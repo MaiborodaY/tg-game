@@ -10,6 +10,7 @@
     #hud{position:fixed;left:12px;top:10px;font-weight:600;opacity:.95}
     #best{position:fixed;left:12px;top:34px;opacity:.75;font-size:12px}
     #hint{position:fixed;right:12px;top:10px;opacity:.65}
+    #pause{position:fixed;right:10px;bottom:10px;padding:8px 10px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a}
     canvas{touch-action:manipulation}
     .btn{position:fixed;left:50%;top:60%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none}
     .btn2{position:fixed;left:50%;top:70%;transform:translateX(-50%);padding:8px 12px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none;font-size:14px}
@@ -20,9 +21,10 @@
   <div id="wrap"><canvas id="c"></canvas></div>
   <div id="hud">Score: <span id="sc">0</span></div>
   <div id="best">Best: <span id="bs">0</span></div>
-  <div id="hint">Tap to jump (×2) • Shield & coins!</div>
+  <div id="hint">Tap to jump (×2) • Pause: ⏸</div>
   <button id="restart" class="btn">↻ Play again</button>
   <button id="share" class="btn2">Share score</button>
+  <button id="pause">⏸</button>
 
   <script>
   // ===== Canvas setup (HiDPI) =====
@@ -40,34 +42,37 @@
   const GRAVITY   = 0.75;
   const JUMP_VY   = -12.5;
   const BASE_SPEED= 4.1;
-  const SPEED_CAP = 9.5;
-  const SPEED_GROWTH = 0.0007; // per ms, до CAP
+  const SPEED_CAP = 9.8;
+  const SPEED_GROWTH = 0.00075; // per ms, до CAP
   const SCORE_PER_MS = 0.012;
   const COIN_SCORE   = 15;
 
-  // интервалы базовые (будем модифицировать синусом)
+  // интервалы базовые — модифицируются синусом сложности
   const OBST_BASE_MIN = 750, OBST_BASE_MAX = 1300; // ms
   const COIN_BASE_MIN = 650, COIN_BASE_MAX = 1100; // ms
   const SIN_PERIOD_MS = 9000; // период «дыхания сложности»
+  const SAFE_MIN = 600, SAFE_MAX = 800; // Fair-спавн окно
 
   // Powerups
-  const SHIELD_CHANCE = 0.22;   // шанс спавна щита вместе с паттерном монет
-  const SHIELD_TIME_SHOW = 7000; // если хотите таймер щита (сейчас — 1 удар, без таймера)
+  const SHIELD_CHANCE = 0.22;
 
   // ===== State =====
-  let running=false, gameOver=false, sentScore=false;
+  let running=false, paused=false, gameOver=false, sentScore=false;
   let speed=BASE_SPEED, last=performance.now(), tStart=last;
   let score=0, best=Number(localStorage.getItem('bestScore')||0);
+  let safeSpawnUntil = 0; // до этого времени — ничего сложного не спавним
+
   const hud = document.getElementById('sc');
   const bestEl = document.getElementById('bs'); bestEl.textContent = best;
-
   const btn = document.getElementById('restart');
   const btnShare = document.getElementById('share');
+  const btnPause = document.getElementById('pause');
 
-  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false, jumpsLeft:2, shield:false, shieldBlink:0 };
+  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false, jumpsLeft:2, shield:false, shieldBlink:0, lastVy:0 };
   let obst = [];
   let coins = [];
   let powerups = []; // {x,y,type:'shield',r}
+  let particles = []; // {x,y,vx,vy,life,clr,sz}
   let nextSpawnAt = 0;
   let nextCoinAt = 0;
 
@@ -126,22 +131,25 @@
   function nowMs(){ return performance.now(); }
 
   function reset(){
-    speed=BASE_SPEED; score=0; hud.textContent='0';
-    obst.length=0; coins.length=0; powerups.length=0;
+    speed=BASE_SPEED; score=0; hud.textContent='0'; paused=false;
+    obst.length=0; coins.length=0; powerups.length=0; particles.length=0;
     player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true; player.jumpsLeft=2; player.shield=false; player.shieldBlink=0;
     tStart = last = performance.now();
     nextSpawnAt = performance.now() + 700;
     nextCoinAt  = performance.now() + 600;
+    safeSpawnUntil = 0;
     gameOver=false; sentScore=false; running=true;
     btn.style.display='none'; btnShare.style.display='none';
+    btnPause.textContent = '⏸';
     spawnParallax();
     requestAnimationFrame(loop);
   }
 
   // ===== Input =====
-  function jump(ev){
+  function jump(){
     if (!AC) ensureAudio(); // первый тап — разблок аудио
     if (gameOver) { reset(); return; }
+    if (paused) { togglePause(); return; }
     if (!running) { running=true; requestAnimationFrame(loop); return; }
     if (player.onGround || player.jumpsLeft>0) {
       player.vy = JUMP_VY;
@@ -150,14 +158,26 @@
     }
   }
   cvs.addEventListener('pointerdown', jump, { passive:true });
-  addEventListener('keydown', e => { if (e.code==='Space') jump(); });
+  addEventListener('keydown', e => {
+    if (e.code==='Space') jump();
+    if (e.code==='KeyP' || e.code==='Escape') togglePause();
+  });
+
   btn.addEventListener('click', ()=>{ if(gameOver) reset(); });
   btnShare.addEventListener('click', ()=>{ try{ if (window.TelegramGameProxy) TelegramGameProxy.shareScore(); }catch(e){} });
+  btnPause.addEventListener('click', togglePause);
+
+  function togglePause(){
+    if (gameOver || !running) return;
+    paused = !paused;
+    btnPause.textContent = paused ? '▶️' : '⏸';
+    if (!paused) { last = performance.now(); requestAnimationFrame(loop); }
+  }
 
   // Pause when hidden / resume
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) running=false;
-    else if(gameOver===false){ running=true; last=performance.now(); requestAnimationFrame(loop); }
+    if (document.hidden) { paused=true; btnPause.textContent='▶️'; }
+    else if(gameOver===false){ last=performance.now(); requestAnimationFrame(loop); }
   });
 
   // ===== Parallax =====
@@ -170,9 +190,10 @@
   function drawParallax(dt){
     const W=cvs.width/DPR,H=cvs.height/DPR;
 
+    // background
+    ctx.fillStyle='#0b0b0f'; ctx.fillRect(0,0,W,H);
+
     // back stars
-    ctx.fillStyle='#0b0b0f';
-    ctx.fillRect(0,0,W,H);
     ctx.fillStyle='rgba(255,255,255,0.35)';
     for(const s of layers.back.stars){
       s.x -= layers.back.speed*dt*0.02*speed;
@@ -188,7 +209,7 @@
       ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
     }
 
-    // front clouds
+    // clouds
     for(const c of layers.front.clouds){
       c.x -= layers.front.speed*dt*0.06*speed;
       if (c.x + c.w < -10){ c.x=W+10; c.y=rnd(40,H-180); c.w=rnd(60,120); c.h=rnd(18,32); c.alpha=rnd(0.08,0.16); }
@@ -225,10 +246,21 @@
     return [baseMin*k, baseMax*k];
   }
 
+  function markSafeWindow(){
+    safeSpawnUntil = Math.max(safeSpawnUntil, performance.now() + rnd(SAFE_MIN, SAFE_MAX));
+  }
+
   function spawnObstacle(){
-    const h = Math.round(rnd(26, 48));
+    // во время safe-окна — сдвигаем спавн
+    if (performance.now() < safeSpawnUntil) { nextSpawnAt = safeSpawnUntil; return; }
+
+    const h = Math.round(rnd(26, 50));
     const w = Math.round(rnd(18, 30));
     obst.push({ x: cvs.width/DPR + 10, y: GROUND_Y()-h, w, h });
+
+    // сложное препятствие → включаем safe-окно
+    if (h >= 44 || w >= 28) markSafeWindow();
+
     const [mn,mx] = effectiveSpawnWindow(OBST_BASE_MIN, OBST_BASE_MAX);
     nextSpawnAt = performance.now() + rnd(mn, mx);
   }
@@ -243,6 +275,8 @@
   const PATTERN_KEYS = Object.keys(PATTERNS);
 
   function spawnCoinPattern(){
+    if (performance.now() < safeSpawnUntil) { nextCoinAt = safeSpawnUntil; return; }
+
     const W=cvs.width/DPR;
     const baseX = W + 20;
     const baseY = GROUND_Y() - rnd(70, 150);
@@ -250,13 +284,53 @@
     const pts = PATTERNS[key](baseX, baseY);
     for (const p of pts) coins.push({ x: p.x, y: p.y, r: 6, taken:false });
 
-    // шанс заспавнить щит рядом с паттерном
+    // более «сложные» паттерны → включаем safe-окно
+    if (key === 'stairs' || key === 'arc') markSafeWindow();
+
+    // шанс заспавнить щит
     if (Math.random() < SHIELD_CHANCE) {
       powerups.push({ x: baseX + rnd(40,80), y: baseY - rnd(10,30), type:'shield', r:8, born: performance.now() });
     }
 
     const [mn,mx] = effectiveSpawnWindow(COIN_BASE_MIN, COIN_BASE_MAX);
     nextCoinAt = performance.now() + rnd(mn, mx);
+  }
+
+  // ===== Particles =====
+  function spawnDust(x,y,impact=1){
+    for(let i=0;i<8;i++){
+      particles.push({
+        x, y, vx: rnd(-1.2,1.2), vy: rnd(-2.2,-0.8)*impact,
+        life: rnd(260,420), clr:'rgba(200,200,255,0.6)', sz:rnd(1,2)
+      });
+    }
+  }
+  function spawnSparks(x,y){
+    for(let i=0;i<10;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = rnd(1.2,2.2);
+      particles.push({
+        x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp,
+        life: rnd(240,420), clr:'rgba(124,247,212,0.9)', sz:rnd(1.2,2.4)
+      });
+    }
+  }
+  function updateParticles(dt){
+    for(const p of particles){
+      p.x += p.vx * (dt*0.06);
+      p.y += p.vy * (dt*0.06);
+      p.vy += 0.02 * (dt*0.06);
+      p.life -= dt;
+    }
+    particles = particles.filter(p => p.life > 0);
+  }
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life/420));
+      ctx.fillStyle = p.clr;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.sz, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   // ===== Drawing =====
@@ -302,23 +376,23 @@
 
   function drawScore(){
     hud.textContent = String(Math.floor(score));
-    if(gameOver){
+    if(gameOver || paused){
       ctx.textAlign='center';
       ctx.font = 'bold 22px system-ui, Arial';
+      ctx.fillStyle='rgba(0,0,0,0.35)';
+      ctx.fillRect(0,0,cvs.width/DPR,cvs.height/DPR);
       ctx.fillStyle='#fff';
-      ctx.fillText('Game Over', (cvs.width/DPR)/2, (cvs.height/DPR)/2 - 24);
+      ctx.fillText(paused ? 'Paused' : 'Game Over', (cvs.width/DPR)/2, (cvs.height/DPR)/2 - 24);
       ctx.font = '16px system-ui, Arial';
       ctx.fillStyle='rgba(255,255,255,.85)';
-      ctx.fillText('Tap to restart', (cvs.width/DPR)/2, (cvs.height/DPR)/2 + 4);
-      btn.style.display='block';
-      btnShare.style.display='block';
+      ctx.fillText(paused ? 'Tap or ▶️ to continue' : 'Tap to restart', (cvs.width/DPR)/2, (cvs.height/DPR)/2 + 4);
+      if (gameOver){ btn.style.display='block'; btnShare.style.display='block'; }
     }
   }
 
   // ===== Physics + Loop =====
   async function endGame(){
     running=false; gameOver=true; drawScore();
-    // локальный рекорд
     if (score > best) { best = Math.floor(score); localStorage.setItem('bestScore', best); bestEl.textContent = best; }
     if (sentScore) return; sentScore = true;
     try{
@@ -346,21 +420,35 @@
   }
 
   function loop(now){
-    if(!running) return;
     requestAnimationFrame(loop);
+    if(!running) return;
+
     const dt = clamp(now - last, 0, 50); last = now;
+
+    if (paused){
+      // рисуем фон/оверлей без апдейта физики
+      drawParallax(0);
+      drawCoins(); drawObstacles(); drawPowerups(); drawPlayer(); drawParticles();
+      drawScore();
+      return;
+    }
 
     // difficulty: speed growth to cap
     speed = Math.min(SPEED_CAP, speed + dt * SPEED_GROWTH);
 
     // physics: player
+    player.lastVy = player.vy;
     player.vy += GRAVITY;
     player.y  += player.vy;
     const gy = GROUND_Y() - player.h;
-    if (player.y >= gy) { player.y = gy; if (player.vy>2) { /*landing effect could be here*/ } player.vy = 0; if(!player.onGround){ player.onGround = true; player.jumpsLeft = 2; } }
+    if (player.y >= gy) {
+      const impact = Math.min(1.6, Math.max(0.6, Math.abs(player.lastVy)/10));
+      if (!player.onGround && player.lastVy > 3) spawnDust(player.x+player.w/2, gy+player.h, impact);
+      player.y = gy; player.vy = 0; if(!player.onGround){ player.onGround = true; player.jumpsLeft = 2; }
+    }
     if (player.shieldBlink>0) player.shieldBlink -= dt;
 
-    // spawn windows modulated by sine curve
+    // spawn windows (with fair-spawn check)
     if (now >= nextSpawnAt) spawnObstacle();
     if (now >= nextCoinAt)  spawnCoinPattern();
 
@@ -374,6 +462,8 @@
     for(const p of powerups){ p.x -= speed * 1.0; }
     powerups = powerups.filter(p => p.x + p.r > -10);
 
+    updateParticles(dt);
+
     // collisions
     // coins
     for(const c of coins){
@@ -384,8 +474,10 @@
     // shield pickup
     for(const p of powerups){
       if (p.type==='shield' && collideCircles({x:player.x+player.w/2,y:player.y+player.h/2,r:12}, p)){
-        player.shield = true; shhhShield();
+        player.shield = true; shhhShield(); spawnSparks(p.x,p.y);
         p.x = -9999; // remove
+        // после поднятия щита — короткое safe-окно
+        markSafeWindow();
       }
     }
     powerups = powerups.filter(p => p.x > -50);
@@ -394,11 +486,14 @@
     for(const o of obst){
       if (collideRect(player, o)) {
         if (player.shield){
-          player.shield = false; player.shieldBlink = 400; thumpHit(); // эффект и гасим щит
+          player.shield = false; player.shieldBlink = 400; thumpHit();
+          spawnSparks(player.x+player.w/2, player.y+player.h/2);
           // Оттолкнём немного
           player.vy = -6; player.onGround=false;
-          // Удалим препятствие, чтобы не цепляться повторно
+          // удалим препятствие, чтобы не цепляться повторно
           o.x = -9999;
+          // fair-спавн после «прощённого» удара
+          markSafeWindow();
           continue;
         } else {
           thumpHit();
@@ -416,6 +511,7 @@
     drawObstacles();
     drawPowerups();
     drawPlayer();
+    drawParticles();
     drawScore();
   }
 
