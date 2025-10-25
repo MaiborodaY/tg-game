@@ -7,21 +7,20 @@
   <style>
     html,body{margin:0;height:100%;background:#0b0b0f;color:#fff;font-family:system-ui,Segoe UI,Arial,sans-serif}
     #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-    #hud{position:fixed;left:12px;top:10px;font-weight:600;opacity:.9}
-    #hint{position:fixed;right:12px;top:10px;opacity:.6}
+    #hud{position:fixed;left:12px;top:10px;font-weight:600;opacity:.95}
+    #best{position:fixed;left:12px;top:34px;opacity:.75;font-size:12px}
+    #hint{position:fixed;right:12px;top:10px;opacity:.65}
     canvas{touch-action:manipulation}
     .btn{position:fixed;left:50%;top:60%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none}
     .btn2{position:fixed;left:50%;top:70%;transform:translateX(-50%);padding:8px 12px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none;font-size:14px}
-    #best{position:fixed;left:12px;top:34px;opacity:.7;font-size:12px}
   </style>
-  <!-- Опционально даст системный share в Telegram 123-->
   <script src="https://telegram.org/js/games.js"></script>
 </head>
 <body>
   <div id="wrap"><canvas id="c"></canvas></div>
   <div id="hud">Score: <span id="sc">0</span></div>
   <div id="best">Best: <span id="bs">0</span></div>
-  <div id="hint">Tap to jump (×2)</div>
+  <div id="hint">Tap to jump (×2) • Shield & coins!</div>
   <button id="restart" class="btn">↻ Play again</button>
   <button id="share" class="btn2">Share score</button>
 
@@ -40,30 +39,44 @@
   const GROUND_Y = () => Math.round(cvs.height/DPR - 100);
   const GRAVITY   = 0.75;
   const JUMP_VY   = -12.5;
-  const BASE_SPEED= 4.2;
-  const OBST_GAP_MIN = 850, OBST_GAP_MAX = 1400; // ms
-  const COIN_GAP_MIN = 700, COIN_GAP_MAX = 1200; // ms
-  const SPEED_GROWTH = 0.00065; // per ms
+  const BASE_SPEED= 4.1;
+  const SPEED_CAP = 9.5;
+  const SPEED_GROWTH = 0.0007; // per ms, до CAP
   const SCORE_PER_MS = 0.012;
   const COIN_SCORE   = 15;
 
+  // интервалы базовые (будем модифицировать синусом)
+  const OBST_BASE_MIN = 750, OBST_BASE_MAX = 1300; // ms
+  const COIN_BASE_MIN = 650, COIN_BASE_MAX = 1100; // ms
+  const SIN_PERIOD_MS = 9000; // период «дыхания сложности»
+
+  // Powerups
+  const SHIELD_CHANCE = 0.22;   // шанс спавна щита вместе с паттерном монет
+  const SHIELD_TIME_SHOW = 7000; // если хотите таймер щита (сейчас — 1 удар, без таймера)
+
   // ===== State =====
   let running=false, gameOver=false, sentScore=false;
-  let speed=BASE_SPEED, last=performance.now();
+  let speed=BASE_SPEED, last=performance.now(), tStart=last;
   let score=0, best=Number(localStorage.getItem('bestScore')||0);
   const hud = document.getElementById('sc');
-  const bestEl = document.getElementById('bs');
-  bestEl.textContent = best;
+  const bestEl = document.getElementById('bs'); bestEl.textContent = best;
 
   const btn = document.getElementById('restart');
   const btnShare = document.getElementById('share');
 
-  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false, jumpsLeft:2 };
-  const floor = { y: GROUND_Y(), h: 6, t:0 };
+  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false, jumpsLeft:2, shield:false, shieldBlink:0 };
   let obst = [];
   let coins = [];
+  let powerups = []; // {x,y,type:'shield',r}
   let nextSpawnAt = 0;
   let nextCoinAt = 0;
+
+  // Parallax layers
+  const layers = {
+    back:   { speed: 0.2, stars: [] },
+    mid:    { speed: 0.5, stars: [] },
+    front:  { speed: 0.9, clouds: [] },
+  };
 
   // read payload from ?p= (for /api/score)
   function getPayload(){
@@ -73,36 +86,61 @@
   }
   const payload = getPayload();
 
+  // ===== WebAudio (synth) =====
+  let AC=null;
+  function ensureAudio(){
+    if (AC) return;
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch {}
+  }
+  function beepCoin(){
+    if(!AC) return;
+    const t=AC.currentTime;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(880,t); o.frequency.exponentialRampToValueAtTime(1320,t+0.08);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t+0.14);
+  }
+  function thumpHit(){
+    if(!AC) return;
+    const t=AC.currentTime;
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(60,t+0.12);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t+0.2);
+  }
+  function shhhShield(){
+    if(!AC) return;
+    const t=AC.currentTime;
+    const buffer=AC.createBuffer(1, AC.sampleRate*0.25, AC.sampleRate);
+    const data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++){ data[i]=(Math.random()*2-1)*Math.exp(-i/data.length*4); }
+    const src=AC.createBufferSource(); src.buffer=buffer;
+    const g=AC.createGain(); g.gain.value=0.25;
+    src.connect(g).connect(AC.destination); src.start(t);
+  }
+
   // ===== Helpers =====
   function rnd(a,b){ return Math.random()*(b-a)+a; }
   function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+  function nowMs(){ return performance.now(); }
 
   function reset(){
     speed=BASE_SPEED; score=0; hud.textContent='0';
-    obst.length=0; coins.length=0;
-    player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true; player.jumpsLeft=2;
+    obst.length=0; coins.length=0; powerups.length=0;
+    player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true; player.jumpsLeft=2; player.shield=false; player.shieldBlink=0;
+    tStart = last = performance.now();
     nextSpawnAt = performance.now() + 700;
-    nextCoinAt  = performance.now() + 500;
+    nextCoinAt  = performance.now() + 600;
     gameOver=false; sentScore=false; running=true;
     btn.style.display='none'; btnShare.style.display='none';
-    requestAnimationFrame(loop);            // <-- ВАЖНО: перезапускаем цикл
-  }
-
-  // ===== Obstacles & Coins =====
-  function spawnObstacle(){
-    const h = Math.round(rnd(26, 46));
-    const w = Math.round(rnd(18, 30));
-    obst.push({ x: cvs.width/DPR + 10, y: GROUND_Y()-h, w, h });
-    nextSpawnAt = performance.now() + rnd(OBST_GAP_MIN, OBST_GAP_MAX);
-  }
-  function spawnCoin(){
-    const y = Math.round(GROUND_Y() - rnd(60, 140)); // немного над землёй
-    coins.push({ x: cvs.width/DPR + 10, y, r: 6, taken:false });
-    nextCoinAt = performance.now() + rnd(COIN_GAP_MIN, COIN_GAP_MAX);
+    spawnParallax();
+    requestAnimationFrame(loop);
   }
 
   // ===== Input =====
-  function jump(){
+  function jump(ev){
+    if (!AC) ensureAudio(); // первый тап — разблок аудио
     if (gameOver) { reset(); return; }
     if (!running) { running=true; requestAnimationFrame(loop); return; }
     if (player.onGround || player.jumpsLeft>0) {
@@ -112,6 +150,7 @@
     }
   }
   cvs.addEventListener('pointerdown', jump, { passive:true });
+  addEventListener('keydown', e => { if (e.code==='Space') jump(); });
   btn.addEventListener('click', ()=>{ if(gameOver) reset(); });
   btnShare.addEventListener('click', ()=>{ try{ if (window.TelegramGameProxy) TelegramGameProxy.shareScore(); }catch(e){} });
 
@@ -121,27 +160,122 @@
     else if(gameOver===false){ running=true; last=performance.now(); requestAnimationFrame(loop); }
   });
 
-  // ===== Drawing =====
-  function drawBackground(dt){
-    const w = cvs.width/DPR, h = cvs.height/DPR;
-    const g = ctx.createLinearGradient(0,0,0,h);
-    g.addColorStop(0,'#0b0b0f'); g.addColorStop(1,'#161622');
-    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  // ===== Parallax =====
+  function spawnParallax(){
+    const W=cvs.width/DPR, H=cvs.height/DPR;
+    layers.back.stars = Array.from({length:40}, _=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.5}));
+    layers.mid.stars  = Array.from({length:30}, _=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.8}));
+    layers.front.clouds= Array.from({length:6}, _=>({x:Math.random()*W,y:rnd(40,H-180),w:rnd(60,120),h:rnd(18,32),alpha:rnd(0.08,0.16)}));
+  }
+  function drawParallax(dt){
+    const W=cvs.width/DPR,H=cvs.height/DPR;
 
-    floor.t += dt*0.06;
+    // back stars
+    ctx.fillStyle='#0b0b0f';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    for(const s of layers.back.stars){
+      s.x -= layers.back.speed*dt*0.02*speed;
+      if (s.x < -2) s.x = W+2;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    }
+
+    // mid stars
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    for(const s of layers.mid.stars){
+      s.x -= layers.mid.speed*dt*0.035*speed;
+      if (s.x < -2) s.x = W+2;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    }
+
+    // front clouds
+    for(const c of layers.front.clouds){
+      c.x -= layers.front.speed*dt*0.06*speed;
+      if (c.x + c.w < -10){ c.x=W+10; c.y=rnd(40,H-180); c.w=rnd(60,120); c.h=rnd(18,32); c.alpha=rnd(0.08,0.16); }
+      ctx.globalAlpha=c.alpha; ctx.fillStyle='#c1d0ff';
+      roundRect(c.x,c.y,c.w,c.h,8,true);
+      ctx.globalAlpha=1;
+    }
+
+    // ground lines
     ctx.strokeStyle = '#232336'; ctx.lineWidth = 2;
     for(let i=0;i<4;i++){
       ctx.beginPath();
       const y = Math.round(GROUND_Y()+i*12);
-      ctx.moveTo(0,y+0.5); ctx.lineTo(w,y+0.5); ctx.stroke();
+      ctx.moveTo(0,y+0.5); ctx.lineTo(W,y+0.5); ctx.stroke();
     }
-    ctx.fillStyle='#2a2a3e'; ctx.fillRect(0, GROUND_Y()+4, w, floor.h);
+    ctx.fillStyle='#2a2a3e'; ctx.fillRect(0, GROUND_Y()+4, W, 6);
+  }
+  function roundRect(x,y,w,h,r,fill){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    if(fill) ctx.fill(); else ctx.stroke();
   }
 
+  // ===== Obstacles & Coins & Powerups =====
+  function effectiveSpawnWindow(baseMin, baseMax){
+    // модифицируем интервалы синусом сложности
+    const t = (nowMs() - tStart);
+    const phase = Math.sin((t / SIN_PERIOD_MS) * Math.PI * 2); // -1..1
+    const k = 1 - 0.35 * phase; // 0.65..1.35 — плотнее/реже
+    return [baseMin*k, baseMax*k];
+  }
+
+  function spawnObstacle(){
+    const h = Math.round(rnd(26, 48));
+    const w = Math.round(rnd(18, 30));
+    obst.push({ x: cvs.width/DPR + 10, y: GROUND_Y()-h, w, h });
+    const [mn,mx] = effectiveSpawnWindow(OBST_BASE_MIN, OBST_BASE_MAX);
+    nextSpawnAt = performance.now() + rnd(mn, mx);
+  }
+
+  // Паттерны монет: line, arc, stairs, wave
+  const PATTERNS = {
+    line: (x0,y0) => Array.from({length:6},(_,i)=>({x:x0+i*18,y:y0})),
+    arc:  (x0,y0) => Array.from({length:7},(_,i)=>({x:x0+i*16,y:y0 - Math.sin(i/6*Math.PI)*24})),
+    stairs:(x0,y0)=> Array.from({length:6},(_,i)=>({x:x0+i*18,y:y0 - i*12})),
+    wave: (x0,y0) => Array.from({length:8},(_,i)=>({x:x0+i*16,y:y0 - Math.sin(i*0.9)*22}))
+  };
+  const PATTERN_KEYS = Object.keys(PATTERNS);
+
+  function spawnCoinPattern(){
+    const W=cvs.width/DPR;
+    const baseX = W + 20;
+    const baseY = GROUND_Y() - rnd(70, 150);
+    const key = PATTERN_KEYS[(Math.random()*PATTERN_KEYS.length)|0];
+    const pts = PATTERNS[key](baseX, baseY);
+    for (const p of pts) coins.push({ x: p.x, y: p.y, r: 6, taken:false });
+
+    // шанс заспавнить щит рядом с паттерном
+    if (Math.random() < SHIELD_CHANCE) {
+      powerups.push({ x: baseX + rnd(40,80), y: baseY - rnd(10,30), type:'shield', r:8, born: performance.now() });
+    }
+
+    const [mn,mx] = effectiveSpawnWindow(COIN_BASE_MIN, COIN_BASE_MAX);
+    nextCoinAt = performance.now() + rnd(mn, mx);
+  }
+
+  // ===== Drawing =====
   function drawPlayer(){
     ctx.save(); ctx.translate(player.x, player.y);
-    ctx.fillStyle = '#7cf7d4'; ctx.fillRect(0,0, player.w, player.h);
+    // body (blink if shield used frame)
+    const blink = player.shieldBlink > 0 ? (Math.sin(performance.now()*0.04)>0?1:0) : 0;
+    ctx.fillStyle = blink ? '#ffffff' : '#7cf7d4';
+    ctx.fillRect(0,0, player.w, player.h);
+    // eye
     ctx.fillStyle='#0b0b0f'; ctx.fillRect(player.w-10, 6, 6, 6);
+    // shield icon
+    if (player.shield){
+      ctx.strokeStyle='rgba(124,247,212,0.9)';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.arc(player.w/2, -8, 8, 0, Math.PI*2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -152,8 +286,17 @@
 
   function drawCoins(){
     ctx.fillStyle='#ffd45c';
-    for(const c of coins){
-      ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
+    for(const c of coins){ if(!c.taken){ ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill(); } }
+  }
+
+  function drawPowerups(){
+    for(const p of powerups){
+      if (p.type==='shield'){
+        ctx.strokeStyle='rgba(124,247,212,0.85)';
+        ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.x,p.y, p.r-4, 0, Math.PI*2); ctx.stroke();
+      }
     }
   }
 
@@ -198,37 +341,69 @@
     const dx = c.x - cx, dy = c.y - cy;
     return (dx*dx + dy*dy) <= c.r*c.r;
   }
+  function collideCircles(a,b){
+    const dx=a.x-b.x, dy=a.y-b.y; const d2=dx*dx+dy*dy; const r=a.r+b.r; return d2<=r*r;
+  }
 
   function loop(now){
     if(!running) return;
     requestAnimationFrame(loop);
     const dt = clamp(now - last, 0, 50); last = now;
 
-    // difficulty grows
-    speed += dt * SPEED_GROWTH;
+    // difficulty: speed growth to cap
+    speed = Math.min(SPEED_CAP, speed + dt * SPEED_GROWTH);
 
     // physics: player
     player.vy += GRAVITY;
     player.y  += player.vy;
     const gy = GROUND_Y() - player.h;
-    if (player.y >= gy) { player.y = gy; player.vy = 0; if(!player.onGround){ player.onGround = true; player.jumpsLeft = 2; } }
+    if (player.y >= gy) { player.y = gy; if (player.vy>2) { /*landing effect could be here*/ } player.vy = 0; if(!player.onGround){ player.onGround = true; player.jumpsLeft = 2; } }
+    if (player.shieldBlink>0) player.shieldBlink -= dt;
 
-    // spawn
+    // spawn windows modulated by sine curve
     if (now >= nextSpawnAt) spawnObstacle();
-    if (now >= nextCoinAt)  spawnCoin();
+    if (now >= nextCoinAt)  spawnCoinPattern();
 
     // move & cull
     for(const o of obst){ o.x -= speed; }
     obst = obst.filter(o => o.x + o.w > -10);
 
-    for(const c of coins){ c.x -= speed * 1.05; }
-    coins = coins.filter(c => !c.taken && c.x + c.r > -10);
+    for(const c of coins){ if(!c.taken) c.x -= speed * 1.05; }
+    coins = coins.filter(c => (!c.taken && c.x + c.r > -10));
+
+    for(const p of powerups){ p.x -= speed * 1.0; }
+    powerups = powerups.filter(p => p.x + p.r > -10);
 
     // collisions
-    for(const o of obst){ if (collideRect(player, o)) { endGame(); return; } }
+    // coins
     for(const c of coins){
       if (!c.taken && collideCircleRect(c, {x:player.x, y:player.y, w:player.w, h:player.h})){
-        c.taken = true; score += COIN_SCORE;
+        c.taken = true; score += COIN_SCORE; beepCoin();
+      }
+    }
+    // shield pickup
+    for(const p of powerups){
+      if (p.type==='shield' && collideCircles({x:player.x+player.w/2,y:player.y+player.h/2,r:12}, p)){
+        player.shield = true; shhhShield();
+        p.x = -9999; // remove
+      }
+    }
+    powerups = powerups.filter(p => p.x > -50);
+
+    // obstacles hit
+    for(const o of obst){
+      if (collideRect(player, o)) {
+        if (player.shield){
+          player.shield = false; player.shieldBlink = 400; thumpHit(); // эффект и гасим щит
+          // Оттолкнём немного
+          player.vy = -6; player.onGround=false;
+          // Удалим препятствие, чтобы не цепляться повторно
+          o.x = -9999;
+          continue;
+        } else {
+          thumpHit();
+          endGame(); return;
+        }
       }
     }
 
@@ -236,9 +411,10 @@
     score += dt * SCORE_PER_MS;
 
     // draw
-    drawBackground(dt);
+    drawParallax(dt);
     drawCoins();
     drawObstacles();
+    drawPowerups();
     drawPlayer();
     drawScore();
   }
