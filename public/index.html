@@ -1,1 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TG HTML5 Game</title>
+  <style>html,body{margin:0;background:#000;color:#fff;font-family:sans-serif}</style>
+</head>
+<body>
+  <canvas id="game" width="360" height="640"></canvas>
+  <script>
+    const cvs = document.getElementById('game'), ctx = cvs.getContext('2d');
+    let t=0, score=0, running=true;
+
+    function loop(){
+      if(!running) return;
+      t++; score = Math.max(score, Math.floor(t/10));
+      ctx.clearRect(0,0,cvs.width,cvs.height);
+      ctx.fillText("SCORE: "+score, 10, 20);
+      requestAnimationFrame(loop);
+    }
+    loop();
+
+    // В реальной игре вызывайте при завершении матча
+    async function onGameOver(){
+      running = false;
+      const payload = getPayloadFromQuery();
+      await fetch('/api/score', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ score, payload })
+      });
+    }
+
+    function getPayloadFromQuery() {
+      const p = new URL(location.href).searchParams.get('p');
+      if (!p) return {};
+      try { return JSON.parse(atob(p)); } catch { return {}; }
+    }
+  </script>
+</body>
+</html>
 
