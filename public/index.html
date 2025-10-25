@@ -11,13 +11,19 @@
     #hint{position:fixed;right:12px;top:10px;opacity:.6}
     canvas{touch-action:manipulation}
     .btn{position:fixed;left:50%;top:60%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none}
+    .btn2{position:fixed;left:50%;top:70%;transform:translateX(-50%);padding:8px 12px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none;font-size:14px}
+    #best{position:fixed;left:12px;top:34px;opacity:.7;font-size:12px}
   </style>
+  <!-- Опционально даст системный share в Telegram -->
+  <script src="https://telegram.org/js/games.js"></script>
 </head>
 <body>
   <div id="wrap"><canvas id="c"></canvas></div>
   <div id="hud">Score: <span id="sc">0</span></div>
-  <div id="hint">Tap to jump</div>
+  <div id="best">Best: <span id="bs">0</span></div>
+  <div id="hint">Tap to jump (×2)</div>
   <button id="restart" class="btn">↻ Play again</button>
+  <button id="share" class="btn2">Share score</button>
 
   <script>
   // ===== Canvas setup (HiDPI) =====
@@ -36,20 +42,28 @@
   const JUMP_VY   = -12.5;
   const BASE_SPEED= 4.2;
   const OBST_GAP_MIN = 850, OBST_GAP_MAX = 1400; // ms
-  const SPEED_GROWTH = 0.0006; // per ms
-  const SCORE_PER_MS = 0.01;
+  const COIN_GAP_MIN = 700, COIN_GAP_MAX = 1200; // ms
+  const SPEED_GROWTH = 0.00065; // per ms
+  const SCORE_PER_MS = 0.012;
+  const COIN_SCORE   = 15;
 
   // ===== State =====
   let running=false, gameOver=false, sentScore=false;
-  let speed=BASE_SPEED, t0=performance.now(), last=performance.now();
-  let score=0;
+  let speed=BASE_SPEED, last=performance.now();
+  let score=0, best=Number(localStorage.getItem('bestScore')||0);
   const hud = document.getElementById('sc');
-  const btn = document.getElementById('restart');
+  const bestEl = document.getElementById('bs');
+  bestEl.textContent = best;
 
-  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false };
+  const btn = document.getElementById('restart');
+  const btnShare = document.getElementById('share');
+
+  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false, jumpsLeft:2 };
   const floor = { y: GROUND_Y(), h: 6, t:0 };
   let obst = [];
+  let coins = [];
   let nextSpawnAt = 0;
+  let nextCoinAt = 0;
 
   // read payload from ?p= (for /api/score)
   function getPayload(){
@@ -65,39 +79,55 @@
 
   function reset(){
     speed=BASE_SPEED; score=0; hud.textContent='0';
-    obst.length=0; player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true;
-    nextSpawnAt = performance.now() + 700; gameOver=false; sentScore=false; running=true; t0 = last = performance.now();
-    btn.style.display='none';
+    obst.length=0; coins.length=0;
+    player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true; player.jumpsLeft=2;
+    nextSpawnAt = performance.now() + 700;
+    nextCoinAt  = performance.now() + 500;
+    gameOver=false; sentScore=false; running=true;
+    btn.style.display='none'; btnShare.style.display='none';
+    requestAnimationFrame(loop);            // <-- ВАЖНО: перезапускаем цикл
   }
 
-  // ===== Obstacles =====
-  function spawn(){
+  // ===== Obstacles & Coins =====
+  function spawnObstacle(){
     const h = Math.round(rnd(26, 46));
     const w = Math.round(rnd(18, 30));
-    obst.push({ x: cvs.width/DPR + 10, y: GROUND_Y()-h, w, h, passed:false });
+    obst.push({ x: cvs.width/DPR + 10, y: GROUND_Y()-h, w, h });
     nextSpawnAt = performance.now() + rnd(OBST_GAP_MIN, OBST_GAP_MAX);
+  }
+  function spawnCoin(){
+    const y = Math.round(GROUND_Y() - rnd(60, 140)); // немного над землёй
+    coins.push({ x: cvs.width/DPR + 10, y, r: 6, taken:false });
+    nextCoinAt = performance.now() + rnd(COIN_GAP_MIN, COIN_GAP_MAX);
   }
 
   // ===== Input =====
   function jump(){
-    if (!running) { if (gameOver) reset(); return; }
-    if (player.onGround) { player.vy = JUMP_VY; player.onGround=false; }
+    if (gameOver) { reset(); return; }
+    if (!running) { running=true; requestAnimationFrame(loop); return; }
+    if (player.onGround || player.jumpsLeft>0) {
+      player.vy = JUMP_VY;
+      player.onGround = false;
+      player.jumpsLeft = Math.max(0, player.jumpsLeft - 1);
+    }
   }
   cvs.addEventListener('pointerdown', jump, { passive:true });
   btn.addEventListener('click', ()=>{ if(gameOver) reset(); });
+  btnShare.addEventListener('click', ()=>{ try{ if (window.TelegramGameProxy) TelegramGameProxy.shareScore(); }catch(e){} });
 
-  // Pause when hidden
-  document.addEventListener('visibilitychange', () => { if (document.hidden) running=false; else if(gameOver===false){ running=true; last=performance.now(); loop(last); } });
+  // Pause when hidden / resume
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) running=false;
+    else if(gameOver===false){ running=true; last=performance.now(); requestAnimationFrame(loop); }
+  });
 
   // ===== Drawing =====
   function drawBackground(dt){
-    // sky
     const w = cvs.width/DPR, h = cvs.height/DPR;
     const g = ctx.createLinearGradient(0,0,0,h);
     g.addColorStop(0,'#0b0b0f'); g.addColorStop(1,'#161622');
     ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
 
-    // parallax lines
     floor.t += dt*0.06;
     ctx.strokeStyle = '#232336'; ctx.lineWidth = 2;
     for(let i=0;i<4;i++){
@@ -105,18 +135,12 @@
       const y = Math.round(GROUND_Y()+i*12);
       ctx.moveTo(0,y+0.5); ctx.lineTo(w,y+0.5); ctx.stroke();
     }
-
-    // ground line
     ctx.fillStyle='#2a2a3e'; ctx.fillRect(0, GROUND_Y()+4, w, floor.h);
   }
 
   function drawPlayer(){
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    // body
-    ctx.fillStyle = '#7cf7d4';
-    ctx.fillRect(0,0, player.w, player.h);
-    // eye
+    ctx.save(); ctx.translate(player.x, player.y);
+    ctx.fillStyle = '#7cf7d4'; ctx.fillRect(0,0, player.w, player.h);
     ctx.fillStyle='#0b0b0f'; ctx.fillRect(player.w-10, 6, 6, 6);
     ctx.restore();
   }
@@ -126,26 +150,34 @@
     for(const o of obst) ctx.fillRect(o.x, o.y, o.w, o.h);
   }
 
+  function drawCoins(){
+    ctx.fillStyle='#ffd45c';
+    for(const c of coins){
+      ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
   function drawScore(){
     hud.textContent = String(Math.floor(score));
     if(gameOver){
       ctx.textAlign='center';
       ctx.font = 'bold 22px system-ui, Arial';
       ctx.fillStyle='#fff';
-      ctx.fillText('Game Over', (cvs.width/DPR)/2, (cvs.height/DPR)/2 - 20);
+      ctx.fillText('Game Over', (cvs.width/DPR)/2, (cvs.height/DPR)/2 - 24);
       ctx.font = '16px system-ui, Arial';
-      ctx.fillStyle='rgba(255,255,255,.8)';
-      ctx.fillText('Tap to restart', (cvs.width/DPR)/2, (cvs.height/DPR)/2 + 6);
+      ctx.fillStyle='rgba(255,255,255,.85)';
+      ctx.fillText('Tap to restart', (cvs.width/DPR)/2, (cvs.height/DPR)/2 + 4);
       btn.style.display='block';
+      btnShare.style.display='block';
     }
   }
 
   // ===== Physics + Loop =====
   async function endGame(){
-    running=false; gameOver=true;
-    drawScore();
-    if (sentScore) return;
-    sentScore = true;
+    running=false; gameOver=true; drawScore();
+    // локальный рекорд
+    if (score > best) { best = Math.floor(score); localStorage.setItem('bestScore', best); bestEl.textContent = best; }
+    if (sentScore) return; sentScore = true;
     try{
       const res = await fetch('/api/score', {
         method:'POST',
@@ -157,8 +189,14 @@
     }catch(e){ console.log('Score send failed:', e); }
   }
 
-  function collide(a,b){
+  function collideRect(a,b){
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+  function collideCircleRect(c, r){
+    const cx = clamp(c.x, r.x, r.x + r.w);
+    const cy = clamp(c.y, r.y, r.y + r.h);
+    const dx = c.x - cx, dy = c.y - cy;
+    return (dx*dx + dy*dy) <= c.r*c.r;
   }
 
   function loop(now){
@@ -173,21 +211,33 @@
     player.vy += GRAVITY;
     player.y  += player.vy;
     const gy = GROUND_Y() - player.h;
-    if (player.y >= gy) { player.y = gy; player.vy = 0; player.onGround = true; }
+    if (player.y >= gy) { player.y = gy; player.vy = 0; if(!player.onGround){ player.onGround = true; player.jumpsLeft = 2; } }
 
-    // obstacles
-    if (now >= nextSpawnAt) spawn();
+    // spawn
+    if (now >= nextSpawnAt) spawnObstacle();
+    if (now >= nextCoinAt)  spawnCoin();
+
+    // move & cull
     for(const o of obst){ o.x -= speed; }
     obst = obst.filter(o => o.x + o.w > -10);
 
+    for(const c of coins){ c.x -= speed * 1.05; }
+    coins = coins.filter(c => !c.taken && c.x + c.r > -10);
+
     // collisions
-    for(const o of obst){ if (collide(player, o)) { endGame(); break; } }
+    for(const o of obst){ if (collideRect(player, o)) { endGame(); return; } }
+    for(const c of coins){
+      if (!c.taken && collideCircleRect(c, {x:player.x, y:player.y, w:player.w, h:player.h})){
+        c.taken = true; score += COIN_SCORE;
+      }
+    }
 
     // score
     score += dt * SCORE_PER_MS;
 
     // draw
     drawBackground(dt);
+    drawCoins();
     drawObstacles();
     drawPlayer();
     drawScore();
@@ -195,7 +245,6 @@
 
   // start
   reset();
-  requestAnimationFrame(loop);
   </script>
 </body>
 </html>
