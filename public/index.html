@@ -41,17 +41,17 @@
   const GROUND_Y     = () => Math.round(cvs.height/DPR - 100);
   const GRAVITY      = 0.75;
   const JUMP_VY      = -12.5;
-  const BASE_SPEED   = 3.2;   // было 4.1
-  const SPEED_CAP    = 7.5;   // было ~9.8
-  const SPEED_GROWTH = 0.00045; // было 0.00075
-  const SCORE_PER_MS = 0.0105; // чуть мягче
+  const BASE_SPEED   = 3.2;
+  const SPEED_CAP    = 7.5;
+  const SPEED_GROWTH = 0.00045;   // per ms
+  const SCORE_PER_MS = 0.0105;
   const COIN_SCORE   = 15;
 
-  // интервалы и «дыхание» сложности (ослаблено)
-  const OBST_BASE_MIN = 900, OBST_BASE_MAX = 1500; // было 750–1300
-  const COIN_BASE_MIN = 750, COIN_BASE_MAX = 1200; // было 650–1100
-  const SIN_PERIOD_MS = 10000;   // длиннее период
-  const SIN_INTENSITY = 0.20;    // амплитуда 20% вместо 35%
+  // интервалы и «дыхание» сложности
+  const OBST_BASE_MIN = 900, OBST_BASE_MAX = 1500; // ms
+  const COIN_BASE_MIN = 750, COIN_BASE_MAX = 1200; // ms
+  const SIN_PERIOD_MS = 10000;
+  const SIN_INTENSITY = 0.20;
   const SAFE_MIN = 650, SAFE_MAX = 800; // fair-спавн
 
   const SHIELD_CHANCE = 0.22;
@@ -76,6 +76,14 @@
   // Parallax layers
   const layers = { back:{speed:0.2,stars:[]}, mid:{speed:0.5,stars:[]}, front:{speed:0.9,clouds:[]} };
 
+  // requestAnimationFrame контроль
+  let rafId = 0;
+  function startLoop(){
+    cancelAnimationFrame(rafId);
+    last = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+
   // payload из ?p=
   function getPayload(){ const p=new URL(location.href).searchParams.get('p'); try{ return p?JSON.parse(atob(p)):{} }catch{ return {} } }
   const payload = getPayload();
@@ -95,9 +103,9 @@
     obst.length=0; coins.length=0; powerups.length=0; particles.length=0;
     player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true; player.jumpsLeft=2; player.shield=false; player.shieldBlink=0;
     tStart = last = performance.now();
-    nextSpawnAt = performance.now() + 1200;    // старт без спавна поближе
+    nextSpawnAt = performance.now() + 1200;
     nextCoinAt  = performance.now() + 1000;
-    safeSpawnUntil = performance.now() + 1200; // ещё немного safety
+    safeSpawnUntil = performance.now() + 1200;
     gameOver=false; sentScore=false; running=true;
     btn.style.display='none'; btnShare.style.display='none';
     btnPause.textContent='⏸';
@@ -106,7 +114,7 @@
     // стартовый отсчёт
     countdownActive = true; countdownPhase = 3; countdownT0 = performance.now();
 
-    requestAnimationFrame(loop);
+    startLoop();
   }
 
   // ===== Input / Pause =====
@@ -114,8 +122,8 @@
     if (!AC) ensureAudio();
     if (gameOver) { reset(); return; }
     if (paused)   { togglePause(); return; }
-    if (countdownActive) return; // во время отсчёта — без прыжков
-    if (!running) { running=true; last=performance.now(); requestAnimationFrame(loop); return; }
+    if (countdownActive) return;
+    if (!running) { running=true; startLoop(); return; }
     if (player.onGround || player.jumpsLeft>0) {
       player.vy = JUMP_VY; player.onGround = false; player.jumpsLeft = Math.max(0, player.jumpsLeft - 1);
     }
@@ -125,21 +133,21 @@
     if (e.code==='Space') jump();
     if (e.code==='KeyP' || e.code==='Escape') togglePause();
   });
-  document.getElementById('restart').addEventListener('click', ()=>{ if(gameOver) reset(); });
-  document.getElementById('share').addEventListener('click', ()=>{ try{ if (window.TelegramGameProxy) TelegramGameProxy.shareScore(); }catch(e){} });
-  document.getElementById('pause').addEventListener('click', togglePause);
+  btn.addEventListener('click', ()=>{ if(gameOver) reset(); });
+  btnShare.addEventListener('click', ()=>{ try{ if (window.TelegramGameProxy) TelegramGameProxy.shareScore(); }catch(e){} });
+  btnPause.addEventListener('click', togglePause);
 
   function togglePause(){
     if (gameOver || !running) return;
-    if (countdownActive) return; // во время отсчёта не ставим паузу
+    if (countdownActive) return;
     paused = !paused;
-    document.getElementById('pause').textContent = paused ? '▶️' : '⏸';
-    if (!paused) { last = performance.now(); requestAnimationFrame(loop); }
+    btnPause.textContent = paused ? '▶️' : '⏸';
+    if (!paused) startLoop();
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { paused=true; document.getElementById('pause').textContent='▶️'; }
-    else if(!gameOver){ last=performance.now(); requestAnimationFrame(loop); }
+    if (document.hidden) { paused=true; btnPause.textContent='▶️'; }
+    else if(!gameOver){ startLoop(); }
   });
 
   // ===== Parallax =====
@@ -223,7 +231,7 @@
   function spawnDust(x,y,impact=1){ for(let i=0;i<8;i++) particles.push({ x, y, vx:rnd(-1.2,1.2), vy:rnd(-2.2,-0.8)*impact, life:rnd(260,420), clr:'rgba(200,200,255,0.6)', sz:rnd(1,2) }); }
   function spawnSparks(x,y){ for(let i=0;i<10;i++){ const a=Math.random()*Math.PI*2, sp=rnd(1.2,2.2); particles.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:rnd(240,420), clr:'rgba(124,247,212,0.9)', sz:rnd(1.2,2.4) }); } }
   function updateParticles(dt){ for(const p of particles){ p.x+=p.vx*(dt*0.06); p.y+=p.vy*(dt*0.06); p.vy+=0.02*(dt*0.06); p.life-=dt; } particles=particles.filter(p=>p.life>0); }
-  function drawParticles(){ for(const p of particles){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life/420)); ctx.fillStyle=p.clr; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; }
+  function drawParticles(){ for(const p of particles){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life/420)); ctx.fillStyle=p.clr; ctx.beginPath(); ctx.arc(p.x, p.y, p.sz, 0, Math.PI*2); ctx.fill(); } ctx.globalAlpha=1; }
 
   // ===== Рендер сущностей =====
   function drawPlayer(){
@@ -258,7 +266,6 @@
         if (phase>=4){
           countdownActive = false;
           last = performance.now(); // сбросить dt
-          // небольшое safety окно прямо после старта
           safeSpawnUntil = performance.now() + 500;
         }
       } else if (paused){
@@ -290,23 +297,31 @@
   const collideCircles=(a,b)=>{ const dx=a.x-b.x, dy=a.y-b.y; const r=a.r+b.r; return dx*dx+dy*dy<=r*r; };
 
   function loop(ts){
-    requestAnimationFrame(loop);
-    if(!running) return;
-
-    // ограничим «скачок» dt (например при сворачивании) до 32мс
+    // ограничим «скачок» dt до 32мс
     let dt = ts - last; if (dt > 32) dt = 32; if (dt < 0) dt = 0; last = ts;
 
-    // рисуем фон
+    // фон
     drawParallax(dt);
 
-    // отсчёт: показываем оверлей и не обновляем физику/спавн
+    // отсчёт / пауза — без апдейта физики
     if (countdownActive){
       drawCoins(); drawObstacles(); drawPowerups(); drawPlayer(); drawParticles();
-      drawOverlays(); return;
+      drawOverlays();
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
+    if (paused){
+      drawCoins(); drawObstacles(); drawPowerups(); drawPlayer(); drawParticles();
+      drawOverlays();
+      rafId = requestAnimationFrame(loop);
+      return;
     }
 
-    // пауза
-    if (paused){ drawCoins(); drawObstacles(); drawPowerups(); drawPlayer(); drawParticles(); drawOverlays(); return; }
+    if (!running){
+      drawOverlays();
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
 
     // рост сложности
     speed = Math.min(SPEED_CAP, speed + dt * SPEED_GROWTH);
@@ -347,15 +362,17 @@
         if (player.shield){
           player.shield=false; player.shieldBlink=400; thumpHit(); spawnSparks(player.x+player.w/2, player.y+player.h/2);
           player.vy=-6; player.onGround=false; o.x=-9999; markSafeWindow();
-        } else { thumpHit(); endGame(); return; }
+        } else { thumpHit(); endGame(); rafId = requestAnimationFrame(loop); return; }
       }
     }
 
     // очки и отрисовка
     score += dt * SCORE_PER_MS;
-    document.getElementById('sc').textContent = String(Math.floor(score));
-    drawCoins(); drawObstacles(); drawPowerups(); drawPlayer(); drawParticles();
-    if (gameOver) { drawOverlays(); }
+    hud.textContent = String(Math.floor(score));
+    drawCoins(); drawObstacles(); drawPowerups(); drawPlayer(); drawParticles(); drawOverlays();
+
+    // планируем следующий кадр
+    rafId = requestAnimationFrame(loop);
   }
 
   // старт
