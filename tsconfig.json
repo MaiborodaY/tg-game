@@ -1,5 +1,9 @@
 {
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241022.0"
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "types": ["@cloudflare/workers-types"]
   }
 }
