@@ -16,20 +16,26 @@
       if(!running) return;
       t++; score = Math.max(score, Math.floor(t/10));
       ctx.clearRect(0,0,cvs.width,cvs.height);
-      ctx.fillText("SCORE: "+score, 10, 20);
+      ctx.font = '16px sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.fillText("Tap to finish. SCORE: "+score, 10, 24);
       requestAnimationFrame(loop);
     }
     loop();
 
-    // В реальной игре вызывайте при завершении матча
+    cvs.addEventListener('pointerdown', onGameOver);
+
     async function onGameOver(){
+      if (!running) return;
       running = false;
       const payload = getPayloadFromQuery();
-      await fetch('/api/score', {
+      const res = await fetch('/api/score', {
         method:'POST',
         headers:{'content-type':'application/json'},
         body: JSON.stringify({ score, payload })
       });
+      const j = await res.json().catch(()=> ({}));
+      ctx.fillText(j.ok ? "Score sent!" : ("Err: " + (j.description || j.error || '')), 10, 50);
     }
 
     function getPayloadFromQuery() {
@@ -40,4 +46,3 @@
   </script>
 </body>
 </html>
-
