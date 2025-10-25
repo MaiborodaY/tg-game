@@ -2,47 +2,200 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>TG HTML5 Game</title>
-  <style>html,body{margin:0;background:#000;color:#fff;font-family:sans-serif}</style>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>Runner • TG HTML5</title>
+  <style>
+    html,body{margin:0;height:100%;background:#0b0b0f;color:#fff;font-family:system-ui,Segoe UI,Arial,sans-serif}
+    #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+    #hud{position:fixed;left:12px;top:10px;font-weight:600;opacity:.9}
+    #hint{position:fixed;right:12px;top:10px;opacity:.6}
+    canvas{touch-action:manipulation}
+    .btn{position:fixed;left:50%;top:60%;transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:#1e1e28;color:#fff;border:1px solid #3a3a4a;display:none}
+  </style>
 </head>
 <body>
-  <canvas id="game" width="360" height="640"></canvas>
+  <div id="wrap"><canvas id="c"></canvas></div>
+  <div id="hud">Score: <span id="sc">0</span></div>
+  <div id="hint">Tap to jump</div>
+  <button id="restart" class="btn">↻ Play again</button>
+
   <script>
-    const cvs = document.getElementById('game'), ctx = cvs.getContext('2d');
-    let t=0, score=0, running=true;
+  // ===== Canvas setup (HiDPI) =====
+  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const cvs = document.getElementById('c'), ctx = cvs.getContext('2d');
+  function resize(){
+    const w = Math.min(innerWidth, 480), h = Math.min(innerHeight, 900);
+    cvs.width = w * DPR; cvs.height = h * DPR; cvs.style.width = w+'px'; cvs.style.height = h+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  addEventListener('resize', resize); resize();
 
-    function loop(){
-      if(!running) return;
-      t++; score = Math.max(score, Math.floor(t/10));
-      ctx.clearRect(0,0,cvs.width,cvs.height);
-      ctx.font = '16px sans-serif';
-      ctx.fillStyle = '#fff';
-      ctx.fillText("Tap to finish. SCORE: "+score, 10, 24);
-      requestAnimationFrame(loop);
+  // ===== Game constants =====
+  const GROUND_Y = () => Math.round(cvs.height/DPR - 100);
+  const GRAVITY   = 0.75;
+  const JUMP_VY   = -12.5;
+  const BASE_SPEED= 4.2;
+  const OBST_GAP_MIN = 850, OBST_GAP_MAX = 1400; // ms
+  const SPEED_GROWTH = 0.0006; // per ms
+  const SCORE_PER_MS = 0.01;
+
+  // ===== State =====
+  let running=false, gameOver=false, sentScore=false;
+  let speed=BASE_SPEED, t0=performance.now(), last=performance.now();
+  let score=0;
+  const hud = document.getElementById('sc');
+  const btn = document.getElementById('restart');
+
+  const player = { x: 60, y: 0, vy:0, w: 28, h: 28, onGround:false };
+  const floor = { y: GROUND_Y(), h: 6, t:0 };
+  let obst = [];
+  let nextSpawnAt = 0;
+
+  // read payload from ?p= (for /api/score)
+  function getPayload(){
+    const p = new URL(location.href).searchParams.get('p');
+    if(!p) return {};
+    try { return JSON.parse(atob(p)); } catch { return {}; }
+  }
+  const payload = getPayload();
+
+  // ===== Helpers =====
+  function rnd(a,b){ return Math.random()*(b-a)+a; }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+  function reset(){
+    speed=BASE_SPEED; score=0; hud.textContent='0';
+    obst.length=0; player.y=GROUND_Y()-player.h; player.vy=0; player.onGround=true;
+    nextSpawnAt = performance.now() + 700; gameOver=false; sentScore=false; running=true; t0 = last = performance.now();
+    btn.style.display='none';
+  }
+
+  // ===== Obstacles =====
+  function spawn(){
+    const h = Math.round(rnd(26, 46));
+    const w = Math.round(rnd(18, 30));
+    obst.push({ x: cvs.width/DPR + 10, y: GROUND_Y()-h, w, h, passed:false });
+    nextSpawnAt = performance.now() + rnd(OBST_GAP_MIN, OBST_GAP_MAX);
+  }
+
+  // ===== Input =====
+  function jump(){
+    if (!running) { if (gameOver) reset(); return; }
+    if (player.onGround) { player.vy = JUMP_VY; player.onGround=false; }
+  }
+  cvs.addEventListener('pointerdown', jump, { passive:true });
+  btn.addEventListener('click', ()=>{ if(gameOver) reset(); });
+
+  // Pause when hidden
+  document.addEventListener('visibilitychange', () => { if (document.hidden) running=false; else if(gameOver===false){ running=true; last=performance.now(); loop(last); } });
+
+  // ===== Drawing =====
+  function drawBackground(dt){
+    // sky
+    const w = cvs.width/DPR, h = cvs.height/DPR;
+    const g = ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#0b0b0f'); g.addColorStop(1,'#161622');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+
+    // parallax lines
+    floor.t += dt*0.06;
+    ctx.strokeStyle = '#232336'; ctx.lineWidth = 2;
+    for(let i=0;i<4;i++){
+      ctx.beginPath();
+      const y = Math.round(GROUND_Y()+i*12);
+      ctx.moveTo(0,y+0.5); ctx.lineTo(w,y+0.5); ctx.stroke();
     }
-    loop();
 
-    cvs.addEventListener('pointerdown', onGameOver);
+    // ground line
+    ctx.fillStyle='#2a2a3e'; ctx.fillRect(0, GROUND_Y()+4, w, floor.h);
+  }
 
-    async function onGameOver(){
-      if (!running) return;
-      running = false;
-      const payload = getPayloadFromQuery();
+  function drawPlayer(){
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    // body
+    ctx.fillStyle = '#7cf7d4';
+    ctx.fillRect(0,0, player.w, player.h);
+    // eye
+    ctx.fillStyle='#0b0b0f'; ctx.fillRect(player.w-10, 6, 6, 6);
+    ctx.restore();
+  }
+
+  function drawObstacles(){
+    ctx.fillStyle='#ff7aa8';
+    for(const o of obst) ctx.fillRect(o.x, o.y, o.w, o.h);
+  }
+
+  function drawScore(){
+    hud.textContent = String(Math.floor(score));
+    if(gameOver){
+      ctx.textAlign='center';
+      ctx.font = 'bold 22px system-ui, Arial';
+      ctx.fillStyle='#fff';
+      ctx.fillText('Game Over', (cvs.width/DPR)/2, (cvs.height/DPR)/2 - 20);
+      ctx.font = '16px system-ui, Arial';
+      ctx.fillStyle='rgba(255,255,255,.8)';
+      ctx.fillText('Tap to restart', (cvs.width/DPR)/2, (cvs.height/DPR)/2 + 6);
+      btn.style.display='block';
+    }
+  }
+
+  // ===== Physics + Loop =====
+  async function endGame(){
+    running=false; gameOver=true;
+    drawScore();
+    if (sentScore) return;
+    sentScore = true;
+    try{
       const res = await fetch('/api/score', {
         method:'POST',
         headers:{'content-type':'application/json'},
-        body: JSON.stringify({ score, payload })
+        body: JSON.stringify({ score: Math.floor(score), payload })
       });
       const j = await res.json().catch(()=> ({}));
-      ctx.fillText(j.ok ? "Score sent!" : ("Err: " + (j.description || j.error || '')), 10, 50);
-    }
+      if(!j.ok) console.log('Score send error:', j);
+    }catch(e){ console.log('Score send failed:', e); }
+  }
 
-    function getPayloadFromQuery() {
-      const p = new URL(location.href).searchParams.get('p');
-      if (!p) return {};
-      try { return JSON.parse(atob(p)); } catch { return {}; }
-    }
+  function collide(a,b){
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function loop(now){
+    if(!running) return;
+    requestAnimationFrame(loop);
+    const dt = clamp(now - last, 0, 50); last = now;
+
+    // difficulty grows
+    speed += dt * SPEED_GROWTH;
+
+    // physics: player
+    player.vy += GRAVITY;
+    player.y  += player.vy;
+    const gy = GROUND_Y() - player.h;
+    if (player.y >= gy) { player.y = gy; player.vy = 0; player.onGround = true; }
+
+    // obstacles
+    if (now >= nextSpawnAt) spawn();
+    for(const o of obst){ o.x -= speed; }
+    obst = obst.filter(o => o.x + o.w > -10);
+
+    // collisions
+    for(const o of obst){ if (collide(player, o)) { endGame(); break; } }
+
+    // score
+    score += dt * SCORE_PER_MS;
+
+    // draw
+    drawBackground(dt);
+    drawObstacles();
+    drawPlayer();
+    drawScore();
+  }
+
+  // start
+  reset();
+  requestAnimationFrame(loop);
   </script>
 </body>
 </html>
