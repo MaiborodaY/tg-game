@@ -1,0 +1,28 @@
+{
+  "frames": {
+    "arrow":          { "frame": { "x": 0,   "y": 0,   "w": 64, "h": 16 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":64,"h":16}, "sourceSize": {"w":64,"h":16} },
+    "arrow_smear_1":  { "frame": { "x": 66,  "y": 0,   "w": 48, "h": 12 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":48,"h":12}, "sourceSize": {"w":48,"h":12} },
+    "arrow_smear_2":  { "frame": { "x": 116, "y": 0,   "w": 48, "h": 12 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":48,"h":12}, "sourceSize": {"w":48,"h":12} },
+
+    "fireball_core":  { "frame": { "x": 0,   "y": 20,  "w": 64, "h": 64 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":64,"h":64}, "sourceSize": {"w":64,"h":64} },
+    "muzzle_archer":  { "frame": { "x": 66,  "y": 20,  "w": 32, "h": 32 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32}, "sourceSize": {"w":32,"h":32} },
+    "muzzle_mage":    { "frame": { "x": 100, "y": 20,  "w": 32, "h": 32 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32}, "sourceSize": {"w":32,"h":32} },
+    "glow_soft":      { "frame": { "x": 134, "y": 20,  "w": 64, "h": 64 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":64,"h":64}, "sourceSize": {"w":64,"h":64} },
+
+    "explosion_0":    { "frame": { "x": 0,   "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} },
+    "explosion_1":    { "frame": { "x": 98,  "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} },
+    "explosion_2":    { "frame": { "x": 196, "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} },
+    "explosion_3":    { "frame": { "x": 294, "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} },
+    "explosion_4":    { "frame": { "x": 392, "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} },
+    "explosion_5":    { "frame": { "x": 490, "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} },
+    "explosion_6":    { "frame": { "x": 588, "y": 88,  "w": 96, "h": 96 }, "rotated": false, "trimmed": false, "spriteSourceSize": {"x":0,"y":0,"w":96,"h":96}, "sourceSize": {"w":96,"h":96} }
+  },
+  "meta": {
+    "app": "TexturePacker",
+    "version": "1.0",
+    "image": "atlas_units.webp",
+    "format": "RGBA8888",
+    "size": { "w": 1024, "h": 512 },
+    "scale": "1"
+  }
+}
