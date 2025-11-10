@@ -1,0 +1,8 @@
+{
+  "frames": {
+    "archer_base": { ... },
+    "archer_top":  { ... },
+    "mage_base":   { ... },
+    "mage_top":    { ... }
+  }
+}
