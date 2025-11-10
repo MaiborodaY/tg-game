@@ -64,19 +64,29 @@
   function create(){
     const s = this;
 
-    // build grid + path
-    grid = Array.from({length:ROWS}, _=> Array.from({length:COLS}, _=> 0));
-    // simple snake path top->bottom
-    let dir = 1;
-    for (let r=0;r<ROWS;r++){
-      if (dir===1) for (let c=0;c<COLS;c++) markPath(r,c);
-      else for (let c=COLS-1;c>=0;c--) markPath(r,c);
-      dir*=-1;
-    }
-    function markPath(r,c){
-      grid[r][c]=1;
-      pathCells.push({r,c,x:c*CELL+CELL/2,y:r*CELL+CELL/2});
-    }
+// build grid + NARROW snake path that leaves buildable rows
+grid = Array.from({length:ROWS}, _=> Array.from({length:COLS}, _=> 0));
+
+function markPath(r,c){
+  grid[r][c] = 1;
+  pathCells.push({ r, c, x:c*CELL+CELL/2, y:r*CELL+CELL/2 });
+}
+
+// Делаем змейку только по каждому ВТОРОМУ ряду,
+// и держим путь внутри рамки 1..COLS-2, чтобы по краям было место под башни.
+const LEFT = 1, RIGHT = COLS - 2;
+let dir = 1; // 1 → вправо, -1 → влево
+for (let r = 0; r < ROWS - 1; r += 2) {
+  if (dir === 1) {
+    for (let c = LEFT; c <= RIGHT; c++) markPath(r, c);   // горизонталь вправо
+    markPath(r + 1, RIGHT);                                // спуск на 1 клетку
+  } else {
+    for (let c = RIGHT; c >= LEFT; c--) markPath(r, c);    // горизонталь влево
+    markPath(r + 1, LEFT);                                 // спуск на 1 клетку
+  }
+  dir *= -1;
+}
+
 
     // draw board
     const g = s.add.graphics();
