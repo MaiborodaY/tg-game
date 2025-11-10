@@ -194,24 +194,31 @@
     return best;
   }
 
-  function shoot(scene,t,e){
-    const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
+function shoot(scene,t,e){
+  const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
 
-    // СТРЕЛА (крупнее, поверх всего)
-    const arrow = scene.physics.add.image(t.x, t.y, 'arrow')
-      .setOrigin(0.2, 0.5)     // нос вперёд
-      .setRotation(a)
-      .setDepth(6);            // выше дороги/колец
-    arrow.dmg = t.dmg;
-    bullets.add(arrow);
+  // СТРЕЛА (крупная, поверх)
+  const arrow = scene.physics.add.image(t.x, t.y, 'arrow')
+    .setOrigin(0.2, 0.5)
+    .setRotation(a)
+    .setDepth(6);
+  arrow.dmg = t.dmg;
+  bullets.add(arrow);
 
-    // хвост (ярче/чаще/дольше и поверх)
-    arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a);
+  // хвост
+  arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a);
 
-    const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
-    arrow.setVelocity((vx/L)*320,(vy/L)*320);
-    scene.time.delayedCall(1500,()=>{ stopTrail(arrow); arrow.destroy(); });
-  }
+  // скорость и время жизни рассчитываем по дистанции
+  const dx = e.x - t.x, dy = e.y - t.y;
+  const L = Math.hypot(dx, dy) || 1;
+  const ARROW_SPEED = 340;                 // px/сек (можешь подстроить)
+  arrow.setVelocity((dx / L) * ARROW_SPEED, (dy / L) * ARROW_SPEED);
+
+  // TTL с запасом, чтобы долетела
+  const ttlMs = Math.ceil((L / ARROW_SPEED) * 1000) + 400;
+  scene.time.delayedCall(ttlMs, ()=>{ stopTrail(arrow); arrow.destroy(); });
+}
+
 
   // --- хвост (простыми спрайтами) ---
   function attachTrail(scene, sprite, color){
