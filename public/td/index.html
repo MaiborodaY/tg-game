@@ -160,7 +160,14 @@ for (let r = 0; r < ROWS - 1; r += 2) {
     g.lineStyle(2,0x0b0b10,1); g.strokeCircle(x,y,16);
     g.setDepth(5);
 
-    const t = {r,c,x,y, node:g, range:CELL*2.5, rate:550, cooldown:200, dmg:8};
+    const t = {
+  r, c, x, y, node: g,
+  range: CELL * 4.0,   // было 2.5 — теперь достаёт до дороги
+  rate: 450,           // перезарядка
+  cooldown: 200,
+  dmg: 10
+};
+
     towers.push(t);
     grid[r][c]=2;
     selectTower(t);
@@ -218,6 +225,8 @@ for (let r = 0; r < ROWS - 1; r += 2) {
     const first = pathCells[0];
     const e = scene.add.circle(first.x, first.y, 10, 0xff7aa8);
     scene.physics.add.existing(e);
+    e.body.setCircle(10);               // круг вместо прямоугольника
+    e.body.setOffset(-10, -10);         // центрируем круг
     e.hp = hp;
     e.step = 0;
 
