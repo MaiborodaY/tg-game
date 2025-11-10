@@ -22,6 +22,7 @@
     <div id="start" class="pill btn">▶️ Start</div>
     <div id="sell"  class="pill btn">💱 Sell</div>
 
+    <!-- выбор типа башни -->
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
     <div id="t-mage"   class="pill btn">🔥 Mage (70)</div>
   </div>
@@ -32,7 +33,7 @@
 
   const game=new Phaser.Game({
     type: Phaser.AUTO, width: W, height: H, backgroundColor:'#0b0b10',
-    pixelArt: true, antialias: false,           // << чёткая пиксельная графика
+    pixelArt:true, antialias:false,
     scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
     physics:{default:'arcade',arcade:{debug:false}},
     scene:{preload,create,update}
@@ -44,6 +45,7 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
+  // обе башни пока стреляют стрелами (без сплэшей)
   const TOWER_TYPES = {
     ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseTint:0x7cf7d4, barrelLen:16, proj:'arrow' },
     MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:420, dmg:10, baseTint:0xff7a59, barrelLen:18, proj:'arrow' }
@@ -77,15 +79,12 @@
     g.fillStyle(0xffffff,1); g.fillCircle(4,4,4);
     g.generateTexture('dot8',8,8);
 
-    // СТРЕЛА 32×8 — крупный белый наконечник
+    // СТРЕЛА 32×8 (крупный белый наконечник)
     this.textures.exists('arrow') && this.textures.remove('arrow');
     const a=this.make.graphics({x:0,y:0,add:false});
-    // древко
-    a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);
-    // наконечник (большой и белый)
-    a.fillStyle(0xffffff,1); a.fillTriangle(24,2, 32,4, 24,6);
-    // оперение
-    a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4);
+    a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);             // древко
+    a.fillStyle(0xffffff,1); a.fillTriangle(24,2, 32,4, 24,6); // наконечник
+    a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4);              // оперение
     a.generateTexture('arrow',32,8);
   }
 
@@ -112,9 +111,20 @@
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
 
-    // попадания — без сплэшей
+    // попадания — с "arming-delay" для стрел
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
-      if(!b.active||!e.active) return;
+      if(!b.active || !e.active) return;
+
+      // стрелы: игнор слишком ранних столкновений (даём пролететь)
+      if (b.texture && b.texture.key === 'arrow') {
+        const now = s.time.now;
+        const born = b.birthTime || 0;
+        const dx = (b.x - (b.startX ?? b.x));
+        const dy = (b.y - (b.startY ?? b.y));
+        const traveled2 = dx*dx + dy*dy;
+        if (now - born < 110 || traveled2 < 8*8) return;
+      }
+
       e.hp -= b.dmg;
       stopTrail(b);
       b.destroy();
@@ -141,7 +151,7 @@
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
       }
-      // поворот ствола к ближайшей цели
+      // Плавный поворот ствола к ближайшей цели
       if(t.barrel){
         const aim = acquireTarget(t);
         if(aim){
@@ -194,47 +204,46 @@
     return best;
   }
 
-function shoot(scene,t,e){
-  const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
+  // --- выстрел стрелой с расчётом TTL и "arming-delay" метками ---
+  function shoot(scene,t,e){
+    const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
 
-  // СТРЕЛА (крупная, поверх)
-  const arrow = scene.physics.add.image(t.x, t.y, 'arrow')
-    .setOrigin(0.2, 0.5)
-    .setRotation(a)
-    .setDepth(6);
-  arrow.dmg = t.dmg;
-  bullets.add(arrow);
+    const arrow = scene.physics.add.image(t.x, t.y, 'arrow')
+      .setOrigin(0.2, 0.5)
+      .setRotation(a)
+      .setDepth(6);
+    arrow.dmg = t.dmg;
+    bullets.add(arrow);
 
-  // хвост
-  arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a);
+    // метки для «arming-delay»
+    arrow.birthTime = scene.time.now;
+    arrow.startX = t.x; arrow.startY = t.y;
 
-  // скорость и время жизни рассчитываем по дистанции
-  const dx = e.x - t.x, dy = e.y - t.y;
-  const L = Math.hypot(dx, dy) || 1;
-  const ARROW_SPEED = 340;                 // px/сек (можешь подстроить)
-  arrow.setVelocity((dx / L) * ARROW_SPEED, (dy / L) * ARROW_SPEED);
+    // хвост
+    arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a);
 
-  // TTL с запасом, чтобы долетела
-  const ttlMs = Math.ceil((L / ARROW_SPEED) * 1000) + 400;
-  scene.time.delayedCall(ttlMs, ()=>{ stopTrail(arrow); arrow.destroy(); });
-}
+    // скорость и TTL по дистанции
+    const dx = e.x - t.x, dy = e.y - t.y;
+    const L = Math.hypot(dx, dy) || 1;
+    const ARROW_SPEED = 340; // px/s
+    arrow.setVelocity((dx / L) * ARROW_SPEED, (dy / L) * ARROW_SPEED);
 
+    const ttlMs = Math.ceil((L / ARROW_SPEED) * 1000) + 450;
+    scene.time.delayedCall(ttlMs, ()=>{ stopTrail(arrow); arrow.destroy(); });
+  }
 
-  // --- хвост (простыми спрайтами) ---
+  // --- хвост простыми спрайтами ---
   function attachTrail(scene, sprite, color){
     return scene.time.addEvent({
-      delay: 24, loop: true,                  // чаще
+      delay: 24, loop: true,
       callback: ()=>{
         if(!sprite.active) return;
         const t = scene.add.image(sprite.x, sprite.y, 'dot8')
           .setTint(color).setAlpha(0.9)
-          .setScale(1.6, 0.7)                 // чуть вытянуто
+          .setScale(1.6, 0.7)
           .setDepth(5);
         t.rotation = sprite.rotation;
-        scene.tweens.add({
-          targets: t, alpha: 0, scaleX: 0.2, scaleY: 0.2,
-          duration: 320, onComplete:()=>t.destroy()
-        });
+        scene.tweens.add({ targets: t, alpha: 0, scaleX: 0.2, scaleY: 0.2, duration: 320, onComplete:()=>t.destroy() });
       }
     });
   }
