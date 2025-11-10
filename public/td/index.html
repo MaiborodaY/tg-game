@@ -22,7 +22,6 @@
     <div id="start" class="pill btn">▶️ Start</div>
     <div id="sell"  class="pill btn">💱 Sell</div>
 
-    <!-- выбор типа башни -->
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
     <div id="t-mage"   class="pill btn">🔥 Mage (70)</div>
   </div>
@@ -45,10 +44,9 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // обе башни пока стреляют стрелами (без сплэшей)
   const TOWER_TYPES = {
-    ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseTint:0x7cf7d4, barrelLen:16, proj:'arrow' },
-    MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:420, dmg:10, baseTint:0xff7a59, barrelLen:18, proj:'arrow' }
+    ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseKey:'archerBase', barrelLen:16, proj:'arrow' },
+    MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:420, dmg:10, baseKey:'mageBase',   barrelLen:18, proj:'arrow' }
   };
   let currentType = TOWER_TYPES.ARCHER;
 
@@ -67,26 +65,55 @@
   mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
 
   function preload(){
-    // 1×1 пиксель
-    this.textures.exists('px') && this.textures.remove('px');
-    let g=this.make.graphics({x:0,y:0,add:false});
-    g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
-    g.generateTexture('px',2,2);
-
-    // 8×8 точка
-    this.textures.exists('dot8') && this.textures.remove('dot8');
-    g=this.make.graphics({x:0,y:0,add:false});
-    g.fillStyle(0xffffff,1); g.fillCircle(4,4,4);
-    g.generateTexture('dot8',8,8);
-
-    // СТРЕЛА 32×8 (крупный белый наконечник)
-    this.textures.exists('arrow') && this.textures.remove('arrow');
-    const a=this.make.graphics({x:0,y:0,add:false});
-    a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);             // древко
-    a.fillStyle(0xffffff,1); a.fillTriangle(24,2, 32,4, 24,6); // наконечник
-    a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4);              // оперение
+    // base 1×1
+    safeRemove(this,'px'); let g=this.make.graphics({x:0,y:0,add:false});
+    g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2); g.generateTexture('px',2,2);
+    // dot8
+    safeRemove(this,'dot8'); g=this.make.graphics({x:0,y:0,add:false});
+    g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8);
+    // arrow 32×8
+    safeRemove(this,'arrow'); const a=this.make.graphics({x:0,y:0,add:false});
+    a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);
+    a.fillStyle(0xffffff,1); a.fillTriangle(24,2,32,4,24,6);
+    a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4);
     a.generateTexture('arrow',32,8);
+
+    // --- NEW: procedural sprites ---
+    // Archer base 32×32
+    safeRemove(this,'archerBase'); const A=this.make.graphics({x:0,y:0,add:false});
+    drawTowerBase(A, 0x5be0c8, 0x2c6a5f);      // aqua base
+    // little bow
+    A.lineStyle(2,0xead29e,1); A.strokeCircle(16,16,8);
+    A.lineStyle(2,0xffffff,1); A.beginPath(); A.moveTo(9,12); A.lineTo(9,20); A.strokePath();
+    A.generateTexture('archerBase',32,32);
+
+    // Mage base 32×32
+    safeRemove(this,'mageBase'); const M=this.make.graphics({x:0,y:0,add:false});
+    drawTowerBase(M, 0x8f6cff, 0x453a7a);      // purple base
+    // crystal/flame
+    M.fillStyle(0xffb38f,1); M.fillTriangle(16,8, 20,20, 12,20);
+    M.fillStyle(0xff7a59,1); M.fillTriangle(16,10, 18,20, 14,20);
+    M.generateTexture('mageBase',32,32);
+
+    // Enemy slime 24×24
+    safeRemove(this,'enemy1'); const E=this.make.graphics({x:0,y:0,add:false});
+    E.fillStyle(0xff7aa8,1); E.fillRoundedRect(2,6,20,14,8);
+    E.fillStyle(0xff5f93,1); E.fillRoundedRect(3,7,18,6,6); // highlight
+    E.fillStyle(0x2a0d1a,1); E.fillCircle(9,14,2); E.fillCircle(15,14,2); // eyes
+    E.generateTexture('enemy1',24,24);
   }
+
+  function drawTowerBase(g, color, shadow){
+    // outer ring
+    g.fillStyle(shadow,1); g.fillCircle(16,18,12);
+    // main disk
+    g.fillStyle(color,1); g.fillCircle(16,16,12);
+    // inner
+    g.fillStyle(0x0b0b10,0.25); g.fillCircle(16,16,7);
+    // rim
+    g.lineStyle(2,0xffffff,0.15); g.strokeCircle(16,16,12);
+  }
+  function safeRemove(scene,key){ if(scene.textures.exists(key)) scene.textures.remove(key); }
 
   function create(){
     const s=this;
@@ -114,17 +141,11 @@
     // попадания — с "arming-delay" для стрел
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active || !e.active) return;
-
-      // стрелы: игнор слишком ранних столкновений (даём пролететь)
       if (b.texture && b.texture.key === 'arrow') {
-        const now = s.time.now;
-        const born = b.birthTime || 0;
-        const dx = (b.x - (b.startX ?? b.x));
-        const dy = (b.y - (b.startY ?? b.y));
-        const traveled2 = dx*dx + dy*dy;
-        if (now - born < 110 || traveled2 < 8*8) return;
+        const now = s.time.now, born = b.birthTime || 0;
+        const dx = (b.x - (b.startX ?? b.x)), dy = (b.y - (b.startY ?? b.y));
+        if (now - born < 110 || (dx*dx+dy*dy) < 64) return; // 8px
       }
-
       e.hp -= b.dmg;
       stopTrail(b);
       b.destroy();
@@ -171,9 +192,19 @@
     const cost=type.cost; if(gold<cost) return; gold-=cost; updateHud();
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    const base=scene.add.image(x,y,'px').setTint(type.baseTint).setDisplaySize(28,28).setDepth(3);
-    const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.barrelLen||16,4).setOrigin(0.1,0.5).setAlpha(0.9).setDepth(4);
-    const ring=scene.add.graphics().setDepth(2); ring.lineStyle(1, type.baseTint, 0.35).strokeCircle(x,y,type.range);
+    // база из процедурной текстуры
+    const base=scene.add.image(x,y,type.baseKey).setDepth(3);
+    // ствол (минимализм)
+    const barrel=scene.add.image(x,y,'px')
+      .setTint(0xffffff)
+      .setDisplaySize(type.barrelLen||16,4)
+      .setOrigin(0.1,0.5)
+      .setAlpha(0.9)
+      .setDepth(4);
+
+    // радиус
+    const ring=scene.add.graphics().setDepth(2);
+    ring.lineStyle(1, 0xffffff, 0.25).strokeCircle(x,y,type.range);
 
     const t={ type: type.key, proj:type.proj, r,c,x,y, node:base, barrel, ring,
       range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
@@ -204,7 +235,7 @@
     return best;
   }
 
-  // --- выстрел стрелой с расчётом TTL и "arming-delay" метками ---
+  // --- стрелы ---
   function shoot(scene,t,e){
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
 
@@ -215,14 +246,11 @@
     arrow.dmg = t.dmg;
     bullets.add(arrow);
 
-    // метки для «arming-delay»
     arrow.birthTime = scene.time.now;
     arrow.startX = t.x; arrow.startY = t.y;
 
-    // хвост
     arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a);
 
-    // скорость и TTL по дистанции
     const dx = e.x - t.x, dy = e.y - t.y;
     const L = Math.hypot(dx, dy) || 1;
     const ARROW_SPEED = 340; // px/s
@@ -232,7 +260,7 @@
     scene.time.delayedCall(ttlMs, ()=>{ stopTrail(arrow); arrow.destroy(); });
   }
 
-  // --- хвост простыми спрайтами ---
+  // хвост
   function attachTrail(scene, sprite, color){
     return scene.time.addEvent({
       delay: 24, loop: true,
@@ -251,12 +279,19 @@
     if(sprite && sprite.__trailEv){ sprite.__trailEv.remove(); sprite.__trailEv=null; }
   }
 
-  // --- enemies & waves (как было) ---
+  // --- enemies & waves ---
   function spawnEnemy(scene,hpBase){
     const first=pathPts[0];
-    const e=scene.physics.add.image(first.x,first.y,'px').setTint(0xff7aa8).setDisplaySize(20,20).setDepth(1);
+    const e=scene.physics.add.image(first.x,first.y,'enemy1')
+      .setDepth(1);
+    // подгоняем до 20×20 визуально
+    e.setDisplaySize(20,20);
+    // круглый хитбокс по текущему дисплей-сайзу
+    const r = e.displayWidth/2;
+    e.body.setCircle(r);
+    e.body.setOffset(e.width/2 - r, e.height/2 - r);
+
     e.hp=hpBase; e.way=0;
-    e.body.setCircle(10); e.body.setOffset( -10 + e.width/2, -10 + e.height/2 );
     enemies.add(e);
     advance(scene,e);
   }
