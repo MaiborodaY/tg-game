@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum=1,user-scalable=no"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <title>TG TD • Neon Fantasy</title>
   <style>
     html,body{margin:0;background:#0b0b10;color:#fff;font-family:system-ui,Segoe UI,Arial}
@@ -39,6 +39,7 @@
   });
 
   // --- state ---
+  let sceneRef=null;           // надёжная ссылка на сцену
   let grid, pathPts=[];
   let enemies, bullets, particles;
   let towers=[], selectedTower=null;
@@ -67,12 +68,13 @@
 
   function preload(){
     // 1×1 белый пиксель
-    this.textures.remove('px')?.catch?.(()=>{});
+    if(this.textures.exists('px')) this.textures.remove('px');
     const g=this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
 
-    // маленькая «точка» 8×8 для частиц
+    // «точка» 8×8 для частиц
+    if(this.textures.exists('dot8')) this.textures.remove('dot8');
     const gg=this.make.graphics({x:0,y:0,add:false});
     gg.fillStyle(0xffffff,1); gg.fillCircle(4,4,4);
     gg.generateTexture('dot8',8,8);
@@ -80,6 +82,7 @@
 
   function create(){
     const s=this;
+    sceneRef=s; // сохранить ссылку
 
     // сетка + путь «змейкой»
     grid=Array.from({length:ROWS}, _=> Array.from({length:COLS}, _=> 0));
@@ -102,7 +105,7 @@
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     particles = s.add.particles('dot8');
-    initVFX(s); // <-- важно
+    initVFX(s); // пул эмиттеров
 
     // попадание пуль во врагов
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
@@ -241,8 +244,7 @@
       });
       trail.startFollow(b);
 
-      const toX=e.x, toY=e.y;
-      const vx=toX-t.x, vy=toY-t.y, L=Math.hypot(vx,vy)||1;
+      const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
       b.setVelocity((vx/L)*340,(vy/L)*340);
 
       scene.time.delayedCall(1200,()=>{ trail.stop(); particles.removeEmitter(trail); b.destroy(); });
@@ -359,7 +361,8 @@
   }
 
   function nextWave(){
-    const s=game.scene.keys.default; wave++; updateHud();
+    const s=sceneRef;                 // ← используем сохранённую сцену
+    wave++; updateHud();
     startBtn.textContent='🔄 Spawning'; spawning=true;
 
     const count=8+Math.floor(wave*1.6), hpBase=24+wave*7;
