@@ -2,13 +2,14 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Solid</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum=1,user-scalable=no"/>
+  <title>TG TD • Neon Fantasy</title>
   <style>
     html,body{margin:0;background:#0b0b10;color:#fff;font-family:system-ui,Segoe UI,Arial}
     #hud{position:fixed;left:8px;top:8px;display:flex;gap:12px;align-items:center;z-index:2}
-    .pill{background:#1d1d2b;border:1px solid #34344a;border-radius:10px;padding:6px 10px}
+    .pill{background:#1d1d2a;border:1px solid #2b2b3d;border-radius:10px;padding:6px 10px;display:flex;gap:6px;align-items:center}
     .btn{cursor:pointer;user-select:none}
+    .btn.sel{outline:2px solid #7cf7d4}
     canvas{touch-action:manipulation}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
@@ -18,8 +19,12 @@
     <div class="pill">💰 <span id="gold">100</span></div>
     <div class="pill">❤️ <span id="hp">20</span></div>
     <div class="pill">🌊 <span id="wave">0</span></div>
+
     <div id="start" class="pill btn">▶️ Start</div>
-    <div id="sell" class="pill btn">💱 Sell</div>
+    <div id="sell"  class="pill btn">💱 Sell</div>
+
+    <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
+    <div id="t-mage"   class="pill btn">🔥 Mage (70)</div>
   </div>
 
 <script>
@@ -35,29 +40,48 @@
 
   // --- state ---
   let grid, pathPts=[];
-  let enemies, bullets;
+  let enemies, bullets, particles;
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // HUD
+  // tower selection
+  const TOWER = {
+    ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:360, dmg:18, proj:'arrow'},
+    MAGE:   { key:'MAGE',   cost:70, range:CELL*3.0, rate:620, dmg:35, proj:'fireball', splash:52 }
+  };
+  let currentType = TOWER.ARCHER;
+
+  // HUD refs
   const goldEl=document.getElementById('gold');
   const hpEl=document.getElementById('hp');
   const waveEl=document.getElementById('wave');
-  document.getElementById('start').onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
-  document.getElementById('sell').onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
+  const startBtn=document.getElementById('start');
+  const sellBtn =document.getElementById('sell');
+  const archerBtn=document.getElementById('t-archer');
+  const mageBtn  =document.getElementById('t-mage');
+
+  startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
+  sellBtn.onclick =()=>{ if(selectedTower) sellTower(selectedTower); };
+  archerBtn.onclick=()=>{ currentType=TOWER.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
+  mageBtn.onclick  =()=>{ currentType=TOWER.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
 
   function preload(){
-    // 1×1 белый пиксель — из него делаем любые спрайты/окружности
+    // 1×1 белый пиксель
     this.textures.remove('px')?.catch?.(()=>{});
     const g=this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
+
+    // маленькая круглую «пых» (2×2 -> 8×8) для вспышек
+    const gg=this.make.graphics({x:0,y:0,add:false});
+    gg.fillStyle(0xffffff,1); gg.fillCircle(4,4,4);
+    gg.generateTexture('dot8',8,8);
   }
 
   function create(){
     const s=this;
 
-    // сетка + узкий путь через каждый второй ряд
+    // сетка + путь «змейкой»
     grid=Array.from({length:ROWS}, _=> Array.from({length:COLS}, _=> 0));
     const LEFT=1, RIGHT=COLS-2; let dir=1;
     function markPath(r,c){ grid[r][c]=1; pathPts.push({r,c,x:c*CELL+CELL/2,y:r*CELL+CELL/2}); }
@@ -67,72 +91,131 @@
       dir*=-1;
     }
 
-    // фон/сетка/дорога
-    const g=s.add.graphics(); g.lineStyle(1,'#23233a',1);
+    // фон/сетка/дорога (неоновый вайб)
+    const g=s.add.graphics();
+    g.lineStyle(1,0x23233a,1);
     for(let r=0;r<=ROWS;r++) g.lineBetween(0,r*CELL,W,r*CELL);
     for(let c=0;c<=COLS;c++) g.lineBetween(c*CELL,0,c*CELL,H);
     for(const p of pathPts){ g.fillStyle(0x1a1a2a,1); g.fillRect(p.c*CELL+2,p.r*CELL+2,CELL-4,CELL-4); }
 
-    // группы ФИЗИКИ
+    // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
 
-    // урон пули → врагу
+    // частицы (общие)
+    particles = s.add.particles('dot8');
+
+    // попадание пуль во врагов
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active||!e.active) return;
-      e.hp -= b.dmg; b.destroy();
-      if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
+
+      if(b.kind==='arrow'){
+        // одиночное попадание
+        e.hp -= b.dmg;
+        hitSparks(s,e.x,e.y,0xffd45c);
+        b.destroy();
+      } else if(b.kind==='fireball'){
+        // взрыв + сплэш
+        fireballExplode(s,b.x,b.y,b.splashRadius);
+        const arr=enemies.getChildren();
+        for(let i=0;i<arr.length;i++){
+          const t=arr[i]; if(!t.active) continue;
+          const dx=t.x-b.x, dy=t.y-b.y; const d=Math.hypot(dx,dy);
+          if(d<=b.splashRadius){
+            const falloff = 1 - (d / (b.splashRadius+1));
+            const extraVsBrute = (t.kind==='brute') ? 1.15 : 1;
+            t.hp -= Math.max(1, Math.round(b.dmg * falloff * extraVsBrute));
+            hitSparks(s,t.x,t.y,0xff7a59);
+          }
+        }
+        b.destroy();
+      }
+
+      if(e.hp<=0){
+        // смерть врага
+        deathPuff(s,e.x,e.y, e.kind==='runner' ? 0x7cf7d4 : 0xff7aa8);
+        e.destroy();
+        gold+=5; updateHud();
+      }
     });
 
-    // ввод
+    // ввод: установка/выбор
     s.input.on('pointerdown', (p)=>{
       const w=p.positionToCamera(s.cameras.main);
       const c=Math.floor(w.x/CELL), r=Math.floor(w.y/CELL);
       if(c<0||r<0||c>=COLS||r>=ROWS) return;
       const isTower=towers.find(t=>t.c===c&&t.r===r);
       if(isTower){ selectTower(isTower); return; }
-      if(grid[r][c]===0) placeTower(s,r,c);
+      if(grid[r][c]===0) placeTower(s,r,c,currentType);
     });
 
     updateHud();
   }
 
   function update(time,dt){
+    // стрельба
     for(const t of towers){
       t.cd-=dt;
       if(t.cd<=0){
         const e = acquireTarget(t);
-        if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
+        if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=120; }
+      }
+      // плавно поворачиваем ствол к последней цели
+      if(t.lastTarget && t.barrel){
+        const a = Phaser.Math.Angle.Between(t.x, t.y, t.lastTarget.x, t.lastTarget.y);
+        t.barrel.rotation = Phaser.Math.Angle.RotateTo(t.barrel.rotation, a, 0.15);
       }
     }
+
+    // волны
     if(running && !spawning && enemies.countActive(true)===0){
       running=false;
-      document.getElementById('start').textContent='▶️ Next';
+      startBtn.textContent='▶️ Next';
     }
   }
 
   // --- towers ---
-  function placeTower(scene,r,c){
-    const cost=50; if(gold<cost) return; gold-=cost; updateHud();
+  function placeTower(scene,r,c,type){
+    if(gold<type.cost) return;
+    gold-=type.cost; updateHud();
+
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    // визуал башни
-    const base=scene.add.image(x,y,'px').setTint(0x7cf7d4).setDisplaySize(28,28);
-    // кольцо радиуса (визуал)
-    const ring=scene.add.graphics(); ring.lineStyle(1,0x7cf7d4,0.35).strokeCircle(x,y,CELL*3.2);
+    // база
+    const base = scene.add.image(x,y,'px').setTint(type.key==='ARCHER'?0x7cf7d4:0xff7a59).setDisplaySize(26,26).setAlpha(0.95);
+    // ствол (баррель) — отдельный спрайт для поворота
+    const barrel = scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.key==='ARCHER'? 16: 18, 4).setOrigin(0.1,0.5);
+    barrel.setAlpha(0.9);
 
-    const t={r,c,x,y,node:base,ring,range:CELL*3.2,rate:420,cd:200,dmg:10};
+    // кольцо радиуса
+    const ring = scene.add.graphics();
+    ring.lineStyle(1, type.key==='ARCHER'?0x7cf7d4:0xff7a59, 0.35).strokeCircle(x,y,type.range);
+
+    const t={
+      type, r,c, x,y, node:base, barrel, ring,
+      range:type.range, rate:type.rate, cd:200, dmg:type.dmg, proj:type.proj,
+      lastTarget:null
+    };
+
     towers.push(t); grid[r][c]=2; selectTower(t);
   }
+
   function selectTower(t){
-    if(selectedTower && selectedTower.ring) selectedTower.ring.clear().strokeCircle(selectedTower.x,selectedTower.y,selectedTower.range);
+    if(selectedTower && selectedTower.ring) {
+      selectedTower.ring.clear().lineStyle(1, selectedTower.type.key==='ARCHER'?0x7cf7d4:0xff7a59, 0.35)
+        .strokeCircle(selectedTower.x,selectedTower.y,selectedTower.range);
+    }
     selectedTower=t;
+    // подсветка текущей
+    t.ring.clear().lineStyle(2, 0xffffff, 0.6).strokeCircle(t.x,t.y,t.range);
   }
+
   function sellTower(t){
-    gold+=25; updateHud();
-    t.node.destroy(); t.ring.destroy();
+    gold+=Math.floor(t.type.cost*0.5); updateHud();
+    t.node.destroy(); t.ring.destroy(); t.barrel.destroy();
     towers=towers.filter(x=>x!==t); grid[t.r][t.c]=0; selectedTower=null;
   }
+
   function acquireTarget(t){
     const arr=enemies.getChildren();
     let best=null, bestD2=Infinity;
@@ -141,43 +224,168 @@
       const dx=e.x-t.x, dy=e.y-t.y, d2=dx*dx+dy*dy;
       if(d2<=t.range*t.range && d2<bestD2){ bestD2=d2; best=e; }
     }
+    t.lastTarget = best || t.lastTarget;
     return best;
   }
+
   function shoot(scene,t,e){
-    const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(4,4);
-    b.dmg=t.dmg; bullets.add(b);
-    const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
-    b.setVelocity((vx/L)*280,(vy/L)*280);
-    scene.time.delayedCall(1500,()=>b.destroy());
+    const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
+    // повернуть мгновенно к цели (быстрая реакция), дальше update сгладит
+    t.barrel.rotation = a;
+
+    // лёгкий recoil
+    const dx = Math.cos(a)*2, dy = Math.sin(a)*2;
+    t.barrel.x = t.x + dx; t.barrel.y = t.y + dy;
+    scene.tweens.add({targets:t.barrel, x:t.x, y:t.y, duration:90, ease:'quad.out'});
+
+    if(t.proj==='arrow'){
+      // вспышка выстрела
+      muzzleFlash(scene, t.x+Math.cos(a)*10, t.y+Math.sin(a)*10, 0xffd45c);
+
+      const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(3,3);
+      b.kind='arrow'; b.dmg=t.dmg;
+      bullets.add(b);
+
+      // трассер (тонкая линия частиц)
+      const trail = particles.createEmitter({
+        alpha: {start:0.9,end:0}, scale:{start:0.8,end:0},
+        speed: 0, lifespan:180, frequency:20, quantity:1,
+        blendMode:'ADD', tint:[0xfff2a0,0xffd45c]
+      });
+      trail.startFollow(b);
+
+      const toX=e.x, toY=e.y;
+      const vx=toX-t.x, vy=toY-t.y, L=Math.hypot(vx,vy)||1;
+      b.setVelocity((vx/L)*340,(vy/L)*340);
+
+      scene.time.delayedCall(1200,()=>{ trail.stop(); b.destroy(); });
+
+    } else if(t.proj==='fireball'){
+      // вспышка теплым цветом
+      muzzleFlash(scene, t.x+Math.cos(a)*12, t.y+Math.sin(a)*12, 0xff7a59);
+
+      const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xff7a59).setDisplaySize(7,7);
+      b.kind='fireball'; b.dmg=t.dmg; b.splashRadius=t.type.splash||48;
+      bullets.add(b);
+
+      // огненный хвост
+      const trail = particles.createEmitter({
+        alpha:{start:0.9,end:0}, scale:{start:1,end:0},
+        speed: {min:2,max:12}, angle:{min:160,max:200},
+        lifespan:220, frequency:30, quantity:1,
+        blendMode:'ADD', tint:[0xffb38f,0xff7a59,0xffd45c]
+      });
+      trail.startFollow(b);
+
+      const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
+      b.setVelocity((vx/L)*260,(vy/L)*260);
+
+      scene.time.delayedCall(1600,()=>{ trail.stop(); b.destroy(); });
+    }
+  }
+
+  // --- VFX helpers ---
+  function muzzleFlash(scene, x,y, color){
+    const em = particles.createEmitter({
+      x,y, speed:{min:30,max:90}, angle:{min:-12,max:12},
+      lifespan:140, quantity:3, scale:{start:1,end:0}, alpha:{start:1,end:0},
+      tint:[color], blendMode:'ADD'
+    });
+    scene.time.delayedCall(120,()=>em.stop());
+  }
+
+  function hitSparks(scene,x,y,color){
+    const em = particles.createEmitter({
+      x,y, speed:{min:20,max:70}, angle:{min:0,max:360},
+      lifespan:160, quantity:4, scale:{start:0.9,end:0}, alpha:{start:1,end:0},
+      tint:[color], blendMode:'ADD'
+    });
+    scene.time.delayedCall(100,()=>em.stop());
+  }
+
+  function deathPuff(scene,x,y,color){
+    // шоквейв
+    const ring = scene.add.graphics();
+    ring.lineStyle(2, color, 0.7).strokeCircle(x,y,2);
+    scene.tweens.add({
+      targets:ring, duration:180,
+      onUpdate:()=>{ ring.clear(); ring.lineStyle(2,color,0.5); ring.strokeCircle(x,y, ring._r=(ring._r||2)+2); },
+      onComplete:()=>ring.destroy()
+    });
+    // дымок
+    const em = particles.createEmitter({
+      x,y, speed:{min:10,max:40}, angle:{min:0,max:360},
+      lifespan:260, quantity:8, scale:{start:1.1,end:0}, alpha:{start:0.9,end:0},
+      tint:[color], blendMode:'ADD'
+    });
+    scene.time.delayedCall(140,()=>em.stop());
+  }
+
+  function fireballExplode(scene,x,y,r){
+    // огненный круг + искры
+    const ring = scene.add.graphics();
+    ring.lineStyle(3, 0xff7a59, 0.9).strokeCircle(x,y,8);
+    scene.tweens.add({
+      targets:ring, duration:220,
+      onUpdate:()=>{ ring.clear(); ring.lineStyle(3,0xffb38f,0.6); ring.strokeCircle(x,y, (ring._r=(ring._r||8)+ (r-8)/6)); },
+      onComplete:()=>ring.destroy()
+    });
+    const em = particles.createEmitter({
+      x,y, speed:{min:40,max:120}, angle:{min:0,max:360},
+      lifespan:220, quantity:18, scale:{start:1.2,end:0}, alpha:{start:1,end:0},
+      tint:[0xffd45c,0xffb38f,0xff7a59], blendMode:'ADD'
+    });
+    scene.time.delayedCall(120,()=>em.stop());
   }
 
   // --- enemies & waves ---
   function spawnEnemy(scene,hpBase){
     const first=pathPts[0];
-    const e=scene.physics.add.image(first.x,first.y,'px').setTint(0xff7aa8).setDisplaySize(20,20);
-    e.hp=hpBase; e.way=0;
-    // круглый хитбокс
-    e.body.setCircle(10); e.body.setOffset( -10 + e.width/2, -10 + e.height/2 );
+
+    // тип врага по волне: 70% runner, 30% brute с шансом растущим
+    const bruteChance = Math.min(0.15 + wave*0.03, 0.6);
+    const isBrute = Math.random() < bruteChance;
+
+    const e=scene.physics.add.image(first.x,first.y,'px')
+      .setTint(isBrute?0xff7aa8:0x7cf7d4)
+      .setDisplaySize(isBrute? 22:16, isBrute?22:16)
+      .setAlpha(0.95);
+
+    e.kind = isBrute? 'brute':'runner';
+    e.hp = isBrute? Math.floor(hpBase*1.8) : Math.floor(hpBase*0.7);
+    e.way=0;
+
+    // хитбокс
+    const r = isBrute? 11:8;
+    e.body.setCircle(r); e.body.setOffset(-r + e.width/2, -r + e.height/2);
     enemies.add(e);
+
     advance(scene,e);
   }
+
   function advance(scene,e){
     e.way++;
-    if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return; }
+    if(e.way>=pathPts.length){
+      hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return;
+    }
     const p=pathPts[e.way];
-    scene.physics.moveTo(e,p.x,p.y,45+wave*4);
+    const baseSpeed = (e.kind==='runner') ? 64+wave*5 : 42+wave*3;
+    scene.physics.moveTo(e,p.x,p.y, baseSpeed);
+
     const h=scene.time.addEvent({delay:100,loop:true,callback:()=>{
       if(!e.active){ h.remove(); return; }
       const dx=e.x-p.x, dy=e.y-p.y;
       if(dx*dx+dy*dy<10*10){ e.body.reset(p.x,p.y); h.remove(); advance(scene,e); }
     }});
   }
+
   function nextWave(){
     const s=game.scene.keys.default; wave++; updateHud();
-    document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
+    startBtn.textContent='🔄 Spawning'; spawning=true;
+
     const count=8+Math.floor(wave*1.6), hpBase=24+wave*7;
-    for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
-    s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
+    for(let i=0;i<count;i++) s.time.delayedCall(460*i,()=>spawnEnemy(s,hpBase));
+    s.time.delayedCall(460*count+220,()=>{ spawning=false; startBtn.textContent='▶️ Next'; running=true; });
   }
 
   // --- hud & over ---
