@@ -40,11 +40,11 @@
 
   // --- state ---
   let grid, pathPts=[];
-  let enemies, bullets;
+  let enemies, bullets, particles;
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // Типы башен (шаг 1) + добавили proj и splash (шаг 5)
+  // Типы башен
   const TOWER_TYPES = {
     ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseTint:0x7cf7d4, barrelLen:16, proj:'arrow' },
     MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:420, dmg:10, baseTint:0xff7a59, barrelLen:18, proj:'fireball', splash:52 }
@@ -61,19 +61,18 @@
   const mageBtn=document.getElementById('t-mage');
 
   startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
-  sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
-
+  sellBtn.onclick =()=>{ if(selectedTower) sellTower(selectedTower); };
   archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
   mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
 
   function preload(){
-    // 1×1 белый пиксель для спрайтов
+    // 1×1 белый пиксель
     this.textures.remove('px')?.catch?.(()=>{});
     const g=this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
 
-    // маленький кружок 8×8 для простых VFX без частиц
+    // 8×8 «точка» для частиц
     this.textures.remove('dot8')?.catch?.(()=>{});
     const gg=this.make.graphics({x:0,y:0,add:false});
     gg.fillStyle(0xffffff,1); gg.fillCircle(4,4,4);
@@ -83,7 +82,7 @@
   function create(){
     const s=this;
 
-    // сетка + путь через каждый второй ряд
+    // сетка + путь
     grid=Array.from({length:ROWS}, _=> Array.from({length:COLS}, _=> 0));
     const LEFT=1, RIGHT=COLS-2; let dir=1;
     function markPath(r,c){ grid[r][c]=1; pathPts.push({r,c,x:c*CELL+CELL/2,y:r*CELL+CELL/2}); }
@@ -99,33 +98,41 @@
     for(let c=0;c<=COLS;c++) g.lineBetween(c*CELL,0,c*CELL,H);
     for(const p of pathPts){ g.fillStyle(0x1a1a2a,1); g.fillRect(p.c*CELL+2,p.r*CELL+2,CELL-4,CELL-4); }
 
-    // группы ФИЗИКИ
+    // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
 
-    // урон пули → врагу (добавили ветку для fireball со сплэшем)
+    // частицы + пул эмиттеров
+    particles = s.add.particles('dot8');
+    initVFX(s);
+
+    // урон пули → врагу (с искрами/взрывом)
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active||!e.active) return;
 
       if(b.kind==='fireball'){
-        // взрыв + сплэш
-        splashRing(s, b.x, b.y, b.splashRadius || 52, 200);
+        fireballExplode(s, b.x, b.y, b.splashRadius || 52);
+        const R = b.splashRadius||52, R2=R*R;
         const arr=enemies.getChildren();
         for(let i=0;i<arr.length;i++){
           const t=arr[i]; if(!t||!t.active) continue;
           const dx=t.x-b.x, dy=t.y-b.y;
-          const d2=dx*dx+dy*dy;
-          if(d2 <= (b.splashRadius||52)*(b.splashRadius||52)) {
-            t.hp -= b.dmg; // простая версия без falloff — балансом займёмся позже
+          if(dx*dx+dy*dy<=R2){
+            t.hp -= b.dmg;
+            hitSparks(t.x,t.y,0xff7a59);
             if(t.hp<=0){ t.destroy(); gold+=5; updateHud(); }
           }
         }
+        b.__trail && (b.__trail.stop(), particles.removeEmitter(b.__trail));
         b.destroy();
         return;
       }
 
-      // обычная стрела
-      e.hp -= b.dmg; b.destroy();
+      // стрела
+      e.hp -= b.dmg;
+      hitSparks(e.x,e.y,0xffd45c);
+      b.__trail && (b.__trail.stop(), particles.removeEmitter(b.__trail));
+      b.destroy();
       if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
     });
 
@@ -150,7 +157,7 @@
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
       }
 
-      // Шаг 4: поворот ствола к ближайшей цели (плавно)
+      // плавный поворот ствола к ближайшей цели
       if(t.barrel){
         const aim = acquireTarget(t);
         if(aim){
@@ -170,14 +177,10 @@
     const cost=type.cost; if(gold<cost) return; gold-=cost; updateHud();
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    // база (разный оттенок для Archer/Mage)
     const base=scene.add.image(x,y,'px').setTint(type.baseTint).setDisplaySize(28,28);
-
-    // ствол (берегём для поворота/отката)
     const barrelLen = type.barrelLen || 16;
     const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(barrelLen,4).setOrigin(0.1,0.5).setAlpha(0.9);
 
-    // кольцо радиуса
     const ring=scene.add.graphics();
     ring.lineStyle(1, type.baseTint, 0.35).strokeCircle(x,y,type.range);
 
@@ -218,71 +221,94 @@
   }
 
   function shoot(scene,t,e){
-    // угол
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
     if(t.barrel){ t.barrel.rotation = a; }
-
-    // Шаг 4: лёгкий recoil (откат ствола) — без частиц
+    // лёгкий recoil
     if(t.barrel){
-      const k = 2; // пиксели
-      const bx0=t.barrel.x, by0=t.barrel.y;
+      const k = 2;
       t.barrel.x = t.x + Math.cos(a)*k;
       t.barrel.y = t.y + Math.sin(a)*k;
       scene.tweens.add({targets:t.barrel, x:t.x, y:t.y, duration:90, ease:'quad.out'});
     }
 
     if(t.proj==='fireball'){
-      // Фаербол (медленнее, сплэш при столкновении)
-      muzzleFlash(scene, t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xff7a59);
+      muzzleFlash(t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xff7a59);
 
       const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xff7a59).setDisplaySize(7,7);
       b.dmg=t.dmg; b.kind='fireball'; b.splashRadius=t.splash||52;
       bullets.add(b);
 
+      // огненный хвост (удаляем корректно)
+      const trail = particles.createEmitter({
+        alpha:{start:0.9,end:0}, scale:{start:1,end:0},
+        speed:{min:2,max:12}, angle:{min:160,max:200},
+        lifespan:220, frequency:30, quantity:1,
+        blendMode:'ADD', tint:[0xffb38f,0xff7a59,0xffd45c]
+      });
+      trail.startFollow(b);
+      b.__trail = trail;
+
       const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
-      b.setVelocity((vx/L)*250,(vy/L)*250);     // медленнее стрелы
-      scene.time.delayedCall(1600,()=>b.destroy());
+      b.setVelocity((vx/L)*250,(vy/L)*250);
+      scene.time.delayedCall(1600,()=>{ if(b.active){ trail.stop(); particles.removeEmitter(trail); b.destroy(); }});
       return;
     }
 
-    // Обычная стрела
-    muzzleFlash(scene, t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xffd45c);
+    // стрела
+    muzzleFlash(t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xffd45c);
 
-    const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(4,4);
+    const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(3,3);
     b.dmg=t.dmg; b.kind='arrow'; bullets.add(b);
+
+    const trail = particles.createEmitter({
+      alpha:{start:0.9,end:0}, scale:{start:0.8,end:0},
+      speed:0, lifespan:180, frequency:20, quantity:1,
+      blendMode:'ADD', tint:[0xfff2a0,0xffd45c]
+    });
+    trail.startFollow(b);
+    b.__trail = trail;
+
     const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
     b.setVelocity((vx/L)*280,(vy/L)*280);
-    scene.time.delayedCall(1500,()=>b.destroy());
+    scene.time.delayedCall(1500,()=>{ if(b.active){ trail.stop(); particles.removeEmitter(trail); b.destroy(); }});
   }
 
-  // --- простые VFX (без частиц) ---
-  function muzzleFlash(scene,x,y,color){
-    const dot = scene.add.image(x,y,'dot8').setTint(color).setAlpha(0.9);
-    scene.tweens.add({
-      targets: dot, alpha: 0, scale: { from: 1, to: 0.6 },
-      duration: 120, onComplete:()=>dot.destroy()
+  // --- VFX (пулы) ---
+  let emMuzzle, emHit, emExplode;
+  function initVFX(scene){
+    emMuzzle = particles.createEmitter({
+      on:false, speed:{min:30,max:90}, angle:{min:-12,max:12},
+      lifespan:140, quantity:6, scale:{start:1,end:0}, alpha:{start:1,end:0},
+      blendMode:'ADD'
+    });
+    emHit = particles.createEmitter({
+      on:false, speed:{min:20,max:70}, angle:{min:0,max:360},
+      lifespan:160, quantity:6, scale:{start:0.9,end:0}, alpha:{start:1,end:0},
+      blendMode:'ADD'
+    });
+    emExplode = particles.createEmitter({
+      on:false, speed:{min:40,max:120}, angle:{min:0,max:360},
+      lifespan:220, quantity:18, scale:{start:1.2,end:0}, alpha:{start:1,end:0},
+      blendMode:'ADD'
     });
   }
+  function muzzleFlash(x,y,color){ emMuzzle.setTint(color); emMuzzle.explode(6, x, y); }
+  function hitSparks(x,y,color){  emHit.setTint(color);    emHit.explode(6, x, y); }
 
-  function splashRing(scene,x,y,r, dur=200){
+  function fireballExplode(scene,x,y,r){
+    // визуальное кольцо (дёшево)
     const ring = scene.add.graphics();
-    ring.lineStyle(3, 0xffb38f, 0.8).strokeCircle(x,y,8);
-    // простой твининга радиуса через таймер
-    const steps = 10;
-    let i=0;
-    const ev = scene.time.addEvent({
-      delay: dur/steps, repeat: steps,
-      callback: ()=>{
-        i++;
-        const rad = 8 + (r-8)*(i/steps);
-        ring.clear();
-        ring.lineStyle(3, 0xff7a59, 0.6).strokeCircle(x,y, rad);
-        if(i===steps){ ring.destroy(); ev.remove(); }
-      }
+    ring.lineStyle(3, 0xff7a59, 0.9).strokeCircle(x,y,8);
+    scene.tweens.add({
+      targets:ring, duration:220,
+      onUpdate:()=>{ ring.clear(); ring.lineStyle(3,0xffb38f,0.6); ring.strokeCircle(x,y, (ring._r=(ring._r||8)+ (r-8)/6)); },
+      onComplete:()=>ring.destroy()
     });
+    // искры
+    emExplode.setTint([0xffd45c,0xffb38f,0xff7a59]); emExplode.explode(18, x, y);
   }
 
-  // --- enemies & waves (без изменений логики) ---
+  // --- enemies & waves (как было) ---
   function spawnEnemy(scene,hpBase){
     const first=pathPts[0];
     const e=scene.physics.add.image(first.x,first.y,'px').setTint(0xff7aa8).setDisplaySize(20,20);
