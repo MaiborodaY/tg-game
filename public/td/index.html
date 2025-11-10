@@ -72,7 +72,7 @@
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
 
-    // маленькая круглую «пых» (2×2 -> 8×8) для вспышек
+    // маленькая «точка» 8×8 для частиц
     const gg=this.make.graphics({x:0,y:0,add:false});
     gg.fillStyle(0xffffff,1); gg.fillCircle(4,4,4);
     gg.generateTexture('dot8',8,8);
@@ -91,31 +91,28 @@
       dir*=-1;
     }
 
-    // фон/сетка/дорога (неоновый вайб)
+    // фон/сетка/дорога
     const g=s.add.graphics();
     g.lineStyle(1,0x23233a,1);
     for(let r=0;r<=ROWS;r++) g.lineBetween(0,r*CELL,W,r*CELL);
     for(let c=0;c<=COLS;c++) g.lineBetween(c*CELL,0,c*CELL,H);
     for(const p of pathPts){ g.fillStyle(0x1a1a2a,1); g.fillRect(p.c*CELL+2,p.r*CELL+2,CELL-4,CELL-4); }
 
-    // группы
+    // группы и частицы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
-
-    // частицы (общие)
     particles = s.add.particles('dot8');
+    initVFX(s); // <-- важно
 
     // попадание пуль во врагов
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active||!e.active) return;
 
       if(b.kind==='arrow'){
-        // одиночное попадание
         e.hp -= b.dmg;
-        hitSparks(s,e.x,e.y,0xffd45c);
+        hitSparks(e.x,e.y,0xffd45c);
         b.destroy();
       } else if(b.kind==='fireball'){
-        // взрыв + сплэш
         fireballExplode(s,b.x,b.y,b.splashRadius);
         const arr=enemies.getChildren();
         for(let i=0;i<arr.length;i++){
@@ -125,14 +122,13 @@
             const falloff = 1 - (d / (b.splashRadius+1));
             const extraVsBrute = (t.kind==='brute') ? 1.15 : 1;
             t.hp -= Math.max(1, Math.round(b.dmg * falloff * extraVsBrute));
-            hitSparks(s,t.x,t.y,0xff7a59);
+            hitSparks(t.x,t.y,0xff7a59);
           }
         }
         b.destroy();
       }
 
       if(e.hp<=0){
-        // смерть врага
         deathPuff(s,e.x,e.y, e.kind==='runner' ? 0x7cf7d4 : 0xff7aa8);
         e.destroy();
         gold+=5; updateHud();
@@ -160,14 +156,13 @@
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=120; }
       }
-      // плавно поворачиваем ствол к последней цели
+      // поворот ствола
       if(t.lastTarget && t.barrel){
         const a = Phaser.Math.Angle.Between(t.x, t.y, t.lastTarget.x, t.lastTarget.y);
         t.barrel.rotation = Phaser.Math.Angle.RotateTo(t.barrel.rotation, a, 0.15);
       }
     }
 
-    // волны
     if(running && !spawning && enemies.countActive(true)===0){
       running=false;
       startBtn.textContent='▶️ Next';
@@ -181,13 +176,9 @@
 
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    // база
     const base = scene.add.image(x,y,'px').setTint(type.key==='ARCHER'?0x7cf7d4:0xff7a59).setDisplaySize(26,26).setAlpha(0.95);
-    // ствол (баррель) — отдельный спрайт для поворота
-    const barrel = scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.key==='ARCHER'? 16: 18, 4).setOrigin(0.1,0.5);
-    barrel.setAlpha(0.9);
+    const barrel = scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.key==='ARCHER'? 16: 18, 4).setOrigin(0.1,0.5).setAlpha(0.9);
 
-    // кольцо радиуса
     const ring = scene.add.graphics();
     ring.lineStyle(1, type.key==='ARCHER'?0x7cf7d4:0xff7a59, 0.35).strokeCircle(x,y,type.range);
 
@@ -206,7 +197,6 @@
         .strokeCircle(selectedTower.x,selectedTower.y,selectedTower.range);
     }
     selectedTower=t;
-    // подсветка текущей
     t.ring.clear().lineStyle(2, 0xffffff, 0.6).strokeCircle(t.x,t.y,t.range);
   }
 
@@ -230,7 +220,6 @@
 
   function shoot(scene,t,e){
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
-    // повернуть мгновенно к цели (быстрая реакция), дальше update сгладит
     t.barrel.rotation = a;
 
     // лёгкий recoil
@@ -239,14 +228,12 @@
     scene.tweens.add({targets:t.barrel, x:t.x, y:t.y, duration:90, ease:'quad.out'});
 
     if(t.proj==='arrow'){
-      // вспышка выстрела
-      muzzleFlash(scene, t.x+Math.cos(a)*10, t.y+Math.sin(a)*10, 0xffd45c);
+      muzzleFlash(t.x+Math.cos(a)*10, t.y+Math.sin(a)*10, 0xffd45c);
 
       const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(3,3);
       b.kind='arrow'; b.dmg=t.dmg;
       bullets.add(b);
 
-      // трассер (тонкая линия частиц)
       const trail = particles.createEmitter({
         alpha: {start:0.9,end:0}, scale:{start:0.8,end:0},
         speed: 0, lifespan:180, frequency:20, quantity:1,
@@ -258,17 +245,15 @@
       const vx=toX-t.x, vy=toY-t.y, L=Math.hypot(vx,vy)||1;
       b.setVelocity((vx/L)*340,(vy/L)*340);
 
-      scene.time.delayedCall(1200,()=>{ trail.stop(); b.destroy(); });
+      scene.time.delayedCall(1200,()=>{ trail.stop(); particles.removeEmitter(trail); b.destroy(); });
 
     } else if(t.proj==='fireball'){
-      // вспышка теплым цветом
-      muzzleFlash(scene, t.x+Math.cos(a)*12, t.y+Math.sin(a)*12, 0xff7a59);
+      muzzleFlash(t.x+Math.cos(a)*12, t.y+Math.sin(a)*12, 0xff7a59);
 
       const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xff7a59).setDisplaySize(7,7);
       b.kind='fireball'; b.dmg=t.dmg; b.splashRadius=t.type.splash||48;
       bullets.add(b);
 
-      // огненный хвост
       const trail = particles.createEmitter({
         alpha:{start:0.9,end:0}, scale:{start:1,end:0},
         speed: {min:2,max:12}, angle:{min:160,max:200},
@@ -280,31 +265,39 @@
       const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
       b.setVelocity((vx/L)*260,(vy/L)*260);
 
-      scene.time.delayedCall(1600,()=>{ trail.stop(); b.destroy(); });
+      scene.time.delayedCall(1600,()=>{ trail.stop(); particles.removeEmitter(trail); b.destroy(); });
     }
   }
 
-  // --- VFX helpers ---
-  function muzzleFlash(scene, x,y, color){
-    const em = particles.createEmitter({
-      x,y, speed:{min:30,max:90}, angle:{min:-12,max:12},
-      lifespan:140, quantity:3, scale:{start:1,end:0}, alpha:{start:1,end:0},
-      tint:[color], blendMode:'ADD'
+  // --- VFX: pooled emitters (без утечек) ---
+  let emMuzzle, emHit, emDeath, emExplode;
+  function initVFX(scene){
+    emMuzzle = particles.createEmitter({
+      on:false, speed:{min:30,max:90}, angle:{min:-12,max:12},
+      lifespan:140, quantity:6, scale:{start:1,end:0}, alpha:{start:1,end:0},
+      blendMode:'ADD'
     });
-    scene.time.delayedCall(120,()=>em.stop());
+    emHit = particles.createEmitter({
+      on:false, speed:{min:20,max:70}, angle:{min:0,max:360},
+      lifespan:160, quantity:6, scale:{start:0.9,end:0}, alpha:{start:1,end:0},
+      blendMode:'ADD'
+    });
+    emDeath = particles.createEmitter({
+      on:false, speed:{min:10,max:40}, angle:{min:0,max:360},
+      lifespan:260, quantity:10, scale:{start:1.1,end:0}, alpha:{start:0.9,end:0},
+      blendMode:'ADD'
+    });
+    emExplode = particles.createEmitter({
+      on:false, speed:{min:40,max:120}, angle:{min:0,max:360},
+      lifespan:220, quantity:18, scale:{start:1.2,end:0}, alpha:{start:1,end:0},
+      blendMode:'ADD'
+    });
   }
 
-  function hitSparks(scene,x,y,color){
-    const em = particles.createEmitter({
-      x,y, speed:{min:20,max:70}, angle:{min:0,max:360},
-      lifespan:160, quantity:4, scale:{start:0.9,end:0}, alpha:{start:1,end:0},
-      tint:[color], blendMode:'ADD'
-    });
-    scene.time.delayedCall(100,()=>em.stop());
-  }
+  function muzzleFlash(x,y,color){ emMuzzle.setTint(color); emMuzzle.explode(6, x, y); }
+  function hitSparks(x,y,color){  emHit.setTint(color);    emHit.explode(6, x, y); }
 
   function deathPuff(scene,x,y,color){
-    // шоквейв
     const ring = scene.add.graphics();
     ring.lineStyle(2, color, 0.7).strokeCircle(x,y,2);
     scene.tweens.add({
@@ -312,17 +305,10 @@
       onUpdate:()=>{ ring.clear(); ring.lineStyle(2,color,0.5); ring.strokeCircle(x,y, ring._r=(ring._r||2)+2); },
       onComplete:()=>ring.destroy()
     });
-    // дымок
-    const em = particles.createEmitter({
-      x,y, speed:{min:10,max:40}, angle:{min:0,max:360},
-      lifespan:260, quantity:8, scale:{start:1.1,end:0}, alpha:{start:0.9,end:0},
-      tint:[color], blendMode:'ADD'
-    });
-    scene.time.delayedCall(140,()=>em.stop());
+    emDeath.setTint(color); emDeath.explode(10, x, y);
   }
 
   function fireballExplode(scene,x,y,r){
-    // огненный круг + искры
     const ring = scene.add.graphics();
     ring.lineStyle(3, 0xff7a59, 0.9).strokeCircle(x,y,8);
     scene.tweens.add({
@@ -330,19 +316,13 @@
       onUpdate:()=>{ ring.clear(); ring.lineStyle(3,0xffb38f,0.6); ring.strokeCircle(x,y, (ring._r=(ring._r||8)+ (r-8)/6)); },
       onComplete:()=>ring.destroy()
     });
-    const em = particles.createEmitter({
-      x,y, speed:{min:40,max:120}, angle:{min:0,max:360},
-      lifespan:220, quantity:18, scale:{start:1.2,end:0}, alpha:{start:1,end:0},
-      tint:[0xffd45c,0xffb38f,0xff7a59], blendMode:'ADD'
-    });
-    scene.time.delayedCall(120,()=>em.stop());
+    emExplode.setTint([0xffd45c,0xffb38f,0xff7a59]); emExplode.explode(18, x, y);
   }
 
   // --- enemies & waves ---
   function spawnEnemy(scene,hpBase){
     const first=pathPts[0];
 
-    // тип врага по волне: 70% runner, 30% brute с шансом растущим
     const bruteChance = Math.min(0.15 + wave*0.03, 0.6);
     const isBrute = Math.random() < bruteChance;
 
@@ -355,7 +335,6 @@
     e.hp = isBrute? Math.floor(hpBase*1.8) : Math.floor(hpBase*0.7);
     e.way=0;
 
-    // хитбокс
     const r = isBrute? 11:8;
     e.body.setCircle(r); e.body.setOffset(-r + e.width/2, -r + e.height/2);
     enemies.add(e);
