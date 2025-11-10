@@ -32,6 +32,7 @@
 
   const game=new Phaser.Game({
     type: Phaser.AUTO, width: W, height: H, backgroundColor:'#0b0b10',
+    pixelArt: true, antialias: false,           // << чёткая пиксельная графика
     scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
     physics:{default:'arcade',arcade:{debug:false}},
     scene:{preload,create,update}
@@ -65,27 +66,27 @@
 
   function preload(){
     // 1×1 пиксель
-    this.textures.remove('px')?.catch?.(()=>{});
+    this.textures.exists('px') && this.textures.remove('px');
     let g=this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
 
-    // 8×8 круг для вспышки/хвоста
-    this.textures.remove('dot8')?.catch?.(()=>{});
+    // 8×8 точка
+    this.textures.exists('dot8') && this.textures.remove('dot8');
     g=this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,1); g.fillCircle(4,4,4);
     g.generateTexture('dot8',8,8);
 
-    // ТЕКСТУРА СТРЕЛЫ (16×6): древко + наконечник
-    this.textures.remove('arrow')?.catch?.(()=>{});
+    // СТРЕЛА 32×8 — крупный белый наконечник
+    this.textures.exists('arrow') && this.textures.remove('arrow');
     const a=this.make.graphics({x:0,y:0,add:false});
     // древко
-    a.fillStyle(0xc7a865,1); a.fillRect(2,2,10,2);
-    // наконечник
-    a.fillStyle(0xffffff,1); a.fillTriangle(12,1, 16,3, 12,5);
-    // оперение (чуть-чуть)
-    a.fillStyle(0xdac07a,1); a.fillRect(0,1,2,4);
-    a.generateTexture('arrow',16,6);
+    a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);
+    // наконечник (большой и белый)
+    a.fillStyle(0xffffff,1); a.fillTriangle(24,2, 32,4, 24,6);
+    // оперение
+    a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4);
+    a.generateTexture('arrow',32,8);
   }
 
   function create(){
@@ -160,9 +161,9 @@
     const cost=type.cost; if(gold<cost) return; gold-=cost; updateHud();
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    const base=scene.add.image(x,y,'px').setTint(type.baseTint).setDisplaySize(28,28);
-    const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.barrelLen||16,4).setOrigin(0.1,0.5).setAlpha(0.9);
-    const ring=scene.add.graphics(); ring.lineStyle(1, type.baseTint, 0.35).strokeCircle(x,y,type.range);
+    const base=scene.add.image(x,y,'px').setTint(type.baseTint).setDisplaySize(28,28).setDepth(3);
+    const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.barrelLen||16,4).setOrigin(0.1,0.5).setAlpha(0.9).setDepth(4);
+    const ring=scene.add.graphics().setDepth(2); ring.lineStyle(1, type.baseTint, 0.35).strokeCircle(x,y,type.range);
 
     const t={ type: type.key, proj:type.proj, r,c,x,y, node:base, barrel, ring,
       range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
@@ -195,41 +196,38 @@
 
   function shoot(scene,t,e){
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
-    // вспышка у дула
-    muzzleFlash(scene, t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xffd45c);
 
-    // СТРЕЛА (замена точки)
+    // СТРЕЛА (крупнее, поверх всего)
     const arrow = scene.physics.add.image(t.x, t.y, 'arrow')
-      .setOrigin(0.15, 0.5)       // чтобы «нос» был вперёд
-      .setRotation(a);
+      .setOrigin(0.2, 0.5)     // нос вперёд
+      .setRotation(a)
+      .setDepth(6);            // выше дороги/колец
     arrow.dmg = t.dmg;
     bullets.add(arrow);
 
-    // лёгкий хвост (видимее: чаще и дольше)
-    arrow.__trailEv = attachTrail(scene, arrow, 0xffd45c);
+    // хвост (ярче/чаще/дольше и поверх)
+    arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a);
 
-    // скорость
     const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
-    arrow.setVelocity((vx/L)*320,(vy/L)*320); // чуть быстрее, чтобы летела «стрела»
+    arrow.setVelocity((vx/L)*320,(vy/L)*320);
     scene.time.delayedCall(1500,()=>{ stopTrail(arrow); arrow.destroy(); });
   }
 
-  // --- хвост и вспышка (простые, без частиц) ---
-  function muzzleFlash(scene,x,y,color){
-    const dot = scene.add.image(x,y,'dot8').setTint(color).setAlpha(0.9);
-    scene.tweens.add({ targets: dot, alpha: 0, scale: { from: 1, to: 0.6 }, duration: 120, onComplete:()=>dot.destroy() });
-  }
-
-  // более заметный «след»: каждые 35мс, живёт 240мс, чуть вытянут по X
+  // --- хвост (простыми спрайтами) ---
   function attachTrail(scene, sprite, color){
     return scene.time.addEvent({
-      delay: 35, loop: true,
+      delay: 24, loop: true,                  // чаще
       callback: ()=>{
         if(!sprite.active) return;
         const t = scene.add.image(sprite.x, sprite.y, 'dot8')
-          .setTint(color).setAlpha(0.75).setScale(1.2, 0.9);
-        t.rotation = sprite.rotation; // лёгкое ощущение направления
-        scene.tweens.add({ targets: t, alpha: 0, scaleX: 0.2, scaleY: 0.2, duration: 240, onComplete:()=>t.destroy() });
+          .setTint(color).setAlpha(0.9)
+          .setScale(1.6, 0.7)                 // чуть вытянуто
+          .setDepth(5);
+        t.rotation = sprite.rotation;
+        scene.tweens.add({
+          targets: t, alpha: 0, scaleX: 0.2, scaleY: 0.2,
+          duration: 320, onComplete:()=>t.destroy()
+        });
       }
     });
   }
@@ -240,7 +238,7 @@
   // --- enemies & waves (как было) ---
   function spawnEnemy(scene,hpBase){
     const first=pathPts[0];
-    const e=scene.physics.add.image(first.x,first.y,'px').setTint(0xff7aa8).setDisplaySize(20,20);
+    const e=scene.physics.add.image(first.x,first.y,'px').setTint(0xff7aa8).setDisplaySize(20,20).setDepth(1);
     e.hp=hpBase; e.way=0;
     e.body.setCircle(10); e.body.setOffset( -10 + e.width/2, -10 + e.height/2 );
     enemies.add(e);
