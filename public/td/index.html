@@ -44,27 +44,27 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // фаербол/сплэш/поджог
-  const FIREBALL_SPEED   = 280;     // px/s
-  const SPLASH_R         = 56;      // радиус взрыва
-  const SPLASH_MIN_PCT   = 0.4;     // урон на краю (40% базового)
-  const BURN_DPS         = 5;       // урон в секунду
-  const BURN_DURATION    = 1800;    // мс длительность поджога
-  const BURN_TICK_MS     = 200;     // период тика догорания
+// фаербол/сплэш/поджог (баланс)
+const FIREBALL_SPEED   = 270;     // px/s
+const SPLASH_R         = 60;      // радиус взрыва
+const SPLASH_MIN_PCT   = 0.45;    // урон на краю (45% базового)
+const BURN_DPS         = 4;       // урон в секунду
+const BURN_DURATION    = 1600;    // мс длительность поджога
+const BURN_TICK_MS     = 200;     // период тика догорания
 
-  // башни
-  const TOWER_TYPES = {
-    ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseKey:'archerBase', barrelLen:16, proj:'arrow' },
-    MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:520, dmg:14, baseKey:'mageBase',   barrelLen:18, proj:'fireball' }
-  };
-  let currentType = TOWER_TYPES.ARCHER;
+// башни (баланс)
+const TOWER_TYPES = {
+  ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:360, dmg:10, baseKey:'archerBase', barrelLen:16, proj:'arrow' },
+  MAGE:   { key:'MAGE',   cost:75, range:CELL*3.2, rate:650, dmg:16, baseKey:'mageBase',   barrelLen:18, proj:'fireball' }
+};
 
-  // ВРАГИ: типы (текстура/скорость/множитель HP)
-  const ENEMY_TYPES = {
-    SLIME:  { key:'enemy_slime',  size:20, speed: 45,  hpMul:1.00, gold:5 },
-    GOBLIN: { key:'enemy_goblin', size:20, speed: 62,  hpMul:0.90, gold:6 },
-    BEETLE: { key:'enemy_beetle', size:22, speed: 38,  hpMul:1.35, gold:7 },
-  };
+// враги (баланс)
+const ENEMY_TYPES = {
+  SLIME:  { key:'enemy_slime',  size:20, speed: 46, hpMul:1.00, gold:5 },
+  GOBLIN: { key:'enemy_goblin', size:20, speed: 70, hpMul:0.85, gold:6 },
+  BEETLE: { key:'enemy_beetle', size:22, speed: 40, hpMul:1.60, gold:8 },
+};
+
 
   // HUD
   const goldEl=document.getElementById('gold');
@@ -420,11 +420,25 @@
   }
 
   // --- enemies & waves ---
-  function pickEnemyTypeForWave(wave){
-    if (wave <= 3) return ENEMY_TYPES.SLIME;
-    if (wave <= 6) return Math.random() < 0.75 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME;
-    return Math.random() < 0.70 ? ENEMY_TYPES.BEETLE : (Math.random() < 0.5 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME);
+function pickEnemyTypeForWave(wave){
+  if (wave <= 3) {
+    // старт: только слаймы
+    return ENEMY_TYPES.SLIME;
   }
+  if (wave <= 6) {
+    // переход: больше гоблинов, иногда слайм
+    return Math.random() < 0.7 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME;
+  }
+  if (wave <= 10) {
+    // мид: смесь, появляются жуки
+    const r = Math.random();
+    return r < 0.4 ? ENEMY_TYPES.BEETLE : (r < 0.8 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME);
+  }
+  // 11+ усиливаем долю жуков
+  const r = Math.random();
+  return r < 0.55 ? ENEMY_TYPES.BEETLE : (r < 0.85 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME);
+}
+
 
   function spawnEnemy(scene,hpBase){
     const first=pathPts[0];
@@ -459,14 +473,18 @@
     }});
   }
 
-  function nextWave(){
-    const s=game.scene.keys.default;
-    wave++; updateHud();
-    document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
-    const count=8+Math.floor(wave*1.6), hpBase=24+wave*7;
-    for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
-    s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
-  }
+function nextWave(){
+  const s=game.scene.keys.default;
+  wave++; updateHud();
+  document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
+
+  const count = 8 + Math.floor(wave * 1.6);
+  const hpBase = 18 + wave * 6; // ← плавнее, чем раньше
+
+  for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
+  s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
+}
+
 
   // --- hud & over ---
   function updateHud(){ goldEl.textContent=gold; hpEl.textContent=hp; waveEl.textContent=wave; }
