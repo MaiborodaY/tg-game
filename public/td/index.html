@@ -44,7 +44,7 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // Типы башен — обе стреляют «стрелой». Никаких fireball/сплэшей на этом шаге.
+  // Типы башен — обе стреляют «стрелой». (без сплэшей)
   const TOWER_TYPES = {
     ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseTint:0x7cf7d4, barrelLen:16, proj:'arrow' },
     MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:420, dmg:10, baseTint:0xff7a59, barrelLen:18, proj:'arrow' }
@@ -72,7 +72,7 @@
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
 
-    // 8×8 круг для вспышки
+    // 8×8 круг для вспышки/хвоста
     this.textures.remove('dot8')?.catch?.(()=>{});
     const gg=this.make.graphics({x:0,y:0,add:false});
     gg.fillStyle(0xffffff,1); gg.fillCircle(4,4,4);
@@ -102,10 +102,12 @@
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
 
-    // попадания — БЕЗ сплэшей
+    // попадания — без сплэшей
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active||!e.active) return;
-      e.hp -= b.dmg; b.destroy();
+      e.hp -= b.dmg;
+      stopTrail(b);
+      b.destroy();
       if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
     });
 
@@ -129,7 +131,14 @@
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
       }
-      // НИКАКОГО поворота ствола/отката на этом шаге
+      // Плавный поворот ствола к ближайшей цели
+      if(t.barrel){
+        const aim = acquireTarget(t);
+        if(aim){
+          const ang = Phaser.Math.Angle.Between(t.x, t.y, aim.x, aim.y);
+          t.barrel.rotation = Phaser.Math.Angle.RotateTo(t.barrel.rotation||0, ang, 0.15);
+        }
+      }
     }
     if(running && !spawning && enemies.countActive(true)===0){
       running=false;
@@ -144,7 +153,7 @@
 
     // база
     const base=scene.add.image(x,y,'px').setTint(type.baseTint).setDisplaySize(28,28);
-    // ствол (пока статичный)
+    // ствол
     const barrelLen = type.barrelLen || 16;
     const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(barrelLen,4).setOrigin(0.1,0.5).setAlpha(0.9);
     // радиус
@@ -182,25 +191,39 @@
   function shoot(scene,t,e){
     // направление
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
-
-    // вспышка у дула (единственный эффект этого шага)
+    // вспышка у дула
     muzzleFlash(scene, t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xffd45c);
 
     // снаряд-«стрела»
     const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(4,4);
     b.dmg=t.dmg; bullets.add(b);
+    // лёгкий хвост
+    b.__trailEv = attachTrail(scene, b, 0xffd45c);
+
     const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
     b.setVelocity((vx/L)*280,(vy/L)*280);
-    scene.time.delayedCall(1500,()=>b.destroy());
+    scene.time.delayedCall(1500,()=>{ stopTrail(b); b.destroy(); });
   }
 
-  // --- простой VFX: вспышка у дула ---
+  // --- хвост и вспышка (без системы частиц) ---
   function muzzleFlash(scene,x,y,color){
     const dot = scene.add.image(x,y,'dot8').setTint(color).setAlpha(0.9);
-    scene.tweens.add({
-      targets: dot, alpha: 0, scale: { from: 1, to: 0.6 },
-      duration: 120, onComplete:()=>dot.destroy()
+    scene.tweens.add({ targets: dot, alpha: 0, scale: { from: 1, to: 0.6 }, duration: 120, onComplete:()=>dot.destroy() });
+  }
+
+  // каждые 50мс оставляем «след» из точек, гасим за 180мс
+  function attachTrail(scene, sprite, color){
+    return scene.time.addEvent({
+      delay: 50, loop: true,
+      callback: ()=>{
+        if(!sprite.active) return;
+        const t = scene.add.image(sprite.x, sprite.y, 'dot8').setTint(color).setAlpha(0.7).setScale(0.9);
+        scene.tweens.add({ targets: t, alpha: 0, scale: 0.2, duration: 180, onComplete:()=>t.destroy() });
+      }
     });
+  }
+  function stopTrail(sprite){
+    if(sprite && sprite.__trailEv){ sprite.__trailEv.remove(); sprite.__trailEv=null; }
   }
 
   // --- enemies & waves (как было) ---
