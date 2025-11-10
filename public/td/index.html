@@ -22,7 +22,6 @@
     <div id="start" class="pill btn">▶️ Start</div>
     <div id="sell"  class="pill btn">💱 Sell</div>
 
-    <!-- выбор типа башни -->
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
     <div id="t-mage"   class="pill btn">🔥 Mage (70)</div>
   </div>
@@ -44,7 +43,6 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // Типы башен — обе стреляют «стрелой». (без сплэшей)
   const TOWER_TYPES = {
     ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:420, dmg:10, baseTint:0x7cf7d4, barrelLen:16, proj:'arrow' },
     MAGE:   { key:'MAGE',   cost:70, range:CELL*3.2, rate:420, dmg:10, baseTint:0xff7a59, barrelLen:18, proj:'arrow' }
@@ -68,15 +66,26 @@
   function preload(){
     // 1×1 пиксель
     this.textures.remove('px')?.catch?.(()=>{});
-    const g=this.make.graphics({x:0,y:0,add:false});
+    let g=this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,1); g.fillRect(0,0,2,2);
     g.generateTexture('px',2,2);
 
     // 8×8 круг для вспышки/хвоста
     this.textures.remove('dot8')?.catch?.(()=>{});
-    const gg=this.make.graphics({x:0,y:0,add:false});
-    gg.fillStyle(0xffffff,1); gg.fillCircle(4,4,4);
-    gg.generateTexture('dot8',8,8);
+    g=this.make.graphics({x:0,y:0,add:false});
+    g.fillStyle(0xffffff,1); g.fillCircle(4,4,4);
+    g.generateTexture('dot8',8,8);
+
+    // ТЕКСТУРА СТРЕЛЫ (16×6): древко + наконечник
+    this.textures.remove('arrow')?.catch?.(()=>{});
+    const a=this.make.graphics({x:0,y:0,add:false});
+    // древко
+    a.fillStyle(0xc7a865,1); a.fillRect(2,2,10,2);
+    // наконечник
+    a.fillStyle(0xffffff,1); a.fillTriangle(12,1, 16,3, 12,5);
+    // оперение (чуть-чуть)
+    a.fillStyle(0xdac07a,1); a.fillRect(0,1,2,4);
+    a.generateTexture('arrow',16,6);
   }
 
   function create(){
@@ -131,7 +140,7 @@
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
       }
-      // Плавный поворот ствола к ближайшей цели
+      // поворот ствола к ближайшей цели
       if(t.barrel){
         const aim = acquireTarget(t);
         if(aim){
@@ -151,12 +160,8 @@
     const cost=type.cost; if(gold<cost) return; gold-=cost; updateHud();
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    // база
     const base=scene.add.image(x,y,'px').setTint(type.baseTint).setDisplaySize(28,28);
-    // ствол
-    const barrelLen = type.barrelLen || 16;
-    const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(barrelLen,4).setOrigin(0.1,0.5).setAlpha(0.9);
-    // радиус
+    const barrel=scene.add.image(x,y,'px').setTint(0xffffff).setDisplaySize(type.barrelLen||16,4).setOrigin(0.1,0.5).setAlpha(0.9);
     const ring=scene.add.graphics(); ring.lineStyle(1, type.baseTint, 0.35).strokeCircle(x,y,type.range);
 
     const t={ type: type.key, proj:type.proj, r,c,x,y, node:base, barrel, ring,
@@ -189,36 +194,42 @@
   }
 
   function shoot(scene,t,e){
-    // направление
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
     // вспышка у дула
     muzzleFlash(scene, t.x + Math.cos(a)*10, t.y + Math.sin(a)*10, 0xffd45c);
 
-    // снаряд-«стрела»
-    const b=scene.physics.add.image(t.x,t.y,'px').setTint(0xffd45c).setDisplaySize(4,4);
-    b.dmg=t.dmg; bullets.add(b);
-    // лёгкий хвост
-    b.__trailEv = attachTrail(scene, b, 0xffd45c);
+    // СТРЕЛА (замена точки)
+    const arrow = scene.physics.add.image(t.x, t.y, 'arrow')
+      .setOrigin(0.15, 0.5)       // чтобы «нос» был вперёд
+      .setRotation(a);
+    arrow.dmg = t.dmg;
+    bullets.add(arrow);
 
+    // лёгкий хвост (видимее: чаще и дольше)
+    arrow.__trailEv = attachTrail(scene, arrow, 0xffd45c);
+
+    // скорость
     const vx=e.x-t.x, vy=e.y-t.y, L=Math.hypot(vx,vy)||1;
-    b.setVelocity((vx/L)*280,(vy/L)*280);
-    scene.time.delayedCall(1500,()=>{ stopTrail(b); b.destroy(); });
+    arrow.setVelocity((vx/L)*320,(vy/L)*320); // чуть быстрее, чтобы летела «стрела»
+    scene.time.delayedCall(1500,()=>{ stopTrail(arrow); arrow.destroy(); });
   }
 
-  // --- хвост и вспышка (без системы частиц) ---
+  // --- хвост и вспышка (простые, без частиц) ---
   function muzzleFlash(scene,x,y,color){
     const dot = scene.add.image(x,y,'dot8').setTint(color).setAlpha(0.9);
     scene.tweens.add({ targets: dot, alpha: 0, scale: { from: 1, to: 0.6 }, duration: 120, onComplete:()=>dot.destroy() });
   }
 
-  // каждые 50мс оставляем «след» из точек, гасим за 180мс
+  // более заметный «след»: каждые 35мс, живёт 240мс, чуть вытянут по X
   function attachTrail(scene, sprite, color){
     return scene.time.addEvent({
-      delay: 50, loop: true,
+      delay: 35, loop: true,
       callback: ()=>{
         if(!sprite.active) return;
-        const t = scene.add.image(sprite.x, sprite.y, 'dot8').setTint(color).setAlpha(0.7).setScale(0.9);
-        scene.tweens.add({ targets: t, alpha: 0, scale: 0.2, duration: 180, onComplete:()=>t.destroy() });
+        const t = scene.add.image(sprite.x, sprite.y, 'dot8')
+          .setTint(color).setAlpha(0.75).setScale(1.2, 0.9);
+        t.rotation = sprite.rotation; // лёгкое ощущение направления
+        scene.tweens.add({ targets: t, alpha: 0, scaleX: 0.2, scaleY: 0.2, duration: 240, onComplete:()=>t.destroy() });
       }
     });
   }
