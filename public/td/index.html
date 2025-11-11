@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Save + 1×/2× + Reset (fixed)</title>
+  <title>TG TD • Save + Resume (fixed)</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
     /* HUD снизу по центру */
@@ -32,7 +32,6 @@
     <div id="t-mage"   class="pill btn">🔥 Mage (75)</div>
 
     <div id="pause" class="pill btn">⏸️ Pause</div>
-    <div id="speed" class="pill btn">⏩ Speed: 1×</div>
     <div id="reset" class="pill btn">🧹 Reset</div>
   </div>
 
@@ -54,11 +53,10 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // скорость/пауза (теперь 1/2)
-  let speedMul = 1;  // 1 | 2
+  // только пауза
   let isPaused = false;
 
-  // флаг «не сохранять»
+  // флаг «не сохранять» (для Reset)
   let SKIP_SAVE = false;
 
   // ===== Баланс =====
@@ -90,28 +88,30 @@
   const archerBtn=document.getElementById('t-archer');
   const mageBtn=document.getElementById('t-mage');
   const pauseBtn=document.getElementById('pause');
-  const speedBtn=document.getElementById('speed');
   const resetBtn=document.getElementById('reset');
 
-  startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
+  // кнопки
+  startBtn.onclick=()=> onStartClick();
   sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
   archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); saveGameDeferred(); };
   mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); saveGameDeferred(); };
-
   pauseBtn.onclick = () => togglePause();
-  speedBtn.onclick = () => toggleSpeed();
   resetBtn.onclick = () => resetSave();
 
   // ===== Сохранение =====
-  const SAVE_KEY = 'td_save_v1';
+  const SAVE_KEY = 'td_save_v2'; // bumped version
   let saveDebounce = null;
 
+  // Важная переменная: какую волну надо запустить (используется для Resume)
+  // Если null — значит в данный момент ничего не идёт и резюма нет.
+  let resumeWave = null;
+
   function saveGame(){
-    if (SKIP_SAVE) return; // критично: не сохраняем, если ресет
+    if (SKIP_SAVE) return;
     try{
       const data = {
         gold, hp, wave,
-        speedMul,
+        resumeWave,              // ← ключ к фиксe «перескока»
         towers: towers.map(t=>({ type:t.type, r:t.r, c:t.c }))
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -132,9 +132,10 @@
       gold = Number.isFinite(data.gold)? data.gold : gold;
       hp   = Number.isFinite(data.hp)? data.hp : hp;
       wave = Number.isFinite(data.wave)? data.wave : wave;
-      speedMul = [1,2].includes(data.speedMul) ? data.speedMul : 1;
 
-      // восстановим башни без списания
+      resumeWave = (Number.isFinite(data.resumeWave) ? data.resumeWave : null);
+
+      // восстановим башни
       if(Array.isArray(data.towers)){
         for(const t of data.towers){
           const typ = (t.type==='MAGE') ? TOWER_TYPES.MAGE : TOWER_TYPES.ARCHER;
@@ -142,9 +143,9 @@
         }
       }
 
-      applySpeedScale(game.scene.keys.default);
+      // подпись на кнопке старт
+      updateStartLabel();
       updateHud();
-      updateSpeedLabel();
       return true;
     }catch(e){ return false; }
   }
@@ -153,11 +154,9 @@
   window.addEventListener('beforeunload', () => { if (!SKIP_SAVE) saveGame(); });
 
   function resetSave(){
-    // выключаем любые будущие сохранения
     SKIP_SAVE = true;
     if (saveDebounce) { clearTimeout(saveDebounce); saveDebounce = null; }
     try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
-    // мгновенная перезагрузка без beforeunload-сейва
     location.reload();
   }
 
@@ -166,32 +165,15 @@
     isPaused = !isPaused;
     if (isPaused){
       s.physics.world.pause();
-      s.physics.world.timeScale = 0;
       s.time.timeScale = 0;
       s.tweens.timeScale = 0;
       pauseBtn.textContent = '▶️ Resume';
     } else {
-      applySpeedScale(s);
+      s.physics.world.resume();
+      s.time.timeScale = 1;
+      s.tweens.timeScale = 1;
       pauseBtn.textContent = '⏸️ Pause';
     }
-  }
-
-  function toggleSpeed(){
-    // 1× → 2× → 1×
-    speedMul = (speedMul===1?2:1);
-    updateSpeedLabel();
-    if (!isPaused) applySpeedScale(game.scene.keys.default);
-    saveGameDeferred();
-  }
-  function updateSpeedLabel(){
-    speedBtn.textContent = `⏩ Speed: ${speedMul}×`;
-  }
-  function applySpeedScale(s){
-    // Ускоряем весь движок: таймеры, твины, физику
-    s.physics.world.resume();
-    s.physics.world.timeScale = speedMul;
-    s.time.timeScale = speedMul;
-    s.tweens.timeScale = speedMul;
   }
 
   // ===== ASSETS =====
@@ -343,11 +325,8 @@
     s.time.addEvent({ delay: BURN_TICK_MS, loop: true, callback: ()=>applyBurnTick(s) });
     s.time.addEvent({ delay: 3000, loop: true, callback: saveGame });
 
-    applySpeedScale(s);
-    updateSpeedLabel();
-
-    loadGame(); // попытка восстановиться
-
+    // загрузка сейва
+    loadGame();
     updateHud();
   }
 
@@ -355,8 +334,7 @@
     if (isPaused) return;
 
     for(const t of towers){
-      // ВАЖНО: больше НЕ умножаем dt на speedMul — ускорение полностью через timeScale
-      t.cd -= dt;
+      t.cd -= dt; // всегда 1×
       if(t.cd<=0){
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; saveGameDeferred(); } else { t.cd=100; }
@@ -370,9 +348,26 @@
       }
     }
     if(running && !spawning && enemies.countActive(true)===0){
-      running=false; document.getElementById('start').textContent='▶️ Next';
+      running=false;
+      // волна успешно завершена — сбрасываем флаг резюма
+      resumeWave = null;
+      updateStartLabel();
       saveGameDeferred();
     }
+  }
+
+  // Start/Resume click
+  function onStartClick(){
+    if (spawning || running) return;
+    // Если есть незавершённая волна — продолжаем её,
+    // иначе запускаем следующую (wave+1).
+    const target = (resumeWave && resumeWave>0) ? resumeWave : (wave + 1);
+    startWave(target);
+  }
+
+  function updateStartLabel(){
+    if (resumeWave && resumeWave>0) startBtn.textContent = `▶️ Resume Wave ${resumeWave}`;
+    else startBtn.textContent = '▶️ Start';
   }
 
   // --- towers (один спрайт) ---
@@ -517,74 +512,30 @@
     if (b.active) b.destroy();
   }
 
-  function explodeSplash(scene, x, y, baseDmg, R){
-    if (scene.textures.exists('atlas_units') && scene.textures.get('atlas_units').get('explosion_0')) {
-      const frames=[]; let i=0;
-      while (scene.textures.get('atlas_units').has('explosion_'+i)) {
-        frames.push({ key:'atlas_units', frame:'explosion_'+i }); i++;
-      }
-      const boom = scene.add.sprite(x, y, 'atlas_units', 'explosion_0').setDepth(7);
-      const key = 'boom_once';
-      if (!scene.anims.exists(key)) {
-        scene.anims.create({ key, frames, frameRate: 28, repeat: 0, hideOnComplete: true });
-      }
-      boom.play(key);
-    } else {
-      const ring = scene.add.graphics().setDepth(7);
-      const steps = 10, dur = 220; let i=0;
-      const ev = scene.time.addEvent({
-        delay: dur/steps, repeat: steps,
-        callback: ()=>{
-          i++; const r = 10 + (R-10)*(i/steps);
-          ring.clear(); ring.lineStyle(3, 0xffb38f, 0.85).strokeCircle(x,y,r);
-          if(i===steps){ ring.destroy(); ev.remove(); }
-        }
-      });
-      for(let k=0;k<10;k++){
-        const ang = Math.random()*Math.PI*2, d = 6 + Math.random()*R*0.6;
-        const dot = scene.add.image(x, y,'dot8').setTint(0xffd2b6).setAlpha(0.95).setDepth(7);
-        scene.tweens.add({ targets: dot, x: x+Math.cos(ang)*d, y: y+Math.sin(ang)*d, alpha: 0,
-          duration: 260 + Math.random()*120, onComplete:()=>dot.destroy() });
-      }
-    }
+  // ===== Waves (Resume fix) =====
+  function startWave(targetWave){
+    const s=game.scene.keys.default;
 
-    const now = scene.time.now;
-    const arr = enemies.getChildren();
-    for(let i=0;i<arr.length;i++){
-      const e = arr[i]; if(!e||!e.active) continue;
-      const dx=e.x-x, dy=e.y-y; const dist=Math.hypot(dx,dy);
-      if(dist<=R){
-        const pct = 1 - (dist/R);
-        const scale = SPLASH_MIN_PCT + (1 - SPLASH_MIN_PCT)*pct;
-        const dmg = Math.max(1, Math.round(baseDmg * scale));
-        e.hp -= dmg;
-        const until = now + BURN_DURATION;
-        e.burnUntil = Math.max(e.burnUntil||0, until);
-        e.burnDps = BURN_DPS;
-        if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
-      }
-    }
+    // ставим «какую волну надо пройти» и сохраняем это:
+    resumeWave = targetWave; // пока волна не завершена — всегда хранится targetWave
+    updateStartLabel();
+    saveGameDeferred();
+
+    // запуск спавна
+    const hpBase = 18 + targetWave * 6;
+    const count = 8 + Math.floor(targetWave * 1.6);
+
+    running = true;
+    spawning = true;
+    wave = targetWave;        // в HUD показываем текущую волну
+    updateHud();
+
+    startBtn.textContent = '🔄 Spawning';
+
+    for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
+    s.time.delayedCall(480*count+200,()=>{ spawning=false; startBtn.textContent='▶️ Next'; });
   }
 
-  function applyBurnTick(scene){
-    const now = scene.time.now;
-    const damagePerTick = (BURN_DPS * BURN_TICK_MS) / 1000;
-    const arr = enemies.getChildren();
-    for(let i=0;i<arr.length;i++){
-      const e = arr[i]; if(!e||!e.active) continue;
-      if(e.burnUntil && e.burnUntil > now){
-        e.hp -= damagePerTick;
-        if(Math.random() < 0.35){
-          const t = scene.add.image(e.x + (Math.random()*6-3), e.y + (Math.random()*6-3), 'dot8')
-            .setTint(0xff9e78).setAlpha(0.9).setScale(0.9).setDepth(6);
-          scene.tweens.add({ targets:t, alpha:0, y: t.y-6, duration: 280, onComplete:()=>t.destroy() });
-        }
-        if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
-      }
-    }
-  }
-
-  // --- enemies & waves ---
   function pickEnemyTypeForWave(wave){
     if (wave <= 3) return ENEMY_TYPES.SLIME;
     if (wave <= 6) return Math.random() < 0.7 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME;
@@ -638,7 +589,12 @@
   }
   function advance(scene,e){
     e.way++;
-    if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); saveGameDeferred(); return; }
+    if(e.way>=pathPts.length){
+      hp--; updateHud(); e.destroy();
+      if(hp<=0) return gameOver(scene);
+      saveGameDeferred();
+      return;
+    }
     const p=pathPts[e.way];
     scene.physics.moveTo(e,p.x,p.y,e.speed);
     const h=scene.time.addEvent({delay:100,loop:true,callback:()=>{
@@ -648,17 +604,11 @@
     }});
   }
 
-  function nextWave(){
-    const s=game.scene.keys.default;
-    wave++; updateHud(); saveGameDeferred();
-    document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
-    const count = 8 + Math.floor(wave * 1.6);
-    const hpBase = 18 + wave * 6;
-    for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
-    s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
-  }
-
   // --- hud & over ---
+  function updateStartLabel(){
+    if (resumeWave && !running) startBtn.textContent = `▶️ Resume Wave ${resumeWave}`;
+    else if (!running) startBtn.textContent = '▶️ Start';
+  }
   function updateHud(){ goldEl.textContent=gold; hpEl.textContent=hp; waveEl.textContent=wave; }
   function gameOver(scene){
     scene.add.rectangle(W/2,H/2,W,H,0x000000,0.5).setDepth(10);
