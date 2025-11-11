@@ -3,10 +3,15 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Save + 4× Speed</title>
+  <title>TG TD • Save + 1×/2×/3× + Reset</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
-    #hud{position:fixed;left:8px;top:8px;display:flex;gap:12px;align-items:center;z-index:10;flex-wrap:wrap}
+    /* HUD снизу */
+    #hud{
+      position:fixed; left:0; right:0; bottom:8px;
+      display:flex; gap:12px; align-items:center; justify-content:center;
+      z-index:10; flex-wrap:wrap; pointer-events:auto;
+    }
     .pill{background:#11161a;border:1px solid #2b3941;border-radius:10px;padding:6px 10px}
     .btn{cursor:pointer;user-select:none}
     .btn.sel{outline:2px solid #7cf7d4}
@@ -19,6 +24,7 @@
     <div class="pill">💰 <span id="gold">100</span></div>
     <div class="pill">❤️ <span id="hp">20</span></div>
     <div class="pill">🌊 <span id="wave">0</span></div>
+
     <div id="start" class="pill btn">▶️ Start</div>
     <div id="sell"  class="pill btn">💱 Sell</div>
 
@@ -27,6 +33,7 @@
 
     <div id="pause" class="pill btn">⏸️ Pause</div>
     <div id="speed" class="pill btn">⏩ Speed: 1×</div>
+    <div id="reset" class="pill btn">🧹 Reset</div>
   </div>
 
 <script>
@@ -47,8 +54,8 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // скорость/пауза
-  let speedMul = 1;            // 1 | 2 | 4
+  // скорость/пауза (теперь 1/2/3)
+  let speedMul = 1;  // 1 | 2 | 3
   let isPaused = false;
 
   // ===== Баланс =====
@@ -81,6 +88,7 @@
   const mageBtn=document.getElementById('t-mage');
   const pauseBtn=document.getElementById('pause');
   const speedBtn=document.getElementById('speed');
+  const resetBtn=document.getElementById('reset');
 
   startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
   sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
@@ -89,6 +97,7 @@
 
   pauseBtn.onclick = () => togglePause();
   speedBtn.onclick = () => toggleSpeed();
+  resetBtn.onclick = () => resetSave();
 
   // ===== Сохранение =====
   const SAVE_KEY = 'td_save_v1';
@@ -102,7 +111,7 @@
         towers: towers.map(t=>({ type:t.type, r:t.r, c:t.c }))
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-    }catch(e){ /* игнор */ }
+    }catch(e){}
   }
   function saveGameDeferred(delay=400){
     if(saveDebounce) clearTimeout(saveDebounce);
@@ -118,9 +127,9 @@
       gold = Number.isFinite(data.gold)? data.gold : gold;
       hp   = Number.isFinite(data.hp)? data.hp : hp;
       wave = Number.isFinite(data.wave)? data.wave : wave;
-      speedMul = (data.speedMul===2||data.speedMul===4)? data.speedMul : 1;
+      speedMul = [1,2,3].includes(data.speedMul) ? data.speedMul : 1;
 
-      // восстановим башни
+      // восстановим башни без списания
       if(Array.isArray(data.towers)){
         for(const t of data.towers){
           const typ = (t.type==='MAGE') ? TOWER_TYPES.MAGE : TOWER_TYPES.ARCHER;
@@ -128,13 +137,15 @@
         }
       }
 
-      // применим скорость в движке
       applySpeedScale(game.scene.keys.default);
-
       updateHud();
       updateSpeedLabel();
       return true;
     }catch(e){ return false; }
+  }
+  function resetSave(){
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+    location.reload();
   }
   window.addEventListener('beforeunload', saveGame);
 
@@ -154,10 +165,9 @@
   }
 
   function toggleSpeed(){
-    // 1× → 2× → 4× → 1×
-    speedMul = (speedMul===1?2 : (speedMul===2?4:1));
+    // 1× → 2× → 3× → 1×
+    speedMul = (speedMul===1?2 : (speedMul===2?3:1));
     updateSpeedLabel();
-    // применить
     if (!isPaused) applySpeedScale(game.scene.keys.default);
     saveGameDeferred();
   }
@@ -173,19 +183,15 @@
 
   // ===== ASSETS =====
   function preload(){
-    // односпрайтовые башни (Вариант D)
     this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
-    // (опционально) юниты/эффекты
     this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
 
-    // процедурные текстуры для фона
     makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);
-    makeCell(this,'cell_path', 0x294432,0x223a2a,0x3a6448);
+    makeCell(this,'cell_path',  0x294432,0x223a2a,0x3a6448);
     makeNoise(this,'noise64');
     makeRadial(this,'grad256',256,0x183126,0x0a1410);
     makeVignette(this,'vign256',256);
 
-    // служебные пиксели / фолбэки
     safeRemove(this,'dot8'); { const g=this.make.graphics({x:0,y:0,add:false}); g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8); }
     if(!hasFrame('atlas_units','arrow',this)){
       safeRemove(this,'arrow'); const a=this.make.graphics({x:0,y:0,add:false});
@@ -270,7 +276,7 @@
       dir*=-1;
     }
 
-    // === ФОН ===
+    // фон
     s.add.image(W/2,H/2,'grad256').setDisplaySize(W,H).setDepth(-10);
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
@@ -292,7 +298,7 @@
       duration: 2600, yoyo:true, repeat:-1, delay:(i)=> (i%7)*120
     });
 
-    // ===== Физика / группы =====
+    // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
 
@@ -300,7 +306,6 @@
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active || !e.active) return;
 
-      // анти-оверлап в дуле
       if (b.birthTime != null) {
         const now = s.time.now;
         const dx = (b.x - (b.startX ?? b.x)), dy = (b.y - (b.startY ?? b.y));
@@ -315,7 +320,7 @@
         return;
       }
 
-      // обычная стрела
+      // стрела
       e.hp -= b.dmg; stopTrail(b); b.destroy();
       if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
     });
@@ -331,18 +336,14 @@
       if(grid[r][c]===0) placeTower(s,r,c, currentType);
     });
 
-    // общий тик поджога
+    // тик поджога и автосейв
     s.time.addEvent({ delay: BURN_TICK_MS, loop: true, callback: ()=>applyBurnTick(s) });
-
-    // автосохранение раз в 3 сек
     s.time.addEvent({ delay: 3000, loop: true, callback: saveGame });
 
-    // применяем текущую скорость ко всем менеджерам
     applySpeedScale(s);
     updateSpeedLabel();
 
-    // попытаться восстановить игру
-    loadGame();
+    loadGame(); // попытка восстановиться
 
     updateHud();
   }
@@ -370,7 +371,7 @@
     }
   }
 
-  // --- towers (Вариант D: один спрайт) ---
+  // --- towers (один спрайт) ---
   function placeTower(scene,r,c,type){
     const cost=type.cost; if(gold<cost) return;
     gold-=cost; updateHud();
@@ -378,9 +379,8 @@
     saveGameDeferred();
     return t;
   }
-  // восстановление без стоимости/логики клика
   function placeTowerRestore(scene,r,c,type){
-    return placeTowerInternal(scene,r,c,type, /*free=*/true);
+    return placeTowerInternal(scene,r,c,type,true);
   }
   function placeTowerInternal(scene,r,c,type, free=false){
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
@@ -661,7 +661,6 @@
     scene.add.text(W/2,H/2-10,'Game Over',{font:'20px system-ui',color:'#fff'}).setOrigin(0.5).setDepth(10);
     scene.add.text(W/2,H/2+20,'Tap to restart',{font:'14px system-ui',color:'#ddd'}).setOrigin(0.5).setDepth(10);
     scene.input.once('pointerdown',()=>{
-      // очистим сейв при полном проигрыше
       try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
       location.reload();
     });
