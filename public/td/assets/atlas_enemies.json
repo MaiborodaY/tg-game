@@ -4,130 +4,130 @@
       "frame": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "sourceSize": {
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       }
     },
     "slime_idle_1": {
       "frame": {
-        "x": 32,
+        "x": 64,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "sourceSize": {
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       }
     },
     "goblin_idle_0": {
       "frame": {
-        "x": 64,
+        "x": 128,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "sourceSize": {
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       }
     },
     "goblin_idle_1": {
       "frame": {
-        "x": 96,
+        "x": 192,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "sourceSize": {
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       }
     },
     "beetle_idle_0": {
       "frame": {
-        "x": 128,
+        "x": 256,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "sourceSize": {
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       }
     },
     "beetle_idle_1": {
       "frame": {
-        "x": 160,
+        "x": 320,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       },
       "sourceSize": {
-        "w": 32,
-        "h": 32
+        "w": 64,
+        "h": 64
       }
     }
   },
   "meta": {
-    "app": "chatgpt",
+    "app": "ChatGPT PIL",
     "version": "1.0",
     "image": "atlas_enemies.webp",
     "size": {
-      "w": 192,
-      "h": 32
+      "w": 384,
+      "h": 64
     }
   }
 }
