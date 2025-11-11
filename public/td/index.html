@@ -109,11 +109,15 @@
   // ===== ASSETS =====
   function preload(){
     // башни
-    this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
-    // снаряды/эффекты
-    this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
-    // НОВОЕ: отдельный атлас врагов (если добавили)
-    this.load.atlas('atlas_enemies','./assets/atlas_enemies.webp','./assets/atlas_enemies.json');
+// башни (единый кадр)
+this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
+
+// ВРАГИ (новый детализированный атлас)
+this.load.atlas('atlas_enemies', './assets/atlas_enemies.webp', './assets/atlas_enemies.json');
+
+// юниты/снаряды/взрывы (если есть)
+this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
+
 
     // фоновые процедурные текстуры (зелёная карта)
     makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);
@@ -513,50 +517,50 @@
     const r=Math.random(); return r<0.55?ENEMY_TYPES.BEETLE:(r<0.85?ENEMY_TYPES.GOBLIN:ENEMY_TYPES.SLIME);
   }
 
-  function spawnEnemy(scene,hpBase){
-    const first=pathPts[0];
-    const blueprint = pickEnemyTypeForWave(wave);
+function spawnEnemy(scene,hpBase){
+  const first=pathPts[0];
+  const blueprint = pickEnemyTypeForWave(wave);
 
-    // 1) Пытаемся взять кадры из atlas_enemies (предпочтительно)
-    let atlasKey = 'atlas_enemies';
-    let f0 = blueprint.key + '_idle_0';
-    let f1 = blueprint.key + '_idle_1';
-    let hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+  // 1) Пытаемся взять кадры из atlas_enemies (предпочтительно)
+  let atlasKey = 'atlas_enemies';
+  let f0 = blueprint.key + '_idle_0';
+  let f1 = blueprint.key + '_idle_1';
+  let hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
 
-    // 2) Если нет — пробуем старый atlas_units
-    if (!hasIdle){
-      atlasKey = 'atlas_units';
-      hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+  // 2) Если нет — пробуем старый atlas_units
+  if (!hasIdle){
+    atlasKey = 'atlas_units';
+    hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+  }
+
+  let e;
+  if (hasIdle) {
+    const idleKey = atlasKey + '_' + blueprint.key + '_idle';
+    if (!scene.anims.exists(idleKey)) {
+      scene.anims.create({
+        key: idleKey,
+        frames: [
+          { key: atlasKey, frame: f0 },
+          { key: atlasKey, frame: f1 }
+        ],
+        frameRate: 4,
+        repeat: -1
+      });
     }
+    e = scene.physics.add.sprite(first.x, first.y, atlasKey, f0).setDepth(1);
+    e.play(idleKey);
+  } else {
+    const fallbackKey =
+      blueprint.key==='slime'  ? 'enemy_slime'  :
+      blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
+    e = scene.physics.add.image(first.x, first.y, fallbackKey).setDepth(1);
+  }
 
-    let e;
-    if (hasIdle) {
-      const idleKey = atlasKey + '_' + blueprint.key + '_idle';
-      if (!scene.anims.exists(idleKey)) {
-        scene.anims.create({
-          key: idleKey,
-          frames: [
-            { key: atlasKey, frame: f0 },
-            { key: atlasKey, frame: f1 }
-          ],
-          frameRate: 4,
-          repeat: -1
-        });
-      }
-      e = scene.physics.add.sprite(first.x, first.y, atlasKey, f0).setDepth(1);
-      e.play(idleKey);
-    } else {
-      const fallbackKey =
-        blueprint.key==='slime'  ? 'enemy_slime'  :
-        blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
-      e = scene.physics.add.image(first.x, first.y, fallbackKey).setDepth(1);
-    }
-
-    e.setDisplaySize(blueprint.size, blueprint.size);
-    const r = e.displayWidth/2;
-    if (e.body.setCircle) {
-      e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
-    }
+  e.setDisplaySize(blueprint.size, blueprint.size);
+  const r = e.displayWidth/2;
+  if (e.body.setCircle) {
+    e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
+  }
 
     // Усиление волн (Stage 1)
     e.hp = Math.round((22 + 8*wave) * blueprint.hpMul);
