@@ -21,6 +21,7 @@
     <div class="pill">🌊 <span id="wave">0</span></div>
     <div id="start" class="pill btn">▶️ Start</div>
     <div id="sell"  class="pill btn">💱 Sell</div>
+
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
     <div id="t-mage"   class="pill btn">🔥 Mage (75)</div>
   </div>
@@ -43,77 +44,101 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // ===== баланс (как было) =====
-  const FIREBALL_SPEED=270, SPLASH_R=60, SPLASH_MIN_PCT=0.45, BURN_DPS=4, BURN_DURATION=1600, BURN_TICK_MS=200;
-  const TOWER_TYPES={ ARCHER:{key:'ARCHER',cost:50,range:CELL*3.2,rate:360,dmg:10,proj:'arrow'},
-                      MAGE:{key:'MAGE',cost:75,range:CELL*3.2,rate:650,dmg:16,proj:'fireball'} };
-  let currentType=TOWER_TYPES.ARCHER;
-  const ENEMY_TYPES={ SLIME:{key:'slime',size:20,speed:46,hpMul:1.0,gold:5},
-                      GOBLIN:{key:'goblin',size:20,speed:70,hpMul:0.85,gold:6},
-                      BEETLE:{key:'beetle',size:22,speed:40,hpMul:1.6,gold:8} };
+  // ===== Баланс =====
+  const FIREBALL_SPEED   = 270;
+  const SPLASH_R         = 60;
+  const SPLASH_MIN_PCT   = 0.45;
+  const BURN_DPS         = 4;
+  const BURN_DURATION    = 1600;
+  const BURN_TICK_MS     = 200;
+
+  const TOWER_TYPES = {
+    ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:360, dmg:10, proj:'arrow' },
+    MAGE:   { key:'MAGE',   cost:75, range:CELL*3.2, rate:650, dmg:16, proj:'fireball' }
+  };
+  let currentType = TOWER_TYPES.ARCHER;
+
+  const ENEMY_TYPES = {
+    SLIME:  { key:'slime',  size:20, speed: 46, hpMul:1.00, gold:5 },
+    GOBLIN: { key:'goblin', size:20, speed: 70, hpMul:0.85, gold:6 },
+    BEETLE: { key:'beetle', size:22, speed: 40, hpMul:1.60, gold:8 },
+  };
 
   // HUD
   const goldEl=document.getElementById('gold');
   const hpEl=document.getElementById('hp');
   const waveEl=document.getElementById('wave');
-  document.getElementById('start').onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
-  document.getElementById('sell').onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
-  document.getElementById('t-archer').onclick=()=>{ currentType=TOWER_TYPES.ARCHER; sel('t-archer','t-mage'); };
-  document.getElementById('t-mage').onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   sel('t-mage','t-archer'); };
-  function sel(on,off){ document.getElementById(on).classList.add('sel'); document.getElementById(off).classList.remove('sel'); }
+  const startBtn=document.getElementById('start');
+  const sellBtn=document.getElementById('sell');
+  const archerBtn=document.getElementById('t-archer');
+  const mageBtn=document.getElementById('t-mage');
+
+  startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
+  sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
+  archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
+  mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
 
   // ===== ASSETS =====
   function preload(){
-    // (остальные атласы можно оставить как есть, если используешь)
-    this.load.atlas('towers1','./assets/atlas_towers_single.webp','./assets/atlas_towers_single.json');
+    // односпрайтовые башни (Вариант D)
+    this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
+
+    // (опционально) остальные атласы, если используешь
+    this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
 
     // процедурные текстуры для фона
     makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);  // трава/брусчатка
-    makeCell(this,'cell_path', 0x294432,0x223a2a,0x3a6448);  // утоптанная тропа (светлее)
+    makeCell(this,'cell_path', 0x294432,0x223a2a,0x3a6448);  // утоптанная тропа
     makeNoise(this,'noise64');                               // тайл шума 64×64
     makeRadial(this,'grad256',256,0x183126,0x0a1410);        // мягкий градиент
     makeVignette(this,'vign256',256);                        // виньетка
 
-    // служебные пиксели
-    if(!this.textures.exists('dot8')){ const g=this.make.graphics({x:0,y:0,add:false}); g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8); }
-    if(!this.textures.exists('arrow')){ const a=this.make.graphics({x:0,y:0,add:false}); a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2); a.fillStyle(0xffffff,1); a.fillTriangle(24,2,32,4,24,6); a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4); a.generateTexture('arrow',32,8); }
-    if(!this.textures.exists('fireball')){ const f=this.make.graphics({x:0,y:0,add:false}); f.fillStyle(0xff7a59,1); f.fillCircle(6,6,5); f.fillStyle(0xffb38f,0.9); f.fillCircle(6,6,3); f.generateTexture('fireball',12,12); }
+    // служебные пиксели / фолбэки
+    safeRemove(this,'dot8'); { const g=this.make.graphics({x:0,y:0,add:false}); g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8); }
+    if(!hasFrame('atlas_units','arrow',this)){
+      safeRemove(this,'arrow'); const a=this.make.graphics({x:0,y:0,add:false});
+      a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);
+      a.fillStyle(0xffffff,1); a.fillTriangle(24,2,32,4,24,6);
+      a.fillStyle(0xdac07a,1); a.fillRect(0,2,4,4);
+      a.generateTexture('arrow',32,8);
+    }
+    if(!hasFrame('atlas_units','fireball_core',this)){
+      safeRemove(this,'fireball'); const f=this.make.graphics({x:0,y:0,add:false});
+      f.fillStyle(0xff7a59,1); f.fillCircle(6,6,5);
+      f.fillStyle(0xffb38f,0.9); f.fillCircle(6,6,3);
+      f.generateTexture('fireball',12,12);
+    }
+  }
+  function safeRemove(scene,key){ if(scene.textures.exists(key)) scene.textures.remove(key); }
+  function hasFrame(atlasKey, frameKey, scene){
+    try { return scene.textures.exists(atlasKey) && !!scene.textures.get(atlasKey).get(frameKey); }
+    catch { return false; }
   }
 
-  // === PROC: плитка клетки (не тяжёлый «шум», а несколько пятен/штрихов) ===
+  // === PROC BG ===
   function makeCell(scene,key,base,mid,hi){
     const g=scene.make.graphics({x:0,y:0,add:false});
     g.fillStyle(base,1); g.fillRect(0,0,CELL,CELL);
     g.lineStyle(1,mid,1);
-    // «швы» плит — делаем не все линии одинаковыми
-    g.beginPath();
-    g.moveTo(0, CELL*0.5); g.lineTo(CELL, CELL*0.5);
-    g.strokePath();
+    g.beginPath(); g.moveTo(0, CELL*0.5); g.lineTo(CELL, CELL*0.5); g.strokePath();
     g.lineStyle(1,0x0b160f,0.4);
     g.beginPath(); g.moveTo(CELL*0.5,0); g.lineTo(CELL*0.5,CELL); g.strokePath();
-    // мягкие пятна
     for(let i=0;i<3;i++){
       const x=4+Math.random()*(CELL-8), y=4+Math.random()*(CELL-8), r=4+Math.random()*6;
       g.fillStyle(hi,0.12); g.fillCircle(x,y,r);
     }
     g.generateTexture(key,CELL,CELL); g.destroy();
   }
-
   function makeNoise(scene,key){
     const s=64, g=scene.make.graphics({x:0,y:0,add:false});
-    g.fillStyle(0xffffff,0);
-    g.fillRect(0,0,s,s);
+    g.fillStyle(0xffffff,0); g.fillRect(0,0,s,s);
     for(let i=0;i<600;i++){
-      const a=0.03+Math.random()*0.05;
-      g.fillStyle(0xffffff, a);
-      const x=Math.random()*s, y=Math.random()*s;
-      g.fillRect(x,y,1,1);
+      const a=0.03+Math.random()*0.05; g.fillStyle(0xffffff,a);
+      g.fillRect(Math.random()*s, Math.random()*s, 1, 1);
     }
     g.generateTexture(key,s,s); g.destroy();
   }
-
   function makeRadial(scene,key,sz,centerCol,edgeCol){
-    // рисуем концентрические квадраты, имитируя радиальный градиент
     const g=scene.make.graphics({x:0,y:0,add:false});
     for(let i=0;i<32;i++){
       const t=i/31;
@@ -128,7 +153,6 @@
     }
     g.generateTexture(key,sz,sz); g.destroy();
   }
-
   function makeVignette(scene,key,sz){
     const g=scene.make.graphics({x:0,y:0,add:false});
     for(let i=0;i<24;i++){
@@ -144,7 +168,7 @@
   function create(){
     const s=this;
 
-    // сетка + «змейка» пути (как было)
+    // сетка + путь
     grid=Array.from({length:ROWS}, _=> Array.from({length:COLS}, _=> 0));
     const LEFT=1, RIGHT=COLS-2; let dir=1;
     function markPath(r,c){ grid[r][c]=1; pathPts.push({r,c,x:c*CELL+CELL/2,y:r*CELL+CELL/2}); }
@@ -155,9 +179,8 @@
     }
 
     // === ФОН ===
-    // 1) градиент
-    s.add.image(W/2,H/2,'grad256').setDisplaySize(W,H).setDepth(-10);
-    // 2) тайлы поля и тропы
+    s.add.image(W/2,H/2,'grad256').setDisplaySize(W,H).setDepth(-10); // градиент
+    // тайлим клетки (трава/тропа)
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
         const isPath = grid[r][c]===1;
@@ -165,19 +188,10 @@
           .setDepth(-9);
       }
     }
-    // 3) лёгкая «шуминка» поверх
-    s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8);
-    // 4) виньетка
-    s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.55).setDepth(9);
+    s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8); // лёгкий шум
+    s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.55).setDepth(9); // виньетка
 
-    // 5) старые линий сетки больше не нужны — фон уже «читабельный».
-    // если хочешь оставить — раскомментируй:
-    // const g=s.add.graphics(); g.lineStyle(1,'#1b2a22',0.25);
-    // for(let rr=0;rr<=ROWS;rr++) g.lineBetween(0,rr*CELL,W,rr*CELL);
-    // for(let cc=0;cc<=COLS;cc++) g.lineBetween(cc*CELL,0,cc*CELL,H);
-    // g.setDepth(-7);
-
-    // 6) мягкий пульс на дорожных клетках
+    // мягкий пульс тропы
     const pulseGroup = s.add.group();
     for(const p of pathPts){
       const glow=s.add.image(p.x,p.y,'cell_path').setDepth(-6).setAlpha(0.0);
@@ -189,23 +203,35 @@
       duration: 2600, yoyo:true, repeat:-1, delay:(i)=> (i%7)*120
     });
 
-    // ====== ТВОЯ БОЕВАЯ ЧАСТЬ (ниже без изменений) ======
+    // ===== Физика / группы =====
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
 
+    // попадания
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
-      if(!b.active||!e.active) return;
-      if (b.birthTime!=null){
-        const now=s.time.now, dx=b.x-(b.startX??b.x), dy=b.y-(b.startY??b.y);
-        if(now-b.birthTime<110 || (dx*dx+dy*dy)<64) return;
+      if(!b.active || !e.active) return;
+
+      // анти-оверлап в дуле
+      if (b.birthTime != null) {
+        const now = s.time.now;
+        const dx = (b.x - (b.startX ?? b.x)), dy = (b.y - (b.startY ?? b.y));
+        if (now - b.birthTime < 110 || (dx*dx+dy*dy) < 8*8) return;
       }
-      if (b.texture?.key==='atlas_units'&&b.frame?.name==='fireball_core' || b.texture?.key==='fireball'){
-        explodeSplash(s,b.x,b.y,b.dmg,SPLASH_R); cleanupProjectile(b); return;
+
+      // fireball → взрыв
+      if ((b.texture?.key === 'atlas_units' && b.frame?.name === 'fireball_core') ||
+          (b.texture?.key === 'fireball')) {
+        explodeSplash(s, b.x, b.y, b.dmg, SPLASH_R);
+        cleanupProjectile(b); // удаляем trail/glow/сам снаряд
+        return;
       }
+
+      // обычная стрела
       e.hp -= b.dmg; stopTrail(b); b.destroy();
       if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
     });
 
+    // ввод
     s.input.on('pointerdown', (p)=>{
       const w=p.positionToCamera(s.cameras.main);
       const c=Math.floor(w.x/CELL), r=Math.floor(w.y/CELL);
@@ -215,7 +241,9 @@
       if(grid[r][c]===0) placeTower(s,r,c, currentType);
     });
 
+    // общий тик поджога
     s.time.addEvent({ delay: BURN_TICK_MS, loop: true, callback: ()=>applyBurnTick(s) });
+
     updateHud();
   }
 
@@ -379,6 +407,7 @@
   }
 
   function explodeSplash(scene, x, y, baseDmg, R){
+    // если есть спрайт-лист взрыва — используем
     if (scene.textures.exists('atlas_units') && scene.textures.get('atlas_units').get('explosion_0')) {
       const frames=[]; let i=0;
       while (scene.textures.get('atlas_units').has('explosion_'+i)) {
@@ -391,6 +420,7 @@
       }
       boom.play(key);
     } else {
+      // fallback: кольцо+искры
       const ring = scene.add.graphics().setDepth(7);
       const steps = 10, dur = 220; let i=0;
       const ev = scene.time.addEvent({
@@ -409,6 +439,7 @@
       }
     }
 
+    // урон + поджог
     const now = scene.time.now;
     const arr = enemies.getChildren();
     for(let i=0;i<arr.length;i++){
