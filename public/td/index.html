@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Save + 1×/2×/3× + Reset</title>
+  <title>TG TD • Save + 1×/2× + Reset (fixed)</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
-    /* HUD снизу */
+    /* HUD снизу по центру */
     #hud{
       position:fixed; left:0; right:0; bottom:8px;
       display:flex; gap:12px; align-items:center; justify-content:center;
@@ -54,9 +54,12 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // скорость/пауза (теперь 1/2/3)
-  let speedMul = 1;  // 1 | 2 | 3
+  // скорость/пауза (теперь 1/2)
+  let speedMul = 1;  // 1 | 2
   let isPaused = false;
+
+  // флаг «не сохранять»
+  let SKIP_SAVE = false;
 
   // ===== Баланс =====
   const FIREBALL_SPEED   = 270;
@@ -104,6 +107,7 @@
   let saveDebounce = null;
 
   function saveGame(){
+    if (SKIP_SAVE) return; // критично: не сохраняем, если ресет
     try{
       const data = {
         gold, hp, wave,
@@ -114,6 +118,7 @@
     }catch(e){}
   }
   function saveGameDeferred(delay=400){
+    if (SKIP_SAVE) return;
     if(saveDebounce) clearTimeout(saveDebounce);
     saveDebounce = setTimeout(saveGame, delay);
   }
@@ -127,7 +132,7 @@
       gold = Number.isFinite(data.gold)? data.gold : gold;
       hp   = Number.isFinite(data.hp)? data.hp : hp;
       wave = Number.isFinite(data.wave)? data.wave : wave;
-      speedMul = [1,2,3].includes(data.speedMul) ? data.speedMul : 1;
+      speedMul = [1,2].includes(data.speedMul) ? data.speedMul : 1;
 
       // восстановим башни без списания
       if(Array.isArray(data.towers)){
@@ -143,11 +148,18 @@
       return true;
     }catch(e){ return false; }
   }
+
+  // beforeunload — сохраняем только если не было Reset
+  window.addEventListener('beforeunload', () => { if (!SKIP_SAVE) saveGame(); });
+
   function resetSave(){
+    // выключаем любые будущие сохранения
+    SKIP_SAVE = true;
+    if (saveDebounce) { clearTimeout(saveDebounce); saveDebounce = null; }
     try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+    // мгновенная перезагрузка без beforeunload-сейва
     location.reload();
   }
-  window.addEventListener('beforeunload', saveGame);
 
   function togglePause(){
     const s = game.scene.keys.default;
@@ -165,8 +177,8 @@
   }
 
   function toggleSpeed(){
-    // 1× → 2× → 3× → 1×
-    speedMul = (speedMul===1?2 : (speedMul===2?3:1));
+    // 1× → 2× → 1×
+    speedMul = (speedMul===1?2:1);
     updateSpeedLabel();
     if (!isPaused) applySpeedScale(game.scene.keys.default);
     saveGameDeferred();
@@ -175,6 +187,7 @@
     speedBtn.textContent = `⏩ Speed: ${speedMul}×`;
   }
   function applySpeedScale(s){
+    // Ускоряем весь движок: таймеры, твины, физику
     s.physics.world.resume();
     s.physics.world.timeScale = speedMul;
     s.time.timeScale = speedMul;
@@ -287,17 +300,6 @@
     s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8);
     s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.55).setDepth(9);
 
-    const pulseGroup = s.add.group();
-    for(const p of pathPts){
-      const glow=s.add.image(p.x,p.y,'cell_path').setDepth(-6).setAlpha(0.0);
-      pulseGroup.add(glow);
-    }
-    s.tweens.add({
-      targets: pulseGroup.getChildren(),
-      alpha: {from:0.06,to:0.18},
-      duration: 2600, yoyo:true, repeat:-1, delay:(i)=> (i%7)*120
-    });
-
     // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
     bullets = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
@@ -306,6 +308,7 @@
     s.physics.add.overlap(bullets, enemies, (b,e)=>{
       if(!b.active || !e.active) return;
 
+      // анти-оверлап в дуле
       if (b.birthTime != null) {
         const now = s.time.now;
         const dx = (b.x - (b.startX ?? b.x)), dy = (b.y - (b.startY ?? b.y));
@@ -352,7 +355,8 @@
     if (isPaused) return;
 
     for(const t of towers){
-      t.cd -= dt * speedMul;
+      // ВАЖНО: больше НЕ умножаем dt на speedMul — ускорение полностью через timeScale
+      t.cd -= dt;
       if(t.cd<=0){
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; saveGameDeferred(); } else { t.cd=100; }
