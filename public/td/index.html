@@ -79,9 +79,12 @@
   mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
 
   function preload(){
-    // Атласы
+    // (оставляем, если используешь старые атласы где-то ещё)
     this.load.atlas('atlas_towers', './assets/atlas_towers.webp', './assets/atlas_towers.json');
     this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
+
+    // НОВЫЙ односпрайтовый атлас башен (Вариант D)
+    this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
 
     // Процедурные фолбэки
     safeRemove(this,'px'); let g=this.make.graphics({x:0,y:0,add:false});
@@ -168,7 +171,7 @@
       if ((b.texture?.key === 'atlas_units' && b.frame?.name === 'fireball_core') ||
           (b.texture?.key === 'fireball')) {
         explodeSplash(s, b.x, b.y, b.dmg, SPLASH_R);
-        cleanupProjectile(b); // ← удаляем glow, таймер, сам снаряд
+        cleanupProjectile(b);
         return;
       }
 
@@ -200,11 +203,12 @@
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
       }
-      if(t.top){
+      // плавный разворот всей башни к цели
+      if(t.sprite){
         const aim = acquireTarget(t);
         if(aim){
           const ang = Phaser.Math.Angle.Between(t.x, t.y, aim.x, aim.y);
-          t.top.rotation = Phaser.Math.Angle.RotateTo(t.top.rotation||0, ang, 0.15);
+          t.sprite.rotation = Phaser.Math.Angle.RotateTo(t.sprite.rotation||0, ang, 0.15);
         }
       }
     }
@@ -213,22 +217,25 @@
     }
   }
 
-  // --- towers ---
+  // --- towers (Вариант D: один спрайт) ---
   function placeTower(scene,r,c,type){
     const cost=type.cost; if(gold<cost) return; gold-=cost; updateHud();
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
 
-    // из atlas_towers
-    const isArcher = type.key === 'ARCHER';
-    const base = scene.add.image(x, y, 'atlas_towers', isArcher ? 'archer_base' : 'mage_base').setDepth(3);
-    const top  = scene.add.image(x, y, 'atlas_towers', isArcher ? 'archer_top'  : 'mage_top')
-      .setOrigin(0.15, 0.5).setDepth(4);
+    const frame = (type.key==='ARCHER') ? 'archer_tower' : 'mage_tower';
+    const sprite = scene.add.sprite(x, y, 'towers1', frame)
+      .setOrigin(0.5, 0.72)   // «центр тяжести» на базе
+      .setScale(0.32)         // ~ размер одной клетки
+      .setDepth(4);
 
     const ring=scene.add.graphics().setDepth(2);
     ring.lineStyle(1, 0xffffff, 0.25).strokeCircle(x,y,type.range);
 
-    const t={ type: type.key, proj:type.proj, r,c,x,y, node:base, top, ring,
-      range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
+    const t={
+      type:type.key, proj:type.proj,
+      r,c,x,y, sprite, ring,
+      range:type.range, rate:type.rate, cd:200, dmg:type.dmg
+    };
     towers.push(t); grid[r][c]=2; selectTower(t);
   }
 
@@ -241,7 +248,8 @@
   function sellTower(t){
     const cfg = TOWER_TYPES[t.type] || TOWER_TYPES.ARCHER;
     gold += Math.floor((cfg.cost||50)*0.5); updateHud();
-    t.node.destroy(); t.ring.destroy(); if(t.top) t.top.destroy();
+    if(t.sprite) t.sprite.destroy();
+    t.ring.destroy();
     towers=towers.filter(x=>x!==t); grid[t.r][t.c]=0; selectedTower=null;
   }
 
@@ -259,20 +267,25 @@
   // --- выстрелы ---
   function shoot(scene,t,e){
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
-    if(t.top){ t.top.rotation = a; }
+    if(t.sprite){ t.sprite.rotation = a; }
+
+    // точка вылета из «носа» башни (интуитивное смещение)
+    const MUZZLE = (t.type==='ARCHER') ? 18 : 16;
+    const mx = t.x + Math.cos(a)*MUZZLE;
+    const my = t.y + Math.sin(a)*MUZZLE;
 
     if (t.proj === 'fireball') {
       const useAtlas = hasFrame('atlas_units','fireball_core',scene);
-      const fb = scene.physics.add.image(t.x, t.y,
+      const fb = scene.physics.add.image(mx, my,
         useAtlas? 'atlas_units':'fireball', useAtlas? 'fireball_core':undefined
       ).setDepth(6).setRotation(a);
       fb.dmg = t.dmg; bullets.add(fb);
-      fb.birthTime = scene.time.now; fb.startX = t.x; fb.startY = t.y;
+      fb.birthTime = scene.time.now; fb.startX = mx; fb.startY = my;
 
       if (hasFrame('atlas_units','glow_soft',scene)) {
-        const glow = scene.add.image(t.x, t.y, 'atlas_units', 'glow_soft')
+        const glow = scene.add.image(mx, my, 'atlas_units', 'glow_soft')
           .setDepth(5).setAlpha(0.9);
-        fb.__glow = glow; // ← сохраняем ссылку
+        fb.__glow = glow;
         fb.__glowFollow = scene.time.addEvent({ delay:16, loop:true, callback: ()=>{
           if(!fb.active){ glow.destroy(); return; }
           glow.x=fb.x; glow.y=fb.y;
@@ -282,21 +295,21 @@
         fb.__trailEv = attachTrail(scene, fb, 0xffb38f, 0.8, 1.0, 0.5, 300);
       }
 
-      const dx=e.x - t.x, dy=e.y - t.y, L = Math.hypot(dx,dy)||1;
+      const dx=e.x - mx, dy=e.y - my, L = Math.hypot(dx,dy)||1;
       fb.setVelocity((dx/L)*FIREBALL_SPEED,(dy/L)*FIREBALL_SPEED);
       const ttl = Math.ceil((L / FIREBALL_SPEED) * 1000) + 500;
-      scene.time.delayedCall(ttl, ()=> cleanupProjectile(fb)); // ← единый чистильщик
+      scene.time.delayedCall(ttl, ()=> cleanupProjectile(fb));
       return;
     }
 
     // Стрела
     const ARROW_SPEED = 340;
     const useArrowAtlas = hasFrame('atlas_units','arrow',scene);
-    const arrow = scene.physics.add.image(t.x, t.y,
+    const arrow = scene.physics.add.image(mx, my,
       useArrowAtlas? 'atlas_units':'arrow', useArrowAtlas? 'arrow':undefined
     ).setOrigin(0.2,0.5).setRotation(a).setDepth(6);
     arrow.dmg = t.dmg; bullets.add(arrow);
-    arrow.birthTime = scene.time.now; arrow.startX = t.x; arrow.startY = t.y;
+    arrow.birthTime = scene.time.now; arrow.startX = mx; arrow.startY = my;
 
     if (hasFrame('atlas_units','arrow_smear_1',scene)) {
       arrow.__trailEv = scene.time.addEvent({
@@ -312,7 +325,7 @@
       arrow.__trailEv = attachTrail(scene, arrow, 0xffe29a, 0.9, 1.6, 0.7, 320);
     }
 
-    const dx=e.x - t.x, dy=e.y - t.y, L = Math.hypot(dx,dy)||1;
+    const dx=e.x - mx, dy=e.y - my, L = Math.hypot(dx,dy)||1;
     arrow.setVelocity((dx/L)*ARROW_SPEED,(dy/L)*ARROW_SPEED);
     const ttl = Math.ceil((L / ARROW_SPEED) * 1000) + 450;
     scene.time.delayedCall(ttl, ()=>{ stopTrail(arrow); arrow.destroy(); });
@@ -343,7 +356,6 @@
   }
 
   function explodeSplash(scene, x, y, baseDmg, R){
-    // если есть спрайт-лист взрыва — используем
     if (scene.textures.exists('atlas_units') && scene.textures.get('atlas_units').get('explosion_0')) {
       const frames=[]; let i=0;
       while (scene.textures.get('atlas_units').has('explosion_'+i)) {
@@ -356,7 +368,6 @@
       }
       boom.play(key);
     } else {
-      // fallback: кольцо+искры
       const ring = scene.add.graphics().setDepth(7);
       const steps = 10, dur = 220; let i=0;
       const ev = scene.time.addEvent({
@@ -375,7 +386,6 @@
       }
     }
 
-    // урон + поджог
     const now = scene.time.now;
     const arr = enemies.getChildren();
     for(let i=0;i<arr.length;i++){
@@ -424,7 +434,6 @@
     const first=pathPts[0];
     const blueprint = pickEnemyTypeForWave(wave);
 
-    // пытаемся использовать кадры из atlas_units
     const hasIdle = hasFrame('atlas_units', blueprint.key + '_idle_0', scene) &&
                     hasFrame('atlas_units', blueprint.key + '_idle_1', scene);
 
