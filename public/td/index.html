@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Balance Stage 1 + Enemy Styling</title>
+  <title>TG TD • Balance Stage 1</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
     /* HUD снизу по центру */
@@ -68,18 +68,10 @@
   };
   let currentType = TOWER_TYPES.ARCHER;
 
-  // Награды подрезаны
   const ENEMY_TYPES = {
     SLIME:  { key:'slime',  size:20, speed: 46, hpMul:1.00, gold:4 },
     GOBLIN: { key:'goblin', size:20, speed: 70, hpMul:0.85, gold:5 },
     BEETLE: { key:'beetle', size:22, speed: 40, hpMul:1.60, gold:7 },
-  };
-
-  // НОВОЕ: стили врагов (контрастные цвета + контур/тень)
-  const ENEMY_STYLE = {
-    slime:  { tint: 0x9b57ff, outline: 0x2a114a, outlineAlpha: 0.9, shadowAlpha: 0.28 },
-    goblin: { tint: 0xff6f5a, outline: 0x4a1911, outlineAlpha: 0.9, shadowAlpha: 0.28 },
-    beetle: { tint: 0x66ccff, outline: 0x0d2330, outlineAlpha: 0.9, shadowAlpha: 0.26 },
   };
 
   // HUD
@@ -116,12 +108,16 @@
 
   // ===== ASSETS =====
   function preload(){
-    // башни (единый кадр)
-    this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
-    // юниты/снаряды/взрывы (старый атлас, если нужен)
-    this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
-    // НОВОЕ: детальный атлас врагов, если он есть — используем в приоритете
-    this.load.atlas('atlas_enemies', './assets/atlas_enemies.webp', './assets/atlas_enemies.json');
+    // башни
+// башни (единый кадр)
+this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
+
+// ВРАГИ (новый детализированный атлас)
+this.load.atlas('atlas_enemies', './assets/atlas_enemies.webp', './assets/atlas_enemies.json');
+
+// юниты/снаряды/взрывы (если есть)
+this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
+
 
     // фоновые процедурные текстуры (зелёная карта)
     makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);
@@ -144,6 +140,25 @@
       f.fillStyle(0xff7a59,1); f.fillCircle(6,6,5);
       f.fillStyle(0xffb38f,0.9); f.fillCircle(6,6,3);
       f.generateTexture('fireball',12,12);
+    }
+
+    // фолбэки врагов (если нет атласа)
+    safeRemove(this,'enemy_slime'); { const g=this.make.graphics({x:0,y:0,add:false});
+      g.fillStyle(0x7fe082,1); g.fillRoundedRect(2,6,20,14,8);
+      g.fillStyle(0x5cc566,1); g.fillRoundedRect(3,7,18,6,6);
+      g.fillStyle(0x203a24,1); g.fillCircle(9,14,2); g.fillCircle(15,14,2);
+      g.generateTexture('enemy_slime',24,24);
+    }
+    safeRemove(this,'enemy_goblin'); { const g=this.make.graphics({x:0,y:0,add:false});
+      g.fillStyle(0xff7aa8,1); g.fillRoundedRect(2,6,20,14,6);
+      g.fillStyle(0xe3578f,1); g.fillRoundedRect(3,7,18,6,5);
+      g.fillStyle(0x3a1030,1); g.fillCircle(9,14,2); g.fillCircle(15,14,2);
+      g.generateTexture('enemy_goblin',24,24);
+    }
+    safeRemove(this,'enemy_beetle'); { const g=this.make.graphics({x:0,y:0,add:false});
+      g.fillStyle(0x3a2f2a,1); g.fillEllipse(13,11,22,16);
+      g.fillStyle(0x231c18,1); g.fillEllipse(13,11,20,14);
+      g.generateTexture('enemy_beetle',26,22);
     }
   }
   function safeRemove(scene,key){ if(scene.textures.exists(key)) scene.textures.remove(key); }
@@ -224,7 +239,7 @@
       }
     }
     s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8);
-    s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.0).setDepth(9);
+    // (в этой сцене виньетку не накладываем)
 
     // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
@@ -502,51 +517,50 @@
     const r=Math.random(); return r<0.55?ENEMY_TYPES.BEETLE:(r<0.85?ENEMY_TYPES.GOBLIN:ENEMY_TYPES.SLIME);
   }
 
-  function spawnEnemy(scene,hpBase){
-    const first=pathPts[0];
-    const blueprint = pickEnemyTypeForWave(wave);
+function spawnEnemy(scene,hpBase){
+  const first=pathPts[0];
+  const blueprint = pickEnemyTypeForWave(wave);
 
-    // приоритетный атлас для детальных врагов
-    let atlasKey = 'atlas_enemies';
-    let f0 = blueprint.key + '_idle_0';
-    let f1 = blueprint.key + '_idle_1';
-    let hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
-    if (!hasIdle){
-      atlasKey = 'atlas_units';
-      hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+  // 1) Пытаемся взять кадры из atlas_enemies (предпочтительно)
+  let atlasKey = 'atlas_enemies';
+  let f0 = blueprint.key + '_idle_0';
+  let f1 = blueprint.key + '_idle_1';
+  let hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+
+  // 2) Если нет — пробуем старый atlas_units
+  if (!hasIdle){
+    atlasKey = 'atlas_units';
+    hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+  }
+
+  let e;
+  if (hasIdle) {
+    const idleKey = atlasKey + '_' + blueprint.key + '_idle';
+    if (!scene.anims.exists(idleKey)) {
+      scene.anims.create({
+        key: idleKey,
+        frames: [
+          { key: atlasKey, frame: f0 },
+          { key: atlasKey, frame: f1 }
+        ],
+        frameRate: 4,
+        repeat: -1
+      });
     }
+    e = scene.physics.add.sprite(first.x, first.y, atlasKey, f0).setDepth(1);
+    e.play(idleKey);
+  } else {
+    const fallbackKey =
+      blueprint.key==='slime'  ? 'enemy_slime'  :
+      blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
+    e = scene.physics.add.image(first.x, first.y, fallbackKey).setDepth(1);
+  }
 
-    let e;
-    if (hasIdle) {
-      const idleKey = atlasKey + '_' + blueprint.key + '_idle';
-      if (!scene.anims.exists(idleKey)) {
-        scene.anims.create({
-          key: idleKey,
-          frames: [
-            { key: atlasKey, frame: f0 },
-            { key: atlasKey, frame: f1 }
-          ],
-          frameRate: 4,
-          repeat: -1
-        });
-      }
-      e = scene.physics.add.sprite(first.x, first.y, atlasKey, f0).setDepth(1);
-      e.play(idleKey);
-    } else {
-      const fallbackKey =
-        blueprint.key==='slime'  ? 'enemy_slime'  :
-        blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
-      e = scene.physics.add.image(first.x, first.y, fallbackKey).setDepth(1);
-    }
-
-    // НОВОЕ: визуальное оформление (цвет/контур/тень/«дыхание»)
-    decorateEnemy(scene, e, blueprint.key);
-
-    e.setDisplaySize(blueprint.size, blueprint.size);
-    const r = e.displayWidth/2;
-    if (e.body.setCircle) {
-      e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
-    }
+  e.setDisplaySize(blueprint.size, blueprint.size);
+  const r = e.displayWidth/2;
+  if (e.body.setCircle) {
+    e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
+  }
 
     // Усиление волн (Stage 1)
     e.hp = Math.round((22 + 8*wave) * blueprint.hpMul);
@@ -557,52 +571,6 @@
     enemies.add(e);
     advance(scene,e);
   }
-
-  // НОВОЕ: контраст и детали у врагов
-  function decorateEnemy(scene, e, typeKey){
-    const style = ENEMY_STYLE[typeKey] || { tint:0xffffff, outline:0x000000, outlineAlpha:0.8, shadowAlpha:0.25 };
-
-    // цвет (и для Sprite, и для Image)
-    e.setTint?.(style.tint);
-
-    // «тень-блин»
-    const shadow = scene.add.image(e.x, e.y, 'dot8')
-      .setTint(0x000000).setAlpha(style.shadowAlpha).setDepth(e.depth-1);
-    // подгоняем размер под врага (dot8 радиус ~4px)
-    const r = (e.displayWidth||20)/2;
-    shadow.setScale((r*0.8)/4, (r*0.5)/4);
-
-    // контур-кольцо (рисуем 1 раз)
-    const outline = scene.add.graphics().setDepth(e.depth-0.5);
-    outline.lineStyle(2, style.outline, style.outlineAlpha);
-    outline.strokeCircle(0, 0, r+2);
-    outline.x = e.x; outline.y = e.y;
-
-    // лёгкое «дыхание» (вертикальный скейл)
-    if (e.setScale){
-      scene.tweens.add({
-        targets: e, scaleY: { from: 1.0, to: 0.92 },
-        duration: 1100, yoyo:true, repeat:-1, ease:'sine.inOut'
-      });
-    }
-
-    // следим за позицией
-    const follow = scene.time.addEvent({
-      delay: 16, loop: true, callback: ()=>{
-        if(!e.active){ follow.remove(); outline.destroy(); shadow.destroy(); return; }
-        outline.x = e.x; outline.y = e.y;
-        shadow.x = e.x; shadow.y = e.y;
-      }
-    });
-
-    // на всякий случай при уничтожении
-    e.once?.('destroy', ()=>{
-      follow.remove();
-      outline.destroy();
-      shadow.destroy();
-    });
-  }
-
   function advance(scene,e){
     e.way++;
     if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return; }
@@ -620,7 +588,7 @@
     wave++; updateHud();
     document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
     const count = 8 + Math.floor(wave * 1.6);
-    const hpBase = 22 + 8 * wave; // усилено
+    const hpBase = 22 + 8 * wave;
     for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
     s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
   }
