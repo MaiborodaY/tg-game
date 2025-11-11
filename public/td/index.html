@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Balance Stage 1</title>
+  <title>TG TD • Enemies Atlas</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
     /* HUD снизу по центру */
@@ -29,9 +29,7 @@
     <div id="sell"  class="pill btn">💱 Sell</div>
 
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
-    <div id="t-mage"   class="pill btn">🔥 Mage (120)</div>
-
-    <div id="pause" class="pill btn">⏸️ Pause</div>
+    <div id="t-mage"   class="pill btn">🔥 Mage (75)</div>
   </div>
 
 <script>
@@ -52,29 +50,24 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  let isPaused = false;
-
-  // ===== Баланс (Stage 1) =====
+  // ===== Баланс =====
   const FIREBALL_SPEED   = 270;
-  const SPLASH_R         = 44;   // было 60
-  const SPLASH_MIN_PCT   = 0.30; // было 0.45
-  const BURN_DPS         = 2;    // было 4
-  const BURN_DURATION    = 1200; // было 1600
+  const SPLASH_R         = 60;
+  const SPLASH_MIN_PCT   = 0.45;
+  const BURN_DPS         = 4;
+  const BURN_DURATION    = 1600;
   const BURN_TICK_MS     = 200;
 
   const TOWER_TYPES = {
-    // Archer: оставили cost 50, но темп и урон ослаблены
-    ARCHER: { key:'ARCHER', cost:50,  range:CELL*3.2, rate:420, dmg:9,  proj:'arrow' },
-    // Mage: мощный, но заметно дороже и медленнее
-    MAGE:   { key:'MAGE',   cost:120, range:CELL*3.2, rate:800, dmg:14, proj:'fireball' }
+    ARCHER: { key:'ARCHER', cost:50, range:CELL*3.2, rate:360, dmg:10, proj:'arrow' },
+    MAGE:   { key:'MAGE',   cost:75, range:CELL*3.2, rate:650, dmg:16, proj:'fireball' }
   };
   let currentType = TOWER_TYPES.ARCHER;
 
-  // Награды подрезаны
   const ENEMY_TYPES = {
-    SLIME:  { key:'slime',  size:20, speed: 46, hpMul:1.00, gold:4 },
-    GOBLIN: { key:'goblin', size:20, speed: 70, hpMul:0.85, gold:5 },
-    BEETLE: { key:'beetle', size:22, speed: 40, hpMul:1.60, gold:7 },
+    SLIME:  { key:'slime',  size:20, speed: 46, hpMul:1.00, gold:5 },
+    GOBLIN: { key:'goblin', size:20, speed: 70, hpMul:0.85, gold:6 },
+    BEETLE: { key:'beetle', size:22, speed: 40, hpMul:1.60, gold:8 },
   };
 
   // HUD
@@ -85,46 +78,38 @@
   const sellBtn=document.getElementById('sell');
   const archerBtn=document.getElementById('t-archer');
   const mageBtn=document.getElementById('t-mage');
-  const pauseBtn=document.getElementById('pause');
 
   startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
   sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
   archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
   mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
-  pauseBtn.onclick = () => togglePause();
 
-  function togglePause(){
-    const s = game.scene.keys.default;
-    isPaused = !isPaused;
-    if (isPaused){
-      s.physics.world.pause();
-      s.time.timeScale = 0;
-      s.tweens.timeScale = 0;
-      pauseBtn.textContent = '▶️ Resume';
-    } else {
-      s.physics.world.resume();
-      s.time.timeScale = 1;
-      s.tweens.timeScale = 1;
-      pauseBtn.textContent = '⏸️ Pause';
-    }
+  // ===== helpers =====
+  function safeRemove(scene,key){ if(scene.textures.exists(key)) scene.textures.remove(key); }
+  function hasFrame(atlasKey, frameKey, scene){
+    try { return scene.textures.exists(atlasKey) && !!scene.textures.get(atlasKey).get(frameKey); }
+    catch { return false; }
   }
 
   // ===== ASSETS =====
   function preload(){
-    // башни (единый кадр)
-    this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
-    // юниты/снаряды/взрывы (если есть)
-    this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
+    // Атласы башен/юнитов (как было)
+    this.load.atlas('towers1',     './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
+    this.load.atlas('atlas_units', './assets/atlas_units.webp',         './assets/atlas_units.json');
+    // НОВОЕ: отдельный атлас врагов
+    this.load.atlas('atlas_enemies','./assets/atlas_enemies.webp',      './assets/atlas_enemies.json');
 
-    // фоновые процедурные текстуры (зелёная карта)
+    // Процедурный фон (зелёная карта)
     makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);
     makeCell(this,'cell_path',  0x294432,0x223a2a,0x3a6448);
     makeNoise(this,'noise64');
     makeRadial(this,'grad256',256,0x183126,0x0a1410);
     makeVignette(this,'vign256',256);
 
-    // вспомогательные
+    // мелочи
     safeRemove(this,'dot8'); { const g=this.make.graphics({x:0,y:0,add:false}); g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8); }
+
+    // фолбэки на стрелу/фаербол если их нет в atlas_units
     if(!hasFrame('atlas_units','arrow',this)){
       safeRemove(this,'arrow'); const a=this.make.graphics({x:0,y:0,add:false});
       a.fillStyle(0xc7a865,1); a.fillRect(4,3,20,2);
@@ -138,34 +123,36 @@
       f.fillStyle(0xffb38f,0.9); f.fillCircle(6,6,3);
       f.generateTexture('fireball',12,12);
     }
-  }
-  function safeRemove(scene,key){ if(scene.textures.exists(key)) scene.textures.remove(key); }
-  function hasFrame(atlasKey, frameKey, scene){
-    try { return scene.textures.exists(atlasKey) && !!scene.textures.get(atlasKey).get(frameKey); }
-    catch { return false; }
+
+    // Процедурные фолбэки врагов (на случай, если atlas_enemies ещё не залит)
+    safeRemove(this,'enemy_slime'); const ES=this.make.graphics({x:0,y:0,add:false});
+    ES.fillStyle(0x64d69a,1); ES.fillEllipse(16,16,22,20); ES.fillStyle(0x3aa374,1); ES.fillEllipse(16,17,14,12);
+    ES.generateTexture('enemy_slime',32,32);
+
+    safeRemove(this,'enemy_goblin'); const EG=this.make.graphics({x:0,y:0,add:false});
+    EG.fillStyle(0x6dc16d,1); EG.fillRoundedRect(8,8,16,16,6);
+    EG.fillStyle(0x4e9a4e,1); EG.fillRoundedRect(10,12,12,8,5);
+    EG.generateTexture('enemy_goblin',32,32);
+
+    safeRemove(this,'enemy_beetle'); const EB=this.make.graphics({x:0,y:0,add:false});
+    EB.fillStyle(0x4a3d33,1); EB.fillEllipse(16,16,20,16);
+    EB.fillStyle(0x3a2f27,1); EB.fillEllipse(16,16,18,14);
+    EB.generateTexture('enemy_beetle',32,32);
   }
 
   // === PROC BG ===
   function makeCell(scene,key,base,mid,hi){
     const g=scene.make.graphics({x:0,y:0,add:false});
     g.fillStyle(base,1); g.fillRect(0,0,CELL,CELL);
-    g.lineStyle(1,mid,1);
-    g.beginPath(); g.moveTo(0, CELL*0.5); g.lineTo(CELL, CELL*0.5); g.strokePath();
-    g.lineStyle(1,0x0b160f,0.4);
-    g.beginPath(); g.moveTo(CELL*0.5,0); g.lineTo(CELL*0.5,CELL); g.strokePath();
-    for(let i=0;i<3;i++){
-      const x=4+Math.random()*(CELL-8), y=4+Math.random()*(CELL-8), r=4+Math.random()*6;
-      g.fillStyle(hi,0.12); g.fillCircle(x,y,r);
-    }
+    g.lineStyle(1,mid,1); g.beginPath(); g.moveTo(0, CELL*0.5); g.lineTo(CELL, CELL*0.5); g.strokePath();
+    g.lineStyle(1,0x0b160f,0.4); g.beginPath(); g.moveTo(CELL*0.5,0); g.lineTo(CELL*0.5,CELL); g.strokePath();
+    for(let i=0;i<3;i++){ const x=4+Math.random()*(CELL-8), y=4+Math.random()*(CELL-8), r=4+Math.random()*6; g.fillStyle(hi,0.12); g.fillCircle(x,y,r); }
     g.generateTexture(key,CELL,CELL); g.destroy();
   }
   function makeNoise(scene,key){
     const s=64, g=scene.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0xffffff,0); g.fillRect(0,0,s,s);
-    for(let i=0;i<600;i++){
-      const a=0.03+Math.random()*0.05; g.fillStyle(0xffffff,a);
-      g.fillRect(Math.random()*s, Math.random()*s, 1, 1);
-    }
+    for(let i=0;i<600;i++){ const a=0.03+Math.random()*0.05; g.fillStyle(0xffffff,a); g.fillRect(Math.random()*s, Math.random()*s, 1, 1); }
     g.generateTexture(key,s,s); g.destroy();
   }
   function makeRadial(scene,key,sz,centerCol,edgeCol){
@@ -185,12 +172,7 @@
   }
   function makeVignette(scene,key,sz){
     const g=scene.make.graphics({x:0,y:0,add:false});
-    for(let i=0;i<24;i++){
-      const t=i/23; const a=0.04+0.03*t;
-      g.lineStyle(8,0x000000,a);
-      const m=4+i*4;
-      g.strokeRect(m,m,sz-2*m,sz-2*m);
-    }
+    for(let i=0;i<24;i++){ const t=i/23; const a=0.04+0.03*t; g.lineStyle(8,0x000000,a); const m=4+i*4; g.strokeRect(m,m,sz-2*m,sz-2*m); }
     g.generateTexture(key,sz,sz); g.destroy();
   }
 
@@ -217,7 +199,7 @@
       }
     }
     s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8);
-    s.add.image(W/2,H/2,'vignette').setDisplaySize(W,H).setAlpha(0.0).setDepth(9); // не используем (оставлено на будущее)
+    s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.55).setDepth(9);
 
     // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
@@ -244,12 +226,11 @@
 
       // стрела
       e.hp -= b.dmg; stopTrail(b); b.destroy();
-      if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); }
+      if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
     });
 
     // ввод
     s.input.on('pointerdown', (p)=>{
-      if (isPaused) return;
       const w=p.positionToCamera(s.cameras.main);
       const c=Math.floor(w.x/CELL), r=Math.floor(w.y/CELL);
       if(c<0||r<0||c>=COLS||r>=ROWS) return;
@@ -265,10 +246,8 @@
   }
 
   function update(time,dt){
-    if (isPaused) return;
-
     for(const t of towers){
-      t.cd -= dt;
+      t.cd-=dt;
       if(t.cd<=0){
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
@@ -282,7 +261,7 @@
       }
     }
     if(running && !spawning && enemies.countActive(true)===0){
-      running=false; document.getElementById('start').textContent='▶️ Start';
+      running=false; document.getElementById('start').textContent='▶️ Next';
     }
   }
 
@@ -290,7 +269,9 @@
   function placeTower(scene,r,c,type){
     const cost=type.cost; if(gold<cost) return;
     gold-=cost; updateHud();
-
+    return placeTowerInternal(scene,r,c,type);
+  }
+  function placeTowerInternal(scene,r,c,type){
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
     const frame = (type.key==='ARCHER') ? 'archer_tower' : 'mage_tower';
     const sprite = scene.add.sprite(x, y, 'towers1', frame)
@@ -302,6 +283,7 @@
     const t={ type:type.key, proj:type.proj, r,c,x,y, sprite, ring,
               range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
     towers.push(t); grid[r][c]=2; selectTower(t);
+    return t;
   }
 
   function selectTower(t){
@@ -312,8 +294,7 @@
 
   function sellTower(t){
     const cfg = TOWER_TYPES[t.type] || TOWER_TYPES.ARCHER;
-    gold += Math.floor((cfg.cost||50)*0.4); // 40% рефанд
-    updateHud();
+    gold += Math.floor((cfg.cost||50)*0.5); updateHud();
     if(t.sprite) t.sprite.destroy();
     t.ring.destroy();
     towers=towers.filter(x=>x!==t); grid[t.r][t.c]=0; selectedTower=null;
@@ -348,12 +329,10 @@
       fb.birthTime = scene.time.now; fb.startX = mx; fb.startY = my;
 
       if (hasFrame('atlas_units','glow_soft',scene)) {
-        const glow = scene.add.image(mx, my, 'atlas_units', 'glow_soft')
-          .setDepth(5).setAlpha(0.9);
+        const glow = scene.add.image(mx, my, 'atlas_units', 'glow_soft').setDepth(5).setAlpha(0.9);
         fb.__glow = glow;
         fb.__glowFollow = scene.time.addEvent({ delay:16, loop:true, callback: ()=>{
-          if(!fb.active){ glow.destroy(); return; }
-          glow.x=fb.x; glow.y=fb.y;
+          if(!fb.active){ glow.destroy(); return; } glow.x=fb.x; glow.y=fb.y;
         }});
         scene.tweens.add({ targets: glow, alpha:0.4, yoyo:true, duration:450, repeat:-1 });
       } else {
@@ -464,7 +443,7 @@
         const until = now + BURN_DURATION;
         e.burnUntil = Math.max(e.burnUntil||0, until);
         e.burnDps = BURN_DPS;
-        if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); }
+        if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
       }
     }
   }
@@ -482,7 +461,7 @@
             .setTint(0xff9e78).setAlpha(0.9).setScale(0.9).setDepth(6);
           scene.tweens.add({ targets:t, alpha:0, y: t.y-6, duration: 280, onComplete:()=>t.destroy() });
         }
-        if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); }
+        if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
       }
     }
   }
@@ -499,8 +478,10 @@
     const first=pathPts[0];
     const blueprint = pickEnemyTypeForWave(wave);
 
-    const hasIdle = hasFrame('atlas_units', blueprint.key + '_idle_0', scene) &&
-                    hasFrame('atlas_units', blueprint.key + '_idle_1', scene);
+    // НОВОЕ: тянем idle-кадры из atlas_enemies
+    const hasIdle = scene.textures.exists('atlas_enemies') &&
+                    scene.textures.get('atlas_enemies').get(blueprint.key + '_idle_0') &&
+                    scene.textures.get('atlas_enemies').get(blueprint.key + '_idle_1');
 
     let e;
     if (hasIdle) {
@@ -509,16 +490,17 @@
         scene.anims.create({
           key: idleKey,
           frames: [
-            { key:'atlas_units', frame: blueprint.key + '_idle_0' },
-            { key:'atlas_units', frame: blueprint.key + '_idle_1' }
+            { key:'atlas_enemies', frame: blueprint.key + '_idle_0' },
+            { key:'atlas_enemies', frame: blueprint.key + '_idle_1' }
           ],
           frameRate: 4,
           repeat: -1
         });
       }
-      e = scene.physics.add.sprite(first.x, first.y, 'atlas_units', blueprint.key + '_idle_0').setDepth(1);
+      e = scene.physics.add.sprite(first.x, first.y, 'atlas_enemies', blueprint.key + '_idle_0').setDepth(1);
       e.play(idleKey);
     } else {
+      // безопасный фолбэк
       const fallbackKey =
         blueprint.key==='slime'  ? 'enemy_slime'  :
         blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
@@ -531,15 +513,15 @@
       e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
     }
 
-    // Усиление волн (Stage 1): HP-формула поднята, скорость растёт быстрее
-    e.hp = Math.round((22 + 8*wave) * blueprint.hpMul); // было 18 + 6*wave
+    e.hp = Math.round(hpBase * blueprint.hpMul);
     e.goldReward = blueprint.gold;
-    e.speed = blueprint.speed + wave*4*0.35;           // было *0.25
+    e.speed = blueprint.speed + wave*4*0.25;
     e.way=0;
 
     enemies.add(e);
     advance(scene,e);
   }
+
   function advance(scene,e){
     e.way++;
     if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return; }
@@ -557,7 +539,7 @@
     wave++; updateHud();
     document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
     const count = 8 + Math.floor(wave * 1.6);
-    const hpBase = 22 + 8 * wave; // усилено
+    const hpBase = 18 + wave * 6;
     for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
     s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
   }
