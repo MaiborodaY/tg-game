@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Green + Pause/2x</title>
+  <title>TG TD • Save + 4× Speed</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
     #hud{position:fixed;left:8px;top:8px;display:flex;gap:12px;align-items:center;z-index:10;flex-wrap:wrap}
@@ -25,9 +25,8 @@
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
     <div id="t-mage"   class="pill btn">🔥 Mage (75)</div>
 
-    <!-- новые кнопки -->
     <div id="pause" class="pill btn">⏸️ Pause</div>
-    <div id="speed" class="pill btn">⏩ 2×</div>
+    <div id="speed" class="pill btn">⏩ Speed: 1×</div>
   </div>
 
 <script>
@@ -48,8 +47,8 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  // Новое: скорость и пауза
-  let speedMul = 1;            // 1 или 2
+  // скорость/пауза
+  let speedMul = 1;            // 1 | 2 | 4
   let isPaused = false;
 
   // ===== Баланс =====
@@ -85,45 +84,91 @@
 
   startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
   sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
-  archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
-  mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
+  archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); saveGameDeferred(); };
+  mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); saveGameDeferred(); };
 
-  // Новое: обработчики кнопок паузы и скорости
   pauseBtn.onclick = () => togglePause();
   speedBtn.onclick = () => toggleSpeed();
+
+  // ===== Сохранение =====
+  const SAVE_KEY = 'td_save_v1';
+  let saveDebounce = null;
+
+  function saveGame(){
+    try{
+      const data = {
+        gold, hp, wave,
+        speedMul,
+        towers: towers.map(t=>({ type:t.type, r:t.r, c:t.c }))
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    }catch(e){ /* игнор */ }
+  }
+  function saveGameDeferred(delay=400){
+    if(saveDebounce) clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(saveGame, delay);
+  }
+  function loadGame(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(!raw) return false;
+      const data = JSON.parse(raw);
+      if(!data) return false;
+
+      gold = Number.isFinite(data.gold)? data.gold : gold;
+      hp   = Number.isFinite(data.hp)? data.hp : hp;
+      wave = Number.isFinite(data.wave)? data.wave : wave;
+      speedMul = (data.speedMul===2||data.speedMul===4)? data.speedMul : 1;
+
+      // восстановим башни
+      if(Array.isArray(data.towers)){
+        for(const t of data.towers){
+          const typ = (t.type==='MAGE') ? TOWER_TYPES.MAGE : TOWER_TYPES.ARCHER;
+          placeTowerRestore(game.scene.keys.default, t.r, t.c, typ);
+        }
+      }
+
+      // применим скорость в движке
+      applySpeedScale(game.scene.keys.default);
+
+      updateHud();
+      updateSpeedLabel();
+      return true;
+    }catch(e){ return false; }
+  }
+  window.addEventListener('beforeunload', saveGame);
 
   function togglePause(){
     const s = game.scene.keys.default;
     isPaused = !isPaused;
-
     if (isPaused){
-      // стоп всего
       s.physics.world.pause();
       s.physics.world.timeScale = 0;
       s.time.timeScale = 0;
       s.tweens.timeScale = 0;
       pauseBtn.textContent = '▶️ Resume';
     } else {
-      s.physics.world.resume();
-      s.physics.world.timeScale = speedMul;
-      s.time.timeScale = speedMul;
-      s.tweens.timeScale = speedMul;
+      applySpeedScale(s);
       pauseBtn.textContent = '⏸️ Pause';
     }
   }
 
   function toggleSpeed(){
-    // Переключаем 1× ↔ 2×
-    speedMul = (speedMul===1? 2 : 1);
-    speedBtn.textContent = (speedMul===2? '⏩ 1×' : '⏩ 2×'); // показываем, во что включить
-
-    // Применяем к активной сцене (если не на паузе)
-    const s = game.scene.keys.default;
-    if (!isPaused){
-      s.physics.world.timeScale = speedMul;
-      s.time.timeScale = speedMul;
-      s.tweens.timeScale = speedMul;
-    }
+    // 1× → 2× → 4× → 1×
+    speedMul = (speedMul===1?2 : (speedMul===2?4:1));
+    updateSpeedLabel();
+    // применить
+    if (!isPaused) applySpeedScale(game.scene.keys.default);
+    saveGameDeferred();
+  }
+  function updateSpeedLabel(){
+    speedBtn.textContent = `⏩ Speed: ${speedMul}×`;
+  }
+  function applySpeedScale(s){
+    s.physics.world.resume();
+    s.physics.world.timeScale = speedMul;
+    s.time.timeScale = speedMul;
+    s.tweens.timeScale = speedMul;
   }
 
   // ===== ASSETS =====
@@ -277,7 +322,7 @@
 
     // ввод
     s.input.on('pointerdown', (p)=>{
-      if (isPaused) return; // на паузе не ставим башни
+      if (isPaused) return;
       const w=p.positionToCamera(s.cameras.main);
       const c=Math.floor(w.x/CELL), r=Math.floor(w.y/CELL);
       if(c<0||r<0||c>=COLS||r>=ROWS) return;
@@ -289,24 +334,27 @@
     // общий тик поджога
     s.time.addEvent({ delay: BURN_TICK_MS, loop: true, callback: ()=>applyBurnTick(s) });
 
+    // автосохранение раз в 3 сек
+    s.time.addEvent({ delay: 3000, loop: true, callback: saveGame });
+
     // применяем текущую скорость ко всем менеджерам
-    s.physics.world.timeScale = speedMul;
-    s.time.timeScale = speedMul;
-    s.tweens.timeScale = speedMul;
+    applySpeedScale(s);
+    updateSpeedLabel();
+
+    // попытаться восстановить игру
+    loadGame();
 
     updateHud();
   }
 
   function update(time,dt){
-    // на паузе — ничего не тикаем
     if (isPaused) return;
 
-    // cd башен зависит от множителя скорости
     for(const t of towers){
       t.cd -= dt * speedMul;
       if(t.cd<=0){
         const e = acquireTarget(t);
-        if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
+        if(e){ shoot(this,t,e); t.cd=t.rate; saveGameDeferred(); } else { t.cd=100; }
       }
       if(t.sprite){
         const aim = acquireTarget(t);
@@ -318,14 +366,24 @@
     }
     if(running && !spawning && enemies.countActive(true)===0){
       running=false; document.getElementById('start').textContent='▶️ Next';
+      saveGameDeferred();
     }
   }
 
   // --- towers (Вариант D: один спрайт) ---
   function placeTower(scene,r,c,type){
-    const cost=type.cost; if(gold<cost) return; gold-=cost; updateHud();
+    const cost=type.cost; if(gold<cost) return;
+    gold-=cost; updateHud();
+    const t = placeTowerInternal(scene,r,c,type);
+    saveGameDeferred();
+    return t;
+  }
+  // восстановление без стоимости/логики клика
+  function placeTowerRestore(scene,r,c,type){
+    return placeTowerInternal(scene,r,c,type, /*free=*/true);
+  }
+  function placeTowerInternal(scene,r,c,type, free=false){
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
-
     const frame = (type.key==='ARCHER') ? 'archer_tower' : 'mage_tower';
     const sprite = scene.add.sprite(x, y, 'towers1', frame)
       .setOrigin(0.5, 0.72).setScale(0.32).setDepth(4);
@@ -336,6 +394,7 @@
     const t={ type:type.key, proj:type.proj, r,c,x,y, sprite, ring,
               range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
     towers.push(t); grid[r][c]=2; selectTower(t);
+    return t;
   }
 
   function selectTower(t){
@@ -350,6 +409,7 @@
     if(t.sprite) t.sprite.destroy();
     t.ring.destroy();
     towers=towers.filter(x=>x!==t); grid[t.r][t.c]=0; selectedTower=null;
+    saveGameDeferred();
   }
 
   function acquireTarget(t){
@@ -574,7 +634,7 @@
   }
   function advance(scene,e){
     e.way++;
-    if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return; }
+    if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); saveGameDeferred(); return; }
     const p=pathPts[e.way];
     scene.physics.moveTo(e,p.x,p.y,e.speed);
     const h=scene.time.addEvent({delay:100,loop:true,callback:()=>{
@@ -586,7 +646,7 @@
 
   function nextWave(){
     const s=game.scene.keys.default;
-    wave++; updateHud();
+    wave++; updateHud(); saveGameDeferred();
     document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
     const count = 8 + Math.floor(wave * 1.6);
     const hpBase = 18 + wave * 6;
@@ -600,7 +660,11 @@
     scene.add.rectangle(W/2,H/2,W,H,0x000000,0.5).setDepth(10);
     scene.add.text(W/2,H/2-10,'Game Over',{font:'20px system-ui',color:'#fff'}).setOrigin(0.5).setDepth(10);
     scene.add.text(W/2,H/2+20,'Tap to restart',{font:'14px system-ui',color:'#ddd'}).setOrigin(0.5).setDepth(10);
-    scene.input.once('pointerdown',()=>location.reload());
+    scene.input.once('pointerdown',()=>{
+      // очистим сейв при полном проигрыше
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      location.reload();
+    });
   }
 })();
 </script>
