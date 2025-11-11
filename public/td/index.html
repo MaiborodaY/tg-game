@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Green</title>
+  <title>TG TD • Green + Pause/2x</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
-    #hud{position:fixed;left:8px;top:8px;display:flex;gap:12px;align-items:center;z-index:10}
+    #hud{position:fixed;left:8px;top:8px;display:flex;gap:12px;align-items:center;z-index:10;flex-wrap:wrap}
     .pill{background:#11161a;border:1px solid #2b3941;border-radius:10px;padding:6px 10px}
     .btn{cursor:pointer;user-select:none}
     .btn.sel{outline:2px solid #7cf7d4}
@@ -24,6 +24,10 @@
 
     <div id="t-archer" class="pill btn sel">🏹 Archer (50)</div>
     <div id="t-mage"   class="pill btn">🔥 Mage (75)</div>
+
+    <!-- новые кнопки -->
+    <div id="pause" class="pill btn">⏸️ Pause</div>
+    <div id="speed" class="pill btn">⏩ 2×</div>
   </div>
 
 <script>
@@ -43,6 +47,10 @@
   let enemies, bullets;
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
+
+  // Новое: скорость и пауза
+  let speedMul = 1;            // 1 или 2
+  let isPaused = false;
 
   // ===== Баланс =====
   const FIREBALL_SPEED   = 270;
@@ -72,26 +80,65 @@
   const sellBtn=document.getElementById('sell');
   const archerBtn=document.getElementById('t-archer');
   const mageBtn=document.getElementById('t-mage');
+  const pauseBtn=document.getElementById('pause');
+  const speedBtn=document.getElementById('speed');
 
   startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
   sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
   archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
   mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
 
+  // Новое: обработчики кнопок паузы и скорости
+  pauseBtn.onclick = () => togglePause();
+  speedBtn.onclick = () => toggleSpeed();
+
+  function togglePause(){
+    const s = game.scene.keys.default;
+    isPaused = !isPaused;
+
+    if (isPaused){
+      // стоп всего
+      s.physics.world.pause();
+      s.physics.world.timeScale = 0;
+      s.time.timeScale = 0;
+      s.tweens.timeScale = 0;
+      pauseBtn.textContent = '▶️ Resume';
+    } else {
+      s.physics.world.resume();
+      s.physics.world.timeScale = speedMul;
+      s.time.timeScale = speedMul;
+      s.tweens.timeScale = speedMul;
+      pauseBtn.textContent = '⏸️ Pause';
+    }
+  }
+
+  function toggleSpeed(){
+    // Переключаем 1× ↔ 2×
+    speedMul = (speedMul===1? 2 : 1);
+    speedBtn.textContent = (speedMul===2? '⏩ 1×' : '⏩ 2×'); // показываем, во что включить
+
+    // Применяем к активной сцене (если не на паузе)
+    const s = game.scene.keys.default;
+    if (!isPaused){
+      s.physics.world.timeScale = speedMul;
+      s.time.timeScale = speedMul;
+      s.tweens.timeScale = speedMul;
+    }
+  }
+
   // ===== ASSETS =====
   function preload(){
     // односпрайтовые башни (Вариант D)
     this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
-
-    // (опционально) остальные атласы, если используешь
+    // (опционально) юниты/эффекты
     this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
 
     // процедурные текстуры для фона
-    makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);  // трава/брусчатка
-    makeCell(this,'cell_path', 0x294432,0x223a2a,0x3a6448);  // утоптанная тропа
-    makeNoise(this,'noise64');                               // тайл шума 64×64
-    makeRadial(this,'grad256',256,0x183126,0x0a1410);        // мягкий градиент
-    makeVignette(this,'vign256',256);                        // виньетка
+    makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);
+    makeCell(this,'cell_path', 0x294432,0x223a2a,0x3a6448);
+    makeNoise(this,'noise64');
+    makeRadial(this,'grad256',256,0x183126,0x0a1410);
+    makeVignette(this,'vign256',256);
 
     // служебные пиксели / фолбэки
     safeRemove(this,'dot8'); { const g=this.make.graphics({x:0,y:0,add:false}); g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8); }
@@ -179,19 +226,16 @@
     }
 
     // === ФОН ===
-    s.add.image(W/2,H/2,'grad256').setDisplaySize(W,H).setDepth(-10); // градиент
-    // тайлим клетки (трава/тропа)
+    s.add.image(W/2,H/2,'grad256').setDisplaySize(W,H).setDepth(-10);
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
         const isPath = grid[r][c]===1;
-        s.add.image(c*CELL+CELL/2, r*CELL+CELL/2, isPath?'cell_path':'cell_grass')
-          .setDepth(-9);
+        s.add.image(c*CELL+CELL/2, r*CELL+CELL/2, isPath?'cell_path':'cell_grass').setDepth(-9);
       }
     }
-    s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8); // лёгкий шум
-    s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.55).setDepth(9); // виньетка
+    s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8);
+    s.add.image(W/2,H/2,'vign256').setDisplaySize(W,H).setAlpha(0.55).setDepth(9);
 
-    // мягкий пульс тропы
     const pulseGroup = s.add.group();
     for(const p of pathPts){
       const glow=s.add.image(p.x,p.y,'cell_path').setDepth(-6).setAlpha(0.0);
@@ -222,7 +266,7 @@
       if ((b.texture?.key === 'atlas_units' && b.frame?.name === 'fireball_core') ||
           (b.texture?.key === 'fireball')) {
         explodeSplash(s, b.x, b.y, b.dmg, SPLASH_R);
-        cleanupProjectile(b); // удаляем trail/glow/сам снаряд
+        cleanupProjectile(b);
         return;
       }
 
@@ -233,6 +277,7 @@
 
     // ввод
     s.input.on('pointerdown', (p)=>{
+      if (isPaused) return; // на паузе не ставим башни
       const w=p.positionToCamera(s.cameras.main);
       const c=Math.floor(w.x/CELL), r=Math.floor(w.y/CELL);
       if(c<0||r<0||c>=COLS||r>=ROWS) return;
@@ -244,17 +289,25 @@
     // общий тик поджога
     s.time.addEvent({ delay: BURN_TICK_MS, loop: true, callback: ()=>applyBurnTick(s) });
 
+    // применяем текущую скорость ко всем менеджерам
+    s.physics.world.timeScale = speedMul;
+    s.time.timeScale = speedMul;
+    s.tweens.timeScale = speedMul;
+
     updateHud();
   }
 
   function update(time,dt){
+    // на паузе — ничего не тикаем
+    if (isPaused) return;
+
+    // cd башен зависит от множителя скорости
     for(const t of towers){
-      t.cd-=dt;
+      t.cd -= dt * speedMul;
       if(t.cd<=0){
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
       }
-      // плавный разворот всей башни к цели
       if(t.sprite){
         const aim = acquireTarget(t);
         if(aim){
@@ -275,18 +328,13 @@
 
     const frame = (type.key==='ARCHER') ? 'archer_tower' : 'mage_tower';
     const sprite = scene.add.sprite(x, y, 'towers1', frame)
-      .setOrigin(0.5, 0.72)   // «центр тяжести» на базе
-      .setScale(0.32)         // ~ размер одной клетки
-      .setDepth(4);
+      .setOrigin(0.5, 0.72).setScale(0.32).setDepth(4);
 
     const ring=scene.add.graphics().setDepth(2);
     ring.lineStyle(1, 0xffffff, 0.25).strokeCircle(x,y,type.range);
 
-    const t={
-      type:type.key, proj:type.proj,
-      r,c,x,y, sprite, ring,
-      range:type.range, rate:type.rate, cd:200, dmg:type.dmg
-    };
+    const t={ type:type.key, proj:type.proj, r,c,x,y, sprite, ring,
+              range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
     towers.push(t); grid[r][c]=2; selectTower(t);
   }
 
@@ -320,7 +368,6 @@
     const a = Phaser.Math.Angle.Between(t.x, t.y, e.x, e.y);
     if(t.sprite){ t.sprite.rotation = a; }
 
-    // точка вылета из «носа» башни (интуитивное смещение)
     const MUZZLE = (t.type==='ARCHER') ? 18 : 16;
     const mx = t.x + Math.cos(a)*MUZZLE;
     const my = t.y + Math.sin(a)*MUZZLE;
@@ -407,7 +454,6 @@
   }
 
   function explodeSplash(scene, x, y, baseDmg, R){
-    // если есть спрайт-лист взрыва — используем
     if (scene.textures.exists('atlas_units') && scene.textures.get('atlas_units').get('explosion_0')) {
       const frames=[]; let i=0;
       while (scene.textures.get('atlas_units').has('explosion_'+i)) {
@@ -420,7 +466,6 @@
       }
       boom.play(key);
     } else {
-      // fallback: кольцо+искры
       const ring = scene.add.graphics().setDepth(7);
       const steps = 10, dur = 220; let i=0;
       const ev = scene.time.addEvent({
@@ -439,7 +484,6 @@
       }
     }
 
-    // урон + поджог
     const now = scene.time.now;
     const arr = enemies.getChildren();
     for(let i=0;i<arr.length;i++){
