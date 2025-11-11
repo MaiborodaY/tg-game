@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Clean (no save/reset)</title>
+  <title>TG TD • Clean (no save / no speed / no reset)</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
     /* HUD снизу по центру */
@@ -51,6 +51,7 @@
   let enemies, bullets;
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
+
   let isPaused = false;
 
   // ===== Баланс =====
@@ -107,9 +108,9 @@
 
   // ===== ASSETS =====
   function preload(){
-    // башни (единый кадр для каждой)
+    // башни (единый кадр)
     this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
-    // юниты/снаряды/взрыв (если есть)
+    // юниты/снаряды/взрывы (если есть)
     this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
 
     // фоновые процедурные текстуры
@@ -119,7 +120,7 @@
     makeRadial(this,'grad256',256,0x183126,0x0a1410);
     makeVignette(this,'vign256',256);
 
-    // простые вспомогательные
+    // вспомогательные
     safeRemove(this,'dot8'); { const g=this.make.graphics({x:0,y:0,add:false}); g.fillStyle(0xffffff,1); g.fillCircle(4,4,4); g.generateTexture('dot8',8,8); }
     if(!hasFrame('atlas_units','arrow',this)){
       safeRemove(this,'arrow'); const a=this.make.graphics({x:0,y:0,add:false});
@@ -264,7 +265,7 @@
     if (isPaused) return;
 
     for(const t of towers){
-      t.cd -= dt; // всегда 1×
+      t.cd -= dt;
       if(t.cd<=0){
         const e = acquireTarget(t);
         if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
@@ -278,8 +279,7 @@
       }
     }
     if(running && !spawning && enemies.countActive(true)===0){
-      running=false;
-      startBtn.textContent='▶️ Start';
+      running=false; document.getElementById('start').textContent='▶️ Start';
     }
   }
 
@@ -416,11 +416,78 @@
     if (b.active) b.destroy();
   }
 
+  function explodeSplash(scene, x, y, baseDmg, R){
+    if (scene.textures.exists('atlas_units') && scene.textures.get('atlas_units').get('explosion_0')) {
+      const frames=[]; let i=0;
+      while (scene.textures.get('atlas_units').has('explosion_'+i)) {
+        frames.push({ key:'atlas_units', frame:'explosion_'+i }); i++;
+      }
+      const boom = scene.add.sprite(x, y, 'atlas_units', 'explosion_0').setDepth(7);
+      const key = 'boom_once';
+      if (!scene.anims.exists(key)) {
+        scene.anims.create({ key, frames, frameRate: 28, repeat: 0, hideOnComplete: true });
+      }
+      boom.play(key);
+    } else {
+      const ring = scene.add.graphics().setDepth(7);
+      const steps = 10, dur = 220; let i=0;
+      const ev = scene.time.addEvent({
+        delay: dur/steps, repeat: steps,
+        callback: ()=>{
+          i++; const r = 10 + (R-10)*(i/steps);
+          ring.clear(); ring.lineStyle(3, 0xffb38f, 0.85).strokeCircle(x,y,r);
+          if(i===steps){ ring.destroy(); ev.remove(); }
+        }
+      });
+      for(let k=0;k<10;k++){
+        const ang = Math.random()*Math.PI*2, d = 6 + Math.random()*R*0.6;
+        const dot = scene.add.image(x, y,'dot8').setTint(0xffd2b6).setAlpha(0.95).setDepth(7);
+        scene.tweens.add({ targets: dot, x: x+Math.cos(ang)*d, y: y+Math.sin(ang)*d, alpha: 0,
+          duration: 260 + Math.random()*120, onComplete:()=>dot.destroy() });
+      }
+    }
+
+    const now = scene.time.now;
+    const arr = enemies.getChildren();
+    for(let i=0;i<arr.length;i++){
+      const e = arr[i]; if(!e||!e.active) continue;
+      const dx=e.x-x, dy=e.y-y; const dist=Math.hypot(dx,dy);
+      if(dist<=R){
+        const pct = 1 - (dist/R);
+        const scale = SPLASH_MIN_PCT + (1 - SPLASH_MIN_PCT)*pct;
+        const dmg = Math.max(1, Math.round(baseDmg * scale));
+        e.hp -= dmg;
+        const until = now + BURN_DURATION;
+        e.burnUntil = Math.max(e.burnUntil||0, until);
+        e.burnDps = BURN_DPS;
+        if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
+      }
+    }
+  }
+
+  function applyBurnTick(scene){
+    const now = scene.time.now;
+    const damagePerTick = (BURN_DPS * BURN_TICK_MS) / 1000;
+    const arr = enemies.getChildren();
+    for(let i=0;i<arr.length;i++){
+      const e = arr[i]; if(!e||!e.active) continue;
+      if(e.burnUntil && e.burnUntil > now){
+        e.hp -= damagePerTick;
+        if(Math.random() < 0.35){
+          const t = scene.add.image(e.x + (Math.random()*6-3), e.y + (Math.random()*6-3), 'dot8')
+            .setTint(0xff9e78).setAlpha(0.9).setScale(0.9).setDepth(6);
+          scene.tweens.add({ targets:t, alpha:0, y: t.y-6, duration: 280, onComplete:()=>t.destroy() });
+        }
+        if(e.hp<=0){ e.destroy(); gold+=5; updateHud(); }
+      }
+    }
+  }
+
   // --- enemies & waves ---
-  function pickEnemyTypeForWave(w){
-    if (w <= 3) return ENEMY_TYPES.SLIME;
-    if (w <= 6) return Math.random() < 0.7 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME;
-    if (w <= 10){ const r=Math.random(); return r<0.4?ENEMY_TYPES.BEETLE:(r<0.8?ENEMY_TYPES.GOBLIN:ENEMY_TYPES.SLIME); }
+  function pickEnemyTypeForWave(wave){
+    if (wave <= 3) return ENEMY_TYPES.SLIME;
+    if (wave <= 6) return Math.random() < 0.7 ? ENEMY_TYPES.GOBLIN : ENEMY_TYPES.SLIME;
+    if (wave <= 10){ const r=Math.random(); return r<0.4?ENEMY_TYPES.BEETLE:(r<0.8?ENEMY_TYPES.GOBLIN:ENEMY_TYPES.SLIME); }
     const r=Math.random(); return r<0.55?ENEMY_TYPES.BEETLE:(r<0.85?ENEMY_TYPES.GOBLIN:ENEMY_TYPES.SLIME);
   }
 
@@ -470,11 +537,7 @@
   }
   function advance(scene,e){
     e.way++;
-    if(e.way>=pathPts.length){
-      hp--; updateHud(); e.destroy();
-      if(hp<=0) return gameOver(scene);
-      return;
-    }
+    if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return; }
     const p=pathPts[e.way];
     scene.physics.moveTo(e,p.x,p.y,e.speed);
     const h=scene.time.addEvent({delay:100,loop:true,callback:()=>{
@@ -487,11 +550,11 @@
   function nextWave(){
     const s=game.scene.keys.default;
     wave++; updateHud();
-    startBtn.textContent='🔄 Spawning'; spawning=true;
+    document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
     const count = 8 + Math.floor(wave * 1.6);
     const hpBase = 18 + wave * 6;
     for(let i=0;i<count;i++) s.time.delayedCall(480*i,()=>spawnEnemy(s,hpBase));
-    s.time.delayedCall(480*count+200,()=>{ spawning=false; startBtn.textContent='▶️ Next'; running=true; });
+    s.time.delayedCall(480*count+200,()=>{ spawning=false; document.getElementById('start').textContent='▶️ Next'; running=true; });
   }
 
   // --- hud & over ---
