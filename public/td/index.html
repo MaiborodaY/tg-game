@@ -52,8 +52,9 @@
   let towers=[], selectedTower=null;
   let gold=100, hp=20, wave=0, running=false, spawning=false;
 
-  let isPaused = false;
-
+// стало:
+let isPaused = false;
+let DISABLE_SAVE = false; // NEW: блокирует любые сохранения (после Game Over)
   // ===== Баланс (Stage 1) =====
   const FIREBALL_SPEED   = 270;
   const SPLASH_R         = 44;   // было 60
@@ -92,15 +93,17 @@
     };
   }
 
-  function saveGame(){
-    try{
-      localStorage.setItem(SAVE_KEY, JSON.stringify(snapshotState()));
-    }catch(e){}
-  }
-  function saveGameDeferred(delay=400){
-    if(saveDebounce) clearTimeout(saveDebounce);
-    saveDebounce = setTimeout(saveGame, delay);
-  }
+function saveGame(){
+  if (DISABLE_SAVE) return; // NEW
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(snapshotState()));
+  }catch(e){}
+}
+function saveGameDeferred(delay=400){
+  if (DISABLE_SAVE) return; // NEW
+  if(saveDebounce) clearTimeout(saveDebounce);
+  saveDebounce = setTimeout(saveGame, delay);
+}
 
   function loadGameIfAny(scene){
     try{
@@ -108,6 +111,11 @@
       if(!raw) return false;
       const data = JSON.parse(raw);
       if(!data) return false;
+      if (data.hp != null && data.hp <= 0) {
+  // сейв «битый» или от Game Over — игнорируем и чистим
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  return false;
+}
 
       gold = Number.isFinite(data.gold) ? data.gold : gold;
       hp   = Number.isFinite(data.hp)   ? data.hp   : hp;
@@ -132,7 +140,9 @@
   }
 
   // на закрытие страницы — финальный сейв
-  window.addEventListener('beforeunload', saveGame);
+window.addEventListener('beforeunload', () => {
+  if (!DISABLE_SAVE) saveGame(); // NEW
+});
 
   // HUD
   const goldEl=document.getElementById('gold');
@@ -678,9 +688,10 @@
 
   // --- hud & over ---
   function updateHud(){ goldEl.textContent=gold; hpEl.textContent=hp; waveEl.textContent=wave; }
-  function gameOver(scene){
-    // очищаем сейв при поражении
-    try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+function gameOver(scene){
+  // Полностью отключаем любые дальнейшие сохранения этой сессии
+  DISABLE_SAVE = true;                                // NEW
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){} // гарантированно чистим сейв
     scene.add.rectangle(W/2,H/2,W,H,0x000000,0.5).setDepth(10);
     scene.add.text(W/2,H/2-10,'Game Over',{font:'20px system-ui',color:'#fff'}).setOrigin(0.5).setDepth(10);
     scene.add.text(W/2,H/2+20,'Tap to restart',{font:'14px system-ui',color:'#ddd'}).setOrigin(0.5).setDepth(10);
