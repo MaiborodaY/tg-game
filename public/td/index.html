@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-  <title>TG TD • Balance Stage 1</title>
+  <title>TG TD • Balance Stage 1 + Save</title>
   <style>
     html,body{margin:0;background:#0b0f0e;color:#fff;font-family:system-ui,Segoe UI,Arial}
     /* HUD снизу по центру */
@@ -64,7 +64,7 @@
 
   const TOWER_TYPES = {
     ARCHER: { key:'ARCHER', cost:50,  range:CELL*3.2, rate:420, dmg:9,  proj:'arrow' },
-    MAGE:   { key:'MAGE',   cost:120, range:CELL*3.2, rate:800, dmg:14, proj:'fireball' }
+    MAGE:   { key:'MAGE',   cost:120, range:CELL*3.2, rate:800, dmg:9, proj:'fireball' }
   };
   let currentType = TOWER_TYPES.ARCHER;
 
@@ -73,6 +73,66 @@
     GOBLIN: { key:'goblin', size:20, speed: 70, hpMul:0.85, gold:5 },
     BEETLE: { key:'beetle', size:22, speed: 40, hpMul:1.60, gold:7 },
   };
+
+  // ======== Сохранение/Загрузка =========
+  const SAVE_KEY = 'td_save_v2';       // новый ключ (чтобы не конфликтовать со старыми тестами)
+  let saveDebounce = null;
+
+  // сериализуем только «логическое» состояние (без объектов Phaser)
+  function snapshotState() {
+    // вычисляем номер «волны для рестарта»:
+    // если сейчас волна идёт/спавнится — вернёмся к началу ЭТОЙ же волны,
+    // если между волнами — к следующей.
+    const resumeWave = (running || spawning) ? wave : (wave + 1);
+
+    return {
+      gold, hp,
+      resumeWave,                 // <- ключевое поле, чтобы не было «перескока»
+      towers: towers.map(t => ({ type: t.type, r: t.r, c: t.c }))
+    };
+  }
+
+  function saveGame(){
+    try{
+      localStorage.setItem(SAVE_KEY, JSON.stringify(snapshotState()));
+    }catch(e){}
+  }
+  function saveGameDeferred(delay=400){
+    if(saveDebounce) clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(saveGame, delay);
+  }
+
+  function loadGameIfAny(scene){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(!raw) return false;
+      const data = JSON.parse(raw);
+      if(!data) return false;
+
+      gold = Number.isFinite(data.gold) ? data.gold : gold;
+      hp   = Number.isFinite(data.hp)   ? data.hp   : hp;
+
+      // Приводим отображаемый wave так, чтобы кнопка Start запустила нужную «resumeWave»
+      // (логика: nextWave делает wave++; поэтому ставим wave = resumeWave - 1)
+      if (Number.isFinite(data.resumeWave) && data.resumeWave >= 1){
+        wave = Math.max(0, data.resumeWave - 1);
+      }
+
+      // восстановим башни без списания золота
+      if(Array.isArray(data.towers)){
+        for(const t of data.towers){
+          const typ = (t.type==='MAGE') ? TOWER_TYPES.MAGE : TOWER_TYPES.ARCHER;
+          placeTowerRestore(scene, t.r, t.c, typ);
+        }
+      }
+
+      updateHud();
+      return true;
+    }catch(e){ return false; }
+  }
+
+  // на закрытие страницы — финальный сейв
+  window.addEventListener('beforeunload', saveGame);
 
   // HUD
   const goldEl=document.getElementById('gold');
@@ -86,8 +146,8 @@
 
   startBtn.onclick=()=>{ if(!running){running=true; nextWave();} else if(!spawning){ nextWave(); } };
   sellBtn.onclick=()=>{ if(selectedTower) sellTower(selectedTower); };
-  archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); };
-  mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); };
+  archerBtn.onclick=()=>{ currentType=TOWER_TYPES.ARCHER; archerBtn.classList.add('sel'); mageBtn.classList.remove('sel'); saveGameDeferred(); };
+  mageBtn.onclick  =()=>{ currentType=TOWER_TYPES.MAGE;   mageBtn.classList.add('sel');   archerBtn.classList.remove('sel'); saveGameDeferred(); };
   pauseBtn.onclick = () => togglePause();
 
   function togglePause(){
@@ -108,16 +168,14 @@
 
   // ===== ASSETS =====
   function preload(){
-    // башни
-// башни (единый кадр)
-this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
+    // башни (единый кадр)
+    this.load.atlas('towers1', './assets/atlas_towers_single.webp', './assets/atlas_towers_single.json');
 
-// ВРАГИ (новый детализированный атлас)
-this.load.atlas('atlas_enemies', './assets/atlas_enemies.webp', './assets/atlas_enemies.json');
+    // ВРАГИ (детализированный атлас, если есть)
+    this.load.atlas('atlas_enemies', './assets/atlas_enemies.webp', './assets/atlas_enemies.json');
 
-// юниты/снаряды/взрывы (если есть)
-this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
-
+    // юниты/снаряды/взрывы (если есть)
+    this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_units.json');
 
     // фоновые процедурные текстуры (зелёная карта)
     makeCell(this,'cell_grass',0x14271e,0x0e2017,0x1a3527);
@@ -239,7 +297,6 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
       }
     }
     s.add.tileSprite(W/2,H/2,W,H,'noise64').setAlpha(0.07).setDepth(-8);
-    // (в этой сцене виньетку не накладываем)
 
     // группы
     enemies = s.physics.add.group({ classType: Phaser.Physics.Arcade.Image, runChildUpdate:false });
@@ -266,7 +323,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
 
       // стрела
       e.hp -= b.dmg; stopTrail(b); b.destroy();
-      if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); }
+      if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); saveGameDeferred(); }
     });
 
     // ввод
@@ -283,6 +340,12 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
     // тик поджога
     s.time.addEvent({ delay: BURN_TICK_MS, loop: true, callback: ()=>applyBurnTick(s) });
 
+    // периодический автосейв (страховка)
+    s.time.addEvent({ delay: 3000, loop: true, callback: saveGame });
+
+    // Попытка восстановиться ИЗ СЕЙВА (после создания сцены, до HUD)
+    loadGameIfAny(s);
+
     updateHud();
   }
 
@@ -293,7 +356,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
       t.cd -= dt;
       if(t.cd<=0){
         const e = acquireTarget(t);
-        if(e){ shoot(this,t,e); t.cd=t.rate; } else { t.cd=100; }
+        if(e){ shoot(this,t,e); t.cd=t.rate; saveGameDeferred(); } else { t.cd=100; }
       }
       if(t.sprite){
         const aim = acquireTarget(t);
@@ -305,6 +368,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
     }
     if(running && !spawning && enemies.countActive(true)===0){
       running=false; document.getElementById('start').textContent='▶️ Start';
+      saveGameDeferred(); // сохраним «между волнами»
     }
   }
 
@@ -313,6 +377,17 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
     const cost=type.cost; if(gold<cost) return;
     gold-=cost; updateHud();
 
+    const t = placeTowerInternal(scene,r,c,type);
+    saveGameDeferred();
+    return t;
+  }
+
+  // восстановление башни без списания золота
+  function placeTowerRestore(scene,r,c,type){
+    return placeTowerInternal(scene,r,c,type);
+  }
+
+  function placeTowerInternal(scene,r,c,type){
     const x=c*CELL+CELL/2,y=r*CELL+CELL/2;
     const frame = (type.key==='ARCHER') ? 'archer_tower' : 'mage_tower';
     const sprite = scene.add.sprite(x, y, 'towers1', frame)
@@ -324,6 +399,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
     const t={ type:type.key, proj:type.proj, r,c,x,y, sprite, ring,
               range:type.range, rate:type.rate, cd:200, dmg:type.dmg };
     towers.push(t); grid[r][c]=2; selectTower(t);
+    return t;
   }
 
   function selectTower(t){
@@ -339,6 +415,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
     if(t.sprite) t.sprite.destroy();
     t.ring.destroy();
     towers=towers.filter(x=>x!==t); grid[t.r][t.c]=0; selectedTower=null;
+    saveGameDeferred();
   }
 
   function acquireTarget(t){
@@ -486,7 +563,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
         const until = now + BURN_DURATION;
         e.burnUntil = Math.max(e.burnUntil||0, until);
         e.burnDps = BURN_DPS;
-        if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); }
+        if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); saveGameDeferred(); }
       }
     }
   }
@@ -504,7 +581,7 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
             .setTint(0xff9e78).setAlpha(0.9).setScale(0.9).setDepth(6);
           scene.tweens.add({ targets:t, alpha:0, y: t.y-6, duration: 280, onComplete:()=>t.destroy() });
         }
-        if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); }
+        if(e.hp<=0){ e.destroy(); gold+=e.goldReward||1; updateHud(); saveGameDeferred(); }
       }
     }
   }
@@ -517,50 +594,50 @@ this.load.atlas('atlas_units',  './assets/atlas_units.webp',  './assets/atlas_un
     const r=Math.random(); return r<0.55?ENEMY_TYPES.BEETLE:(r<0.85?ENEMY_TYPES.GOBLIN:ENEMY_TYPES.SLIME);
   }
 
-function spawnEnemy(scene,hpBase){
-  const first=pathPts[0];
-  const blueprint = pickEnemyTypeForWave(wave);
+  function spawnEnemy(scene,hpBase){
+    const first=pathPts[0];
+    const blueprint = pickEnemyTypeForWave(wave);
 
-  // 1) Пытаемся взять кадры из atlas_enemies (предпочтительно)
-  let atlasKey = 'atlas_enemies';
-  let f0 = blueprint.key + '_idle_0';
-  let f1 = blueprint.key + '_idle_1';
-  let hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
+    // 1) atlas_enemies (предпочтительно)
+    let atlasKey = 'atlas_enemies';
+    let f0 = blueprint.key + '_idle_0';
+    let f1 = blueprint.key + '_idle_1';
+    let hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
 
-  // 2) Если нет — пробуем старый atlas_units
-  if (!hasIdle){
-    atlasKey = 'atlas_units';
-    hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
-  }
-
-  let e;
-  if (hasIdle) {
-    const idleKey = atlasKey + '_' + blueprint.key + '_idle';
-    if (!scene.anims.exists(idleKey)) {
-      scene.anims.create({
-        key: idleKey,
-        frames: [
-          { key: atlasKey, frame: f0 },
-          { key: atlasKey, frame: f1 }
-        ],
-        frameRate: 4,
-        repeat: -1
-      });
+    // 2) fallback — atlas_units
+    if (!hasIdle){
+      atlasKey = 'atlas_units';
+      hasIdle = hasFrame(atlasKey, f0, scene) && hasFrame(atlasKey, f1, scene);
     }
-    e = scene.physics.add.sprite(first.x, first.y, atlasKey, f0).setDepth(1);
-    e.play(idleKey);
-  } else {
-    const fallbackKey =
-      blueprint.key==='slime'  ? 'enemy_slime'  :
-      blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
-    e = scene.physics.add.image(first.x, first.y, fallbackKey).setDepth(1);
-  }
 
-  e.setDisplaySize(blueprint.size, blueprint.size);
-  const r = e.displayWidth/2;
-  if (e.body.setCircle) {
-    e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
-  }
+    let e;
+    if (hasIdle) {
+      const idleKey = atlasKey + '_' + blueprint.key + '_idle';
+      if (!scene.anims.exists(idleKey)) {
+        scene.anims.create({
+          key: idleKey,
+          frames: [
+            { key: atlasKey, frame: f0 },
+            { key: atlasKey, frame: f1 }
+          ],
+          frameRate: 4,
+          repeat: -1
+        });
+      }
+      e = scene.physics.add.sprite(first.x, first.y, atlasKey, f0).setDepth(1);
+      e.play(idleKey);
+    } else {
+      const fallbackKey =
+        blueprint.key==='slime'  ? 'enemy_slime'  :
+        blueprint.key==='goblin' ? 'enemy_goblin' : 'enemy_beetle';
+      e = scene.physics.add.image(first.x, first.y, fallbackKey).setDepth(1);
+    }
+
+    e.setDisplaySize(blueprint.size, blueprint.size);
+    const r = e.displayWidth/2;
+    if (e.body.setCircle) {
+      e.body.setCircle(r); e.body.setOffset(e.width/2 - r, e.height/2 - r);
+    }
 
     // Усиление волн (Stage 1)
     e.hp = Math.round((22 + 8*wave) * blueprint.hpMul);
@@ -571,9 +648,15 @@ function spawnEnemy(scene,hpBase){
     enemies.add(e);
     advance(scene,e);
   }
+
   function advance(scene,e){
     e.way++;
-    if(e.way>=pathPts.length){ hp--; updateHud(); e.destroy(); if(hp<=0) return gameOver(scene); return; }
+    if(e.way>=pathPts.length){
+      hp--; updateHud(); e.destroy();
+      if(hp<=0) return gameOver(scene);
+      saveGameDeferred();
+      return;
+    }
     const p=pathPts[e.way];
     scene.physics.moveTo(e,p.x,p.y,e.speed);
     const h=scene.time.addEvent({delay:100,loop:true,callback:()=>{
@@ -585,7 +668,7 @@ function spawnEnemy(scene,hpBase){
 
   function nextWave(){
     const s=game.scene.keys.default;
-    wave++; updateHud();
+    wave++; updateHud(); saveGameDeferred(); // сохраняем сразу номер волны, чтобы при закрытии вернуться к ней
     document.getElementById('start').textContent='🔄 Spawning'; spawning=true;
     const count = 8 + Math.floor(wave * 1.6);
     const hpBase = 22 + 8 * wave;
@@ -596,6 +679,8 @@ function spawnEnemy(scene,hpBase){
   // --- hud & over ---
   function updateHud(){ goldEl.textContent=gold; hpEl.textContent=hp; waveEl.textContent=wave; }
   function gameOver(scene){
+    // очищаем сейв при поражении
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
     scene.add.rectangle(W/2,H/2,W,H,0x000000,0.5).setDepth(10);
     scene.add.text(W/2,H/2-10,'Game Over',{font:'20px system-ui',color:'#fff'}).setOrigin(0.5).setDepth(10);
     scene.add.text(W/2,H/2+20,'Tap to restart',{font:'14px system-ui',color:'#ddd'}).setOrigin(0.5).setDepth(10);
