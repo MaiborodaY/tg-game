@@ -54,6 +54,37 @@
 
 // стало:
 let isPaused = false;
+  const params = new URL(location.href).searchParams;
+  const rewardRun = {
+    runId: params.get('run_id') || '',
+    token: params.get('token') || '',
+    finishUrl: params.get('finish_url') || ''
+  };
+  let sentReward = false;
+  const gameStartedAt = performance.now();
+
+  async function sendRewardFinish(finalScore){
+    if (sentReward) return;
+    sentReward = true;
+    if (!rewardRun.runId || !rewardRun.token || !rewardRun.finishUrl) return;
+    try {
+      const durationMs = Math.max(0, Math.floor(performance.now() - gameStartedAt));
+      const res = await fetch(rewardRun.finishUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          run_id: rewardRun.runId,
+          token: rewardRun.token,
+          score: Math.max(0, Math.floor(Number(finalScore) || 0)),
+          duration_ms: durationMs
+        })
+      });
+      const j = await res.json().catch(()=> ({}));
+      if (!j.ok && !j.duplicate) console.log('Reward finish error:', j);
+    } catch(e) {
+      console.log('Reward finish failed:', e);
+    }
+  }
 let DISABLE_SAVE = false; // NEW: блокирует любые сохранения (после Game Over)
   // ===== Баланс (Stage 1) =====
   const FIREBALL_SPEED   = 270;
@@ -689,6 +720,7 @@ window.addEventListener('beforeunload', () => {
   // --- hud & over ---
   function updateHud(){ goldEl.textContent=gold; hpEl.textContent=hp; waveEl.textContent=wave; }
 function gameOver(scene){
+  sendRewardFinish(wave);
   // Полностью отключаем любые дальнейшие сохранения этой сессии
   DISABLE_SAVE = true;                                // NEW
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){} // гарантированно чистим сейв

@@ -87,6 +87,36 @@
   // payload из ?p=
   function getPayload(){ const p=new URL(location.href).searchParams.get('p'); try{ return p?JSON.parse(atob(p)):{} }catch{ return {} } }
   const payload = getPayload();
+  const params = new URL(location.href).searchParams;
+  const rewardRun = {
+    runId: params.get('run_id') || '',
+    token: params.get('token') || '',
+    finishUrl: params.get('finish_url') || ''
+  };
+  let sentReward = false;
+
+  async function sendRewardFinish(finalScore){
+    if (sentReward) return;
+    sentReward = true;
+    if (!rewardRun.runId || !rewardRun.token || !rewardRun.finishUrl) return;
+    try {
+      const durationMs = Math.max(0, Math.floor(performance.now() - tStart));
+      const res = await fetch(rewardRun.finishUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          run_id: rewardRun.runId,
+          token: rewardRun.token,
+          score: Math.max(0, Math.floor(Number(finalScore) || 0)),
+          duration_ms: durationMs
+        })
+      });
+      const j = await res.json().catch(()=> ({}));
+      if (!j.ok && !j.duplicate) console.log('Reward finish error:', j);
+    } catch(e) {
+      console.log('Reward finish failed:', e);
+    }
+  }
 
   // ===== WebAudio (синт) =====
   let AC=null;
@@ -286,6 +316,7 @@
     running=false; gameOver=true; drawOverlays();
     if (score > best) { best = Math.floor(score); localStorage.setItem('bestScore', best); bestEl.textContent = best; }
     if (sentScore) return; sentScore = true;
+    await sendRewardFinish(score);
     try{
       const res = await fetch('/api/score', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ score: Math.floor(score), payload }) });
       const j = await res.json().catch(()=> ({})); if(!j.ok) console.log('Score send error:', j);
