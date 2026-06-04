@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dust Arena - Vite Phaser Prototype</title>
+    <script type="module" crossorigin src="./assets/index-BygQn658.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-kgZ1LVRw.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Vite + TypeScript + Phaser 3</p>
+          <h1>Dust Arena</h1>
+          <p class="subtitle">
+            A slapstick turn-based gladiator toy with stamina, risky choices, and very questionable helmets.
+          </p>
+        </div>
+
+        <div class="score-card">
+          <span>Score</span>
+          <strong id="score">0</strong>
+          <small id="statusText">Round 1 of 12</small>
+        </div>
+      </section>
+
+      <section class="stage-panel">
+        <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
+        <div class="battle-ui" aria-label="Battle controls">
+          <div id="turnBadge" class="turn-badge">Your turn</div>
+
+          <div class="action-cluster">
+            <div id="actions" class="action-wheel"></div>
+          </div>
+
+          <div class="combat-plate player-plate">
+            <strong>Borshemir</strong>
+            <span id="playerHpText">HP 30/30</span>
+            <div class="stat-track"><div id="playerHpFill" class="stat-fill hp-fill"></div></div>
+            <span id="playerStaText">STA 10/10</span>
+            <div class="stat-track"><div id="playerStaFill" class="stat-fill stamina-fill"></div></div>
+          </div>
+
+          <div class="combat-plate enemy-plate">
+            <strong>Grumbus</strong>
+            <span id="enemyHpText">HP 30/30</span>
+            <div class="stat-track"><div id="enemyHpFill" class="stat-fill hp-fill"></div></div>
+            <span id="enemyStaText">STA 10/10</span>
+            <div class="stat-track"><div id="enemyStaFill" class="stat-fill stamina-fill"></div></div>
+          </div>
+
+          <div class="distance-ribbon">
+            <span>Distance</span>
+            <strong id="distanceText">Far</strong>
+          </div>
+
+          <div class="combat-toast">
+            <div id="log" class="log" aria-live="polite"></div>
+          </div>
+
+          <button id="restartButton" class="restart stage-restart" type="button">Restart fight</button>
+        </div>
+        <div id="resultBanner" class="result-banner" hidden></div>
+      </section>
+    </main>
+
+  </body>
+</html>

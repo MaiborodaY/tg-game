@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Gladiator fighter asset template</title>
+  <desc id="desc">A 512 by 512 alignment template for modular paper-doll gladiator assets.</desc>
+
+  <defs>
+    <style>
+      .label {
+        fill: #2f2417;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .small-label {
+        fill: #5f4b32;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .guide {
+        fill: none;
+        stroke: #cc3f2f;
+        stroke-width: 2;
+        stroke-dasharray: 8 8;
+      }
+
+      .zone {
+        fill: rgba(255, 221, 143, 0.14);
+        stroke: #d79b3d;
+        stroke-width: 1.5;
+        stroke-dasharray: 5 5;
+      }
+
+      .silhouette {
+        fill: rgba(55, 31, 18, 0.16);
+        stroke: #3a2416;
+        stroke-width: 3;
+      }
+
+      .pivot {
+        stroke: #14877d;
+        stroke-width: 3;
+      }
+    </style>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="511" height="511" rx="18" fill="none" stroke="#3a2416" stroke-width="1" />
+
+  <g id="zones">
+    <rect class="zone" x="166" y="70" width="180" height="105" rx="10" />
+    <text class="label" x="180" y="91">HEAD ZONE</text>
+
+    <rect class="zone" x="145" y="155" width="222" height="175" rx="10" />
+    <text class="label" x="159" y="177">TORSO / ARMOR ZONE</text>
+
+    <rect class="zone" x="151" y="315" width="210" height="140" rx="10" />
+    <text class="label" x="165" y="337">LEGS / BOOTS ZONE</text>
+
+    <rect class="zone" x="62" y="178" width="118" height="198" rx="10" />
+    <text class="small-label" x="76" y="199">SHIELD HAND</text>
+
+    <rect class="zone" x="332" y="178" width="118" height="198" rx="10" />
+    <text class="small-label" x="347" y="199">WEAPON HAND</text>
+  </g>
+
+  <g id="silhouette">
+    <ellipse class="silhouette" cx="256" cy="455" rx="94" ry="16" />
+    <circle class="silhouette" cx="256" cy="121" r="41" />
+    <path class="silhouette" d="M229 160 L283 160 L307 310 L205 310 Z" />
+    <path class="silhouette" d="M212 179 L176 251 L153 342 L122 331 L148 239 L191 169 Z" />
+    <path class="silhouette" d="M300 179 L336 251 L359 342 L390 331 L364 239 L321 169 Z" />
+    <path class="silhouette" d="M217 309 L251 309 L239 455 L196 455 Z" />
+    <path class="silhouette" d="M261 309 L295 309 L316 455 L273 455 Z" />
+  </g>
+
+  <g id="guides">
+    <line class="guide" x1="256" y1="0" x2="256" y2="512" />
+    <line class="guide" x1="0" y1="455" x2="512" y2="455" />
+    <line class="pivot" x1="236" y1="455" x2="276" y2="455" />
+    <line class="pivot" x1="256" y1="435" x2="256" y2="475" />
+    <circle cx="256" cy="455" r="7" fill="#14877d" />
+    <text class="label" x="271" y="449">PIVOT: feet-center</text>
+    <text class="small-label" x="271" y="464">x=256 y=455</text>
+    <text class="small-label" x="270" y="28">CENTER X</text>
+    <text class="small-label" x="18" y="449">FEET BASELINE</text>
+  </g>
+
+  <g id="notes">
+    <text class="label" x="24" y="34">512x512 transparent canvas</text>
+    <text class="small-label" x="24" y="52">Do not crop layers. Keep every part aligned to this silhouette.</text>
+    <text class="small-label" x="24" y="490">Runtime scale can change, but all source parts should keep this exact canvas.</text>
+  </g>
+</svg>
