@@ -29,7 +29,7 @@ function loadActionArcLayoutModule() {
         }
 
         if (id === "./combat") {
-          return { MELEE_RANGE: 0 };
+          return { MAX_STAMINA: 10, MELEE_RANGE: 0 };
         }
 
         if (id === "./stageLayout") {
@@ -54,7 +54,7 @@ function loadActionArcLayoutModule() {
 const actionArcLayout = loadActionArcLayoutModule();
 
 function makeState(distance, overrides = {}) {
-  return { distance, ...overrides };
+  return { activeTurn: "player", result: "playing", distance, player: { stamina: 10 }, ...overrides };
 }
 
 test("distance arc shows movement controls plus lunge", () => {
@@ -62,7 +62,7 @@ test("distance arc shows movement controls plus lunge", () => {
 
   assert.deepEqual(
     Array.from(layout.buttons, (button) => button.actionId),
-    ["forward", "back", "lunge", "rest"],
+    ["forward", "back", "lunge", "taunt"],
   );
 });
 
@@ -71,7 +71,7 @@ test("clinch arc swaps approach controls for attacks", () => {
 
   assert.deepEqual(
     Array.from(layout.buttons, (button) => button.actionId),
-    ["back", "heavy", "light", "taunt", "rest"],
+    ["back", "heavy", "light", "taunt"],
   );
 });
 
@@ -112,4 +112,32 @@ test("debug tuning can set a single absolute action button angle", () => {
   assert.notEqual(Math.round(tunedForward.y), Math.round(baseForward.y));
   assert.equal(Math.round(tunedBack.x), Math.round(baseBack.x));
   assert.equal(Math.round(tunedBack.y), Math.round(baseBack.y));
+});
+
+test("action buttons hide while the enemy is taking a turn", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { activeTurn: "enemy" }));
+
+  assert.equal(layout.buttons.length, 0);
+});
+
+test("action buttons hide after the fight is over", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(0, { result: "win" }));
+
+  assert.equal(layout.buttons.length, 0);
+});
+test("utility action becomes rest only below half stamina", () => {
+  const highStamina = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 5 } }));
+  const lowStamina = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 4 } }));
+
+  assert.equal(highStamina.buttons.at(-1).actionId, "taunt");
+  assert.equal(lowStamina.buttons.at(-1).actionId, "rest");
+});
+
+test("clinch arc uses one merged utility action", () => {
+  const lowStamina = actionArcLayout.getActionArcLayout(makeState(0, { player: { stamina: 4 } }));
+
+  assert.deepEqual(
+    Array.from(lowStamina.buttons, (button) => button.actionId),
+    ["back", "heavy", "light", "rest"],
+  );
 });

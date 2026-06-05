@@ -60,23 +60,23 @@ export const actions: Record<ActionId, ActionConfig> = {
   forward: {
     id: "forward",
     title: "Step Forward",
-    detail: "Cost 1 - Distance -1",
+    detail: "Cost 1 - Distance -0.5",
     cost: 1,
-    move: -1,
+    move: -0.5,
   },
   back: {
     id: "back",
     title: "Step Back",
-    detail: "Cost 1 - Distance +1",
+    detail: "Cost 1 - Distance +0.5",
     cost: 1,
-    move: 1,
+    move: 0.5,
   },
   lunge: {
     id: "lunge",
     title: "Lunge",
-    detail: "Cost 4 - Short dash + hit in clinch",
+    detail: "Cost 4 - Half dash + hit in clinch",
     cost: 4,
-    move: -1,
+    move: -0.5,
     damage: 4,
     rangeMax: MELEE_RANGE,
   },
@@ -191,15 +191,15 @@ export function distanceLabel(distance: number): string {
     return "Clinch";
   }
 
-  if (distance === 1) {
+  if (distance <= 1) {
     return "Melee";
   }
 
-  if (distance === 2) {
+  if (distance <= 2) {
     return "Near";
   }
 
-  if (distance === 3) {
+  if (distance <= 3) {
     return "Far";
   }
 

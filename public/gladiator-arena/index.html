@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Dust Arena - Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-D3dVJ967.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-gtGp4JwC.css">
+    <script type="module" crossorigin src="./assets/index-BAaj6P0l.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D3pu5Qng.css">
   </head>
   <body>
     <main class="shell">
@@ -45,21 +45,37 @@
           <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
           <div class="battle-ui" aria-label="Battle overlay">
             <button id="restartButton" class="restart stage-restart" type="button">Restart</button>
-            <section class="fighters-strip arena-fighters-strip" aria-label="Fighter stats">
-              <div class="combat-plate player-plate">
-                <strong>Borshemir</strong>
-                <span id="playerHpText">HP 30/30</span>
-                <div class="stat-track"><div id="playerHpFill" class="stat-fill hp-fill"></div></div>
-                <span id="playerStaText">STA 10/10</span>
-                <div class="stat-track"><div id="playerStaFill" class="stat-fill stamina-fill"></div></div>
+            <section class="fighters-strip arena-fighters-strip flask-hud" aria-label="Fighter stats">
+              <div class="fighter-flasks player-flasks">
+                <div class="flask-row" aria-label="Borshemir resources">
+                  <div class="resource-flask flask--stamina" aria-label="Borshemir stamina">
+                    <div id="playerStaFill" class="flask-fill stamina-fill"></div>
+                    <span id="playerStaText" class="flask-value">10/10</span>
+                    <small>Energy</small>
+                  </div>
+                  <div class="resource-flask flask--hp" aria-label="Borshemir health">
+                    <div id="playerHpFill" class="flask-fill hp-fill"></div>
+                    <span id="playerHpText" class="flask-value">30/30</span>
+                    <small>Health</small>
+                  </div>
+                </div>
+                <strong class="fighter-name">Borshemir</strong>
               </div>
 
-              <div class="combat-plate enemy-plate">
-                <strong>Grumbus</strong>
-                <span id="enemyHpText">HP 30/30</span>
-                <div class="stat-track"><div id="enemyHpFill" class="stat-fill hp-fill"></div></div>
-                <span id="enemyStaText">STA 10/10</span>
-                <div class="stat-track"><div id="enemyStaFill" class="stat-fill stamina-fill"></div></div>
+              <div class="fighter-flasks enemy-flasks">
+                <div class="flask-row" aria-label="Grumbus resources">
+                  <div class="resource-flask flask--hp" aria-label="Grumbus health">
+                    <div id="enemyHpFill" class="flask-fill hp-fill"></div>
+                    <span id="enemyHpText" class="flask-value">30/30</span>
+                    <small>Health</small>
+                  </div>
+                  <div class="resource-flask flask--stamina" aria-label="Grumbus stamina">
+                    <div id="enemyStaFill" class="flask-fill stamina-fill"></div>
+                    <span id="enemyStaText" class="flask-value">10/10</span>
+                    <small>Energy</small>
+                  </div>
+                </div>
+                <strong class="fighter-name">Grumbus</strong>
               </div>
             </section>
           </div>

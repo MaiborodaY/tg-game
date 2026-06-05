@@ -12,7 +12,7 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
 } from "./arenaLayout";
-import { MELEE_RANGE, type ActionId, type CombatState } from "./combat";
+import { MAX_STAMINA, MELEE_RANGE, type ActionId, type CombatState } from "./combat";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
@@ -48,15 +48,14 @@ const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "forward" },
   { actionId: "back" },
   { actionId: "lunge" },
-  { actionId: "rest" },
+  { actionId: "utility" },
 ];
 
 const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "back" },
   { actionId: "heavy" },
   { actionId: "light" },
-  { actionId: "taunt" },
-  { actionId: "rest" },
+  { actionId: "utility" },
 ];
 
 const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
@@ -69,6 +68,14 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
+
+function getSlotActionId(slot: ActionArcSlot, state: CombatState): ActionId {
+  if (slot.actionId !== "utility") {
+    return slot.actionId;
+  }
+
+  return state.player.stamina < MAX_STAMINA / 2 ? "rest" : "taunt";
+}
 
 function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number {
   switch (actionId) {
@@ -101,18 +108,19 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const centerY = fighterLayout.playerY + ACTION_ARC_CENTER_OFFSET_Y * scale;
   const radius = actionArcRadius * scale;
   const buttonEdge = ACTION_ARC_BUTTON_EDGE * actionButtonScale;
-  const slots = state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS;
+  const slots = state.activeTurn === "player" && state.result === "playing" ? (state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS) : [];
 
   return {
     centerX: clamp(centerX, buttonEdge, GAME_WIDTH - buttonEdge),
     centerY: clamp(centerY, ACTION_ARC_MIN_Y, ACTION_ARC_MAX_Y),
     buttons: slots.map((slot) => {
-      const angle = getActionAngle(slot.actionId, tuning) + actionArcRotation;
+      const actionId = getSlotActionId(slot, state);
+      const angle = getActionAngle(actionId, tuning) + actionArcRotation;
       const radians = (angle * Math.PI) / 180;
-      const label = ACTION_LABELS[slot.actionId];
+      const label = ACTION_LABELS[actionId];
 
       return {
-        actionId: slot.actionId,
+        actionId,
         label: label.label,
         detail: label.detail,
         x: clamp(centerX + Math.cos(radians) * radius, buttonEdge, GAME_WIDTH - buttonEdge),

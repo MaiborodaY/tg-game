@@ -41,13 +41,19 @@ function setConsistentDistance(state, distance) {
 test("melee attacks only work in clinch", () => {
   const state = combat.freshState();
 
-  state.distance = 1;
+  state.distance = 0.5;
   assert.equal(combat.canUseAction(state, "light"), false);
   assert.equal(combat.canUseAction(state, "heavy"), false);
 
   state.distance = combat.MELEE_RANGE;
   assert.equal(combat.canUseAction(state, "light"), true);
   assert.equal(combat.canUseAction(state, "heavy"), true);
+});
+
+test("movement actions use half-distance steps", () => {
+  assert.equal(combat.actions.forward.move, -0.5);
+  assert.equal(combat.actions.back.move, 0.5);
+  assert.equal(combat.actions.lunge.move, -0.5);
 });
 
 test("lunge is available at any open distance", () => {
@@ -59,25 +65,25 @@ test("lunge is available at any open distance", () => {
   state.distance = 2;
   assert.equal(combat.canUseAction(state, "lunge"), true);
 
-  state.distance = 1;
+  state.distance = 0.5;
   assert.equal(combat.canUseAction(state, "lunge"), true);
 
   state.distance = combat.MELEE_RANGE;
   assert.equal(combat.canUseAction(state, "lunge"), false);
 });
 
-test("lunge closes one step and only hits when it reaches clinch", () => {
+test("lunge closes half a step and only hits when it reaches clinch", () => {
   const farState = combat.freshState();
   setConsistentDistance(farState, 3);
 
   const missed = combat.resolvePlayerTurn(farState, "lunge");
 
-  assert.equal(missed.distance, 2);
+  assert.equal(missed.distance, 2.5);
   assert.equal(missed.enemy.hp, combat.MAX_HP);
   assert.equal(missed.lastPlayerDamage, 0);
 
   const nearState = combat.freshState();
-  setConsistentDistance(nearState, 1);
+  setConsistentDistance(nearState, 0.5);
 
   const hit = combat.resolvePlayerTurn(nearState, "lunge");
 
@@ -89,14 +95,14 @@ test("lunge closes one step and only hits when it reaches clinch", () => {
 
 test("lunge cannot move a fighter past the opponent", () => {
   const playerState = combat.freshState();
-  setConsistentDistance(playerState, 1);
+  setConsistentDistance(playerState, 0.5);
 
   const afterPlayerLunge = combat.resolvePlayerTurn(playerState, "lunge");
 
   assert.ok(afterPlayerLunge.playerPosition <= afterPlayerLunge.enemyPosition);
 
   const enemyState = combat.freshState();
-  setConsistentDistance(enemyState, 1);
+  setConsistentDistance(enemyState, 0.5);
   enemyState.activeTurn = "enemy";
 
   const afterEnemyLunge = combat.resolveEnemyTurn(enemyState);

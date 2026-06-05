@@ -10,7 +10,7 @@ const html = readFileSync(resolve(currentDir, "../index.html"), "utf8");
 test("fighter stats are mounted inside the battle overlay", () => {
   const statusStripIndex = html.indexOf('<section class="status-strip"');
   const battleOverlayIndex = html.indexOf('<div class="battle-ui"');
-  const statsIndex = html.indexOf('class="fighters-strip arena-fighters-strip"');
+  const statsIndex = html.indexOf('class="fighters-strip arena-fighters-strip flask-hud"');
   const resultBannerIndex = html.indexOf('<div id="resultBanner"');
 
   assert.ok(statusStripIndex > 0, "status strip should exist");
@@ -23,6 +23,15 @@ test("fighter stats are mounted inside the battle overlay", () => {
 test("bottom action panel is removed", () => {
   assert.equal(html.includes('class="action-cluster"'), false);
   assert.equal(html.includes('id="actions"'), false);
+});
+test("fighter resources use flask HUD while preserving stat ids", () => {
+  assert.equal(html.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
+  assert.equal(html.includes('class="resource-flask flask--hp"'), true);
+  assert.equal(html.includes('class="resource-flask flask--stamina"'), true);
+
+  for (const id of ["playerHpText", "playerStaText", "playerHpFill", "playerStaFill", "enemyHpText", "enemyStaText", "enemyHpFill", "enemyStaFill"]) {
+    assert.equal(html.includes(`id="${id}"`), true, `${id} should remain available for combat rendering`);
+  }
 });
 
 test("arena background is mounted as the battle screen backdrop", () => {

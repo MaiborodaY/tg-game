@@ -64,15 +64,21 @@ export function renderDom(dom: DomRefs, state: CombatState): void {
 }
 
 function renderStats(dom: DomRefs, state: CombatState): void {
-  dom.playerHpText.textContent = `HP ${state.player.hp}/${MAX_HP}`;
-  dom.playerStaText.textContent = `STA ${state.player.stamina}/${MAX_STAMINA}`;
-  dom.enemyHpText.textContent = `HP ${state.enemy.hp}/${MAX_HP}`;
-  dom.enemyStaText.textContent = `STA ${state.enemy.stamina}/${MAX_STAMINA}`;
+  dom.playerHpText.textContent = `${state.player.hp}/${MAX_HP}`;
+  dom.playerStaText.textContent = `${state.player.stamina}/${MAX_STAMINA}`;
+  dom.enemyHpText.textContent = `${state.enemy.hp}/${MAX_HP}`;
+  dom.enemyStaText.textContent = `${state.enemy.stamina}/${MAX_STAMINA}`;
 
-  dom.playerHpFill.style.width = `${(state.player.hp / MAX_HP) * 100}%`;
-  dom.playerStaFill.style.width = `${(state.player.stamina / MAX_STAMINA) * 100}%`;
-  dom.enemyHpFill.style.width = `${(state.enemy.hp / MAX_HP) * 100}%`;
-  dom.enemyStaFill.style.width = `${(state.enemy.stamina / MAX_STAMINA) * 100}%`;
+  setFlaskFill(dom.playerHpFill, state.player.hp / MAX_HP);
+  setFlaskFill(dom.playerStaFill, state.player.stamina / MAX_STAMINA);
+  setFlaskFill(dom.enemyHpFill, state.enemy.hp / MAX_HP);
+  setFlaskFill(dom.enemyStaFill, state.enemy.stamina / MAX_STAMINA);
+}
+
+function setFlaskFill(element: HTMLElement, ratio: number): void {
+  const safeRatio = Math.max(0, Math.min(1, ratio));
+  element.style.width = "100%";
+  element.style.height = `${safeRatio * 100}%`;
 }
 
 function renderLog(dom: DomRefs, state: CombatState): void {

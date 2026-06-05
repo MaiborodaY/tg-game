@@ -23,6 +23,11 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugHtml.includes('id="gameScreen" class="game-screen battle-screen"'), true);
   assert.equal(debugMainSource.includes("mountDebugPanel"), true);
 });
+test("debug preview uses the same flask resource HUD as the game", () => {
+  assert.equal(debugHtml.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
+  assert.equal(debugHtml.includes('class="resource-flask flask--hp"'), true);
+  assert.equal(debugHtml.includes('class="resource-flask flask--stamina"'), true);
+});
 
 test("debug panel source contains precision controls and grid", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");

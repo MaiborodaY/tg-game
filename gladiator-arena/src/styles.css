@@ -171,7 +171,9 @@ h1 {
 .stat-fill {
   width: 100%;
   height: 100%;
-  transition: width 220ms ease;
+  transition:
+    width 220ms ease,
+    height 220ms ease;
 }
 
 .hp-fill {
@@ -266,31 +268,158 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
+  align-items: end;
 }
 
-.battle-ui .combat-plate {
-  padding: 6px 7px 7px;
-  border-width: 2px;
-  border-radius: 12px;
+.flask-hud {
+  pointer-events: none;
+}
+
+.fighter-flasks {
+  display: grid;
+  width: fit-content;
+  max-width: 100%;
+  gap: 3px;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.32));
+}
+
+.enemy-flasks {
+  justify-self: end;
+}
+
+.flask-row {
+  display: flex;
+  align-items: end;
+  gap: 6px;
+}
+
+.enemy-flasks .flask-row {
+  justify-content: end;
+}
+
+.fighter-name {
+  display: block;
+  min-width: 104px;
+  padding: 4px 9px 5px;
+  border: 2px solid #35180d;
+  border-radius: 7px 14px 7px 14px;
+  color: #35180d;
   background:
-    linear-gradient(135deg, transparent 0 10px, rgba(255, 239, 185, 0.96) 10px),
-    linear-gradient(180deg, rgba(255, 240, 189, 0.96), rgba(217, 147, 56, 0.96));
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+    linear-gradient(100deg, transparent 0 9px, rgba(255, 244, 195, 0.98) 9px),
+    linear-gradient(180deg, #fff2be, #eda338);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.9);
+  text-transform: uppercase;
 }
 
-.battle-ui .combat-plate strong {
-  margin-bottom: 2px;
-  font-size: 0.7rem;
+.resource-flask {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: clamp(34px, 10vw, 44px);
+  height: clamp(56px, 16vw, 72px);
+  border: 3px solid #35180d;
+  border-radius: 11px 11px 18px 18px;
+  color: #fff5ca;
+  background:
+    radial-gradient(circle at 28% 16%, rgba(255, 255, 255, 0.92) 0 9px, transparent 10px),
+    linear-gradient(180deg, rgba(255, 239, 185, 0.42), rgba(46, 17, 8, 0.46));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.22),
+    0 3px 0 rgba(0, 0, 0, 0.32);
 }
 
-.battle-ui .combat-plate span {
-  margin-top: 2px;
-  font-size: 0.54rem;
+.resource-flask::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  z-index: 2;
+  width: 48%;
+  height: 16px;
+  border: 3px solid #35180d;
+  border-bottom: 0;
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(180deg, #726b8c, #251c34);
+  transform: translateX(-50%);
 }
 
-.battle-ui .stat-track {
-  height: 6px;
-  border-width: 2px;
+.resource-flask::after {
+  content: "";
+  position: absolute;
+  inset: 4px 6px auto auto;
+  z-index: 4;
+  width: 9px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent);
+  opacity: 0.72;
+  transform: rotate(16deg);
+}
+
+.flask-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  transition: height 220ms ease;
+}
+
+.flask--hp .flask-fill {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 236, 170, 0.75) 0 8px, transparent 9px),
+    linear-gradient(180deg, #ff5750, #b81416 58%, #78100d);
+}
+
+.flask--stamina .flask-fill {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(236, 255, 233, 0.74) 0 8px, transparent 9px),
+    linear-gradient(180deg, #5de7dd, #119a99 58%, #0b525b);
+}
+
+.flask-value {
+  position: absolute;
+  inset: 0 1px 13px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  color: #fff7cc;
+  font-size: clamp(0.48rem, 2.1vw, 0.68rem);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow:
+    1px 1px 0 #35180d,
+    -1px 1px 0 #35180d,
+    1px -1px 0 #35180d,
+    -1px -1px 0 #35180d;
+}
+
+.resource-flask small {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 4px;
+  z-index: 5;
+  overflow: hidden;
+  color: #fff0bd;
+  font-size: clamp(0.38rem, 1.6vw, 0.52rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 0 #35180d;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .combat-toast {
