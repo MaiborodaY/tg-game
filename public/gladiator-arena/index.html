@@ -5,19 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Dust Arena - Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-Z6tSelni.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B7cAoa18.css">
+    <script type="module" crossorigin src="./assets/index-B1K1ItOC.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CSbT3zoP.css">
   </head>
   <body>
     <main class="shell">
       <section id="mainMenu" class="main-menu" aria-label="Dust Arena main menu">
-        <div class="menu-card">
-          <p class="eyebrow">Telegram Mini App</p>
-          <h1>Dust Arena</h1>
-          <p class="subtitle">
-            A slapstick turn-based gladiator toy with stamina, risky choices, and very questionable helmets.
-          </p>
-          <button id="startButton" class="restart start-button" type="button">Start fight</button>
+        <h1 class="menu-title">Dust Arena</h1>
+        <div class="city-menu">
+          <img class="city-menu__bg" src="./assets/menu/city-menu.png" alt="" aria-hidden="true" />
+          <nav class="city-menu__nav" aria-label="City locations">
+            <button id="startButton" class="city-menu__button" type="button">
+              <span class="city-menu__icon" aria-hidden="true">⚔️</span>
+              <span>Арена</span>
+            </button>
+            <button class="city-menu__button" type="button" disabled>
+              <span class="city-menu__icon" aria-hidden="true">🔨</span>
+              <span>Кузнец</span>
+            </button>
+            <button class="city-menu__button" type="button" disabled>
+              <span class="city-menu__icon" aria-hidden="true">🛡️</span>
+              <span>Бронник</span>
+            </button>
+            <button class="city-menu__button" type="button" disabled>
+              <span class="city-menu__icon" aria-hidden="true">✨</span>
+              <span>Магическая лавка</span>
+            </button>
+            <button class="city-menu__button" type="button" disabled>
+              <span class="city-menu__icon" aria-hidden="true">⛪</span>
+              <span>Церковь</span>
+            </button>
+          </nav>
         </div>
       </section>
 
@@ -80,6 +98,7 @@
             </section>
           </div>
           <div id="resultBanner" class="result-banner" hidden></div>
+          <button id="cityButton" class="restart city-return" type="button" hidden>Back to City</button>
         </section>
 
         <section class="combat-toast" aria-label="Fight log">
