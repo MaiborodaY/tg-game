@@ -18,7 +18,7 @@ import {
   PLAYER_BODY_ASSET_URL,
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
-import { MAX_HP, MAX_STAMINA, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
+import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
 import { debugTuning, subscribeDebugTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
 
@@ -343,9 +343,12 @@ function renderScene(target: ArenaScene, current: CombatState): void {
 }
 
 function setHud(hud: HudVisual, fighter: FighterState): void {
-  hud.hpFill.displayWidth = 226 * (fighter.hp / MAX_HP);
-  hud.staminaFill.displayWidth = 226 * (fighter.stamina / MAX_STAMINA);
-  hud.label.setText(`HP ${fighter.hp}/${MAX_HP}  STA ${fighter.stamina}/${MAX_STAMINA}`);
+  const maxHp = getFighterMaxHp(fighter);
+  const maxStamina = getFighterMaxStamina(fighter);
+
+  hud.hpFill.displayWidth = 226 * (fighter.hp / maxHp);
+  hud.staminaFill.displayWidth = 226 * (fighter.stamina / maxStamina);
+  hud.label.setText(`HP ${fighter.hp}/${maxHp}  STA ${fighter.stamina}/${maxStamina}`);
 }
 
 function setFighterAlpha(fighter: FighterVisual, alpha: number): void {

@@ -19,7 +19,9 @@ export interface ActionConfig {
 export interface FighterState {
   name: string;
   hp: number;
+  maxHp: number;
   stamina: number;
+  maxStamina: number;
 }
 
 export interface LogEntry {
@@ -133,8 +135,8 @@ export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "me
 
 export function freshState(): CombatState {
   return {
-    player: { name: "Borshemir", hp: MAX_HP, stamina: MAX_STAMINA },
-    enemy: { name: "Grumbus", hp: MAX_HP, stamina: MAX_STAMINA },
+    player: { name: "Borshemir", hp: MAX_HP, maxHp: MAX_HP, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
+    enemy: { name: "Grumbus", hp: MAX_HP, maxHp: MAX_HP, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
     round: 1,
     score: 0,
     result: "playing",
@@ -153,6 +155,14 @@ export function freshState(): CombatState {
       { text: "Move into range, strike, then survive Grumbus on his turn." },
     ],
   };
+}
+
+export function getFighterMaxHp(fighter: FighterState): number {
+  return Math.max(1, fighter.maxHp);
+}
+
+export function getFighterMaxStamina(fighter: FighterState): number {
+  return Math.max(1, fighter.maxStamina);
 }
 
 export function availableActionIds(state: CombatState, actor: TurnOwner): ActionId[] {
@@ -319,7 +329,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
   const actorLabel = actor === "player" ? "You" : "Grumbus";
   const defenderLabel = actor === "player" ? "Grumbus" : "you";
 
-  attacker.stamina = clamp(attacker.stamina - action.cost, 0, MAX_STAMINA);
+  attacker.stamina = clamp(attacker.stamina - action.cost, 0, getFighterMaxStamina(attacker));
   clearGuard(state, actor);
 
   if (action.move) {
@@ -327,7 +337,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
   }
 
   if (action.restore) {
-    attacker.stamina = clamp(attacker.stamina + action.restore, 0, MAX_STAMINA);
+    attacker.stamina = clamp(attacker.stamina + action.restore, 0, getFighterMaxStamina(attacker));
   }
 
   if (action.block) {
@@ -347,7 +357,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
 
   if (damage > 0) {
     damage = applyDefensiveStatuses(state, actor, damage);
-    defender.hp = clamp(defender.hp - damage, 0, MAX_HP);
+    defender.hp = clamp(defender.hp - damage, 0, getFighterMaxHp(defender));
   } else {
     clearIncomingBonus(state, actor === "player" ? "enemy" : "player");
   }
@@ -421,6 +431,9 @@ function addActionLog(
 }
 
 function finishBattle(state: CombatState): void {
+  const playerName = state.player.name;
+  const enemyName = state.enemy.name;
+
   if (state.enemy.hp <= 0 && state.player.hp <= 0) {
     state.result = "draw";
     state.score += 250;
@@ -431,13 +444,13 @@ function finishBattle(state: CombatState): void {
   if (state.enemy.hp <= 0 || state.player.hp > state.enemy.hp) {
     state.result = "win";
     state.score += 1000 + state.player.hp * 40;
-    addLog(state, "Victory! Borshemir survives with all the dignity a bucket helmet allows.", true);
+    addLog(state, `Victory! ${playerName} survives with all the dignity a bucket helmet allows.`, true);
     return;
   }
 
   if (state.player.hp <= 0 || state.enemy.hp > state.player.hp) {
     state.result = "lose";
-    addLog(state, "Defeat. Grumbus wins and immediately starts posing at the wrong crowd.", true);
+    addLog(state, `Defeat. ${enemyName} wins and immediately starts posing at the wrong crowd.`, true);
     return;
   }
 

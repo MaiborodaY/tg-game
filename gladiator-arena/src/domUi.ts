@@ -1,4 +1,4 @@
-import { distanceLabel, MAX_HP, MAX_STAMINA, ROUND_LIMIT, type CombatState, type Result } from "./combat";
+import { distanceLabel, getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type CombatState, type Result } from "./combat";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -58,7 +58,7 @@ export function renderDom(dom: DomRefs, state: CombatState): void {
   dom.score.textContent = `${state.score}`;
   dom.statusText.textContent =
     state.result === "playing" ? `Round ${state.round} / ${ROUND_LIMIT}` : resultStatusText(state.result, state.round);
-  dom.turnBadge.textContent = state.result === "playing" ? (state.activeTurn === "player" ? "Your turn" : "Grumbus turn") : resultStatusText(state.result, state.round);
+  dom.turnBadge.textContent = state.result === "playing" ? (state.activeTurn === "player" ? "Your turn" : `${state.enemy.name} turn`) : resultStatusText(state.result, state.round);
   dom.distanceText.textContent = distanceLabel(state.distance);
   renderStats(dom, state);
   renderLog(dom, state);
@@ -66,15 +66,20 @@ export function renderDom(dom: DomRefs, state: CombatState): void {
 }
 
 function renderStats(dom: DomRefs, state: CombatState): void {
-  dom.playerHpText.textContent = `${state.player.hp}/${MAX_HP}`;
-  dom.playerStaText.textContent = `${state.player.stamina}/${MAX_STAMINA}`;
-  dom.enemyHpText.textContent = `${state.enemy.hp}/${MAX_HP}`;
-  dom.enemyStaText.textContent = `${state.enemy.stamina}/${MAX_STAMINA}`;
+  const playerMaxHp = getFighterMaxHp(state.player);
+  const playerMaxStamina = getFighterMaxStamina(state.player);
+  const enemyMaxHp = getFighterMaxHp(state.enemy);
+  const enemyMaxStamina = getFighterMaxStamina(state.enemy);
 
-  setFlaskFill(dom.playerHpFill, state.player.hp / MAX_HP);
-  setFlaskFill(dom.playerStaFill, state.player.stamina / MAX_STAMINA);
-  setFlaskFill(dom.enemyHpFill, state.enemy.hp / MAX_HP);
-  setFlaskFill(dom.enemyStaFill, state.enemy.stamina / MAX_STAMINA);
+  dom.playerHpText.textContent = `${state.player.hp}/${playerMaxHp}`;
+  dom.playerStaText.textContent = `${state.player.stamina}/${playerMaxStamina}`;
+  dom.enemyHpText.textContent = `${state.enemy.hp}/${enemyMaxHp}`;
+  dom.enemyStaText.textContent = `${state.enemy.stamina}/${enemyMaxStamina}`;
+
+  setFlaskFill(dom.playerHpFill, state.player.hp / playerMaxHp);
+  setFlaskFill(dom.playerStaFill, state.player.stamina / playerMaxStamina);
+  setFlaskFill(dom.enemyHpFill, state.enemy.hp / enemyMaxHp);
+  setFlaskFill(dom.enemyStaFill, state.enemy.stamina / enemyMaxStamina);
 }
 
 function setFlaskFill(element: HTMLElement, ratio: number): void {
@@ -104,7 +109,7 @@ function renderResult(dom: DomRefs, state: CombatState): void {
   }
 
   dom.resultBanner.hidden = false;
-  dom.resultBanner.textContent = resultBannerText(state.result);
+  dom.resultBanner.textContent = resultBannerText(state);
   dom.cityButton.hidden = false;
 }
 
@@ -124,13 +129,13 @@ function resultStatusText(result: Result, round: number): string {
   return `Round ${round} of ${ROUND_LIMIT}`;
 }
 
-function resultBannerText(result: Result): string {
-  if (result === "win") {
-    return "Borshemir wins!";
+function resultBannerText(state: CombatState): string {
+  if (state.result === "win") {
+    return `${state.player.name} wins!`;
   }
 
-  if (result === "lose") {
-    return "Grumbus wins!";
+  if (state.result === "lose") {
+    return `${state.enemy.name} wins!`;
   }
 
   return "The arena shrugs. Draw!";

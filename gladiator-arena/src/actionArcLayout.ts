@@ -78,7 +78,7 @@ function getSlotActionId(slot: ActionArcSlot, state: CombatState): ActionId {
     return slot.actionId;
   }
 
-  return state.player.stamina < MAX_STAMINA / 2 ? "rest" : "taunt";
+  return state.player.stamina < (state.player.maxStamina ?? MAX_STAMINA) / 2 ? "rest" : "taunt";
 }
 
 function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number {

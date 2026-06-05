@@ -1,7 +1,8 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
 import { launchArena, type ArenaScene } from "./ArenaScene";
-import { freshState, resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
+import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { getDomRefs, renderDom } from "./domUi";
+import { createCombatStateFromHero, createDefaultHero, type HeroState } from "./hero";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import "./styles.css";
 
@@ -40,7 +41,8 @@ function bootTelegramWebApp(): void {
 bootTelegramWebApp();
 
 const dom = getDomRefs();
-let state: CombatState = freshState();
+const hero: HeroState = createDefaultHero();
+let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
 let enemyTurnTimer: number | undefined;
@@ -194,7 +196,7 @@ function restart(options: { syncArena?: boolean } = {}): void {
 
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  commitState(freshState(), options);
+  commitState(createCombatStateFromHero(hero), options);
 }
 
 dom.startButton.addEventListener("click", startGame);
