@@ -680,6 +680,9 @@ body.arena-active .shell {
   object-fit: cover;
   object-position: center;
   pointer-events: none;
+  transform: translate3d(var(--arena-camera-x, 0), var(--arena-camera-y, 0), 0) scale(var(--arena-camera-zoom, 1));
+  transform-origin: 0 0;
+  transition: var(--arena-camera-transition, transform 320ms ease);
   user-select: none;
 }
 
@@ -1062,7 +1065,7 @@ body.debug-active .battle-screen .stage-bg {
   text-align: center;
   text-shadow: 2px 2px 0 #35180d;
   transform: translate(-50%, -50%) scale(var(--action-button-scale, 1));
-  transition: filter 120ms ease, opacity 120ms ease, transform 120ms ease;
+  transition: left 260ms ease, top 260ms ease, filter 120ms ease, opacity 120ms ease, transform 120ms ease;
 }
 
 .action-arc__button[data-action="forward"],
@@ -1070,6 +1073,40 @@ body.debug-active .battle-screen .stage-bg {
   background:
     radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
     linear-gradient(180deg, #e89e36 0%, #c46c1e 70%, #743113 100%);
+}
+.action-arc__button[data-action="light"] {
+  background:
+    radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
+    linear-gradient(180deg, #4fc15c 0%, #258b33 70%, #134b1f 100%);
+}
+
+.action-arc__button[data-action="medium"] {
+  background:
+    radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
+    linear-gradient(180deg, #ffd95e 0%, #d28b17 70%, #7a3b0f 100%);
+}
+
+.action-arc__button[data-action="heavy"] {
+  background:
+    radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
+    linear-gradient(180deg, #e14335 0%, #b8201b 70%, #69130e 100%);
+}
+
+.action-arc__button[data-action="light"]::before,
+.action-arc__button[data-action="medium"]::before,
+.action-arc__button[data-action="heavy"]::before {
+  content: "";
+  position: absolute;
+  right: 9px;
+  top: 8px;
+  width: 5px;
+  height: 24px;
+  border: 1px solid rgba(53, 24, 13, 0.82);
+  border-radius: 999px 999px 2px 2px;
+  background: linear-gradient(180deg, #fff8d8, #cbc5aa);
+  box-shadow: 0 17px 0 -1px #6b2a12;
+  transform: rotate(42deg);
+  transform-origin: center bottom;
 }
 
 .action-arc__button[data-action="rest"] {
@@ -1110,6 +1147,7 @@ body.debug-active .battle-screen .stage-bg {
 
 body.debug-active .action-arc__button {
   outline: 1px solid rgba(0, 255, 255, 0.35);
+  transition: none;
 }
 
 .turn-probe {
@@ -1145,4 +1183,275 @@ body.debug-active .action-arc__button {
 
 body.debug-active .action-arc__center {
   display: block;
+}
+
+.action-arc__button[data-action="taunt"] {
+  background:
+    radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
+    linear-gradient(180deg, #c86cff 0%, #7d30b6 70%, #3f145f 100%);
+}
+
+.action-arc__button[data-action]::before,
+.action-arc__button[data-action]::after {
+  content: none;
+}
+
+.action-arc__icon {
+  display: block;
+  min-height: 1.25rem;
+  font-size: 1.15rem;
+  line-height: 0.9;
+  text-shadow: none;
+  transform-origin: center;
+}
+
+.action-arc__button[data-action="back"] .action-arc__icon {
+  transform: scaleX(-1);
+}
+
+.action-arc__button[data-action="lunge"] .action-arc__icon {
+  margin-left: -0.18em;
+  letter-spacing: -0.32em;
+}
+.action-arc__button[data-action="rest"] {
+  background:
+    radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
+    linear-gradient(180deg, #4ebfff 0%, #1f75d0 70%, #123a76 100%);
+}
+
+.action-arc__button[data-action="taunt"] {
+  background:
+    radial-gradient(circle at 25% 20%, #fff6c9 0 18%, transparent 19%),
+    linear-gradient(180deg, #c86cff 0%, #7d30b6 70%, #3f145f 100%);
+}
+
+.action-arc__button[data-action]::before,
+.action-arc__button[data-action]::after {
+  content: none;
+}
+
+.action-arc__button > strong,
+.action-arc__button > span:not(.action-arc__icon) {
+  display: none;
+}
+
+.action-arc__icon {
+  display: block;
+  min-height: 1.25rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  text-shadow: none;
+  transform-origin: center;
+}
+
+.action-arc__button[data-action="back"] .action-arc__icon {
+  transform: scaleX(-1);
+}
+
+.action-arc__button[data-action="lunge"] .action-arc__icon {
+  margin-left: -0.18em;
+  letter-spacing: -0.32em;
+}
+/* Icon-first action buttons: softer volume, no oversized glare spot. */
+.action-arc__button {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(145deg, rgba(255, 242, 183, 0.2) 0%, rgba(255, 242, 183, 0.06) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 190, 0.24) 0 13%, transparent 14%),
+    linear-gradient(180deg, #f05245 0%, #b9211b 66%, #62120e 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 244, 190, 0.28),
+    inset 0 -7px 0 rgba(0, 0, 0, 0.24),
+    0 5px 0 #35180d,
+    0 0 0 2px rgba(255, 211, 132, 0.18);
+}
+
+.action-arc__button[data-action="forward"],
+.action-arc__button[data-action="back"] {
+  background:
+    linear-gradient(145deg, rgba(255, 242, 183, 0.22) 0%, rgba(255, 242, 183, 0.08) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 190, 0.24) 0 13%, transparent 14%),
+    linear-gradient(180deg, #f3a33d 0%, #c56b1e 66%, #6e2c12 100%);
+}
+
+.action-arc__button[data-action="lunge"],
+.action-arc__button[data-action="heavy"] {
+  background:
+    linear-gradient(145deg, rgba(255, 242, 183, 0.2) 0%, rgba(255, 242, 183, 0.06) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 190, 0.22) 0 13%, transparent 14%),
+    linear-gradient(180deg, #f24d42 0%, #b71918 66%, #5f0f0d 100%);
+}
+
+.action-arc__button[data-action="light"] {
+  background:
+    linear-gradient(145deg, rgba(255, 242, 183, 0.2) 0%, rgba(255, 242, 183, 0.06) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 190, 0.22) 0 13%, transparent 14%),
+    linear-gradient(180deg, #54ca62 0%, #278d35 66%, #114a1c 100%);
+}
+
+.action-arc__button[data-action="medium"] {
+  background:
+    linear-gradient(145deg, rgba(255, 252, 207, 0.22) 0%, rgba(255, 242, 183, 0.08) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 252, 207, 0.26) 0 13%, transparent 14%),
+    linear-gradient(180deg, #ffd85c 0%, #cf8616 66%, #73380e 100%);
+}
+
+.action-arc__button[data-action="taunt"] {
+  background:
+    linear-gradient(145deg, rgba(255, 242, 183, 0.2) 0%, rgba(255, 242, 183, 0.06) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 190, 0.22) 0 13%, transparent 14%),
+    linear-gradient(180deg, #c86cff 0%, #7d30b6 66%, #3f145f 100%);
+}
+
+.action-arc__button[data-action="rest"] {
+  background:
+    linear-gradient(145deg, rgba(255, 242, 183, 0.2) 0%, rgba(255, 242, 183, 0.06) 34%, transparent 36%),
+    radial-gradient(circle at 34% 24%, rgba(255, 244, 190, 0.22) 0 13%, transparent 14%),
+    linear-gradient(180deg, #4ebfff 0%, #1f75d0 66%, #123a76 100%);
+}
+
+.action-arc__icon {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  place-items: center;
+  font-size: 1.82rem;
+  line-height: 1;
+  filter: drop-shadow(1px 2px 0 rgba(53, 24, 13, 0.62));
+  text-shadow: none;
+}
+
+.action-arc__button[data-action="lunge"] .action-arc__icon {
+  font-size: 1rem;
+}
+
+.action-arc__icon-layer {
+  grid-area: 1 / 1;
+  display: block;
+  line-height: 1;
+  transform-origin: center;
+}
+
+.action-arc__icon-layer--bolt {
+  z-index: 1;
+  font-size: 2.2rem;
+  filter: drop-shadow(1px 2px 0 rgba(53, 24, 13, 0.45));
+  transform: translate(-5px, 1px) rotate(-12deg);
+}
+
+.action-arc__icon-layer--sword {
+  z-index: 2;
+  font-size: 1.75rem;
+  filter: drop-shadow(1px 2px 0 rgba(53, 24, 13, 0.72));
+  transform: translate(5px, -2px) rotate(20deg);
+}
+
+.action-arc__button:disabled .action-arc__icon {
+  opacity: 0.82;
+}
+/* Icon-only action buttons: richer material gradients without the old oversized glare. */
+.action-arc__button {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgba(255, 246, 204, 0.2), transparent 40%),
+    linear-gradient(180deg, #f05a4d 0%, #b6261d 58%, #5a120e 100%);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 239, 180, 0.25),
+    inset 0 -7px 0 rgba(0, 0, 0, 0.24),
+    0 5px 0 #35180d,
+    0 0 0 2px rgba(255, 211, 132, 0.18);
+}
+
+.action-arc__button[data-action="forward"],
+.action-arc__button[data-action="back"] {
+  background:
+    linear-gradient(145deg, rgba(255, 246, 204, 0.22), transparent 40%),
+    linear-gradient(180deg, #ffb041 0%, #c66a12 60%, #68300a 100%);
+}
+
+.action-arc__button[data-action="light"] {
+  background:
+    linear-gradient(145deg, rgba(255, 246, 204, 0.2), transparent 40%),
+    linear-gradient(180deg, #5fe08a 0%, #24984c 58%, #0e4d27 100%);
+}
+
+.action-arc__button[data-action="medium"] {
+  background:
+    linear-gradient(145deg, rgba(255, 250, 210, 0.22), transparent 40%),
+    linear-gradient(180deg, #ffd95f 0%, #d19015 58%, #724006 100%);
+}
+
+.action-arc__button[data-action="heavy"],
+.action-arc__button[data-action="lunge"] {
+  background:
+    linear-gradient(145deg, rgba(255, 244, 190, 0.18), transparent 40%),
+    linear-gradient(180deg, #ff5c54 0%, #c51f1e 58%, #641010 100%);
+}
+
+.action-arc__button[data-action="taunt"] {
+  background:
+    linear-gradient(145deg, rgba(255, 239, 205, 0.2), transparent 40%),
+    linear-gradient(180deg, #ab72ff 0%, #6933bc 58%, #2f155d 100%);
+}
+
+.action-arc__button[data-action="rest"] {
+  background:
+    linear-gradient(145deg, rgba(231, 255, 244, 0.22), transparent 40%),
+    linear-gradient(180deg, #34d6d2 0%, #138b8a 58%, #0b484b 100%);
+}
+
+.action-arc__button[data-action]::before,
+.action-arc__button[data-action]::after {
+  content: none;
+}
+
+.action-arc__icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  font-size: 1.82rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 0 rgba(53, 24, 13, 0.72));
+  text-shadow: none;
+}
+
+.action-arc__button:disabled .action-arc__icon {
+  opacity: 0.72;
+}
+
+.action-arc__button[data-action="back"] .action-arc__icon {
+  transform: scaleX(-1);
+}
+
+.action-arc__button[data-action="lunge"] .action-arc__icon {
+  transform: none;
+}
+
+.action-arc__icon-layer {
+  grid-area: 1 / 1;
+  display: block;
+  line-height: 1;
+  transform-origin: center;
+}
+
+.action-arc__icon-layer--bolt {
+  z-index: 1;
+  font-size: 2.05rem;
+  transform: translate(-4px, 2px) rotate(-12deg);
+  filter: drop-shadow(0 2px 0 rgba(91, 37, 8, 0.62));
+}
+
+.action-arc__icon-layer--sword {
+  z-index: 2;
+  font-size: 1.78rem;
+  transform: translate(5px, -3px) rotate(20deg);
+  filter: drop-shadow(0 2px 0 rgba(53, 24, 13, 0.8));
 }

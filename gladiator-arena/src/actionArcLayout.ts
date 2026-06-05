@@ -7,18 +7,20 @@ import {
   DEFAULT_ACTION_HEAVY_ANGLE,
   DEFAULT_ACTION_LIGHT_ANGLE,
   DEFAULT_ACTION_LUNGE_ANGLE,
+  DEFAULT_ACTION_MEDIUM_ANGLE,
   DEFAULT_ACTION_REST_ANGLE,
   DEFAULT_ACTION_TAUNT_ANGLE,
   GAME_HEIGHT,
   GAME_WIDTH,
 } from "./arenaLayout";
+import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
 import { MAX_STAMINA, MELEE_RANGE, type ActionId, type CombatState } from "./combat";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 
 interface ActionArcSlot {
-  actionId: ActionId;
+  actionId: ActionId | "utility";
 }
 
 export interface ActionArcButtonLayout {
@@ -54,6 +56,7 @@ const DISTANCE_SLOTS: ActionArcSlot[] = [
 const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "back" },
   { actionId: "heavy" },
+  { actionId: "medium" },
   { actionId: "light" },
   { actionId: "utility" },
 ];
@@ -62,8 +65,9 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   forward: { label: "FWD", detail: "Step" },
   back: { label: "BACK", detail: "Back" },
   lunge: { label: "LUNGE", detail: "Dash" },
-  light: { label: "SLASH", detail: "Quick" },
-  heavy: { label: "BONK", detail: "Heavy" },
+  light: { label: "LOW", detail: "3 dmg" },
+  medium: { label: "MED", detail: "5 dmg" },
+  heavy: { label: "STRONG", detail: "7 dmg" },
   block: { label: "BLOCK", detail: "Guard" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
@@ -87,6 +91,8 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
       return tuning?.actionLungeArcAngle ?? DEFAULT_ACTION_LUNGE_ANGLE;
     case "light":
       return tuning?.actionLightArcAngle ?? DEFAULT_ACTION_LIGHT_ANGLE;
+    case "medium":
+      return tuning?.actionMediumArcAngle ?? DEFAULT_ACTION_MEDIUM_ANGLE;
     case "heavy":
       return tuning?.actionHeavyArcAngle ?? DEFAULT_ACTION_HEAVY_ANGLE;
     case "taunt":
@@ -100,13 +106,17 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
 
 export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTuning): ActionArcLayout {
   const fighterLayout = getStageLayout(state, tuning);
+  const camera = getCameraTarget(state, tuning);
   const scale = Math.max(0.7, Math.min(1.35, fighterLayout.playerScale));
   const actionArcRotation = tuning?.actionArcRotation ?? DEFAULT_ACTION_ARC_ROTATION;
   const actionArcRadius = tuning?.actionArcRadius ?? DEFAULT_ACTION_ARC_RADIUS;
   const actionButtonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
-  const centerX = fighterLayout.playerX + ACTION_ARC_CENTER_OFFSET_X * scale;
-  const centerY = fighterLayout.playerY + ACTION_ARC_CENTER_OFFSET_Y * scale;
-  const radius = actionArcRadius * scale;
+  const worldCenterX = fighterLayout.playerX + ACTION_ARC_CENTER_OFFSET_X * scale;
+  const worldCenterY = fighterLayout.playerY + ACTION_ARC_CENTER_OFFSET_Y * scale;
+  const screenCenter = projectWorldToScreen(worldCenterX, worldCenterY, camera);
+  const centerX = screenCenter.x;
+  const centerY = screenCenter.y;
+  const radius = actionArcRadius * scale * camera.zoom;
   const buttonEdge = ACTION_ARC_BUTTON_EDGE * actionButtonScale;
   const slots = state.activeTurn === "player" && state.result === "playing" ? (state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS) : [];
 

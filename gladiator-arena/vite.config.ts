@@ -20,6 +20,7 @@ const prodDefaultFields = {
   DEFAULT_ACTION_BACK_ANGLE: "actionBackArcAngle",
   DEFAULT_ACTION_LUNGE_ANGLE: "actionLungeArcAngle",
   DEFAULT_ACTION_LIGHT_ANGLE: "actionLightArcAngle",
+  DEFAULT_ACTION_MEDIUM_ANGLE: "actionMediumArcAngle",
   DEFAULT_ACTION_HEAVY_ANGLE: "actionHeavyArcAngle",
   DEFAULT_ACTION_TAUNT_ANGLE: "actionTauntArcAngle",
   DEFAULT_ACTION_REST_ANGLE: "actionRestArcAngle",

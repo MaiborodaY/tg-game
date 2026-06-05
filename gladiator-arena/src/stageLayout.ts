@@ -22,7 +22,7 @@ export interface RuntimeStageLayout {
 
 export const CLINCH_VISUAL_GAP = 44;
 
-export function getStageLayout(current: CombatState, tuning?: ArenaDebugTuning): RuntimeStageLayout {
+export function getStageLayout(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): RuntimeStageLayout {
   const originX = tuning?.originX ?? DEFAULT_STAGE_ORIGIN_X;
   const originY = tuning?.originY ?? DEFAULT_STAGE_ORIGIN_Y;
   const playerStageX = tuning?.playerStageX ?? DEFAULT_PLAYER_STAGE_X;

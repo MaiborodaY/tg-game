@@ -17,6 +17,7 @@ import {
   PLAYER_BODY_ASSET_KEY,
   PLAYER_BODY_ASSET_URL,
 } from "./assets";
+import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { MAX_HP, MAX_STAMINA, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
 import { debugTuning, subscribeDebugTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
@@ -333,7 +334,7 @@ function renderScene(target: ArenaScene, current: CombatState): void {
   }
 
   positionFightersForState(target, target.visuals, current);
-  updateCamera(target);
+  updateCamera(target, current);
   setHud(target.visuals.playerHud, current.player);
   setHud(target.visuals.enemyHud, current.enemy);
   target.visuals.roundText.setText(`Round ${current.round} / ${ROUND_LIMIT}`);
@@ -434,12 +435,41 @@ function getScalableFighterParts(fighter: FighterVisual): ScalableGameObject[] {
   ];
 }
 
-function updateCamera(target: Phaser.Scene): void {
+function updateCamera(target: Phaser.Scene, current: CombatState): void {
   const camera = target.cameras.main;
+  const cameraTarget = getCameraTarget(current, getActiveDebugTuning());
+  const shouldSnap = isDebugTuningActive();
 
   target.tweens.killTweensOf(camera);
-  camera.setScroll(0, 0);
-  camera.setZoom(1);
+  syncStageBackground(cameraTarget, shouldSnap);
+
+  if (shouldSnap) {
+    camera.setScroll(cameraTarget.scrollX, cameraTarget.scrollY);
+    camera.setZoom(cameraTarget.zoom);
+    return;
+  }
+
+  target.tweens.add({
+    targets: camera,
+    scrollX: cameraTarget.scrollX,
+    scrollY: cameraTarget.scrollY,
+    zoom: cameraTarget.zoom,
+    duration: 320,
+    ease: "Sine.easeInOut",
+  });
+}
+
+function syncStageBackground(cameraTarget: CameraTarget, shouldSnap: boolean): void {
+  const gameScreen = document.querySelector<HTMLElement>("#gameScreen");
+
+  if (!gameScreen) {
+    return;
+  }
+
+  gameScreen.style.setProperty("--arena-camera-x", `${-cameraTarget.scrollX * cameraTarget.zoom}px`);
+  gameScreen.style.setProperty("--arena-camera-y", `${-cameraTarget.scrollY * cameraTarget.zoom}px`);
+  gameScreen.style.setProperty("--arena-camera-zoom", `${cameraTarget.zoom}`);
+  gameScreen.style.setProperty("--arena-camera-transition", shouldSnap ? "none" : "transform 320ms ease");
 }
 
 function getActiveDebugTuning(): typeof debugTuning | undefined {
@@ -615,7 +645,7 @@ function animateAction(
 }
 
 function getActionAnimationDx(actor: FighterVisual, opponent: FighterVisual, actionId: ActionId, direction: "left" | "right"): number {
-  const baseDx = actionId === "lunge" ? 42 : actionId === "heavy" ? 32 : actionId === "light" ? 24 : actionId === "taunt" ? -12 : 0;
+  const baseDx = actionId === "lunge" ? 42 : actionId === "heavy" ? 32 : actionId === "medium" ? 28 : actionId === "light" ? 24 : actionId === "taunt" ? -12 : 0;
 
   if (actionId !== "lunge") {
     return baseDx;

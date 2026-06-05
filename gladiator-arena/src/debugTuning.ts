@@ -7,6 +7,7 @@ import {
   DEFAULT_ACTION_HEAVY_ANGLE,
   DEFAULT_ACTION_LIGHT_ANGLE,
   DEFAULT_ACTION_LUNGE_ANGLE,
+  DEFAULT_ACTION_MEDIUM_ANGLE,
   DEFAULT_ACTION_REST_ANGLE,
   DEFAULT_ACTION_TAUNT_ANGLE,
   DEFAULT_ENEMY_SCALE,
@@ -38,6 +39,7 @@ export interface ArenaDebugTuning {
   actionBackArcAngle: number;
   actionLungeArcAngle: number;
   actionLightArcAngle: number;
+  actionMediumArcAngle: number;
   actionHeavyArcAngle: number;
   actionTauntArcAngle: number;
   actionRestArcAngle: number;
@@ -62,6 +64,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionBackArcAngle: DEFAULT_ACTION_BACK_ANGLE,
   actionLungeArcAngle: DEFAULT_ACTION_LUNGE_ANGLE,
   actionLightArcAngle: DEFAULT_ACTION_LIGHT_ANGLE,
+  actionMediumArcAngle: DEFAULT_ACTION_MEDIUM_ANGLE,
   actionHeavyArcAngle: DEFAULT_ACTION_HEAVY_ANGLE,
   actionTauntArcAngle: DEFAULT_ACTION_TAUNT_ANGLE,
   actionRestArcAngle: DEFAULT_ACTION_REST_ANGLE,
@@ -109,6 +112,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionBackArcAngle: clampNumber(input.actionBackArcAngle, -180, 180, defaultDebugTuning.actionBackArcAngle),
     actionLungeArcAngle: clampNumber(input.actionLungeArcAngle, -180, 180, defaultDebugTuning.actionLungeArcAngle),
     actionLightArcAngle: clampNumber(input.actionLightArcAngle, -180, 180, defaultDebugTuning.actionLightArcAngle),
+    actionMediumArcAngle: clampNumber(input.actionMediumArcAngle, -180, 180, defaultDebugTuning.actionMediumArcAngle),
     actionHeavyArcAngle: clampNumber(input.actionHeavyArcAngle, -180, 180, defaultDebugTuning.actionHeavyArcAngle),
     actionTauntArcAngle: clampNumber(input.actionTauntArcAngle, -180, 180, defaultDebugTuning.actionTauntArcAngle),
     actionRestArcAngle: clampNumber(input.actionRestArcAngle, -180, 180, defaultDebugTuning.actionRestArcAngle),

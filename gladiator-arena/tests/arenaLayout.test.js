@@ -50,7 +50,14 @@ test("stage origin is the shared gameplay and debug coordinate base", () => {
   assert.ok(arenaLayout.DEFAULT_STAGE_ORIGIN_Y <= arenaLayout.GAME_HEIGHT);
   assert.equal(arenaLayout.PLAYER_BASE_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_PLAYER_STAGE_X);
   assert.equal(arenaLayout.ENEMY_BASE_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_ENEMY_STAGE_X);
-  assert.equal(arenaLayout.CAMERA_PLAYER_SCREEN_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_PLAYER_STAGE_X);
+  assert.ok(arenaLayout.CAMERA_PLAYER_SCREEN_X > arenaLayout.PLAYER_BASE_X);
+  assert.ok(arenaLayout.CAMERA_PLAYER_SCREEN_X < arenaLayout.GAME_WIDTH / 2);
+});
+
+test("action angle defaults include all three attack tiers", () => {
+  assertFinite(arenaLayout.DEFAULT_ACTION_LIGHT_ANGLE);
+  assertFinite(arenaLayout.DEFAULT_ACTION_MEDIUM_ANGLE);
+  assertFinite(arenaLayout.DEFAULT_ACTION_HEAVY_ANGLE);
 });
 
 test("fighter ground line is derived from the stage origin", () => {

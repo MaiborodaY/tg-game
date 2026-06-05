@@ -45,6 +45,7 @@ test("debug panel source contains precision controls and grid", () => {
   assert.equal(debugPanelSource.includes("Button scale"), true);
   assert.equal(debugPanelSource.includes("FWD angle"), true);
   assert.equal(debugPanelSource.includes("LUNGE angle"), true);
+  assert.equal(debugPanelSource.includes("MED angle"), true);
   assert.equal(debugPanelSource.includes("REST angle"), true);
 });
 

@@ -1,4 +1,4 @@
-export type ActionId = "forward" | "back" | "lunge" | "light" | "heavy" | "block" | "taunt" | "rest";
+export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "block" | "taunt" | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
 
@@ -82,10 +82,18 @@ export const actions: Record<ActionId, ActionConfig> = {
   },
   light: {
     id: "light",
-    title: "Quick Slash",
+    title: "Weak Slash",
     detail: "Cost 2 - Clinch only - Damage 3",
     cost: 2,
     damage: 3,
+    rangeMax: MELEE_RANGE,
+  },
+  medium: {
+    id: "medium",
+    title: "Medium Slash",
+    detail: "Cost 3 - Clinch only - Damage 5",
+    cost: 3,
+    damage: 5,
     rangeMax: MELEE_RANGE,
   },
   heavy: {
@@ -121,7 +129,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   },
 };
 
-export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "heavy", "taunt", "rest"];
+export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"];
 
 export function freshState(): CombatState {
   return {
@@ -281,7 +289,9 @@ function chooseEnemyAction(current: CombatState): ActionId {
     }
 
     if (id === "heavy") {
-      weighted.push(id, id, playerLowHp ? id : "light");
+      weighted.push(id, playerLowHp ? id : "medium");
+    } else if (id === "medium") {
+      weighted.push(id, id, playerLowHp ? "heavy" : id);
     } else if (id === "light") {
       weighted.push(id, id, id);
     } else if (id === "block") {

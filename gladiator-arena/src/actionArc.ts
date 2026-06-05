@@ -6,6 +6,39 @@ import { getStageLayout } from "./stageLayout";
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 type TuningProvider = () => StageLayoutTuning;
 
+const ACTION_ICONS: Record<ActionId, string> = {
+  forward: "🏃",
+  back: "🏃",
+  lunge: "",
+  light: "🗡",
+  medium: "🗡",
+  heavy: "🗡",
+  block: "🛡",
+  taunt: "📣",
+  rest: "😴",
+};
+
+const LUNGE_ICON_LAYERS = [
+  { className: "action-arc__icon-layer action-arc__icon-layer--bolt", text: "⚡" },
+  { className: "action-arc__icon-layer action-arc__icon-layer--sword", text: "🗡" },
+] as const;
+
+function renderActionIcon(icon: HTMLElement, actionId: ActionId): void {
+  icon.replaceChildren();
+
+  if (actionId !== "lunge") {
+    icon.textContent = ACTION_ICONS[actionId];
+    return;
+  }
+
+  for (const layer of LUNGE_ICON_LAYERS) {
+    const layerElement = document.createElement("span");
+
+    layerElement.className = layer.className;
+    layerElement.textContent = layer.text;
+    icon.append(layerElement);
+  }
+}
 export interface ActionArcApi {
   sync: (state: CombatState) => void;
   destroy: () => void;
@@ -26,14 +59,15 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
 
   for (const actionId of actionOrder) {
     const button = document.createElement("button");
-    const title = document.createElement("strong");
-    const detail = document.createElement("span");
+    const icon = document.createElement("span");
 
     button.type = "button";
     button.className = "action-arc__button";
     button.dataset.action = actionId;
     button.hidden = true;
-    button.append(title, detail);
+    icon.className = "action-arc__icon";
+    icon.setAttribute("aria-hidden", "true");
+    button.append(icon);
     button.addEventListener("click", () => {
       button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
 
@@ -57,13 +91,16 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
 
     for (const [actionId, button] of buttons) {
       const buttonLayout = visibleButtons.get(actionId);
+      const icon = button.querySelector<HTMLElement>(".action-arc__icon");
 
       if (!buttonLayout) {
         button.hidden = true;
         continue;
       }
 
-      const [title, detail] = button.children;
+      if (!icon) {
+        continue;
+      }
 
       button.hidden = false;
       button.disabled = !canUseAction(state, actionId, "player");
@@ -71,9 +108,9 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
       button.style.top = `${(buttonLayout.y / GAME_HEIGHT) * 100}%`;
       button.style.setProperty("--action-button-scale", `${buttonLayout.scale}`);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
-      button.title = `${buttonLayout.label} angle ${Math.round(buttonLayout.angle)} deg`;
-      title.textContent = buttonLayout.label;
-      detail.textContent = buttonLayout.detail;
+      button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
+      button.title = `${buttonLayout.label} ${buttonLayout.detail} angle ${Math.round(buttonLayout.angle)} deg`;
+      renderActionIcon(icon, actionId);
     }
   }
 

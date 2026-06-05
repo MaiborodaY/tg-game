@@ -25,7 +25,14 @@ function loadActionArcLayoutModule() {
       module,
       require: (id) => {
         if (id === "./arenaLayout") {
-          return { GAME_WIDTH: 430, GAME_HEIGHT: 764, DEFAULT_ACTION_ARC_ROTATION: 0, DEFAULT_ACTION_ARC_RADIUS: 62, DEFAULT_ACTION_BUTTON_SCALE: 1, DEFAULT_ACTION_FORWARD_ANGLE: -108, DEFAULT_ACTION_BACK_ANGLE: -166, DEFAULT_ACTION_LUNGE_ANGLE: -34, DEFAULT_ACTION_LIGHT_ANGLE: -34, DEFAULT_ACTION_HEAVY_ANGLE: -108, DEFAULT_ACTION_TAUNT_ANGLE: 28, DEFAULT_ACTION_REST_ANGLE: 106 };
+          return { GAME_WIDTH: 430, GAME_HEIGHT: 764, DEFAULT_ACTION_ARC_ROTATION: 0, DEFAULT_ACTION_ARC_RADIUS: 62, DEFAULT_ACTION_BUTTON_SCALE: 1, DEFAULT_ACTION_FORWARD_ANGLE: -108, DEFAULT_ACTION_BACK_ANGLE: -166, DEFAULT_ACTION_LUNGE_ANGLE: -34, DEFAULT_ACTION_LIGHT_ANGLE: -34, DEFAULT_ACTION_MEDIUM_ANGLE: -70, DEFAULT_ACTION_HEAVY_ANGLE: -108, DEFAULT_ACTION_TAUNT_ANGLE: 28, DEFAULT_ACTION_REST_ANGLE: 106 };
+        }
+
+        if (id === "./arenaCamera") {
+          return {
+            getCameraTarget: () => ({ scrollX: 0, scrollY: 0, zoom: 1, centerX: 215, centerY: 382 }),
+            projectWorldToScreen: (x, y) => ({ x, y }),
+          };
         }
 
         if (id === "./combat") {
@@ -71,7 +78,7 @@ test("clinch arc swaps approach controls for attacks", () => {
 
   assert.deepEqual(
     Array.from(layout.buttons, (button) => button.actionId),
-    ["back", "heavy", "light", "taunt"],
+    ["back", "heavy", "medium", "light", "taunt"],
   );
 });
 
@@ -138,6 +145,14 @@ test("clinch arc uses one merged utility action", () => {
 
   assert.deepEqual(
     Array.from(lowStamina.buttons, (button) => button.actionId),
-    ["back", "heavy", "light", "rest"],
+    ["back", "heavy", "medium", "light", "rest"],
   );
+});
+test("clinch attack labels show low medium and strong tiers", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(0));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.equal(labels.light, "LOW");
+  assert.equal(labels.medium, "MED");
+  assert.equal(labels.heavy, "STRONG");
 });

@@ -50,6 +50,14 @@ test("melee attacks only work in clinch", () => {
   assert.equal(combat.canUseAction(state, "heavy"), true);
 });
 
+
+test("clinch attacks have weak medium and strong damage tiers", () => {
+  assert.equal(combat.actions.light.damage, 3);
+  assert.equal(combat.actions.medium.damage, 5);
+  assert.equal(combat.actions.heavy.damage, 7);
+  assert.ok(combat.actions.light.cost < combat.actions.medium.cost);
+  assert.ok(combat.actions.medium.cost < combat.actions.heavy.cost);
+});
 test("movement actions use half-distance steps", () => {
   assert.equal(combat.actions.forward.move, -0.5);
   assert.equal(combat.actions.back.move, 0.5);

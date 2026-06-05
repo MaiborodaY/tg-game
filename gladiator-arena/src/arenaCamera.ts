@@ -4,19 +4,18 @@ import {
   CAMERA_CENTER_Y,
   CAMERA_PLAYER_SCREEN_X,
   CLOSE_CAMERA_ZOOM,
-  ENEMY_BASE_X,
   FAR_CAMERA_ZOOM,
   GAME_HEIGHT,
   GAME_WIDTH,
   OVERVIEW_DISTANCE,
   OVERVIEW_MAX_ZOOM,
   OVERVIEW_MIN_ZOOM,
-  POSITION_PIXEL_STEP,
-  PLAYER_BASE_X,
   START_ENEMY_SCREEN_X,
   START_PLAYER_SCREEN_X,
 } from "./arenaLayout";
-import { MAX_DISTANCE, START_DISTANCE, type CombatState } from "./combat";
+import { MAX_DISTANCE, type CombatState } from "./combat";
+import type { ArenaDebugTuning } from "./debugTuning";
+import { getStageLayout } from "./stageLayout";
 
 export {
   ARENA_WORLD_LEFT,
@@ -27,7 +26,6 @@ export {
   OVERVIEW_DISTANCE,
   OVERVIEW_MAX_ZOOM,
   OVERVIEW_MIN_ZOOM,
-  POSITION_PIXEL_STEP,
   START_ENEMY_SCREEN_X,
   START_PLAYER_SCREEN_X,
 } from "./arenaLayout";
@@ -40,58 +38,81 @@ export interface CameraTarget {
   zoom: number;
 }
 
-export function getPlayerWorldX(current: Pick<CombatState, "playerPosition">): number {
-  return PLAYER_BASE_X + current.playerPosition * POSITION_PIXEL_STEP;
+export interface ScreenPoint {
+  x: number;
+  y: number;
 }
 
-export function getEnemyWorldX(current: Pick<CombatState, "enemyPosition">): number {
-  return ENEMY_BASE_X + (current.enemyPosition - START_DISTANCE) * POSITION_PIXEL_STEP;
+type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition">;
+
+export function getPlayerWorldX(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): number {
+  return getStageLayout(current, tuning).playerX;
 }
 
-export function getCameraTarget(current: Pick<CombatState, "distance" | "playerPosition" | "enemyPosition">): CameraTarget {
+export function getEnemyWorldX(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): number {
+  return getStageLayout(current, tuning).enemyX;
+}
+
+export function getCameraTarget(current: CameraState, tuning?: ArenaDebugTuning): CameraTarget {
   if (current.distance >= OVERVIEW_DISTANCE) {
-    return getOverviewCameraTarget(current);
+    return getOverviewCameraTarget(current, tuning);
   }
 
-  const closeness = (MAX_DISTANCE - current.distance) / MAX_DISTANCE;
+  const fighterLayout = getStageLayout(current, tuning);
+  const closeness = clamp((MAX_DISTANCE - current.distance) / MAX_DISTANCE, 0, 1);
   const zoom = FAR_CAMERA_ZOOM + closeness * (CLOSE_CAMERA_ZOOM - FAR_CAMERA_ZOOM);
-  const playerX = getPlayerWorldX(current);
-  const desiredCenterX = playerX + (GAME_WIDTH / 2 - CAMERA_PLAYER_SCREEN_X) / zoom;
-  const centerX = clampCameraCenterX(desiredCenterX, zoom);
-  const centerY = CAMERA_CENTER_Y;
+  const enemyInfluence = 0.3 - closeness * 0.12;
+  const desiredCenterX = fighterLayout.playerX + (fighterLayout.enemyX - fighterLayout.playerX) * enemyInfluence + (GAME_WIDTH / 2 - CAMERA_PLAYER_SCREEN_X) / zoom;
 
-  return toCameraTarget(centerX, centerY, zoom);
+  return toCameraTarget(desiredCenterX, CAMERA_CENTER_Y, zoom);
 }
 
-function getOverviewCameraTarget(current: Pick<CombatState, "playerPosition" | "enemyPosition">): CameraTarget {
-  const playerX = getPlayerWorldX(current);
-  const enemyX = getEnemyWorldX(current);
-  const span = Math.abs(enemyX - playerX);
+export function projectWorldToScreen(x: number, y: number, target: CameraTarget): ScreenPoint {
+  return {
+    x: (x - target.scrollX) * target.zoom,
+    y: (y - target.scrollY) * target.zoom,
+  };
+}
+
+function getOverviewCameraTarget(current: CameraState, tuning?: ArenaDebugTuning): CameraTarget {
+  const fighterLayout = getStageLayout(current, tuning);
+  const span = Math.max(1, Math.abs(fighterLayout.enemyX - fighterLayout.playerX));
   const desiredScreenSpan = START_ENEMY_SCREEN_X - START_PLAYER_SCREEN_X;
   const zoom = clamp(desiredScreenSpan / span, OVERVIEW_MIN_ZOOM, OVERVIEW_MAX_ZOOM);
-  const desiredCenterX = playerX + (GAME_WIDTH / 2 - START_PLAYER_SCREEN_X) / zoom;
-  const centerX = clampCameraCenterX(desiredCenterX, zoom);
-  const centerY = CAMERA_CENTER_Y;
+  const desiredCenterX = (fighterLayout.playerX + fighterLayout.enemyX) / 2;
 
-  return toCameraTarget(centerX, centerY, zoom);
+  return toCameraTarget(desiredCenterX, CAMERA_CENTER_Y, zoom);
 }
 
 function toCameraTarget(centerX: number, centerY: number, zoom: number): CameraTarget {
+  const scrollX = clampCameraScrollX(centerX - GAME_WIDTH / (2 * zoom), zoom);
+  const scrollY = clampCameraScrollY(centerY - GAME_HEIGHT / (2 * zoom), zoom);
+
   return {
-    centerX,
-    centerY,
-    scrollX: centerX - GAME_WIDTH / (2 * zoom),
-    scrollY: centerY - GAME_HEIGHT / (2 * zoom),
+    centerX: scrollX + GAME_WIDTH / (2 * zoom),
+    centerY: scrollY + GAME_HEIGHT / (2 * zoom),
+    scrollX,
+    scrollY,
     zoom,
   };
 }
 
 export function clampCameraCenterX(centerX: number, zoom: number): number {
-  const halfViewWidth = GAME_WIDTH / zoom / 2;
-  const minCenterX = ARENA_WORLD_LEFT + halfViewWidth;
-  const maxCenterX = ARENA_WORLD_LEFT + ARENA_WORLD_WIDTH - halfViewWidth;
+  const scrollX = clampCameraScrollX(centerX - GAME_WIDTH / (2 * zoom), zoom);
 
-  return clamp(centerX, minCenterX, maxCenterX);
+  return scrollX + GAME_WIDTH / (2 * zoom);
+}
+
+export function clampCameraScrollX(scrollX: number, zoom: number): number {
+  const maxScrollX = ARENA_WORLD_LEFT + ARENA_WORLD_WIDTH - GAME_WIDTH / zoom;
+
+  return clamp(scrollX, ARENA_WORLD_LEFT, Math.max(ARENA_WORLD_LEFT, maxScrollX));
+}
+
+export function clampCameraScrollY(scrollY: number, zoom: number): number {
+  const maxScrollY = GAME_HEIGHT - GAME_HEIGHT / zoom;
+
+  return clamp(scrollY, 0, Math.max(0, maxScrollY));
 }
 
 function clamp(value: number, min: number, max: number): number {
