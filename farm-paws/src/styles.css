@@ -1,0 +1,664 @@
+:root {
+  color: #263322;
+  background: #d7ecdb;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+button {
+  font: inherit;
+}
+
+.phone-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0) 44%),
+    radial-gradient(circle at 18% 18%, rgba(255, 224, 126, 0.42), transparent 24%),
+    linear-gradient(145deg, #c5e7c9 0%, #f5e5b8 48%, #c1dfb4 100%);
+}
+
+.game-card {
+  width: min(100%, 430px);
+  min-height: min(760px, calc(100vh - 36px));
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid rgba(71, 101, 55, 0.18);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 239, 0.96), rgba(246, 240, 217, 0.96)),
+    #fff8df;
+  box-shadow: 0 24px 80px rgba(58, 86, 44, 0.28);
+}
+
+.start-screen,
+.result-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.pet-badge,
+.result-emoji {
+  width: 86px;
+  height: 86px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7cf72;
+  box-shadow: inset 0 -8px 0 rgba(112, 72, 23, 0.12);
+  font-size: 46px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #68805a;
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+.lead,
+.best-note,
+.reward-line {
+  margin: 0;
+}
+
+h1 {
+  color: #2b4b27;
+  font-size: 2.2rem;
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+h2 {
+  color: #2f5028;
+  font-size: 1.8rem;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.lead {
+  max-width: 290px;
+  color: #5d674f;
+  line-height: 1.45;
+}
+
+.preview-grid {
+  width: min(100%, 274px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  padding: 12px;
+  border-radius: 24px;
+  background: rgba(104, 129, 73, 0.12);
+}
+
+.preview-plot {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  background: linear-gradient(180deg, #b87946, #8d5a36);
+  box-shadow: inset 0 7px 0 rgba(255, 255, 255, 0.12);
+  font-size: 1.7rem;
+}
+
+.mini-sequence {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: -4px;
+}
+
+.mini-sequence span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #4f7f3b;
+  box-shadow: 0 5px 0 rgba(52, 88, 36, 0.24);
+  font-weight: 950;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 52px;
+  border: 0;
+  border-radius: 17px;
+  padding: 0 22px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.primary-button {
+  color: #20301b;
+  background: #ffcf5d;
+  box-shadow: 0 10px 0 #c58a2b;
+}
+
+.secondary-button {
+  color: #31502c;
+  background: #dcebc7;
+  box-shadow: 0 8px 0 #a6bd82;
+}
+
+.primary-button:hover,
+.secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.primary-button:active,
+.secondary-button:active {
+  transform: translateY(4px);
+  box-shadow: 0 4px 0 rgba(80, 76, 49, 0.5);
+}
+
+.best-note {
+  color: #657756;
+}
+
+.top-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.top-panel h1 {
+  margin-top: 4px;
+  font-size: clamp(1.7rem, 8vw, 2.25rem);
+}
+
+.score-pill {
+  min-width: 78px;
+  min-height: 78px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border-radius: 24px;
+  color: #ffffff;
+  background: #4e7c35;
+  box-shadow: inset 0 -8px 0 rgba(31, 54, 20, 0.2);
+}
+
+.score-pill span {
+  display: block;
+  font-size: 1.85rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.score-pill small {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 18px 0 8px;
+  color: #59704f;
+  font-size: 0.93rem;
+}
+
+.heart-row {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  color: #596f4d;
+  background: rgba(255, 255, 255, 0.56);
+  font-size: 0.93rem;
+}
+
+.heart-row strong {
+  letter-spacing: 0;
+  font-size: 1.12rem;
+  line-height: 1;
+}
+
+.status-line {
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+  border-radius: 15px;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.status-line.is-watch {
+  background: #527ec0;
+}
+
+.status-line.is-repeat {
+  background: #7762a7;
+}
+
+.status-line.is-success {
+  background: #3d8c52;
+}
+
+.status-line.is-error {
+  background: #be5151;
+}
+
+.farm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0)),
+    #72954e;
+}
+
+.plot-button {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 32%),
+    repeating-linear-gradient(0deg, rgba(73, 41, 25, 0.08) 0 6px, transparent 6px 14px),
+    #9a643d;
+  box-shadow:
+    inset 0 -9px 0 rgba(73, 41, 25, 0.24),
+    0 5px 0 rgba(48, 75, 34, 0.18);
+  cursor: pointer;
+  transition: transform 130ms ease, filter 130ms ease, background 130ms ease;
+}
+
+.plot-button::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 3px solid rgba(255, 245, 178, 0);
+  border-radius: 14px;
+  transition: border-color 130ms ease, box-shadow 130ms ease;
+}
+
+.plot-button .plot-content {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(1.55rem, 9vw, 2.35rem);
+  line-height: 1;
+  filter: saturate(0.72);
+  opacity: 0.72;
+}
+
+.plot-pet {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 238, 164, 0.92);
+  box-shadow:
+    0 6px 0 rgba(111, 76, 31, 0.18),
+    0 0 18px rgba(255, 229, 114, 0.78);
+  font-size: 1.36rem;
+  pointer-events: none;
+  transform-origin: 50% 78%;
+  animation: plotPetRun 480ms ease-in-out infinite alternate;
+}
+
+.plot-pet::before,
+.plot-pet::after {
+  content: "🐾";
+  position: absolute;
+  color: rgba(65, 49, 95, 0.62);
+  font-size: 0.72rem;
+  filter: saturate(0.9);
+}
+
+.plot-pet::before {
+  left: -25px;
+  bottom: 2px;
+  transform: rotate(-18deg);
+  opacity: 0.82;
+}
+
+.plot-pet::after {
+  left: -43px;
+  bottom: 13px;
+  transform: rotate(15deg) scale(0.8);
+  opacity: 0.46;
+}
+
+.plot-button:disabled {
+  cursor: default;
+}
+
+.plot-button:not(:disabled):hover {
+  filter: brightness(1.06);
+  transform: translateY(-2px);
+}
+
+.plot-button.is-active {
+  animation: plotPulse 520ms ease-in-out infinite alternate;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 242, 155, 0.84), transparent 48%),
+    repeating-linear-gradient(0deg, rgba(73, 41, 25, 0.05) 0 6px, transparent 6px 14px),
+    #bf823f;
+  z-index: 1;
+}
+
+.plot-button.is-active::after {
+  border-color: rgba(255, 250, 204, 0.98);
+  box-shadow:
+    0 0 0 4px rgba(255, 214, 96, 0.46),
+    0 0 24px rgba(255, 227, 112, 0.8);
+}
+
+.plot-button.is-active .plot-content {
+  font-size: clamp(1.75rem, 10vw, 2.55rem);
+  filter: saturate(1.08) brightness(1.06);
+  opacity: 0.9;
+}
+
+.plot-button.is-correct {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.38), transparent 42%),
+    #4f9e54;
+}
+
+.plot-button.is-correct .plot-content,
+.plot-button.is-wrong .plot-content {
+  filter: saturate(1);
+  opacity: 1;
+}
+
+.plot-button.is-wrong {
+  animation: plotShake 260ms ease-in-out;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.28), transparent 42%),
+    #be5151;
+}
+
+.cat-guide-panel {
+  position: relative;
+  min-height: 132px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.cat-guide-panel::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  z-index: 0;
+  width: 116px;
+  height: 24px;
+  transform: translateX(-50%);
+  border-radius: 54% 46% 48% 52% / 58% 62% 38% 42%;
+  background:
+    radial-gradient(ellipse at 22% 40%, rgba(151, 183, 84, 0.92) 0 18%, transparent 34%),
+    radial-gradient(ellipse at 78% 28%, rgba(236, 199, 91, 0.58) 0 14%, transparent 32%),
+    linear-gradient(180deg, #93b966 0%, #7c9449 44%, #8a6638 100%);
+  box-shadow:
+    inset 0 -4px 0 rgba(96, 65, 32, 0.18),
+    0 8px 16px rgba(84, 91, 45, 0.16);
+}
+
+.cat-guide-image {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  height: 132px;
+  max-width: 76%;
+  object-fit: contain;
+  object-position: bottom center;
+  transform-origin: 50% 92%;
+  filter: drop-shadow(0 14px 20px rgba(65, 76, 38, 0.24));
+  pointer-events: none;
+}
+
+.cat-guide-image.is-waiting {
+  animation: catGuideIdle 1700ms ease-in-out infinite;
+}
+
+.cat-guide-image.is-pointing {
+  animation: catGuidePoint 720ms ease-in-out infinite alternate;
+}
+
+.cat-guide-image.is-happy {
+  animation: catGuideHappy 560ms ease-in-out infinite alternate;
+}
+
+.cat-guide-image.is-hurt {
+  width: 188px;
+  height: 132px;
+  max-width: 88%;
+  object-fit: cover;
+  object-position: 36% 58%;
+  animation: catGuideHurt 300ms ease-in-out;
+}
+
+.result-panel {
+  padding: 20px 0;
+}
+
+.result-cat-image {
+  width: 176px;
+  height: 142px;
+  object-fit: cover;
+  object-position: 36% 58%;
+  filter: drop-shadow(0 16px 22px rgba(65, 76, 38, 0.2));
+  pointer-events: none;
+}
+
+.reward-line {
+  padding: 10px 14px;
+  border-radius: 16px;
+  color: #31502c;
+  background: #dcebc7;
+  font-weight: 850;
+}
+
+.result-actions {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 260px);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 10;
+  max-width: min(330px, calc(100vw - 28px));
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border-radius: 16px;
+  color: #ffffff;
+  background: rgba(35, 49, 31, 0.94);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.18);
+  font-weight: 800;
+}
+
+@keyframes plotPulse {
+  from {
+    transform: translateY(0) scale(1);
+    filter: brightness(1);
+  }
+
+  to {
+    transform: translateY(-4px) scale(1.04);
+    filter: brightness(1.16);
+  }
+}
+
+@keyframes plotShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes plotPetRun {
+  from {
+    transform: translate(-6px, 1px) rotate(-8deg) scale(0.96);
+  }
+
+  to {
+    transform: translate(2px, -5px) rotate(8deg) scale(1.05);
+  }
+}
+
+@keyframes catGuideIdle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes catGuidePoint {
+  from {
+    transform: translateX(-3px) rotate(-2deg) scale(1);
+  }
+
+  to {
+    transform: translateX(4px) rotate(2deg) scale(1.02);
+  }
+}
+
+@keyframes catGuideHappy {
+  from {
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    transform: translateY(-5px) scale(1.06);
+  }
+}
+
+@keyframes catGuideHurt {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  30% {
+    transform: translateX(-5px) rotate(-2deg);
+  }
+
+  70% {
+    transform: translateX(5px) rotate(2deg);
+  }
+}
+
+@media (max-width: 430px) {
+  .phone-shell {
+    padding: 0;
+  }
+
+  .game-card {
+    min-height: 100vh;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .farm-grid {
+    gap: 8px;
+  }
+
+  .cat-guide-panel {
+    min-height: 122px;
+    margin-top: 8px;
+  }
+
+  .cat-guide-image {
+    height: 122px;
+  }
+
+  .cat-guide-image.is-hurt {
+    width: 176px;
+    height: 124px;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-card {
+    padding: 16px;
+  }
+
+  .top-panel {
+    align-items: flex-start;
+  }
+
+  .score-pill {
+    min-width: 68px;
+    min-height: 68px;
+  }
+
+  .cat-guide-panel {
+    min-height: 110px;
+  }
+
+  .cat-guide-image {
+    height: 112px;
+  }
+
+  .cat-guide-image.is-hurt {
+    width: 164px;
+    height: 116px;
+  }
+}

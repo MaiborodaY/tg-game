@@ -12,7 +12,9 @@
                     "gladiator:dev":  "vite gladiator-arena --open",
                     "gladiator:build":  "vite build gladiator-arena --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
                     "gladiator:test":  "node --test gladiator-arena/tests/*.test.js",
-                    "gladiator:lint":  "eslint gladiator-arena/src gladiator-arena/tests"
+                    "gladiator:lint":  "eslint gladiator-arena/src gladiator-arena/tests",
+                    "farm-paws:dev":  "vite farm-paws --open",
+                    "farm-paws:build":  "vite build farm-paws --base=./ --outDir ../public/farm-paws --emptyOutDir"
                 },
     "dependencies":  {
                          "phaser":  "^4.1.0"
