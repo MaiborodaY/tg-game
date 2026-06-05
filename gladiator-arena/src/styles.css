@@ -754,3 +754,91 @@ body.debug-active .battle-screen .stage-bg {
     margin: 0 8px 12px;
   }
 }
+.debug-grid {
+  --debug-grid-step: 20px;
+  --debug-grid-opacity: 0.55;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--debug-grid-opacity);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(rgba(255, 225, 90, 0.34) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 225, 90, 0.34) 2px, transparent 2px);
+  background-size:
+    var(--debug-grid-step) var(--debug-grid-step),
+    var(--debug-grid-step) var(--debug-grid-step),
+    100px 100px,
+    100px 100px;
+}
+
+.debug-grid__center-x,
+.debug-grid__center-y {
+  position: absolute;
+  background: rgba(0, 255, 255, 0.42);
+  box-shadow: none;
+}
+
+.debug-grid__center-x {
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.debug-grid__center-y {
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+}
+
+.debug-grid__label {
+  display: none;
+  position: absolute;
+  left: 8px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  color: #fff0bd;
+  background: rgba(35, 10, 4, 0.82);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.debug-grid__label--top {
+  top: 104px;
+}
+
+.debug-grid__label--bottom {
+  bottom: 116px;
+}
+
+.debug-app-panel .debug-panel__row {
+  grid-template-columns: 104px minmax(90px, 1fr) 68px;
+}
+
+.debug-panel__row--toggle {
+  grid-template-columns: 1fr auto;
+}
+
+.debug-panel__number {
+  width: 100%;
+  min-width: 0;
+  padding: 3px 5px;
+  border: 1px solid rgba(255, 211, 132, 0.72);
+  border-radius: 7px;
+  color: #fff0bd;
+  background: rgba(22, 7, 3, 0.72);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.debug-panel__row--toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #e99c33;
+}

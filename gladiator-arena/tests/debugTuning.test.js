@@ -27,27 +27,39 @@ const debugTuningModule = loadDebugTuningModule();
 
 test("debug tuning normalizes unsafe values", () => {
   const normalized = debugTuningModule.normalizeDebugTuning({
+    showGrid: "yes",
+    gridStep: 999,
+    gridOpacity: -1,
     playerScale: 99,
     enemyScale: -4,
     playerXOffset: 999,
+    playerYOffset: 999,
     enemyXOffset: -999,
+    enemyYOffset: -999,
     fighterYOffset: Number.NaN,
     actionWheelScale: 0,
     actionWheelOffsetX: 999,
     actionWheelOffsetY: -999,
   });
 
-  assert.equal(normalized.playerScale, 2.2);
-  assert.equal(normalized.enemyScale, 0.35);
-  assert.equal(normalized.playerXOffset, 180);
-  assert.equal(normalized.enemyXOffset, -180);
+  assert.equal(normalized.showGrid, true);
+  assert.equal(normalized.gridStep, 100);
+  assert.equal(normalized.gridOpacity, 0.1);
+  assert.equal(normalized.playerScale, 6);
+  assert.equal(normalized.enemyScale, 0.1);
+  assert.equal(normalized.playerXOffset, 320);
+  assert.equal(normalized.playerYOffset, 240);
+  assert.equal(normalized.enemyXOffset, -320);
+  assert.equal(normalized.enemyYOffset, -240);
   assert.equal(normalized.fighterYOffset, 0);
-  assert.equal(normalized.actionWheelScale, 0.55);
-  assert.equal(normalized.actionWheelOffsetX, 160);
-  assert.equal(normalized.actionWheelOffsetY, -160);
+  assert.equal(normalized.actionWheelScale, 0.2);
+  assert.equal(normalized.actionWheelOffsetX, 260);
+  assert.equal(normalized.actionWheelOffsetY, -260);
 });
 
-test("debug tuning defaults are stable", () => {
+test("debug tuning defaults enable the grid for the tuning app", () => {
+  assert.equal(debugTuningModule.defaultDebugTuning.showGrid, true);
+  assert.equal(debugTuningModule.defaultDebugTuning.gridStep, 40);
   assert.equal(debugTuningModule.defaultDebugTuning.playerScale, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyScale, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.actionWheelScale, 1);

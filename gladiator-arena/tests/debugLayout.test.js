@@ -23,3 +23,13 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugHtml.includes('id="gameScreen" class="game-screen battle-screen"'), true);
   assert.equal(debugMainSource.includes("mountDebugPanel"), true);
 });
+
+test("debug panel source contains precision controls and grid", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes("Show grid"), true);
+  assert.equal(debugPanelSource.includes("debug-panel__number"), true);
+  assert.equal(debugPanelSource.includes("debug-grid"), true);
+  assert.equal(debugPanelSource.includes("Player Y"), true);
+  assert.equal(debugPanelSource.includes("Enemy Y"), true);
+});

@@ -534,20 +534,47 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
 
 function applyFighterTuning(fighter: FighterVisual, side: "player" | "enemy"): void {
   const scale = side === "player" ? debugTuning.playerScale : debugTuning.enemyScale;
-  const scaleRatio = scale / fighter.debugScale;
+  const yOffset = debugTuning.fighterYOffset + (side === "player" ? debugTuning.playerYOffset : debugTuning.enemyYOffset);
 
   if (fighter.avatar) {
-    fighter.avatar.displayHeight = PLAYER_AVATAR_DISPLAY_HEIGHT * scale;
-    fighter.avatar.scaleX = fighter.avatar.scaleY;
-  } else if (Math.abs(scaleRatio - 1) > 0.001) {
+    applyAvatarFighterTuning(fighter, scale, yOffset);
+    return;
+  }
+
+  applyVectorFighterTuning(fighter, scale, yOffset);
+}
+
+function applyAvatarFighterTuning(fighter: FighterVisual, scale: number, yOffset: number): void {
+  if (!fighter.avatar) {
+    return;
+  }
+
+  const bodyY = FIGHTER_BASE_Y + 28 + yOffset;
+  const avatarY = FIGHTER_BASE_Y + PLAYER_AVATAR_FEET_Y_OFFSET + yOffset;
+  const shadowY = FIGHTER_BASE_Y + PLAYER_AVATAR_FEET_Y_OFFSET + yOffset;
+
+  fighter.body.y = bodyY;
+  fighter.avatar.y = avatarY;
+  fighter.avatar.displayHeight = PLAYER_AVATAR_DISPLAY_HEIGHT * scale;
+  fighter.avatar.scaleX = fighter.avatar.scaleY;
+  fighter.shadow.y = shadowY;
+  fighter.shadow.scaleX = scale;
+  fighter.shadow.scaleY = Math.max(0.65, scale * 0.85);
+  fighter.debugScale = scale;
+}
+
+function applyVectorFighterTuning(fighter: FighterVisual, scale: number, yOffset: number): void {
+  const scaleRatio = scale / fighter.debugScale;
+
+  if (Math.abs(scaleRatio - 1) > 0.001) {
     scaleObjectsFromPivot(getScalableFighterParts(fighter), fighter.shadow.x, fighter.shadow.y, scaleRatio);
   }
 
   fighter.debugScale = scale;
-  setFighterY(fighter, FIGHTER_BASE_Y + 28 + debugTuning.fighterYOffset);
+  setVectorFighterY(fighter, FIGHTER_BASE_Y + 28 + yOffset);
 }
 
-function setFighterY(fighter: FighterVisual, nextBodyY: number): void {
+function setVectorFighterY(fighter: FighterVisual, nextBodyY: number): void {
   const delta = nextBodyY - fighter.body.y;
 
   if (Math.abs(delta) < 0.5) {
