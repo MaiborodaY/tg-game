@@ -1,4 +1,4 @@
-import {
+﻿import {
   debugTuning,
   defaultDebugTuning,
   resetDebugTuning,
@@ -14,30 +14,50 @@ interface DebugRangeControlConfig {
   min: number;
   max: number;
   step: number;
+  resetValue: number;
 }
 
 interface DebugToggleControlConfig {
   type: "toggle";
   key: keyof ArenaDebugTuning;
   label: string;
+  resetValue: boolean;
 }
 
 type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig;
 
-const controls: DebugControlConfig[] = [
-  { type: "toggle", key: "showGrid", label: "Show grid" },
-  { type: "range", key: "gridStep", label: "Grid step", min: 10, max: 100, step: 1 },
-  { type: "range", key: "gridOpacity", label: "Grid alpha", min: 0.1, max: 1, step: 0.05 },
-  { type: "range", key: "playerScale", label: "Player scale", min: 0.1, max: 6, step: 0.01 },
-  { type: "range", key: "enemyScale", label: "Enemy scale", min: 0.1, max: 6, step: 0.01 },
-  { type: "range", key: "playerXOffset", label: "Player X", min: -320, max: 320, step: 1 },
-  { type: "range", key: "playerYOffset", label: "Player Y", min: -240, max: 240, step: 1 },
-  { type: "range", key: "enemyXOffset", label: "Enemy X", min: -320, max: 320, step: 1 },
-  { type: "range", key: "enemyYOffset", label: "Enemy Y", min: -240, max: 240, step: 1 },
-  { type: "range", key: "fighterYOffset", label: "Both Y", min: -320, max: 320, step: 1 },
-  { type: "range", key: "actionWheelScale", label: "Wheel scale", min: 0.2, max: 4, step: 0.01 },
-  { type: "range", key: "actionWheelOffsetX", label: "Wheel X", min: -260, max: 260, step: 1 },
-  { type: "range", key: "actionWheelOffsetY", label: "Wheel Y", min: -260, max: 260, step: 1 },
+interface DebugControlGroup {
+  title: string;
+  controls: DebugControlConfig[];
+}
+
+const controlGroups: DebugControlGroup[] = [
+  {
+    title: "Grid",
+    controls: [
+      { type: "toggle", key: "showGrid", label: "Show grid", resetValue: defaultDebugTuning.showGrid },
+      { type: "range", key: "gridStep", label: "Grid step", min: 10, max: 100, step: 1, resetValue: defaultDebugTuning.gridStep },
+      { type: "range", key: "gridOpacity", label: "Grid alpha", min: 0.1, max: 1, step: 0.05, resetValue: defaultDebugTuning.gridOpacity },
+    ],
+  },
+  {
+    title: "Origin",
+    controls: [
+      { type: "range", key: "originX", label: "Origin X", min: 0, max: 430, step: 1, resetValue: defaultDebugTuning.originX },
+      { type: "range", key: "originY", label: "Origin Y", min: 0, max: 764, step: 1, resetValue: defaultDebugTuning.originY },
+    ],
+  },
+  {
+    title: "Fighters from origin",
+    controls: [
+      { type: "range", key: "playerStageX", label: "Player X", min: -600, max: 600, step: 1, resetValue: 0 },
+      { type: "range", key: "playerStageY", label: "Player Y", min: -500, max: 500, step: 1, resetValue: 0 },
+      { type: "range", key: "enemyStageX", label: "Enemy X", min: -600, max: 600, step: 1, resetValue: 0 },
+      { type: "range", key: "enemyStageY", label: "Enemy Y", min: -500, max: 500, step: 1, resetValue: 0 },
+      { type: "range", key: "playerScale", label: "Player scale", min: 0.1, max: 6, step: 0.01, resetValue: defaultDebugTuning.playerScale },
+      { type: "range", key: "enemyScale", label: "Enemy scale", min: 0.1, max: 6, step: 0.01, resetValue: defaultDebugTuning.enemyScale },
+    ],
+  },
 ];
 
 export function mountDebugPanel(root: HTMLElement): void {
@@ -51,7 +71,7 @@ export function mountDebugPanel(root: HTMLElement): void {
     <details open>
       <summary>Debug tuning</summary>
       <div class="debug-panel__body"></div>
-      <button class="debug-panel__reset" type="button">Reset tuning</button>
+      <button class="debug-panel__reset" type="button">Reset all tuning</button>
     </details>
   `;
 
@@ -62,8 +82,8 @@ export function mountDebugPanel(root: HTMLElement): void {
     return;
   }
 
-  for (const control of controls) {
-    body.append(createControl(control));
+  for (const group of controlGroups) {
+    body.append(createControlGroup(group));
   }
 
   resetButton.addEventListener("click", () => {
@@ -75,6 +95,21 @@ export function mountDebugPanel(root: HTMLElement): void {
   mountDebugGrid();
   subscribeDebugTuning(() => syncDebugTools(panel));
   syncDebugTools(panel);
+}
+
+function createControlGroup(group: DebugControlGroup): HTMLElement {
+  const fieldset = document.createElement("fieldset");
+  fieldset.className = "debug-panel__group";
+
+  const legend = document.createElement("legend");
+  legend.textContent = group.title;
+  fieldset.append(legend);
+
+  for (const control of group.controls) {
+    fieldset.append(createControl(control));
+  }
+
+  return fieldset;
 }
 
 function createControl(control: DebugControlConfig): HTMLElement {
@@ -91,12 +126,19 @@ function createToggleControl(control: DebugToggleControlConfig): HTMLElement {
   row.innerHTML = `
     <span>${control.label}</span>
     <input type="checkbox" data-debug-key="${control.key}" />
+    <button class="debug-panel__control-reset" type="button" data-debug-reset-key="${control.key}" data-debug-reset-value="${control.resetValue}">Reset</button>
   `;
 
   const input = row.querySelector<HTMLInputElement>("input");
+  const reset = row.querySelector<HTMLButtonElement>(".debug-panel__control-reset");
 
   input?.addEventListener("change", () => {
     updateDebugTuning({ [control.key]: input.checked });
+  });
+
+  reset?.addEventListener("click", (event) => {
+    event.preventDefault();
+    updateDebugTuning({ [control.key]: control.resetValue });
   });
 
   return row;
@@ -125,10 +167,12 @@ function createRangeControl(control: DebugRangeControlConfig): HTMLElement {
       value="${defaultDebugTuning[control.key]}"
       data-debug-number-key="${control.key}"
     />
+    <button class="debug-panel__control-reset" type="button" data-debug-reset-key="${control.key}" data-debug-reset-value="${control.resetValue}">Reset</button>
   `;
 
   const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
   const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+  const reset = row.querySelector<HTMLButtonElement>(".debug-panel__control-reset");
 
   range?.addEventListener("input", () => {
     updateDebugTuning({ [control.key]: Number(range.value) });
@@ -136,6 +180,11 @@ function createRangeControl(control: DebugRangeControlConfig): HTMLElement {
 
   number?.addEventListener("input", () => {
     updateDebugTuning({ [control.key]: Number(number.value) });
+  });
+
+  reset?.addEventListener("click", (event) => {
+    event.preventDefault();
+    updateDebugTuning({ [control.key]: control.resetValue });
   });
 
   return row;
@@ -154,8 +203,7 @@ function mountDebugGrid(): void {
   grid.innerHTML = `
     <div class="debug-grid__center-x"></div>
     <div class="debug-grid__center-y"></div>
-    <div class="debug-grid__label debug-grid__label--top">x/y screen grid</div>
-    <div class="debug-grid__label debug-grid__label--bottom">430 x 764</div>
+    <div class="debug-grid__origin">0,0</div>
   `;
   battleScreen.append(grid);
 }
@@ -195,4 +243,6 @@ function syncGrid(): void {
   grid.hidden = !debugTuning.showGrid;
   grid.style.setProperty("--debug-grid-step", `${debugTuning.gridStep}px`);
   grid.style.setProperty("--debug-grid-opacity", `${debugTuning.gridOpacity}`);
+  grid.style.setProperty("--debug-origin-x", `${debugTuning.originX}px`);
+  grid.style.setProperty("--debug-origin-y", `${debugTuning.originY}px`);
 }

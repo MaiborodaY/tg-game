@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
@@ -30,6 +30,20 @@ test("debug panel source contains precision controls and grid", () => {
   assert.equal(debugPanelSource.includes("Show grid"), true);
   assert.equal(debugPanelSource.includes("debug-panel__number"), true);
   assert.equal(debugPanelSource.includes("debug-grid"), true);
+  assert.equal(debugPanelSource.includes("Origin X"), true);
+  assert.equal(debugPanelSource.includes("Origin Y"), true);
   assert.equal(debugPanelSource.includes("Player Y"), true);
   assert.equal(debugPanelSource.includes("Enemy Y"), true);
+  assert.equal(debugPanelSource.includes("Buttons rel X"), false);
+});
+
+test("debug panel groups controls by tuning category", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes('title: "Grid"'), true);
+  assert.equal(debugPanelSource.includes('title: "Origin"'), true);
+  assert.equal(debugPanelSource.includes('title: "Fighters from origin"'), true);
+  assert.equal(debugPanelSource.includes('title: "Action buttons relative to player"'), false);
+  assert.equal(debugPanelSource.includes("debug-panel__control-reset"), true);
+  assert.equal(debugPanelSource.includes("resetValue: 0"), true);
 });

@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath, URL } from "node:url";
@@ -18,7 +18,30 @@ function loadDebugTuningModule() {
 
   const module = { exports: {} };
 
-  vm.runInNewContext(outputText, { exports: module.exports, module }, { filename });
+  vm.runInNewContext(
+    outputText,
+    {
+      exports: module.exports,
+      module,
+      require: (id) => {
+        if (id === "./arenaLayout") {
+          return {
+            DEFAULT_STAGE_ORIGIN_X: 215,
+            DEFAULT_STAGE_ORIGIN_Y: 520,
+            DEFAULT_PLAYER_STAGE_X: -130,
+            DEFAULT_PLAYER_STAGE_Y: 0,
+            DEFAULT_ENEMY_STAGE_X: 130,
+            DEFAULT_ENEMY_STAGE_Y: 0,
+            DEFAULT_PLAYER_SCALE: 1,
+            DEFAULT_ENEMY_SCALE: 1,
+          };
+        }
+
+        throw new Error(`Unexpected require: ${id}`);
+      },
+    },
+    { filename },
+  );
 
   return module.exports;
 }
@@ -30,37 +53,36 @@ test("debug tuning normalizes unsafe values", () => {
     showGrid: "yes",
     gridStep: 999,
     gridOpacity: -1,
+    originX: 999,
+    originY: -999,
+    playerStageX: 999,
+    playerStageY: 999,
+    enemyStageX: -999,
+    enemyStageY: -999,
     playerScale: 99,
     enemyScale: -4,
-    playerXOffset: 999,
-    playerYOffset: 999,
-    enemyXOffset: -999,
-    enemyYOffset: -999,
-    fighterYOffset: Number.NaN,
-    actionWheelScale: 0,
-    actionWheelOffsetX: 999,
-    actionWheelOffsetY: -999,
   });
 
   assert.equal(normalized.showGrid, true);
   assert.equal(normalized.gridStep, 100);
   assert.equal(normalized.gridOpacity, 0.1);
+  assert.equal(normalized.originX, 430);
+  assert.equal(normalized.originY, 0);
+  assert.equal(normalized.playerStageX, 600);
+  assert.equal(normalized.playerStageY, 500);
+  assert.equal(normalized.enemyStageX, -600);
+  assert.equal(normalized.enemyStageY, -500);
   assert.equal(normalized.playerScale, 6);
   assert.equal(normalized.enemyScale, 0.1);
-  assert.equal(normalized.playerXOffset, 320);
-  assert.equal(normalized.playerYOffset, 240);
-  assert.equal(normalized.enemyXOffset, -320);
-  assert.equal(normalized.enemyYOffset, -240);
-  assert.equal(normalized.fighterYOffset, 0);
-  assert.equal(normalized.actionWheelScale, 0.2);
-  assert.equal(normalized.actionWheelOffsetX, 260);
-  assert.equal(normalized.actionWheelOffsetY, -260);
 });
 
-test("debug tuning defaults enable the grid for the tuning app", () => {
+test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.showGrid, true);
   assert.equal(debugTuningModule.defaultDebugTuning.gridStep, 40);
-  assert.equal(debugTuningModule.defaultDebugTuning.playerScale, 1);
-  assert.equal(debugTuningModule.defaultDebugTuning.enemyScale, 1);
-  assert.equal(debugTuningModule.defaultDebugTuning.actionWheelScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.originX, 215);
+  assert.equal(debugTuningModule.defaultDebugTuning.originY, 520);
+  assert.equal(debugTuningModule.defaultDebugTuning.playerStageX, -130);
+  assert.equal(debugTuningModule.defaultDebugTuning.playerStageY, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.enemyStageX, 130);
+  assert.equal(debugTuningModule.defaultDebugTuning.enemyStageY, 0);
 });

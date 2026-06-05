@@ -1,33 +1,40 @@
+﻿import {
+  DEFAULT_ENEMY_SCALE,
+  DEFAULT_ENEMY_STAGE_X,
+  DEFAULT_ENEMY_STAGE_Y,
+  DEFAULT_PLAYER_SCALE,
+  DEFAULT_PLAYER_STAGE_X,
+  DEFAULT_PLAYER_STAGE_Y,
+  DEFAULT_STAGE_ORIGIN_X,
+  DEFAULT_STAGE_ORIGIN_Y,
+} from "./arenaLayout";
+
 export interface ArenaDebugTuning {
   showGrid: boolean;
   gridStep: number;
   gridOpacity: number;
-  playerXOffset: number;
-  enemyXOffset: number;
-  fighterYOffset: number;
-  playerYOffset: number;
-  enemyYOffset: number;
+  originX: number;
+  originY: number;
+  playerStageX: number;
+  playerStageY: number;
+  enemyStageX: number;
+  enemyStageY: number;
   playerScale: number;
   enemyScale: number;
-  actionWheelScale: number;
-  actionWheelOffsetX: number;
-  actionWheelOffsetY: number;
 }
 
 export const defaultDebugTuning: ArenaDebugTuning = {
   showGrid: true,
   gridStep: 40,
   gridOpacity: 0.22,
-  playerXOffset: 0,
-  enemyXOffset: 0,
-  fighterYOffset: 0,
-  playerYOffset: 0,
-  enemyYOffset: 0,
-  playerScale: 1,
-  enemyScale: 1,
-  actionWheelScale: 1,
-  actionWheelOffsetX: 0,
-  actionWheelOffsetY: 0,
+  originX: DEFAULT_STAGE_ORIGIN_X,
+  originY: DEFAULT_STAGE_ORIGIN_Y,
+  playerStageX: DEFAULT_PLAYER_STAGE_X,
+  playerStageY: DEFAULT_PLAYER_STAGE_Y,
+  enemyStageX: DEFAULT_ENEMY_STAGE_X,
+  enemyStageY: DEFAULT_ENEMY_STAGE_Y,
+  playerScale: DEFAULT_PLAYER_SCALE,
+  enemyScale: DEFAULT_ENEMY_SCALE,
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -56,16 +63,14 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     showGrid: typeof input.showGrid === "boolean" ? input.showGrid : defaultDebugTuning.showGrid,
     gridStep: clampNumber(input.gridStep, 10, 100, defaultDebugTuning.gridStep),
     gridOpacity: clampNumber(input.gridOpacity, 0.1, 1, defaultDebugTuning.gridOpacity),
-    playerXOffset: clampNumber(input.playerXOffset, -320, 320, defaultDebugTuning.playerXOffset),
-    enemyXOffset: clampNumber(input.enemyXOffset, -320, 320, defaultDebugTuning.enemyXOffset),
-    fighterYOffset: clampNumber(input.fighterYOffset, -320, 320, defaultDebugTuning.fighterYOffset),
-    playerYOffset: clampNumber(input.playerYOffset, -240, 240, defaultDebugTuning.playerYOffset),
-    enemyYOffset: clampNumber(input.enemyYOffset, -240, 240, defaultDebugTuning.enemyYOffset),
+    originX: clampNumber(input.originX, 0, 430, defaultDebugTuning.originX),
+    originY: clampNumber(input.originY, 0, 764, defaultDebugTuning.originY),
+    playerStageX: clampNumber(input.playerStageX, -600, 600, defaultDebugTuning.playerStageX),
+    playerStageY: clampNumber(input.playerStageY, -500, 500, defaultDebugTuning.playerStageY),
+    enemyStageX: clampNumber(input.enemyStageX, -600, 600, defaultDebugTuning.enemyStageX),
+    enemyStageY: clampNumber(input.enemyStageY, -500, 500, defaultDebugTuning.enemyStageY),
     playerScale: clampNumber(input.playerScale, 0.1, 6, defaultDebugTuning.playerScale),
     enemyScale: clampNumber(input.enemyScale, 0.1, 6, defaultDebugTuning.enemyScale),
-    actionWheelScale: clampNumber(input.actionWheelScale, 0.2, 4, defaultDebugTuning.actionWheelScale),
-    actionWheelOffsetX: clampNumber(input.actionWheelOffsetX, -260, 260, defaultDebugTuning.actionWheelOffsetX),
-    actionWheelOffsetY: clampNumber(input.actionWheelOffsetY, -260, 260, defaultDebugTuning.actionWheelOffsetY),
   };
 }
 

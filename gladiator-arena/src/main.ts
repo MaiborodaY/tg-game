@@ -1,3 +1,4 @@
+import { mountActionArc, type ActionArcApi } from "./actionArc";
 import { launchArena, type ArenaScene } from "./ArenaScene";
 import { freshState, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
 import { getDomRefs, renderDom } from "./domUi";
@@ -40,12 +41,14 @@ bootTelegramWebApp();
 const dom = getDomRefs();
 let state: CombatState = freshState();
 let arenaScene: ArenaScene | undefined;
+let actionArc: ActionArcApi | undefined;
 let enemyTurnTimer: number | undefined;
 let hasStarted = false;
 
 function commitState(nextState: CombatState): void {
   state = nextState;
   renderDom(dom, state);
+  actionArc?.sync(state);
   arenaScene?.sync(state);
 }
 
@@ -81,6 +84,7 @@ function startGame(): void {
   hasStarted = true;
   dom.mainMenu.hidden = true;
   dom.gameScreen.hidden = false;
+  actionArc = mountActionArc(dom.gameScreen, handleAction);
   restart();
 
   window.requestAnimationFrame(() => {
