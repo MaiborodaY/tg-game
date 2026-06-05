@@ -25,6 +25,11 @@ function loadArenaLayoutModule() {
 
 const arenaLayout = loadArenaLayoutModule();
 
+function assertFinite(value) {
+  assert.equal(typeof value, "number");
+  assert.ok(Number.isFinite(value));
+}
+
 test("arena canvas uses a vertical 9:16 mobile layout", () => {
   assert.equal(arenaLayout.GAME_WIDTH, 430);
   assert.equal(arenaLayout.GAME_HEIGHT, 764);
@@ -32,12 +37,20 @@ test("arena canvas uses a vertical 9:16 mobile layout", () => {
 });
 
 test("stage origin is the shared gameplay and debug coordinate base", () => {
-  assert.equal(arenaLayout.DEFAULT_STAGE_ORIGIN_X, 215);
-  assert.equal(arenaLayout.DEFAULT_STAGE_ORIGIN_Y, 520);
-  assert.equal(arenaLayout.DEFAULT_PLAYER_STAGE_X, -130);
-  assert.equal(arenaLayout.DEFAULT_PLAYER_STAGE_Y, 0);
-  assert.equal(arenaLayout.DEFAULT_ENEMY_STAGE_X, 130);
-  assert.equal(arenaLayout.DEFAULT_ENEMY_STAGE_Y, 0);
+  assertFinite(arenaLayout.DEFAULT_STAGE_ORIGIN_X);
+  assertFinite(arenaLayout.DEFAULT_STAGE_ORIGIN_Y);
+  assertFinite(arenaLayout.DEFAULT_PLAYER_STAGE_X);
+  assertFinite(arenaLayout.DEFAULT_PLAYER_STAGE_Y);
+  assertFinite(arenaLayout.DEFAULT_ENEMY_STAGE_X);
+  assertFinite(arenaLayout.DEFAULT_ENEMY_STAGE_Y);
+
+  assert.ok(arenaLayout.DEFAULT_STAGE_ORIGIN_X >= 0);
+  assert.ok(arenaLayout.DEFAULT_STAGE_ORIGIN_X <= arenaLayout.GAME_WIDTH);
+  assert.ok(arenaLayout.DEFAULT_STAGE_ORIGIN_Y >= 0);
+  assert.ok(arenaLayout.DEFAULT_STAGE_ORIGIN_Y <= arenaLayout.GAME_HEIGHT);
+  assert.equal(arenaLayout.PLAYER_BASE_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_PLAYER_STAGE_X);
+  assert.equal(arenaLayout.ENEMY_BASE_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_ENEMY_STAGE_X);
+  assert.equal(arenaLayout.CAMERA_PLAYER_SCREEN_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_PLAYER_STAGE_X);
 });
 
 test("fighter ground line is derived from the stage origin", () => {

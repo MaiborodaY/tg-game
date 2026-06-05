@@ -453,12 +453,12 @@ function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number):
   }
 
   if (actor === "player") {
-    state.playerPosition -= actualDistanceDelta;
+    state.playerPosition = Math.min(state.playerPosition - actualDistanceDelta, state.enemyPosition);
   } else {
-    state.enemyPosition += actualDistanceDelta;
+    state.enemyPosition = Math.max(state.enemyPosition + actualDistanceDelta, state.playerPosition);
   }
 
-  state.distance = nextDistance;
+  state.distance = clamp(state.enemyPosition - state.playerPosition, MIN_DISTANCE, MAX_DISTANCE);
 }
 
 function setGuard(state: CombatState, actor: TurnOwner, value: number): void {

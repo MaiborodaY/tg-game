@@ -1,4 +1,4 @@
-﻿import {
+import {
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
@@ -7,7 +7,6 @@
   DEFAULT_PLAYER_STAGE_Y,
   DEFAULT_STAGE_ORIGIN_X,
   DEFAULT_STAGE_ORIGIN_Y,
-  POSITION_PIXEL_STEP,
 } from "./arenaLayout";
 import { START_DISTANCE, type CombatState } from "./combat";
 import type { ArenaDebugTuning } from "./debugTuning";
@@ -21,6 +20,8 @@ export interface RuntimeStageLayout {
   enemyScale: number;
 }
 
+export const CLINCH_VISUAL_GAP = 44;
+
 export function getStageLayout(current: CombatState, tuning?: ArenaDebugTuning): RuntimeStageLayout {
   const originX = tuning?.originX ?? DEFAULT_STAGE_ORIGIN_X;
   const originY = tuning?.originY ?? DEFAULT_STAGE_ORIGIN_Y;
@@ -28,13 +29,22 @@ export function getStageLayout(current: CombatState, tuning?: ArenaDebugTuning):
   const playerStageY = tuning?.playerStageY ?? DEFAULT_PLAYER_STAGE_Y;
   const enemyStageX = tuning?.enemyStageX ?? DEFAULT_ENEMY_STAGE_X;
   const enemyStageY = tuning?.enemyStageY ?? DEFAULT_ENEMY_STAGE_Y;
+  const playerBaseX = originX + playerStageX;
+  const enemyBaseX = originX + enemyStageX;
+  const positionStep = getPositionStep(playerBaseX, enemyBaseX);
 
   return {
-    playerX: originX + playerStageX + current.playerPosition * POSITION_PIXEL_STEP,
+    playerX: playerBaseX + current.playerPosition * positionStep,
     playerY: originY + playerStageY,
-    enemyX: originX + enemyStageX + (current.enemyPosition - START_DISTANCE) * POSITION_PIXEL_STEP,
+    enemyX: enemyBaseX + (current.enemyPosition - START_DISTANCE) * positionStep,
     enemyY: originY + enemyStageY,
     playerScale: tuning?.playerScale ?? DEFAULT_PLAYER_SCALE,
     enemyScale: tuning?.enemyScale ?? DEFAULT_ENEMY_SCALE,
   };
+}
+
+function getPositionStep(playerBaseX: number, enemyBaseX: number): number {
+  const playableGap = Math.max(0, enemyBaseX - playerBaseX - CLINCH_VISUAL_GAP);
+
+  return playableGap / START_DISTANCE;
 }

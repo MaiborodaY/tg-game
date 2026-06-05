@@ -13,3 +13,10 @@ test("gladiator dev scripts load the local Vite config", () => {
   assert.match(packageJson.scripts["gladiator:debug"], /--config gladiator-arena\/vite\.config\.ts/);
   assert.match(packageJson.scripts["gladiator:build"], /--config gladiator-arena\/vite\.config\.ts/);
 });
+
+test("debug start command launches the gladiator debug script", () => {
+  const source = readFileSync(join(repoRoot, "start-gladiator-debug.cmd"), "utf8");
+
+  assert.match(source, /npm\.cmd" run gladiator:debug/);
+  assert.match(source, /cd \/d/);
+});

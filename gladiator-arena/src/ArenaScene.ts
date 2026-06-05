@@ -514,7 +514,7 @@ function animateAction(
   direction: "left" | "right",
 ): void {
   const sign = direction === "right" ? 1 : -1;
-  const dx = actionId === "lunge" ? 42 : actionId === "heavy" ? 32 : actionId === "light" ? 24 : actionId === "taunt" ? -12 : 0;
+  const dx = getActionAnimationDx(actor, opponent, actionId, direction);
   const y = actionId === "rest" ? "+=14" : 0;
   const parts = actor.avatar
     ? [actor.avatar, actor.name]
@@ -614,6 +614,17 @@ function animateAction(
   createDust(target, opponent.body.x - 20 * sign, opponent.body.y + 72);
 }
 
+function getActionAnimationDx(actor: FighterVisual, opponent: FighterVisual, actionId: ActionId, direction: "left" | "right"): number {
+  const baseDx = actionId === "lunge" ? 42 : actionId === "heavy" ? 32 : actionId === "light" ? 24 : actionId === "taunt" ? -12 : 0;
+
+  if (actionId !== "lunge") {
+    return baseDx;
+  }
+
+  const gapToOpponent = direction === "right" ? opponent.body.x - actor.body.x : actor.body.x - opponent.body.x;
+
+  return Math.min(baseDx, Math.max(0, gapToOpponent - 2));
+}
 function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
   const parts = fighter.avatar
     ? [fighter.avatar]

@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath, URL } from "node:url";
@@ -34,7 +34,6 @@ function loadStageLayoutModule() {
             DEFAULT_ENEMY_STAGE_Y: 0,
             DEFAULT_PLAYER_SCALE: 1,
             DEFAULT_ENEMY_SCALE: 1,
-            POSITION_PIXEL_STEP: 96,
           };
         }
 
@@ -68,15 +67,19 @@ test("stage layout uses default origin for the regular game", () => {
   assert.equal(layout.enemyScale, 1);
 });
 
-test("stage layout applies combat movement from the shared origin", () => {
-  const layout = stageLayout.getStageLayout(makeCombatState(1, 2));
+test("stage layout applies combat movement without letting fighters cross", () => {
+  const near = stageLayout.getStageLayout(makeCombatState(2, 3));
+  const clinch = stageLayout.getStageLayout(makeCombatState(3, 3));
 
-  assert.equal(layout.playerX, 181);
-  assert.equal(layout.enemyX, 249);
+  assert.equal(near.playerX, 229);
+  assert.equal(near.enemyX, 345);
+  assert.equal(clinch.playerX, 301);
+  assert.equal(clinch.enemyX, 345);
+  assert.equal(clinch.enemyX - clinch.playerX, stageLayout.CLINCH_VISUAL_GAP);
 });
 
 test("stage layout uses debug tuning as an override, not a separate coordinate system", () => {
-  const layout = stageLayout.getStageLayout(makeCombatState(2, 1), {
+  const layout = stageLayout.getStageLayout(makeCombatState(1, 2), {
     showGrid: true,
     gridStep: 40,
     gridOpacity: 0.22,
@@ -90,9 +93,9 @@ test("stage layout uses debug tuning as an override, not a separate coordinate s
     enemyScale: 0.8,
   });
 
-  assert.equal(layout.playerX, 332);
+  assert.equal(layout.playerX, 172);
   assert.equal(layout.playerY, 520);
-  assert.equal(layout.enemyX, 88);
+  assert.equal(layout.enemyX, 248);
   assert.equal(layout.enemyY, 490);
   assert.equal(layout.playerScale, 1.4);
   assert.equal(layout.enemyScale, 0.8);

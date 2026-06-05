@@ -32,6 +32,12 @@ function loadCombatModule() {
 
 const combat = loadCombatModule();
 
+function setConsistentDistance(state, distance) {
+  state.distance = distance;
+  state.enemyPosition = combat.START_DISTANCE;
+  state.playerPosition = combat.START_DISTANCE - distance;
+}
+
 test("melee attacks only work in clinch", () => {
   const state = combat.freshState();
 
@@ -62,7 +68,7 @@ test("lunge is available at any open distance", () => {
 
 test("lunge closes one step and only hits when it reaches clinch", () => {
   const farState = combat.freshState();
-  farState.distance = 3;
+  setConsistentDistance(farState, 3);
 
   const missed = combat.resolvePlayerTurn(farState, "lunge");
 
@@ -71,20 +77,38 @@ test("lunge closes one step and only hits when it reaches clinch", () => {
   assert.equal(missed.lastPlayerDamage, 0);
 
   const nearState = combat.freshState();
-  nearState.distance = 1;
+  setConsistentDistance(nearState, 1);
 
   const hit = combat.resolvePlayerTurn(nearState, "lunge");
 
   assert.equal(hit.distance, combat.MELEE_RANGE);
+  assert.equal(hit.playerPosition, hit.enemyPosition);
   assert.equal(hit.enemy.hp, combat.MAX_HP - combat.actions.lunge.damage);
   assert.equal(hit.lastPlayerDamage, combat.actions.lunge.damage);
+});
+
+test("lunge cannot move a fighter past the opponent", () => {
+  const playerState = combat.freshState();
+  setConsistentDistance(playerState, 1);
+
+  const afterPlayerLunge = combat.resolvePlayerTurn(playerState, "lunge");
+
+  assert.ok(afterPlayerLunge.playerPosition <= afterPlayerLunge.enemyPosition);
+
+  const enemyState = combat.freshState();
+  setConsistentDistance(enemyState, 1);
+  enemyState.activeTurn = "enemy";
+
+  const afterEnemyLunge = combat.resolveEnemyTurn(enemyState);
+
+  assert.ok(afterEnemyLunge.playerPosition <= afterEnemyLunge.enemyPosition);
 });
 
 test("enemy cannot damage the player from far away", () => {
   const state = combat.freshState();
 
   state.activeTurn = "enemy";
-  state.distance = 3;
+  setConsistentDistance(state, 3);
 
   assert.equal(combat.canUseAction(state, "lunge", "enemy"), true);
   assert.equal(combat.canUseAction(state, "light", "enemy"), false);
@@ -95,4 +119,3 @@ test("enemy cannot damage the player from far away", () => {
   assert.equal(nextState.player.hp, state.player.hp);
   assert.equal(nextState.lastEnemyDamage, 0);
 });
-
