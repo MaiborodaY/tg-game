@@ -1522,7 +1522,11 @@ body.debug-active .action-arc__center {
   width: 44px;
   height: 44px;
   margin: 0;
+  border: 0;
+  border-radius: 0;
   place-items: center;
+  background: none;
+  box-shadow: none;
   color: #fff0bd;
   content: attr(data-icon);
   font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
@@ -1530,8 +1534,10 @@ body.debug-active .action-arc__center {
   font-weight: 400;
   line-height: 1;
   pointer-events: none;
+  right: auto;
   text-shadow: none;
   transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y)));
+  transform-origin: center;
   unicode-bidi: isolate;
 }
 
