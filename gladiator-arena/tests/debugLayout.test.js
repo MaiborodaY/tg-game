@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
@@ -35,6 +35,12 @@ test("debug panel source contains precision controls and grid", () => {
   assert.equal(debugPanelSource.includes("Player Y"), true);
   assert.equal(debugPanelSource.includes("Enemy Y"), true);
   assert.equal(debugPanelSource.includes("Buttons rel X"), false);
+  assert.equal(debugPanelSource.includes("Arc rotation"), true);
+  assert.equal(debugPanelSource.includes("Arc radius"), true);
+  assert.equal(debugPanelSource.includes("Button scale"), true);
+  assert.equal(debugPanelSource.includes("FWD angle"), true);
+  assert.equal(debugPanelSource.includes("LUNGE angle"), true);
+  assert.equal(debugPanelSource.includes("REST angle"), true);
 });
 
 test("debug panel groups controls by tuning category", () => {
@@ -44,6 +50,8 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes('title: "Origin"'), true);
   assert.equal(debugPanelSource.includes('title: "Fighters from origin"'), true);
   assert.equal(debugPanelSource.includes('title: "Action buttons relative to player"'), false);
+  assert.equal(debugPanelSource.includes('title: "Action arc"'), true);
+  assert.equal(debugPanelSource.includes('title: "Action button angles"'), true);
   assert.equal(debugPanelSource.includes("debug-panel__control-reset"), true);
   assert.equal(debugPanelSource.includes("resetValue: 0"), true);
 });

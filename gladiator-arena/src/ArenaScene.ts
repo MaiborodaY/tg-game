@@ -1,4 +1,4 @@
-﻿import Phaser from "phaser";
+import Phaser from "phaser";
 import {
   ARENA_WORLD_LEFT,
   ARENA_WORLD_WIDTH,
@@ -348,7 +348,7 @@ function setHud(hud: HudVisual, fighter: FighterState): void {
 }
 
 function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
-  Object.values(fighter).forEach((part) => part.setAlpha(alpha));
+  getFighterParts(fighter).forEach((part) => part.setAlpha(alpha));
 }
 
 function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState): void {

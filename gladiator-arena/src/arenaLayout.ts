@@ -1,4 +1,4 @@
-﻿export const GAME_WIDTH = 430;
+export const GAME_WIDTH = 430;
 export const GAME_HEIGHT = 764;
 
 export const DEFAULT_STAGE_ORIGIN_X = 215;
@@ -9,6 +9,16 @@ export const DEFAULT_ENEMY_STAGE_X = 130;
 export const DEFAULT_ENEMY_STAGE_Y = 0;
 export const DEFAULT_PLAYER_SCALE = 1;
 export const DEFAULT_ENEMY_SCALE = 1;
+export const DEFAULT_ACTION_ARC_ROTATION = 0;
+export const DEFAULT_ACTION_ARC_RADIUS = 62;
+export const DEFAULT_ACTION_BUTTON_SCALE = 1;
+export const DEFAULT_ACTION_FORWARD_ANGLE = -108;
+export const DEFAULT_ACTION_BACK_ANGLE = -166;
+export const DEFAULT_ACTION_LUNGE_ANGLE = -34;
+export const DEFAULT_ACTION_LIGHT_ANGLE = -34;
+export const DEFAULT_ACTION_HEAVY_ANGLE = -108;
+export const DEFAULT_ACTION_TAUNT_ANGLE = 28;
+export const DEFAULT_ACTION_REST_ANGLE = 106;
 
 export const GROUND_Y = DEFAULT_STAGE_ORIGIN_Y;
 export const FIGHTER_BASE_Y = DEFAULT_STAGE_ORIGIN_Y - 132;

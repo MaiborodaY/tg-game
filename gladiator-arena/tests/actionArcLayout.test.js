@@ -25,7 +25,7 @@ function loadActionArcLayoutModule() {
       module,
       require: (id) => {
         if (id === "./arenaLayout") {
-          return { GAME_WIDTH: 430, GAME_HEIGHT: 764 };
+          return { GAME_WIDTH: 430, GAME_HEIGHT: 764, DEFAULT_ACTION_ARC_ROTATION: 0, DEFAULT_ACTION_ARC_RADIUS: 62, DEFAULT_ACTION_BUTTON_SCALE: 1, DEFAULT_ACTION_FORWARD_ANGLE: -108, DEFAULT_ACTION_BACK_ANGLE: -166, DEFAULT_ACTION_LUNGE_ANGLE: -34, DEFAULT_ACTION_LIGHT_ANGLE: -34, DEFAULT_ACTION_HEAVY_ANGLE: -108, DEFAULT_ACTION_TAUNT_ANGLE: 28, DEFAULT_ACTION_REST_ANGLE: 106 };
         }
 
         if (id === "./combat") {
@@ -84,4 +84,32 @@ test("arc button centers stay inside the mobile game frame", () => {
     assert.ok(button.y >= actionArcLayout.ACTION_ARC_MIN_Y);
     assert.ok(button.y <= actionArcLayout.ACTION_ARC_MAX_Y);
   }
+});
+test("debug tuning can rotate and scale the action arc", () => {
+  const base = actionArcLayout.getActionArcLayout(makeState(3));
+  const tuned = actionArcLayout.getActionArcLayout(makeState(3), {
+    actionArcRotation: 90,
+    actionArcRadius: 100,
+    actionButtonScale: 1.5,
+  });
+
+  assert.notEqual(Math.round(tuned.buttons[0].x), Math.round(base.buttons[0].x));
+  assert.notEqual(Math.round(tuned.buttons[0].y), Math.round(base.buttons[0].y));
+  assert.equal(tuned.buttons[0].scale, 1.5);
+});
+
+test("debug tuning can set a single absolute action button angle", () => {
+  const base = actionArcLayout.getActionArcLayout(makeState(3));
+  const tuned = actionArcLayout.getActionArcLayout(makeState(3), {
+    actionForwardArcAngle: 90,
+  });
+  const baseForward = base.buttons.find((button) => button.actionId === "forward");
+  const tunedForward = tuned.buttons.find((button) => button.actionId === "forward");
+  const baseBack = base.buttons.find((button) => button.actionId === "back");
+  const tunedBack = tuned.buttons.find((button) => button.actionId === "back");
+
+  assert.notEqual(Math.round(tunedForward.x), Math.round(baseForward.x));
+  assert.notEqual(Math.round(tunedForward.y), Math.round(baseForward.y));
+  assert.equal(Math.round(tunedBack.x), Math.round(baseBack.x));
+  assert.equal(Math.round(tunedBack.y), Math.round(baseBack.y));
 });

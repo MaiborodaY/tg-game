@@ -9,9 +9,9 @@
                             "vite":  "^8.0.16"
                         },
     "scripts":  {
-                    "gladiator:dev":  "vite gladiator-arena --open",
-                    "gladiator:debug":  "vite gladiator-arena --open /debug.html",
-                    "gladiator:build":  "vite build gladiator-arena --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
+                    "gladiator:dev":  "vite gladiator-arena --config gladiator-arena/vite.config.ts --open",
+                    "gladiator:debug":  "vite gladiator-arena --config gladiator-arena/vite.config.ts --open /debug.html",
+                    "gladiator:build":  "vite build gladiator-arena --config gladiator-arena/vite.config.ts --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
                     "gladiator:test":  "node --test gladiator-arena/tests/*.test.js",
                     "gladiator:lint":  "eslint gladiator-arena/src gladiator-arena/tests",
                     "farm-paws:dev":  "vite farm-paws --open",

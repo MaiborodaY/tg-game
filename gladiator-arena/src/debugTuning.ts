@@ -1,4 +1,14 @@
-﻿import {
+import {
+  DEFAULT_ACTION_ARC_RADIUS,
+  DEFAULT_ACTION_ARC_ROTATION,
+  DEFAULT_ACTION_BACK_ANGLE,
+  DEFAULT_ACTION_BUTTON_SCALE,
+  DEFAULT_ACTION_FORWARD_ANGLE,
+  DEFAULT_ACTION_HEAVY_ANGLE,
+  DEFAULT_ACTION_LIGHT_ANGLE,
+  DEFAULT_ACTION_LUNGE_ANGLE,
+  DEFAULT_ACTION_REST_ANGLE,
+  DEFAULT_ACTION_TAUNT_ANGLE,
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
@@ -21,6 +31,16 @@ export interface ArenaDebugTuning {
   enemyStageY: number;
   playerScale: number;
   enemyScale: number;
+  actionArcRotation: number;
+  actionArcRadius: number;
+  actionButtonScale: number;
+  actionForwardArcAngle: number;
+  actionBackArcAngle: number;
+  actionLungeArcAngle: number;
+  actionLightArcAngle: number;
+  actionHeavyArcAngle: number;
+  actionTauntArcAngle: number;
+  actionRestArcAngle: number;
 }
 
 export const defaultDebugTuning: ArenaDebugTuning = {
@@ -35,6 +55,16 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   enemyStageY: DEFAULT_ENEMY_STAGE_Y,
   playerScale: DEFAULT_PLAYER_SCALE,
   enemyScale: DEFAULT_ENEMY_SCALE,
+  actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
+  actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
+  actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
+  actionForwardArcAngle: DEFAULT_ACTION_FORWARD_ANGLE,
+  actionBackArcAngle: DEFAULT_ACTION_BACK_ANGLE,
+  actionLungeArcAngle: DEFAULT_ACTION_LUNGE_ANGLE,
+  actionLightArcAngle: DEFAULT_ACTION_LIGHT_ANGLE,
+  actionHeavyArcAngle: DEFAULT_ACTION_HEAVY_ANGLE,
+  actionTauntArcAngle: DEFAULT_ACTION_TAUNT_ANGLE,
+  actionRestArcAngle: DEFAULT_ACTION_REST_ANGLE,
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -46,6 +76,7 @@ export function updateDebugTuning(patch: Partial<ArenaDebugTuning>): void {
   Object.assign(debugTuning, normalizeDebugTuning({ ...debugTuning, ...patch }));
   saveDebugTuning(debugTuning);
   listeners.forEach((listener) => listener());
+  dispatchDebugTuningChange();
 }
 
 export function resetDebugTuning(): void {
@@ -71,6 +102,16 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     enemyStageY: clampNumber(input.enemyStageY, -500, 500, defaultDebugTuning.enemyStageY),
     playerScale: clampNumber(input.playerScale, 0.1, 6, defaultDebugTuning.playerScale),
     enemyScale: clampNumber(input.enemyScale, 0.1, 6, defaultDebugTuning.enemyScale),
+    actionArcRotation: clampNumber(input.actionArcRotation, -180, 180, defaultDebugTuning.actionArcRotation),
+    actionArcRadius: clampNumber(input.actionArcRadius, 24, 150, defaultDebugTuning.actionArcRadius),
+    actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),
+    actionForwardArcAngle: clampNumber(input.actionForwardArcAngle, -180, 180, defaultDebugTuning.actionForwardArcAngle),
+    actionBackArcAngle: clampNumber(input.actionBackArcAngle, -180, 180, defaultDebugTuning.actionBackArcAngle),
+    actionLungeArcAngle: clampNumber(input.actionLungeArcAngle, -180, 180, defaultDebugTuning.actionLungeArcAngle),
+    actionLightArcAngle: clampNumber(input.actionLightArcAngle, -180, 180, defaultDebugTuning.actionLightArcAngle),
+    actionHeavyArcAngle: clampNumber(input.actionHeavyArcAngle, -180, 180, defaultDebugTuning.actionHeavyArcAngle),
+    actionTauntArcAngle: clampNumber(input.actionTauntArcAngle, -180, 180, defaultDebugTuning.actionTauntArcAngle),
+    actionRestArcAngle: clampNumber(input.actionRestArcAngle, -180, 180, defaultDebugTuning.actionRestArcAngle),
   };
 }
 
@@ -98,6 +139,14 @@ function saveDebugTuning(nextTuning: ArenaDebugTuning): void {
   }
 
   window.localStorage.setItem(storageKey, JSON.stringify(nextTuning));
+}
+
+function dispatchDebugTuningChange(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent("arena-debug-tuning-change"));
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {

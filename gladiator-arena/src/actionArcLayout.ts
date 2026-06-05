@@ -1,4 +1,17 @@
-import { GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
+import {
+  DEFAULT_ACTION_ARC_RADIUS,
+  DEFAULT_ACTION_ARC_ROTATION,
+  DEFAULT_ACTION_BACK_ANGLE,
+  DEFAULT_ACTION_BUTTON_SCALE,
+  DEFAULT_ACTION_FORWARD_ANGLE,
+  DEFAULT_ACTION_HEAVY_ANGLE,
+  DEFAULT_ACTION_LIGHT_ANGLE,
+  DEFAULT_ACTION_LUNGE_ANGLE,
+  DEFAULT_ACTION_REST_ANGLE,
+  DEFAULT_ACTION_TAUNT_ANGLE,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+} from "./arenaLayout";
 import { MELEE_RANGE, type ActionId, type CombatState } from "./combat";
 import { getStageLayout } from "./stageLayout";
 
@@ -6,7 +19,6 @@ type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 
 interface ActionArcSlot {
   actionId: ActionId;
-  angle: number;
 }
 
 export interface ActionArcButtonLayout {
@@ -15,6 +27,8 @@ export interface ActionArcButtonLayout {
   detail: string;
   x: number;
   y: number;
+  scale: number;
+  angle: number;
 }
 
 export interface ActionArcLayout {
@@ -27,23 +41,22 @@ export const ACTION_ARC_BUTTON_EDGE = 38;
 export const ACTION_ARC_MIN_Y = 126;
 export const ACTION_ARC_MAX_Y = GAME_HEIGHT - 132;
 
-const ACTION_ARC_RADIUS = 62;
 const ACTION_ARC_CENTER_OFFSET_X = 4;
 const ACTION_ARC_CENTER_OFFSET_Y = -120;
 
 const DISTANCE_SLOTS: ActionArcSlot[] = [
-  { actionId: "forward", angle: -108 },
-  { actionId: "back", angle: -166 },
-  { actionId: "lunge", angle: -34 },
-  { actionId: "rest", angle: 106 },
+  { actionId: "forward" },
+  { actionId: "back" },
+  { actionId: "lunge" },
+  { actionId: "rest" },
 ];
 
 const CLINCH_SLOTS: ActionArcSlot[] = [
-  { actionId: "back", angle: -166 },
-  { actionId: "heavy", angle: -108 },
-  { actionId: "light", angle: -34 },
-  { actionId: "taunt", angle: 28 },
-  { actionId: "rest", angle: 112 },
+  { actionId: "back" },
+  { actionId: "heavy" },
+  { actionId: "light" },
+  { actionId: "taunt" },
+  { actionId: "rest" },
 ];
 
 const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
@@ -57,27 +70,55 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   rest: { label: "REST", detail: "Breath" },
 };
 
+function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number {
+  switch (actionId) {
+    case "forward":
+      return tuning?.actionForwardArcAngle ?? DEFAULT_ACTION_FORWARD_ANGLE;
+    case "back":
+      return tuning?.actionBackArcAngle ?? DEFAULT_ACTION_BACK_ANGLE;
+    case "lunge":
+      return tuning?.actionLungeArcAngle ?? DEFAULT_ACTION_LUNGE_ANGLE;
+    case "light":
+      return tuning?.actionLightArcAngle ?? DEFAULT_ACTION_LIGHT_ANGLE;
+    case "heavy":
+      return tuning?.actionHeavyArcAngle ?? DEFAULT_ACTION_HEAVY_ANGLE;
+    case "taunt":
+      return tuning?.actionTauntArcAngle ?? DEFAULT_ACTION_TAUNT_ANGLE;
+    case "rest":
+      return tuning?.actionRestArcAngle ?? DEFAULT_ACTION_REST_ANGLE;
+    case "block":
+      return 0;
+  }
+}
+
 export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTuning): ActionArcLayout {
   const fighterLayout = getStageLayout(state, tuning);
   const scale = Math.max(0.7, Math.min(1.35, fighterLayout.playerScale));
+  const actionArcRotation = tuning?.actionArcRotation ?? DEFAULT_ACTION_ARC_ROTATION;
+  const actionArcRadius = tuning?.actionArcRadius ?? DEFAULT_ACTION_ARC_RADIUS;
+  const actionButtonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
   const centerX = fighterLayout.playerX + ACTION_ARC_CENTER_OFFSET_X * scale;
   const centerY = fighterLayout.playerY + ACTION_ARC_CENTER_OFFSET_Y * scale;
-  const radius = ACTION_ARC_RADIUS * scale;
+  const radius = actionArcRadius * scale;
+  const buttonEdge = ACTION_ARC_BUTTON_EDGE * actionButtonScale;
   const slots = state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS;
 
   return {
-    centerX: clamp(centerX, ACTION_ARC_BUTTON_EDGE, GAME_WIDTH - ACTION_ARC_BUTTON_EDGE),
+    centerX: clamp(centerX, buttonEdge, GAME_WIDTH - buttonEdge),
     centerY: clamp(centerY, ACTION_ARC_MIN_Y, ACTION_ARC_MAX_Y),
     buttons: slots.map((slot) => {
-      const radians = (slot.angle * Math.PI) / 180;
+      const angle = getActionAngle(slot.actionId, tuning) + actionArcRotation;
+      const radians = (angle * Math.PI) / 180;
       const label = ACTION_LABELS[slot.actionId];
 
       return {
         actionId: slot.actionId,
         label: label.label,
         detail: label.detail,
-        x: clamp(centerX + Math.cos(radians) * radius, ACTION_ARC_BUTTON_EDGE, GAME_WIDTH - ACTION_ARC_BUTTON_EDGE),
+        x: clamp(centerX + Math.cos(radians) * radius, buttonEdge, GAME_WIDTH - buttonEdge),
         y: clamp(centerY + Math.sin(radians) * radius, ACTION_ARC_MIN_Y, ACTION_ARC_MAX_Y),
+        scale: actionButtonScale,
+        angle,
       };
     }),
   };

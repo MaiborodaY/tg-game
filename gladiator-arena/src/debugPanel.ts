@@ -1,4 +1,4 @@
-﻿import {
+import {
   debugTuning,
   defaultDebugTuning,
   resetDebugTuning,
@@ -6,6 +6,7 @@
   updateDebugTuning,
   type ArenaDebugTuning,
 } from "./debugTuning";
+import { saveProdDefaults } from "./prodDefaultsSaver";
 
 interface DebugRangeControlConfig {
   type: "range";
@@ -58,6 +59,26 @@ const controlGroups: DebugControlGroup[] = [
       { type: "range", key: "enemyScale", label: "Enemy scale", min: 0.1, max: 6, step: 0.01, resetValue: defaultDebugTuning.enemyScale },
     ],
   },
+  {
+    title: "Action arc",
+    controls: [
+      { type: "range", key: "actionArcRotation", label: "Arc rotation", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionArcRotation },
+      { type: "range", key: "actionArcRadius", label: "Arc radius", min: 24, max: 150, step: 1, resetValue: defaultDebugTuning.actionArcRadius },
+      { type: "range", key: "actionButtonScale", label: "Button scale", min: 0.5, max: 2, step: 0.01, resetValue: defaultDebugTuning.actionButtonScale },
+    ],
+  },
+  {
+    title: "Action button angles",
+    controls: [
+      { type: "range", key: "actionForwardArcAngle", label: "FWD angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionForwardArcAngle },
+      { type: "range", key: "actionBackArcAngle", label: "BACK angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionBackArcAngle },
+      { type: "range", key: "actionLungeArcAngle", label: "LUNGE angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionLungeArcAngle },
+      { type: "range", key: "actionLightArcAngle", label: "SLASH angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionLightArcAngle },
+      { type: "range", key: "actionHeavyArcAngle", label: "BONK angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionHeavyArcAngle },
+      { type: "range", key: "actionTauntArcAngle", label: "TAUNT angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionTauntArcAngle },
+      { type: "range", key: "actionRestArcAngle", label: "REST angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionRestArcAngle },
+    ],
+  },
 ];
 
 export function mountDebugPanel(root: HTMLElement): void {
@@ -71,20 +92,37 @@ export function mountDebugPanel(root: HTMLElement): void {
     <details open>
       <summary>Debug tuning</summary>
       <div class="debug-panel__body"></div>
+      <button class="debug-panel__reset debug-panel__save-prod" type="button">Save as prod defaults</button>
       <button class="debug-panel__reset" type="button">Reset all tuning</button>
+      <p class="debug-panel__status" aria-live="polite"></p>
     </details>
   `;
 
   const body = panel.querySelector<HTMLElement>(".debug-panel__body");
-  const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset");
+  const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
+  const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset:not(.debug-panel__save-prod)");
+  const status = panel.querySelector<HTMLElement>(".debug-panel__status");
 
-  if (!body || !resetButton) {
+  if (!body || !saveButton || !resetButton || !status) {
     return;
   }
 
   for (const group of controlGroups) {
     body.append(createControlGroup(group));
   }
+
+  saveButton.addEventListener("click", async () => {
+    saveButton.disabled = true;
+    status.textContent = "Saving prod defaults...";
+
+    try {
+      status.textContent = await saveProdDefaults(debugTuning);
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not save prod defaults.";
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
 
   resetButton.addEventListener("click", () => {
     resetDebugTuning();

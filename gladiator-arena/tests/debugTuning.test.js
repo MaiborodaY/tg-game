@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath, URL } from "node:url";
@@ -34,6 +34,16 @@ function loadDebugTuningModule() {
             DEFAULT_ENEMY_STAGE_Y: 0,
             DEFAULT_PLAYER_SCALE: 1,
             DEFAULT_ENEMY_SCALE: 1,
+            DEFAULT_ACTION_ARC_ROTATION: 0,
+            DEFAULT_ACTION_ARC_RADIUS: 62,
+            DEFAULT_ACTION_BUTTON_SCALE: 1,
+            DEFAULT_ACTION_FORWARD_ANGLE: -108,
+            DEFAULT_ACTION_BACK_ANGLE: -166,
+            DEFAULT_ACTION_LUNGE_ANGLE: -34,
+            DEFAULT_ACTION_LIGHT_ANGLE: -34,
+            DEFAULT_ACTION_HEAVY_ANGLE: -108,
+            DEFAULT_ACTION_TAUNT_ANGLE: 28,
+            DEFAULT_ACTION_REST_ANGLE: 106,
           };
         }
 
@@ -61,6 +71,16 @@ test("debug tuning normalizes unsafe values", () => {
     enemyStageY: -999,
     playerScale: 99,
     enemyScale: -4,
+    actionArcRotation: 999,
+    actionArcRadius: -5,
+    actionButtonScale: 99,
+    actionForwardArcAngle: 999,
+    actionBackArcAngle: -999,
+    actionLungeArcAngle: 999,
+    actionLightArcAngle: -999,
+    actionHeavyArcAngle: 999,
+    actionTauntArcAngle: -999,
+    actionRestArcAngle: 999,
   });
 
   assert.equal(normalized.showGrid, true);
@@ -74,6 +94,16 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.enemyStageY, -500);
   assert.equal(normalized.playerScale, 6);
   assert.equal(normalized.enemyScale, 0.1);
+  assert.equal(normalized.actionArcRotation, 180);
+  assert.equal(normalized.actionArcRadius, 24);
+  assert.equal(normalized.actionButtonScale, 2);
+  assert.equal(normalized.actionForwardArcAngle, 180);
+  assert.equal(normalized.actionBackArcAngle, -180);
+  assert.equal(normalized.actionLungeArcAngle, 180);
+  assert.equal(normalized.actionLightArcAngle, -180);
+  assert.equal(normalized.actionHeavyArcAngle, 180);
+  assert.equal(normalized.actionTauntArcAngle, -180);
+  assert.equal(normalized.actionRestArcAngle, 180);
 });
 
 test("debug tuning defaults use a stage origin coordinate system", () => {
@@ -85,4 +115,14 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.playerStageY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageX, 130);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageY, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionArcRotation, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionArcRadius, 62);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionButtonScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionForwardArcAngle, -108);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionBackArcAngle, -166);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionLungeArcAngle, -34);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionLightArcAngle, -34);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyArcAngle, -108);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTauntArcAngle, 28);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionRestArcAngle, 106);
 });
