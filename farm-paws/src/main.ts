@@ -13,11 +13,27 @@ import {
 } from "./gameState";
 import { loadBestScore, saveBestScore } from "./storage";
 
+type TelegramWebApp = {
+  ready?: () => void;
+  expand?: () => void;
+  setHeaderColor?: (color: string) => void;
+  setBackgroundColor?: (color: string) => void;
+  disableVerticalSwipes?: () => void;
+};
+
 type ActiveStep = {
   cellIndex: number;
   stepNumber: number;
   totalSteps: number;
 } | null;
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: TelegramWebApp;
+    };
+  }
+}
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -41,7 +57,23 @@ let state: GameState = {
 let activeStep: ActiveStep = null;
 let runToken = 0;
 
+initTelegramWebApp();
 render();
+
+function initTelegramWebApp(): void {
+  const webApp = window.Telegram?.WebApp;
+  if (!webApp) return;
+
+  try {
+    webApp.ready?.();
+    webApp.expand?.();
+    webApp.setHeaderColor?.("#fff8df");
+    webApp.setBackgroundColor?.("#fff8df");
+    webApp.disableVerticalSwipes?.();
+  } catch {
+    // Telegram WebApp methods can vary by client version.
+  }
+}
 
 function render(): void {
   app.innerHTML = `
