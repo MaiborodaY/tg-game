@@ -40,3 +40,19 @@ test("lunge icon is layered and button gradients avoid the old glare spot", () =
   assert.equal(stylesSource.includes("Icon-first action buttons: softer volume"), true);
   assert.equal(stylesSource.includes("font-size: 1.82rem"), true);
 });
+
+test("emoji action icons reset inherited button text metrics", () => {
+  assert.equal(stylesSource.includes("Stabilize native emoji metrics inside the scaled round buttons."), true);
+  assert.equal(stylesSource.includes(".action-arc__icon,\n.action-arc__icon-layer"), true);
+  assert.equal(stylesSource.includes('font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;'), true);
+  assert.equal(stylesSource.includes("padding: 0;"), true);
+  assert.equal(stylesSource.includes("margin: 0;"), true);
+});
+
+test("emoji action icons draw from button data attributes", () => {
+  assert.equal(actionArcSource.includes("button.dataset.icon = ACTION_ICONS[actionId]"), true);
+  assert.equal(actionArcSource.includes("button.dataset.iconAlt = LUNGE_ICON_LAYERS[1].text"), true);
+  assert.equal(stylesSource.includes("Draw action emoji on the button itself"), true);
+  assert.equal(stylesSource.includes("content: attr(data-icon);"), true);
+  assert.equal(stylesSource.includes("content: attr(data-icon-alt);"), true);
+});

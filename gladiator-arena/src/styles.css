@@ -1455,3 +1455,112 @@ body.debug-active .action-arc__center {
   transform: translate(5px, -3px) rotate(20deg);
   filter: drop-shadow(0 2px 0 rgba(53, 24, 13, 0.8));
 }
+
+/* Stabilize native emoji metrics inside the scaled round buttons. */
+.action-arc__button {
+  --action-icon-x: 0px;
+  --action-icon-y: -1px;
+  --action-icon-size: 2.06rem;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.action-arc__button[data-action="forward"],
+.action-arc__button[data-action="back"] {
+  --action-icon-y: 0px;
+  --action-icon-size: 2.02rem;
+}
+
+.action-arc__button[data-action="taunt"] {
+  --action-icon-size: 1.96rem;
+}
+
+.action-arc__button[data-action="rest"] {
+  --action-icon-y: 0px;
+  --action-icon-size: 1.98rem;
+}
+
+.action-arc__icon,
+.action-arc__icon-layer {
+  margin: 0;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-weight: 400;
+}
+
+.action-arc__icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  font-size: var(--action-icon-size);
+  line-height: 1;
+  pointer-events: none;
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y)));
+}
+
+.action-arc__button[data-action="back"] .action-arc__icon {
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y))) scaleX(-1);
+}
+
+.action-arc__button[data-action="lunge"] .action-arc__icon {
+  --action-icon-y: -1px;
+  width: 44px;
+  height: 44px;
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y)));
+}
+
+/* Draw action emoji on the button itself so nested span metrics cannot hide it. */
+.action-arc__button[data-action]::before,
+.action-arc__button[data-action]::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  place-items: center;
+  color: #fff0bd;
+  content: attr(data-icon);
+  font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  font-size: var(--action-icon-size);
+  font-weight: 400;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: none;
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y)));
+  unicode-bidi: isolate;
+}
+
+.action-arc__button[data-action]::after {
+  content: none;
+}
+
+.action-arc__button[data-action="back"]::before {
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y))) scaleX(-1);
+}
+
+.action-arc__button[data-action="lunge"]::before {
+  width: 42px;
+  height: 42px;
+  content: attr(data-icon);
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 0 rgba(91, 37, 8, 0.62));
+  transform: translate(calc(-50% - 4px), calc(-50% + 2px)) rotate(-12deg);
+}
+
+.action-arc__button[data-action="lunge"]::after {
+  width: 42px;
+  height: 42px;
+  content: attr(data-icon-alt);
+  font-size: 1.72rem;
+  filter: drop-shadow(0 2px 0 rgba(53, 24, 13, 0.8));
+  transform: translate(calc(-50% + 5px), calc(-50% - 3px)) rotate(20deg);
+}
+
+.action-arc__icon {
+  display: none;
+}

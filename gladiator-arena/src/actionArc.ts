@@ -23,13 +23,17 @@ const LUNGE_ICON_LAYERS = [
   { className: "action-arc__icon-layer action-arc__icon-layer--sword", text: "🗡" },
 ] as const;
 
-function renderActionIcon(icon: HTMLElement, actionId: ActionId): void {
+function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId: ActionId): void {
   icon.replaceChildren();
+  delete button.dataset.iconAlt;
 
   if (actionId !== "lunge") {
-    icon.textContent = ACTION_ICONS[actionId];
+    button.dataset.icon = ACTION_ICONS[actionId];
     return;
   }
+
+  button.dataset.icon = LUNGE_ICON_LAYERS[0].text;
+  button.dataset.iconAlt = LUNGE_ICON_LAYERS[1].text;
 
   for (const layer of LUNGE_ICON_LAYERS) {
     const layerElement = document.createElement("span");
@@ -110,7 +114,7 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
       button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
       button.title = `${buttonLayout.label} ${buttonLayout.detail} angle ${Math.round(buttonLayout.angle)} deg`;
-      renderActionIcon(icon, actionId);
+      renderActionIcon(button, icon, actionId);
     }
   }
 
