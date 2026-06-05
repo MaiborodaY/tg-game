@@ -1,6 +1,6 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
 import { launchArena, type ArenaScene } from "./ArenaScene";
-import { freshState, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { freshState, resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
 import { debugTuning, subscribeDebugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
@@ -38,6 +38,20 @@ function handleAction(actionId: ActionId): void {
   scheduleEnemyTurn(nextState);
 }
 
+function maybeAutoRestPlayerTurn(): void {
+  if (!shouldAutoRestPlayer(state)) {
+    return;
+  }
+
+  lastActionClick = "rest:auto";
+  logTurnProbe("auto-rest", state, enemyTimerStatus, "rest");
+
+  const nextState = resolvePlayerTurn(state, "rest");
+
+  commitState(nextState);
+  scheduleEnemyTurn(nextState);
+}
+
 function scheduleEnemyTurn(enemyState: CombatState): void {
   if (enemyState.result !== "playing" || enemyState.activeTurn !== "enemy") {
     return;
@@ -61,6 +75,7 @@ function scheduleEnemyTurn(enemyState: CombatState): void {
     enemyTimerStatus = "idle";
     commitState(nextState);
     logTurnProbe("enemy-committed", nextState, enemyTimerStatus);
+    maybeAutoRestPlayerTurn();
   }, 700);
 }
 
@@ -115,4 +130,5 @@ function startDebugApp(): void {
 }
 
 dom.restartButton.addEventListener("click", restart);
+dom.cityButton.addEventListener("click", restart);
 startDebugApp();

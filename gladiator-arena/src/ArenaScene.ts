@@ -113,12 +113,12 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     if (nextState.lastPlayerDamage > 0) {
-      showFloatingText(this, this.visuals.enemy.body.x, this.visuals.enemy.body.y - 124, `-${nextState.lastPlayerDamage}`, "#fff1bd");
+      showDamagePopup(this, this.visuals.enemy.body.x, this.visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
       shakeFighter(this, this.visuals.enemy);
     }
 
     if (nextState.lastEnemyDamage > 0) {
-      showFloatingText(this, this.visuals.player.body.x, this.visuals.player.body.y - 124, `-${nextState.lastEnemyDamage}`, "#fff1bd");
+      showDamagePopup(this, this.visuals.player.body.x, this.visuals.player.body.y - 128, nextState.lastEnemyDamage);
       shakeFighter(this, this.visuals.player);
     }
   }
@@ -701,6 +701,80 @@ function showFloatingText(target: Phaser.Scene, x: number, y: number, text: stri
     ease: "Quad.easeOut",
     onComplete: () => label.destroy(),
   });
+}
+
+function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {
+  const popup = target.add.container(x, y).setDepth(40);
+  const shadow = target.add.graphics();
+  const burst = target.add.graphics();
+  const label = target.add
+    .text(0, -2, `${amount}`, {
+      color: "#fff4cf",
+      fontFamily: "Georgia",
+      fontSize: "30px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 5,
+    })
+    .setOrigin(0.5);
+
+  drawDamageBurst(shadow, 4, 5, 0x35180d, 0.92);
+  drawDamageBurst(burst, 0, 0, 0xd52b1f, 1);
+  popup.add([shadow, burst, label]);
+  popup.setScale(0.58);
+  popup.setAngle(-4);
+
+  target.tweens.add({
+    targets: popup,
+    scale: 1,
+    duration: 130,
+    ease: "Back.easeOut",
+  });
+
+  target.tweens.add({
+    targets: popup,
+    y: y - 34,
+    alpha: 0,
+    duration: 680,
+    delay: 180,
+    ease: "Quad.easeIn",
+    onComplete: () => popup.destroy(),
+  });
+}
+
+function drawDamageBurst(graphics: Phaser.GameObjects.Graphics, offsetX: number, offsetY: number, color: number, alpha: number): void {
+  const points = [
+    { x: -34, y: -8 },
+    { x: -48, y: -24 },
+    { x: -24, y: -23 },
+    { x: -19, y: -42 },
+    { x: -4, y: -27 },
+    { x: 12, y: -44 },
+    { x: 15, y: -24 },
+    { x: 42, y: -28 },
+    { x: 28, y: -7 },
+    { x: 46, y: 7 },
+    { x: 24, y: 14 },
+    { x: 24, y: 36 },
+    { x: 4, y: 23 },
+    { x: -11, y: 40 },
+    { x: -15, y: 19 },
+    { x: -42, y: 24 },
+    { x: -29, y: 6 },
+  ];
+
+  graphics.fillStyle(color, alpha);
+  graphics.lineStyle(3, 0x35180d, color === 0x35180d ? 0 : 0.86);
+  graphics.beginPath();
+  graphics.moveTo(points[0].x + offsetX, points[0].y + offsetY);
+
+  for (const point of points.slice(1)) {
+    graphics.lineTo(point.x + offsetX, point.y + offsetY);
+  }
+
+  graphics.closePath();
+  graphics.fillPath();
+  graphics.strokePath();
 }
 
 function createDust(target: Phaser.Scene, x: number, y: number): void {

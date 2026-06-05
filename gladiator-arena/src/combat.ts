@@ -159,6 +159,10 @@ export function availableActionIds(state: CombatState, actor: TurnOwner): Action
   return actionOrder.filter((id) => canUseAction(state, id, actor));
 }
 
+export function shouldAutoRestPlayer(state: CombatState): boolean {
+  return state.result === "playing" && state.activeTurn === "player" && state.player.stamina <= 0 && canUseAction(state, "rest", "player");
+}
+
 export function canUseAction(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
   if (state.result !== "playing") {
     return false;

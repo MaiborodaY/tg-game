@@ -1,6 +1,6 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
 import { launchArena, type ArenaScene } from "./ArenaScene";
-import { freshState, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { freshState, resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { getDomRefs, renderDom } from "./domUi";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import "./styles.css";
@@ -48,6 +48,7 @@ let enemyTimerStatus: EnemyTimerStatus = "idle";
 let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
 let hasStarted = false;
+let isInCity = true;
 
 function commitState(nextState: CombatState): void {
   state = nextState;
@@ -62,13 +63,27 @@ function syncTurnProbe(): void {
 }
 
 function handleAction(actionId: ActionId): void {
-  if (!hasStarted) {
+  if (!hasStarted || isInCity) {
     return;
   }
 
   logTurnProbe("player-action", state, enemyTimerStatus, actionId);
 
   const nextState = resolvePlayerTurn(state, actionId);
+
+  commitState(nextState);
+  scheduleEnemyTurn(nextState);
+}
+
+function maybeAutoRestPlayerTurn(): void {
+  if (!shouldAutoRestPlayer(state)) {
+    return;
+  }
+
+  lastActionClick = "rest:auto";
+  logTurnProbe("auto-rest", state, enemyTimerStatus, "rest");
+
+  const nextState = resolvePlayerTurn(state, "rest");
 
   commitState(nextState);
   scheduleEnemyTurn(nextState);
@@ -97,6 +112,7 @@ function scheduleEnemyTurn(enemyState: CombatState): void {
     enemyTimerStatus = "idle";
     commitState(nextState);
     logTurnProbe("enemy-committed", nextState, enemyTimerStatus);
+    maybeAutoRestPlayerTurn();
   }, 700);
 }
 
@@ -118,12 +134,20 @@ function handleActionArcClick(event: Event): void {
 
 function startGame(): void {
   if (hasStarted) {
+    isInCity = false;
+    dom.mainMenu.hidden = true;
+    dom.gameScreen.hidden = false;
+    document.body.classList.add("arena-active");
+    restart();
+    refreshArenaLayout();
     return;
   }
 
   hasStarted = true;
+  isInCity = false;
   dom.mainMenu.hidden = true;
   dom.gameScreen.hidden = false;
+  document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
@@ -136,6 +160,21 @@ function startGame(): void {
       refreshArenaLayout();
     }, handleAction);
   });
+}
+
+function returnToCity(): void {
+  if (enemyTurnTimer) {
+    window.clearTimeout(enemyTurnTimer);
+    enemyTurnTimer = undefined;
+  }
+
+  isInCity = true;
+  enemyTimerStatus = "idle";
+  lastActionClick = "none";
+  dom.gameScreen.hidden = true;
+  dom.mainMenu.hidden = false;
+  document.body.classList.remove("arena-active");
+  syncTurnProbe();
 }
 
 function restart(): void {
@@ -151,4 +190,5 @@ function restart(): void {
 
 dom.startButton.addEventListener("click", startGame);
 dom.restartButton.addEventListener("click", restart);
+dom.cityButton.addEventListener("click", returnToCity);
 renderDom(dom, state);

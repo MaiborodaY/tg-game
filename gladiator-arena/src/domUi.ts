@@ -9,6 +9,7 @@ export interface DomRefs {
   log: HTMLElement;
   resultBanner: HTMLElement;
   restartButton: HTMLButtonElement;
+  cityButton: HTMLButtonElement;
   turnBadge: HTMLElement;
   distanceText: HTMLElement;
   playerHpFill: HTMLElement;
@@ -31,6 +32,7 @@ export function getDomRefs(): DomRefs {
     log: document.querySelector<HTMLElement>("#log"),
     resultBanner: document.querySelector<HTMLElement>("#resultBanner"),
     restartButton: document.querySelector<HTMLButtonElement>("#restartButton"),
+    cityButton: document.querySelector<HTMLButtonElement>("#cityButton"),
     turnBadge: document.querySelector<HTMLElement>("#turnBadge"),
     distanceText: document.querySelector<HTMLElement>("#distanceText"),
     playerHpFill: document.querySelector<HTMLElement>("#playerHpFill"),
@@ -97,11 +99,13 @@ function renderResult(dom: DomRefs, state: CombatState): void {
   if (state.result === "playing") {
     dom.resultBanner.hidden = true;
     dom.resultBanner.textContent = "";
+    dom.cityButton.hidden = true;
     return;
   }
 
   dom.resultBanner.hidden = false;
   dom.resultBanner.textContent = resultBannerText(state.result);
+  dom.cityButton.hidden = false;
 }
 
 function resultStatusText(result: Result, round: number): string {

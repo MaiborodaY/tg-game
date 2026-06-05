@@ -555,6 +555,19 @@ h1 {
   transform: translate(-50%, -50%) rotate(-2deg);
 }
 
+.city-return {
+  position: absolute;
+  left: var(--debug-origin-x, 50%);
+  top: calc(var(--debug-origin-y, 50%) + 86px);
+  z-index: 6;
+  min-width: min(240px, calc(100% - 72px));
+  min-height: 44px;
+  border: 3px solid #35180d;
+  border-radius: 999px;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
 @media (max-height: 760px) {
   .shell {
     gap: 6px;
@@ -596,37 +609,124 @@ h1 {
 
 .main-menu {
   min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  position: relative;
+}
+
+.menu-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.city-menu {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  border: 4px solid #35180d;
+  background: #b59b61;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.36);
+}
+
+.city-menu::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(32, 13, 6, 0) 54%, rgba(32, 13, 6, 0.38) 100%);
+  pointer-events: none;
+}
+
+.city-menu__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.city-menu__nav {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 2;
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  padding: 6px;
+  border: 3px solid #35180d;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 232, 166, 0.22), rgba(53, 24, 13, 0.78)),
+    rgba(35, 10, 4, 0.72);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
 }
 
-.menu-card {
-  width: 100%;
-  padding: 20px 18px 18px;
-  border: 3px solid rgba(255, 211, 132, 0.62);
-  border-radius: 0;
-  background: rgba(35, 10, 4, 0.72);
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28);
+.city-menu__button {
+  display: grid;
+  grid-template-rows: 1.45rem minmax(1.9rem, auto);
+  align-items: center;
+  justify-items: center;
+  min-width: 0;
+  min-height: 58px;
+  padding: 5px 3px 6px;
+  border: 3px solid #130908;
+  border-radius: 9px;
+  color: #35180d;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 203, 0.78), transparent 48%),
+    linear-gradient(180deg, #ffcf6c 0%, #e88d28 68%, #8d3616 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 245, 205, 0.58),
+    0 3px 0 #35180d;
+  cursor: pointer;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.48rem, 2.3vw, 0.66rem);
+  font-weight: 900;
+  line-height: 1.02;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(255, 241, 196, 0.88);
+  text-transform: uppercase;
+  transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
 }
 
-.main-menu h1 {
-  font-size: clamp(3.3rem, 18vw, 5rem);
+.city-menu__button:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
-.main-menu .subtitle {
+.city-menu__button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 245, 205, 0.58),
+    0 1px 0 #35180d;
+}
+
+.city-menu__button:disabled {
+  cursor: default;
+  filter: grayscale(0.2) brightness(0.8);
+  opacity: 0.82;
+}
+
+.city-menu__button span:last-child {
   display: block;
-  margin: 14px 0 18px;
-  color: #ffe6ab;
-  font-size: 0.96rem;
-  font-weight: 800;
-  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.start-button {
-  width: 100%;
-  min-height: 56px;
-  margin-top: 4px;
-  font-size: 1rem;
+.city-menu__icon {
+  display: block;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.25rem;
+  line-height: 1;
+  text-shadow: none;
 }
 
 .top-hud {
@@ -734,10 +834,6 @@ body.arena-active .shell {
 .battle-screen .combat-toast {
   display: none;
 }
-.menu-card {
-  border-radius: 24px;
-}
-
 .result-banner {
   border: 5px solid var(--ink);
   border-radius: 20px;
