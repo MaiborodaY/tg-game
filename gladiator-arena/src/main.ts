@@ -50,11 +50,15 @@ let lastActionClick = "none";
 let hasStarted = false;
 let isInCity = true;
 
-function commitState(nextState: CombatState): void {
+function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
+  const syncArena = options.syncArena ?? true;
+
   state = nextState;
   renderDom(dom, state);
   actionArc?.sync(state);
-  arenaScene?.sync(state);
+  if (syncArena) {
+    arenaScene?.sync(state);
+  }
   syncTurnProbe();
 }
 
@@ -119,8 +123,13 @@ function scheduleEnemyTurn(enemyState: CombatState): void {
 function refreshArenaLayout(): void {
   window.requestAnimationFrame(() => {
     arenaScene?.scale.refresh();
-    arenaScene?.sync(state);
-    syncTurnProbe();
+
+    window.requestAnimationFrame(() => {
+      arenaScene?.scale.refresh();
+      arenaScene?.sync(state);
+      actionArc?.sync(state);
+      syncTurnProbe();
+    });
   });
 }
 
@@ -138,7 +147,7 @@ function startGame(): void {
     dom.mainMenu.hidden = true;
     dom.gameScreen.hidden = false;
     document.body.classList.add("arena-active");
-    restart();
+    restart({ syncArena: false });
     refreshArenaLayout();
     return;
   }
@@ -177,7 +186,7 @@ function returnToCity(): void {
   syncTurnProbe();
 }
 
-function restart(): void {
+function restart(options: { syncArena?: boolean } = {}): void {
   if (enemyTurnTimer) {
     window.clearTimeout(enemyTurnTimer);
     enemyTurnTimer = undefined;
@@ -185,10 +194,10 @@ function restart(): void {
 
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  commitState(freshState());
+  commitState(freshState(), options);
 }
 
 dom.startButton.addEventListener("click", startGame);
-dom.restartButton.addEventListener("click", restart);
+dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
 renderDom(dom, state);
