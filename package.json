@@ -10,6 +10,7 @@
                         },
     "scripts":  {
                     "gladiator:dev":  "vite gladiator-arena --open",
+                    "gladiator:debug":  "vite gladiator-arena --open /debug.html",
                     "gladiator:build":  "vite build gladiator-arena --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
                     "gladiator:test":  "node --test gladiator-arena/tests/*.test.js",
                     "gladiator:lint":  "eslint gladiator-arena/src gladiator-arena/tests",

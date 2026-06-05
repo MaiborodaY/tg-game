@@ -1,47 +1,14 @@
 import { launchArena, type ArenaScene } from "./ArenaScene";
 import { freshState, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { mountDebugPanel } from "./debugPanel";
 import { getDomRefs, renderDom } from "./domUi";
 import "./styles.css";
 
-interface TelegramWebApp {
-  ready: () => void;
-  expand: () => void;
-  disableVerticalSwipes?: () => void;
-  setBackgroundColor?: (color: string) => void;
-  setHeaderColor?: (color: string) => void;
-}
-
-interface TelegramWindow {
-  WebApp?: TelegramWebApp;
-}
-
-declare global {
-  interface Window {
-    Telegram?: TelegramWindow;
-  }
-}
-
-function bootTelegramWebApp(): void {
-  const webApp = window.Telegram?.WebApp;
-
-  if (!webApp) {
-    return;
-  }
-
-  webApp.ready();
-  webApp.expand();
-  webApp.disableVerticalSwipes?.();
-  webApp.setBackgroundColor?.("#35180d");
-  webApp.setHeaderColor?.("#35180d");
-}
-
-bootTelegramWebApp();
-
 const dom = getDomRefs();
+const debugPanelHost = document.querySelector<HTMLElement>("#debugPanelHost");
 let state: CombatState = freshState();
 let arenaScene: ArenaScene | undefined;
 let enemyTurnTimer: number | undefined;
-let hasStarted = false;
 
 function commitState(nextState: CombatState): void {
   state = nextState;
@@ -50,10 +17,6 @@ function commitState(nextState: CombatState): void {
 }
 
 function handleAction(actionId: ActionId): void {
-  if (!hasStarted) {
-    return;
-  }
-
   const nextState = resolvePlayerTurn(state, actionId);
 
   commitState(nextState);
@@ -73,14 +36,20 @@ function refreshArenaLayout(): void {
   });
 }
 
-function startGame(): void {
-  if (hasStarted) {
-    return;
+function restart(): void {
+  if (enemyTurnTimer) {
+    window.clearTimeout(enemyTurnTimer);
+    enemyTurnTimer = undefined;
   }
 
-  hasStarted = true;
+  commitState(freshState());
+}
+
+function startDebugApp(): void {
+  document.body.classList.add("arena-active", "debug-active");
   dom.mainMenu.hidden = true;
   dom.gameScreen.hidden = false;
+  mountDebugPanel(debugPanelHost ?? dom.gameScreen);
   restart();
 
   window.requestAnimationFrame(() => {
@@ -92,15 +61,5 @@ function startGame(): void {
   });
 }
 
-function restart(): void {
-  if (enemyTurnTimer) {
-    window.clearTimeout(enemyTurnTimer);
-    enemyTurnTimer = undefined;
-  }
-
-  commitState(freshState());
-}
-
-dom.startButton.addEventListener("click", startGame);
 dom.restartButton.addEventListener("click", restart);
-renderDom(dom, state);
+startDebugApp();

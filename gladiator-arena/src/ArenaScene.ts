@@ -1,11 +1,11 @@
 import Phaser from "phaser";
+import { getActionWheelSlots } from "./actionWheelLayout";
+import { getCameraTarget, getEnemyWorldX, getPlayerWorldX } from "./arenaCamera";
 import {
   ARENA_WORLD_LEFT,
   ARENA_WORLD_WIDTH,
-  getCameraTarget,
-  getEnemyWorldX,
-  getPlayerWorldX,
-} from "./arenaCamera";
+  FIGHTER_BASE_Y,
+} from "./arenaLayout";
 import {
   ARENA_BACKGROUND_ASSET_KEY,
   ARENA_BACKGROUND_ASSET_URL,
@@ -16,7 +16,8 @@ import {
   PLAYER_BODY_ASSET_KEY,
   PLAYER_BODY_ASSET_URL,
 } from "./assets";
-import { MAX_HP, MAX_STAMINA, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
+import { actions, canUseAction, MAX_HP, MAX_STAMINA, ROUND_LIMIT, START_DISTANCE, type ActionId, type CombatState, type FighterState } from "./combat";
+import { debugTuning, subscribeDebugTuning } from "./debugTuning";
 
 interface FighterVisual {
   avatar?: Phaser.GameObjects.Image;
@@ -41,12 +42,26 @@ interface HudVisual {
   label: Phaser.GameObjects.Text;
 }
 
+interface ActionButtonVisual {
+  actionId: ActionId;
+  container: Phaser.GameObjects.Container;
+  disc: Phaser.GameObjects.Arc;
+  shine: Phaser.GameObjects.Arc;
+  label: Phaser.GameObjects.Text;
+  caption: Phaser.GameObjects.Text;
+}
+
+interface ActionWheelVisual {
+  buttons: Map<ActionId, ActionButtonVisual>;
+}
+
 interface ArenaVisuals {
   player: FighterVisual;
   enemy: FighterVisual;
   playerHud: HudVisual;
   enemyHud: HudVisual;
   roundText: Phaser.GameObjects.Text;
+  actionWheel: ActionWheelVisual;
 }
 
 type ScalableGameObject = Phaser.GameObjects.GameObject & {
@@ -56,14 +71,19 @@ type ScalableGameObject = Phaser.GameObjects.GameObject & {
   scaleY: number;
 };
 
-const VECTOR_FIGHTER_SCALE = 0.28;
+const VECTOR_FIGHTER_SCALE = 0.34;
 const FIGHTER_MOVE_DURATION = 280;
 const CAMERA_MOVE_DURATION = 340;
+const ACTION_BUTTON_RADIUS = 30;
+const ACTION_BUTTON_SIZE = ACTION_BUTTON_RADIUS * 2;
+const ACTION_WHEEL_DEPTH = 60;
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
+let actionCallback: ((actionId: ActionId) => void) | undefined;
 
 export class ArenaScene extends Phaser.Scene {
   visuals?: ArenaVisuals;
+  currentState?: CombatState;
 
   constructor() {
     super("ArenaScene");
@@ -75,14 +95,22 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor("#4e8fa1");
+    this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
     this.cameras.main.setBounds(ARENA_WORLD_LEFT, 0, ARENA_WORLD_WIDTH, GAME_HEIGHT);
     drawArenaBackground(this);
     this.visuals = buildVisuals(this);
+    this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
+      if (this.currentState) {
+        renderScene(this, this.currentState);
+      }
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
     readyCallback?.(this);
   }
 
   sync(nextState: CombatState): void {
+    this.currentState = nextState;
+
     if (!this.visuals) {
       return;
     }
@@ -107,17 +135,25 @@ export class ArenaScene extends Phaser.Scene {
       shakeFighter(this, this.visuals.player);
     }
   }
+
+  update(): void {
+    if (this.visuals && this.currentState) {
+      positionActionWheel(this, this.currentState);
+    }
+  }
 }
 
-export function launchArena(onReady: (scene: ArenaScene) => void): void {
+export function launchArena(onReady: (scene: ArenaScene) => void, onAction: (actionId: ActionId) => void): void {
   readyCallback = onReady;
+  actionCallback = onAction;
 
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent: "game",
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
-    backgroundColor: "#4e8fa1",
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    transparent: true,
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -131,21 +167,6 @@ export function launchArena(onReady: (scene: ArenaScene) => void): void {
 function drawArenaBackground(target: Phaser.Scene): void {
   if (!target.textures.exists(ARENA_BACKGROUND_ASSET_KEY)) {
     drawArena(target);
-    return;
-  }
-
-  const backgroundY = GAME_HEIGHT / 2 + 34;
-  const background = target.add.image(GAME_WIDTH / 2, backgroundY, ARENA_BACKGROUND_ASSET_KEY).setOrigin(0.5);
-  const scale = Math.max(GAME_WIDTH / background.width, GAME_HEIGHT / background.height);
-  const displayWidth = background.width * scale;
-
-  background.setScale(scale);
-
-  for (const offset of [-1, 1]) {
-    target.add
-      .image(GAME_WIDTH / 2 + displayWidth * offset, backgroundY, ARENA_BACKGROUND_ASSET_KEY)
-      .setOrigin(0.5)
-      .setScale(scale);
   }
 }
 
@@ -186,23 +207,25 @@ function drawArena(target: Phaser.Scene): void {
     .setOrigin(0.5);
 }
 
-function buildVisuals(target: Phaser.Scene): ArenaVisuals {
-  const player = createGladiator(target, 292, 272, 1, 0xcc412f, "BORSHEMIR", PLAYER_BODY_ASSET_KEY);
-  const enemy = createGladiator(target, 748, 272, -1, 0x5d7f3e, "GRUMBUS");
+function buildVisuals(target: ArenaScene): ArenaVisuals {
+  const player = createGladiator(target, getPlayerWorldX({ playerPosition: 0 }), FIGHTER_BASE_Y, 1, 0xcc412f, "BORSHEMIR", PLAYER_BODY_ASSET_KEY);
+  const enemy = createGladiator(target, getEnemyWorldX({ enemyPosition: START_DISTANCE }), FIGHTER_BASE_Y, -1, 0x5d7f3e, "GRUMBUS");
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
+  const actionWheel = createActionWheel(target);
   const roundText = target.add
     .text(GAME_WIDTH / 2, 92, "", {
       color: "#ffe7a4",
       fontFamily: "Georgia",
-      fontSize: "25px",
+      fontSize: "20px",
       fontStyle: "900",
       stroke: "#d59045",
       strokeThickness: 3,
     })
     .setOrigin(0.5);
+  roundText.setVisible(false);
 
-  return { player, enemy, playerHud, enemyHud, roundText };
+  return { player, enemy, playerHud, enemyHud, roundText, actionWheel };
 }
 
 function createHud(target: Phaser.Scene, x: number, y: number, label: string): HudVisual {
@@ -234,6 +257,160 @@ function createHud(target: Phaser.Scene, x: number, y: number, label: string): H
   return { hpFill, staminaFill, label: text };
 }
 
+function createActionWheel(target: ArenaScene): ActionWheelVisual {
+  const buttons = new Map<ActionId, ActionButtonVisual>();
+
+  for (const actionId of ["forward", "back", "lunge", "light", "heavy", "taunt", "rest"] satisfies ActionId[]) {
+    buttons.set(actionId, createActionButton(target, actionId));
+  }
+
+  return { buttons };
+}
+
+function createActionButton(target: ArenaScene, actionId: ActionId): ActionButtonVisual {
+  const container = target.add.container(0, 0).setDepth(ACTION_WHEEL_DEPTH).setScrollFactor(0);
+  const isRest = actionId === "rest";
+  const isMove = actionId === "forward" || actionId === "back";
+  const fill = isRest ? 0x248982 : isMove ? 0xd17a23 : 0xc62a24;
+  const disc = target.add.circle(0, 0, ACTION_BUTTON_RADIUS, fill, 0.94).setStrokeStyle(3, 0x35180d);
+  const shine = target.add.circle(-12, -13, 13, 0xfff4bf, 0.88);
+  const label = target.add
+    .text(0, actionId === "lunge" ? 8 : -4, getActionButtonLabel(actionId), {
+      color: "#fff0bd",
+      fontFamily: "Georgia",
+      fontSize: actionId === "lunge" ? "12px" : "13px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 3,
+    })
+    .setOrigin(0.5);
+  const caption = target.add
+    .text(0, 15, actions[actionId].title, {
+      color: "#fff0bd",
+      fontFamily: "Georgia",
+      fontSize: "8px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 2,
+    })
+    .setOrigin(0.5);
+
+  container.add([disc, shine]);
+
+  if (actionId === "lunge") {
+    const blade = target.add.rectangle(3, -12, 5, 28, 0xfff6d5).setAngle(42).setStrokeStyle(1, 0x35180d);
+    const guard = target.add.rectangle(-6, 3, 18, 4, 0x35180d).setAngle(42);
+    const handle = target.add.rectangle(-11, 10, 5, 12, 0x8a3a18).setAngle(42).setStrokeStyle(1, 0x35180d);
+    container.add([blade, guard, handle]);
+  }
+
+  container.add([label, caption]);
+  container.setSize(ACTION_BUTTON_SIZE, ACTION_BUTTON_SIZE);
+  container.setInteractive(new Phaser.Geom.Circle(0, 0, ACTION_BUTTON_RADIUS), Phaser.Geom.Circle.Contains);
+  container.on("pointerdown", () => {
+    const state = target.currentState;
+
+    if (state && canUseAction(state, actionId, "player")) {
+      actionCallback?.(actionId);
+    }
+  });
+
+  container.setVisible(false);
+
+  return { actionId, container, disc, shine, label, caption };
+}
+
+function getActionButtonLabel(actionId: ActionId): string {
+  if (actionId === "forward") {
+    return "FWD";
+  }
+
+  if (actionId === "back") {
+    return "BACK";
+  }
+
+  if (actionId === "lunge") {
+    return "LUNGE";
+  }
+
+  if (actionId === "light") {
+    return "SLASH";
+  }
+
+  if (actionId === "heavy") {
+    return "BONK";
+  }
+
+  if (actionId === "taunt") {
+    return "TAUNT";
+  }
+
+  return "REST";
+}
+
+function updateActionWheel(target: ArenaScene, current: CombatState): void {
+  if (!target.visuals) {
+    return;
+  }
+
+  const slots = getActionWheelSlots(current.distance);
+  const visibleIds = new Set(slots.map((slot) => slot.actionId));
+
+  for (const [actionId, button] of target.visuals.actionWheel.buttons) {
+    const visible = current.result === "playing" && visibleIds.has(actionId);
+    const enabled = visible && canUseAction(current, actionId, "player");
+
+    button.container.setVisible(visible);
+    button.container.setAlpha(enabled ? 1 : 0.44);
+    button.caption.setText(slots.find((slot) => slot.actionId === actionId)?.caption ?? actions[actionId].title);
+  }
+
+  positionActionWheel(target, current);
+}
+
+function positionActionWheel(target: ArenaScene, current: CombatState): void {
+  if (!target.visuals) {
+    return;
+  }
+
+  const slots = getActionWheelSlots(current.distance);
+  const anchor = getPlayerScreenAnchor(target);
+
+  for (const slot of slots) {
+    const button = target.visuals.actionWheel.buttons.get(slot.actionId);
+
+    if (!button) {
+      continue;
+    }
+
+    button.container.setScale(debugTuning.actionWheelScale);
+    button.container.setPosition(
+      anchor.x + slot.offsetX + debugTuning.actionWheelOffsetX,
+      anchor.y + slot.offsetY + debugTuning.actionWheelOffsetY,
+    );
+  }
+}
+
+function getPlayerScreenAnchor(target: ArenaScene): { x: number; y: number } {
+  const player = target.visuals?.player;
+
+  if (!player) {
+    return { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2 };
+  }
+
+  const camera = target.cameras.main;
+  const x = (player.body.x - camera.scrollX) * camera.zoom;
+  const y = (player.body.y - camera.scrollY) * camera.zoom;
+
+  return {
+    x: clampScreen(x, 100, GAME_WIDTH - 100),
+    y: clampScreen(y - 58, 142, GAME_HEIGHT - 146),
+  };
+}
+
+function clampScreen(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
 function createGladiator(
   target: Phaser.Scene,
   x: number,
@@ -335,6 +512,7 @@ function renderScene(target: ArenaScene, current: CombatState): void {
   target.visuals.roundText.setText(`Round ${current.round} / ${ROUND_LIMIT}`);
   setFighterAlpha(target.visuals.player, current.player.hp <= 0 ? 0.45 : 1);
   setFighterAlpha(target.visuals.enemy, current.enemy.hp <= 0 ? 0.45 : 1);
+  updateActionWheel(target, current);
 }
 
 function setHud(hud: HudVisual, fighter: FighterState): void {
@@ -348,10 +526,55 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
 }
 
 function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState): void {
-  setFighterX(target, visuals.player, getPlayerWorldX(current));
-  setFighterX(target, visuals.enemy, getEnemyWorldX(current));
+  setFighterX(target, visuals.player, getPlayerWorldX(current) + debugTuning.playerXOffset);
+  setFighterX(target, visuals.enemy, getEnemyWorldX(current) + debugTuning.enemyXOffset);
+  applyFighterTuning(visuals.player, "player");
+  applyFighterTuning(visuals.enemy, "enemy");
 }
 
+function applyFighterTuning(fighter: FighterVisual, side: "player" | "enemy"): void {
+  const scale = side === "player" ? debugTuning.playerScale : debugTuning.enemyScale;
+  const scaleRatio = scale / fighter.debugScale;
+
+  if (fighter.avatar) {
+    fighter.avatar.displayHeight = PLAYER_AVATAR_DISPLAY_HEIGHT * scale;
+    fighter.avatar.scaleX = fighter.avatar.scaleY;
+  } else if (Math.abs(scaleRatio - 1) > 0.001) {
+    scaleObjectsFromPivot(getScalableFighterParts(fighter), fighter.shadow.x, fighter.shadow.y, scaleRatio);
+  }
+
+  fighter.debugScale = scale;
+  setFighterY(fighter, FIGHTER_BASE_Y + 28 + debugTuning.fighterYOffset);
+}
+
+function setFighterY(fighter: FighterVisual, nextBodyY: number): void {
+  const delta = nextBodyY - fighter.body.y;
+
+  if (Math.abs(delta) < 0.5) {
+    return;
+  }
+
+  getFighterParts(fighter).forEach((part) => {
+    part.y += delta;
+  });
+}
+
+function getScalableFighterParts(fighter: FighterVisual): ScalableGameObject[] {
+  return [
+    fighter.body,
+    fighter.head,
+    fighter.eyeLeft,
+    fighter.eyeRight,
+    fighter.helmet,
+    fighter.plume,
+    fighter.sword,
+    fighter.armFront,
+    fighter.armBack,
+    fighter.legFront,
+    fighter.legBack,
+    fighter.shadow,
+  ];
+}
 function updateCamera(target: Phaser.Scene, current: CombatState): void {
   const camera = target.cameras.main;
   const cameraTarget = getCameraTarget(current);
@@ -384,7 +607,7 @@ function setFighterX(target: Phaser.Scene, fighter: FighterVisual, nextX: number
   });
 }
 
-function getFighterParts(fighter: FighterVisual): Array<Phaser.GameObjects.GameObject & { x: number }> {
+function getFighterParts(fighter: FighterVisual): Array<Phaser.GameObjects.GameObject & { x: number; y: number }> {
   return [
     fighter.body,
     fighter.head,
@@ -581,3 +804,6 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
     });
   }
 }
+
+
+

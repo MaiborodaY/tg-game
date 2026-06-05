@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Dust Arena - Debug Tuning</title>
+  </head>
+  <body class="arena-active debug-active">
+    <main class="debug-app">
+      <div class="debug-game-shell shell">
+        <section id="mainMenu" class="main-menu" aria-label="Dust Arena debug boot" hidden>
+          <button id="startButton" class="restart start-button" type="button">Start debug</button>
+        </section>
+
+        <section id="gameScreen" class="game-screen battle-screen" aria-label="Dust Arena debug preview">
+          <img class="stage-bg" src="./assets/arena/arena-bg-01.png" alt="" aria-hidden="true" />
+
+          <section class="top-hud" aria-label="Arena summary">
+            <div class="score-card">
+              <span>Score</span>
+              <strong id="score">0</strong>
+              <small id="statusText">Round 1 / 12</small>
+            </div>
+          </section>
+
+          <section class="status-strip" aria-label="Turn and range">
+            <div id="turnBadge" class="turn-badge">Your turn</div>
+            <div class="distance-ribbon">
+              <span>Distance</span>
+              <strong id="distanceText">Far</strong>
+            </div>
+          </section>
+
+          <section class="stage-panel">
+            <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
+            <div class="battle-ui" aria-label="Battle overlay">
+              <button id="restartButton" class="restart stage-restart" type="button">Restart</button>
+              <section class="fighters-strip arena-fighters-strip" aria-label="Fighter stats">
+                <div class="combat-plate player-plate">
+                  <strong>Borshemir</strong>
+                  <span id="playerHpText">HP 30/30</span>
+                  <div class="stat-track"><div id="playerHpFill" class="stat-fill hp-fill"></div></div>
+                  <span id="playerStaText">STA 10/10</span>
+                  <div class="stat-track"><div id="playerStaFill" class="stat-fill stamina-fill"></div></div>
+                </div>
+
+                <div class="combat-plate enemy-plate">
+                  <strong>Grumbus</strong>
+                  <span id="enemyHpText">HP 30/30</span>
+                  <div class="stat-track"><div id="enemyHpFill" class="stat-fill hp-fill"></div></div>
+                  <span id="enemyStaText">STA 10/10</span>
+                  <div class="stat-track"><div id="enemyStaFill" class="stat-fill stamina-fill"></div></div>
+                </div>
+              </section>
+            </div>
+            <div id="resultBanner" class="result-banner" hidden></div>
+          </section>
+
+          <section class="combat-toast" aria-label="Fight log">
+            <div id="log" class="log" aria-live="polite"></div>
+          </section>
+        </section>
+      </div>
+
+      <aside id="debugPanelHost" class="debug-app-panel" aria-label="Debug tuning controls">
+        <header>
+          <p class="eyebrow">Dust Arena</p>
+          <h1>Tuning</h1>
+          <p>Adjust the preview, then copy stable values back into layout defaults later.</p>
+        </header>
+      </aside>
+    </main>
+
+    <script type="module" src="/src/debugMain.ts"></script>
+  </body>
+</html>

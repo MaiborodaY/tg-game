@@ -74,9 +74,9 @@ export const actions: Record<ActionId, ActionConfig> = {
   lunge: {
     id: "lunge",
     title: "Lunge",
-    detail: "Cost 4 - Melee dash + hit",
+    detail: "Cost 4 - Short dash + hit in clinch",
     cost: 4,
-    move: -2,
+    move: -1,
     damage: 4,
     rangeMax: MELEE_RANGE,
   },
@@ -176,7 +176,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionId === "lunge") {
-    return state.distance === MELEE_RANGE + 1;
+    return state.distance > MELEE_RANGE;
   }
 
   if (action.rangeMax !== undefined) {
