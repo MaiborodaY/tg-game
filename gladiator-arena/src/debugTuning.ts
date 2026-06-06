@@ -135,9 +135,9 @@ export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
   backThigh: { x: 4, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
   backShin: { x: 7, y: 34, angle: 0, scaleX: 0.88, scaleY: 1, flipX: true, flipY: false },
   backFoot: { x: -17, y: 69, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
-  frontThigh: { x: -4, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
-  frontShin: { x: -6, y: 30, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
-  frontFoot: { x: -13, y: 67, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontThigh: { x: -4, y: 0, angle: -8, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontShin: { x: 1, y: 30, angle: 10, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontFoot: { x: -18, y: 67, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
