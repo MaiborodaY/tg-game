@@ -139,8 +139,8 @@ export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
 };
 
 export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
-  eyeLeft: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
-  eyeRight: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
