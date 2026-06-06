@@ -20,6 +20,43 @@ import {
   DEFAULT_STAGE_ORIGIN_Y,
 } from "./arenaLayout";
 
+export const RIG_PART_KEYS = [
+  "head",
+  "torso",
+  "backUpperArm",
+  "backForearm",
+  "backHand",
+  "frontUpperArm",
+  "frontForearm",
+  "frontHand",
+  "backThigh",
+  "backShin",
+  "backFoot",
+  "frontThigh",
+  "frontShin",
+  "frontFoot",
+] as const;
+
+export type RigPartKey = (typeof RIG_PART_KEYS)[number];
+
+export interface RigPartTuning {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+  flipX: boolean;
+  flipY: boolean;
+}
+
+export interface IdleAnimationTuning {
+  enabled: boolean;
+  duration: number;
+  base: Record<RigPartKey, RigPartTuning>;
+  breath: Record<RigPartKey, RigPartTuning>;
+  activeParts: Record<RigPartKey, boolean>;
+}
+
 export interface ArenaDebugTuning {
   showGrid: boolean;
   gridStep: number;
@@ -43,7 +80,20 @@ export interface ArenaDebugTuning {
   actionHeavyArcAngle: number;
   actionTauntArcAngle: number;
   actionRestArcAngle: number;
+  selectedRigPart: RigPartKey;
+  rigParts: Record<RigPartKey, RigPartTuning>;
+  idleAnimation: IdleAnimationTuning;
 }
+
+export const defaultRigPartTuning: RigPartTuning = {
+  x: 0,
+  y: 0,
+  angle: 0,
+  scaleX: 1,
+  scaleY: 1,
+  flipX: false,
+  flipY: false,
+};
 
 export const defaultDebugTuning: ArenaDebugTuning = {
   showGrid: true,
@@ -68,6 +118,9 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionHeavyArcAngle: DEFAULT_ACTION_HEAVY_ANGLE,
   actionTauntArcAngle: DEFAULT_ACTION_TAUNT_ANGLE,
   actionRestArcAngle: DEFAULT_ACTION_REST_ANGLE,
+  selectedRigPart: "torso",
+  rigParts: createDefaultRigParts(),
+  idleAnimation: createDefaultIdleAnimation(),
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -116,7 +169,85 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionHeavyArcAngle: clampNumber(input.actionHeavyArcAngle, -180, 180, defaultDebugTuning.actionHeavyArcAngle),
     actionTauntArcAngle: clampNumber(input.actionTauntArcAngle, -180, 180, defaultDebugTuning.actionTauntArcAngle),
     actionRestArcAngle: clampNumber(input.actionRestArcAngle, -180, 180, defaultDebugTuning.actionRestArcAngle),
+    selectedRigPart: isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart,
+    rigParts: normalizeRigParts(input.rigParts),
+    idleAnimation: normalizeIdleAnimation(input.idleAnimation),
   };
+}
+
+function createDefaultRigParts(): Record<RigPartKey, RigPartTuning> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...defaultRigPartTuning }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function createDefaultIdleActiveParts(): Record<RigPartKey, boolean> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, true])) as Record<RigPartKey, boolean>;
+}
+
+function normalizeRigParts(input: unknown): Record<RigPartKey, RigPartTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<RigPartKey, Partial<RigPartTuning>>>) : {};
+
+  return Object.fromEntries(
+    RIG_PART_KEYS.map((key) => {
+      const part = source[key] ?? {};
+
+      return [
+        key,
+        {
+          x: clampNumber(part.x, -120, 120, defaultRigPartTuning.x),
+          y: clampNumber(part.y, -120, 120, defaultRigPartTuning.y),
+          angle: clampNumber(part.angle, -180, 180, defaultRigPartTuning.angle),
+          scaleX: clampNumber(part.scaleX, 0.1, 3, defaultRigPartTuning.scaleX),
+          scaleY: clampNumber(part.scaleY, 0.1, 3, defaultRigPartTuning.scaleY),
+          flipX: typeof part.flipX === "boolean" ? part.flipX : defaultRigPartTuning.flipX,
+          flipY: typeof part.flipY === "boolean" ? part.flipY : defaultRigPartTuning.flipY,
+        },
+      ];
+    }),
+  ) as Record<RigPartKey, RigPartTuning>;
+}
+
+function createDefaultIdleAnimation(): IdleAnimationTuning {
+  const base = createDefaultRigParts();
+  const breath = createDefaultRigParts();
+
+  breath.torso.y = -4;
+  breath.head.y = -2;
+  breath.backUpperArm.angle = -2;
+  breath.frontUpperArm.angle = 2;
+  breath.backForearm.angle = -1;
+  breath.frontForearm.angle = 1;
+
+  return {
+    enabled: false,
+    duration: 900,
+    base,
+    breath,
+    activeParts: createDefaultIdleActiveParts(),
+  };
+}
+
+function normalizeIdleAnimation(input: unknown): IdleAnimationTuning {
+  const source = typeof input === "object" && input !== null ? (input as Partial<IdleAnimationTuning>) : {};
+
+  return {
+    enabled: typeof source.enabled === "boolean" ? source.enabled : defaultDebugTuning.idleAnimation.enabled,
+    duration: clampNumber(source.duration, 240, 2400, defaultDebugTuning.idleAnimation.duration),
+    base: normalizeRigParts(source.base),
+    breath: normalizeRigParts(source.breath),
+    activeParts: normalizeIdleActiveParts(source.activeParts),
+  };
+}
+
+function normalizeIdleActiveParts(input: unknown): Record<RigPartKey, boolean> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<RigPartKey, boolean>>) : {};
+
+  return Object.fromEntries(
+    RIG_PART_KEYS.map((key) => [key, typeof source[key] === "boolean" ? source[key] : true]),
+  ) as Record<RigPartKey, boolean>;
+}
+
+function isRigPartKey(value: unknown): value is RigPartKey {
+  return typeof value === "string" && RIG_PART_KEYS.includes(value as RigPartKey);
 }
 
 function loadDebugTuning(): ArenaDebugTuning {

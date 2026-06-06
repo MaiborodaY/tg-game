@@ -32,7 +32,7 @@ import {
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
-import { debugTuning, subscribeDebugTuning } from "./debugTuning";
+import { debugTuning, defaultRigPartTuning, RIG_PART_KEYS, subscribeDebugTuning, type RigPartKey, type RigPartTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -66,21 +66,7 @@ interface FighterVisual {
   debugScale: number;
 }
 
-type PaperDollPartKey =
-  | "head"
-  | "torso"
-  | "backUpperArm"
-  | "backForearm"
-  | "backHand"
-  | "frontUpperArm"
-  | "frontForearm"
-  | "frontHand"
-  | "backThigh"
-  | "backShin"
-  | "backFoot"
-  | "frontThigh"
-  | "frontShin"
-  | "frontFoot";
+type PaperDollPartKey = RigPartKey;
 
 interface PaperDollRig {
   root: FighterPart;
@@ -199,6 +185,15 @@ export class ArenaScene extends Phaser.Scene {
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
     readyCallback?.(this);
+  }
+
+  update(time: number): void {
+    if (!this.visuals || !isDebugTuningActive() || !debugTuning.idleAnimation.enabled) {
+      return;
+    }
+
+    applyIdleDebugAnimation(this.visuals.player, time);
+    applyIdleDebugAnimation(this.visuals.enemy, time);
   }
 
   sync(nextState: CombatState): void {
@@ -435,18 +430,18 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
 
 const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
   "backThigh",
-  "backShin",
-  "backFoot",
-  "backUpperArm",
-  "backForearm",
-  "backHand",
   "frontThigh",
+  "backShin",
   "frontShin",
+  "backFoot",
   "frontFoot",
+  "backUpperArm",
+  "frontUpperArm",
   "torso",
   "head",
-  "frontUpperArm",
+  "backForearm",
   "frontForearm",
+  "backHand",
   "frontHand",
 ];
 
@@ -478,9 +473,71 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
   rig.root.y = feetY;
   rig.root.scaleX = PAPER_DOLL_BASE_SCALE * scale * rig.appearance.facing;
   rig.root.scaleY = PAPER_DOLL_BASE_SCALE * scale;
+  applyRigPartDebugTuning(rig);
   fighter.name.x = centerX;
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
+}
+
+function applyRigPartDebugTuning(rig: PaperDollRig): void {
+  const rigParts = getActiveDebugTuning()?.rigParts;
+
+  RIG_PART_KEYS.forEach((key) => {
+    const part = rig.parts[key];
+    const pivot = PAPER_DOLL_PART_PIVOTS[key];
+    const tuning = rigParts?.[key] ?? defaultRigPartTuning;
+
+    applyRigPartTransform(part, pivot, tuning);
+  });
+}
+
+function applyIdleDebugAnimation(fighter: FighterVisual, time: number): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  const idle = debugTuning.idleAnimation;
+  const duration = Math.max(1, idle.duration);
+  const phase = (time % duration) / duration;
+  const blend = 0.5 - Math.cos(phase * Math.PI * 2) * 0.5;
+
+  RIG_PART_KEYS.forEach((key) => {
+    if (!idle.activeParts[key]) {
+      return;
+    }
+
+    const part = rig.parts[key];
+    const pivot = PAPER_DOLL_PART_PIVOTS[key];
+    const tuning = interpolateRigPartTuning(idle.base[key] ?? defaultRigPartTuning, idle.breath[key] ?? defaultRigPartTuning, blend);
+
+    applyRigPartTransform(part, pivot, tuning);
+  });
+}
+
+function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend: number): RigPartTuning {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+    angle: lerp(from.angle, to.angle, blend),
+    scaleX: lerp(from.scaleX, to.scaleX, blend),
+    scaleY: lerp(from.scaleY, to.scaleY, blend),
+    flipX: blend < 0.5 ? from.flipX : to.flipX,
+    flipY: blend < 0.5 ? from.flipY : to.flipY,
+  };
+}
+
+function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number }, tuning: RigPartTuning): void {
+  part.x = pivot.x + tuning.x;
+  part.y = pivot.y + tuning.y;
+  part.angle = tuning.angle;
+  part.scaleX = tuning.scaleX * (tuning.flipX ? -1 : 1);
+  part.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
+}
+
+function lerp(from: number, to: number, blend: number): number {
+  return from + (to - from) * blend;
 }
 
 function addPaperDollPartVisual(
