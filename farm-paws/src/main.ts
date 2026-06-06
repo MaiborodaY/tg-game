@@ -283,7 +283,11 @@ async function playSequence(token: number): Promise<void> {
     render();
     await sleep(showMs);
     if (token !== runToken) return;
-    activeStep = null;
+    activeStep = {
+      cellIndex: -1,
+      stepNumber: index + 1,
+      totalSteps: state.sequence.length
+    };
     render();
     await sleep(gapMs);
   }
