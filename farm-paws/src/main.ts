@@ -151,7 +151,7 @@ function renderGameScreen(): string {
   return `
     <header class="top-panel">
       <div>
-        <p class="eyebrow">🐾 ${escapeHtml(currentRun.petName || "Питомец")}</p>
+        <p class="eyebrow">🐾 Фермерские лапки</p>
         <h1>${failed ? "Забег окончен" : `Раунд ${state.round}`}</h1>
       </div>
       <div class="score-pill">
@@ -165,7 +165,7 @@ function renderGameScreen(): string {
       <span>Рекорд: <strong>${state.bestScore}</strong></span>
     </section>
     <section class="heart-row" aria-label="Жизни">
-      <span>Жизни</span>
+      <span>${escapeHtml(currentRun.petName || "Питомец")}</span>
       <strong>${renderHearts()}</strong>
     </section>
 

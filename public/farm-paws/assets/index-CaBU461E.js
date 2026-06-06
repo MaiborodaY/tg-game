@@ -25,7 +25,7 @@
   `}function me(){let e=F.phase===`failed`;return`
     <header class="top-panel">
       <div>
-        <p class="eyebrow">🐾 ${Q(R.petName||`Питомец`)}</p>
+        <p class="eyebrow">🐾 Фермерские лапки</p>
         <h1>${e?`Забег окончен`:`Раунд ${F.round}`}</h1>
       </div>
       <div class="score-pill">
@@ -39,7 +39,7 @@
       <span>Рекорд: <strong>${F.bestScore}</strong></span>
     </section>
     <section class="heart-row" aria-label="Жизни">
-      <span>Жизни</span>
+      <span>${Q(R.petName||`Питомец`)}</span>
       <strong>${xe()}</strong>
     </section>
 
