@@ -416,8 +416,8 @@ function normalizeRigParts(input: unknown, fallbackParts = createDefaultRigParts
       return [
         key,
         {
-          x: clampNumber(part.x, -120, 120, fallback.x),
-          y: clampNumber(part.y, -120, 120, fallback.y),
+          x: clampNumber(part.x, -240, 240, fallback.x),
+          y: clampNumber(part.y, -240, 240, fallback.y),
           angle: clampNumber(part.angle, -180, 180, fallback.angle),
           scaleX: clampNumber(part.scaleX, 0.1, 3, fallback.scaleX),
           scaleY: clampNumber(part.scaleY, 0.1, 3, fallback.scaleY),

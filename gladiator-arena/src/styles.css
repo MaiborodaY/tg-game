@@ -1074,6 +1074,60 @@ body.debug-mode-arena .debug-rig-panel {
   gap: 7px;
 }
 
+.debug-rig-editor__nudge {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 7px;
+  border: 1px solid rgba(255, 211, 132, 0.22);
+  border-radius: 8px;
+}
+
+.debug-rig-editor__nudge legend {
+  padding: 0 4px;
+  color: #ffd384;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debug-rig-editor__nudge-steps,
+.debug-rig-editor__nudge-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.debug-rig-editor__nudge-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.debug-rig-editor__nudge-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.debug-rig-editor__nudge .debug-panel__reset {
+  width: 100%;
+  margin: 0;
+  min-height: 28px;
+}
+
+.debug-rig-editor__nudge-button[aria-pressed="true"] {
+  outline: 2px solid #ffe7a4;
+  outline-offset: 1px;
+  filter: brightness(1.08);
+}
+
+.debug-rig-editor__nudge-empty,
+.debug-rig-editor__nudge-center {
+  min-height: 28px;
+}
+
+.debug-rig-editor__nudge-center {
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 211, 132, 0.78) 0 3px, rgba(255, 211, 132, 0.12) 4px 100%);
+}
+
 .debug-rig-editor__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1146,7 +1200,7 @@ body.debug-mode-arena .debug-rig-panel {
 .debug-app {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(0, 430px) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 430px) minmax(360px, 480px);
   gap: 14px;
   align-items: start;
   justify-content: center;

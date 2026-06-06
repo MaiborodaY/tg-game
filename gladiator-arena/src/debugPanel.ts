@@ -41,6 +41,7 @@ type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
 type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetY";
 type FaceNumericControlKey = keyof FacePartTuning;
+type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigEditTargetKey =
   | "selected"
   | "frontForearmHand"
@@ -148,8 +149,8 @@ const controlGroups: DebugControlGroup[] = [
 ];
 
 const rigNumericControls: RigNumericControlConfig[] = [
-  { key: "x", label: "x", min: -120, max: 120, step: 1 },
-  { key: "y", label: "y", min: -120, max: 120, step: 1 },
+  { key: "x", label: "x", min: -240, max: 240, step: 1 },
+  { key: "y", label: "y", min: -240, max: 240, step: 1 },
   { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
   { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
@@ -189,7 +190,25 @@ const rigEditTargets: RigEditTargetConfig[] = [
   { key: "fullBody", label: "full body", parts: [...RIG_PART_KEYS] },
 ];
 
+const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
+  head: { x: 0, y: -205 },
+  torso: { x: 0, y: -84 },
+  backUpperArm: { x: -43, y: -180 },
+  backForearm: { x: -58, y: -115 },
+  backHand: { x: -64, y: -55 },
+  frontUpperArm: { x: 43, y: -180 },
+  frontForearm: { x: 58, y: -115 },
+  frontHand: { x: 64, y: -55 },
+  backThigh: { x: -25, y: -78 },
+  backShin: { x: -31, y: -40 },
+  backFoot: { x: -38, y: -7 },
+  frontThigh: { x: 25, y: -78 },
+  frontShin: { x: 31, y: -40 },
+  frontFoot: { x: 38, y: -7 },
+};
+
 let activeRigEditTarget: RigEditTargetKey = "selected";
+let activeNudgeStep = 5;
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -224,6 +243,37 @@ export function mountDebugPanel(root: HTMLElement): void {
         <fieldset class="debug-rig-editor__preview">
           <legend>Preview</legend>
           <div class="debug-rig-editor__preview-controls"></div>
+          <fieldset class="debug-rig-editor__nudge">
+            <legend>Nudge</legend>
+            <div class="debug-rig-editor__nudge-steps" role="group" aria-label="Nudge step">
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-step="1">1</button>
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-step="5">5</button>
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-step="10">10</button>
+            </div>
+            <div class="debug-rig-editor__nudge-grid" role="group" aria-label="Nudge target position">
+              <span class="debug-rig-editor__nudge-empty"></span>
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="up">&uarr;</button>
+              <span class="debug-rig-editor__nudge-empty"></span>
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="left">&larr;</button>
+              <span class="debug-rig-editor__nudge-center"></span>
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="right">&rarr;</button>
+              <span class="debug-rig-editor__nudge-empty"></span>
+              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="down">&darr;</button>
+              <span class="debug-rig-editor__nudge-empty"></span>
+            </div>
+            <div class="debug-rig-editor__actions">
+              <button class="debug-panel__reset" type="button" data-nudge-action="rotateLeft">Rotate target -</button>
+              <button class="debug-panel__reset" type="button" data-nudge-action="rotateRight">Rotate target +</button>
+            </div>
+            <div class="debug-rig-editor__actions">
+              <button class="debug-panel__reset" type="button" data-nudge-action="scaleDown">Scale target -</button>
+              <button class="debug-panel__reset" type="button" data-nudge-action="scaleUp">Scale target +</button>
+            </div>
+          </fieldset>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-rig-editor__rotate-left" type="button">Rotate doll -5</button>
+            <button class="debug-panel__reset debug-rig-editor__rotate-right" type="button">Rotate doll +5</button>
+          </div>
         </fieldset>
         <label class="debug-rig-editor__part">
           <span>Part</span>
@@ -476,6 +526,10 @@ function mountRigEditor(editor: HTMLElement): void {
   const captureFaceBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-face-breath");
   const applyFaceBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-face-base");
   const applyFaceBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-face-breath");
+  const rotateLeft = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__rotate-left");
+  const rotateRight = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__rotate-right");
+  const nudgeStepButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]")];
+  const nudgeActionButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-nudge-action]")];
   const animationSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
   const animationEnabled = editor.querySelector<HTMLInputElement>("input[data-animation-enabled]");
   const animationDuration = editor.querySelector<HTMLInputElement>("input[data-animation-duration]");
@@ -501,6 +555,10 @@ function mountRigEditor(editor: HTMLElement): void {
     !captureFaceBreath ||
     !applyFaceBase ||
     !applyFaceBreath ||
+    !rotateLeft ||
+    !rotateRight ||
+    nudgeStepButtons.length === 0 ||
+    nudgeActionButtons.length === 0 ||
     !animationSelect ||
     !animationEnabled ||
     !animationDuration ||
@@ -599,6 +657,31 @@ function mountRigEditor(editor: HTMLElement): void {
     }
 
     updateRigPartTuning(selectedPart, { ...debugTuning.rigParts[oppositePart] });
+  });
+
+  rotateLeft.addEventListener("click", () => {
+    rotatePaperDoll(-5);
+  });
+
+  rotateRight.addEventListener("click", () => {
+    rotatePaperDoll(5);
+  });
+
+  nudgeStepButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeNudgeStep = Number(button.dataset.nudgeStep) || activeNudgeStep;
+      syncNudgeControls(editor);
+    });
+  });
+
+  nudgeActionButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.nudgeAction;
+
+      if (isRigNudgeAction(action)) {
+        nudgeRigEditTarget(action);
+      }
+    });
   });
 
   animationSelect.addEventListener("change", () => {
@@ -882,6 +965,95 @@ function updateRigToggleTuning(key: RigToggleControlKey, value: boolean): void {
   updateDebugTuning({ rigParts: nextRigParts });
 }
 
+function nudgeRigEditTarget(action: RigNudgeAction): void {
+  const step = activeNudgeStep;
+
+  if (action === "left") {
+    updateRigTargetParts((current) => ({ x: clampRigNumericValue("x", current.x - step) }));
+    return;
+  }
+
+  if (action === "right") {
+    updateRigTargetParts((current) => ({ x: clampRigNumericValue("x", current.x + step) }));
+    return;
+  }
+
+  if (action === "up") {
+    updateRigTargetParts((current) => ({ y: clampRigNumericValue("y", current.y - step) }));
+    return;
+  }
+
+  if (action === "down") {
+    updateRigTargetParts((current) => ({ y: clampRigNumericValue("y", current.y + step) }));
+    return;
+  }
+
+  if (action === "rotateLeft") {
+    updateRigTargetParts((current) => ({ angle: clampRigNumericValue("angle", current.angle - step) }));
+    return;
+  }
+
+  if (action === "rotateRight") {
+    updateRigTargetParts((current) => ({ angle: clampRigNumericValue("angle", current.angle + step) }));
+    return;
+  }
+
+  const scaleDelta = step / 100;
+
+  if (action === "scaleDown") {
+    updateRigTargetParts((current) => ({
+      scaleX: clampRigNumericValue("scaleX", current.scaleX - scaleDelta),
+      scaleY: clampRigNumericValue("scaleY", current.scaleY - scaleDelta),
+    }));
+    return;
+  }
+
+  updateRigTargetParts((current) => ({
+    scaleX: clampRigNumericValue("scaleX", current.scaleX + scaleDelta),
+    scaleY: clampRigNumericValue("scaleY", current.scaleY + scaleDelta),
+  }));
+}
+
+function updateRigTargetParts(getPatch: (current: RigPartTuning, partKey: RigPartKey) => Partial<RigPartTuning>): void {
+  const nextRigParts = { ...debugTuning.rigParts };
+
+  getRigEditTargetParts().forEach((partKey) => {
+    const current = debugTuning.rigParts[partKey];
+
+    nextRigParts[partKey] = {
+      ...current,
+      ...getPatch(current, partKey),
+    };
+  });
+
+  updateDebugTuning({ rigParts: nextRigParts });
+}
+
+function rotatePaperDoll(degrees: number): void {
+  const radians = (degrees * Math.PI) / 180;
+  const sin = Math.sin(radians);
+  const cos = Math.cos(radians);
+  const nextRigParts = { ...debugTuning.rigParts };
+
+  RIG_PART_KEYS.forEach((partKey) => {
+    const current = debugTuning.rigParts[partKey];
+    const pivot = rigPartRootPivots[partKey];
+    const localX = pivot.x + current.x;
+    const localY = pivot.y + current.y;
+    const rotatedX = localX * cos - localY * sin;
+    const rotatedY = localX * sin + localY * cos;
+
+    nextRigParts[partKey] = {
+      ...current,
+      x: clampRigNumericValue("x", rotatedX - pivot.x),
+      y: clampRigNumericValue("y", rotatedY - pivot.y),
+      angle: clampRigNumericValue("angle", current.angle + degrees),
+    };
+  });
+
+  updateDebugTuning({ rigParts: nextRigParts });
+}
+
 function resetRigEditTarget(): void {
   const nextRigParts = { ...debugTuning.rigParts };
 
@@ -912,6 +1084,19 @@ function isRigEditTargetKey(value: string): value is RigEditTargetKey {
   return rigEditTargets.some((target) => target.key === value);
 }
 
+function isRigNudgeAction(value: string | undefined): value is RigNudgeAction {
+  return (
+    value === "left" ||
+    value === "right" ||
+    value === "up" ||
+    value === "down" ||
+    value === "rotateLeft" ||
+    value === "rotateRight" ||
+    value === "scaleDown" ||
+    value === "scaleUp"
+  );
+}
+
 function isBodyAnimationKey(value: string): value is BodyAnimationKey {
   return BODY_ANIMATION_KEYS.includes(value as BodyAnimationKey);
 }
@@ -929,7 +1114,7 @@ function clampRigNumericValue(key: RigNumericControlKey, value: number): number 
     return clampNumber(value, 0.1, 3);
   }
 
-  return clampNumber(value, -120, 120);
+  return clampNumber(value, -240, 240);
 }
 
 function clampFaceNumericValue(key: FaceNumericControlKey, value: number): number {
@@ -1052,6 +1237,7 @@ function syncDebugTools(panel: HTMLElement): void {
   syncRigEditor(panel);
   syncFaceEditor(panel);
   syncAnimationEditor(panel);
+  syncNudgeControls(panel);
   syncGrid();
 }
 
@@ -1189,6 +1375,12 @@ function syncAnimationEditor(panel: HTMLElement): void {
     const partKey = input.dataset.animationPartKey as RigPartKey;
 
     input.checked = animation.activeParts[partKey];
+  });
+}
+
+function syncNudgeControls(panel: HTMLElement): void {
+  panel.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]").forEach((button) => {
+    button.setAttribute("aria-pressed", `${Number(button.dataset.nudgeStep) === activeNudgeStep}`);
   });
 }
 
