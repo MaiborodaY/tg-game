@@ -2,7 +2,9 @@ import {
   BODY_ANIMATION_KEYS,
   debugTuning,
   defaultDebugTuning,
+  defaultFacePartTuning,
   defaultRigPartTuning,
+  FACE_PART_KEYS,
   resetDebugTuning,
   RIG_PART_KEYS,
   subscribeDebugTuning,
@@ -10,6 +12,8 @@ import {
   type ArenaDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type FacePartKey,
+  type FacePartTuning,
   type RigPartKey,
   type RigPartTuning,
 } from "./debugTuning";
@@ -36,6 +40,7 @@ type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig;
 type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
 type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetY";
+type FaceNumericControlKey = keyof FacePartTuning;
 type RigEditTargetKey =
   | "selected"
   | "frontForearmHand"
@@ -72,6 +77,14 @@ interface RigToggleControlConfig {
 
 interface CharacterPreviewControlConfig {
   key: CharacterPreviewControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface FaceNumericControlConfig {
+  key: FaceNumericControlKey;
   label: string;
   min: number;
   max: number;
@@ -152,6 +165,13 @@ const characterPreviewControls: CharacterPreviewControlConfig[] = [
   { key: "characterPreviewFeetY", label: "feet Y", min: 560, max: 740, step: 1 },
 ];
 
+const faceNumericControls: FaceNumericControlConfig[] = [
+  { key: "x", label: "x", min: -40, max: 40, step: 0.5 },
+  { key: "y", label: "y", min: -40, max: 40, step: 0.5 },
+  { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
+  { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
+];
+
 const rigEditTargets: RigEditTargetConfig[] = [
   { key: "selected", label: "selected only", parts: [] },
   { key: "frontForearmHand", label: "front forearm + hand", parts: ["frontForearm", "frontHand"] },
@@ -218,6 +238,13 @@ export function mountDebugPanel(root: HTMLElement): void {
           <button class="debug-panel__reset debug-rig-editor__copy-opposite" type="button">Copy opposite</button>
           <button class="debug-panel__reset debug-rig-editor__reset" type="button">Reset selected</button>
         </div>
+        <fieldset class="debug-rig-editor__face" hidden>
+          <legend>Head face</legend>
+          <div class="debug-rig-editor__face-controls"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-rig-editor__face-reset" type="button">Reset eyes</button>
+          </div>
+        </fieldset>
         <fieldset class="debug-rig-editor__idle">
           <legend>Animation</legend>
           <label class="debug-rig-editor__part">
@@ -433,8 +460,10 @@ function mountRigEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__select");
   const targetSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__target-select");
   const controls = editor.querySelector<HTMLElement>(".debug-rig-editor__controls");
+  const faceControls = editor.querySelector<HTMLElement>(".debug-rig-editor__face-controls");
   const copyOpposite = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
+  const resetFace = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__face-reset");
   const animationSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
   const animationEnabled = editor.querySelector<HTMLInputElement>("input[data-animation-enabled]");
   const animationDuration = editor.querySelector<HTMLInputElement>("input[data-animation-duration]");
@@ -452,8 +481,10 @@ function mountRigEditor(editor: HTMLElement): void {
     !targetSelect ||
     !previewControls ||
     !controls ||
+    !faceControls ||
     !copyOpposite ||
     !reset ||
+    !resetFace ||
     !animationSelect ||
     !animationEnabled ||
     !animationDuration ||
@@ -493,6 +524,7 @@ function mountRigEditor(editor: HTMLElement): void {
 
   rigNumericControls.forEach((control) => controls.append(createRigRangeControl(control)));
   rigToggleControls.forEach((control) => controls.append(createRigToggleControl(control)));
+  FACE_PART_KEYS.forEach((key) => faceControls.append(createFacePartEditor(key)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
   select.addEventListener("change", () => {
@@ -520,6 +552,10 @@ function mountRigEditor(editor: HTMLElement): void {
 
   reset.addEventListener("click", () => {
     resetRigEditTarget();
+  });
+
+  resetFace.addEventListener("click", () => {
+    resetFaceParts();
   });
 
   copyOpposite.addEventListener("click", () => {
@@ -684,6 +720,57 @@ function createAnimationPartToggle(partKey: RigPartKey): HTMLElement {
   return row;
 }
 
+function createFacePartEditor(partKey: FacePartKey): HTMLElement {
+  const fieldset = document.createElement("fieldset");
+  fieldset.className = "debug-rig-editor__face-part";
+  fieldset.innerHTML = `<legend>${partKey}</legend>`;
+
+  faceNumericControls.forEach((control) => {
+    fieldset.append(createFaceRangeControl(partKey, control));
+  });
+
+  return fieldset;
+}
+
+function createFaceRangeControl(partKey: FacePartKey, control: FaceNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-face-part="${partKey}"
+      data-face-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-face-part="${partKey}"
+      data-face-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateFacePartTuning(partKey, control.key, Number(range.value));
+  });
+
+  number?.addEventListener("input", () => {
+    updateFacePartTuning(partKey, control.key, Number(number.value));
+  });
+
+  return row;
+}
+
 function updateRigPartTuning(partKey: RigPartKey, patch: Partial<RigPartTuning>): void {
   updateDebugTuning({
     rigParts: {
@@ -693,6 +780,24 @@ function updateRigPartTuning(partKey: RigPartKey, patch: Partial<RigPartTuning>)
         ...patch,
       },
     },
+  });
+}
+
+function updateFacePartTuning(partKey: FacePartKey, key: FaceNumericControlKey, value: number): void {
+  updateDebugTuning({
+    faceParts: {
+      ...debugTuning.faceParts,
+      [partKey]: {
+        ...debugTuning.faceParts[partKey],
+        [key]: clampFaceNumericValue(key, value),
+      },
+    },
+  });
+}
+
+function resetFaceParts(): void {
+  updateDebugTuning({
+    faceParts: Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...defaultFacePartTuning }])) as Record<FacePartKey, FacePartTuning>,
   });
 }
 
@@ -779,6 +884,10 @@ function isBodyAnimationKey(value: string): value is BodyAnimationKey {
   return BODY_ANIMATION_KEYS.includes(value as BodyAnimationKey);
 }
 
+function isFacePartKey(value: string | undefined): value is FacePartKey {
+  return typeof value === "string" && FACE_PART_KEYS.includes(value as FacePartKey);
+}
+
 function clampRigNumericValue(key: RigNumericControlKey, value: number): number {
   if (key === "angle") {
     return clampNumber(value, -180, 180);
@@ -789,6 +898,14 @@ function clampRigNumericValue(key: RigNumericControlKey, value: number): number 
   }
 
   return clampNumber(value, -120, 120);
+}
+
+function clampFaceNumericValue(key: FaceNumericControlKey, value: number): number {
+  if (key === "scaleX" || key === "scaleY") {
+    return clampNumber(value, 0.1, 3);
+  }
+
+  return clampNumber(value, -40, 40);
 }
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -873,6 +990,7 @@ function syncDebugTools(panel: HTMLElement): void {
   syncModeTabs(panel);
   syncInputs(panel);
   syncRigEditor(panel);
+  syncFaceEditor(panel);
   syncAnimationEditor(panel);
   syncGrid();
 }
@@ -950,6 +1068,37 @@ function syncRigEditor(panel: HTMLElement): void {
     const key = input.dataset.rigToggleKey as RigToggleControlKey;
 
     input.checked = anchorTuning[key];
+  });
+}
+
+function syncFaceEditor(panel: HTMLElement): void {
+  const faceEditor = panel.querySelector<HTMLElement>(".debug-rig-editor__face");
+
+  if (faceEditor) {
+    faceEditor.hidden = debugTuning.selectedRigPart !== "head";
+  }
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-face-key]").forEach((input) => {
+    const partKey = input.dataset.facePart;
+    const key = input.dataset.faceKey as FaceNumericControlKey;
+
+    if (!isFacePartKey(partKey)) {
+      return;
+    }
+
+    input.value = `${debugTuning.faceParts[partKey][key]}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-face-number-key]").forEach((input) => {
+    const partKey = input.dataset.facePart;
+    const key = input.dataset.faceNumberKey as FaceNumericControlKey;
+
+    if (!isFacePartKey(partKey)) {
+      return;
+    }
+
+    const value = debugTuning.faceParts[partKey][key];
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
   });
 }
 

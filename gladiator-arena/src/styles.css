@@ -1015,6 +1015,42 @@ body.debug-mode-arena .debug-rig-panel {
   gap: 7px;
 }
 
+.debug-rig-editor__face {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 211, 132, 0.32);
+  border-radius: 10px;
+}
+
+.debug-rig-editor__face[hidden] {
+  display: none;
+}
+
+.debug-rig-editor__face legend,
+.debug-rig-editor__face-part legend {
+  padding: 0 4px;
+  color: #ffd384;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.debug-rig-editor__face-controls,
+.debug-rig-editor__face-part {
+  display: grid;
+  gap: 7px;
+}
+
+.debug-rig-editor__face-part {
+  margin: 0;
+  padding: 7px;
+  border: 1px solid rgba(255, 211, 132, 0.2);
+  border-radius: 8px;
+}
+
 .debug-rig-editor__preview {
   display: grid;
   gap: 7px;

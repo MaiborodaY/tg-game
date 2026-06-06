@@ -42,6 +42,9 @@ export type RigPartKey = (typeof RIG_PART_KEYS)[number];
 export const BODY_ANIMATION_KEYS = ["idle", "walkCycle"] as const;
 export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 
+export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
+export type FacePartKey = (typeof FACE_PART_KEYS)[number];
+
 export interface RigPartTuning {
   x: number;
   y: number;
@@ -50,6 +53,13 @@ export interface RigPartTuning {
   scaleY: number;
   flipX: boolean;
   flipY: boolean;
+}
+
+export interface FacePartTuning {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
 }
 
 export interface BodyAnimationTuning {
@@ -89,6 +99,7 @@ export interface ArenaDebugTuning {
   characterPreviewFeetY: number;
   selectedRigPart: RigPartKey;
   rigParts: Record<RigPartKey, RigPartTuning>;
+  faceParts: Record<FacePartKey, FacePartTuning>;
   selectedBodyAnimation: BodyAnimationKey;
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
 }
@@ -101,6 +112,13 @@ export const defaultRigPartTuning: RigPartTuning = {
   scaleY: 1,
   flipX: false,
   flipY: false,
+};
+
+export const defaultFacePartTuning: FacePartTuning = {
+  x: 0,
+  y: 0,
+  scaleX: 1,
+  scaleY: 1,
 };
 
 export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
@@ -118,6 +136,11 @@ export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
   frontThigh: { x: -4, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontShin: { x: -6, y: 30, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontFoot: { x: -13, y: 67, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+};
+
+export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
+  eyeLeft: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+  eyeRight: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
@@ -207,6 +230,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewFeetY: 700,
   selectedRigPart: "torso",
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
+  faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),
   selectedBodyAnimation: "idle",
   bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
 };
@@ -263,6 +287,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
     selectedRigPart: isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart,
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
+    faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
     selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
     bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
   };
@@ -274,6 +299,10 @@ function createDefaultRigParts(): Record<RigPartKey, RigPartTuning> {
 
 function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<FacePartKey, FacePartTuning> {
+  return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<FacePartKey, FacePartTuning>;
 }
 
 function cloneBodyAnimations(source: Record<BodyAnimationKey, BodyAnimationTuning>): Record<BodyAnimationKey, BodyAnimationTuning> {
@@ -324,6 +353,27 @@ function normalizeRigParts(input: unknown, fallbackParts = createDefaultRigParts
       ];
     }),
   ) as Record<RigPartKey, RigPartTuning>;
+}
+
+function normalizeFaceParts(input: unknown, fallbackParts = DEFAULT_FACE_PARTS): Record<FacePartKey, FacePartTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<FacePartKey, Partial<FacePartTuning>>>) : {};
+
+  return Object.fromEntries(
+    FACE_PART_KEYS.map((key) => {
+      const part = source[key] ?? {};
+      const fallback = fallbackParts[key] ?? defaultFacePartTuning;
+
+      return [
+        key,
+        {
+          x: clampNumber(part.x, -40, 40, fallback.x),
+          y: clampNumber(part.y, -40, 40, fallback.y),
+          scaleX: clampNumber(part.scaleX, 0.1, 3, fallback.scaleX),
+          scaleY: clampNumber(part.scaleY, 0.1, 3, fallback.scaleY),
+        },
+      ];
+    }),
+  ) as Record<FacePartKey, FacePartTuning>;
 }
 
 function createDefaultIdleAnimation(): BodyAnimationTuning {

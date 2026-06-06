@@ -44,7 +44,20 @@ import {
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
-import { debugTuning, DEFAULT_BODY_ANIMATIONS, DEFAULT_RIG_PARTS, defaultRigPartTuning, RIG_PART_KEYS, subscribeDebugTuning, type BodyAnimationKey, type BodyAnimationTuning, type RigPartKey, type RigPartTuning } from "./debugTuning";
+import {
+  debugTuning,
+  DEFAULT_BODY_ANIMATIONS,
+  DEFAULT_FACE_PARTS,
+  DEFAULT_RIG_PARTS,
+  defaultRigPartTuning,
+  RIG_PART_KEYS,
+  subscribeDebugTuning,
+  type BodyAnimationKey,
+  type BodyAnimationTuning,
+  type FacePartTuning,
+  type RigPartKey,
+  type RigPartTuning,
+} from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -84,7 +97,13 @@ type PaperDollPartKey = RigPartKey;
 interface PaperDollRig {
   root: FighterPart;
   parts: Record<PaperDollPartKey, FighterPart>;
+  faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
+}
+
+interface PaperDollFaceParts {
+  eyeLeft?: FighterPart;
+  eyeRight?: FighterPart;
 }
 
 interface PaperDollAppearance {
@@ -137,6 +156,15 @@ const HEAD_ASSET_DISPLAY_HEIGHT = 122;
 const HEAD_ASSET_LOCAL_BOTTOM_Y = 14;
 const HEAD_ASSET_ORIGIN_X = 312 / 623;
 const HEAD_ASSET_ORIGIN_Y = 828 / 830;
+const HEAD_FACE_EYE_Y = -41;
+const HEAD_FACE_LEFT_EYE_X = -8.6;
+const HEAD_FACE_RIGHT_EYE_X = 8.6;
+const HEAD_FACE_EYE_WIDTH = 6.8;
+const HEAD_FACE_EYE_HEIGHT = 14;
+const HEAD_FACE_EYE_COVER_WIDTH = 18;
+const HEAD_FACE_EYE_COVER_HEIGHT = 17;
+const HEAD_FACE_EYE_WHITE = 0xfffbf2;
+const HEAD_FACE_EYE_BLACK = 0x050201;
 const TORSO_ASSET_DISPLAY_HEIGHT = 175;
 const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
 const TORSO_ASSET_ORIGIN_X = 626 / 1254;
@@ -498,12 +526,13 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const rootContainer = target.add.container(options.x, initialFeetY);
   const root = part(rootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
+  const faceParts: PaperDollFaceParts = {};
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, appearance, options);
+    addPaperDollPartVisual(target, partContainer, key, appearance, options, faceParts);
     rootContainer.add(partContainer);
     parts[key] = part(partContainer);
   });
@@ -526,8 +555,8 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   return {
     body: root,
     head: parts.head,
-    eyeLeft: parts.head,
-    eyeRight: parts.head,
+    eyeLeft: faceParts.eyeLeft ?? parts.head,
+    eyeRight: faceParts.eyeRight ?? parts.head,
     helmet: parts.head,
     plume: parts.head,
     sword: parts.frontHand,
@@ -542,6 +571,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     paperDollRig: {
       root,
       parts,
+      faceParts,
       appearance,
     },
     debugScale: 1,
@@ -600,7 +630,9 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
 }
 
 function applyRigPartDebugTuning(rig: PaperDollRig): void {
-  const rigParts = getActiveDebugTuning()?.rigParts;
+  const activeDebugTuning = getActiveDebugTuning();
+  const rigParts = activeDebugTuning?.rigParts;
+  const faceParts = activeDebugTuning?.faceParts ?? DEFAULT_FACE_PARTS;
 
   RIG_PART_KEYS.forEach((key) => {
     const part = rig.parts[key];
@@ -609,6 +641,9 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
 
     applyRigPartTransform(part, pivot, tuning);
   });
+
+  applyFacePartTransform(rig.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
+  applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
@@ -667,6 +702,17 @@ function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number 
   part.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
 }
 
+function applyFacePartTransform(part: FighterPart | undefined, baseX: number, baseY: number, tuning: FacePartTuning): void {
+  if (!part) {
+    return;
+  }
+
+  part.x = baseX + tuning.x;
+  part.y = baseY + tuning.y;
+  part.scaleX = tuning.scaleX;
+  part.scaleY = tuning.scaleY;
+}
+
 function lerp(from: number, to: number, blend: number): number {
   return from + (to - from) * blend;
 }
@@ -677,6 +723,7 @@ function addPaperDollPartVisual(
   key: PaperDollPartKey,
   appearance: PaperDollAppearance,
   options: PaperDollFighterOptions,
+  faceParts: PaperDollFaceParts,
 ): void {
   if (key === "head" && options.headAssetKey && target.textures.exists(options.headAssetKey)) {
     const image = target.add.image(0, HEAD_ASSET_LOCAL_BOTTOM_Y, options.headAssetKey);
@@ -684,6 +731,7 @@ function addPaperDollPartVisual(
     image.displayHeight = HEAD_ASSET_DISPLAY_HEIGHT;
     image.scaleX = image.scaleY;
     partContainer.add(image);
+    addPaperDollFaceOverlay(target, partContainer, faceParts, true);
     return;
   }
 
@@ -711,6 +759,31 @@ function addPaperDollPartVisual(
   const graphics = target.add.graphics();
   drawPaperDollPart(graphics, key, appearance);
   partContainer.add(graphics);
+
+  if (key === "head") {
+    addPaperDollFaceOverlay(target, partContainer, faceParts, false);
+  }
+}
+
+function addPaperDollFaceOverlay(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  faceParts: PaperDollFaceParts,
+  shouldCoverBakedEyes: boolean,
+): void {
+  if (shouldCoverBakedEyes) {
+    const leftCover = target.add.ellipse(HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, HEAD_FACE_EYE_COVER_WIDTH, HEAD_FACE_EYE_COVER_HEIGHT, HEAD_FACE_EYE_WHITE);
+    const rightCover = target.add.ellipse(HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, HEAD_FACE_EYE_COVER_WIDTH, HEAD_FACE_EYE_COVER_HEIGHT, HEAD_FACE_EYE_WHITE);
+
+    partContainer.add([leftCover, rightCover]);
+  }
+
+  const eyeLeft = target.add.ellipse(HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, HEAD_FACE_EYE_WIDTH, HEAD_FACE_EYE_HEIGHT, HEAD_FACE_EYE_BLACK);
+  const eyeRight = target.add.ellipse(HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, HEAD_FACE_EYE_WIDTH, HEAD_FACE_EYE_HEIGHT, HEAD_FACE_EYE_BLACK);
+
+  partContainer.add([eyeLeft, eyeRight]);
+  faceParts.eyeLeft = part(eyeLeft);
+  faceParts.eyeRight = part(eyeRight);
 }
 
 function drawPaperDollPart(graphics: Phaser.GameObjects.Graphics, key: PaperDollPartKey, appearance: PaperDollAppearance): void {
@@ -719,7 +792,6 @@ function drawPaperDollPart(graphics: Phaser.GameObjects.Graphics, key: PaperDoll
   const outline = 0x35180d;
   const muscle = appearance.muscle;
   const hair = appearance.hair;
-  const eye = 0x160703;
   const isBack = key.startsWith("back");
   const side = key.startsWith("front") ? 1 : -1;
   const limbFill = isBack ? skinDark : skin;
@@ -788,8 +860,6 @@ function drawPaperDollPart(graphics: Phaser.GameObjects.Graphics, key: PaperDoll
       1,
       4,
     );
-    drawDollEllipse(graphics, -14, -42, 7, 7, 0, eye, eye, 1, 1, 0);
-    drawDollEllipse(graphics, 16, -42, 7, 7, 0, eye, eye, 1, 1, 0);
     drawDollSmile(graphics, 0, -26, 12, outline, 1);
     return;
   }

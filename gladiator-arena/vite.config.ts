@@ -50,6 +50,9 @@ const rigPartKeys = [
 
 type RigPartKey = (typeof rigPartKeys)[number];
 
+const facePartKeys = ["eyeLeft", "eyeRight"] as const;
+type FacePartKey = (typeof facePartKeys)[number];
+
 const bodyAnimationKeys = ["idle", "walkCycle"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 
@@ -68,6 +71,13 @@ interface RigPartTuningPayload {
   flipY: unknown;
 }
 
+interface FacePartTuningPayload {
+  x: unknown;
+  y: unknown;
+  scaleX: unknown;
+  scaleY: unknown;
+}
+
 interface RigPartTuning {
   x: number;
   y: number;
@@ -78,7 +88,15 @@ interface RigPartTuning {
   flipY: boolean;
 }
 
+interface FacePartTuning {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+}
+
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
+type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
 
 interface BodyAnimationUpdates {
   key: BodyAnimationKey;
@@ -107,15 +125,16 @@ function saveProdDefaultsPlugin(): Plugin {
           const payload = await readJson(request);
           const layoutUpdates = pickProdDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
+          const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const [layoutSource, debugTuningSource] = await Promise.all([readFile(arenaLayoutUrl, "utf8"), readFile(debugTuningUrl, "utf8")]);
           const nextLayoutSource = applyProdDefaultUpdates(layoutSource, layoutUpdates);
-          const nextDebugTuningSource = applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates);
+          const nextDebugTuningSource = applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates);
 
           await Promise.all([writeFile(arenaLayoutUrl, nextLayoutSource, "utf8"), writeFile(debugTuningUrl, nextDebugTuningSource, "utf8")]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults and ${Object.keys(rigPartUpdates).length} rig defaults to prod.`,
-            updated: Object.keys(layoutUpdates).length + Object.keys(rigPartUpdates).length,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(rigPartUpdates).length} rig defaults, and ${Object.keys(facePartUpdates).length} face defaults to prod.`,
+            updated: Object.keys(layoutUpdates).length + Object.keys(rigPartUpdates).length + Object.keys(facePartUpdates).length,
           });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod defaults." });
@@ -189,6 +208,30 @@ export function pickRigPartDefaultUpdates(payload: unknown): RigPartUpdates {
   }
 
   return Object.fromEntries(rigPartKeys.map((key) => [key, readRigPartTuning(rigParts, key)])) as RigPartUpdates;
+}
+
+export function applyFacePartDefaultUpdates(source: string, updates: FacePartUpdates): string {
+  const pattern = /export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = (?:\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_FACE_PARTS in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatFacePartDefaults(updates));
+}
+
+export function pickFacePartDefaultUpdates(payload: unknown): FacePartUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const faceParts = (payload as { faceParts?: unknown }).faceParts;
+
+  if (!faceParts || typeof faceParts !== "object" || Array.isArray(faceParts)) {
+    throw new Error("Expected faceParts in debug tuning payload.");
+  }
+
+  return Object.fromEntries(facePartKeys.map((key) => [key, readFacePartTuning(faceParts, key)])) as FacePartUpdates;
 }
 
 export function applyBodyAnimationDefaultUpdates(source: string, updates: BodyAnimationUpdates): string {
@@ -268,6 +311,16 @@ function formatRigPartDefaults(updates: RigPartUpdates): string {
   });
 
   return `export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatFacePartDefaults(updates: FacePartUpdates): string {
+  const rows = facePartKeys.map((key) => {
+    const part = updates[key];
+
+    return `  ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)} },`;
+  });
+
+  return `export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {\n${rows.join("\n")}\n};`;
 }
 
 function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimationUpdates): string {
@@ -354,11 +407,38 @@ function readRigPartTuning(rigParts: object, key: RigPartKey): RigPartTuning {
   };
 }
 
+function readFacePartTuning(faceParts: object, key: FacePartKey): FacePartTuning {
+  const part = (faceParts as Partial<Record<FacePartKey, unknown>>)[key];
+
+  if (!part || typeof part !== "object" || Array.isArray(part)) {
+    throw new Error(`Invalid face part tuning value: ${key}.`);
+  }
+
+  const tuning = part as Partial<FacePartTuningPayload>;
+
+  return {
+    x: readFiniteFacePartNumber(tuning, key, "x"),
+    y: readFiniteFacePartNumber(tuning, key, "y"),
+    scaleX: readFiniteFacePartNumber(tuning, key, "scaleX"),
+    scaleY: readFiniteFacePartNumber(tuning, key, "scaleY"),
+  };
+}
+
 function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey: RigPartKey, fieldName: keyof RigPartTuning): number {
   const value = payload[fieldName];
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid rig part tuning value: ${partKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteFacePartNumber(payload: Partial<FacePartTuningPayload>, partKey: FacePartKey, fieldName: keyof FacePartTuning): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid face part tuning value: ${partKey}.${fieldName}.`);
   }
 
   return value;
