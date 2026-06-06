@@ -3,6 +3,7 @@ export type FarmPawsRunSession = {
   runId: string | null;
   bestScore: number;
   error: string | null;
+  petName: string | null;
   code?: string | null;
   dailyLimit?: number | null;
   dailyStarts?: number | null;
@@ -28,6 +29,8 @@ type ApiStartResponse = {
   ok?: boolean;
   runId?: string;
   run_id?: string;
+  petName?: string;
+  pet_name?: string;
   bestScore?: number;
   best_score?: number;
   error?: string;
@@ -81,6 +84,7 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
       runId,
       bestScore: normalizedScore(response.bestScore ?? response.best_score ?? localBestScore),
       error: null,
+      petName: normalizedText(response.petName ?? response.pet_name),
       code: null,
       dailyLimit: null,
       dailyStarts: null
@@ -168,6 +172,7 @@ function localSession(bestScore: number, error: string | null): FarmPawsRunSessi
     runId: null,
     bestScore: normalizedScore(bestScore),
     error,
+    petName: null,
     code: null,
     dailyLimit: null,
     dailyStarts: null
@@ -185,6 +190,7 @@ function blockedSession(
     runId: null,
     bestScore: normalizedScore(bestScore),
     error,
+    petName: normalizedText(response?.petName ?? response?.pet_name),
     code,
     dailyLimit: normalizedNullableScore(response?.dailyLimit ?? response?.daily_limit),
     dailyStarts: normalizedNullableScore(response?.dailyStarts ?? response?.daily_starts)
@@ -216,6 +222,10 @@ function normalizedNullableScore(value: number | undefined): number | null {
 
 function normalizedScore(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function normalizedText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 class ApiError extends Error {

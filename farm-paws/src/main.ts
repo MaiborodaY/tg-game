@@ -63,7 +63,8 @@ let currentRun: FarmPawsRunSession = {
   mode: "local",
   runId: null,
   bestScore: state.bestScore,
-  error: null
+  error: null,
+  petName: null
 };
 let runStartedAt = 0;
 let isStartingRun = false;
@@ -125,7 +126,7 @@ function renderStartScreen(): string {
   return `
     <div class="start-screen">
       <div class="pet-badge" aria-hidden="true">🐾</div>
-      <p class="eyebrow">Локальный прототип</p>
+      <p class="eyebrow">Прогулка питомца</p>
       <h1>Фермерские лапки</h1>
       <p class="lead">Запомни маршрут питомца по грядкам и повтори его.</p>
       <div class="preview-grid" aria-hidden="true">
@@ -148,7 +149,7 @@ function renderGameScreen(): string {
   return `
     <header class="top-panel">
       <div>
-        <p class="eyebrow">🐾 Фермерские лапки</p>
+        <p class="eyebrow">🐾 ${escapeHtml(currentRun.petName || "Питомец")}</p>
         <h1>${failed ? "Забег окончен" : `Раунд ${state.round}`}</h1>
       </div>
       <div class="score-pill">
