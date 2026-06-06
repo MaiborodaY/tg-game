@@ -2,6 +2,12 @@ import "./styles.css";
 import catGuideUrl from "./assets/cat-guide.png";
 import catGuideSadUrl from "./assets/cat-guide-sad.png";
 import {
+  FarmPawsFinishResult,
+  FarmPawsRunSession,
+  finishFarmPawsRun,
+  startFarmPawsRun
+} from "./api";
+import {
   GameState,
   defaultPlotEmojis,
   handleCellInput,
@@ -14,6 +20,7 @@ import {
 import { loadBestScore, saveBestScore } from "./storage";
 
 type TelegramWebApp = {
+  initData?: string;
   ready?: () => void;
   expand?: () => void;
   setHeaderColor?: (color: string) => void;
@@ -56,6 +63,17 @@ let state: GameState = {
 };
 let activeStep: ActiveStep = null;
 let runToken = 0;
+let currentRun: FarmPawsRunSession = {
+  mode: "local",
+  runId: null,
+  bestScore: state.bestScore,
+  error: null
+};
+let runStartedAt = 0;
+let isStartingRun = false;
+let finishPending = false;
+let finishResult: FarmPawsFinishResult | null = null;
+let finishError: string | null = null;
 
 initTelegramWebApp();
 render();
@@ -113,7 +131,7 @@ function renderStartScreen(): string {
         <span>2</span>
         <span>3</span>
       </div>
-      <button class="primary-button" data-action="start">▶️ Играть</button>
+      <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${isStartingRun ? "⏳ Стартуем" : "▶️ Играть"}</button>
       <p class="best-note">Лучший результат: <strong>${state.bestScore}</strong></p>
     </div>
   `;
@@ -159,14 +177,13 @@ function renderPlayPanel(): string {
 }
 
 function renderResultPanel(): string {
-  const xp = mockPetXpForScore(state.score);
   return `
     <div class="result-panel">
       <img class="result-cat-image" src="${catGuideSadUrl}" alt="" />
       <h2>Урожай спасён: ${state.score}</h2>
       <p>Сердечки закончились.</p>
       <p>Лучший результат: <strong>${state.bestScore}</strong></p>
-      <p class="reward-line">Питомец получил +${xp} XP</p>
+      <p class="reward-line">${rewardText()}</p>
       <div class="result-actions">
         <button class="primary-button" data-action="retry">🔁 Ещё раз</button>
         <button class="secondary-button" data-action="farm">🌾 На ферму</button>
@@ -195,12 +212,38 @@ function renderCell(index: number): string {
   `;
 }
 
-function beginGame(): void {
+async function beginGame(): Promise<void> {
+  if (isStartingRun) return;
+
   runToken += 1;
+  const token = runToken;
+  const localBestScore = loadBestScore();
   activeStep = null;
-  state = startGame(loadBestScore());
+  finishPending = false;
+  finishResult = null;
+  finishError = null;
+  isStartingRun = true;
+  state = {
+    ...state,
+    phase: "idle",
+    bestScore: Math.max(state.bestScore, localBestScore)
+  };
   render();
-  void playSequence(runToken);
+
+  const run = await startFarmPawsRun(localBestScore);
+  if (token !== runToken) return;
+
+  currentRun = run;
+  runStartedAt = Date.now();
+  isStartingRun = false;
+  state = startGame(run.bestScore);
+  render();
+
+  if (run.mode === "local" && run.error) {
+    showToast("Игра запущена локально. Награда не начислится.");
+  }
+
+  void playSequence(token);
 }
 
 async function playSequence(token: number): Promise<void> {
@@ -251,6 +294,10 @@ function onCellClick(cellIndex: number): void {
     }, 520);
   }
 
+  if (result.result === "failed") {
+    void finishCurrentRun(token);
+  }
+
   if (result.result === "roundComplete") {
     window.setTimeout(() => {
       if (token !== runToken) return;
@@ -259,6 +306,36 @@ function onCellClick(cellIndex: number): void {
       void playSequence(token);
     }, 700);
   }
+}
+
+async function finishCurrentRun(token: number): Promise<void> {
+  if (finishPending || finishResult) return;
+
+  finishPending = true;
+  finishError = null;
+  render();
+
+  const result = await finishFarmPawsRun(currentRun, {
+    score: state.score,
+    round: state.round,
+    hpLeft: state.hp,
+    durationMs: Math.max(0, Date.now() - runStartedAt)
+  });
+  if (token !== runToken) return;
+
+  finishPending = false;
+  finishResult = result;
+  finishError = result.ok ? null : result.error || "finish_failed";
+
+  if (typeof result.bestScore === "number" && result.bestScore > state.bestScore) {
+    state = {
+      ...state,
+      bestScore: result.bestScore
+    };
+    saveBestScore(result.bestScore);
+  }
+
+  render();
 }
 
 function statusText(): string {
@@ -283,6 +360,23 @@ function statusClass(): string {
 
 function renderHearts(): string {
   return Array.from({ length: state.maxHp }, (_, index) => index < state.hp ? "❤️" : "🤍").join("");
+}
+
+function rewardText(): string {
+  if (finishPending) return "Сохраняем результат...";
+  if (currentRun.mode === "server" && !finishResult && !finishError) {
+    return "Сохраняем результат...";
+  }
+  if (finishResult?.mode === "server" && finishResult.ok) {
+    return `Питомец получил +${finishResult.xpReward || 0} XP`;
+  }
+  if (currentRun.mode === "server" && finishError) {
+    return "Результат не сохранён, награда не начислена";
+  }
+  if (currentRun.mode === "local") {
+    return "Локальный режим: награда не начисляется";
+  }
+  return `Питомец получил +${mockPetXpForScore(state.score)} XP`;
 }
 
 function catGuideClass(): string {
