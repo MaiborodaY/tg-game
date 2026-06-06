@@ -39,6 +39,9 @@ export const RIG_PART_KEYS = [
 
 export type RigPartKey = (typeof RIG_PART_KEYS)[number];
 
+export const BODY_ANIMATION_KEYS = ["idle", "walkCycle"] as const;
+export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
+
 export interface RigPartTuning {
   x: number;
   y: number;
@@ -49,13 +52,15 @@ export interface RigPartTuning {
   flipY: boolean;
 }
 
-export interface IdleAnimationTuning {
+export interface BodyAnimationTuning {
   enabled: boolean;
   duration: number;
   base: Record<RigPartKey, RigPartTuning>;
   breath: Record<RigPartKey, RigPartTuning>;
   activeParts: Record<RigPartKey, boolean>;
 }
+
+export type IdleAnimationTuning = BodyAnimationTuning;
 
 export interface ArenaDebugTuning {
   showGrid: boolean;
@@ -80,9 +85,12 @@ export interface ArenaDebugTuning {
   actionHeavyArcAngle: number;
   actionTauntArcAngle: number;
   actionRestArcAngle: number;
+  characterPreviewScale: number;
+  characterPreviewFeetY: number;
   selectedRigPart: RigPartKey;
   rigParts: Record<RigPartKey, RigPartTuning>;
-  idleAnimation: IdleAnimationTuning;
+  selectedBodyAnimation: BodyAnimationKey;
+  bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
 }
 
 export const defaultRigPartTuning: RigPartTuning = {
@@ -93,6 +101,83 @@ export const defaultRigPartTuning: RigPartTuning = {
   scaleY: 1,
   flipX: false,
   flipY: false,
+};
+
+export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
+  head: { x: 0, y: -3, angle: 2, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
+  torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.98, flipX: false, flipY: false },
+  backUpperArm: { x: -10, y: -3, angle: 0, scaleX: 1.02, scaleY: 1.02, flipX: false, flipY: false },
+  backForearm: { x: -1, y: 11, angle: -5, scaleX: 1.41, scaleY: 0.99, flipX: false, flipY: false },
+  backHand: { x: 23, y: 5, angle: -28, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
+  frontUpperArm: { x: 10, y: 0, angle: 0, scaleX: 1.07, scaleY: 1.07, flipX: true, flipY: false },
+  frontForearm: { x: -1, y: 14, angle: 6, scaleX: 1.41, scaleY: 0.99, flipX: true, flipY: false },
+  frontHand: { x: -25, y: 5, angle: 34, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
+  backThigh: { x: 4, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+  backShin: { x: 7, y: 34, angle: 0, scaleX: 0.88, scaleY: 1, flipX: true, flipY: false },
+  backFoot: { x: -17, y: 69, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+  frontThigh: { x: -4, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontShin: { x: -6, y: 30, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontFoot: { x: -13, y: 67, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+};
+
+export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
+  enabled: true,
+  duration: 2400,
+  base: {
+    head: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    torso: { x: 0, y: -14, angle: 0, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
+    backUpperArm: { x: -10, y: -3, angle: 0, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
+    backForearm: { x: -1, y: 11, angle: 1, scaleX: 1.41, scaleY: 0.99, flipX: false, flipY: false },
+    backHand: { x: 17, y: 4, angle: -28, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
+    frontUpperArm: { x: 10, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontForearm: { x: -1, y: 14, angle: 0, scaleX: 1.41, scaleY: 0.99, flipX: true, flipY: false },
+    frontHand: { x: -18, y: 3, angle: 19, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
+    backThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backShin: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backFoot: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  breath: {
+    head: { x: 0, y: -3, angle: 2, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.98, flipX: false, flipY: false },
+    backUpperArm: { x: -10, y: -3, angle: 0, scaleX: 1.02, scaleY: 1.02, flipX: false, flipY: false },
+    backForearm: { x: -1, y: 11, angle: -5, scaleX: 1.41, scaleY: 0.99, flipX: false, flipY: false },
+    backHand: { x: 23, y: 5, angle: -28, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
+    frontUpperArm: { x: 10, y: 0, angle: 0, scaleX: 1.07, scaleY: 1.07, flipX: true, flipY: false },
+    frontForearm: { x: -1, y: 14, angle: 6, scaleX: 1.41, scaleY: 0.99, flipX: true, flipY: false },
+    frontHand: { x: -25, y: 5, angle: 34, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
+    backThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backShin: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backFoot: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  activeParts: {
+    head: true,
+    torso: true,
+    backUpperArm: true,
+    backForearm: true,
+    backHand: true,
+    frontUpperArm: true,
+    frontForearm: true,
+    frontHand: true,
+    backThigh: false,
+    backShin: false,
+    backFoot: false,
+    frontThigh: false,
+    frontShin: false,
+    frontFoot: false,
+  },
+};
+
+export const DEFAULT_WALK_CYCLE_ANIMATION: BodyAnimationTuning = createDefaultWalkCycleAnimation();
+
+export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuning> = {
+  idle: DEFAULT_IDLE_ANIMATION,
+  walkCycle: DEFAULT_WALK_CYCLE_ANIMATION,
 };
 
 export const defaultDebugTuning: ArenaDebugTuning = {
@@ -118,9 +203,12 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionHeavyArcAngle: DEFAULT_ACTION_HEAVY_ANGLE,
   actionTauntArcAngle: DEFAULT_ACTION_TAUNT_ANGLE,
   actionRestArcAngle: DEFAULT_ACTION_REST_ANGLE,
+  characterPreviewScale: 1.8,
+  characterPreviewFeetY: 700,
   selectedRigPart: "torso",
-  rigParts: createDefaultRigParts(),
-  idleAnimation: createDefaultIdleAnimation(),
+  rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
+  selectedBodyAnimation: "idle",
+  bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -146,6 +234,8 @@ export function subscribeDebugTuning(listener: () => void): () => void {
 }
 
 export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDebugTuning {
+  const legacyIdleAnimation = (input as { idleAnimation?: unknown }).idleAnimation;
+
   return {
     showGrid: typeof input.showGrid === "boolean" ? input.showGrid : defaultDebugTuning.showGrid,
     gridStep: clampNumber(input.gridStep, 10, 100, defaultDebugTuning.gridStep),
@@ -169,9 +259,12 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionHeavyArcAngle: clampNumber(input.actionHeavyArcAngle, -180, 180, defaultDebugTuning.actionHeavyArcAngle),
     actionTauntArcAngle: clampNumber(input.actionTauntArcAngle, -180, 180, defaultDebugTuning.actionTauntArcAngle),
     actionRestArcAngle: clampNumber(input.actionRestArcAngle, -180, 180, defaultDebugTuning.actionRestArcAngle),
+    characterPreviewScale: clampNumber(input.characterPreviewScale, 1, 2.6, defaultDebugTuning.characterPreviewScale),
+    characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
     selectedRigPart: isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart,
-    rigParts: normalizeRigParts(input.rigParts),
-    idleAnimation: normalizeIdleAnimation(input.idleAnimation),
+    rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
+    selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
+    bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
   };
 }
 
@@ -179,34 +272,61 @@ function createDefaultRigParts(): Record<RigPartKey, RigPartTuning> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...defaultRigPartTuning }])) as Record<RigPartKey, RigPartTuning>;
 }
 
+function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function cloneBodyAnimations(source: Record<BodyAnimationKey, BodyAnimationTuning>): Record<BodyAnimationKey, BodyAnimationTuning> {
+  return Object.fromEntries(BODY_ANIMATION_KEYS.map((key) => [key, cloneBodyAnimation(source[key])])) as Record<BodyAnimationKey, BodyAnimationTuning>;
+}
+
+function cloneBodyAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
+  return {
+    enabled: source.enabled,
+    duration: source.duration,
+    base: cloneRigParts(source.base),
+    breath: cloneRigParts(source.breath),
+    activeParts: cloneIdleActiveParts(source.activeParts),
+  };
+}
+
+function cloneIdleAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
+  return cloneBodyAnimation(source);
+}
+
+function cloneIdleActiveParts(source: Record<RigPartKey, boolean>): Record<RigPartKey, boolean> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, source[key]])) as Record<RigPartKey, boolean>;
+}
+
 function createDefaultIdleActiveParts(): Record<RigPartKey, boolean> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, true])) as Record<RigPartKey, boolean>;
 }
 
-function normalizeRigParts(input: unknown): Record<RigPartKey, RigPartTuning> {
+function normalizeRigParts(input: unknown, fallbackParts = createDefaultRigParts()): Record<RigPartKey, RigPartTuning> {
   const source = typeof input === "object" && input !== null ? (input as Partial<Record<RigPartKey, Partial<RigPartTuning>>>) : {};
 
   return Object.fromEntries(
     RIG_PART_KEYS.map((key) => {
       const part = source[key] ?? {};
+      const fallback = fallbackParts[key] ?? defaultRigPartTuning;
 
       return [
         key,
         {
-          x: clampNumber(part.x, -120, 120, defaultRigPartTuning.x),
-          y: clampNumber(part.y, -120, 120, defaultRigPartTuning.y),
-          angle: clampNumber(part.angle, -180, 180, defaultRigPartTuning.angle),
-          scaleX: clampNumber(part.scaleX, 0.1, 3, defaultRigPartTuning.scaleX),
-          scaleY: clampNumber(part.scaleY, 0.1, 3, defaultRigPartTuning.scaleY),
-          flipX: typeof part.flipX === "boolean" ? part.flipX : defaultRigPartTuning.flipX,
-          flipY: typeof part.flipY === "boolean" ? part.flipY : defaultRigPartTuning.flipY,
+          x: clampNumber(part.x, -120, 120, fallback.x),
+          y: clampNumber(part.y, -120, 120, fallback.y),
+          angle: clampNumber(part.angle, -180, 180, fallback.angle),
+          scaleX: clampNumber(part.scaleX, 0.1, 3, fallback.scaleX),
+          scaleY: clampNumber(part.scaleY, 0.1, 3, fallback.scaleY),
+          flipX: typeof part.flipX === "boolean" ? part.flipX : fallback.flipX,
+          flipY: typeof part.flipY === "boolean" ? part.flipY : fallback.flipY,
         },
       ];
     }),
   ) as Record<RigPartKey, RigPartTuning>;
 }
 
-function createDefaultIdleAnimation(): IdleAnimationTuning {
+function createDefaultIdleAnimation(): BodyAnimationTuning {
   const base = createDefaultRigParts();
   const breath = createDefaultRigParts();
 
@@ -226,28 +346,78 @@ function createDefaultIdleAnimation(): IdleAnimationTuning {
   };
 }
 
-function normalizeIdleAnimation(input: unknown): IdleAnimationTuning {
-  const source = typeof input === "object" && input !== null ? (input as Partial<IdleAnimationTuning>) : {};
+function createDefaultWalkCycleAnimation(): BodyAnimationTuning {
+  const base = cloneRigParts(DEFAULT_RIG_PARTS);
+  const breath = cloneRigParts(DEFAULT_RIG_PARTS);
+
+  breath.torso.y -= 3;
+  breath.torso.angle = 2;
+  breath.head.y -= 2;
+  breath.backUpperArm.angle -= 7;
+  breath.backForearm.angle += 7;
+  breath.backHand.x += 4;
+  breath.frontUpperArm.angle += 7;
+  breath.frontForearm.angle -= 7;
+  breath.frontHand.x -= 4;
+  breath.backThigh.angle += 8;
+  breath.backShin.angle -= 10;
+  breath.backFoot.x += 6;
+  breath.frontThigh.angle -= 8;
+  breath.frontShin.angle += 10;
+  breath.frontFoot.x -= 6;
 
   return {
-    enabled: typeof source.enabled === "boolean" ? source.enabled : defaultDebugTuning.idleAnimation.enabled,
-    duration: clampNumber(source.duration, 240, 2400, defaultDebugTuning.idleAnimation.duration),
-    base: normalizeRigParts(source.base),
-    breath: normalizeRigParts(source.breath),
-    activeParts: normalizeIdleActiveParts(source.activeParts),
+    enabled: false,
+    duration: 620,
+    base,
+    breath,
+    activeParts: createDefaultIdleActiveParts(),
   };
 }
 
-function normalizeIdleActiveParts(input: unknown): Record<RigPartKey, boolean> {
+function normalizeBodyAnimations(input: unknown, legacyIdleAnimation?: unknown): Record<BodyAnimationKey, BodyAnimationTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<BodyAnimationKey, unknown>>) : {};
+
+  return Object.fromEntries(
+    BODY_ANIMATION_KEYS.map((key) => {
+      const fallback = DEFAULT_BODY_ANIMATIONS[key];
+      const candidate = source[key] ?? (key === "idle" ? legacyIdleAnimation : undefined);
+
+      return [key, normalizeBodyAnimation(candidate, fallback)];
+    }),
+  ) as Record<BodyAnimationKey, BodyAnimationTuning>;
+}
+
+function normalizeBodyAnimation(input: unknown, fallback = DEFAULT_IDLE_ANIMATION): BodyAnimationTuning {
+  const source = typeof input === "object" && input !== null ? (input as Partial<BodyAnimationTuning>) : {};
+
+  return {
+    enabled: typeof source.enabled === "boolean" ? source.enabled : fallback.enabled,
+    duration: clampNumber(source.duration, 240, 2400, fallback.duration),
+    base: normalizeRigParts(source.base, fallback.base),
+    breath: normalizeRigParts(source.breath, fallback.breath),
+    activeParts: normalizeIdleActiveParts(source.activeParts, fallback.activeParts),
+  };
+}
+
+function normalizeIdleAnimation(input: unknown, fallback = DEFAULT_IDLE_ANIMATION): BodyAnimationTuning {
+  return normalizeBodyAnimation(input, fallback);
+}
+
+function normalizeIdleActiveParts(input: unknown, fallback = createDefaultIdleActiveParts()): Record<RigPartKey, boolean> {
   const source = typeof input === "object" && input !== null ? (input as Partial<Record<RigPartKey, boolean>>) : {};
 
   return Object.fromEntries(
-    RIG_PART_KEYS.map((key) => [key, typeof source[key] === "boolean" ? source[key] : true]),
+    RIG_PART_KEYS.map((key) => [key, typeof source[key] === "boolean" ? source[key] : fallback[key]]),
   ) as Record<RigPartKey, boolean>;
 }
 
 function isRigPartKey(value: unknown): value is RigPartKey {
   return typeof value === "string" && RIG_PART_KEYS.includes(value as RigPartKey);
+}
+
+function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {
+  return typeof value === "string" && BODY_ANIMATION_KEYS.includes(value as BodyAnimationKey);
 }
 
 function loadDebugTuning(): ArenaDebugTuning {

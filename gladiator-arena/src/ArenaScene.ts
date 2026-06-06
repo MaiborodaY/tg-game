@@ -10,16 +10,28 @@ import {
 import {
   ARENA_BACKGROUND_ASSET_KEY,
   ARENA_BACKGROUND_ASSET_URL,
+  FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_FOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
   FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
   FIGHTER_BACK_HAND_LIGHT_ASSET_URL,
+  FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_SHIN_LIGHT_ASSET_URL,
+  FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_THIGH_LIGHT_ASSET_URL,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL,
   FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL,
   FIGHTER_HEAD_LIGHT_ASSET_KEY,
@@ -32,7 +44,7 @@ import {
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
-import { debugTuning, defaultRigPartTuning, RIG_PART_KEYS, subscribeDebugTuning, type RigPartKey, type RigPartTuning } from "./debugTuning";
+import { debugTuning, DEFAULT_BODY_ANIMATIONS, DEFAULT_RIG_PARTS, defaultRigPartTuning, RIG_PART_KEYS, subscribeDebugTuning, type BodyAnimationKey, type BodyAnimationTuning, type RigPartKey, type RigPartTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -64,6 +76,7 @@ interface FighterVisual {
   animatedParts?: FighterPart[];
   paperDollRig?: PaperDollRig;
   debugScale: number;
+  bodyAnimationLockedUntil?: number;
 }
 
 type PaperDollPartKey = RigPartKey;
@@ -128,6 +141,10 @@ const TORSO_ASSET_DISPLAY_HEIGHT = 175;
 const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
 const TORSO_ASSET_ORIGIN_X = 626 / 1254;
 const TORSO_ASSET_ORIGIN_Y = 998 / 1254;
+const DEBUG_CHARACTER_VIEWER_WIDTH = 430;
+const DEBUG_CHARACTER_VIEWER_HEIGHT = 764;
+const DEBUG_CHARACTER_CENTER_X = DEBUG_CHARACTER_VIEWER_WIDTH / 2;
+const DEBUG_CHARACTER_FEET_Y = 690;
 
 interface PaperDollPartAssetConfig {
   displayHeight: number;
@@ -141,9 +158,15 @@ const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollP
   backUpperArm: { displayHeight: 90, localX: 0, localY: -8, originX: 158 / 319, originY: 6 / 548 },
   backForearm: { displayHeight: 66, localX: 0, localY: -3, originX: 122 / 251, originY: 6 / 497 },
   backHand: { displayHeight: 68, localX: 0, localY: -3, originX: 630 / 1254, originY: 294 / 1254 },
+  backThigh: { displayHeight: 78, localX: 0, localY: -9, originX: 158 / 319, originY: 6 / 548 },
+  backShin: { displayHeight: 72, localX: 0, localY: -5, originX: 122 / 251, originY: 6 / 497 },
+  backFoot: { displayHeight: 34, localX: -14, localY: 8, originX: 386 / 772, originY: 194 / 388 },
   frontUpperArm: { displayHeight: 90, localX: 0, localY: -8, originX: 160 / 322, originY: 6 / 546 },
   frontForearm: { displayHeight: 66, localX: 0, localY: -3, originX: 122 / 251, originY: 6 / 497 },
   frontHand: { displayHeight: 68, localX: 0, localY: -3, originX: 630 / 1254, originY: 294 / 1254 },
+  frontThigh: { displayHeight: 78, localX: 0, localY: -9, originX: 160 / 322, originY: 6 / 546 },
+  frontShin: { displayHeight: 72, localX: 0, localY: -5, originX: 122 / 251, originY: 6 / 497 },
+  frontFoot: { displayHeight: 34, localX: 14, localY: 8, originX: 386 / 772, originY: 194 / 388 },
 };
 
 
@@ -151,6 +174,24 @@ let readyCallback: ((scene: ArenaScene) => void) | undefined;
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
+}
+
+function preloadPaperDollAssets(target: Phaser.Scene): void {
+  target.load.image(ARENA_BACKGROUND_ASSET_KEY, ARENA_BACKGROUND_ASSET_URL);
+  target.load.image(FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY, FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_HAND_LIGHT_ASSET_KEY, FIGHTER_BACK_HAND_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY, FIGHTER_BACK_THIGH_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY, FIGHTER_BACK_SHIN_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY, FIGHTER_BACK_FOOT_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY, FIGHTER_FRONT_HAND_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY, FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
 }
 
 export class ArenaScene extends Phaser.Scene {
@@ -162,15 +203,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(ARENA_BACKGROUND_ASSET_KEY, ARENA_BACKGROUND_ASSET_URL);
-    this.load.image(FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY, FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_BACK_HAND_LIGHT_ASSET_KEY, FIGHTER_BACK_HAND_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY, FIGHTER_FRONT_HAND_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
-    this.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
+    preloadPaperDollAssets(this);
   }
 
   create(): void {
@@ -188,12 +221,14 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   update(time: number): void {
-    if (!this.visuals || !isDebugTuningActive() || !debugTuning.idleAnimation.enabled) {
+    const idle = getActiveBodyAnimation("idle");
+
+    if (!this.visuals || !idle.enabled) {
       return;
     }
 
-    applyIdleDebugAnimation(this.visuals.player, time);
-    applyIdleDebugAnimation(this.visuals.enemy, time);
+    applyLoopingBodyAnimation(this.visuals.player, time, idle);
+    applyLoopingBodyAnimation(this.visuals.enemy, time, idle);
   }
 
   sync(nextState: CombatState): void {
@@ -247,6 +282,81 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
   new Phaser.Game(config);
 }
 
+class DebugCharacterScene extends Phaser.Scene {
+  private fighter?: FighterVisual;
+  private unsubscribeDebugTuning?: () => void;
+
+  constructor() {
+    super("DebugCharacterScene");
+  }
+
+  preload(): void {
+    preloadPaperDollAssets(this);
+  }
+
+  create(): void {
+    this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
+    drawDebugCharacterBackdrop(this);
+    this.fighter = createPaperDollFighter(this, createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0));
+    this.fighter.name.setVisible(false);
+    this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
+    this.sync();
+  }
+
+  update(time: number): void {
+    const animation = getSelectedDebugBodyAnimation();
+
+    if (!this.fighter || !animation.enabled) {
+      return;
+    }
+
+    applyBodyAnimation(this.fighter, time, animation);
+  }
+
+  private sync(): void {
+    if (!this.fighter) {
+      return;
+    }
+
+    applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, DEBUG_CHARACTER_CENTER_X);
+  }
+}
+
+export function mountDebugCharacterViewer(parent: HTMLElement): () => void {
+  const game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent,
+    width: DEBUG_CHARACTER_VIEWER_WIDTH,
+    height: DEBUG_CHARACTER_VIEWER_HEIGHT,
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    transparent: true,
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    scene: DebugCharacterScene,
+  });
+
+  return () => game.destroy(true);
+}
+
+function drawDebugCharacterBackdrop(target: Phaser.Scene): void {
+  const g = target.add.graphics();
+
+  g.fillStyle(0x4e7774, 1);
+  g.fillRect(0, 0, DEBUG_CHARACTER_VIEWER_WIDTH, DEBUG_CHARACTER_VIEWER_HEIGHT);
+  g.fillStyle(0x6f8b66, 1);
+  g.fillRect(0, DEBUG_CHARACTER_FEET_Y - 34, DEBUG_CHARACTER_VIEWER_WIDTH, DEBUG_CHARACTER_VIEWER_HEIGHT - DEBUG_CHARACTER_FEET_Y + 34);
+  g.lineStyle(2, 0x35180d, 0.18);
+  g.beginPath();
+  g.moveTo(0, DEBUG_CHARACTER_FEET_Y - 34);
+  g.lineTo(DEBUG_CHARACTER_VIEWER_WIDTH, DEBUG_CHARACTER_FEET_Y - 34);
+  g.strokePath();
+  g.fillStyle(0x35180d, 0.22);
+  g.fillEllipse(DEBUG_CHARACTER_CENTER_X, DEBUG_CHARACTER_FEET_Y + 11, 180, 24);
+}
+
 function drawArenaBackground(target: Phaser.Scene): void {
   if (!target.textures.exists(ARENA_BACKGROUND_ASSET_KEY)) {
     drawArena(target);
@@ -290,10 +400,10 @@ function drawArena(target: Phaser.Scene): void {
     .setOrigin(0.5);
 }
 
-function buildVisuals(target: ArenaScene): ArenaVisuals {
-  const player = createPaperDollFighter(target, {
-    x: DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X,
-    y: FIGHTER_BASE_Y,
+function createPlayerPaperDollOptions(x: number, y: number): PaperDollFighterOptions {
+  return {
+    x,
+    y,
     label: "BORSHEMIR",
     facing: 1,
     skin: 0xefaa7b,
@@ -305,11 +415,21 @@ function buildVisuals(target: ArenaScene): ArenaVisuals {
       backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
       backForearm: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
       backHand: FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
+      backThigh: FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
+      backShin: FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
+      backFoot: FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
       frontUpperArm: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
       frontForearm: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
       frontHand: FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
+      frontThigh: FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
+      frontShin: FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
+      frontFoot: FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
     },
-  });
+  };
+}
+
+function buildVisuals(target: ArenaScene): ArenaVisuals {
+  const player = createPaperDollFighter(target, createPlayerPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y));
   const enemy = createPaperDollFighter(target, {
     x: DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X,
     y: FIGHTER_BASE_Y,
@@ -485,32 +605,43 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   RIG_PART_KEYS.forEach((key) => {
     const part = rig.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
-    const tuning = rigParts?.[key] ?? defaultRigPartTuning;
+    const tuning = rigParts?.[key] ?? DEFAULT_RIG_PARTS[key] ?? defaultRigPartTuning;
 
     applyRigPartTransform(part, pivot, tuning);
   });
 }
 
-function applyIdleDebugAnimation(fighter: FighterVisual, time: number): void {
+function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
+  if ((fighter.bodyAnimationLockedUntil ?? 0) > time) {
+    return;
+  }
+
+  applyBodyAnimation(fighter, time, animation);
+}
+
+function applyBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
+  const duration = Math.max(1, animation.duration);
+  const phase = (time % duration) / duration;
+  const blend = 0.5 - Math.cos(phase * Math.PI * 2) * 0.5;
+
+  applyBodyAnimationBlend(fighter, animation, blend);
+}
+
+function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimationTuning, blend: number): void {
   const rig = fighter.paperDollRig;
 
   if (!rig) {
     return;
   }
 
-  const idle = debugTuning.idleAnimation;
-  const duration = Math.max(1, idle.duration);
-  const phase = (time % duration) / duration;
-  const blend = 0.5 - Math.cos(phase * Math.PI * 2) * 0.5;
-
   RIG_PART_KEYS.forEach((key) => {
-    if (!idle.activeParts[key]) {
+    if (!animation.activeParts[key]) {
       return;
     }
 
     const part = rig.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
-    const tuning = interpolateRigPartTuning(idle.base[key] ?? defaultRigPartTuning, idle.breath[key] ?? defaultRigPartTuning, blend);
+    const tuning = interpolateRigPartTuning(animation.base[key] ?? defaultRigPartTuning, animation.breath[key] ?? defaultRigPartTuning, blend);
 
     applyRigPartTransform(part, pivot, tuning);
   });
@@ -912,6 +1043,18 @@ function isDebugTuningActive(): boolean {
   return typeof document !== "undefined" && document.body.classList.contains("debug-active");
 }
 
+function getActiveBodyAnimation(key: BodyAnimationKey): BodyAnimationTuning {
+  if (isDebugTuningActive()) {
+    return debugTuning.bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
+  }
+
+  return DEFAULT_BODY_ANIMATIONS[key];
+}
+
+function getSelectedDebugBodyAnimation(): BodyAnimationTuning {
+  return debugTuning.bodyAnimations[debugTuning.selectedBodyAnimation] ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
+}
+
 function setFighterXImmediate(fighter: FighterVisual, nextX: number): void {
   const delta = nextX - fighter.body.x;
 
@@ -963,6 +1106,37 @@ function getFighterParts(fighter: FighterVisual): FighterPart[] {
   ] as FighterPart[];
 }
 
+function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, animation: BodyAnimationTuning): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig || !animation.enabled) {
+    return;
+  }
+
+  const duration = Math.max(1, animation.duration);
+  const lockedUntil = target.time.now + duration;
+
+  fighter.bodyAnimationLockedUntil = lockedUntil;
+  target.tweens.killTweensOf(Object.values(rig.parts));
+  applyBodyAnimationBlend(fighter, animation, 0);
+
+  target.tweens.addCounter({
+    from: 0,
+    to: 1,
+    duration: Math.max(1, duration / 2),
+    yoyo: true,
+    ease: "Sine.easeInOut",
+    onUpdate: (tween) => {
+      applyBodyAnimationBlend(fighter, animation, tween.getValue());
+    },
+    onComplete: () => {
+      if (fighter.bodyAnimationLockedUntil === lockedUntil) {
+        fighter.bodyAnimationLockedUntil = 0;
+      }
+    },
+  });
+}
+
 function animateAction(
   target: Phaser.Scene,
   actor: FighterVisual,
@@ -976,6 +1150,7 @@ function animateAction(
   const parts = getAnimatedFighterParts(actor);
 
   if (actionId === "forward" || actionId === "back") {
+    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
     showFloatingText(target, actor.body.x, actor.body.y - 120, actionId === "forward" ? "STEP" : "BACK", "#ffe7a4");
     return;
   }

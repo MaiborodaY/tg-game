@@ -7,12 +7,17 @@
   </head>
   <body class="arena-active debug-active">
     <main class="debug-app">
-      <div class="debug-game-shell shell">
-        <section id="mainMenu" class="main-menu" aria-label="Dust Arena debug boot" hidden>
-          <button id="startButton" class="restart start-button" type="button">Start debug</button>
+      <div class="debug-preview-column">
+        <section id="debugCharacterShell" class="debug-character-shell" aria-label="Character rig preview">
+          <div id="debugCharacterViewer" class="debug-character-viewer debug-character-viewer--large"></div>
         </section>
 
-        <section id="gameScreen" class="game-screen battle-screen" aria-label="Dust Arena debug preview">
+        <div class="debug-game-shell shell">
+          <section id="mainMenu" class="main-menu" aria-label="Dust Arena debug boot" hidden>
+            <button id="startButton" class="restart start-button" type="button">Start debug</button>
+          </section>
+
+          <section id="gameScreen" class="game-screen battle-screen" aria-label="Dust Arena debug preview">
           <img class="stage-bg" src="./assets/arena/arena-bg-01.png" alt="" aria-hidden="true" />
 
           <section class="top-hud" aria-label="Arena summary">
@@ -76,7 +81,8 @@
           <section class="combat-toast" aria-label="Fight log">
             <div id="log" class="log" aria-live="polite"></div>
           </section>
-        </section>
+          </section>
+        </div>
       </div>
 
       <aside id="debugPanelHost" class="debug-app-panel" aria-label="Debug tuning controls">

@@ -25,3 +25,16 @@ export const FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY = "front-forearm-light-01";
 export const FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL = "./assets/fighters/body-parts/arms/front-forearm-light-01.png";
 export const FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY = "front-hand-light-01";
 export const FIGHTER_FRONT_HAND_LIGHT_ASSET_URL = "./assets/fighters/body-parts/arms/front-hand-light-01.png";
+
+export const FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY = "back-thigh-light-01";
+export const FIGHTER_BACK_THIGH_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/back-thigh-light-01.png";
+export const FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY = "back-shin-light-01";
+export const FIGHTER_BACK_SHIN_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/back-shin-light-01.png";
+export const FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY = "back-foot-light-01";
+export const FIGHTER_BACK_FOOT_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/back-foot-light-01.png";
+export const FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY = "front-thigh-light-01";
+export const FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/front-thigh-light-01.png";
+export const FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY = "front-shin-light-01";
+export const FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/front-shin-light-01.png";
+export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY = "front-foot-light-01";
+export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/front-foot-light-01.png";
