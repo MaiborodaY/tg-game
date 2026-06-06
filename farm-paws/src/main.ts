@@ -26,6 +26,7 @@ type TelegramWebApp = {
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   disableVerticalSwipes?: () => void;
+  close?: () => void;
 };
 
 type ActiveStep = {
@@ -110,9 +111,7 @@ function render(): void {
 
   appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
   appRoot.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
-  appRoot.querySelector<HTMLButtonElement>("[data-action='farm']")?.addEventListener("click", () => {
-    showToast("Ферма будет подключена позже.");
-  });
+  appRoot.querySelector<HTMLButtonElement>("[data-action='home']")?.addEventListener("click", exitMiniApp);
 
   appRoot.querySelectorAll<HTMLButtonElement>("[data-cell]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -193,7 +192,7 @@ function renderResultPanel(): string {
       <p class="reward-line">${rewardText()}</p>
       <div class="result-actions">
         <button class="primary-button" data-action="retry">🔁 Ещё раз</button>
-        <button class="secondary-button" data-action="farm">🌾 На ферму</button>
+        <button class="secondary-button" data-action="home">🏠 В дом</button>
       </div>
     </div>
   `;
@@ -417,6 +416,20 @@ function showToast(text: string): void {
   toast.textContent = text;
   document.body.append(toast);
   window.setTimeout(() => toast.remove(), 1800);
+}
+
+function exitMiniApp(): void {
+  try {
+    const close = window.Telegram?.WebApp?.close;
+    if (typeof close === "function") {
+      close();
+      return;
+    }
+  } catch {
+    // Fall through to the dev-mode hint below.
+  }
+
+  showToast("Закрой мини-игру, чтобы вернуться домой.");
 }
 
 function startBlockedText(run: FarmPawsRunSession): string {
