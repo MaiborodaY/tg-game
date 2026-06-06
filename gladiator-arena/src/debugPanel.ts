@@ -1,9 +1,9 @@
 import {
   BODY_ANIMATION_KEYS,
+  DEFAULT_RIG_PARTS,
   debugTuning,
   defaultDebugTuning,
   defaultFacePartTuning,
-  defaultRigPartTuning,
   FACE_PART_KEYS,
   resetDebugTuning,
   RIG_PART_KEYS,
@@ -39,24 +39,11 @@ interface DebugToggleControlConfig {
 type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig;
 type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
-type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetY";
+type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetX" | "characterPreviewFeetY";
 type FaceNumericControlKey = keyof FacePartTuning;
 type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
-type RigEditTargetKey =
-  | "selected"
-  | "frontForearmHand"
-  | "backForearmHand"
-  | "frontArm"
-  | "backArm"
-  | "frontArmHand"
-  | "backArmHand"
-  | "bothForearmsHands"
-  | "bothArms"
-  | "frontLeg"
-  | "backLeg"
-  | "bothLegs"
-  | "upperBody"
-  | "fullBody";
+type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
+type AnimationApplyScope = "selected" | "checked" | "all";
 
 interface DebugControlGroup {
   title: string;
@@ -92,9 +79,10 @@ interface FaceNumericControlConfig {
   step: number;
 }
 
-interface RigEditTargetConfig {
-  key: RigEditTargetKey;
+interface RigLimbRotateConfig {
+  key: RigLimbKey;
   label: string;
+  anchor: RigPartKey;
   parts: RigPartKey[];
 }
 
@@ -163,6 +151,7 @@ const rigToggleControls: RigToggleControlConfig[] = [
 
 const characterPreviewControls: CharacterPreviewControlConfig[] = [
   { key: "characterPreviewScale", label: "zoom", min: 1, max: 2.6, step: 0.01 },
+  { key: "characterPreviewFeetX", label: "feet X", min: 0, max: 430, step: 1 },
   { key: "characterPreviewFeetY", label: "feet Y", min: 560, max: 740, step: 1 },
 ];
 
@@ -173,21 +162,11 @@ const faceNumericControls: FaceNumericControlConfig[] = [
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
 ];
 
-const rigEditTargets: RigEditTargetConfig[] = [
-  { key: "selected", label: "selected only", parts: [] },
-  { key: "frontForearmHand", label: "front forearm + hand", parts: ["frontForearm", "frontHand"] },
-  { key: "backForearmHand", label: "back forearm + hand", parts: ["backForearm", "backHand"] },
-  { key: "frontArm", label: "front upper + forearm", parts: ["frontUpperArm", "frontForearm"] },
-  { key: "backArm", label: "back upper + forearm", parts: ["backUpperArm", "backForearm"] },
-  { key: "frontArmHand", label: "front arm + hand", parts: ["frontUpperArm", "frontForearm", "frontHand"] },
-  { key: "backArmHand", label: "back arm + hand", parts: ["backUpperArm", "backForearm", "backHand"] },
-  { key: "bothForearmsHands", label: "both forearms + hands", parts: ["backForearm", "backHand", "frontForearm", "frontHand"] },
-  { key: "bothArms", label: "both arms + hands", parts: ["backUpperArm", "backForearm", "backHand", "frontUpperArm", "frontForearm", "frontHand"] },
-  { key: "frontLeg", label: "front leg", parts: ["frontThigh", "frontShin", "frontFoot"] },
-  { key: "backLeg", label: "back leg", parts: ["backThigh", "backShin", "backFoot"] },
-  { key: "bothLegs", label: "both legs", parts: ["backThigh", "backShin", "backFoot", "frontThigh", "frontShin", "frontFoot"] },
-  { key: "upperBody", label: "upper body", parts: ["head", "torso", "backUpperArm", "backForearm", "backHand", "frontUpperArm", "frontForearm", "frontHand"] },
-  { key: "fullBody", label: "full body", parts: [...RIG_PART_KEYS] },
+const rigLimbRotateConfigs: RigLimbRotateConfig[] = [
+  { key: "leftArm", label: "Left arm", anchor: "backUpperArm", parts: ["backUpperArm", "backForearm", "backHand"] },
+  { key: "rightArm", label: "Right arm", anchor: "frontUpperArm", parts: ["frontUpperArm", "frontForearm", "frontHand"] },
+  { key: "leftLeg", label: "Left leg", anchor: "backThigh", parts: ["backThigh", "backShin", "backFoot"] },
+  { key: "rightLeg", label: "Right leg", anchor: "frontThigh", parts: ["frontThigh", "frontShin", "frontFoot"] },
 ];
 
 const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
@@ -207,8 +186,9 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
   frontFoot: { x: 38, y: -7 },
 };
 
-let activeRigEditTarget: RigEditTargetKey = "selected";
 let activeNudgeStep = 5;
+let activeAnimationCaptureScope: AnimationApplyScope = "selected";
+let activeAnimationApplyScope: AnimationApplyScope = "selected";
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -240,54 +220,20 @@ export function mountDebugPanel(root: HTMLElement): void {
     <details class="debug-rig-panel" open>
       <summary>Rig editor</summary>
       <div class="debug-rig-editor">
-        <fieldset class="debug-rig-editor__preview">
-          <legend>Preview</legend>
-          <div class="debug-rig-editor__preview-controls"></div>
-          <fieldset class="debug-rig-editor__nudge">
-            <legend>Nudge</legend>
-            <div class="debug-rig-editor__nudge-steps" role="group" aria-label="Nudge step">
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-step="1">1</button>
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-step="5">5</button>
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-step="10">10</button>
-            </div>
-            <div class="debug-rig-editor__nudge-grid" role="group" aria-label="Nudge target position">
-              <span class="debug-rig-editor__nudge-empty"></span>
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="up">&uarr;</button>
-              <span class="debug-rig-editor__nudge-empty"></span>
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="left">&larr;</button>
-              <span class="debug-rig-editor__nudge-center"></span>
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="right">&rarr;</button>
-              <span class="debug-rig-editor__nudge-empty"></span>
-              <button class="debug-panel__reset debug-rig-editor__nudge-button" type="button" data-nudge-action="down">&darr;</button>
-              <span class="debug-rig-editor__nudge-empty"></span>
-            </div>
-            <div class="debug-rig-editor__actions">
-              <button class="debug-panel__reset" type="button" data-nudge-action="rotateLeft">Rotate target -</button>
-              <button class="debug-panel__reset" type="button" data-nudge-action="rotateRight">Rotate target +</button>
-            </div>
-            <div class="debug-rig-editor__actions">
-              <button class="debug-panel__reset" type="button" data-nudge-action="scaleDown">Scale target -</button>
-              <button class="debug-panel__reset" type="button" data-nudge-action="scaleUp">Scale target +</button>
-            </div>
-          </fieldset>
-          <div class="debug-rig-editor__actions">
-            <button class="debug-panel__reset debug-rig-editor__rotate-left" type="button">Rotate doll -5</button>
-            <button class="debug-panel__reset debug-rig-editor__rotate-right" type="button">Rotate doll +5</button>
-          </div>
-        </fieldset>
         <label class="debug-rig-editor__part">
           <span>Part</span>
           <select class="debug-rig-editor__select"></select>
-        </label>
-        <label class="debug-rig-editor__part">
-          <span>Target</span>
-          <select class="debug-rig-editor__target-select"></select>
         </label>
         <div class="debug-rig-editor__controls"></div>
         <div class="debug-rig-editor__actions">
           <button class="debug-panel__reset debug-rig-editor__copy-opposite" type="button">Copy opposite</button>
           <button class="debug-panel__reset debug-rig-editor__reset" type="button">Reset selected</button>
         </div>
+        <button class="debug-panel__reset debug-rig-editor__reset-all-parts" type="button">Reset all parts</button>
+        <fieldset class="debug-rig-editor__limbs">
+          <legend>Limb rotate</legend>
+          <div class="debug-rig-editor__limb-grid"></div>
+        </fieldset>
         <fieldset class="debug-rig-editor__face" hidden>
           <legend>Head face</legend>
           <div class="debug-rig-editor__face-controls"></div>
@@ -323,13 +269,29 @@ export function mountDebugPanel(root: HTMLElement): void {
             <button class="debug-panel__reset debug-rig-editor__idle-all" type="button">All parts</button>
             <button class="debug-panel__reset debug-rig-editor__idle-none" type="button">No parts</button>
           </div>
+          <fieldset class="debug-rig-editor__capture-scope">
+            <legend>Capture to</legend>
+            <div class="debug-rig-editor__capture-scope-options" role="group" aria-label="Animation capture scope">
+              <button class="debug-panel__reset" type="button" data-animation-capture-scope="selected">Selected</button>
+              <button class="debug-panel__reset" type="button" data-animation-capture-scope="checked">Checked</button>
+              <button class="debug-panel__reset" type="button" data-animation-capture-scope="all">All</button>
+            </div>
+          </fieldset>
           <div class="debug-rig-editor__actions">
-            <button class="debug-panel__reset debug-rig-editor__capture-base" type="button">Capture part base</button>
-            <button class="debug-panel__reset debug-rig-editor__capture-breath" type="button">Capture part breath</button>
+            <button class="debug-panel__reset debug-rig-editor__capture-base" type="button">Capture base</button>
+            <button class="debug-panel__reset debug-rig-editor__capture-breath" type="button">Capture breath</button>
           </div>
+          <fieldset class="debug-rig-editor__apply-scope">
+            <legend>Apply to</legend>
+            <div class="debug-rig-editor__apply-scope-options" role="group" aria-label="Animation apply scope">
+              <button class="debug-panel__reset" type="button" data-animation-apply-scope="selected">Selected</button>
+              <button class="debug-panel__reset" type="button" data-animation-apply-scope="checked">Checked</button>
+              <button class="debug-panel__reset" type="button" data-animation-apply-scope="all">All</button>
+            </div>
+          </fieldset>
           <div class="debug-rig-editor__actions">
-            <button class="debug-panel__reset debug-rig-editor__apply-base" type="button">Apply part base</button>
-            <button class="debug-panel__reset debug-rig-editor__apply-breath" type="button">Apply part breath</button>
+            <button class="debug-panel__reset debug-rig-editor__apply-base" type="button">Apply base</button>
+            <button class="debug-panel__reset debug-rig-editor__apply-breath" type="button">Apply breath</button>
           </div>
         </fieldset>
       </div>
@@ -360,7 +322,22 @@ export function mountDebugPanel(root: HTMLElement): void {
   for (const group of controlGroups) {
     body.append(createControlGroup(group));
   }
+
+  const previewToolbar = createPreviewToolbar();
+  const nudgeToolbar = createNudgeToolbar();
+  const previewTools = createPreviewTools(previewToolbar, nudgeToolbar);
+  const previewColumn = document.querySelector<HTMLElement>(".debug-preview-column");
+
+  if (previewColumn) {
+    previewColumn.prepend(previewTools);
+  } else {
+    previewTools.classList.add("debug-preview-tools--inline");
+    rigEditor.prepend(previewTools);
+  }
+
+  mountPreviewToolbar(previewToolbar);
   mountRigEditor(rigEditor);
+  mountNudgeToolbar(nudgeToolbar);
   mountModeTabs(panel);
 
   saveButton.addEventListener("click", async () => {
@@ -398,6 +375,108 @@ export function mountDebugPanel(root: HTMLElement): void {
   mountDebugGrid();
   subscribeDebugTuning(() => syncDebugTools(panel));
   syncDebugTools(panel);
+}
+
+function createPreviewTools(...items: HTMLElement[]): HTMLElement {
+  const tools = document.createElement("div");
+  tools.className = "debug-preview-tools";
+  tools.append(...items);
+
+  return tools;
+}
+
+function createPreviewToolbar(): HTMLElement {
+  const toolbar = document.createElement("aside");
+  toolbar.className = "debug-preview-toolbar";
+  toolbar.setAttribute("aria-label", "Rig preview controls");
+  toolbar.innerHTML = `
+    <fieldset class="debug-preview-toolbar__group">
+      <legend>Preview</legend>
+      <div class="debug-preview-toolbar__controls"></div>
+      <div class="debug-preview-toolbar__actions">
+        <button class="debug-panel__reset debug-preview-toolbar__rotate-left" type="button">Rot doll -</button>
+        <button class="debug-panel__reset debug-preview-toolbar__rotate-right" type="button">Rot doll +</button>
+      </div>
+    </fieldset>
+  `;
+
+  return toolbar;
+}
+
+function mountPreviewToolbar(toolbar: HTMLElement): void {
+  const controls = toolbar.querySelector<HTMLElement>(".debug-preview-toolbar__controls");
+  const rotateLeft = toolbar.querySelector<HTMLButtonElement>(".debug-preview-toolbar__rotate-left");
+  const rotateRight = toolbar.querySelector<HTMLButtonElement>(".debug-preview-toolbar__rotate-right");
+
+  if (!controls || !rotateLeft || !rotateRight) {
+    return;
+  }
+
+  characterPreviewControls.forEach((control) => controls.append(createCharacterPreviewRangeControl(control)));
+
+  rotateLeft.addEventListener("click", () => {
+    rotatePaperDoll(-5);
+  });
+
+  rotateRight.addEventListener("click", () => {
+    rotatePaperDoll(5);
+  });
+}
+
+function createNudgeToolbar(): HTMLElement {
+  const toolbar = document.createElement("aside");
+  toolbar.className = "debug-nudge-toolbar";
+  toolbar.setAttribute("aria-label", "Rig nudge controls");
+  toolbar.innerHTML = `
+    <fieldset class="debug-nudge-toolbar__group">
+      <legend>Nudge</legend>
+      <div class="debug-nudge-toolbar__steps" role="group" aria-label="Nudge step">
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-step="1">1</button>
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-step="5">5</button>
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-step="10">10</button>
+      </div>
+      <div class="debug-nudge-toolbar__grid" role="group" aria-label="Nudge selected part position">
+        <span class="debug-nudge-toolbar__empty"></span>
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="up">&uarr;</button>
+        <span class="debug-nudge-toolbar__empty"></span>
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="left">&larr;</button>
+        <span class="debug-nudge-toolbar__center"></span>
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="right">&rarr;</button>
+        <span class="debug-nudge-toolbar__empty"></span>
+        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="down">&darr;</button>
+        <span class="debug-nudge-toolbar__empty"></span>
+      </div>
+      <div class="debug-nudge-toolbar__actions">
+        <button class="debug-panel__reset" type="button" data-nudge-action="rotateLeft">Rot -</button>
+        <button class="debug-panel__reset" type="button" data-nudge-action="rotateRight">Rot +</button>
+      </div>
+      <div class="debug-nudge-toolbar__actions">
+        <button class="debug-panel__reset" type="button" data-nudge-action="scaleDown">Scl -</button>
+        <button class="debug-panel__reset" type="button" data-nudge-action="scaleUp">Scl +</button>
+      </div>
+    </fieldset>
+  `;
+
+  return toolbar;
+}
+
+function mountNudgeToolbar(toolbar: HTMLElement): void {
+  toolbar.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeNudgeStep = Number(button.dataset.nudgeStep) || activeNudgeStep;
+      syncNudgeControls();
+    });
+  });
+
+  toolbar.querySelectorAll<HTMLButtonElement>("button[data-nudge-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.nudgeAction;
+
+      if (isRigNudgeAction(action)) {
+        nudgeSelectedRigPart(action);
+      }
+    });
+  });
 }
 
 type DebugMode = "character" | "arena";
@@ -514,22 +593,18 @@ function createRangeControl(control: DebugRangeControlConfig): HTMLElement {
 }
 
 function mountRigEditor(editor: HTMLElement): void {
-  const previewControls = editor.querySelector<HTMLElement>(".debug-rig-editor__preview-controls");
   const select = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__select");
-  const targetSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__target-select");
   const controls = editor.querySelector<HTMLElement>(".debug-rig-editor__controls");
+  const limbGrid = editor.querySelector<HTMLElement>(".debug-rig-editor__limb-grid");
   const faceControls = editor.querySelector<HTMLElement>(".debug-rig-editor__face-controls");
   const copyOpposite = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
+  const resetAllParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset-all-parts");
   const resetFace = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__face-reset");
   const captureFaceBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-face-base");
   const captureFaceBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-face-breath");
   const applyFaceBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-face-base");
   const applyFaceBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-face-breath");
-  const rotateLeft = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__rotate-left");
-  const rotateRight = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__rotate-right");
-  const nudgeStepButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]")];
-  const nudgeActionButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-nudge-action]")];
   const animationSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
   const animationEnabled = editor.querySelector<HTMLInputElement>("input[data-animation-enabled]");
   const animationDuration = editor.querySelector<HTMLInputElement>("input[data-animation-duration]");
@@ -537,28 +612,26 @@ function mountRigEditor(editor: HTMLElement): void {
   const animationParts = editor.querySelector<HTMLElement>("[data-animation-parts]");
   const idleAllParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__idle-all");
   const idleNoParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__idle-none");
+  const captureScopeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-animation-capture-scope]")];
   const captureBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-base");
   const captureBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-breath");
+  const applyScopeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-animation-apply-scope]")];
   const applyBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-base");
   const applyBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-breath");
 
   if (
     !select ||
-    !targetSelect ||
-    !previewControls ||
     !controls ||
+    !limbGrid ||
     !faceControls ||
     !copyOpposite ||
     !reset ||
+    !resetAllParts ||
     !resetFace ||
     !captureFaceBase ||
     !captureFaceBreath ||
     !applyFaceBase ||
     !applyFaceBreath ||
-    !rotateLeft ||
-    !rotateRight ||
-    nudgeStepButtons.length === 0 ||
-    nudgeActionButtons.length === 0 ||
     !animationSelect ||
     !animationEnabled ||
     !animationDuration ||
@@ -566,27 +639,21 @@ function mountRigEditor(editor: HTMLElement): void {
     !animationParts ||
     !idleAllParts ||
     !idleNoParts ||
+    captureScopeButtons.length === 0 ||
     !captureBase ||
     !captureBreath ||
+    applyScopeButtons.length === 0 ||
     !applyBase ||
     !applyBreath
   ) {
     return;
   }
 
-  characterPreviewControls.forEach((control) => previewControls.append(createCharacterPreviewRangeControl(control)));
   RIG_PART_KEYS.forEach((key) => {
     const option = document.createElement("option");
     option.value = key;
     option.textContent = key;
     select.append(option);
-  });
-
-  rigEditTargets.forEach((target) => {
-    const option = document.createElement("option");
-    option.value = target.key;
-    option.textContent = target.label;
-    targetSelect.append(option);
   });
 
   BODY_ANIMATION_KEYS.forEach((key) => {
@@ -598,34 +665,20 @@ function mountRigEditor(editor: HTMLElement): void {
 
   rigNumericControls.forEach((control) => controls.append(createRigRangeControl(control)));
   rigToggleControls.forEach((control) => controls.append(createRigToggleControl(control)));
+  rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
   FACE_PART_KEYS.forEach((key) => faceControls.append(createFacePartEditor(key)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
   select.addEventListener("change", () => {
-    const selectedPart = select.value as RigPartKey;
-
-    if (activeRigEditTarget !== "selected" && !getRigEditTargetParts(selectedPart).includes(selectedPart)) {
-      activeRigEditTarget = "selected";
-    }
-
-    updateDebugTuning({ selectedRigPart: selectedPart });
-  });
-
-  targetSelect.addEventListener("change", () => {
-    activeRigEditTarget = isRigEditTargetKey(targetSelect.value) ? targetSelect.value : "selected";
-
-    const targetParts = getRigEditTargetParts();
-
-    if (!targetParts.includes(debugTuning.selectedRigPart)) {
-      updateDebugTuning({ selectedRigPart: targetParts[0] ?? debugTuning.selectedRigPart });
-      return;
-    }
-
-    syncRigEditor(editor);
+    updateDebugTuning({ selectedRigPart: select.value as RigPartKey });
   });
 
   reset.addEventListener("click", () => {
-    resetRigEditTarget();
+    resetSelectedRigPart();
+  });
+
+  resetAllParts.addEventListener("click", () => {
+    resetAllRigParts();
   });
 
   resetFace.addEventListener("click", () => {
@@ -659,31 +712,6 @@ function mountRigEditor(editor: HTMLElement): void {
     updateRigPartTuning(selectedPart, { ...debugTuning.rigParts[oppositePart] });
   });
 
-  rotateLeft.addEventListener("click", () => {
-    rotatePaperDoll(-5);
-  });
-
-  rotateRight.addEventListener("click", () => {
-    rotatePaperDoll(5);
-  });
-
-  nudgeStepButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      activeNudgeStep = Number(button.dataset.nudgeStep) || activeNudgeStep;
-      syncNudgeControls(editor);
-    });
-  });
-
-  nudgeActionButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.nudgeAction;
-
-      if (isRigNudgeAction(action)) {
-        nudgeRigEditTarget(action);
-      }
-    });
-  });
-
   animationSelect.addEventListener("change", () => {
     updateDebugTuning({
       selectedBodyAnimation: isBodyAnimationKey(animationSelect.value) ? animationSelect.value : "idle",
@@ -710,20 +738,42 @@ function mountRigEditor(editor: HTMLElement): void {
     updateSelectedBodyAnimation({ activeParts: createAnimationActiveParts(false) });
   });
 
+  captureScopeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const scope = button.dataset.animationCaptureScope;
+
+      if (isAnimationApplyScope(scope)) {
+        activeAnimationCaptureScope = scope;
+        syncAnimationCaptureScopeControls();
+      }
+    });
+  });
+
   captureBase.addEventListener("click", () => {
-    updateAnimationPosePart("base", debugTuning.selectedRigPart);
+    updateAnimationPose("base");
   });
 
   captureBreath.addEventListener("click", () => {
-    updateAnimationPosePart("breath", debugTuning.selectedRigPart);
+    updateAnimationPose("breath");
+  });
+
+  applyScopeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const scope = button.dataset.animationApplyScope;
+
+      if (isAnimationApplyScope(scope)) {
+        activeAnimationApplyScope = scope;
+        syncAnimationApplyScopeControls();
+      }
+    });
   });
 
   applyBase.addEventListener("click", () => {
-    applyAnimationPosePart("base", debugTuning.selectedRigPart);
+    applyAnimationPose("base");
   });
 
   applyBreath.addEventListener("click", () => {
-    applyAnimationPosePart("breath", debugTuning.selectedRigPart);
+    applyAnimationPose("breath");
   });
 }
 
@@ -776,6 +826,29 @@ function createRigToggleControl(control: RigToggleControlConfig): HTMLElement {
 
   input?.addEventListener("change", () => {
     updateRigToggleTuning(control.key, input.checked);
+  });
+
+  return row;
+}
+
+function createLimbRotateControl(config: RigLimbRotateConfig): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "debug-rig-editor__limb-row";
+  row.innerHTML = `
+    <span>${config.label}</span>
+    <button class="debug-panel__reset" type="button" data-limb-rotate="${config.key}" data-limb-direction="-1">-</button>
+    <button class="debug-panel__reset" type="button" data-limb-rotate="${config.key}" data-limb-direction="1">+</button>
+  `;
+
+  row.querySelectorAll<HTMLButtonElement>("button[data-limb-rotate]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const limbKey = button.dataset.limbRotate;
+      const direction = button.dataset.limbDirection === "-1" ? -1 : 1;
+
+      if (isRigLimbKey(limbKey)) {
+        rotateRigLimb(limbKey, activeNudgeStep * direction);
+      }
+    });
   });
 
   return row;
@@ -917,116 +990,69 @@ function resetFaceParts(): void {
 }
 
 function updateRigNumericTuning(key: RigNumericControlKey, value: number): void {
-  const targetParts = getRigEditTargetParts();
-  const anchorPart = getRigEditAnchorPart(targetParts);
-  const anchorTuning = debugTuning.rigParts[anchorPart];
-
-  if (!anchorTuning) {
-    return;
-  }
-
-  const nextRigParts = { ...debugTuning.rigParts };
-
-  if (key === "scaleX" || key === "scaleY") {
-    const ratio = anchorTuning[key] === 0 ? 1 : value / anchorTuning[key];
-
-    targetParts.forEach((partKey) => {
-      const current = debugTuning.rigParts[partKey];
-      nextRigParts[partKey] = {
-        ...current,
-        [key]: clampRigNumericValue(key, current[key] * ratio),
-      };
-    });
-  } else {
-    const delta = value - anchorTuning[key];
-
-    targetParts.forEach((partKey) => {
-      const current = debugTuning.rigParts[partKey];
-      nextRigParts[partKey] = {
-        ...current,
-        [key]: clampRigNumericValue(key, current[key] + delta),
-      };
-    });
-  }
-
-  updateDebugTuning({ rigParts: nextRigParts });
+  updateRigPartTuning(debugTuning.selectedRigPart, { [key]: clampRigNumericValue(key, value) } as Partial<RigPartTuning>);
 }
 
 function updateRigToggleTuning(key: RigToggleControlKey, value: boolean): void {
-  const nextRigParts = { ...debugTuning.rigParts };
-
-  getRigEditTargetParts().forEach((partKey) => {
-    nextRigParts[partKey] = {
-      ...debugTuning.rigParts[partKey],
-      [key]: value,
-    };
-  });
-
-  updateDebugTuning({ rigParts: nextRigParts });
+  updateRigPartTuning(debugTuning.selectedRigPart, { [key]: value } as Partial<RigPartTuning>);
 }
 
-function nudgeRigEditTarget(action: RigNudgeAction): void {
+function nudgeSelectedRigPart(action: RigNudgeAction): void {
   const step = activeNudgeStep;
 
   if (action === "left") {
-    updateRigTargetParts((current) => ({ x: clampRigNumericValue("x", current.x - step) }));
+    updateSelectedRigPart((current) => ({ x: clampRigNumericValue("x", current.x - step) }));
     return;
   }
 
   if (action === "right") {
-    updateRigTargetParts((current) => ({ x: clampRigNumericValue("x", current.x + step) }));
+    updateSelectedRigPart((current) => ({ x: clampRigNumericValue("x", current.x + step) }));
     return;
   }
 
   if (action === "up") {
-    updateRigTargetParts((current) => ({ y: clampRigNumericValue("y", current.y - step) }));
+    updateSelectedRigPart((current) => ({ y: clampRigNumericValue("y", current.y - step) }));
     return;
   }
 
   if (action === "down") {
-    updateRigTargetParts((current) => ({ y: clampRigNumericValue("y", current.y + step) }));
+    updateSelectedRigPart((current) => ({ y: clampRigNumericValue("y", current.y + step) }));
     return;
   }
 
   if (action === "rotateLeft") {
-    updateRigTargetParts((current) => ({ angle: clampRigNumericValue("angle", current.angle - step) }));
+    updateSelectedRigPart((current) => ({ angle: clampRigNumericValue("angle", current.angle - step) }));
     return;
   }
 
   if (action === "rotateRight") {
-    updateRigTargetParts((current) => ({ angle: clampRigNumericValue("angle", current.angle + step) }));
+    updateSelectedRigPart((current) => ({ angle: clampRigNumericValue("angle", current.angle + step) }));
     return;
   }
 
   const scaleDelta = step / 100;
 
   if (action === "scaleDown") {
-    updateRigTargetParts((current) => ({
+    updateSelectedRigPart((current) => ({
       scaleX: clampRigNumericValue("scaleX", current.scaleX - scaleDelta),
       scaleY: clampRigNumericValue("scaleY", current.scaleY - scaleDelta),
     }));
     return;
   }
 
-  updateRigTargetParts((current) => ({
+  updateSelectedRigPart((current) => ({
     scaleX: clampRigNumericValue("scaleX", current.scaleX + scaleDelta),
     scaleY: clampRigNumericValue("scaleY", current.scaleY + scaleDelta),
   }));
 }
 
-function updateRigTargetParts(getPatch: (current: RigPartTuning, partKey: RigPartKey) => Partial<RigPartTuning>): void {
-  const nextRigParts = { ...debugTuning.rigParts };
+function updateSelectedRigPart(getPatch: (current: RigPartTuning, partKey: RigPartKey) => Partial<RigPartTuning>): void {
+  const partKey = debugTuning.selectedRigPart;
+  const current = debugTuning.rigParts[partKey];
 
-  getRigEditTargetParts().forEach((partKey) => {
-    const current = debugTuning.rigParts[partKey];
-
-    nextRigParts[partKey] = {
-      ...current,
-      ...getPatch(current, partKey),
-    };
+  updateRigPartTuning(partKey, {
+    ...getPatch(current, partKey),
   });
-
-  updateDebugTuning({ rigParts: nextRigParts });
 }
 
 function rotatePaperDoll(degrees: number): void {
@@ -1054,34 +1080,51 @@ function rotatePaperDoll(degrees: number): void {
   updateDebugTuning({ rigParts: nextRigParts });
 }
 
-function resetRigEditTarget(): void {
+function rotateRigLimb(limbKey: RigLimbKey, degrees: number): void {
+  const config = rigLimbRotateConfigs.find((item) => item.key === limbKey);
+
+  if (!config) {
+    return;
+  }
+
+  const radians = (degrees * Math.PI) / 180;
+  const sin = Math.sin(radians);
+  const cos = Math.cos(radians);
+  const anchorPivot = rigPartRootPivots[config.anchor];
+  const anchorTuning = debugTuning.rigParts[config.anchor];
+  const originX = anchorPivot.x + anchorTuning.x;
+  const originY = anchorPivot.y + anchorTuning.y;
   const nextRigParts = { ...debugTuning.rigParts };
 
-  getRigEditTargetParts().forEach((partKey) => {
-    nextRigParts[partKey] = { ...defaultRigPartTuning };
+  config.parts.forEach((partKey) => {
+    const current = debugTuning.rigParts[partKey];
+    const pivot = rigPartRootPivots[partKey];
+    const localX = pivot.x + current.x;
+    const localY = pivot.y + current.y;
+    const offsetX = localX - originX;
+    const offsetY = localY - originY;
+    const rotatedX = originX + offsetX * cos - offsetY * sin;
+    const rotatedY = originY + offsetX * sin + offsetY * cos;
+
+    nextRigParts[partKey] = {
+      ...current,
+      x: clampRigNumericValue("x", rotatedX - pivot.x),
+      y: clampRigNumericValue("y", rotatedY - pivot.y),
+      angle: clampRigNumericValue("angle", current.angle + degrees),
+    };
   });
 
   updateDebugTuning({ rigParts: nextRigParts });
 }
 
-function getRigEditTargetParts(selectedPart = debugTuning.selectedRigPart): RigPartKey[] {
-  if (activeRigEditTarget === "selected") {
-    return [selectedPart];
-  }
-
-  return getRigEditTarget(activeRigEditTarget)?.parts ?? [selectedPart];
+function resetSelectedRigPart(): void {
+  updateRigPartTuning(debugTuning.selectedRigPart, { ...DEFAULT_RIG_PARTS[debugTuning.selectedRigPart] });
 }
 
-function getRigEditAnchorPart(targetParts: RigPartKey[]): RigPartKey {
-  return targetParts.includes(debugTuning.selectedRigPart) ? debugTuning.selectedRigPart : targetParts[0] ?? debugTuning.selectedRigPart;
-}
-
-function getRigEditTarget(key: RigEditTargetKey): RigEditTargetConfig | undefined {
-  return rigEditTargets.find((target) => target.key === key);
-}
-
-function isRigEditTargetKey(value: string): value is RigEditTargetKey {
-  return rigEditTargets.some((target) => target.key === value);
+function resetAllRigParts(): void {
+  updateDebugTuning({
+    rigParts: Object.fromEntries(RIG_PART_KEYS.map((partKey) => [partKey, { ...DEFAULT_RIG_PARTS[partKey] }])) as Record<RigPartKey, RigPartTuning>,
+  });
 }
 
 function isRigNudgeAction(value: string | undefined): value is RigNudgeAction {
@@ -1095,6 +1138,14 @@ function isRigNudgeAction(value: string | undefined): value is RigNudgeAction {
     value === "scaleDown" ||
     value === "scaleUp"
   );
+}
+
+function isRigLimbKey(value: string | undefined): value is RigLimbKey {
+  return rigLimbRotateConfigs.some((config) => config.key === value);
+}
+
+function isAnimationApplyScope(value: string | undefined): value is AnimationApplyScope {
+  return value === "selected" || value === "checked" || value === "all";
 }
 
 function isBodyAnimationKey(value: string): value is BodyAnimationKey {
@@ -1140,15 +1191,14 @@ function updateAnimationActivePart(partKey: RigPartKey, enabled: boolean): void 
   });
 }
 
-function updateAnimationPosePart(poseKey: "base" | "breath", partKey: RigPartKey): void {
+function updateAnimationPose(poseKey: "base" | "breath"): void {
   const animation = getSelectedBodyAnimation();
   const pose = animation[poseKey];
-  const nextPose = {
-    ...pose,
-    [partKey]: {
-      ...debugTuning.rigParts[partKey],
-    },
-  };
+  const nextPose = { ...pose };
+
+  getAnimationCaptureParts(animation).forEach((partKey) => {
+    nextPose[partKey] = { ...debugTuning.rigParts[partKey] };
+  });
 
   if (poseKey === "base") {
     updateSelectedBodyAnimation({ base: nextPose });
@@ -1158,8 +1208,16 @@ function updateAnimationPosePart(poseKey: "base" | "breath", partKey: RigPartKey
   updateSelectedBodyAnimation({ breath: nextPose });
 }
 
-function applyAnimationPosePart(poseKey: "base" | "breath", partKey: RigPartKey): void {
-  updateRigPartTuning(partKey, { ...getSelectedBodyAnimation()[poseKey][partKey] });
+function applyAnimationPose(poseKey: "base" | "breath"): void {
+  const animation = getSelectedBodyAnimation();
+  const pose = animation[poseKey];
+  const nextRigParts = { ...debugTuning.rigParts };
+
+  getAnimationApplyParts(animation).forEach((partKey) => {
+    nextRigParts[partKey] = { ...pose[partKey] };
+  });
+
+  updateDebugTuning({ rigParts: nextRigParts });
 }
 
 function updateAnimationFacePose(poseKey: "base" | "breath"): void {
@@ -1209,6 +1267,30 @@ function getSelectedBodyAnimation(): BodyAnimationTuning {
   return debugTuning.bodyAnimations[debugTuning.selectedBodyAnimation] ?? debugTuning.bodyAnimations.idle;
 }
 
+function getAnimationCaptureParts(animation: BodyAnimationTuning): RigPartKey[] {
+  if (activeAnimationCaptureScope === "all") {
+    return [...RIG_PART_KEYS];
+  }
+
+  if (activeAnimationCaptureScope === "checked") {
+    return RIG_PART_KEYS.filter((partKey) => animation.activeParts[partKey]);
+  }
+
+  return [debugTuning.selectedRigPart];
+}
+
+function getAnimationApplyParts(animation: BodyAnimationTuning): RigPartKey[] {
+  if (activeAnimationApplyScope === "all") {
+    return [...RIG_PART_KEYS];
+  }
+
+  if (activeAnimationApplyScope === "checked") {
+    return RIG_PART_KEYS.filter((partKey) => animation.activeParts[partKey]);
+  }
+
+  return [debugTuning.selectedRigPart];
+}
+
 function createAnimationActiveParts(enabled: boolean): Record<RigPartKey, boolean> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, enabled])) as Record<RigPartKey, boolean>;
 }
@@ -1233,11 +1315,13 @@ function mountDebugGrid(): void {
 
 function syncDebugTools(panel: HTMLElement): void {
   syncModeTabs(panel);
-  syncInputs(panel);
+  syncInputs();
   syncRigEditor(panel);
   syncFaceEditor(panel);
   syncAnimationEditor(panel);
-  syncNudgeControls(panel);
+  syncAnimationCaptureScopeControls();
+  syncAnimationApplyScopeControls();
+  syncNudgeControls();
   syncGrid();
 }
 
@@ -1249,8 +1333,8 @@ function syncModeTabs(panel: HTMLElement): void {
   });
 }
 
-function syncInputs(panel: HTMLElement): void {
-  panel.querySelectorAll<HTMLInputElement>("input[data-debug-key]").forEach((input) => {
+function syncInputs(): void {
+  document.querySelectorAll<HTMLInputElement>("input[data-debug-key]").forEach((input) => {
     const key = input.dataset.debugKey as keyof ArenaDebugTuning;
     const value = debugTuning[key];
 
@@ -1261,7 +1345,7 @@ function syncInputs(panel: HTMLElement): void {
     }
   });
 
-  panel.querySelectorAll<HTMLInputElement>("input[data-debug-number-key]").forEach((input) => {
+  document.querySelectorAll<HTMLInputElement>("input[data-debug-number-key]").forEach((input) => {
     const key = input.dataset.debugNumberKey as keyof ArenaDebugTuning;
     const value = debugTuning[key];
 
@@ -1271,23 +1355,19 @@ function syncInputs(panel: HTMLElement): void {
 
 function syncRigEditor(panel: HTMLElement): void {
   const select = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__select");
-  const targetSelect = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__target-select");
   const copyOpposite = panel.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = panel.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
   const selectedPart = debugTuning.selectedRigPart;
-  const targetParts = getRigEditTargetParts();
-  const anchorPart = getRigEditAnchorPart(targetParts);
-  const anchorTuning = debugTuning.rigParts[anchorPart];
+  const selectedTuning = debugTuning.rigParts[selectedPart];
 
-  if (!select || !targetSelect || !anchorTuning) {
+  if (!select || !selectedTuning) {
     return;
   }
 
   select.value = selectedPart;
-  targetSelect.value = activeRigEditTarget;
 
   if (reset) {
-    reset.textContent = activeRigEditTarget === "selected" ? "Reset selected" : "Reset target";
+    reset.textContent = "Reset selected";
   }
 
   if (copyOpposite) {
@@ -1300,12 +1380,12 @@ function syncRigEditor(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLInputElement>("input[data-rig-key]").forEach((input) => {
     const key = input.dataset.rigKey as RigNumericControlKey;
 
-    input.value = `${anchorTuning[key]}`;
+    input.value = `${selectedTuning[key]}`;
   });
 
   panel.querySelectorAll<HTMLInputElement>("input[data-rig-number-key]").forEach((input) => {
     const key = input.dataset.rigNumberKey as RigNumericControlKey;
-    const value = anchorTuning[key];
+    const value = selectedTuning[key];
 
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
   });
@@ -1313,7 +1393,7 @@ function syncRigEditor(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLInputElement>("input[data-rig-toggle-key]").forEach((input) => {
     const key = input.dataset.rigToggleKey as RigToggleControlKey;
 
-    input.checked = anchorTuning[key];
+    input.checked = selectedTuning[key];
   });
 }
 
@@ -1378,8 +1458,20 @@ function syncAnimationEditor(panel: HTMLElement): void {
   });
 }
 
-function syncNudgeControls(panel: HTMLElement): void {
-  panel.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]").forEach((button) => {
+function syncAnimationCaptureScopeControls(): void {
+  document.querySelectorAll<HTMLButtonElement>("button[data-animation-capture-scope]").forEach((button) => {
+    button.setAttribute("aria-pressed", `${button.dataset.animationCaptureScope === activeAnimationCaptureScope}`);
+  });
+}
+
+function syncAnimationApplyScopeControls(): void {
+  document.querySelectorAll<HTMLButtonElement>("button[data-animation-apply-scope]").forEach((button) => {
+    button.setAttribute("aria-pressed", `${button.dataset.animationApplyScope === activeAnimationApplyScope}`);
+  });
+}
+
+function syncNudgeControls(): void {
+  document.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]").forEach((button) => {
     button.setAttribute("aria-pressed", `${Number(button.dataset.nudgeStep) === activeNudgeStep}`);
   });
 }

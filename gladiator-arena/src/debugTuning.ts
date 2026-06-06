@@ -98,6 +98,7 @@ export interface ArenaDebugTuning {
   actionTauntArcAngle: number;
   actionRestArcAngle: number;
   characterPreviewScale: number;
+  characterPreviewFeetX: number;
   characterPreviewFeetY: number;
   selectedRigPart: RigPartKey;
   rigParts: Record<RigPartKey, RigPartTuning>;
@@ -267,7 +268,66 @@ export const DEFAULT_WALK_CYCLE_ANIMATION: BodyAnimationTuning = {
   },
 };
 
-export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = createDefaultLungeAnimation();
+export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
+  enabled: true,
+  duration: 520,
+  base: {
+    head: { x: 0, y: -3, angle: 2, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
+    torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.98, flipX: false, flipY: false },
+    backUpperArm: { x: -10, y: -3, angle: 0, scaleX: 1.02, scaleY: 1.02, flipX: false, flipY: false },
+    backForearm: { x: -1, y: 11, angle: -5, scaleX: 1.41, scaleY: 0.99, flipX: false, flipY: false },
+    backHand: { x: 23, y: 5, angle: -28, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
+    frontUpperArm: { x: 10, y: 0, angle: 0, scaleX: 1.07, scaleY: 1.07, flipX: true, flipY: false },
+    frontForearm: { x: -1, y: 14, angle: 6, scaleX: 1.41, scaleY: 0.99, flipX: true, flipY: false },
+    frontHand: { x: -25, y: 5, angle: 34, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
+    backThigh: { x: 4, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: 7, y: 34, angle: 0, scaleX: 0.88, scaleY: 1, flipX: true, flipY: false },
+    backFoot: { x: -17, y: 69, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -4, y: 0, angle: -8, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: 1, y: 30, angle: 10, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: -18, y: 67, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  breath: {
+    head: { x: 104, y: 24.867, angle: 32, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
+    torso: { x: 49, y: -0.87, angle: 30, scaleX: 0.98, scaleY: 0.98, flipX: false, flipY: false },
+    backUpperArm: { x: 88.601, y: -4.983, angle: 45, scaleX: 1.02, scaleY: 1.02, flipX: false, flipY: false },
+    backForearm: { x: 43.497, y: -18.364, angle: 57, scaleX: 1.41, scaleY: 0.99, flipX: false, flipY: false },
+    backHand: { x: 9, y: -34, angle: 44, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
+    frontUpperArm: { x: 92.899, y: 50.615, angle: -85, scaleX: 1.07, scaleY: 1.07, flipX: true, flipY: false },
+    frontForearm: { x: 165, y: -11, angle: -91, scaleX: 1.41, scaleY: 0.99, flipX: true, flipY: false },
+    frontHand: { x: 213, y: -59, angle: -79, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
+    backThigh: { x: 45.813, y: -0.05, angle: 42, scaleX: 1.12, scaleY: 1.13, flipX: true, flipY: false },
+    backShin: { x: 1.407, y: 13.449, angle: 55, scaleX: 1.06, scaleY: 1.12, flipX: true, flipY: false },
+    backFoot: { x: -75, y: 36, angle: -16, scaleX: 1.15, scaleY: 1.05, flipX: true, flipY: false },
+    frontThigh: { x: 32.187, y: 20.95, angle: 34, scaleX: 1.1, scaleY: 1.07, flipX: false, flipY: false },
+    frontShin: { x: -13, y: 47, angle: 40, scaleX: 1.1, scaleY: 1.1, flipX: false, flipY: false },
+    frontFoot: { x: -68, y: 69.962, angle: 72, scaleX: 1.06, scaleY: 1.06, flipX: false, flipY: false },
+  },
+  faceBase: {
+    eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+    eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+  },
+  faceBreath: {
+    eyeLeft: { x: 1.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+    eyeRight: { x: 10.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+  },
+  activeParts: {
+    head: true,
+    torso: true,
+    backUpperArm: true,
+    backForearm: true,
+    backHand: true,
+    frontUpperArm: true,
+    frontForearm: true,
+    frontHand: true,
+    backThigh: true,
+    backShin: true,
+    backFoot: true,
+    frontThigh: true,
+    frontShin: true,
+    frontFoot: true,
+  },
+};
 
 export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuning> = {
   idle: DEFAULT_IDLE_ANIMATION,
@@ -299,6 +359,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionTauntArcAngle: DEFAULT_ACTION_TAUNT_ANGLE,
   actionRestArcAngle: DEFAULT_ACTION_REST_ANGLE,
   characterPreviewScale: 1.8,
+  characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
   selectedRigPart: "torso",
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
@@ -356,6 +417,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionTauntArcAngle: clampNumber(input.actionTauntArcAngle, -180, 180, defaultDebugTuning.actionTauntArcAngle),
     actionRestArcAngle: clampNumber(input.actionRestArcAngle, -180, 180, defaultDebugTuning.actionRestArcAngle),
     characterPreviewScale: clampNumber(input.characterPreviewScale, 1, 2.6, defaultDebugTuning.characterPreviewScale),
+    characterPreviewFeetX: clampNumber(input.characterPreviewFeetX, 0, 430, defaultDebugTuning.characterPreviewFeetX),
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
     selectedRigPart: isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart,
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),

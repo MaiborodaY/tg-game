@@ -347,7 +347,7 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
-    applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, DEBUG_CHARACTER_CENTER_X);
+    applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, debugTuning.characterPreviewFeetX);
   }
 }
 
