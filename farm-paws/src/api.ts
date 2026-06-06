@@ -1,8 +1,11 @@
 export type FarmPawsRunSession = {
-  mode: "local" | "server";
+  mode: "local" | "server" | "blocked";
   runId: string | null;
   bestScore: number;
   error: string | null;
+  code?: string | null;
+  dailyLimit?: number | null;
+  dailyStarts?: number | null;
 };
 
 export type FarmPawsFinishPayload = {
@@ -28,6 +31,11 @@ type ApiStartResponse = {
   bestScore?: number;
   best_score?: number;
   error?: string;
+  code?: string;
+  dailyLimit?: number;
+  daily_limit?: number;
+  dailyStarts?: number;
+  daily_starts?: number;
 };
 
 type ApiFinishResponse = {
@@ -42,6 +50,14 @@ type ApiFinishResponse = {
 };
 
 const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_FARM_PAWS_API_BASE_URL || "");
+const BLOCKING_START_CODES = new Set([
+  "daily_limit",
+  "no_pet",
+  "pet_dead",
+  "pet_changed",
+  "not_enough_energy",
+  "forbidden"
+]);
 
 export async function startFarmPawsRun(localBestScore: number): Promise<FarmPawsRunSession> {
   const initData = telegramInitData();
@@ -53,6 +69,10 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
     const response = await postJson<ApiStartResponse>("/api/farm-paws/start", { initData });
     const runId = response.runId || response.run_id || null;
     if (!response.ok || !runId) {
+      const code = normalizeCode(response.code);
+      if (isBlockingStartCode(code)) {
+        return blockedSession(localBestScore, response.error || code || "start_blocked", code, response);
+      }
       return localSession(localBestScore, response.error || "start_failed");
     }
 
@@ -60,9 +80,16 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
       mode: "server",
       runId,
       bestScore: normalizedScore(response.bestScore ?? response.best_score ?? localBestScore),
-      error: null
+      error: null,
+      code: null,
+      dailyLimit: null,
+      dailyStarts: null
     };
   } catch (error) {
+    if (error instanceof ApiError && isBlockingStartCode(error.code)) {
+      const payload = error.payload as ApiStartResponse;
+      return blockedSession(localBestScore, error.message, error.code, payload);
+    }
     return localSession(localBestScore, error instanceof Error ? error.message : "network_error");
   }
 }
@@ -124,9 +151,9 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
     },
     body: JSON.stringify(body)
   });
-  const parsed = await response.json().catch(() => ({}));
+  const parsed = await response.json().catch(() => ({})) as Record<string, unknown>;
   if (!response.ok) {
-    throw new Error(typeof parsed.error === "string" ? parsed.error : `HTTP ${response.status}`);
+    throw new ApiError(response.status, parsed);
   }
   return parsed as T;
 }
@@ -140,8 +167,36 @@ function localSession(bestScore: number, error: string | null): FarmPawsRunSessi
     mode: "local",
     runId: null,
     bestScore: normalizedScore(bestScore),
-    error
+    error,
+    code: null,
+    dailyLimit: null,
+    dailyStarts: null
   };
+}
+
+function blockedSession(
+  bestScore: number,
+  error: string | null,
+  code: string | null,
+  response: ApiStartResponse | null
+): FarmPawsRunSession {
+  return {
+    mode: "blocked",
+    runId: null,
+    bestScore: normalizedScore(bestScore),
+    error,
+    code,
+    dailyLimit: normalizedNullableScore(response?.dailyLimit ?? response?.daily_limit),
+    dailyStarts: normalizedNullableScore(response?.dailyStarts ?? response?.daily_starts)
+  };
+}
+
+function isBlockingStartCode(code: string | null): boolean {
+  return Boolean(code && BLOCKING_START_CODES.has(code));
+}
+
+function normalizeCode(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function serverFinishError(error: string): FarmPawsFinishResult {
@@ -161,4 +216,22 @@ function normalizedNullableScore(value: number | undefined): number | null {
 
 function normalizedScore(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+class ApiError extends Error {
+  status: number;
+  code: string | null;
+  payload: Record<string, unknown>;
+
+  constructor(status: number, payload: Record<string, unknown>) {
+    const code = normalizeCode(payload.code);
+    const message = typeof payload.error === "string" && payload.error.trim()
+      ? payload.error.trim()
+      : (code || `HTTP ${status}`);
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+    this.payload = payload;
+  }
 }

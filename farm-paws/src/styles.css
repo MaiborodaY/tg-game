@@ -191,6 +191,18 @@ h2 {
   color: #657756;
 }
 
+.start-warning {
+  max-width: 310px;
+  margin: -4px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(190, 81, 81, 0.24);
+  border-radius: 14px;
+  color: #7d342f;
+  background: rgba(255, 232, 216, 0.78);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .top-panel {
   display: flex;
   align-items: center;

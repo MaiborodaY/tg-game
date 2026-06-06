@@ -42,11 +42,7 @@ declare global {
   }
 }
 
-const app = document.querySelector<HTMLDivElement>("#app");
-
-if (!app) {
-  throw new Error("App root was not found.");
-}
+const appRoot = requireAppRoot();
 
 let state: GameState = {
   phase: "idle",
@@ -74,6 +70,7 @@ let isStartingRun = false;
 let finishPending = false;
 let finishResult: FarmPawsFinishResult | null = null;
 let finishError: string | null = null;
+let startBlockMessage: string | null = null;
 
 initTelegramWebApp();
 render();
@@ -93,8 +90,16 @@ function initTelegramWebApp(): void {
   }
 }
 
+function requireAppRoot(): HTMLDivElement {
+  const root = document.querySelector<HTMLDivElement>("#app");
+  if (!root) {
+    throw new Error("App root was not found.");
+  }
+  return root;
+}
+
 function render(): void {
-  app.innerHTML = `
+  appRoot.innerHTML = `
     <main class="phone-shell">
       <section class="game-card ${state.phase === "failed" ? "is-failed" : ""}">
         ${state.phase === "idle" ? renderStartScreen() : renderGameScreen()}
@@ -102,13 +107,13 @@ function render(): void {
     </main>
   `;
 
-  app.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
-  app.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
-  app.querySelector<HTMLButtonElement>("[data-action='farm']")?.addEventListener("click", () => {
+  appRoot.querySelector<HTMLButtonElement>("[data-action='start']")?.addEventListener("click", beginGame);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='retry']")?.addEventListener("click", beginGame);
+  appRoot.querySelector<HTMLButtonElement>("[data-action='farm']")?.addEventListener("click", () => {
     showToast("Ферма будет подключена позже.");
   });
 
-  app.querySelectorAll<HTMLButtonElement>("[data-cell]").forEach((button) => {
+  appRoot.querySelectorAll<HTMLButtonElement>("[data-cell]").forEach((button) => {
     button.addEventListener("click", () => {
       const cellIndex = Number.parseInt(button.dataset.cell || "-1", 10);
       onCellClick(cellIndex);
@@ -132,6 +137,7 @@ function renderStartScreen(): string {
         <span>3</span>
       </div>
       <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${isStartingRun ? "⏳ Стартуем" : "▶️ Играть"}</button>
+      ${startBlockMessage ? `<p class="start-warning">${escapeHtml(startBlockMessage)}</p>` : ""}
       <p class="best-note">Лучший результат: <strong>${state.bestScore}</strong></p>
     </div>
   `;
@@ -222,6 +228,7 @@ async function beginGame(): Promise<void> {
   finishPending = false;
   finishResult = null;
   finishError = null;
+  startBlockMessage = null;
   isStartingRun = true;
   state = {
     ...state,
@@ -233,9 +240,22 @@ async function beginGame(): Promise<void> {
   const run = await startFarmPawsRun(localBestScore);
   if (token !== runToken) return;
 
+  isStartingRun = false;
+  if (run.mode === "blocked") {
+    currentRun = run;
+    startBlockMessage = startBlockedText(run);
+    state = {
+      ...state,
+      phase: "idle",
+      bestScore: Math.max(state.bestScore, run.bestScore)
+    };
+    render();
+    showToast(startBlockMessage);
+    return;
+  }
+
   currentRun = run;
   runStartedAt = Date.now();
-  isStartingRun = false;
   state = startGame(run.bestScore);
   render();
 
@@ -396,6 +416,29 @@ function showToast(text: string): void {
   toast.textContent = text;
   document.body.append(toast);
   window.setTimeout(() => toast.remove(), 1800);
+}
+
+function startBlockedText(run: FarmPawsRunSession): string {
+  if (run.code === "daily_limit") {
+    const limit = typeof run.dailyLimit === "number" ? run.dailyLimit : null;
+    const starts = typeof run.dailyStarts === "number" ? run.dailyStarts : limit;
+    const attempts = limit ? ` (${Math.min(starts || 0, limit)}/${limit})` : "";
+    return `Лимит прогулок на сегодня исчерпан${attempts}. Новые попытки будут в 00:00 UTC.`;
+  }
+  if (run.code === "no_pet") return "Сначала нужен питомец. Открой меню питомца в боте.";
+  if (run.code === "pet_dead") return "Питомец не может гулять. Открой меню питомца в боте.";
+  if (run.code === "pet_changed") return "Питомец изменился. Закрой мини-игру и открой прогулку заново из бота.";
+  if (run.code === "not_enough_energy") return "Не хватает энергии для прогулки.";
+  return "Сейчас прогулку начать нельзя. Открой меню питомца и попробуй позже.";
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function sleep(ms: number): Promise<void> {
