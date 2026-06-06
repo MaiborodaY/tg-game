@@ -118,6 +118,7 @@ function startDebugApp(): void {
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {
     actionArc?.sync(state);
+    arenaScene?.sync(state);
     syncTurnProbe();
   });
   restart();

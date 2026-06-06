@@ -10,34 +10,89 @@ import {
 import {
   ARENA_BACKGROUND_ASSET_KEY,
   ARENA_BACKGROUND_ASSET_URL,
+  FIGHTER_HEAD_LIGHT_ASSET_KEY,
+  FIGHTER_HEAD_LIGHT_ASSET_URL,
+  FIGHTER_TORSO_LIGHT_ASSET_KEY,
+  FIGHTER_TORSO_LIGHT_ASSET_URL,
   GAME_HEIGHT,
   GAME_WIDTH,
-  PLAYER_AVATAR_DISPLAY_HEIGHT,
   PLAYER_AVATAR_FEET_Y_OFFSET,
-  PLAYER_BODY_ASSET_KEY,
-  PLAYER_BODY_ASSET_URL,
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
 import { debugTuning, subscribeDebugTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
 
+type FighterPart = Phaser.GameObjects.GameObject & {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+  angle: number;
+  setAlpha: (alpha: number) => FighterPart;
+  setVisible: (visible: boolean) => FighterPart;
+};
+
 interface FighterVisual {
-  avatar?: Phaser.GameObjects.Image;
-  body: Phaser.GameObjects.Rectangle;
-  head: Phaser.GameObjects.Arc;
-  eyeLeft: Phaser.GameObjects.Arc;
-  eyeRight: Phaser.GameObjects.Arc;
-  helmet: Phaser.GameObjects.Rectangle;
-  plume: Phaser.GameObjects.Rectangle;
-  sword: Phaser.GameObjects.Rectangle;
-  armFront: Phaser.GameObjects.Rectangle;
-  armBack: Phaser.GameObjects.Rectangle;
-  legFront: Phaser.GameObjects.Rectangle;
-  legBack: Phaser.GameObjects.Rectangle;
-  shadow: Phaser.GameObjects.Ellipse;
-  name: Phaser.GameObjects.Text;
+  body: FighterPart;
+  head: FighterPart;
+  eyeLeft: FighterPart;
+  eyeRight: FighterPart;
+  helmet: FighterPart;
+  plume: FighterPart;
+  sword: FighterPart;
+  armFront: FighterPart;
+  armBack: FighterPart;
+  legFront: FighterPart;
+  legBack: FighterPart;
+  shadow: FighterPart;
+  name: FighterPart;
+  extraParts?: FighterPart[];
+  movableParts?: FighterPart[];
+  animatedParts?: FighterPart[];
+  paperDollRig?: PaperDollRig;
   debugScale: number;
+}
+
+type PaperDollPartKey =
+  | "head"
+  | "torso"
+  | "backUpperArm"
+  | "backForearmHand"
+  | "frontUpperArm"
+  | "frontForearmHand"
+  | "backThigh"
+  | "backShin"
+  | "backFoot"
+  | "frontThigh"
+  | "frontShin"
+  | "frontFoot";
+
+interface PaperDollRig {
+  root: FighterPart;
+  parts: Record<PaperDollPartKey, FighterPart>;
+  appearance: PaperDollAppearance;
+}
+
+interface PaperDollAppearance {
+  facing: 1 | -1;
+  skin: number;
+  skinDark: number;
+  hair: number;
+  muscle: number;
+}
+
+interface PaperDollFighterOptions {
+  x: number;
+  y: number;
+  label: string;
+  facing: 1 | -1;
+  skin: number;
+  skinDark: number;
+  hair: number;
+  muscle?: number;
+  headAssetKey?: string;
+  torsoAssetKey?: string;
 }
 
 interface HudVisual {
@@ -55,18 +110,30 @@ interface ArenaVisuals {
   roundText: Phaser.GameObjects.Text;
 }
 
-type ScalableGameObject = Phaser.GameObjects.GameObject & {
-  x: number;
-  y: number;
-  scaleX: number;
-  scaleY: number;
+const PAPER_DOLL_BASE_SCALE = 0.52;
+const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
+  facing: 1,
+  skin: 0xefaa7b,
+  skinDark: 0xd9854d,
+  hair: 0x8b4a1f,
+  muscle: 0x9b5a35,
 };
-
-const VECTOR_FIGHTER_SCALE = 0.34;
 const FIGHTER_MOVE_DURATION = 280;
+const HEAD_ASSET_DISPLAY_HEIGHT = 122;
+const HEAD_ASSET_LOCAL_BOTTOM_Y = 14;
+const HEAD_ASSET_ORIGIN_X = 312 / 623;
+const HEAD_ASSET_ORIGIN_Y = 828 / 830;
+const TORSO_ASSET_DISPLAY_HEIGHT = 175;
+const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
+const TORSO_ASSET_ORIGIN_X = 626 / 1254;
+const TORSO_ASSET_ORIGIN_Y = 998 / 1254;
 
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
+
+function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
+  return gameObject as FighterPart;
+}
 
 export class ArenaScene extends Phaser.Scene {
   visuals?: ArenaVisuals;
@@ -78,7 +145,8 @@ export class ArenaScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image(ARENA_BACKGROUND_ASSET_KEY, ARENA_BACKGROUND_ASSET_URL);
-    this.load.image(PLAYER_BODY_ASSET_KEY, PLAYER_BODY_ASSET_URL);
+    this.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
+    this.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
   }
 
   create(): void {
@@ -190,8 +258,27 @@ function drawArena(target: Phaser.Scene): void {
 }
 
 function buildVisuals(target: ArenaScene): ArenaVisuals {
-  const player = createGladiator(target, DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y, 1, 0xcc412f, "BORSHEMIR", PLAYER_BODY_ASSET_KEY);
-  const enemy = createGladiator(target, DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y, -1, 0x5d7f3e, "GRUMBUS");
+  const player = createPaperDollFighter(target, {
+    x: DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X,
+    y: FIGHTER_BASE_Y,
+    label: "BORSHEMIR",
+    facing: 1,
+    skin: 0xefaa7b,
+    skinDark: 0xd9854d,
+    hair: 0x8b4a1f,
+    headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
+    torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+  });
+  const enemy = createPaperDollFighter(target, {
+    x: DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X,
+    y: FIGHTER_BASE_Y,
+    label: "GRUMBUS",
+    facing: -1,
+    skin: 0xd48f62,
+    skinDark: 0xac673d,
+    hair: 0x2f251a,
+    muscle: 0x7a4328,
+  });
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
   const roundText = target.add
@@ -238,94 +325,365 @@ function createHud(target: Phaser.Scene, x: number, y: number, label: string): H
   return { hpFill, staminaFill, label: text };
 }
 
-function createGladiator(
-  target: Phaser.Scene,
-  x: number,
-  y: number,
-  facing: 1 | -1,
-  color: number,
-  label: string,
-  bodyTextureKey?: string,
-): FighterVisual {
-  const shadow = target.add.ellipse(x, y + 132, 160, 28, 0x000000, 0.22);
-  const legBack = target.add
-    .rectangle(x - 32 * facing, y + 92, 34, 88, 0xd9854d)
-    .setAngle(8 * facing)
-    .setStrokeStyle(4, 0x35180d);
-  const legFront = target.add
-    .rectangle(x + 28 * facing, y + 92, 34, 88, 0xd9854d)
-    .setAngle(-8 * facing)
-    .setStrokeStyle(4, 0x35180d);
-  const armBack = target.add
-    .rectangle(x - 78 * facing, y + 20, 30, 94, 0xd9854d)
-    .setAngle(24 * facing)
-    .setStrokeStyle(4, 0x35180d);
-  const body = target.add.rectangle(x, y + 28, 112, 124, color).setStrokeStyle(5, 0x35180d);
-  const armFront = target.add
-    .rectangle(x + 74 * facing, y + 20, 30, 96, 0xd9854d)
-    .setAngle(-38 * facing)
-    .setStrokeStyle(4, 0x35180d);
-  const head = target.add.circle(x, y - 54, 42, 0xd9854d).setStrokeStyle(5, 0x35180d);
-  const eyeLeft = target.add.circle(x - 14 * facing, y - 60, 4, 0x160703);
-  const eyeRight = target.add.circle(x + 16 * facing, y - 60, 4, 0x160703);
-  const helmet = target.add.rectangle(x, y - 98, 100, 38, 0xaeb7af).setStrokeStyle(5, 0x35180d);
-  const plume = target.add.rectangle(x + 34 * facing, y - 140, 17, 82, 0xcc412f).setAngle(9 * facing);
-  const sword = target.add
-    .rectangle(x + 94 * facing, y + 5, 16, 112, 0xf5f4da)
-    .setAngle(-28 * facing)
-    .setStrokeStyle(4, 0x35180d);
-  const name = target.add
-    .text(x, y + 162, label, {
-      color: "#35180d",
-      fontFamily: "Georgia",
-      fontSize: "19px",
-      fontStyle: "900",
-    })
-    .setOrigin(0.5);
-  name.setVisible(false);
+function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterOptions): FighterVisual {
+  const appearance: PaperDollAppearance = {
+    facing: options.facing,
+    skin: options.skin,
+    skinDark: options.skinDark,
+    hair: options.hair,
+    muscle: options.muscle ?? DEFAULT_PAPER_DOLL_APPEARANCE.muscle,
+  };
+  const initialFeetY = options.y + PLAYER_AVATAR_FEET_Y_OFFSET;
+  const rootContainer = target.add.container(options.x, initialFeetY);
+  const root = part(rootContainer);
+  const parts = {} as Record<PaperDollPartKey, FighterPart>;
 
-  const vectorParts = [legBack, legFront, armBack, body, armFront, head, eyeLeft, eyeRight, helmet, plume, sword];
-  const hasBodyAsset = bodyTextureKey ? target.textures.exists(bodyTextureKey) : false;
-  const avatar = hasBodyAsset
-    ? target.add
-        .image(x, y + PLAYER_AVATAR_FEET_Y_OFFSET, bodyTextureKey)
-        .setOrigin(0.5, 455 / 512)
-    : undefined;
+  PAPER_DOLL_PART_ORDER.forEach((key) => {
+    const pivot = PAPER_DOLL_PART_PIVOTS[key];
+    const partContainer = target.add.container(pivot.x, pivot.y);
 
-  if (avatar) {
-    avatar.displayHeight = PLAYER_AVATAR_DISPLAY_HEIGHT;
-    avatar.scaleX = avatar.scaleY;
-    vectorParts.forEach((part) => part.setVisible(false));
-  } else {
-    scaleObjectsFromPivot([...vectorParts, shadow], x, y + PLAYER_AVATAR_FEET_Y_OFFSET, VECTOR_FIGHTER_SCALE);
-  }
-
-  target.tweens.add({
-    targets: avatar ? [avatar] : [head, eyeLeft, eyeRight, helmet, body, armBack, armFront, sword, plume],
-    y: "+=5",
-    duration: 950,
-    yoyo: true,
-    repeat: -1,
-    ease: "Sine.easeInOut",
+    addPaperDollPartVisual(target, partContainer, key, appearance, options);
+    rootContainer.add(partContainer);
+    parts[key] = part(partContainer);
   });
 
+  root.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing;
+  root.scaleY = PAPER_DOLL_BASE_SCALE;
+
+  const name = part(
+    target.add
+      .text(options.x, initialFeetY + 30 * PAPER_DOLL_BASE_SCALE, options.label, {
+        color: "#35180d",
+        fontFamily: "Georgia",
+        fontSize: "19px",
+        fontStyle: "900",
+      })
+      .setOrigin(0.5),
+  );
+  name.setVisible(false);
+
   return {
-    ...(avatar ? { avatar } : {}),
-    body,
-    head,
-    eyeLeft,
-    eyeRight,
-    helmet,
-    plume,
-    sword,
-    armFront,
-    armBack,
-    legFront,
-    legBack,
-    shadow,
+    body: root,
+    head: parts.head,
+    eyeLeft: parts.head,
+    eyeRight: parts.head,
+    helmet: parts.head,
+    plume: parts.head,
+    sword: parts.frontForearmHand,
+    armFront: parts.frontUpperArm,
+    armBack: parts.backUpperArm,
+    legFront: parts.frontThigh,
+    legBack: parts.backThigh,
+    shadow: root,
     name,
+    movableParts: [root, name],
+    animatedParts: [root],
+    paperDollRig: {
+      root,
+      parts,
+      appearance,
+    },
     debugScale: 1,
   };
+}
+
+const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
+  "backThigh",
+  "backShin",
+  "backFoot",
+  "backUpperArm",
+  "backForearmHand",
+  "frontThigh",
+  "frontShin",
+  "frontFoot",
+  "torso",
+  "head",
+  "frontUpperArm",
+  "frontForearmHand",
+];
+
+const PAPER_DOLL_PART_PIVOTS: Record<PaperDollPartKey, { x: number; y: number }> = {
+  head: { x: 0, y: -205 },
+  torso: { x: 0, y: -84 },
+  backUpperArm: { x: -43, y: -180 },
+  backForearmHand: { x: -58, y: -115 },
+  frontUpperArm: { x: 43, y: -180 },
+  frontForearmHand: { x: 58, y: -115 },
+  backThigh: { x: -25, y: -78 },
+  backShin: { x: -31, y: -40 },
+  backFoot: { x: -38, y: -7 },
+  frontThigh: { x: 25, y: -78 },
+  frontShin: { x: 31, y: -40 },
+  frontFoot: { x: 38, y: -7 },
+};
+
+function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: number, centerX = fighter.body.x): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  rig.root.x = centerX;
+  rig.root.y = feetY;
+  rig.root.scaleX = PAPER_DOLL_BASE_SCALE * scale * rig.appearance.facing;
+  rig.root.scaleY = PAPER_DOLL_BASE_SCALE * scale;
+  fighter.name.x = centerX;
+  fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
+  fighter.debugScale = scale;
+}
+
+function addPaperDollPartVisual(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  key: PaperDollPartKey,
+  appearance: PaperDollAppearance,
+  options: PaperDollFighterOptions,
+): void {
+  if (key === "head" && options.headAssetKey && target.textures.exists(options.headAssetKey)) {
+    const image = target.add.image(0, HEAD_ASSET_LOCAL_BOTTOM_Y, options.headAssetKey);
+    image.setOrigin(HEAD_ASSET_ORIGIN_X, HEAD_ASSET_ORIGIN_Y);
+    image.displayHeight = HEAD_ASSET_DISPLAY_HEIGHT;
+    image.scaleX = image.scaleY;
+    partContainer.add(image);
+    return;
+  }
+
+  if (key === "torso" && options.torsoAssetKey && target.textures.exists(options.torsoAssetKey)) {
+    const image = target.add.image(0, TORSO_ASSET_LOCAL_BOTTOM_Y, options.torsoAssetKey);
+    image.setOrigin(TORSO_ASSET_ORIGIN_X, TORSO_ASSET_ORIGIN_Y);
+    image.displayHeight = TORSO_ASSET_DISPLAY_HEIGHT;
+    image.scaleX = image.scaleY;
+    partContainer.add(image);
+    return;
+  }
+
+  const graphics = target.add.graphics();
+  drawPaperDollPart(graphics, key, appearance);
+  partContainer.add(graphics);
+}
+
+function drawPaperDollPart(graphics: Phaser.GameObjects.Graphics, key: PaperDollPartKey, appearance: PaperDollAppearance): void {
+  const skin = appearance.skin;
+  const skinDark = appearance.skinDark;
+  const outline = 0x35180d;
+  const muscle = appearance.muscle;
+  const hair = appearance.hair;
+  const eye = 0x160703;
+  const isBack = key.startsWith("back");
+  const side = key.startsWith("front") ? 1 : -1;
+  const limbFill = isBack ? skinDark : skin;
+
+  graphics.clear();
+
+  if (key === "torso") {
+    drawDollPolygon(
+      graphics,
+      [
+        { x: -39, y: -106 },
+        { x: 39, y: -106 },
+        { x: 31, y: -25 },
+        { x: 17, y: 8 },
+        { x: -17, y: 8 },
+        { x: -31, y: -25 },
+      ],
+      skin,
+      outline,
+      1,
+      1,
+      5,
+    );
+    drawDollLine(graphics, 0, -94, 0, -3, muscle, 1, 3, 0.7);
+    drawDollEllipse(graphics, -14, -68, 25, 16, 0, 0x000000, muscle, 1, 0, 3, 0.7);
+    drawDollEllipse(graphics, 14, -68, 25, 16, 0, 0x000000, muscle, 1, 0, 3, 0.7);
+    drawDollEllipse(graphics, -8, -28, 16, 12, 0, 0x000000, muscle, 1, 0, 3, 0.7);
+    drawDollEllipse(graphics, 8, -28, 16, 12, 0, 0x000000, muscle, 1, 0, 3, 0.7);
+    return;
+  }
+
+  if (key === "head") {
+    drawDollEllipse(graphics, 0, 0, 26, 28, 0, skin, outline, 1, 1, 4);
+    drawDollEllipse(graphics, -42, -33, 23, 32, 0, skin, outline, 1, 1, 4);
+    drawDollEllipse(graphics, 42, -33, 23, 32, 0, skin, outline, 1, 1, 4);
+    drawDollEllipse(graphics, 0, -39, 78, 86, 0, skin, outline, 1, 1, 5);
+    drawDollPolygon(
+      graphics,
+      [
+        { x: -37, y: -46 },
+        { x: -26, y: -77 },
+        { x: 8, y: -87 },
+        { x: 36, y: -64 },
+        { x: 37, y: -42 },
+        { x: 22, y: -53 },
+        { x: -8, y: -57 },
+        { x: -37, y: -38 },
+      ],
+      hair,
+      outline,
+      1,
+      1,
+      5,
+    );
+    drawDollPolygon(
+      graphics,
+      [
+        { x: -12, y: -72 },
+        { x: -2, y: -102 },
+        { x: 15, y: -77 },
+        { x: 4, y: -66 },
+      ],
+      hair,
+      outline,
+      1,
+      1,
+      4,
+    );
+    drawDollEllipse(graphics, -14, -42, 7, 7, 0, eye, eye, 1, 1, 0);
+    drawDollEllipse(graphics, 16, -42, 7, 7, 0, eye, eye, 1, 1, 0);
+    drawDollSmile(graphics, 0, -26, 12, outline, 1);
+    return;
+  }
+
+  if (key.endsWith("UpperArm")) {
+    drawDollEllipse(graphics, 8 * side, 35, 31, 86, -0.18 * side, limbFill, outline, 1, 1, 4);
+    return;
+  }
+
+  if (key.endsWith("ForearmHand")) {
+    drawDollEllipse(graphics, 6 * side, 32, 28, 68, -0.06 * side, limbFill, outline, 1, 1, 4);
+    drawDollEllipse(graphics, 9 * side, 68, 29, 29, 0, limbFill, outline, 1, 1, 4);
+    return;
+  }
+
+  if (key.endsWith("Thigh")) {
+    drawDollEllipse(graphics, 3 * side, 25, 30, 72, -0.05 * side, limbFill, outline, 1, 1, 4);
+    return;
+  }
+
+  if (key.endsWith("Shin")) {
+    drawDollEllipse(graphics, 4 * side, 28, 27, 70, 0.04 * side, limbFill, outline, 1, 1, 4);
+    return;
+  }
+
+  drawDollEllipse(graphics, 14 * side, 8, 50, 22, -0.08 * side, limbFill, outline, 1, 1, 4);
+}
+
+function drawDollEllipse(
+  graphics: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  rotation: number,
+  fill: number,
+  outline: number,
+  scale: number,
+  fillAlpha = 1,
+  strokeWidth = 4,
+  strokeAlpha = 1,
+): void {
+  const points = createEllipsePoints(x, y, width / 2, height / 2, rotation, 28);
+  drawDollPolygon(graphics, points, fill, outline, scale, fillAlpha, strokeWidth, strokeAlpha);
+}
+
+function drawDollPolygon(
+  graphics: Phaser.GameObjects.Graphics,
+  points: { x: number; y: number }[],
+  fill: number,
+  outline: number,
+  scale: number,
+  fillAlpha = 1,
+  strokeWidth = 4,
+  strokeAlpha = 1,
+): void {
+  if (points.length === 0) {
+    return;
+  }
+
+  graphics.fillStyle(fill, fillAlpha);
+  graphics.lineStyle(Math.max(1, strokeWidth * scale), outline, strokeAlpha);
+  graphics.beginPath();
+  graphics.moveTo(points[0].x * scale, points[0].y * scale);
+
+  for (const point of points.slice(1)) {
+    graphics.lineTo(point.x * scale, point.y * scale);
+  }
+
+  graphics.closePath();
+
+  if (fillAlpha > 0) {
+    graphics.fillPath();
+  }
+
+  if (strokeWidth > 0 && strokeAlpha > 0) {
+    graphics.strokePath();
+  }
+}
+
+function drawDollLine(
+  graphics: Phaser.GameObjects.Graphics,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: number,
+  scale: number,
+  width: number,
+  alpha = 1,
+): void {
+  graphics.lineStyle(Math.max(1, width * scale), color, alpha);
+  graphics.beginPath();
+  graphics.moveTo(x1 * scale, y1 * scale);
+  graphics.lineTo(x2 * scale, y2 * scale);
+  graphics.strokePath();
+}
+
+function drawDollSmile(graphics: Phaser.GameObjects.Graphics, x: number, y: number, radius: number, color: number, scale: number): void {
+  const points: { x: number; y: number }[] = [];
+
+  for (let i = 0; i <= 10; i += 1) {
+    const angle = 0.1 * Math.PI + (0.8 * Math.PI * i) / 10;
+    points.push({
+      x: x + Math.cos(angle) * radius,
+      y: y + Math.sin(angle) * radius,
+    });
+  }
+
+  graphics.lineStyle(Math.max(1, 3 * scale), color, 1);
+  graphics.beginPath();
+  graphics.moveTo(points[0].x * scale, points[0].y * scale);
+
+  for (const point of points.slice(1)) {
+    graphics.lineTo(point.x * scale, point.y * scale);
+  }
+
+  graphics.strokePath();
+}
+
+function createEllipsePoints(
+  x: number,
+  y: number,
+  radiusX: number,
+  radiusY: number,
+  rotation: number,
+  segments: number,
+): { x: number; y: number }[] {
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const points: { x: number; y: number }[] = [];
+
+  for (let i = 0; i < segments; i += 1) {
+    const angle = (Math.PI * 2 * i) / segments;
+    const localX = Math.cos(angle) * radiusX;
+    const localY = Math.sin(angle) * radiusY;
+
+    points.push({
+      x: x + localX * cos - localY * sin,
+      y: y + localX * sin + localY * cos,
+    });
+  }
+
+  return points;
 }
 
 function renderScene(target: ArenaScene, current: CombatState): void {
@@ -357,85 +715,33 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
 
 function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState): void {
   const layout = getStageLayout(current, getActiveDebugTuning());
+  const shouldSnap = isDebugTuningActive();
 
-  if (isDebugTuningActive()) {
-    setFighterXImmediate(visuals.player, layout.playerX);
-    setFighterXImmediate(visuals.enemy, layout.enemyX);
+  positionFighterForLayout(target, visuals.player, layout.playerX, layout.playerScale, layout.playerY, shouldSnap);
+  positionFighterForLayout(target, visuals.enemy, layout.enemyX, layout.enemyScale, layout.enemyY, shouldSnap);
+}
+
+function positionFighterForLayout(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  x: number,
+  scale: number,
+  feetY: number,
+  shouldSnap: boolean,
+): void {
+  if (shouldSnap) {
+    setFighterXImmediate(fighter, x);
   } else {
-    setFighterX(target, visuals.player, layout.playerX);
-    setFighterX(target, visuals.enemy, layout.enemyX);
+    setFighterX(target, fighter, x);
   }
 
-  applyFighterTuning(visuals.player, layout.playerScale, layout.playerY);
-  applyFighterTuning(visuals.enemy, layout.enemyScale, layout.enemyY);
+  applyFighterTuning(fighter, scale, feetY);
 }
 
 function applyFighterTuning(fighter: FighterVisual, scale: number, feetY: number): void {
-  if (fighter.avatar) {
-    applyAvatarFighterTuning(fighter, scale, feetY);
-    return;
+  if (fighter.paperDollRig) {
+    applyPaperDollRigTuning(fighter, scale, feetY);
   }
-
-  applyVectorFighterTuning(fighter, scale, feetY);
-}
-
-function applyAvatarFighterTuning(fighter: FighterVisual, scale: number, feetY: number): void {
-  if (!fighter.avatar) {
-    return;
-  }
-
-  fighter.body.y = getBodyYFromFeetY(feetY);
-  fighter.avatar.y = feetY;
-  fighter.avatar.displayHeight = PLAYER_AVATAR_DISPLAY_HEIGHT * scale;
-  fighter.avatar.scaleX = fighter.avatar.scaleY;
-  fighter.shadow.y = feetY;
-  fighter.shadow.scaleX = scale;
-  fighter.shadow.scaleY = Math.max(0.65, scale * 0.85);
-  fighter.debugScale = scale;
-}
-
-function applyVectorFighterTuning(fighter: FighterVisual, scale: number, feetY: number): void {
-  const scaleRatio = scale / fighter.debugScale;
-
-  if (Math.abs(scaleRatio - 1) > 0.001) {
-    scaleObjectsFromPivot(getScalableFighterParts(fighter), fighter.shadow.x, fighter.shadow.y, scaleRatio);
-  }
-
-  fighter.debugScale = scale;
-  setVectorFighterY(fighter, getBodyYFromFeetY(feetY));
-}
-
-function setVectorFighterY(fighter: FighterVisual, nextBodyY: number): void {
-  const delta = nextBodyY - fighter.body.y;
-
-  if (Math.abs(delta) < 0.5) {
-    return;
-  }
-
-  getFighterParts(fighter).forEach((part) => {
-    part.y += delta;
-  });
-}
-
-function getBodyYFromFeetY(feetY: number): number {
-  return feetY - PLAYER_AVATAR_FEET_Y_OFFSET + 28;
-}
-
-function getScalableFighterParts(fighter: FighterVisual): ScalableGameObject[] {
-  return [
-    fighter.body,
-    fighter.head,
-    fighter.eyeLeft,
-    fighter.eyeRight,
-    fighter.helmet,
-    fighter.plume,
-    fighter.sword,
-    fighter.armFront,
-    fighter.armBack,
-    fighter.legFront,
-    fighter.legBack,
-    fighter.shadow,
-  ];
 }
 
 function updateCamera(target: Phaser.Scene, current: CombatState): void {
@@ -511,7 +817,11 @@ function setFighterX(target: Phaser.Scene, fighter: FighterVisual, nextX: number
     });
   });
 }
-function getFighterParts(fighter: FighterVisual): Array<Phaser.GameObjects.GameObject & { x: number; y: number }> {
+function getFighterParts(fighter: FighterVisual): FighterPart[] {
+  if (fighter.movableParts) {
+    return [...fighter.movableParts];
+  }
+
   return [
     fighter.body,
     fighter.head,
@@ -526,17 +836,8 @@ function getFighterParts(fighter: FighterVisual): Array<Phaser.GameObjects.GameO
     fighter.legBack,
     fighter.shadow,
     fighter.name,
-    ...(fighter.avatar ? [fighter.avatar] : []),
-  ];
-}
-
-function scaleObjectsFromPivot(parts: ScalableGameObject[], pivotX: number, pivotY: number, scale: number): void {
-  parts.forEach((part) => {
-    part.x = pivotX + (part.x - pivotX) * scale;
-    part.y = pivotY + (part.y - pivotY) * scale;
-    part.scaleX *= scale;
-    part.scaleY *= scale;
-  });
+    ...(fighter.extraParts ?? []),
+  ] as FighterPart[];
 }
 
 function animateAction(
@@ -549,21 +850,7 @@ function animateAction(
   const sign = direction === "right" ? 1 : -1;
   const dx = getActionAnimationDx(actor, opponent, actionId, direction);
   const y = actionId === "rest" ? "+=14" : 0;
-  const parts = actor.avatar
-    ? [actor.avatar, actor.name]
-    : [
-        actor.body,
-        actor.head,
-        actor.eyeLeft,
-        actor.eyeRight,
-        actor.helmet,
-        actor.sword,
-        actor.armFront,
-        actor.armBack,
-        actor.legFront,
-        actor.legBack,
-        actor.name,
-      ];
+  const parts = getAnimatedFighterParts(actor);
 
   if (actionId === "forward" || actionId === "back") {
     showFloatingText(target, actor.body.x, actor.body.y - 120, actionId === "forward" ? "STEP" : "BACK", "#ffe7a4");
@@ -571,16 +858,6 @@ function animateAction(
   }
 
   if (actionId === "block") {
-    if (actor.avatar) {
-      target.tweens.add({
-        targets: actor.avatar,
-        angle: 5 * sign,
-        duration: 140,
-        yoyo: true,
-        ease: "Back.easeOut",
-      });
-    }
-
     target.tweens.add({
       targets: actor.sword,
       angle: actor.sword.angle + 58 * sign,
@@ -593,19 +870,8 @@ function animateAction(
   }
 
   if (actionId === "taunt") {
-    if (actor.avatar) {
-      target.tweens.add({
-        targets: actor.avatar,
-        angle: 7 * sign,
-        duration: 110,
-        yoyo: true,
-        repeat: 3,
-        ease: "Sine.easeInOut",
-      });
-    }
-
     target.tweens.add({
-      targets: [actor.head, actor.eyeLeft, actor.eyeRight, actor.helmet],
+      targets: parts,
       angle: 9 * sign,
       duration: 110,
       yoyo: true,
@@ -659,20 +925,7 @@ function getActionAnimationDx(actor: FighterVisual, opponent: FighterVisual, act
   return Math.min(baseDx, Math.max(0, gapToOpponent - 2));
 }
 function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
-  const parts = fighter.avatar
-    ? [fighter.avatar]
-    : [
-        fighter.body,
-        fighter.head,
-        fighter.eyeLeft,
-        fighter.eyeRight,
-        fighter.helmet,
-        fighter.sword,
-        fighter.armFront,
-        fighter.armBack,
-        fighter.legFront,
-        fighter.legBack,
-      ];
+  const parts = getAnimatedFighterParts(fighter);
 
   target.tweens.add({
     targets: parts,
@@ -704,6 +957,14 @@ function showFloatingText(target: Phaser.Scene, x: number, y: number, text: stri
     ease: "Quad.easeOut",
     onComplete: () => label.destroy(),
   });
+}
+
+function getAnimatedFighterParts(fighter: FighterVisual): FighterPart[] {
+  if (fighter.animatedParts) {
+    return fighter.animatedParts;
+  }
+
+  return getFighterParts(fighter).filter((part) => part !== fighter.shadow && part !== fighter.name);
 }
 
 function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {

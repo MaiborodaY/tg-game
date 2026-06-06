@@ -3,12 +3,12 @@ export const GAME_HEIGHT = 764;
 
 export const DEFAULT_STAGE_ORIGIN_X = 215;
 export const DEFAULT_STAGE_ORIGIN_Y = 520;
-export const DEFAULT_PLAYER_STAGE_X = -130;
+export const DEFAULT_PLAYER_STAGE_X = -139;
 export const DEFAULT_PLAYER_STAGE_Y = 159;
-export const DEFAULT_ENEMY_STAGE_X = 130;
-export const DEFAULT_ENEMY_STAGE_Y = 223;
-export const DEFAULT_PLAYER_SCALE = 0.78;
-export const DEFAULT_ENEMY_SCALE = 1;
+export const DEFAULT_ENEMY_STAGE_X = 139;
+export const DEFAULT_ENEMY_STAGE_Y = 159;
+export const DEFAULT_PLAYER_SCALE = 0.6;
+export const DEFAULT_ENEMY_SCALE = 0.6;
 export const DEFAULT_ACTION_ARC_ROTATION = 71;
 export const DEFAULT_ACTION_ARC_RADIUS = 54;
 export const DEFAULT_ACTION_BUTTON_SCALE = 0.63;
