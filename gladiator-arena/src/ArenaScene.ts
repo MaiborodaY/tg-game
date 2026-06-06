@@ -1297,6 +1297,10 @@ function animateAction(
     return;
   }
 
+  if (isAttackBodyAnimationKey(actionId)) {
+    playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId));
+  }
+
   target.tweens.add({
     targets: parts,
     x: `+=${dx * sign}`,
@@ -1314,6 +1318,10 @@ function animateAction(
   });
 
   createDust(target, opponent.body.x - 20 * sign, opponent.body.y + 72);
+}
+
+function isAttackBodyAnimationKey(actionId: ActionId): actionId is Extract<BodyAnimationKey, "light" | "medium" | "heavy"> {
+  return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
 function getActionAnimationDx(actor: FighterVisual, opponent: FighterVisual, actionId: ActionId, direction: "left" | "right"): number {
