@@ -244,6 +244,14 @@ export function mountDebugPanel(root: HTMLElement): void {
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-rig-editor__face-reset" type="button">Reset eyes</button>
           </div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-rig-editor__capture-face-base" type="button">Capture face base</button>
+            <button class="debug-panel__reset debug-rig-editor__capture-face-breath" type="button">Capture face breath</button>
+          </div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-rig-editor__apply-face-base" type="button">Apply face base</button>
+            <button class="debug-panel__reset debug-rig-editor__apply-face-breath" type="button">Apply face breath</button>
+          </div>
         </fieldset>
         <fieldset class="debug-rig-editor__idle">
           <legend>Animation</legend>
@@ -464,6 +472,10 @@ function mountRigEditor(editor: HTMLElement): void {
   const copyOpposite = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
   const resetFace = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__face-reset");
+  const captureFaceBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-face-base");
+  const captureFaceBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__capture-face-breath");
+  const applyFaceBase = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-face-base");
+  const applyFaceBreath = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__apply-face-breath");
   const animationSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
   const animationEnabled = editor.querySelector<HTMLInputElement>("input[data-animation-enabled]");
   const animationDuration = editor.querySelector<HTMLInputElement>("input[data-animation-duration]");
@@ -485,6 +497,10 @@ function mountRigEditor(editor: HTMLElement): void {
     !copyOpposite ||
     !reset ||
     !resetFace ||
+    !captureFaceBase ||
+    !captureFaceBreath ||
+    !applyFaceBase ||
+    !applyFaceBreath ||
     !animationSelect ||
     !animationEnabled ||
     !animationDuration ||
@@ -556,6 +572,22 @@ function mountRigEditor(editor: HTMLElement): void {
 
   resetFace.addEventListener("click", () => {
     resetFaceParts();
+  });
+
+  captureFaceBase.addEventListener("click", () => {
+    updateAnimationFacePose("base");
+  });
+
+  captureFaceBreath.addEventListener("click", () => {
+    updateAnimationFacePose("breath");
+  });
+
+  applyFaceBase.addEventListener("click", () => {
+    applyAnimationFacePose("base");
+  });
+
+  applyFaceBreath.addEventListener("click", () => {
+    applyAnimationFacePose("breath");
   });
 
   copyOpposite.addEventListener("click", () => {
@@ -943,6 +975,34 @@ function updateAnimationPosePart(poseKey: "base" | "breath", partKey: RigPartKey
 
 function applyAnimationPosePart(poseKey: "base" | "breath", partKey: RigPartKey): void {
   updateRigPartTuning(partKey, { ...getSelectedBodyAnimation()[poseKey][partKey] });
+}
+
+function updateAnimationFacePose(poseKey: "base" | "breath"): void {
+  const facePoseKey = getAnimationFacePoseKey(poseKey);
+
+  updateSelectedBodyAnimation({
+    [facePoseKey]: cloneCurrentFaceParts(),
+  });
+}
+
+function applyAnimationFacePose(poseKey: "base" | "breath"): void {
+  const facePoseKey = getAnimationFacePoseKey(poseKey);
+
+  updateDebugTuning({
+    faceParts: cloneFaceParts(getSelectedBodyAnimation()[facePoseKey]),
+  });
+}
+
+function getAnimationFacePoseKey(poseKey: "base" | "breath"): "faceBase" | "faceBreath" {
+  return poseKey === "base" ? "faceBase" : "faceBreath";
+}
+
+function cloneCurrentFaceParts(): Record<FacePartKey, FacePartTuning> {
+  return cloneFaceParts(debugTuning.faceParts);
+}
+
+function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<FacePartKey, FacePartTuning> {
+  return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<FacePartKey, FacePartTuning>;
 }
 
 function updateSelectedBodyAnimation(patch: Partial<BodyAnimationTuning>): void {

@@ -104,6 +104,8 @@ interface BodyAnimationUpdates {
   duration: number;
   base: RigPartUpdates;
   breath: RigPartUpdates;
+  faceBase: FacePartUpdates;
+  faceBreath: FacePartUpdates;
   activeParts: Record<RigPartKey, boolean>;
 }
 
@@ -267,7 +269,7 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
     throw new Error(`Expected ${selectedBodyAnimation} animation in debug tuning payload.`);
   }
 
-  const animation = bodyAnimation as { enabled?: unknown; duration?: unknown; base?: unknown; breath?: unknown; activeParts?: unknown };
+  const animation = bodyAnimation as { enabled?: unknown; duration?: unknown; base?: unknown; breath?: unknown; faceBase?: unknown; faceBreath?: unknown; activeParts?: unknown };
 
   if (typeof animation.enabled !== "boolean") {
     throw new Error("Invalid body animation value: enabled.");
@@ -283,6 +285,8 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
     duration: Math.max(240, Math.min(2400, animation.duration)),
     base: readRigPartRecord(animation.base, "base"),
     breath: readRigPartRecord(animation.breath, "breath"),
+    faceBase: readFacePartRecord(animation.faceBase, "faceBase"),
+    faceBreath: readFacePartRecord(animation.faceBreath, "faceBreath"),
     activeParts: readBodyAnimationActiveParts(animation.activeParts),
   };
 }
@@ -334,6 +338,12 @@ function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimatio
     "  breath: {",
     formatRigPartRows(updates.breath),
     "  },",
+    "  faceBase: {",
+    formatFacePartRows(updates.faceBase),
+    "  },",
+    "  faceBreath: {",
+    formatFacePartRows(updates.faceBreath),
+    "  },",
     "  activeParts: {",
     formatBodyAnimationActivePartRows(updates.activeParts),
     "  },",
@@ -355,12 +365,30 @@ function formatBodyAnimationActivePartRows(updates: Record<RigPartKey, boolean>)
   return rigPartKeys.map((key) => `    ${key}: ${updates[key]},`).join("\n");
 }
 
+function formatFacePartRows(updates: FacePartUpdates): string {
+  return facePartKeys
+    .map((key) => {
+      const part = updates[key];
+
+      return `    ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)} },`;
+    })
+    .join("\n");
+}
+
 function readRigPartRecord(input: unknown, label: string): RigPartUpdates {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error(`Expected body animation ${label} rig parts.`);
   }
 
   return Object.fromEntries(rigPartKeys.map((key) => [key, readRigPartTuning(input, key)])) as RigPartUpdates;
+}
+
+function readFacePartRecord(input: unknown, label: string): FacePartUpdates {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`Expected body animation ${label} face parts.`);
+  }
+
+  return Object.fromEntries(facePartKeys.map((key) => [key, readFacePartTuning(input, key)])) as FacePartUpdates;
 }
 
 function readBodyAnimationActiveParts(input: unknown): Record<RigPartKey, boolean> {

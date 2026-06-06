@@ -680,6 +680,19 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
 
     applyRigPartTransform(part, pivot, tuning);
   });
+
+  applyFacePartTransform(
+    rig.faceParts.eyeLeft,
+    HEAD_FACE_LEFT_EYE_X,
+    HEAD_FACE_EYE_Y,
+    interpolateFacePartTuning(animation.faceBase.eyeLeft, animation.faceBreath.eyeLeft, blend),
+  );
+  applyFacePartTransform(
+    rig.faceParts.eyeRight,
+    HEAD_FACE_RIGHT_EYE_X,
+    HEAD_FACE_EYE_Y,
+    interpolateFacePartTuning(animation.faceBase.eyeRight, animation.faceBreath.eyeRight, blend),
+  );
 }
 
 function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend: number): RigPartTuning {
@@ -691,6 +704,15 @@ function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend:
     scaleY: lerp(from.scaleY, to.scaleY, blend),
     flipX: blend < 0.5 ? from.flipX : to.flipX,
     flipY: blend < 0.5 ? from.flipY : to.flipY,
+  };
+}
+
+function interpolateFacePartTuning(from: FacePartTuning, to: FacePartTuning, blend: number): FacePartTuning {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+    scaleX: lerp(from.scaleX, to.scaleX, blend),
+    scaleY: lerp(from.scaleY, to.scaleY, blend),
   };
 }
 
