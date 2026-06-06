@@ -1,6 +1,6 @@
 import {
   BODY_ANIMATION_KEYS,
-  DEFAULT_RIG_PARTS,
+  DEFAULT_BODY_ANIMATIONS,
   debugTuning,
   defaultDebugTuning,
   defaultFacePartTuning,
@@ -1118,13 +1118,20 @@ function rotateRigLimb(limbKey: RigLimbKey, degrees: number): void {
 }
 
 function resetSelectedRigPart(): void {
-  updateRigPartTuning(debugTuning.selectedRigPart, { ...DEFAULT_RIG_PARTS[debugTuning.selectedRigPart] });
+  updateRigPartTuning(debugTuning.selectedRigPart, { ...getNeutralRigPartDefaults()[debugTuning.selectedRigPart] });
 }
 
 function resetAllRigParts(): void {
   updateDebugTuning({
-    rigParts: Object.fromEntries(RIG_PART_KEYS.map((partKey) => [partKey, { ...DEFAULT_RIG_PARTS[partKey] }])) as Record<RigPartKey, RigPartTuning>,
+    rigParts: getNeutralRigPartDefaults(),
+    selectedBodyAnimation: "idle",
   });
+}
+
+function getNeutralRigPartDefaults(): Record<RigPartKey, RigPartTuning> {
+  const neutralParts = DEFAULT_BODY_ANIMATIONS.idle.base;
+
+  return Object.fromEntries(RIG_PART_KEYS.map((partKey) => [partKey, { ...neutralParts[partKey] }])) as Record<RigPartKey, RigPartTuning>;
 }
 
 function isRigNudgeAction(value: string | undefined): value is RigNudgeAction {

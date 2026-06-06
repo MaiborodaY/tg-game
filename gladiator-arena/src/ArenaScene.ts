@@ -52,6 +52,7 @@ import {
   defaultRigPartTuning,
   RIG_PART_KEYS,
   subscribeDebugTuning,
+  updateDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
   type FacePartTuning,
@@ -99,6 +100,7 @@ interface PaperDollRig {
   parts: Record<PaperDollPartKey, FighterPart>;
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
+  selectionHighlights: Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
 }
 
 interface PaperDollFaceParts {
@@ -173,6 +175,8 @@ const DEBUG_CHARACTER_VIEWER_WIDTH = 430;
 const DEBUG_CHARACTER_VIEWER_HEIGHT = 764;
 const DEBUG_CHARACTER_CENTER_X = DEBUG_CHARACTER_VIEWER_WIDTH / 2;
 const DEBUG_CHARACTER_FEET_Y = 690;
+const PAPER_DOLL_SELECTION_FILL = 0xffc857;
+const PAPER_DOLL_SELECTION_STROKE = 0xfff1a8;
 
 interface PaperDollPartAssetConfig {
   displayHeight: number;
@@ -327,6 +331,7 @@ class DebugCharacterScene extends Phaser.Scene {
     drawDebugCharacterBackdrop(this);
     this.fighter = createPaperDollFighter(this, createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0));
     this.fighter.name.setVisible(false);
+    enableDebugPaperDollPartPicking(this.fighter.paperDollRig);
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
     this.sync();
@@ -348,6 +353,7 @@ class DebugCharacterScene extends Phaser.Scene {
     }
 
     applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, debugTuning.characterPreviewFeetX);
+    syncPaperDollSelectionHighlight(this.fighter.paperDollRig);
   }
 }
 
@@ -527,12 +533,14 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const root = part(rootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
   const faceParts: PaperDollFaceParts = {};
+  const selectionHighlights = {} as Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
     addPaperDollPartVisual(target, partContainer, key, appearance, options, faceParts);
+    selectionHighlights[key] = addPaperDollPartSelectionHighlight(target, partContainer, key);
     rootContainer.add(partContainer);
     parts[key] = part(partContainer);
   });
@@ -573,6 +581,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
       parts,
       faceParts,
       appearance,
+      selectionHighlights,
     },
     debugScale: 1,
   };
@@ -610,6 +619,23 @@ const PAPER_DOLL_PART_PIVOTS: Record<PaperDollPartKey, { x: number; y: number }>
   frontThigh: { x: 25, y: -78 },
   frontShin: { x: 31, y: -40 },
   frontFoot: { x: 38, y: -7 },
+};
+
+const PAPER_DOLL_PART_HIT_AREAS: Record<PaperDollPartKey, Phaser.Geom.Rectangle> = {
+  head: new Phaser.Geom.Rectangle(-50, -112, 100, 128),
+  torso: new Phaser.Geom.Rectangle(-48, -112, 96, 126),
+  backUpperArm: new Phaser.Geom.Rectangle(-28, -14, 56, 104),
+  backForearm: new Phaser.Geom.Rectangle(-26, -12, 52, 84),
+  backHand: new Phaser.Geom.Rectangle(-28, -22, 56, 64),
+  frontUpperArm: new Phaser.Geom.Rectangle(-28, -14, 56, 104),
+  frontForearm: new Phaser.Geom.Rectangle(-26, -12, 52, 84),
+  frontHand: new Phaser.Geom.Rectangle(-28, -22, 56, 64),
+  backThigh: new Phaser.Geom.Rectangle(-28, -16, 56, 100),
+  backShin: new Phaser.Geom.Rectangle(-26, -12, 52, 92),
+  backFoot: new Phaser.Geom.Rectangle(-56, -18, 86, 52),
+  frontThigh: new Phaser.Geom.Rectangle(-28, -16, 56, 100),
+  frontShin: new Phaser.Geom.Rectangle(-26, -12, 52, 92),
+  frontFoot: new Phaser.Geom.Rectangle(-30, -18, 86, 52),
 };
 
 function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: number, centerX = fighter.body.x): void {
@@ -735,8 +761,122 @@ function applyFacePartTransform(part: FighterPart | undefined, baseX: number, ba
   part.scaleY = tuning.scaleY;
 }
 
+function enableDebugPaperDollPartPicking(rig: PaperDollRig | undefined): void {
+  if (!rig) {
+    return;
+  }
+
+  RIG_PART_KEYS.forEach((key) => {
+    const partContainer = rig.parts[key] as Phaser.GameObjects.Container;
+
+    partContainer.setInteractive(PAPER_DOLL_PART_HIT_AREAS[key], Phaser.Geom.Rectangle.Contains);
+
+    if (partContainer.input) {
+      partContainer.input.cursor = "pointer";
+    }
+
+    partContainer.on("pointerdown", (...args: unknown[]) => {
+      const event = args[3] as { stopPropagation?: () => void } | undefined;
+
+      event?.stopPropagation?.();
+      updateDebugTuning({ selectedRigPart: key });
+    });
+  });
+}
+
+function syncPaperDollSelectionHighlight(rig: PaperDollRig | undefined): void {
+  if (!rig) {
+    return;
+  }
+
+  RIG_PART_KEYS.forEach((key) => {
+    rig.selectionHighlights[key].setVisible(key === debugTuning.selectedRigPart);
+  });
+}
+
 function lerp(from: number, to: number, blend: number): number {
   return from + (to - from) * blend;
+}
+
+function addPaperDollPartSelectionHighlight(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  key: PaperDollPartKey,
+): Phaser.GameObjects.Graphics {
+  const highlight = target.add.graphics();
+
+  drawPaperDollPartSelectionHighlight(highlight, key);
+  highlight.setVisible(false);
+  partContainer.add(highlight);
+
+  return highlight;
+}
+
+function drawPaperDollPartSelectionHighlight(graphics: Phaser.GameObjects.Graphics, key: PaperDollPartKey): void {
+  const fill = PAPER_DOLL_SELECTION_FILL;
+  const stroke = PAPER_DOLL_SELECTION_STROKE;
+  const fillAlpha = 0.18;
+  const strokeAlpha = 0.9;
+  const strokeWidth = 5;
+  const side = key.startsWith("front") ? 1 : -1;
+
+  graphics.clear();
+
+  if (key === "torso") {
+    drawDollPolygon(
+      graphics,
+      [
+        { x: -41, y: -108 },
+        { x: 41, y: -108 },
+        { x: 34, y: -25 },
+        { x: 19, y: 11 },
+        { x: -19, y: 11 },
+        { x: -34, y: -25 },
+      ],
+      fill,
+      stroke,
+      1,
+      fillAlpha,
+      strokeWidth,
+      strokeAlpha,
+    );
+    return;
+  }
+
+  if (key === "head") {
+    drawDollEllipse(graphics, -42, -33, 26, 35, 0, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    drawDollEllipse(graphics, 42, -33, 26, 35, 0, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    drawDollEllipse(graphics, 0, -39, 84, 92, 0, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    drawDollEllipse(graphics, 0, 0, 30, 32, 0, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    return;
+  }
+
+  if (key.endsWith("UpperArm")) {
+    drawDollEllipse(graphics, 8 * side, 35, 36, 92, -0.18 * side, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    return;
+  }
+
+  if (key.endsWith("Forearm")) {
+    drawDollEllipse(graphics, 5 * side, 29, 32, 70, -0.06 * side, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    return;
+  }
+
+  if (key.endsWith("Hand")) {
+    drawDollEllipse(graphics, 4 * side, 12, 36, 36, 0, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    return;
+  }
+
+  if (key.endsWith("Thigh")) {
+    drawDollEllipse(graphics, 3 * side, 25, 36, 78, -0.05 * side, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    return;
+  }
+
+  if (key.endsWith("Shin")) {
+    drawDollEllipse(graphics, 4 * side, 28, 33, 76, 0.04 * side, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
+    return;
+  }
+
+  drawDollEllipse(graphics, 14 * side, 8, 56, 28, -0.08 * side, fill, stroke, 1, fillAlpha, strokeWidth, strokeAlpha);
 }
 
 function addPaperDollPartVisual(
