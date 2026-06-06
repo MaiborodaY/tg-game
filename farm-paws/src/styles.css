@@ -498,6 +498,14 @@ h2 {
   animation: catGuideHurt 300ms ease-in-out;
 }
 
+.cat-guide-image.is-dog.is-hurt {
+  width: auto;
+  height: 118px;
+  max-width: 72%;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
 .result-panel {
   padding: 20px 0;
 }
@@ -509,6 +517,14 @@ h2 {
   object-position: 36% 58%;
   filter: drop-shadow(0 16px 22px rgba(65, 76, 38, 0.2));
   pointer-events: none;
+}
+
+.result-cat-image.is-dog {
+  width: auto;
+  height: 118px;
+  max-width: 70%;
+  object-fit: contain;
+  object-position: bottom center;
 }
 
 .reward-line {

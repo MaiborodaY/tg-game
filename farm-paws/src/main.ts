@@ -180,7 +180,7 @@ function renderPlayPanel(): string {
       ${Array.from({ length: 9 }, (_, index) => renderCell(index)).join("")}
     </div>
     <div class="cat-guide-panel" aria-label="Питомец помогает запомнить маршрут">
-      <img class="cat-guide-image ${catGuideClass()}" src="${petGuideImageUrl(false)}" alt="" />
+      <img class="cat-guide-image ${petGuideClassName()}" src="${petGuideImageUrl(false)}" alt="" />
     </div>
   `;
 }
@@ -188,7 +188,7 @@ function renderPlayPanel(): string {
 function renderResultPanel(): string {
   return `
     <div class="result-panel">
-      <img class="result-cat-image" src="${petGuideImageUrl(true)}" alt="" />
+      <img class="result-cat-image ${petTypeClass()}" src="${petGuideImageUrl(true)}" alt="" />
       <h2>Урожай спасён: ${state.score}</h2>
       <p>Сердечки закончились.</p>
       <p>Лучший результат: <strong>${state.bestScore}</strong></p>
@@ -407,6 +407,14 @@ function catGuideClass(): string {
   if (state.phase === "success") return "is-happy";
   if (state.lastInputStatus === "wrong") return "is-hurt";
   return "is-waiting";
+}
+
+function petGuideClassName(): string {
+  return `${catGuideClass()} ${petTypeClass()}`;
+}
+
+function petTypeClass(): string {
+  return currentRun.petType === "dog" ? "is-dog" : "is-cat";
 }
 
 function petGuideImageUrl(forceSad = false): string {
