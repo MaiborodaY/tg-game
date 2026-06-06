@@ -1247,6 +1247,19 @@ function animateAction(
     return;
   }
 
+  if (actionId === "lunge") {
+    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"));
+    target.tweens.add({
+      targets: parts,
+      x: `+=${dx * sign}`,
+      duration: 160,
+      yoyo: true,
+      ease: "Quad.easeOut",
+    });
+    createDust(target, opponent.body.x - 20 * sign, opponent.body.y + 72);
+    return;
+  }
+
   if (actionId === "block") {
     target.tweens.add({
       targets: actor.sword,

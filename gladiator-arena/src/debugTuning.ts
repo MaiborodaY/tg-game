@@ -39,7 +39,7 @@ export const RIG_PART_KEYS = [
 
 export type RigPartKey = (typeof RIG_PART_KEYS)[number];
 
-export const BODY_ANIMATION_KEYS = ["idle", "walkCycle"] as const;
+export const BODY_ANIMATION_KEYS = ["idle", "walkCycle", "lunge"] as const;
 export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
@@ -267,9 +267,12 @@ export const DEFAULT_WALK_CYCLE_ANIMATION: BodyAnimationTuning = {
   },
 };
 
+export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = createDefaultLungeAnimation();
+
 export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuning> = {
   idle: DEFAULT_IDLE_ANIMATION,
   walkCycle: DEFAULT_WALK_CYCLE_ANIMATION,
+  lunge: DEFAULT_LUNGE_ANIMATION,
 };
 
 export const defaultDebugTuning: ArenaDebugTuning = {
@@ -496,6 +499,68 @@ function createDefaultWalkCycleAnimation(): BodyAnimationTuning {
     breath,
     faceBase: cloneFaceParts(DEFAULT_FACE_PARTS),
     faceBreath: cloneFaceParts(DEFAULT_FACE_PARTS),
+    activeParts: createDefaultIdleActiveParts(),
+  };
+}
+
+function createDefaultLungeAnimation(): BodyAnimationTuning {
+  const base = cloneRigParts(DEFAULT_RIG_PARTS);
+  const breath = cloneRigParts(DEFAULT_RIG_PARTS);
+  const faceBase = cloneFaceParts(DEFAULT_FACE_PARTS);
+  const faceBreath = cloneFaceParts(DEFAULT_FACE_PARTS);
+
+  breath.head.x += 8;
+  breath.head.y -= 5;
+  breath.head.angle = 8;
+  breath.torso.x += 8;
+  breath.torso.y -= 7;
+  breath.torso.angle = 11;
+  breath.frontUpperArm.x += 5;
+  breath.frontUpperArm.y -= 6;
+  breath.frontUpperArm.angle = -20;
+  breath.frontForearm.x += 22;
+  breath.frontForearm.y -= 4;
+  breath.frontForearm.angle = -28;
+  breath.frontHand.x += 38;
+  breath.frontHand.y -= 8;
+  breath.frontHand.angle = -16;
+  breath.backUpperArm.x -= 8;
+  breath.backUpperArm.y += 1;
+  breath.backUpperArm.angle = 16;
+  breath.backForearm.x -= 12;
+  breath.backForearm.y += 3;
+  breath.backForearm.angle = -18;
+  breath.backHand.x -= 14;
+  breath.backHand.y += 2;
+  breath.backHand.angle = -38;
+  breath.frontThigh.x += 16;
+  breath.frontThigh.y -= 2;
+  breath.frontThigh.angle = -30;
+  breath.frontShin.x += 28;
+  breath.frontShin.y -= 7;
+  breath.frontShin.angle = 18;
+  breath.frontFoot.x += 35;
+  breath.frontFoot.y -= 5;
+  breath.frontFoot.angle = 4;
+  breath.backThigh.x -= 12;
+  breath.backThigh.y += 2;
+  breath.backThigh.angle = 18;
+  breath.backShin.x -= 14;
+  breath.backShin.y += 1;
+  breath.backShin.angle = -18;
+  breath.backFoot.x -= 18;
+  breath.backFoot.y += 1;
+  breath.backFoot.angle = -8;
+  faceBreath.eyeLeft.x += 7;
+  faceBreath.eyeRight.x += 7;
+
+  return {
+    enabled: true,
+    duration: 320,
+    base,
+    breath,
+    faceBase,
+    faceBreath,
     activeParts: createDefaultIdleActiveParts(),
   };
 }
