@@ -1,6 +1,8 @@
 import "./styles.css";
 import catGuideUrl from "./assets/cat-guide.png";
 import catGuideSadUrl from "./assets/cat-guide-sad.png";
+import dogGuideUrl from "./assets/dog-guide.png";
+import dogGuideSadUrl from "./assets/dog-guide-sad.png";
 import {
   FarmPawsFinishResult,
   FarmPawsRunSession,
@@ -65,7 +67,8 @@ let currentRun: FarmPawsRunSession = {
   runId: null,
   bestScore: state.bestScore,
   error: null,
-  petName: null
+  petName: null,
+  petType: null
 };
 let runStartedAt = 0;
 let isStartingRun = false;
@@ -176,8 +179,8 @@ function renderPlayPanel(): string {
     <div class="farm-grid" aria-label="Грядки">
       ${Array.from({ length: 9 }, (_, index) => renderCell(index)).join("")}
     </div>
-    <div class="cat-guide-panel" aria-label="Котик помогает запомнить маршрут">
-      <img class="cat-guide-image ${catGuideClass()}" src="${catGuideImageUrl()}" alt="" />
+    <div class="cat-guide-panel" aria-label="Питомец помогает запомнить маршрут">
+      <img class="cat-guide-image ${catGuideClass()}" src="${petGuideImageUrl(false)}" alt="" />
     </div>
   `;
 }
@@ -185,7 +188,7 @@ function renderPlayPanel(): string {
 function renderResultPanel(): string {
   return `
     <div class="result-panel">
-      <img class="result-cat-image" src="${catGuideSadUrl}" alt="" />
+      <img class="result-cat-image" src="${petGuideImageUrl(true)}" alt="" />
       <h2>Урожай спасён: ${state.score}</h2>
       <p>Сердечки закончились.</p>
       <p>Лучший результат: <strong>${state.bestScore}</strong></p>
@@ -406,8 +409,12 @@ function catGuideClass(): string {
   return "is-waiting";
 }
 
-function catGuideImageUrl(): string {
-  return state.lastInputStatus === "wrong" ? catGuideSadUrl : catGuideUrl;
+function petGuideImageUrl(forceSad = false): string {
+  const isSad = forceSad || state.lastInputStatus === "wrong";
+  if (currentRun.petType === "dog") {
+    return isSad ? dogGuideSadUrl : dogGuideUrl;
+  }
+  return isSad ? catGuideSadUrl : catGuideUrl;
 }
 
 function showToast(text: string): void {

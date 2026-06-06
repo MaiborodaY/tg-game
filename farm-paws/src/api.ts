@@ -4,6 +4,7 @@ export type FarmPawsRunSession = {
   bestScore: number;
   error: string | null;
   petName: string | null;
+  petType: string | null;
   code?: string | null;
   dailyLimit?: number | null;
   dailyStarts?: number | null;
@@ -31,6 +32,8 @@ type ApiStartResponse = {
   run_id?: string;
   petName?: string;
   pet_name?: string;
+  petType?: string;
+  pet_type?: string;
   bestScore?: number;
   best_score?: number;
   error?: string;
@@ -85,6 +88,7 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
       bestScore: normalizedScore(response.bestScore ?? response.best_score ?? localBestScore),
       error: null,
       petName: normalizedText(response.petName ?? response.pet_name),
+      petType: normalizedText(response.petType ?? response.pet_type),
       code: null,
       dailyLimit: null,
       dailyStarts: null
@@ -173,6 +177,7 @@ function localSession(bestScore: number, error: string | null): FarmPawsRunSessi
     bestScore: normalizedScore(bestScore),
     error,
     petName: null,
+    petType: null,
     code: null,
     dailyLimit: null,
     dailyStarts: null
@@ -191,6 +196,7 @@ function blockedSession(
     bestScore: normalizedScore(bestScore),
     error,
     petName: normalizedText(response?.petName ?? response?.pet_name),
+    petType: normalizedText(response?.petType ?? response?.pet_type),
     code,
     dailyLimit: normalizedNullableScore(response?.dailyLimit ?? response?.daily_limit),
     dailyStarts: normalizedNullableScore(response?.dailyStarts ?? response?.daily_starts)
