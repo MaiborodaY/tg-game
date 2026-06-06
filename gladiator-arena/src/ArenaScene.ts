@@ -10,6 +10,18 @@ import {
 import {
   ARENA_BACKGROUND_ASSET_KEY,
   ARENA_BACKGROUND_ASSET_URL,
+  FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
+  FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_HAND_LIGHT_ASSET_URL,
+  FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_HAND_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL,
   FIGHTER_HEAD_LIGHT_ASSET_KEY,
   FIGHTER_HEAD_LIGHT_ASSET_URL,
   FIGHTER_TORSO_LIGHT_ASSET_KEY,
@@ -58,9 +70,11 @@ type PaperDollPartKey =
   | "head"
   | "torso"
   | "backUpperArm"
-  | "backForearmHand"
+  | "backForearm"
+  | "backHand"
   | "frontUpperArm"
-  | "frontForearmHand"
+  | "frontForearm"
+  | "frontHand"
   | "backThigh"
   | "backShin"
   | "backFoot"
@@ -93,6 +107,7 @@ interface PaperDollFighterOptions {
   muscle?: number;
   headAssetKey?: string;
   torsoAssetKey?: string;
+  bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
 }
 
 interface HudVisual {
@@ -128,6 +143,23 @@ const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
 const TORSO_ASSET_ORIGIN_X = 626 / 1254;
 const TORSO_ASSET_ORIGIN_Y = 998 / 1254;
 
+interface PaperDollPartAssetConfig {
+  displayHeight: number;
+  localX: number;
+  localY: number;
+  originX: number;
+  originY: number;
+}
+
+const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollPartAssetConfig>> = {
+  backUpperArm: { displayHeight: 90, localX: 0, localY: -8, originX: 158 / 319, originY: 6 / 548 },
+  backForearm: { displayHeight: 66, localX: 0, localY: -3, originX: 122 / 251, originY: 6 / 497 },
+  backHand: { displayHeight: 68, localX: 0, localY: -3, originX: 630 / 1254, originY: 294 / 1254 },
+  frontUpperArm: { displayHeight: 90, localX: 0, localY: -8, originX: 160 / 322, originY: 6 / 546 },
+  frontForearm: { displayHeight: 66, localX: 0, localY: -3, originX: 122 / 251, originY: 6 / 497 },
+  frontHand: { displayHeight: 68, localX: 0, localY: -3, originX: 630 / 1254, originY: 294 / 1254 },
+};
+
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 
@@ -145,6 +177,12 @@ export class ArenaScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image(ARENA_BACKGROUND_ASSET_KEY, ARENA_BACKGROUND_ASSET_URL);
+    this.load.image(FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL);
+    this.load.image(FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY, FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL);
+    this.load.image(FIGHTER_BACK_HAND_LIGHT_ASSET_KEY, FIGHTER_BACK_HAND_LIGHT_ASSET_URL);
+    this.load.image(FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL);
+    this.load.image(FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL);
+    this.load.image(FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY, FIGHTER_FRONT_HAND_LIGHT_ASSET_URL);
     this.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
     this.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
   }
@@ -268,6 +306,14 @@ function buildVisuals(target: ArenaScene): ArenaVisuals {
     hair: 0x8b4a1f,
     headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
     torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+    bodyPartAssetKeys: {
+      backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
+      backForearm: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
+      backHand: FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
+      frontUpperArm: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
+      frontForearm: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
+      frontHand: FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
+    },
   });
   const enemy = createPaperDollFighter(target, {
     x: DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X,
@@ -369,7 +415,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     eyeRight: parts.head,
     helmet: parts.head,
     plume: parts.head,
-    sword: parts.frontForearmHand,
+    sword: parts.frontHand,
     armFront: parts.frontUpperArm,
     armBack: parts.backUpperArm,
     legFront: parts.frontThigh,
@@ -392,23 +438,27 @@ const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
   "backShin",
   "backFoot",
   "backUpperArm",
-  "backForearmHand",
+  "backForearm",
+  "backHand",
   "frontThigh",
   "frontShin",
   "frontFoot",
   "torso",
   "head",
   "frontUpperArm",
-  "frontForearmHand",
+  "frontForearm",
+  "frontHand",
 ];
 
 const PAPER_DOLL_PART_PIVOTS: Record<PaperDollPartKey, { x: number; y: number }> = {
   head: { x: 0, y: -205 },
   torso: { x: 0, y: -84 },
   backUpperArm: { x: -43, y: -180 },
-  backForearmHand: { x: -58, y: -115 },
+  backForearm: { x: -58, y: -115 },
+  backHand: { x: -64, y: -55 },
   frontUpperArm: { x: 43, y: -180 },
-  frontForearmHand: { x: 58, y: -115 },
+  frontForearm: { x: 58, y: -115 },
+  frontHand: { x: 64, y: -55 },
   backThigh: { x: -25, y: -78 },
   backShin: { x: -31, y: -40 },
   backFoot: { x: -38, y: -7 },
@@ -453,6 +503,18 @@ function addPaperDollPartVisual(
     const image = target.add.image(0, TORSO_ASSET_LOCAL_BOTTOM_Y, options.torsoAssetKey);
     image.setOrigin(TORSO_ASSET_ORIGIN_X, TORSO_ASSET_ORIGIN_Y);
     image.displayHeight = TORSO_ASSET_DISPLAY_HEIGHT;
+    image.scaleX = image.scaleY;
+    partContainer.add(image);
+    return;
+  }
+
+  const assetKey = options.bodyPartAssetKeys?.[key];
+  const assetConfig = PAPER_DOLL_PART_ASSET_CONFIGS[key];
+
+  if (assetKey && assetConfig && target.textures.exists(assetKey)) {
+    const image = target.add.image(assetConfig.localX, assetConfig.localY, assetKey);
+    image.setOrigin(assetConfig.originX, assetConfig.originY);
+    image.displayHeight = assetConfig.displayHeight;
     image.scaleX = image.scaleY;
     partContainer.add(image);
     return;
@@ -549,9 +611,13 @@ function drawPaperDollPart(graphics: Phaser.GameObjects.Graphics, key: PaperDoll
     return;
   }
 
-  if (key.endsWith("ForearmHand")) {
-    drawDollEllipse(graphics, 6 * side, 32, 28, 68, -0.06 * side, limbFill, outline, 1, 1, 4);
-    drawDollEllipse(graphics, 9 * side, 68, 29, 29, 0, limbFill, outline, 1, 1, 4);
+  if (key.endsWith("Forearm")) {
+    drawDollEllipse(graphics, 5 * side, 29, 27, 64, -0.06 * side, limbFill, outline, 1, 1, 4);
+    return;
+  }
+
+  if (key.endsWith("Hand")) {
+    drawDollEllipse(graphics, 4 * side, 12, 30, 30, 0, limbFill, outline, 1, 1, 4);
     return;
   }
 
