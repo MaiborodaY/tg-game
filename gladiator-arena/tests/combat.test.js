@@ -118,6 +118,19 @@ test("lunge cannot move a fighter past the opponent", () => {
   assert.ok(afterEnemyLunge.playerPosition <= afterEnemyLunge.enemyPosition);
 });
 
+test("damage depletes armor before health", () => {
+  const state = combat.freshState();
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.enemy.armor = 2;
+  state.enemy.maxArmor = 2;
+
+  const nextState = combat.resolvePlayerTurn(state, "light");
+
+  assert.equal(nextState.enemy.armor, 0);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 1);
+  assert.equal(nextState.lastPlayerDamage, combat.actions.light.damage);
+});
+
 test("enemy cannot damage the player from far away", () => {
   const state = combat.freshState();
 

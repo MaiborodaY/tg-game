@@ -22,6 +22,7 @@ export interface HeroBaseStats {
 
 export interface HeroStats {
   maxHp: number;
+  maxArmor: number;
   maxStamina: number;
   lightDamageBonus: number;
   mediumDamageBonus: number;
@@ -52,6 +53,7 @@ export interface HeroItemDefinition {
   name: string;
   kind: "weapon" | "armor";
   equipmentSlot: HeroEquipmentSlotKey;
+  armorHp?: number;
   statBonuses?: Partial<HeroBaseStats>;
 }
 
@@ -68,6 +70,19 @@ export interface BattleReward {
 export interface HeroItemPurchase {
   itemIds: HeroItemId[];
   price: number;
+}
+
+export interface EnemyVisualPreset {
+  skin: number;
+  skinDark: number;
+  hair: number;
+  muscle?: number;
+  usesDefaultBodyAssets: boolean;
+}
+
+export interface EnemyLoadout {
+  equipment: HeroEquipment;
+  visualPreset: EnemyVisualPreset;
 }
 
 export const DEFAULT_HERO_ID = "local-hero";
@@ -89,6 +104,7 @@ export const STARTER_FRONT_SHINGUARD_ID = "starter_front_shinguard";
 export const STARTER_BACK_BOOT_ID = "starter_back_boot";
 export const STARTER_FRONT_BOOT_ID = "starter_front_boot";
 export const STARTER_ARMOUR_ID = STARTER_BREASTPLATE_ID;
+export const STARTER_ARMOR_HP = 1;
 
 export const HERO_ITEM_IDS = [
   TRAINING_WEAPON_ID,
@@ -110,29 +126,142 @@ export type HeroItemId = (typeof HERO_ITEM_IDS)[number];
 
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
   [TRAINING_WEAPON_ID]: { id: TRAINING_WEAPON_ID, name: "Training Sword", kind: "weapon", equipmentSlot: "weaponMain" },
-  [STARTER_HELMET_ID]: { id: STARTER_HELMET_ID, name: "Starter Helmet", kind: "armor", equipmentSlot: "helmet" },
-  [STARTER_BREASTPLATE_ID]: { id: STARTER_BREASTPLATE_ID, name: "Starter Breastplate", kind: "armor", equipmentSlot: "breastplate" },
+  [STARTER_HELMET_ID]: { id: STARTER_HELMET_ID, name: "Starter Helmet", kind: "armor", equipmentSlot: "helmet", armorHp: STARTER_ARMOR_HP },
+  [STARTER_BREASTPLATE_ID]: {
+    id: STARTER_BREASTPLATE_ID,
+    name: "Starter Breastplate",
+    kind: "armor",
+    equipmentSlot: "breastplate",
+    armorHp: STARTER_ARMOR_HP,
+  },
   [STARTER_BACK_SHOULDERGUARD_ID]: {
     id: STARTER_BACK_SHOULDERGUARD_ID,
     name: "Starter Back Shoulderguard",
     kind: "armor",
     equipmentSlot: "backShoulderguard",
+    armorHp: STARTER_ARMOR_HP,
   },
   [STARTER_FRONT_SHOULDERGUARD_ID]: {
     id: STARTER_FRONT_SHOULDERGUARD_ID,
     name: "Starter Front Shoulderguard",
     kind: "armor",
     equipmentSlot: "frontShoulderguard",
+    armorHp: STARTER_ARMOR_HP,
   },
-  [STARTER_BACK_GAUNTLET_ID]: { id: STARTER_BACK_GAUNTLET_ID, name: "Starter Back Gauntlet", kind: "armor", equipmentSlot: "backGauntlet" },
-  [STARTER_FRONT_GAUNTLET_ID]: { id: STARTER_FRONT_GAUNTLET_ID, name: "Starter Front Gauntlet", kind: "armor", equipmentSlot: "frontGauntlet" },
-  [STARTER_BACK_GREAVE_ID]: { id: STARTER_BACK_GREAVE_ID, name: "Starter Back Greave", kind: "armor", equipmentSlot: "backGreave" },
-  [STARTER_FRONT_GREAVE_ID]: { id: STARTER_FRONT_GREAVE_ID, name: "Starter Front Greave", kind: "armor", equipmentSlot: "frontGreave" },
-  [STARTER_BACK_SHINGUARD_ID]: { id: STARTER_BACK_SHINGUARD_ID, name: "Starter Back Shinguard", kind: "armor", equipmentSlot: "backShinguard" },
-  [STARTER_FRONT_SHINGUARD_ID]: { id: STARTER_FRONT_SHINGUARD_ID, name: "Starter Front Shinguard", kind: "armor", equipmentSlot: "frontShinguard" },
-  [STARTER_BACK_BOOT_ID]: { id: STARTER_BACK_BOOT_ID, name: "Starter Back Boot", kind: "armor", equipmentSlot: "backBoot" },
-  [STARTER_FRONT_BOOT_ID]: { id: STARTER_FRONT_BOOT_ID, name: "Starter Front Boot", kind: "armor", equipmentSlot: "frontBoot" },
+  [STARTER_BACK_GAUNTLET_ID]: {
+    id: STARTER_BACK_GAUNTLET_ID,
+    name: "Starter Back Gauntlet",
+    kind: "armor",
+    equipmentSlot: "backGauntlet",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [STARTER_FRONT_GAUNTLET_ID]: {
+    id: STARTER_FRONT_GAUNTLET_ID,
+    name: "Starter Front Gauntlet",
+    kind: "armor",
+    equipmentSlot: "frontGauntlet",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [STARTER_BACK_GREAVE_ID]: {
+    id: STARTER_BACK_GREAVE_ID,
+    name: "Starter Back Greave",
+    kind: "armor",
+    equipmentSlot: "backGreave",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [STARTER_FRONT_GREAVE_ID]: {
+    id: STARTER_FRONT_GREAVE_ID,
+    name: "Starter Front Greave",
+    kind: "armor",
+    equipmentSlot: "frontGreave",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [STARTER_BACK_SHINGUARD_ID]: {
+    id: STARTER_BACK_SHINGUARD_ID,
+    name: "Starter Back Shinguard",
+    kind: "armor",
+    equipmentSlot: "backShinguard",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [STARTER_FRONT_SHINGUARD_ID]: {
+    id: STARTER_FRONT_SHINGUARD_ID,
+    name: "Starter Front Shinguard",
+    kind: "armor",
+    equipmentSlot: "frontShinguard",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [STARTER_BACK_BOOT_ID]: { id: STARTER_BACK_BOOT_ID, name: "Starter Back Boot", kind: "armor", equipmentSlot: "backBoot", armorHp: STARTER_ARMOR_HP },
+  [STARTER_FRONT_BOOT_ID]: {
+    id: STARTER_FRONT_BOOT_ID,
+    name: "Starter Front Boot",
+    kind: "armor",
+    equipmentSlot: "frontBoot",
+    armorHp: STARTER_ARMOR_HP,
+  },
 };
+
+export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
+  skin: 0xd48f62,
+  skinDark: 0xac673d,
+  hair: 0x2f251a,
+  muscle: 0x7a4328,
+  usesDefaultBodyAssets: false,
+};
+
+export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [
+  DEFAULT_ENEMY_VISUAL_PRESET,
+  {
+    skin: 0xefaa7b,
+    skinDark: 0xd9854d,
+    hair: 0x8b4a1f,
+    muscle: 0x9b5a35,
+    usesDefaultBodyAssets: true,
+  },
+];
+
+const ENEMY_ARMOR_GROUPS: Array<Array<[HeroEquipmentSlotKey, HeroItemId]>> = [
+  [["helmet", STARTER_HELMET_ID]],
+  [["breastplate", STARTER_BREASTPLATE_ID]],
+  [
+    ["backShoulderguard", STARTER_BACK_SHOULDERGUARD_ID],
+    ["frontShoulderguard", STARTER_FRONT_SHOULDERGUARD_ID],
+  ],
+  [
+    ["backGauntlet", STARTER_BACK_GAUNTLET_ID],
+    ["frontGauntlet", STARTER_FRONT_GAUNTLET_ID],
+  ],
+  [
+    ["backGreave", STARTER_BACK_GREAVE_ID],
+    ["frontGreave", STARTER_FRONT_GREAVE_ID],
+  ],
+  [
+    ["backShinguard", STARTER_BACK_SHINGUARD_ID],
+    ["frontShinguard", STARTER_FRONT_SHINGUARD_ID],
+  ],
+  [
+    ["backBoot", STARTER_BACK_BOOT_ID],
+    ["frontBoot", STARTER_FRONT_BOOT_ID],
+  ],
+];
+
+export function createRandomEnemyLoadout(random = Math.random): EnemyLoadout {
+  const equipment = createDefaultHeroEquipment();
+
+  ENEMY_ARMOR_GROUPS.forEach((group) => {
+    if (random() >= 0.52) {
+      return;
+    }
+
+    group.forEach(([slotKey, itemId]) => {
+      equipment[slotKey] = itemId;
+    });
+  });
+
+  return {
+    equipment,
+    visualPreset: pickRandom(ENEMY_VISUAL_PRESETS, random),
+  };
+}
 
 export function createDefaultHeroEquipment(): HeroEquipment {
   return Object.fromEntries(HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])) as HeroEquipment;
@@ -186,12 +315,14 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
 
 export function deriveHeroStats(hero: HeroState): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
+  const armorBonus = getHeroEquipmentArmor(hero.equipment);
   const strengthBonus = Math.max(0, hero.baseStats.strength + equipmentBonuses.strength - 1);
   const enduranceBonus = Math.max(0, hero.baseStats.endurance + equipmentBonuses.endurance - 1);
   const agilityBonus = Math.max(0, hero.baseStats.agility + equipmentBonuses.agility - 1);
 
   return {
     maxHp: MAX_HP + enduranceBonus * 4,
+    maxArmor: armorBonus,
     maxStamina: MAX_STAMINA + agilityBonus,
     lightDamageBonus: Math.floor(strengthBonus / 2),
     mediumDamageBonus: strengthBonus,
@@ -219,8 +350,14 @@ export function getHeroEquipmentStatBonuses(equipment: HeroEquipment): HeroBaseS
   );
 }
 
+export function getHeroEquipmentArmor(equipment: HeroEquipment): number {
+  return getEquippedHeroItems(equipment).reduce((armor, item) => armor + (item.armorHp ?? 0), 0);
+}
+
 export function createCombatStateFromHero(hero: HeroState): CombatState {
   const stats = deriveHeroStats(hero);
+  const enemyLoadout = createRandomEnemyLoadout();
+  const enemyArmor = getHeroEquipmentArmor(enemyLoadout.equipment);
   const state = freshState();
 
   return {
@@ -230,8 +367,18 @@ export function createCombatStateFromHero(hero: HeroState): CombatState {
       name: hero.name,
       hp: stats.maxHp,
       maxHp: stats.maxHp,
+      armor: stats.maxArmor,
+      maxArmor: stats.maxArmor,
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
+      equipment: { ...hero.equipment },
+    },
+    enemy: {
+      ...state.enemy,
+      armor: enemyArmor,
+      maxArmor: enemyArmor,
+      equipment: { ...enemyLoadout.equipment },
+      visualPreset: { ...enemyLoadout.visualPreset },
     },
     log: [
       { text: `The gate slams open. ${hero.name} and ${state.enemy.name} enter the sand.`, important: true },
@@ -315,4 +462,12 @@ function applyHeroXp(level: number, xp: number, xpToNextLevel: number): Pick<Her
     xp: nextXp,
     xpToNextLevel: nextXpToNextLevel,
   };
+}
+
+function pickRandom<T>(items: readonly T[], random: () => number): T {
+  if (items.length === 0) {
+    throw new Error("Cannot pick a random item from an empty list.");
+  }
+
+  return items[Math.floor(random() * items.length)] ?? items[0]!;
 }

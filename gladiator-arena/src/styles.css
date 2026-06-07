@@ -379,6 +379,12 @@ h1 {
     linear-gradient(180deg, #ff5750, #b81416 58%, #78100d);
 }
 
+.flask--armor .flask-fill {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(244, 250, 255, 0.76) 0 8px, transparent 9px),
+    linear-gradient(180deg, #c7d8e8, #59748d 58%, #263949);
+}
+
 .flask--stamina .flask-fill {
   background:
     radial-gradient(circle at 30% 20%, rgba(236, 255, 233, 0.74) 0 8px, transparent 9px),

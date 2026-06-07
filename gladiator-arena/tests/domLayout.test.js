@@ -27,9 +27,23 @@ test("bottom action panel is removed", () => {
 test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(html.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
   assert.equal(html.includes('class="resource-flask flask--hp"'), true);
+  assert.equal(html.includes('class="resource-flask flask--armor"'), true);
   assert.equal(html.includes('class="resource-flask flask--stamina"'), true);
 
-  for (const id of ["playerHpText", "playerStaText", "playerHpFill", "playerStaFill", "enemyHpText", "enemyStaText", "enemyHpFill", "enemyStaFill"]) {
+  for (const id of [
+    "playerHpText",
+    "playerArmorText",
+    "playerStaText",
+    "playerHpFill",
+    "playerArmorFill",
+    "playerStaFill",
+    "enemyHpText",
+    "enemyArmorText",
+    "enemyStaText",
+    "enemyHpFill",
+    "enemyArmorFill",
+    "enemyStaFill",
+  ]) {
     assert.equal(html.includes(`id="${id}"`), true, `${id} should remain available for combat rendering`);
   }
 });

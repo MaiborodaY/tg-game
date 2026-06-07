@@ -26,6 +26,7 @@ test("debug app mounts the same arena with a separate tuning host", () => {
 test("debug preview uses the same flask resource HUD as the game", () => {
   assert.equal(debugHtml.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
   assert.equal(debugHtml.includes('class="resource-flask flask--hp"'), true);
+  assert.equal(debugHtml.includes('class="resource-flask flask--armor"'), true);
   assert.equal(debugHtml.includes('class="resource-flask flask--stamina"'), true);
 });
 

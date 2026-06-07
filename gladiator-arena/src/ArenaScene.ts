@@ -69,21 +69,11 @@ import {
   PLAYER_AVATAR_FEET_Y_OFFSET,
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
-import { getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
+import { getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
 import {
+  createDefaultHeroEquipment,
+  DEFAULT_ENEMY_VISUAL_PRESET,
   HERO_EQUIPMENT_SLOT_KEYS,
-  STARTER_BACK_BOOT_ID,
-  STARTER_BACK_GAUNTLET_ID,
-  STARTER_BACK_GREAVE_ID,
-  STARTER_BACK_SHINGUARD_ID,
-  STARTER_BACK_SHOULDERGUARD_ID,
-  STARTER_BREASTPLATE_ID,
-  STARTER_FRONT_BOOT_ID,
-  STARTER_FRONT_GAUNTLET_ID,
-  STARTER_FRONT_GREAVE_ID,
-  STARTER_FRONT_SHINGUARD_ID,
-  STARTER_FRONT_SHOULDERGUARD_ID,
-  STARTER_HELMET_ID,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -250,6 +240,7 @@ type PaperDollEquipmentAssetKey = keyof PaperDollEquipmentAssetKeys;
 
 interface HudVisual {
   hpFill: Phaser.GameObjects.Rectangle;
+  armorFill: Phaser.GameObjects.Rectangle;
   staminaFill: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
 }
@@ -399,56 +390,6 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
 };
 
 const PAPER_DOLL_EQUIPMENT_SLOT_KEYS = HERO_EQUIPMENT_SLOT_KEYS;
-
-const ENEMY_ARMOR_GROUPS: Array<Array<[PaperDollEquipmentSlotKey, HeroItemId]>> = [
-  [["helmet", STARTER_HELMET_ID]],
-  [["breastplate", STARTER_BREASTPLATE_ID]],
-  [
-    ["backShoulderguard", STARTER_BACK_SHOULDERGUARD_ID],
-    ["frontShoulderguard", STARTER_FRONT_SHOULDERGUARD_ID],
-  ],
-  [
-    ["backGauntlet", STARTER_BACK_GAUNTLET_ID],
-    ["frontGauntlet", STARTER_FRONT_GAUNTLET_ID],
-  ],
-  [
-    ["backGreave", STARTER_BACK_GREAVE_ID],
-    ["frontGreave", STARTER_FRONT_GREAVE_ID],
-  ],
-  [
-    ["backShinguard", STARTER_BACK_SHINGUARD_ID],
-    ["frontShinguard", STARTER_FRONT_SHINGUARD_ID],
-  ],
-  [
-    ["backBoot", STARTER_BACK_BOOT_ID],
-    ["frontBoot", STARTER_FRONT_BOOT_ID],
-  ],
-];
-
-interface EnemyVisualPreset {
-  skin: number;
-  skinDark: number;
-  hair: number;
-  muscle?: number;
-  usesDefaultBodyAssets: boolean;
-}
-
-const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [
-  {
-    skin: 0xd48f62,
-    skinDark: 0xac673d,
-    hair: 0x2f251a,
-    muscle: 0x7a4328,
-    usesDefaultBodyAssets: false,
-  },
-  {
-    skin: 0xefaa7b,
-    skinDark: 0xd9854d,
-    hair: 0x8b4a1f,
-    muscle: 0x9b5a35,
-    usesDefaultBodyAssets: true,
-  },
-];
 
 const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, PaperDollEquipmentAssetKey> = {
   weaponMain: "weaponMainAssetKey",
@@ -640,7 +581,7 @@ export class ArenaScene extends Phaser.Scene {
       return;
     }
 
-    randomizeEnemyVisualForFreshBattle(this, this.visuals, previousState, nextState);
+    syncEnemyVisualForState(this, this.visuals, previousState, nextState);
     resetDeathEffectsForLiveFighters(this, this.visuals, nextState);
     renderScene(this, nextState);
 
@@ -1038,9 +979,9 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
   };
 }
 
-function createRandomEnemyPaperDollOptions(x: number, y: number): PaperDollFighterOptions {
-  const preset = pickRandom(ENEMY_VISUAL_PRESETS);
-  const equipment = createRandomEnemyEquipment();
+function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState): PaperDollFighterOptions {
+  const preset = enemy?.visualPreset ?? DEFAULT_ENEMY_VISUAL_PRESET;
+  const equipment = enemy?.equipment ? { ...enemy.equipment } : createDefaultHeroEquipment();
   const assetOptions = preset.usesDefaultBodyAssets
     ? {
         headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
@@ -1052,7 +993,7 @@ function createRandomEnemyPaperDollOptions(x: number, y: number): PaperDollFight
   return {
     x,
     y,
-    label: "GRUMBUS",
+    label: enemy?.name.toUpperCase() ?? "GRUMBUS",
     facing: -1,
     skin: preset.skin,
     skinDark: preset.skinDark,
@@ -1064,46 +1005,24 @@ function createRandomEnemyPaperDollOptions(x: number, y: number): PaperDollFight
   };
 }
 
-function createRandomEnemyEquipment(): HeroEquipment {
-  const equipment = createEmptyEquipment();
-
-  ENEMY_ARMOR_GROUPS.forEach((group) => {
-    if (Math.random() >= 0.52) {
-      return;
-    }
-
-    group.forEach(([slotKey, itemId]) => {
-      equipment[slotKey] = itemId;
-    });
-  });
-
-  return equipment;
-}
-
-function createEmptyEquipment(): HeroEquipment {
-  return Object.fromEntries(PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])) as HeroEquipment;
-}
-
-function pickRandom<T>(items: readonly T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
-}
-
 function buildVisuals(target: ArenaScene): ArenaVisuals {
   const player = createPaperDollFighter(target, createPlayerPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y));
-  const enemy = createPaperDollFighter(target, createRandomEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y));
+  const enemy = createPaperDollFighter(target, createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y));
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
   return { player, enemy, playerHud, enemyHud };
 }
 
 function createHud(target: Phaser.Scene, x: number, y: number, label: string): HudVisual {
-  const panel = target.add.rectangle(x + 150, y + 34, 300, 74, 0xf1dca2).setStrokeStyle(4, 0x35180d);
+  const panel = target.add.rectangle(x + 150, y + 46, 300, 96, 0xf1dca2).setStrokeStyle(4, 0x35180d);
   const hpTrack = target.add.rectangle(x + 150, y + 25, 230, 18, 0x35180d);
-  const staminaTrack = target.add.rectangle(x + 150, y + 51, 230, 18, 0x35180d);
+  const armorTrack = target.add.rectangle(x + 150, y + 51, 230, 18, 0x35180d);
+  const staminaTrack = target.add.rectangle(x + 150, y + 77, 230, 18, 0x35180d);
   const hpFill = target.add.rectangle(x + 35, y + 25, 226, 14, 0xc32a2a).setOrigin(0, 0.5);
-  const staminaFill = target.add.rectangle(x + 35, y + 51, 226, 14, 0x43b5ab).setOrigin(0, 0.5);
+  const armorFill = target.add.rectangle(x + 35, y + 51, 226, 14, 0x6e879c).setOrigin(0, 0.5);
+  const staminaFill = target.add.rectangle(x + 35, y + 77, 226, 14, 0x43b5ab).setOrigin(0, 0.5);
   const text = target.add
-    .text(x + 150, y + 82, "", {
+    .text(x + 150, y + 108, "", {
       color: "#35180d",
       fontFamily: "Georgia",
       fontSize: "16px",
@@ -1120,9 +1039,9 @@ function createHud(target: Phaser.Scene, x: number, y: number, label: string): H
     })
     .setOrigin(0.5);
 
-  [panel, hpTrack, staminaTrack, hpFill, staminaFill, text, name].forEach((part) => part.setVisible(false));
+  [panel, hpTrack, armorTrack, staminaTrack, hpFill, armorFill, staminaFill, text, name].forEach((part) => part.setVisible(false));
 
-  return { hpFill, staminaFill, label: text };
+  return { hpFill, armorFill, staminaFill, label: text };
 }
 
 function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterOptions): FighterVisual {
@@ -2244,40 +2163,31 @@ function resetDeathEffectsForLiveFighters(target: ArenaScene, visuals: ArenaVisu
   }
 }
 
-function randomizeEnemyVisualForFreshBattle(
+function syncEnemyVisualForState(
   target: ArenaScene,
   visuals: ArenaVisuals,
   previous: CombatState | undefined,
   current: CombatState,
 ): void {
-  if (!shouldRandomizeEnemyVisual(previous, current)) {
+  const previousLoadoutKey = previous ? getFighterLoadoutKey(previous.enemy) : undefined;
+  const currentLoadoutKey = getFighterLoadoutKey(current.enemy);
+
+  if (previousLoadoutKey === currentLoadoutKey) {
     return;
   }
 
   destroyFighterVisual(target, visuals.enemy);
-  visuals.enemy = createPaperDollFighter(target, createRandomEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y));
+  visuals.enemy = createPaperDollFighter(
+    target,
+    createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y, current.enemy),
+  );
 }
 
-function shouldRandomizeEnemyVisual(previous: CombatState | undefined, current: CombatState): boolean {
-  if (!previous || current.result !== "playing") {
-    return false;
-  }
-
-  const isFreshBattle =
-    current.round === 1 &&
-    current.player.hp === getFighterMaxHp(current.player) &&
-    current.enemy.hp === getFighterMaxHp(current.enemy);
-
-  if (!isFreshBattle) {
-    return false;
-  }
-
-  return (
-    previous.result !== "playing" ||
-    previous.round > current.round ||
-    previous.player.hp < getFighterMaxHp(previous.player) ||
-    previous.enemy.hp < getFighterMaxHp(previous.enemy)
-  );
+function getFighterLoadoutKey(fighter: FighterState): string {
+  return JSON.stringify({
+    equipment: fighter.equipment ?? null,
+    visualPreset: fighter.visualPreset ?? null,
+  });
 }
 
 function destroyFighterVisual(target: Phaser.Scene, fighter: FighterVisual): void {
@@ -2394,11 +2304,13 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
 
 function setHud(hud: HudVisual, fighter: FighterState): void {
   const maxHp = getFighterMaxHp(fighter);
+  const maxArmor = getFighterMaxArmor(fighter);
   const maxStamina = getFighterMaxStamina(fighter);
 
   hud.hpFill.displayWidth = 226 * (fighter.hp / maxHp);
+  hud.armorFill.displayWidth = maxArmor > 0 ? 226 * (fighter.armor / maxArmor) : 0;
   hud.staminaFill.displayWidth = 226 * (fighter.stamina / maxStamina);
-  hud.label.setText(`HP ${fighter.hp}/${maxHp}  STA ${fighter.stamina}/${maxStamina}`);
+  hud.label.setText(`HP ${fighter.hp}/${maxHp}  ARM ${fighter.armor}/${maxArmor}  STA ${fighter.stamina}/${maxStamina}`);
 }
 
 function setFighterAlpha(fighter: FighterVisual, alpha: number): void {

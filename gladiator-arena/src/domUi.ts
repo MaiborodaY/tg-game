@@ -1,4 +1,4 @@
-import { distanceLabel, getFighterMaxHp, getFighterMaxStamina, type CombatState, type Result } from "./combat";
+import { distanceLabel, getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type CombatState, type Result } from "./combat";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -13,12 +13,16 @@ export interface DomRefs {
   turnBadge: HTMLElement;
   distanceText: HTMLElement;
   playerHpFill: HTMLElement;
+  playerArmorFill: HTMLElement;
   playerStaFill: HTMLElement;
   playerHpText: HTMLElement;
+  playerArmorText: HTMLElement;
   playerStaText: HTMLElement;
   enemyHpFill: HTMLElement;
+  enemyArmorFill: HTMLElement;
   enemyStaFill: HTMLElement;
   enemyHpText: HTMLElement;
+  enemyArmorText: HTMLElement;
   enemyStaText: HTMLElement;
 }
 
@@ -36,12 +40,16 @@ export function getDomRefs(): DomRefs {
     turnBadge: document.querySelector<HTMLElement>("#turnBadge"),
     distanceText: document.querySelector<HTMLElement>("#distanceText"),
     playerHpFill: document.querySelector<HTMLElement>("#playerHpFill"),
+    playerArmorFill: document.querySelector<HTMLElement>("#playerArmorFill"),
     playerStaFill: document.querySelector<HTMLElement>("#playerStaFill"),
     playerHpText: document.querySelector<HTMLElement>("#playerHpText"),
+    playerArmorText: document.querySelector<HTMLElement>("#playerArmorText"),
     playerStaText: document.querySelector<HTMLElement>("#playerStaText"),
     enemyHpFill: document.querySelector<HTMLElement>("#enemyHpFill"),
+    enemyArmorFill: document.querySelector<HTMLElement>("#enemyArmorFill"),
     enemyStaFill: document.querySelector<HTMLElement>("#enemyStaFill"),
     enemyHpText: document.querySelector<HTMLElement>("#enemyHpText"),
+    enemyArmorText: document.querySelector<HTMLElement>("#enemyArmorText"),
     enemyStaText: document.querySelector<HTMLElement>("#enemyStaText"),
   };
 
@@ -66,18 +74,24 @@ export function renderDom(dom: DomRefs, state: CombatState): void {
 
 function renderStats(dom: DomRefs, state: CombatState): void {
   const playerMaxHp = getFighterMaxHp(state.player);
+  const playerMaxArmor = getFighterMaxArmor(state.player);
   const playerMaxStamina = getFighterMaxStamina(state.player);
   const enemyMaxHp = getFighterMaxHp(state.enemy);
+  const enemyMaxArmor = getFighterMaxArmor(state.enemy);
   const enemyMaxStamina = getFighterMaxStamina(state.enemy);
 
   dom.playerHpText.textContent = `${state.player.hp}/${playerMaxHp}`;
+  dom.playerArmorText.textContent = `${state.player.armor}/${playerMaxArmor}`;
   dom.playerStaText.textContent = `${state.player.stamina}/${playerMaxStamina}`;
   dom.enemyHpText.textContent = `${state.enemy.hp}/${enemyMaxHp}`;
+  dom.enemyArmorText.textContent = `${state.enemy.armor}/${enemyMaxArmor}`;
   dom.enemyStaText.textContent = `${state.enemy.stamina}/${enemyMaxStamina}`;
 
   setFlaskFill(dom.playerHpFill, state.player.hp / playerMaxHp);
+  setFlaskFill(dom.playerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
   setFlaskFill(dom.playerStaFill, state.player.stamina / playerMaxStamina);
   setFlaskFill(dom.enemyHpFill, state.enemy.hp / enemyMaxHp);
+  setFlaskFill(dom.enemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
   setFlaskFill(dom.enemyStaFill, state.enemy.stamina / enemyMaxStamina);
 }
 

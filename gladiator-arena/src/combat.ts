@@ -1,3 +1,5 @@
+import type { EnemyVisualPreset, HeroEquipment } from "./hero";
+
 export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "block" | "taunt" | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
@@ -20,8 +22,12 @@ export interface FighterState {
   name: string;
   hp: number;
   maxHp: number;
+  armor: number;
+  maxArmor: number;
   stamina: number;
   maxStamina: number;
+  equipment?: HeroEquipment;
+  visualPreset?: EnemyVisualPreset;
 }
 
 export interface LogEntry {
@@ -134,8 +140,8 @@ export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "me
 
 export function freshState(): CombatState {
   return {
-    player: { name: "Borshemir", hp: MAX_HP, maxHp: MAX_HP, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
-    enemy: { name: "Grumbus", hp: MAX_HP, maxHp: MAX_HP, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
+    player: { name: "Borshemir", hp: MAX_HP, maxHp: MAX_HP, armor: 0, maxArmor: 0, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
+    enemy: { name: "Grumbus", hp: MAX_HP, maxHp: MAX_HP, armor: 0, maxArmor: 0, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
     round: 1,
     score: 0,
     result: "playing",
@@ -158,6 +164,10 @@ export function freshState(): CombatState {
 
 export function getFighterMaxHp(fighter: FighterState): number {
   return Math.max(1, fighter.maxHp);
+}
+
+export function getFighterMaxArmor(fighter: FighterState): number {
+  return Math.max(0, fighter.maxArmor ?? 0);
 }
 
 export function getFighterMaxStamina(fighter: FighterState): number {
@@ -265,13 +275,21 @@ export function resolveEnemyTurn(current: CombatState): CombatState {
 function cloneStateForTurn(current: CombatState): CombatState {
   return {
     ...current,
-    player: { ...current.player },
-    enemy: { ...current.enemy },
+    player: cloneFighterState(current.player),
+    enemy: cloneFighterState(current.enemy),
     log: [...current.log],
     lastPlayerAction: undefined,
     lastEnemyAction: undefined,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
+  };
+}
+
+function cloneFighterState(fighter: FighterState): FighterState {
+  return {
+    ...fighter,
+    equipment: fighter.equipment ? { ...fighter.equipment } : undefined,
+    visualPreset: fighter.visualPreset ? { ...fighter.visualPreset } : undefined,
   };
 }
 
@@ -351,7 +369,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
 
   if (damage > 0) {
     damage = applyDefensiveStatuses(state, actor, damage);
-    defender.hp = clamp(defender.hp - damage, 0, getFighterMaxHp(defender));
+    applyDamageToFighter(defender, damage);
   } else {
     clearIncomingBonus(state, actor === "player" ? "enemy" : "player");
   }
@@ -373,6 +391,23 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
+  }
+}
+
+function applyDamageToFighter(defender: FighterState, damage: number): void {
+  let remainingDamage = Math.max(0, damage);
+
+  if (remainingDamage <= 0) {
+    return;
+  }
+
+  const currentArmor = Math.max(0, defender.armor ?? 0);
+  const armorDamage = Math.min(currentArmor, remainingDamage);
+  defender.armor = clamp(currentArmor - armorDamage, 0, getFighterMaxArmor(defender));
+  remainingDamage -= armorDamage;
+
+  if (remainingDamage > 0) {
+    defender.hp = clamp(defender.hp - remainingDamage, 0, getFighterMaxHp(defender));
   }
 }
 
