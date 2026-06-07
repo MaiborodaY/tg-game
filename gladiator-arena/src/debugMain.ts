@@ -115,10 +115,10 @@ function startDebugApp(): void {
   dom.mainMenu.hidden = false;
   dom.gameScreen.hidden = false;
   if (debugCharacterViewer) {
-    mountDebugCharacterViewer(debugCharacterViewer);
+    mountDebugCharacterViewer(debugCharacterViewer, hero.equipment);
   }
   if (cityHero) {
-    mountCityHeroPreview(cityHero);
+    mountCityHeroPreview(cityHero, hero.equipment);
   }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen);
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
@@ -136,7 +136,7 @@ function startDebugApp(): void {
       arenaScene = scene;
       arenaScene.sync(state);
       refreshArenaLayout();
-    }, handleAction);
+    }, handleAction, hero.equipment);
   });
 }
 

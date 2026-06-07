@@ -70,6 +70,7 @@ import {
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
+import type { HeroEquipment, HeroItemId } from "./hero";
 import {
   beginDebugUndoGroup,
   debugTuning,
@@ -203,6 +204,23 @@ interface PaperDollFighterOptions {
   weaponMainAssetKey?: string;
 }
 
+type PaperDollEquipmentAssetKeys = Pick<
+  PaperDollFighterOptions,
+  | "weaponMainAssetKey"
+  | "helmetAssetKey"
+  | "breastplateAssetKey"
+  | "backShoulderguardAssetKey"
+  | "frontShoulderguardAssetKey"
+  | "backGauntletAssetKey"
+  | "frontGauntletAssetKey"
+  | "backGreaveAssetKey"
+  | "frontGreaveAssetKey"
+  | "backShinguardAssetKey"
+  | "frontShinguardAssetKey"
+  | "backBootAssetKey"
+  | "frontBootAssetKey"
+>;
+
 interface HudVisual {
   hpFill: Phaser.GameObjects.Rectangle;
   staminaFill: Phaser.GameObjects.Rectangle;
@@ -318,8 +336,40 @@ const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollP
   frontFoot: { displayHeight: 34, localX: 14, localY: 8, originX: 386 / 772, originY: 194 / 388 },
 };
 
+const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
+  weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
+  helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY,
+  breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
+  backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
+  frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
+  backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
+  frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+  backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
+  frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
+  backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
+  frontShinguardAssetKey: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
+  backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
+  frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
+};
+
+const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipmentAssetKeys>> = {
+  training_sword: { weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY },
+  starter_helmet: { helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY },
+  starter_breastplate: { breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY },
+  starter_back_shoulderguard: { backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY },
+  starter_front_shoulderguard: { frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY },
+  starter_back_gauntlet: { backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY },
+  starter_front_gauntlet: { frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY },
+  starter_back_greave: { backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY },
+  starter_front_greave: { frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY },
+  starter_back_shinguard: { backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY },
+  starter_front_shinguard: { frontShinguardAssetKey: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY },
+  starter_back_boot: { backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY },
+  starter_front_boot: { frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY },
+};
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
+let activePlayerEquipment: HeroEquipment | undefined;
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -354,6 +404,32 @@ function preloadPaperDollAssets(target: Phaser.Scene): void {
   target.load.image(FIGHTER_WEAPON_SWORD_01_ASSET_KEY, FIGHTER_WEAPON_SWORD_01_ASSET_URL);
   target.load.image(FIGHTER_HELMET_LIGHT_ASSET_KEY, FIGHTER_HELMET_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY, FIGHTER_BREASTPLATE_LIGHT_ASSET_URL);
+}
+
+export function setPlayerEquipment(equipment: HeroEquipment): void {
+  activePlayerEquipment = { ...equipment };
+}
+
+function usePlayerEquipment(equipment: HeroEquipment | undefined): void {
+  if (equipment) {
+    setPlayerEquipment(equipment);
+  }
+}
+
+function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): PaperDollEquipmentAssetKeys {
+  if (!equipment) {
+    return { ...DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS };
+  }
+
+  return Object.values(equipment).reduce((assetKeys, itemId) => {
+    if (!itemId) {
+      return assetKeys;
+    }
+
+    const itemAssetKeys = HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId];
+
+    return itemAssetKeys ? { ...assetKeys, ...itemAssetKeys } : assetKeys;
+  }, {} as PaperDollEquipmentAssetKeys);
 }
 
 export class ArenaScene extends Phaser.Scene {
@@ -423,8 +499,9 @@ export class ArenaScene extends Phaser.Scene {
 
 }
 
-export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void): void {
+export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void, playerEquipment?: HeroEquipment): void {
   void _onAction;
+  usePlayerEquipment(playerEquipment);
   readyCallback = onReady;
 
   const config: Phaser.Types.Core.GameConfig = {
@@ -491,7 +568,9 @@ class CityHeroScene extends Phaser.Scene {
   }
 }
 
-export function mountCityHeroPreview(parent: HTMLElement): () => void {
+export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): () => void {
+  usePlayerEquipment(playerEquipment);
+
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
@@ -654,7 +733,9 @@ class DebugCharacterScene extends Phaser.Scene {
   }
 }
 
-export function mountDebugCharacterViewer(parent: HTMLElement): () => void {
+export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?: HeroEquipment): () => void {
+  usePlayerEquipment(playerEquipment);
+
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
@@ -731,7 +812,9 @@ function drawArena(target: Phaser.Scene): void {
     .setOrigin(0.5);
 }
 
-function createPlayerPaperDollOptions(x: number, y: number): PaperDollFighterOptions {
+function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment): PaperDollFighterOptions {
+  const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipment);
+
   return {
     x,
     y,
@@ -742,19 +825,7 @@ function createPlayerPaperDollOptions(x: number, y: number): PaperDollFighterOpt
     hair: 0x8b4a1f,
     headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
     torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
-    helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY,
-    breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
-    backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
-    frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-    backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
-    frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
-    backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
-    frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
-    backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
-    frontShinguardAssetKey: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
-    backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
-    frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
-    weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
+    ...equipmentAssetKeys,
     bodyPartAssetKeys: {
       backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
       backForearm: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,

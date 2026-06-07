@@ -170,7 +170,7 @@ function startGame(): void {
       arenaScene = scene;
       arenaScene.sync(state);
       refreshArenaLayout();
-    }, handleAction);
+    }, handleAction, hero.equipment);
   });
 }
 
@@ -204,6 +204,6 @@ dom.startButton.addEventListener("click", startGame);
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
 if (cityHero) {
-  mountCityHeroPreview(cityHero);
+  mountCityHeroPreview(cityHero, hero.equipment);
 }
 renderDom(dom, state);
