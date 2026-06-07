@@ -98,6 +98,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
   let selectedCategoryId: string | undefined;
+  let unmountPreview: (() => void) | undefined;
 
   const shop = document.createElement("section");
   shop.className = "armory-shop";
@@ -148,11 +149,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   panel.append(previewShell, menu);
   shop.append(panel);
   root.append(shop);
-  options.mountPreview(preview);
 
   function open(): void {
     selectedCategoryId = undefined;
     shop.hidden = false;
+    ensurePreviewMounted();
     render();
   }
 
@@ -180,6 +181,14 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     selectedCategory.products.forEach((product) => {
       content.append(createProductButton(product, hero));
     });
+  }
+
+  function ensurePreviewMounted(): void {
+    if (unmountPreview) {
+      return;
+    }
+
+    unmountPreview = options.mountPreview(preview);
   }
 
   function createCategoryButton(category: ArmoryCategory): HTMLButtonElement {

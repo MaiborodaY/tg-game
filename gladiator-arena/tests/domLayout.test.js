@@ -44,5 +44,5 @@ test("arena background is mounted as the battle screen backdrop", () => {
   assert.ok(backgroundIndex > gameScreenIndex, "stage background should be inside the battle screen");
   assert.ok(backgroundIndex < topHudIndex, "stage background should be the first battle screen layer");
   assert.ok(backgroundIndex < gameFrameIndex, "stage background should not be nested inside the Phaser frame");
-  assert.equal(html.includes('src="./assets/arena/arena-bg-01.png"'), true);
+  assert.equal(html.includes('src="./assets/arena/arena-bg-01.webp"'), true);
 });

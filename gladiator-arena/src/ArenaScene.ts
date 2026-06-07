@@ -491,8 +491,11 @@ function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
 }
 
-function preloadPaperDollAssets(target: Phaser.Scene): void {
+function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(ARENA_BACKGROUND_ASSET_KEY, ARENA_BACKGROUND_ASSET_URL);
+}
+
+function preloadPaperDollAssets(target: Phaser.Scene): void {
   target.load.image(FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY, FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_HAND_LIGHT_ASSET_KEY, FIGHTER_BACK_HAND_LIGHT_ASSET_URL);
@@ -697,6 +700,7 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   preload(): void {
+    preloadArenaAssets(this);
     preloadPaperDollAssets(this);
   }
 

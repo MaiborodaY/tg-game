@@ -48,6 +48,7 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {
   let selectedCategoryId: string | undefined;
+  let unmountPreview: (() => void) | undefined;
 
   const shop = document.createElement("section");
   shop.className = "armory-shop weapon-shop";
@@ -98,11 +99,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   panel.append(previewShell, menu);
   shop.append(panel);
   root.append(shop);
-  options.mountPreview(preview);
 
   function open(): void {
     selectedCategoryId = undefined;
     shop.hidden = false;
+    ensurePreviewMounted();
     render();
   }
 
@@ -135,6 +136,14 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     selectedCategory.products.forEach((product) => {
       content.append(createProductButton(product, hero));
     });
+  }
+
+  function ensurePreviewMounted(): void {
+    if (unmountPreview) {
+      return;
+    }
+
+    unmountPreview = options.mountPreview(preview);
   }
 
   function createCategoryButton(category: WeaponCategory): HTMLButtonElement {
