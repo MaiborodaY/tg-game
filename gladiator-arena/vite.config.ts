@@ -52,6 +52,11 @@ const debugTuningDefaultFields = {
   heroPortraitButtonX: "heroPortraitButtonX",
   heroPortraitButtonY: "heroPortraitButtonY",
   heroPortraitButtonScale: "heroPortraitButtonScale",
+  shadowOffsetX: "shadowOffsetX",
+  shadowOffsetY: "shadowOffsetY",
+  shadowScaleX: "shadowScaleX",
+  shadowScaleY: "shadowScaleY",
+  shadowAlpha: "shadowAlpha",
 } as const;
 
 type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;

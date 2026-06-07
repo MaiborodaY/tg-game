@@ -167,6 +167,16 @@ const controlGroups: DebugControlGroup[] = [
     ],
   },
   {
+    title: "Fighter shadow",
+    controls: [
+      { type: "range", key: "shadowOffsetX", label: "Shadow X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetX },
+      { type: "range", key: "shadowOffsetY", label: "Shadow Y", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetY },
+      { type: "range", key: "shadowScaleX", label: "Shadow scale X", min: -4, max: 4, step: 0.01, resetValue: defaultDebugTuning.shadowScaleX },
+      { type: "range", key: "shadowScaleY", label: "Shadow scale Y", min: -1, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowScaleY },
+      { type: "range", key: "shadowAlpha", label: "Shadow alpha", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowAlpha },
+    ],
+  },
+  {
     title: "Action arc",
     controls: [
       { type: "range", key: "actionArcRotation", label: "Arc rotation", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionArcRotation },

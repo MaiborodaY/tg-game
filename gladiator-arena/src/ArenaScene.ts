@@ -97,6 +97,7 @@ import {
   updateDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type EquipmentSlotKey,
   type EquipmentTuning,
   type FacePartTuning,
   type RigPartKey,
@@ -104,6 +105,7 @@ import {
   type SlashArcAttackKey,
   type SlashArcTuning,
 } from "./debugTuning";
+import { arenaProfiler } from "./profiler";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -165,6 +167,14 @@ interface PaperDollRig {
   appearance: PaperDollAppearance;
   selectionHighlights: Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
   usesPlayerEquipment: boolean;
+  shadow?: PaperDollShadowRig;
+}
+
+interface PaperDollShadowRig {
+  root: FighterPart;
+  parts: Record<PaperDollPartKey, FighterPart>;
+  equipment: PaperDollEquipment;
+  faceParts: PaperDollFaceParts;
 }
 
 interface PaperDollEquipment {
@@ -262,7 +272,8 @@ interface ArenaVisuals {
 }
 
 const PAPER_DOLL_BASE_SCALE = 0.52;
-const PAPER_DOLL_SHADOW_DEPTH = -5;
+const PAPER_DOLL_SHADOW_DEPTH = -1;
+const PAPER_DOLL_SHADOW_COLOR = 0x120805;
 const SLASH_ARC_DEPTH = 36;
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
@@ -594,33 +605,42 @@ export class ArenaScene extends Phaser.Scene {
       return;
     }
 
-    syncEnemyVisualForState(this, this.visuals, previousState, nextState);
-    resetDeathEffectsForLiveFighters(this, this.visuals, nextState);
-    renderScene(this, nextState);
+    const visuals = this.visuals;
 
-    if (nextState.lastPlayerAction) {
-      animateAction(this, this.visuals.player, this.visuals.enemy, nextState.lastPlayerAction, "right");
+    arenaProfiler.measure("arena.enemyVisual", () => syncEnemyVisualForState(this, visuals, previousState, nextState));
+    arenaProfiler.measure("arena.deathReset", () => resetDeathEffectsForLiveFighters(this, visuals, nextState));
+    arenaProfiler.measure("arena.renderScene", () => renderScene(this, nextState));
+
+    const lastPlayerAction = nextState.lastPlayerAction;
+    const lastEnemyAction = nextState.lastEnemyAction;
+
+    if (lastPlayerAction) {
+      arenaProfiler.measure("arena.playerAnim", () => animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right"));
     }
 
-    if (nextState.lastEnemyAction) {
-      animateAction(this, this.visuals.enemy, this.visuals.player, nextState.lastEnemyAction, "left");
+    if (lastEnemyAction) {
+      arenaProfiler.measure("arena.enemyAnim", () => animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left"));
     }
 
     if (nextState.lastPlayerDamage > 0) {
-      showDamagePopup(this, this.visuals.enemy.body.x, this.visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
-      shakeFighter(this, this.visuals.enemy);
+      arenaProfiler.measure("arena.playerDamageFx", () => {
+        showDamagePopup(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
+        shakeFighter(this, visuals.enemy);
+      });
     } else if (nextState.lastPlayerBlocked) {
-      showFloatingText(this, this.visuals.enemy.body.x, this.visuals.enemy.body.y - 128, "BLOCK", "#dfe9ff");
+      arenaProfiler.measure("arena.playerBlockFx", () => showFloatingText(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, "BLOCK", "#dfe9ff"));
     }
 
     if (nextState.lastEnemyDamage > 0) {
-      showDamagePopup(this, this.visuals.player.body.x, this.visuals.player.body.y - 128, nextState.lastEnemyDamage);
-      shakeFighter(this, this.visuals.player);
+      arenaProfiler.measure("arena.enemyDamageFx", () => {
+        showDamagePopup(this, visuals.player.body.x, visuals.player.body.y - 128, nextState.lastEnemyDamage);
+        shakeFighter(this, visuals.player);
+      });
     } else if (nextState.lastEnemyBlocked) {
-      showFloatingText(this, this.visuals.player.body.x, this.visuals.player.body.y - 128, "BLOCK", "#dfe9ff");
+      arenaProfiler.measure("arena.enemyBlockFx", () => showFloatingText(this, visuals.player.body.x, visuals.player.body.y - 128, "BLOCK", "#dfe9ff"));
     }
 
-    scheduleDeathEffects(this, nextState);
+    arenaProfiler.measure("arena.deathSchedule", () => scheduleDeathEffects(this, nextState));
   }
 
   previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
@@ -1093,7 +1113,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     muscle: options.muscle ?? DEFAULT_PAPER_DOLL_APPEARANCE.muscle,
   };
   const initialFeetY = options.y + PLAYER_AVATAR_FEET_Y_OFFSET;
-  const shadow = createPaperDollGroundShadow(target, options.x, initialFeetY, options.castsShadow !== false);
+  const shadowRig = createPaperDollShadowRig(target, options, appearance, initialFeetY, options.castsShadow !== false);
   const rootContainer = target.add.container(options.x, initialFeetY);
   const root = part(rootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
@@ -1122,6 +1142,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     appearance,
     selectionHighlights,
     usesPlayerEquipment: Boolean(options.usesPlayerEquipment),
+    shadow: shadowRig,
   };
 
   syncPaperDollEquipmentVisibility(paperDollRig);
@@ -1150,33 +1171,69 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     armBack: parts.backUpperArm,
     legFront: parts.frontThigh,
     legBack: parts.backThigh,
-    shadow,
+    shadow: shadowRig.root,
     name,
-    movableParts: [shadow, root, name],
+    movableParts: [shadowRig.root, root, name],
     animatedParts: [root],
     paperDollRig,
     debugScale: 1,
   };
 }
 
-function createPaperDollGroundShadow(target: Phaser.Scene, x: number, y: number, visible: boolean): FighterPart {
-  const shadowContainer = target.add.container(x, y).setDepth(PAPER_DOLL_SHADOW_DEPTH).setVisible(visible);
-  const graphics = target.add.graphics();
+function createPaperDollShadowRig(
+  target: Phaser.Scene,
+  options: PaperDollFighterOptions,
+  appearance: PaperDollAppearance,
+  initialFeetY: number,
+  visible: boolean,
+): PaperDollShadowRig {
+  const shadowRootContainer = target.add
+    .container(options.x, initialFeetY)
+    .setDepth(PAPER_DOLL_SHADOW_DEPTH)
+    .setAlpha(debugTuning.shadowAlpha)
+    .setVisible(visible);
+  const shadowRoot = part(shadowRootContainer);
+  const parts = {} as Record<PaperDollPartKey, FighterPart>;
+  const equipment: PaperDollEquipment = {};
+  const faceParts: PaperDollFaceParts = {};
+  const shadowAppearance: PaperDollAppearance = {
+    ...appearance,
+    skin: PAPER_DOLL_SHADOW_COLOR,
+    skinDark: PAPER_DOLL_SHADOW_COLOR,
+    hair: PAPER_DOLL_SHADOW_COLOR,
+    muscle: PAPER_DOLL_SHADOW_COLOR,
+  };
 
-  graphics.fillStyle(0x160a05, 0.18);
-  graphics.fillEllipse(0, 4, 164, 30);
-  graphics.fillStyle(0x160a05, 0.15);
-  graphics.fillEllipse(-44, 9, 88, 18);
-  graphics.fillEllipse(44, 9, 88, 18);
-  graphics.fillStyle(0x160a05, 0.09);
-  graphics.fillEllipse(-72, 2, 58, 16);
-  graphics.fillEllipse(72, 2, 58, 16);
-  graphics.fillStyle(0x160a05, 0.08);
-  graphics.fillEllipse(0, -5, 100, 18);
+  PAPER_DOLL_PART_ORDER.forEach((key) => {
+    const pivot = PAPER_DOLL_PART_PIVOTS[key];
+    const partContainer = target.add.container(pivot.x, pivot.y);
 
-  shadowContainer.add(graphics);
+    addPaperDollPartVisual(target, partContainer, key, shadowAppearance, options, equipment, faceParts);
+    tintPaperDollShadowObject(partContainer);
+    shadowRootContainer.add(partContainer);
+    parts[key] = part(partContainer);
+  });
 
-  return part(shadowContainer);
+  shadowRoot.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing * debugTuning.shadowScaleX;
+  shadowRoot.scaleY = PAPER_DOLL_BASE_SCALE * debugTuning.shadowScaleY;
+
+  return { root: shadowRoot, parts, equipment, faceParts };
+}
+
+function tintPaperDollShadowObject(gameObject: Phaser.GameObjects.GameObject): void {
+  const tintable = gameObject as Phaser.GameObjects.GameObject & { setTint?: (color: number) => unknown };
+  const shape = gameObject as Phaser.GameObjects.GameObject & {
+    setFillStyle?: (color: number, alpha?: number) => unknown;
+    setStrokeStyle?: (lineWidth: number, color: number, alpha?: number) => unknown;
+  };
+
+  tintable.setTint?.(PAPER_DOLL_SHADOW_COLOR);
+  shape.setFillStyle?.(PAPER_DOLL_SHADOW_COLOR, 1);
+  shape.setStrokeStyle?.(0, PAPER_DOLL_SHADOW_COLOR, 0);
+
+  if (gameObject instanceof Phaser.GameObjects.Container) {
+    gameObject.list.forEach((child) => tintPaperDollShadowObject(child));
+  }
 }
 
 const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
@@ -1250,11 +1307,12 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
 }
 
 function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY: number, centerX: number): void {
-  fighter.shadow.x = centerX;
-  fighter.shadow.y = feetY + 4 * scale;
-  fighter.shadow.scaleX = scale;
-  fighter.shadow.scaleY = scale;
+  fighter.shadow.x = centerX + debugTuning.shadowOffsetX * scale;
+  fighter.shadow.y = feetY + debugTuning.shadowOffsetY * scale;
+  fighter.shadow.scaleX = PAPER_DOLL_BASE_SCALE * scale * (fighter.paperDollRig?.appearance.facing ?? 1) * debugTuning.shadowScaleX;
+  fighter.shadow.scaleY = PAPER_DOLL_BASE_SCALE * scale * debugTuning.shadowScaleY;
   fighter.shadow.angle = 0;
+  fighter.shadow.setAlpha(debugTuning.shadowAlpha);
 }
 
 function applyRigPartDebugTuning(rig: PaperDollRig): void {
@@ -1265,27 +1323,40 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
 
   RIG_PART_KEYS.forEach((key) => {
     const part = rig.parts[key];
+    const shadowPart = rig.shadow?.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const tuning = rigParts?.[key] ?? DEFAULT_RIG_PARTS[key] ?? defaultRigPartTuning;
 
     applyRigPartTransform(part, pivot, tuning);
+    if (shadowPart) {
+      applyRigPartTransform(shadowPart, pivot, tuning);
+    }
   });
 
   applyFacePartTransform(rig.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
   applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
-  applyEquipmentTransform(rig.equipment.weaponMain, equipment.weaponMain);
-  applyEquipmentTransform(rig.equipment.helmet, equipment.helmet);
-  applyEquipmentTransform(rig.equipment.breastplate, equipment.breastplate);
-  applyEquipmentTransform(rig.equipment.backShoulderguard, equipment.backShoulderguard);
-  applyEquipmentTransform(rig.equipment.frontShoulderguard, equipment.frontShoulderguard);
-  applyEquipmentTransform(rig.equipment.backGauntlet, equipment.backGauntlet);
-  applyEquipmentTransform(rig.equipment.frontGauntlet, equipment.frontGauntlet);
-  applyEquipmentTransform(rig.equipment.backGreave, equipment.backGreave);
-  applyEquipmentTransform(rig.equipment.frontGreave, equipment.frontGreave);
-  applyEquipmentTransform(rig.equipment.backShinguard, equipment.backShinguard);
-  applyEquipmentTransform(rig.equipment.frontShinguard, equipment.frontShinguard);
-  applyEquipmentTransform(rig.equipment.backBoot, equipment.backBoot);
-  applyEquipmentTransform(rig.equipment.frontBoot, equipment.frontBoot);
+  applyFacePartTransform(rig.shadow?.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
+  applyFacePartTransform(rig.shadow?.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
+  applyPaperDollEquipmentTuning(rig.equipment, equipment);
+  if (rig.shadow) {
+    applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment);
+  }
+}
+
+function applyPaperDollEquipmentTuning(equipmentParts: PaperDollEquipment, equipment: Record<EquipmentSlotKey, EquipmentTuning>): void {
+  applyEquipmentTransform(equipmentParts.weaponMain, equipment.weaponMain);
+  applyEquipmentTransform(equipmentParts.helmet, equipment.helmet);
+  applyEquipmentTransform(equipmentParts.breastplate, equipment.breastplate);
+  applyEquipmentTransform(equipmentParts.backShoulderguard, equipment.backShoulderguard);
+  applyEquipmentTransform(equipmentParts.frontShoulderguard, equipment.frontShoulderguard);
+  applyEquipmentTransform(equipmentParts.backGauntlet, equipment.backGauntlet);
+  applyEquipmentTransform(equipmentParts.frontGauntlet, equipment.frontGauntlet);
+  applyEquipmentTransform(equipmentParts.backGreave, equipment.backGreave);
+  applyEquipmentTransform(equipmentParts.frontGreave, equipment.frontGreave);
+  applyEquipmentTransform(equipmentParts.backShinguard, equipment.backShinguard);
+  applyEquipmentTransform(equipmentParts.frontShinguard, equipment.frontShinguard);
+  applyEquipmentTransform(equipmentParts.backBoot, equipment.backBoot);
+  applyEquipmentTransform(equipmentParts.frontBoot, equipment.frontBoot);
 }
 
 function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined): void {
@@ -1309,6 +1380,7 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
 
   PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
     rig.equipment[slotKey]?.setVisible(visibility[slotKey]);
+    rig.shadow?.equipment[slotKey]?.setVisible(visibility[slotKey]);
   });
 }
 
@@ -1349,24 +1421,23 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
     }
 
     const part = rig.parts[key];
+    const shadowPart = rig.shadow?.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const tuning = interpolateRigPartTuning(animation.base[key] ?? defaultRigPartTuning, animation.breath[key] ?? defaultRigPartTuning, blend);
 
     applyRigPartTransform(part, pivot, tuning);
+    if (shadowPart) {
+      applyRigPartTransform(shadowPart, pivot, tuning);
+    }
   });
 
-  applyFacePartTransform(
-    rig.faceParts.eyeLeft,
-    HEAD_FACE_LEFT_EYE_X,
-    HEAD_FACE_EYE_Y,
-    interpolateFacePartTuning(animation.faceBase.eyeLeft, animation.faceBreath.eyeLeft, blend),
-  );
-  applyFacePartTransform(
-    rig.faceParts.eyeRight,
-    HEAD_FACE_RIGHT_EYE_X,
-    HEAD_FACE_EYE_Y,
-    interpolateFacePartTuning(animation.faceBase.eyeRight, animation.faceBreath.eyeRight, blend),
-  );
+  const eyeLeft = interpolateFacePartTuning(animation.faceBase.eyeLeft, animation.faceBreath.eyeLeft, blend);
+  const eyeRight = interpolateFacePartTuning(animation.faceBase.eyeRight, animation.faceBreath.eyeRight, blend);
+
+  applyFacePartTransform(rig.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, eyeLeft);
+  applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, eyeRight);
+  applyFacePartTransform(rig.shadow?.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, eyeLeft);
+  applyFacePartTransform(rig.shadow?.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, eyeRight);
 }
 
 function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend: number): RigPartTuning {
@@ -2315,6 +2386,7 @@ function resetFighterShatter(target: Phaser.Scene, fighter: FighterVisual): void
   }
 
   setFighterAlpha(fighter, 1);
+  fighter.shadow.setVisible(true);
 }
 
 function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirection: -1 | 1): void {
@@ -2328,6 +2400,7 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
   fighter.isShattered = true;
   fighter.bodyAnimationLockedUntil = Number.POSITIVE_INFINITY;
   fighter.name.setVisible(false);
+  fighter.shadow.setVisible(false);
   target.tweens.killTweensOf([rig.root, ...Object.values(rig.parts)]);
   setFighterAlpha(fighter, 1);
   createDust(target, rig.root.x, rig.root.y - 6);
@@ -2384,7 +2457,9 @@ function setHud(hud: HudVisual, fighter: FighterState): void {
 }
 
 function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
-  getFighterParts(fighter).forEach((part) => part.setAlpha(alpha));
+  getFighterParts(fighter).forEach((part) => {
+    part.setAlpha(part === fighter.shadow ? alpha * debugTuning.shadowAlpha : alpha);
+  });
 }
 
 function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState): void {

@@ -1975,6 +1975,59 @@ body.debug-active .battle-screen {
   transform: translateY(1px);
 }
 
+.arena-profiler {
+  position: absolute;
+  left: 8px;
+  top: 112px;
+  z-index: 150;
+  display: grid;
+  gap: 4px;
+  width: min(300px, calc(100% - 16px));
+  pointer-events: none;
+}
+
+.arena-profiler__toggle {
+  justify-self: start;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 2px solid #35180d;
+  border-radius: 8px;
+  color: #fff0bd;
+  background: linear-gradient(180deg, #ffd58a 0%, #d48633 76%, #743113 100%);
+  box-shadow: 0 3px 0 #35180d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.68rem;
+  font-weight: 900;
+  pointer-events: auto;
+  text-transform: uppercase;
+}
+
+.arena-profiler__output {
+  display: none;
+  max-height: 220px;
+  margin: 0;
+  padding: 7px 8px;
+  overflow: auto;
+  border: 2px solid rgba(255, 211, 132, 0.68);
+  border-radius: 8px;
+  color: #fff0bd;
+  background: rgba(22, 7, 3, 0.82);
+  font-family: Consolas, "Liberation Mono", monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.35;
+  pointer-events: auto;
+  white-space: pre-wrap;
+}
+
+.arena-profiler--enabled .arena-profiler__output {
+  display: block;
+}
+
+.arena-profiler--enabled .arena-profiler__toggle {
+  background: linear-gradient(180deg, #95f0b3 0%, #2f9c68 76%, #145136 100%);
+}
+
 
 
 

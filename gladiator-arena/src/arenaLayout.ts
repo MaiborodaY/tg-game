@@ -3,7 +3,7 @@ export const GAME_HEIGHT = 764;
 
 export const DEFAULT_STAGE_ORIGIN_X = 215;
 export const DEFAULT_STAGE_ORIGIN_Y = 520;
-export const DEFAULT_PLAYER_STAGE_X = -145;
+export const DEFAULT_PLAYER_STAGE_X = -146;
 export const DEFAULT_PLAYER_STAGE_Y = 90;
 export const DEFAULT_ENEMY_STAGE_X = 139;
 export const DEFAULT_ENEMY_STAGE_Y = 90;

@@ -128,6 +128,11 @@ export interface ArenaDebugTuning {
   enemyStageY: number;
   playerScale: number;
   enemyScale: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+  shadowScaleX: number;
+  shadowScaleY: number;
+  shadowAlpha: number;
   actionArcRotation: number;
   actionArcRadius: number;
   actionButtonScale: number;
@@ -768,6 +773,11 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   enemyStageY: DEFAULT_ENEMY_STAGE_Y,
   playerScale: DEFAULT_PLAYER_SCALE,
   enemyScale: DEFAULT_ENEMY_SCALE,
+  shadowOffsetX: 0,
+  shadowOffsetY: 76,
+  shadowScaleX: 1.11,
+  shadowScaleY: -0.68,
+  shadowAlpha: 0.22,
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
   actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
   actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
@@ -892,6 +902,11 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     enemyStageY: clampNumber(input.enemyStageY, -500, 500, defaultDebugTuning.enemyStageY),
     playerScale: clampNumber(input.playerScale, 0.1, 6, defaultDebugTuning.playerScale),
     enemyScale: clampNumber(input.enemyScale, 0.1, 6, defaultDebugTuning.enemyScale),
+    shadowOffsetX: clampNumber(input.shadowOffsetX, -240, 240, defaultDebugTuning.shadowOffsetX),
+    shadowOffsetY: clampNumber(input.shadowOffsetY, -240, 240, defaultDebugTuning.shadowOffsetY),
+    shadowScaleX: clampNumber(input.shadowScaleX, -4, 4, defaultDebugTuning.shadowScaleX),
+    shadowScaleY: clampNumber(input.shadowScaleY, -1, 1, defaultDebugTuning.shadowScaleY),
+    shadowAlpha: clampNumber(input.shadowAlpha, 0, 1, defaultDebugTuning.shadowAlpha),
     actionArcRotation: clampNumber(input.actionArcRotation, -180, 180, defaultDebugTuning.actionArcRotation),
     actionArcRadius: clampNumber(input.actionArcRadius, 24, 150, defaultDebugTuning.actionArcRadius),
     actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),

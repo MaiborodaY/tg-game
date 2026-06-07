@@ -6,6 +6,7 @@ import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionI
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
 import { applyBattleReward, buyAndEquipHeroItems, createCombatStateFromHero, createDefaultHero, getBattleReward, type HeroState } from "./hero";
+import { arenaProfiler, mountArenaProfiler } from "./profiler";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -34,16 +35,16 @@ let weaponShop: WeaponShopApi | undefined;
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
   const syncArena = options.syncArena ?? true;
-  const committedState = applyBattleRewardIfNeeded(nextState);
+  const committedState = arenaProfiler.measure("applyReward", () => applyBattleRewardIfNeeded(nextState));
 
   state = committedState;
-  renderDom(dom, state);
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
-  actionArc?.sync(state);
+  arenaProfiler.measure("renderDom", () => renderDom(dom, state));
+  arenaProfiler.measure("cityHeroInfo", () => renderCityHeroInfo(cityHeroWidgetRefs, hero));
+  arenaProfiler.measure("actionArc.sync", () => actionArc?.sync(state));
   if (syncArena) {
-    arenaScene?.sync(state);
+    arenaProfiler.measure("arenaScene.sync", () => arenaScene?.sync(state));
   }
-  syncTurnProbe();
+  arenaProfiler.measure("turnProbe.sync", () => syncTurnProbe());
 }
 
 function syncTurnProbe(): void {
@@ -57,10 +58,11 @@ function handleAction(actionId: ActionId): void {
 
   logTurnProbe("player-action", state, enemyTimerStatus, actionId);
 
-  const nextState = resolvePlayerTurn(state, actionId);
+  const nextState = arenaProfiler.measure("resolvePlayerTurn", () => resolvePlayerTurn(state, actionId));
 
-  commitState(nextState);
-  scheduleEnemyTurn(nextState);
+  arenaProfiler.measure("commitState", () => commitState(nextState));
+  arenaProfiler.measure("scheduleEnemyTurn", () => scheduleEnemyTurn(nextState));
+  arenaProfiler.end(`player ${actionId}`);
 }
 
 function maybeAutoRestPlayerTurn(): void {
@@ -71,10 +73,12 @@ function maybeAutoRestPlayerTurn(): void {
   lastActionClick = "rest:auto";
   logTurnProbe("auto-rest", state, enemyTimerStatus, "rest");
 
-  const nextState = resolvePlayerTurn(state, "rest");
+  arenaProfiler.start("auto rest");
+  const nextState = arenaProfiler.measure("resolvePlayerTurn", () => resolvePlayerTurn(state, "rest"));
 
-  commitState(nextState);
-  scheduleEnemyTurn(nextState);
+  arenaProfiler.measure("commitState", () => commitState(nextState));
+  arenaProfiler.measure("scheduleEnemyTurn", () => scheduleEnemyTurn(nextState));
+  arenaProfiler.end("auto rest");
 }
 
 function scheduleEnemyTurn(enemyState: CombatState): void {
@@ -95,11 +99,13 @@ function scheduleEnemyTurn(enemyState: CombatState): void {
     enemyTimerStatus = "running";
     logTurnProbe("enemy-running", enemyState, enemyTimerStatus);
 
-    const nextState = resolveEnemyTurn(enemyState);
+    arenaProfiler.start("enemy turn");
+    const nextState = arenaProfiler.measure("resolveEnemyTurn", () => resolveEnemyTurn(enemyState));
 
     enemyTimerStatus = "idle";
-    commitState(nextState);
-    logTurnProbe("enemy-committed", nextState, enemyTimerStatus);
+    arenaProfiler.measure("commitState", () => commitState(nextState));
+    arenaProfiler.measure("enemy.log", () => logTurnProbe("enemy-committed", nextState, enemyTimerStatus));
+    arenaProfiler.end("enemy turn");
     maybeAutoRestPlayerTurn();
   }, 700);
 }
@@ -121,8 +127,12 @@ function handleActionArcClick(event: Event): void {
   const { actionId, disabled } = (event as CustomEvent<{ actionId?: ActionId; disabled?: boolean }>).detail ?? {};
 
   lastActionClick = actionId ? `${actionId}${disabled ? ":disabled" : ""}` : "unknown";
-  syncTurnProbe();
-  logTurnProbe("button-click", state, enemyTimerStatus, actionId);
+  arenaProfiler.start(`tap ${lastActionClick}`);
+  arenaProfiler.measure("button.syncProbe", () => syncTurnProbe());
+  arenaProfiler.measure("button.log", () => logTurnProbe("button-click", state, enemyTimerStatus, actionId));
+  if (disabled) {
+    arenaProfiler.end(`tap ${lastActionClick}`);
+  }
 }
 
 function startGame(): void {
@@ -142,6 +152,7 @@ function startGame(): void {
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction);
+  mountArenaProfiler(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   restart();

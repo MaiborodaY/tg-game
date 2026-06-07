@@ -6,41 +6,10 @@ import { getStageLayout } from "./stageLayout";
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 type TuningProvider = () => StageLayoutTuning;
 
-const ACTION_ICONS: Record<ActionId, string> = {
-  forward: "🏃",
-  back: "🏃",
-  lunge: "",
-  light: "🗡",
-  medium: "🗡",
-  heavy: "🗡",
-  taunt: "📣",
-  rest: "😴",
-};
-
-const LUNGE_ICON_LAYERS = [
-  { className: "action-arc__icon-layer action-arc__icon-layer--bolt", text: "⚡" },
-  { className: "action-arc__icon-layer action-arc__icon-layer--sword", text: "🗡" },
-] as const;
-
-function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId: ActionId): void {
+function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, _actionId: ActionId): void {
   icon.replaceChildren();
+  delete button.dataset.icon;
   delete button.dataset.iconAlt;
-
-  if (actionId !== "lunge") {
-    button.dataset.icon = ACTION_ICONS[actionId];
-    return;
-  }
-
-  button.dataset.icon = LUNGE_ICON_LAYERS[0].text;
-  button.dataset.iconAlt = LUNGE_ICON_LAYERS[1].text;
-
-  for (const layer of LUNGE_ICON_LAYERS) {
-    const layerElement = document.createElement("span");
-
-    layerElement.className = layer.className;
-    layerElement.textContent = layer.text;
-    icon.append(layerElement);
-  }
 }
 export interface ActionArcApi {
   sync: (state: CombatState) => void;
