@@ -6,6 +6,18 @@ const repoRoot = process.cwd();
 const assetsRoot = path.join(repoRoot, "gladiator-arena", "public", "assets");
 const quality = Number.parseFloat(process.argv[2] ?? "0.86");
 const webpQuality = Math.round(quality <= 1 ? quality * 100 : quality);
+const resizeRules = [
+  { maxSide: 768, pattern: /^fighters\/bodies\// },
+  { maxSide: 768, pattern: /^fighters\/body-parts\/head\// },
+  { maxSide: 768, pattern: /^fighters\/body-parts\/torso\// },
+  { maxSide: 768, pattern: /^fighters\/armor\/helmet\// },
+  { maxSide: 512, pattern: /^fighters\/body-parts\/arms\// },
+  { maxSide: 512, pattern: /^fighters\/body-parts\/legs\// },
+  { maxSide: 512, pattern: /^fighters\/armor\/arms\// },
+  { maxSide: 512, pattern: /^fighters\/armor\/breastplate\// },
+  { maxSide: 512, pattern: /^fighters\/armor\/legs\// },
+  { maxSide: 512, pattern: /^fighters\/weapons\// },
+];
 
 const pngFiles = await listFiles(assetsRoot, ".png");
 let originalTotal = 0;
@@ -14,7 +26,20 @@ let webpTotal = 0;
 for (const pngPath of pngFiles) {
   const png = await readFile(pngPath);
   const webpPath = pngPath.replace(/\.png$/i, ".webp");
-  const webp = await sharp(png)
+  const relativePngPath = path.relative(assetsRoot, pngPath).replaceAll(path.sep, "/");
+  const maxSide = getResizeMaxSide(relativePngPath);
+  const pipeline = sharp(png);
+
+  if (maxSide) {
+    pipeline.resize({
+      fit: "inside",
+      height: maxSide,
+      width: maxSide,
+      withoutEnlargement: true,
+    });
+  }
+
+  const webp = await pipeline
     .webp({
       alphaQuality: 100,
       effort: 6,
@@ -51,4 +76,10 @@ async function listFiles(root, extension) {
 
 function formatBytes(bytes) {
   return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function getResizeMaxSide(relativePath) {
+  const rule = resizeRules.find((resizeRule) => resizeRule.pattern.test(relativePath));
+
+  return rule?.maxSide;
 }

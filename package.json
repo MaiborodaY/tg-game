@@ -13,6 +13,7 @@
         "gladiator:dev": "vite gladiator-arena --config gladiator-arena/vite.config.ts --open",
         "gladiator:debug": "vite gladiator-arena --config gladiator-arena/vite.config.ts --open /debug.html",
         "gladiator:build": "vite build gladiator-arena --config gladiator-arena/vite.config.ts --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
+        "gladiator:audit-assets": "node gladiator-arena/scripts/audit-assets.mjs",
         "gladiator:optimize-assets": "node gladiator-arena/scripts/optimize-assets.mjs",
         "gladiator:test": "node --test gladiator-arena/tests/*.test.js",
         "gladiator:lint": "eslint gladiator-arena/src gladiator-arena/tests",

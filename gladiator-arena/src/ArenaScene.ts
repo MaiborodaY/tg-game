@@ -1015,45 +1015,8 @@ function drawDebugCharacterBackdrop(target: Phaser.Scene): void {
 
 function drawArenaBackground(target: Phaser.Scene): void {
   if (!target.textures.exists(ARENA_BACKGROUND_ASSET_KEY)) {
-    drawArena(target);
+    target.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
   }
-}
-
-function drawArena(target: Phaser.Scene): void {
-  const g = target.add.graphics();
-
-  g.fillStyle(0x4e8fa1, 1);
-  g.fillRect(ARENA_WORLD_LEFT, 0, ARENA_WORLD_WIDTH, 130);
-  g.fillStyle(0xd38332, 1);
-  g.fillRect(ARENA_WORLD_LEFT, 130, ARENA_WORLD_WIDTH, 290);
-  g.fillStyle(0x7a3a1a, 1);
-  g.fillRect(ARENA_WORLD_LEFT, 198, ARENA_WORLD_WIDTH, 84);
-  g.fillStyle(0xe9aa60, 1);
-  g.fillEllipse(GAME_WIDTH / 2, 344, 620, 104);
-  g.fillStyle(0xd59045, 1);
-  g.fillEllipse(GAME_WIDTH / 2, 358, 760, 92);
-
-  for (let i = 0; i < 16; i += 1) {
-    const x = ARENA_WORLD_LEFT + i * 78 + 24;
-    const y = 148 + (i % 3) * 18;
-    g.fillStyle(i % 2 ? 0x75431f : 0x311c11, 1);
-    g.fillCircle(x, y, 16);
-    g.fillStyle(i % 2 ? 0x9b5a2d : 0x4a2a17, 1);
-    g.fillCircle(x + 22, y + 16, 16);
-    g.fillStyle(0x2b180f, 1);
-    g.fillCircle(x + 48, y + 32, 16);
-  }
-
-  target.add
-    .text(GAME_WIDTH / 2, 34, "DUST ARENA", {
-      color: "#ffe7a4",
-      fontFamily: "Georgia",
-      fontSize: "34px",
-      fontStyle: "900",
-      stroke: "#d59045",
-      strokeThickness: 4,
-    })
-    .setOrigin(0.5);
 }
 
 function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment): PaperDollFighterOptions {
