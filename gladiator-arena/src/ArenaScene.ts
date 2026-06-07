@@ -596,11 +596,15 @@ export class ArenaScene extends Phaser.Scene {
     if (nextState.lastPlayerDamage > 0) {
       showDamagePopup(this, this.visuals.enemy.body.x, this.visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
       shakeFighter(this, this.visuals.enemy);
+    } else if (nextState.lastPlayerBlocked) {
+      showFloatingText(this, this.visuals.enemy.body.x, this.visuals.enemy.body.y - 128, "BLOCK", "#dfe9ff");
     }
 
     if (nextState.lastEnemyDamage > 0) {
       showDamagePopup(this, this.visuals.player.body.x, this.visuals.player.body.y - 128, nextState.lastEnemyDamage);
       shakeFighter(this, this.visuals.player);
+    } else if (nextState.lastEnemyBlocked) {
+      showFloatingText(this, this.visuals.player.body.x, this.visuals.player.body.y - 128, "BLOCK", "#dfe9ff");
     }
 
     scheduleDeathEffects(this, nextState);

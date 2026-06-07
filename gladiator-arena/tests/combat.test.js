@@ -58,6 +58,14 @@ test("clinch attacks have weak medium and strong damage tiers", () => {
   assert.ok(combat.actions.light.cost < combat.actions.medium.cost);
   assert.ok(combat.actions.medium.cost < combat.actions.heavy.cost);
 });
+
+test("attacks define base block chances", () => {
+  assert.equal(combat.actions.lunge.blockChance, 0.5);
+  assert.equal(combat.actions.light.blockChance, 0.25);
+  assert.equal(combat.actions.medium.blockChance, 0.5);
+  assert.equal(combat.actions.heavy.blockChance, 0.75);
+});
+
 test("movement actions use half-distance steps", () => {
   assert.equal(combat.actions.forward.move, -0.5);
   assert.equal(combat.actions.back.move, 0.5);
@@ -93,7 +101,7 @@ test("lunge closes half a step and only hits when it reaches clinch", () => {
   const nearState = combat.freshState();
   setConsistentDistance(nearState, 0.5);
 
-  const hit = combat.resolvePlayerTurn(nearState, "lunge");
+  const hit = combat.resolvePlayerTurn(nearState, "lunge", () => 0.99);
 
   assert.equal(hit.distance, combat.MELEE_RANGE);
   assert.equal(hit.playerPosition, hit.enemyPosition);
@@ -124,11 +132,23 @@ test("damage depletes armor before health", () => {
   state.enemy.armor = 2;
   state.enemy.maxArmor = 2;
 
-  const nextState = combat.resolvePlayerTurn(state, "light");
+  const nextState = combat.resolvePlayerTurn(state, "light", () => 0.99);
 
   assert.equal(nextState.enemy.armor, 1);
   assert.equal(nextState.enemy.hp, combat.MAX_HP);
   assert.equal(nextState.lastPlayerDamage, combat.actions.light.damage);
+});
+
+test("blocked attacks deal no damage", () => {
+  const state = combat.freshState();
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolvePlayerTurn(state, "heavy", () => 0);
+
+  assert.equal(nextState.enemy.armor, 0);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
+  assert.equal(nextState.lastPlayerDamage, 0);
+  assert.equal(nextState.lastPlayerBlocked, true);
 });
 
 test("enemy cannot damage the player from far away", () => {

@@ -10,6 +10,7 @@ export interface ActionConfig {
   detail: string;
   cost: number;
   damage?: number;
+  blockChance?: number;
   restore?: number;
   glory?: number;
   vulnerability?: number;
@@ -51,6 +52,8 @@ export interface CombatState {
   lastEnemyAction?: ActionId;
   lastPlayerDamage: number;
   lastEnemyDamage: number;
+  lastPlayerBlocked: boolean;
+  lastEnemyBlocked: boolean;
   log: LogEntry[];
 }
 
@@ -83,6 +86,7 @@ export const actions: Record<ActionId, ActionConfig> = {
     cost: 4,
     move: -0.5,
     damage: 4,
+    blockChance: 0.5,
     rangeMax: MELEE_RANGE,
   },
   light: {
@@ -91,6 +95,7 @@ export const actions: Record<ActionId, ActionConfig> = {
     detail: "Cost 2 - Clinch only - Damage 1",
     cost: 2,
     damage: 1,
+    blockChance: 0.25,
     rangeMax: MELEE_RANGE,
   },
   medium: {
@@ -99,6 +104,7 @@ export const actions: Record<ActionId, ActionConfig> = {
     detail: "Cost 3 - Clinch only - Damage 2",
     cost: 3,
     damage: 2,
+    blockChance: 0.5,
     rangeMax: MELEE_RANGE,
   },
   heavy: {
@@ -107,6 +113,7 @@ export const actions: Record<ActionId, ActionConfig> = {
     detail: "Cost 5 - Clinch only - Damage 4",
     cost: 5,
     damage: 4,
+    blockChance: 0.75,
     rangeMax: MELEE_RANGE,
   },
   taunt: {
@@ -162,6 +169,8 @@ export function freshState(): CombatState {
     enemyIncomingBonus: 0,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
+    lastPlayerBlocked: false,
+    lastEnemyBlocked: false,
     log: [
       { text: "The gate slams open. Borshemir and Grumbus enter the sand.", important: true },
       { text: "Move into range, strike, then survive Grumbus on his turn." },
@@ -179,6 +188,10 @@ export function getFighterMaxArmor(fighter: FighterState): number {
 
 export function getFighterMaxStamina(fighter: FighterState): number {
   return Math.max(1, fighter.maxStamina);
+}
+
+export function getActionBlockChance(action: ActionConfig, _attacker?: FighterState, _defender?: FighterState): number {
+  return clamp(action.blockChance ?? 0, 0, 0.95);
 }
 
 export function availableActionIds(state: CombatState, actor: TurnOwner): ActionId[] {
@@ -244,7 +257,7 @@ export function distanceLabel(distance: number): string {
   return "Very far";
 }
 
-export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId): CombatState {
+export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId, random = Math.random): CombatState {
   const state = cloneStateForTurn(current);
 
   if (!canUseAction(state, playerActionId, "player")) {
@@ -252,7 +265,7 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
     return state;
   }
 
-  applyAction(state, "player", playerActionId);
+  applyAction(state, "player", playerActionId, random);
 
   if (state.result === "playing") {
     state.activeTurn = "enemy";
@@ -261,14 +274,14 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
   return state;
 }
 
-export function resolveEnemyTurn(current: CombatState): CombatState {
+export function resolveEnemyTurn(current: CombatState, random = Math.random): CombatState {
   const state = cloneStateForTurn(current);
 
   if (state.result !== "playing" || state.activeTurn !== "enemy") {
     return state;
   }
 
-  applyAction(state, "enemy", chooseEnemyAction(state));
+  applyAction(state, "enemy", chooseEnemyAction(state, random), random);
 
   if (state.result !== "playing") {
     return state;
@@ -289,6 +302,8 @@ function cloneStateForTurn(current: CombatState): CombatState {
     lastEnemyAction: undefined,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
+    lastPlayerBlocked: false,
+    lastEnemyBlocked: false,
   };
 }
 
@@ -300,7 +315,7 @@ function cloneFighterState(fighter: FighterState): FighterState {
   };
 }
 
-function chooseEnemyAction(current: CombatState): ActionId {
+function chooseEnemyAction(current: CombatState, random = Math.random): ActionId {
   const available = availableActionIds(current, "enemy");
   const weighted: ActionId[] = [];
   const enemyLowStamina = current.enemy.stamina <= 3;
@@ -336,15 +351,16 @@ function chooseEnemyAction(current: CombatState): ActionId {
     }
   }
 
-  return weighted[Math.floor(Math.random() * weighted.length)] ?? "rest";
+  return weighted[Math.floor(random() * weighted.length)] ?? "rest";
 }
 
-function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): void {
+function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, random: () => number): void {
   const action = actions[actionId];
   const attacker = actor === "player" ? state.player : state.enemy;
   const defender = actor === "player" ? state.enemy : state.player;
   const actorLabel = actor === "player" ? "You" : "Grumbus";
   const defenderLabel = actor === "player" ? "Grumbus" : "you";
+  const defenderOwner = actor === "player" ? "enemy" : "player";
 
   attacker.stamina = clamp(attacker.stamina - action.cost, 0, getFighterMaxStamina(attacker));
 
@@ -362,16 +378,24 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
 
   let damage = action.damage ? action.damage + Math.max(0, attacker.damageBonus ?? 0) : 0;
   const inRange = action.rangeMax === undefined || state.distance <= action.rangeMax;
+  let blocked = false;
 
   if (damage > 0 && !inRange) {
     damage = 0;
   }
 
   if (damage > 0) {
-    damage = applyIncomingBonus(state, actor, damage);
-    applyDamageToFighter(defender, damage);
+    blocked = isActionBlocked(action, attacker, defender, random);
+
+    if (blocked) {
+      damage = 0;
+      clearIncomingBonus(state, defenderOwner);
+    } else {
+      damage = applyIncomingBonus(state, actor, damage);
+      applyDamageToFighter(defender, damage);
+    }
   } else {
-    clearIncomingBonus(state, actor === "player" ? "enemy" : "player");
+    clearIncomingBonus(state, defenderOwner);
   }
 
   if (actor === "player") {
@@ -382,16 +406,24 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
     state.score += damage * 90 + glory + riskBonus + staminaBonus;
     state.lastPlayerAction = actionId;
     state.lastPlayerDamage = damage;
+    state.lastPlayerBlocked = blocked;
   } else {
     state.lastEnemyAction = actionId;
     state.lastEnemyDamage = damage;
+    state.lastEnemyBlocked = blocked;
   }
 
-  addActionLog(state, actorLabel, defenderLabel, action, damage, inRange);
+  addActionLog(state, actorLabel, defenderLabel, action, damage, inRange, blocked);
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
   }
+}
+
+function isActionBlocked(action: ActionConfig, attacker: FighterState, defender: FighterState, random: () => number): boolean {
+  const blockChance = getActionBlockChance(action, attacker, defender);
+
+  return blockChance > 0 && random() < blockChance;
 }
 
 function applyDamageToFighter(defender: FighterState, damage: number): void {
@@ -418,12 +450,13 @@ function addActionLog(
   action: ActionConfig,
   damage: number,
   inRange: boolean,
+  blocked: boolean,
 ): void {
   if (action.move && action.damage) {
     addLog(
       state,
       `${actorLabel} used ${action.title}, rushed to ${distanceLabel(state.distance)}, and ${
-        damage > 0 ? `hit ${defenderLabel} for ${damage}` : "came up short"
+        blocked ? `${defenderLabel} blocked it` : damage > 0 ? `hit ${defenderLabel} for ${damage}` : "came up short"
       }.`,
       damage >= 4,
     );
@@ -438,7 +471,9 @@ function addActionLog(
   if (action.damage) {
     addLog(
       state,
-      `${actorLabel} used ${action.title} and ${inRange ? `hit ${defenderLabel} for ${damage}` : "missed out of range"}.`,
+      `${actorLabel} used ${action.title} and ${
+        !inRange ? "missed out of range" : blocked ? `${defenderLabel} blocked it` : `hit ${defenderLabel} for ${damage}`
+      }.`,
       damage >= 7,
     );
     return;
