@@ -1582,7 +1582,6 @@ function animateAction(
 ): void {
   const sign = direction === "right" ? 1 : -1;
   const dx = getActionAnimationDx(actor, opponent, actionId, direction);
-  const y = actionId === "rest" ? "+=14" : 0;
   const parts = getAnimatedFighterParts(actor);
 
   if (actionId === "forward" || actionId === "back") {
@@ -1617,41 +1616,26 @@ function animateAction(
   }
 
   if (actionId === "taunt") {
-    target.tweens.add({
-      targets: parts,
-      angle: 9 * sign,
-      duration: 110,
-      yoyo: true,
-      repeat: 3,
-      ease: "Sine.easeInOut",
-    });
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "BOO?", "#ffe7a4");
+    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"));
     return;
   }
 
   if (actionId === "rest") {
-    target.tweens.add({
-      targets: parts,
-      y,
-      duration: 180,
-      yoyo: true,
-      ease: "Quad.easeInOut",
-    });
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "+STA", "#86fff2");
+    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"));
     return;
   }
 
   if (isAttackBodyAnimationKey(actionId)) {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId));
+  } else if (dx !== 0) {
+    target.tweens.add({
+      targets: parts,
+      x: `+=${dx * sign}`,
+      duration: 120,
+      yoyo: true,
+      ease: "Quad.easeOut",
+    });
   }
-
-  target.tweens.add({
-    targets: parts,
-    x: `+=${dx * sign}`,
-    duration: 120,
-    yoyo: true,
-    ease: "Quad.easeOut",
-  });
 
   target.tweens.add({
     targets: actor.sword,
@@ -1669,7 +1653,7 @@ function isAttackBodyAnimationKey(actionId: ActionId): actionId is Extract<BodyA
 }
 
 function getActionAnimationDx(actor: FighterVisual, opponent: FighterVisual, actionId: ActionId, direction: "left" | "right"): number {
-  const baseDx = actionId === "lunge" ? 42 : actionId === "heavy" ? 32 : actionId === "medium" ? 28 : actionId === "light" ? 24 : actionId === "taunt" ? -12 : 0;
+  const baseDx = actionId === "lunge" ? 42 : 0;
 
   if (actionId !== "lunge") {
     return baseDx;

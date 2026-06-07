@@ -53,7 +53,7 @@ type RigPartKey = (typeof rigPartKeys)[number];
 const facePartKeys = ["eyeLeft", "eyeRight"] as const;
 type FacePartKey = (typeof facePartKeys)[number];
 
-const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy"] as const;
+const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 
 const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
@@ -63,6 +63,8 @@ const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
   light: "DEFAULT_LIGHT_ANIMATION",
   medium: "DEFAULT_MEDIUM_ANIMATION",
   heavy: "DEFAULT_HEAVY_ANIMATION",
+  taunt: "DEFAULT_TAUNT_ANIMATION",
+  rest: "DEFAULT_REST_ANIMATION",
 };
 
 interface RigPartTuningPayload {
