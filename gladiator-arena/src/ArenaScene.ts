@@ -89,6 +89,7 @@ import {
   DEFAULT_EQUIPMENT,
   DEFAULT_FACE_PARTS,
   DEFAULT_RIG_PARTS,
+  DEFAULT_SLASH_ARCS,
   defaultRigPartTuning,
   endDebugUndoGroup,
   RIG_PART_KEYS,
@@ -100,6 +101,8 @@ import {
   type FacePartTuning,
   type RigPartKey,
   type RigPartTuning,
+  type SlashArcAttackKey,
+  type SlashArcTuning,
 } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
 
@@ -139,6 +142,7 @@ interface FighterVisual {
 
 type PaperDollPartKey = RigPartKey;
 type AnimationRigPoseKey = "base" | "breath";
+type AttackBodyAnimationKey = SlashArcAttackKey;
 
 interface DebugRigPartDragState {
   partKeys: RigPartKey[];
@@ -219,6 +223,7 @@ interface PaperDollFighterOptions {
   weaponMainAssetKey?: string;
   equipment?: HeroEquipment;
   usesPlayerEquipment?: boolean;
+  castsShadow?: boolean;
 }
 
 type PaperDollEquipmentSlotKey = HeroEquipmentSlotKey;
@@ -249,7 +254,6 @@ interface HudVisual {
   label: Phaser.GameObjects.Text;
 }
 
-
 interface ArenaVisuals {
   player: FighterVisual;
   enemy: FighterVisual;
@@ -258,6 +262,8 @@ interface ArenaVisuals {
 }
 
 const PAPER_DOLL_BASE_SCALE = 0.52;
+const PAPER_DOLL_SHADOW_DEPTH = -5;
+const SLASH_ARC_DEPTH = 36;
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
   skin: 0xefaa7b,
@@ -617,6 +623,19 @@ export class ArenaScene extends Phaser.Scene {
     scheduleDeathEffects(this, nextState);
   }
 
+  previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
+    if (!this.visuals) {
+      return;
+    }
+
+    if (withBodyAnimation) {
+      animateAction(this, this.visuals.player, this.visuals.enemy, actionId, "right");
+      return;
+    }
+
+    showSlashArc(this, this.visuals.player, actionId, "right");
+  }
+
 }
 
 export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void, playerEquipment?: HeroEquipment): void {
@@ -660,7 +679,7 @@ class CityHeroScene extends Phaser.Scene {
     this.groundShadow = this.add.ellipse(debugTuning.cityHeroX, debugTuning.cityHeroY + 8, 104, 20, 0x2a190f, 0.28);
     this.fighter = createPaperDollFighter(
       this,
-      createPlayerPaperDollOptions(debugTuning.cityHeroX, debugTuning.cityHeroY - PLAYER_AVATAR_FEET_Y_OFFSET),
+      { ...createPlayerPaperDollOptions(debugTuning.cityHeroX, debugTuning.cityHeroY - PLAYER_AVATAR_FEET_Y_OFFSET), castsShadow: false },
     );
     this.fighter.name.setVisible(false);
     this.sync();
@@ -728,7 +747,7 @@ class HeroPortraitScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-    this.fighter = createPaperDollFighter(this, createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0));
+    this.fighter = createPaperDollFighter(this, { ...createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0), castsShadow: false });
     this.fighter.name.setVisible(false);
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
@@ -795,7 +814,7 @@ class DebugCharacterScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
     drawDebugCharacterBackdrop(this);
-    this.fighter = createPaperDollFighter(this, createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0));
+    this.fighter = createPaperDollFighter(this, { ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0), castsShadow: false });
     this.fighter.name.setVisible(false);
     enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) => this.handlePreviewPointerDown(pointer, gameObjects));
@@ -1074,6 +1093,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     muscle: options.muscle ?? DEFAULT_PAPER_DOLL_APPEARANCE.muscle,
   };
   const initialFeetY = options.y + PLAYER_AVATAR_FEET_Y_OFFSET;
+  const shadow = createPaperDollGroundShadow(target, options.x, initialFeetY, options.castsShadow !== false);
   const rootContainer = target.add.container(options.x, initialFeetY);
   const root = part(rootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
@@ -1130,13 +1150,33 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     armBack: parts.backUpperArm,
     legFront: parts.frontThigh,
     legBack: parts.backThigh,
-    shadow: root,
+    shadow,
     name,
-    movableParts: [root, name],
+    movableParts: [shadow, root, name],
     animatedParts: [root],
     paperDollRig,
     debugScale: 1,
   };
+}
+
+function createPaperDollGroundShadow(target: Phaser.Scene, x: number, y: number, visible: boolean): FighterPart {
+  const shadowContainer = target.add.container(x, y).setDepth(PAPER_DOLL_SHADOW_DEPTH).setVisible(visible);
+  const graphics = target.add.graphics();
+
+  graphics.fillStyle(0x160a05, 0.18);
+  graphics.fillEllipse(0, 4, 164, 30);
+  graphics.fillStyle(0x160a05, 0.15);
+  graphics.fillEllipse(-44, 9, 88, 18);
+  graphics.fillEllipse(44, 9, 88, 18);
+  graphics.fillStyle(0x160a05, 0.09);
+  graphics.fillEllipse(-72, 2, 58, 16);
+  graphics.fillEllipse(72, 2, 58, 16);
+  graphics.fillStyle(0x160a05, 0.08);
+  graphics.fillEllipse(0, -5, 100, 18);
+
+  shadowContainer.add(graphics);
+
+  return part(shadowContainer);
 }
 
 const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
@@ -1203,9 +1243,18 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
   rig.root.scaleY = PAPER_DOLL_BASE_SCALE * scale;
   applyRigPartDebugTuning(rig);
   syncPaperDollEquipmentVisibility(rig);
+  applyPaperDollShadowTuning(fighter, scale, feetY, centerX);
   fighter.name.x = centerX;
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
+}
+
+function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY: number, centerX: number): void {
+  fighter.shadow.x = centerX;
+  fighter.shadow.y = feetY + 4 * scale;
+  fighter.shadow.scaleX = scale;
+  fighter.shadow.scaleY = scale;
+  fighter.shadow.angle = 0;
 }
 
 function applyRigPartDebugTuning(rig: PaperDollRig): void {
@@ -2413,6 +2462,14 @@ function getActiveBodyAnimation(key: BodyAnimationKey): BodyAnimationTuning {
   return DEFAULT_BODY_ANIMATIONS[key];
 }
 
+function getActiveSlashArc(key: SlashArcAttackKey): SlashArcTuning {
+  if (isDebugTuningActive()) {
+    return debugTuning.slashArcs[key] ?? DEFAULT_SLASH_ARCS[key];
+  }
+
+  return DEFAULT_SLASH_ARCS[key];
+}
+
 function getSelectedDebugBodyAnimation(): BodyAnimationTuning {
   return debugTuning.bodyAnimations[debugTuning.selectedBodyAnimation] ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
 }
@@ -2502,13 +2559,11 @@ function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, ani
 function animateAction(
   target: Phaser.Scene,
   actor: FighterVisual,
-  opponent: FighterVisual,
+  _opponent: FighterVisual,
   actionId: ActionId,
   direction: "left" | "right",
 ): void {
   const sign = direction === "right" ? 1 : -1;
-  const dx = getActionAnimationDx(actor, opponent, actionId, direction);
-  const parts = getAnimatedFighterParts(actor);
 
   if (actionId === "forward" || actionId === "back") {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
@@ -2518,14 +2573,6 @@ function animateAction(
 
   if (actionId === "lunge") {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"));
-    target.tweens.add({
-      targets: parts,
-      x: `+=${dx * sign}`,
-      duration: 160,
-      yoyo: true,
-      ease: "Quad.easeOut",
-    });
-    createDust(target, opponent.body.x - 20 * sign, opponent.body.y + 72);
     return;
   }
 
@@ -2541,14 +2588,7 @@ function animateAction(
 
   if (isAttackBodyAnimationKey(actionId)) {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId));
-  } else if (dx !== 0) {
-    target.tweens.add({
-      targets: parts,
-      x: `+=${dx * sign}`,
-      duration: 120,
-      yoyo: true,
-      ease: "Quad.easeOut",
-    });
+    showSlashArc(target, actor, actionId, direction);
   }
 
   target.tweens.add({
@@ -2558,25 +2598,58 @@ function animateAction(
     yoyo: true,
     ease: "Back.easeOut",
   });
-
-  createDust(target, opponent.body.x - 20 * sign, opponent.body.y + 72);
 }
 
-function isAttackBodyAnimationKey(actionId: ActionId): actionId is Extract<BodyAnimationKey, "light" | "medium" | "heavy"> {
+function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAnimationKey {
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
-function getActionAnimationDx(actor: FighterVisual, opponent: FighterVisual, actionId: ActionId, direction: "left" | "right"): number {
-  const baseDx = actionId === "lunge" ? 42 : 0;
+function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: AttackBodyAnimationKey, direction: "left" | "right"): void {
+  const config = getActiveSlashArc(actionId);
+  const sign = direction === "right" ? 1 : -1;
+  const visualScale = Math.max(0.65, Math.min(1.45, actor.debugScale / 0.3));
+  const x = actor.body.x + sign * config.offsetX * visualScale;
+  const y = actor.body.y + config.offsetY * visualScale;
+  const slash = target.add.graphics();
 
-  if (actionId !== "lunge") {
-    return baseDx;
-  }
+  slash.setPosition(x, y);
+  slash.setDepth(SLASH_ARC_DEPTH);
+  slash.setAlpha(config.alpha);
+  slash.setBlendMode(Phaser.BlendModes.ADD);
+  slash.setAngle(config.angle * sign);
+  slash.setScale(sign * 0.82 * visualScale, 0.82 * visualScale);
 
-  const gapToOpponent = direction === "right" ? opponent.body.x - actor.body.x : actor.body.x - opponent.body.x;
+  drawSlashArc(slash, config);
 
-  return Math.min(baseDx, Math.max(0, gapToOpponent - 2));
+  target.tweens.add({
+    targets: slash,
+    alpha: 0,
+    scaleX: sign * 1.22 * visualScale,
+    scaleY: 1.22 * visualScale,
+    angle: slash.angle + config.sweep * sign,
+    duration: config.duration,
+    ease: "Quad.easeOut",
+    onComplete: () => slash.destroy(),
+  });
 }
+
+function drawSlashArc(graphics: Phaser.GameObjects.Graphics, config: SlashArcTuning): void {
+  graphics.lineStyle(config.width + 4, 0x35180d, 0.46);
+  graphics.beginPath();
+  graphics.arc(0, 0, config.radius + 2, config.startAngle, config.endAngle);
+  graphics.strokePath();
+
+  graphics.lineStyle(config.width, config.color, 0.92);
+  graphics.beginPath();
+  graphics.arc(0, 0, config.radius, config.startAngle, config.endAngle);
+  graphics.strokePath();
+
+  graphics.lineStyle(Math.max(2, config.width * 0.34), 0xfff8dc, 0.84);
+  graphics.beginPath();
+  graphics.arc(0, 0, Math.max(1, config.radius - config.width * 0.55), config.startAngle + 0.08, config.endAngle - 0.08);
+  graphics.strokePath();
+}
+
 function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
   const parts = getAnimatedFighterParts(fighter);
 

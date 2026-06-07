@@ -6,10 +6,13 @@ import {
   debugTuning,
   defaultDebugTuning,
   EQUIPMENT_SLOT_KEYS,
+  DEFAULT_SLASH_ARCS,
   defaultFacePartTuning,
   FACE_PART_KEYS,
+  isSlashArcAttackKey,
   resetDebugTuning,
   RIG_PART_KEYS,
+  SLASH_ARC_ATTACK_KEYS,
   subscribeDebugTuning,
   undoDebugTuning,
   updateDebugTuning,
@@ -23,6 +26,8 @@ import {
   type FacePartTuning,
   type RigPartKey,
   type RigPartTuning,
+  type SlashArcAttackKey,
+  type SlashArcTuning,
 } from "./debugTuning";
 import {
   createDefaultHeroInventory,
@@ -39,6 +44,7 @@ interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
   heroInventory?: HeroInventoryEntry[];
   onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
+  onPreviewSlashArc?: (actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void;
 }
 
 interface DebugRangeControlConfig {
@@ -65,6 +71,7 @@ type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFee
 type FaceNumericControlKey = keyof FacePartTuning;
 type EquipmentNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type EquipmentToggleControlKey = "flipX" | "flipY";
+type SlashArcNumericControlKey = Exclude<keyof SlashArcTuning, "color">;
 type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
 type AnimationRigPoseKey = "base" | "breath";
@@ -115,6 +122,14 @@ interface EquipmentNumericControlConfig {
 interface EquipmentToggleControlConfig {
   key: EquipmentToggleControlKey;
   label: string;
+}
+
+interface SlashArcNumericControlConfig {
+  key: SlashArcNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
 }
 
 interface RigLimbRotateConfig {
@@ -232,6 +247,19 @@ const equipmentToggleControls: EquipmentToggleControlConfig[] = [
   { key: "flipY", label: "mirror Y" },
 ];
 
+const slashArcNumericControls: SlashArcNumericControlConfig[] = [
+  { key: "radius", label: "radius", min: 1, max: 140, step: 1 },
+  { key: "width", label: "width", min: 1, max: 24, step: 1 },
+  { key: "alpha", label: "alpha", min: 0.1, max: 1, step: 0.01 },
+  { key: "duration", label: "duration", min: 30, max: 1000, step: 10 },
+  { key: "offsetX", label: "offset X", min: -240, max: 240, step: 1 },
+  { key: "offsetY", label: "offset Y", min: -240, max: 240, step: 1 },
+  { key: "startAngle", label: "start", min: -6.28, max: 6.28, step: 0.01 },
+  { key: "endAngle", label: "end", min: -6.28, max: 6.28, step: 0.01 },
+  { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
+  { key: "sweep", label: "sweep", min: -180, max: 180, step: 1 },
+];
+
 const rigLimbRotateConfigs: RigLimbRotateConfig[] = [
   { key: "leftArm", label: "Left arm", anchor: "backUpperArm", parts: ["backUpperArm", "backForearm", "backHand"] },
   { key: "rightArm", label: "Right arm", anchor: "frontUpperArm", parts: ["frontUpperArm", "frontForearm", "frontHand"] },
@@ -262,6 +290,9 @@ let isDebugUndoShortcutMounted = false;
 let debugHeroEquipment: HeroEquipment | undefined;
 let debugHeroInventory: HeroInventoryEntry[] = createDefaultHeroInventory();
 let notifyHeroEquipmentChange: ((equipment: HeroEquipment) => void) | undefined;
+let previewSlashArc: ((actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void) | undefined;
+let isSlashPreviewLoopRunning = false;
+let slashPreviewTimer: number | undefined;
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -292,6 +323,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="character" aria-pressed="true">Character</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="city" aria-pressed="false">City</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="arena" aria-pressed="false">Arena</button>
+      <button class="debug-panel__mode-tab" type="button" data-debug-mode="effects" aria-pressed="false">Effects</button>
     </nav>
     <details class="debug-rig-panel" open>
       <summary>Rig editor</summary>
@@ -373,6 +405,24 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <summary>City tuning</summary>
       <div class="debug-panel__city-body"></div>
     </details>
+    <details class="debug-effects-panel" open>
+      <summary>Effects</summary>
+      <div class="debug-effects">
+        <fieldset class="debug-effects__group">
+          <legend>Slash arc</legend>
+          <label class="debug-rig-editor__part">
+            <span>Attack</span>
+            <select class="debug-effects__slash-select"></select>
+          </label>
+          <div class="debug-effects__slash-controls"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-effects__start" type="button">Start</button>
+            <button class="debug-panel__reset debug-effects__stop" type="button">Stop</button>
+          </div>
+          <button class="debug-panel__reset debug-effects__reset-slash" type="button">Reset slash</button>
+        </fieldset>
+      </div>
+    </details>
     <div class="debug-panel__prod-actions">
       <button class="debug-panel__reset debug-panel__save-prod" type="button">Save as prod defaults</button>
       <button class="debug-panel__reset debug-panel__save-prod-animation" type="button">Save animation as prod</button>
@@ -383,6 +433,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
 
   const body = panel.querySelector<HTMLElement>(".debug-panel__body");
   const cityBody = panel.querySelector<HTMLElement>(".debug-panel__city-body");
+  const effectsBody = panel.querySelector<HTMLElement>(".debug-effects");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
   const heroEquipmentBody = panel.querySelector<HTMLElement>(".debug-hero-equipment");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
@@ -390,7 +441,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset-all");
   const status = panel.querySelector<HTMLElement>(".debug-panel__status");
 
-  if (!body || !cityBody || !rigEditor || !heroEquipmentBody || !saveButton || !saveAnimationButton || !resetButton || !status) {
+  if (!body || !cityBody || !effectsBody || !rigEditor || !heroEquipmentBody || !saveButton || !saveAnimationButton || !resetButton || !status) {
     return;
   }
 
@@ -418,6 +469,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
 
   mountPreviewToolbar(previewToolbar);
   mountRigEditor(rigEditor);
+  mountEffectsEditor(effectsBody);
   mountHeroEquipmentEditor(heroEquipmentBody);
   mountNudgeToolbar(nudgeToolbar);
   mountModeTabs(panel);
@@ -464,6 +516,7 @@ function configureHeroEquipmentDebug(options: DebugPanelOptions): void {
   debugHeroEquipment = options.heroEquipment ? { ...options.heroEquipment } : undefined;
   debugHeroInventory = options.heroInventory ? cloneHeroInventory(options.heroInventory) : createDefaultHeroInventory();
   notifyHeroEquipmentChange = options.onHeroEquipmentChange;
+  previewSlashArc = options.onPreviewSlashArc;
 }
 
 function cloneHeroInventory(source: readonly HeroInventoryEntry[]): HeroInventoryEntry[] {
@@ -627,7 +680,7 @@ function mountNudgeToolbar(toolbar: HTMLElement): void {
   });
 }
 
-type DebugMode = "character" | "city" | "arena";
+type DebugMode = "character" | "city" | "arena" | "effects";
 
 function mountModeTabs(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
@@ -646,10 +699,11 @@ function setDebugMode(mode: DebugMode): void {
   document.body.classList.toggle("debug-mode-character", mode === "character");
   document.body.classList.toggle("debug-mode-city", mode === "city");
   document.body.classList.toggle("debug-mode-arena", mode === "arena");
+  document.body.classList.toggle("debug-mode-effects", mode === "effects");
 }
 
 function getDebugModeFromValue(value: string | undefined): DebugMode {
-  if (value === "city" || value === "arena") {
+  if (value === "city" || value === "arena" || value === "effects") {
     return value;
   }
 
@@ -949,6 +1003,91 @@ function mountRigEditor(editor: HTMLElement): void {
 
 }
 
+function mountEffectsEditor(editor: HTMLElement): void {
+  const slashSelect = editor.querySelector<HTMLSelectElement>(".debug-effects__slash-select");
+  const slashControls = editor.querySelector<HTMLElement>(".debug-effects__slash-controls");
+  const start = editor.querySelector<HTMLButtonElement>(".debug-effects__start");
+  const stop = editor.querySelector<HTMLButtonElement>(".debug-effects__stop");
+  const resetSlash = editor.querySelector<HTMLButtonElement>(".debug-effects__reset-slash");
+
+  if (!slashSelect || !slashControls || !start || !stop || !resetSlash) {
+    return;
+  }
+
+  SLASH_ARC_ATTACK_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    slashSelect.append(option);
+  });
+
+  slashArcNumericControls.forEach((control) => slashControls.append(createSlashArcRangeControl(control)));
+
+  slashSelect.addEventListener("change", () => {
+    if (isSlashArcAttackKey(slashSelect.value)) {
+      updateDebugTuning({ selectedSlashArc: slashSelect.value }, { undoable: false });
+    }
+  });
+
+  start.addEventListener("click", () => {
+    startSlashPreviewLoop();
+  });
+
+  stop.addEventListener("click", () => {
+    stopSlashPreviewLoop();
+  });
+
+  resetSlash.addEventListener("click", () => {
+    resetSelectedSlashArc();
+  });
+}
+
+function startSlashPreviewLoop(): void {
+  if (isSlashPreviewLoopRunning) {
+    return;
+  }
+
+  isSlashPreviewLoopRunning = true;
+  runSlashPreviewLoop();
+  syncSlashPreviewButtons();
+}
+
+function stopSlashPreviewLoop(): void {
+  isSlashPreviewLoopRunning = false;
+
+  if (slashPreviewTimer !== undefined) {
+    window.clearTimeout(slashPreviewTimer);
+    slashPreviewTimer = undefined;
+  }
+
+  syncSlashPreviewButtons();
+}
+
+function runSlashPreviewLoop(): void {
+  if (!isSlashPreviewLoopRunning) {
+    return;
+  }
+
+  const actionId = debugTuning.selectedSlashArc;
+  const arc = debugTuning.slashArcs[actionId] ?? DEFAULT_SLASH_ARCS[actionId];
+  const animation = debugTuning.bodyAnimations[actionId] ?? DEFAULT_BODY_ANIMATIONS[actionId];
+
+  previewSlashArc?.(actionId, true);
+
+  slashPreviewTimer = window.setTimeout(
+    () => runSlashPreviewLoop(),
+    Math.max(animation.duration, arc.duration, 120) + 140,
+  );
+}
+
+function syncSlashPreviewButtons(): void {
+  const panel = document.querySelector<HTMLElement>(".debug-panel");
+
+  if (panel) {
+    syncEffectsEditor(panel);
+  }
+}
+
 function createRigRangeControl(control: RigNumericControlConfig): HTMLElement {
   const row = document.createElement("label");
   row.className = "debug-panel__row debug-rig-editor__row";
@@ -981,6 +1120,43 @@ function createRigRangeControl(control: RigNumericControlConfig): HTMLElement {
 
   number?.addEventListener("input", () => {
     updateRigNumericTuning(control.key, Number(number.value));
+  });
+
+  return row;
+}
+
+function createSlashArcRangeControl(control: SlashArcNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-slash-arc-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-slash-arc-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateSelectedSlashArc({ [control.key]: Number(range.value) } as Partial<SlashArcTuning>);
+  });
+
+  number?.addEventListener("input", () => {
+    updateSelectedSlashArc({ [control.key]: Number(number.value) } as Partial<SlashArcTuning>);
   });
 
   return row;
@@ -1237,6 +1413,32 @@ function updateEquipmentSlot(slotKey: EquipmentSlotKey, patch: Partial<Equipment
 
 function resetEquipmentSlot(slotKey: EquipmentSlotKey): void {
   updateEquipmentSlot(slotKey, { ...DEFAULT_EQUIPMENT[slotKey] });
+}
+
+function updateSelectedSlashArc(patch: Partial<SlashArcTuning>): void {
+  const key = debugTuning.selectedSlashArc;
+  const current = debugTuning.slashArcs[key] ?? DEFAULT_SLASH_ARCS[key];
+
+  updateDebugTuning({
+    slashArcs: {
+      ...debugTuning.slashArcs,
+      [key]: {
+        ...current,
+        ...patch,
+      },
+    },
+  });
+}
+
+function resetSelectedSlashArc(): void {
+  const key = debugTuning.selectedSlashArc;
+
+  updateDebugTuning({
+    slashArcs: {
+      ...debugTuning.slashArcs,
+      [key]: { ...DEFAULT_SLASH_ARCS[key] },
+    },
+  });
 }
 
 function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItemId | null): void {
@@ -1697,6 +1899,7 @@ function syncDebugTools(panel: HTMLElement): void {
   syncRigEditor(panel);
   syncFaceEditor(panel);
   syncEquipmentEditor(panel);
+  syncEffectsEditor(panel);
   syncHeroEquipmentEditor(panel);
   syncAnimationEditor(panel);
   syncNudgeControls();
@@ -1766,7 +1969,9 @@ function syncModeTabs(panel: HTMLElement): void {
     ? "arena"
     : document.body.classList.contains("debug-mode-city")
       ? "city"
-      : "character";
+      : document.body.classList.contains("debug-mode-effects")
+        ? "effects"
+        : "character";
 
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.debugMode === mode}`);
@@ -1903,6 +2108,40 @@ function syncEquipmentEditor(panel: HTMLElement): void {
     const key = input.dataset.equipmentToggleKey as EquipmentToggleControlKey;
 
     input.checked = Boolean(selectedEquipment[key]);
+  });
+}
+
+function syncEffectsEditor(panel: HTMLElement): void {
+  const slashSelect = panel.querySelector<HTMLSelectElement>(".debug-effects__slash-select");
+  const start = panel.querySelector<HTMLButtonElement>(".debug-effects__start");
+  const stop = panel.querySelector<HTMLButtonElement>(".debug-effects__stop");
+  const selectedSlashArc = debugTuning.slashArcs[debugTuning.selectedSlashArc] ?? DEFAULT_SLASH_ARCS[debugTuning.selectedSlashArc];
+  const canPreview = Boolean(previewSlashArc);
+
+  if (slashSelect) {
+    slashSelect.value = debugTuning.selectedSlashArc;
+  }
+
+  if (start) {
+    start.disabled = !canPreview || isSlashPreviewLoopRunning;
+    start.textContent = isSlashPreviewLoopRunning ? "Running" : "Start";
+  }
+
+  if (stop) {
+    stop.disabled = !isSlashPreviewLoopRunning;
+  }
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-slash-arc-key]").forEach((input) => {
+    const key = input.dataset.slashArcKey as SlashArcNumericControlKey;
+
+    input.value = `${selectedSlashArc[key]}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-slash-arc-number-key]").forEach((input) => {
+    const key = input.dataset.slashArcNumberKey as SlashArcNumericControlKey;
+    const value = selectedSlashArc[key];
+
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
   });
 }
 

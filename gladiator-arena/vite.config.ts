@@ -100,6 +100,9 @@ type EquipmentSlotKey = (typeof equipmentSlotKeys)[number];
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 
+const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
+type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
+
 const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
   idle: "DEFAULT_IDLE_ANIMATION",
   walkCycle: "DEFAULT_WALK_CYCLE_ANIMATION",
@@ -148,6 +151,21 @@ interface FacePartTuning {
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
+type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
+
+interface SlashArcTuning {
+  radius: number;
+  width: number;
+  color: number;
+  alpha: number;
+  duration: number;
+  offsetX: number;
+  offsetY: number;
+  startAngle: number;
+  endAngle: number;
+  angle: number;
+  sweep: number;
+}
 
 interface BodyAnimationUpdates {
   key: BodyAnimationKey;
@@ -182,6 +200,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
+          const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
           const [layoutSource, combatSource, debugTuningSource] = await Promise.all([
             readFile(arenaLayoutUrl, "utf8"),
             readFile(combatUrl, "utf8"),
@@ -190,9 +209,12 @@ function saveProdDefaultsPlugin(): Plugin {
           const nextLayoutSource = applyProdDefaultUpdates(layoutSource, layoutUpdates);
           const nextCombatSource = applyCombatDefaultUpdates(combatSource, combatUpdates);
           const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
-            applyEquipmentDefaultUpdates(
-              applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates),
-              equipmentUpdates,
+            applySlashArcDefaultUpdates(
+              applyEquipmentDefaultUpdates(
+                applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates),
+                equipmentUpdates,
+              ),
+              slashArcUpdates,
             ),
             debugTuningDefaultUpdates,
           );
@@ -204,14 +226,15 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, and ${Object.keys(equipmentUpdates).length} equipment defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${Object.keys(equipmentUpdates).length} equipment defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
               Object.keys(debugTuningDefaultUpdates).length +
               Object.keys(rigPartUpdates).length +
               Object.keys(facePartUpdates).length +
-              Object.keys(equipmentUpdates).length,
+              Object.keys(equipmentUpdates).length +
+              Object.keys(slashArcUpdates).length,
           });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod defaults." });
@@ -382,6 +405,30 @@ export function pickEquipmentDefaultUpdates(payload: unknown): EquipmentUpdates 
   return Object.fromEntries(equipmentSlotKeys.map((key) => [key, readEquipmentTuning(equipment, key)])) as EquipmentUpdates;
 }
 
+export function applySlashArcDefaultUpdates(source: string, updates: SlashArcUpdates): string {
+  const pattern = /export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = (?:\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_SLASH_ARCS in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatSlashArcDefaults(updates));
+}
+
+export function pickSlashArcDefaultUpdates(payload: unknown): SlashArcUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const slashArcs = (payload as { slashArcs?: unknown }).slashArcs;
+
+  if (!slashArcs || typeof slashArcs !== "object" || Array.isArray(slashArcs)) {
+    throw new Error("Expected slashArcs in debug tuning payload.");
+  }
+
+  return Object.fromEntries(slashArcAttackKeys.map((key) => [key, readSlashArcTuning(slashArcs, key)])) as SlashArcUpdates;
+}
+
 export function applyBodyAnimationDefaultUpdates(source: string, updates: BodyAnimationUpdates): string {
   const constantName = bodyAnimationDefaultConstants[updates.key];
   const pattern = new RegExp(`export const ${constantName}: BodyAnimationTuning = (?:createDefault[A-Za-z]+Animation\\(\\);|\\{[\\s\\S]*?\\r?\\n\\};)`);
@@ -481,6 +528,34 @@ function formatEquipmentDefaults(updates: EquipmentUpdates): string {
   });
 
   return `export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatSlashArcDefaults(updates: SlashArcUpdates): string {
+  const rows = slashArcAttackKeys.map((key) => {
+    const arc = updates[key];
+
+    return [
+      `  ${key}: {`,
+      `    radius: ${formatNumber(arc.radius)},`,
+      `    width: ${formatNumber(arc.width)},`,
+      `    color: ${formatHexColor(arc.color)},`,
+      `    alpha: ${formatNumber(arc.alpha)},`,
+      `    duration: ${formatNumber(arc.duration)},`,
+      `    offsetX: ${formatNumber(arc.offsetX)},`,
+      `    offsetY: ${formatNumber(arc.offsetY)},`,
+      `    startAngle: ${formatNumber(arc.startAngle)},`,
+      `    endAngle: ${formatNumber(arc.endAngle)},`,
+      `    angle: ${formatNumber(arc.angle)},`,
+      `    sweep: ${formatNumber(arc.sweep)},`,
+      "  },",
+    ].join("\n");
+  });
+
+  return `export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatHexColor(value: number): string {
+  return `0x${Math.round(value).toString(16).padStart(6, "0")}`;
 }
 
 function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimationUpdates): string {
@@ -628,6 +703,30 @@ function readEquipmentTuning(equipment: object, key: EquipmentSlotKey): RigPartT
   };
 }
 
+function readSlashArcTuning(slashArcs: object, key: SlashArcAttackKey): SlashArcTuning {
+  const arc = (slashArcs as Partial<Record<SlashArcAttackKey, unknown>>)[key];
+
+  if (!arc || typeof arc !== "object" || Array.isArray(arc)) {
+    throw new Error(`Invalid slash arc tuning value: ${key}.`);
+  }
+
+  const tuning = arc as Partial<Record<keyof SlashArcTuning, unknown>>;
+
+  return {
+    radius: readFiniteSlashArcNumber(tuning, key, "radius"),
+    width: readFiniteSlashArcNumber(tuning, key, "width"),
+    color: readFiniteSlashArcNumber(tuning, key, "color"),
+    alpha: readFiniteSlashArcNumber(tuning, key, "alpha"),
+    duration: readFiniteSlashArcNumber(tuning, key, "duration"),
+    offsetX: readFiniteSlashArcNumber(tuning, key, "offsetX"),
+    offsetY: readFiniteSlashArcNumber(tuning, key, "offsetY"),
+    startAngle: readFiniteSlashArcNumber(tuning, key, "startAngle"),
+    endAngle: readFiniteSlashArcNumber(tuning, key, "endAngle"),
+    angle: readFiniteSlashArcNumber(tuning, key, "angle"),
+    sweep: readFiniteSlashArcNumber(tuning, key, "sweep"),
+  };
+}
+
 function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey: string, fieldName: keyof RigPartTuning): number {
   const value = payload[fieldName];
 
@@ -643,6 +742,16 @@ function readFiniteFacePartNumber(payload: Partial<FacePartTuningPayload>, partK
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid face part tuning value: ${partKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteSlashArcNumber(payload: Partial<Record<keyof SlashArcTuning, unknown>>, arcKey: SlashArcAttackKey, fieldName: keyof SlashArcTuning): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid slash arc tuning value: ${arcKey}.${fieldName}.`);
   }
 
   return value;

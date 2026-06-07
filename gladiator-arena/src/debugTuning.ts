@@ -45,6 +45,9 @@ export type RigPartKey = (typeof RIG_PART_KEYS)[number];
 export const BODY_ANIMATION_KEYS = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 
+export const SLASH_ARC_ATTACK_KEYS = ["light", "medium", "heavy"] as const;
+export type SlashArcAttackKey = (typeof SLASH_ARC_ATTACK_KEYS)[number];
+
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
 
@@ -99,6 +102,20 @@ export interface BodyAnimationTuning {
 
 export type IdleAnimationTuning = BodyAnimationTuning;
 
+export interface SlashArcTuning {
+  radius: number;
+  width: number;
+  color: number;
+  alpha: number;
+  duration: number;
+  offsetX: number;
+  offsetY: number;
+  startAngle: number;
+  endAngle: number;
+  angle: number;
+  sweep: number;
+}
+
 export interface ArenaDebugTuning {
   showGrid: boolean;
   gridStep: number;
@@ -142,6 +159,8 @@ export interface ArenaDebugTuning {
   animationEditMode: AnimationEditMode;
   selectedBodyAnimation: BodyAnimationKey;
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
+  selectedSlashArc: SlashArcAttackKey;
+  slashArcs: Record<SlashArcAttackKey, SlashArcTuning>;
 }
 
 export const defaultRigPartTuning: RigPartTuning = {
@@ -323,7 +342,7 @@ export const DEFAULT_WALK_CYCLE_ANIMATION: BodyAnimationTuning = {
 
 export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 700,
+  duration: 900,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -695,6 +714,48 @@ export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuni
   rest: DEFAULT_REST_ANIMATION,
 };
 
+export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
+  light: {
+    radius: 17,
+    width: 2,
+    color: 0xfff3c7,
+    alpha: 1,
+    duration: 130,
+    offsetX: 1,
+    offsetY: -14,
+    startAngle: -1.2,
+    endAngle: 1.05,
+    angle: 83,
+    sweep: -116,
+  },
+  medium: {
+    radius: 20,
+    width: 3,
+    color: 0xffcf62,
+    alpha: 0.95,
+    duration: 165,
+    offsetX: 0,
+    offsetY: -18,
+    startAngle: -1.28,
+    endAngle: 1.12,
+    angle: -40,
+    sweep: 43,
+  },
+  heavy: {
+    radius: 25,
+    width: 10,
+    color: 0xff6048,
+    alpha: 1,
+    duration: 210,
+    offsetX: 0,
+    offsetY: -36,
+    startAngle: -1.36,
+    endAngle: 1.22,
+    angle: -16,
+    sweep: 105,
+  },
+};
+
 export const defaultDebugTuning: ArenaDebugTuning = {
   showGrid: true,
   gridStep: 40,
@@ -738,6 +799,8 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   animationEditMode: "poseA",
   selectedBodyAnimation: "idle",
   bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
+  selectedSlashArc: "light",
+  slashArcs: cloneSlashArcs(DEFAULT_SLASH_ARCS),
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -860,6 +923,8 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     animationEditMode: isAnimationEditMode(input.animationEditMode) ? input.animationEditMode : defaultDebugTuning.animationEditMode,
     selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
     bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
+    selectedSlashArc: isSlashArcAttackKey(input.selectedSlashArc) ? input.selectedSlashArc : defaultDebugTuning.selectedSlashArc,
+    slashArcs: normalizeSlashArcs(input.slashArcs),
   };
 }
 
@@ -895,6 +960,10 @@ function cloneBodyAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
   };
 }
 
+function cloneSlashArcs(source: Record<SlashArcAttackKey, SlashArcTuning>): Record<SlashArcAttackKey, SlashArcTuning> {
+  return Object.fromEntries(SLASH_ARC_ATTACK_KEYS.map((key) => [key, { ...source[key] }])) as Record<SlashArcAttackKey, SlashArcTuning>;
+}
+
 function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
   return {
     ...source,
@@ -903,6 +972,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     faceParts: cloneFaceParts(source.faceParts),
     equipment: cloneEquipment(source.equipment),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
+    slashArcs: cloneSlashArcs(source.slashArcs),
   };
 }
 
@@ -1311,6 +1381,32 @@ function normalizeBodyAnimation(input: unknown, fallback = DEFAULT_IDLE_ANIMATIO
   };
 }
 
+function normalizeSlashArcs(input: unknown): Record<SlashArcAttackKey, SlashArcTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<SlashArcAttackKey, unknown>>) : {};
+
+  return Object.fromEntries(
+    SLASH_ARC_ATTACK_KEYS.map((key) => [key, normalizeSlashArc(source[key], DEFAULT_SLASH_ARCS[key])]),
+  ) as Record<SlashArcAttackKey, SlashArcTuning>;
+}
+
+function normalizeSlashArc(input: unknown, fallback: SlashArcTuning): SlashArcTuning {
+  const source = typeof input === "object" && input !== null ? (input as Partial<SlashArcTuning>) : {};
+
+  return {
+    radius: clampNumber(source.radius, 1, 140, fallback.radius),
+    width: clampNumber(source.width, 1, 24, fallback.width),
+    color: Math.round(clampNumber(source.color, 0, 0xffffff, fallback.color)),
+    alpha: clampNumber(source.alpha, 0.1, 1, fallback.alpha),
+    duration: clampNumber(source.duration, 30, 1000, fallback.duration),
+    offsetX: clampNumber(source.offsetX, -240, 240, fallback.offsetX),
+    offsetY: clampNumber(source.offsetY, -240, 240, fallback.offsetY),
+    startAngle: clampNumber(source.startAngle, -6.28, 6.28, fallback.startAngle),
+    endAngle: clampNumber(source.endAngle, -6.28, 6.28, fallback.endAngle),
+    angle: clampNumber(source.angle, -180, 180, fallback.angle),
+    sweep: clampNumber(source.sweep, -180, 180, fallback.sweep),
+  };
+}
+
 function normalizeIdleAnimation(input: unknown, fallback = DEFAULT_IDLE_ANIMATION): BodyAnimationTuning {
   return normalizeBodyAnimation(input, fallback);
 }
@@ -1329,6 +1425,10 @@ function isRigPartKey(value: unknown): value is RigPartKey {
 
 function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {
   return typeof value === "string" && BODY_ANIMATION_KEYS.includes(value as BodyAnimationKey);
+}
+
+export function isSlashArcAttackKey(value: unknown): value is SlashArcAttackKey {
+  return typeof value === "string" && SLASH_ARC_ATTACK_KEYS.includes(value as SlashArcAttackKey);
 }
 
 function isAnimationEditMode(value: unknown): value is AnimationEditMode {

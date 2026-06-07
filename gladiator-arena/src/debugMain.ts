@@ -11,7 +11,7 @@ import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armor
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
-import { beginDebugUndoGroup, debugTuning, endDebugUndoGroup, subscribeDebugTuning, updateDebugTuning } from "./debugTuning";
+import { beginDebugUndoGroup, debugTuning, endDebugUndoGroup, subscribeDebugTuning, updateDebugTuning, type SlashArcAttackKey } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
 import {
   applyBattleReward,
@@ -178,6 +178,10 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   armoryShop?.render();
 }
 
+function previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
+  arenaScene?.previewSlashArc(actionId, withBodyAnimation);
+}
+
 function syncHeroPortraitButton(): void {
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 }
@@ -289,6 +293,7 @@ function startDebugApp(): void {
       hero.equipment = equipment;
       setPlayerEquipment(hero.equipment);
     },
+    onPreviewSlashArc: previewSlashArc,
   });
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
