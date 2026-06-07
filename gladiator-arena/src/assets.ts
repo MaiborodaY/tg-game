@@ -38,3 +38,6 @@ export const FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY = "front-shin-light-01";
 export const FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/front-shin-light-01.png";
 export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY = "front-foot-light-01";
 export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL = "./assets/fighters/body-parts/legs/front-foot-light-01.png";
+
+export const FIGHTER_WEAPON_SWORD_01_ASSET_KEY = "weapon-sword-01";
+export const FIGHTER_WEAPON_SWORD_01_ASSET_URL = "./assets/fighters/weapons/weapon-sword-01.png";

@@ -31,6 +31,16 @@ type ProdDefaultConstant = keyof typeof prodDefaultFields;
 type ProdDefaultPayload = Record<(typeof prodDefaultFields)[ProdDefaultConstant], unknown>;
 type ProdDefaultUpdates = Record<ProdDefaultConstant, number>;
 
+const debugTuningDefaultFields = {
+  cityHeroX: "cityHeroX",
+  cityHeroY: "cityHeroY",
+  cityHeroScale: "cityHeroScale",
+} as const;
+
+type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;
+type DebugTuningDefaultPayload = Record<(typeof debugTuningDefaultFields)[DebugTuningDefaultField], unknown>;
+type DebugTuningDefaultUpdates = Record<DebugTuningDefaultField, number>;
+
 const rigPartKeys = [
   "head",
   "torso",
@@ -52,6 +62,9 @@ type RigPartKey = (typeof rigPartKeys)[number];
 
 const facePartKeys = ["eyeLeft", "eyeRight"] as const;
 type FacePartKey = (typeof facePartKeys)[number];
+
+const equipmentSlotKeys = ["weaponMain"] as const;
+type EquipmentSlotKey = (typeof equipmentSlotKeys)[number];
 
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
@@ -103,6 +116,7 @@ interface FacePartTuning {
 
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
+type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 
 interface BodyAnimationUpdates {
   key: BodyAnimationKey;
@@ -132,17 +146,30 @@ function saveProdDefaultsPlugin(): Plugin {
         try {
           const payload = await readJson(request);
           const layoutUpdates = pickProdDefaultUpdates(payload);
+          const debugTuningDefaultUpdates = pickDebugTuningDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
+          const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
           const [layoutSource, debugTuningSource] = await Promise.all([readFile(arenaLayoutUrl, "utf8"), readFile(debugTuningUrl, "utf8")]);
           const nextLayoutSource = applyProdDefaultUpdates(layoutSource, layoutUpdates);
-          const nextDebugTuningSource = applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates);
+          const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
+            applyEquipmentDefaultUpdates(
+              applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates),
+              equipmentUpdates,
+            ),
+            debugTuningDefaultUpdates,
+          );
 
           await Promise.all([writeFile(arenaLayoutUrl, nextLayoutSource, "utf8"), writeFile(debugTuningUrl, nextDebugTuningSource, "utf8")]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(rigPartUpdates).length} rig defaults, and ${Object.keys(facePartUpdates).length} face defaults to prod.`,
-            updated: Object.keys(layoutUpdates).length + Object.keys(rigPartUpdates).length + Object.keys(facePartUpdates).length,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, and ${Object.keys(equipmentUpdates).length} equipment defaults to prod.`,
+            updated:
+              Object.keys(layoutUpdates).length +
+              Object.keys(debugTuningDefaultUpdates).length +
+              Object.keys(rigPartUpdates).length +
+              Object.keys(facePartUpdates).length +
+              Object.keys(equipmentUpdates).length,
           });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod defaults." });
@@ -194,6 +221,31 @@ export function pickProdDefaultUpdates(payload: unknown): ProdDefaultUpdates {
   ) as ProdDefaultUpdates;
 }
 
+export function applyDebugTuningDefaultUpdates(source: string, updates: DebugTuningDefaultUpdates): string {
+  return Object.entries(updates).reduce((nextSource, [fieldName, value]) => {
+    const pattern = new RegExp(`(\\n\\s*${fieldName}: )[-0-9.]+(,)`);
+
+    if (!pattern.test(nextSource)) {
+      throw new Error(`Could not find defaultDebugTuning.${fieldName} in debugTuning.ts.`);
+    }
+
+    return nextSource.replace(pattern, `$1${formatNumber(value)}$2`);
+  }, source);
+}
+
+export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefaultUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(debugTuningDefaultFields).map(([fieldName, payloadField]) => [
+      fieldName,
+      readFiniteNumber(payload as DebugTuningDefaultPayload, payloadField),
+    ]),
+  ) as DebugTuningDefaultUpdates;
+}
+
 export function applyRigPartDefaultUpdates(source: string, updates: RigPartUpdates): string {
   const pattern = /export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = (?:createDefaultRigParts\(\)|\{[\s\S]*?\});/;
 
@@ -240,6 +292,30 @@ export function pickFacePartDefaultUpdates(payload: unknown): FacePartUpdates {
   }
 
   return Object.fromEntries(facePartKeys.map((key) => [key, readFacePartTuning(faceParts, key)])) as FacePartUpdates;
+}
+
+export function applyEquipmentDefaultUpdates(source: string, updates: EquipmentUpdates): string {
+  const pattern = /export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = (?:\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_EQUIPMENT in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatEquipmentDefaults(updates));
+}
+
+export function pickEquipmentDefaultUpdates(payload: unknown): EquipmentUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const equipment = (payload as { equipment?: unknown }).equipment;
+
+  if (!equipment || typeof equipment !== "object" || Array.isArray(equipment)) {
+    throw new Error("Expected equipment in debug tuning payload.");
+  }
+
+  return Object.fromEntries(equipmentSlotKeys.map((key) => [key, readEquipmentTuning(equipment, key)])) as EquipmentUpdates;
 }
 
 export function applyBodyAnimationDefaultUpdates(source: string, updates: BodyAnimationUpdates): string {
@@ -331,6 +407,16 @@ function formatFacePartDefaults(updates: FacePartUpdates): string {
   });
 
   return `export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatEquipmentDefaults(updates: EquipmentUpdates): string {
+  const rows = equipmentSlotKeys.map((key) => {
+    const item = updates[key];
+
+    return `  ${key}: { x: ${formatNumber(item.x)}, y: ${formatNumber(item.y)}, angle: ${formatNumber(item.angle)}, scaleX: ${formatNumber(item.scaleX)}, scaleY: ${formatNumber(item.scaleY)}, flipX: ${item.flipX}, flipY: ${item.flipY} },`;
+  });
+
+  return `export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {\n${rows.join("\n")}\n};`;
 }
 
 function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimationUpdates): string {
@@ -458,7 +544,27 @@ function readFacePartTuning(faceParts: object, key: FacePartKey): FacePartTuning
   };
 }
 
-function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey: RigPartKey, fieldName: keyof RigPartTuning): number {
+function readEquipmentTuning(equipment: object, key: EquipmentSlotKey): RigPartTuning {
+  const item = (equipment as Partial<Record<EquipmentSlotKey, unknown>>)[key];
+
+  if (!item || typeof item !== "object" || Array.isArray(item)) {
+    throw new Error(`Invalid equipment tuning value: ${key}.`);
+  }
+
+  const tuning = item as Partial<RigPartTuningPayload>;
+
+  return {
+    x: readFiniteRigPartNumber(tuning, key, "x"),
+    y: readFiniteRigPartNumber(tuning, key, "y"),
+    angle: readFiniteRigPartNumber(tuning, key, "angle"),
+    scaleX: readFiniteRigPartNumber(tuning, key, "scaleX"),
+    scaleY: readFiniteRigPartNumber(tuning, key, "scaleY"),
+    flipX: readRigPartBoolean(tuning, key, "flipX"),
+    flipY: readRigPartBoolean(tuning, key, "flipY"),
+  };
+}
+
+function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey: string, fieldName: keyof RigPartTuning): number {
   const value = payload[fieldName];
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -478,7 +584,7 @@ function readFiniteFacePartNumber(payload: Partial<FacePartTuningPayload>, partK
   return value;
 }
 
-function readRigPartBoolean(payload: Partial<RigPartTuningPayload>, partKey: RigPartKey, fieldName: keyof RigPartTuning): boolean {
+function readRigPartBoolean(payload: Partial<RigPartTuningPayload>, partKey: string, fieldName: keyof RigPartTuning): boolean {
   const value = payload[fieldName];
 
   if (typeof value !== "boolean") {

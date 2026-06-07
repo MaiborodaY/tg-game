@@ -2,8 +2,10 @@ import {
   ANIMATION_EDIT_MODES,
   BODY_ANIMATION_KEYS,
   DEFAULT_BODY_ANIMATIONS,
+  DEFAULT_EQUIPMENT,
   debugTuning,
   defaultDebugTuning,
+  EQUIPMENT_SLOT_KEYS,
   defaultFacePartTuning,
   FACE_PART_KEYS,
   resetDebugTuning,
@@ -15,6 +17,8 @@ import {
   type ArenaDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type EquipmentSlotKey,
+  type EquipmentTuning,
   type FacePartKey,
   type FacePartTuning,
   type RigPartKey,
@@ -44,6 +48,8 @@ type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
 type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetX" | "characterPreviewFeetY";
 type FaceNumericControlKey = keyof FacePartTuning;
+type EquipmentNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
+type EquipmentToggleControlKey = "flipX" | "flipY";
 type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
 type AnimationRigPoseKey = "base" | "breath";
@@ -81,6 +87,19 @@ interface FaceNumericControlConfig {
   min: number;
   max: number;
   step: number;
+}
+
+interface EquipmentNumericControlConfig {
+  key: EquipmentNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface EquipmentToggleControlConfig {
+  key: EquipmentToggleControlKey;
+  label: string;
 }
 
 interface RigLimbRotateConfig {
@@ -140,6 +159,17 @@ const controlGroups: DebugControlGroup[] = [
   },
 ];
 
+const cityControlGroups: DebugControlGroup[] = [
+  {
+    title: "City hero",
+    controls: [
+      { type: "range", key: "cityHeroX", label: "Hero X", min: 0, max: 240, step: 1, resetValue: defaultDebugTuning.cityHeroX },
+      { type: "range", key: "cityHeroY", label: "Hero Y", min: 160, max: 360, step: 1, resetValue: defaultDebugTuning.cityHeroY },
+      { type: "range", key: "cityHeroScale", label: "Hero scale", min: 0.4, max: 1.6, step: 0.01, resetValue: defaultDebugTuning.cityHeroScale },
+    ],
+  },
+];
+
 const rigNumericControls: RigNumericControlConfig[] = [
   { key: "x", label: "x", min: -480, max: 480, step: 1 },
   { key: "y", label: "y", min: -480, max: 480, step: 1 },
@@ -164,6 +194,19 @@ const faceNumericControls: FaceNumericControlConfig[] = [
   { key: "y", label: "y", min: -40, max: 40, step: 0.5 },
   { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
+];
+
+const equipmentNumericControls: EquipmentNumericControlConfig[] = [
+  { key: "x", label: "x", min: -240, max: 240, step: 1 },
+  { key: "y", label: "y", min: -240, max: 240, step: 1 },
+  { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
+  { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
+  { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
+];
+
+const equipmentToggleControls: EquipmentToggleControlConfig[] = [
+  { key: "flipX", label: "mirror X" },
+  { key: "flipY", label: "mirror Y" },
 ];
 
 const rigLimbRotateConfigs: RigLimbRotateConfig[] = [
@@ -218,6 +261,7 @@ export function mountDebugPanel(root: HTMLElement): void {
   panel.innerHTML = `
     <nav class="debug-panel__mode-tabs" aria-label="Debug mode">
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="character" aria-pressed="true">Character</button>
+      <button class="debug-panel__mode-tab" type="button" data-debug-mode="city" aria-pressed="false">City</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="arena" aria-pressed="false">Arena</button>
     </nav>
     <details class="debug-rig-panel" open>
@@ -243,6 +287,17 @@ export function mountDebugPanel(root: HTMLElement): void {
           <div class="debug-rig-editor__face-controls"></div>
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-rig-editor__face-reset" type="button">Reset eyes</button>
+          </div>
+        </fieldset>
+        <fieldset class="debug-rig-editor__equipment">
+          <legend>Equipment</legend>
+          <label class="debug-rig-editor__part">
+            <span>Slot</span>
+            <select class="debug-rig-editor__equipment-select"></select>
+          </label>
+          <div class="debug-rig-editor__equipment-controls"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-rig-editor__equipment-reset" type="button">Reset weapon</button>
           </div>
         </fieldset>
         <fieldset class="debug-rig-editor__idle">
@@ -281,6 +336,10 @@ export function mountDebugPanel(root: HTMLElement): void {
       <summary>Arena tuning</summary>
       <div class="debug-panel__body"></div>
     </details>
+    <details class="debug-city-panel" open>
+      <summary>City tuning</summary>
+      <div class="debug-panel__city-body"></div>
+    </details>
     <div class="debug-panel__prod-actions">
       <button class="debug-panel__reset debug-panel__save-prod" type="button">Save as prod defaults</button>
       <button class="debug-panel__reset debug-panel__save-prod-animation" type="button">Save animation as prod</button>
@@ -290,18 +349,23 @@ export function mountDebugPanel(root: HTMLElement): void {
   `;
 
   const body = panel.querySelector<HTMLElement>(".debug-panel__body");
+  const cityBody = panel.querySelector<HTMLElement>(".debug-panel__city-body");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
   const saveAnimationButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod-animation");
   const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset-all");
   const status = panel.querySelector<HTMLElement>(".debug-panel__status");
 
-  if (!body || !rigEditor || !saveButton || !saveAnimationButton || !resetButton || !status) {
+  if (!body || !cityBody || !rigEditor || !saveButton || !saveAnimationButton || !resetButton || !status) {
     return;
   }
 
   for (const group of controlGroups) {
     body.append(createControlGroup(group));
+  }
+
+  for (const group of cityControlGroups) {
+    cityBody.append(createControlGroup(group));
   }
 
   const previewToolbar = createPreviewToolbar();
@@ -499,12 +563,12 @@ function mountNudgeToolbar(toolbar: HTMLElement): void {
   });
 }
 
-type DebugMode = "character" | "arena";
+type DebugMode = "character" | "city" | "arena";
 
 function mountModeTabs(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
     button.addEventListener("click", () => {
-      const mode = button.dataset.debugMode === "arena" ? "arena" : "character";
+      const mode = getDebugModeFromValue(button.dataset.debugMode);
 
       setDebugMode(mode);
       syncModeTabs(panel);
@@ -516,7 +580,16 @@ function mountModeTabs(panel: HTMLElement): void {
 
 function setDebugMode(mode: DebugMode): void {
   document.body.classList.toggle("debug-mode-character", mode === "character");
+  document.body.classList.toggle("debug-mode-city", mode === "city");
   document.body.classList.toggle("debug-mode-arena", mode === "arena");
+}
+
+function getDebugModeFromValue(value: string | undefined): DebugMode {
+  if (value === "city" || value === "arena") {
+    return value;
+  }
+
+  return "character";
 }
 
 function createControlGroup(group: DebugControlGroup): HTMLElement {
@@ -617,6 +690,9 @@ function mountRigEditor(editor: HTMLElement): void {
   const controls = editor.querySelector<HTMLElement>(".debug-rig-editor__controls");
   const limbGrid = editor.querySelector<HTMLElement>(".debug-rig-editor__limb-grid");
   const faceControls = editor.querySelector<HTMLElement>(".debug-rig-editor__face-controls");
+  const equipmentSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__equipment-select");
+  const equipmentControls = editor.querySelector<HTMLElement>(".debug-rig-editor__equipment-controls");
+  const resetEquipment = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__equipment-reset");
   const copyOpposite = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
   const resetAllParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset-all-parts");
@@ -637,6 +713,9 @@ function mountRigEditor(editor: HTMLElement): void {
     !controls ||
     !limbGrid ||
     !faceControls ||
+    !equipmentSelect ||
+    !equipmentControls ||
+    !resetEquipment ||
     !copyOpposite ||
     !reset ||
     !resetAllParts ||
@@ -669,10 +748,19 @@ function mountRigEditor(editor: HTMLElement): void {
     animationSelect.append(option);
   });
 
+  EQUIPMENT_SLOT_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    equipmentSelect.append(option);
+  });
+
   rigNumericControls.forEach((control) => controls.append(createRigRangeControl(control)));
   rigToggleControls.forEach((control) => controls.append(createRigToggleControl(control)));
   rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
   FACE_PART_KEYS.forEach((key) => faceControls.append(createFacePartEditor(key)));
+  equipmentNumericControls.forEach((control) => equipmentControls.append(createEquipmentRangeControl(control)));
+  equipmentToggleControls.forEach((control) => equipmentControls.append(createEquipmentToggleControl(control)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
   select.addEventListener("change", () => {
@@ -695,6 +783,10 @@ function mountRigEditor(editor: HTMLElement): void {
 
   resetFace.addEventListener("click", () => {
     resetFaceParts();
+  });
+
+  resetEquipment.addEventListener("click", () => {
+    resetEquipmentSlot("weaponMain");
   });
 
   copyOpposite.addEventListener("click", () => {
@@ -933,6 +1025,60 @@ function createFaceRangeControl(partKey: FacePartKey, control: FaceNumericContro
   return row;
 }
 
+function createEquipmentRangeControl(control: EquipmentNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-equipment-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-equipment-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateEquipmentSlot("weaponMain", { [control.key]: clampEquipmentNumericValue(control.key, Number(range.value)) } as Partial<EquipmentTuning>);
+  });
+
+  number?.addEventListener("input", () => {
+    updateEquipmentSlot("weaponMain", { [control.key]: clampEquipmentNumericValue(control.key, Number(number.value)) } as Partial<EquipmentTuning>);
+  });
+
+  return row;
+}
+
+function createEquipmentToggleControl(control: EquipmentToggleControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-panel__row--toggle debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input type="checkbox" data-equipment-toggle-key="${control.key}" />
+  `;
+
+  const input = row.querySelector<HTMLInputElement>("input");
+
+  input?.addEventListener("change", () => {
+    updateEquipmentSlot("weaponMain", { [control.key]: input.checked } as Partial<EquipmentTuning>);
+  });
+
+  return row;
+}
+
 function updateRigPartTuning(partKey: RigPartKey, patch: Partial<RigPartTuning>): void {
   const rigParts = getEditableRigParts();
 
@@ -967,6 +1113,24 @@ function updateFacePartTuning(partKey: FacePartKey, key: FaceNumericControlKey, 
 
 function resetFaceParts(): void {
   updateEditableFaceParts(Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...defaultFacePartTuning }])) as Record<FacePartKey, FacePartTuning>);
+}
+
+function updateEquipmentSlot(slotKey: EquipmentSlotKey, patch: Partial<EquipmentTuning>): void {
+  const current = debugTuning.equipment[slotKey] ?? DEFAULT_EQUIPMENT[slotKey];
+
+  updateDebugTuning({
+    equipment: {
+      ...debugTuning.equipment,
+      [slotKey]: {
+        ...current,
+        ...patch,
+      },
+    },
+  });
+}
+
+function resetEquipmentSlot(slotKey: EquipmentSlotKey): void {
+  updateEquipmentSlot(slotKey, { ...DEFAULT_EQUIPMENT[slotKey] });
 }
 
 function updateRigNumericTuning(key: RigNumericControlKey, value: number): void {
@@ -1275,6 +1439,18 @@ function clampFaceNumericValue(key: FaceNumericControlKey, value: number): numbe
   return clampNumber(value, -40, 40);
 }
 
+function clampEquipmentNumericValue(key: EquipmentNumericControlKey, value: number): number {
+  if (key === "angle") {
+    return clampNumber(value, -180, 180);
+  }
+
+  if (key === "scaleX" || key === "scaleY") {
+    return clampNumber(value, 0.1, 3);
+  }
+
+  return clampNumber(value, -240, 240);
+}
+
 function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -1357,13 +1533,18 @@ function syncDebugTools(panel: HTMLElement): void {
   syncInputs();
   syncRigEditor(panel);
   syncFaceEditor(panel);
+  syncEquipmentEditor(panel);
   syncAnimationEditor(panel);
   syncNudgeControls();
   syncGrid();
 }
 
 function syncModeTabs(panel: HTMLElement): void {
-  const mode: DebugMode = document.body.classList.contains("debug-mode-arena") ? "arena" : "character";
+  const mode: DebugMode = document.body.classList.contains("debug-mode-arena")
+    ? "arena"
+    : document.body.classList.contains("debug-mode-city")
+      ? "city"
+      : "character";
 
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.debugMode === mode}`);
@@ -1472,6 +1653,34 @@ function syncFaceEditor(panel: HTMLElement): void {
     const value = (faceParts ?? debugTuning.faceParts)[partKey][key];
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
     input.disabled = !isEditable;
+  });
+}
+
+function syncEquipmentEditor(panel: HTMLElement): void {
+  const equipmentSelect = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__equipment-select");
+  const selectedEquipment = debugTuning.equipment.weaponMain ?? DEFAULT_EQUIPMENT.weaponMain;
+
+  if (equipmentSelect) {
+    equipmentSelect.value = "weaponMain";
+  }
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-equipment-key]").forEach((input) => {
+    const key = input.dataset.equipmentKey as EquipmentNumericControlKey;
+
+    input.value = `${selectedEquipment[key]}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-equipment-number-key]").forEach((input) => {
+    const key = input.dataset.equipmentNumberKey as EquipmentNumericControlKey;
+    const value = selectedEquipment[key];
+
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-equipment-toggle-key]").forEach((input) => {
+    const key = input.dataset.equipmentToggleKey as EquipmentToggleControlKey;
+
+    input.checked = Boolean(selectedEquipment[key]);
   });
 }
 

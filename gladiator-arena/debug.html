@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Dust Arena - Debug Tuning</title>
   </head>
-  <body class="arena-active debug-active">
+  <body class="arena-active debug-active debug-mode-character">
     <main class="debug-app">
       <div class="debug-preview-column">
         <section id="debugCharacterShell" class="debug-character-shell" aria-label="Character rig preview">
@@ -13,8 +13,34 @@
         </section>
 
         <div class="debug-game-shell shell">
-          <section id="mainMenu" class="main-menu" aria-label="Dust Arena debug boot" hidden>
-            <button id="startButton" class="restart start-button" type="button">Start debug</button>
+          <section id="mainMenu" class="main-menu" aria-label="Dust Arena city debug preview">
+            <h1 class="menu-title">Dust Arena</h1>
+            <div class="city-menu">
+              <img class="city-menu__bg" src="./assets/menu/city-menu.png" alt="" aria-hidden="true" />
+              <div id="cityHero" class="city-menu__hero" aria-hidden="true"></div>
+              <nav class="city-menu__nav" aria-label="City locations">
+                <button id="startButton" class="city-menu__button" type="button">
+                  <span class="city-menu__icon" aria-hidden="true">A</span>
+                  <span>Arena</span>
+                </button>
+                <button class="city-menu__button" type="button" disabled>
+                  <span class="city-menu__icon" aria-hidden="true">W</span>
+                  <span>Smith</span>
+                </button>
+                <button class="city-menu__button" type="button" disabled>
+                  <span class="city-menu__icon" aria-hidden="true">B</span>
+                  <span>Armour</span>
+                </button>
+                <button class="city-menu__button" type="button" disabled>
+                  <span class="city-menu__icon" aria-hidden="true">M</span>
+                  <span>Magic</span>
+                </button>
+                <button class="city-menu__button" type="button" disabled>
+                  <span class="city-menu__icon" aria-hidden="true">C</span>
+                  <span>Church</span>
+                </button>
+              </nav>
+            </div>
           </section>
 
           <section id="gameScreen" class="game-screen battle-screen" aria-label="Dust Arena debug preview">

@@ -1,5 +1,5 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
-import { launchArena, type ArenaScene } from "./ArenaScene";
+import { launchArena, mountCityHeroPreview, type ArenaScene } from "./ArenaScene";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { getDomRefs, renderDom } from "./domUi";
 import { createCombatStateFromHero, createDefaultHero, type HeroState } from "./hero";
@@ -41,6 +41,7 @@ function bootTelegramWebApp(): void {
 bootTelegramWebApp();
 
 const dom = getDomRefs();
+const cityHero = document.querySelector<HTMLElement>("#cityHero");
 const hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
@@ -202,4 +203,7 @@ function restart(options: { syncArena?: boolean } = {}): void {
 dom.startButton.addEventListener("click", startGame);
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
+if (cityHero) {
+  mountCityHeroPreview(cityHero);
+}
 renderDom(dom, state);

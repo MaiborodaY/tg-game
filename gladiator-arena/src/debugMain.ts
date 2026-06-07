@@ -1,5 +1,5 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
-import { launchArena, mountDebugCharacterViewer, type ArenaScene } from "./ArenaScene";
+import { launchArena, mountCityHeroPreview, mountDebugCharacterViewer, type ArenaScene } from "./ArenaScene";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
 import { debugTuning, subscribeDebugTuning } from "./debugTuning";
@@ -11,6 +11,7 @@ import "./styles.css";
 const dom = getDomRefs();
 const debugPanelHost = document.querySelector<HTMLElement>("#debugPanelHost");
 const debugCharacterViewer = document.querySelector<HTMLElement>("#debugCharacterViewer");
+const cityHero = document.querySelector<HTMLElement>("#cityHero");
 const hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
@@ -111,10 +112,13 @@ function handleActionArcClick(event: Event): void {
 
 function startDebugApp(): void {
   document.body.classList.add("arena-active", "debug-active", "debug-mode-character");
-  dom.mainMenu.hidden = true;
+  dom.mainMenu.hidden = false;
   dom.gameScreen.hidden = false;
   if (debugCharacterViewer) {
     mountDebugCharacterViewer(debugCharacterViewer);
+  }
+  if (cityHero) {
+    mountCityHeroPreview(cityHero);
   }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen);
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);

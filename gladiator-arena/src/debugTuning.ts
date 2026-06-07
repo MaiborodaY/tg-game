@@ -48,6 +48,9 @@ export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
 export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 
+export const EQUIPMENT_SLOT_KEYS = ["weaponMain"] as const;
+export type EquipmentSlotKey = (typeof EQUIPMENT_SLOT_KEYS)[number];
+
 export interface RigPartTuning {
   x: number;
   y: number;
@@ -64,6 +67,8 @@ export interface FacePartTuning {
   scaleX: number;
   scaleY: number;
 }
+
+export type EquipmentTuning = RigPartTuning;
 
 export interface BodyAnimationTuning {
   enabled: boolean;
@@ -103,10 +108,14 @@ export interface ArenaDebugTuning {
   characterPreviewScale: number;
   characterPreviewFeetX: number;
   characterPreviewFeetY: number;
+  cityHeroX: number;
+  cityHeroY: number;
+  cityHeroScale: number;
   selectedRigPart: RigPartKey;
   selectedRigParts: RigPartKey[];
   rigParts: Record<RigPartKey, RigPartTuning>;
   faceParts: Record<FacePartKey, FacePartTuning>;
+  equipment: Record<EquipmentSlotKey, EquipmentTuning>;
   animationEditMode: AnimationEditMode;
   selectedBodyAnimation: BodyAnimationKey;
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
@@ -130,25 +139,29 @@ export const defaultFacePartTuning: FacePartTuning = {
 };
 
 export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
-  head: { x: 104, y: 24.867, angle: 32, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
-  torso: { x: 49, y: -0.87, angle: 30, scaleX: 0.98, scaleY: 0.98, flipX: false, flipY: false },
-  backUpperArm: { x: 88.601, y: -4.983, angle: 45, scaleX: 1.02, scaleY: 1.02, flipX: false, flipY: false },
-  backForearm: { x: 43.497, y: -18.364, angle: 57, scaleX: 1.41, scaleY: 0.99, flipX: false, flipY: false },
-  backHand: { x: 9, y: -34, angle: 44, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
-  frontUpperArm: { x: 92.899, y: 50.615, angle: -84, scaleX: 1.07, scaleY: 1.07, flipX: true, flipY: false },
-  frontForearm: { x: 165, y: -11, angle: -91, scaleX: 1.41, scaleY: 0.99, flipX: true, flipY: false },
-  frontHand: { x: 213, y: -59, angle: -79, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
-  backThigh: { x: 45.813, y: -0.05, angle: 42, scaleX: 1.12, scaleY: 1.13, flipX: true, flipY: false },
-  backShin: { x: 1.407, y: 13.449, angle: 55, scaleX: 1.06, scaleY: 1.12, flipX: true, flipY: false },
-  backFoot: { x: -75, y: 36, angle: -16, scaleX: 1.15, scaleY: 1.05, flipX: true, flipY: false },
-  frontThigh: { x: 32.187, y: 20.95, angle: 34, scaleX: 1.1, scaleY: 1.07, flipX: false, flipY: false },
-  frontShin: { x: -13, y: 47, angle: 40, scaleX: 1.1, scaleY: 1.1, flipX: false, flipY: false },
-  frontFoot: { x: -68, y: 69.962, angle: 72, scaleX: 1.06, scaleY: 1.06, flipX: false, flipY: false },
+  head: { x: -1, y: -10, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  torso: { x: 0, y: -14, angle: 0, scaleX: 0.95, scaleY: 0.95, flipX: false, flipY: false },
+  backUpperArm: { x: -21.55, y: -15.473, angle: 0, scaleX: 0.8, scaleY: 1, flipX: false, flipY: false },
+  backForearm: { x: -12.088, y: 2.421, angle: 1, scaleX: 1.19, scaleY: 1, flipX: false, flipY: false },
+  backHand: { x: 2.429, y: 1.79, angle: -28, scaleX: 1.18, scaleY: 0.99, flipX: false, flipY: false },
+  frontUpperArm: { x: 23.45, y: -15.473, angle: 0, scaleX: 0.8, scaleY: 1, flipX: true, flipY: false },
+  frontForearm: { x: 12.45, y: 1.948, angle: 0, scaleX: 1.19, scaleY: 1, flipX: true, flipY: false },
+  frontHand: { x: -6.791, y: 1.895, angle: 19, scaleX: 1.14, scaleY: 0.95, flipX: true, flipY: false },
+  backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.3, scaleY: 1, flipX: true, flipY: false },
+  backShin: { x: 3.121, y: 30.79, angle: 1, scaleX: 1.26, scaleY: 0.96, flipX: true, flipY: false },
+  backFoot: { x: -21.879, y: 67.79, angle: 0, scaleX: 1.15, scaleY: 1, flipX: true, flipY: false },
+  frontThigh: { x: 1.121, y: -6.631, angle: 0, scaleX: 1.3, scaleY: 1, flipX: false, flipY: false },
+  frontShin: { x: 0.121, y: 25.369, angle: 0, scaleX: 1.3, scaleY: 1, flipX: false, flipY: false },
+  frontFoot: { x: -7.879, y: 61.369, angle: 0, scaleX: 1.15, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
   eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
   eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+};
+
+export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
+  weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.55, scaleY: 0.55, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
@@ -673,10 +686,14 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewScale: 1.8,
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
+  cityHeroX: 114,
+  cityHeroY: 160,
+  cityHeroScale: 0.85,
   selectedRigPart: "torso",
   selectedRigParts: ["torso"],
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
   faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),
+  equipment: cloneEquipment(DEFAULT_EQUIPMENT),
   animationEditMode: "poseA",
   selectedBodyAnimation: "idle",
   bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
@@ -785,10 +802,14 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     characterPreviewScale: clampNumber(input.characterPreviewScale, 1, 2.6, defaultDebugTuning.characterPreviewScale),
     characterPreviewFeetX: clampNumber(input.characterPreviewFeetX, 0, 430, defaultDebugTuning.characterPreviewFeetX),
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
+    cityHeroX: clampNumber(input.cityHeroX, 0, 240, defaultDebugTuning.cityHeroX),
+    cityHeroY: clampNumber(input.cityHeroY, 160, 360, defaultDebugTuning.cityHeroY),
+    cityHeroScale: clampNumber(input.cityHeroScale, 0.4, 1.6, defaultDebugTuning.cityHeroScale),
     selectedRigPart,
     selectedRigParts: normalizeSelectedRigParts(input.selectedRigParts, selectedRigPart),
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
     faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
+    equipment: normalizeEquipment(input.equipment, DEFAULT_EQUIPMENT),
     animationEditMode: isAnimationEditMode(input.animationEditMode) ? input.animationEditMode : defaultDebugTuning.animationEditMode,
     selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
     bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
@@ -805,6 +826,10 @@ function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPar
 
 function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<FacePartKey, FacePartTuning> {
   return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<FacePartKey, FacePartTuning>;
+}
+
+function cloneEquipment(source: Record<EquipmentSlotKey, EquipmentTuning>): Record<EquipmentSlotKey, EquipmentTuning> {
+  return Object.fromEntries(EQUIPMENT_SLOT_KEYS.map((key) => [key, { ...source[key] }])) as Record<EquipmentSlotKey, EquipmentTuning>;
 }
 
 function cloneBodyAnimations(source: Record<BodyAnimationKey, BodyAnimationTuning>): Record<BodyAnimationKey, BodyAnimationTuning> {
@@ -829,6 +854,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     selectedRigParts: [...source.selectedRigParts],
     rigParts: cloneRigParts(source.rigParts),
     faceParts: cloneFaceParts(source.faceParts),
+    equipment: cloneEquipment(source.equipment),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
   };
 }
@@ -929,6 +955,30 @@ function normalizeFaceParts(input: unknown, fallbackParts = DEFAULT_FACE_PARTS):
       ];
     }),
   ) as Record<FacePartKey, FacePartTuning>;
+}
+
+function normalizeEquipment(input: unknown, fallbackEquipment = DEFAULT_EQUIPMENT): Record<EquipmentSlotKey, EquipmentTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<EquipmentSlotKey, Partial<EquipmentTuning>>>) : {};
+
+  return Object.fromEntries(
+    EQUIPMENT_SLOT_KEYS.map((key) => {
+      const part = source[key] ?? {};
+      const fallback = fallbackEquipment[key] ?? defaultRigPartTuning;
+
+      return [
+        key,
+        {
+          x: clampNumber(part.x, -240, 240, fallback.x),
+          y: clampNumber(part.y, -240, 240, fallback.y),
+          angle: clampNumber(part.angle, -180, 180, fallback.angle),
+          scaleX: clampNumber(part.scaleX, 0.1, 3, fallback.scaleX),
+          scaleY: clampNumber(part.scaleY, 0.1, 3, fallback.scaleY),
+          flipX: typeof part.flipX === "boolean" ? part.flipX : fallback.flipX,
+          flipY: typeof part.flipY === "boolean" ? part.flipY : fallback.flipY,
+        },
+      ];
+    }),
+  ) as Record<EquipmentSlotKey, EquipmentTuning>;
 }
 
 function createDefaultIdleAnimation(): BodyAnimationTuning {
