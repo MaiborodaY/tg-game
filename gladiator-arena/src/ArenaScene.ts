@@ -14,8 +14,14 @@ import {
   FIGHTER_BACK_FOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
+  FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL,
   FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
   FIGHTER_BACK_HAND_LIGHT_ASSET_URL,
+  FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL,
+  FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
+  FIGHTER_BREASTPLATE_LIGHT_ASSET_URL,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_URL,
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
@@ -26,14 +32,20 @@ import {
   FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL,
   FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL,
   FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL,
   FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL,
+  FIGHTER_HELMET_LIGHT_ASSET_KEY,
+  FIGHTER_HELMET_LIGHT_ASSET_URL,
   FIGHTER_HEAD_LIGHT_ASSET_KEY,
   FIGHTER_HEAD_LIGHT_ASSET_URL,
   FIGHTER_TORSO_LIGHT_ASSET_KEY,
@@ -125,6 +137,12 @@ interface PaperDollRig {
 
 interface PaperDollEquipment {
   weaponMain?: FighterPart;
+  helmet?: FighterPart;
+  breastplate?: FighterPart;
+  backShoulderguard?: FighterPart;
+  frontShoulderguard?: FighterPart;
+  backGauntlet?: FighterPart;
+  frontGauntlet?: FighterPart;
 }
 
 interface PaperDollFaceParts {
@@ -151,6 +169,12 @@ interface PaperDollFighterOptions {
   muscle?: number;
   headAssetKey?: string;
   torsoAssetKey?: string;
+  helmetAssetKey?: string;
+  breastplateAssetKey?: string;
+  backShoulderguardAssetKey?: string;
+  frontShoulderguardAssetKey?: string;
+  backGauntletAssetKey?: string;
+  frontGauntletAssetKey?: string;
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
 }
@@ -199,6 +223,30 @@ const TORSO_ASSET_ORIGIN_Y = 998 / 1254;
 const WEAPON_MAIN_DISPLAY_HEIGHT = 132;
 const WEAPON_MAIN_ORIGIN_X = 0.5;
 const WEAPON_MAIN_ORIGIN_Y = 0.9;
+const HELMET_DISPLAY_HEIGHT = 118;
+const HELMET_LOCAL_X = 0;
+const HELMET_LOCAL_Y = -64;
+const HELMET_ORIGIN_X = 0.5;
+const HELMET_ORIGIN_Y = 0.5;
+const BREASTPLATE_DISPLAY_HEIGHT = 126;
+const BREASTPLATE_LOCAL_X = 0;
+const BREASTPLATE_LOCAL_Y = -56;
+const BREASTPLATE_ORIGIN_X = 0.5;
+const BREASTPLATE_ORIGIN_Y = 0.5;
+const SHOULDERGUARD_DISPLAY_HEIGHT = 72;
+const SHOULDERGUARD_LOCAL_X = 0;
+const SHOULDERGUARD_LOCAL_Y = 16;
+const SHOULDERGUARD_ORIGIN_X = 0.5;
+const SHOULDERGUARD_ORIGIN_Y = 0.5;
+const GAUNTLET_DISPLAY_HEIGHT = 58;
+const GAUNTLET_LOCAL_X = 0;
+const GAUNTLET_LOCAL_Y = 10;
+const GAUNTLET_ORIGIN_X = 0.5;
+const GAUNTLET_ORIGIN_Y = 0.5;
+const ARMOR_PLACEHOLDER_FILL = 0x9aa4aa;
+const ARMOR_PLACEHOLDER_DARK = 0x5f696e;
+const ARMOR_PLACEHOLDER_HIGHLIGHT = 0xd7e0e4;
+const ARMOR_PLACEHOLDER_OUTLINE = 0x24140d;
 const DEBUG_CHARACTER_VIEWER_WIDTH = 430;
 const DEBUG_CHARACTER_VIEWER_HEIGHT = 764;
 const DEBUG_CHARACTER_CENTER_X = DEBUG_CHARACTER_VIEWER_WIDTH / 2;
@@ -243,18 +291,24 @@ function preloadPaperDollAssets(target: Phaser.Scene): void {
   target.load.image(FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY, FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_HAND_LIGHT_ASSET_KEY, FIGHTER_BACK_HAND_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY, FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY, FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY, FIGHTER_BACK_THIGH_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY, FIGHTER_BACK_SHIN_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY, FIGHTER_BACK_FOOT_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY, FIGHTER_FRONT_HAND_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY, FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY, FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_WEAPON_SWORD_01_ASSET_KEY, FIGHTER_WEAPON_SWORD_01_ASSET_URL);
+  target.load.image(FIGHTER_HELMET_LIGHT_ASSET_KEY, FIGHTER_HELMET_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY, FIGHTER_BREASTPLATE_LIGHT_ASSET_URL);
 }
 
 export class ArenaScene extends Phaser.Scene {
@@ -643,6 +697,12 @@ function createPlayerPaperDollOptions(x: number, y: number): PaperDollFighterOpt
     hair: 0x8b4a1f,
     headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
     torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+    helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY,
+    breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
+    backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
+    frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
+    backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
+    frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
     weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
     bodyPartAssetKeys: {
       backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
@@ -873,6 +933,12 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   applyFacePartTransform(rig.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
   applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
   applyEquipmentTransform(rig.equipment.weaponMain, equipment.weaponMain);
+  applyEquipmentTransform(rig.equipment.helmet, equipment.helmet);
+  applyEquipmentTransform(rig.equipment.breastplate, equipment.breastplate);
+  applyEquipmentTransform(rig.equipment.backShoulderguard, equipment.backShoulderguard);
+  applyEquipmentTransform(rig.equipment.frontShoulderguard, equipment.frontShoulderguard);
+  applyEquipmentTransform(rig.equipment.backGauntlet, equipment.backGauntlet);
+  applyEquipmentTransform(rig.equipment.frontGauntlet, equipment.frontGauntlet);
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
@@ -1196,6 +1262,7 @@ function addPaperDollPartVisual(
     image.displayHeight = HEAD_ASSET_DISPLAY_HEIGHT;
     image.scaleX = image.scaleY;
     partContainer.add(image);
+    addPaperDollHelmetVisual(target, partContainer, options.helmetAssetKey, equipment);
     addPaperDollFaceOverlay(target, partContainer, faceParts, true);
     return;
   }
@@ -1206,6 +1273,7 @@ function addPaperDollPartVisual(
     image.displayHeight = TORSO_ASSET_DISPLAY_HEIGHT;
     image.scaleX = image.scaleY;
     partContainer.add(image);
+    addPaperDollBreastplateVisual(target, partContainer, options.breastplateAssetKey, equipment);
     return;
   }
 
@@ -1222,14 +1290,21 @@ function addPaperDollPartVisual(
     image.displayHeight = assetConfig.displayHeight;
     image.scaleX = image.scaleY;
     partContainer.add(image);
+    addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
     return;
   }
 
   const graphics = target.add.graphics();
   drawPaperDollPart(graphics, key, appearance);
   partContainer.add(graphics);
+  addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
+
+  if (key === "torso") {
+    addPaperDollBreastplateVisual(target, partContainer, options.breastplateAssetKey, equipment);
+  }
 
   if (key === "head") {
+    addPaperDollHelmetVisual(target, partContainer, options.helmetAssetKey, equipment);
     addPaperDollFaceOverlay(target, partContainer, faceParts, false);
   }
 }
@@ -1249,6 +1324,181 @@ function addPaperDollWeaponVisual(
   weaponContainer.add(image);
   partContainer.add(weaponContainer);
   equipment.weaponMain = part(weaponContainer);
+}
+
+function addPaperDollHelmetVisual(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  assetKey: string | undefined,
+  equipment: PaperDollEquipment,
+): void {
+  const helmetContainer = target.add.container(0, 0);
+
+  if (assetKey && target.textures.exists(assetKey)) {
+    const image = target.add.image(HELMET_LOCAL_X, HELMET_LOCAL_Y, assetKey);
+
+    image.setOrigin(HELMET_ORIGIN_X, HELMET_ORIGIN_Y);
+    image.displayHeight = HELMET_DISPLAY_HEIGHT;
+    image.scaleX = image.scaleY;
+    helmetContainer.add(image);
+  } else {
+    const graphics = target.add.graphics();
+
+    drawArmorHelmetPlaceholder(graphics);
+    helmetContainer.add(graphics);
+  }
+
+  partContainer.add(helmetContainer);
+  equipment.helmet = part(helmetContainer);
+}
+
+function addPaperDollBreastplateVisual(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  assetKey: string | undefined,
+  equipment: PaperDollEquipment,
+): void {
+  const breastplateContainer = target.add.container(0, 0);
+
+  if (assetKey && target.textures.exists(assetKey)) {
+    const image = target.add.image(BREASTPLATE_LOCAL_X, BREASTPLATE_LOCAL_Y, assetKey);
+
+    image.setOrigin(BREASTPLATE_ORIGIN_X, BREASTPLATE_ORIGIN_Y);
+    image.displayHeight = BREASTPLATE_DISPLAY_HEIGHT;
+    image.scaleX = image.scaleY;
+    breastplateContainer.add(image);
+  } else {
+    const graphics = target.add.graphics();
+
+    drawArmorBreastplatePlaceholder(graphics);
+    breastplateContainer.add(graphics);
+  }
+
+  partContainer.add(breastplateContainer);
+  equipment.breastplate = part(breastplateContainer);
+}
+
+function addPaperDollArmArmorVisual(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  key: PaperDollPartKey,
+  options: PaperDollFighterOptions,
+  equipment: PaperDollEquipment,
+): void {
+  if (key === "backUpperArm") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backShoulderguardAssetKey, "backShoulderguard", equipment, {
+      displayHeight: SHOULDERGUARD_DISPLAY_HEIGHT,
+      localX: SHOULDERGUARD_LOCAL_X,
+      localY: SHOULDERGUARD_LOCAL_Y,
+      originX: SHOULDERGUARD_ORIGIN_X,
+      originY: SHOULDERGUARD_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "frontUpperArm") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShoulderguardAssetKey, "frontShoulderguard", equipment, {
+      displayHeight: SHOULDERGUARD_DISPLAY_HEIGHT,
+      localX: SHOULDERGUARD_LOCAL_X,
+      localY: SHOULDERGUARD_LOCAL_Y,
+      originX: SHOULDERGUARD_ORIGIN_X,
+      originY: SHOULDERGUARD_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "backHand") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backGauntletAssetKey, "backGauntlet", equipment, {
+      displayHeight: GAUNTLET_DISPLAY_HEIGHT,
+      localX: GAUNTLET_LOCAL_X,
+      localY: GAUNTLET_LOCAL_Y,
+      originX: GAUNTLET_ORIGIN_X,
+      originY: GAUNTLET_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "frontHand") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGauntletAssetKey, "frontGauntlet", equipment, {
+      displayHeight: GAUNTLET_DISPLAY_HEIGHT,
+      localX: GAUNTLET_LOCAL_X,
+      localY: GAUNTLET_LOCAL_Y,
+      originX: GAUNTLET_ORIGIN_X,
+      originY: GAUNTLET_ORIGIN_Y,
+    });
+  }
+}
+
+function addPaperDollEquipmentImageVisual(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  assetKey: string | undefined,
+  slotKey: keyof PaperDollEquipment,
+  equipment: PaperDollEquipment,
+  config: PaperDollPartAssetConfig,
+): void {
+  if (!assetKey || !target.textures.exists(assetKey)) {
+    return;
+  }
+
+  const armorContainer = target.add.container(0, 0);
+  const image = target.add.image(config.localX, config.localY, assetKey);
+
+  image.setOrigin(config.originX, config.originY);
+  image.displayHeight = config.displayHeight;
+  image.scaleX = image.scaleY;
+  armorContainer.add(image);
+  partContainer.add(armorContainer);
+  equipment[slotKey] = part(armorContainer);
+}
+
+function drawArmorHelmetPlaceholder(graphics: Phaser.GameObjects.Graphics): void {
+  graphics.clear();
+  drawDollPolygon(
+    graphics,
+    [
+      { x: -42, y: -40 },
+      { x: -36, y: -67 },
+      { x: -15, y: -89 },
+      { x: 14, y: -89 },
+      { x: 36, y: -67 },
+      { x: 42, y: -40 },
+      { x: 26, y: -51 },
+      { x: 0, y: -56 },
+      { x: -26, y: -51 },
+    ],
+    ARMOR_PLACEHOLDER_FILL,
+    ARMOR_PLACEHOLDER_OUTLINE,
+    1,
+    0.92,
+    4,
+  );
+  drawDollLine(graphics, -32, -50, 32, -50, ARMOR_PLACEHOLDER_DARK, 1, 4, 0.75);
+  drawDollLine(graphics, -13, -82, 9, -86, ARMOR_PLACEHOLDER_HIGHLIGHT, 1, 3, 0.65);
+}
+
+function drawArmorBreastplatePlaceholder(graphics: Phaser.GameObjects.Graphics): void {
+  graphics.clear();
+  drawDollPolygon(
+    graphics,
+    [
+      { x: -39, y: -103 },
+      { x: 39, y: -103 },
+      { x: 34, y: -55 },
+      { x: 18, y: -14 },
+      { x: 0, y: 7 },
+      { x: -18, y: -14 },
+      { x: -34, y: -55 },
+    ],
+    ARMOR_PLACEHOLDER_FILL,
+    ARMOR_PLACEHOLDER_OUTLINE,
+    1,
+    0.9,
+    4,
+  );
+  drawDollLine(graphics, 0, -96, 0, -5, ARMOR_PLACEHOLDER_DARK, 1, 3, 0.65);
+  drawDollLine(graphics, -29, -72, 29, -72, ARMOR_PLACEHOLDER_DARK, 1, 3, 0.55);
+  drawDollLine(graphics, -24, -91, -8, -97, ARMOR_PLACEHOLDER_HIGHLIGHT, 1, 3, 0.65);
 }
 
 function addPaperDollFaceOverlay(

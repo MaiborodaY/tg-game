@@ -63,7 +63,7 @@ type RigPartKey = (typeof rigPartKeys)[number];
 const facePartKeys = ["eyeLeft", "eyeRight"] as const;
 type FacePartKey = (typeof facePartKeys)[number];
 
-const equipmentSlotKeys = ["weaponMain"] as const;
+const equipmentSlotKeys = ["weaponMain", "helmet", "breastplate", "backShoulderguard", "frontShoulderguard", "backGauntlet", "frontGauntlet"] as const;
 type EquipmentSlotKey = (typeof equipmentSlotKeys)[number];
 
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;

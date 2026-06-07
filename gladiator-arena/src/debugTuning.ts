@@ -48,7 +48,15 @@ export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
 export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 
-export const EQUIPMENT_SLOT_KEYS = ["weaponMain"] as const;
+export const EQUIPMENT_SLOT_KEYS = [
+  "weaponMain",
+  "helmet",
+  "breastplate",
+  "backShoulderguard",
+  "frontShoulderguard",
+  "backGauntlet",
+  "frontGauntlet",
+] as const;
 export type EquipmentSlotKey = (typeof EQUIPMENT_SLOT_KEYS)[number];
 
 export interface RigPartTuning {
@@ -161,7 +169,13 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 };
 
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
-  weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.55, scaleY: 0.55, flipX: false, flipY: false },
+  weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
+  helmet: { x: -1, y: 6, angle: 0, scaleX: 0.77, scaleY: 0.94, flipX: false, flipY: false },
+  breastplate: { x: 0, y: 10, angle: 0, scaleX: 0.89, scaleY: 1.11, flipX: false, flipY: false },
+  backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  backGauntlet: { x: 15, y: -64, angle: 18, scaleX: 1.1, scaleY: 1.1, flipX: true, flipY: false },
+  frontGauntlet: { x: 9, y: -60, angle: 16, scaleX: 1.1, scaleY: 1.1, flipX: true, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

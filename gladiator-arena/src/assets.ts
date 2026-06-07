@@ -41,3 +41,18 @@ export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL = "./assets/fighters/body-parts/
 
 export const FIGHTER_WEAPON_SWORD_01_ASSET_KEY = "weapon-sword-01";
 export const FIGHTER_WEAPON_SWORD_01_ASSET_URL = "./assets/fighters/weapons/weapon-sword-01.png";
+
+export const FIGHTER_HELMET_LIGHT_ASSET_KEY = "helmet-light-01";
+export const FIGHTER_HELMET_LIGHT_ASSET_URL = "./assets/fighters/armor/helmet/helmet-light-01.png";
+
+export const FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY = "breastplate-light-01";
+export const FIGHTER_BREASTPLATE_LIGHT_ASSET_URL = "./assets/fighters/armor/breastplate/breastplate-light-01.png";
+
+export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY = "back-shoulderguard-light-01";
+export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL = "./assets/fighters/armor/arms/back-shoulderguard-light-01.png";
+export const FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY = "front-shoulderguard-light-01";
+export const FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL = "./assets/fighters/armor/arms/front-shoulderguard-light-01.png";
+export const FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY = "back-gauntlet-light-01";
+export const FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL = "./assets/fighters/armor/arms/back-gauntlet-light-01.png";
+export const FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY = "front-gauntlet-light-01";
+export const FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL = "./assets/fighters/armor/arms/front-gauntlet-light-01.png";

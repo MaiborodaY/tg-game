@@ -234,6 +234,7 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
 };
 
 let activeNudgeStep = 5;
+let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let isDebugUndoShortcutMounted = false;
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
@@ -297,7 +298,7 @@ export function mountDebugPanel(root: HTMLElement): void {
           </label>
           <div class="debug-rig-editor__equipment-controls"></div>
           <div class="debug-rig-editor__actions">
-            <button class="debug-panel__reset debug-rig-editor__equipment-reset" type="button">Reset weapon</button>
+            <button class="debug-panel__reset debug-rig-editor__equipment-reset" type="button">Reset slot</button>
           </div>
         </fieldset>
         <fieldset class="debug-rig-editor__idle">
@@ -785,8 +786,17 @@ function mountRigEditor(editor: HTMLElement): void {
     resetFaceParts();
   });
 
+  equipmentSelect.addEventListener("change", () => {
+    if (isEquipmentSlotKey(equipmentSelect.value)) {
+      activeEquipmentSlot = equipmentSelect.value;
+      const panel = editor.closest(".debug-panel") as HTMLElement | null;
+
+      syncEquipmentEditor(panel ?? editor);
+    }
+  });
+
   resetEquipment.addEventListener("click", () => {
-    resetEquipmentSlot("weaponMain");
+    resetEquipmentSlot(activeEquipmentSlot);
   });
 
   copyOpposite.addEventListener("click", () => {
@@ -1052,11 +1062,11 @@ function createEquipmentRangeControl(control: EquipmentNumericControlConfig): HT
   const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
 
   range?.addEventListener("input", () => {
-    updateEquipmentSlot("weaponMain", { [control.key]: clampEquipmentNumericValue(control.key, Number(range.value)) } as Partial<EquipmentTuning>);
+    updateEquipmentSlot(activeEquipmentSlot, { [control.key]: clampEquipmentNumericValue(control.key, Number(range.value)) } as Partial<EquipmentTuning>);
   });
 
   number?.addEventListener("input", () => {
-    updateEquipmentSlot("weaponMain", { [control.key]: clampEquipmentNumericValue(control.key, Number(number.value)) } as Partial<EquipmentTuning>);
+    updateEquipmentSlot(activeEquipmentSlot, { [control.key]: clampEquipmentNumericValue(control.key, Number(number.value)) } as Partial<EquipmentTuning>);
   });
 
   return row;
@@ -1073,7 +1083,7 @@ function createEquipmentToggleControl(control: EquipmentToggleControlConfig): HT
   const input = row.querySelector<HTMLInputElement>("input");
 
   input?.addEventListener("change", () => {
-    updateEquipmentSlot("weaponMain", { [control.key]: input.checked } as Partial<EquipmentTuning>);
+    updateEquipmentSlot(activeEquipmentSlot, { [control.key]: input.checked } as Partial<EquipmentTuning>);
   });
 
   return row;
@@ -1419,6 +1429,10 @@ function isFacePartKey(value: string | undefined): value is FacePartKey {
   return typeof value === "string" && FACE_PART_KEYS.includes(value as FacePartKey);
 }
 
+function isEquipmentSlotKey(value: string | undefined): value is EquipmentSlotKey {
+  return typeof value === "string" && EQUIPMENT_SLOT_KEYS.includes(value as EquipmentSlotKey);
+}
+
 function clampRigNumericValue(key: RigNumericControlKey, value: number): number {
   if (key === "angle") {
     return clampNumber(value, -180, 180);
@@ -1658,10 +1672,10 @@ function syncFaceEditor(panel: HTMLElement): void {
 
 function syncEquipmentEditor(panel: HTMLElement): void {
   const equipmentSelect = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__equipment-select");
-  const selectedEquipment = debugTuning.equipment.weaponMain ?? DEFAULT_EQUIPMENT.weaponMain;
+  const selectedEquipment = debugTuning.equipment[activeEquipmentSlot] ?? DEFAULT_EQUIPMENT[activeEquipmentSlot];
 
   if (equipmentSelect) {
-    equipmentSelect.value = "weaponMain";
+    equipmentSelect.value = activeEquipmentSlot;
   }
 
   panel.querySelectorAll<HTMLInputElement>("input[data-equipment-key]").forEach((input) => {
