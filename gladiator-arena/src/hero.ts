@@ -65,6 +65,11 @@ export interface BattleReward {
   xp: number;
 }
 
+export interface HeroItemPurchase {
+  itemIds: HeroItemId[];
+  price: number;
+}
+
 export const DEFAULT_HERO_ID = "local-hero";
 export const DEFAULT_HERO_NAME = "Borshemir";
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = 100;
@@ -256,6 +261,36 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
     level: progress.level,
     xp: progress.xp,
     xpToNextLevel: progress.xpToNextLevel,
+    updatedAt: now,
+  };
+}
+
+export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase, now = new Date().toISOString()): HeroState {
+  if (purchase.price > hero.gold) {
+    return hero;
+  }
+
+  const inventory = [...hero.inventory];
+  const equipment = { ...hero.equipment };
+
+  purchase.itemIds.forEach((itemId) => {
+    const existingEntry = inventory.find((entry) => entry.itemId === itemId);
+
+    if (existingEntry) {
+      existingEntry.quantity = Math.max(1, existingEntry.quantity);
+    } else {
+      inventory.push({ itemId, quantity: 1 });
+    }
+
+    const item = HERO_ITEM_CATALOG[itemId];
+    equipment[item.equipmentSlot] = itemId;
+  });
+
+  return {
+    ...hero,
+    gold: hero.gold - purchase.price,
+    equipment,
+    inventory,
     updatedAt: now,
   };
 }

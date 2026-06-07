@@ -1,4 +1,4 @@
-import { distanceLabel, getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type CombatState, type Result } from "./combat";
+import { distanceLabel, getFighterMaxHp, getFighterMaxStamina, type CombatState, type Result } from "./combat";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -56,9 +56,8 @@ export function getDomRefs(): DomRefs {
 
 export function renderDom(dom: DomRefs, state: CombatState): void {
   dom.score.textContent = `${state.score}`;
-  dom.statusText.textContent =
-    state.result === "playing" ? `Round ${state.round} / ${ROUND_LIMIT}` : resultStatusText(state.result, state.round);
-  dom.turnBadge.textContent = state.result === "playing" ? (state.activeTurn === "player" ? "Your turn" : `${state.enemy.name} turn`) : resultStatusText(state.result, state.round);
+  dom.statusText.textContent = state.result === "playing" ? "Fight to the finish" : resultStatusText(state.result);
+  dom.turnBadge.textContent = state.result === "playing" ? (state.activeTurn === "player" ? "Your turn" : `${state.enemy.name} turn`) : resultStatusText(state.result);
   dom.distanceText.textContent = distanceLabel(state.distance);
   renderStats(dom, state);
   renderLog(dom, state);
@@ -113,7 +112,7 @@ function renderResult(dom: DomRefs, state: CombatState): void {
   dom.cityButton.hidden = false;
 }
 
-function resultStatusText(result: Result, round: number): string {
+function resultStatusText(result: Result): string {
   if (result === "win") {
     return "Victory";
   }
@@ -126,7 +125,7 @@ function resultStatusText(result: Result, round: number): string {
     return "Draw";
   }
 
-  return `Round ${round} of ${ROUND_LIMIT}`;
+  return "Fight to the finish";
 }
 
 function resultBannerText(state: CombatState): string {

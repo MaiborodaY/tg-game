@@ -7,6 +7,7 @@ import {
   setPlayerEquipment,
   type ArenaScene,
 } from "./ArenaScene";
+import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
@@ -14,6 +15,7 @@ import { beginDebugUndoGroup, debugTuning, endDebugUndoGroup, subscribeDebugTuni
 import { getDomRefs, renderDom } from "./domUi";
 import {
   applyBattleReward,
+  buyAndEquipHeroItems,
   createCombatStateFromHero,
   createDefaultHero,
   createStarterHeroEquipment,
@@ -22,12 +24,16 @@ import {
   type HeroState,
 } from "./hero";
 import { logTurnProbe, mountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
+import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
 
 const dom = getDomRefs();
 const debugPanelHost = document.querySelector<HTMLElement>("#debugPanelHost");
 const debugCharacterViewer = document.querySelector<HTMLElement>("#debugCharacterViewer");
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
+const cityMenu = document.querySelector<HTMLElement>(".city-menu");
+const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
+const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
 let hero: HeroState = {
@@ -42,6 +48,8 @@ let enemyTurnTimer: number | undefined;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
 let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
+let weaponShop: WeaponShopApi | undefined;
+let armoryShop: ArmoryShopApi | undefined;
 
 interface HeroPortraitButtonDragState {
   pointerId: number;
@@ -147,8 +155,27 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   }
 
   hero = applyBattleReward(hero, getBattleReward(nextState));
+  weaponShop?.render();
+  armoryShop?.render();
 
   return nextState;
+}
+
+function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
+  const nextHero = buyAndEquipHeroItems(hero, {
+    itemIds: product.itemIds,
+    price: product.price,
+  });
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  setPlayerEquipment(hero.equipment);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  weaponShop?.render();
+  armoryShop?.render();
 }
 
 function syncHeroPortraitButton(): void {
@@ -242,6 +269,18 @@ function startDebugApp(): void {
   }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   mountHeroPortraitButtonDebug();
+  if (cityMenu) {
+    weaponShop = mountWeaponShop(cityMenu, {
+      getHero: () => hero,
+      mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
+      onBuy: handleShopBuy,
+    });
+    armoryShop = mountArmoryShop(cityMenu, {
+      getHero: () => hero,
+      mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
+      onBuy: handleShopBuy,
+    });
+  }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen, {
     heroEquipment: hero.equipment,
     heroInventory: hero.inventory,
@@ -272,4 +311,12 @@ function startDebugApp(): void {
 
 dom.restartButton.addEventListener("click", restart);
 dom.cityButton.addEventListener("click", restart);
+weaponShopButton?.addEventListener("click", () => {
+  armoryShop?.close();
+  weaponShop?.open();
+});
+armoryButton?.addEventListener("click", () => {
+  weaponShop?.close();
+  armoryShop?.open();
+});
 startDebugApp();

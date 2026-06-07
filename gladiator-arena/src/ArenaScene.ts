@@ -69,7 +69,7 @@ import {
   PLAYER_AVATAR_FEET_Y_OFFSET,
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
-import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
+import { getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
 import { HERO_EQUIPMENT_SLOT_KEYS, type HeroEquipment, type HeroEquipmentSlotKey, type HeroItemId } from "./hero";
 import {
   beginDebugUndoGroup,
@@ -122,6 +122,8 @@ interface FighterVisual {
   paperDollRig?: PaperDollRig;
   debugScale: number;
   bodyAnimationLockedUntil?: number;
+  isShattered?: boolean;
+  isShatterScheduled?: boolean;
 }
 
 type PaperDollPartKey = RigPartKey;
@@ -239,7 +241,6 @@ interface ArenaVisuals {
   enemy: FighterVisual;
   playerHud: HudVisual;
   enemyHud: HudVisual;
-  roundText: Phaser.GameObjects.Text;
 }
 
 const PAPER_DOLL_BASE_SCALE = 0.52;
@@ -251,6 +252,7 @@ const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   muscle: 0x9b5a35,
 };
 const FIGHTER_MOVE_DURATION = 280;
+const DEATH_SHATTER_DELAY = 260;
 const HEAD_ASSET_DISPLAY_HEIGHT = 122;
 const HEAD_ASSET_LOCAL_BOTTOM_Y = 14;
 const HEAD_ASSET_ORIGIN_X = 312 / 623;
@@ -549,6 +551,7 @@ export class ArenaScene extends Phaser.Scene {
       return;
     }
 
+    resetDeathEffectsForLiveFighters(this, this.visuals, nextState);
     renderScene(this, nextState);
 
     if (nextState.lastPlayerAction) {
@@ -568,6 +571,8 @@ export class ArenaScene extends Phaser.Scene {
       showDamagePopup(this, this.visuals.player.body.x, this.visuals.player.body.y - 128, nextState.lastEnemyDamage);
       shakeFighter(this, this.visuals.player);
     }
+
+    scheduleDeathEffects(this, nextState);
   }
 
 }
@@ -1006,19 +1011,7 @@ function buildVisuals(target: ArenaScene): ArenaVisuals {
   });
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
-  const roundText = target.add
-    .text(GAME_WIDTH / 2, 92, "", {
-      color: "#ffe7a4",
-      fontFamily: "Georgia",
-      fontSize: "20px",
-      fontStyle: "900",
-      stroke: "#d59045",
-      strokeThickness: 3,
-    })
-    .setOrigin(0.5);
-  roundText.setVisible(false);
-
-  return { player, enemy, playerHud, enemyHud, roundText };
+  return { player, enemy, playerHud, enemyHud };
 }
 
 function createHud(target: Phaser.Scene, x: number, y: number, label: string): HudVisual {
@@ -1240,6 +1233,10 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
+  if (fighter.isShattered) {
+    return;
+  }
+
   if ((fighter.bodyAnimationLockedUntil ?? 0) > time) {
     return;
   }
@@ -1256,6 +1253,10 @@ function applyBodyAnimation(fighter: FighterVisual, time: number, animation: Bod
 }
 
 function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimationTuning, blend: number): void {
+  if (fighter.isShattered) {
+    return;
+  }
+
   const rig = fighter.paperDollRig;
 
   if (!rig) {
@@ -2128,9 +2129,131 @@ function renderScene(target: ArenaScene, current: CombatState): void {
   updateCamera(target, current);
   setHud(target.visuals.playerHud, current.player);
   setHud(target.visuals.enemyHud, current.enemy);
-  target.visuals.roundText.setText(`Round ${current.round} / ${ROUND_LIMIT}`);
-  setFighterAlpha(target.visuals.player, current.player.hp <= 0 ? 0.45 : 1);
-  setFighterAlpha(target.visuals.enemy, current.enemy.hp <= 0 ? 0.45 : 1);
+
+  if (!target.visuals.player.isShattered) {
+    setFighterAlpha(target.visuals.player, 1);
+  }
+
+  if (!target.visuals.enemy.isShattered) {
+    setFighterAlpha(target.visuals.enemy, 1);
+  }
+}
+
+function resetDeathEffectsForLiveFighters(target: ArenaScene, visuals: ArenaVisuals, current: CombatState): void {
+  if (current.result !== "playing") {
+    return;
+  }
+
+  if (current.player.hp > 0) {
+    resetFighterShatter(target, visuals.player);
+  }
+
+  if (current.enemy.hp > 0) {
+    resetFighterShatter(target, visuals.enemy);
+  }
+}
+
+function scheduleDeathEffects(target: ArenaScene, current: CombatState): void {
+  if (!target.visuals || current.result === "playing") {
+    return;
+  }
+
+  if (current.player.hp <= 0) {
+    scheduleFighterShatter(target, target.visuals.player, -1);
+  }
+
+  if (current.enemy.hp <= 0) {
+    scheduleFighterShatter(target, target.visuals.enemy, 1);
+  }
+}
+
+function scheduleFighterShatter(target: ArenaScene, fighter: FighterVisual, worldDirection: -1 | 1): void {
+  if (fighter.isShattered || fighter.isShatterScheduled) {
+    return;
+  }
+
+  fighter.isShatterScheduled = true;
+  target.time.delayedCall(DEATH_SHATTER_DELAY, () => {
+    if (!fighter.isShatterScheduled || fighter.isShattered) {
+      return;
+    }
+
+    fighter.isShatterScheduled = false;
+    shatterFighter(target, fighter, worldDirection);
+  });
+}
+
+function resetFighterShatter(target: Phaser.Scene, fighter: FighterVisual): void {
+  if (!fighter.isShattered && !fighter.isShatterScheduled) {
+    return;
+  }
+
+  fighter.isShattered = false;
+  fighter.isShatterScheduled = false;
+  fighter.bodyAnimationLockedUntil = 0;
+
+  const rig = fighter.paperDollRig;
+
+  if (rig) {
+    target.tweens.killTweensOf(Object.values(rig.parts));
+  }
+
+  setFighterAlpha(fighter, 1);
+}
+
+function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirection: -1 | 1): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    setFighterAlpha(fighter, 0.35);
+    return;
+  }
+
+  fighter.isShattered = true;
+  fighter.bodyAnimationLockedUntil = Number.POSITIVE_INFINITY;
+  fighter.name.setVisible(false);
+  target.tweens.killTweensOf([rig.root, ...Object.values(rig.parts)]);
+  setFighterAlpha(fighter, 1);
+  createDust(target, rig.root.x, rig.root.y - 6);
+
+  const rootDirection = Math.sign(rig.root.scaleX) || 1;
+  const localBlastDirection = worldDirection / rootDirection;
+
+  RIG_PART_KEYS.forEach((key, index) => {
+    const part = rig.parts[key];
+    const startX = part.x;
+    const startY = part.y;
+    const startAngle = part.angle;
+    const side = key.startsWith("front") ? 1 : key.startsWith("back") ? -1 : 0;
+    const delay = index * 9 + Math.random() * 22;
+    const liftDuration = 120 + Math.random() * 70;
+    const scatterX = localBlastDirection * (44 + Math.random() * 104) + side * (18 + Math.random() * 42);
+    const liftY = startY - (34 + Math.random() * 64);
+    const landingY = 54 + Math.random() * 78 + (key.endsWith("Foot") ? 22 : 0);
+    const spin = (90 + Math.random() * 250) * (Math.random() < 0.5 ? -1 : 1);
+
+    part.setVisible(true);
+
+    target.tweens.add({
+      targets: part,
+      x: startX + scatterX * 0.42,
+      y: liftY,
+      angle: startAngle + spin * 0.28,
+      duration: liftDuration,
+      delay,
+      ease: "Quad.easeOut",
+    });
+
+    target.tweens.add({
+      targets: part,
+      x: startX + scatterX,
+      y: landingY,
+      angle: startAngle + spin,
+      duration: 480 + Math.random() * 180,
+      delay: delay + liftDuration,
+      ease: "Bounce.easeOut",
+    });
+  });
 }
 
 function setHud(hud: HudVisual, fighter: FighterState): void {
@@ -2150,8 +2273,13 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
   const layout = getStageLayout(current, getActiveDebugTuning());
   const shouldSnap = isDebugTuningActive();
 
-  positionFighterForLayout(target, visuals.player, layout.playerX, layout.playerScale, layout.playerY, shouldSnap);
-  positionFighterForLayout(target, visuals.enemy, layout.enemyX, layout.enemyScale, layout.enemyY, shouldSnap);
+  if (!visuals.player.isShattered) {
+    positionFighterForLayout(target, visuals.player, layout.playerX, layout.playerScale, layout.playerY, shouldSnap);
+  }
+
+  if (!visuals.enemy.isShattered) {
+    positionFighterForLayout(target, visuals.enemy, layout.enemyX, layout.enemyScale, layout.enemyY, shouldSnap);
+  }
 }
 
 function positionFighterForLayout(

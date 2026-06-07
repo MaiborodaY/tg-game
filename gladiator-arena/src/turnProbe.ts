@@ -51,6 +51,5 @@ export function logTurnProbe(event: string, state: CombatState, timerStatus: Ene
     enemyPosition: state.enemyPosition,
     lastPlayerAction: state.lastPlayerAction ?? null,
     lastEnemyAction: state.lastEnemyAction ?? null,
-    round: state.round,
   });
 }

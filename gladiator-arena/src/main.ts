@@ -1,11 +1,13 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
-import { launchArena, mountCityHeroPreview, mountHeroPortraitPreview, type ArenaScene } from "./ArenaScene";
+import { launchArena, mountCityHeroPreview, mountDebugCharacterViewer, mountHeroPortraitPreview, setPlayerEquipment, type ArenaScene } from "./ArenaScene";
+import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
-import { applyBattleReward, createCombatStateFromHero, createDefaultHero, getBattleReward, type HeroState } from "./hero";
+import { applyBattleReward, buyAndEquipHeroItems, createCombatStateFromHero, createDefaultHero, getBattleReward, type HeroState } from "./hero";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
+import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
 
 interface TelegramWebApp {
@@ -44,6 +46,9 @@ bootTelegramWebApp();
 
 const dom = getDomRefs();
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
+const cityMenu = document.querySelector<HTMLElement>(".city-menu");
+const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
+const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 let hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
@@ -55,6 +60,8 @@ let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
 let hasStarted = false;
 let isInCity = true;
+let armoryShop: ArmoryShopApi | undefined;
+let weaponShop: WeaponShopApi | undefined;
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
   const syncArena = options.syncArena ?? true;
@@ -185,8 +192,27 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   }
 
   hero = applyBattleReward(hero, getBattleReward(nextState));
+  armoryShop?.render();
+  weaponShop?.render();
 
   return nextState;
+}
+
+function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
+  const nextHero = buyAndEquipHeroItems(hero, {
+    itemIds: product.itemIds,
+    price: product.price,
+  });
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  setPlayerEquipment(hero.equipment);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  armoryShop?.render();
+  weaponShop?.render();
 }
 
 function returnToCity(): void {
@@ -218,6 +244,14 @@ function restart(options: { syncArena?: boolean } = {}): void {
 dom.startButton.addEventListener("click", startGame);
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
+weaponShopButton?.addEventListener("click", () => {
+  armoryShop?.close();
+  weaponShop?.open();
+});
+armoryButton?.addEventListener("click", () => {
+  weaponShop?.close();
+  armoryShop?.open();
+});
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 renderCityHeroInfo(cityHeroWidgetRefs, hero);
 if (cityHero) {
@@ -225,5 +259,17 @@ if (cityHero) {
 }
 if (cityHeroWidgetRefs.portrait) {
   mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
+}
+if (cityMenu) {
+  weaponShop = mountWeaponShop(cityMenu, {
+    getHero: () => hero,
+    mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
+    onBuy: handleShopBuy,
+  });
+  armoryShop = mountArmoryShop(cityMenu, {
+    getHero: () => hero,
+    mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
+    onBuy: handleShopBuy,
+  });
 }
 renderDom(dom, state);

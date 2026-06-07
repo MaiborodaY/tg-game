@@ -52,7 +52,6 @@ export interface CombatState {
 
 export const MAX_HP = 30;
 export const MAX_STAMINA = 10;
-export const ROUND_LIMIT = 12;
 export const MIN_DISTANCE = 0;
 export const MAX_DISTANCE = 4;
 export const START_DISTANCE = 3;
@@ -258,11 +257,6 @@ export function resolveEnemyTurn(current: CombatState): CombatState {
     return state;
   }
 
-  if (state.round >= ROUND_LIMIT) {
-    finishBattle(state);
-    return state;
-  }
-
   state.round += 1;
   state.activeTurn = "player";
   return state;
@@ -441,22 +435,17 @@ function finishBattle(state: CombatState): void {
     return;
   }
 
-  if (state.enemy.hp <= 0 || state.player.hp > state.enemy.hp) {
+  if (state.enemy.hp <= 0) {
     state.result = "win";
     state.score += 1000 + state.player.hp * 40;
     addLog(state, `Victory! ${playerName} survives with all the dignity a bucket helmet allows.`, true);
     return;
   }
 
-  if (state.player.hp <= 0 || state.enemy.hp > state.player.hp) {
+  if (state.player.hp <= 0) {
     state.result = "lose";
     addLog(state, `Defeat. ${enemyName} wins and immediately starts posing at the wrong crowd.`, true);
-    return;
   }
-
-  state.result = "draw";
-  state.score += 250;
-  addLog(state, "The horn sounds. It is a draw, somehow.", true);
 }
 
 function applyDefensiveStatuses(state: CombatState, attacker: TurnOwner, damage: number): number {
