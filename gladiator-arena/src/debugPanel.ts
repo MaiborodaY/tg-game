@@ -141,8 +141,8 @@ const controlGroups: DebugControlGroup[] = [
 ];
 
 const rigNumericControls: RigNumericControlConfig[] = [
-  { key: "x", label: "x", min: -240, max: 240, step: 1 },
-  { key: "y", label: "y", min: -240, max: 240, step: 1 },
+  { key: "x", label: "x", min: -480, max: 480, step: 1 },
+  { key: "y", label: "y", min: -480, max: 480, step: 1 },
   { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
   { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
@@ -233,6 +233,7 @@ export function mountDebugPanel(root: HTMLElement): void {
           <button class="debug-panel__reset debug-rig-editor__reset" type="button">Reset selected</button>
         </div>
         <button class="debug-panel__reset debug-rig-editor__reset-all-parts" type="button">Reset all parts</button>
+        <button class="debug-panel__reset debug-rig-editor__reset-animation-to-idle" type="button">Reset A+B to idle</button>
         <fieldset class="debug-rig-editor__limbs">
           <legend>Limb rotate</legend>
           <div class="debug-rig-editor__limb-grid"></div>
@@ -257,6 +258,7 @@ export function mountDebugPanel(root: HTMLElement): void {
               <button class="debug-panel__reset" type="button" data-animation-edit-mode="poseB">Pose B</button>
               <button class="debug-panel__reset" type="button" data-animation-edit-mode="preview">Preview</button>
             </div>
+            <button class="debug-panel__reset debug-rig-editor__copy-pose-a-to-b" type="button">Copy A -&gt; B</button>
           </fieldset>
           <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
             <span>Enabled</span>
@@ -618,9 +620,11 @@ function mountRigEditor(editor: HTMLElement): void {
   const copyOpposite = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
   const resetAllParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset-all-parts");
+  const resetAnimationToIdle = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset-animation-to-idle");
   const resetFace = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__face-reset");
   const animationSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
   const animationModeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]")];
+  const copyPoseAToB = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-pose-a-to-b");
   const animationEnabled = editor.querySelector<HTMLInputElement>("input[data-animation-enabled]");
   const animationDuration = editor.querySelector<HTMLInputElement>("input[data-animation-duration]");
   const animationDurationNumber = editor.querySelector<HTMLInputElement>("input[data-animation-duration-number]");
@@ -636,9 +640,11 @@ function mountRigEditor(editor: HTMLElement): void {
     !copyOpposite ||
     !reset ||
     !resetAllParts ||
+    !resetAnimationToIdle ||
     !resetFace ||
     !animationSelect ||
     animationModeButtons.length === 0 ||
+    !copyPoseAToB ||
     !animationEnabled ||
     !animationDuration ||
     !animationDurationNumber ||
@@ -683,6 +689,10 @@ function mountRigEditor(editor: HTMLElement): void {
     resetAllRigParts();
   });
 
+  resetAnimationToIdle.addEventListener("click", () => {
+    resetSelectedAnimationToIdle();
+  });
+
   resetFace.addEventListener("click", () => {
     resetFaceParts();
   });
@@ -713,6 +723,10 @@ function mountRigEditor(editor: HTMLElement): void {
         updateDebugTuning({ animationEditMode: mode }, { undoable: false });
       }
     });
+  });
+
+  copyPoseAToB.addEventListener("click", () => {
+    copyAnimationPoseAToB();
   });
 
   animationEnabled.addEventListener("change", () => {
@@ -1123,10 +1137,29 @@ function resetAllRigParts(): void {
   updateEditableRigParts(getNeutralRigPartDefaults());
 }
 
+function resetSelectedAnimationToIdle(): void {
+  const neutralParts = getNeutralRigPartDefaults();
+  const neutralFaceParts = getNeutralFacePartDefaults();
+
+  updateSelectedBodyAnimation({
+    base: cloneRigParts(neutralParts),
+    breath: cloneRigParts(neutralParts),
+    faceBase: cloneFaceParts(neutralFaceParts),
+    faceBreath: cloneFaceParts(neutralFaceParts),
+    activeParts: createAnimationActiveParts(true),
+  });
+}
+
 function getNeutralRigPartDefaults(): Record<RigPartKey, RigPartTuning> {
   const neutralParts = DEFAULT_BODY_ANIMATIONS.idle.base;
 
   return Object.fromEntries(RIG_PART_KEYS.map((partKey) => [partKey, { ...neutralParts[partKey] }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function getNeutralFacePartDefaults(): Record<FacePartKey, FacePartTuning> {
+  const neutralFaceParts = DEFAULT_BODY_ANIMATIONS.idle.faceBase;
+
+  return cloneFaceParts(neutralFaceParts);
 }
 
 function getEditableRigParts(): Record<RigPartKey, RigPartTuning> | undefined {
@@ -1231,7 +1264,7 @@ function clampRigNumericValue(key: RigNumericControlKey, value: number): number 
     return clampNumber(value, 0.1, 3);
   }
 
-  return clampNumber(value, -240, 240);
+  return clampNumber(value, -480, 480);
 }
 
 function clampFaceNumericValue(key: FaceNumericControlKey, value: number): number {
@@ -1255,6 +1288,19 @@ function updateAnimationActivePart(partKey: RigPartKey, enabled: boolean): void 
       [partKey]: enabled,
     },
   });
+}
+
+function copyAnimationPoseAToB(): void {
+  const animation = getSelectedBodyAnimation();
+
+  updateSelectedBodyAnimation({
+    breath: cloneRigParts(animation.base),
+    faceBreath: cloneFaceParts(animation.faceBase),
+  });
+}
+
+function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<RigPartKey, RigPartTuning>;
 }
 
 function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<FacePartKey, FacePartTuning> {

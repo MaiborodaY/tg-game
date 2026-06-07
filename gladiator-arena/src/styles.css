@@ -1120,7 +1120,8 @@ body.debug-mode-arena .debug-rig-panel {
   opacity: 0.5;
 }
 
-.debug-rig-editor__reset-all-parts {
+.debug-rig-editor__reset-all-parts,
+.debug-rig-editor__reset-animation-to-idle {
   width: 100%;
   margin: 0;
 }
@@ -1205,6 +1206,16 @@ body.debug-mode-arena .debug-rig-panel {
   outline: 2px solid #ffe7a4;
   outline-offset: 1px;
   filter: brightness(1.08);
+}
+
+.debug-rig-editor__copy-pose-a-to-b {
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  line-height: 1;
 }
 .debug-app {
   min-height: 100dvh;

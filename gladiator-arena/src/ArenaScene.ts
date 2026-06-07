@@ -988,8 +988,8 @@ function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
 function applyRigPartInteractiveDelta(part: RigPartTuning, delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): RigPartTuning {
   return {
     ...part,
-    x: delta.x === undefined ? part.x : clampNumber(part.x + delta.x, -240, 240),
-    y: delta.y === undefined ? part.y : clampNumber(part.y + delta.y, -240, 240),
+    x: delta.x === undefined ? part.x : clampNumber(part.x + delta.x, -480, 480),
+    y: delta.y === undefined ? part.y : clampNumber(part.y + delta.y, -480, 480),
     angle: delta.angle === undefined ? part.angle : clampNumber(part.angle + delta.angle, -180, 180),
   };
 }
