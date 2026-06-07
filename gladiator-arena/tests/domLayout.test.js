@@ -48,15 +48,12 @@ test("fighter resources use flask HUD while preserving stat ids", () => {
   }
 });
 
-test("arena background is mounted as the battle screen backdrop", () => {
+test("arena background is rendered inside the Phaser battle scene", () => {
   const gameScreenIndex = html.indexOf('id="gameScreen" class="game-screen battle-screen"');
-  const backgroundIndex = html.indexOf('class="stage-bg"');
-  const topHudIndex = html.indexOf('class="top-hud"');
   const gameFrameIndex = html.indexOf('id="game" class="game-frame"');
 
   assert.ok(gameScreenIndex > 0, "battle screen should exist");
-  assert.ok(backgroundIndex > gameScreenIndex, "stage background should be inside the battle screen");
-  assert.ok(backgroundIndex < topHudIndex, "stage background should be the first battle screen layer");
-  assert.ok(backgroundIndex < gameFrameIndex, "stage background should not be nested inside the Phaser frame");
-  assert.equal(html.includes('src="./assets/arena/arena-bg-01.webp"'), true);
+  assert.ok(gameFrameIndex > gameScreenIndex, "Phaser frame should be inside the battle screen");
+  assert.equal(html.includes('class="stage-bg"'), false);
+  assert.equal(html.includes('src="./assets/arena/arena-bg-01.webp"'), false);
 });

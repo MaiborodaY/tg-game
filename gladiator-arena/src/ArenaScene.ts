@@ -8,8 +8,12 @@ import {
   FIGHTER_BASE_Y,
 } from "./arenaLayout";
 import {
-  ARENA_BACKGROUND_ASSET_KEY,
-  ARENA_BACKGROUND_ASSET_URL,
+  ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY,
+  ARENA_BACKGROUND_BACK_LAYER_ASSET_URL,
+  ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY,
+  ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL,
+  ARENA_BACKGROUND_MID_LAYER_ASSET_KEY,
+  ARENA_BACKGROUND_MID_LAYER_ASSET_URL,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
@@ -68,7 +72,7 @@ import {
   GAME_WIDTH,
   PLAYER_AVATAR_FEET_Y_OFFSET,
 } from "./assets";
-import { getCameraTarget, type CameraTarget } from "./arenaCamera";
+import { getCameraTarget } from "./arenaCamera";
 import { getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
 import {
   createDefaultHeroEquipment,
@@ -433,7 +437,9 @@ function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
 }
 
 function preloadArenaAssets(target: Phaser.Scene): void {
-  target.load.image(ARENA_BACKGROUND_ASSET_KEY, ARENA_BACKGROUND_ASSET_URL);
+  target.load.image(ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, ARENA_BACKGROUND_BACK_LAYER_ASSET_URL);
+  target.load.image(ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, ARENA_BACKGROUND_MID_LAYER_ASSET_URL);
+  target.load.image(ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL);
 }
 
 function preloadPaperDollAssets(target: Phaser.Scene): void {
@@ -540,6 +546,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   preload(): void {
+    preloadArenaAssets(this);
     preloadPaperDollAssets(this);
   }
 
@@ -645,7 +652,6 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   preload(): void {
-    preloadArenaAssets(this);
     preloadPaperDollAssets(this);
   }
 
@@ -959,9 +965,20 @@ function drawDebugCharacterBackdrop(target: Phaser.Scene): void {
 }
 
 function drawArenaBackground(target: Phaser.Scene): void {
-  if (!target.textures.exists(ARENA_BACKGROUND_ASSET_KEY)) {
-    target.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-  }
+  const layers = [
+    { key: ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, depth: -30 },
+    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, depth: -20 },
+    { key: ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, depth: -10 },
+  ] as const;
+
+  layers.forEach((layer) => {
+    if (!target.textures.exists(layer.key)) {
+      target.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
+      return;
+    }
+
+    target.add.image(0, 0, layer.key).setOrigin(0, 0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(layer.depth);
+  });
 }
 
 function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment): PaperDollFighterOptions {
@@ -2363,7 +2380,6 @@ function updateCamera(target: Phaser.Scene, current: CombatState): void {
   const shouldSnap = isDebugTuningActive();
 
   target.tweens.killTweensOf(camera);
-  syncStageBackground(cameraTarget, shouldSnap);
 
   if (shouldSnap) {
     camera.setScroll(cameraTarget.scrollX, cameraTarget.scrollY);
@@ -2379,19 +2395,6 @@ function updateCamera(target: Phaser.Scene, current: CombatState): void {
     duration: 320,
     ease: "Sine.easeInOut",
   });
-}
-
-function syncStageBackground(cameraTarget: CameraTarget, shouldSnap: boolean): void {
-  const gameScreen = document.querySelector<HTMLElement>("#gameScreen");
-
-  if (!gameScreen) {
-    return;
-  }
-
-  gameScreen.style.setProperty("--arena-camera-x", `${-cameraTarget.scrollX * cameraTarget.zoom}px`);
-  gameScreen.style.setProperty("--arena-camera-y", `${-cameraTarget.scrollY * cameraTarget.zoom}px`);
-  gameScreen.style.setProperty("--arena-camera-zoom", `${cameraTarget.zoom}`);
-  gameScreen.style.setProperty("--arena-camera-transition", shouldSnap ? "none" : "transform 320ms ease");
 }
 
 function getActiveDebugTuning(): typeof debugTuning | undefined {

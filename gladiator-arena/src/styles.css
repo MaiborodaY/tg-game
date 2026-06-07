@@ -633,7 +633,7 @@ h1 {
   overflow: hidden;
   min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   border: 4px solid #35180d;
-  background: #b59b61;
+  background: #b59b61 url("./assets/menu/city-menu.webp") center / cover no-repeat;
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.36);
 }
 
@@ -644,18 +644,6 @@ h1 {
   z-index: 1;
   background: linear-gradient(180deg, rgba(32, 13, 6, 0) 54%, rgba(32, 13, 6, 0.38) 100%);
   pointer-events: none;
-}
-
-.city-menu__bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
-  user-select: none;
 }
 
 .city-menu__hero {
@@ -1113,21 +1101,6 @@ body.arena-active .shell {
   overflow: hidden;
   padding: max(8px, env(safe-area-inset-top)) 8px calc(8px + env(safe-area-inset-bottom));
   background: #a75a1f;
-}
-
-.battle-screen .stage-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
-  transform: translate3d(var(--arena-camera-x, 0), var(--arena-camera-y, 0), 0) scale(var(--arena-camera-zoom, 1));
-  transform-origin: 0 0;
-  transition: var(--arena-camera-transition, transform 320ms ease);
-  user-select: none;
 }
 
 .battle-screen .top-hud,
@@ -1759,10 +1732,6 @@ body.debug-active .battle-screen {
   border: 3px solid var(--ink);
   border-radius: 24px;
   box-shadow: 0 10px 0 rgba(0, 0, 0, 0.24);
-}
-
-body.debug-active .battle-screen .stage-bg {
-  border-radius: 20px;
 }
 
 .debug-app-panel {
