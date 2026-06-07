@@ -35,6 +35,9 @@ const debugTuningDefaultFields = {
   cityHeroX: "cityHeroX",
   cityHeroY: "cityHeroY",
   cityHeroScale: "cityHeroScale",
+  heroPortraitButtonX: "heroPortraitButtonX",
+  heroPortraitButtonY: "heroPortraitButtonY",
+  heroPortraitButtonScale: "heroPortraitButtonScale",
 } as const;
 
 type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;

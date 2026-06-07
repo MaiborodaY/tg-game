@@ -70,7 +70,7 @@ import {
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
-import type { HeroEquipment, HeroItemId } from "./hero";
+import { HERO_EQUIPMENT_SLOT_KEYS, type HeroEquipment, type HeroEquipmentSlotKey, type HeroItemId } from "./hero";
 import {
   beginDebugUndoGroup,
   debugTuning,
@@ -146,6 +146,7 @@ interface PaperDollRig {
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
   selectionHighlights: Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
+  usesPlayerEquipment: boolean;
 }
 
 interface PaperDollEquipment {
@@ -202,7 +203,10 @@ interface PaperDollFighterOptions {
   frontBootAssetKey?: string;
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
+  usesPlayerEquipment?: boolean;
 }
+
+type PaperDollEquipmentSlotKey = HeroEquipmentSlotKey;
 
 type PaperDollEquipmentAssetKeys = Pick<
   PaperDollFighterOptions,
@@ -220,6 +224,8 @@ type PaperDollEquipmentAssetKeys = Pick<
   | "backBootAssetKey"
   | "frontBootAssetKey"
 >;
+
+type PaperDollEquipmentAssetKey = keyof PaperDollEquipmentAssetKeys;
 
 interface HudVisual {
   hpFill: Phaser.GameObjects.Rectangle;
@@ -310,6 +316,10 @@ const DEBUG_CHARACTER_CENTER_X = DEBUG_CHARACTER_VIEWER_WIDTH / 2;
 const DEBUG_CHARACTER_FEET_Y = 690;
 const CITY_HERO_VIEWER_WIDTH = 240;
 const CITY_HERO_VIEWER_HEIGHT = 360;
+const HERO_PORTRAIT_VIEWER_SIZE = 112;
+const HERO_PORTRAIT_CENTER_X = HERO_PORTRAIT_VIEWER_SIZE / 2;
+const HERO_PORTRAIT_FEET_Y = 194;
+const HERO_PORTRAIT_SCALE = 1.18;
 const PAPER_DOLL_SELECTION_FILL = 0xffc857;
 const PAPER_DOLL_SELECTION_STROKE = 0xfff1a8;
 
@@ -352,6 +362,24 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
   frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
 };
 
+const PAPER_DOLL_EQUIPMENT_SLOT_KEYS = HERO_EQUIPMENT_SLOT_KEYS;
+
+const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, PaperDollEquipmentAssetKey> = {
+  weaponMain: "weaponMainAssetKey",
+  helmet: "helmetAssetKey",
+  breastplate: "breastplateAssetKey",
+  backShoulderguard: "backShoulderguardAssetKey",
+  frontShoulderguard: "frontShoulderguardAssetKey",
+  backGauntlet: "backGauntletAssetKey",
+  frontGauntlet: "frontGauntletAssetKey",
+  backGreave: "backGreaveAssetKey",
+  frontGreave: "frontGreaveAssetKey",
+  backShinguard: "backShinguardAssetKey",
+  frontShinguard: "frontShinguardAssetKey",
+  backBoot: "backBootAssetKey",
+  frontBoot: "frontBootAssetKey",
+};
+
 const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipmentAssetKeys>> = {
   training_sword: { weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY },
   starter_helmet: { helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY },
@@ -367,6 +395,8 @@ const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipm
   starter_back_boot: { backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY },
   starter_front_boot: { frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY },
 };
+
+const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
@@ -408,6 +438,7 @@ function preloadPaperDollAssets(target: Phaser.Scene): void {
 
 export function setPlayerEquipment(equipment: HeroEquipment): void {
   activePlayerEquipment = { ...equipment };
+  notifyPlayerEquipmentChanged();
 }
 
 function usePlayerEquipment(equipment: HeroEquipment | undefined): void {
@@ -417,8 +448,10 @@ function usePlayerEquipment(equipment: HeroEquipment | undefined): void {
 }
 
 function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): PaperDollEquipmentAssetKeys {
+  const defaultAssetKeys = { ...DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS };
+
   if (!equipment) {
-    return { ...DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS };
+    return defaultAssetKeys;
   }
 
   return Object.values(equipment).reduce((assetKeys, itemId) => {
@@ -429,12 +462,48 @@ function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): Pape
     const itemAssetKeys = HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId];
 
     return itemAssetKeys ? { ...assetKeys, ...itemAssetKeys } : assetKeys;
-  }, {} as PaperDollEquipmentAssetKeys);
+  }, defaultAssetKeys);
+}
+
+function createPlayerEquipmentVisibility(equipment = activePlayerEquipment): Record<PaperDollEquipmentSlotKey, boolean> {
+  if (!equipment) {
+    return Object.fromEntries(PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, false])) as Record<PaperDollEquipmentSlotKey, boolean>;
+  }
+
+  return Object.fromEntries(
+    PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => {
+      const itemId = equipment[slotKey];
+      const assetKey = PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey];
+      const hasVisualAsset = Boolean(itemId && HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId]?.[assetKey]);
+
+      return [slotKey, hasVisualAsset];
+    }),
+  ) as Record<PaperDollEquipmentSlotKey, boolean>;
+}
+
+function notifyPlayerEquipmentChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(PLAYER_EQUIPMENT_CHANGE_EVENT));
+}
+
+function subscribePlayerEquipmentChanges(callback: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
+
+  return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
 }
 
 export class ArenaScene extends Phaser.Scene {
   visuals?: ArenaVisuals;
   currentState?: CombatState;
+  private unsubscribeDebugTuning?: () => void;
+  private unsubscribePlayerEquipment?: () => void;
 
   constructor() {
     super("ArenaScene");
@@ -454,7 +523,11 @@ export class ArenaScene extends Phaser.Scene {
         renderScene(this, this.currentState);
       }
     });
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => syncFighterEquipmentVisibility(this.visuals?.player));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribeDebugTuning?.();
+      this.unsubscribePlayerEquipment?.();
+    });
     readyCallback?.(this);
   }
 
@@ -525,6 +598,7 @@ class CityHeroScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private groundShadow?: Phaser.GameObjects.Ellipse;
   private unsubscribeDebugTuning?: () => void;
+  private unsubscribePlayerEquipment?: () => void;
 
   constructor() {
     super("CityHeroScene");
@@ -544,7 +618,11 @@ class CityHeroScene extends Phaser.Scene {
     this.fighter.name.setVisible(false);
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribeDebugTuning?.();
+      this.unsubscribePlayerEquipment?.();
+    });
   }
 
   update(time: number): void {
@@ -588,10 +666,76 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   return () => game.destroy(true);
 }
 
+class HeroPortraitScene extends Phaser.Scene {
+  private fighter?: FighterVisual;
+  private unsubscribeDebugTuning?: () => void;
+  private unsubscribePlayerEquipment?: () => void;
+
+  constructor() {
+    super("HeroPortraitScene");
+  }
+
+  preload(): void {
+    preloadPaperDollAssets(this);
+  }
+
+  create(): void {
+    this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
+    this.fighter = createPaperDollFighter(this, createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0));
+    this.fighter.name.setVisible(false);
+    this.sync();
+    this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribeDebugTuning?.();
+      this.unsubscribePlayerEquipment?.();
+    });
+  }
+
+  update(time: number): void {
+    const idle = getActiveBodyAnimation("idle");
+
+    if (!this.fighter || !idle.enabled) {
+      return;
+    }
+
+    applyBodyAnimation(this.fighter, time, idle);
+  }
+
+  private sync(): void {
+    if (!this.fighter) {
+      return;
+    }
+
+    applyPaperDollRigTuning(this.fighter, HERO_PORTRAIT_SCALE, HERO_PORTRAIT_FEET_Y, HERO_PORTRAIT_CENTER_X);
+  }
+}
+
+export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): () => void {
+  usePlayerEquipment(playerEquipment);
+
+  const game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent,
+    width: HERO_PORTRAIT_VIEWER_SIZE,
+    height: HERO_PORTRAIT_VIEWER_SIZE,
+    backgroundColor: "rgba(0, 0, 0, 0)",
+    transparent: true,
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    scene: HeroPortraitScene,
+  });
+
+  return () => game.destroy(true);
+}
+
 class DebugCharacterScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private dragState?: DebugRigPartDragState;
   private unsubscribeDebugTuning?: () => void;
+  private unsubscribePlayerEquipment?: () => void;
 
   constructor() {
     super("DebugCharacterScene");
@@ -615,7 +759,11 @@ class DebugCharacterScene extends Phaser.Scene {
       this.rotateSelectedRigPartsWithWheel(deltaY);
     });
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.unsubscribeDebugTuning?.();
+      this.unsubscribePlayerEquipment?.();
+    });
     this.sync();
   }
 
@@ -826,6 +974,7 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
     headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
     torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
     ...equipmentAssetKeys,
+    usesPlayerEquipment: true,
     bodyPartAssetKeys: {
       backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
       backForearm: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
@@ -929,6 +1078,17 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
 
   root.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing;
   root.scaleY = PAPER_DOLL_BASE_SCALE;
+  const paperDollRig: PaperDollRig = {
+    root,
+    parts,
+    equipment,
+    faceParts,
+    appearance,
+    selectionHighlights,
+    usesPlayerEquipment: Boolean(options.usesPlayerEquipment),
+  };
+
+  syncPaperDollEquipmentVisibility(paperDollRig);
 
   const name = part(
     target.add
@@ -958,14 +1118,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     name,
     movableParts: [root, name],
     animatedParts: [root],
-    paperDollRig: {
-      root,
-      parts,
-      equipment,
-      faceParts,
-      appearance,
-      selectionHighlights,
-    },
+    paperDollRig,
     debugScale: 1,
   };
 }
@@ -1033,6 +1186,7 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
   rig.root.scaleX = PAPER_DOLL_BASE_SCALE * scale * rig.appearance.facing;
   rig.root.scaleY = PAPER_DOLL_BASE_SCALE * scale;
   applyRigPartDebugTuning(rig);
+  syncPaperDollEquipmentVisibility(rig);
   fighter.name.x = centerX;
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
@@ -1067,6 +1221,22 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   applyEquipmentTransform(rig.equipment.frontShinguard, equipment.frontShinguard);
   applyEquipmentTransform(rig.equipment.backBoot, equipment.backBoot);
   applyEquipmentTransform(rig.equipment.frontBoot, equipment.frontBoot);
+}
+
+function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined): void {
+  syncPaperDollEquipmentVisibility(fighter?.paperDollRig);
+}
+
+function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
+  if (!rig?.usesPlayerEquipment) {
+    return;
+  }
+
+  const visibility = createPlayerEquipmentVisibility();
+
+  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    rig.equipment[slotKey]?.setVisible(visibility[slotKey]);
+  });
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {

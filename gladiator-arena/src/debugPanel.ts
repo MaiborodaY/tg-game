@@ -24,7 +24,22 @@ import {
   type RigPartKey,
   type RigPartTuning,
 } from "./debugTuning";
+import {
+  createDefaultHeroInventory,
+  HERO_EQUIPMENT_SLOT_KEYS,
+  HERO_ITEM_CATALOG,
+  type HeroEquipment,
+  type HeroEquipmentSlotKey,
+  type HeroInventoryEntry,
+  type HeroItemId,
+} from "./hero";
 import { saveProdAnimation, saveProdDefaults } from "./prodDefaultsSaver";
+
+interface DebugPanelOptions {
+  heroEquipment?: HeroEquipment;
+  heroInventory?: HeroInventoryEntry[];
+  onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
+}
 
 interface DebugRangeControlConfig {
   type: "range";
@@ -236,6 +251,9 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
 let activeNudgeStep = 5;
 let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let isDebugUndoShortcutMounted = false;
+let debugHeroEquipment: HeroEquipment | undefined;
+let debugHeroInventory: HeroInventoryEntry[] = createDefaultHeroInventory();
+let notifyHeroEquipmentChange: ((equipment: HeroEquipment) => void) | undefined;
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -252,7 +270,9 @@ const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   frontFoot: "backFoot",
 };
 
-export function mountDebugPanel(root: HTMLElement): void {
+export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = {}): void {
+  configureHeroEquipmentDebug(options);
+
   if (document.querySelector(".debug-panel")) {
     return;
   }
@@ -333,6 +353,10 @@ export function mountDebugPanel(root: HTMLElement): void {
         </fieldset>
       </div>
     </details>
+    <details class="debug-hero-equipment-panel" open>
+      <summary>Hero equipment</summary>
+      <div class="debug-hero-equipment"></div>
+    </details>
     <details class="debug-arena-panel">
       <summary>Arena tuning</summary>
       <div class="debug-panel__body"></div>
@@ -352,12 +376,13 @@ export function mountDebugPanel(root: HTMLElement): void {
   const body = panel.querySelector<HTMLElement>(".debug-panel__body");
   const cityBody = panel.querySelector<HTMLElement>(".debug-panel__city-body");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
+  const heroEquipmentBody = panel.querySelector<HTMLElement>(".debug-hero-equipment");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
   const saveAnimationButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod-animation");
   const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset-all");
   const status = panel.querySelector<HTMLElement>(".debug-panel__status");
 
-  if (!body || !cityBody || !rigEditor || !saveButton || !saveAnimationButton || !resetButton || !status) {
+  if (!body || !cityBody || !rigEditor || !heroEquipmentBody || !saveButton || !saveAnimationButton || !resetButton || !status) {
     return;
   }
 
@@ -368,6 +393,8 @@ export function mountDebugPanel(root: HTMLElement): void {
   for (const group of cityControlGroups) {
     cityBody.append(createControlGroup(group));
   }
+
+  cityBody.append(createHeroPortraitButtonReset());
 
   const previewToolbar = createPreviewToolbar();
   const nudgeToolbar = createNudgeToolbar();
@@ -383,6 +410,7 @@ export function mountDebugPanel(root: HTMLElement): void {
 
   mountPreviewToolbar(previewToolbar);
   mountRigEditor(rigEditor);
+  mountHeroEquipmentEditor(heroEquipmentBody);
   mountNudgeToolbar(nudgeToolbar);
   mountModeTabs(panel);
 
@@ -422,6 +450,33 @@ export function mountDebugPanel(root: HTMLElement): void {
   mountDebugUndoShortcut();
   subscribeDebugTuning(() => syncDebugTools(panel));
   syncDebugTools(panel);
+}
+
+function configureHeroEquipmentDebug(options: DebugPanelOptions): void {
+  debugHeroEquipment = options.heroEquipment ? { ...options.heroEquipment } : undefined;
+  debugHeroInventory = options.heroInventory ? cloneHeroInventory(options.heroInventory) : createDefaultHeroInventory();
+  notifyHeroEquipmentChange = options.onHeroEquipmentChange;
+}
+
+function cloneHeroInventory(source: readonly HeroInventoryEntry[]): HeroInventoryEntry[] {
+  return source.map((entry) => ({ ...entry }));
+}
+
+function createHeroPortraitButtonReset(): HTMLButtonElement {
+  const button = document.createElement("button");
+
+  button.className = "debug-panel__reset debug-panel__reset--city";
+  button.type = "button";
+  button.textContent = "Reset";
+  button.addEventListener("click", () => {
+    updateDebugTuning({
+      heroPortraitButtonX: defaultDebugTuning.heroPortraitButtonX,
+      heroPortraitButtonY: defaultDebugTuning.heroPortraitButtonY,
+      heroPortraitButtonScale: defaultDebugTuning.heroPortraitButtonScale,
+    });
+  });
+
+  return button;
 }
 
 function createPreviewTools(...items: HTMLElement[]): HTMLElement {
@@ -682,6 +737,39 @@ function createRangeControl(control: DebugRangeControlConfig): HTMLElement {
     event.preventDefault();
     updateDebugTuning({ [control.key]: control.resetValue });
   });
+
+  return row;
+}
+
+function mountHeroEquipmentEditor(root: HTMLElement): void {
+  root.innerHTML = "";
+
+  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    root.append(createHeroEquipmentRow(slotKey));
+  });
+}
+
+function createHeroEquipmentRow(slotKey: HeroEquipmentSlotKey): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "debug-hero-equipment__row";
+
+  const slot = document.createElement("span");
+  slot.className = "debug-hero-equipment__slot";
+  slot.textContent = slotKey;
+
+  const select = document.createElement("select");
+  select.className = "debug-hero-equipment__select";
+  select.dataset.heroEquipmentSlot = slotKey;
+
+  const item = document.createElement("span");
+  item.className = "debug-hero-equipment__item";
+  item.dataset.heroEquipmentItem = slotKey;
+
+  select.addEventListener("change", () => {
+    updateHeroEquipmentSlot(slotKey, getHeroEquipmentSelectItemId(select.value));
+  });
+
+  row.append(slot, select, item);
 
   return row;
 }
@@ -1143,6 +1231,26 @@ function resetEquipmentSlot(slotKey: EquipmentSlotKey): void {
   updateEquipmentSlot(slotKey, { ...DEFAULT_EQUIPMENT[slotKey] });
 }
 
+function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItemId | null): void {
+  if (!debugHeroEquipment) {
+    return;
+  }
+
+  const nextEquipment: HeroEquipment = {
+    ...debugHeroEquipment,
+    [slotKey]: itemId,
+  };
+
+  debugHeroEquipment = nextEquipment;
+  notifyHeroEquipmentChange?.({ ...nextEquipment });
+
+  const panel = document.querySelector<HTMLElement>(".debug-panel");
+
+  if (panel) {
+    syncHeroEquipmentEditor(panel);
+  }
+}
+
 function updateRigNumericTuning(key: RigNumericControlKey, value: number): void {
   updateRigPartTuning(debugTuning.selectedRigPart, { [key]: clampRigNumericValue(key, value) } as Partial<RigPartTuning>);
 }
@@ -1433,6 +1541,39 @@ function isEquipmentSlotKey(value: string | undefined): value is EquipmentSlotKe
   return typeof value === "string" && EQUIPMENT_SLOT_KEYS.includes(value as EquipmentSlotKey);
 }
 
+function isHeroEquipmentSlotKey(value: string | undefined): value is HeroEquipmentSlotKey {
+  return typeof value === "string" && HERO_EQUIPMENT_SLOT_KEYS.includes(value as HeroEquipmentSlotKey);
+}
+
+function isHeroItemId(value: string | undefined): value is HeroItemId {
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(HERO_ITEM_CATALOG, value);
+}
+
+function getHeroEquipmentSelectItemId(value: string): HeroItemId | null {
+  return isHeroItemId(value) ? value : null;
+}
+
+function getInventoryItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[] {
+  const itemIds = debugHeroInventory.flatMap((entry) => {
+    if (entry.quantity <= 0 || !isHeroItemId(entry.itemId)) {
+      return [];
+    }
+
+    return HERO_ITEM_CATALOG[entry.itemId].equipmentSlot === slotKey ? [entry.itemId] : [];
+  });
+  const equippedItemId = debugHeroEquipment?.[slotKey];
+
+  if (equippedItemId && HERO_ITEM_CATALOG[equippedItemId].equipmentSlot === slotKey) {
+    itemIds.push(equippedItemId);
+  }
+
+  return [...new Set(itemIds)];
+}
+
+function getInventoryItemQuantity(itemId: HeroItemId): number {
+  return debugHeroInventory.reduce((quantity, entry) => (entry.itemId === itemId ? quantity + entry.quantity : quantity), 0);
+}
+
 function clampRigNumericValue(key: RigNumericControlKey, value: number): number {
   if (key === "angle") {
     return clampNumber(value, -180, 180);
@@ -1548,9 +1689,68 @@ function syncDebugTools(panel: HTMLElement): void {
   syncRigEditor(panel);
   syncFaceEditor(panel);
   syncEquipmentEditor(panel);
+  syncHeroEquipmentEditor(panel);
   syncAnimationEditor(panel);
   syncNudgeControls();
   syncGrid();
+}
+
+function syncHeroEquipmentEditor(panel: HTMLElement): void {
+  const fieldset = panel.querySelector<HTMLElement>(".debug-hero-equipment-panel");
+
+  if (fieldset) {
+    fieldset.hidden = !debugHeroEquipment;
+  }
+
+  if (!debugHeroEquipment) {
+    return;
+  }
+
+  panel.querySelectorAll<HTMLSelectElement>("select[data-hero-equipment-slot]").forEach((select) => {
+    const slotKey = select.dataset.heroEquipmentSlot;
+
+    if (!isHeroEquipmentSlotKey(slotKey)) {
+      return;
+    }
+
+    const currentItemId = debugHeroEquipment?.[slotKey] ?? null;
+    const inventoryItemIds = getInventoryItemIdsForSlot(slotKey);
+
+    select.replaceChildren(createHeroEquipmentOption("", "empty"));
+
+    inventoryItemIds.forEach((itemId) => {
+      const definition = HERO_ITEM_CATALOG[itemId];
+      const quantity = getInventoryItemQuantity(itemId);
+      const label = quantity > 1 ? `${definition.name} x${quantity}` : definition.name;
+
+      select.append(createHeroEquipmentOption(itemId, label));
+    });
+
+    select.value = currentItemId ?? "";
+    select.disabled = inventoryItemIds.length === 0 && !currentItemId;
+  });
+
+  panel.querySelectorAll<HTMLElement>("[data-hero-equipment-item]").forEach((item) => {
+    const slotKey = item.dataset.heroEquipmentItem;
+
+    if (!isHeroEquipmentSlotKey(slotKey)) {
+      return;
+    }
+
+    const itemId = debugHeroEquipment?.[slotKey];
+    const definition = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+    item.textContent = definition ? definition.id : "empty";
+  });
+}
+
+function createHeroEquipmentOption(value: string, label: string): HTMLOptionElement {
+  const option = document.createElement("option");
+
+  option.value = value;
+  option.textContent = label;
+
+  return option;
 }
 
 function syncModeTabs(panel: HTMLElement): void {

@@ -1,8 +1,10 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
-import { launchArena, mountCityHeroPreview, type ArenaScene } from "./ArenaScene";
+import { launchArena, mountCityHeroPreview, mountHeroPortraitPreview, type ArenaScene } from "./ArenaScene";
+import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
+import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
-import { createCombatStateFromHero, createDefaultHero, type HeroState } from "./hero";
+import { applyBattleReward, createCombatStateFromHero, createDefaultHero, getBattleReward, type HeroState } from "./hero";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import "./styles.css";
 
@@ -42,7 +44,8 @@ bootTelegramWebApp();
 
 const dom = getDomRefs();
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
-const hero: HeroState = createDefaultHero();
+const cityHeroWidgetRefs = getCityHeroWidgetRefs();
+let hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
@@ -55,9 +58,11 @@ let isInCity = true;
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
   const syncArena = options.syncArena ?? true;
+  const committedState = applyBattleRewardIfNeeded(nextState);
 
-  state = nextState;
+  state = committedState;
   renderDom(dom, state);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
   actionArc?.sync(state);
   if (syncArena) {
     arenaScene?.sync(state);
@@ -174,6 +179,16 @@ function startGame(): void {
   });
 }
 
+function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
+  if (state.result !== "playing" || nextState.result === "playing") {
+    return nextState;
+  }
+
+  hero = applyBattleReward(hero, getBattleReward(nextState));
+
+  return nextState;
+}
+
 function returnToCity(): void {
   if (enemyTurnTimer) {
     window.clearTimeout(enemyTurnTimer);
@@ -203,7 +218,12 @@ function restart(options: { syncArena?: boolean } = {}): void {
 dom.startButton.addEventListener("click", startGame);
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
+syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
+renderCityHeroInfo(cityHeroWidgetRefs, hero);
 if (cityHero) {
   mountCityHeroPreview(cityHero, hero.equipment);
+}
+if (cityHeroWidgetRefs.portrait) {
+  mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
 }
 renderDom(dom, state);

@@ -125,6 +125,9 @@ export interface ArenaDebugTuning {
   cityHeroX: number;
   cityHeroY: number;
   cityHeroScale: number;
+  heroPortraitButtonX: number;
+  heroPortraitButtonY: number;
+  heroPortraitButtonScale: number;
   selectedRigPart: RigPartKey;
   selectedRigParts: RigPartKey[];
   rigParts: Record<RigPartKey, RigPartTuning>;
@@ -177,7 +180,7 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
   helmet: { x: -1, y: 6, angle: 0, scaleX: 0.77, scaleY: 0.94, flipX: false, flipY: false },
-  breastplate: { x: 0, y: 10, angle: 0, scaleX: 0.89, scaleY: 1.11, flipX: false, flipY: false },
+  breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.3, flipX: false, flipY: false },
   backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   backGauntlet: { x: 15, y: -64, angle: 18, scaleX: 1.1, scaleY: 1.1, flipX: true, flipY: false },
@@ -375,7 +378,7 @@ export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
 
 export const DEFAULT_LIGHT_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 240,
+  duration: 570,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -715,6 +718,9 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   cityHeroX: 114,
   cityHeroY: 160,
   cityHeroScale: 0.85,
+  heroPortraitButtonX: 4,
+  heroPortraitButtonY: 2,
+  heroPortraitButtonScale: 1.35,
   selectedRigPart: "torso",
   selectedRigParts: ["torso"],
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
@@ -831,6 +837,9 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     cityHeroX: clampNumber(input.cityHeroX, 0, 240, defaultDebugTuning.cityHeroX),
     cityHeroY: clampNumber(input.cityHeroY, 160, 360, defaultDebugTuning.cityHeroY),
     cityHeroScale: clampNumber(input.cityHeroScale, 0.4, 1.6, defaultDebugTuning.cityHeroScale),
+    heroPortraitButtonX: clampNumber(input.heroPortraitButtonX, 0, 430, defaultDebugTuning.heroPortraitButtonX),
+    heroPortraitButtonY: clampNumber(input.heroPortraitButtonY, 0, 764, defaultDebugTuning.heroPortraitButtonY),
+    heroPortraitButtonScale: clampNumber(input.heroPortraitButtonScale, 0.5, 1.8, defaultDebugTuning.heroPortraitButtonScale),
     selectedRigPart,
     selectedRigParts: normalizeSelectedRigParts(input.selectedRigParts, selectedRigPart),
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),

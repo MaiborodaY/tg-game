@@ -13,6 +13,24 @@
         <div class="city-menu">
           <img class="city-menu__bg" src="./assets/menu/city-menu.png" alt="" aria-hidden="true" />
           <div id="cityHero" class="city-menu__hero" aria-hidden="true"></div>
+          <div id="heroWidget" class="city-menu__hero-widget">
+            <button id="heroPortraitButton" class="city-menu__portrait-button" type="button" aria-label="Character">
+              <div id="heroPortrait" class="city-menu__portrait" aria-hidden="true"></div>
+            </button>
+            <div class="city-menu__hero-info" aria-live="polite">
+              <div class="city-menu__hero-info-top">
+                <strong id="heroInfoName" class="city-menu__hero-name"></strong>
+                <span id="heroInfoGold" class="city-menu__hero-gold"></span>
+              </div>
+              <div id="heroInfoLevel" class="city-menu__hero-level"></div>
+              <div class="city-menu__hero-xp">
+                <div class="city-menu__hero-xp-track" aria-hidden="true">
+                  <div id="heroInfoXpFill" class="city-menu__hero-xp-fill"></div>
+                </div>
+                <span id="heroInfoXpText" class="city-menu__hero-xp-text"></span>
+              </div>
+            </div>
+          </div>
           <nav class="city-menu__nav" aria-label="City locations">
             <button id="startButton" class="city-menu__button" type="button">
               <span class="city-menu__icon" aria-hidden="true">⚔️</span>

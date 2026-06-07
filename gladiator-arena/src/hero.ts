@@ -5,6 +5,7 @@ export interface HeroState {
   name: string;
   level: number;
   xp: number;
+  xpToNextLevel: number;
   gold: number;
   baseStats: HeroBaseStats;
   equipment: HeroEquipment;
@@ -55,7 +56,7 @@ export interface HeroItemDefinition {
 }
 
 export interface HeroInventoryEntry {
-  itemId: string;
+  itemId: HeroItemId;
   quantity: number;
 }
 
@@ -66,6 +67,9 @@ export interface BattleReward {
 
 export const DEFAULT_HERO_ID = "local-hero";
 export const DEFAULT_HERO_NAME = "Borshemir";
+export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = 100;
+export const HERO_XP_TO_NEXT_LEVEL_STEP = 50;
+export const BATTLE_WIN_REWARD: BattleReward = { gold: 25, xp: 20 };
 export const TRAINING_WEAPON_ID = "training_sword";
 export const STARTER_HELMET_ID = "starter_helmet";
 export const STARTER_BREASTPLATE_ID = "starter_breastplate";
@@ -126,6 +130,10 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
 };
 
 export function createDefaultHeroEquipment(): HeroEquipment {
+  return Object.fromEntries(HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])) as HeroEquipment;
+}
+
+export function createStarterHeroEquipment(): HeroEquipment {
   return {
     weaponMain: TRAINING_WEAPON_ID,
     helmet: STARTER_HELMET_ID,
@@ -143,12 +151,21 @@ export function createDefaultHeroEquipment(): HeroEquipment {
   };
 }
 
+export function createDefaultHeroInventory(): HeroInventoryEntry[] {
+  return [];
+}
+
+export function createStarterHeroInventory(): HeroInventoryEntry[] {
+  return HERO_ITEM_IDS.map((itemId) => ({ itemId, quantity: 1 }));
+}
+
 export function createDefaultHero(now = new Date().toISOString()): HeroState {
   return {
     id: DEFAULT_HERO_ID,
     name: DEFAULT_HERO_NAME,
     level: 1,
     xp: 0,
+    xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
     gold: 0,
     baseStats: {
       strength: 1,
@@ -156,7 +173,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
       agility: 1,
     },
     equipment: createDefaultHeroEquipment(),
-    inventory: [],
+    inventory: createDefaultHeroInventory(),
     createdAt: now,
     updatedAt: now,
   };
@@ -220,15 +237,7 @@ export function createCombatStateFromHero(hero: HeroState): CombatState {
 
 export function getBattleReward(combat: CombatState): BattleReward {
   if (combat.result === "win") {
-    return { gold: 18 + Math.floor(combat.score / 500), xp: 24 };
-  }
-
-  if (combat.result === "draw") {
-    return { gold: 6, xp: 10 };
-  }
-
-  if (combat.result === "lose") {
-    return { gold: 2, xp: 4 };
+    return { ...BATTLE_WIN_REWARD };
   }
 
   return { gold: 0, xp: 0 };
@@ -239,10 +248,36 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
     return hero;
   }
 
+  const progress = applyHeroXp(hero.level, hero.xp + reward.xp, hero.xpToNextLevel);
+
   return {
     ...hero,
     gold: hero.gold + reward.gold,
-    xp: hero.xp + reward.xp,
+    level: progress.level,
+    xp: progress.xp,
+    xpToNextLevel: progress.xpToNextLevel,
     updatedAt: now,
+  };
+}
+
+export function getHeroXpToNextLevel(level: number): number {
+  return DEFAULT_HERO_XP_TO_NEXT_LEVEL + Math.max(0, level - 1) * HERO_XP_TO_NEXT_LEVEL_STEP;
+}
+
+function applyHeroXp(level: number, xp: number, xpToNextLevel: number): Pick<HeroState, "level" | "xp" | "xpToNextLevel"> {
+  let nextLevel = Math.max(1, Math.floor(level));
+  let nextXp = Math.max(0, Math.floor(xp));
+  let nextXpToNextLevel = Math.max(1, Math.floor(xpToNextLevel));
+
+  while (nextXp >= nextXpToNextLevel) {
+    nextXp -= nextXpToNextLevel;
+    nextLevel += 1;
+    nextXpToNextLevel = getHeroXpToNextLevel(nextLevel);
+  }
+
+  return {
+    level: nextLevel,
+    xp: nextXp,
+    xpToNextLevel: nextXpToNextLevel,
   };
 }
