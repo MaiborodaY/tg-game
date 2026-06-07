@@ -56,6 +56,12 @@ export const EQUIPMENT_SLOT_KEYS = [
   "frontShoulderguard",
   "backGauntlet",
   "frontGauntlet",
+  "backGreave",
+  "frontGreave",
+  "backShinguard",
+  "frontShinguard",
+  "backBoot",
+  "frontBoot",
 ] as const;
 export type EquipmentSlotKey = (typeof EQUIPMENT_SLOT_KEYS)[number];
 
@@ -176,6 +182,12 @@ export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   backGauntlet: { x: 15, y: -64, angle: 18, scaleX: 1.1, scaleY: 1.1, flipX: true, flipY: false },
   frontGauntlet: { x: 9, y: -60, angle: 16, scaleX: 1.1, scaleY: 1.1, flipX: true, flipY: false },
+  backGreave: { x: -3, y: 0, angle: -8, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
+  frontGreave: { x: -6, y: 3, angle: -11, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
+  backShinguard: { x: -3, y: -3, angle: 4, scaleX: 1.5, scaleY: 1, flipX: false, flipY: false },
+  frontShinguard: { x: -6, y: -3, angle: 0, scaleX: 1.5, scaleY: 1, flipX: false, flipY: false },
+  backBoot: { x: 1, y: -1, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
+  frontBoot: { x: 1, y: 0, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

@@ -56,3 +56,16 @@ export const FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY = "back-gauntlet-light-01";
 export const FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL = "./assets/fighters/armor/arms/back-gauntlet-light-01.png";
 export const FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY = "front-gauntlet-light-01";
 export const FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL = "./assets/fighters/armor/arms/front-gauntlet-light-01.png";
+
+export const FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY = "back-greave-light-01";
+export const FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL = "./assets/fighters/armor/legs/back-greave-light-01.png";
+export const FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY = "front-greave-light-01";
+export const FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL = "./assets/fighters/armor/legs/front-greave-light-01.png";
+export const FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY = "back-shinguard-light-01";
+export const FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL = "./assets/fighters/armor/legs/back-shinguard-light-01.png";
+export const FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY = "front-shinguard-light-01";
+export const FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL = "./assets/fighters/armor/legs/front-shinguard-light-01.png";
+export const FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY = "back-boot-light-01";
+export const FIGHTER_BACK_BOOT_LIGHT_ASSET_URL = "./assets/fighters/armor/legs/back-boot-light-01.png";
+export const FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY = "front-boot-light-01";
+export const FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL = "./assets/fighters/armor/legs/front-boot-light-01.png";

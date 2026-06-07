@@ -10,16 +10,22 @@ import {
 import {
   ARENA_BACKGROUND_ASSET_KEY,
   ARENA_BACKGROUND_ASSET_URL,
+  FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
   FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
   FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL,
+  FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL,
   FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
   FIGHTER_BACK_HAND_LIGHT_ASSET_URL,
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL,
+  FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_URL,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
@@ -34,10 +40,16 @@ import {
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
   FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_URL,
   FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL,
+  FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL,
   FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL,
   FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
@@ -143,6 +155,12 @@ interface PaperDollEquipment {
   frontShoulderguard?: FighterPart;
   backGauntlet?: FighterPart;
   frontGauntlet?: FighterPart;
+  backGreave?: FighterPart;
+  frontGreave?: FighterPart;
+  backShinguard?: FighterPart;
+  frontShinguard?: FighterPart;
+  backBoot?: FighterPart;
+  frontBoot?: FighterPart;
 }
 
 interface PaperDollFaceParts {
@@ -175,6 +193,12 @@ interface PaperDollFighterOptions {
   frontShoulderguardAssetKey?: string;
   backGauntletAssetKey?: string;
   frontGauntletAssetKey?: string;
+  backGreaveAssetKey?: string;
+  frontGreaveAssetKey?: string;
+  backShinguardAssetKey?: string;
+  frontShinguardAssetKey?: string;
+  backBootAssetKey?: string;
+  frontBootAssetKey?: string;
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
 }
@@ -243,6 +267,21 @@ const GAUNTLET_LOCAL_X = 0;
 const GAUNTLET_LOCAL_Y = 10;
 const GAUNTLET_ORIGIN_X = 0.5;
 const GAUNTLET_ORIGIN_Y = 0.5;
+const GREAVE_DISPLAY_HEIGHT = 82;
+const GREAVE_LOCAL_X = 0;
+const GREAVE_LOCAL_Y = 26;
+const GREAVE_ORIGIN_X = 0.5;
+const GREAVE_ORIGIN_Y = 0.5;
+const SHINGUARD_DISPLAY_HEIGHT = 76;
+const SHINGUARD_LOCAL_X = 0;
+const SHINGUARD_LOCAL_Y = 30;
+const SHINGUARD_ORIGIN_X = 0.5;
+const SHINGUARD_ORIGIN_Y = 0.5;
+const BOOT_DISPLAY_HEIGHT = 42;
+const BOOT_LOCAL_X = 14;
+const BOOT_LOCAL_Y = 8;
+const BOOT_ORIGIN_X = 0.5;
+const BOOT_ORIGIN_Y = 0.5;
 const ARMOR_PLACEHOLDER_FILL = 0x9aa4aa;
 const ARMOR_PLACEHOLDER_DARK = 0x5f696e;
 const ARMOR_PLACEHOLDER_HIGHLIGHT = 0xd7e0e4;
@@ -296,6 +335,9 @@ function preloadPaperDollAssets(target: Phaser.Scene): void {
   target.load.image(FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY, FIGHTER_BACK_THIGH_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY, FIGHTER_BACK_SHIN_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY, FIGHTER_BACK_FOOT_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY, FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY, FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY, FIGHTER_BACK_BOOT_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY, FIGHTER_FRONT_HAND_LIGHT_ASSET_URL);
@@ -304,6 +346,9 @@ function preloadPaperDollAssets(target: Phaser.Scene): void {
   target.load.image(FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY, FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY, FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL);
+  target.load.image(FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY, FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
   target.load.image(FIGHTER_WEAPON_SWORD_01_ASSET_KEY, FIGHTER_WEAPON_SWORD_01_ASSET_URL);
@@ -703,6 +748,12 @@ function createPlayerPaperDollOptions(x: number, y: number): PaperDollFighterOpt
     frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
     backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
     frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+    backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
+    frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
+    backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
+    frontShinguardAssetKey: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
+    backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
+    frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
     weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
     bodyPartAssetKeys: {
       backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
@@ -939,6 +990,12 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   applyEquipmentTransform(rig.equipment.frontShoulderguard, equipment.frontShoulderguard);
   applyEquipmentTransform(rig.equipment.backGauntlet, equipment.backGauntlet);
   applyEquipmentTransform(rig.equipment.frontGauntlet, equipment.frontGauntlet);
+  applyEquipmentTransform(rig.equipment.backGreave, equipment.backGreave);
+  applyEquipmentTransform(rig.equipment.frontGreave, equipment.frontGreave);
+  applyEquipmentTransform(rig.equipment.backShinguard, equipment.backShinguard);
+  applyEquipmentTransform(rig.equipment.frontShinguard, equipment.frontShinguard);
+  applyEquipmentTransform(rig.equipment.backBoot, equipment.backBoot);
+  applyEquipmentTransform(rig.equipment.frontBoot, equipment.frontBoot);
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
@@ -1291,6 +1348,7 @@ function addPaperDollPartVisual(
     image.scaleX = image.scaleY;
     partContainer.add(image);
     addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
+    addPaperDollLegArmorVisual(target, partContainer, key, options, equipment);
     return;
   }
 
@@ -1298,6 +1356,7 @@ function addPaperDollPartVisual(
   drawPaperDollPart(graphics, key, appearance);
   partContainer.add(graphics);
   addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
+  addPaperDollLegArmorVisual(target, partContainer, key, options, equipment);
 
   if (key === "torso") {
     addPaperDollBreastplateVisual(target, partContainer, options.breastplateAssetKey, equipment);
@@ -1425,6 +1484,79 @@ function addPaperDollArmArmorVisual(
       localY: GAUNTLET_LOCAL_Y,
       originX: GAUNTLET_ORIGIN_X,
       originY: GAUNTLET_ORIGIN_Y,
+    });
+  }
+}
+
+function addPaperDollLegArmorVisual(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  key: PaperDollPartKey,
+  options: PaperDollFighterOptions,
+  equipment: PaperDollEquipment,
+): void {
+  if (key === "backThigh") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backGreaveAssetKey, "backGreave", equipment, {
+      displayHeight: GREAVE_DISPLAY_HEIGHT,
+      localX: GREAVE_LOCAL_X,
+      localY: GREAVE_LOCAL_Y,
+      originX: GREAVE_ORIGIN_X,
+      originY: GREAVE_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "frontThigh") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGreaveAssetKey, "frontGreave", equipment, {
+      displayHeight: GREAVE_DISPLAY_HEIGHT,
+      localX: GREAVE_LOCAL_X,
+      localY: GREAVE_LOCAL_Y,
+      originX: GREAVE_ORIGIN_X,
+      originY: GREAVE_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "backShin") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backShinguardAssetKey, "backShinguard", equipment, {
+      displayHeight: SHINGUARD_DISPLAY_HEIGHT,
+      localX: SHINGUARD_LOCAL_X,
+      localY: SHINGUARD_LOCAL_Y,
+      originX: SHINGUARD_ORIGIN_X,
+      originY: SHINGUARD_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "frontShin") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShinguardAssetKey, "frontShinguard", equipment, {
+      displayHeight: SHINGUARD_DISPLAY_HEIGHT,
+      localX: SHINGUARD_LOCAL_X,
+      localY: SHINGUARD_LOCAL_Y,
+      originX: SHINGUARD_ORIGIN_X,
+      originY: SHINGUARD_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "backFoot") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backBootAssetKey, "backBoot", equipment, {
+      displayHeight: BOOT_DISPLAY_HEIGHT,
+      localX: -BOOT_LOCAL_X,
+      localY: BOOT_LOCAL_Y,
+      originX: BOOT_ORIGIN_X,
+      originY: BOOT_ORIGIN_Y,
+    });
+    return;
+  }
+
+  if (key === "frontFoot") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontBootAssetKey, "frontBoot", equipment, {
+      displayHeight: BOOT_DISPLAY_HEIGHT,
+      localX: BOOT_LOCAL_X,
+      localY: BOOT_LOCAL_Y,
+      originX: BOOT_ORIGIN_X,
+      originY: BOOT_ORIGIN_Y,
     });
   }
 }
