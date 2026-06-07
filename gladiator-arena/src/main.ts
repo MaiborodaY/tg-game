@@ -32,6 +32,9 @@ let hasStarted = false;
 let isInCity = true;
 let armoryShop: ArmoryShopApi | undefined;
 let weaponShop: WeaponShopApi | undefined;
+let unmountArena: (() => void) | undefined;
+let unmountCityHeroPreview: (() => void) | undefined;
+let unmountHeroPortraitPreview: (() => void) | undefined;
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
   const syncArena = options.syncArena ?? true;
@@ -135,14 +138,55 @@ function handleActionArcClick(event: Event): void {
   }
 }
 
+function mountCityPreviews(): void {
+  if (cityHero && !unmountCityHeroPreview) {
+    unmountCityHeroPreview = mountCityHeroPreview(cityHero, hero.equipment);
+  }
+
+  if (cityHeroWidgetRefs.portrait && !unmountHeroPortraitPreview) {
+    unmountHeroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
+  }
+}
+
+function unmountCityPreviews(): void {
+  unmountCityHeroPreview?.();
+  unmountHeroPortraitPreview?.();
+  unmountCityHeroPreview = undefined;
+  unmountHeroPortraitPreview = undefined;
+}
+
+function mountArena(): void {
+  unmountArena?.();
+  unmountArena = undefined;
+  arenaScene = undefined;
+
+  window.requestAnimationFrame(() => {
+    unmountArena = launchArena((scene) => {
+      arenaScene = scene;
+      arenaScene.sync(state);
+      refreshArenaLayout();
+    }, handleAction, hero.equipment);
+  });
+}
+
+function unmountArenaScene(): void {
+  unmountArena?.();
+  unmountArena = undefined;
+  arenaScene = undefined;
+}
+
 function startGame(): void {
+  unmountCityPreviews();
+  weaponShop?.close();
+  armoryShop?.close();
+
   if (hasStarted) {
     isInCity = false;
     dom.mainMenu.hidden = true;
     dom.gameScreen.hidden = false;
     document.body.classList.add("arena-active");
     restart({ syncArena: false });
-    refreshArenaLayout();
+    mountArena();
     return;
   }
 
@@ -155,15 +199,8 @@ function startGame(): void {
   mountArenaProfiler(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
-  restart();
-
-  window.requestAnimationFrame(() => {
-    launchArena((scene) => {
-      arenaScene = scene;
-      arenaScene.sync(state);
-      refreshArenaLayout();
-    }, handleAction, hero.equipment);
-  });
+  restart({ syncArena: false });
+  mountArena();
 }
 
 function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
@@ -204,9 +241,13 @@ function returnToCity(): void {
   isInCity = true;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
+  unmountArenaScene();
   dom.gameScreen.hidden = true;
   dom.mainMenu.hidden = false;
   document.body.classList.remove("arena-active");
+  mountCityPreviews();
+  syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
   syncTurnProbe();
 }
 
@@ -234,12 +275,7 @@ armoryButton?.addEventListener("click", () => {
 });
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 renderCityHeroInfo(cityHeroWidgetRefs, hero);
-if (cityHero) {
-  mountCityHeroPreview(cityHero, hero.equipment);
-}
-if (cityHeroWidgetRefs.portrait) {
-  mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
-}
+mountCityPreviews();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,

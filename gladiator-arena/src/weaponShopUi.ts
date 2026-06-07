@@ -109,6 +109,8 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   function close(): void {
     shop.hidden = true;
+    unmountPreview?.();
+    unmountPreview = undefined;
   }
 
   function render(): void {

@@ -658,7 +658,7 @@ export class ArenaScene extends Phaser.Scene {
 
 }
 
-export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void, playerEquipment?: HeroEquipment): void {
+export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void, playerEquipment?: HeroEquipment): () => void {
   void _onAction;
   usePlayerEquipment(playerEquipment);
   readyCallback = onReady;
@@ -677,7 +677,12 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
     scene: ArenaScene,
   };
 
-  new Phaser.Game(config);
+  const game = new Phaser.Game(config);
+
+  return () => {
+    readyCallback = undefined;
+    game.destroy(true);
+  };
 }
 
 class CityHeroScene extends Phaser.Scene {

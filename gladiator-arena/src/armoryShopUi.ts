@@ -159,6 +159,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function close(): void {
     shop.hidden = true;
+    unmountPreview?.();
+    unmountPreview = undefined;
   }
 
   function render(): void {

@@ -1,16 +1,13 @@
-import { distanceLabel, getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type CombatState, type Result } from "./combat";
+import { distanceLabel, getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type CombatState } from "./combat";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
   gameScreen: HTMLElement;
   startButton: HTMLButtonElement;
-  score: HTMLElement;
-  statusText: HTMLElement;
   log: HTMLElement;
   resultBanner: HTMLElement;
   restartButton: HTMLButtonElement;
   cityButton: HTMLButtonElement;
-  turnBadge: HTMLElement;
   distanceText: HTMLElement;
   playerHpFill: HTMLElement;
   playerArmorFill: HTMLElement;
@@ -31,13 +28,10 @@ export function getDomRefs(): DomRefs {
     mainMenu: document.querySelector<HTMLElement>("#mainMenu"),
     gameScreen: document.querySelector<HTMLElement>("#gameScreen"),
     startButton: document.querySelector<HTMLButtonElement>("#startButton"),
-    score: document.querySelector<HTMLElement>("#score"),
-    statusText: document.querySelector<HTMLElement>("#statusText"),
     log: document.querySelector<HTMLElement>("#log"),
     resultBanner: document.querySelector<HTMLElement>("#resultBanner"),
     restartButton: document.querySelector<HTMLButtonElement>("#restartButton"),
     cityButton: document.querySelector<HTMLButtonElement>("#cityButton"),
-    turnBadge: document.querySelector<HTMLElement>("#turnBadge"),
     distanceText: document.querySelector<HTMLElement>("#distanceText"),
     playerHpFill: document.querySelector<HTMLElement>("#playerHpFill"),
     playerArmorFill: document.querySelector<HTMLElement>("#playerArmorFill"),
@@ -63,9 +57,6 @@ export function getDomRefs(): DomRefs {
 }
 
 export function renderDom(dom: DomRefs, state: CombatState): void {
-  dom.score.textContent = `${state.score}`;
-  dom.statusText.textContent = state.result === "playing" ? "Fight to the finish" : resultStatusText(state.result);
-  dom.turnBadge.textContent = state.result === "playing" ? (state.activeTurn === "player" ? "Your turn" : `${state.enemy.name} turn`) : resultStatusText(state.result);
   dom.distanceText.textContent = distanceLabel(state.distance);
   renderStats(dom, state);
   renderLog(dom, state);
@@ -124,22 +115,6 @@ function renderResult(dom: DomRefs, state: CombatState): void {
   dom.resultBanner.hidden = false;
   dom.resultBanner.textContent = resultBannerText(state);
   dom.cityButton.hidden = false;
-}
-
-function resultStatusText(result: Result): string {
-  if (result === "win") {
-    return "Victory";
-  }
-
-  if (result === "lose") {
-    return "Defeat";
-  }
-
-  if (result === "draw") {
-    return "Draw";
-  }
-
-  return "Fight to the finish";
 }
 
 function resultBannerText(state: CombatState): string {
