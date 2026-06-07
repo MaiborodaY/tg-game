@@ -19,6 +19,12 @@ import {
   startGame,
   startNextRound
 } from "./gameState";
+import {
+  type FarmPawsLang,
+  type FarmPawsTextKey,
+  initialFarmPawsLang,
+  tfp
+} from "./i18n";
 import { loadBestScore, saveBestScore } from "./storage";
 
 type TelegramWebApp = {
@@ -46,6 +52,7 @@ declare global {
 }
 
 const appRoot = requireAppRoot();
+let activeLang: FarmPawsLang = initialFarmPawsLang();
 
 let state: GameState = {
   phase: "idle",
@@ -68,7 +75,8 @@ let currentRun: FarmPawsRunSession = {
   bestScore: state.bestScore,
   error: null,
   petName: null,
-  petType: null
+  petType: null,
+  lang: activeLang
 };
 let runStartedAt = 0;
 let isStartingRun = false;
@@ -103,7 +111,12 @@ function requireAppRoot(): HTMLDivElement {
   return root;
 }
 
+function tr(key: FarmPawsTextKey, vars: Record<string, string | number> = {}): string {
+  return tfp(activeLang, key, vars);
+}
+
 function render(): void {
+  document.title = tr("app_title");
   appRoot.innerHTML = `
     <main class="phone-shell">
       <section class="game-card ${state.phase === "failed" ? "is-failed" : ""}">
@@ -128,9 +141,9 @@ function renderStartScreen(): string {
   return `
     <div class="start-screen">
       <div class="pet-badge" aria-hidden="true">🐾</div>
-      <p class="eyebrow">Прогулка питомца</p>
-      <h1>Фермерские лапки</h1>
-      <p class="lead">Запомни маршрут питомца по грядкам и повтори его.</p>
+      <p class="eyebrow">${escapeHtml(tr("start_eyebrow"))}</p>
+      <h1>${escapeHtml(tr("app_title"))}</h1>
+      <p class="lead">${escapeHtml(tr("start_lead"))}</p>
       <div class="preview-grid" aria-hidden="true">
         ${Array.from({ length: 9 }, (_, index) => `<span class="preview-plot">${previewEmoji(index)}</span>`).join("")}
       </div>
@@ -139,9 +152,9 @@ function renderStartScreen(): string {
         <span>2</span>
         <span>3</span>
       </div>
-      <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${isStartingRun ? "⏳ Стартуем" : "▶️ Играть"}</button>
+      <button class="primary-button" data-action="start" ${isStartingRun ? "disabled" : ""}>${escapeHtml(isStartingRun ? tr("start_busy") : tr("start_play"))}</button>
       ${startBlockMessage ? `<p class="start-warning">${escapeHtml(startBlockMessage)}</p>` : ""}
-      <p class="best-note">Лучший результат: <strong>${state.bestScore}</strong></p>
+      <p class="best-note">${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
     </div>
   `;
 }
@@ -151,21 +164,21 @@ function renderGameScreen(): string {
   return `
     <header class="top-panel">
       <div>
-        <p class="eyebrow">🐾 Фермерские лапки</p>
-        <h1>${failed ? "Забег окончен" : `Раунд ${state.round}`}</h1>
+        <p class="eyebrow">🐾 ${escapeHtml(tr("app_title"))}</p>
+        <h1>${escapeHtml(failed ? tr("run_finished") : tr("round_title", { round: state.round }))}</h1>
       </div>
       <div class="score-pill">
         <span>${state.score}</span>
-        <small>урожай</small>
+        <small>${escapeHtml(tr("score_unit"))}</small>
       </div>
     </header>
 
-    <section class="stats-row" aria-label="Статистика забега">
-      <span>Раунд: <strong>${state.round}</strong></span>
-      <span>Рекорд: <strong>${state.bestScore}</strong></span>
+    <section class="stats-row" aria-label="${escapeHtml(tr("stats_label"))}">
+      <span>${escapeHtml(tr("round_label"))}: <strong>${state.round}</strong></span>
+      <span>${escapeHtml(tr("record_label"))}: <strong>${state.bestScore}</strong></span>
     </section>
-    <section class="heart-row" aria-label="Жизни">
-      <span>${escapeHtml(currentRun.petName || "Питомец")}</span>
+    <section class="heart-row" aria-label="${escapeHtml(tr("lives_label"))}">
+      <span>${escapeHtml(currentRun.petName || tr("default_pet"))}</span>
       <strong>${renderHearts()}</strong>
     </section>
 
@@ -175,11 +188,11 @@ function renderGameScreen(): string {
 
 function renderPlayPanel(): string {
   return `
-    <div class="status-line ${statusClass()}">${statusText()}</div>
-    <div class="farm-grid" aria-label="Грядки">
+    <div class="status-line ${statusClass()}">${escapeHtml(statusText())}</div>
+    <div class="farm-grid" aria-label="${escapeHtml(tr("grid_label"))}">
       ${Array.from({ length: 9 }, (_, index) => renderCell(index)).join("")}
     </div>
-    <div class="cat-guide-panel" aria-label="Питомец помогает запомнить маршрут">
+    <div class="cat-guide-panel" aria-label="${escapeHtml(tr("pet_guide_label"))}">
       <img class="cat-guide-image ${petGuideClassName()}" src="${petGuideImageUrl(false)}" alt="" />
     </div>
   `;
@@ -189,13 +202,13 @@ function renderResultPanel(): string {
   return `
     <div class="result-panel">
       <img class="result-cat-image ${petTypeClass()}" src="${petGuideImageUrl(true)}" alt="" />
-      <h2>Урожай спасён: ${state.score}</h2>
-      <p>Сердечки закончились.</p>
-      <p>Лучший результат: <strong>${state.bestScore}</strong></p>
-      <p class="reward-line">${rewardText()}</p>
+      <h2>${escapeHtml(tr("result_title", { score: state.score }))}</h2>
+      <p>${escapeHtml(tr("hearts_ended"))}</p>
+      <p>${escapeHtml(tr("best_result", { score: state.bestScore }))}</p>
+      <p class="reward-line">${escapeHtml(rewardText())}</p>
       <div class="result-actions">
-        <button class="primary-button" data-action="retry">🔁 Ещё раз</button>
-        <button class="secondary-button" data-action="home">🏠 В дом</button>
+        <button class="primary-button" data-action="retry">${escapeHtml(tr("retry_button"))}</button>
+        <button class="secondary-button" data-action="home">${escapeHtml(tr("home_button"))}</button>
       </div>
     </div>
   `;
@@ -214,7 +227,7 @@ function renderCell(index: number): string {
   ].filter(Boolean).join(" ");
 
   return `
-    <button class="${className}" data-cell="${index}" ${state.phase !== "input" ? "disabled" : ""} aria-label="Грядка ${index + 1}">
+    <button class="${className}" data-cell="${index}" ${state.phase !== "input" ? "disabled" : ""} aria-label="${escapeHtml(tr("plot_label", { number: index + 1 }))}">
       <span class="plot-content">${content}</span>
       ${isActive ? `<span class="plot-pet" aria-hidden="true">🐕</span>` : ""}
     </button>
@@ -244,6 +257,7 @@ async function beginGame(): Promise<void> {
   if (token !== runToken) return;
 
   isStartingRun = false;
+  activeLang = run.lang;
   if (run.mode === "blocked") {
     currentRun = run;
     startBlockMessage = startBlockedText(run);
@@ -263,7 +277,7 @@ async function beginGame(): Promise<void> {
   render();
 
   if (run.mode === "local" && run.error) {
-    showToast("Игра запущена локально. Награда не начислится.");
+    showToast(tr("local_run_toast"));
   }
 
   void playSequence(token);
@@ -369,12 +383,15 @@ function statusText(): string {
   if (state.phase === "showing") {
     const stepNumber = activeStep?.stepNumber || 1;
     const totalSteps = activeStep?.totalSteps || state.sequence.length;
-    return `Смотри ${stepNumber}/${totalSteps}`;
+    return tr("status_watch", { step: stepNumber, total: totalSteps });
   }
-  if (state.phase === "success") return "Верно";
-  if (state.phase === "failed") return "Ошибка";
-  if (state.lastInputStatus === "wrong") return `Минус сердце ${state.hp}/${state.maxHp}`;
-  return `Повтори ${Math.min(state.inputIndex + 1, state.sequence.length)}/${state.sequence.length}`;
+  if (state.phase === "success") return tr("status_correct");
+  if (state.phase === "failed") return tr("status_error");
+  if (state.lastInputStatus === "wrong") return tr("status_minus_heart", { hp: state.hp, maxHp: state.maxHp });
+  return tr("status_repeat", {
+    step: Math.min(state.inputIndex + 1, state.sequence.length),
+    total: state.sequence.length
+  });
 }
 
 function statusClass(): string {
@@ -390,20 +407,20 @@ function renderHearts(): string {
 }
 
 function rewardText(): string {
-  if (finishPending) return "Сохраняем результат...";
+  if (finishPending) return tr("reward_saving");
   if (currentRun.mode === "server" && !finishResult && !finishError) {
-    return "Сохраняем результат...";
+    return tr("reward_saving");
   }
   if (finishResult?.mode === "server" && finishResult.ok) {
-    return `Питомец получил +${finishResult.xpReward || 0} XP`;
+    return tr("reward_ok", { xp: finishResult.xpReward || 0 });
   }
   if (currentRun.mode === "server" && finishError) {
-    return "Результат не сохранён, награда не начислена";
+    return tr("reward_not_saved");
   }
   if (currentRun.mode === "local") {
-    return "Локальный режим: награда не начисляется";
+    return tr("reward_local");
   }
-  return `Питомец получил +${mockPetXpForScore(state.score)} XP`;
+  return tr("reward_ok", { xp: mockPetXpForScore(state.score) });
 }
 
 function catGuideClass(): string {
@@ -448,7 +465,7 @@ function exitMiniApp(): void {
     // Fall through to the dev-mode hint below.
   }
 
-  showToast("Закрой мини-игру, чтобы вернуться домой.");
+  showToast(tr("close_hint"));
 }
 
 function startBlockedText(run: FarmPawsRunSession): string {
@@ -456,13 +473,13 @@ function startBlockedText(run: FarmPawsRunSession): string {
     const limit = typeof run.dailyLimit === "number" ? run.dailyLimit : null;
     const starts = typeof run.dailyStarts === "number" ? run.dailyStarts : limit;
     const attempts = limit ? ` (${Math.min(starts || 0, limit)}/${limit})` : "";
-    return `Лимит прогулок на сегодня исчерпан${attempts}. Новые попытки будут в 00:00 UTC.`;
+    return tr("blocked_daily_limit", { attempts });
   }
-  if (run.code === "no_pet") return "Сначала нужен питомец. Открой меню питомца в боте.";
-  if (run.code === "pet_dead") return "Питомец не может гулять. Открой меню питомца в боте.";
-  if (run.code === "pet_changed") return "Питомец изменился. Закрой мини-игру и открой прогулку заново из бота.";
-  if (run.code === "not_enough_energy") return "Не хватает энергии для прогулки.";
-  return "Сейчас прогулку начать нельзя. Открой меню питомца и попробуй позже.";
+  if (run.code === "no_pet") return tr("blocked_no_pet");
+  if (run.code === "pet_dead") return tr("blocked_pet_dead");
+  if (run.code === "pet_changed") return tr("blocked_pet_changed");
+  if (run.code === "not_enough_energy") return tr("blocked_not_enough_energy");
+  return tr("blocked_default");
 }
 
 function escapeHtml(value: string): string {

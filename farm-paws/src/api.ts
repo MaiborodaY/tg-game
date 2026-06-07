@@ -1,3 +1,5 @@
+import { type FarmPawsLang, initialFarmPawsLang, normalizeFarmPawsLang } from "./i18n";
+
 export type FarmPawsRunSession = {
   mode: "local" | "server" | "blocked";
   runId: string | null;
@@ -5,6 +7,7 @@ export type FarmPawsRunSession = {
   error: string | null;
   petName: string | null;
   petType: string | null;
+  lang: FarmPawsLang;
   code?: string | null;
   dailyLimit?: number | null;
   dailyStarts?: number | null;
@@ -38,6 +41,8 @@ type ApiStartResponse = {
   best_score?: number;
   error?: string;
   code?: string;
+  lang?: string;
+  language?: string;
   dailyLimit?: number;
   daily_limit?: number;
   dailyStarts?: number;
@@ -79,7 +84,7 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
       if (isBlockingStartCode(code)) {
         return blockedSession(localBestScore, response.error || code || "start_blocked", code, response);
       }
-      return localSession(localBestScore, response.error || "start_failed");
+      return localSession(localBestScore, response.error || "start_failed", responseLang(response));
     }
 
     return {
@@ -89,6 +94,7 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
       error: null,
       petName: normalizedText(response.petName ?? response.pet_name),
       petType: normalizedText(response.petType ?? response.pet_type),
+      lang: responseLang(response),
       code: null,
       dailyLimit: null,
       dailyStarts: null
@@ -97,6 +103,9 @@ export async function startFarmPawsRun(localBestScore: number): Promise<FarmPaws
     if (error instanceof ApiError && isBlockingStartCode(error.code)) {
       const payload = error.payload as ApiStartResponse;
       return blockedSession(localBestScore, error.message, error.code, payload);
+    }
+    if (error instanceof ApiError) {
+      return localSession(localBestScore, error.message, responseLang(error.payload as ApiStartResponse));
     }
     return localSession(localBestScore, error instanceof Error ? error.message : "network_error");
   }
@@ -170,7 +179,11 @@ function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
 }
 
-function localSession(bestScore: number, error: string | null): FarmPawsRunSession {
+function localSession(
+  bestScore: number,
+  error: string | null,
+  lang: FarmPawsLang = initialFarmPawsLang()
+): FarmPawsRunSession {
   return {
     mode: "local",
     runId: null,
@@ -178,6 +191,7 @@ function localSession(bestScore: number, error: string | null): FarmPawsRunSessi
     error,
     petName: null,
     petType: null,
+    lang,
     code: null,
     dailyLimit: null,
     dailyStarts: null
@@ -197,6 +211,7 @@ function blockedSession(
     error,
     petName: normalizedText(response?.petName ?? response?.pet_name),
     petType: normalizedText(response?.petType ?? response?.pet_type),
+    lang: responseLang(response),
     code,
     dailyLimit: normalizedNullableScore(response?.dailyLimit ?? response?.daily_limit),
     dailyStarts: normalizedNullableScore(response?.dailyStarts ?? response?.daily_starts)
@@ -232,6 +247,10 @@ function normalizedScore(value: number): number {
 
 function normalizedText(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function responseLang(response: ApiStartResponse | null): FarmPawsLang {
+  return normalizeFarmPawsLang(response?.lang ?? response?.language ?? initialFarmPawsLang());
 }
 
 class ApiError extends Error {
