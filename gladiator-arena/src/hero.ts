@@ -79,7 +79,6 @@ export interface EnemyVisualPreset {
   skinDark: number;
   hair: number;
   muscle?: number;
-  usesDefaultBodyAssets: boolean;
 }
 
 export interface EnemyLoadout {
@@ -210,23 +209,13 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
 };
 
 export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
-  skin: 0xd48f62,
-  skinDark: 0xac673d,
-  hair: 0x2f251a,
-  muscle: 0x7a4328,
-  usesDefaultBodyAssets: false,
+  skin: 0xefaa7b,
+  skinDark: 0xd9854d,
+  hair: 0x8b4a1f,
+  muscle: 0x9b5a35,
 };
 
-export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [
-  DEFAULT_ENEMY_VISUAL_PRESET,
-  {
-    skin: 0xefaa7b,
-    skinDark: 0xd9854d,
-    hair: 0x8b4a1f,
-    muscle: 0x9b5a35,
-    usesDefaultBodyAssets: true,
-  },
-];
+export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [DEFAULT_ENEMY_VISUAL_PRESET];
 
 const ENEMY_ARMOR_ITEMS: Array<[HeroEquipmentSlotKey, HeroItemId]> = [
   ["helmet", STARTER_HELMET_ID],

@@ -165,7 +165,7 @@ interface PaperDollRig {
   equipmentState?: HeroEquipment;
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
-  selectionHighlights: Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
+  selectionHighlights?: Partial<Record<PaperDollPartKey, Phaser.GameObjects.Graphics>>;
   usesPlayerEquipment: boolean;
   shadow?: PaperDollShadowRig;
 }
@@ -234,6 +234,7 @@ interface PaperDollFighterOptions {
   equipment?: HeroEquipment;
   usesPlayerEquipment?: boolean;
   castsShadow?: boolean;
+  enableSelectionHighlights?: boolean;
 }
 
 type PaperDollEquipmentSlotKey = HeroEquipmentSlotKey;
@@ -839,7 +840,11 @@ class DebugCharacterScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
     drawDebugCharacterBackdrop(this);
-    this.fighter = createPaperDollFighter(this, { ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0), castsShadow: false });
+    this.fighter = createPaperDollFighter(this, {
+      ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0),
+      castsShadow: false,
+      enableSelectionHighlights: true,
+    });
     this.fighter.name.setVisible(false);
     enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) => this.handlePreviewPointerDown(pointer, gameObjects));
@@ -1047,13 +1052,6 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
 function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState): PaperDollFighterOptions {
   const preset = enemy?.visualPreset ?? DEFAULT_ENEMY_VISUAL_PRESET;
   const equipment = enemy?.equipment ? { ...enemy.equipment } : createDefaultHeroEquipment();
-  const assetOptions = preset.usesDefaultBodyAssets
-    ? {
-        headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
-        torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
-        bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
-      }
-    : {};
 
   return {
     x,
@@ -1064,8 +1062,10 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
     skinDark: preset.skinDark,
     hair: preset.hair,
     muscle: preset.muscle,
+    headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
+    torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+    bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
     ...createPlayerEquipmentAssetKeys(equipment),
-    ...assetOptions,
     equipment,
   };
 }
@@ -1124,14 +1124,18 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
   const equipment: PaperDollEquipment = {};
   const faceParts: PaperDollFaceParts = {};
-  const selectionHighlights = {} as Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
+  const selectionHighlights = options.enableSelectionHighlights
+    ? ({} as Record<PaperDollPartKey, Phaser.GameObjects.Graphics>)
+    : undefined;
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, appearance, options, equipment, faceParts);
-    selectionHighlights[key] = addPaperDollPartSelectionHighlight(target, partContainer, key);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, faceParts);
+    if (selectionHighlights) {
+      selectionHighlights[key] = addRigPartSelectionHighlight(target, partContainer, key);
+    }
     rootContainer.add(partContainer);
     parts[key] = part(partContainer);
   });
@@ -1201,19 +1205,12 @@ function createPaperDollShadowRig(
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
   const equipment: PaperDollEquipment = {};
   const faceParts: PaperDollFaceParts = {};
-  const shadowAppearance: PaperDollAppearance = {
-    ...appearance,
-    skin: PAPER_DOLL_SHADOW_COLOR,
-    skinDark: PAPER_DOLL_SHADOW_COLOR,
-    hair: PAPER_DOLL_SHADOW_COLOR,
-    muscle: PAPER_DOLL_SHADOW_COLOR,
-  };
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, shadowAppearance, options, equipment, faceParts);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, faceParts);
     tintPaperDollShadowObject(partContainer);
     shadowRootContainer.add(partContainer);
     parts[key] = part(partContainer);
@@ -1524,12 +1521,12 @@ function enableDebugPaperDollPartPicking(rig: PaperDollRig | undefined, onPick?:
 }
 
 function syncPaperDollSelectionHighlight(rig: PaperDollRig | undefined, highlightedParts: readonly RigPartKey[]): void {
-  if (!rig) {
+  if (!rig?.selectionHighlights) {
     return;
   }
 
   RIG_PART_KEYS.forEach((key) => {
-    rig.selectionHighlights[key].setVisible(highlightedParts.includes(key));
+    rig.selectionHighlights?.[key]?.setVisible(highlightedParts.includes(key));
   });
 }
 
@@ -1621,21 +1618,21 @@ function lerp(from: number, to: number, blend: number): number {
   return from + (to - from) * blend;
 }
 
-function addPaperDollPartSelectionHighlight(
+function addRigPartSelectionHighlight(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
   key: PaperDollPartKey,
 ): Phaser.GameObjects.Graphics {
   const highlight = target.add.graphics();
 
-  drawPaperDollPartSelectionHighlight(highlight, key);
+  drawRigPartSelectionHighlight(highlight, key);
   highlight.setVisible(false);
   partContainer.add(highlight);
 
   return highlight;
 }
 
-function drawPaperDollPartSelectionHighlight(graphics: Phaser.GameObjects.Graphics, key: PaperDollPartKey): void {
+function drawRigPartSelectionHighlight(graphics: Phaser.GameObjects.Graphics, key: PaperDollPartKey): void {
   const fill = PAPER_DOLL_SELECTION_FILL;
   const stroke = PAPER_DOLL_SELECTION_STROKE;
   const fillAlpha = 0.18;
@@ -1706,7 +1703,6 @@ function addPaperDollPartVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
   key: PaperDollPartKey,
-  appearance: PaperDollAppearance,
   options: PaperDollFighterOptions,
   equipment: PaperDollEquipment,
   faceParts: PaperDollFaceParts,
@@ -1750,20 +1746,6 @@ function addPaperDollPartVisual(
     return;
   }
 
-  const graphics = target.add.graphics();
-  drawPaperDollPart(graphics, key, appearance);
-  partContainer.add(graphics);
-  addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
-  addPaperDollLegArmorVisual(target, partContainer, key, options, equipment);
-
-  if (key === "torso") {
-    addPaperDollBreastplateVisual(target, partContainer, options.breastplateAssetKey, equipment);
-  }
-
-  if (key === "head") {
-    addPaperDollHelmetVisual(target, partContainer, options.helmetAssetKey, equipment);
-    addPaperDollFaceOverlay(target, partContainer, faceParts, false);
-  }
 }
 
 function addPaperDollWeaponVisual(
@@ -2052,112 +2034,6 @@ function addPaperDollFaceOverlay(
   faceParts.eyeRight = part(eyeRight);
 }
 
-function drawPaperDollPart(graphics: Phaser.GameObjects.Graphics, key: PaperDollPartKey, appearance: PaperDollAppearance): void {
-  const skin = appearance.skin;
-  const skinDark = appearance.skinDark;
-  const outline = 0x35180d;
-  const muscle = appearance.muscle;
-  const hair = appearance.hair;
-  const isBack = key.startsWith("back");
-  const side = key.startsWith("front") ? 1 : -1;
-  const limbFill = isBack ? skinDark : skin;
-
-  graphics.clear();
-
-  if (key === "torso") {
-    drawDollPolygon(
-      graphics,
-      [
-        { x: -39, y: -106 },
-        { x: 39, y: -106 },
-        { x: 31, y: -25 },
-        { x: 17, y: 8 },
-        { x: -17, y: 8 },
-        { x: -31, y: -25 },
-      ],
-      skin,
-      outline,
-      1,
-      1,
-      5,
-    );
-    drawDollLine(graphics, 0, -94, 0, -3, muscle, 1, 3, 0.7);
-    drawDollEllipse(graphics, -14, -68, 25, 16, 0, 0x000000, muscle, 1, 0, 3, 0.7);
-    drawDollEllipse(graphics, 14, -68, 25, 16, 0, 0x000000, muscle, 1, 0, 3, 0.7);
-    drawDollEllipse(graphics, -8, -28, 16, 12, 0, 0x000000, muscle, 1, 0, 3, 0.7);
-    drawDollEllipse(graphics, 8, -28, 16, 12, 0, 0x000000, muscle, 1, 0, 3, 0.7);
-    return;
-  }
-
-  if (key === "head") {
-    drawDollEllipse(graphics, 0, 0, 26, 28, 0, skin, outline, 1, 1, 4);
-    drawDollEllipse(graphics, -42, -33, 23, 32, 0, skin, outline, 1, 1, 4);
-    drawDollEllipse(graphics, 42, -33, 23, 32, 0, skin, outline, 1, 1, 4);
-    drawDollEllipse(graphics, 0, -39, 78, 86, 0, skin, outline, 1, 1, 5);
-    drawDollPolygon(
-      graphics,
-      [
-        { x: -37, y: -46 },
-        { x: -26, y: -77 },
-        { x: 8, y: -87 },
-        { x: 36, y: -64 },
-        { x: 37, y: -42 },
-        { x: 22, y: -53 },
-        { x: -8, y: -57 },
-        { x: -37, y: -38 },
-      ],
-      hair,
-      outline,
-      1,
-      1,
-      5,
-    );
-    drawDollPolygon(
-      graphics,
-      [
-        { x: -12, y: -72 },
-        { x: -2, y: -102 },
-        { x: 15, y: -77 },
-        { x: 4, y: -66 },
-      ],
-      hair,
-      outline,
-      1,
-      1,
-      4,
-    );
-    drawDollSmile(graphics, 0, -26, 12, outline, 1);
-    return;
-  }
-
-  if (key.endsWith("UpperArm")) {
-    drawDollEllipse(graphics, 8 * side, 35, 31, 86, -0.18 * side, limbFill, outline, 1, 1, 4);
-    return;
-  }
-
-  if (key.endsWith("Forearm")) {
-    drawDollEllipse(graphics, 5 * side, 29, 27, 64, -0.06 * side, limbFill, outline, 1, 1, 4);
-    return;
-  }
-
-  if (key.endsWith("Hand")) {
-    drawDollEllipse(graphics, 4 * side, 12, 30, 30, 0, limbFill, outline, 1, 1, 4);
-    return;
-  }
-
-  if (key.endsWith("Thigh")) {
-    drawDollEllipse(graphics, 3 * side, 25, 30, 72, -0.05 * side, limbFill, outline, 1, 1, 4);
-    return;
-  }
-
-  if (key.endsWith("Shin")) {
-    drawDollEllipse(graphics, 4 * side, 28, 27, 70, 0.04 * side, limbFill, outline, 1, 1, 4);
-    return;
-  }
-
-  drawDollEllipse(graphics, 14 * side, 8, 50, 22, -0.08 * side, limbFill, outline, 1, 1, 4);
-}
-
 function drawDollEllipse(
   graphics: Phaser.GameObjects.Graphics,
   x: number,
@@ -2225,28 +2101,6 @@ function drawDollLine(
   graphics.beginPath();
   graphics.moveTo(x1 * scale, y1 * scale);
   graphics.lineTo(x2 * scale, y2 * scale);
-  graphics.strokePath();
-}
-
-function drawDollSmile(graphics: Phaser.GameObjects.Graphics, x: number, y: number, radius: number, color: number, scale: number): void {
-  const points: { x: number; y: number }[] = [];
-
-  for (let i = 0; i <= 10; i += 1) {
-    const angle = 0.1 * Math.PI + (0.8 * Math.PI * i) / 10;
-    points.push({
-      x: x + Math.cos(angle) * radius,
-      y: y + Math.sin(angle) * radius,
-    });
-  }
-
-  graphics.lineStyle(Math.max(1, 3 * scale), color, 1);
-  graphics.beginPath();
-  graphics.moveTo(points[0].x * scale, points[0].y * scale);
-
-  for (const point of points.slice(1)) {
-    graphics.lineTo(point.x * scale, point.y * scale);
-  }
-
   graphics.strokePath();
 }
 
