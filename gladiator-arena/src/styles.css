@@ -1986,7 +1986,14 @@ body.debug-active .battle-screen {
   pointer-events: none;
 }
 
-.arena-profiler__toggle {
+.arena-profiler__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.arena-profiler__toggle,
+.arena-profiler__reset {
   justify-self: start;
   min-height: 30px;
   padding: 5px 10px;
@@ -2000,6 +2007,10 @@ body.debug-active .battle-screen {
   font-weight: 900;
   pointer-events: auto;
   text-transform: uppercase;
+}
+
+.arena-profiler__reset {
+  background: linear-gradient(180deg, #f4c87c 0%, #a8642b 76%, #5c2510 100%);
 }
 
 .arena-profiler__output {
