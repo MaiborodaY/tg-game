@@ -18,6 +18,12 @@ export interface ActionConfig {
   rangeMax?: number;
 }
 
+export interface CombatMovementTuning {
+  forwardMoveDistance: number;
+  backMoveDistance: number;
+  lungeMoveDistance: number;
+}
+
 export interface FighterState {
   name: string;
   hp: number;
@@ -63,6 +69,17 @@ export const MIN_DISTANCE = 0;
 export const MAX_DISTANCE = 4;
 export const START_DISTANCE = 3;
 export const MELEE_RANGE = 0;
+export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
+export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
+export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
+
+const defaultCombatMovementTuning: CombatMovementTuning = {
+  forwardMoveDistance: DEFAULT_FORWARD_MOVE_DISTANCE,
+  backMoveDistance: DEFAULT_BACK_MOVE_DISTANCE,
+  lungeMoveDistance: DEFAULT_LUNGE_MOVE_DISTANCE,
+};
+
+let combatMovementTuning: CombatMovementTuning = { ...defaultCombatMovementTuning };
 
 export const actions: Record<ActionId, ActionConfig> = {
   forward: {
@@ -70,21 +87,21 @@ export const actions: Record<ActionId, ActionConfig> = {
     title: "Step Forward",
     detail: "Cost 1 - Distance -0.5",
     cost: 1,
-    move: -0.5,
+    move: -DEFAULT_FORWARD_MOVE_DISTANCE,
   },
   back: {
     id: "back",
     title: "Step Back",
     detail: "Cost 1 - Distance +0.5",
     cost: 1,
-    move: 0.5,
+    move: DEFAULT_BACK_MOVE_DISTANCE,
   },
   lunge: {
     id: "lunge",
     title: "Lunge",
     detail: "Cost 4 - Half dash + hit in clinch",
     cost: 4,
-    move: -0.5,
+    move: -DEFAULT_LUNGE_MOVE_DISTANCE,
     damage: 4,
     blockChance: 0.5,
     rangeMax: MELEE_RANGE,
@@ -135,6 +152,34 @@ export const actions: Record<ActionId, ActionConfig> = {
 };
 
 export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"];
+
+export function setCombatMovementTuning(nextTuning: Partial<CombatMovementTuning>): void {
+  combatMovementTuning = {
+    forwardMoveDistance: clampMoveDistance(nextTuning.forwardMoveDistance, defaultCombatMovementTuning.forwardMoveDistance),
+    backMoveDistance: clampMoveDistance(nextTuning.backMoveDistance, defaultCombatMovementTuning.backMoveDistance),
+    lungeMoveDistance: clampMoveDistance(nextTuning.lungeMoveDistance, defaultCombatMovementTuning.lungeMoveDistance),
+  };
+}
+
+export function getCombatMovementTuning(): CombatMovementTuning {
+  return { ...combatMovementTuning };
+}
+
+export function getActionMove(actionId: ActionId): number {
+  if (actionId === "forward") {
+    return -combatMovementTuning.forwardMoveDistance;
+  }
+
+  if (actionId === "back") {
+    return combatMovementTuning.backMoveDistance;
+  }
+
+  if (actionId === "lunge") {
+    return -combatMovementTuning.lungeMoveDistance;
+  }
+
+  return actions[actionId].move ?? 0;
+}
 
 export function freshState(): CombatState {
   return {
@@ -356,6 +401,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
 
 function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, random: () => number): void {
   const action = actions[actionId];
+  const actionMove = getActionMove(actionId);
   const attacker = actor === "player" ? state.player : state.enemy;
   const defender = actor === "player" ? state.enemy : state.player;
   const actorLabel = actor === "player" ? "You" : "Grumbus";
@@ -364,8 +410,8 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
 
   attacker.stamina = clamp(attacker.stamina - action.cost, 0, getFighterMaxStamina(attacker));
 
-  if (action.move) {
-    moveActor(state, actor, action.move);
+  if (actionMove) {
+    moveActor(state, actor, actionMove);
   }
 
   if (action.restore) {
@@ -413,7 +459,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastEnemyBlocked = blocked;
   }
 
-  addActionLog(state, actorLabel, defenderLabel, action, damage, inRange, blocked);
+  addActionLog(state, actorLabel, defenderLabel, action, actionMove, damage, inRange, blocked);
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
@@ -448,11 +494,12 @@ function addActionLog(
   actorLabel: string,
   defenderLabel: string,
   action: ActionConfig,
+  actionMove: number,
   damage: number,
   inRange: boolean,
   blocked: boolean,
 ): void {
-  if (action.move && action.damage) {
+  if (actionMove && action.damage) {
     addLog(
       state,
       `${actorLabel} used ${action.title}, rushed to ${distanceLabel(state.distance)}, and ${
@@ -463,7 +510,7 @@ function addActionLog(
     return;
   }
 
-  if (action.move) {
+  if (actionMove) {
     addLog(state, `${actorLabel} used ${action.title}. Distance is now ${distanceLabel(state.distance)}.`);
     return;
   }
@@ -561,4 +608,8 @@ function addLog(state: CombatState, text: string, important = false): void {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function clampMoveDistance(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? clamp(value, 0.1, MAX_DISTANCE) : fallback;
 }

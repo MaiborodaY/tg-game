@@ -9,7 +9,7 @@ import {
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
-import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
+import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
 import { beginDebugUndoGroup, debugTuning, endDebugUndoGroup, subscribeDebugTuning, updateDebugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
@@ -256,6 +256,7 @@ function finishHeroPortraitButtonDrag(event?: PointerEvent): void {
 
 function startDebugApp(): void {
   document.body.classList.add("arena-active", "debug-active", "debug-mode-character");
+  setCombatMovementTuning(debugTuning);
   dom.mainMenu.hidden = false;
   dom.gameScreen.hidden = false;
   if (debugCharacterViewer) {
@@ -293,6 +294,7 @@ function startDebugApp(): void {
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {
+    setCombatMovementTuning(debugTuning);
     actionArc?.sync(state);
     arenaScene?.sync(state);
     syncHeroPortraitButton();

@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { defineConfig, type Plugin } from "vite";
 
 const arenaLayoutUrl = new URL("./src/arenaLayout.ts", import.meta.url);
+const combatUrl = new URL("./src/combat.ts", import.meta.url);
 const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
 
 const prodDefaultFields = {
@@ -17,6 +18,9 @@ const prodDefaultFields = {
   DEFAULT_ACTION_ARC_ROTATION: "actionArcRotation",
   DEFAULT_ACTION_ARC_RADIUS: "actionArcRadius",
   DEFAULT_ACTION_BUTTON_SCALE: "actionButtonScale",
+  DEFAULT_FORWARD_MOVE_DISTANCE: "forwardMoveDistance",
+  DEFAULT_BACK_MOVE_DISTANCE: "backMoveDistance",
+  DEFAULT_LUNGE_MOVE_DISTANCE: "lungeMoveDistance",
   DEFAULT_ACTION_FORWARD_ANGLE: "actionForwardArcAngle",
   DEFAULT_ACTION_BACK_ANGLE: "actionBackArcAngle",
   DEFAULT_ACTION_LUNGE_ANGLE: "actionLungeArcAngle",
@@ -30,6 +34,16 @@ const prodDefaultFields = {
 type ProdDefaultConstant = keyof typeof prodDefaultFields;
 type ProdDefaultPayload = Record<(typeof prodDefaultFields)[ProdDefaultConstant], unknown>;
 type ProdDefaultUpdates = Record<ProdDefaultConstant, number>;
+
+const combatDefaultFields = {
+  DEFAULT_FORWARD_MOVE_DISTANCE: "forwardMoveDistance",
+  DEFAULT_BACK_MOVE_DISTANCE: "backMoveDistance",
+  DEFAULT_LUNGE_MOVE_DISTANCE: "lungeMoveDistance",
+} as const;
+
+type CombatDefaultConstant = keyof typeof combatDefaultFields;
+type CombatDefaultPayload = Record<(typeof combatDefaultFields)[CombatDefaultConstant], unknown>;
+type CombatDefaultUpdates = Record<CombatDefaultConstant, number>;
 
 const debugTuningDefaultFields = {
   cityHeroX: "cityHeroX",
@@ -163,12 +177,18 @@ function saveProdDefaultsPlugin(): Plugin {
         try {
           const payload = await readJson(request);
           const layoutUpdates = pickProdDefaultUpdates(payload);
+          const combatUpdates = pickCombatDefaultUpdates(payload);
           const debugTuningDefaultUpdates = pickDebugTuningDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
-          const [layoutSource, debugTuningSource] = await Promise.all([readFile(arenaLayoutUrl, "utf8"), readFile(debugTuningUrl, "utf8")]);
+          const [layoutSource, combatSource, debugTuningSource] = await Promise.all([
+            readFile(arenaLayoutUrl, "utf8"),
+            readFile(combatUrl, "utf8"),
+            readFile(debugTuningUrl, "utf8"),
+          ]);
           const nextLayoutSource = applyProdDefaultUpdates(layoutSource, layoutUpdates);
+          const nextCombatSource = applyCombatDefaultUpdates(combatSource, combatUpdates);
           const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
             applyEquipmentDefaultUpdates(
               applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates),
@@ -177,12 +197,17 @@ function saveProdDefaultsPlugin(): Plugin {
             debugTuningDefaultUpdates,
           );
 
-          await Promise.all([writeFile(arenaLayoutUrl, nextLayoutSource, "utf8"), writeFile(debugTuningUrl, nextDebugTuningSource, "utf8")]);
+          await Promise.all([
+            writeFile(arenaLayoutUrl, nextLayoutSource, "utf8"),
+            writeFile(combatUrl, nextCombatSource, "utf8"),
+            writeFile(debugTuningUrl, nextDebugTuningSource, "utf8"),
+          ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, and ${Object.keys(equipmentUpdates).length} equipment defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, and ${Object.keys(equipmentUpdates).length} equipment defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
+              Object.keys(combatUpdates).length +
               Object.keys(debugTuningDefaultUpdates).length +
               Object.keys(rigPartUpdates).length +
               Object.keys(facePartUpdates).length +
@@ -236,6 +261,28 @@ export function pickProdDefaultUpdates(payload: unknown): ProdDefaultUpdates {
   return Object.fromEntries(
     Object.entries(prodDefaultFields).map(([constantName, fieldName]) => [constantName, readFiniteNumber(payload as ProdDefaultPayload, fieldName)]),
   ) as ProdDefaultUpdates;
+}
+
+export function applyCombatDefaultUpdates(source: string, updates: CombatDefaultUpdates): string {
+  return Object.entries(updates).reduce((nextSource, [constantName, value]) => {
+    const pattern = new RegExp(`export const ${constantName} = [-]?[0-9]+(?:\\.[0-9]+)?;`);
+
+    if (!pattern.test(nextSource)) {
+      throw new Error(`Could not find ${constantName} in combat.ts.`);
+    }
+
+    return nextSource.replace(pattern, `export const ${constantName} = ${formatNumber(value)};`);
+  }, source);
+}
+
+export function pickCombatDefaultUpdates(payload: unknown): CombatDefaultUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(combatDefaultFields).map(([constantName, fieldName]) => [constantName, readFiniteNumber(payload as CombatDefaultPayload, fieldName)]),
+  ) as CombatDefaultUpdates;
 }
 
 export function applyDebugTuningDefaultUpdates(source: string, updates: DebugTuningDefaultUpdates): string {
@@ -390,7 +437,7 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
   };
 }
 
-function readFiniteNumber(payload: ProdDefaultPayload, fieldName: keyof ProdDefaultPayload): number {
+function readFiniteNumber(payload: Record<string, unknown>, fieldName: string): number {
   const value = payload[fieldName];
 
   if (typeof value !== "number" || !Number.isFinite(value)) {

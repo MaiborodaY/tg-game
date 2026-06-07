@@ -160,6 +160,14 @@ const controlGroups: DebugControlGroup[] = [
     ],
   },
   {
+    title: "Combat movement",
+    controls: [
+      { type: "range", key: "forwardMoveDistance", label: "FWD distance", min: 0.1, max: 4, step: 0.1, resetValue: defaultDebugTuning.forwardMoveDistance },
+      { type: "range", key: "backMoveDistance", label: "BACK distance", min: 0.1, max: 4, step: 0.1, resetValue: defaultDebugTuning.backMoveDistance },
+      { type: "range", key: "lungeMoveDistance", label: "LUNGE distance", min: 0.1, max: 4, step: 0.1, resetValue: defaultDebugTuning.lungeMoveDistance },
+    ],
+  },
+  {
     title: "Action button angles",
     controls: [
       { type: "range", key: "actionForwardArcAngle", label: "FWD angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionForwardArcAngle },

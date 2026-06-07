@@ -3,6 +3,7 @@ import {
   DEFAULT_ACTION_ARC_ROTATION,
   DEFAULT_ACTION_BACK_ANGLE,
   DEFAULT_ACTION_BUTTON_SCALE,
+  DEFAULT_BACK_MOVE_DISTANCE,
   DEFAULT_ACTION_FORWARD_ANGLE,
   DEFAULT_ACTION_HEAVY_ANGLE,
   DEFAULT_ACTION_LIGHT_ANGLE,
@@ -13,6 +14,8 @@ import {
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
+  DEFAULT_FORWARD_MOVE_DISTANCE,
+  DEFAULT_LUNGE_MOVE_DISTANCE,
   DEFAULT_PLAYER_SCALE,
   DEFAULT_PLAYER_STAGE_X,
   DEFAULT_PLAYER_STAGE_Y,
@@ -111,6 +114,9 @@ export interface ArenaDebugTuning {
   actionArcRotation: number;
   actionArcRadius: number;
   actionButtonScale: number;
+  forwardMoveDistance: number;
+  backMoveDistance: number;
+  lungeMoveDistance: number;
   actionForwardArcAngle: number;
   actionBackArcAngle: number;
   actionLungeArcAngle: number;
@@ -704,6 +710,9 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
   actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
   actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
+  forwardMoveDistance: DEFAULT_FORWARD_MOVE_DISTANCE,
+  backMoveDistance: DEFAULT_BACK_MOVE_DISTANCE,
+  lungeMoveDistance: DEFAULT_LUNGE_MOVE_DISTANCE,
   actionForwardArcAngle: DEFAULT_ACTION_FORWARD_ANGLE,
   actionBackArcAngle: DEFAULT_ACTION_BACK_ANGLE,
   actionLungeArcAngle: DEFAULT_ACTION_LUNGE_ANGLE,
@@ -823,6 +832,9 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionArcRotation: clampNumber(input.actionArcRotation, -180, 180, defaultDebugTuning.actionArcRotation),
     actionArcRadius: clampNumber(input.actionArcRadius, 24, 150, defaultDebugTuning.actionArcRadius),
     actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),
+    forwardMoveDistance: clampNumber(input.forwardMoveDistance, 0.1, 4, defaultDebugTuning.forwardMoveDistance),
+    backMoveDistance: clampNumber(input.backMoveDistance, 0.1, 4, defaultDebugTuning.backMoveDistance),
+    lungeMoveDistance: clampNumber(input.lungeMoveDistance, 0.1, 4, defaultDebugTuning.lungeMoveDistance),
     actionForwardArcAngle: clampNumber(input.actionForwardArcAngle, -180, 180, defaultDebugTuning.actionForwardArcAngle),
     actionBackArcAngle: clampNumber(input.actionBackArcAngle, -180, 180, defaultDebugTuning.actionBackArcAngle),
     actionLungeArcAngle: clampNumber(input.actionLungeArcAngle, -180, 180, defaultDebugTuning.actionLungeArcAngle),
