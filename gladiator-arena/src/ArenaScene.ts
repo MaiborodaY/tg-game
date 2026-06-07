@@ -70,7 +70,24 @@ import {
 } from "./assets";
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
-import { HERO_EQUIPMENT_SLOT_KEYS, type HeroEquipment, type HeroEquipmentSlotKey, type HeroItemId } from "./hero";
+import {
+  HERO_EQUIPMENT_SLOT_KEYS,
+  STARTER_BACK_BOOT_ID,
+  STARTER_BACK_GAUNTLET_ID,
+  STARTER_BACK_GREAVE_ID,
+  STARTER_BACK_SHINGUARD_ID,
+  STARTER_BACK_SHOULDERGUARD_ID,
+  STARTER_BREASTPLATE_ID,
+  STARTER_FRONT_BOOT_ID,
+  STARTER_FRONT_GAUNTLET_ID,
+  STARTER_FRONT_GREAVE_ID,
+  STARTER_FRONT_SHINGUARD_ID,
+  STARTER_FRONT_SHOULDERGUARD_ID,
+  STARTER_HELMET_ID,
+  type HeroEquipment,
+  type HeroEquipmentSlotKey,
+  type HeroItemId,
+} from "./hero";
 import {
   beginDebugUndoGroup,
   debugTuning,
@@ -145,6 +162,7 @@ interface PaperDollRig {
   root: FighterPart;
   parts: Record<PaperDollPartKey, FighterPart>;
   equipment: PaperDollEquipment;
+  equipmentState?: HeroEquipment;
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
   selectionHighlights: Record<PaperDollPartKey, Phaser.GameObjects.Graphics>;
@@ -205,6 +223,7 @@ interface PaperDollFighterOptions {
   frontBootAssetKey?: string;
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
+  equipment?: HeroEquipment;
   usesPlayerEquipment?: boolean;
 }
 
@@ -348,6 +367,21 @@ const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollP
   frontFoot: { displayHeight: 34, localX: 14, localY: 8, originX: 386 / 772, originY: 194 / 388 },
 };
 
+const DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS: Partial<Record<PaperDollPartKey, string>> = {
+  backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
+  backForearm: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
+  backHand: FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
+  backThigh: FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
+  backShin: FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
+  backFoot: FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
+  frontUpperArm: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
+  frontForearm: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
+  frontHand: FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
+  frontThigh: FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
+  frontShin: FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
+  frontFoot: FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
+};
+
 const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
   weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
   helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY,
@@ -365,6 +399,56 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
 };
 
 const PAPER_DOLL_EQUIPMENT_SLOT_KEYS = HERO_EQUIPMENT_SLOT_KEYS;
+
+const ENEMY_ARMOR_GROUPS: Array<Array<[PaperDollEquipmentSlotKey, HeroItemId]>> = [
+  [["helmet", STARTER_HELMET_ID]],
+  [["breastplate", STARTER_BREASTPLATE_ID]],
+  [
+    ["backShoulderguard", STARTER_BACK_SHOULDERGUARD_ID],
+    ["frontShoulderguard", STARTER_FRONT_SHOULDERGUARD_ID],
+  ],
+  [
+    ["backGauntlet", STARTER_BACK_GAUNTLET_ID],
+    ["frontGauntlet", STARTER_FRONT_GAUNTLET_ID],
+  ],
+  [
+    ["backGreave", STARTER_BACK_GREAVE_ID],
+    ["frontGreave", STARTER_FRONT_GREAVE_ID],
+  ],
+  [
+    ["backShinguard", STARTER_BACK_SHINGUARD_ID],
+    ["frontShinguard", STARTER_FRONT_SHINGUARD_ID],
+  ],
+  [
+    ["backBoot", STARTER_BACK_BOOT_ID],
+    ["frontBoot", STARTER_FRONT_BOOT_ID],
+  ],
+];
+
+interface EnemyVisualPreset {
+  skin: number;
+  skinDark: number;
+  hair: number;
+  muscle?: number;
+  usesDefaultBodyAssets: boolean;
+}
+
+const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [
+  {
+    skin: 0xd48f62,
+    skinDark: 0xac673d,
+    hair: 0x2f251a,
+    muscle: 0x7a4328,
+    usesDefaultBodyAssets: false,
+  },
+  {
+    skin: 0xefaa7b,
+    skinDark: 0xd9854d,
+    hair: 0x8b4a1f,
+    muscle: 0x9b5a35,
+    usesDefaultBodyAssets: true,
+  },
+];
 
 const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, PaperDollEquipmentAssetKey> = {
   weaponMain: "weaponMainAssetKey",
@@ -545,12 +629,15 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   sync(nextState: CombatState): void {
+    const previousState = this.currentState;
+
     this.currentState = nextState;
 
     if (!this.visuals) {
       return;
     }
 
+    randomizeEnemyVisualForFreshBattle(this, this.visuals, previousState, nextState);
     resetDeathEffectsForLiveFighters(this, this.visuals, nextState);
     renderScene(this, nextState);
 
@@ -980,35 +1067,63 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
     torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
     ...equipmentAssetKeys,
     usesPlayerEquipment: true,
-    bodyPartAssetKeys: {
-      backUpperArm: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
-      backForearm: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
-      backHand: FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
-      backThigh: FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
-      backShin: FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
-      backFoot: FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
-      frontUpperArm: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
-      frontForearm: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
-      frontHand: FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
-      frontThigh: FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
-      frontShin: FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
-      frontFoot: FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
-    },
+    bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
   };
+}
+
+function createRandomEnemyPaperDollOptions(x: number, y: number): PaperDollFighterOptions {
+  const preset = pickRandom(ENEMY_VISUAL_PRESETS);
+  const equipment = createRandomEnemyEquipment();
+  const assetOptions = preset.usesDefaultBodyAssets
+    ? {
+        headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
+        torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+        bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
+      }
+    : {};
+
+  return {
+    x,
+    y,
+    label: "GRUMBUS",
+    facing: -1,
+    skin: preset.skin,
+    skinDark: preset.skinDark,
+    hair: preset.hair,
+    muscle: preset.muscle,
+    ...createPlayerEquipmentAssetKeys(equipment),
+    ...assetOptions,
+    equipment,
+  };
+}
+
+function createRandomEnemyEquipment(): HeroEquipment {
+  const equipment = createEmptyEquipment();
+
+  ENEMY_ARMOR_GROUPS.forEach((group) => {
+    if (Math.random() >= 0.52) {
+      return;
+    }
+
+    group.forEach(([slotKey, itemId]) => {
+      equipment[slotKey] = itemId;
+    });
+  });
+
+  return equipment;
+}
+
+function createEmptyEquipment(): HeroEquipment {
+  return Object.fromEntries(PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])) as HeroEquipment;
+}
+
+function pickRandom<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 function buildVisuals(target: ArenaScene): ArenaVisuals {
   const player = createPaperDollFighter(target, createPlayerPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y));
-  const enemy = createPaperDollFighter(target, {
-    x: DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X,
-    y: FIGHTER_BASE_Y,
-    label: "GRUMBUS",
-    facing: -1,
-    skin: 0xd48f62,
-    skinDark: 0xac673d,
-    hair: 0x2f251a,
-    muscle: 0x7a4328,
-  });
+  const enemy = createPaperDollFighter(target, createRandomEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y));
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
   return { player, enemy, playerHud, enemyHud };
@@ -1075,6 +1190,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     root,
     parts,
     equipment,
+    equipmentState: options.equipment ? { ...options.equipment } : undefined,
     faceParts,
     appearance,
     selectionHighlights,
@@ -1221,11 +1337,19 @@ function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined): voi
 }
 
 function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
-  if (!rig?.usesPlayerEquipment) {
+  if (!rig) {
     return;
   }
 
-  const visibility = createPlayerEquipmentVisibility();
+  const visibility = rig.usesPlayerEquipment
+    ? createPlayerEquipmentVisibility()
+    : rig.equipmentState
+      ? createPlayerEquipmentVisibility(rig.equipmentState)
+      : undefined;
+
+  if (!visibility) {
+    return;
+  }
 
   PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
     rig.equipment[slotKey]?.setVisible(visibility[slotKey]);
@@ -2151,6 +2275,51 @@ function resetDeathEffectsForLiveFighters(target: ArenaScene, visuals: ArenaVisu
   if (current.enemy.hp > 0) {
     resetFighterShatter(target, visuals.enemy);
   }
+}
+
+function randomizeEnemyVisualForFreshBattle(
+  target: ArenaScene,
+  visuals: ArenaVisuals,
+  previous: CombatState | undefined,
+  current: CombatState,
+): void {
+  if (!shouldRandomizeEnemyVisual(previous, current)) {
+    return;
+  }
+
+  destroyFighterVisual(target, visuals.enemy);
+  visuals.enemy = createPaperDollFighter(target, createRandomEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y));
+}
+
+function shouldRandomizeEnemyVisual(previous: CombatState | undefined, current: CombatState): boolean {
+  if (!previous || current.result !== "playing") {
+    return false;
+  }
+
+  const isFreshBattle =
+    current.round === 1 &&
+    current.player.hp === getFighterMaxHp(current.player) &&
+    current.enemy.hp === getFighterMaxHp(current.enemy);
+
+  if (!isFreshBattle) {
+    return false;
+  }
+
+  return (
+    previous.result !== "playing" ||
+    previous.round > current.round ||
+    previous.player.hp < getFighterMaxHp(previous.player) ||
+    previous.enemy.hp < getFighterMaxHp(previous.enemy)
+  );
+}
+
+function destroyFighterVisual(target: Phaser.Scene, fighter: FighterVisual): void {
+  const parts = getFighterParts(fighter);
+
+  fighter.isShatterScheduled = false;
+  fighter.isShattered = true;
+  target.tweens.killTweensOf(parts);
+  parts.forEach((part) => part.destroy());
 }
 
 function scheduleDeathEffects(target: ArenaScene, current: CombatState): void {
