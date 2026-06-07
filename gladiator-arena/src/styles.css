@@ -1167,8 +1167,7 @@ body.debug-mode-arena .debug-rig-panel {
   line-height: 1;
 }
 
-.debug-rig-editor__capture-scope,
-.debug-rig-editor__apply-scope {
+.debug-rig-editor__animation-mode {
   display: grid;
   gap: 7px;
   margin: 0;
@@ -1177,8 +1176,7 @@ body.debug-mode-arena .debug-rig-panel {
   border-radius: 10px;
 }
 
-.debug-rig-editor__capture-scope legend,
-.debug-rig-editor__apply-scope legend {
+.debug-rig-editor__animation-mode legend {
   padding: 0 4px;
   color: #ffd384;
   font-size: 0.58rem;
@@ -1187,15 +1185,13 @@ body.debug-mode-arena .debug-rig-panel {
   text-transform: uppercase;
 }
 
-.debug-rig-editor__capture-scope-options,
-.debug-rig-editor__apply-scope-options {
+.debug-rig-editor__animation-mode-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 
-.debug-rig-editor__capture-scope-options .debug-panel__reset,
-.debug-rig-editor__apply-scope-options .debug-panel__reset {
+.debug-rig-editor__animation-mode-options .debug-panel__reset {
   width: 100%;
   min-height: 28px;
   margin: 0;
@@ -1205,8 +1201,7 @@ body.debug-mode-arena .debug-rig-panel {
   line-height: 1;
 }
 
-.debug-rig-editor__capture-scope-options .debug-panel__reset[aria-pressed="true"],
-.debug-rig-editor__apply-scope-options .debug-panel__reset[aria-pressed="true"] {
+.debug-rig-editor__animation-mode-options .debug-panel__reset[aria-pressed="true"] {
   outline: 2px solid #ffe7a4;
   outline-offset: 1px;
   filter: brightness(1.08);

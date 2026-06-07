@@ -42,6 +42,9 @@ export type RigPartKey = (typeof RIG_PART_KEYS)[number];
 export const BODY_ANIMATION_KEYS = ["idle", "walkCycle", "lunge", "light", "medium", "heavy"] as const;
 export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 
+export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
+export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
+
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
 export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 
@@ -101,8 +104,10 @@ export interface ArenaDebugTuning {
   characterPreviewFeetX: number;
   characterPreviewFeetY: number;
   selectedRigPart: RigPartKey;
+  selectedRigParts: RigPartKey[];
   rigParts: Record<RigPartKey, RigPartTuning>;
   faceParts: Record<FacePartKey, FacePartTuning>;
+  animationEditMode: AnimationEditMode;
   selectedBodyAnimation: BodyAnimationKey;
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
 }
@@ -369,19 +374,34 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
   selectedRigPart: "torso",
+  selectedRigParts: ["torso"],
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
   faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),
+  animationEditMode: "poseA",
   selectedBodyAnimation: "idle",
   bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
 };
 
 const storageKey = "dust-arena-debug-tuning";
+const debugUndoLimit = 50;
 const listeners = new Set<() => void>();
+const debugUndoStack: ArenaDebugTuning[] = [];
+let activeDebugUndoGroupSnapshot: ArenaDebugTuning | undefined;
+
+interface DebugTuningUpdateOptions {
+  undoable?: boolean;
+}
 
 export const debugTuning: ArenaDebugTuning = loadDebugTuning();
 
-export function updateDebugTuning(patch: Partial<ArenaDebugTuning>): void {
-  Object.assign(debugTuning, normalizeDebugTuning({ ...debugTuning, ...patch }));
+export function updateDebugTuning(patch: Partial<ArenaDebugTuning>, options: DebugTuningUpdateOptions = {}): void {
+  const nextDebugTuning = normalizeDebugTuning({ ...debugTuning, ...patch });
+
+  if (options.undoable !== false && !activeDebugUndoGroupSnapshot && !areDebugTuningsEqual(debugTuning, nextDebugTuning)) {
+    pushDebugUndoSnapshot(cloneDebugTuning(debugTuning));
+  }
+
+  Object.assign(debugTuning, nextDebugTuning);
   saveDebugTuning(debugTuning);
   listeners.forEach((listener) => listener());
   dispatchDebugTuningChange();
@@ -389,6 +409,44 @@ export function updateDebugTuning(patch: Partial<ArenaDebugTuning>): void {
 
 export function resetDebugTuning(): void {
   updateDebugTuning(defaultDebugTuning);
+}
+
+export function beginDebugUndoGroup(): void {
+  activeDebugUndoGroupSnapshot ??= cloneDebugTuning(debugTuning);
+}
+
+export function endDebugUndoGroup(): void {
+  if (!activeDebugUndoGroupSnapshot) {
+    return;
+  }
+
+  const snapshot = activeDebugUndoGroupSnapshot;
+  activeDebugUndoGroupSnapshot = undefined;
+
+  if (!areDebugTuningsEqual(snapshot, debugTuning)) {
+    pushDebugUndoSnapshot(snapshot);
+  }
+}
+
+export function undoDebugTuning(): boolean {
+  if (activeDebugUndoGroupSnapshot) {
+    const snapshot = activeDebugUndoGroupSnapshot;
+    activeDebugUndoGroupSnapshot = undefined;
+
+    if (!areDebugTuningsEqual(snapshot, debugTuning)) {
+      restoreDebugTuningSnapshot(snapshot);
+      return true;
+    }
+  }
+
+  const snapshot = debugUndoStack.pop();
+
+  if (!snapshot) {
+    return false;
+  }
+
+  restoreDebugTuningSnapshot(snapshot);
+  return true;
 }
 
 export function subscribeDebugTuning(listener: () => void): () => void {
@@ -399,6 +457,7 @@ export function subscribeDebugTuning(listener: () => void): () => void {
 
 export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDebugTuning {
   const legacyIdleAnimation = (input as { idleAnimation?: unknown }).idleAnimation;
+  const selectedRigPart = isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart;
 
   return {
     showGrid: typeof input.showGrid === "boolean" ? input.showGrid : defaultDebugTuning.showGrid,
@@ -426,9 +485,11 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     characterPreviewScale: clampNumber(input.characterPreviewScale, 1, 2.6, defaultDebugTuning.characterPreviewScale),
     characterPreviewFeetX: clampNumber(input.characterPreviewFeetX, 0, 430, defaultDebugTuning.characterPreviewFeetX),
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
-    selectedRigPart: isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart,
+    selectedRigPart,
+    selectedRigParts: normalizeSelectedRigParts(input.selectedRigParts, selectedRigPart),
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
     faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
+    animationEditMode: isAnimationEditMode(input.animationEditMode) ? input.animationEditMode : defaultDebugTuning.animationEditMode,
     selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
     bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
   };
@@ -460,6 +521,57 @@ function cloneBodyAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
     faceBreath: cloneFaceParts(source.faceBreath),
     activeParts: cloneIdleActiveParts(source.activeParts),
   };
+}
+
+function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
+  return {
+    ...source,
+    selectedRigParts: [...source.selectedRigParts],
+    rigParts: cloneRigParts(source.rigParts),
+    faceParts: cloneFaceParts(source.faceParts),
+    bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
+  };
+}
+
+function pushDebugUndoSnapshot(snapshot: ArenaDebugTuning): void {
+  const previousSnapshot = debugUndoStack[debugUndoStack.length - 1];
+
+  if (previousSnapshot && areDebugTuningsEqual(previousSnapshot, snapshot)) {
+    return;
+  }
+
+  debugUndoStack.push(cloneDebugTuning(snapshot));
+
+  if (debugUndoStack.length > debugUndoLimit) {
+    debugUndoStack.shift();
+  }
+}
+
+function restoreDebugTuningSnapshot(snapshot: ArenaDebugTuning): void {
+  Object.assign(debugTuning, cloneDebugTuning(snapshot));
+  saveDebugTuning(debugTuning);
+  listeners.forEach((listener) => listener());
+  dispatchDebugTuningChange();
+}
+
+function areDebugTuningsEqual(left: ArenaDebugTuning, right: ArenaDebugTuning): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function normalizeSelectedRigParts(input: unknown, fallback: RigPartKey): RigPartKey[] {
+  if (!Array.isArray(input)) {
+    return [fallback];
+  }
+
+  const selectedParts: RigPartKey[] = [];
+
+  input.forEach((value) => {
+    if (isRigPartKey(value) && !selectedParts.includes(value)) {
+      selectedParts.push(value);
+    }
+  });
+
+  return selectedParts;
 }
 
 function cloneIdleAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
@@ -757,6 +869,10 @@ function isRigPartKey(value: unknown): value is RigPartKey {
 
 function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {
   return typeof value === "string" && BODY_ANIMATION_KEYS.includes(value as BodyAnimationKey);
+}
+
+function isAnimationEditMode(value: unknown): value is AnimationEditMode {
+  return typeof value === "string" && ANIMATION_EDIT_MODES.includes(value as AnimationEditMode);
 }
 
 function loadDebugTuning(): ArenaDebugTuning {
