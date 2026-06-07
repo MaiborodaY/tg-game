@@ -45,11 +45,13 @@ import {
 import { getCameraTarget, type CameraTarget } from "./arenaCamera";
 import { getFighterMaxHp, getFighterMaxStamina, ROUND_LIMIT, type ActionId, type CombatState, type FighterState } from "./combat";
 import {
+  beginDebugUndoGroup,
   debugTuning,
   DEFAULT_BODY_ANIMATIONS,
   DEFAULT_FACE_PARTS,
   DEFAULT_RIG_PARTS,
   defaultRigPartTuning,
+  endDebugUndoGroup,
   RIG_PART_KEYS,
   subscribeDebugTuning,
   updateDebugTuning,
@@ -94,6 +96,19 @@ interface FighterVisual {
 }
 
 type PaperDollPartKey = RigPartKey;
+type AnimationRigPoseKey = "base" | "breath";
+
+interface DebugRigPartDragState {
+  partKeys: RigPartKey[];
+  lastPointerX: number;
+  lastPointerY: number;
+}
+
+interface DebugInputEvent {
+  stopPropagation: () => void;
+}
+
+type DebugRigPartPickHandler = (partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent) => void;
 
 interface PaperDollRig {
   root: FighterPart;
@@ -316,6 +331,7 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
 
 class DebugCharacterScene extends Phaser.Scene {
   private fighter?: FighterVisual;
+  private dragState?: DebugRigPartDragState;
   private unsubscribeDebugTuning?: () => void;
 
   constructor() {
@@ -331,7 +347,14 @@ class DebugCharacterScene extends Phaser.Scene {
     drawDebugCharacterBackdrop(this);
     this.fighter = createPaperDollFighter(this, createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0));
     this.fighter.name.setVisible(false);
-    enableDebugPaperDollPartPicking(this.fighter.paperDollRig);
+    enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) => this.handlePreviewPointerDown(pointer, gameObjects));
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.dragRigPart(pointer));
+    this.input.on("pointerup", () => this.endRigPartDrag());
+    this.input.on("pointerupoutside", () => this.endRigPartDrag());
+    this.input.on("wheel", (_pointer: Phaser.Input.Pointer, _gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+      this.rotateSelectedRigPartsWithWheel(deltaY);
+    });
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.unsubscribeDebugTuning?.());
     this.sync();
@@ -340,11 +363,19 @@ class DebugCharacterScene extends Phaser.Scene {
   update(time: number): void {
     const animation = getSelectedDebugBodyAnimation();
 
-    if (!this.fighter || !animation.enabled) {
+    if (!this.fighter) {
       return;
     }
 
-    applyBodyAnimation(this.fighter, time, animation);
+    if (debugTuning.animationEditMode === "preview") {
+      if (animation.enabled) {
+        applyBodyAnimation(this.fighter, time, animation);
+      }
+
+      return;
+    }
+
+    applySelectedDebugAnimationEditPose(this.fighter);
   }
 
   private sync(): void {
@@ -353,7 +384,93 @@ class DebugCharacterScene extends Phaser.Scene {
     }
 
     applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, debugTuning.characterPreviewFeetX);
-    syncPaperDollSelectionHighlight(this.fighter.paperDollRig);
+    applySelectedDebugAnimationEditPose(this.fighter);
+    syncPaperDollSelectionHighlight(this.fighter.paperDollRig, debugTuning.selectedRigParts);
+  }
+
+  private beginRigPartDrag(partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
+    if (typeof pointer.leftButtonDown === "function" && !pointer.leftButtonDown()) {
+      return;
+    }
+
+    event?.stopPropagation();
+    const selectedRigParts = getNextDebugRigPartSelection(partKey, isMultiSelectPointer(pointer));
+    const selectedRigPart = selectedRigParts.includes(partKey) ? partKey : selectedRigParts[0] ?? partKey;
+
+    updateDebugTuning({ selectedRigPart, selectedRigParts }, { undoable: false });
+
+    if (!selectedRigParts.includes(partKey)) {
+      this.endRigPartDrag();
+      return;
+    }
+
+    beginDebugUndoGroup();
+
+    this.dragState = {
+      partKeys: selectedRigParts,
+      lastPointerX: pointer.worldX,
+      lastPointerY: pointer.worldY,
+    };
+  }
+
+  private handlePreviewPointerDown(pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]): void {
+    if (gameObjects.length > 0) {
+      return;
+    }
+
+    if (typeof pointer.leftButtonDown === "function" && !pointer.leftButtonDown()) {
+      return;
+    }
+
+    updateDebugTuning({ selectedRigParts: [] }, { undoable: false });
+    this.endRigPartDrag();
+  }
+
+  private dragRigPart(pointer: Phaser.Input.Pointer): void {
+    if (!this.dragState || !this.fighter?.paperDollRig) {
+      return;
+    }
+
+    if (!pointer.isDown) {
+      this.endRigPartDrag();
+      return;
+    }
+
+    const pointerX = pointer.worldX;
+    const pointerY = pointer.worldY;
+    const deltaX = pointerX - this.dragState.lastPointerX;
+    const deltaY = pointerY - this.dragState.lastPointerY;
+
+    if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+      return;
+    }
+
+    const root = this.fighter.paperDollRig.root;
+    const scaleX = root.scaleX === 0 ? 1 : root.scaleX;
+    const scaleY = root.scaleY === 0 ? 1 : root.scaleY;
+
+    updateRigPartsWithInteractiveDelta(this.dragState.partKeys, {
+      x: deltaX / scaleX,
+      y: deltaY / scaleY,
+    });
+
+    this.dragState.lastPointerX = pointerX;
+    this.dragState.lastPointerY = pointerY;
+  }
+
+  private endRigPartDrag(): void {
+    this.dragState = undefined;
+    endDebugUndoGroup();
+  }
+
+  private rotateSelectedRigPartsWithWheel(deltaY: number): void {
+    if (deltaY === 0 || debugTuning.selectedRigParts.length === 0) {
+      return;
+    }
+
+    updateRigPartsWithInteractiveDelta(debugTuning.selectedRigParts, {
+      angle: deltaY > 0 ? 3 : -3,
+    });
   }
 }
 
@@ -594,10 +711,10 @@ const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
   "frontShin",
   "backFoot",
   "frontFoot",
-  "backUpperArm",
-  "frontUpperArm",
   "torso",
   "head",
+  "backUpperArm",
+  "frontUpperArm",
   "backForearm",
   "frontForearm",
   "backHand",
@@ -761,7 +878,7 @@ function applyFacePartTransform(part: FighterPart | undefined, baseX: number, ba
   part.scaleY = tuning.scaleY;
 }
 
-function enableDebugPaperDollPartPicking(rig: PaperDollRig | undefined): void {
+function enableDebugPaperDollPartPicking(rig: PaperDollRig | undefined, onPick?: DebugRigPartPickHandler): void {
   if (!rig) {
     return;
   }
@@ -775,23 +892,110 @@ function enableDebugPaperDollPartPicking(rig: PaperDollRig | undefined): void {
       partContainer.input.cursor = "pointer";
     }
 
-    partContainer.on("pointerdown", (...args: unknown[]) => {
-      const event = args[3] as { stopPropagation?: () => void } | undefined;
+    partContainer.on("pointerdown", (pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event?: DebugInputEvent) => {
+      event?.stopPropagation();
 
-      event?.stopPropagation?.();
-      updateDebugTuning({ selectedRigPart: key });
+      if (onPick) {
+        onPick(key, pointer, event);
+      } else {
+        updateDebugTuning({ selectedRigPart: key, selectedRigParts: [key] }, { undoable: false });
+      }
     });
   });
 }
 
-function syncPaperDollSelectionHighlight(rig: PaperDollRig | undefined): void {
+function syncPaperDollSelectionHighlight(rig: PaperDollRig | undefined, highlightedParts: readonly RigPartKey[]): void {
   if (!rig) {
     return;
   }
 
   RIG_PART_KEYS.forEach((key) => {
-    rig.selectionHighlights[key].setVisible(key === debugTuning.selectedRigPart);
+    rig.selectionHighlights[key].setVisible(highlightedParts.includes(key));
   });
+}
+
+function getNextDebugRigPartSelection(partKey: RigPartKey, shouldToggle: boolean): RigPartKey[] {
+  if (!shouldToggle) {
+    return [partKey];
+  }
+
+  const selectedParts = debugTuning.selectedRigParts.includes(partKey)
+    ? debugTuning.selectedRigParts.filter((selectedPart) => selectedPart !== partKey)
+    : [...debugTuning.selectedRigParts, partKey];
+
+  return selectedParts;
+}
+
+function isMultiSelectPointer(pointer: Phaser.Input.Pointer): boolean {
+  const event = (pointer as Phaser.Input.Pointer & { event?: { ctrlKey?: boolean; metaKey?: boolean } }).event;
+
+  return Boolean(event?.ctrlKey || event?.metaKey);
+}
+
+function updateRigPartsWithInteractiveDelta(partKeys: readonly RigPartKey[], delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): void {
+  const poseKey = getActiveDebugAnimationRigPoseKey();
+
+  if (partKeys.length === 0 || !poseKey) {
+    return;
+  }
+
+  const animationKey = debugTuning.selectedBodyAnimation;
+  const animation = debugTuning.bodyAnimations[animationKey];
+
+  if (!animation) {
+    return;
+  }
+
+  const nextPose = { ...animation[poseKey] };
+
+  partKeys.forEach((partKey) => {
+    nextPose[partKey] = applyRigPartInteractiveDelta(animation[poseKey][partKey] ?? defaultRigPartTuning, delta);
+  });
+
+  updateDebugTuning({
+    bodyAnimations: {
+      ...debugTuning.bodyAnimations,
+      [animationKey]: {
+        ...animation,
+        [poseKey]: nextPose,
+      },
+    },
+  });
+}
+
+function getActiveDebugAnimationRigPoseKey(): AnimationRigPoseKey | undefined {
+  if (debugTuning.animationEditMode === "poseA") {
+    return "base";
+  }
+
+  if (debugTuning.animationEditMode === "poseB") {
+    return "breath";
+  }
+
+  return undefined;
+}
+
+function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
+  const poseKey = getActiveDebugAnimationRigPoseKey();
+
+  if (!poseKey) {
+    return;
+  }
+
+  applyBodyAnimationBlend(fighter, getSelectedDebugBodyAnimation(), poseKey === "base" ? 0 : 1);
+}
+
+function applyRigPartInteractiveDelta(part: RigPartTuning, delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): RigPartTuning {
+  return {
+    ...part,
+    x: delta.x === undefined ? part.x : clampNumber(part.x + delta.x, -480, 480),
+    y: delta.y === undefined ? part.y : clampNumber(part.y + delta.y, -480, 480),
+    angle: delta.angle === undefined ? part.angle : clampNumber(part.angle + delta.angle, -180, 180),
+  };
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function lerp(from: number, to: number, blend: number): number {
