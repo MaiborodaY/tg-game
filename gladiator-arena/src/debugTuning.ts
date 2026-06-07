@@ -795,8 +795,8 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewScale: 1.8,
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
-  cityHeroX: 114,
-  cityHeroY: 160,
+  cityHeroX: 100,
+  cityHeroY: 0,
   cityHeroScale: 0.85,
   heroPortraitButtonX: 5,
   heroPortraitButtonY: 3,
@@ -818,12 +818,20 @@ const debugUndoLimit = 50;
 const listeners = new Set<() => void>();
 const debugUndoStack: ArenaDebugTuning[] = [];
 let activeDebugUndoGroupSnapshot: ArenaDebugTuning | undefined;
+let shouldPersistDebugTuning = false;
 
 interface DebugTuningUpdateOptions {
   undoable?: boolean;
 }
 
-export const debugTuning: ArenaDebugTuning = loadDebugTuning();
+export const debugTuning: ArenaDebugTuning = cloneDebugTuning(defaultDebugTuning);
+
+export function hydrateDebugTuningFromStorage(): void {
+  Object.assign(debugTuning, loadDebugTuning());
+  debugUndoStack.length = 0;
+  activeDebugUndoGroupSnapshot = undefined;
+  shouldPersistDebugTuning = true;
+}
 
 export function updateDebugTuning(patch: Partial<ArenaDebugTuning>, options: DebugTuningUpdateOptions = {}): void {
   const nextDebugTuning = normalizeDebugTuning({ ...debugTuning, ...patch });
@@ -925,7 +933,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     characterPreviewFeetX: clampNumber(input.characterPreviewFeetX, 0, 430, defaultDebugTuning.characterPreviewFeetX),
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
     cityHeroX: clampNumber(input.cityHeroX, 0, 240, defaultDebugTuning.cityHeroX),
-    cityHeroY: clampNumber(input.cityHeroY, 160, 360, defaultDebugTuning.cityHeroY),
+    cityHeroY: clampNumber(input.cityHeroY, 0, 360, defaultDebugTuning.cityHeroY),
     cityHeroScale: clampNumber(input.cityHeroScale, 0.4, 1.6, defaultDebugTuning.cityHeroScale),
     heroPortraitButtonX: clampNumber(input.heroPortraitButtonX, 0, 430, defaultDebugTuning.heroPortraitButtonX),
     heroPortraitButtonY: clampNumber(input.heroPortraitButtonY, 0, 764, defaultDebugTuning.heroPortraitButtonY),
@@ -1469,7 +1477,7 @@ function loadDebugTuning(): ArenaDebugTuning {
 }
 
 function saveDebugTuning(nextTuning: ArenaDebugTuning): void {
-  if (typeof window === "undefined") {
+  if (!shouldPersistDebugTuning || typeof window === "undefined") {
     return;
   }
 

@@ -212,7 +212,7 @@ const cityControlGroups: DebugControlGroup[] = [
     title: "City hero",
     controls: [
       { type: "range", key: "cityHeroX", label: "Hero X", min: 0, max: 240, step: 1, resetValue: defaultDebugTuning.cityHeroX },
-      { type: "range", key: "cityHeroY", label: "Hero Y", min: 160, max: 360, step: 1, resetValue: defaultDebugTuning.cityHeroY },
+      { type: "range", key: "cityHeroY", label: "Hero Y", min: 0, max: 360, step: 1, resetValue: defaultDebugTuning.cityHeroY },
       { type: "range", key: "cityHeroScale", label: "Hero scale", min: 0.4, max: 1.6, step: 0.01, resetValue: defaultDebugTuning.cityHeroScale },
     ],
   },

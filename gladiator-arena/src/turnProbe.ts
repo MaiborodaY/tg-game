@@ -40,16 +40,6 @@ export function formatTurnProbe(state: CombatState, timerStatus: EnemyTimerStatu
   ].join(" | ");
 }
 
-export function logTurnProbe(event: string, state: CombatState, timerStatus: EnemyTimerStatus, actionId?: ActionId): void {
-  console.info("[arena-turn]", {
-    event,
-    actionId,
-    activeTurn: state.activeTurn,
-    timerStatus,
-    distance: state.distance,
-    playerPosition: state.playerPosition,
-    enemyPosition: state.enemyPosition,
-    lastPlayerAction: state.lastPlayerAction ?? null,
-    lastEnemyAction: state.lastEnemyAction ?? null,
-  });
+export function logTurnProbe(_event: string, _state: CombatState, _timerStatus: EnemyTimerStatus, _actionId?: ActionId): void {
+  // Intentionally silent in production.
 }

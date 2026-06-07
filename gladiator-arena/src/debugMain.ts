@@ -11,7 +11,15 @@ import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armor
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
-import { beginDebugUndoGroup, debugTuning, endDebugUndoGroup, subscribeDebugTuning, updateDebugTuning, type SlashArcAttackKey } from "./debugTuning";
+import {
+  beginDebugUndoGroup,
+  debugTuning,
+  endDebugUndoGroup,
+  hydrateDebugTuningFromStorage,
+  subscribeDebugTuning,
+  updateDebugTuning,
+  type SlashArcAttackKey,
+} from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
 import {
   applyBattleReward,
@@ -26,6 +34,8 @@ import {
 import { logTurnProbe, mountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
+
+hydrateDebugTuningFromStorage();
 
 const dom = getDomRefs();
 const debugPanelHost = document.querySelector<HTMLElement>("#debugPanelHost");

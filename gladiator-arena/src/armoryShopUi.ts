@@ -37,8 +37,10 @@ interface ArmoryCategory {
 
 interface ArmoryShopOptions {
   getHero: () => HeroState;
-  mountPreview: (parent: HTMLElement) => () => void;
+  mountPreview?: (parent: HTMLElement) => () => void;
   onBuy: (product: ArmoryProduct) => void;
+  onOpen?: () => void;
+  onClose?: () => void;
 }
 
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
@@ -99,9 +101,10 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
   let selectedCategoryId: string | undefined;
   let unmountPreview: (() => void) | undefined;
+  const usesCityHeroPreview = !options.mountPreview;
 
   const shop = document.createElement("section");
-  shop.className = "armory-shop";
+  shop.className = usesCityHeroPreview ? "armory-shop armory-shop--city-mode" : "armory-shop";
   shop.hidden = true;
   shop.setAttribute("aria-label", "Бронник");
 
@@ -146,18 +149,29 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   header.append(title, gold);
   menu.append(header, content, back);
-  panel.append(previewShell, menu);
+  if (options.mountPreview) {
+    panel.append(previewShell);
+  }
+  panel.append(menu);
   shop.append(panel);
   root.append(shop);
 
   function open(): void {
     selectedCategoryId = undefined;
+    if (usesCityHeroPreview) {
+      root.classList.add("city-menu--armory-open");
+    }
+    options.onOpen?.();
     shop.hidden = false;
     ensurePreviewMounted();
     render();
   }
 
   function close(): void {
+    if (usesCityHeroPreview) {
+      root.classList.remove("city-menu--armory-open");
+    }
+    options.onClose?.();
     shop.hidden = true;
     unmountPreview?.();
     unmountPreview = undefined;
@@ -186,7 +200,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   function ensurePreviewMounted(): void {
-    if (unmountPreview) {
+    if (unmountPreview || !options.mountPreview) {
       return;
     }
 

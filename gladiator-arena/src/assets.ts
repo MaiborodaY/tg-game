@@ -7,6 +7,9 @@ export const ARENA_BACKGROUND_MID_LAYER_ASSET_URL = new URL("./assets/arena/laye
 export const ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY = "arena-bg-ground-layer";
 export const ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-ground.png", import.meta.url).href;
 
+export const CITY_BACKGROUND_ASSET_KEY = "city-menu-bg";
+export const CITY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city.webp", import.meta.url).href;
+
 export const PLAYER_BODY_ASSET_KEY = "body-light-01";
 export const PLAYER_BODY_ASSET_URL = new URL("./assets/fighters/bodies/body-light-01.webp", import.meta.url).href;
 export const PLAYER_AVATAR_DISPLAY_HEIGHT = 116;

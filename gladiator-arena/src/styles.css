@@ -594,7 +594,7 @@ h1 {
   overflow: hidden;
   min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   border: 4px solid #35180d;
-  background: #b59b61 url("./assets/menu/city-menu.webp") center / cover no-repeat;
+  background: #b59b61;
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.36);
 }
 
@@ -605,23 +605,22 @@ h1 {
   z-index: 1;
   background: linear-gradient(180deg, rgba(32, 13, 6, 0) 54%, rgba(32, 13, 6, 0.38) 100%);
   pointer-events: none;
+  transition: background 220ms ease;
 }
 
 .city-menu__hero {
   position: absolute;
-  left: 50%;
-  bottom: max(82px, calc(72px + env(safe-area-inset-bottom)));
-  z-index: 2;
-  width: clamp(150px, 38vw, 190px);
-  aspect-ratio: 2 / 3;
-  transform: translateX(-50%);
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
 .city-menu__hero canvas {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .city-menu__hero-widget {
@@ -636,6 +635,13 @@ h1 {
   width: min(282px, calc(100% - 20px));
   transform: scale(var(--hero-portrait-button-scale, 1));
   transform-origin: top left;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.city-menu--armory-open .city-menu__hero-widget {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px) scale(var(--hero-portrait-button-scale, 1));
 }
 
 .city-menu__portrait-button {
@@ -794,6 +800,13 @@ body.debug-active .city-menu__portrait-button:active {
     rgba(35, 10, 4, 0.72);
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(2px);
+  transition: opacity 200ms ease, transform 220ms ease;
+}
+
+.city-menu--armory-open .city-menu__nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(100% + 18px));
 }
 
 .city-menu__button {
@@ -865,12 +878,28 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: auto;
 }
 
+.armory-shop--city-mode {
+  z-index: 16;
+  display: grid;
+  align-items: end;
+  padding: 0 8px max(8px, env(safe-area-inset-bottom));
+  background: transparent;
+  pointer-events: none;
+}
+
 .armory-shop__panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) minmax(190px, 34%);
   gap: 8px;
   height: 100%;
   min-height: 0;
+}
+
+.armory-shop--city-mode .armory-shop__panel {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 100%;
 }
 
 .armory-shop__preview-shell,
@@ -886,6 +915,10 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop__preview-shell {
   overflow: hidden;
   border-radius: 16px 16px 10px 10px;
+}
+
+.armory-shop--city-mode .armory-shop__preview-shell {
+  display: none;
 }
 
 .armory-shop__preview {
@@ -907,6 +940,13 @@ body.debug-active .city-menu__portrait-button:active {
   overflow: hidden;
   padding: 8px;
   border-radius: 10px 10px 16px 16px;
+}
+
+.armory-shop--city-mode .armory-shop__menu {
+  width: 100%;
+  max-height: min(280px, 42dvh);
+  pointer-events: auto;
+  animation: armory-shop-rise 240ms ease-out both;
 }
 
 .armory-shop__header {
@@ -1020,6 +1060,24 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop__back {
   padding: 8px 10px;
   text-align: center;
+}
+
+@keyframes armory-shop-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-height: 760px) {
+  .armory-shop--city-mode .armory-shop__menu {
+    max-height: min(252px, 42dvh);
+  }
 }
 
 body.arena-active {
@@ -1907,78 +1965,6 @@ body.debug-active .battle-screen {
 .debug-panel__control-reset:active {
   transform: translateY(1px);
 }
-
-.arena-profiler {
-  position: absolute;
-  left: 8px;
-  top: 112px;
-  z-index: 150;
-  display: grid;
-  gap: 4px;
-  width: min(300px, calc(100% - 16px));
-  pointer-events: none;
-}
-
-.arena-profiler__actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.arena-profiler__toggle,
-.arena-profiler__reset {
-  justify-self: start;
-  min-height: 30px;
-  padding: 5px 10px;
-  border: 2px solid #35180d;
-  border-radius: 8px;
-  color: #fff0bd;
-  background: linear-gradient(180deg, #ffd58a 0%, #d48633 76%, #743113 100%);
-  box-shadow: 0 3px 0 #35180d;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.68rem;
-  font-weight: 900;
-  pointer-events: auto;
-  text-transform: uppercase;
-}
-
-.arena-profiler__reset {
-  background: linear-gradient(180deg, #f4c87c 0%, #a8642b 76%, #5c2510 100%);
-}
-
-.arena-profiler__output {
-  display: none;
-  max-height: 220px;
-  margin: 0;
-  padding: 7px 8px;
-  overflow: auto;
-  border: 2px solid rgba(255, 211, 132, 0.68);
-  border-radius: 8px;
-  color: #fff0bd;
-  background: rgba(22, 7, 3, 0.82);
-  font-family: Consolas, "Liberation Mono", monospace;
-  font-size: 0.58rem;
-  font-weight: 700;
-  line-height: 1.35;
-  pointer-events: auto;
-  white-space: pre-wrap;
-}
-
-.arena-profiler--enabled .arena-profiler__output {
-  display: block;
-}
-
-.arena-profiler--enabled .arena-profiler__toggle {
-  background: linear-gradient(180deg, #95f0b3 0%, #2f9c68 76%, #145136 100%);
-}
-
-
-
-
-
-
-
-
 
 .action-arc {
   position: absolute;

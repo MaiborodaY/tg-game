@@ -1,12 +1,19 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
-import { launchArena, mountCityHeroPreview, mountDebugCharacterViewer, mountHeroPortraitPreview, setPlayerEquipment, type ArenaScene } from "./ArenaScene";
+import {
+  launchArena,
+  mountCityHeroPreview,
+  mountDebugCharacterViewer,
+  mountHeroPortraitPreview,
+  setPlayerEquipment,
+  type ArenaScene,
+  type CitySceneApi,
+} from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
 import { applyBattleReward, buyAndEquipHeroItems, createCombatStateFromHero, createDefaultHero, getBattleReward, type HeroState } from "./hero";
-import { arenaProfiler, mountArenaProfiler } from "./profiler";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -33,21 +40,21 @@ let isInCity = true;
 let armoryShop: ArmoryShopApi | undefined;
 let weaponShop: WeaponShopApi | undefined;
 let unmountArena: (() => void) | undefined;
-let unmountCityHeroPreview: (() => void) | undefined;
+let cityScene: CitySceneApi | undefined;
 let unmountHeroPortraitPreview: (() => void) | undefined;
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
   const syncArena = options.syncArena ?? true;
-  const committedState = arenaProfiler.measure("applyReward", () => applyBattleRewardIfNeeded(nextState));
+  const committedState = applyBattleRewardIfNeeded(nextState);
 
   state = committedState;
-  arenaProfiler.measure("renderDom", () => renderDom(dom, state));
-  arenaProfiler.measure("cityHeroInfo", () => renderCityHeroInfo(cityHeroWidgetRefs, hero));
-  arenaProfiler.measure("actionArc.sync", () => actionArc?.sync(state));
+  renderDom(dom, state);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  actionArc?.sync(state);
   if (syncArena) {
-    arenaProfiler.measure("arenaScene.sync", () => arenaScene?.sync(state));
+    arenaScene?.sync(state);
   }
-  arenaProfiler.measure("turnProbe.sync", () => syncTurnProbe());
+  syncTurnProbe();
 }
 
 function syncTurnProbe(): void {
@@ -61,11 +68,10 @@ function handleAction(actionId: ActionId): void {
 
   logTurnProbe("player-action", state, enemyTimerStatus, actionId);
 
-  const nextState = arenaProfiler.measure("resolvePlayerTurn", () => resolvePlayerTurn(state, actionId));
+  const nextState = resolvePlayerTurn(state, actionId);
 
-  arenaProfiler.measure("commitState", () => commitState(nextState));
-  arenaProfiler.measure("scheduleEnemyTurn", () => scheduleEnemyTurn(nextState));
-  arenaProfiler.end(`player ${actionId}`);
+  commitState(nextState);
+  scheduleEnemyTurn(nextState);
 }
 
 function maybeAutoRestPlayerTurn(): void {
@@ -76,12 +82,10 @@ function maybeAutoRestPlayerTurn(): void {
   lastActionClick = "rest:auto";
   logTurnProbe("auto-rest", state, enemyTimerStatus, "rest");
 
-  arenaProfiler.start("auto rest");
-  const nextState = arenaProfiler.measure("resolvePlayerTurn", () => resolvePlayerTurn(state, "rest"));
+  const nextState = resolvePlayerTurn(state, "rest");
 
-  arenaProfiler.measure("commitState", () => commitState(nextState));
-  arenaProfiler.measure("scheduleEnemyTurn", () => scheduleEnemyTurn(nextState));
-  arenaProfiler.end("auto rest");
+  commitState(nextState);
+  scheduleEnemyTurn(nextState);
 }
 
 function scheduleEnemyTurn(enemyState: CombatState): void {
@@ -102,13 +106,11 @@ function scheduleEnemyTurn(enemyState: CombatState): void {
     enemyTimerStatus = "running";
     logTurnProbe("enemy-running", enemyState, enemyTimerStatus);
 
-    arenaProfiler.start("enemy turn");
-    const nextState = arenaProfiler.measure("resolveEnemyTurn", () => resolveEnemyTurn(enemyState));
+    const nextState = resolveEnemyTurn(enemyState);
 
     enemyTimerStatus = "idle";
-    arenaProfiler.measure("commitState", () => commitState(nextState));
-    arenaProfiler.measure("enemy.log", () => logTurnProbe("enemy-committed", nextState, enemyTimerStatus));
-    arenaProfiler.end("enemy turn");
+    commitState(nextState);
+    logTurnProbe("enemy-committed", nextState, enemyTimerStatus);
     maybeAutoRestPlayerTurn();
   }, 700);
 }
@@ -130,17 +132,13 @@ function handleActionArcClick(event: Event): void {
   const { actionId, disabled } = (event as CustomEvent<{ actionId?: ActionId; disabled?: boolean }>).detail ?? {};
 
   lastActionClick = actionId ? `${actionId}${disabled ? ":disabled" : ""}` : "unknown";
-  arenaProfiler.start(`tap ${lastActionClick}`);
-  arenaProfiler.measure("button.syncProbe", () => syncTurnProbe());
-  arenaProfiler.measure("button.log", () => logTurnProbe("button-click", state, enemyTimerStatus, actionId));
-  if (disabled) {
-    arenaProfiler.end(`tap ${lastActionClick}`);
-  }
+  syncTurnProbe();
+  logTurnProbe("button-click", state, enemyTimerStatus, actionId);
 }
 
 function mountCityPreviews(): void {
-  if (cityHero && !unmountCityHeroPreview) {
-    unmountCityHeroPreview = mountCityHeroPreview(cityHero, hero.equipment);
+  if (cityHero && !cityScene) {
+    cityScene = mountCityHeroPreview(cityHero, hero.equipment);
   }
 
   if (cityHeroWidgetRefs.portrait && !unmountHeroPortraitPreview) {
@@ -149,9 +147,9 @@ function mountCityPreviews(): void {
 }
 
 function unmountCityPreviews(): void {
-  unmountCityHeroPreview?.();
+  cityScene?.destroy();
   unmountHeroPortraitPreview?.();
-  unmountCityHeroPreview = undefined;
+  cityScene = undefined;
   unmountHeroPortraitPreview = undefined;
 }
 
@@ -196,7 +194,6 @@ function startGame(): void {
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction);
-  mountArenaProfiler(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   restart({ syncArena: false });
@@ -284,8 +281,9 @@ if (cityMenu) {
   });
   armoryShop = mountArmoryShop(cityMenu, {
     getHero: () => hero,
-    mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
     onBuy: handleShopBuy,
+    onOpen: () => cityScene?.focusArmory(),
+    onClose: () => cityScene?.focusDefault(),
   });
 }
 renderDom(dom, state);
