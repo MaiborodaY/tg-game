@@ -13,7 +13,6 @@ const ACTION_ICONS: Record<ActionId, string> = {
   light: "🗡",
   medium: "🗡",
   heavy: "🗡",
-  block: "🛡",
   taunt: "📣",
   rest: "😴",
 };

@@ -65,10 +65,9 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   forward: { label: "FWD", detail: "Step" },
   back: { label: "BACK", detail: "Back" },
   lunge: { label: "LUNGE", detail: "Dash" },
-  light: { label: "LOW", detail: "3 dmg" },
-  medium: { label: "MED", detail: "5 dmg" },
-  heavy: { label: "STRONG", detail: "7 dmg" },
-  block: { label: "BLOCK", detail: "Guard" },
+  light: { label: "LOW", detail: "1 dmg" },
+  medium: { label: "MED", detail: "2 dmg" },
+  heavy: { label: "STRONG", detail: "4 dmg" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
@@ -99,8 +98,6 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
       return tuning?.actionTauntArcAngle ?? DEFAULT_ACTION_TAUNT_ANGLE;
     case "rest":
       return tuning?.actionRestArcAngle ?? DEFAULT_ACTION_REST_ANGLE;
-    case "block":
-      return 0;
   }
 }
 

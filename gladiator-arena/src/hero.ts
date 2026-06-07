@@ -24,6 +24,7 @@ export interface HeroStats {
   maxHp: number;
   maxArmor: number;
   maxStamina: number;
+  damageBonus: number;
   lightDamageBonus: number;
   mediumDamageBonus: number;
   heavyDamageBonus: number;
@@ -54,6 +55,7 @@ export interface HeroItemDefinition {
   kind: "weapon" | "armor";
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
+  damageBonus?: number;
   statBonuses?: Partial<HeroBaseStats>;
 }
 
@@ -105,6 +107,7 @@ export const STARTER_BACK_BOOT_ID = "starter_back_boot";
 export const STARTER_FRONT_BOOT_ID = "starter_front_boot";
 export const STARTER_ARMOUR_ID = STARTER_BREASTPLATE_ID;
 export const STARTER_ARMOR_HP = 1;
+export const TRAINING_WEAPON_DAMAGE_BONUS = 1;
 
 export const HERO_ITEM_IDS = [
   TRAINING_WEAPON_ID,
@@ -125,7 +128,13 @@ export const HERO_ITEM_IDS = [
 export type HeroItemId = (typeof HERO_ITEM_IDS)[number];
 
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
-  [TRAINING_WEAPON_ID]: { id: TRAINING_WEAPON_ID, name: "Training Sword", kind: "weapon", equipmentSlot: "weaponMain" },
+  [TRAINING_WEAPON_ID]: {
+    id: TRAINING_WEAPON_ID,
+    name: "Training Sword",
+    kind: "weapon",
+    equipmentSlot: "weaponMain",
+    damageBonus: TRAINING_WEAPON_DAMAGE_BONUS,
+  },
   [STARTER_HELMET_ID]: { id: STARTER_HELMET_ID, name: "Starter Helmet", kind: "armor", equipmentSlot: "helmet", armorHp: STARTER_ARMOR_HP },
   [STARTER_BREASTPLATE_ID]: {
     id: STARTER_BREASTPLATE_ID,
@@ -219,42 +228,40 @@ export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [
   },
 ];
 
-const ENEMY_ARMOR_GROUPS: Array<Array<[HeroEquipmentSlotKey, HeroItemId]>> = [
-  [["helmet", STARTER_HELMET_ID]],
-  [["breastplate", STARTER_BREASTPLATE_ID]],
-  [
-    ["backShoulderguard", STARTER_BACK_SHOULDERGUARD_ID],
-    ["frontShoulderguard", STARTER_FRONT_SHOULDERGUARD_ID],
-  ],
-  [
-    ["backGauntlet", STARTER_BACK_GAUNTLET_ID],
-    ["frontGauntlet", STARTER_FRONT_GAUNTLET_ID],
-  ],
-  [
-    ["backGreave", STARTER_BACK_GREAVE_ID],
-    ["frontGreave", STARTER_FRONT_GREAVE_ID],
-  ],
-  [
-    ["backShinguard", STARTER_BACK_SHINGUARD_ID],
-    ["frontShinguard", STARTER_FRONT_SHINGUARD_ID],
-  ],
-  [
-    ["backBoot", STARTER_BACK_BOOT_ID],
-    ["frontBoot", STARTER_FRONT_BOOT_ID],
-  ],
+const ENEMY_ARMOR_ITEMS: Array<[HeroEquipmentSlotKey, HeroItemId]> = [
+  ["helmet", STARTER_HELMET_ID],
+  ["breastplate", STARTER_BREASTPLATE_ID],
+  ["backShoulderguard", STARTER_BACK_SHOULDERGUARD_ID],
+  ["frontShoulderguard", STARTER_FRONT_SHOULDERGUARD_ID],
+  ["backGauntlet", STARTER_BACK_GAUNTLET_ID],
+  ["frontGauntlet", STARTER_FRONT_GAUNTLET_ID],
+  ["backGreave", STARTER_BACK_GREAVE_ID],
+  ["frontGreave", STARTER_FRONT_GREAVE_ID],
+  ["backShinguard", STARTER_BACK_SHINGUARD_ID],
+  ["frontShinguard", STARTER_FRONT_SHINGUARD_ID],
+  ["backBoot", STARTER_BACK_BOOT_ID],
+  ["frontBoot", STARTER_FRONT_BOOT_ID],
 ];
+
+const ENEMY_WEAPON_ITEMS: Array<[HeroEquipmentSlotKey, HeroItemId]> = [["weaponMain", TRAINING_WEAPON_ID]];
 
 export function createRandomEnemyLoadout(random = Math.random): EnemyLoadout {
   const equipment = createDefaultHeroEquipment();
 
-  ENEMY_ARMOR_GROUPS.forEach((group) => {
+  ENEMY_WEAPON_ITEMS.forEach(([slotKey, itemId]) => {
     if (random() >= 0.52) {
       return;
     }
 
-    group.forEach(([slotKey, itemId]) => {
-      equipment[slotKey] = itemId;
-    });
+    equipment[slotKey] = itemId;
+  });
+
+  ENEMY_ARMOR_ITEMS.forEach(([slotKey, itemId]) => {
+    if (random() >= 0.52) {
+      return;
+    }
+
+    equipment[slotKey] = itemId;
   });
 
   return {
@@ -316,6 +323,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
 export function deriveHeroStats(hero: HeroState): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
   const armorBonus = getHeroEquipmentArmor(hero.equipment);
+  const damageBonus = getHeroEquipmentDamageBonus(hero.equipment);
   const strengthBonus = Math.max(0, hero.baseStats.strength + equipmentBonuses.strength - 1);
   const enduranceBonus = Math.max(0, hero.baseStats.endurance + equipmentBonuses.endurance - 1);
   const agilityBonus = Math.max(0, hero.baseStats.agility + equipmentBonuses.agility - 1);
@@ -324,6 +332,7 @@ export function deriveHeroStats(hero: HeroState): HeroStats {
     maxHp: MAX_HP + enduranceBonus * 4,
     maxArmor: armorBonus,
     maxStamina: MAX_STAMINA + agilityBonus,
+    damageBonus,
     lightDamageBonus: Math.floor(strengthBonus / 2),
     mediumDamageBonus: strengthBonus,
     heavyDamageBonus: strengthBonus * 2,
@@ -354,10 +363,15 @@ export function getHeroEquipmentArmor(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((armor, item) => armor + (item.armorHp ?? 0), 0);
 }
 
+export function getHeroEquipmentDamageBonus(equipment: HeroEquipment): number {
+  return getEquippedHeroItems(equipment).reduce((damageBonus, item) => damageBonus + (item.damageBonus ?? 0), 0);
+}
+
 export function createCombatStateFromHero(hero: HeroState): CombatState {
   const stats = deriveHeroStats(hero);
   const enemyLoadout = createRandomEnemyLoadout();
   const enemyArmor = getHeroEquipmentArmor(enemyLoadout.equipment);
+  const enemyDamageBonus = getHeroEquipmentDamageBonus(enemyLoadout.equipment);
   const state = freshState();
 
   return {
@@ -371,12 +385,14 @@ export function createCombatStateFromHero(hero: HeroState): CombatState {
       maxArmor: stats.maxArmor,
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
+      damageBonus: stats.damageBonus,
       equipment: { ...hero.equipment },
     },
     enemy: {
       ...state.enemy,
       armor: enemyArmor,
       maxArmor: enemyArmor,
+      damageBonus: enemyDamageBonus,
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },
     },

@@ -52,9 +52,9 @@ test("melee attacks only work in clinch", () => {
 
 
 test("clinch attacks have weak medium and strong damage tiers", () => {
-  assert.equal(combat.actions.light.damage, 3);
-  assert.equal(combat.actions.medium.damage, 5);
-  assert.equal(combat.actions.heavy.damage, 7);
+  assert.equal(combat.actions.light.damage, 1);
+  assert.equal(combat.actions.medium.damage, 2);
+  assert.equal(combat.actions.heavy.damage, 4);
   assert.ok(combat.actions.light.cost < combat.actions.medium.cost);
   assert.ok(combat.actions.medium.cost < combat.actions.heavy.cost);
 });
@@ -126,8 +126,8 @@ test("damage depletes armor before health", () => {
 
   const nextState = combat.resolvePlayerTurn(state, "light");
 
-  assert.equal(nextState.enemy.armor, 0);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 1);
+  assert.equal(nextState.enemy.armor, 1);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
   assert.equal(nextState.lastPlayerDamage, combat.actions.light.damage);
 });
 

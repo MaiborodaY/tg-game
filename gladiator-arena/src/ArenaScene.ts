@@ -2522,18 +2522,6 @@ function animateAction(
     return;
   }
 
-  if (actionId === "block") {
-    target.tweens.add({
-      targets: actor.sword,
-      angle: actor.sword.angle + 58 * sign,
-      duration: 140,
-      yoyo: true,
-      ease: "Back.easeOut",
-    });
-    showFloatingText(target, actor.body.x, actor.body.y - 112, "BLOCK", "#ffe7a4");
-    return;
-  }
-
   if (actionId === "taunt") {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"));
     return;

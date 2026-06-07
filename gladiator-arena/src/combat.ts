@@ -1,6 +1,6 @@
 import type { EnemyVisualPreset, HeroEquipment } from "./hero";
 
-export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "block" | "taunt" | "rest";
+export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "taunt" | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
 
@@ -10,7 +10,6 @@ export interface ActionConfig {
   detail: string;
   cost: number;
   damage?: number;
-  block?: number;
   restore?: number;
   glory?: number;
   vulnerability?: number;
@@ -26,6 +25,7 @@ export interface FighterState {
   maxArmor: number;
   stamina: number;
   maxStamina: number;
+  damageBonus: number;
   equipment?: HeroEquipment;
   visualPreset?: EnemyVisualPreset;
 }
@@ -45,8 +45,6 @@ export interface CombatState {
   distance: number;
   playerPosition: number;
   enemyPosition: number;
-  playerGuard: number;
-  enemyGuard: number;
   playerIncomingBonus: number;
   enemyIncomingBonus: number;
   lastPlayerAction?: ActionId;
@@ -56,7 +54,7 @@ export interface CombatState {
   log: LogEntry[];
 }
 
-export const MAX_HP = 30;
+export const MAX_HP = 10;
 export const MAX_STAMINA = 10;
 export const MIN_DISTANCE = 0;
 export const MAX_DISTANCE = 4;
@@ -90,33 +88,26 @@ export const actions: Record<ActionId, ActionConfig> = {
   light: {
     id: "light",
     title: "Weak Slash",
-    detail: "Cost 2 - Clinch only - Damage 3",
+    detail: "Cost 2 - Clinch only - Damage 1",
     cost: 2,
-    damage: 3,
+    damage: 1,
     rangeMax: MELEE_RANGE,
   },
   medium: {
     id: "medium",
     title: "Medium Slash",
-    detail: "Cost 3 - Clinch only - Damage 5",
+    detail: "Cost 3 - Clinch only - Damage 2",
     cost: 3,
-    damage: 5,
+    damage: 2,
     rangeMax: MELEE_RANGE,
   },
   heavy: {
     id: "heavy",
     title: "Grand Bonk",
-    detail: "Cost 5 - Clinch only - Damage 7",
+    detail: "Cost 5 - Clinch only - Damage 4",
     cost: 5,
-    damage: 7,
+    damage: 4,
     rangeMax: MELEE_RANGE,
-  },
-  block: {
-    id: "block",
-    title: "Pot Lid Block",
-    detail: "Cost 3 - Guard next hit",
-    cost: 3,
-    block: 0.7,
   },
   taunt: {
     id: "taunt",
@@ -140,8 +131,26 @@ export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "me
 
 export function freshState(): CombatState {
   return {
-    player: { name: "Borshemir", hp: MAX_HP, maxHp: MAX_HP, armor: 0, maxArmor: 0, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
-    enemy: { name: "Grumbus", hp: MAX_HP, maxHp: MAX_HP, armor: 0, maxArmor: 0, stamina: MAX_STAMINA, maxStamina: MAX_STAMINA },
+    player: {
+      name: "Borshemir",
+      hp: MAX_HP,
+      maxHp: MAX_HP,
+      armor: 0,
+      maxArmor: 0,
+      stamina: MAX_STAMINA,
+      maxStamina: MAX_STAMINA,
+      damageBonus: 0,
+    },
+    enemy: {
+      name: "Grumbus",
+      hp: MAX_HP,
+      maxHp: MAX_HP,
+      armor: 0,
+      maxArmor: 0,
+      stamina: MAX_STAMINA,
+      maxStamina: MAX_STAMINA,
+      damageBonus: 0,
+    },
     round: 1,
     score: 0,
     result: "playing",
@@ -149,8 +158,6 @@ export function freshState(): CombatState {
     distance: START_DISTANCE,
     playerPosition: 0,
     enemyPosition: START_DISTANCE,
-    playerGuard: 0,
-    enemyGuard: 0,
     playerIncomingBonus: 0,
     enemyIncomingBonus: 0,
     lastPlayerDamage: 0,
@@ -320,8 +327,6 @@ function chooseEnemyAction(current: CombatState): ActionId {
       weighted.push(id, id, playerLowHp ? "heavy" : id);
     } else if (id === "light") {
       weighted.push(id, id, id);
-    } else if (id === "block") {
-      weighted.push(id, enemyLowHp ? id : "light");
     } else if (id === "rest") {
       weighted.push(id, enemyLowStamina ? id : "light");
     } else if (id === "back") {
@@ -342,7 +347,6 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
   const defenderLabel = actor === "player" ? "Grumbus" : "you";
 
   attacker.stamina = clamp(attacker.stamina - action.cost, 0, getFighterMaxStamina(attacker));
-  clearGuard(state, actor);
 
   if (action.move) {
     moveActor(state, actor, action.move);
@@ -352,15 +356,11 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
     attacker.stamina = clamp(attacker.stamina + action.restore, 0, getFighterMaxStamina(attacker));
   }
 
-  if (action.block) {
-    setGuard(state, actor, action.block);
-  }
-
   if (action.vulnerability) {
     addIncomingBonus(state, actor, action.vulnerability);
   }
 
-  let damage = action.damage ?? 0;
+  let damage = action.damage ? action.damage + Math.max(0, attacker.damageBonus ?? 0) : 0;
   const inRange = action.rangeMax === undefined || state.distance <= action.rangeMax;
 
   if (damage > 0 && !inRange) {
@@ -368,7 +368,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId): 
   }
 
   if (damage > 0) {
-    damage = applyDefensiveStatuses(state, actor, damage);
+    damage = applyIncomingBonus(state, actor, damage);
     applyDamageToFighter(defender, damage);
   } else {
     clearIncomingBonus(state, actor === "player" ? "enemy" : "player");
@@ -444,11 +444,6 @@ function addActionLog(
     return;
   }
 
-  if (action.block) {
-    addLog(state, `${actorLabel} used ${action.title} and guards the next blow.`);
-    return;
-  }
-
   if (action.restore) {
     addLog(state, `${actorLabel} used ${action.title} and restored stamina.`);
     return;
@@ -483,16 +478,13 @@ function finishBattle(state: CombatState): void {
   }
 }
 
-function applyDefensiveStatuses(state: CombatState, attacker: TurnOwner, damage: number): number {
+function applyIncomingBonus(state: CombatState, attacker: TurnOwner, damage: number): number {
   const defender = attacker === "player" ? "enemy" : "player";
-  const guard = defender === "player" ? state.playerGuard : state.enemyGuard;
   const incomingBonus = defender === "player" ? state.playerIncomingBonus : state.enemyIncomingBonus;
-  const guardedDamage = guard > 0 ? Math.ceil(damage * (1 - guard)) : damage;
 
-  clearGuard(state, defender);
   clearIncomingBonus(state, defender);
 
-  return guardedDamage + incomingBonus;
+  return damage + incomingBonus;
 }
 
 function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number): void {
@@ -510,18 +502,6 @@ function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number):
   }
 
   state.distance = clamp(state.enemyPosition - state.playerPosition, MIN_DISTANCE, MAX_DISTANCE);
-}
-
-function setGuard(state: CombatState, actor: TurnOwner, value: number): void {
-  if (actor === "player") {
-    state.playerGuard = value;
-  } else {
-    state.enemyGuard = value;
-  }
-}
-
-function clearGuard(state: CombatState, actor: TurnOwner): void {
-  setGuard(state, actor, 0);
 }
 
 function addIncomingBonus(state: CombatState, actor: TurnOwner, value: number): void {
