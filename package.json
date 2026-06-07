@@ -1,23 +1,25 @@
 {
-    "type":  "module",
-    "devDependencies":  {
-                            "@cloudflare/workers-types":  "^4.20241022.0",
-                            "@eslint/js":  "^10.0.1",
-                            "eslint":  "^10.4.1",
-                            "typescript":  "^6.0.3",
-                            "typescript-eslint":  "^8.60.1",
-                            "vite":  "^8.0.16"
-                        },
-    "scripts":  {
-                    "gladiator:dev":  "vite gladiator-arena --config gladiator-arena/vite.config.ts --open",
-                    "gladiator:debug":  "vite gladiator-arena --config gladiator-arena/vite.config.ts --open /debug.html",
-                    "gladiator:build":  "vite build gladiator-arena --config gladiator-arena/vite.config.ts --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
-                    "gladiator:test":  "node --test gladiator-arena/tests/*.test.js",
-                    "gladiator:lint":  "eslint gladiator-arena/src gladiator-arena/tests",
-                    "farm-paws:dev":  "vite farm-paws --open",
-                    "farm-paws:build":  "vite build farm-paws --base=./ --outDir ../public/farm-paws --emptyOutDir"
-                },
-    "dependencies":  {
-                         "phaser":  "^4.1.0"
-                     }
+    "type": "module",
+    "devDependencies": {
+        "@cloudflare/workers-types": "^4.20241022.0",
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.4.1",
+        "sharp": "^0.34.5",
+        "typescript": "^6.0.3",
+        "typescript-eslint": "^8.60.1",
+        "vite": "^8.0.16"
+    },
+    "scripts": {
+        "gladiator:dev": "vite gladiator-arena --config gladiator-arena/vite.config.ts --open",
+        "gladiator:debug": "vite gladiator-arena --config gladiator-arena/vite.config.ts --open /debug.html",
+        "gladiator:build": "vite build gladiator-arena --config gladiator-arena/vite.config.ts --base=./ --outDir ../public/gladiator-arena --emptyOutDir",
+        "gladiator:optimize-assets": "node gladiator-arena/scripts/optimize-assets.mjs",
+        "gladiator:test": "node --test gladiator-arena/tests/*.test.js",
+        "gladiator:lint": "eslint gladiator-arena/src gladiator-arena/tests",
+        "farm-paws:dev": "vite farm-paws --open",
+        "farm-paws:build": "vite build farm-paws --base=./ --outDir ../public/farm-paws --emptyOutDir"
+    },
+    "dependencies": {
+        "phaser": "^4.1.0"
+    }
 }
