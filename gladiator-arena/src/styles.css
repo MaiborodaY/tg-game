@@ -1449,6 +1449,17 @@ body.arena-active .shell {
   pointer-events: none;
 }
 
+.battle-screen .stage-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(22, 7, 3, 0) 0 58%, rgba(22, 7, 3, 0.18) 76%, rgba(22, 7, 3, 0.42) 100%),
+    linear-gradient(180deg, rgba(22, 7, 3, 0.16), rgba(22, 7, 3, 0) 18% 74%, rgba(22, 7, 3, 0.22));
+}
+
 .battle-screen .game-frame {
   position: absolute;
   inset: 0;
@@ -2411,6 +2422,19 @@ body.debug-active .action-arc__button {
   transition: none;
 }
 
+.action-arc--editing .action-arc__button {
+  cursor: grab;
+}
+
+.action-arc--editing .action-arc__button:active {
+  cursor: grabbing;
+}
+
+.action-arc--editing .action-arc__button--selected {
+  outline: 3px solid rgba(0, 255, 255, 0.92);
+  filter: brightness(1.16);
+}
+
 .turn-probe {
   position: absolute;
   left: 10px;
@@ -2444,6 +2468,16 @@ body.debug-active .action-arc__button {
 
 body.debug-active .action-arc__center {
   display: block;
+}
+
+.action-arc--editing .action-arc__center {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.action-arc--editing .action-arc__center--selected {
+  background: rgba(0, 255, 255, 0.55);
+  box-shadow: 0 0 0 6px rgba(0, 255, 255, 0.2);
 }
 
 .action-arc__button[data-action="taunt"] {

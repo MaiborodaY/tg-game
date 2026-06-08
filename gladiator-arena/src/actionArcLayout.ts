@@ -48,8 +48,8 @@ export const ACTION_ARC_BUTTON_EDGE = 38;
 export const ACTION_ARC_MIN_Y = 126;
 export const ACTION_ARC_MAX_Y = GAME_HEIGHT - 132;
 
-const ACTION_ARC_CENTER_OFFSET_X = 4;
-const ACTION_ARC_CENTER_OFFSET_Y = -120;
+const ACTION_ARC_CENTER_OFFSET_X = 0;
+const ACTION_ARC_CENTER_OFFSET_Y = -70;
 
 const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "forward" },
@@ -117,8 +117,8 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const worldCenterX = fighterLayout.playerX + ACTION_ARC_CENTER_OFFSET_X * scale;
   const worldCenterY = fighterLayout.playerY + ACTION_ARC_CENTER_OFFSET_Y * scale;
   const screenCenter = projectWorldToScreen(worldCenterX, worldCenterY, camera);
-  const centerX = screenCenter.x;
-  const centerY = screenCenter.y;
+  const centerX = screenCenter.x + (tuning?.actionArcOffsetX ?? 0);
+  const centerY = screenCenter.y + (tuning?.actionArcOffsetY ?? 0);
   const radius = actionArcRadius * scale;
   const buttonEdge = ACTION_ARC_BUTTON_EDGE * actionButtonScale;
   const maxX = actionViewport.width - buttonEdge;
@@ -133,13 +133,14 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
       const angle = getActionAngle(actionId, tuning) + actionArcRotation;
       const radians = (angle * Math.PI) / 180;
       const label = ACTION_LABELS[actionId];
+      const offset = tuning?.actionButtonOffsets?.[actionId] ?? { x: 0, y: 0 };
 
       return {
         actionId,
         label: label.label,
         detail: label.detail,
-        x: clamp(centerX + Math.cos(radians) * radius, buttonEdge, maxX),
-        y: clamp(centerY + Math.sin(radians) * radius, ACTION_ARC_MIN_Y, maxY),
+        x: clamp(centerX + Math.cos(radians) * radius + offset.x, buttonEdge, maxX),
+        y: clamp(centerY + Math.sin(radians) * radius + offset.y, ACTION_ARC_MIN_Y, maxY),
         scale: actionButtonScale,
         angle,
       };

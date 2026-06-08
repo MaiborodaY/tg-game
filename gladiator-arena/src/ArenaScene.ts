@@ -307,7 +307,7 @@ interface ArenaLayerTransform {
 const ARENA_LAYER_PARALLAX: Record<keyof Omit<ArenaLayers, "all">, ArenaLayerParallax> = {
   back: { followX: 0.06, followY: 0.04, zoom: 0.3, lookUpY: 150 },
   mid: { followX: 0.22, followY: 0.16, zoom: 0.42, lookUpY: 132 },
-  ground: { followX: 0.78, followY: 0.72, zoom: 0.88, lookUpY: 10 },
+  ground: { followX: 0.6, followY: 0.52, zoom: 0.74, lookUpY: 10 },
   actors: { followX: 1, followY: 1, zoom: 1, lookUpY: 0 },
   effects: { followX: 1, followY: 1, zoom: 1, lookUpY: 0 },
 };
@@ -1498,7 +1498,7 @@ function createArenaLayers(target: Phaser.Scene): ArenaLayers {
 function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
   const layerConfigs = [
     { key: ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, layer: layers.back },
-    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, layer: layers.mid },
+    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, layer: layers.mid, tint: 0xb1a18f },
     { key: ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, layer: layers.ground },
   ] as const;
 
@@ -1508,12 +1508,16 @@ function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
       return;
     }
 
-    config.layer.add(
-      target.add
-        .image(ARENA_WORLD_LEFT, ARENA_WORLD_TOP, config.key)
-        .setOrigin(0, 0)
-        .setDisplaySize(ARENA_WORLD_WIDTH, ARENA_WORLD_HEIGHT),
-    );
+    const image = target.add
+      .image(ARENA_WORLD_LEFT, ARENA_WORLD_TOP, config.key)
+      .setOrigin(0, 0)
+      .setDisplaySize(ARENA_WORLD_WIDTH, ARENA_WORLD_HEIGHT);
+
+    if ("tint" in config) {
+      image.setTint(config.tint);
+    }
+
+    config.layer.add(image);
   });
 }
 

@@ -234,7 +234,7 @@ function startGame(): void {
   dom.mainMenu.hidden = true;
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
-  actionArc = mountActionArc(dom.gameScreen, handleAction);
+  actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   restart({ syncArena: false });

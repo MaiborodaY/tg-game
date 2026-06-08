@@ -333,7 +333,25 @@ function startDebugApp(): void {
     },
     onPreviewSlashArc: previewSlashArc,
   });
-  actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
+  actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning, {
+    isEnabled: () => debugTuning.actionArcEditMode,
+    beginEdit: beginDebugUndoGroup,
+    endEdit: endDebugUndoGroup,
+    setArcOffset: (offset) => {
+      updateDebugTuning({
+        actionArcOffsetX: offset.x,
+        actionArcOffsetY: offset.y,
+      });
+    },
+    setButtonOffset: (actionId, offset) => {
+      updateDebugTuning({
+        actionButtonOffsets: {
+          ...debugTuning.actionButtonOffsets,
+          [actionId]: offset,
+        },
+      });
+    },
+  });
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {

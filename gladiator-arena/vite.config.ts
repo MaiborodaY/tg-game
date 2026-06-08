@@ -17,6 +17,8 @@ const prodDefaultFields = {
   DEFAULT_ENEMY_SCALE: "enemyScale",
   DEFAULT_ACTION_ARC_ROTATION: "actionArcRotation",
   DEFAULT_ACTION_ARC_RADIUS: "actionArcRadius",
+  DEFAULT_ACTION_ARC_OFFSET_X: "actionArcOffsetX",
+  DEFAULT_ACTION_ARC_OFFSET_Y: "actionArcOffsetY",
   DEFAULT_ACTION_BUTTON_SCALE: "actionButtonScale",
   DEFAULT_FORWARD_MOVE_DISTANCE: "forwardMoveDistance",
   DEFAULT_BACK_MOVE_DISTANCE: "backMoveDistance",
@@ -108,6 +110,9 @@ type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
 type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
 
+const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
+type ActionButtonOffsetKey = (typeof actionButtonOffsetKeys)[number];
+
 const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
   idle: "DEFAULT_IDLE_ANIMATION",
   walkCycle: "DEFAULT_WALK_CYCLE_ANIMATION",
@@ -157,6 +162,7 @@ type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
+type ActionButtonOffsetUpdates = Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
 
 interface SlashArcTuning {
   radius: number;
@@ -170,6 +176,11 @@ interface SlashArcTuning {
   endAngle: number;
   angle: number;
   sweep: number;
+}
+
+interface ActionButtonOffsetTuning {
+  x: number;
+  y: number;
 }
 
 interface BodyAnimationUpdates {
@@ -206,6 +217,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
+          const actionButtonOffsetUpdates = pickActionButtonOffsetDefaultUpdates(payload);
           const [layoutSource, combatSource, debugTuningSource] = await Promise.all([
             readFile(arenaLayoutUrl, "utf8"),
             readFile(combatUrl, "utf8"),
@@ -216,7 +228,10 @@ function saveProdDefaultsPlugin(): Plugin {
           const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
             applySlashArcDefaultUpdates(
               applyEquipmentDefaultUpdates(
-                applyFacePartDefaultUpdates(applyRigPartDefaultUpdates(debugTuningSource, rigPartUpdates), facePartUpdates),
+                applyFacePartDefaultUpdates(
+                  applyRigPartDefaultUpdates(applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates), rigPartUpdates),
+                  facePartUpdates,
+                ),
                 equipmentUpdates,
               ),
               slashArcUpdates,
@@ -231,11 +246,12 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${Object.keys(equipmentUpdates).length} equipment defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${Object.keys(equipmentUpdates).length} equipment defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
               Object.keys(debugTuningDefaultUpdates).length +
+              Object.keys(actionButtonOffsetUpdates).length +
               Object.keys(rigPartUpdates).length +
               Object.keys(facePartUpdates).length +
               Object.keys(equipmentUpdates).length +
@@ -434,6 +450,31 @@ export function pickSlashArcDefaultUpdates(payload: unknown): SlashArcUpdates {
   return Object.fromEntries(slashArcAttackKeys.map((key) => [key, readSlashArcTuning(slashArcs, key)])) as SlashArcUpdates;
 }
 
+export function applyActionButtonOffsetDefaultUpdates(source: string, updates: ActionButtonOffsetUpdates): string {
+  const pattern =
+    /export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> = (?:createDefaultActionButtonOffsets\(\)|\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_ACTION_BUTTON_OFFSETS in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatActionButtonOffsetDefaults(updates));
+}
+
+export function pickActionButtonOffsetDefaultUpdates(payload: unknown): ActionButtonOffsetUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const offsets = (payload as { actionButtonOffsets?: unknown }).actionButtonOffsets;
+
+  if (!offsets || typeof offsets !== "object" || Array.isArray(offsets)) {
+    throw new Error("Expected actionButtonOffsets in debug tuning payload.");
+  }
+
+  return Object.fromEntries(actionButtonOffsetKeys.map((key) => [key, readActionButtonOffsetTuning(offsets, key)])) as ActionButtonOffsetUpdates;
+}
+
 export function applyBodyAnimationDefaultUpdates(source: string, updates: BodyAnimationUpdates): string {
   const constantName = bodyAnimationDefaultConstants[updates.key];
   const pattern = new RegExp(`export const ${constantName}: BodyAnimationTuning = (?:createDefault[A-Za-z]+Animation\\(\\);|\\{[\\s\\S]*?\\r?\\n\\};)`);
@@ -557,6 +598,16 @@ function formatSlashArcDefaults(updates: SlashArcUpdates): string {
   });
 
   return `export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatActionButtonOffsetDefaults(updates: ActionButtonOffsetUpdates): string {
+  const rows = actionButtonOffsetKeys.map((key) => {
+    const offset = updates[key];
+
+    return `  ${key}: { x: ${formatNumber(offset.x)}, y: ${formatNumber(offset.y)} },`;
+  });
+
+  return `export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> = {\n${rows.join("\n")}\n};`;
 }
 
 function formatHexColor(value: number): string {
@@ -708,6 +759,21 @@ function readEquipmentTuning(equipment: object, key: EquipmentSlotKey): RigPartT
   };
 }
 
+function readActionButtonOffsetTuning(offsets: object, key: ActionButtonOffsetKey): ActionButtonOffsetTuning {
+  const offset = (offsets as Partial<Record<ActionButtonOffsetKey, unknown>>)[key];
+
+  if (!offset || typeof offset !== "object" || Array.isArray(offset)) {
+    throw new Error(`Invalid action button offset value: ${key}.`);
+  }
+
+  const tuning = offset as Partial<ActionButtonOffsetTuning>;
+
+  return {
+    x: readFiniteActionButtonOffsetNumber(tuning, key, "x"),
+    y: readFiniteActionButtonOffsetNumber(tuning, key, "y"),
+  };
+}
+
 function readSlashArcTuning(slashArcs: object, key: SlashArcAttackKey): SlashArcTuning {
   const arc = (slashArcs as Partial<Record<SlashArcAttackKey, unknown>>)[key];
 
@@ -737,6 +803,20 @@ function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid rig part tuning value: ${partKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteActionButtonOffsetNumber(
+  payload: Partial<ActionButtonOffsetTuning>,
+  buttonKey: ActionButtonOffsetKey,
+  fieldName: keyof ActionButtonOffsetTuning,
+): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid action button offset value: ${buttonKey}.${fieldName}.`);
   }
 
   return value;

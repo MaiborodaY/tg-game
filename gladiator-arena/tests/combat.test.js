@@ -66,6 +66,34 @@ test("attacks define base block chances", () => {
   assert.equal(combat.actions.heavy.blockChance, 0.75);
 });
 
+test("stamina does not block attacks", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.stamina = 1;
+
+  assert.equal(combat.canUseAction(state, "heavy"), true);
+
+  const nextState = combat.resolvePlayerTurn(state, "heavy", () => 0.99);
+
+  assert.equal(nextState.player.stamina, 0);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - combat.actions.heavy.damage);
+  assert.equal(nextState.lastPlayerDamage, combat.actions.heavy.damage);
+});
+
+test("rest restores stamina and heals one hp without incoming penalty", () => {
+  const state = combat.freshState();
+
+  state.player.hp = 6;
+  state.player.stamina = 0;
+
+  const nextState = combat.resolvePlayerTurn(state, "rest");
+
+  assert.equal(nextState.player.stamina, 5);
+  assert.equal(nextState.player.hp, 7);
+  assert.equal(nextState.playerIncomingBonus, 0);
+});
+
 test("movement actions use half-distance steps", () => {
   assert.equal(combat.actions.forward.move, -0.5);
   assert.equal(combat.actions.back.move, 0.5);

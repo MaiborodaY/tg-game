@@ -28,7 +28,7 @@ type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosit
 
 const CLOSE_ZOOM = 2.75;
 const FIGHTER_FEET_SCREEN_Y = 560;
-const CLOSE_LOW_ANGLE_FEET_SHIFT_Y = 92;
+const CLOSE_LOW_ANGLE_FEET_SHIFT_Y = 70;
 
 export function getPlayerWorldX(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): number {
   return getStageLayout(current, tuning).playerX;

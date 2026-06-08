@@ -12,6 +12,7 @@ export interface ActionConfig {
   damage?: number;
   blockChance?: number;
   restore?: number;
+  heal?: number;
   glory?: number;
   vulnerability?: number;
   move?: number;
@@ -144,10 +145,10 @@ export const actions: Record<ActionId, ActionConfig> = {
   rest: {
     id: "rest",
     title: "Catch Breath",
-    detail: "Free - Restore 5, +1 incoming",
+    detail: "Free - Restore 5, +1 HP",
     cost: 0,
     restore: 5,
-    vulnerability: 1,
+    heal: 1,
   },
 };
 
@@ -256,12 +257,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
     return false;
   }
 
-  const fighter = actor === "player" ? state.player : state.enemy;
   const action = actions[actionId];
-
-  if (fighter.stamina < action.cost) {
-    return false;
-  }
 
   if (actionId === "forward") {
     return state.distance > MIN_DISTANCE;
@@ -418,6 +414,10 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     attacker.stamina = clamp(attacker.stamina + action.restore, 0, getFighterMaxStamina(attacker));
   }
 
+  if (action.heal) {
+    attacker.hp = clamp(attacker.hp + action.heal, 0, getFighterMaxHp(attacker));
+  }
+
   if (action.vulnerability) {
     addIncomingBonus(state, actor, action.vulnerability);
   }
@@ -526,8 +526,18 @@ function addActionLog(
     return;
   }
 
-  if (action.restore) {
-    addLog(state, `${actorLabel} used ${action.title} and restored stamina.`);
+  if (action.restore || action.heal) {
+    if (action.restore && action.heal) {
+      addLog(state, `${actorLabel} used ${action.title}, restored stamina, and recovered ${action.heal} HP.`);
+      return;
+    }
+
+    if (action.restore) {
+      addLog(state, `${actorLabel} used ${action.title} and restored stamina.`);
+      return;
+    }
+
+    addLog(state, `${actorLabel} used ${action.title} and recovered ${action.heal} HP.`);
     return;
   }
 

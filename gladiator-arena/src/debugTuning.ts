@@ -1,4 +1,6 @@
 import {
+  DEFAULT_ACTION_ARC_OFFSET_X,
+  DEFAULT_ACTION_ARC_OFFSET_Y,
   DEFAULT_ACTION_ARC_RADIUS,
   DEFAULT_ACTION_ARC_ROTATION,
   DEFAULT_ACTION_BACK_ANGLE,
@@ -47,6 +49,9 @@ export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 
 export const SLASH_ARC_ATTACK_KEYS = ["light", "medium", "heavy"] as const;
 export type SlashArcAttackKey = (typeof SLASH_ARC_ATTACK_KEYS)[number];
+
+export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
+export type ActionButtonOffsetKey = (typeof ACTION_BUTTON_OFFSET_KEYS)[number];
 
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
@@ -116,6 +121,11 @@ export interface SlashArcTuning {
   sweep: number;
 }
 
+export interface ActionButtonOffsetTuning {
+  x: number;
+  y: number;
+}
+
 export interface ArenaDebugTuning {
   showGrid: boolean;
   gridStep: number;
@@ -133,9 +143,13 @@ export interface ArenaDebugTuning {
   shadowScaleX: number;
   shadowScaleY: number;
   shadowAlpha: number;
+  actionArcEditMode: boolean;
   actionArcRotation: number;
   actionArcRadius: number;
+  actionArcOffsetX: number;
+  actionArcOffsetY: number;
   actionButtonScale: number;
+  actionButtonOffsets: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
   forwardMoveDistance: number;
   backMoveDistance: number;
   lungeMoveDistance: number;
@@ -183,6 +197,22 @@ export const defaultFacePartTuning: FacePartTuning = {
   y: 0,
   scaleX: 1,
   scaleY: 1,
+};
+
+export const defaultActionButtonOffsetTuning: ActionButtonOffsetTuning = {
+  x: 0,
+  y: 0,
+};
+
+export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> = {
+  forward: { x: -53, y: -37 },
+  back: { x: 56, y: -30 },
+  lunge: { x: -25, y: -27 },
+  light: { x: 0, y: 0 },
+  medium: { x: -14, y: 8 },
+  heavy: { x: 0, y: 18 },
+  taunt: { x: 29, y: -25 },
+  rest: { x: 25, y: -27 },
 };
 
 export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
@@ -777,10 +807,14 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   shadowOffsetY: 76,
   shadowScaleX: 1.11,
   shadowScaleY: -0.68,
-  shadowAlpha: 0.22,
+  shadowAlpha: 0.09,
+  actionArcEditMode: false,
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
   actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
+  actionArcOffsetX: DEFAULT_ACTION_ARC_OFFSET_X,
+  actionArcOffsetY: DEFAULT_ACTION_ARC_OFFSET_Y,
   actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
+  actionButtonOffsets: cloneActionButtonOffsets(DEFAULT_ACTION_BUTTON_OFFSETS),
   forwardMoveDistance: DEFAULT_FORWARD_MOVE_DISTANCE,
   backMoveDistance: DEFAULT_BACK_MOVE_DISTANCE,
   lungeMoveDistance: DEFAULT_LUNGE_MOVE_DISTANCE,
@@ -796,8 +830,8 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
   cityHeroX: 100,
-  cityHeroY: 89,
-  cityHeroScale: 0.85,
+  cityHeroY: 103,
+  cityHeroScale: 1,
   heroPortraitButtonX: 5,
   heroPortraitButtonY: 3,
   heroPortraitButtonScale: 1.2,
@@ -915,9 +949,13 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     shadowScaleX: clampNumber(input.shadowScaleX, -4, 4, defaultDebugTuning.shadowScaleX),
     shadowScaleY: clampNumber(input.shadowScaleY, -1, 1, defaultDebugTuning.shadowScaleY),
     shadowAlpha: clampNumber(input.shadowAlpha, 0, 1, defaultDebugTuning.shadowAlpha),
+    actionArcEditMode: typeof input.actionArcEditMode === "boolean" ? input.actionArcEditMode : defaultDebugTuning.actionArcEditMode,
     actionArcRotation: clampNumber(input.actionArcRotation, -180, 180, defaultDebugTuning.actionArcRotation),
     actionArcRadius: clampNumber(input.actionArcRadius, 24, 150, defaultDebugTuning.actionArcRadius),
+    actionArcOffsetX: clampNumber(input.actionArcOffsetX, -320, 320, defaultDebugTuning.actionArcOffsetX),
+    actionArcOffsetY: clampNumber(input.actionArcOffsetY, -320, 320, defaultDebugTuning.actionArcOffsetY),
     actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),
+    actionButtonOffsets: normalizeActionButtonOffsets(input.actionButtonOffsets),
     forwardMoveDistance: clampNumber(input.forwardMoveDistance, 0.1, 4, defaultDebugTuning.forwardMoveDistance),
     backMoveDistance: clampNumber(input.backMoveDistance, 0.1, 4, defaultDebugTuning.backMoveDistance),
     lungeMoveDistance: clampNumber(input.lungeMoveDistance, 0.1, 4, defaultDebugTuning.lungeMoveDistance),
@@ -953,6 +991,20 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
 
 function createDefaultRigParts(): Record<RigPartKey, RigPartTuning> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...defaultRigPartTuning }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function createDefaultActionButtonOffsets(): Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> {
+  return Object.fromEntries(ACTION_BUTTON_OFFSET_KEYS.map((key) => [key, { ...defaultActionButtonOffsetTuning }])) as Record<
+    ActionButtonOffsetKey,
+    ActionButtonOffsetTuning
+  >;
+}
+
+function cloneActionButtonOffsets(source: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>): Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> {
+  return Object.fromEntries(ACTION_BUTTON_OFFSET_KEYS.map((key) => [key, { ...source[key] }])) as Record<
+    ActionButtonOffsetKey,
+    ActionButtonOffsetTuning
+  >;
 }
 
 function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
@@ -991,6 +1043,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
   return {
     ...source,
     selectedRigParts: [...source.selectedRigParts],
+    actionButtonOffsets: cloneActionButtonOffsets(source.actionButtonOffsets),
     rigParts: cloneRigParts(source.rigParts),
     faceParts: cloneFaceParts(source.faceParts),
     equipment: cloneEquipment(source.equipment),
@@ -1038,6 +1091,29 @@ function normalizeSelectedRigParts(input: unknown, fallback: RigPartKey): RigPar
   });
 
   return selectedParts;
+}
+
+function normalizeActionButtonOffsets(
+  input: unknown,
+  fallbackOffsets = DEFAULT_ACTION_BUTTON_OFFSETS,
+): Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> {
+  const source =
+    typeof input === "object" && input !== null ? (input as Partial<Record<ActionButtonOffsetKey, Partial<ActionButtonOffsetTuning>>>) : {};
+
+  return Object.fromEntries(
+    ACTION_BUTTON_OFFSET_KEYS.map((key) => {
+      const offset = source[key] ?? {};
+      const fallback = fallbackOffsets[key] ?? defaultActionButtonOffsetTuning;
+
+      return [
+        key,
+        {
+          x: clampNumber(offset.x, -320, 320, fallback.x),
+          y: clampNumber(offset.y, -320, 320, fallback.y),
+        },
+      ];
+    }),
+  ) as Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
 }
 
 function cloneIdleAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
