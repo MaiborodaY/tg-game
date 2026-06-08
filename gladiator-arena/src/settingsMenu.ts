@@ -1,10 +1,11 @@
 export type PlayerAnimationMode = "normal" | "half" | "off";
+export type PlayerShadowMode = "high" | "low" | "off";
 
 export interface PlayerSettings {
   lowEffects: boolean;
   animationMode: PlayerAnimationMode;
   vfxEnabled: boolean;
-  shadowsEnabled: boolean;
+  shadowMode: PlayerShadowMode;
   showFps: boolean;
 }
 
@@ -15,7 +16,7 @@ const defaultSettings: PlayerSettings = {
   lowEffects: false,
   animationMode: "normal",
   vfxEnabled: true,
-  shadowsEnabled: true,
+  shadowMode: "high",
   showFps: false,
 };
 let cachedSettings: PlayerSettings | undefined;
@@ -30,21 +31,21 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   const panel = root.querySelector<HTMLElement>("[data-settings-panel]");
   const lowEffects = root.querySelector<HTMLInputElement>("[data-setting-low-effects]");
   const vfx = root.querySelector<HTMLInputElement>("[data-setting-vfx]");
-  const shadows = root.querySelector<HTMLInputElement>("[data-setting-shadows]");
   const fps = root.querySelector<HTMLInputElement>("[data-setting-fps]");
   const fpsCounter = root.querySelector<HTMLElement>("[data-fps-counter]");
   const animationInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-animation]"));
+  const shadowModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-shadow-mode]"));
 
-  if (!menu || !button || !panel || !lowEffects || !vfx || !shadows || !fps || !fpsCounter || animationInputs.length === 0) {
+  if (!menu || !button || !panel || !lowEffects || !vfx || !fps || !fpsCounter || animationInputs.length === 0 || shadowModeInputs.length === 0) {
     return;
   }
 
   const settings = getPlayerSettings();
   lowEffects.checked = settings.lowEffects;
   vfx.checked = settings.vfxEnabled;
-  shadows.checked = settings.shadowsEnabled;
   fps.checked = settings.showFps;
   syncAnimationInputs(animationInputs, settings.animationMode);
+  syncShadowModeInputs(shadowModeInputs, settings.shadowMode);
   applySettings(settings);
   syncFpsCounter(fpsCounter, settings.showFps);
 
@@ -66,10 +67,6 @@ export function mountSettingsMenu(root: ParentNode = document): void {
     updateSettings({ vfxEnabled: vfx.checked });
   });
 
-  shadows.addEventListener("change", () => {
-    updateSettings({ shadowsEnabled: shadows.checked });
-  });
-
   fps.addEventListener("change", () => {
     updateSettings({ showFps: fps.checked });
     syncFpsCounter(fpsCounter, fps.checked);
@@ -82,6 +79,16 @@ export function mountSettingsMenu(root: ParentNode = document): void {
       }
 
       updateSettings({ animationMode: input.value });
+    });
+  });
+
+  shadowModeInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      if (!input.checked || !isPlayerShadowMode(input.value)) {
+        return;
+      }
+
+      updateSettings({ shadowMode: input.value });
     });
   });
 
@@ -137,7 +144,7 @@ function loadSettings(): PlayerSettings {
 
   try {
     const raw = window.localStorage.getItem(storageKey);
-    const parsed = raw ? (JSON.parse(raw) as Partial<PlayerSettings>) : {};
+    const parsed = raw ? (JSON.parse(raw) as Partial<PlayerSettings> & { shadowsEnabled?: boolean }) : {};
 
     return normalizeSettings(parsed);
   } catch {
@@ -154,7 +161,7 @@ function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
     lowEffects: typeof input.lowEffects === "boolean" ? input.lowEffects : defaultSettings.lowEffects,
     animationMode: isPlayerAnimationMode(input.animationMode) ? input.animationMode : defaultSettings.animationMode,
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
-    shadowsEnabled: typeof input.shadowsEnabled === "boolean" ? input.shadowsEnabled : defaultSettings.shadowsEnabled,
+    shadowMode: normalizeShadowMode(input),
     showFps: typeof input.showFps === "boolean" ? input.showFps : defaultSettings.showFps,
   };
 }
@@ -165,8 +172,30 @@ function syncAnimationInputs(inputs: HTMLInputElement[], mode: PlayerAnimationMo
   });
 }
 
+function syncShadowModeInputs(inputs: HTMLInputElement[], mode: PlayerShadowMode): void {
+  inputs.forEach((input) => {
+    input.checked = input.value === mode;
+  });
+}
+
 function isPlayerAnimationMode(value: unknown): value is PlayerAnimationMode {
   return value === "normal" || value === "half" || value === "off";
+}
+
+function isPlayerShadowMode(value: unknown): value is PlayerShadowMode {
+  return value === "high" || value === "low" || value === "off";
+}
+
+function normalizeShadowMode(input: Partial<PlayerSettings> & { shadowsEnabled?: boolean }): PlayerShadowMode {
+  if (isPlayerShadowMode(input.shadowMode)) {
+    return input.shadowMode;
+  }
+
+  if (typeof input.shadowsEnabled === "boolean") {
+    return input.shadowsEnabled ? "high" : "off";
+  }
+
+  return defaultSettings.shadowMode;
 }
 
 function syncFpsCounter(counter: HTMLElement, show: boolean): void {

@@ -9,5 +9,5 @@ const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"
 
 test("fighter alpha only touches Phaser game objects", () => {
   assert.equal(arenaSceneSource.includes("Object.values(fighter).forEach((part) => part.setAlpha(alpha))"), false);
-  assert.equal(arenaSceneSource.includes("getFighterParts(fighter).forEach((part) => part.setAlpha(alpha))"), true);
+  assert.equal(arenaSceneSource.includes("getFighterParts(fighter).forEach((part) => {"), true);
 });
