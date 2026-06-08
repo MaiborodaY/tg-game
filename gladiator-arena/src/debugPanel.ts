@@ -198,6 +198,7 @@ const controlGroups: DebugControlGroup[] = [
       { type: "range", key: "hudNameGap", label: "Name gap", min: -12, max: 24, step: 1, resetValue: defaultDebugTuning.hudNameGap },
       { type: "range", key: "hudSafeGapRatio", label: "Safe ratio", min: 0, max: 0.5, step: 0.01, resetValue: defaultDebugTuning.hudSafeGapRatio },
       { type: "range", key: "hudSafeMinGap", label: "Safe min", min: 0, max: 80, step: 1, resetValue: defaultDebugTuning.hudSafeMinGap },
+      { type: "range", key: "fighterHudGap", label: "Fighter HUD gap", min: 0, max: 120, step: 1, resetValue: defaultDebugTuning.fighterHudGap },
     ],
   },
   {

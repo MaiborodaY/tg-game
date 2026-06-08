@@ -27,6 +27,7 @@ const prodDefaultFields = {
   DEFAULT_HUD_NAME_GAP: "hudNameGap",
   DEFAULT_HUD_SAFE_GAP_RATIO: "hudSafeGapRatio",
   DEFAULT_HUD_SAFE_MIN_GAP: "hudSafeMinGap",
+  DEFAULT_FIGHTER_HUD_GAP: "fighterHudGap",
   DEFAULT_FORWARD_MOVE_DISTANCE: "forwardMoveDistance",
   DEFAULT_BACK_MOVE_DISTANCE: "backMoveDistance",
   DEFAULT_LUNGE_MOVE_DISTANCE: "lungeMoveDistance",

@@ -16,6 +16,7 @@ import {
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
+  DEFAULT_FIGHTER_HUD_GAP,
   DEFAULT_FORWARD_MOVE_DISTANCE,
   DEFAULT_HUD_BOTTOM_OFFSET,
   DEFAULT_HUD_FLASK_GAP,
@@ -165,6 +166,7 @@ export interface ArenaDebugTuning {
   hudNameGap: number;
   hudSafeGapRatio: number;
   hudSafeMinGap: number;
+  fighterHudGap: number;
   forwardMoveDistance: number;
   backMoveDistance: number;
   lungeMoveDistance: number;
@@ -838,6 +840,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   hudNameGap: DEFAULT_HUD_NAME_GAP,
   hudSafeGapRatio: DEFAULT_HUD_SAFE_GAP_RATIO,
   hudSafeMinGap: DEFAULT_HUD_SAFE_MIN_GAP,
+  fighterHudGap: DEFAULT_FIGHTER_HUD_GAP,
   forwardMoveDistance: DEFAULT_FORWARD_MOVE_DISTANCE,
   backMoveDistance: DEFAULT_BACK_MOVE_DISTANCE,
   lungeMoveDistance: DEFAULT_LUNGE_MOVE_DISTANCE,
@@ -987,6 +990,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     hudNameGap: clampNumber(input.hudNameGap, -12, 24, defaultDebugTuning.hudNameGap),
     hudSafeGapRatio: clampNumber(input.hudSafeGapRatio, 0, 0.5, defaultDebugTuning.hudSafeGapRatio),
     hudSafeMinGap: clampNumber(input.hudSafeMinGap, 0, 80, defaultDebugTuning.hudSafeMinGap),
+    fighterHudGap: clampNumber(input.fighterHudGap, 0, 120, defaultDebugTuning.fighterHudGap),
     forwardMoveDistance: clampNumber(input.forwardMoveDistance, 0.1, 4, defaultDebugTuning.forwardMoveDistance),
     backMoveDistance: clampNumber(input.backMoveDistance, 0.1, 4, defaultDebugTuning.backMoveDistance),
     lungeMoveDistance: clampNumber(input.lungeMoveDistance, 0.1, 4, defaultDebugTuning.lungeMoveDistance),

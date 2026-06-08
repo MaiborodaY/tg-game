@@ -20,6 +20,7 @@ const layout = {
   DEFAULT_ENEMY_STAGE_Y: 223,
   DEFAULT_PLAYER_SCALE: 0.78,
   DEFAULT_ENEMY_SCALE: 1,
+  DEFAULT_FIGHTER_HUD_GAP: 0,
   PLAYER_BASE_X: 85,
   ENEMY_BASE_X: 345,
 };
@@ -115,6 +116,15 @@ test("arena camera respects a dynamic bottom safe line", () => {
   const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
 
   assert.ok((fighterFeetY - target.scrollY) * target.zoom <= 500);
+});
+
+test("arena camera applies a zoom-aware fighter HUD gap", () => {
+  const closeState = { distance: 0, playerPosition: 3, enemyPosition: 3 };
+  const tuning = { fighterHudGap: 20 };
+  const target = arenaCamera.getCameraTarget(closeState, tuning, { width: 430, height: 764, safeBottom: 500 });
+  const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
+
+  assert.ok((fighterFeetY - target.scrollY) * target.zoom <= 500 - 20 * target.zoom);
 });
 
 test("arena camera centers the virtual viewport on the fighters while zooming", () => {

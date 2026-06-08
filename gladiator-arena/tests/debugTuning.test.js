@@ -34,6 +34,7 @@ function loadDebugTuningModule() {
             DEFAULT_ENEMY_STAGE_Y: 0,
             DEFAULT_PLAYER_SCALE: 1,
             DEFAULT_ENEMY_SCALE: 1,
+            DEFAULT_FIGHTER_HUD_GAP: 0,
             DEFAULT_ACTION_ARC_ROTATION: 0,
             DEFAULT_ACTION_ARC_RADIUS: 62,
             DEFAULT_ACTION_BUTTON_SCALE: 1,
@@ -92,6 +93,7 @@ test("debug tuning normalizes unsafe values", () => {
     hudNameGap: -999,
     hudSafeGapRatio: 99,
     hudSafeMinGap: 999,
+    fighterHudGap: 999,
     actionForwardArcAngle: 999,
     actionBackArcAngle: -999,
     actionLungeArcAngle: 999,
@@ -123,6 +125,7 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.hudNameGap, -12);
   assert.equal(normalized.hudSafeGapRatio, 0.5);
   assert.equal(normalized.hudSafeMinGap, 80);
+  assert.equal(normalized.fighterHudGap, 120);
   assert.equal(normalized.actionForwardArcAngle, 180);
   assert.equal(normalized.actionBackArcAngle, -180);
   assert.equal(normalized.actionLungeArcAngle, 180);
@@ -151,6 +154,7 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.hudNameGap, 3);
   assert.equal(debugTuningModule.defaultDebugTuning.hudSafeGapRatio, 0.18);
   assert.equal(debugTuningModule.defaultDebugTuning.hudSafeMinGap, 24);
+  assert.equal(debugTuningModule.defaultDebugTuning.fighterHudGap, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.actionForwardArcAngle, -108);
   assert.equal(debugTuningModule.defaultDebugTuning.actionBackArcAngle, -166);
   assert.equal(debugTuningModule.defaultDebugTuning.actionLungeArcAngle, -34);

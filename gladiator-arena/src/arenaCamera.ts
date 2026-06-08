@@ -1,4 +1,4 @@
-import { ARENA_WORLD_HEIGHT, ARENA_WORLD_TOP, GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
+import { ARENA_WORLD_HEIGHT, ARENA_WORLD_TOP, DEFAULT_FIGHTER_HUD_GAP, GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
 import { START_DISTANCE, type CombatState } from "./combat";
 import type { ArenaDebugTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
@@ -48,7 +48,9 @@ export function getCameraTarget(current: CameraState, tuning?: ArenaDebugTuning,
   const fighterFeetY = (fighterLayout.playerY + fighterLayout.enemyY) / 2;
   const lowAngleAmount = easeInOut(closeness);
   const fighterFeetTargetY = FIGHTER_FEET_SCREEN_Y + CLOSE_LOW_ANGLE_FEET_SHIFT_Y * lowAngleAmount;
-  const fighterFeetMaxY = Math.min(cameraViewport.height - 112, getFiniteNumber(cameraViewport.safeBottom, cameraViewport.height));
+  const fighterHudGap = getFiniteNumber(tuning?.fighterHudGap, DEFAULT_FIGHTER_HUD_GAP);
+  const zoomAwareSafeBottom = getFiniteNumber(cameraViewport.safeBottom, cameraViewport.height) - fighterHudGap * zoom;
+  const fighterFeetMaxY = Math.min(cameraViewport.height - 112, zoomAwareSafeBottom);
   const fighterFeetMinY = Math.min(cameraViewport.height * 0.58, fighterFeetMaxY);
   const fighterFeetScreenY = clamp(fighterFeetTargetY, fighterFeetMinY, fighterFeetMaxY);
   const centerY = fighterFeetY - (fighterFeetScreenY - cameraViewport.height / 2) / zoom;
