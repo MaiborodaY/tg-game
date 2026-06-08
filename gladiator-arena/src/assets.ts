@@ -86,3 +86,146 @@ export const FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY = "back-boot-light-01";
 export const FIGHTER_BACK_BOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/back-boot-light-01.webp", import.meta.url).href;
 export const FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY = "front-boot-light-01";
 export const FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/front-boot-light-01.webp", import.meta.url).href;
+
+export const FIGHTER_LOW_RES_ASSET_KEY_SUFFIX = "-low";
+export const FIGHTER_PAPER_DOLL_ASSETS = [
+  {
+    key: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/arms/back-upper-arm-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/arms/back-forearm-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_HAND_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/arms/back-hand-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_THIGH_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/legs/back-thigh-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_SHIN_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/legs/back-shin-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_FOOT_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/legs/back-foot-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/arms/front-upper-arm-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/arms/front-forearm-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_HAND_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/arms/front-hand-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/legs/front-thigh-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/legs/front-shin-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/legs/front-foot-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_HEAD_LIGHT_ASSET_KEY,
+    url: FIGHTER_HEAD_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/head/head-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+    url: FIGHTER_TORSO_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/body-parts/torso/torso-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
+    url: FIGHTER_WEAPON_SWORD_01_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/weapons/weapon-sword-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_HELMET_LIGHT_ASSET_KEY,
+    url: FIGHTER_HELMET_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/helmet/helmet-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
+    url: FIGHTER_BREASTPLATE_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/breastplate/breastplate-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/back-shoulderguard-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/front-shoulderguard-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/back-gauntlet-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/front-gauntlet-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/back-greave-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/front-greave-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/back-shinguard-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/front-shinguard-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/back-boot-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/front-boot-light-01.webp", import.meta.url).href,
+  },
+] as const;
+
+export function getFighterTextureKey(assetKey: string, lowRes: boolean): string {
+  return lowRes ? `${assetKey}${FIGHTER_LOW_RES_ASSET_KEY_SUFFIX}` : assetKey;
+}

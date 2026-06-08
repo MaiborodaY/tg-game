@@ -3,7 +3,7 @@ import path from "node:path";
 import sharp from "sharp";
 
 const repoRoot = process.cwd();
-const assetsRoot = path.join(repoRoot, "gladiator-arena", "public", "assets");
+const assetsRoot = readAssetsRoot();
 const topLimit = readNumberArg("--top", 40);
 const largeSideLimit = readNumberArg("--large-side", 1024);
 const imageExtensions = new Set([".avif", ".jpeg", ".jpg", ".png", ".webp"]);
@@ -49,6 +49,7 @@ const totalPreferredFileBytes = sum(logicalAssets, (asset) => asset.fileBytes);
 const totalDecodedBytes = sum(logicalAssets, (asset) => asset.decodedBytes);
 const largeAssets = logicalAssets.filter((asset) => Math.max(asset.width, asset.height) > largeSideLimit);
 
+console.log(`Assets root: ${path.relative(repoRoot, assetsRoot)}`);
 console.log(`Scanned image files: ${records.length}`);
 console.log(`Logical assets: ${logicalAssets.length}`);
 console.log(`Source files on disk: ${formatBytes(totalSourceFileBytes)}`);
@@ -141,6 +142,16 @@ function readNumberArg(name, fallback) {
   const parsed = Number.parseInt(value.slice(name.length + 1), 10);
 
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readAssetsRoot() {
+  const value = process.argv.find((argument) => argument.startsWith("--assets-root="));
+
+  if (!value) {
+    return path.join(repoRoot, "gladiator-arena", "src", "assets");
+  }
+
+  return path.resolve(repoRoot, value.slice("--assets-root=".length));
 }
 
 function sum(items, getValue) {

@@ -1,19 +1,19 @@
-# Runtime fighter body assets
+# Fighter body assets
 
-Drop the first exported body PNG here:
+Keep the editable PNG source here:
 
 `body-light-01.png`
 
-Expected runtime URL:
+The runtime asset is generated next to it and imported from `src/assets`:
 
-`/assets/fighters/bodies/body-light-01.png`
+`body-light-01.webp`
 
 Asset requirements:
 
-- Exact size: `512x512`.
+- Current source size: `768x768`.
 - Aspect ratio: `1:1`.
 - Transparent background.
 - Feet-center pivot: `x=256`, `y=455`.
 - No baked floor shadow.
 
-The Phaser prototype has a safe fallback. If `body-light-01.png` is missing, the old code-drawn gladiator still appears.
+Run `npm run gladiator:optimize-assets` from the repo root after changing the PNG source.

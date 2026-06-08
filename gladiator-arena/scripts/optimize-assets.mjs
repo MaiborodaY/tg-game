@@ -3,8 +3,8 @@ import path from "node:path";
 import sharp from "sharp";
 
 const repoRoot = process.cwd();
-const assetsRoot = path.join(repoRoot, "gladiator-arena", "public", "assets");
-const quality = Number.parseFloat(process.argv[2] ?? "0.86");
+const assetsRoot = readAssetsRoot();
+const quality = readQualityArg();
 const webpQuality = Math.round(quality <= 1 ? quality * 100 : quality);
 const resizeRules = [
   { maxSide: 768, pattern: /^fighters\/bodies\// },
@@ -22,6 +22,8 @@ const resizeRules = [
 const pngFiles = await listFiles(assetsRoot, ".png");
 let originalTotal = 0;
 let webpTotal = 0;
+
+console.log(`Assets root: ${path.relative(repoRoot, assetsRoot)}`);
 
 for (const pngPath of pngFiles) {
   const png = await readFile(pngPath);
@@ -82,4 +84,22 @@ function getResizeMaxSide(relativePath) {
   const rule = resizeRules.find((resizeRule) => resizeRule.pattern.test(relativePath));
 
   return rule?.maxSide;
+}
+
+function readAssetsRoot() {
+  const value = process.argv.find((argument) => argument.startsWith("--assets-root="));
+
+  if (!value) {
+    return path.join(repoRoot, "gladiator-arena", "src", "assets");
+  }
+
+  return path.resolve(repoRoot, value.slice("--assets-root=".length));
+}
+
+function readQualityArg() {
+  const namedQuality = process.argv.find((argument) => argument.startsWith("--quality="));
+  const rawQuality = namedQuality?.slice("--quality=".length) ?? process.argv.slice(2).find((argument) => !argument.startsWith("--")) ?? "0.86";
+  const parsedQuality = Number.parseFloat(rawQuality);
+
+  return Number.isFinite(parsedQuality) ? parsedQuality : 0.86;
 }

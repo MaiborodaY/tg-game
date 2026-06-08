@@ -24,61 +24,36 @@ import {
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_FOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
   FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL,
   FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL,
   FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_HAND_LIGHT_ASSET_URL,
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL,
   FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
-  FIGHTER_BREASTPLATE_LIGHT_ASSET_URL,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_SHIN_LIGHT_ASSET_URL,
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_THIGH_LIGHT_ASSET_URL,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL,
   FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
   FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL,
   FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL,
   FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_HAND_LIGHT_ASSET_URL,
   FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL,
   FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL,
   FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL,
   FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL,
   FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL,
   FIGHTER_HELMET_LIGHT_ASSET_KEY,
-  FIGHTER_HELMET_LIGHT_ASSET_URL,
   FIGHTER_HEAD_LIGHT_ASSET_KEY,
-  FIGHTER_HEAD_LIGHT_ASSET_URL,
+  FIGHTER_PAPER_DOLL_ASSETS,
   FIGHTER_TORSO_LIGHT_ASSET_KEY,
-  FIGHTER_TORSO_LIGHT_ASSET_URL,
   FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
-  FIGHTER_WEAPON_SWORD_01_ASSET_URL,
   GAME_HEIGHT,
   GAME_WIDTH,
+  getFighterTextureKey,
   PLAYER_AVATAR_FEET_Y_OFFSET,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
@@ -511,6 +486,7 @@ const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
+let activePaperDollAssetsUseLowRes = false;
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -530,33 +506,30 @@ function preloadCityAssets(target: Phaser.Scene): void {
 }
 
 function preloadPaperDollAssets(target: Phaser.Scene): void {
-  target.load.image(FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY, FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_HAND_LIGHT_ASSET_KEY, FIGHTER_BACK_HAND_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY, FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY, FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY, FIGHTER_BACK_THIGH_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY, FIGHTER_BACK_SHIN_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY, FIGHTER_BACK_FOOT_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY, FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY, FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY, FIGHTER_BACK_BOOT_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY, FIGHTER_FRONT_HAND_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY, FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY, FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY, FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY, FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY, FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY, FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_HEAD_LIGHT_ASSET_KEY, FIGHTER_HEAD_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_TORSO_LIGHT_ASSET_KEY, FIGHTER_TORSO_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_WEAPON_SWORD_01_ASSET_KEY, FIGHTER_WEAPON_SWORD_01_ASSET_URL);
-  target.load.image(FIGHTER_HELMET_LIGHT_ASSET_KEY, FIGHTER_HELMET_LIGHT_ASSET_URL);
-  target.load.image(FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY, FIGHTER_BREASTPLATE_LIGHT_ASSET_URL);
+  activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
+
+  FIGHTER_PAPER_DOLL_ASSETS.forEach((asset) => {
+    target.load.image(getActivePaperDollAssetKey(asset.key), activePaperDollAssetsUseLowRes ? asset.lowUrl : asset.url);
+  });
+}
+
+function getActivePaperDollAssetKey(assetKey: string): string {
+  return getFighterTextureKey(assetKey, activePaperDollAssetsUseLowRes);
+}
+
+function getActivePaperDollBodyPartAssetKeys(): Partial<Record<PaperDollPartKey, string>> {
+  return Object.fromEntries(
+    Object.entries(DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS).map(([partKey, assetKey]) => [partKey, getActivePaperDollAssetKey(assetKey)]),
+  ) as Partial<Record<PaperDollPartKey, string>>;
+}
+
+function getActivePaperDollEquipmentAssetKeys<T extends Partial<PaperDollEquipmentAssetKeys>>(assetKeys: T): T {
+  return Object.fromEntries(
+    Object.entries(assetKeys).map(([slotKey, assetKey]) => [
+      slotKey,
+      typeof assetKey === "string" ? getActivePaperDollAssetKey(assetKey) : assetKey,
+    ]),
+  ) as T;
 }
 
 export function setPlayerEquipment(equipment: HeroEquipment): void {
@@ -571,7 +544,7 @@ function usePlayerEquipment(equipment: HeroEquipment | undefined): void {
 }
 
 function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): PaperDollEquipmentAssetKeys {
-  const defaultAssetKeys = { ...DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS };
+  const defaultAssetKeys = getActivePaperDollEquipmentAssetKeys(DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS);
 
   if (!equipment) {
     return defaultAssetKeys;
@@ -584,7 +557,7 @@ function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): Pape
 
     const itemAssetKeys = HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId];
 
-    return itemAssetKeys ? { ...assetKeys, ...itemAssetKeys } : assetKeys;
+    return itemAssetKeys ? { ...assetKeys, ...getActivePaperDollEquipmentAssetKeys(itemAssetKeys) } : assetKeys;
   }, defaultAssetKeys);
 }
 
@@ -1544,11 +1517,11 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
     skin: 0xefaa7b,
     skinDark: 0xd9854d,
     hair: 0x8b4a1f,
-    headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
-    torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+    headAssetKey: getActivePaperDollAssetKey(FIGHTER_HEAD_LIGHT_ASSET_KEY),
+    torsoAssetKey: getActivePaperDollAssetKey(FIGHTER_TORSO_LIGHT_ASSET_KEY),
     ...equipmentAssetKeys,
     usesPlayerEquipment: true,
-    bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
+    bodyPartAssetKeys: getActivePaperDollBodyPartAssetKeys(),
   };
 }
 
@@ -1565,9 +1538,9 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
     skinDark: preset.skinDark,
     hair: preset.hair,
     muscle: preset.muscle,
-    headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
-    torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
-    bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
+    headAssetKey: getActivePaperDollAssetKey(FIGHTER_HEAD_LIGHT_ASSET_KEY),
+    torsoAssetKey: getActivePaperDollAssetKey(FIGHTER_TORSO_LIGHT_ASSET_KEY),
+    bodyPartAssetKeys: getActivePaperDollBodyPartAssetKeys(),
     ...createPlayerEquipmentAssetKeys(equipment),
     equipment,
   };
