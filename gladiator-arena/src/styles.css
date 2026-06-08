@@ -1481,7 +1481,7 @@ body.arena-active .shell {
 }
 
 .battle-screen .arena-fighters-strip {
-  bottom: calc(8px + env(safe-area-inset-bottom));
+  bottom: max(6px, calc(env(safe-area-inset-bottom) - 16px));
 }
 
 .battle-screen .combat-toast {

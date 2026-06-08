@@ -109,6 +109,14 @@ test("arena camera zooms when fighters get close", () => {
   assert.ok(close.scrollY > far.scrollY);
 });
 
+test("arena camera respects a dynamic bottom safe line", () => {
+  const closeState = { distance: 0, playerPosition: 3, enemyPosition: 3 };
+  const target = arenaCamera.getCameraTarget(closeState, undefined, { width: 430, height: 764, safeBottom: 500 });
+  const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
+
+  assert.ok((fighterFeetY - target.scrollY) * target.zoom <= 500);
+});
+
 test("arena camera centers the virtual viewport on the fighters while zooming", () => {
   const close = { distance: 0, playerPosition: 3, enemyPosition: 3 };
   const target = arenaCamera.getCameraTarget(close);

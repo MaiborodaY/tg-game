@@ -1,4 +1,5 @@
 import { GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
+import { getBattleSafeArea } from "./battleSafeArea";
 import { actionOrder, canUseAction, type ActionId, type CombatState } from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
@@ -310,12 +311,14 @@ export function mountActionArc(
   }
 }
 
-function getActionArcViewport(host: HTMLElement): { width: number; height: number } {
+function getActionArcViewport(host: HTMLElement): { width: number; height: number; safeBottom: number } {
   const rect = host.getBoundingClientRect();
+  const height = getPositiveNumber(rect.height, GAME_HEIGHT);
 
   return {
     width: getPositiveNumber(rect.width, GAME_WIDTH),
-    height: getPositiveNumber(rect.height, GAME_HEIGHT),
+    height,
+    safeBottom: getBattleSafeArea(host, height).bottom,
   };
 }
 

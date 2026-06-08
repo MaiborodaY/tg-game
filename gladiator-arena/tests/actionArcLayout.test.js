@@ -92,6 +92,16 @@ test("arc button centers stay inside the mobile game frame", () => {
     assert.ok(button.y <= actionArcLayout.ACTION_ARC_MAX_Y);
   }
 });
+
+test("arc button centers stay above the dynamic bottom safe line", () => {
+  const safeBottom = 360;
+  const layout = actionArcLayout.getActionArcLayout(makeState(0), undefined, { width: 430, height: 764, safeBottom });
+
+  for (const button of layout.buttons) {
+    assert.ok(button.y <= safeBottom - actionArcLayout.ACTION_ARC_BUTTON_EDGE);
+  }
+});
+
 test("debug tuning can rotate and scale the action arc", () => {
   const base = actionArcLayout.getActionArcLayout(makeState(3));
   const tuned = actionArcLayout.getActionArcLayout(makeState(3), {

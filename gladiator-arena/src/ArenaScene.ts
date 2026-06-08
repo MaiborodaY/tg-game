@@ -83,6 +83,7 @@ import {
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
 import type { CameraViewport } from "./arenaCamera";
+import { getBattleSafeArea } from "./battleSafeArea";
 import { getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
 import {
   createDefaultHeroEquipment,
@@ -2975,9 +2976,12 @@ function syncArenaMainCamera(target: Phaser.Scene): void {
 }
 
 function getArenaViewport(target: Phaser.Scene): CameraViewport {
+  const height = Math.max(1, target.scale.height || GAME_HEIGHT);
+
   return {
     width: Math.max(1, target.scale.width || GAME_WIDTH),
-    height: Math.max(1, target.scale.height || GAME_HEIGHT),
+    height,
+    safeBottom: getBattleSafeArea(undefined, height).bottom,
   };
 }
 

@@ -22,6 +22,7 @@ export interface ScreenPoint {
 export interface CameraViewport {
   width: number;
   height: number;
+  safeBottom?: number;
 }
 
 type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition">;
@@ -47,7 +48,9 @@ export function getCameraTarget(current: CameraState, tuning?: ArenaDebugTuning,
   const fighterFeetY = (fighterLayout.playerY + fighterLayout.enemyY) / 2;
   const lowAngleAmount = easeInOut(closeness);
   const fighterFeetTargetY = FIGHTER_FEET_SCREEN_Y + CLOSE_LOW_ANGLE_FEET_SHIFT_Y * lowAngleAmount;
-  const fighterFeetScreenY = clamp(fighterFeetTargetY, cameraViewport.height * 0.58, cameraViewport.height - 112);
+  const fighterFeetMaxY = Math.min(cameraViewport.height - 112, getFiniteNumber(cameraViewport.safeBottom, cameraViewport.height));
+  const fighterFeetMinY = Math.min(cameraViewport.height * 0.58, fighterFeetMaxY);
+  const fighterFeetScreenY = clamp(fighterFeetTargetY, fighterFeetMinY, fighterFeetMaxY);
   const centerY = fighterFeetY - (fighterFeetScreenY - cameraViewport.height / 2) / zoom;
   const scrollX = centerX - cameraViewport.width / (2 * zoom);
   const scrollY = clampCameraScrollY(centerY - cameraViewport.height / (2 * zoom), zoom, cameraViewport.height);
@@ -80,14 +83,21 @@ function easeInOut(value: number): number {
 }
 
 function getCameraViewport(viewport?: Partial<CameraViewport>): CameraViewport {
+  const height = getPositiveNumber(viewport?.height, GAME_HEIGHT);
+
   return {
     width: getPositiveNumber(viewport?.width, GAME_WIDTH),
-    height: getPositiveNumber(viewport?.height, GAME_HEIGHT),
+    height,
+    safeBottom: getPositiveNumber(viewport?.safeBottom, height),
   };
 }
 
 function getPositiveNumber(value: number | undefined, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function getFiniteNumber(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function clampCameraScrollY(scrollY: number, zoom: number, viewportHeight: number): number {

@@ -22,6 +22,7 @@ type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 interface ActionArcViewport {
   width: number;
   height: number;
+  safeBottom?: number;
 }
 
 interface ActionArcSlot {
@@ -129,7 +130,8 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const minX = buttonEdge;
   const maxX = actionViewport.width - buttonEdge;
   const minY = ACTION_ARC_MIN_Y;
-  const maxY = actionViewport.height - (GAME_HEIGHT - ACTION_ARC_MAX_Y);
+  const safeBottom = getFiniteNumber(actionViewport.safeBottom, actionViewport.height);
+  const maxY = Math.max(minY, Math.min(actionViewport.height - (GAME_HEIGHT - ACTION_ARC_MAX_Y), safeBottom - buttonEdge));
   const slots = state.activeTurn === "player" && state.result === "playing" ? (state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS) : [];
   const playerButtons = getRawActionArcButtons(
     slots,
@@ -141,7 +143,7 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
     actionArcRotation,
     actionButtonScale,
   );
-  const useSharedCenter = touchesHorizontalSide(playerButtons, minX, maxX);
+  const useSharedCenter = touchesSide(playerButtons, minX, maxX, minY, maxY);
   const enemyX = getFiniteNumber(fighterLayout.enemyX, fighterLayout.playerX);
   const enemyY = getFiniteNumber(fighterLayout.enemyY, fighterLayout.playerY);
   const sharedWorldCenterX = (fighterLayout.playerX + enemyX) / 2 + ACTION_ARC_CENTER_OFFSET_X * scale;
@@ -152,14 +154,24 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const buttons = useSharedCenter
     ? getRawActionArcButtons(slots, state, tuning, layoutCenterX, layoutCenterY, radius, actionArcRotation, actionButtonScale)
     : playerButtons;
+  const groupShiftX = getGroupShift(
+    buttons.map((button) => button.rawX),
+    minX,
+    maxX,
+  );
+  const groupShiftY = getGroupShift(
+    buttons.map((button) => button.rawY),
+    minY,
+    maxY,
+  );
 
   return {
-    centerX: clamp(layoutCenterX, minX, maxX),
-    centerY: clamp(layoutCenterY, minY, maxY),
+    centerX: clamp(layoutCenterX + groupShiftX, minX, maxX),
+    centerY: clamp(layoutCenterY + groupShiftY, minY, maxY),
     buttons: buttons.map(({ rawX, rawY, ...button }) => ({
       ...button,
-      x: clamp(rawX, minX, maxX),
-      y: clamp(rawY, minY, maxY),
+      x: clamp(rawX + groupShiftX, minX, maxX),
+      y: clamp(rawY + groupShiftY, minY, maxY),
     })),
   };
 }
@@ -201,14 +213,42 @@ function getRawActionArcButtons(
   });
 }
 
-function touchesHorizontalSide(buttons: RawActionArcButton[], minX: number, maxX: number): boolean {
-  return buttons.some((button) => button.rawX <= minX || button.rawX >= maxX);
+function getGroupShift(values: number[], minBound: number, maxBound: number): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const valueSpan = maxValue - minValue;
+  const boundSpan = maxBound - minBound;
+
+  if (valueSpan > boundSpan) {
+    return (minBound + maxBound) / 2 - (minValue + maxValue) / 2;
+  }
+
+  if (minValue < minBound) {
+    return minBound - minValue;
+  }
+
+  if (maxValue > maxBound) {
+    return maxBound - maxValue;
+  }
+
+  return 0;
+}
+
+function touchesSide(buttons: RawActionArcButton[], minX: number, maxX: number, minY: number, maxY: number): boolean {
+  return buttons.some((button) => button.rawX <= minX || button.rawX >= maxX || button.rawY <= minY || button.rawY >= maxY);
 }
 
 function getActionArcViewport(viewport?: Partial<ActionArcViewport>): ActionArcViewport {
+  const height = getPositiveNumber(viewport?.height, GAME_HEIGHT);
+
   return {
     width: getPositiveNumber(viewport?.width, GAME_WIDTH),
-    height: getPositiveNumber(viewport?.height, GAME_HEIGHT),
+    height,
+    safeBottom: getFiniteNumber(viewport?.safeBottom, height),
   };
 }
 
