@@ -33,6 +33,10 @@ function assertFinite(value) {
 test("arena canvas uses a vertical 9:16 mobile layout", () => {
   assert.equal(arenaLayout.GAME_WIDTH, 430);
   assert.equal(arenaLayout.GAME_HEIGHT, 764);
+  assert.equal(arenaLayout.ARENA_WORLD_LEFT, -arenaLayout.ARENA_WORLD_PADDING_X);
+  assert.equal(arenaLayout.ARENA_WORLD_TOP, -arenaLayout.ARENA_WORLD_PADDING_Y);
+  assert.equal(arenaLayout.ARENA_WORLD_WIDTH, arenaLayout.GAME_WIDTH + arenaLayout.ARENA_WORLD_PADDING_X * 2);
+  assert.equal(arenaLayout.ARENA_WORLD_HEIGHT, arenaLayout.GAME_HEIGHT + arenaLayout.ARENA_WORLD_PADDING_Y * 2);
   assert.ok(Math.abs(arenaLayout.GAME_WIDTH / arenaLayout.GAME_HEIGHT - 9 / 16) < 0.01);
 });
 
@@ -50,8 +54,6 @@ test("stage origin is the shared gameplay and debug coordinate base", () => {
   assert.ok(arenaLayout.DEFAULT_STAGE_ORIGIN_Y <= arenaLayout.GAME_HEIGHT);
   assert.equal(arenaLayout.PLAYER_BASE_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_PLAYER_STAGE_X);
   assert.equal(arenaLayout.ENEMY_BASE_X, arenaLayout.DEFAULT_STAGE_ORIGIN_X + arenaLayout.DEFAULT_ENEMY_STAGE_X);
-  assert.ok(arenaLayout.CAMERA_PLAYER_SCREEN_X > arenaLayout.PLAYER_BASE_X);
-  assert.ok(arenaLayout.CAMERA_PLAYER_SCREEN_X < arenaLayout.GAME_WIDTH / 2);
 });
 
 test("action angle defaults include all three attack tiers", () => {

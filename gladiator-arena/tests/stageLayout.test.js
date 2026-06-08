@@ -52,8 +52,8 @@ function loadStageLayoutModule() {
 
 const stageLayout = loadStageLayoutModule();
 
-function makeCombatState(playerPosition, enemyPosition) {
-  return { playerPosition, enemyPosition };
+function makeCombatState(playerPosition, enemyPosition, distance = 3) {
+  return { playerPosition, enemyPosition, distance };
 }
 
 test("stage layout uses default origin for the regular game", () => {
@@ -67,6 +67,15 @@ test("stage layout uses default origin for the regular game", () => {
   assert.equal(layout.enemyScale, 1);
 });
 
+test("stage layout moves only the enemy when only the enemy approaches", () => {
+  const start = stageLayout.getStageLayout(makeCombatState(0, 3));
+  const enemyClose = stageLayout.getStageLayout(makeCombatState(0, 0));
+
+  assert.equal(enemyClose.playerX, start.playerX);
+  assert.equal(enemyClose.enemyX, 129);
+  assert.equal(enemyClose.enemyX - enemyClose.playerX, stageLayout.CLINCH_VISUAL_GAP);
+});
+
 test("stage layout applies combat movement without letting fighters cross", () => {
   const near = stageLayout.getStageLayout(makeCombatState(2, 3));
   const clinch = stageLayout.getStageLayout(makeCombatState(3, 3));
@@ -76,6 +85,16 @@ test("stage layout applies combat movement without letting fighters cross", () =
   assert.equal(clinch.playerX, 301);
   assert.equal(clinch.enemyX, 345);
   assert.equal(clinch.enemyX - clinch.playerX, stageLayout.CLINCH_VISUAL_GAP);
+});
+
+test("stage layout keeps fighter scale independent from distance", () => {
+  const far = stageLayout.getStageLayout(makeCombatState(0, 3, 3));
+  const close = stageLayout.getStageLayout(makeCombatState(3, 3, 0));
+
+  assert.equal(far.playerScale, 1);
+  assert.equal(far.enemyScale, 1);
+  assert.equal(close.playerScale, 1);
+  assert.equal(close.enemyScale, 1);
 });
 
 test("stage layout uses debug tuning as an override, not a separate coordinate system", () => {

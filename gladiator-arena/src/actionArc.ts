@@ -16,7 +16,11 @@ export interface ActionArcApi {
   destroy: () => void;
 }
 
-export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId) => void, getTuning?: TuningProvider): ActionArcApi {
+export function mountActionArc(
+  host: HTMLElement,
+  onAction: (actionId: ActionId) => void,
+  getTuning?: TuningProvider,
+): ActionArcApi {
   const overlay = host;
   const root = document.createElement("div");
   const centerMarker = document.createElement("div");
@@ -56,9 +60,10 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
 
   function sync(state: CombatState): void {
     lastState = state;
-    const layout = getActionArcLayout(state, getTuning?.());
-    centerMarker.style.left = `${(layout.centerX / GAME_WIDTH) * 100}%`;
-    centerMarker.style.top = `${(layout.centerY / GAME_HEIGHT) * 100}%`;
+    const viewport = getActionArcViewport(overlay);
+    const layout = getActionArcLayout(state, getTuning?.(), viewport);
+    centerMarker.style.left = `${(layout.centerX / viewport.width) * 100}%`;
+    centerMarker.style.top = `${(layout.centerY / viewport.height) * 100}%`;
     const visibleButtons = new Map(layout.buttons.map((buttonLayout) => [buttonLayout.actionId, buttonLayout]));
 
     for (const [actionId, button] of buttons) {
@@ -76,8 +81,8 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
 
       button.hidden = false;
       button.disabled = !canUseAction(state, actionId, "player");
-      button.style.left = `${(buttonLayout.x / GAME_WIDTH) * 100}%`;
-      button.style.top = `${(buttonLayout.y / GAME_HEIGHT) * 100}%`;
+      button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
+      button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
       button.style.setProperty("--action-button-scale", `${buttonLayout.scale}`);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
       button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
@@ -103,4 +108,17 @@ export function mountActionArc(host: HTMLElement, onAction: (actionId: ActionId)
       root.remove();
     },
   };
+}
+
+function getActionArcViewport(host: HTMLElement): { width: number; height: number } {
+  const rect = host.getBoundingClientRect();
+
+  return {
+    width: getPositiveNumber(rect.width, GAME_WIDTH),
+    height: getPositiveNumber(rect.height, GAME_HEIGHT),
+  };
+}
+
+function getPositiveNumber(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
 }

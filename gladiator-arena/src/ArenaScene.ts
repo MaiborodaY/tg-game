@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import {
   ARENA_WORLD_LEFT,
+  ARENA_WORLD_HEIGHT,
+  ARENA_WORLD_TOP,
   ARENA_WORLD_WIDTH,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_PLAYER_STAGE_X,
@@ -80,6 +82,7 @@ import {
   PLAYER_AVATAR_FEET_Y_OFFSET,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
+import type { CameraViewport } from "./arenaCamera";
 import { getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
 import {
   createDefaultHeroEquipment,
@@ -277,6 +280,40 @@ interface ArenaVisuals {
   playerHud: HudVisual;
   enemyHud: HudVisual;
 }
+
+interface ArenaLayers {
+  back: Phaser.GameObjects.Container;
+  mid: Phaser.GameObjects.Container;
+  ground: Phaser.GameObjects.Container;
+  actors: Phaser.GameObjects.Container;
+  effects: Phaser.GameObjects.Container;
+  all: Phaser.GameObjects.Container[];
+}
+
+interface ArenaLayerParallax {
+  followX: number;
+  followY: number;
+  zoom: number;
+  lookUpY: number;
+}
+
+interface ArenaLayerTransform {
+  layer: Phaser.GameObjects.Container;
+  x: number;
+  y: number;
+  scale: number;
+}
+
+const ARENA_LAYER_PARALLAX: Record<keyof Omit<ArenaLayers, "all">, ArenaLayerParallax> = {
+  back: { followX: 0.06, followY: 0.04, zoom: 0.3, lookUpY: 150 },
+  mid: { followX: 0.22, followY: 0.16, zoom: 0.42, lookUpY: 132 },
+  ground: { followX: 0.78, followY: 0.72, zoom: 0.88, lookUpY: 10 },
+  actors: { followX: 1, followY: 1, zoom: 1, lookUpY: 0 },
+  effects: { followX: 1, followY: 1, zoom: 1, lookUpY: 0 },
+};
+
+const ARENA_CAMERA_TWEEN_DURATION_MS = 560;
+const ARENA_CAMERA_TWEEN_EASE = "Cubic.easeInOut";
 
 const PAPER_DOLL_BASE_SCALE = 0.52;
 const PAPER_DOLL_SHADOW_DEPTH = -1;
@@ -585,7 +622,9 @@ function subscribePlayerEquipmentChanges(callback: () => void): () => void {
 
 export class ArenaScene extends Phaser.Scene {
   visuals?: ArenaVisuals;
+  arenaLayers?: ArenaLayers;
   currentState?: CombatState;
+  cameraFrameInitialized?: boolean;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
 
@@ -600,8 +639,9 @@ export class ArenaScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-    this.cameras.main.setBounds(ARENA_WORLD_LEFT, 0, ARENA_WORLD_WIDTH, GAME_HEIGHT);
-    drawArenaBackground(this);
+    syncArenaMainCamera(this);
+    this.arenaLayers = createArenaLayers(this);
+    drawArenaBackground(this, this.arenaLayers);
     this.visuals = buildVisuals(this);
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
       if (this.currentState) {
@@ -682,7 +722,6 @@ export class ArenaScene extends Phaser.Scene {
 
     showSlashArc(this, this.visuals.player, actionId, "right");
   }
-
 }
 
 export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void, playerEquipment?: HeroEquipment): () => void {
@@ -698,8 +737,7 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      mode: Phaser.Scale.RESIZE,
     },
     scene: ArenaScene,
   };
@@ -1447,20 +1485,35 @@ function drawDebugCharacterBackdrop(target: Phaser.Scene): void {
   g.fillEllipse(DEBUG_CHARACTER_CENTER_X, DEBUG_CHARACTER_FEET_Y + 11, 180, 24);
 }
 
-function drawArenaBackground(target: Phaser.Scene): void {
-  const layers = [
-    { key: ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, depth: -30 },
-    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, depth: -20 },
-    { key: ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, depth: -10 },
+function createArenaLayers(target: Phaser.Scene): ArenaLayers {
+  const back = target.add.container(0, 0).setDepth(-30);
+  const ground = target.add.container(0, 0).setDepth(-25);
+  const mid = target.add.container(0, 0).setDepth(-20);
+  const actors = target.add.container(0, 0).setDepth(10);
+  const effects = target.add.container(0, 0).setDepth(40);
+
+  return { back, mid, ground, actors, effects, all: [back, mid, ground, actors, effects] };
+}
+
+function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
+  const layerConfigs = [
+    { key: ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, layer: layers.back },
+    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, layer: layers.mid },
+    { key: ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, layer: layers.ground },
   ] as const;
 
-  layers.forEach((layer) => {
-    if (!target.textures.exists(layer.key)) {
+  layerConfigs.forEach((config) => {
+    if (!target.textures.exists(config.key)) {
       target.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
       return;
     }
 
-    target.add.image(0, 0, layer.key).setOrigin(0, 0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(layer.depth);
+    config.layer.add(
+      target.add
+        .image(ARENA_WORLD_LEFT, ARENA_WORLD_TOP, config.key)
+        .setOrigin(0, 0)
+        .setDisplaySize(ARENA_WORLD_WIDTH, ARENA_WORLD_HEIGHT),
+    );
   });
 }
 
@@ -1505,8 +1558,8 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
 }
 
 function buildVisuals(target: ArenaScene): ArenaVisuals {
-  const player = createPaperDollFighter(target, createPlayerPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y));
-  const enemy = createPaperDollFighter(target, createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y));
+  const player = createPaperDollFighter(target, createPlayerPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y), target.arenaLayers?.actors);
+  const enemy = createPaperDollFighter(target, createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y), target.arenaLayers?.actors);
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
   return { player, enemy, playerHud, enemyHud };
@@ -1543,7 +1596,7 @@ function createHud(target: Phaser.Scene, x: number, y: number, label: string): H
   return { hpFill, armorFill, staminaFill, label: text };
 }
 
-function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterOptions): FighterVisual {
+function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterOptions, parentLayer?: Phaser.GameObjects.Container): FighterVisual {
   const appearance: PaperDollAppearance = {
     facing: options.facing,
     skin: options.skin,
@@ -1601,6 +1654,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
       .setOrigin(0.5),
   );
   name.setVisible(false);
+  parentLayer?.add([shadowRig.root, root, name]);
 
   return {
     body: root,
@@ -2644,6 +2698,7 @@ function syncEnemyVisualForState(
   visuals.enemy = createPaperDollFighter(
     target,
     createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y, current.enemy),
+    target.arenaLayers?.actors,
   );
 }
 
@@ -2661,6 +2716,18 @@ function destroyFighterVisual(target: Phaser.Scene, fighter: FighterVisual): voi
   fighter.isShattered = true;
   target.tweens.killTweensOf(parts);
   parts.forEach((part) => part.destroy());
+}
+
+function getArenaEffectsLayer(target: Phaser.Scene): Phaser.GameObjects.Container | undefined {
+  return (target as Partial<ArenaScene>).arenaLayers?.effects;
+}
+
+function addToArenaEffectsLayer(target: Phaser.Scene, gameObject: Phaser.GameObjects.GameObject): void {
+  getArenaEffectsLayer(target)?.add(gameObject);
+}
+
+function getArenaEffectsLayerScale(target: Phaser.Scene): number {
+  return Math.max(0.001, Math.abs(getArenaEffectsLayer(target)?.scaleX ?? 1));
 }
 
 function scheduleDeathEffects(target: ArenaScene, current: CombatState): void {
@@ -2821,27 +2888,93 @@ function applyFighterTuning(fighter: FighterVisual, scale: number, feetY: number
   }
 }
 
-function updateCamera(target: Phaser.Scene, current: CombatState): void {
-  const camera = target.cameras.main;
-  const cameraTarget = getCameraTarget(current, getActiveDebugTuning());
+function updateCamera(target: ArenaScene, current: CombatState): void {
   const shouldSnap = isDebugTuningActive();
+  const isPendingEnemyResponse = current.result === "playing" && current.activeTurn === "enemy";
+  const layers = target.arenaLayers;
 
-  target.tweens.killTweensOf(camera);
-
-  if (shouldSnap) {
-    camera.setScroll(cameraTarget.scrollX, cameraTarget.scrollY);
-    camera.setZoom(cameraTarget.zoom);
+  if (!layers) {
     return;
   }
 
-  target.tweens.add({
-    targets: camera,
-    scrollX: cameraTarget.scrollX,
-    scrollY: cameraTarget.scrollY,
-    zoom: cameraTarget.zoom,
-    duration: 320,
-    ease: "Sine.easeInOut",
+  syncArenaMainCamera(target);
+
+  if (isPendingEnemyResponse && target.cameraFrameInitialized) {
+    target.tweens.killTweensOf(layers.all);
+    return;
+  }
+
+  const cameraTarget = getCameraTarget(current, getActiveDebugTuning(), getArenaViewport(target));
+
+  target.cameraFrameInitialized = true;
+  target.tweens.killTweensOf(layers.all);
+
+  if (shouldSnap) {
+    applyArenaTransform(layers, cameraTarget);
+    return;
+  }
+
+  getArenaLayerTransforms(layers, cameraTarget).forEach((transform) => {
+    target.tweens.add({
+      targets: transform.layer,
+      x: transform.x,
+      y: transform.y,
+      scaleX: transform.scale,
+      scaleY: transform.scale,
+      duration: ARENA_CAMERA_TWEEN_DURATION_MS,
+      ease: ARENA_CAMERA_TWEEN_EASE,
+    });
   });
+}
+
+function applyArenaTransform(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>): void {
+  getArenaLayerTransforms(layers, cameraTarget).forEach((transform) => {
+    transform.layer.setPosition(transform.x, transform.y);
+    transform.layer.setScale(transform.scale);
+  });
+}
+
+function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>): ArenaLayerTransform[] {
+  return [
+    getArenaLayerTransform(layers.back, cameraTarget, ARENA_LAYER_PARALLAX.back),
+    getArenaLayerTransform(layers.mid, cameraTarget, ARENA_LAYER_PARALLAX.mid),
+    getArenaLayerTransform(layers.ground, cameraTarget, ARENA_LAYER_PARALLAX.ground),
+    getArenaLayerTransform(layers.actors, cameraTarget, ARENA_LAYER_PARALLAX.actors),
+    getArenaLayerTransform(layers.effects, cameraTarget, ARENA_LAYER_PARALLAX.effects),
+  ];
+}
+
+function getArenaLayerTransform(
+  layer: Phaser.GameObjects.Container,
+  cameraTarget: ReturnType<typeof getCameraTarget>,
+  parallax: ArenaLayerParallax,
+): ArenaLayerTransform {
+  const scale = 1 + (cameraTarget.zoom - 1) * parallax.zoom;
+  const centerX = GAME_WIDTH / 2 + (cameraTarget.centerX - GAME_WIDTH / 2) * parallax.followX;
+  const centerY = GAME_HEIGHT / 2 + (cameraTarget.centerY - GAME_HEIGHT / 2) * parallax.followY;
+
+  return {
+    layer,
+    x: cameraTarget.viewportWidth / 2 - centerX * scale,
+    y: cameraTarget.viewportHeight / 2 - centerY * scale + cameraTarget.closeness * parallax.lookUpY,
+    scale,
+  };
+}
+
+function syncArenaMainCamera(target: Phaser.Scene): void {
+  const viewport = getArenaViewport(target);
+
+  target.cameras.main.setViewport(0, 0, viewport.width, viewport.height);
+  target.cameras.main.setBounds(0, 0, viewport.width, viewport.height);
+  target.cameras.main.setScroll(0, 0);
+  target.cameras.main.setZoom(1);
+}
+
+function getArenaViewport(target: Phaser.Scene): CameraViewport {
+  return {
+    width: Math.max(1, target.scale.width || GAME_WIDTH),
+    height: Math.max(1, target.scale.height || GAME_HEIGHT),
+  };
 }
 
 function getActiveDebugTuning(): typeof debugTuning | undefined {
@@ -3018,6 +3151,7 @@ function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: Atta
   slash.setScale(sign * 0.82 * visualScale, 0.82 * visualScale);
 
   drawSlashArc(slash, config);
+  addToArenaEffectsLayer(target, slash);
 
   target.tweens.add({
     targets: slash,
@@ -3062,6 +3196,9 @@ function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
 }
 
 function showFloatingText(target: Phaser.Scene, x: number, y: number, text: string, color: string): void {
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const liftY = 48 / layerScale;
   const label = target.add
     .text(x, y, text, {
       color,
@@ -3073,9 +3210,11 @@ function showFloatingText(target: Phaser.Scene, x: number, y: number, text: stri
     })
     .setOrigin(0.5);
 
+  addToArenaEffectsLayer(target, label);
+  label.setScale(fixedScreenScale);
   target.tweens.add({
     targets: label,
-    y: y - 48,
+    y: y - liftY,
     alpha: 0,
     duration: 720,
     ease: "Quad.easeOut",
@@ -3092,6 +3231,11 @@ function getAnimatedFighterParts(fighter: FighterVisual): FighterPart[] {
 }
 
 function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const startScale = 0.58 * fixedScreenScale;
+  const endScale = fixedScreenScale;
+  const liftY = 34 / layerScale;
   const popup = target.add.container(x, y).setDepth(40);
   const shadow = target.add.graphics();
   const burst = target.add.graphics();
@@ -3109,19 +3253,20 @@ function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: num
   drawDamageBurst(shadow, 4, 5, 0x35180d, 0.92);
   drawDamageBurst(burst, 0, 0, 0xd52b1f, 1);
   popup.add([shadow, burst, label]);
-  popup.setScale(0.58);
+  addToArenaEffectsLayer(target, popup);
+  popup.setScale(startScale);
   popup.setAngle(-4);
 
   target.tweens.add({
     targets: popup,
-    scale: 1,
+    scale: endScale,
     duration: 130,
     ease: "Back.easeOut",
   });
 
   target.tweens.add({
     targets: popup,
-    y: y - 34,
+    y: y - liftY,
     alpha: 0,
     duration: 680,
     delay: 180,
@@ -3168,6 +3313,8 @@ function drawDamageBurst(graphics: Phaser.GameObjects.Graphics, offsetX: number,
 function createDust(target: Phaser.Scene, x: number, y: number): void {
   for (let i = 0; i < 7; i += 1) {
     const dot = target.add.circle(x + Math.random() * 36 - 18, y + Math.random() * 16, 5 + Math.random() * 7, 0xf0bd72, 0.72);
+    addToArenaEffectsLayer(target, dot);
+
     target.tweens.add({
       targets: dot,
       x: dot.x + Math.random() * 64 - 32,

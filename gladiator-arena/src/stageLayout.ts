@@ -32,11 +32,13 @@ export function getStageLayout(current: Pick<CombatState, "playerPosition" | "en
   const playerBaseX = originX + playerStageX;
   const enemyBaseX = originX + enemyStageX;
   const positionStep = getPositionStep(playerBaseX, enemyBaseX);
+  const playerX = playerBaseX + current.playerPosition * positionStep;
+  const enemyX = enemyBaseX + (current.enemyPosition - START_DISTANCE) * positionStep;
 
   return {
-    playerX: playerBaseX + current.playerPosition * positionStep,
+    playerX,
     playerY: originY + playerStageY,
-    enemyX: enemyBaseX + (current.enemyPosition - START_DISTANCE) * positionStep,
+    enemyX,
     enemyY: originY + enemyStageY,
     playerScale: tuning?.playerScale ?? DEFAULT_PLAYER_SCALE,
     enemyScale: tuning?.enemyScale ?? DEFAULT_ENEMY_SCALE,

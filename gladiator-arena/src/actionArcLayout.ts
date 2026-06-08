@@ -19,6 +19,11 @@ import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 
+interface ActionArcViewport {
+  width: number;
+  height: number;
+}
+
 interface ActionArcSlot {
   actionId: ActionId | "utility";
 }
@@ -101,9 +106,10 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
   }
 }
 
-export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTuning): ActionArcLayout {
+export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTuning, viewport?: Partial<ActionArcViewport>): ActionArcLayout {
+  const actionViewport = getActionArcViewport(viewport);
   const fighterLayout = getStageLayout(state, tuning);
-  const camera = getCameraTarget(state, tuning);
+  const camera = getCameraTarget(state, tuning, actionViewport);
   const scale = Math.max(0.7, Math.min(1.35, fighterLayout.playerScale));
   const actionArcRotation = tuning?.actionArcRotation ?? DEFAULT_ACTION_ARC_ROTATION;
   const actionArcRadius = tuning?.actionArcRadius ?? DEFAULT_ACTION_ARC_RADIUS;
@@ -113,13 +119,15 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const screenCenter = projectWorldToScreen(worldCenterX, worldCenterY, camera);
   const centerX = screenCenter.x;
   const centerY = screenCenter.y;
-  const radius = actionArcRadius * scale * camera.zoom;
+  const radius = actionArcRadius * scale;
   const buttonEdge = ACTION_ARC_BUTTON_EDGE * actionButtonScale;
+  const maxX = actionViewport.width - buttonEdge;
+  const maxY = actionViewport.height - (GAME_HEIGHT - ACTION_ARC_MAX_Y);
   const slots = state.activeTurn === "player" && state.result === "playing" ? (state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS) : [];
 
   return {
-    centerX: clamp(centerX, buttonEdge, GAME_WIDTH - buttonEdge),
-    centerY: clamp(centerY, ACTION_ARC_MIN_Y, ACTION_ARC_MAX_Y),
+    centerX: clamp(centerX, buttonEdge, maxX),
+    centerY: clamp(centerY, ACTION_ARC_MIN_Y, maxY),
     buttons: slots.map((slot) => {
       const actionId = getSlotActionId(slot, state);
       const angle = getActionAngle(actionId, tuning) + actionArcRotation;
@@ -130,8 +138,8 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
         actionId,
         label: label.label,
         detail: label.detail,
-        x: clamp(centerX + Math.cos(radians) * radius, buttonEdge, GAME_WIDTH - buttonEdge),
-        y: clamp(centerY + Math.sin(radians) * radius, ACTION_ARC_MIN_Y, ACTION_ARC_MAX_Y),
+        x: clamp(centerX + Math.cos(radians) * radius, buttonEdge, maxX),
+        y: clamp(centerY + Math.sin(radians) * radius, ACTION_ARC_MIN_Y, maxY),
         scale: actionButtonScale,
         angle,
       };
@@ -141,4 +149,15 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function getActionArcViewport(viewport?: Partial<ActionArcViewport>): ActionArcViewport {
+  return {
+    width: getPositiveNumber(viewport?.width, GAME_WIDTH),
+    height: getPositiveNumber(viewport?.height, GAME_HEIGHT),
+  };
+}
+
+function getPositiveNumber(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
 }

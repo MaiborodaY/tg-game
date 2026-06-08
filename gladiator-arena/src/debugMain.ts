@@ -76,8 +76,8 @@ function commitState(nextState: CombatState): void {
   state = applyBattleRewardIfNeeded(nextState);
   renderDom(dom, state);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
-  actionArc?.sync(state);
   arenaScene?.sync(state);
+  actionArc?.sync(state);
   syncTurnProbe();
 }
 
@@ -139,6 +139,7 @@ function refreshArenaLayout(): void {
   window.requestAnimationFrame(() => {
     arenaScene?.scale.refresh();
     arenaScene?.sync(state);
+    actionArc?.sync(state);
     syncTurnProbe();
   });
 }
@@ -337,8 +338,8 @@ function startDebugApp(): void {
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {
     setCombatMovementTuning(debugTuning);
-    actionArc?.sync(state);
     arenaScene?.sync(state);
+    actionArc?.sync(state);
     syncHeroPortraitButton();
     syncTurnProbe();
   });

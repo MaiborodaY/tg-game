@@ -91,10 +91,10 @@ function commitState(nextState: CombatState, options: { syncArena?: boolean } = 
   state = committedState;
   renderDom(dom, state);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
-  actionArc?.sync(state);
   if (syncArena) {
     arenaScene?.sync(state);
   }
+  actionArc?.sync(state);
   syncTurnProbe();
 }
 

@@ -8,6 +8,10 @@ import ts from "typescript";
 const layout = {
   GAME_WIDTH: 430,
   GAME_HEIGHT: 764,
+  ARENA_WORLD_LEFT: -220,
+  ARENA_WORLD_TOP: -240,
+  ARENA_WORLD_WIDTH: 870,
+  ARENA_WORLD_HEIGHT: 1244,
   DEFAULT_STAGE_ORIGIN_X: 215,
   DEFAULT_STAGE_ORIGIN_Y: 520,
   DEFAULT_PLAYER_STAGE_X: -130,
@@ -18,20 +22,6 @@ const layout = {
   DEFAULT_ENEMY_SCALE: 1,
   PLAYER_BASE_X: 85,
   ENEMY_BASE_X: 345,
-  POSITION_PIXEL_STEP: 72,
-  ARENA_WORLD_PADDING_X: 0,
-  ARENA_WORLD_LEFT: 0,
-  ARENA_WORLD_WIDTH: 430,
-  CAMERA_PLAYER_SCREEN_X: 150,
-  START_PLAYER_SCREEN_X: 85,
-  START_ENEMY_SCREEN_X: 345,
-  FAR_CAMERA_ZOOM: 1,
-  CLOSE_CAMERA_ZOOM: 1.14,
-  CAMERA_CENTER_Y: 430,
-  OVERVIEW_DISTANCE: 3,
-  OVERVIEW_MIN_ZOOM: 1,
-  OVERVIEW_MAX_ZOOM: 1,
-  OVERVIEW_SCREEN_PADDING: 28,
 };
 
 function loadArenaCameraModule() {
@@ -58,7 +48,7 @@ function loadArenaCameraModule() {
         }
 
         if (id === "./combat") {
-          return { MAX_DISTANCE: 4 };
+          return { START_DISTANCE: 3 };
         }
 
         if (id === "./stageLayout") {
@@ -87,10 +77,6 @@ function loadArenaCameraModule() {
   return module.exports;
 }
 
-function screenX(worldX, target) {
-  return (worldX - target.scrollX) * target.zoom;
-}
-
 const arenaCamera = loadArenaCameraModule();
 
 test("layout contract leaves small fighters separated at clinch", () => {
@@ -99,43 +85,54 @@ test("layout contract leaves small fighters separated at clinch", () => {
   assert.equal(arenaCamera.getEnemyWorldX({ playerPosition: 3, enemyPosition: 3 }) - arenaCamera.getPlayerWorldX({ playerPosition: 3, enemyPosition: 3 }), 44);
 });
 
-test("overview camera keeps the arena as a full-screen background", () => {
+test("arena camera keeps fighter feet above the bottom controls at the opening distance", () => {
   const start = { distance: 3, playerPosition: 0, enemyPosition: 3 };
   const target = arenaCamera.getCameraTarget(start);
+  const fighterCenterX = (arenaCamera.getPlayerWorldX(start) + arenaCamera.getEnemyWorldX(start)) / 2;
+  const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
 
-  assert.equal(target.zoom, layout.FAR_CAMERA_ZOOM);
-  assert.equal(target.scrollX, 0);
-  assert.equal(target.scrollY, 0);
-  assert.ok(Math.abs(screenX(arenaCamera.getPlayerWorldX(start), target) - layout.START_PLAYER_SCREEN_X) < 1);
-  assert.ok(Math.abs(screenX(arenaCamera.getEnemyWorldX(start), target) - layout.START_ENEMY_SCREEN_X) < 1);
+  assert.equal(target.centerX, fighterCenterX);
+  assert.equal(target.scrollX, fighterCenterX - layout.GAME_WIDTH / 2);
+  assert.equal((fighterFeetY - target.scrollY) * target.zoom, 560);
+  assert.equal(target.zoom, 1);
 });
 
-test("smart camera zooms in as fighters get close", () => {
+test("arena camera zooms when fighters get close", () => {
   const far = arenaCamera.getCameraTarget({ distance: 3, playerPosition: 0, enemyPosition: 3 });
-  const close = arenaCamera.getCameraTarget({ distance: 0, playerPosition: 3, enemyPosition: 3 });
+  const closeState = { distance: 0, playerPosition: 3, enemyPosition: 3 };
+  const close = arenaCamera.getCameraTarget(closeState);
 
-  assert.equal(far.zoom, layout.FAR_CAMERA_ZOOM);
-  assert.ok(close.zoom > far.zoom);
-  assert.equal(close.zoom, layout.CLOSE_CAMERA_ZOOM);
+  assert.equal(far.zoom, 1);
+  assert.equal(close.zoom, 2.75);
+  assert.equal(close.centerX, (arenaCamera.getPlayerWorldX(closeState) + arenaCamera.getEnemyWorldX(closeState)) / 2);
+  assert.equal(close.scrollX, close.centerX - layout.GAME_WIDTH / (2 * close.zoom));
+  assert.ok(close.scrollY > far.scrollY);
 });
 
-test("smart camera clamps scroll so the portrait background does not break", () => {
-  const target = arenaCamera.getCameraTarget({ distance: 0, playerPosition: 3, enemyPosition: 3 });
-  const maxScrollX = layout.ARENA_WORLD_LEFT + layout.ARENA_WORLD_WIDTH - layout.GAME_WIDTH / target.zoom;
-  const maxScrollY = layout.GAME_HEIGHT - layout.GAME_HEIGHT / target.zoom;
+test("arena camera centers the virtual viewport on the fighters while zooming", () => {
+  const close = { distance: 0, playerPosition: 3, enemyPosition: 3 };
+  const target = arenaCamera.getCameraTarget(close);
+  const center = (arenaCamera.getPlayerWorldX(close) + arenaCamera.getEnemyWorldX(close)) / 2;
 
-  assert.ok(target.scrollX >= layout.ARENA_WORLD_LEFT);
-  assert.ok(target.scrollX <= maxScrollX);
-  assert.ok(target.scrollY >= 0);
-  assert.ok(target.scrollY <= maxScrollY);
+  assert.equal(target.centerX, center);
+  assert.equal((center - target.scrollX) * target.zoom, layout.GAME_WIDTH / 2);
+});
+
+test("arena camera follows the honest midpoint when either fighter moves", () => {
+  const start = { distance: 3, playerPosition: 0, enemyPosition: 3 };
+  const playerForward = { distance: 2, playerPosition: 1, enemyPosition: 3 };
+  const enemyForward = { distance: 2, playerPosition: 0, enemyPosition: 2 };
+
+  assert.ok(arenaCamera.getCameraTarget(playerForward).centerX > arenaCamera.getCameraTarget(start).centerX);
+  assert.ok(arenaCamera.getCameraTarget(enemyForward).centerX < arenaCamera.getCameraTarget(start).centerX);
 });
 
 test("world projection uses the camera target for DOM overlays", () => {
   const target = arenaCamera.getCameraTarget({ distance: 0, playerPosition: 3, enemyPosition: 3 });
-  const worldX = layout.PLAYER_BASE_X + 3 * layout.POSITION_PIXEL_STEP;
+  const worldX = 193;
   const worldY = layout.DEFAULT_STAGE_ORIGIN_Y;
   const projected = arenaCamera.projectWorldToScreen(worldX, worldY, target);
 
-  assert.equal(projected.x, screenX(worldX, target));
+  assert.equal(projected.x, (worldX - target.scrollX) * target.zoom);
   assert.equal(projected.y, (worldY - target.scrollY) * target.zoom);
 });
