@@ -857,7 +857,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewFeetY: 700,
   cityHeroX: 100,
   cityHeroY: 127,
-  cityHeroScale: 1.35,
+  cityHeroScale: 1.2,
   heroPortraitButtonX: 5,
   heroPortraitButtonY: 3,
   heroPortraitButtonScale: 1.2,
