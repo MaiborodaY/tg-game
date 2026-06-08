@@ -364,7 +364,8 @@ const CITY_CAMERA_DEFAULT_ZOOM = 1;
 const CITY_CAMERA_ARMORY_ZOOM = 3.5;
 const CITY_CAMERA_TWEEN_DURATION = 280;
 const CITY_BACKGROUND_FADE_DURATION = 220;
-const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 30;
+const CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 24;
+const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 15;
 const CITY_ARMORY_HERO_LIFT_Y = 132;
 const CITY_BACKGROUND_DEPTH = -30;
 const CITY_CLOUD_DEPTH = CITY_BACKGROUND_DEPTH + 4;
@@ -919,10 +920,10 @@ class CityHeroScene extends Phaser.Scene {
 
   private createCityClouds(): CityCloud[] {
     const presets: Array<Omit<CityCloud, "image" | "initialized">> = [
-      { speed: 5.2, xRatio: 0.18, yRatio: 0.11, scaleRatio: 0.55, alpha: 0.42, direction: 1 },
-      { speed: 3.4, xRatio: 0.72, yRatio: 0.18, scaleRatio: 0.72, alpha: 0.34, direction: -1 },
-      { speed: 4.1, xRatio: 0.42, yRatio: 0.27, scaleRatio: 0.48, alpha: 0.28, direction: 1 },
-      { speed: 2.8, xRatio: 0.95, yRatio: 0.34, scaleRatio: 0.64, alpha: 0.24, direction: -1 },
+      { speed: 34, xRatio: 0.18, yRatio: 0.11, scaleRatio: 0.55, alpha: 0.42, direction: 1 },
+      { speed: 22, xRatio: 0.72, yRatio: 0.18, scaleRatio: 0.72, alpha: 0.34, direction: -1 },
+      { speed: 28, xRatio: 0.42, yRatio: 0.27, scaleRatio: 0.48, alpha: 0.28, direction: 1 },
+      { speed: 18, xRatio: 0.95, yRatio: 0.34, scaleRatio: 0.64, alpha: 0.24, direction: -1 },
     ];
 
     return CITY_CLOUD_ASSETS.map((asset, index) => {
@@ -1054,15 +1055,16 @@ class CityHeroScene extends Phaser.Scene {
     const layout = this.getHeroLayout(targetLiftProgress);
 
     if (this.cameraMode !== "default") {
+      const targetX = layout.feetX + CITY_CAMERA_ARMORY_FOCUS_OFFSET_X * Math.max(0.7, layout.scale);
       const targetY = layout.feetY - CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale);
 
       if (instant) {
         camera.setZoom(CITY_CAMERA_ARMORY_ZOOM);
-        camera.centerOn(layout.feetX, targetY);
+        camera.centerOn(targetX, targetY);
         return;
       }
 
-      camera.pan(layout.feetX, targetY, duration, "Sine.easeInOut");
+      camera.pan(targetX, targetY, duration, "Sine.easeInOut");
       camera.zoomTo(CITY_CAMERA_ARMORY_ZOOM, duration, "Sine.easeInOut");
       return;
     }

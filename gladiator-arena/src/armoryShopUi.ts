@@ -33,6 +33,7 @@ export interface ArmoryShopApi {
 interface ArmoryCategory {
   id: string;
   name: string;
+  shortLabel: string;
   products: ArmoryProduct[];
 }
 
@@ -49,51 +50,62 @@ interface ArmoryShopOptions {
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
     id: "head",
-    name: "Голова",
-    products: [{ id: "starter-helmet", name: "Учебный шлем", price: 0, itemIds: [STARTER_HELMET_ID] }],
+    name: "Head",
+    shortLabel: "HD",
+    products: [{ id: "starter-helmet", name: "Training Helmet", price: 0, itemIds: [STARTER_HELMET_ID] }],
   },
   {
     id: "chest",
-    name: "Грудь",
-    products: [{ id: "starter-breastplate", name: "Учебный нагрудник", price: 0, itemIds: [STARTER_BREASTPLATE_ID] }],
+    name: "Chest",
+    shortLabel: "CH",
+    products: [{ id: "starter-breastplate", name: "Training Breastplate", price: 0, itemIds: [STARTER_BREASTPLATE_ID] }],
   },
   {
     id: "shoulders",
-    name: "Плечи",
+    name: "Shoulders",
+    shortLabel: "SH",
     products: [
       {
         id: "starter-shoulderguards",
-        name: "Учебные наплечники",
+        name: "Training Shoulderguards",
         price: 0,
         itemIds: [STARTER_BACK_SHOULDERGUARD_ID, STARTER_FRONT_SHOULDERGUARD_ID],
       },
     ],
   },
   {
-    id: "other",
-    name: "Прочее",
+    id: "arms",
+    name: "Arms",
+    shortLabel: "AR",
     products: [
       {
         id: "starter-gauntlets",
-        name: "Учебные перчатки",
+        name: "Training Gauntlets",
         price: 0,
         itemIds: [STARTER_BACK_GAUNTLET_ID, STARTER_FRONT_GAUNTLET_ID],
       },
+    ],
+  },
+  {
+    id: "legs",
+    name: "Legs",
+    shortLabel: "LG",
+    products: [
       {
         id: "starter-greaves",
-        name: "Учебные поножи",
+        name: "Training Greaves",
         price: 0,
         itemIds: [STARTER_BACK_GREAVE_ID, STARTER_FRONT_GREAVE_ID],
       },
       {
         id: "starter-shinguards",
-        name: "Учебные щитки",
+        name: "Training Shinguards",
         price: 0,
         itemIds: [STARTER_BACK_SHINGUARD_ID, STARTER_FRONT_SHINGUARD_ID],
       },
       {
         id: "starter-boots",
-        name: "Учебные сапоги",
+        name: "Training Boots",
         price: 0,
         itemIds: [STARTER_BACK_BOOT_ID, STARTER_FRONT_BOOT_ID],
       },
@@ -110,7 +122,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   const shop = document.createElement("section");
   shop.className = usesCityHeroPreview ? "armory-shop armory-shop--city-mode" : "armory-shop";
   shop.hidden = true;
-  shop.setAttribute("aria-label", "Бронник");
+  shop.setAttribute("aria-label", "Armorer");
 
   const panel = document.createElement("div");
   panel.className = "armory-shop__panel";
@@ -125,6 +137,12 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   const menu = document.createElement("div");
   menu.className = "armory-shop__menu";
 
+  const categoryRail = document.createElement("div");
+  categoryRail.className = "armory-shop__category-rail";
+
+  const tray = document.createElement("div");
+  tray.className = "armory-shop__tray";
+
   const header = document.createElement("div");
   header.className = "armory-shop__header";
 
@@ -134,22 +152,18 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   const gold = document.createElement("span");
   gold.className = "armory-shop__gold";
 
+  const level = document.createElement("span");
+  level.className = "armory-shop__level";
+
   const content = document.createElement("div");
   content.className = "armory-shop__content";
 
   const back = document.createElement("button");
   back.className = "armory-shop__back";
   back.type = "button";
-  back.textContent = "Назад";
+  back.textContent = "Back";
   back.addEventListener("click", () => {
     if (previewProduct) {
-      clearProductPreview();
-      render();
-      return;
-    }
-
-    if (selectedCategoryId) {
-      selectedCategoryId = undefined;
       clearProductPreview();
       render();
       return;
@@ -158,8 +172,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     close();
   });
 
-  header.append(title, gold);
-  menu.append(header, content, back);
+  header.append(gold, title, level);
+  tray.append(header, content, back);
+  menu.append(categoryRail, tray);
   if (options.mountPreview) {
     panel.append(previewShell);
   }
@@ -168,7 +183,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   root.append(shop);
 
   function open(): void {
-    selectedCategoryId = undefined;
+    selectedCategoryId = ARMORY_CATEGORIES[0]?.id;
     clearProductPreview();
     if (usesCityHeroPreview) {
       root.classList.add("city-menu--armory-open");
@@ -196,22 +211,22 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function render(): void {
     const hero = options.getHero();
-    const selectedCategory = ARMORY_CATEGORIES.find((category) => category.id === selectedCategoryId);
+    const selectedCategory = ARMORY_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? ARMORY_CATEGORIES[0]!;
 
-    title.textContent = selectedCategory ? selectedCategory.name : "Бронник";
+    selectedCategoryId = selectedCategory.id;
+    title.textContent = selectedCategory.name;
     gold.textContent = `GOLD ${hero.gold}`;
+    level.textContent = `LVL ${hero.level}`;
+    categoryRail.replaceChildren();
     content.replaceChildren();
-    content.classList.toggle("armory-shop__content--categories", !selectedCategory);
-    content.classList.toggle("armory-shop__content--products", Boolean(selectedCategory) && !previewProduct);
-    content.classList.toggle("armory-shop__content--confirm", Boolean(selectedCategory) && Boolean(previewProduct));
+    content.classList.toggle("armory-shop__content--categories", false);
+    content.classList.toggle("armory-shop__content--products", !previewProduct);
+    content.classList.toggle("armory-shop__content--confirm", Boolean(previewProduct));
     back.hidden = Boolean(previewProduct);
 
-    if (!selectedCategory) {
-      ARMORY_CATEGORIES.forEach((category) => {
-        content.append(createCategoryButton(category));
-      });
-      return;
-    }
+    ARMORY_CATEGORIES.forEach((category) => {
+      categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
+    });
 
     if (previewProduct) {
       content.append(createPreviewBuyButton(previewProduct, hero), createPreviewBackButton());
@@ -231,12 +246,31 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     unmountPreview = options.mountPreview(preview);
   }
 
-  function createCategoryButton(category: ArmoryCategory): HTMLButtonElement {
+  function createCategoryButton(category: ArmoryCategory, isActive: boolean): HTMLButtonElement {
     const button = document.createElement("button");
+    const iconUrl = getShopProductIconUrl(category.products.flatMap((product) => product.itemIds));
 
-    button.className = "armory-shop__option";
+    button.className = "armory-shop__category-button";
+    button.classList.toggle("armory-shop__category-button--active", isActive);
     button.type = "button";
-    button.textContent = category.name;
+    button.title = category.name;
+    button.setAttribute("aria-label", category.name);
+    button.setAttribute("aria-pressed", String(isActive));
+    if (iconUrl) {
+      const icon = document.createElement("img");
+
+      icon.className = "armory-shop__category-icon";
+      icon.src = iconUrl;
+      icon.alt = "";
+      icon.draggable = false;
+      button.append(icon);
+    } else {
+      const fallback = document.createElement("span");
+
+      fallback.className = "armory-shop__category-fallback";
+      fallback.textContent = category.shortLabel;
+      button.append(fallback);
+    }
     button.addEventListener("click", () => {
       selectedCategoryId = category.id;
       clearProductPreview();
@@ -248,22 +282,16 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function createProductButton(product: ArmoryProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
-    const isOwned = product.itemIds.every((itemId) => hero.inventory.some((entry) => entry.itemId === itemId && entry.quantity > 0));
     const isEquipped = product.itemIds.every((itemId) => {
       const item = HERO_ITEM_CATALOG[itemId];
 
       return hero.equipment[item.equipmentSlot] === itemId;
     });
-    const canBuy = hero.gold >= product.price;
     const iconUrl = getShopProductIconUrl(product.itemIds);
 
     button.className = "armory-shop__option armory-shop__option--product";
     button.type = "button";
     button.disabled = isEquipped;
-    button.innerHTML = `
-      <span class="armory-shop__product-name">${product.name}</span>
-      <span class="armory-shop__product-meta">${getProductActionLabel(isOwned, isEquipped, canBuy)} · ${product.price} GOLD</span>
-    `;
     button.title = product.name;
     button.setAttribute("aria-label", `${product.name}, ${product.price} GOLD`);
     button.innerHTML = iconUrl
@@ -293,7 +321,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--buy";
     button.type = "button";
     button.disabled = isEquipped || !canBuy;
-    button.textContent = `Купить · ${product.price} GOLD`;
+    button.textContent = `Buy - ${product.price} GOLD`;
     button.addEventListener("click", () => {
       previewProduct = undefined;
       options.onBuy(product);
@@ -308,7 +336,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--back";
     button.type = "button";
-    button.textContent = "Назад";
+    button.textContent = "Back";
     button.addEventListener("click", () => {
       clearProductPreview();
       render();
@@ -327,16 +355,4 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   return { open, close, render };
-}
-
-function getProductActionLabel(isOwned: boolean, isEquipped: boolean, canBuy: boolean): string {
-  if (isEquipped) {
-    return "Надето";
-  }
-
-  if (isOwned) {
-    return "Надеть";
-  }
-
-  return canBuy ? "Купить" : "Не хватает золота";
 }
