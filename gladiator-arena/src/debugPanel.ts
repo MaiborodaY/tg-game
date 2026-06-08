@@ -188,6 +188,19 @@ const controlGroups: DebugControlGroup[] = [
     ],
   },
   {
+    title: "HUD",
+    controls: [
+      { type: "toggle", key: "hudEditMode", label: "Edit HUD", resetValue: defaultDebugTuning.hudEditMode },
+      { type: "range", key: "hudBottomOffset", label: "HUD bottom", min: -96, max: 96, step: 1, resetValue: defaultDebugTuning.hudBottomOffset },
+      { type: "range", key: "hudSideInset", label: "HUD side", min: 0, max: 64, step: 1, resetValue: defaultDebugTuning.hudSideInset },
+      { type: "range", key: "hudScale", label: "HUD scale", min: 0.7, max: 1.25, step: 0.01, resetValue: defaultDebugTuning.hudScale },
+      { type: "range", key: "hudFlaskGap", label: "Flask gap", min: 0, max: 18, step: 1, resetValue: defaultDebugTuning.hudFlaskGap },
+      { type: "range", key: "hudNameGap", label: "Name gap", min: -12, max: 24, step: 1, resetValue: defaultDebugTuning.hudNameGap },
+      { type: "range", key: "hudSafeGapRatio", label: "Safe ratio", min: 0, max: 0.5, step: 0.01, resetValue: defaultDebugTuning.hudSafeGapRatio },
+      { type: "range", key: "hudSafeMinGap", label: "Safe min", min: 0, max: 80, step: 1, resetValue: defaultDebugTuning.hudSafeMinGap },
+    ],
+  },
+  {
     title: "Combat movement",
     controls: [
       { type: "range", key: "forwardMoveDistance", label: "FWD distance", min: 0.1, max: 4, step: 0.1, resetValue: defaultDebugTuning.forwardMoveDistance },

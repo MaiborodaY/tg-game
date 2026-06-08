@@ -246,7 +246,7 @@ h1 {
   display: grid;
   width: fit-content;
   max-width: 100%;
-  gap: 3px;
+  gap: var(--hud-name-gap, 3px);
   filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.32));
 }
 
@@ -257,7 +257,7 @@ h1 {
 .flask-row {
   display: flex;
   align-items: end;
-  gap: 6px;
+  gap: var(--hud-flask-gap, 6px);
 }
 
 .enemy-flasks .flask-row {
@@ -1424,6 +1424,13 @@ body.arena-active .shell {
 }
 
 .battle-screen {
+  --hud-bottom-offset: -16px;
+  --hud-flask-gap: 6px;
+  --hud-name-gap: 3px;
+  --hud-safe-gap-ratio: 0.18;
+  --hud-safe-min-gap: 24px;
+  --hud-scale: 1;
+  --hud-side-inset: 8px;
   position: relative;
   isolation: isolate;
   display: block;
@@ -1481,7 +1488,23 @@ body.arena-active .shell {
 }
 
 .battle-screen .arena-fighters-strip {
-  bottom: max(6px, calc(env(safe-area-inset-bottom) - 16px));
+  left: var(--hud-side-inset, 8px);
+  right: var(--hud-side-inset, 8px);
+  bottom: max(6px, calc(env(safe-area-inset-bottom) + var(--hud-bottom-offset, -16px)));
+  transform: scale(var(--hud-scale, 1));
+  transform-origin: bottom center;
+}
+
+body.debug-active .battle-screen.hud-editing .flask-hud {
+  outline: 2px dashed rgba(0, 255, 255, 0.72);
+  outline-offset: 4px;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+body.debug-active .battle-screen.hud-editing .flask-hud:active {
+  cursor: grabbing;
 }
 
 .battle-screen .combat-toast {

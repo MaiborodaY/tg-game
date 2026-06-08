@@ -17,6 +17,13 @@ import {
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
   DEFAULT_FORWARD_MOVE_DISTANCE,
+  DEFAULT_HUD_BOTTOM_OFFSET,
+  DEFAULT_HUD_FLASK_GAP,
+  DEFAULT_HUD_NAME_GAP,
+  DEFAULT_HUD_SAFE_GAP_RATIO,
+  DEFAULT_HUD_SAFE_MIN_GAP,
+  DEFAULT_HUD_SCALE,
+  DEFAULT_HUD_SIDE_INSET,
   DEFAULT_LUNGE_MOVE_DISTANCE,
   DEFAULT_PLAYER_SCALE,
   DEFAULT_PLAYER_STAGE_X,
@@ -150,6 +157,14 @@ export interface ArenaDebugTuning {
   actionArcOffsetY: number;
   actionButtonScale: number;
   actionButtonOffsets: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
+  hudEditMode: boolean;
+  hudBottomOffset: number;
+  hudSideInset: number;
+  hudScale: number;
+  hudFlaskGap: number;
+  hudNameGap: number;
+  hudSafeGapRatio: number;
+  hudSafeMinGap: number;
   forwardMoveDistance: number;
   backMoveDistance: number;
   lungeMoveDistance: number;
@@ -815,6 +830,14 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionArcOffsetY: DEFAULT_ACTION_ARC_OFFSET_Y,
   actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
   actionButtonOffsets: cloneActionButtonOffsets(DEFAULT_ACTION_BUTTON_OFFSETS),
+  hudEditMode: false,
+  hudBottomOffset: DEFAULT_HUD_BOTTOM_OFFSET,
+  hudSideInset: DEFAULT_HUD_SIDE_INSET,
+  hudScale: DEFAULT_HUD_SCALE,
+  hudFlaskGap: DEFAULT_HUD_FLASK_GAP,
+  hudNameGap: DEFAULT_HUD_NAME_GAP,
+  hudSafeGapRatio: DEFAULT_HUD_SAFE_GAP_RATIO,
+  hudSafeMinGap: DEFAULT_HUD_SAFE_MIN_GAP,
   forwardMoveDistance: DEFAULT_FORWARD_MOVE_DISTANCE,
   backMoveDistance: DEFAULT_BACK_MOVE_DISTANCE,
   lungeMoveDistance: DEFAULT_LUNGE_MOVE_DISTANCE,
@@ -956,6 +979,14 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionArcOffsetY: clampNumber(input.actionArcOffsetY, -320, 320, defaultDebugTuning.actionArcOffsetY),
     actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),
     actionButtonOffsets: normalizeActionButtonOffsets(input.actionButtonOffsets),
+    hudEditMode: typeof input.hudEditMode === "boolean" ? input.hudEditMode : defaultDebugTuning.hudEditMode,
+    hudBottomOffset: clampNumber(input.hudBottomOffset, -96, 96, defaultDebugTuning.hudBottomOffset),
+    hudSideInset: clampNumber(input.hudSideInset, 0, 64, defaultDebugTuning.hudSideInset),
+    hudScale: clampNumber(input.hudScale, 0.7, 1.25, defaultDebugTuning.hudScale),
+    hudFlaskGap: clampNumber(input.hudFlaskGap, 0, 18, defaultDebugTuning.hudFlaskGap),
+    hudNameGap: clampNumber(input.hudNameGap, -12, 24, defaultDebugTuning.hudNameGap),
+    hudSafeGapRatio: clampNumber(input.hudSafeGapRatio, 0, 0.5, defaultDebugTuning.hudSafeGapRatio),
+    hudSafeMinGap: clampNumber(input.hudSafeMinGap, 0, 80, defaultDebugTuning.hudSafeMinGap),
     forwardMoveDistance: clampNumber(input.forwardMoveDistance, 0.1, 4, defaultDebugTuning.forwardMoveDistance),
     backMoveDistance: clampNumber(input.backMoveDistance, 0.1, 4, defaultDebugTuning.backMoveDistance),
     lungeMoveDistance: clampNumber(input.lungeMoveDistance, 0.1, 4, defaultDebugTuning.lungeMoveDistance),

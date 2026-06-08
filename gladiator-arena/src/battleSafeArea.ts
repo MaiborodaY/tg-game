@@ -1,11 +1,8 @@
-import { GAME_HEIGHT } from "./arenaLayout";
+import { DEFAULT_HUD_SAFE_GAP_RATIO, DEFAULT_HUD_SAFE_MIN_GAP, GAME_HEIGHT } from "./arenaLayout";
 
 export interface BattleSafeArea {
   bottom: number;
 }
-
-const BATTLE_SAFE_GAP_RATIO = 0.18;
-const BATTLE_SAFE_MIN_GAP = 24;
 
 export function getBattleSafeArea(root?: HTMLElement | null, viewportHeight = GAME_HEIGHT): BattleSafeArea {
   return {
@@ -33,7 +30,10 @@ export function getBattleSafeBottom(root?: HTMLElement | null, viewportHeight = 
   }
 
   const screenToViewportY = viewportHeight / battleRect.height;
-  const visualClearance = Math.max(BATTLE_SAFE_MIN_GAP, hudRect.height * BATTLE_SAFE_GAP_RATIO);
+  const styles = typeof window === "undefined" ? undefined : window.getComputedStyle(battleScreen);
+  const safeGapRatio = getCssNumber(styles?.getPropertyValue("--hud-safe-gap-ratio") ?? "", DEFAULT_HUD_SAFE_GAP_RATIO);
+  const safeMinGap = getCssPixelNumber(styles?.getPropertyValue("--hud-safe-min-gap") ?? "", DEFAULT_HUD_SAFE_MIN_GAP);
+  const visualClearance = Math.max(safeMinGap, hudRect.height * safeGapRatio);
   const safeBottom = (hudRect.top - battleRect.top - visualClearance) * screenToViewportY;
 
   return clamp(safeBottom, 0, viewportHeight);
@@ -45,4 +45,14 @@ function getBattleScreen(root?: HTMLElement | null): HTMLElement | null {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function getCssNumber(value: string, fallback: number): number {
+  const parsed = Number.parseFloat(value);
+
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getCssPixelNumber(value: string, fallback: number): number {
+  return getCssNumber(value, fallback);
 }

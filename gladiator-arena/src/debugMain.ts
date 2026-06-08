@@ -34,6 +34,7 @@ import {
   type HeroItemId,
   type HeroState,
 } from "./hero";
+import { syncHudTuning } from "./hudTuning";
 import { logTurnProbe, mountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
@@ -71,6 +72,13 @@ interface HeroPortraitButtonDragState {
 }
 
 let heroPortraitButtonDragState: HeroPortraitButtonDragState | undefined;
+
+interface HudDragState {
+  pointerId: number;
+  lastY: number;
+}
+
+let hudDragState: HudDragState | undefined;
 
 function commitState(nextState: CombatState): void {
   state = applyBattleRewardIfNeeded(nextState);
@@ -292,6 +300,82 @@ function finishHeroPortraitButtonDrag(event?: PointerEvent): void {
   endDebugUndoGroup();
 }
 
+function syncHud(): void {
+  syncHudTuning(dom.gameScreen, debugTuning);
+}
+
+function mountHudDebug(): void {
+  const hud = dom.gameScreen.querySelector<HTMLElement>(".arena-fighters-strip");
+
+  if (!hud) {
+    return;
+  }
+
+  syncHud();
+
+  hud.addEventListener("pointerdown", (event) => {
+    if (!debugTuning.hudEditMode || event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    hud.setPointerCapture(event.pointerId);
+    beginDebugUndoGroup();
+    hudDragState = {
+      pointerId: event.pointerId,
+      lastY: event.clientY,
+    };
+  });
+
+  hud.addEventListener("pointermove", (event) => {
+    if (!hudDragState || hudDragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaY = event.clientY - hudDragState.lastY;
+
+    if (Math.abs(deltaY) < 0.1) {
+      return;
+    }
+
+    updateDebugTuning({
+      hudBottomOffset: debugTuning.hudBottomOffset - deltaY,
+    });
+    hudDragState.lastY = event.clientY;
+  });
+
+  hud.addEventListener("pointerup", finishHudDrag);
+  hud.addEventListener("pointercancel", finishHudDrag);
+  hud.addEventListener("lostpointercapture", () => finishHudDrag());
+  hud.addEventListener(
+    "wheel",
+    (event) => {
+      if (!debugTuning.hudEditMode) {
+        return;
+      }
+
+      event.preventDefault();
+      updateDebugTuning({
+        hudScale: debugTuning.hudScale + (event.deltaY > 0 ? -0.03 : 0.03),
+      });
+    },
+    { passive: false },
+  );
+}
+
+function finishHudDrag(event?: PointerEvent): void {
+  if (event && hudDragState?.pointerId !== event.pointerId) {
+    return;
+  }
+
+  if (!hudDragState) {
+    return;
+  }
+
+  hudDragState = undefined;
+  endDebugUndoGroup();
+}
+
 function startDebugApp(): void {
   document.body.classList.add("arena-active", "debug-active", "debug-mode-character");
   setCombatMovementTuning(debugTuning);
@@ -308,6 +392,7 @@ function startDebugApp(): void {
   }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   mountHeroPortraitButtonDebug();
+  mountHudDebug();
   if (cityMenu) {
     weaponShop = mountWeaponShop(cityMenu, {
       getHero: () => hero,
@@ -356,6 +441,7 @@ function startDebugApp(): void {
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {
     setCombatMovementTuning(debugTuning);
+    syncHud();
     arenaScene?.sync(state);
     actionArc?.sync(state);
     syncHeroPortraitButton();

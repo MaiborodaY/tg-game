@@ -37,6 +37,13 @@ function loadDebugTuningModule() {
             DEFAULT_ACTION_ARC_ROTATION: 0,
             DEFAULT_ACTION_ARC_RADIUS: 62,
             DEFAULT_ACTION_BUTTON_SCALE: 1,
+            DEFAULT_HUD_BOTTOM_OFFSET: -16,
+            DEFAULT_HUD_SIDE_INSET: 8,
+            DEFAULT_HUD_SCALE: 1,
+            DEFAULT_HUD_FLASK_GAP: 6,
+            DEFAULT_HUD_NAME_GAP: 3,
+            DEFAULT_HUD_SAFE_GAP_RATIO: 0.18,
+            DEFAULT_HUD_SAFE_MIN_GAP: 24,
             DEFAULT_FORWARD_MOVE_DISTANCE: 0.5,
             DEFAULT_BACK_MOVE_DISTANCE: 0.5,
             DEFAULT_LUNGE_MOVE_DISTANCE: 0.5,
@@ -77,6 +84,14 @@ test("debug tuning normalizes unsafe values", () => {
     actionArcRotation: 999,
     actionArcRadius: -5,
     actionButtonScale: 99,
+    hudEditMode: "true",
+    hudBottomOffset: -999,
+    hudSideInset: 999,
+    hudScale: 99,
+    hudFlaskGap: 999,
+    hudNameGap: -999,
+    hudSafeGapRatio: 99,
+    hudSafeMinGap: 999,
     actionForwardArcAngle: 999,
     actionBackArcAngle: -999,
     actionLungeArcAngle: 999,
@@ -100,6 +115,14 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.actionArcRotation, 180);
   assert.equal(normalized.actionArcRadius, 24);
   assert.equal(normalized.actionButtonScale, 2);
+  assert.equal(normalized.hudEditMode, false);
+  assert.equal(normalized.hudBottomOffset, -96);
+  assert.equal(normalized.hudSideInset, 64);
+  assert.equal(normalized.hudScale, 1.25);
+  assert.equal(normalized.hudFlaskGap, 18);
+  assert.equal(normalized.hudNameGap, -12);
+  assert.equal(normalized.hudSafeGapRatio, 0.5);
+  assert.equal(normalized.hudSafeMinGap, 80);
   assert.equal(normalized.actionForwardArcAngle, 180);
   assert.equal(normalized.actionBackArcAngle, -180);
   assert.equal(normalized.actionLungeArcAngle, 180);
@@ -121,6 +144,13 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRotation, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRadius, 62);
   assert.equal(debugTuningModule.defaultDebugTuning.actionButtonScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudBottomOffset, -16);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudSideInset, 8);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudFlaskGap, 6);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudNameGap, 3);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudSafeGapRatio, 0.18);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudSafeMinGap, 24);
   assert.equal(debugTuningModule.defaultDebugTuning.actionForwardArcAngle, -108);
   assert.equal(debugTuningModule.defaultDebugTuning.actionBackArcAngle, -166);
   assert.equal(debugTuningModule.defaultDebugTuning.actionLungeArcAngle, -34);
