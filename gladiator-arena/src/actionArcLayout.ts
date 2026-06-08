@@ -44,12 +44,18 @@ export interface ActionArcLayout {
   buttons: ActionArcButtonLayout[];
 }
 
+interface RawActionArcButton extends ActionArcButtonLayout {
+  rawX: number;
+  rawY: number;
+}
+
 export const ACTION_ARC_BUTTON_EDGE = 38;
 export const ACTION_ARC_MIN_Y = 126;
 export const ACTION_ARC_MAX_Y = GAME_HEIGHT - 132;
 
 const ACTION_ARC_CENTER_OFFSET_X = 0;
 const ACTION_ARC_CENTER_OFFSET_Y = -70;
+const ACTION_ARC_SCREEN_PADDING = 12;
 
 const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "forward" },
@@ -121,35 +127,81 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const centerY = screenCenter.y + (tuning?.actionArcOffsetY ?? 0);
   const radius = actionArcRadius * scale;
   const buttonEdge = ACTION_ARC_BUTTON_EDGE * actionButtonScale;
-  const maxX = actionViewport.width - buttonEdge;
-  const maxY = actionViewport.height - (GAME_HEIGHT - ACTION_ARC_MAX_Y);
+  const minX = buttonEdge + ACTION_ARC_SCREEN_PADDING;
+  const maxX = actionViewport.width - buttonEdge - ACTION_ARC_SCREEN_PADDING;
+  const minY = ACTION_ARC_MIN_Y + ACTION_ARC_SCREEN_PADDING;
+  const maxY = actionViewport.height - (GAME_HEIGHT - ACTION_ARC_MAX_Y) - ACTION_ARC_SCREEN_PADDING;
   const slots = state.activeTurn === "player" && state.result === "playing" ? (state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS) : [];
+  const rawButtons: RawActionArcButton[] = slots.map((slot) => {
+    const actionId = getSlotActionId(slot, state);
+    const angle = getActionAngle(actionId, tuning) + actionArcRotation;
+    const radians = (angle * Math.PI) / 180;
+    const label = ACTION_LABELS[actionId];
+    const offset = tuning?.actionButtonOffsets?.[actionId] ?? { x: 0, y: 0 };
+    const rawX = centerX + Math.cos(radians) * radius + offset.x;
+    const rawY = centerY + Math.sin(radians) * radius + offset.y;
+
+    return {
+      actionId,
+      label: label.label,
+      detail: label.detail,
+      rawX,
+      rawY,
+      x: rawX,
+      y: rawY,
+      scale: actionButtonScale,
+      angle,
+    };
+  });
+  const groupShiftX = getGroupShift(
+    rawButtons.map((button) => button.rawX),
+    minX,
+    maxX,
+  );
+  const groupShiftY = getGroupShift(
+    rawButtons.map((button) => button.rawY),
+    minY,
+    maxY,
+  );
 
   return {
-    centerX: clamp(centerX, buttonEdge, maxX),
-    centerY: clamp(centerY, ACTION_ARC_MIN_Y, maxY),
-    buttons: slots.map((slot) => {
-      const actionId = getSlotActionId(slot, state);
-      const angle = getActionAngle(actionId, tuning) + actionArcRotation;
-      const radians = (angle * Math.PI) / 180;
-      const label = ACTION_LABELS[actionId];
-      const offset = tuning?.actionButtonOffsets?.[actionId] ?? { x: 0, y: 0 };
-
-      return {
-        actionId,
-        label: label.label,
-        detail: label.detail,
-        x: clamp(centerX + Math.cos(radians) * radius + offset.x, buttonEdge, maxX),
-        y: clamp(centerY + Math.sin(radians) * radius + offset.y, ACTION_ARC_MIN_Y, maxY),
-        scale: actionButtonScale,
-        angle,
-      };
-    }),
+    centerX: clamp(centerX + groupShiftX, minX, maxX),
+    centerY: clamp(centerY + groupShiftY, minY, maxY),
+    buttons: rawButtons.map(({ rawX, rawY, ...button }) => ({
+      ...button,
+      x: clamp(rawX + groupShiftX, minX, maxX),
+      y: clamp(rawY + groupShiftY, minY, maxY),
+    })),
   };
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function getGroupShift(values: number[], minBound: number, maxBound: number): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const valueSpan = maxValue - minValue;
+  const boundSpan = maxBound - minBound;
+
+  if (valueSpan > boundSpan) {
+    return (minBound + maxBound) / 2 - (minValue + maxValue) / 2;
+  }
+
+  if (minValue < minBound) {
+    return minBound - minValue;
+  }
+
+  if (maxValue > maxBound) {
+    return maxBound - maxValue;
+  }
+
+  return 0;
 }
 
 function getActionArcViewport(viewport?: Partial<ActionArcViewport>): ActionArcViewport {
