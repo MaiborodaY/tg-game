@@ -4,6 +4,7 @@ export interface PlayerSettings {
   lowEffects: boolean;
   animationMode: PlayerAnimationMode;
   vfxEnabled: boolean;
+  shadowsEnabled: boolean;
   showFps: boolean;
 }
 
@@ -14,6 +15,7 @@ const defaultSettings: PlayerSettings = {
   lowEffects: false,
   animationMode: "normal",
   vfxEnabled: true,
+  shadowsEnabled: true,
   showFps: false,
 };
 let cachedSettings: PlayerSettings | undefined;
@@ -28,17 +30,19 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   const panel = root.querySelector<HTMLElement>("[data-settings-panel]");
   const lowEffects = root.querySelector<HTMLInputElement>("[data-setting-low-effects]");
   const vfx = root.querySelector<HTMLInputElement>("[data-setting-vfx]");
+  const shadows = root.querySelector<HTMLInputElement>("[data-setting-shadows]");
   const fps = root.querySelector<HTMLInputElement>("[data-setting-fps]");
   const fpsCounter = root.querySelector<HTMLElement>("[data-fps-counter]");
   const animationInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-animation]"));
 
-  if (!menu || !button || !panel || !lowEffects || !vfx || !fps || !fpsCounter || animationInputs.length === 0) {
+  if (!menu || !button || !panel || !lowEffects || !vfx || !shadows || !fps || !fpsCounter || animationInputs.length === 0) {
     return;
   }
 
   const settings = getPlayerSettings();
   lowEffects.checked = settings.lowEffects;
   vfx.checked = settings.vfxEnabled;
+  shadows.checked = settings.shadowsEnabled;
   fps.checked = settings.showFps;
   syncAnimationInputs(animationInputs, settings.animationMode);
   applySettings(settings);
@@ -60,6 +64,10 @@ export function mountSettingsMenu(root: ParentNode = document): void {
 
   vfx.addEventListener("change", () => {
     updateSettings({ vfxEnabled: vfx.checked });
+  });
+
+  shadows.addEventListener("change", () => {
+    updateSettings({ shadowsEnabled: shadows.checked });
   });
 
   fps.addEventListener("change", () => {
@@ -146,6 +154,7 @@ function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
     lowEffects: typeof input.lowEffects === "boolean" ? input.lowEffects : defaultSettings.lowEffects,
     animationMode: isPlayerAnimationMode(input.animationMode) ? input.animationMode : defaultSettings.animationMode,
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
+    shadowsEnabled: typeof input.shadowsEnabled === "boolean" ? input.shadowsEnabled : defaultSettings.shadowsEnabled,
     showFps: typeof input.showFps === "boolean" ? input.showFps : defaultSettings.showFps,
   };
 }

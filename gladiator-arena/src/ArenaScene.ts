@@ -116,7 +116,7 @@ import {
   type SlashArcAttackKey,
   type SlashArcTuning,
 } from "./debugTuning";
-import { getPlayerSettings } from "./settingsMenu";
+import { getPlayerSettings, subscribePlayerSettings } from "./settingsMenu";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -629,6 +629,7 @@ export class ArenaScene extends Phaser.Scene {
   cameraFrameInitialized?: boolean;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerSettings?: () => void;
 
   constructor() {
     super("ArenaScene");
@@ -651,9 +652,15 @@ export class ArenaScene extends Phaser.Scene {
       }
     });
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => syncFighterEquipmentVisibility(this.visuals?.player));
+    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+      if (this.currentState) {
+        renderScene(this, this.currentState);
+      }
+    });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerSettings?.();
     });
     readyCallback?.(this);
   }
@@ -1836,12 +1843,15 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
 }
 
 function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY: number, centerX: number): void {
+  const shadowVisible = areArenaShadowsEnabled() && !fighter.isShattered;
+
   fighter.shadow.x = centerX + debugTuning.shadowOffsetX * scale;
   fighter.shadow.y = feetY + debugTuning.shadowOffsetY * scale;
   fighter.shadow.scaleX = PAPER_DOLL_BASE_SCALE * scale * (fighter.paperDollRig?.appearance.facing ?? 1) * debugTuning.shadowScaleX;
   fighter.shadow.scaleY = PAPER_DOLL_BASE_SCALE * scale * debugTuning.shadowScaleY;
   fighter.shadow.angle = 0;
-  fighter.shadow.setAlpha(debugTuning.shadowAlpha);
+  fighter.shadow.setVisible(shadowVisible);
+  fighter.shadow.setAlpha(shadowVisible ? debugTuning.shadowAlpha : 0);
 }
 
 function applyRigPartDebugTuning(rig: PaperDollRig): void {
@@ -2785,7 +2795,7 @@ function resetFighterShatter(target: Phaser.Scene, fighter: FighterVisual): void
   }
 
   setFighterAlpha(fighter, 1);
-  fighter.shadow.setVisible(true);
+  fighter.shadow.setVisible(areArenaShadowsEnabled());
 }
 
 function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirection: -1 | 1): void {
@@ -2857,7 +2867,15 @@ function setHud(hud: HudVisual, fighter: FighterState): void {
 
 function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
   getFighterParts(fighter).forEach((part) => {
-    part.setAlpha(part === fighter.shadow ? alpha * debugTuning.shadowAlpha : alpha);
+    if (part === fighter.shadow) {
+      const shadowVisible = areArenaShadowsEnabled() && !fighter.isShattered;
+
+      part.setVisible(shadowVisible);
+      part.setAlpha(shadowVisible ? alpha * debugTuning.shadowAlpha : 0);
+      return;
+    }
+
+    part.setAlpha(alpha);
   });
 }
 
@@ -3378,4 +3396,8 @@ function getArenaAnimationAmount(): number {
 
 function areArenaVfxEnabled(): boolean {
   return getPlayerSettings().vfxEnabled;
+}
+
+function areArenaShadowsEnabled(): boolean {
+  return getPlayerSettings().shadowsEnabled;
 }
