@@ -790,13 +790,14 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-menu__nav {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 4px;
+  right: 4px;
   bottom: max(6px, env(safe-area-inset-bottom));
   z-index: 3;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 7px;
+  justify-items: stretch;
+  gap: 4px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -818,6 +819,7 @@ body.debug-active .city-menu__portrait-button:active {
   grid-template-rows: 1fr;
   align-items: center;
   justify-items: center;
+  width: 100%;
   min-width: 0;
   min-height: 62px;
   padding: 8px;
@@ -848,29 +850,24 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__button::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  z-index: 0;
-  border: 2px solid rgba(53, 24, 13, 0.82);
-  border-radius: 7px;
+  inset: 2px;
+  z-index: 1;
+  border: 0;
+  border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 246, 203, 0.76), rgba(255, 246, 203, 0.16) 44%, transparent 46%),
-    linear-gradient(180deg, #ffe38f 0%, #efa134 70%, #b9561d 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 248, 215, 0.7),
-    inset 0 -3px 0 rgba(94, 38, 15, 0.32),
-    0 2px 0 rgba(22, 7, 3, 0.58);
+    radial-gradient(circle at 8px 8px, #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) top left / 20px 20px no-repeat,
+    radial-gradient(circle at calc(100% - 8px) 8px, #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) top right / 20px 20px no-repeat,
+    radial-gradient(circle at 8px calc(100% - 8px), #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) bottom left / 20px 20px no-repeat,
+    radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) bottom right / 20px 20px no-repeat,
+    linear-gradient(135deg, #f0aa3c 0 11px, transparent 11px) top left / 22px 22px no-repeat,
+    linear-gradient(225deg, #c7822e 0 11px, transparent 11px) top right / 22px 22px no-repeat,
+    linear-gradient(45deg, #8a4d1f 0 11px, transparent 11px) bottom left / 22px 22px no-repeat,
+    linear-gradient(315deg, #d99132 0 11px, transparent 11px) bottom right / 22px 22px no-repeat;
+  pointer-events: none;
 }
 
 .city-menu__button::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  z-index: 0;
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(255, 204, 100, 0.44) 0 7px, transparent 7px calc(100% - 7px), rgba(255, 204, 100, 0.32) calc(100% - 7px)),
-    linear-gradient(180deg, rgba(255, 204, 100, 0.4) 0 7px, transparent 7px calc(100% - 5px), rgba(48, 19, 8, 0.18) calc(100% - 5px));
-  pointer-events: none;
+  display: none;
 }
 
 .city-menu__button:hover:not(:disabled) {
@@ -905,8 +902,8 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   position: relative;
   z-index: 1;
-  width: min(44px, 11vw);
-  height: min(44px, 11vw);
+  width: min(50px, 12.5vw);
+  height: min(50px, 12.5vw);
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
