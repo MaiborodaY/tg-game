@@ -616,9 +616,7 @@ export class ArenaScene extends Phaser.Scene {
     readyCallback?.(this);
   }
 
-  update(time: number, delta: number): void {
-    this.updateCityClouds(delta);
-
+  update(time: number): void {
     const idle = getActiveBodyAnimation("idle");
 
     if (!this.visuals || !idle.enabled) {
@@ -795,7 +793,9 @@ class CityHeroScene extends Phaser.Scene {
     cityReadyCallback?.(this);
   }
 
-  update(time: number): void {
+  update(time: number, delta: number): void {
+    this.updateCityClouds(delta);
+
     const idle = getActiveBodyAnimation("idle");
 
     if (!this.fighter || !idle.enabled) {
@@ -920,10 +920,10 @@ class CityHeroScene extends Phaser.Scene {
 
   private createCityClouds(): CityCloud[] {
     const presets: Array<Omit<CityCloud, "image" | "initialized">> = [
-      { speed: 34, xRatio: 0.18, yRatio: 0.11, scaleRatio: 0.55, alpha: 0.42, direction: 1 },
-      { speed: 22, xRatio: 0.72, yRatio: 0.18, scaleRatio: 0.72, alpha: 0.34, direction: -1 },
-      { speed: 28, xRatio: 0.42, yRatio: 0.27, scaleRatio: 0.48, alpha: 0.28, direction: 1 },
-      { speed: 18, xRatio: 0.95, yRatio: 0.34, scaleRatio: 0.64, alpha: 0.24, direction: -1 },
+      { speed: 5.2, xRatio: 0.18, yRatio: 0.11, scaleRatio: 0.55, alpha: 0.42, direction: 1 },
+      { speed: 3.4, xRatio: 0.72, yRatio: 0.18, scaleRatio: 0.72, alpha: 0.34, direction: -1 },
+      { speed: 4.1, xRatio: 0.42, yRatio: 0.27, scaleRatio: 0.48, alpha: 0.28, direction: 1 },
+      { speed: 2.8, xRatio: 0.95, yRatio: 0.22, scaleRatio: 0.64, alpha: 0.24, direction: -1 },
     ];
 
     return CITY_CLOUD_ASSETS.map((asset, index) => {

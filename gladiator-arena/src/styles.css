@@ -792,19 +792,17 @@ body.debug-active .city-menu__portrait-button:active {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: max(8px, env(safe-area-inset-bottom));
+  bottom: max(6px, env(safe-area-inset-bottom));
   z-index: 3;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 5px;
-  padding: 6px;
-  border: 3px solid #35180d;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 232, 166, 0.22), rgba(53, 24, 13, 0.78)),
-    rgba(35, 10, 4, 0.72);
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(2px);
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
   transition: opacity 200ms ease, transform 220ms ease;
 }
 
@@ -815,31 +813,64 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-menu__button {
+  position: relative;
   display: grid;
-  grid-template-rows: 1.45rem minmax(1.9rem, auto);
+  grid-template-rows: 1fr;
   align-items: center;
   justify-items: center;
   min-width: 0;
-  min-height: 58px;
-  padding: 5px 3px 6px;
-  border: 3px solid #130908;
-  border-radius: 9px;
+  min-height: 62px;
+  padding: 8px;
+  border: 3px solid #170b06;
+  border-radius: 10px;
   color: #35180d;
   background:
-    linear-gradient(135deg, rgba(255, 246, 203, 0.78), transparent 48%),
-    linear-gradient(180deg, #ffcf6c 0%, #e88d28 68%, #8d3616 100%);
+    radial-gradient(circle at 18% 18%, rgba(255, 222, 137, 0.28), transparent 30%),
+    linear-gradient(90deg, #3b1a0d 0 11%, #6a3518 20% 80%, #2a1209 92% 100%);
   box-shadow:
-    inset 0 2px 0 rgba(255, 245, 205, 0.58),
-    0 3px 0 #35180d;
+    inset 0 0 0 2px rgba(255, 205, 106, 0.15),
+    inset 0 5px 8px rgba(255, 210, 118, 0.16),
+    0 2px 0 #160703,
+    0 5px 7px rgba(0, 0, 0, 0.22);
   cursor: pointer;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(0.48rem, 2.3vw, 0.66rem);
+  font-size: clamp(0.46rem, 2.05vw, 0.6rem);
   font-weight: 900;
   line-height: 1.02;
   text-align: center;
-  text-shadow: 1px 1px 0 rgba(255, 241, 196, 0.88);
+  text-shadow:
+    1px 1px 0 rgba(255, 241, 196, 0.9),
+    0 1px 0 rgba(53, 24, 13, 0.42);
   text-transform: uppercase;
   transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+}
+
+.city-menu__button::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  z-index: 0;
+  border: 2px solid rgba(53, 24, 13, 0.82);
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 203, 0.76), rgba(255, 246, 203, 0.16) 44%, transparent 46%),
+    linear-gradient(180deg, #ffe38f 0%, #efa134 70%, #b9561d 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 248, 215, 0.7),
+    inset 0 -3px 0 rgba(94, 38, 15, 0.32),
+    0 2px 0 rgba(22, 7, 3, 0.58);
+}
+
+.city-menu__button::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(255, 204, 100, 0.44) 0 7px, transparent 7px calc(100% - 7px), rgba(255, 204, 100, 0.32) calc(100% - 7px)),
+    linear-gradient(180deg, rgba(255, 204, 100, 0.4) 0 7px, transparent 7px calc(100% - 5px), rgba(48, 19, 8, 0.18) calc(100% - 5px));
+  pointer-events: none;
 }
 
 .city-menu__button:hover:not(:disabled) {
@@ -849,27 +880,61 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__button:active:not(:disabled) {
   transform: translateY(2px);
   box-shadow:
-    inset 0 2px 0 rgba(255, 245, 205, 0.58),
-    0 1px 0 #35180d;
+    inset 0 0 0 2px rgba(255, 205, 106, 0.15),
+    inset 0 4px 7px rgba(255, 210, 118, 0.14),
+    0 1px 0 #160703,
+    0 3px 5px rgba(0, 0, 0, 0.2);
 }
 
 .city-menu__button:disabled {
   cursor: default;
-  filter: grayscale(0.2) brightness(0.8);
-  opacity: 0.82;
+  filter: grayscale(0.32) brightness(0.78);
+  opacity: 0.88;
 }
 
 .city-menu__button span:last-child {
-  display: block;
-  overflow-wrap: anywhere;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .city-menu__icon {
   display: block;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  font-size: 1.25rem;
+  position: relative;
+  z-index: 1;
+  width: min(44px, 11vw);
+  height: min(44px, 11vw);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter:
+    drop-shadow(0 2px 0 rgba(53, 24, 13, 0.62))
+    drop-shadow(0 5px 5px rgba(22, 7, 3, 0.18));
   line-height: 1;
   text-shadow: none;
+}
+
+.city-menu__icon--arena {
+  background-image: url("./assets/ui/city-buttons/city-arena-icon.webp");
+}
+
+.city-menu__icon--smith {
+  background-image: url("./assets/ui/city-buttons/city-smith-icon.webp");
+}
+
+.city-menu__icon--armorer {
+  background-image: url("./assets/ui/city-buttons/city-armorer-icon.webp");
+}
+
+.city-menu__icon--magic-shop {
+  background-image: url("./assets/ui/city-buttons/city-magic-shop-icon.webp");
+}
+
+.city-menu__icon--church {
+  background-image: url("./assets/ui/city-buttons/city-church-icon.webp");
 }
 
 .armory-shop {
