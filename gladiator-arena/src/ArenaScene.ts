@@ -116,6 +116,7 @@ import {
   type SlashArcAttackKey,
   type SlashArcTuning,
 } from "./debugTuning";
+import { getPlayerSettings } from "./settingsMenu";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -659,13 +660,14 @@ export class ArenaScene extends Phaser.Scene {
 
   update(time: number): void {
     const idle = getActiveBodyAnimation("idle");
+    const animationAmount = getArenaAnimationAmount();
 
-    if (!this.visuals || !idle.enabled) {
+    if (!this.visuals || !idle.enabled || animationAmount <= 0) {
       return;
     }
 
-    applyLoopingBodyAnimation(this.visuals.player, time, idle);
-    applyLoopingBodyAnimation(this.visuals.enemy, time, idle);
+    applyLoopingBodyAnimation(this.visuals.player, time, idle, animationAmount);
+    applyLoopingBodyAnimation(this.visuals.enemy, time, idle, animationAmount);
   }
 
   sync(nextState: CombatState): void {
@@ -694,18 +696,20 @@ export class ArenaScene extends Phaser.Scene {
       animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left");
     }
 
-    if (nextState.lastPlayerDamage > 0) {
-      showDamagePopup(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
-      shakeFighter(this, visuals.enemy);
-    } else if (nextState.lastPlayerBlocked) {
-      showFloatingText(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, "BLOCK", "#dfe9ff");
-    }
+    if (areArenaVfxEnabled()) {
+      if (nextState.lastPlayerDamage > 0) {
+        showDamagePopup(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
+        shakeFighter(this, visuals.enemy);
+      } else if (nextState.lastPlayerBlocked) {
+        showFloatingText(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, "BLOCK", "#dfe9ff");
+      }
 
-    if (nextState.lastEnemyDamage > 0) {
-      showDamagePopup(this, visuals.player.body.x, visuals.player.body.y - 128, nextState.lastEnemyDamage);
-      shakeFighter(this, visuals.player);
-    } else if (nextState.lastEnemyBlocked) {
-      showFloatingText(this, visuals.player.body.x, visuals.player.body.y - 128, "BLOCK", "#dfe9ff");
+      if (nextState.lastEnemyDamage > 0) {
+        showDamagePopup(this, visuals.player.body.x, visuals.player.body.y - 128, nextState.lastEnemyDamage);
+        shakeFighter(this, visuals.player);
+      } else if (nextState.lastEnemyBlocked) {
+        showFloatingText(this, visuals.player.body.x, visuals.player.body.y - 128, "BLOCK", "#dfe9ff");
+      }
     }
 
     scheduleDeathEffects(this, nextState);
@@ -1909,7 +1913,7 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
   });
 }
 
-function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
+function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
   if (fighter.isShattered) {
     return;
   }
@@ -1918,13 +1922,13 @@ function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animati
     return;
   }
 
-  applyBodyAnimation(fighter, time, animation);
+  applyBodyAnimation(fighter, time, animation, amount);
 }
 
-function applyBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning): void {
+function applyBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
   const duration = Math.max(1, animation.duration);
   const phase = (time % duration) / duration;
-  const blend = 0.5 - Math.cos(phase * Math.PI * 2) * 0.5;
+  const blend = (0.5 - Math.cos(phase * Math.PI * 2) * 0.5) * amount;
 
   applyBodyAnimationBlend(fighter, animation, blend);
 }
@@ -3066,8 +3070,9 @@ function getFighterParts(fighter: FighterVisual): FighterPart[] {
 
 function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, animation: BodyAnimationTuning): void {
   const rig = fighter.paperDollRig;
+  const animationAmount = getArenaAnimationAmount();
 
-  if (!rig || !animation.enabled) {
+  if (!rig || !animation.enabled || animationAmount <= 0) {
     return;
   }
 
@@ -3080,7 +3085,7 @@ function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, ani
 
   target.tweens.addCounter({
     from: 0,
-    to: 1,
+    to: animationAmount,
     duration: Math.max(1, duration / 2),
     yoyo: true,
     ease: "Sine.easeInOut",
@@ -3103,10 +3108,13 @@ function animateAction(
   direction: "left" | "right",
 ): void {
   const sign = direction === "right" ? 1 : -1;
+  const animationAmount = getArenaAnimationAmount();
 
   if (actionId === "forward" || actionId === "back") {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
-    showFloatingText(target, actor.body.x, actor.body.y - 120, actionId === "forward" ? "STEP" : "BACK", "#ffe7a4");
+    if (areArenaVfxEnabled()) {
+      showFloatingText(target, actor.body.x, actor.body.y - 120, actionId === "forward" ? "STEP" : "BACK", "#ffe7a4");
+    }
     return;
   }
 
@@ -3127,16 +3135,20 @@ function animateAction(
 
   if (isAttackBodyAnimationKey(actionId)) {
     playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId));
-    showSlashArc(target, actor, actionId, direction);
+    if (areArenaVfxEnabled()) {
+      showSlashArc(target, actor, actionId, direction);
+    }
   }
 
-  target.tweens.add({
-    targets: actor.sword,
-    angle: actor.sword.angle - 32 * sign,
-    duration: 110,
-    yoyo: true,
-    ease: "Back.easeOut",
-  });
+  if (animationAmount > 0) {
+    target.tweens.add({
+      targets: actor.sword,
+      angle: actor.sword.angle - 32 * sign * animationAmount,
+      duration: 110,
+      yoyo: true,
+      ease: "Back.easeOut",
+    });
+  }
 }
 
 function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAnimationKey {
@@ -3144,6 +3156,10 @@ function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAni
 }
 
 function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: AttackBodyAnimationKey, direction: "left" | "right"): void {
+  if (!areArenaVfxEnabled()) {
+    return;
+  }
+
   const config = getActiveSlashArc(actionId);
   const sign = direction === "right" ? 1 : -1;
   const visualScale = Math.max(0.65, Math.min(1.45, actor.debugScale / 0.3));
@@ -3191,6 +3207,10 @@ function drawSlashArc(graphics: Phaser.GameObjects.Graphics, config: SlashArcTun
 }
 
 function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
+  if (!areArenaVfxEnabled()) {
+    return;
+  }
+
   const parts = getAnimatedFighterParts(fighter);
 
   target.tweens.add({
@@ -3204,6 +3224,10 @@ function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
 }
 
 function showFloatingText(target: Phaser.Scene, x: number, y: number, text: string, color: string): void {
+  if (!areArenaVfxEnabled()) {
+    return;
+  }
+
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = 1 / layerScale;
   const liftY = 48 / layerScale;
@@ -3239,6 +3263,10 @@ function getAnimatedFighterParts(fighter: FighterVisual): FighterPart[] {
 }
 
 function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {
+  if (!areArenaVfxEnabled()) {
+    return;
+  }
+
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = 1 / layerScale;
   const startScale = 0.58 * fixedScreenScale;
@@ -3319,6 +3347,10 @@ function drawDamageBurst(graphics: Phaser.GameObjects.Graphics, offsetX: number,
 }
 
 function createDust(target: Phaser.Scene, x: number, y: number): void {
+  if (!areArenaVfxEnabled()) {
+    return;
+  }
+
   for (let i = 0; i < 7; i += 1) {
     const dot = target.add.circle(x + Math.random() * 36 - 18, y + Math.random() * 16, 5 + Math.random() * 7, 0xf0bd72, 0.72);
     addToArenaEffectsLayer(target, dot);
@@ -3332,4 +3364,18 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
       onComplete: () => dot.destroy(),
     });
   }
+}
+
+function getArenaAnimationAmount(): number {
+  const { animationMode } = getPlayerSettings();
+
+  if (animationMode === "off") {
+    return 0;
+  }
+
+  return animationMode === "half" ? 0.5 : 1;
+}
+
+function areArenaVfxEnabled(): boolean {
+  return getPlayerSettings().vfxEnabled;
 }

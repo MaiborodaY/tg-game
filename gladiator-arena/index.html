@@ -64,6 +64,51 @@
           </div>
         </section>
 
+        <div class="settings-menu" data-settings-menu>
+          <button
+            id="arenaSettingsButton"
+            class="settings-menu__button"
+            type="button"
+            aria-label="Settings"
+            aria-expanded="false"
+            aria-controls="arenaSettingsPanel"
+            data-settings-button
+          >
+            <span aria-hidden="true">&#9881;</span>
+          </button>
+          <section id="arenaSettingsPanel" class="settings-menu__panel" aria-label="Settings" hidden data-settings-panel>
+            <h2>Settings</h2>
+            <fieldset class="settings-menu__group">
+              <legend>Animation</legend>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaAnimation" value="normal" data-setting-animation />
+                <span>Normal</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaAnimation" value="half" data-setting-animation />
+                <span>Half</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaAnimation" value="off" data-setting-animation />
+                <span>Off</span>
+              </label>
+            </fieldset>
+            <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-vfx />
+              <span>VFX</span>
+            </label>
+            <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-low-effects />
+              <span>Low effects</span>
+            </label>
+            <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-fps />
+              <span>Show FPS</span>
+            </label>
+          </section>
+        </div>
+        <output class="fps-counter" aria-label="FPS" hidden data-fps-counter>FPS --</output>
+
         <section class="stage-panel">
           <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
           <div class="battle-ui" aria-label="Battle overlay">

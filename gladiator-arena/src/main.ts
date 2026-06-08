@@ -24,6 +24,7 @@ import {
   type HeroState,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
+import { mountSettingsMenu } from "./settingsMenu";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -58,6 +59,7 @@ let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 
 syncHudTuning(dom.gameScreen, debugTuning);
+mountSettingsMenu();
 
 function playCityCurtainTransition(onCovered?: () => void): void {
   if (!cityMenu) {
