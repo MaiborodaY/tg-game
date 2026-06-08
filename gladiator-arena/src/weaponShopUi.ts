@@ -1,4 +1,5 @@
 import { HERO_ITEM_CATALOG, TRAINING_WEAPON_ID, type HeroItemId, type HeroState } from "./hero";
+import { getShopProductIconUrl } from "./shopItemIcons";
 
 export interface WeaponProduct {
   id: string;
@@ -22,8 +23,12 @@ interface WeaponCategory {
 
 interface WeaponShopOptions {
   getHero: () => HeroState;
-  mountPreview: (parent: HTMLElement) => () => void;
+  mountPreview?: (parent: HTMLElement) => () => void;
   onBuy: (product: WeaponProduct) => void;
+  onPreview?: (product: WeaponProduct) => void;
+  onPreviewClear?: () => void;
+  onOpen?: () => void;
+  onClose?: () => void;
 }
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
@@ -48,10 +53,12 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {
   let selectedCategoryId: string | undefined;
+  let previewProduct: WeaponProduct | undefined;
   let unmountPreview: (() => void) | undefined;
+  const usesCityHeroPreview = !options.mountPreview;
 
   const shop = document.createElement("section");
-  shop.className = "armory-shop weapon-shop";
+  shop.className = usesCityHeroPreview ? "armory-shop weapon-shop armory-shop--city-mode" : "armory-shop weapon-shop";
   shop.hidden = true;
   shop.setAttribute("aria-label", "Оружейник");
 
@@ -85,8 +92,15 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   back.type = "button";
   back.textContent = "Назад";
   back.addEventListener("click", () => {
+    if (previewProduct) {
+      clearProductPreview();
+      render();
+      return;
+    }
+
     if (selectedCategoryId) {
       selectedCategoryId = undefined;
+      clearProductPreview();
       render();
       return;
     }
@@ -96,18 +110,35 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   header.append(title, gold);
   menu.append(header, content, back);
-  panel.append(previewShell, menu);
+  if (options.mountPreview) {
+    panel.append(previewShell);
+  }
+  panel.append(menu);
   shop.append(panel);
   root.append(shop);
 
   function open(): void {
     selectedCategoryId = undefined;
+    clearProductPreview();
+    if (usesCityHeroPreview) {
+      root.classList.add("city-menu--armory-open");
+    }
+    options.onOpen?.();
     shop.hidden = false;
     ensurePreviewMounted();
     render();
   }
 
   function close(): void {
+    if (shop.hidden) {
+      return;
+    }
+
+    clearProductPreview();
+    if (usesCityHeroPreview) {
+      root.classList.remove("city-menu--armory-open");
+    }
+    options.onClose?.();
     shop.hidden = true;
     unmountPreview?.();
     unmountPreview = undefined;
@@ -121,12 +152,19 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     gold.textContent = `GOLD ${hero.gold}`;
     content.replaceChildren();
     content.classList.toggle("armory-shop__content--categories", !selectedCategory);
-    content.classList.toggle("armory-shop__content--products", Boolean(selectedCategory));
+    content.classList.toggle("armory-shop__content--products", Boolean(selectedCategory) && !previewProduct);
+    content.classList.toggle("armory-shop__content--confirm", Boolean(selectedCategory) && Boolean(previewProduct));
+    back.hidden = Boolean(previewProduct);
 
     if (!selectedCategory) {
       WEAPON_CATEGORIES.forEach((category) => {
         content.append(createCategoryButton(category));
       });
+      return;
+    }
+
+    if (previewProduct) {
+      content.append(createPreviewBuyButton(previewProduct, hero), createPreviewBackButton());
       return;
     }
 
@@ -141,7 +179,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
 
   function ensurePreviewMounted(): void {
-    if (unmountPreview) {
+    if (unmountPreview || !options.mountPreview) {
       return;
     }
 
@@ -156,6 +194,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.textContent = category.name;
     button.addEventListener("click", () => {
       selectedCategoryId = category.id;
+      clearProductPreview();
       render();
     });
 
@@ -171,20 +210,75 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       return hero.equipment[item.equipmentSlot] === itemId;
     });
     const canBuy = hero.gold >= product.price;
+    const iconUrl = getShopProductIconUrl(product.itemIds);
 
     button.className = "armory-shop__option armory-shop__option--product";
     button.type = "button";
-    button.disabled = isEquipped || !canBuy;
+    button.disabled = isEquipped;
     button.innerHTML = `
       <span class="armory-shop__product-name">${product.name}</span>
       <span class="armory-shop__product-meta">${getProductActionLabel(isOwned, isEquipped, canBuy)} · ${product.price} GOLD</span>
     `;
+    button.title = product.name;
+    button.setAttribute("aria-label", `${product.name}, ${product.price} GOLD`);
+    button.innerHTML = iconUrl
+      ? `
+        <img class="armory-shop__product-icon" src="${iconUrl}" alt="" draggable="false" />
+        <span class="armory-shop__product-price">${product.price} GOLD</span>
+      `
+      : `<span class="armory-shop__product-price">${product.price} GOLD</span>`;
     button.addEventListener("click", () => {
+      previewProduct = product;
+      options.onPreview?.(product);
+      render();
+    });
+
+    return button;
+  }
+
+  function createPreviewBuyButton(product: WeaponProduct, hero: HeroState): HTMLButtonElement {
+    const button = document.createElement("button");
+    const isEquipped = product.itemIds.every((itemId) => {
+      const item = HERO_ITEM_CATALOG[itemId];
+
+      return hero.equipment[item.equipmentSlot] === itemId;
+    });
+    const canBuy = hero.gold >= product.price;
+
+    button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--buy";
+    button.type = "button";
+    button.disabled = isEquipped || !canBuy;
+    button.textContent = `Купить · ${product.price} GOLD`;
+    button.addEventListener("click", () => {
+      previewProduct = undefined;
       options.onBuy(product);
       render();
     });
 
     return button;
+  }
+
+  function createPreviewBackButton(): HTMLButtonElement {
+    const button = document.createElement("button");
+
+    button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--back";
+    button.type = "button";
+    button.textContent = "Назад";
+    button.addEventListener("click", () => {
+      clearProductPreview();
+      render();
+    });
+
+    return button;
+  }
+
+  function clearProductPreview(): void {
+    if (!previewProduct) {
+      return;
+    }
+
+    previewProduct = undefined;
+    options.onPreviewClear?.();
   }
 
   return { open, close, render };

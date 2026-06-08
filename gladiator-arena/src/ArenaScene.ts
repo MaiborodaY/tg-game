@@ -14,8 +14,12 @@ import {
   ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL,
   ARENA_BACKGROUND_MID_LAYER_ASSET_KEY,
   ARENA_BACKGROUND_MID_LAYER_ASSET_URL,
+  CITY_ARMORY_BACKGROUND_ASSET_KEY,
+  CITY_ARMORY_BACKGROUND_ASSET_URL,
   CITY_BACKGROUND_ASSET_KEY,
   CITY_BACKGROUND_ASSET_URL,
+  CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
+  CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
@@ -356,9 +360,14 @@ const CITY_HERO_SLOT_MAX_WIDTH = 190;
 const CITY_HERO_SLOT_WIDTH_RATIO = 0.38;
 const CITY_HERO_SLOT_BOTTOM = 82;
 const CITY_CAMERA_DEFAULT_ZOOM = 1;
-const CITY_CAMERA_ARMORY_ZOOM = 2.6;
+const CITY_CAMERA_ARMORY_ZOOM = 3.5;
 const CITY_CAMERA_TWEEN_DURATION = 280;
-const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 88;
+const CITY_BACKGROUND_FADE_DURATION = 220;
+const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 30;
+const CITY_ARMORY_HERO_LIFT_Y = 132;
+const CITY_BACKGROUND_DEPTH = -30;
+const CITY_HERO_BODY_TINT = 0xf0b892;
+const CITY_HERO_EQUIPMENT_TINT = 0xd3ad84;
 const HERO_PORTRAIT_VIEWER_SIZE = 112;
 const HERO_PORTRAIT_CENTER_X = HERO_PORTRAIT_VIEWER_SIZE / 2;
 const HERO_PORTRAIT_FEET_Y = 194;
@@ -472,6 +481,8 @@ function preloadArenaAssets(target: Phaser.Scene): void {
 
 function preloadCityAssets(target: Phaser.Scene): void {
   target.load.image(CITY_BACKGROUND_ASSET_KEY, CITY_BACKGROUND_ASSET_URL);
+  target.load.image(CITY_ARMORY_BACKGROUND_ASSET_KEY, CITY_ARMORY_BACKGROUND_ASSET_URL);
+  target.load.image(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL);
 }
 
 function preloadPaperDollAssets(target: Phaser.Scene): void {
@@ -696,7 +707,7 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
   };
 }
 
-type CityCameraMode = "default" | "armory";
+type CityCameraMode = "default" | "armory" | "weaponShop";
 
 interface CityHeroLayout {
   feetX: number;
@@ -707,16 +718,22 @@ interface CityHeroLayout {
 export interface CitySceneApi {
   focusDefault: () => void;
   focusArmory: () => void;
+  focusWeaponShop: () => void;
   destroy: () => void;
 }
 
 class CityHeroScene extends Phaser.Scene {
   private background?: Phaser.GameObjects.Image;
+  private backgroundNext?: Phaser.GameObjects.Image;
+  private backgroundFadeTween?: Phaser.Tweens.Tween;
   private fighter?: FighterVisual;
-  private groundShadow?: Phaser.GameObjects.Ellipse;
+  private heroCamera?: Phaser.Cameras.Scene2D.Camera;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private cameraMode: CityCameraMode = "default";
+  private backgroundAssetKey = CITY_BACKGROUND_ASSET_KEY;
+  private cityHeroLiftProgress = 0;
+  private cityHeroLiftTween?: Phaser.Tweens.Tween;
 
   constructor() {
     super("CityHeroScene");
@@ -729,18 +746,25 @@ class CityHeroScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-    this.background = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5);
-    this.groundShadow = this.add.ellipse(0, 0, 104, 20, 0x2a190f, 0.28);
+    this.heroCamera = this.cameras.add(0, 0, this.sceneWidth, this.sceneHeight, false, "CityHeroCamera");
+    this.heroCamera.setBackgroundColor("rgba(0, 0, 0, 0)");
+    this.background = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH);
+    this.backgroundNext = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH + 1).setAlpha(0).setVisible(false);
     this.fighter = createPaperDollFighter(
       this,
-      { ...createPlayerPaperDollOptions(0, -PLAYER_AVATAR_FEET_Y_OFFSET), castsShadow: false },
+      { ...createPlayerPaperDollOptions(0, -PLAYER_AVATAR_FEET_Y_OFFSET), castsShadow: true },
     );
     this.fighter.name.setVisible(false);
+    applyCityHeroLighting(this.fighter);
+    this.syncCameraLayers();
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.cityHeroLiftTween?.remove();
+      this.backgroundFadeTween?.remove();
+      this.heroCamera = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
@@ -760,12 +784,23 @@ class CityHeroScene extends Phaser.Scene {
 
   focusDefault(): void {
     this.cameraMode = "default";
-    this.syncCamera(false);
+    this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY);
+    this.tweenHeroLiftTo(0);
+    this.syncCamera(false, 0);
   }
 
   focusArmory(): void {
     this.cameraMode = "armory";
-    this.syncCamera(false);
+    this.transitionBackgroundTo(CITY_ARMORY_BACKGROUND_ASSET_KEY);
+    this.tweenHeroLiftTo(1);
+    this.syncCamera(false, 1);
+  }
+
+  focusWeaponShop(): void {
+    this.cameraMode = "weaponShop";
+    this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY);
+    this.tweenHeroLiftTo(1);
+    this.syncCamera(false, 1);
   }
 
   private sync(): void {
@@ -774,14 +809,18 @@ class CityHeroScene extends Phaser.Scene {
     }
 
     this.syncBackground();
-    this.cameras.main.setBounds(0, 0, this.sceneWidth, this.sceneHeight);
+    this.syncCameraViewports();
+    this.syncFighterLayout();
+    this.syncCamera(true);
+  }
 
+  private syncFighterLayout(): void {
+    if (!this.fighter) {
+      return;
+    }
     const layout = this.getHeroLayout();
 
     applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
-    this.groundShadow?.setPosition(layout.feetX, layout.feetY + 8 * layout.scale);
-    this.groundShadow?.setScale(layout.scale, layout.scale);
-    this.syncCamera(true);
   }
 
   private handleResize(): void {
@@ -793,22 +832,112 @@ class CityHeroScene extends Phaser.Scene {
       return;
     }
 
-    const texture = this.textures.get(CITY_BACKGROUND_ASSET_KEY);
+    if (!this.backgroundFadeTween && this.background.texture.key !== this.backgroundAssetKey) {
+      this.background.setTexture(this.backgroundAssetKey);
+    }
+
+    this.syncBackgroundImage(this.background, this.backgroundAssetKey);
+    if (this.backgroundNext?.visible) {
+      this.syncBackgroundImage(this.backgroundNext, this.backgroundNext.texture.key);
+    }
+  }
+
+  private transitionBackgroundTo(assetKey: string): void {
+    if (assetKey === this.backgroundAssetKey) {
+      this.backgroundFadeTween?.remove();
+      this.backgroundFadeTween = undefined;
+      this.backgroundNext?.setVisible(false).setAlpha(0);
+      this.background?.setTexture(assetKey).setAlpha(1);
+      this.syncBackground();
+      return;
+    }
+
+    if (!this.background || !this.backgroundNext) {
+      this.backgroundAssetKey = assetKey;
+      this.syncBackground();
+      return;
+    }
+
+    this.backgroundFadeTween?.remove();
+    this.backgroundFadeTween = undefined;
+    this.background.setTexture(this.backgroundAssetKey).setAlpha(1).setVisible(true);
+    this.backgroundNext.setTexture(assetKey).setAlpha(0).setVisible(true);
+    this.syncBackgroundImage(this.background, this.backgroundAssetKey);
+    this.syncBackgroundImage(this.backgroundNext, assetKey);
+
+    this.backgroundFadeTween = this.tweens.add({
+      targets: this.backgroundNext,
+      alpha: 1,
+      duration: CITY_BACKGROUND_FADE_DURATION,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        this.backgroundAssetKey = assetKey;
+        this.background?.setTexture(assetKey).setAlpha(1).setVisible(true);
+        this.backgroundNext?.setVisible(false).setAlpha(0);
+        this.backgroundFadeTween = undefined;
+        this.syncBackground();
+      },
+    });
+  }
+
+  private syncBackgroundImage(background: Phaser.GameObjects.Image, assetKey: string): void {
+    const texture = this.textures.get(assetKey);
     const source = texture.getSourceImage() as { width?: number; height?: number };
     const sourceWidth = source.width || this.sceneWidth;
     const sourceHeight = source.height || this.sceneHeight;
     const scale = Math.max(this.sceneWidth / sourceWidth, this.sceneHeight / sourceHeight);
 
-    this.background.setPosition(this.sceneWidth / 2, this.sceneHeight / 2);
-    this.background.setScale(scale);
+    background.setPosition(this.sceneWidth / 2, this.sceneHeight / 2);
+    background.setScale(scale);
   }
 
-  private syncCamera(instant: boolean): void {
-    const camera = this.cameras.main;
-    const duration = instant ? 0 : CITY_CAMERA_TWEEN_DURATION;
-    const layout = this.getHeroLayout();
+  private syncCameraLayers(): void {
+    if (!this.background || !this.backgroundNext || !this.fighter || !this.heroCamera) {
+      return;
+    }
 
-    if (this.cameraMode === "armory") {
+    this.cameras.main.ignore(getFighterParts(this.fighter) as unknown as Phaser.GameObjects.GameObject[]);
+    this.heroCamera.ignore([this.background, this.backgroundNext]);
+  }
+
+  private syncCameraViewports(): void {
+    const width = this.sceneWidth;
+    const height = this.sceneHeight;
+    const backgroundCamera = this.cameras.main;
+    const heroCamera = this.getHeroCamera();
+
+    backgroundCamera.setViewport(0, 0, width, height);
+    backgroundCamera.setBounds(0, 0, width, height);
+    backgroundCamera.setZoom(CITY_CAMERA_DEFAULT_ZOOM);
+    backgroundCamera.centerOn(width / 2, height / 2);
+
+    heroCamera.setViewport(0, 0, width, height);
+    heroCamera.setBounds(0, 0, width, height);
+  }
+
+  private tweenHeroLiftTo(progress: number): void {
+    this.cityHeroLiftTween?.remove();
+
+    this.cityHeroLiftTween = this.tweens.add({
+      targets: this,
+      cityHeroLiftProgress: progress,
+      duration: CITY_CAMERA_TWEEN_DURATION,
+      ease: "Sine.easeInOut",
+      onUpdate: () => this.syncFighterLayout(),
+      onComplete: () => {
+        this.cityHeroLiftProgress = progress;
+        this.cityHeroLiftTween = undefined;
+        this.syncFighterLayout();
+      },
+    });
+  }
+
+  private syncCamera(instant: boolean, targetLiftProgress = this.cityHeroLiftProgress): void {
+    const camera = this.getHeroCamera();
+    const duration = instant ? 0 : CITY_CAMERA_TWEEN_DURATION;
+    const layout = this.getHeroLayout(targetLiftProgress);
+
+    if (this.cameraMode !== "default") {
       const targetY = layout.feetY - CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale);
 
       if (instant) {
@@ -832,7 +961,11 @@ class CityHeroScene extends Phaser.Scene {
     camera.zoomTo(CITY_CAMERA_DEFAULT_ZOOM, duration, "Sine.easeInOut");
   }
 
-  private getHeroLayout(): CityHeroLayout {
+  private getHeroCamera(): Phaser.Cameras.Scene2D.Camera {
+    return this.heroCamera ?? this.cameras.main;
+  }
+
+  private getHeroLayout(liftProgress = this.cityHeroLiftProgress): CityHeroLayout {
     const slotWidth = clampNumber(this.sceneWidth * CITY_HERO_SLOT_WIDTH_RATIO, CITY_HERO_SLOT_MIN_WIDTH, CITY_HERO_SLOT_MAX_WIDTH);
     const slotScale = slotWidth / CITY_HERO_VIEWER_WIDTH;
     const slotHeight = CITY_HERO_VIEWER_HEIGHT * slotScale;
@@ -842,7 +975,7 @@ class CityHeroScene extends Phaser.Scene {
 
     return {
       feetX: slotLeft + debugTuning.cityHeroX * slotScale,
-      feetY: slotTop + debugTuning.cityHeroY * slotScale,
+      feetY: slotTop + debugTuning.cityHeroY * slotScale - CITY_ARMORY_HERO_LIFT_Y * liftProgress,
       scale: debugTuning.cityHeroScale * slotScale,
     };
   }
@@ -865,6 +998,11 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     scene = readyScene;
     if (pendingCameraMode === "armory") {
       readyScene.focusArmory();
+      return;
+    }
+
+    if (pendingCameraMode === "weaponShop") {
+      readyScene.focusWeaponShop();
       return;
     }
 
@@ -893,6 +1031,10 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     focusArmory: () => {
       pendingCameraMode = "armory";
       scene?.focusArmory();
+    },
+    focusWeaponShop: () => {
+      pendingCameraMode = "weaponShop";
+      scene?.focusWeaponShop();
     },
     destroy: () => {
       if (cityReadyCallback === readyCallbackForGame) {
@@ -1381,6 +1523,36 @@ function tintPaperDollShadowObject(gameObject: Phaser.GameObjects.GameObject): v
 
   if (gameObject instanceof Phaser.GameObjects.Container) {
     gameObject.list.forEach((child) => tintPaperDollShadowObject(child));
+  }
+}
+
+function applyCityHeroLighting(fighter: FighterVisual): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  RIG_PART_KEYS.forEach((key) => {
+    tintPaperDollImages(rig.parts[key], CITY_HERO_BODY_TINT);
+  });
+
+  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    tintPaperDollImages(rig.equipment[slotKey], CITY_HERO_EQUIPMENT_TINT);
+  });
+}
+
+function tintPaperDollImages(gameObject: Phaser.GameObjects.GameObject | undefined, tint: number): void {
+  if (!gameObject) {
+    return;
+  }
+
+  if (gameObject instanceof Phaser.GameObjects.Image || gameObject instanceof Phaser.GameObjects.Sprite) {
+    gameObject.setTint(tint);
+  }
+
+  if (gameObject instanceof Phaser.GameObjects.Container) {
+    gameObject.list.forEach((child) => tintPaperDollImages(child, tint));
   }
 }
 
@@ -2860,10 +3032,3 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
     });
   }
 }
-
-
-
-
-
-
-

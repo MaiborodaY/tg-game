@@ -946,7 +946,7 @@ body.debug-active .city-menu__portrait-button:active {
   width: 100%;
   max-height: min(280px, 42dvh);
   pointer-events: auto;
-  animation: armory-shop-rise 240ms ease-out both;
+  animation: armory-shop-rise 320ms cubic-bezier(0.2, 0.88, 0.26, 1.08) both;
 }
 
 .armory-shop__header {
@@ -993,7 +993,13 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__content--products {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+}
+
+.armory-shop__content--confirm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: end;
+  animation: armory-shop-confirm-rise 180ms ease-out both;
 }
 
 .armory-shop__option,
@@ -1023,6 +1029,14 @@ body.debug-active .city-menu__portrait-button:active {
   display: grid;
   gap: 4px;
   padding: 7px 9px;
+}
+
+.armory-shop__option--product {
+  justify-items: center;
+  align-content: center;
+  min-height: 86px;
+  padding: 7px;
+  text-align: center;
 }
 
 .armory-shop__option:hover:not(:disabled),
@@ -1057,18 +1071,68 @@ body.debug-active .city-menu__portrait-button:active {
   letter-spacing: 0.04em;
 }
 
+.armory-shop__product-icon {
+  display: block;
+  width: min(58px, 16vw);
+  height: 48px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 0 rgba(53, 24, 13, 0.46));
+}
+
+.armory-shop__product-price {
+  display: block;
+  color: #35180d;
+  font-size: clamp(0.56rem, 2.3vw, 0.72rem);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.86);
+  white-space: nowrap;
+}
+
+.armory-shop__confirm-button {
+  min-height: 48px;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.armory-shop__confirm-button--buy {
+  background:
+    linear-gradient(135deg, rgba(255, 246, 203, 0.9), rgba(255, 246, 203, 0.22) 48%, transparent 50%),
+    linear-gradient(180deg, #fff1bd 0%, #efad3f 100%);
+}
+
 .armory-shop__back {
   padding: 8px 10px;
   text-align: center;
 }
 
-@keyframes armory-shop-rise {
+@keyframes armory-shop-confirm-rise {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(14px);
   }
 
   to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes armory-shop-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(34px) scale(0.985);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.004);
+  }
+
+  100% {
     opacity: 1;
     transform: translateY(0);
   }

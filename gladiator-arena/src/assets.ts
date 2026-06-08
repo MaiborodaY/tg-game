@@ -9,6 +9,10 @@ export const ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL = new URL("./assets/arena/l
 
 export const CITY_BACKGROUND_ASSET_KEY = "city-menu-bg";
 export const CITY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city.webp", import.meta.url).href;
+export const CITY_ARMORY_BACKGROUND_ASSET_KEY = "city-armory-bg";
+export const CITY_ARMORY_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-armory.webp", import.meta.url).href;
+export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY = "city-weapon-shop-bg";
+export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-weapon-shop.webp", import.meta.url).href;
 
 export const PLAYER_BODY_ASSET_KEY = "body-light-01";
 export const PLAYER_BODY_ASSET_URL = new URL("./assets/fighters/bodies/body-light-01.webp", import.meta.url).href;

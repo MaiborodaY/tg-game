@@ -2,7 +2,6 @@ import { mountActionArc, type ActionArcApi } from "./actionArc";
 import {
   launchArena,
   mountCityHeroPreview,
-  mountDebugCharacterViewer,
   mountHeroPortraitPreview,
   setPlayerEquipment,
   type ArenaScene,
@@ -13,7 +12,17 @@ import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition }
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
-import { applyBattleReward, buyAndEquipHeroItems, createCombatStateFromHero, createDefaultHero, getBattleReward, type HeroState } from "./hero";
+import {
+  HERO_ITEM_CATALOG,
+  applyBattleReward,
+  buyAndEquipHeroItems,
+  createCombatStateFromHero,
+  createDefaultHero,
+  getBattleReward,
+  type HeroEquipment,
+  type HeroItemId,
+  type HeroState,
+} from "./hero";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -229,6 +238,26 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   weaponShop?.render();
 }
 
+function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
+  const equipment: HeroEquipment = { ...hero.equipment };
+
+  itemIds.forEach((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    equipment[item.equipmentSlot] = itemId;
+  });
+
+  return equipment;
+}
+
+function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
+  setPlayerEquipment(createShopPreviewEquipment(product.itemIds));
+}
+
+function clearShopPreview(): void {
+  setPlayerEquipment(hero.equipment);
+}
+
 function returnToCity(): void {
   if (enemyTurnTimer) {
     window.clearTimeout(enemyTurnTimer);
@@ -276,12 +305,17 @@ mountCityPreviews();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,
-    mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
     onBuy: handleShopBuy,
+    onPreview: handleShopPreview,
+    onPreviewClear: clearShopPreview,
+    onOpen: () => cityScene?.focusWeaponShop(),
+    onClose: () => cityScene?.focusDefault(),
   });
   armoryShop = mountArmoryShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
+    onPreview: handleShopPreview,
+    onPreviewClear: clearShopPreview,
     onOpen: () => cityScene?.focusArmory(),
     onClose: () => cityScene?.focusDefault(),
   });

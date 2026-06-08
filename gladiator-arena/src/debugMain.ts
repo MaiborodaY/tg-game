@@ -22,6 +22,7 @@ import {
 } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
 import {
+  HERO_ITEM_CATALOG,
   applyBattleReward,
   buyAndEquipHeroItems,
   createCombatStateFromHero,
@@ -29,6 +30,8 @@ import {
   createStarterHeroEquipment,
   createStarterHeroInventory,
   getBattleReward,
+  type HeroEquipment,
+  type HeroItemId,
   type HeroState,
 } from "./hero";
 import { logTurnProbe, mountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
@@ -188,6 +191,26 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   armoryShop?.render();
 }
 
+function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
+  const equipment: HeroEquipment = { ...hero.equipment };
+
+  itemIds.forEach((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    equipment[item.equipmentSlot] = itemId;
+  });
+
+  return equipment;
+}
+
+function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
+  setPlayerEquipment(createShopPreviewEquipment(product.itemIds));
+}
+
+function clearShopPreview(): void {
+  setPlayerEquipment(hero.equipment);
+}
+
 function previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
   arenaScene?.previewSlashArc(actionId, withBodyAnimation);
 }
@@ -289,11 +312,15 @@ function startDebugApp(): void {
       getHero: () => hero,
       mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
       onBuy: handleShopBuy,
+      onPreview: handleShopPreview,
+      onPreviewClear: clearShopPreview,
     });
     armoryShop = mountArmoryShop(cityMenu, {
       getHero: () => hero,
       mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
       onBuy: handleShopBuy,
+      onPreview: handleShopPreview,
+      onPreviewClear: clearShopPreview,
     });
   }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen, {
