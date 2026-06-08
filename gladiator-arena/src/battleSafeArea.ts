@@ -4,7 +4,8 @@ export interface BattleSafeArea {
   bottom: number;
 }
 
-const BATTLE_SAFE_GAP = 12;
+const BATTLE_SAFE_GAP_RATIO = 0.18;
+const BATTLE_SAFE_MIN_GAP = 24;
 
 export function getBattleSafeArea(root?: HTMLElement | null, viewportHeight = GAME_HEIGHT): BattleSafeArea {
   return {
@@ -32,7 +33,8 @@ export function getBattleSafeBottom(root?: HTMLElement | null, viewportHeight = 
   }
 
   const screenToViewportY = viewportHeight / battleRect.height;
-  const safeBottom = (hudRect.top - battleRect.top - BATTLE_SAFE_GAP) * screenToViewportY;
+  const visualClearance = Math.max(BATTLE_SAFE_MIN_GAP, hudRect.height * BATTLE_SAFE_GAP_RATIO);
+  const safeBottom = (hudRect.top - battleRect.top - visualClearance) * screenToViewportY;
 
   return clamp(safeBottom, 0, viewportHeight);
 }
