@@ -51,6 +51,38 @@ let weaponShop: WeaponShopApi | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let unmountHeroPortraitPreview: (() => void) | undefined;
+const CITY_CURTAIN_TRANSITION_MS = 620;
+const CITY_CURTAIN_SWITCH_MS = 210;
+let cityCurtainCleanupTimer: number | undefined;
+let cityCurtainSwitchTimer: number | undefined;
+
+function playCityCurtainTransition(onCovered?: () => void): void {
+  if (!cityMenu) {
+    onCovered?.();
+    return;
+  }
+
+  if (cityCurtainCleanupTimer) {
+    window.clearTimeout(cityCurtainCleanupTimer);
+    cityCurtainCleanupTimer = undefined;
+  }
+  if (cityCurtainSwitchTimer) {
+    window.clearTimeout(cityCurtainSwitchTimer);
+    cityCurtainSwitchTimer = undefined;
+  }
+
+  cityMenu.classList.remove("city-menu--curtain-play");
+  void cityMenu.offsetWidth;
+  cityMenu.classList.add("city-menu--curtain-play");
+  cityCurtainSwitchTimer = window.setTimeout(() => {
+    cityCurtainSwitchTimer = undefined;
+    onCovered?.();
+  }, CITY_CURTAIN_SWITCH_MS);
+  cityCurtainCleanupTimer = window.setTimeout(() => {
+    cityCurtainCleanupTimer = undefined;
+    cityMenu.classList.remove("city-menu--curtain-play");
+  }, CITY_CURTAIN_TRANSITION_MS);
+}
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): void {
   const syncArena = options.syncArena ?? true;
@@ -308,16 +340,26 @@ if (cityMenu) {
     onBuy: handleShopBuy,
     onPreview: handleShopPreview,
     onPreviewClear: clearShopPreview,
-    onOpen: () => cityScene?.focusWeaponShop(),
-    onClose: () => cityScene?.focusDefault(),
+    transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
+    onOpen: () => {
+      playCityCurtainTransition(() => cityScene?.focusWeaponShop(true));
+    },
+    onClose: () => {
+      playCityCurtainTransition(() => cityScene?.focusDefault(true));
+    },
   });
   armoryShop = mountArmoryShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
     onPreview: handleShopPreview,
     onPreviewClear: clearShopPreview,
-    onOpen: () => cityScene?.focusArmory(),
-    onClose: () => cityScene?.focusDefault(),
+    transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
+    onOpen: () => {
+      playCityCurtainTransition(() => cityScene?.focusArmory(true));
+    },
+    onClose: () => {
+      playCityCurtainTransition(() => cityScene?.focusDefault(true));
+    },
   });
 }
 renderDom(dom, state);

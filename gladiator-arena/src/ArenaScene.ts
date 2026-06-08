@@ -362,7 +362,7 @@ const CITY_HERO_SLOT_WIDTH_RATIO = 0.38;
 const CITY_HERO_SLOT_BOTTOM = 82;
 const CITY_CAMERA_DEFAULT_ZOOM = 1;
 const CITY_CAMERA_ARMORY_ZOOM = 3.5;
-const CITY_CAMERA_TWEEN_DURATION = 280;
+const CITY_CAMERA_TWEEN_DURATION = 420;
 const CITY_BACKGROUND_FADE_DURATION = 220;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 24;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 15;
@@ -732,9 +732,9 @@ interface CityCloud {
 }
 
 export interface CitySceneApi {
-  focusDefault: () => void;
-  focusArmory: () => void;
-  focusWeaponShop: () => void;
+  focusDefault: (instant?: boolean) => void;
+  focusArmory: (instant?: boolean) => void;
+  focusWeaponShop: (instant?: boolean) => void;
   destroy: () => void;
 }
 
@@ -805,28 +805,28 @@ class CityHeroScene extends Phaser.Scene {
     applyBodyAnimation(this.fighter, time, idle);
   }
 
-  focusDefault(): void {
+  focusDefault(instant = false): void {
     this.cameraMode = "default";
-    this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY);
-    this.transitionCityCloudsTo(1);
-    this.tweenHeroLiftTo(0);
-    this.syncCamera(false, 0);
+    this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY, instant);
+    this.transitionCityCloudsTo(1, instant);
+    this.tweenHeroLiftTo(0, instant);
+    this.syncCamera(instant, 0);
   }
 
-  focusArmory(): void {
+  focusArmory(instant = false): void {
     this.cameraMode = "armory";
-    this.transitionBackgroundTo(CITY_ARMORY_BACKGROUND_ASSET_KEY);
-    this.transitionCityCloudsTo(0);
-    this.tweenHeroLiftTo(1);
-    this.syncCamera(false, 1);
+    this.transitionBackgroundTo(CITY_ARMORY_BACKGROUND_ASSET_KEY, instant);
+    this.transitionCityCloudsTo(0, instant);
+    this.tweenHeroLiftTo(1, instant);
+    this.syncCamera(instant, 1);
   }
 
-  focusWeaponShop(): void {
+  focusWeaponShop(instant = false): void {
     this.cameraMode = "weaponShop";
-    this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY);
-    this.transitionCityCloudsTo(0);
-    this.tweenHeroLiftTo(1);
-    this.syncCamera(false, 1);
+    this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, instant);
+    this.transitionCityCloudsTo(0, instant);
+    this.tweenHeroLiftTo(1, instant);
+    this.syncCamera(instant, 1);
   }
 
   private sync(): void {
@@ -869,7 +869,17 @@ class CityHeroScene extends Phaser.Scene {
     }
   }
 
-  private transitionBackgroundTo(assetKey: string): void {
+  private transitionBackgroundTo(assetKey: string, instant = false): void {
+    if (instant) {
+      this.backgroundFadeTween?.remove();
+      this.backgroundFadeTween = undefined;
+      this.backgroundAssetKey = assetKey;
+      this.background?.setTexture(assetKey).setAlpha(1).setVisible(true);
+      this.backgroundNext?.setVisible(false).setAlpha(0);
+      this.syncBackground();
+      return;
+    }
+
     if (assetKey === this.backgroundAssetKey) {
       this.backgroundFadeTween?.remove();
       this.backgroundFadeTween = undefined;
@@ -974,7 +984,18 @@ class CityHeroScene extends Phaser.Scene {
     });
   }
 
-  private transitionCityCloudsTo(visibility: number): void {
+  private transitionCityCloudsTo(visibility: number, instant = false): void {
+    if (instant) {
+      this.cloudsAlphaTween?.remove();
+      this.cloudsAlphaTween = undefined;
+      this.cityCloudVisibility = visibility;
+      if (visibility > 0) {
+        this.clouds.forEach((cloud) => cloud.image.setVisible(true));
+      }
+      this.applyCityCloudVisibility();
+      return;
+    }
+
     if (Math.abs(this.cityCloudVisibility - visibility) < 0.01) {
       this.cityCloudVisibility = visibility;
       this.applyCityCloudVisibility();
@@ -1032,8 +1053,15 @@ class CityHeroScene extends Phaser.Scene {
     heroCamera.setBounds(0, 0, width, height);
   }
 
-  private tweenHeroLiftTo(progress: number): void {
+  private tweenHeroLiftTo(progress: number, instant = false): void {
     this.cityHeroLiftTween?.remove();
+
+    if (instant) {
+      this.cityHeroLiftProgress = progress;
+      this.cityHeroLiftTween = undefined;
+      this.syncFighterLayout();
+      return;
+    }
 
     this.cityHeroLiftTween = this.tweens.add({
       targets: this,
@@ -1064,8 +1092,8 @@ class CityHeroScene extends Phaser.Scene {
         return;
       }
 
-      camera.pan(targetX, targetY, duration, "Sine.easeInOut");
-      camera.zoomTo(CITY_CAMERA_ARMORY_ZOOM, duration, "Sine.easeInOut");
+      camera.pan(targetX, targetY, duration, "Cubic.easeOut");
+      camera.zoomTo(CITY_CAMERA_ARMORY_ZOOM, duration, "Cubic.easeOut");
       return;
     }
 
@@ -1142,17 +1170,17 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   });
 
   return {
-    focusDefault: () => {
+    focusDefault: (instant = false) => {
       pendingCameraMode = "default";
-      scene?.focusDefault();
+      scene?.focusDefault(instant);
     },
-    focusArmory: () => {
+    focusArmory: (instant = false) => {
       pendingCameraMode = "armory";
-      scene?.focusArmory();
+      scene?.focusArmory(instant);
     },
-    focusWeaponShop: () => {
+    focusWeaponShop: (instant = false) => {
       pendingCameraMode = "weaponShop";
-      scene?.focusWeaponShop();
+      scene?.focusWeaponShop(instant);
     },
     destroy: () => {
       if (cityReadyCallback === readyCallbackForGame) {

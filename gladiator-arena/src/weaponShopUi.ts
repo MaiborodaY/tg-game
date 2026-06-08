@@ -30,6 +30,7 @@ interface WeaponShopOptions {
   onPreviewClear?: () => void;
   onOpen?: () => void;
   onClose?: () => void;
+  transitionDelayMs?: number;
 }
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
@@ -59,7 +60,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   let selectedCategoryId: string | undefined;
   let previewProduct: WeaponProduct | undefined;
   let unmountPreview: (() => void) | undefined;
+  let transitionTimer: number | undefined;
   const usesCityHeroPreview = !options.mountPreview;
+  const transitionDelayMs = options.transitionDelayMs ?? 0;
 
   const shop = document.createElement("section");
   shop.className = usesCityHeroPreview ? "armory-shop weapon-shop armory-shop--city-mode" : "armory-shop weapon-shop";
@@ -125,30 +128,36 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   root.append(shop);
 
   function open(): void {
+    clearTransitionTimer();
     selectedCategoryId = WEAPON_CATEGORIES[0]?.id;
     clearProductPreview();
-    if (usesCityHeroPreview) {
-      root.classList.add("city-menu--armory-open");
-    }
     options.onOpen?.();
-    shop.hidden = false;
-    ensurePreviewMounted();
-    render();
+    scheduleShopTransition(() => {
+      if (usesCityHeroPreview) {
+        root.classList.add("city-menu--armory-open");
+      }
+      shop.hidden = false;
+      ensurePreviewMounted();
+      render();
+    });
   }
 
   function close(): void {
-    if (shop.hidden) {
+    if (shop.hidden && !transitionTimer) {
       return;
     }
 
+    clearTransitionTimer();
     clearProductPreview();
-    if (usesCityHeroPreview) {
-      root.classList.remove("city-menu--armory-open");
-    }
     options.onClose?.();
-    shop.hidden = true;
-    unmountPreview?.();
-    unmountPreview = undefined;
+    scheduleShopTransition(() => {
+      if (usesCityHeroPreview) {
+        root.classList.remove("city-menu--armory-open");
+      }
+      shop.hidden = true;
+      unmountPreview?.();
+      unmountPreview = undefined;
+    });
   }
 
   function render(): void {
@@ -299,6 +308,27 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
     previewProduct = undefined;
     options.onPreviewClear?.();
+  }
+
+  function scheduleShopTransition(callback: () => void): void {
+    if (transitionDelayMs <= 0) {
+      callback();
+      return;
+    }
+
+    transitionTimer = window.setTimeout(() => {
+      transitionTimer = undefined;
+      callback();
+    }, transitionDelayMs);
+  }
+
+  function clearTransitionTimer(): void {
+    if (!transitionTimer) {
+      return;
+    }
+
+    window.clearTimeout(transitionTimer);
+    transitionTimer = undefined;
   }
 
   return { open, close, render };
