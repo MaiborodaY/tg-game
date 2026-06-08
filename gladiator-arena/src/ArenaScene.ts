@@ -18,6 +18,7 @@ import {
   CITY_ARMORY_BACKGROUND_ASSET_URL,
   CITY_BACKGROUND_ASSET_KEY,
   CITY_BACKGROUND_ASSET_URL,
+  CITY_CLOUD_ASSETS,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
@@ -366,6 +367,8 @@ const CITY_BACKGROUND_FADE_DURATION = 220;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 30;
 const CITY_ARMORY_HERO_LIFT_Y = 132;
 const CITY_BACKGROUND_DEPTH = -30;
+const CITY_CLOUD_DEPTH = CITY_BACKGROUND_DEPTH + 4;
+const CITY_CLOUD_FADE_DURATION = 180;
 const CITY_HERO_BODY_TINT = 0xf0b892;
 const CITY_HERO_EQUIPMENT_TINT = 0xd3ad84;
 const HERO_PORTRAIT_VIEWER_SIZE = 112;
@@ -483,6 +486,7 @@ function preloadCityAssets(target: Phaser.Scene): void {
   target.load.image(CITY_BACKGROUND_ASSET_KEY, CITY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_ARMORY_BACKGROUND_ASSET_KEY, CITY_ARMORY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL);
+  CITY_CLOUD_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
 }
 
 function preloadPaperDollAssets(target: Phaser.Scene): void {
@@ -611,7 +615,9 @@ export class ArenaScene extends Phaser.Scene {
     readyCallback?.(this);
   }
 
-  update(time: number): void {
+  update(time: number, delta: number): void {
+    this.updateCityClouds(delta);
+
     const idle = getActiveBodyAnimation("idle");
 
     if (!this.visuals || !idle.enabled) {
@@ -715,6 +721,17 @@ interface CityHeroLayout {
   scale: number;
 }
 
+interface CityCloud {
+  image: Phaser.GameObjects.Image;
+  speed: number;
+  xRatio: number;
+  yRatio: number;
+  scaleRatio: number;
+  alpha: number;
+  direction: 1 | -1;
+  initialized: boolean;
+}
+
 export interface CitySceneApi {
   focusDefault: () => void;
   focusArmory: () => void;
@@ -726,12 +743,15 @@ class CityHeroScene extends Phaser.Scene {
   private background?: Phaser.GameObjects.Image;
   private backgroundNext?: Phaser.GameObjects.Image;
   private backgroundFadeTween?: Phaser.Tweens.Tween;
+  private clouds: CityCloud[] = [];
+  private cloudsAlphaTween?: Phaser.Tweens.Tween;
   private fighter?: FighterVisual;
   private heroCamera?: Phaser.Cameras.Scene2D.Camera;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private cameraMode: CityCameraMode = "default";
   private backgroundAssetKey = CITY_BACKGROUND_ASSET_KEY;
+  private cityCloudVisibility = 1;
   private cityHeroLiftProgress = 0;
   private cityHeroLiftTween?: Phaser.Tweens.Tween;
 
@@ -750,6 +770,7 @@ class CityHeroScene extends Phaser.Scene {
     this.heroCamera.setBackgroundColor("rgba(0, 0, 0, 0)");
     this.background = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH);
     this.backgroundNext = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH + 1).setAlpha(0).setVisible(false);
+    this.clouds = this.createCityClouds();
     this.fighter = createPaperDollFighter(
       this,
       { ...createPlayerPaperDollOptions(0, -PLAYER_AVATAR_FEET_Y_OFFSET), castsShadow: true },
@@ -764,6 +785,7 @@ class CityHeroScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.cityHeroLiftTween?.remove();
       this.backgroundFadeTween?.remove();
+      this.cloudsAlphaTween?.remove();
       this.heroCamera = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
@@ -785,6 +807,7 @@ class CityHeroScene extends Phaser.Scene {
   focusDefault(): void {
     this.cameraMode = "default";
     this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY);
+    this.transitionCityCloudsTo(1);
     this.tweenHeroLiftTo(0);
     this.syncCamera(false, 0);
   }
@@ -792,6 +815,7 @@ class CityHeroScene extends Phaser.Scene {
   focusArmory(): void {
     this.cameraMode = "armory";
     this.transitionBackgroundTo(CITY_ARMORY_BACKGROUND_ASSET_KEY);
+    this.transitionCityCloudsTo(0);
     this.tweenHeroLiftTo(1);
     this.syncCamera(false, 1);
   }
@@ -799,6 +823,7 @@ class CityHeroScene extends Phaser.Scene {
   focusWeaponShop(): void {
     this.cameraMode = "weaponShop";
     this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY);
+    this.transitionCityCloudsTo(0);
     this.tweenHeroLiftTo(1);
     this.syncCamera(false, 1);
   }
@@ -809,6 +834,7 @@ class CityHeroScene extends Phaser.Scene {
     }
 
     this.syncBackground();
+    this.syncCityClouds();
     this.syncCameraViewports();
     this.syncFighterLayout();
     this.syncCamera(true);
@@ -891,13 +917,103 @@ class CityHeroScene extends Phaser.Scene {
     background.setScale(scale);
   }
 
+  private createCityClouds(): CityCloud[] {
+    const presets: Array<Omit<CityCloud, "image" | "initialized">> = [
+      { speed: 5.2, xRatio: 0.18, yRatio: 0.11, scaleRatio: 0.55, alpha: 0.42, direction: 1 },
+      { speed: 3.4, xRatio: 0.72, yRatio: 0.18, scaleRatio: 0.72, alpha: 0.34, direction: -1 },
+      { speed: 4.1, xRatio: 0.42, yRatio: 0.27, scaleRatio: 0.48, alpha: 0.28, direction: 1 },
+      { speed: 2.8, xRatio: 0.95, yRatio: 0.34, scaleRatio: 0.64, alpha: 0.24, direction: -1 },
+    ];
+
+    return CITY_CLOUD_ASSETS.map((asset, index) => {
+      const preset = presets[index % presets.length]!;
+      const image = this.add.image(0, 0, asset.key).setOrigin(0.5).setDepth(CITY_CLOUD_DEPTH + index).setAlpha(preset.alpha);
+
+      return { ...preset, image, initialized: false };
+    });
+  }
+
+  private syncCityClouds(): void {
+    const width = this.sceneWidth;
+    const height = this.sceneHeight;
+
+    this.clouds.forEach((cloud) => {
+      const source = cloud.image.texture.getSourceImage() as { width?: number; height?: number };
+      const sourceWidth = source.width || 1;
+      const targetWidth = width * cloud.scaleRatio;
+
+      cloud.image.setScale(targetWidth / sourceWidth);
+      cloud.image.y = height * cloud.yRatio;
+      if (!cloud.initialized) {
+        cloud.image.x = width * cloud.xRatio;
+        cloud.initialized = true;
+      }
+    });
+    this.applyCityCloudVisibility();
+  }
+
+  private updateCityClouds(delta: number): void {
+    if (this.clouds.length === 0) {
+      return;
+    }
+
+    const deltaSeconds = Math.min(0.05, delta / 1000);
+    const width = this.sceneWidth;
+
+    this.clouds.forEach((cloud) => {
+      const halfWidth = cloud.image.displayWidth / 2;
+      const padding = Math.max(18, width * 0.08);
+
+      cloud.image.x += cloud.speed * cloud.direction * deltaSeconds;
+      if (cloud.direction > 0 && cloud.image.x - halfWidth > width + padding) {
+        cloud.image.x = -halfWidth - padding;
+      } else if (cloud.direction < 0 && cloud.image.x + halfWidth < -padding) {
+        cloud.image.x = width + halfWidth + padding;
+      }
+    });
+  }
+
+  private transitionCityCloudsTo(visibility: number): void {
+    if (Math.abs(this.cityCloudVisibility - visibility) < 0.01) {
+      this.cityCloudVisibility = visibility;
+      this.applyCityCloudVisibility();
+      return;
+    }
+
+    if (visibility > 0) {
+      this.clouds.forEach((cloud) => cloud.image.setVisible(true));
+    }
+    this.cloudsAlphaTween?.remove();
+    this.cloudsAlphaTween = this.tweens.add({
+      targets: this,
+      cityCloudVisibility: visibility,
+      duration: CITY_CLOUD_FADE_DURATION,
+      ease: "Sine.easeInOut",
+      onUpdate: () => this.applyCityCloudVisibility(),
+      onComplete: () => {
+        this.cityCloudVisibility = visibility;
+        this.cloudsAlphaTween = undefined;
+        this.applyCityCloudVisibility();
+      },
+    });
+  }
+
+  private applyCityCloudVisibility(): void {
+    this.clouds.forEach((cloud) => {
+      const alpha = cloud.alpha * this.cityCloudVisibility;
+
+      cloud.image.setAlpha(alpha);
+      cloud.image.setVisible(alpha > 0.01);
+    });
+  }
+
   private syncCameraLayers(): void {
     if (!this.background || !this.backgroundNext || !this.fighter || !this.heroCamera) {
       return;
     }
 
     this.cameras.main.ignore(getFighterParts(this.fighter) as unknown as Phaser.GameObjects.GameObject[]);
-    this.heroCamera.ignore([this.background, this.backgroundNext]);
+    this.heroCamera.ignore([this.background, this.backgroundNext, ...this.clouds.map((cloud) => cloud.image)]);
   }
 
   private syncCameraViewports(): void {

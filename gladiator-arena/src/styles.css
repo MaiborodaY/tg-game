@@ -47,6 +47,11 @@ select {
   gap: 8px;
 }
 
+body:not(.arena-active) .shell {
+  padding: 0;
+  gap: 0;
+}
+
 .brand-card,
 .combat-plate,
 .distance-ribbon,
@@ -575,7 +580,7 @@ h1 {
 }
 
 .main-menu {
-  min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: 100dvh;
   position: relative;
 }
 
@@ -592,7 +597,7 @@ h1 {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: 100dvh;
   border: 4px solid #35180d;
   background: #b59b61;
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.36);

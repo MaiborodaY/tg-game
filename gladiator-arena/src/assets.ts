@@ -13,6 +13,12 @@ export const CITY_ARMORY_BACKGROUND_ASSET_KEY = "city-armory-bg";
 export const CITY_ARMORY_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-armory.webp", import.meta.url).href;
 export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY = "city-weapon-shop-bg";
 export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-weapon-shop.webp", import.meta.url).href;
+export const CITY_CLOUD_ASSETS = [
+  { key: "city-cloud-01", url: new URL("./assets/clouds/cloud-01.webp", import.meta.url).href },
+  { key: "city-cloud-02", url: new URL("./assets/clouds/cloud-02.webp", import.meta.url).href },
+  { key: "city-cloud-03", url: new URL("./assets/clouds/cloud-03.webp", import.meta.url).href },
+  { key: "city-cloud-04", url: new URL("./assets/clouds/cloud-04.webp", import.meta.url).href },
+] as const;
 
 export const PLAYER_BODY_ASSET_KEY = "body-light-01";
 export const PLAYER_BODY_ASSET_URL = new URL("./assets/fighters/bodies/body-light-01.webp", import.meta.url).href;
