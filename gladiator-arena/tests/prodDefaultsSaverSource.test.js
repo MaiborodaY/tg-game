@@ -56,7 +56,8 @@ test("vite dev middleware converts promoted png equipment to standardized webp a
   assert.match(source, /convertPromotedEquipmentPngAsset/);
   assert.match(source, /sourcePath\.endsWith\("\.png"\)/);
   assert.match(source, /promotedEquipmentRuntimeWebpQuality = 86/);
-  assert.match(source, /promotedEquipmentLowWebpQuality = 84/);
+  assert.match(source, /promotedEquipmentLowWebpQuality = 76/);
+  assert.match(source, /promotedEquipmentLowMaxSide = 448/);
   assert.match(source, /readAssetSourcePath\(asset\.sourcePath, "assets\/fighters\/armor\/", "asset\.sourcePath", \["\.png", "\.webp"\]\)/);
 });
 

@@ -7,8 +7,8 @@ import sharp from "sharp";
 const repoRoot = process.cwd();
 const sourceRoot = path.join(repoRoot, "gladiator-arena", "src", "assets", "fighters");
 const outputRoot = path.join(repoRoot, "gladiator-arena", "src", "assets-low", "fighters");
-const maxSide = readNumberArg("--max-side", 640);
-const quality = readNumberArg("--quality", 84);
+const maxSide = readNumberArg("--max-side", 448);
+const quality = readNumberArg("--quality", 76);
 
 const webpFiles = await listFiles(sourceRoot, ".webp");
 let runtimeTotal = 0;

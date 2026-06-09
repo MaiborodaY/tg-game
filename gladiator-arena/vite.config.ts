@@ -9,8 +9,8 @@ const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
 const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.generated.json", import.meta.url);
 const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
 const promotedEquipmentRuntimeWebpQuality = 86;
-const promotedEquipmentLowWebpQuality = 84;
-const promotedEquipmentLowMaxSide = 640;
+const promotedEquipmentLowWebpQuality = 76;
+const promotedEquipmentLowMaxSide = 448;
 const promotedEquipmentResizeRules = [
   { maxSide: 768, pattern: /^assets\/fighters\/armor\/helmet\// },
   { maxSide: 512, pattern: /^assets\/fighters\/armor\/arms\// },

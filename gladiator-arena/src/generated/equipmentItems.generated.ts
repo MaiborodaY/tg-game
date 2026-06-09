@@ -18,7 +18,21 @@ export interface GeneratedEquipmentItemRecord {
   armoryProduct?: GeneratedArmoryProduct;
 }
 
-export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [];
+export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [
+  {
+    item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":1},
+    assetKeys: {"helmetAssetKey":"helmet-cloth-01"},
+    equipmentTuning: {"x":-1,"y":21,"angle":0,"scaleX":1.12,"scaleY":1.12,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-cloth-01",
+      url: new URL("../assets/fighters/armor/helmet/helmet-cloth-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-cloth-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/helmet/helmet-cloth-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-cloth-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","price":0,"itemIds":["generated_equipment_helmet_cloth_01"],"categoryId":"head"},
+  }
+];
 
 export const GENERATED_EQUIPMENT_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);
 
