@@ -33,3 +33,11 @@ test("generated equipment items can carry item-specific transform tuning", () =>
   assert.equal(arenaSceneSource.includes("getEquipmentTransformTuning"), true);
   assert.equal(arenaSceneSource.includes("equipmentItems[itemId] ?? GENERATED_EQUIPMENT_ITEM_TUNING[itemId]"), true);
 });
+
+test("low effects can hot swap paper doll textures after preload", () => {
+  assert.equal(arenaSceneSource.includes("function ensurePaperDollAssetResolution("), true);
+  assert.equal(arenaSceneSource.includes("target.load.start();"), true);
+  assert.equal(arenaSceneSource.includes("syncFighterPaperDollTextureResolution"), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollBodyPartImage"), true);
+  assert.equal(arenaSceneSource.includes("activePaperDollAssetsUseLowRes = lowRes;"), true);
+});

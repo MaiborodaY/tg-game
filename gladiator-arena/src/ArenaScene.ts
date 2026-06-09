@@ -394,6 +394,27 @@ interface PaperDollPartAssetConfig {
   originY: number;
 }
 
+interface PaperDollAssetLoadEntry {
+  key: string;
+  url: string;
+}
+
+const PAPER_DOLL_HEAD_ASSET_CONFIG: PaperDollPartAssetConfig = {
+  displayHeight: HEAD_ASSET_DISPLAY_HEIGHT,
+  localX: 0,
+  localY: HEAD_ASSET_LOCAL_BOTTOM_Y,
+  originX: HEAD_ASSET_ORIGIN_X,
+  originY: HEAD_ASSET_ORIGIN_Y,
+};
+
+const PAPER_DOLL_TORSO_ASSET_CONFIG: PaperDollPartAssetConfig = {
+  displayHeight: TORSO_ASSET_DISPLAY_HEIGHT,
+  localX: 0,
+  localY: TORSO_ASSET_LOCAL_BOTTOM_Y,
+  originX: TORSO_ASSET_ORIGIN_X,
+  originY: TORSO_ASSET_ORIGIN_Y,
+};
+
 const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollPartAssetConfig>> = {
   backUpperArm: { displayHeight: 90, localX: 0, localY: -8, originX: 158 / 319, originY: 6 / 548 },
   backForearm: { displayHeight: 66, localX: 0, localY: -3, originX: 122 / 251, originY: 6 / 497 },
@@ -602,16 +623,52 @@ function preloadPaperDollAssets(target: Phaser.Scene): void {
   activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
   const loadedAssetKeys = new Set<string>();
 
-  [...FIGHTER_PAPER_DOLL_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS].forEach((asset) => {
-    const textureKey = getActivePaperDollAssetKey(asset.key);
+  getPaperDollAssetLoadEntries(activePaperDollAssetsUseLowRes).forEach((asset) => {
+    const textureKey = asset.key;
 
     if (loadedAssetKeys.has(textureKey)) {
       return;
     }
 
     loadedAssetKeys.add(textureKey);
-    target.load.image(textureKey, activePaperDollAssetsUseLowRes ? asset.lowUrl ?? asset.url : asset.url);
+    target.load.image(textureKey, asset.url);
   });
+}
+
+function ensurePaperDollAssetResolution(
+  target: Phaser.Scene,
+  lowRes: boolean,
+  fighters: Array<FighterVisual | undefined>,
+  onSynced?: () => void,
+): void {
+  const missingAssets = getPaperDollAssetLoadEntries(lowRes).filter((asset) => !target.textures.exists(asset.key));
+  const syncTextures = (): void => {
+    activePaperDollAssetsUseLowRes = lowRes;
+    fighters.forEach(syncFighterPaperDollTextureResolution);
+    onSynced?.();
+  };
+
+  if (missingAssets.length === 0) {
+    syncTextures();
+    return;
+  }
+
+  target.load.once("complete", syncTextures);
+  missingAssets.forEach((asset) => target.load.image(asset.key, asset.url));
+  target.load.start();
+}
+
+function getPaperDollAssetLoadEntries(lowRes: boolean): PaperDollAssetLoadEntry[] {
+  const entries = new Map<string, string>();
+
+  [...FIGHTER_PAPER_DOLL_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS].forEach((asset) => {
+    const key = getFighterTextureKey(asset.key, lowRes);
+    const url = lowRes ? asset.lowUrl ?? asset.url : asset.url;
+
+    entries.set(key, url);
+  });
+
+  return [...entries.entries()].map(([key, url]) => ({ key, url }));
 }
 
 function getActivePaperDollAssetKey(assetKey: string): string {
@@ -727,9 +784,11 @@ export class ArenaScene extends Phaser.Scene {
     });
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => syncFighterEquipmentVisibility(this.visuals?.player));
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
-      if (this.currentState) {
-        renderScene(this, this.currentState);
-      }
+      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.visuals?.player, this.visuals?.enemy], () => {
+        if (this.currentState) {
+          renderScene(this, this.currentState);
+        }
+      });
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
@@ -870,6 +929,7 @@ class CityHeroScene extends Phaser.Scene {
   private heroCamera?: Phaser.Cameras.Scene2D.Camera;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerSettings?: () => void;
   private cameraMode: CityCameraMode = "default";
   private backgroundAssetKey = CITY_BACKGROUND_ASSET_KEY;
   private cityCloudVisibility = 1;
@@ -902,6 +962,14 @@ class CityHeroScene extends Phaser.Scene {
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
+        if (this.fighter) {
+          applyCityHeroLighting(this.fighter);
+        }
+        this.sync();
+      });
+    });
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.cityHeroLiftTween?.remove();
@@ -910,6 +978,7 @@ class CityHeroScene extends Phaser.Scene {
       this.heroCamera = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerSettings?.();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     });
     cityReadyCallback?.(this);
@@ -1330,6 +1399,7 @@ class HeroPortraitScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerSettings?: () => void;
 
   constructor() {
     super("HeroPortraitScene");
@@ -1346,9 +1416,13 @@ class HeroPortraitScene extends Phaser.Scene {
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
+    });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerSettings?.();
     });
   }
 
@@ -1396,6 +1470,7 @@ class DebugCharacterScene extends Phaser.Scene {
   private dragState?: DebugRigPartDragState;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerSettings?: () => void;
 
   constructor() {
     super("DebugCharacterScene");
@@ -1424,9 +1499,13 @@ class DebugCharacterScene extends Phaser.Scene {
     });
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
+    });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerSettings?.();
     });
     this.sync();
   }
@@ -2023,6 +2102,55 @@ function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined): voi
   syncPaperDollEquipmentVisibility(fighter?.paperDollRig);
 }
 
+function syncFighterPaperDollTextureResolution(fighter: FighterVisual | undefined): void {
+  const rig = fighter?.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  syncPaperDollBodyPartVisuals(rig.parts);
+  if (rig.shadow) {
+    syncPaperDollBodyPartVisuals(rig.shadow.parts);
+  }
+  syncPaperDollEquipmentVisibility(rig);
+  if (rig.shadow) {
+    tintPaperDollShadowObject(rig.shadow.root);
+  }
+}
+
+function syncPaperDollBodyPartVisuals(parts: Record<PaperDollPartKey, FighterPart>): void {
+  syncPaperDollBodyPartImage(parts.head, getActivePaperDollAssetKey(FIGHTER_HEAD_LIGHT_ASSET_KEY), PAPER_DOLL_HEAD_ASSET_CONFIG);
+  syncPaperDollBodyPartImage(parts.torso, getActivePaperDollAssetKey(FIGHTER_TORSO_LIGHT_ASSET_KEY), PAPER_DOLL_TORSO_ASSET_CONFIG);
+
+  Object.entries(DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS).forEach(([partKey, assetKey]) => {
+    const config = PAPER_DOLL_PART_ASSET_CONFIGS[partKey as PaperDollPartKey];
+
+    if (assetKey && config) {
+      syncPaperDollBodyPartImage(parts[partKey as PaperDollPartKey], getActivePaperDollAssetKey(assetKey), config);
+    }
+  });
+}
+
+function syncPaperDollBodyPartImage(part: FighterPart | undefined, textureKey: string, config: PaperDollPartAssetConfig): void {
+  if (!part) {
+    return;
+  }
+
+  const partContainer = part as Phaser.GameObjects.Container;
+  const image = partContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
+
+  if (!image || !partContainer.scene.textures.exists(textureKey)) {
+    return;
+  }
+
+  if (image.texture.key !== textureKey) {
+    image.setTexture(textureKey);
+  }
+
+  applyPaperDollPartImageConfig(image, config);
+}
+
 function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
   if (!rig) {
     return;
@@ -2399,9 +2527,7 @@ function addPaperDollPartVisual(
 ): void {
   if (key === "head" && options.headAssetKey && target.textures.exists(options.headAssetKey)) {
     const image = target.add.image(0, HEAD_ASSET_LOCAL_BOTTOM_Y, options.headAssetKey);
-    image.setOrigin(HEAD_ASSET_ORIGIN_X, HEAD_ASSET_ORIGIN_Y);
-    image.displayHeight = HEAD_ASSET_DISPLAY_HEIGHT;
-    image.scaleX = image.scaleY;
+    applyPaperDollPartImageConfig(image, PAPER_DOLL_HEAD_ASSET_CONFIG);
     partContainer.add(image);
     addPaperDollHelmetVisual(target, partContainer, options.helmetAssetKey, equipment);
     addPaperDollFaceOverlay(target, partContainer, faceParts, true);
@@ -2410,9 +2536,7 @@ function addPaperDollPartVisual(
 
   if (key === "torso" && options.torsoAssetKey && target.textures.exists(options.torsoAssetKey)) {
     const image = target.add.image(0, TORSO_ASSET_LOCAL_BOTTOM_Y, options.torsoAssetKey);
-    image.setOrigin(TORSO_ASSET_ORIGIN_X, TORSO_ASSET_ORIGIN_Y);
-    image.displayHeight = TORSO_ASSET_DISPLAY_HEIGHT;
-    image.scaleX = image.scaleY;
+    applyPaperDollPartImageConfig(image, PAPER_DOLL_TORSO_ASSET_CONFIG);
     partContainer.add(image);
     addPaperDollBreastplateVisual(target, partContainer, options.breastplateAssetKey, equipment);
     return;
@@ -2427,9 +2551,7 @@ function addPaperDollPartVisual(
 
   if (assetKey && assetConfig && target.textures.exists(assetKey)) {
     const image = target.add.image(assetConfig.localX, assetConfig.localY, assetKey);
-    image.setOrigin(assetConfig.originX, assetConfig.originY);
-    image.displayHeight = assetConfig.displayHeight;
-    image.scaleX = image.scaleY;
+    applyPaperDollPartImageConfig(image, assetConfig);
     partContainer.add(image);
     addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
     addPaperDollLegArmorVisual(target, partContainer, key, options, equipment);
@@ -2589,6 +2711,10 @@ function createPaperDollEquipmentImage(target: Phaser.Scene, assetKey: string, c
 }
 
 function applyPaperDollEquipmentImageConfig(image: Phaser.GameObjects.Image, config: PaperDollPartAssetConfig): void {
+  applyPaperDollPartImageConfig(image, config);
+}
+
+function applyPaperDollPartImageConfig(image: Phaser.GameObjects.Image, config: PaperDollPartAssetConfig): void {
   image.x = config.localX;
   image.y = config.localY;
   image.setOrigin(config.originX, config.originY);
