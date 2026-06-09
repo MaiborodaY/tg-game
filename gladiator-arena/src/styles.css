@@ -1878,6 +1878,7 @@ body.debug-mode-effects .main-menu {
 }
 
 .debug-rig-editor__face,
+.debug-auto-equipment__transform,
 .debug-effects__group {
   display: grid;
   gap: 8px;
@@ -1892,6 +1893,7 @@ body.debug-mode-effects .main-menu {
 }
 
 .debug-rig-editor__face legend,
+.debug-auto-equipment__transform legend,
 .debug-rig-editor__face-part legend,
 .debug-effects__group legend {
   padding: 0 4px;
@@ -1904,6 +1906,7 @@ body.debug-mode-effects .main-menu {
 
 .debug-rig-editor__face-controls,
 .debug-item-equipment__controls,
+.debug-auto-equipment__transform-controls,
 .debug-effects__slash-controls,
 .debug-rig-editor__face-part {
   display: grid;

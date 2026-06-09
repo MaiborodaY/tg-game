@@ -1,4 +1,4 @@
-import type { ArenaDebugTuning } from "./debugTuning";
+import type { ArenaDebugTuning, EquipmentTuning } from "./debugTuning";
 import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
 import type { HeroItemDefinition } from "./hero";
 
@@ -15,6 +15,7 @@ export interface PromoteEquipmentItemPayload {
   item: HeroItemDefinition;
   assetKeys: EquipmentItemAssetKeys;
   asset: EquipmentAssetDefinition;
+  equipmentTuning: EquipmentTuning;
 }
 
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";

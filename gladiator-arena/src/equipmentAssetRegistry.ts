@@ -53,7 +53,13 @@ interface ArmorAssetSlotConfig {
   label: string;
 }
 
-const armorAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.webp", {
+const armorWebpAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const armorPngAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.png", {
   eager: true,
   query: "?url",
   import: "default",
@@ -104,7 +110,7 @@ const generatedEquipmentAssetKeys = new Set(
 
 const registeredEquipmentAssetKeys = new Set([...manualEquipmentAssetKeys, ...generatedEquipmentAssetKeys]);
 
-export const AUTO_EQUIPMENT_ITEM_RECORDS = Object.entries(armorAssetUrls)
+export const AUTO_EQUIPMENT_ITEM_RECORDS = createAutoArmorAssetEntries()
   .flatMap(([assetPath, url]) => createAutoEquipmentItemRecord(assetPath, url))
   .sort((left, right) => left.item.name.localeCompare(right.item.name)) as AutoEquipmentItemRecord[];
 
@@ -137,7 +143,7 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
   const suffix = assetKey.slice(slotConfig.prefix.length);
   const material = suffix.split("-")[0] ?? "armor";
   const itemId = `auto_equipment_${toIdentifier(assetKey)}`;
-  const lowAssetPath = assetPath.replace("./assets/", "./assets-low/");
+  const lowAssetPath = assetPath.replace("./assets/", "./assets-low/").replace(/\.(?:png|webp)$/i, ".webp");
   const lowUrl = lowArmorAssetUrls[lowAssetPath];
   const asset: EquipmentAssetDefinition = {
     key: assetKey,
@@ -162,6 +168,28 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
       asset,
     },
   ];
+}
+
+function createAutoArmorAssetEntries(): [string, string][] {
+  const entriesByAssetKey = new Map<string, [string, string]>();
+
+  Object.entries(armorWebpAssetUrls).forEach(([assetPath, url]) => {
+    const assetKey = getAssetKey(assetPath);
+
+    if (assetKey) {
+      entriesByAssetKey.set(assetKey, [assetPath, url]);
+    }
+  });
+
+  Object.entries(armorPngAssetUrls).forEach(([assetPath, url]) => {
+    const assetKey = getAssetKey(assetPath);
+
+    if (assetKey && !entriesByAssetKey.has(assetKey)) {
+      entriesByAssetKey.set(assetKey, [assetPath, url]);
+    }
+  });
+
+  return [...entriesByAssetKey.values()];
 }
 
 function getAssetKey(assetPath: string): string | undefined {

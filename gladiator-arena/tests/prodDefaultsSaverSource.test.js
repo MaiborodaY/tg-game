@@ -45,4 +45,28 @@ test("vite dev middleware writes promoted equipment to generated files", () => {
   assert.match(source, /equipmentItems\.generated\.json/);
   assert.match(source, /equipmentItems\.generated\.ts/);
   assert.match(source, /pickPromotedEquipmentItem/);
+  assert.match(source, /equipmentTuning/);
+});
+
+test("vite dev middleware converts promoted png equipment to standardized webp assets", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /import sharp from "sharp"/);
+  assert.match(source, /await pickPromotedEquipmentItem/);
+  assert.match(source, /convertPromotedEquipmentPngAsset/);
+  assert.match(source, /sourcePath\.endsWith\("\.png"\)/);
+  assert.match(source, /promotedEquipmentRuntimeWebpQuality = 86/);
+  assert.match(source, /promotedEquipmentLowWebpQuality = 84/);
+  assert.match(source, /readAssetSourcePath\(asset\.sourcePath, "assets\/fighters\/armor\/", "asset\.sourcePath", \["\.png", "\.webp"\]\)/);
+});
+
+test("vite dev middleware can persist item-specific equipment defaults", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
+
+  assert.match(debugTuningSource, /DEFAULT_EQUIPMENT_ITEM_TUNING/);
+  assert.match(debugTuningSource, /equipmentItems: cloneEquipmentItems/);
+  assert.match(source, /pickEquipmentItemDefaultUpdates/);
+  assert.match(source, /applyEquipmentItemDefaultUpdates/);
+  assert.match(source, /DEFAULT_EQUIPMENT_ITEM_TUNING/);
 });

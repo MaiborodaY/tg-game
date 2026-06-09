@@ -25,3 +25,11 @@ test("paper doll loader includes generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("getHeroItemEquipmentAssetKeys"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ITEM_ASSET_KEYS"), true);
 });
+
+test("generated equipment items can carry item-specific transform tuning", () => {
+  assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ITEM_TUNING"), true);
+  assert.equal(arenaSceneSource.includes("DEFAULT_EQUIPMENT_ITEM_TUNING"), true);
+  assert.equal(arenaSceneSource.includes("activeDebugTuning?.equipmentItems"), true);
+  assert.equal(arenaSceneSource.includes("getEquipmentTransformTuning"), true);
+  assert.equal(arenaSceneSource.includes("equipmentItems[itemId] ?? GENERATED_EQUIPMENT_ITEM_TUNING[itemId]"), true);
+});

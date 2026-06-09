@@ -70,7 +70,9 @@ test("debug panel exposes item equipment tuning separately", () => {
   assert.equal(debugPanelSource.includes("Item equipment"), true);
   assert.equal(debugPanelSource.includes("mountItemEquipmentEditor"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__select"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__item-select"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__controls"), true);
+  assert.equal(debugPanelSource.includes("getCurrentEquipmentItemTuning"), true);
 });
 
 test("debug hero equipment picker can list catalog-only items", () => {
@@ -88,4 +90,6 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("Auto equipment"), true);
   assert.equal(debugPanelSource.includes("savePromotedEquipmentItem"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ITEM_RECORDS"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__transform-controls"), true);
+  assert.equal(debugPanelSource.includes("equipmentTuning: getCurrentEquipmentItemTuning"), true);
 });

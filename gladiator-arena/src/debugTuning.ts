@@ -192,6 +192,7 @@ export interface ArenaDebugTuning {
   rigParts: Record<RigPartKey, RigPartTuning>;
   faceParts: Record<FacePartKey, FacePartTuning>;
   equipment: Record<EquipmentSlotKey, EquipmentTuning>;
+  equipmentItems: Record<string, EquipmentTuning>;
   animationEditMode: AnimationEditMode;
   selectedBodyAnimation: BodyAnimationKey;
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
@@ -255,9 +256,9 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 };
 
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
-  weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
+  weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
   helmet: { x: -1, y: 6, angle: 0, scaleX: 0.77, scaleY: 0.94, flipX: false, flipY: false },
-  breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.3, flipX: false, flipY: false },
+  breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.31, flipX: false, flipY: false },
   backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   backGauntlet: { x: 15, y: -64, angle: 18, scaleX: 1.1, scaleY: 1.1, flipX: true, flipY: false },
@@ -268,6 +269,10 @@ export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   frontShinguard: { x: -6, y: -3, angle: 0, scaleX: 1.5, scaleY: 1, flipX: false, flipY: false },
   backBoot: { x: 1, y: -1, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
   frontBoot: { x: 1, y: 0, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
+};
+
+export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
+  "cloth_breastplate_01": { x: 0, y: 47, angle: 0, scaleX: 1.26, scaleY: 1.53, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
@@ -866,6 +871,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
   faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),
   equipment: cloneEquipment(DEFAULT_EQUIPMENT),
+  equipmentItems: cloneEquipmentItems(DEFAULT_EQUIPMENT_ITEM_TUNING),
   animationEditMode: "poseA",
   selectedBodyAnimation: "idle",
   bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
@@ -1016,6 +1022,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
     faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
     equipment: normalizeEquipment(input.equipment, DEFAULT_EQUIPMENT),
+    equipmentItems: normalizeEquipmentItems(input.equipmentItems, DEFAULT_EQUIPMENT_ITEM_TUNING),
     animationEditMode: isAnimationEditMode(input.animationEditMode) ? input.animationEditMode : defaultDebugTuning.animationEditMode,
     selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
     bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
@@ -1054,6 +1061,10 @@ function cloneEquipment(source: Record<EquipmentSlotKey, EquipmentTuning>): Reco
   return Object.fromEntries(EQUIPMENT_SLOT_KEYS.map((key) => [key, { ...source[key] }])) as Record<EquipmentSlotKey, EquipmentTuning>;
 }
 
+function cloneEquipmentItems(source: Record<string, EquipmentTuning>): Record<string, EquipmentTuning> {
+  return Object.fromEntries(Object.entries(source).map(([itemId, tuning]) => [itemId, { ...tuning }]));
+}
+
 function cloneBodyAnimations(source: Record<BodyAnimationKey, BodyAnimationTuning>): Record<BodyAnimationKey, BodyAnimationTuning> {
   return Object.fromEntries(BODY_ANIMATION_KEYS.map((key) => [key, cloneBodyAnimation(source[key])])) as Record<BodyAnimationKey, BodyAnimationTuning>;
 }
@@ -1082,6 +1093,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     rigParts: cloneRigParts(source.rigParts),
     faceParts: cloneFaceParts(source.faceParts),
     equipment: cloneEquipment(source.equipment),
+    equipmentItems: cloneEquipmentItems(source.equipmentItems),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
     slashArcs: cloneSlashArcs(source.slashArcs),
   };
@@ -1216,20 +1228,39 @@ function normalizeEquipment(input: unknown, fallbackEquipment = DEFAULT_EQUIPMEN
       const part = source[key] ?? {};
       const fallback = fallbackEquipment[key] ?? defaultRigPartTuning;
 
-      return [
-        key,
-        {
-          x: clampNumber(part.x, -240, 240, fallback.x),
-          y: clampNumber(part.y, -240, 240, fallback.y),
-          angle: clampNumber(part.angle, -180, 180, fallback.angle),
-          scaleX: clampNumber(part.scaleX, 0.1, 3, fallback.scaleX),
-          scaleY: clampNumber(part.scaleY, 0.1, 3, fallback.scaleY),
-          flipX: typeof part.flipX === "boolean" ? part.flipX : fallback.flipX,
-          flipY: typeof part.flipY === "boolean" ? part.flipY : fallback.flipY,
-        },
-      ];
+      return [key, normalizeEquipmentTuning(part, fallback)];
     }),
   ) as Record<EquipmentSlotKey, EquipmentTuning>;
+}
+
+function normalizeEquipmentItems(input: unknown, fallbackItems = DEFAULT_EQUIPMENT_ITEM_TUNING): Record<string, EquipmentTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Record<string, Partial<EquipmentTuning>>) : {};
+  const itemIds = [...new Set([...Object.keys(fallbackItems), ...Object.keys(source)])];
+
+  return Object.fromEntries(
+    itemIds.flatMap((itemId) => {
+      if (!itemId) {
+        return [];
+      }
+
+      const part = source[itemId] ?? {};
+      const fallback = fallbackItems[itemId] ?? defaultRigPartTuning;
+
+      return [[itemId, normalizeEquipmentTuning(part, fallback)]];
+    }),
+  );
+}
+
+function normalizeEquipmentTuning(part: Partial<EquipmentTuning>, fallback: EquipmentTuning): EquipmentTuning {
+  return {
+    x: clampNumber(part.x, -240, 240, fallback.x),
+    y: clampNumber(part.y, -240, 240, fallback.y),
+    angle: clampNumber(part.angle, -180, 180, fallback.angle),
+    scaleX: clampNumber(part.scaleX, 0.1, 3, fallback.scaleX),
+    scaleY: clampNumber(part.scaleY, 0.1, 3, fallback.scaleY),
+    flipX: typeof part.flipX === "boolean" ? part.flipX : fallback.flipX,
+    flipY: typeof part.flipY === "boolean" ? part.flipY : fallback.flipY,
+  };
 }
 
 function createDefaultIdleAnimation(): BodyAnimationTuning {

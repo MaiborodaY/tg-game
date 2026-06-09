@@ -72,12 +72,13 @@ import {
   CLOTH_BREASTPLATE_ID,
 } from "./hero";
 import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
-import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS } from "./generated/equipmentItems.generated";
+import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
 import {
   beginDebugUndoGroup,
   debugTuning,
   DEFAULT_BODY_ANIMATIONS,
   DEFAULT_EQUIPMENT,
+  DEFAULT_EQUIPMENT_ITEM_TUNING,
   DEFAULT_FACE_PARTS,
   DEFAULT_RIG_PARTS,
   DEFAULT_SLASH_ARCS,
@@ -1961,6 +1962,8 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   const rigParts = activeDebugTuning?.rigParts;
   const faceParts = activeDebugTuning?.faceParts ?? DEFAULT_FACE_PARTS;
   const equipment = activeDebugTuning?.equipment ?? DEFAULT_EQUIPMENT;
+  const equipmentItems = activeDebugTuning?.equipmentItems ?? DEFAULT_EQUIPMENT_ITEM_TUNING;
+  const equipmentState = rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
 
   RIG_PART_KEYS.forEach((key) => {
     const part = rig.parts[key];
@@ -1978,26 +1981,42 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
   applyFacePartTransform(rig.shadow?.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
   applyFacePartTransform(rig.shadow?.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
-  applyPaperDollEquipmentTuning(rig.equipment, equipment);
+  applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState);
   if (rig.shadow) {
-    applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment);
+    applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment, equipmentItems, equipmentState);
   }
 }
 
-function applyPaperDollEquipmentTuning(equipmentParts: PaperDollEquipment, equipment: Record<EquipmentSlotKey, EquipmentTuning>): void {
-  applyEquipmentTransform(equipmentParts.weaponMain, equipment.weaponMain);
-  applyEquipmentTransform(equipmentParts.helmet, equipment.helmet);
-  applyEquipmentTransform(equipmentParts.breastplate, equipment.breastplate);
-  applyEquipmentTransform(equipmentParts.backShoulderguard, equipment.backShoulderguard);
-  applyEquipmentTransform(equipmentParts.frontShoulderguard, equipment.frontShoulderguard);
-  applyEquipmentTransform(equipmentParts.backGauntlet, equipment.backGauntlet);
-  applyEquipmentTransform(equipmentParts.frontGauntlet, equipment.frontGauntlet);
-  applyEquipmentTransform(equipmentParts.backGreave, equipment.backGreave);
-  applyEquipmentTransform(equipmentParts.frontGreave, equipment.frontGreave);
-  applyEquipmentTransform(equipmentParts.backShinguard, equipment.backShinguard);
-  applyEquipmentTransform(equipmentParts.frontShinguard, equipment.frontShinguard);
-  applyEquipmentTransform(equipmentParts.backBoot, equipment.backBoot);
-  applyEquipmentTransform(equipmentParts.frontBoot, equipment.frontBoot);
+function applyPaperDollEquipmentTuning(
+  equipmentParts: PaperDollEquipment,
+  equipment: Record<EquipmentSlotKey, EquipmentTuning>,
+  equipmentItems: Record<string, EquipmentTuning>,
+  equipmentState?: HeroEquipment,
+): void {
+  applyEquipmentTransform(equipmentParts.weaponMain, getEquipmentTransformTuning("weaponMain", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.helmet, getEquipmentTransformTuning("helmet", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.breastplate, getEquipmentTransformTuning("breastplate", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backShoulderguard, getEquipmentTransformTuning("backShoulderguard", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontShoulderguard, getEquipmentTransformTuning("frontShoulderguard", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backGauntlet, getEquipmentTransformTuning("backGauntlet", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontGauntlet, getEquipmentTransformTuning("frontGauntlet", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backGreave, getEquipmentTransformTuning("backGreave", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontGreave, getEquipmentTransformTuning("frontGreave", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backShinguard, getEquipmentTransformTuning("backShinguard", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontShinguard, getEquipmentTransformTuning("frontShinguard", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backBoot, getEquipmentTransformTuning("backBoot", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontBoot, getEquipmentTransformTuning("frontBoot", equipment, equipmentItems, equipmentState));
+}
+
+function getEquipmentTransformTuning(
+  slotKey: EquipmentSlotKey,
+  equipment: Record<EquipmentSlotKey, EquipmentTuning>,
+  equipmentItems: Record<string, EquipmentTuning>,
+  equipmentState?: HeroEquipment,
+): EquipmentTuning {
+  const itemId = equipmentState?.[slotKey];
+
+  return (itemId ? equipmentItems[itemId] ?? GENERATED_EQUIPMENT_ITEM_TUNING[itemId] : undefined) ?? equipment[slotKey];
 }
 
 function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined): void {

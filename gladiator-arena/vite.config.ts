@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import sharp from "sharp";
 import { defineConfig, type Plugin } from "vite";
 
 const arenaLayoutUrl = new URL("./src/arenaLayout.ts", import.meta.url);
@@ -7,6 +8,15 @@ const combatUrl = new URL("./src/combat.ts", import.meta.url);
 const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
 const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.generated.json", import.meta.url);
 const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
+const promotedEquipmentRuntimeWebpQuality = 86;
+const promotedEquipmentLowWebpQuality = 84;
+const promotedEquipmentLowMaxSide = 640;
+const promotedEquipmentResizeRules = [
+  { maxSide: 768, pattern: /^assets\/fighters\/armor\/helmet\// },
+  { maxSide: 512, pattern: /^assets\/fighters\/armor\/arms\// },
+  { maxSide: 512, pattern: /^assets\/fighters\/armor\/breastplate\// },
+  { maxSide: 512, pattern: /^assets\/fighters\/armor\/legs\// },
+] as const;
 
 const prodDefaultFields = {
   DEFAULT_STAGE_ORIGIN_X: "originX",
@@ -171,6 +181,7 @@ interface FacePartTuning {
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
+type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
 type ActionButtonOffsetUpdates = Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
 
@@ -212,6 +223,7 @@ interface PromoteEquipmentItemPayload {
   item?: unknown;
   assetKeys?: unknown;
   asset?: unknown;
+  equipmentTuning?: unknown;
 }
 
 interface GeneratedEquipmentJsonRecord {
@@ -222,6 +234,7 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp: number;
   assetKeys: Record<string, string>;
+  equipmentTuning: RigPartTuning;
   asset: {
     key: string;
     sourcePath: string;
@@ -258,6 +271,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
+          const equipmentItemUpdates = pickEquipmentItemDefaultUpdates(payload);
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
           const actionButtonOffsetUpdates = pickActionButtonOffsetDefaultUpdates(payload);
           const [layoutSource, combatSource, debugTuningSource] = await Promise.all([
@@ -269,12 +283,15 @@ function saveProdDefaultsPlugin(): Plugin {
           const nextCombatSource = applyCombatDefaultUpdates(combatSource, combatUpdates);
           const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
             applySlashArcDefaultUpdates(
-              applyEquipmentDefaultUpdates(
-                applyFacePartDefaultUpdates(
-                  applyRigPartDefaultUpdates(applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates), rigPartUpdates),
-                  facePartUpdates,
+              applyEquipmentItemDefaultUpdates(
+                applyEquipmentDefaultUpdates(
+                  applyFacePartDefaultUpdates(
+                    applyRigPartDefaultUpdates(applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates), rigPartUpdates),
+                    facePartUpdates,
+                  ),
+                  equipmentUpdates,
                 ),
-                equipmentUpdates,
+                equipmentItemUpdates,
               ),
               slashArcUpdates,
             ),
@@ -288,7 +305,7 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${Object.keys(equipmentUpdates).length} equipment defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
@@ -297,6 +314,7 @@ function saveProdDefaultsPlugin(): Plugin {
               Object.keys(rigPartUpdates).length +
               Object.keys(facePartUpdates).length +
               Object.keys(equipmentUpdates).length +
+              Object.keys(equipmentItemUpdates).length +
               Object.keys(slashArcUpdates).length,
           });
         } catch (error) {
@@ -332,7 +350,7 @@ function saveProdDefaultsPlugin(): Plugin {
 
         try {
           const payload = await readJson(request);
-          const promotedItem = pickPromotedEquipmentItem(payload);
+          const promotedItem = await pickPromotedEquipmentItem(payload);
           const records = await readGeneratedEquipmentRecords();
           const nextRecords = upsertGeneratedEquipmentRecord(records, promotedItem);
 
@@ -488,6 +506,38 @@ export function pickEquipmentDefaultUpdates(payload: unknown): EquipmentUpdates 
   return Object.fromEntries(equipmentSlotKeys.map((key) => [key, readEquipmentTuning(equipment, key)])) as EquipmentUpdates;
 }
 
+export function applyEquipmentItemDefaultUpdates(source: string, updates: EquipmentItemUpdates): string {
+  const pattern = /export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = (?:\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_EQUIPMENT_ITEM_TUNING in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatEquipmentItemDefaults(updates));
+}
+
+export function pickEquipmentItemDefaultUpdates(payload: unknown): EquipmentItemUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const equipmentItems = (payload as { equipmentItems?: unknown }).equipmentItems;
+
+  if (!equipmentItems || typeof equipmentItems !== "object" || Array.isArray(equipmentItems)) {
+    throw new Error("Expected equipmentItems in debug tuning payload.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(equipmentItems).flatMap(([itemId, tuning]) => {
+      if (!itemId.trim()) {
+        return [];
+      }
+
+      return [[itemId, readLooseEquipmentTuning(tuning, itemId)]];
+    }),
+  );
+}
+
 export function applySlashArcDefaultUpdates(source: string, updates: SlashArcUpdates): string {
   const pattern = /export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = (?:\{[\s\S]*?\});/;
 
@@ -592,7 +642,7 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
   };
 }
 
-export function pickPromotedEquipmentItem(payload: unknown): GeneratedEquipmentJsonRecord {
+export async function pickPromotedEquipmentItem(payload: unknown): Promise<GeneratedEquipmentJsonRecord> {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Expected a JSON object with equipment promotion values.");
   }
@@ -602,8 +652,9 @@ export function pickPromotedEquipmentItem(payload: unknown): GeneratedEquipmentJ
   const asset = readPlainObject(promotion.asset, "asset");
   const assetKeys = readStringRecord(promotion.assetKeys, "assetKeys");
   const equipmentSlot = readEquipmentSlot(item.equipmentSlot);
+  const equipmentTuning = readPromotedEquipmentTuning(promotion.equipmentTuning);
   const assetKey = readNonEmptyString(asset.key, "asset.key");
-  const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "asset.sourcePath");
+  const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "asset.sourcePath", [".png", ".webp"]);
   const lowSourcePath =
     typeof asset.lowSourcePath === "string" && asset.lowSourcePath.trim()
       ? readAssetSourcePath(asset.lowSourcePath, "assets-low/fighters/armor/", "asset.lowSourcePath")
@@ -624,6 +675,13 @@ export function pickPromotedEquipmentItem(payload: unknown): GeneratedEquipmentJ
     throw new Error("Promoted item assetKeys must reference asset.key.");
   }
 
+  const promotedAssetPaths = sourcePath.endsWith(".png")
+    ? await convertPromotedEquipmentPngAsset(sourcePath)
+    : {
+        sourcePath,
+        ...(lowSourcePath ? { lowSourcePath } : {}),
+      };
+
   return {
     id,
     name,
@@ -632,10 +690,11 @@ export function pickPromotedEquipmentItem(payload: unknown): GeneratedEquipmentJ
     equipmentSlot,
     armorHp,
     assetKeys,
+    equipmentTuning,
     asset: {
       key: assetKey,
-      sourcePath,
-      ...(lowSourcePath ? { lowSourcePath } : {}),
+      sourcePath: promotedAssetPaths.sourcePath,
+      ...(promotedAssetPaths.lowSourcePath ? { lowSourcePath: promotedAssetPaths.lowSourcePath } : {}),
     },
     ...(addToShop && categoryId
       ? {
@@ -677,6 +736,50 @@ function upsertGeneratedEquipmentRecord(records: GeneratedEquipmentJsonRecord[],
   ].sort((left, right) => left.id.localeCompare(right.id));
 }
 
+async function convertPromotedEquipmentPngAsset(sourcePath: string): Promise<{ sourcePath: string; lowSourcePath: string }> {
+  const runtimeSourcePath = sourcePath.replace(/\.png$/i, ".webp");
+  const lowSourcePath = sourcePath.replace(/^assets\//, "assets-low/").replace(/\.png$/i, ".webp");
+  const sourceUrl = getProjectSourceUrl(sourcePath);
+  const runtimeUrl = getProjectSourceUrl(runtimeSourcePath);
+  const lowUrl = getProjectSourceUrl(lowSourcePath);
+  const source = await readFile(sourceUrl);
+  const runtime = await createEquipmentWebp(source, getPromotedEquipmentRuntimeMaxSide(sourcePath), promotedEquipmentRuntimeWebpQuality);
+  const low = await createEquipmentWebp(runtime, promotedEquipmentLowMaxSide, promotedEquipmentLowWebpQuality);
+
+  await Promise.all([mkdir(new URL(".", runtimeUrl), { recursive: true }), mkdir(new URL(".", lowUrl), { recursive: true })]);
+  await Promise.all([writeFile(runtimeUrl, runtime), writeFile(lowUrl, low)]);
+
+  return {
+    sourcePath: runtimeSourcePath,
+    lowSourcePath,
+  };
+}
+
+async function createEquipmentWebp(input: Buffer, maxSide: number, quality: number): Promise<Buffer> {
+  return sharp(input)
+    .resize({
+      fit: "inside",
+      height: maxSide,
+      width: maxSide,
+      withoutEnlargement: true,
+    })
+    .webp({
+      alphaQuality: 100,
+      effort: 6,
+      quality,
+      smartSubsample: true,
+    })
+    .toBuffer();
+}
+
+function getPromotedEquipmentRuntimeMaxSide(sourcePath: string): number {
+  return promotedEquipmentResizeRules.find((rule) => rule.pattern.test(sourcePath))?.maxSide ?? 512;
+}
+
+function getProjectSourceUrl(sourcePath: string): URL {
+  return new URL(`./src/${sourcePath}`, import.meta.url);
+}
+
 async function writeGeneratedEquipmentRecords(records: GeneratedEquipmentJsonRecord[]): Promise<void> {
   await mkdir(new URL("./src/generated/", import.meta.url), { recursive: true });
   await Promise.all([
@@ -689,6 +792,7 @@ function formatGeneratedEquipmentSource(records: GeneratedEquipmentJsonRecord[])
   const rows = records.map(formatGeneratedEquipmentRecord).join(",\n");
 
   return `import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "../equipmentAssetRegistry";
+import type { EquipmentTuning } from "../debugTuning";
 import type { HeroItemDefinition, HeroItemId } from "../hero";
 
 export interface GeneratedArmoryProduct {
@@ -702,6 +806,7 @@ export interface GeneratedArmoryProduct {
 export interface GeneratedEquipmentItemRecord {
   item: HeroItemDefinition;
   assetKeys: EquipmentItemAssetKeys;
+  equipmentTuning?: EquipmentTuning;
   asset: EquipmentAssetDefinition;
   armoryProduct?: GeneratedArmoryProduct;
 }
@@ -717,6 +822,10 @@ export const GENERATED_EQUIPMENT_ITEM_CATALOG = Object.fromEntries(
 export const GENERATED_EQUIPMENT_ITEM_ASSET_KEYS = Object.fromEntries(
   GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, record.assetKeys]),
 ) as Partial<Record<HeroItemId, EquipmentItemAssetKeys>>;
+
+export const GENERATED_EQUIPMENT_ITEM_TUNING = Object.fromEntries(
+  GENERATED_EQUIPMENT_ITEM_RECORDS.flatMap((record) => (record.equipmentTuning ? [[record.item.id, record.equipmentTuning]] : [])),
+) as Partial<Record<HeroItemId, EquipmentTuning>>;
 
 export const GENERATED_EQUIPMENT_ASSETS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.asset);
 
@@ -740,6 +849,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     "  {",
     `    item: ${JSON.stringify(item)},`,
     `    assetKeys: ${JSON.stringify(record.assetKeys)},`,
+    `    equipmentTuning: ${JSON.stringify(record.equipmentTuning)},`,
     "    asset: {",
     `      key: ${JSON.stringify(record.asset.key)},`,
     `      url: new URL(${JSON.stringify(`../${record.asset.sourcePath}`)}, import.meta.url).href,`,
@@ -761,6 +871,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const kind = record.kind;
   const armorHp = Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))));
   const assetKeys = readStringRecord(record.assetKeys, "generated equipment assetKeys");
+  const equipmentTuning = readPromotedEquipmentTuning(record.equipmentTuning);
   const assetKey = readNonEmptyString(asset.key, "generated equipment asset.key");
   const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "generated equipment asset.sourcePath");
   const lowSourcePath =
@@ -781,6 +892,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     equipmentSlot,
     armorHp,
     assetKeys,
+    equipmentTuning,
     asset: {
       key: assetKey,
       sourcePath,
@@ -848,6 +960,14 @@ function formatEquipmentDefaults(updates: EquipmentUpdates): string {
   });
 
   return `export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatEquipmentItemDefaults(updates: EquipmentItemUpdates): string {
+  const rows = Object.entries(updates).map(([itemId, item]) => {
+    return `  ${JSON.stringify(itemId)}: { x: ${formatNumber(item.x)}, y: ${formatNumber(item.y)}, angle: ${formatNumber(item.angle)}, scaleX: ${formatNumber(item.scaleX)}, scaleY: ${formatNumber(item.scaleY)}, flipX: ${item.flipX}, flipY: ${item.flipY} },`;
+  });
+
+  return `export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {\n${rows.join("\n")}\n};`;
 }
 
 function formatSlashArcDefaults(updates: SlashArcUpdates): string {
@@ -1033,6 +1153,34 @@ function readEquipmentTuning(equipment: object, key: EquipmentSlotKey): RigPartT
   };
 }
 
+function readLooseEquipmentTuning(input: unknown, label: string): RigPartTuning {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`Invalid equipment item tuning value: ${label}.`);
+  }
+
+  return readClampedEquipmentTuning(input as Partial<RigPartTuningPayload>, label);
+}
+
+function readPromotedEquipmentTuning(input: unknown): RigPartTuning {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Expected promoted equipment tuning.");
+  }
+
+  return readClampedEquipmentTuning(input as Partial<RigPartTuningPayload>, "promotedEquipment");
+}
+
+function readClampedEquipmentTuning(tuning: Partial<RigPartTuningPayload>, label: string): RigPartTuning {
+  return {
+    x: Math.max(-240, Math.min(240, readFiniteRigPartNumber(tuning, label, "x"))),
+    y: Math.max(-240, Math.min(240, readFiniteRigPartNumber(tuning, label, "y"))),
+    angle: Math.max(-180, Math.min(180, readFiniteRigPartNumber(tuning, label, "angle"))),
+    scaleX: Math.max(0.1, Math.min(3, readFiniteRigPartNumber(tuning, label, "scaleX"))),
+    scaleY: Math.max(0.1, Math.min(3, readFiniteRigPartNumber(tuning, label, "scaleY"))),
+    flipX: readRigPartBoolean(tuning, label, "flipX"),
+    flipY: readRigPartBoolean(tuning, label, "flipY"),
+  };
+}
+
 function readActionButtonOffsetTuning(offsets: object, key: ActionButtonOffsetKey): ActionButtonOffsetTuning {
   const offset = (offsets as Partial<Record<ActionButtonOffsetKey, unknown>>)[key];
 
@@ -1184,10 +1332,11 @@ function readArmorCategory(value: unknown): GeneratedEquipmentJsonRecord["armorC
   throw new Error("Invalid armor category.");
 }
 
-function readAssetSourcePath(value: unknown, expectedPrefix: string, label: string): string {
+function readAssetSourcePath(value: unknown, expectedPrefix: string, label: string, allowedExtensions = [".webp"]): string {
   const sourcePath = readNonEmptyString(value, label).replace(/\\/g, "/").replace(/^\.\//, "");
+  const hasAllowedExtension = allowedExtensions.some((extension) => sourcePath.endsWith(extension));
 
-  if (sourcePath.includes("..") || !sourcePath.startsWith(expectedPrefix) || !sourcePath.endsWith(".webp")) {
+  if (sourcePath.includes("..") || !sourcePath.startsWith(expectedPrefix) || !hasAllowedExtension) {
     throw new Error(`Invalid ${label}.`);
   }
 
