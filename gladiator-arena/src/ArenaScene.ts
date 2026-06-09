@@ -33,6 +33,7 @@ import {
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
+  FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
@@ -68,6 +69,7 @@ import {
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
+  CLOTH_BREASTPLATE_ID,
 } from "./hero";
 import {
   beginDebugUndoGroup,
@@ -472,6 +474,7 @@ const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipm
   training_sword: { weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY },
   starter_helmet: { helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY },
   starter_breastplate: { breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY },
+  [CLOTH_BREASTPLATE_ID]: { breastplateAssetKey: FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY },
   starter_back_shoulderguard: { backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY },
   starter_front_shoulderguard: { frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY },
   starter_back_gauntlet: { backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY },
@@ -1900,6 +1903,8 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
     return;
   }
 
+  syncPaperDollEquipmentVisuals(rig);
+
   const visibility = rig.usesPlayerEquipment
     ? createPlayerEquipmentVisibility()
     : rig.equipmentState
@@ -1914,6 +1919,32 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
     rig.equipment[slotKey]?.setVisible(visibility[slotKey]);
     rig.shadow?.equipment[slotKey]?.setVisible(visibility[slotKey]);
   });
+}
+
+function syncPaperDollEquipmentVisuals(rig: PaperDollRig): void {
+  const equipmentState = rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
+  if (!equipmentState) {
+    return;
+  }
+
+  const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipmentState);
+  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    const textureKey = equipmentAssetKeys[PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey]];
+    syncPaperDollEquipmentSlot(rig.equipment[slotKey], textureKey);
+    syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], textureKey);
+  });
+}
+
+function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, textureKey: string | undefined): void {
+  if (!slot || !textureKey) {
+    return;
+  }
+
+  const slotContainer = slot as Phaser.GameObjects.Container;
+  const image = slotContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
+  if (image && slotContainer.scene.textures.exists(textureKey)) {
+    image.setTexture(textureKey);
+  }
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {

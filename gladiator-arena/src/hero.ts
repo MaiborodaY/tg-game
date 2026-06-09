@@ -53,6 +53,7 @@ export interface HeroItemDefinition {
   id: HeroItemId;
   name: string;
   kind: "weapon" | "armor";
+  armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
@@ -94,6 +95,7 @@ export const BATTLE_WIN_REWARD: BattleReward = { gold: 25, xp: 20 };
 export const TRAINING_WEAPON_ID = "training_sword";
 export const STARTER_HELMET_ID = "starter_helmet";
 export const STARTER_BREASTPLATE_ID = "starter_breastplate";
+export const CLOTH_BREASTPLATE_ID = "cloth_breastplate_01";
 export const STARTER_BACK_SHOULDERGUARD_ID = "starter_back_shoulderguard";
 export const STARTER_FRONT_SHOULDERGUARD_ID = "starter_front_shoulderguard";
 export const STARTER_BACK_GAUNTLET_ID = "starter_back_gauntlet";
@@ -112,6 +114,7 @@ export const HERO_ITEM_IDS = [
   TRAINING_WEAPON_ID,
   STARTER_HELMET_ID,
   STARTER_BREASTPLATE_ID,
+  CLOTH_BREASTPLATE_ID,
   STARTER_BACK_SHOULDERGUARD_ID,
   STARTER_FRONT_SHOULDERGUARD_ID,
   STARTER_BACK_GAUNTLET_ID,
@@ -134,11 +137,27 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     equipmentSlot: "weaponMain",
     damageBonus: TRAINING_WEAPON_DAMAGE_BONUS,
   },
-  [STARTER_HELMET_ID]: { id: STARTER_HELMET_ID, name: "Starter Helmet", kind: "armor", equipmentSlot: "helmet", armorHp: STARTER_ARMOR_HP },
+  [STARTER_HELMET_ID]: {
+    id: STARTER_HELMET_ID,
+    name: "Starter Helmet",
+    kind: "armor",
+    armorCategory: "leather",
+    equipmentSlot: "helmet",
+    armorHp: STARTER_ARMOR_HP,
+  },
   [STARTER_BREASTPLATE_ID]: {
     id: STARTER_BREASTPLATE_ID,
     name: "Starter Breastplate",
     kind: "armor",
+    armorCategory: "leather",
+    equipmentSlot: "breastplate",
+    armorHp: STARTER_ARMOR_HP,
+  },
+  [CLOTH_BREASTPLATE_ID]: {
+    id: CLOTH_BREASTPLATE_ID,
+    name: "Cloth Breastplate",
+    kind: "armor",
+    armorCategory: "cloth",
     equipmentSlot: "breastplate",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -146,6 +165,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_SHOULDERGUARD_ID,
     name: "Starter Back Shoulderguard",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "backShoulderguard",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -153,6 +173,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_SHOULDERGUARD_ID,
     name: "Starter Front Shoulderguard",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "frontShoulderguard",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -160,6 +181,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_GAUNTLET_ID,
     name: "Starter Back Gauntlet",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "backGauntlet",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -167,6 +189,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_GAUNTLET_ID,
     name: "Starter Front Gauntlet",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "frontGauntlet",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -174,6 +197,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_GREAVE_ID,
     name: "Starter Back Greave",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "backGreave",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -181,6 +205,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_GREAVE_ID,
     name: "Starter Front Greave",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "frontGreave",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -188,6 +213,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_SHINGUARD_ID,
     name: "Starter Back Shinguard",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "backShinguard",
     armorHp: STARTER_ARMOR_HP,
   },
@@ -195,14 +221,23 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_SHINGUARD_ID,
     name: "Starter Front Shinguard",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "frontShinguard",
     armorHp: STARTER_ARMOR_HP,
   },
-  [STARTER_BACK_BOOT_ID]: { id: STARTER_BACK_BOOT_ID, name: "Starter Back Boot", kind: "armor", equipmentSlot: "backBoot", armorHp: STARTER_ARMOR_HP },
+  [STARTER_BACK_BOOT_ID]: {
+    id: STARTER_BACK_BOOT_ID,
+    name: "Starter Back Boot",
+    kind: "armor",
+    armorCategory: "leather",
+    equipmentSlot: "backBoot",
+    armorHp: STARTER_ARMOR_HP,
+  },
   [STARTER_FRONT_BOOT_ID]: {
     id: STARTER_FRONT_BOOT_ID,
     name: "Starter Front Boot",
     kind: "armor",
+    armorCategory: "leather",
     equipmentSlot: "frontBoot",
     armorHp: STARTER_ARMOR_HP,
   },

@@ -64,6 +64,8 @@ export const FIGHTER_HELMET_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/h
 
 export const FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY = "breastplate-light-01";
 export const FIGHTER_BREASTPLATE_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/breastplate/breastplate-light-01.webp", import.meta.url).href;
+export const FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY = "breastplate-cloth-01";
+export const FIGHTER_BREASTPLATE_CLOTH_ASSET_URL = new URL("./assets/fighters/armor/breastplate/breastplate-cloth-01.webp", import.meta.url).href;
 
 export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY = "back-shoulderguard-light-01";
 export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/back-shoulderguard-light-01.webp", import.meta.url).href;
@@ -173,6 +175,11 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     key: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
     url: FIGHTER_BREASTPLATE_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/armor/breastplate/breastplate-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
+    url: FIGHTER_BREASTPLATE_CLOTH_ASSET_URL,
+    lowUrl: FIGHTER_BREASTPLATE_CLOTH_ASSET_URL,
   },
   {
     key: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,

@@ -5,6 +5,7 @@ import sharp from "sharp";
 const repoRoot = process.cwd();
 const assetsRoot = readAssetsRoot();
 const quality = readQualityArg();
+const targetFile = readTargetFileArg();
 const webpQuality = Math.round(quality <= 1 ? quality * 100 : quality);
 const resizeRules = [
   { maxSide: 768, pattern: /^fighters\/bodies\// },
@@ -19,13 +20,18 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/weapons\// },
 ];
 
-const pngFiles = await listFiles(assetsRoot, ".png");
+const pngFiles = targetFile ? [targetFile] : await listFiles(assetsRoot, ".png");
 let originalTotal = 0;
 let webpTotal = 0;
 
 console.log(`Assets root: ${path.relative(repoRoot, assetsRoot)}`);
 
 for (const pngPath of pngFiles) {
+  if (path.extname(pngPath).toLowerCase() !== ".png") {
+    console.log(`Skipping non-PNG file: ${path.relative(repoRoot, pngPath)}`);
+    continue;
+  }
+
   const png = await readFile(pngPath);
   const webpPath = pngPath.replace(/\.png$/i, ".webp");
   const relativePngPath = path.relative(assetsRoot, pngPath).replaceAll(path.sep, "/");
@@ -102,4 +108,14 @@ function readQualityArg() {
   const parsedQuality = Number.parseFloat(rawQuality);
 
   return Number.isFinite(parsedQuality) ? parsedQuality : 0.86;
+}
+
+function readTargetFileArg() {
+  const value = process.argv.find((argument) => argument.startsWith("--file="));
+  if (!value) {
+    return null;
+  }
+
+  const resolvedPath = path.resolve(repoRoot, value.slice("--file=".length));
+  return path.normalize(resolvedPath);
 }
