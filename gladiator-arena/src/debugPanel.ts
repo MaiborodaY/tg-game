@@ -31,14 +31,17 @@ import {
 } from "./debugTuning";
 import {
   createDefaultHeroInventory,
+  ALL_HERO_ITEM_IDS,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroInventoryEntry,
+  type HeroItemDefinition,
   type HeroItemId,
 } from "./hero";
-import { saveProdAnimation, saveProdDefaults } from "./prodDefaultsSaver";
+import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_IDS, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equipmentAssetRegistry";
+import { saveProdAnimation, saveProdDefaults, savePromotedEquipmentItem } from "./prodDefaultsSaver";
 
 interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
@@ -377,17 +380,6 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
             <button class="debug-panel__reset debug-rig-editor__face-reset" type="button">Reset eyes</button>
           </div>
         </fieldset>
-        <fieldset class="debug-rig-editor__equipment">
-          <legend>Equipment</legend>
-          <label class="debug-rig-editor__part">
-            <span>Slot</span>
-            <select class="debug-rig-editor__equipment-select"></select>
-          </label>
-          <div class="debug-rig-editor__equipment-controls"></div>
-          <div class="debug-rig-editor__actions">
-            <button class="debug-panel__reset debug-rig-editor__equipment-reset" type="button">Reset slot</button>
-          </div>
-        </fieldset>
         <fieldset class="debug-rig-editor__idle">
           <legend>Animation</legend>
           <label class="debug-rig-editor__part">
@@ -423,6 +415,51 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     <details class="debug-hero-equipment-panel" open>
       <summary>Hero equipment</summary>
       <div class="debug-hero-equipment"></div>
+    </details>
+    <details class="debug-item-equipment-panel" open>
+      <summary>Item equipment</summary>
+      <div class="debug-item-equipment">
+        <label class="debug-rig-editor__part">
+          <span>Slot</span>
+          <select class="debug-item-equipment__select"></select>
+        </label>
+        <div class="debug-item-equipment__controls"></div>
+        <div class="debug-rig-editor__actions">
+          <button class="debug-panel__reset debug-item-equipment__reset" type="button">Reset slot</button>
+        </div>
+      </div>
+    </details>
+    <details class="debug-auto-equipment-panel" open>
+      <summary>Auto equipment</summary>
+      <div class="debug-auto-equipment">
+        <label class="debug-rig-editor__part">
+          <span>Asset</span>
+          <select class="debug-auto-equipment__select"></select>
+        </label>
+        <label class="debug-rig-editor__part">
+          <span>Name</span>
+          <input class="debug-auto-equipment__name" type="text" />
+        </label>
+        <label class="debug-panel__row debug-rig-editor__row">
+          <span>Armor HP</span>
+          <input class="debug-panel__range" type="range" min="0" max="10" step="1" value="1" data-auto-equipment-armor />
+          <input class="debug-panel__number" type="number" min="0" max="10" step="1" value="1" data-auto-equipment-armor-number />
+        </label>
+        <label class="debug-panel__row debug-rig-editor__row">
+          <span>Price</span>
+          <input class="debug-panel__range" type="range" min="0" max="250" step="1" value="0" data-auto-equipment-price />
+          <input class="debug-panel__number" type="number" min="0" max="250" step="1" value="0" data-auto-equipment-price-number />
+        </label>
+        <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+          <span>Armory</span>
+          <input class="debug-auto-equipment__shop" type="checkbox" checked />
+        </label>
+        <div class="debug-rig-editor__actions">
+          <button class="debug-panel__reset debug-auto-equipment__preview" type="button">Preview</button>
+          <button class="debug-panel__reset debug-auto-equipment__promote" type="button">Promote</button>
+        </div>
+        <p class="debug-auto-equipment__status" aria-live="polite"></p>
+      </div>
     </details>
     <details class="debug-arena-panel">
       <summary>Arena tuning</summary>
@@ -463,12 +500,26 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const effectsBody = panel.querySelector<HTMLElement>(".debug-effects");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
   const heroEquipmentBody = panel.querySelector<HTMLElement>(".debug-hero-equipment");
+  const itemEquipmentBody = panel.querySelector<HTMLElement>(".debug-item-equipment");
+  const autoEquipmentBody = panel.querySelector<HTMLElement>(".debug-auto-equipment");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
   const saveAnimationButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod-animation");
   const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset-all");
   const status = panel.querySelector<HTMLElement>(".debug-panel__status");
 
-  if (!body || !cityBody || !effectsBody || !rigEditor || !heroEquipmentBody || !saveButton || !saveAnimationButton || !resetButton || !status) {
+  if (
+    !body ||
+    !cityBody ||
+    !effectsBody ||
+    !rigEditor ||
+    !heroEquipmentBody ||
+    !itemEquipmentBody ||
+    !autoEquipmentBody ||
+    !saveButton ||
+    !saveAnimationButton ||
+    !resetButton ||
+    !status
+  ) {
     return;
   }
 
@@ -498,6 +549,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountRigEditor(rigEditor);
   mountEffectsEditor(effectsBody);
   mountHeroEquipmentEditor(heroEquipmentBody);
+  mountItemEquipmentEditor(itemEquipmentBody);
+  mountAutoEquipmentEditor(autoEquipmentBody);
   mountNudgeToolbar(nudgeToolbar);
   mountModeTabs(panel);
 
@@ -863,14 +916,118 @@ function createHeroEquipmentRow(slotKey: HeroEquipmentSlotKey): HTMLElement {
   return row;
 }
 
+function mountItemEquipmentEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__select");
+  const controls = editor.querySelector<HTMLElement>(".debug-item-equipment__controls");
+  const reset = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__reset");
+
+  if (!select || !controls || !reset) {
+    return;
+  }
+
+  EQUIPMENT_SLOT_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    select.append(option);
+  });
+
+  equipmentNumericControls.forEach((control) => controls.append(createEquipmentRangeControl(control)));
+  equipmentToggleControls.forEach((control) => controls.append(createEquipmentToggleControl(control)));
+
+  select.addEventListener("change", () => {
+    if (isEquipmentSlotKey(select.value)) {
+      activeEquipmentSlot = select.value;
+      const panel = editor.closest(".debug-panel") as HTMLElement | null;
+
+      syncEquipmentEditor(panel ?? editor);
+    }
+  });
+
+  reset.addEventListener("click", () => {
+    resetEquipmentSlot(activeEquipmentSlot);
+  });
+}
+
+function mountAutoEquipmentEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
+  const nameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__name");
+  const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
+  const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
+  const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
+  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
+  const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const preview = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__preview");
+  const promote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__promote");
+  const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
+
+  if (!select || !nameInput || !armorRange || !armorNumber || !priceRange || !priceNumber || !addToShop || !preview || !promote || !status) {
+    return;
+  }
+
+  AUTO_EQUIPMENT_ITEM_RECORDS.forEach((record) => {
+    const option = document.createElement("option");
+
+    option.value = record.item.id;
+    option.textContent = record.item.name;
+    select.append(option);
+  });
+
+  syncAutoEquipmentEditor(editor);
+
+  select.addEventListener("change", () => {
+    syncAutoEquipmentEditor(editor);
+  });
+
+  syncLinkedNumberInputs(armorRange, armorNumber, 0, 10);
+  syncLinkedNumberInputs(priceRange, priceNumber, 0, 250);
+
+  preview.addEventListener("click", () => {
+    const record = getSelectedAutoEquipmentRecord(select.value);
+
+    if (!record) {
+      status.textContent = "No auto equipment asset selected.";
+      return;
+    }
+
+    updateHeroEquipmentSlot(record.item.equipmentSlot, record.item.id);
+    status.textContent = `Previewing ${record.item.name}.`;
+  });
+
+  promote.addEventListener("click", async () => {
+    const record = getSelectedAutoEquipmentRecord(select.value);
+
+    if (!record) {
+      status.textContent = "No auto equipment asset selected.";
+      return;
+    }
+
+    promote.disabled = true;
+    status.textContent = "Promoting equipment...";
+
+    try {
+      status.textContent = await savePromotedEquipmentItem({
+        name: nameInput.value.trim() || record.item.name.replace(/\s+\(Auto\)$/u, ""),
+        armorHp: clampNumber(Number(armorNumber.value), 0, 10),
+        price: clampNumber(Number(priceNumber.value), 0, 250),
+        addToShop: addToShop.checked,
+        item: record.item,
+        assetKeys: record.assetKeys,
+        asset: record.asset,
+      });
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not promote equipment.";
+    } finally {
+      promote.disabled = false;
+    }
+  });
+}
+
 function mountRigEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__select");
   const controls = editor.querySelector<HTMLElement>(".debug-rig-editor__controls");
   const limbGrid = editor.querySelector<HTMLElement>(".debug-rig-editor__limb-grid");
   const faceControls = editor.querySelector<HTMLElement>(".debug-rig-editor__face-controls");
-  const equipmentSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__equipment-select");
-  const equipmentControls = editor.querySelector<HTMLElement>(".debug-rig-editor__equipment-controls");
-  const resetEquipment = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__equipment-reset");
   const copyOpposite = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
   const resetAllParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset-all-parts");
@@ -891,9 +1048,6 @@ function mountRigEditor(editor: HTMLElement): void {
     !controls ||
     !limbGrid ||
     !faceControls ||
-    !equipmentSelect ||
-    !equipmentControls ||
-    !resetEquipment ||
     !copyOpposite ||
     !reset ||
     !resetAllParts ||
@@ -926,19 +1080,10 @@ function mountRigEditor(editor: HTMLElement): void {
     animationSelect.append(option);
   });
 
-  EQUIPMENT_SLOT_KEYS.forEach((key) => {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = key;
-    equipmentSelect.append(option);
-  });
-
   rigNumericControls.forEach((control) => controls.append(createRigRangeControl(control)));
   rigToggleControls.forEach((control) => controls.append(createRigToggleControl(control)));
   rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
   FACE_PART_KEYS.forEach((key) => faceControls.append(createFacePartEditor(key)));
-  equipmentNumericControls.forEach((control) => equipmentControls.append(createEquipmentRangeControl(control)));
-  equipmentToggleControls.forEach((control) => equipmentControls.append(createEquipmentToggleControl(control)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
   select.addEventListener("change", () => {
@@ -961,19 +1106,6 @@ function mountRigEditor(editor: HTMLElement): void {
 
   resetFace.addEventListener("click", () => {
     resetFaceParts();
-  });
-
-  equipmentSelect.addEventListener("change", () => {
-    if (isEquipmentSlotKey(equipmentSelect.value)) {
-      activeEquipmentSlot = equipmentSelect.value;
-      const panel = editor.closest(".debug-panel") as HTMLElement | null;
-
-      syncEquipmentEditor(panel ?? editor);
-    }
-  });
-
-  resetEquipment.addEventListener("click", () => {
-    resetEquipmentSlot(activeEquipmentSlot);
   });
 
   copyOpposite.addEventListener("click", () => {
@@ -1783,7 +1915,7 @@ function isHeroEquipmentSlotKey(value: string | undefined): value is HeroEquipme
 }
 
 function isHeroItemId(value: string | undefined): value is HeroItemId {
-  return typeof value === "string" && Object.prototype.hasOwnProperty.call(HERO_ITEM_CATALOG, value);
+  return typeof value === "string" && Boolean(getDebugHeroItemDefinition(value));
 }
 
 function getHeroEquipmentSelectItemId(value: string): HeroItemId | null {
@@ -1791,20 +1923,31 @@ function getHeroEquipmentSelectItemId(value: string): HeroItemId | null {
 }
 
 function getInventoryItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[] {
-  const itemIds = debugHeroInventory.flatMap((entry) => {
+  const itemIds = [...ALL_HERO_ITEM_IDS, ...AUTO_EQUIPMENT_ITEM_IDS].filter((itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey);
+  const inventoryItemIds = debugHeroInventory.flatMap((entry) => {
     if (entry.quantity <= 0 || !isHeroItemId(entry.itemId)) {
       return [];
     }
 
-    return HERO_ITEM_CATALOG[entry.itemId].equipmentSlot === slotKey ? [entry.itemId] : [];
+    return getDebugHeroItemDefinition(entry.itemId)?.equipmentSlot === slotKey ? [entry.itemId] : [];
   });
+
+  itemIds.push(...inventoryItemIds);
   const equippedItemId = debugHeroEquipment?.[slotKey];
 
-  if (equippedItemId && HERO_ITEM_CATALOG[equippedItemId].equipmentSlot === slotKey) {
+  if (equippedItemId && getDebugHeroItemDefinition(equippedItemId)?.equipmentSlot === slotKey) {
     itemIds.push(equippedItemId);
   }
 
   return [...new Set(itemIds)];
+}
+
+function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItemDefinition | undefined {
+  if (!itemId) {
+    return undefined;
+  }
+
+  return HERO_ITEM_CATALOG[itemId] ?? AUTO_EQUIPMENT_ITEM_CATALOG[itemId];
 }
 
 function getInventoryItemQuantity(itemId: HeroItemId): number {
@@ -1957,7 +2100,12 @@ function syncHeroEquipmentEditor(panel: HTMLElement): void {
     select.replaceChildren(createHeroEquipmentOption("", "empty"));
 
     inventoryItemIds.forEach((itemId) => {
-      const definition = HERO_ITEM_CATALOG[itemId];
+      const definition = getDebugHeroItemDefinition(itemId);
+
+      if (!definition) {
+        return;
+      }
+
       const quantity = getInventoryItemQuantity(itemId);
       const label = quantity > 1 ? `${definition.name} x${quantity}` : definition.name;
 
@@ -1976,10 +2124,69 @@ function syncHeroEquipmentEditor(panel: HTMLElement): void {
     }
 
     const itemId = debugHeroEquipment?.[slotKey];
-    const definition = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+    const definition = getDebugHeroItemDefinition(itemId);
 
     item.textContent = definition ? definition.id : "empty";
   });
+}
+
+function syncAutoEquipmentEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
+  const nameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__name");
+  const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
+  const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
+  const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
+  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
+  const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const buttons = editor.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__preview, .debug-auto-equipment__promote");
+  const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
+  const record = getSelectedAutoEquipmentRecord(select?.value);
+  const isAvailable = Boolean(record);
+
+  if (select) {
+    select.disabled = AUTO_EQUIPMENT_ITEM_RECORDS.length === 0;
+  }
+
+  if (nameInput) {
+    nameInput.value = record?.item.name.replace(/\s+\(Auto\)$/u, "") ?? "";
+    nameInput.disabled = !isAvailable;
+  }
+
+  [armorRange, armorNumber, priceRange, priceNumber, addToShop].forEach((input) => {
+    if (input) {
+      input.disabled = !isAvailable;
+    }
+  });
+
+  buttons.forEach((button) => {
+    button.disabled = !isAvailable;
+  });
+
+  if (status) {
+    status.textContent = isAvailable ? `${record?.asset.sourcePath ?? ""}` : "No unpromoted armor assets found.";
+  }
+}
+
+function getSelectedAutoEquipmentRecord(itemId: string | undefined): (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined {
+  return AUTO_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId);
+}
+
+function syncLinkedNumberInputs(range: HTMLInputElement, number: HTMLInputElement, min: number, max: number): void {
+  const syncFromRange = (): void => {
+    const value = clampNumber(Number(range.value), min, max);
+
+    range.value = `${value}`;
+    number.value = `${value}`;
+  };
+  const syncFromNumber = (): void => {
+    const value = clampNumber(Number(number.value), min, max);
+
+    range.value = `${value}`;
+    number.value = `${value}`;
+  };
+
+  range.addEventListener("input", syncFromRange);
+  number.addEventListener("input", syncFromNumber);
 }
 
 function createHeroEquipmentOption(value: string, label: string): HTMLOptionElement {
@@ -2111,7 +2318,7 @@ function syncFaceEditor(panel: HTMLElement): void {
 }
 
 function syncEquipmentEditor(panel: HTMLElement): void {
-  const equipmentSelect = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__equipment-select");
+  const equipmentSelect = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__select");
   const selectedEquipment = debugTuning.equipment[activeEquipmentSlot] ?? DEFAULT_EQUIPMENT[activeEquipmentSlot];
 
   if (equipmentSelect) {

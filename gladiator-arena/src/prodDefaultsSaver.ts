@@ -1,12 +1,25 @@
 import type { ArenaDebugTuning } from "./debugTuning";
+import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
+import type { HeroItemDefinition } from "./hero";
 
 interface SaveProdDefaultsResponse {
   message?: string;
   updated?: number;
 }
 
+export interface PromoteEquipmentItemPayload {
+  name: string;
+  armorHp: number;
+  price: number;
+  addToShop: boolean;
+  item: HeroItemDefinition;
+  assetKeys: EquipmentItemAssetKeys;
+  asset: EquipmentAssetDefinition;
+}
+
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
+const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
   const response = await fetch(saveProdDefaultsEndpoint, {
@@ -36,6 +49,21 @@ export async function saveProdAnimation(tuning: ArenaDebugTuning): Promise<strin
   }
 
   return payload.message ?? "Saved animation to prod.";
+}
+
+export async function savePromotedEquipmentItem(payload: PromoteEquipmentItemPayload): Promise<string> {
+  const response = await fetch(promoteEquipmentItemEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not promote equipment item. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Promoted equipment item.";
 }
 
 async function readResponse(response: Response): Promise<SaveProdDefaultsResponse> {

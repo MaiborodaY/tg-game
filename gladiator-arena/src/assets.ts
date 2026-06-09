@@ -179,7 +179,7 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
   {
     key: FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
     url: FIGHTER_BREASTPLATE_CLOTH_ASSET_URL,
-    lowUrl: FIGHTER_BREASTPLATE_CLOTH_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/breastplate/breastplate-cloth-01.webp", import.meta.url).href,
   },
   {
     key: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,

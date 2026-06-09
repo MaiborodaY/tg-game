@@ -71,6 +71,8 @@ import {
   type HeroItemId,
   CLOTH_BREASTPLATE_ID,
 } from "./hero";
+import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
+import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS } from "./generated/equipmentItems.generated";
 import {
   beginDebugUndoGroup,
   debugTuning,
@@ -230,22 +232,7 @@ interface PaperDollFighterOptions {
 
 type PaperDollEquipmentSlotKey = HeroEquipmentSlotKey;
 
-type PaperDollEquipmentAssetKeys = Pick<
-  PaperDollFighterOptions,
-  | "weaponMainAssetKey"
-  | "helmetAssetKey"
-  | "breastplateAssetKey"
-  | "backShoulderguardAssetKey"
-  | "frontShoulderguardAssetKey"
-  | "backGauntletAssetKey"
-  | "frontGauntletAssetKey"
-  | "backGreaveAssetKey"
-  | "frontGreaveAssetKey"
-  | "backShinguardAssetKey"
-  | "frontShinguardAssetKey"
-  | "backBootAssetKey"
-  | "frontBootAssetKey"
->;
+type PaperDollEquipmentAssetKeys = EquipmentItemAssetKeys;
 
 type PaperDollEquipmentAssetKey = keyof PaperDollEquipmentAssetKeys;
 
@@ -470,6 +457,101 @@ const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, Pape
   frontBoot: "frontBootAssetKey",
 };
 
+const PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS: Record<PaperDollEquipmentSlotKey, PaperDollPartAssetConfig> = {
+  weaponMain: {
+    displayHeight: WEAPON_MAIN_DISPLAY_HEIGHT,
+    localX: 0,
+    localY: 0,
+    originX: WEAPON_MAIN_ORIGIN_X,
+    originY: WEAPON_MAIN_ORIGIN_Y,
+  },
+  helmet: {
+    displayHeight: HELMET_DISPLAY_HEIGHT,
+    localX: HELMET_LOCAL_X,
+    localY: HELMET_LOCAL_Y,
+    originX: HELMET_ORIGIN_X,
+    originY: HELMET_ORIGIN_Y,
+  },
+  breastplate: {
+    displayHeight: BREASTPLATE_DISPLAY_HEIGHT,
+    localX: BREASTPLATE_LOCAL_X,
+    localY: BREASTPLATE_LOCAL_Y,
+    originX: BREASTPLATE_ORIGIN_X,
+    originY: BREASTPLATE_ORIGIN_Y,
+  },
+  backShoulderguard: {
+    displayHeight: SHOULDERGUARD_DISPLAY_HEIGHT,
+    localX: SHOULDERGUARD_LOCAL_X,
+    localY: SHOULDERGUARD_LOCAL_Y,
+    originX: SHOULDERGUARD_ORIGIN_X,
+    originY: SHOULDERGUARD_ORIGIN_Y,
+  },
+  frontShoulderguard: {
+    displayHeight: SHOULDERGUARD_DISPLAY_HEIGHT,
+    localX: SHOULDERGUARD_LOCAL_X,
+    localY: SHOULDERGUARD_LOCAL_Y,
+    originX: SHOULDERGUARD_ORIGIN_X,
+    originY: SHOULDERGUARD_ORIGIN_Y,
+  },
+  backGauntlet: {
+    displayHeight: GAUNTLET_DISPLAY_HEIGHT,
+    localX: GAUNTLET_LOCAL_X,
+    localY: GAUNTLET_LOCAL_Y,
+    originX: GAUNTLET_ORIGIN_X,
+    originY: GAUNTLET_ORIGIN_Y,
+  },
+  frontGauntlet: {
+    displayHeight: GAUNTLET_DISPLAY_HEIGHT,
+    localX: GAUNTLET_LOCAL_X,
+    localY: GAUNTLET_LOCAL_Y,
+    originX: GAUNTLET_ORIGIN_X,
+    originY: GAUNTLET_ORIGIN_Y,
+  },
+  backGreave: {
+    displayHeight: GREAVE_DISPLAY_HEIGHT,
+    localX: GREAVE_LOCAL_X,
+    localY: GREAVE_LOCAL_Y,
+    originX: GREAVE_ORIGIN_X,
+    originY: GREAVE_ORIGIN_Y,
+  },
+  frontGreave: {
+    displayHeight: GREAVE_DISPLAY_HEIGHT,
+    localX: GREAVE_LOCAL_X,
+    localY: GREAVE_LOCAL_Y,
+    originX: GREAVE_ORIGIN_X,
+    originY: GREAVE_ORIGIN_Y,
+  },
+  backShinguard: {
+    displayHeight: SHINGUARD_DISPLAY_HEIGHT,
+    localX: SHINGUARD_LOCAL_X,
+    localY: SHINGUARD_LOCAL_Y,
+    originX: SHINGUARD_ORIGIN_X,
+    originY: SHINGUARD_ORIGIN_Y,
+  },
+  frontShinguard: {
+    displayHeight: SHINGUARD_DISPLAY_HEIGHT,
+    localX: SHINGUARD_LOCAL_X,
+    localY: SHINGUARD_LOCAL_Y,
+    originX: SHINGUARD_ORIGIN_X,
+    originY: SHINGUARD_ORIGIN_Y,
+  },
+  backBoot: {
+    displayHeight: BOOT_DISPLAY_HEIGHT,
+    localX: -BOOT_LOCAL_X,
+    localY: BOOT_LOCAL_Y,
+    originX: BOOT_ORIGIN_X,
+    originY: BOOT_ORIGIN_Y,
+  },
+  frontBoot: {
+    displayHeight: BOOT_DISPLAY_HEIGHT,
+    localX: BOOT_LOCAL_X,
+    localY: BOOT_LOCAL_Y,
+    originX: BOOT_ORIGIN_X,
+    originY: BOOT_ORIGIN_Y,
+  },
+};
+const paperDollEquipmentSlotConfigs = new WeakMap<FighterPart, PaperDollPartAssetConfig>();
+
 const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipmentAssetKeys>> = {
   training_sword: { weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY },
   starter_helmet: { helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY },
@@ -486,6 +568,10 @@ const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipm
   starter_back_boot: { backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY },
   starter_front_boot: { frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY },
 };
+
+function getHeroItemEquipmentAssetKeys(itemId: HeroItemId): PaperDollEquipmentAssetKeys | undefined {
+  return HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId] ?? GENERATED_EQUIPMENT_ITEM_ASSET_KEYS[itemId] ?? AUTO_EQUIPMENT_ITEM_ASSET_KEYS[itemId];
+}
 
 const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
 
@@ -513,9 +599,17 @@ function preloadCityAssets(target: Phaser.Scene): void {
 
 function preloadPaperDollAssets(target: Phaser.Scene): void {
   activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
+  const loadedAssetKeys = new Set<string>();
 
-  FIGHTER_PAPER_DOLL_ASSETS.forEach((asset) => {
-    target.load.image(getActivePaperDollAssetKey(asset.key), activePaperDollAssetsUseLowRes ? asset.lowUrl : asset.url);
+  [...FIGHTER_PAPER_DOLL_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS].forEach((asset) => {
+    const textureKey = getActivePaperDollAssetKey(asset.key);
+
+    if (loadedAssetKeys.has(textureKey)) {
+      return;
+    }
+
+    loadedAssetKeys.add(textureKey);
+    target.load.image(textureKey, activePaperDollAssetsUseLowRes ? asset.lowUrl ?? asset.url : asset.url);
   });
 }
 
@@ -561,7 +655,7 @@ function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): Pape
       return assetKeys;
     }
 
-    const itemAssetKeys = HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId];
+    const itemAssetKeys = getHeroItemEquipmentAssetKeys(itemId);
 
     return itemAssetKeys ? { ...assetKeys, ...getActivePaperDollEquipmentAssetKeys(itemAssetKeys) } : assetKeys;
   }, defaultAssetKeys);
@@ -576,7 +670,7 @@ function createPlayerEquipmentVisibility(equipment = activePlayerEquipment): Rec
     PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => {
       const itemId = equipment[slotKey];
       const assetKey = PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey];
-      const hasVisualAsset = Boolean(itemId && HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId]?.[assetKey]);
+      const hasVisualAsset = Boolean(itemId && getHeroItemEquipmentAssetKeys(itemId)?.[assetKey]);
 
       return [slotKey, hasVisualAsset];
     }),
@@ -834,6 +928,7 @@ class CityHeroScene extends Phaser.Scene {
 
   focusDefault(instant = false): void {
     this.cameraMode = "default";
+    this.setCityHeroShadowEnabled(true);
     this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(1, instant);
     this.tweenHeroLiftTo(0, instant);
@@ -842,6 +937,7 @@ class CityHeroScene extends Phaser.Scene {
 
   focusArmory(instant = false): void {
     this.cameraMode = "armory";
+    this.setCityHeroShadowEnabled(false);
     this.transitionBackgroundTo(CITY_ARMORY_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
@@ -850,6 +946,7 @@ class CityHeroScene extends Phaser.Scene {
 
   focusWeaponShop(instant = false): void {
     this.cameraMode = "weaponShop";
+    this.setCityHeroShadowEnabled(false);
     this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
@@ -875,6 +972,15 @@ class CityHeroScene extends Phaser.Scene {
     const layout = this.getHeroLayout();
 
     applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+  }
+
+  private setCityHeroShadowEnabled(enabled: boolean): void {
+    if (!this.fighter) {
+      return;
+    }
+
+    this.fighter.castsShadow = enabled;
+    syncFighterShadowVisibility(this.fighter, 1);
   }
 
   private handleResize(): void {
@@ -1930,12 +2036,12 @@ function syncPaperDollEquipmentVisuals(rig: PaperDollRig): void {
   const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipmentState);
   PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
     const textureKey = equipmentAssetKeys[PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey]];
-    syncPaperDollEquipmentSlot(rig.equipment[slotKey], textureKey);
-    syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], textureKey);
+    syncPaperDollEquipmentSlot(rig.equipment[slotKey], slotKey, textureKey);
+    syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], slotKey, textureKey);
   });
 }
 
-function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, textureKey: string | undefined): void {
+function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, slotKey: PaperDollEquipmentSlotKey, textureKey: string | undefined): void {
   if (!slot || !textureKey) {
     return;
   }
@@ -1943,7 +2049,11 @@ function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, textureKey: s
   const slotContainer = slot as Phaser.GameObjects.Container;
   const image = slotContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
   if (image && slotContainer.scene.textures.exists(textureKey)) {
-    image.setTexture(textureKey);
+    if (image.texture.key !== textureKey) {
+      image.setTexture(textureKey);
+    }
+
+    applyPaperDollEquipmentImageConfig(image, paperDollEquipmentSlotConfigs.get(slot) ?? PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey]);
   }
 }
 
@@ -2316,14 +2426,11 @@ function addPaperDollWeaponVisual(
   equipment: PaperDollEquipment,
 ): void {
   const weaponContainer = target.add.container(0, 0);
-  const image = target.add.image(0, 0, assetKey);
+  const image = createPaperDollEquipmentImage(target, assetKey, PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
 
-  image.setOrigin(WEAPON_MAIN_ORIGIN_X, WEAPON_MAIN_ORIGIN_Y);
-  image.displayHeight = WEAPON_MAIN_DISPLAY_HEIGHT;
-  image.scaleX = image.scaleY;
   weaponContainer.add(image);
   partContainer.add(weaponContainer);
-  equipment.weaponMain = part(weaponContainer);
+  registerPaperDollEquipmentSlot(weaponContainer, equipment, "weaponMain", PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
 }
 
 function addPaperDollHelmetVisual(
@@ -2333,14 +2440,10 @@ function addPaperDollHelmetVisual(
   equipment: PaperDollEquipment,
 ): void {
   const helmetContainer = target.add.container(0, 0);
+  const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.helmet;
 
   if (assetKey && target.textures.exists(assetKey)) {
-    const image = target.add.image(HELMET_LOCAL_X, HELMET_LOCAL_Y, assetKey);
-
-    image.setOrigin(HELMET_ORIGIN_X, HELMET_ORIGIN_Y);
-    image.displayHeight = HELMET_DISPLAY_HEIGHT;
-    image.scaleX = image.scaleY;
-    helmetContainer.add(image);
+    helmetContainer.add(createPaperDollEquipmentImage(target, assetKey, config));
   } else {
     const graphics = target.add.graphics();
 
@@ -2349,7 +2452,7 @@ function addPaperDollHelmetVisual(
   }
 
   partContainer.add(helmetContainer);
-  equipment.helmet = part(helmetContainer);
+  registerPaperDollEquipmentSlot(helmetContainer, equipment, "helmet", config);
 }
 
 function addPaperDollBreastplateVisual(
@@ -2359,14 +2462,10 @@ function addPaperDollBreastplateVisual(
   equipment: PaperDollEquipment,
 ): void {
   const breastplateContainer = target.add.container(0, 0);
+  const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.breastplate;
 
   if (assetKey && target.textures.exists(assetKey)) {
-    const image = target.add.image(BREASTPLATE_LOCAL_X, BREASTPLATE_LOCAL_Y, assetKey);
-
-    image.setOrigin(BREASTPLATE_ORIGIN_X, BREASTPLATE_ORIGIN_Y);
-    image.displayHeight = BREASTPLATE_DISPLAY_HEIGHT;
-    image.scaleX = image.scaleY;
-    breastplateContainer.add(image);
+    breastplateContainer.add(createPaperDollEquipmentImage(target, assetKey, config));
   } else {
     const graphics = target.add.graphics();
 
@@ -2375,7 +2474,7 @@ function addPaperDollBreastplateVisual(
   }
 
   partContainer.add(breastplateContainer);
-  equipment.breastplate = part(breastplateContainer);
+  registerPaperDollEquipmentSlot(breastplateContainer, equipment, "breastplate", config);
 }
 
 function addPaperDollArmArmorVisual(
@@ -2386,46 +2485,22 @@ function addPaperDollArmArmorVisual(
   equipment: PaperDollEquipment,
 ): void {
   if (key === "backUpperArm") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backShoulderguardAssetKey, "backShoulderguard", equipment, {
-      displayHeight: SHOULDERGUARD_DISPLAY_HEIGHT,
-      localX: SHOULDERGUARD_LOCAL_X,
-      localY: SHOULDERGUARD_LOCAL_Y,
-      originX: SHOULDERGUARD_ORIGIN_X,
-      originY: SHOULDERGUARD_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backShoulderguardAssetKey, "backShoulderguard", equipment);
     return;
   }
 
   if (key === "frontUpperArm") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShoulderguardAssetKey, "frontShoulderguard", equipment, {
-      displayHeight: SHOULDERGUARD_DISPLAY_HEIGHT,
-      localX: SHOULDERGUARD_LOCAL_X,
-      localY: SHOULDERGUARD_LOCAL_Y,
-      originX: SHOULDERGUARD_ORIGIN_X,
-      originY: SHOULDERGUARD_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShoulderguardAssetKey, "frontShoulderguard", equipment);
     return;
   }
 
   if (key === "backHand") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backGauntletAssetKey, "backGauntlet", equipment, {
-      displayHeight: GAUNTLET_DISPLAY_HEIGHT,
-      localX: GAUNTLET_LOCAL_X,
-      localY: GAUNTLET_LOCAL_Y,
-      originX: GAUNTLET_ORIGIN_X,
-      originY: GAUNTLET_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backGauntletAssetKey, "backGauntlet", equipment);
     return;
   }
 
   if (key === "frontHand") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGauntletAssetKey, "frontGauntlet", equipment, {
-      displayHeight: GAUNTLET_DISPLAY_HEIGHT,
-      localX: GAUNTLET_LOCAL_X,
-      localY: GAUNTLET_LOCAL_Y,
-      originX: GAUNTLET_ORIGIN_X,
-      originY: GAUNTLET_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGauntletAssetKey, "frontGauntlet", equipment);
   }
 }
 
@@ -2437,68 +2512,32 @@ function addPaperDollLegArmorVisual(
   equipment: PaperDollEquipment,
 ): void {
   if (key === "backThigh") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backGreaveAssetKey, "backGreave", equipment, {
-      displayHeight: GREAVE_DISPLAY_HEIGHT,
-      localX: GREAVE_LOCAL_X,
-      localY: GREAVE_LOCAL_Y,
-      originX: GREAVE_ORIGIN_X,
-      originY: GREAVE_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backGreaveAssetKey, "backGreave", equipment);
     return;
   }
 
   if (key === "frontThigh") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGreaveAssetKey, "frontGreave", equipment, {
-      displayHeight: GREAVE_DISPLAY_HEIGHT,
-      localX: GREAVE_LOCAL_X,
-      localY: GREAVE_LOCAL_Y,
-      originX: GREAVE_ORIGIN_X,
-      originY: GREAVE_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGreaveAssetKey, "frontGreave", equipment);
     return;
   }
 
   if (key === "backShin") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backShinguardAssetKey, "backShinguard", equipment, {
-      displayHeight: SHINGUARD_DISPLAY_HEIGHT,
-      localX: SHINGUARD_LOCAL_X,
-      localY: SHINGUARD_LOCAL_Y,
-      originX: SHINGUARD_ORIGIN_X,
-      originY: SHINGUARD_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backShinguardAssetKey, "backShinguard", equipment);
     return;
   }
 
   if (key === "frontShin") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShinguardAssetKey, "frontShinguard", equipment, {
-      displayHeight: SHINGUARD_DISPLAY_HEIGHT,
-      localX: SHINGUARD_LOCAL_X,
-      localY: SHINGUARD_LOCAL_Y,
-      originX: SHINGUARD_ORIGIN_X,
-      originY: SHINGUARD_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShinguardAssetKey, "frontShinguard", equipment);
     return;
   }
 
   if (key === "backFoot") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backBootAssetKey, "backBoot", equipment, {
-      displayHeight: BOOT_DISPLAY_HEIGHT,
-      localX: -BOOT_LOCAL_X,
-      localY: BOOT_LOCAL_Y,
-      originX: BOOT_ORIGIN_X,
-      originY: BOOT_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backBootAssetKey, "backBoot", equipment);
     return;
   }
 
   if (key === "frontFoot") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontBootAssetKey, "frontBoot", equipment, {
-      displayHeight: BOOT_DISPLAY_HEIGHT,
-      localX: BOOT_LOCAL_X,
-      localY: BOOT_LOCAL_Y,
-      originX: BOOT_ORIGIN_X,
-      originY: BOOT_ORIGIN_Y,
-    });
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontBootAssetKey, "frontBoot", equipment);
   }
 }
 
@@ -2506,23 +2545,48 @@ function addPaperDollEquipmentImageVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
   assetKey: string | undefined,
-  slotKey: keyof PaperDollEquipment,
+  slotKey: PaperDollEquipmentSlotKey,
   equipment: PaperDollEquipment,
-  config: PaperDollPartAssetConfig,
 ): void {
   if (!assetKey || !target.textures.exists(assetKey)) {
     return;
   }
 
   const armorContainer = target.add.container(0, 0);
+  const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
+  const image = createPaperDollEquipmentImage(target, assetKey, config);
+
+  armorContainer.add(image);
+  partContainer.add(armorContainer);
+  registerPaperDollEquipmentSlot(armorContainer, equipment, slotKey, config);
+}
+
+function createPaperDollEquipmentImage(target: Phaser.Scene, assetKey: string, config: PaperDollPartAssetConfig): Phaser.GameObjects.Image {
   const image = target.add.image(config.localX, config.localY, assetKey);
 
+  applyPaperDollEquipmentImageConfig(image, config);
+
+  return image;
+}
+
+function applyPaperDollEquipmentImageConfig(image: Phaser.GameObjects.Image, config: PaperDollPartAssetConfig): void {
+  image.x = config.localX;
+  image.y = config.localY;
   image.setOrigin(config.originX, config.originY);
   image.displayHeight = config.displayHeight;
   image.scaleX = image.scaleY;
-  armorContainer.add(image);
-  partContainer.add(armorContainer);
-  equipment[slotKey] = part(armorContainer);
+}
+
+function registerPaperDollEquipmentSlot(
+  container: Phaser.GameObjects.Container,
+  equipment: PaperDollEquipment,
+  slotKey: PaperDollEquipmentSlotKey,
+  config: PaperDollPartAssetConfig,
+): void {
+  const slot = part(container);
+
+  equipment[slotKey] = slot;
+  paperDollEquipmentSlotConfigs.set(slot, config);
 }
 
 function drawArmorHelmetPlaceholder(graphics: Phaser.GameObjects.Graphics): void {

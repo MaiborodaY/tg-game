@@ -29,6 +29,7 @@ import {
   TRAINING_WEAPON_ID,
   type HeroItemId,
 } from "./hero";
+import { GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
 
 const SHOP_ITEM_ICON_URLS: Partial<Record<HeroItemId, string>> = {
   [TRAINING_WEAPON_ID]: FIGHTER_WEAPON_SWORD_01_ASSET_URL,
@@ -44,6 +45,7 @@ const SHOP_ITEM_ICON_URLS: Partial<Record<HeroItemId, string>> = {
   [STARTER_FRONT_SHINGUARD_ID]: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL,
   [STARTER_BACK_BOOT_ID]: FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
   [STARTER_FRONT_BOOT_ID]: FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL,
+  ...Object.fromEntries(GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, record.asset.url])),
 };
 
 export function getShopProductIconUrl(itemIds: HeroItemId[]): string | undefined {

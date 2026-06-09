@@ -1,10 +1,12 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { defineConfig, type Plugin } from "vite";
 
 const arenaLayoutUrl = new URL("./src/arenaLayout.ts", import.meta.url);
 const combatUrl = new URL("./src/combat.ts", import.meta.url);
 const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
+const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.generated.json", import.meta.url);
+const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
 
 const prodDefaultFields = {
   DEFAULT_STAGE_ORIGIN_X: "originX",
@@ -202,6 +204,38 @@ interface BodyAnimationUpdates {
   activeParts: Record<RigPartKey, boolean>;
 }
 
+interface PromoteEquipmentItemPayload {
+  name?: unknown;
+  armorHp?: unknown;
+  price?: unknown;
+  addToShop?: unknown;
+  item?: unknown;
+  assetKeys?: unknown;
+  asset?: unknown;
+}
+
+interface GeneratedEquipmentJsonRecord {
+  id: string;
+  name: string;
+  kind: "armor";
+  armorCategory?: "leather" | "cloth" | "chain" | "plate";
+  equipmentSlot: EquipmentSlotKey;
+  armorHp: number;
+  assetKeys: Record<string, string>;
+  asset: {
+    key: string;
+    sourcePath: string;
+    lowSourcePath?: string;
+  };
+  armoryProduct?: {
+    id: string;
+    name: string;
+    price: number;
+    itemIds: string[];
+    categoryId: string;
+  };
+}
+
 export default defineConfig({
   plugins: [saveProdDefaultsPlugin()],
 });
@@ -287,6 +321,26 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: `Saved ${animationUpdates.key} animation defaults to prod.`, updated: 1 });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod animation." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/promote-equipment-item", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to promote equipment items." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const promotedItem = pickPromotedEquipmentItem(payload);
+          const records = await readGeneratedEquipmentRecords();
+          const nextRecords = upsertGeneratedEquipmentRecord(records, promotedItem);
+
+          await writeGeneratedEquipmentRecords(nextRecords);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: `Promoted ${promotedItem.name}.`, updated: 1 });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote equipment item." });
         }
       });
     },
@@ -535,6 +589,218 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
     faceBase: readFacePartRecord(animation.faceBase, "faceBase"),
     faceBreath: readFacePartRecord(animation.faceBreath, "faceBreath"),
     activeParts: readBodyAnimationActiveParts(animation.activeParts),
+  };
+}
+
+export function pickPromotedEquipmentItem(payload: unknown): GeneratedEquipmentJsonRecord {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with equipment promotion values.");
+  }
+
+  const promotion = payload as PromoteEquipmentItemPayload;
+  const item = readPlainObject(promotion.item, "item");
+  const asset = readPlainObject(promotion.asset, "asset");
+  const assetKeys = readStringRecord(promotion.assetKeys, "assetKeys");
+  const equipmentSlot = readEquipmentSlot(item.equipmentSlot);
+  const assetKey = readNonEmptyString(asset.key, "asset.key");
+  const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "asset.sourcePath");
+  const lowSourcePath =
+    typeof asset.lowSourcePath === "string" && asset.lowSourcePath.trim()
+      ? readAssetSourcePath(asset.lowSourcePath, "assets-low/fighters/armor/", "asset.lowSourcePath")
+      : undefined;
+  const armorCategory = readArmorCategory(item.armorCategory);
+  const name = readNonEmptyString(promotion.name, "name").slice(0, 80);
+  const armorHp = Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.armorHp, "armorHp"))));
+  const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(promotion.price, "price"))));
+  const addToShop = promotion.addToShop === true;
+  const categoryId = getArmoryCategoryId(equipmentSlot);
+  const id = `generated_equipment_${toIdentifier(assetKey)}`;
+
+  if (equipmentSlot === "weaponMain") {
+    throw new Error("Promoted armor item cannot use weaponMain slot.");
+  }
+
+  if (!Object.values(assetKeys).includes(assetKey)) {
+    throw new Error("Promoted item assetKeys must reference asset.key.");
+  }
+
+  return {
+    id,
+    name,
+    kind: "armor",
+    ...(armorCategory ? { armorCategory } : {}),
+    equipmentSlot,
+    armorHp,
+    assetKeys,
+    asset: {
+      key: assetKey,
+      sourcePath,
+      ...(lowSourcePath ? { lowSourcePath } : {}),
+    },
+    ...(addToShop && categoryId
+      ? {
+          armoryProduct: {
+            id,
+            name,
+            price,
+            itemIds: [id],
+            categoryId,
+          },
+        }
+      : {}),
+  };
+}
+
+async function readGeneratedEquipmentRecords(): Promise<GeneratedEquipmentJsonRecord[]> {
+  try {
+    const source = await readFile(generatedEquipmentJsonUrl, "utf8");
+    const records = JSON.parse(source) as unknown;
+
+    if (!Array.isArray(records)) {
+      throw new Error("Generated equipment JSON must contain an array.");
+    }
+
+    return records.map((record) => validateGeneratedEquipmentRecord(record));
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function upsertGeneratedEquipmentRecord(records: GeneratedEquipmentJsonRecord[], nextRecord: GeneratedEquipmentJsonRecord): GeneratedEquipmentJsonRecord[] {
+  return [
+    ...records.filter((record) => record.id !== nextRecord.id && record.asset.sourcePath !== nextRecord.asset.sourcePath),
+    nextRecord,
+  ].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+async function writeGeneratedEquipmentRecords(records: GeneratedEquipmentJsonRecord[]): Promise<void> {
+  await mkdir(new URL("./src/generated/", import.meta.url), { recursive: true });
+  await Promise.all([
+    writeFile(generatedEquipmentJsonUrl, `${JSON.stringify(records, null, 2)}\n`, "utf8"),
+    writeFile(generatedEquipmentTsUrl, formatGeneratedEquipmentSource(records), "utf8"),
+  ]);
+}
+
+function formatGeneratedEquipmentSource(records: GeneratedEquipmentJsonRecord[]): string {
+  const rows = records.map(formatGeneratedEquipmentRecord).join(",\n");
+
+  return `import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "../equipmentAssetRegistry";
+import type { HeroItemDefinition, HeroItemId } from "../hero";
+
+export interface GeneratedArmoryProduct {
+  id: string;
+  name: string;
+  price: number;
+  itemIds: HeroItemId[];
+  categoryId: string;
+}
+
+export interface GeneratedEquipmentItemRecord {
+  item: HeroItemDefinition;
+  assetKeys: EquipmentItemAssetKeys;
+  asset: EquipmentAssetDefinition;
+  armoryProduct?: GeneratedArmoryProduct;
+}
+
+export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [${rows ? `\n${rows}\n` : ""}];
+
+export const GENERATED_EQUIPMENT_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);
+
+export const GENERATED_EQUIPMENT_ITEM_CATALOG = Object.fromEntries(
+  GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, record.item]),
+) as Record<HeroItemId, HeroItemDefinition>;
+
+export const GENERATED_EQUIPMENT_ITEM_ASSET_KEYS = Object.fromEntries(
+  GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, record.assetKeys]),
+) as Partial<Record<HeroItemId, EquipmentItemAssetKeys>>;
+
+export const GENERATED_EQUIPMENT_ASSETS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.asset);
+
+export const GENERATED_ARMORY_PRODUCTS = GENERATED_EQUIPMENT_ITEM_RECORDS.flatMap((record) =>
+  record.armoryProduct ? [record.armoryProduct] : [],
+);
+`;
+}
+
+function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): string {
+  const item = {
+    id: record.id,
+    name: record.name,
+    kind: record.kind,
+    ...(record.armorCategory ? { armorCategory: record.armorCategory } : {}),
+    equipmentSlot: record.equipmentSlot,
+    armorHp: record.armorHp,
+  };
+
+  return [
+    "  {",
+    `    item: ${JSON.stringify(item)},`,
+    `    assetKeys: ${JSON.stringify(record.assetKeys)},`,
+    "    asset: {",
+    `      key: ${JSON.stringify(record.asset.key)},`,
+    `      url: new URL(${JSON.stringify(`../${record.asset.sourcePath}`)}, import.meta.url).href,`,
+    ...(record.asset.lowSourcePath ? [`      lowUrl: new URL(${JSON.stringify(`../${record.asset.lowSourcePath}`)}, import.meta.url).href,`] : []),
+    `      sourcePath: ${JSON.stringify(record.asset.sourcePath)},`,
+    ...(record.asset.lowSourcePath ? [`      lowSourcePath: ${JSON.stringify(record.asset.lowSourcePath)},`] : []),
+    "    },",
+    ...(record.armoryProduct ? [`    armoryProduct: ${JSON.stringify(record.armoryProduct)},`] : []),
+    "  }",
+  ].join("\n");
+}
+
+function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJsonRecord {
+  const record = readPlainObject(input, "generated equipment record");
+  const asset = readPlainObject(record.asset, "generated equipment asset");
+  const equipmentSlot = readEquipmentSlot(record.equipmentSlot);
+  const id = readNonEmptyString(record.id, "generated equipment id");
+  const name = readNonEmptyString(record.name, "generated equipment name");
+  const kind = record.kind;
+  const armorHp = Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))));
+  const assetKeys = readStringRecord(record.assetKeys, "generated equipment assetKeys");
+  const assetKey = readNonEmptyString(asset.key, "generated equipment asset.key");
+  const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "generated equipment asset.sourcePath");
+  const lowSourcePath =
+    typeof asset.lowSourcePath === "string" && asset.lowSourcePath.trim()
+      ? readAssetSourcePath(asset.lowSourcePath, "assets-low/fighters/armor/", "generated equipment asset.lowSourcePath")
+      : undefined;
+  const armorCategory = readArmorCategory(record.armorCategory);
+
+  if (kind !== "armor") {
+    throw new Error("Generated equipment kind must be armor.");
+  }
+
+  return {
+    id,
+    name,
+    kind,
+    ...(armorCategory ? { armorCategory } : {}),
+    equipmentSlot,
+    armorHp,
+    assetKeys,
+    asset: {
+      key: assetKey,
+      sourcePath,
+      ...(lowSourcePath ? { lowSourcePath } : {}),
+    },
+    ...(record.armoryProduct ? { armoryProduct: validateGeneratedArmoryProduct(record.armoryProduct, id, name) } : {}),
+  };
+}
+
+function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["armoryProduct"] {
+  const product = readPlainObject(input, "generated armory product");
+  const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(product.price, "generated armory product price"))));
+  const categoryId = readNonEmptyString(product.categoryId, "generated armory product categoryId");
+
+  return {
+    id: readNonEmptyString(product.id, "generated armory product id"),
+    name: readNonEmptyString(product.name, "generated armory product name") || itemName,
+    price,
+    itemIds: [itemId],
+    categoryId,
   };
 }
 
@@ -858,6 +1124,106 @@ function readRigPartBoolean(payload: Partial<RigPartTuningPayload>, partKey: str
   }
 
   return value;
+}
+
+function readPlainObject(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`Expected ${label}.`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function readStringRecord(value: unknown, label: string): Record<string, string> {
+  const record = readPlainObject(value, label);
+
+  return Object.fromEntries(
+    Object.entries(record).map(([key, recordValue]) => {
+      if (typeof recordValue !== "string" || !recordValue.trim()) {
+        throw new Error(`Invalid ${label}.${key}.`);
+      }
+
+      return [key, recordValue.trim()];
+    }),
+  );
+}
+
+function readNonEmptyString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`Invalid ${label}.`);
+  }
+
+  return value.trim();
+}
+
+function readFinitePayloadNumber(value: unknown, label: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid numeric value: ${label}.`);
+  }
+
+  return value;
+}
+
+function readEquipmentSlot(value: unknown): EquipmentSlotKey {
+  if (typeof value !== "string" || !equipmentSlotKeys.includes(value as EquipmentSlotKey)) {
+    throw new Error("Invalid equipment slot.");
+  }
+
+  return value as EquipmentSlotKey;
+}
+
+function readArmorCategory(value: unknown): GeneratedEquipmentJsonRecord["armorCategory"] | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  if (value === "leather" || value === "cloth" || value === "chain" || value === "plate") {
+    return value;
+  }
+
+  throw new Error("Invalid armor category.");
+}
+
+function readAssetSourcePath(value: unknown, expectedPrefix: string, label: string): string {
+  const sourcePath = readNonEmptyString(value, label).replace(/\\/g, "/").replace(/^\.\//, "");
+
+  if (sourcePath.includes("..") || !sourcePath.startsWith(expectedPrefix) || !sourcePath.endsWith(".webp")) {
+    throw new Error(`Invalid ${label}.`);
+  }
+
+  return sourcePath;
+}
+
+function getArmoryCategoryId(slotKey: EquipmentSlotKey): string | undefined {
+  if (slotKey === "helmet") {
+    return "head";
+  }
+
+  if (slotKey === "breastplate") {
+    return "chest";
+  }
+
+  if (slotKey === "backShoulderguard" || slotKey === "frontShoulderguard") {
+    return "shoulders";
+  }
+
+  if (slotKey === "backGauntlet" || slotKey === "frontGauntlet") {
+    return "arms";
+  }
+
+  if (slotKey === "backGreave" || slotKey === "frontGreave" || slotKey === "backShinguard" || slotKey === "frontShinguard") {
+    return "legs";
+  }
+
+  if (slotKey === "backBoot" || slotKey === "frontBoot") {
+    return "legs";
+  }
+
+  return undefined;
+}
+
+function toIdentifier(value: string): string {
+  return value.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "").toLowerCase();
 }
 
 function readJson(request: IncomingMessage): Promise<unknown> {

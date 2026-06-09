@@ -1,4 +1,5 @@
 import { freshState, MAX_HP, MAX_STAMINA, type CombatState } from "./combat";
+import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS } from "./generated/equipmentItems.generated";
 
 export interface HeroState {
   id: string;
@@ -47,6 +48,7 @@ export const HERO_EQUIPMENT_SLOT_KEYS = [
 ] as const;
 
 export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
+export type HeroItemId = string;
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
 
 export interface HeroItemDefinition {
@@ -125,9 +127,25 @@ export const HERO_ITEM_IDS = [
   STARTER_FRONT_SHINGUARD_ID,
   STARTER_BACK_BOOT_ID,
   STARTER_FRONT_BOOT_ID,
-] as const;
+] as const satisfies readonly HeroItemId[];
 
-export type HeroItemId = (typeof HERO_ITEM_IDS)[number];
+export const ALL_HERO_ITEM_IDS = [...HERO_ITEM_IDS, ...GENERATED_EQUIPMENT_ITEM_IDS] as const satisfies readonly HeroItemId[];
+
+const STARTER_HERO_ITEM_IDS: HeroItemId[] = [
+  TRAINING_WEAPON_ID,
+  STARTER_HELMET_ID,
+  STARTER_BREASTPLATE_ID,
+  STARTER_BACK_SHOULDERGUARD_ID,
+  STARTER_FRONT_SHOULDERGUARD_ID,
+  STARTER_BACK_GAUNTLET_ID,
+  STARTER_FRONT_GAUNTLET_ID,
+  STARTER_BACK_GREAVE_ID,
+  STARTER_FRONT_GREAVE_ID,
+  STARTER_BACK_SHINGUARD_ID,
+  STARTER_FRONT_SHINGUARD_ID,
+  STARTER_BACK_BOOT_ID,
+  STARTER_FRONT_BOOT_ID,
+];
 
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
   [TRAINING_WEAPON_ID]: {
@@ -147,7 +165,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
   },
   [STARTER_BREASTPLATE_ID]: {
     id: STARTER_BREASTPLATE_ID,
-    name: "Starter Breastplate",
+    name: "Leather Breastplate",
     kind: "armor",
     armorCategory: "leather",
     equipmentSlot: "breastplate",
@@ -241,6 +259,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     equipmentSlot: "frontBoot",
     armorHp: STARTER_ARMOR_HP,
   },
+  ...GENERATED_EQUIPMENT_ITEM_CATALOG,
 };
 
 export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
@@ -321,7 +340,7 @@ export function createDefaultHeroInventory(): HeroInventoryEntry[] {
 }
 
 export function createStarterHeroInventory(): HeroInventoryEntry[] {
-  return HERO_ITEM_IDS.map((itemId) => ({ itemId, quantity: 1 }));
+  return STARTER_HERO_ITEM_IDS.map((itemId) => ({ itemId, quantity: 1 }));
 }
 
 export function createDefaultHero(now = new Date().toISOString()): HeroState {

@@ -1,4 +1,5 @@
 import {
+  CLOTH_BREASTPLATE_ID,
   HERO_ITEM_CATALOG,
   STARTER_BACK_BOOT_ID,
   STARTER_BACK_GAUNTLET_ID,
@@ -15,6 +16,7 @@ import {
   type HeroItemId,
   type HeroState,
 } from "./hero";
+import { GENERATED_ARMORY_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 
 export interface ArmoryProduct {
@@ -53,13 +55,17 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "head",
     name: "Head",
     shortLabel: "HD",
-    products: [{ id: "starter-helmet", name: "Training Helmet", price: 0, itemIds: [STARTER_HELMET_ID] }],
+    products: [{ id: "starter-helmet", name: "Training Helmet", price: 0, itemIds: [STARTER_HELMET_ID] }, ...getGeneratedArmoryProducts("head")],
   },
   {
     id: "chest",
     name: "Chest",
     shortLabel: "CH",
-    products: [{ id: "starter-breastplate", name: "Training Breastplate", price: 0, itemIds: [STARTER_BREASTPLATE_ID] }],
+    products: [
+      { id: "starter-breastplate", name: "Leather Breastplate", price: 0, itemIds: [STARTER_BREASTPLATE_ID] },
+      { id: "cloth-breastplate", name: "Cloth Breastplate", price: 0, itemIds: [CLOTH_BREASTPLATE_ID] },
+      ...getGeneratedArmoryProducts("chest"),
+    ],
   },
   {
     id: "shoulders",
@@ -72,6 +78,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
         price: 0,
         itemIds: [STARTER_BACK_SHOULDERGUARD_ID, STARTER_FRONT_SHOULDERGUARD_ID],
       },
+      ...getGeneratedArmoryProducts("shoulders"),
     ],
   },
   {
@@ -85,6 +92,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
         price: 0,
         itemIds: [STARTER_BACK_GAUNTLET_ID, STARTER_FRONT_GAUNTLET_ID],
       },
+      ...getGeneratedArmoryProducts("arms"),
     ],
   },
   {
@@ -110,9 +118,19 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
         price: 0,
         itemIds: [STARTER_BACK_BOOT_ID, STARTER_FRONT_BOOT_ID],
       },
+      ...getGeneratedArmoryProducts("legs"),
     ],
   },
 ];
+
+function getGeneratedArmoryProducts(categoryId: string): ArmoryProduct[] {
+  return GENERATED_ARMORY_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    itemIds: [...product.itemIds],
+  }));
+}
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
   let selectedCategoryId: string | undefined;

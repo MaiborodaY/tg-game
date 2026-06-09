@@ -1687,7 +1687,9 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 
 .debug-panel__body,
 .debug-panel__city-body,
-.debug-effects {
+.debug-effects,
+.debug-item-equipment,
+.debug-auto-equipment {
   display: grid;
   gap: 6px;
   padding: 0 10px 8px;
@@ -1848,13 +1850,17 @@ body.debug-mode-effects .debug-rig-panel,
 body.debug-mode-effects .debug-city-panel,
 body.debug-mode-effects .debug-arena-panel,
 body.debug-mode-effects .debug-hero-equipment-panel,
+body.debug-mode-effects .debug-item-equipment-panel,
+body.debug-mode-effects .debug-auto-equipment-panel,
 body.debug-mode-effects .main-menu {
   display: none;
 }
 
 .debug-rig-editor__select,
 .debug-rig-editor__animation-select,
-.debug-rig-editor__equipment-select,
+.debug-item-equipment__select,
+.debug-auto-equipment__select,
+.debug-auto-equipment__name,
 .debug-effects__slash-select {
   min-width: 0;
   padding: 4px 6px;
@@ -1872,7 +1878,6 @@ body.debug-mode-effects .main-menu {
 }
 
 .debug-rig-editor__face,
-.debug-rig-editor__equipment,
 .debug-effects__group {
   display: grid;
   gap: 8px;
@@ -1887,7 +1892,6 @@ body.debug-mode-effects .main-menu {
 }
 
 .debug-rig-editor__face legend,
-.debug-rig-editor__equipment legend,
 .debug-rig-editor__face-part legend,
 .debug-effects__group legend {
   padding: 0 4px;
@@ -1899,11 +1903,19 @@ body.debug-mode-effects .main-menu {
 }
 
 .debug-rig-editor__face-controls,
-.debug-rig-editor__equipment-controls,
+.debug-item-equipment__controls,
 .debug-effects__slash-controls,
 .debug-rig-editor__face-part {
   display: grid;
   gap: 7px;
+}
+
+.debug-auto-equipment__status {
+  min-height: 16px;
+  margin: 0 10px 8px;
+  color: #fff0bd;
+  font-size: 0.58rem;
+  font-weight: 800;
 }
 
 .debug-rig-editor__face-part {
