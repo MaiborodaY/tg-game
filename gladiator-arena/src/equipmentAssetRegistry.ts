@@ -1,13 +1,13 @@
 import {
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
   FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
@@ -22,8 +22,10 @@ export interface EquipmentItemAssetKeys {
   breastplateAssetKey?: string;
   backShoulderguardAssetKey?: string;
   frontShoulderguardAssetKey?: string;
-  backGauntletAssetKey?: string;
-  frontGauntletAssetKey?: string;
+  backWristAssetKey?: string;
+  frontWristAssetKey?: string;
+  backGloveAssetKey?: string;
+  frontGloveAssetKey?: string;
   backGreaveAssetKey?: string;
   frontGreaveAssetKey?: string;
   backShinguardAssetKey?: string;
@@ -74,8 +76,10 @@ const lowArmorAssetUrls = import.meta.glob("./assets-low/fighters/armor/**/*.web
 const armorAssetSlotConfigs: ArmorAssetSlotConfig[] = [
   { prefix: "back-shoulderguard-", slot: "backShoulderguard", assetKey: "backShoulderguardAssetKey", label: "Back Shoulderguard" },
   { prefix: "front-shoulderguard-", slot: "frontShoulderguard", assetKey: "frontShoulderguardAssetKey", label: "Front Shoulderguard" },
-  { prefix: "back-gauntlet-", slot: "backGauntlet", assetKey: "backGauntletAssetKey", label: "Back Gauntlet" },
-  { prefix: "front-gauntlet-", slot: "frontGauntlet", assetKey: "frontGauntletAssetKey", label: "Front Gauntlet" },
+  { prefix: "back-wrist-", slot: "backWrist", assetKey: "backWristAssetKey", label: "Back Wrist" },
+  { prefix: "front-wrist-", slot: "frontWrist", assetKey: "frontWristAssetKey", label: "Front Wrist" },
+  { prefix: "back-glove-", slot: "backGlove", assetKey: "backGloveAssetKey", label: "Back Glove" },
+  { prefix: "front-glove-", slot: "frontGlove", assetKey: "frontGloveAssetKey", label: "Front Glove" },
   { prefix: "back-shinguard-", slot: "backShinguard", assetKey: "backShinguardAssetKey", label: "Back Shinguard" },
   { prefix: "front-shinguard-", slot: "frontShinguard", assetKey: "frontShinguardAssetKey", label: "Front Shinguard" },
   { prefix: "back-greave-", slot: "backGreave", assetKey: "backGreaveAssetKey", label: "Back Greave" },
@@ -92,8 +96,8 @@ const manualEquipmentAssetKeys = new Set([
   FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
   FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,

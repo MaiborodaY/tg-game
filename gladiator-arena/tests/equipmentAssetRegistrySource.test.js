@@ -18,3 +18,18 @@ test("auto equipment registry prefers low webp paths for png previews", () => {
   assert.match(registrySource, /replace\("\.\/assets\/", "\.\/assets-low\/"\)\.replace/);
   assert.match(registrySource, /\.replace\(\/\\\.\(\?:png\|webp\)\$\/i, "\.webp"\)/);
 });
+
+test("auto equipment registry recognizes wrist and glove armor assets", () => {
+  assert.match(registrySource, /prefix: "back-wrist-"/);
+  assert.match(registrySource, /slot: "backWrist"/);
+  assert.match(registrySource, /assetKey: "backWristAssetKey"/);
+  assert.match(registrySource, /prefix: "front-wrist-"/);
+  assert.match(registrySource, /slot: "frontWrist"/);
+  assert.match(registrySource, /assetKey: "frontWristAssetKey"/);
+  assert.match(registrySource, /prefix: "back-glove-"/);
+  assert.match(registrySource, /slot: "backGlove"/);
+  assert.match(registrySource, /assetKey: "backGloveAssetKey"/);
+  assert.match(registrySource, /prefix: "front-glove-"/);
+  assert.match(registrySource, /slot: "frontGlove"/);
+  assert.match(registrySource, /assetKey: "frontGloveAssetKey"/);
+});

@@ -60,3 +60,17 @@ test("cloth breastplate is cataloged but not starter inventory", () => {
   assert.equal(starterItemIds.includes(hero.STARTER_BREASTPLATE_ID), true);
   assert.equal(starterItemIds.includes(hero.CLOTH_BREASTPLATE_ID), false);
 });
+
+test("hero equipment has empty glove slots separate from wrists", () => {
+  assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backWrist"), true);
+  assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontWrist"), true);
+  assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backGlove"), true);
+  assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontGlove"), true);
+
+  assert.equal(hero.createStarterHeroEquipment().backWrist, hero.STARTER_BACK_WRIST_ID);
+  assert.equal(hero.createStarterHeroEquipment().frontWrist, hero.STARTER_FRONT_WRIST_ID);
+  assert.equal(hero.createDefaultHeroEquipment().backGlove, null);
+  assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
+  assert.equal(hero.createStarterHeroEquipment().backGlove, null);
+  assert.equal(hero.createStarterHeroEquipment().frontGlove, null);
+});

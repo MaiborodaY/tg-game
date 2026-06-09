@@ -113,8 +113,10 @@ const equipmentSlotKeys = [
   "breastplate",
   "backShoulderguard",
   "frontShoulderguard",
-  "backGauntlet",
-  "frontGauntlet",
+  "backWrist",
+  "frontWrist",
+  "backGlove",
+  "frontGlove",
   "backGreave",
   "frontGreave",
   "backShinguard",
@@ -270,6 +272,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const debugTuningDefaultUpdates = pickDebugTuningDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
+          const bodyAnimationUpdates = pickBodyAnimationUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
           const equipmentItemUpdates = pickEquipmentItemDefaultUpdates(payload);
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
@@ -286,7 +289,10 @@ function saveProdDefaultsPlugin(): Plugin {
               applyEquipmentItemDefaultUpdates(
                 applyEquipmentDefaultUpdates(
                   applyFacePartDefaultUpdates(
-                    applyRigPartDefaultUpdates(applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates), rigPartUpdates),
+                    applyBodyAnimationDefaultUpdates(
+                      applyRigPartDefaultUpdates(applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates), rigPartUpdates),
+                      bodyAnimationUpdates,
+                    ),
                     facePartUpdates,
                   ),
                   equipmentUpdates,
@@ -305,7 +311,7 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
@@ -313,6 +319,7 @@ function saveProdDefaultsPlugin(): Plugin {
               Object.keys(actionButtonOffsetUpdates).length +
               Object.keys(rigPartUpdates).length +
               Object.keys(facePartUpdates).length +
+              1 +
               Object.keys(equipmentUpdates).length +
               Object.keys(equipmentItemUpdates).length +
               Object.keys(slashArcUpdates).length,
@@ -1356,7 +1363,7 @@ function getArmoryCategoryId(slotKey: EquipmentSlotKey): string | undefined {
     return "shoulders";
   }
 
-  if (slotKey === "backGauntlet" || slotKey === "frontGauntlet") {
+  if (slotKey === "backWrist" || slotKey === "frontWrist" || slotKey === "backGlove" || slotKey === "frontGlove") {
     return "arms";
   }
 

@@ -48,6 +48,15 @@ test("vite dev middleware writes promoted equipment to generated files", () => {
   assert.match(source, /equipmentTuning/);
 });
 
+test("save as prod defaults also persists the selected rig editor animation", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const saveDefaultsRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-defaults"'), source.indexOf('"/__dust-arena/save-prod-animation"'));
+
+  assert.match(saveDefaultsRoute, /const bodyAnimationUpdates = pickBodyAnimationUpdates\(payload\)/);
+  assert.match(saveDefaultsRoute, /applyBodyAnimationDefaultUpdates/);
+  assert.match(saveDefaultsRoute, /bodyAnimationUpdates\.key/);
+});
+
 test("vite dev middleware converts promoted png equipment to standardized webp assets", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 
@@ -70,4 +79,22 @@ test("vite dev middleware can persist item-specific equipment defaults", () => {
   assert.match(source, /pickEquipmentItemDefaultUpdates/);
   assert.match(source, /applyEquipmentItemDefaultUpdates/);
   assert.match(source, /DEFAULT_EQUIPMENT_ITEM_TUNING/);
+});
+
+test("vite dev middleware whitelists wrist and glove equipment slots for prod saves and promotion", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
+
+  assert.match(source, /"backWrist"/);
+  assert.match(source, /"frontWrist"/);
+  assert.match(source, /"backGlove"/);
+  assert.match(source, /"frontGlove"/);
+  assert.match(source, /slotKey === "backWrist"/);
+  assert.match(source, /slotKey === "frontWrist"/);
+  assert.match(source, /slotKey === "backGlove"/);
+  assert.match(source, /slotKey === "frontGlove"/);
+  assert.match(debugTuningSource, /backWrist:/);
+  assert.match(debugTuningSource, /frontWrist:/);
+  assert.match(debugTuningSource, /backGlove:/);
+  assert.match(debugTuningSource, /frontGlove:/);
 });

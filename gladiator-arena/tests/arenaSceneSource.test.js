@@ -19,6 +19,23 @@ test("equipment texture swaps reapply slot image sizing", () => {
   assert.equal(arenaSceneSource.includes("image.scaleX = image.scaleY;"), true);
 });
 
+test("paper doll parents wrist equipment to forearms and glove equipment to hands", () => {
+  const armArmorSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function addPaperDollArmArmorVisual"),
+    arenaSceneSource.indexOf("function addPaperDollLegArmorVisual"),
+  );
+
+  assert.equal(arenaSceneSource.includes('backWrist: "backWristAssetKey"'), true);
+  assert.equal(arenaSceneSource.includes('frontWrist: "frontWristAssetKey"'), true);
+  assert.equal(arenaSceneSource.includes('backGlove: "backGloveAssetKey"'), true);
+  assert.equal(arenaSceneSource.includes('frontGlove: "frontGloveAssetKey"'), true);
+  assert.match(armArmorSource, /key === "backForearm"[\s\S]*options\.backWristAssetKey, "backWrist"/);
+  assert.match(armArmorSource, /key === "frontForearm"[\s\S]*options\.frontWristAssetKey, "frontWrist"/);
+  assert.match(armArmorSource, /key === "backHand"[\s\S]*options\.backGloveAssetKey, "backGlove"/);
+  assert.match(armArmorSource, /key === "frontHand"[\s\S]*options\.frontGloveAssetKey, "frontGlove"/);
+  assert.equal(arenaSceneSource.includes("image = createPaperDollEquipmentImage(slotContainer.scene, textureKey, config);"), true);
+});
+
 test("paper doll loader includes generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ASSETS"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ASSETS"), true);

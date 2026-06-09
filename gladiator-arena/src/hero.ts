@@ -37,8 +37,10 @@ export const HERO_EQUIPMENT_SLOT_KEYS = [
   "breastplate",
   "backShoulderguard",
   "frontShoulderguard",
-  "backGauntlet",
-  "frontGauntlet",
+  "backWrist",
+  "frontWrist",
+  "backGlove",
+  "frontGlove",
   "backGreave",
   "frontGreave",
   "backShinguard",
@@ -100,8 +102,8 @@ export const STARTER_BREASTPLATE_ID = "starter_breastplate";
 export const CLOTH_BREASTPLATE_ID = "cloth_breastplate_01";
 export const STARTER_BACK_SHOULDERGUARD_ID = "starter_back_shoulderguard";
 export const STARTER_FRONT_SHOULDERGUARD_ID = "starter_front_shoulderguard";
-export const STARTER_BACK_GAUNTLET_ID = "starter_back_gauntlet";
-export const STARTER_FRONT_GAUNTLET_ID = "starter_front_gauntlet";
+export const STARTER_BACK_WRIST_ID = "starter_back_wrist";
+export const STARTER_FRONT_WRIST_ID = "starter_front_wrist";
 export const STARTER_BACK_GREAVE_ID = "starter_back_greave";
 export const STARTER_FRONT_GREAVE_ID = "starter_front_greave";
 export const STARTER_BACK_SHINGUARD_ID = "starter_back_shinguard";
@@ -119,8 +121,8 @@ export const HERO_ITEM_IDS = [
   CLOTH_BREASTPLATE_ID,
   STARTER_BACK_SHOULDERGUARD_ID,
   STARTER_FRONT_SHOULDERGUARD_ID,
-  STARTER_BACK_GAUNTLET_ID,
-  STARTER_FRONT_GAUNTLET_ID,
+  STARTER_BACK_WRIST_ID,
+  STARTER_FRONT_WRIST_ID,
   STARTER_BACK_GREAVE_ID,
   STARTER_FRONT_GREAVE_ID,
   STARTER_BACK_SHINGUARD_ID,
@@ -137,8 +139,8 @@ const STARTER_HERO_ITEM_IDS: HeroItemId[] = [
   STARTER_BREASTPLATE_ID,
   STARTER_BACK_SHOULDERGUARD_ID,
   STARTER_FRONT_SHOULDERGUARD_ID,
-  STARTER_BACK_GAUNTLET_ID,
-  STARTER_FRONT_GAUNTLET_ID,
+  STARTER_BACK_WRIST_ID,
+  STARTER_FRONT_WRIST_ID,
   STARTER_BACK_GREAVE_ID,
   STARTER_FRONT_GREAVE_ID,
   STARTER_BACK_SHINGUARD_ID,
@@ -195,20 +197,20 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     equipmentSlot: "frontShoulderguard",
     armorHp: STARTER_ARMOR_HP,
   },
-  [STARTER_BACK_GAUNTLET_ID]: {
-    id: STARTER_BACK_GAUNTLET_ID,
-    name: "Starter Back Gauntlet",
+  [STARTER_BACK_WRIST_ID]: {
+    id: STARTER_BACK_WRIST_ID,
+    name: "Starter Back Wrist",
     kind: "armor",
     armorCategory: "leather",
-    equipmentSlot: "backGauntlet",
+    equipmentSlot: "backWrist",
     armorHp: STARTER_ARMOR_HP,
   },
-  [STARTER_FRONT_GAUNTLET_ID]: {
-    id: STARTER_FRONT_GAUNTLET_ID,
-    name: "Starter Front Gauntlet",
+  [STARTER_FRONT_WRIST_ID]: {
+    id: STARTER_FRONT_WRIST_ID,
+    name: "Starter Front Wrist",
     kind: "armor",
     armorCategory: "leather",
-    equipmentSlot: "frontGauntlet",
+    equipmentSlot: "frontWrist",
     armorHp: STARTER_ARMOR_HP,
   },
   [STARTER_BACK_GREAVE_ID]: {
@@ -276,8 +278,8 @@ const ENEMY_ARMOR_ITEMS: Array<[HeroEquipmentSlotKey, HeroItemId]> = [
   ["breastplate", STARTER_BREASTPLATE_ID],
   ["backShoulderguard", STARTER_BACK_SHOULDERGUARD_ID],
   ["frontShoulderguard", STARTER_FRONT_SHOULDERGUARD_ID],
-  ["backGauntlet", STARTER_BACK_GAUNTLET_ID],
-  ["frontGauntlet", STARTER_FRONT_GAUNTLET_ID],
+  ["backWrist", STARTER_BACK_WRIST_ID],
+  ["frontWrist", STARTER_FRONT_WRIST_ID],
   ["backGreave", STARTER_BACK_GREAVE_ID],
   ["frontGreave", STARTER_FRONT_GREAVE_ID],
   ["backShinguard", STARTER_BACK_SHINGUARD_ID],
@@ -324,8 +326,10 @@ export function createStarterHeroEquipment(): HeroEquipment {
     breastplate: STARTER_BREASTPLATE_ID,
     backShoulderguard: STARTER_BACK_SHOULDERGUARD_ID,
     frontShoulderguard: STARTER_FRONT_SHOULDERGUARD_ID,
-    backGauntlet: STARTER_BACK_GAUNTLET_ID,
-    frontGauntlet: STARTER_FRONT_GAUNTLET_ID,
+    backWrist: STARTER_BACK_WRIST_ID,
+    frontWrist: STARTER_FRONT_WRIST_ID,
+    backGlove: null,
+    frontGlove: null,
     backGreave: STARTER_BACK_GREAVE_ID,
     frontGreave: STARTER_FRONT_GREAVE_ID,
     backShinguard: STARTER_BACK_SHINGUARD_ID,

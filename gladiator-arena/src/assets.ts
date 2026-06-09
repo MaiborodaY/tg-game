@@ -71,10 +71,10 @@ export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY = "back-shoulderguard-li
 export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/back-shoulderguard-light-01.webp", import.meta.url).href;
 export const FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY = "front-shoulderguard-light-01";
 export const FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/front-shoulderguard-light-01.webp", import.meta.url).href;
-export const FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY = "back-gauntlet-light-01";
-export const FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/back-gauntlet-light-01.webp", import.meta.url).href;
-export const FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY = "front-gauntlet-light-01";
-export const FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/front-gauntlet-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY = "back-wrist-light-01";
+export const FIGHTER_BACK_WRIST_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/back-wrist-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY = "front-wrist-light-01";
+export const FIGHTER_FRONT_WRIST_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/front-wrist-light-01.webp", import.meta.url).href;
 
 export const FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY = "back-greave-light-01";
 export const FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/back-greave-light-01.webp", import.meta.url).href;
@@ -192,14 +192,14 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/armor/arms/front-shoulderguard-light-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
-    url: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/arms/back-gauntlet-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
+    url: FIGHTER_BACK_WRIST_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/back-wrist-light-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
-    url: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/arms/front-gauntlet-light-01.webp", import.meta.url).href,
+    key: FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
+    url: FIGHTER_FRONT_WRIST_LIGHT_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/front-wrist-light-01.webp", import.meta.url).href,
   },
   {
     key: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,

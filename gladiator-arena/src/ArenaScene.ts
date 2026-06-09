@@ -27,7 +27,7 @@ import {
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
   FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
   FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
@@ -39,7 +39,7 @@ import {
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
@@ -177,8 +177,10 @@ interface PaperDollEquipment {
   breastplate?: FighterPart;
   backShoulderguard?: FighterPart;
   frontShoulderguard?: FighterPart;
-  backGauntlet?: FighterPart;
-  frontGauntlet?: FighterPart;
+  backWrist?: FighterPart;
+  frontWrist?: FighterPart;
+  backGlove?: FighterPart;
+  frontGlove?: FighterPart;
   backGreave?: FighterPart;
   frontGreave?: FighterPart;
   backShinguard?: FighterPart;
@@ -215,8 +217,10 @@ interface PaperDollFighterOptions {
   breastplateAssetKey?: string;
   backShoulderguardAssetKey?: string;
   frontShoulderguardAssetKey?: string;
-  backGauntletAssetKey?: string;
-  frontGauntletAssetKey?: string;
+  backWristAssetKey?: string;
+  frontWristAssetKey?: string;
+  backGloveAssetKey?: string;
+  frontGloveAssetKey?: string;
   backGreaveAssetKey?: string;
   frontGreaveAssetKey?: string;
   backShinguardAssetKey?: string;
@@ -333,11 +337,16 @@ const SHOULDERGUARD_LOCAL_X = 0;
 const SHOULDERGUARD_LOCAL_Y = 16;
 const SHOULDERGUARD_ORIGIN_X = 0.5;
 const SHOULDERGUARD_ORIGIN_Y = 0.5;
-const GAUNTLET_DISPLAY_HEIGHT = 58;
-const GAUNTLET_LOCAL_X = 0;
-const GAUNTLET_LOCAL_Y = 10;
-const GAUNTLET_ORIGIN_X = 0.5;
-const GAUNTLET_ORIGIN_Y = 0.5;
+const WRIST_DISPLAY_HEIGHT = 58;
+const WRIST_LOCAL_X = 0;
+const WRIST_LOCAL_Y = 10;
+const WRIST_ORIGIN_X = 0.5;
+const WRIST_ORIGIN_Y = 0.5;
+const GLOVE_DISPLAY_HEIGHT = 54;
+const GLOVE_LOCAL_X = 0;
+const GLOVE_LOCAL_Y = 0;
+const GLOVE_ORIGIN_X = 0.5;
+const GLOVE_ORIGIN_Y = 0.5;
 const GREAVE_DISPLAY_HEIGHT = 82;
 const GREAVE_LOCAL_X = 0;
 const GREAVE_LOCAL_Y = 26;
@@ -451,8 +460,8 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
   breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
   backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
   frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY,
-  frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY,
+  backWristAssetKey: FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
+  frontWristAssetKey: FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
   backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
   frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
   backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
@@ -469,8 +478,10 @@ const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, Pape
   breastplate: "breastplateAssetKey",
   backShoulderguard: "backShoulderguardAssetKey",
   frontShoulderguard: "frontShoulderguardAssetKey",
-  backGauntlet: "backGauntletAssetKey",
-  frontGauntlet: "frontGauntletAssetKey",
+  backWrist: "backWristAssetKey",
+  frontWrist: "frontWristAssetKey",
+  backGlove: "backGloveAssetKey",
+  frontGlove: "frontGloveAssetKey",
   backGreave: "backGreaveAssetKey",
   frontGreave: "frontGreaveAssetKey",
   backShinguard: "backShinguardAssetKey",
@@ -515,19 +526,33 @@ const PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS: Record<PaperDollEquipmentSlotKey, Paper
     originX: SHOULDERGUARD_ORIGIN_X,
     originY: SHOULDERGUARD_ORIGIN_Y,
   },
-  backGauntlet: {
-    displayHeight: GAUNTLET_DISPLAY_HEIGHT,
-    localX: GAUNTLET_LOCAL_X,
-    localY: GAUNTLET_LOCAL_Y,
-    originX: GAUNTLET_ORIGIN_X,
-    originY: GAUNTLET_ORIGIN_Y,
+  backWrist: {
+    displayHeight: WRIST_DISPLAY_HEIGHT,
+    localX: WRIST_LOCAL_X,
+    localY: WRIST_LOCAL_Y,
+    originX: WRIST_ORIGIN_X,
+    originY: WRIST_ORIGIN_Y,
   },
-  frontGauntlet: {
-    displayHeight: GAUNTLET_DISPLAY_HEIGHT,
-    localX: GAUNTLET_LOCAL_X,
-    localY: GAUNTLET_LOCAL_Y,
-    originX: GAUNTLET_ORIGIN_X,
-    originY: GAUNTLET_ORIGIN_Y,
+  frontWrist: {
+    displayHeight: WRIST_DISPLAY_HEIGHT,
+    localX: WRIST_LOCAL_X,
+    localY: WRIST_LOCAL_Y,
+    originX: WRIST_ORIGIN_X,
+    originY: WRIST_ORIGIN_Y,
+  },
+  backGlove: {
+    displayHeight: GLOVE_DISPLAY_HEIGHT,
+    localX: GLOVE_LOCAL_X,
+    localY: GLOVE_LOCAL_Y,
+    originX: GLOVE_ORIGIN_X,
+    originY: GLOVE_ORIGIN_Y,
+  },
+  frontGlove: {
+    displayHeight: GLOVE_DISPLAY_HEIGHT,
+    localX: GLOVE_LOCAL_X,
+    localY: GLOVE_LOCAL_Y,
+    originX: GLOVE_ORIGIN_X,
+    originY: GLOVE_ORIGIN_Y,
   },
   backGreave: {
     displayHeight: GREAVE_DISPLAY_HEIGHT,
@@ -581,8 +606,8 @@ const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipm
   [CLOTH_BREASTPLATE_ID]: { breastplateAssetKey: FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY },
   starter_back_shoulderguard: { backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY },
   starter_front_shoulderguard: { frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY },
-  starter_back_gauntlet: { backGauntletAssetKey: FIGHTER_BACK_GAUNTLET_LIGHT_ASSET_KEY },
-  starter_front_gauntlet: { frontGauntletAssetKey: FIGHTER_FRONT_GAUNTLET_LIGHT_ASSET_KEY },
+  starter_back_wrist: { backWristAssetKey: FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY },
+  starter_front_wrist: { frontWristAssetKey: FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY },
   starter_back_greave: { backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY },
   starter_front_greave: { frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY },
   starter_back_shinguard: { backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY },
@@ -2077,8 +2102,10 @@ function applyPaperDollEquipmentTuning(
   applyEquipmentTransform(equipmentParts.breastplate, getEquipmentTransformTuning("breastplate", equipment, equipmentItems, equipmentState));
   applyEquipmentTransform(equipmentParts.backShoulderguard, getEquipmentTransformTuning("backShoulderguard", equipment, equipmentItems, equipmentState));
   applyEquipmentTransform(equipmentParts.frontShoulderguard, getEquipmentTransformTuning("frontShoulderguard", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backGauntlet, getEquipmentTransformTuning("backGauntlet", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontGauntlet, getEquipmentTransformTuning("frontGauntlet", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backWrist, getEquipmentTransformTuning("backWrist", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontWrist, getEquipmentTransformTuning("frontWrist", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.backGlove, getEquipmentTransformTuning("backGlove", equipment, equipmentItems, equipmentState));
+  applyEquipmentTransform(equipmentParts.frontGlove, getEquipmentTransformTuning("frontGlove", equipment, equipmentItems, equipmentState));
   applyEquipmentTransform(equipmentParts.backGreave, getEquipmentTransformTuning("backGreave", equipment, equipmentItems, equipmentState));
   applyEquipmentTransform(equipmentParts.frontGreave, getEquipmentTransformTuning("frontGreave", equipment, equipmentItems, equipmentState));
   applyEquipmentTransform(equipmentParts.backShinguard, getEquipmentTransformTuning("backShinguard", equipment, equipmentItems, equipmentState));
@@ -2157,6 +2184,9 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
   }
 
   syncPaperDollEquipmentVisuals(rig);
+  if (rig.shadow) {
+    tintPaperDollShadowObject(rig.shadow.root);
+  }
 
   const visibility = rig.usesPlayerEquipment
     ? createPlayerEquipmentVisibility()
@@ -2194,14 +2224,24 @@ function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, slotKey: Pape
   }
 
   const slotContainer = slot as Phaser.GameObjects.Container;
-  const image = slotContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
-  if (image && slotContainer.scene.textures.exists(textureKey)) {
-    if (image.texture.key !== textureKey) {
-      image.setTexture(textureKey);
-    }
+  const config = paperDollEquipmentSlotConfigs.get(slot) ?? PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
+  let image = slotContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
 
-    applyPaperDollEquipmentImageConfig(image, paperDollEquipmentSlotConfigs.get(slot) ?? PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey]);
+  if (!slotContainer.scene.textures.exists(textureKey)) {
+    return;
   }
+
+  if (!image) {
+    image = createPaperDollEquipmentImage(slotContainer.scene, textureKey, config);
+    slotContainer.add(image);
+    return;
+  }
+
+  if (image.texture.key !== textureKey) {
+    image.setTexture(textureKey);
+  }
+
+  applyPaperDollEquipmentImageConfig(image, config);
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
@@ -2635,13 +2675,23 @@ function addPaperDollArmArmorVisual(
     return;
   }
 
+  if (key === "backForearm") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backWristAssetKey, "backWrist", equipment);
+    return;
+  }
+
+  if (key === "frontForearm") {
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontWristAssetKey, "frontWrist", equipment);
+    return;
+  }
+
   if (key === "backHand") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backGauntletAssetKey, "backGauntlet", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, options.backGloveAssetKey, "backGlove", equipment);
     return;
   }
 
   if (key === "frontHand") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGauntletAssetKey, "frontGauntlet", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGloveAssetKey, "frontGlove", equipment);
   }
 }
 
@@ -2689,15 +2739,13 @@ function addPaperDollEquipmentImageVisual(
   slotKey: PaperDollEquipmentSlotKey,
   equipment: PaperDollEquipment,
 ): void {
-  if (!assetKey || !target.textures.exists(assetKey)) {
-    return;
-  }
-
   const armorContainer = target.add.container(0, 0);
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
-  const image = createPaperDollEquipmentImage(target, assetKey, config);
 
-  armorContainer.add(image);
+  if (assetKey && target.textures.exists(assetKey)) {
+    armorContainer.add(createPaperDollEquipmentImage(target, assetKey, config));
+  }
+
   partContainer.add(armorContainer);
   registerPaperDollEquipmentSlot(armorContainer, equipment, slotKey, config);
 }
