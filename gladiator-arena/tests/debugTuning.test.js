@@ -59,6 +59,7 @@ function loadDebugTuningModule() {
             DEFAULT_CLASSIC_HUD_OFFSET_X: 0,
             DEFAULT_CLASSIC_HUD_OFFSET_Y: 0,
             DEFAULT_CLASSIC_HUD_SCALE: 1,
+            DEFAULT_CLASSIC_HUD_SAFE_OFFSET: 160,
             DEFAULT_HUD_BOTTOM_OFFSET: -16,
             DEFAULT_HUD_SIDE_INSET: 8,
             DEFAULT_HUD_SCALE: 1,
@@ -142,6 +143,7 @@ test("debug tuning normalizes unsafe values", () => {
     classicHudOffsetX: 999,
     classicHudOffsetY: -999,
     classicHudScale: 99,
+    classicHudSafeOffset: 999,
     hudMode: "wide",
     hudEditMode: "true",
     hudBottomOffset: -999,
@@ -198,11 +200,12 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.classicActionButtonSlots.distance.forward.x, 240);
   assert.equal(normalized.classicActionButtonSlots.distance.forward.y, -180);
   assert.equal(normalized.classicActionButtonSlots.distance.forward.rotation, 180);
-  assert.equal(normalized.classicActionButtonSlots.clinch.medium.y, -113);
+  assert.equal(normalized.classicActionButtonSlots.clinch.medium.y, -180);
   assert.equal(normalized.classicHudEditMode, false);
   assert.equal(normalized.classicHudOffsetX, 240);
   assert.equal(normalized.classicHudOffsetY, -160);
   assert.equal(normalized.classicHudScale, 1.6);
+  assert.equal(normalized.classicHudSafeOffset, 280);
   assert.equal(normalized.hudMode, "immersive");
   assert.equal(normalized.hudEditMode, false);
   assert.equal(normalized.hudBottomOffset, -96);
@@ -255,11 +258,12 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionWheelMode, "distance");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionButton, "forward");
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 70);
-  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -113);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -180);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, 118);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetX, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicHudSafeOffset, 160);
   assert.equal(debugTuningModule.defaultDebugTuning.hudMode, "immersive");
   assert.equal(debugTuningModule.defaultDebugTuning.hudBottomOffset, -16);
   assert.equal(debugTuningModule.defaultDebugTuning.hudSideInset, 8);

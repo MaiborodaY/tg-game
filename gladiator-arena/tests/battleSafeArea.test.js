@@ -49,6 +49,7 @@ function loadBattleSafeAreaModule(cssVars = {}, options = {}) {
         if (id === "./arenaLayout") {
           return {
             GAME_HEIGHT: 764,
+            DEFAULT_CLASSIC_HUD_SAFE_OFFSET: 160,
             DEFAULT_HUD_SAFE_GAP_RATIO: 0.18,
             DEFAULT_HUD_SAFE_MIN_GAP: 24,
           };
@@ -94,11 +95,12 @@ test("battle safe bottom falls back to default HUD clearance", () => {
 test("battle safe bottom uses the classic action wheel in classic HUD mode", () => {
   const { battleSafeArea, root } = loadBattleSafeAreaModule(
     {
+      "--classic-hud-safe-offset": "120px",
       "--hud-safe-gap-ratio": "0.1",
       "--hud-safe-min-gap": "30px",
     },
     { classicHudActive: true },
   );
 
-  assert.equal(battleSafeArea.getBattleSafeBottom(root, 1000), 670);
+  assert.equal(battleSafeArea.getBattleSafeBottom(root, 1000), 790);
 });

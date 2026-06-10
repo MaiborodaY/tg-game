@@ -1756,6 +1756,7 @@ body.arena-active .shell {
   --classic-hud-offset-x: 0px;
   --classic-hud-offset-y: 0px;
   --classic-hud-scale: 1;
+  --classic-hud-safe-offset: 160px;
   --hud-bottom-offset: -16px;
   --hud-flask-gap: 6px;
   --hud-name-gap: 3px;

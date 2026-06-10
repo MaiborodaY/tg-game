@@ -303,6 +303,7 @@ const hudControlGroups: DebugControlGroup[] = [
       { type: "range", key: "classicHudOffsetX", label: "Wheel X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.classicHudOffsetX },
       { type: "range", key: "classicHudOffsetY", label: "Wheel Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.classicHudOffsetY },
       { type: "range", key: "classicHudScale", label: "Wheel scale", min: 0.6, max: 1.6, step: 0.01, resetValue: defaultDebugTuning.classicHudScale },
+      { type: "range", key: "classicHudSafeOffset", label: "Safe offset", min: 0, max: 280, step: 1, resetValue: defaultDebugTuning.classicHudSafeOffset },
     ],
   },
 ];

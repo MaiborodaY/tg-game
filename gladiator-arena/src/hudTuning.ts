@@ -6,6 +6,7 @@ type HudTuning = Pick<
   | "classicHudOffsetX"
   | "classicHudOffsetY"
   | "classicHudScale"
+  | "classicHudSafeOffset"
   | "hudEditMode"
   | "hudBottomOffset"
   | "hudSideInset"
@@ -33,6 +34,7 @@ export function syncHudTuning(root: HTMLElement | null | undefined, tuning: HudT
   battleScreen.style.setProperty("--classic-hud-offset-x", `${tuning.classicHudOffsetX}px`);
   battleScreen.style.setProperty("--classic-hud-offset-y", `${tuning.classicHudOffsetY}px`);
   battleScreen.style.setProperty("--classic-hud-scale", `${tuning.classicHudScale}`);
+  battleScreen.style.setProperty("--classic-hud-safe-offset", `${tuning.classicHudSafeOffset}px`);
   battleScreen.classList.toggle("hud-editing", tuning.hudEditMode);
   battleScreen.classList.toggle("classic-hud-editing", tuning.classicHudEditMode);
 }

@@ -61,6 +61,7 @@ test("debug preview can mount and tune the classic action wheel", () => {
   assert.equal(debugPanelSource.includes("Wheel X"), true);
   assert.equal(debugPanelSource.includes("Wheel Y"), true);
   assert.equal(debugPanelSource.includes("Wheel scale"), true);
+  assert.equal(debugPanelSource.includes("Safe offset"), true);
   assert.equal(debugPanelSource.includes("Classic button slots"), true);
   assert.equal(debugPanelSource.includes("data-classic-slot-mode"), true);
   assert.equal(debugPanelSource.includes("data-classic-slot-action"), true);
@@ -68,9 +69,12 @@ test("debug preview can mount and tune the classic action wheel", () => {
   assert.equal(hudTuningSource.includes("--classic-hud-offset-x"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-offset-y"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-scale"), true);
+  assert.equal(hudTuningSource.includes("--classic-hud-safe-offset"), true);
   assert.equal(hudTuningSource.includes("classic-hud-editing"), true);
   assert.equal(arenaLayoutSource.includes("DEFAULT_CLASSIC_HUD_OFFSET_X"), true);
+  assert.equal(arenaLayoutSource.includes("DEFAULT_CLASSIC_HUD_SAFE_OFFSET"), true);
   assert.equal(viteConfigSource.includes('DEFAULT_CLASSIC_HUD_OFFSET_X: "classicHudOffsetX"'), true);
+  assert.equal(viteConfigSource.includes('DEFAULT_CLASSIC_HUD_SAFE_OFFSET: "classicHudSafeOffset"'), true);
   assert.equal(stylesSource.includes("body.debug-mode-hud .action-arc"), true);
   assert.equal(stylesSource.includes(".debug-panel__hud-body"), true);
 });

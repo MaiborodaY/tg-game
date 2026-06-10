@@ -33,6 +33,7 @@ import {
   DEFAULT_ACTION_TOKEN_STRIPE_SHINE,
   DEFAULT_CLASSIC_HUD_OFFSET_X,
   DEFAULT_CLASSIC_HUD_OFFSET_Y,
+  DEFAULT_CLASSIC_HUD_SAFE_OFFSET,
   DEFAULT_CLASSIC_HUD_SCALE,
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
@@ -216,6 +217,7 @@ export interface ArenaDebugTuning {
   classicHudOffsetX: number;
   classicHudOffsetY: number;
   classicHudScale: number;
+  classicHudSafeOffset: number;
   hudMode: PlayerHudMode;
   hudEditMode: boolean;
   hudBottomOffset: number;
@@ -979,6 +981,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   classicHudOffsetX: DEFAULT_CLASSIC_HUD_OFFSET_X,
   classicHudOffsetY: DEFAULT_CLASSIC_HUD_OFFSET_Y,
   classicHudScale: DEFAULT_CLASSIC_HUD_SCALE,
+  classicHudSafeOffset: DEFAULT_CLASSIC_HUD_SAFE_OFFSET,
   hudMode: DEFAULT_PLAYER_HUD_MODE,
   hudEditMode: false,
   hudBottomOffset: DEFAULT_HUD_BOTTOM_OFFSET,
@@ -1160,6 +1163,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     classicHudOffsetX: clampNumber(input.classicHudOffsetX, -240, 240, defaultDebugTuning.classicHudOffsetX),
     classicHudOffsetY: clampNumber(input.classicHudOffsetY, -160, 160, defaultDebugTuning.classicHudOffsetY),
     classicHudScale: clampNumber(input.classicHudScale, 0.6, 1.6, defaultDebugTuning.classicHudScale),
+    classicHudSafeOffset: clampNumber(input.classicHudSafeOffset, 0, 280, defaultDebugTuning.classicHudSafeOffset),
     hudMode: isDebugHudMode(input.hudMode) ? input.hudMode : defaultDebugTuning.hudMode,
     hudEditMode: typeof input.hudEditMode === "boolean" ? input.hudEditMode : defaultDebugTuning.hudEditMode,
     hudBottomOffset: clampNumber(input.hudBottomOffset, -96, 96, defaultDebugTuning.hudBottomOffset),

@@ -55,6 +55,7 @@ const prodDefaultFields = {
   DEFAULT_CLASSIC_HUD_OFFSET_X: "classicHudOffsetX",
   DEFAULT_CLASSIC_HUD_OFFSET_Y: "classicHudOffsetY",
   DEFAULT_CLASSIC_HUD_SCALE: "classicHudScale",
+  DEFAULT_CLASSIC_HUD_SAFE_OFFSET: "classicHudSafeOffset",
   DEFAULT_HUD_BOTTOM_OFFSET: "hudBottomOffset",
   DEFAULT_HUD_SIDE_INSET: "hudSideInset",
   DEFAULT_HUD_SCALE: "hudScale",

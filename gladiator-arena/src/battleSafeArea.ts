@@ -1,4 +1,4 @@
-import { DEFAULT_HUD_SAFE_GAP_RATIO, DEFAULT_HUD_SAFE_MIN_GAP, GAME_HEIGHT } from "./arenaLayout";
+import { DEFAULT_CLASSIC_HUD_SAFE_OFFSET, DEFAULT_HUD_SAFE_GAP_RATIO, DEFAULT_HUD_SAFE_MIN_GAP, GAME_HEIGHT } from "./arenaLayout";
 
 export interface BattleSafeArea {
   bottom: number;
@@ -22,9 +22,9 @@ export function getBattleSafeBottom(root?: HTMLElement | null, viewportHeight = 
   }
 
   const battleRect = battleScreen.getBoundingClientRect();
-  const hudRect = getActiveBottomHudRect(battleScreen);
+  const hud = getActiveBottomHud(battleScreen);
 
-  if (!hudRect || battleRect.height <= 0 || hudRect.height <= 0) {
+  if (!hud || battleRect.height <= 0 || hud.rect.height <= 0) {
     return viewportHeight;
   }
 
@@ -32,8 +32,11 @@ export function getBattleSafeBottom(root?: HTMLElement | null, viewportHeight = 
   const styles = typeof window === "undefined" ? undefined : window.getComputedStyle(battleScreen);
   const safeGapRatio = getCssNumber(styles?.getPropertyValue("--hud-safe-gap-ratio") ?? "", DEFAULT_HUD_SAFE_GAP_RATIO);
   const safeMinGap = getCssPixelNumber(styles?.getPropertyValue("--hud-safe-min-gap") ?? "", DEFAULT_HUD_SAFE_MIN_GAP);
-  const visualClearance = Math.max(safeMinGap, hudRect.height * safeGapRatio);
-  const safeBottom = (hudRect.top - battleRect.top - visualClearance) * screenToViewportY;
+  const classicSafeOffset = hud.isClassic
+    ? getCssPixelNumber(styles?.getPropertyValue("--classic-hud-safe-offset") ?? "", DEFAULT_CLASSIC_HUD_SAFE_OFFSET)
+    : 0;
+  const visualClearance = Math.max(safeMinGap, hud.rect.height * safeGapRatio);
+  const safeBottom = (hud.rect.top + classicSafeOffset - battleRect.top - visualClearance) * screenToViewportY;
 
   return clamp(safeBottom, 0, viewportHeight);
 }
@@ -42,28 +45,40 @@ function getBattleScreen(root?: HTMLElement | null): HTMLElement | null {
   return root?.closest<HTMLElement>(".battle-screen") ?? document.querySelector<HTMLElement>(".battle-screen");
 }
 
-function getActiveBottomHudRect(battleScreen: HTMLElement): Pick<DOMRect, "top" | "height"> | undefined {
+interface ActiveBottomHud {
+  rect: Pick<DOMRect, "top" | "height">;
+  isClassic: boolean;
+}
+
+function getActiveBottomHud(battleScreen: HTMLElement): ActiveBottomHud | undefined {
   for (const hud of getBottomHudCandidates(battleScreen)) {
-    const rect = hud.getBoundingClientRect();
+    const rect = hud.element.getBoundingClientRect();
 
     if (rect.height > 0) {
-      return rect;
+      return { rect, isClassic: hud.isClassic };
     }
   }
 
   return undefined;
 }
 
-function getBottomHudCandidates(battleScreen: HTMLElement): HTMLElement[] {
+interface BottomHudCandidate {
+  element: HTMLElement;
+  isClassic: boolean;
+}
+
+function getBottomHudCandidates(battleScreen: HTMLElement): BottomHudCandidate[] {
   const standardHud = battleScreen.querySelector<HTMLElement>(".arena-fighters-strip");
   const classicHud = battleScreen.querySelector<HTMLElement>(".classic-action-bar");
   const isClassicHud = typeof document !== "undefined" && document.body?.classList.contains("arena-hud-classic");
-  const candidates = isClassicHud ? [classicHud, standardHud] : [standardHud, classicHud];
+  const classicCandidate = classicHud ? { element: classicHud, isClassic: true } : undefined;
+  const standardCandidate = standardHud ? { element: standardHud, isClassic: false } : undefined;
+  const candidates = isClassicHud ? [classicCandidate, standardCandidate] : [standardCandidate, classicCandidate];
 
-  return candidates.filter(isHTMLElement);
+  return candidates.filter(isBottomHudCandidate);
 }
 
-function isHTMLElement(value: HTMLElement | null | undefined): value is HTMLElement {
+function isBottomHudCandidate(value: BottomHudCandidate | undefined): value is BottomHudCandidate {
   return Boolean(value);
 }
 

@@ -52,6 +52,7 @@ test("vite dev middleware only writes whitelisted arena layout defaults", () => 
   assert.match(source, /DEFAULT_CLASSIC_HUD_OFFSET_X: "classicHudOffsetX"/);
   assert.match(source, /DEFAULT_CLASSIC_HUD_OFFSET_Y: "classicHudOffsetY"/);
   assert.match(source, /DEFAULT_CLASSIC_HUD_SCALE: "classicHudScale"/);
+  assert.match(source, /DEFAULT_CLASSIC_HUD_SAFE_OFFSET: "classicHudSafeOffset"/);
   assert.match(source, /DEFAULT_HUD_BOTTOM_OFFSET: "hudBottomOffset"/);
   assert.match(source, /DEFAULT_FIGHTER_HUD_GAP: "fighterHudGap"/);
   assert.doesNotMatch(source, /gridStep/);
