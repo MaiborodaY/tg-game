@@ -4,6 +4,19 @@ import {
   ARENA_WORLD_HEIGHT,
   ARENA_WORLD_TOP,
   ARENA_WORLD_WIDTH,
+  DEFAULT_ARENA_BACK_FOLLOW_X,
+  DEFAULT_ARENA_BACK_FOLLOW_Y,
+  DEFAULT_ARENA_BACK_LOOK_UP_Y,
+  DEFAULT_ARENA_BACK_ZOOM,
+  DEFAULT_ARENA_GROUND_FOLLOW_X,
+  DEFAULT_ARENA_GROUND_FOLLOW_Y,
+  DEFAULT_ARENA_GROUND_LOOK_UP_Y,
+  DEFAULT_ARENA_GROUND_ZOOM,
+  DEFAULT_ARENA_MID_FOLLOW_X,
+  DEFAULT_ARENA_MID_FOLLOW_Y,
+  DEFAULT_ARENA_MID_LOOK_UP_Y,
+  DEFAULT_ARENA_MID_ZOOM,
+  DEFAULT_ARENA_MID_ZOOM_DARKEN,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_PLAYER_STAGE_X,
   DEFAULT_PLAYER_SCALE,
@@ -91,6 +104,7 @@ import {
   RIG_PART_KEYS,
   subscribeDebugTuning,
   updateDebugTuning,
+  type ArenaDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
   type EquipmentSlotKey,
@@ -265,6 +279,10 @@ interface HudVisual {
   label: Phaser.GameObjects.Text;
 }
 
+interface ArenaMidLayerShadeState {
+  amount: number;
+}
+
 interface ArenaVisuals {
   player: FighterVisual;
   enemy: FighterVisual;
@@ -278,8 +296,12 @@ interface ArenaLayers {
   ground: Phaser.GameObjects.Container;
   actors: Phaser.GameObjects.Container;
   effects: Phaser.GameObjects.Container;
+  midImage?: Phaser.GameObjects.Image;
+  midShade: ArenaMidLayerShadeState;
   all: Phaser.GameObjects.Container[];
 }
+
+type ArenaLayerKey = "back" | "mid" | "ground" | "actors" | "effects";
 
 interface ArenaLayerParallax {
   followX: number;
@@ -297,14 +319,16 @@ interface ArenaLayerTransform {
 
 type ArenaEntryTransitionState = "pending" | "running" | "done";
 
-const ARENA_LAYER_PARALLAX: Record<keyof Omit<ArenaLayers, "all">, ArenaLayerParallax> = {
-  back: { followX: 0.06, followY: 0.04, zoom: 0.3, lookUpY: 150 },
-  mid: { followX: 0.22, followY: 0.16, zoom: 0.42, lookUpY: 132 },
-  ground: { followX: 0.6, followY: 0.52, zoom: 0.74, lookUpY: 10 },
+const ARENA_LAYER_PARALLAX: Record<ArenaLayerKey, ArenaLayerParallax> = {
+  back: { followX: DEFAULT_ARENA_BACK_FOLLOW_X, followY: DEFAULT_ARENA_BACK_FOLLOW_Y, zoom: DEFAULT_ARENA_BACK_ZOOM, lookUpY: DEFAULT_ARENA_BACK_LOOK_UP_Y },
+  mid: { followX: DEFAULT_ARENA_MID_FOLLOW_X, followY: DEFAULT_ARENA_MID_FOLLOW_Y, zoom: DEFAULT_ARENA_MID_ZOOM, lookUpY: DEFAULT_ARENA_MID_LOOK_UP_Y },
+  ground: { followX: DEFAULT_ARENA_GROUND_FOLLOW_X, followY: DEFAULT_ARENA_GROUND_FOLLOW_Y, zoom: DEFAULT_ARENA_GROUND_ZOOM, lookUpY: DEFAULT_ARENA_GROUND_LOOK_UP_Y },
   actors: { followX: 1, followY: 1, zoom: 1, lookUpY: 0 },
   effects: { followX: 1, followY: 1, zoom: 1, lookUpY: 0 },
 };
 
+const ARENA_MID_LAYER_BASE_TINT = 0xb1a18f;
+const ARENA_MID_LAYER_CLOSE_TINT = 0x6f5a49;
 const ARENA_CAMERA_TWEEN_DURATION_MS = 560;
 const ARENA_CAMERA_TWEEN_EASE = "Cubic.easeInOut";
 const ARENA_ENTRY_TRANSITION_DURATION_MS = 850;
@@ -1002,19 +1026,21 @@ export class ArenaScene extends Phaser.Scene {
 
     this.arenaEntryTransitionState = "running";
 
-    const finalTarget = getCameraTarget(current, getActiveDebugTuning(), getArenaViewport(this));
+    const debug = getActiveDebugTuning();
+    const finalTarget = getCameraTarget(current, debug, getArenaViewport(this));
     const startTarget = getArenaEntryStartCameraTarget(finalTarget);
 
-    this.tweens.killTweensOf(layers.all);
-    applyArenaTransform(layers, startTarget);
+    killArenaTransformTweens(this, layers);
+    applyArenaTransform(layers, startTarget, debug);
 
-    return tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE)
+    return tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE, debug)
       .then(() => {
         if (!this.currentState) {
           return;
         }
 
-        applyArenaTransform(layers, getCameraTarget(this.currentState, getActiveDebugTuning(), getArenaViewport(this)));
+        const currentDebug = getActiveDebugTuning();
+        applyArenaTransform(layers, getCameraTarget(this.currentState, currentDebug, getArenaViewport(this)), currentDebug);
       })
       .finally(() => {
         this.arenaEntryTransitionState = "done";
@@ -2010,14 +2036,15 @@ function createArenaLayers(target: Phaser.Scene): ArenaLayers {
   const mid = target.add.container(0, 0).setDepth(-20);
   const actors = target.add.container(0, 0).setDepth(10);
   const effects = target.add.container(0, 0).setDepth(40);
+  const midShade = { amount: 0 };
 
-  return { back, mid, ground, actors, effects, all: [back, mid, ground, actors, effects] };
+  return { back, mid, ground, actors, effects, midShade, all: [back, mid, ground, actors, effects] };
 }
 
 function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
   const layerConfigs = [
     { key: ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, layer: layers.back },
-    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, layer: layers.mid, tint: 0xb1a18f },
+    { key: ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, layer: layers.mid, tint: ARENA_MID_LAYER_BASE_TINT },
     { key: ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, layer: layers.ground },
   ] as const;
 
@@ -2034,6 +2061,11 @@ function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
 
     if ("tint" in config) {
       image.setTint(config.tint);
+    }
+
+    if (config.key === ARENA_BACKGROUND_MID_LAYER_ASSET_KEY) {
+      layers.midImage = image;
+      syncArenaMidLayerTint(layers);
     }
 
     config.layer.add(image);
@@ -3658,21 +3690,22 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
   }
 
   if (isPendingEnemyResponse && target.cameraFrameInitialized) {
-    target.tweens.killTweensOf(layers.all);
+    killArenaTransformTweens(target, layers);
     return;
   }
 
-  const cameraTarget = getCameraTarget(current, getActiveDebugTuning(), getArenaViewport(target));
+  const debug = getActiveDebugTuning();
+  const cameraTarget = getCameraTarget(current, debug, getArenaViewport(target));
 
   target.cameraFrameInitialized = true;
-  target.tweens.killTweensOf(layers.all);
+  killArenaTransformTweens(target, layers);
 
   if (shouldSnap) {
-    applyArenaTransform(layers, cameraTarget);
+    applyArenaTransform(layers, cameraTarget, debug);
     return;
   }
 
-  getArenaLayerTransforms(layers, cameraTarget).forEach((transform) => {
+  getArenaLayerTransforms(layers, cameraTarget, debug).forEach((transform) => {
     target.tweens.add({
       targets: transform.layer,
       x: transform.x,
@@ -3682,6 +3715,18 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
       duration: ARENA_CAMERA_TWEEN_DURATION_MS,
       ease: ARENA_CAMERA_TWEEN_EASE,
     });
+  });
+  target.tweens.add({
+    targets: layers.midShade,
+    amount: getArenaMidLayerShade(cameraTarget, debug),
+    duration: ARENA_CAMERA_TWEEN_DURATION_MS,
+    ease: ARENA_CAMERA_TWEEN_EASE,
+    onUpdate: () => {
+      syncArenaMidLayerTint(layers);
+    },
+    onComplete: () => {
+      syncArenaMidLayerTint(layers);
+    },
   });
 }
 
@@ -3703,15 +3748,17 @@ function tweenArenaTransform(
   cameraTarget: CameraTarget,
   duration: number,
   ease: string,
+  tuning?: ArenaDebugTuning,
 ): Promise<void> {
-  const transforms = getArenaLayerTransforms(layers, cameraTarget);
+  const transforms = getArenaLayerTransforms(layers, cameraTarget, tuning);
 
   if (transforms.length <= 0) {
+    setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning));
     return Promise.resolve();
   }
 
   return new Promise((resolve) => {
-    let remainingTweens = transforms.length;
+    let remainingTweens = transforms.length + 1;
     let resolved = false;
 
     function finish(): void {
@@ -3724,7 +3771,29 @@ function tweenArenaTransform(
       resolve();
     }
 
+    function completeTween(): void {
+      remainingTweens -= 1;
+
+      if (remainingTweens <= 0) {
+        finish();
+      }
+    }
+
     target.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
+
+    target.tweens.add({
+      targets: layers.midShade,
+      amount: getArenaMidLayerShade(cameraTarget, tuning),
+      duration,
+      ease,
+      onUpdate: () => {
+        syncArenaMidLayerTint(layers);
+      },
+      onComplete: () => {
+        syncArenaMidLayerTint(layers);
+        completeTween();
+      },
+    });
 
     transforms.forEach((transform) => {
       target.tweens.add({
@@ -3736,32 +3805,56 @@ function tweenArenaTransform(
         duration,
         ease,
         onComplete: () => {
-          remainingTweens -= 1;
-
-          if (remainingTweens <= 0) {
-            finish();
-          }
+          completeTween();
         },
       });
     });
   });
 }
 
-function applyArenaTransform(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>): void {
-  getArenaLayerTransforms(layers, cameraTarget).forEach((transform) => {
+function applyArenaTransform(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>, tuning?: ArenaDebugTuning): void {
+  getArenaLayerTransforms(layers, cameraTarget, tuning).forEach((transform) => {
     transform.layer.setPosition(transform.x, transform.y);
     transform.layer.setScale(transform.scale);
   });
+  setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning));
 }
 
-function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>): ArenaLayerTransform[] {
+function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>, tuning?: ArenaDebugTuning): ArenaLayerTransform[] {
+  const parallax = getArenaLayerParallax(tuning);
+
   return [
-    getArenaLayerTransform(layers.back, cameraTarget, ARENA_LAYER_PARALLAX.back),
-    getArenaLayerTransform(layers.mid, cameraTarget, ARENA_LAYER_PARALLAX.mid),
-    getArenaLayerTransform(layers.ground, cameraTarget, ARENA_LAYER_PARALLAX.ground),
-    getArenaLayerTransform(layers.actors, cameraTarget, ARENA_LAYER_PARALLAX.actors),
-    getArenaLayerTransform(layers.effects, cameraTarget, ARENA_LAYER_PARALLAX.effects),
+    getArenaLayerTransform(layers.back, cameraTarget, parallax.back),
+    getArenaLayerTransform(layers.mid, cameraTarget, parallax.mid),
+    getArenaLayerTransform(layers.ground, cameraTarget, parallax.ground),
+    getArenaLayerTransform(layers.actors, cameraTarget, parallax.actors),
+    getArenaLayerTransform(layers.effects, cameraTarget, parallax.effects),
   ];
+}
+
+function getArenaLayerParallax(tuning?: ArenaDebugTuning): Record<ArenaLayerKey, ArenaLayerParallax> {
+  return {
+    back: {
+      followX: tuning?.arenaBackFollowX ?? ARENA_LAYER_PARALLAX.back.followX,
+      followY: tuning?.arenaBackFollowY ?? ARENA_LAYER_PARALLAX.back.followY,
+      zoom: tuning?.arenaBackZoom ?? ARENA_LAYER_PARALLAX.back.zoom,
+      lookUpY: tuning?.arenaBackLookUpY ?? ARENA_LAYER_PARALLAX.back.lookUpY,
+    },
+    mid: {
+      followX: tuning?.arenaMidFollowX ?? ARENA_LAYER_PARALLAX.mid.followX,
+      followY: tuning?.arenaMidFollowY ?? ARENA_LAYER_PARALLAX.mid.followY,
+      zoom: tuning?.arenaMidZoom ?? ARENA_LAYER_PARALLAX.mid.zoom,
+      lookUpY: tuning?.arenaMidLookUpY ?? ARENA_LAYER_PARALLAX.mid.lookUpY,
+    },
+    ground: {
+      followX: tuning?.arenaGroundFollowX ?? ARENA_LAYER_PARALLAX.ground.followX,
+      followY: tuning?.arenaGroundFollowY ?? ARENA_LAYER_PARALLAX.ground.followY,
+      zoom: tuning?.arenaGroundZoom ?? ARENA_LAYER_PARALLAX.ground.zoom,
+      lookUpY: tuning?.arenaGroundLookUpY ?? ARENA_LAYER_PARALLAX.ground.lookUpY,
+    },
+    actors: ARENA_LAYER_PARALLAX.actors,
+    effects: ARENA_LAYER_PARALLAX.effects,
+  };
 }
 
 function getArenaLayerTransform(
@@ -3779,6 +3872,48 @@ function getArenaLayerTransform(
     y: cameraTarget.viewportHeight / 2 - centerY * scale + cameraTarget.closeness * parallax.lookUpY,
     scale,
   };
+}
+
+function killArenaTransformTweens(target: Phaser.Scene, layers: ArenaLayers): void {
+  target.tweens.killTweensOf([...layers.all, layers.midShade]);
+}
+
+function setArenaMidLayerShade(layers: ArenaLayers, amount: number): void {
+  layers.midShade.amount = clamp01(amount);
+  syncArenaMidLayerTint(layers);
+}
+
+function syncArenaMidLayerTint(layers: ArenaLayers): void {
+  layers.midImage?.setTint(mixColor(ARENA_MID_LAYER_BASE_TINT, ARENA_MID_LAYER_CLOSE_TINT, layers.midShade.amount));
+}
+
+function getArenaMidLayerShade(cameraTarget: CameraTarget, tuning?: ArenaDebugTuning): number {
+  const maxDarken = clamp01(tuning?.arenaMidZoomDarken ?? DEFAULT_ARENA_MID_ZOOM_DARKEN);
+
+  return smoothStep(clamp01(cameraTarget.closeness)) * maxDarken;
+}
+
+function mixColor(from: number, to: number, amount: number): number {
+  const ratio = clamp01(amount);
+  const fromR = (from >> 16) & 0xff;
+  const fromG = (from >> 8) & 0xff;
+  const fromB = from & 0xff;
+  const toR = (to >> 16) & 0xff;
+  const toG = (to >> 8) & 0xff;
+  const toB = to & 0xff;
+  const r = Math.round(fromR + (toR - fromR) * ratio);
+  const g = Math.round(fromG + (toG - fromG) * ratio);
+  const b = Math.round(fromB + (toB - fromB) * ratio);
+
+  return (r << 16) | (g << 8) | b;
+}
+
+function smoothStep(value: number): number {
+  return value * value * (3 - 2 * value);
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function syncArenaMainCamera(target: Phaser.Scene): void {

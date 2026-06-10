@@ -1906,9 +1906,14 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
   display: grid;
   gap: 10px;
   width: min(260px, calc(100% - 16px));
+  max-height: min(720px, calc(100dvh - 122px - env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 3px;
   color: #fff0bd;
   font-family: Georgia, "Times New Roman", serif;
   pointer-events: auto;
+  scrollbar-color: rgba(255, 211, 132, 0.72) rgba(22, 7, 3, 0.54);
 }
 
 .debug-panel details {
@@ -1960,6 +1965,7 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 .debug-auto-equipment {
   display: grid;
   gap: 6px;
+  min-height: 0;
   padding: 0 10px 8px;
 }
 
@@ -2109,12 +2115,18 @@ body.debug-mode-arena .debug-rig-panel,
 body.debug-mode-arena .debug-hud-panel,
 body.debug-mode-arena .debug-city-panel,
 body.debug-mode-arena .debug-effects-panel,
+body.debug-mode-arena .debug-hero-equipment-panel,
+body.debug-mode-arena .debug-item-equipment-panel,
+body.debug-mode-arena .debug-auto-equipment-panel,
 body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
 body.debug-mode-city .debug-rig-panel,
 body.debug-mode-city .debug-arena-panel,
 body.debug-mode-city .debug-hud-panel,
 body.debug-mode-city .debug-effects-panel,
+body.debug-mode-city .debug-hero-equipment-panel,
+body.debug-mode-city .debug-item-equipment-panel,
+body.debug-mode-city .debug-auto-equipment-panel,
 body.debug-mode-city .battle-screen,
 body.debug-mode-hud .debug-character-shell,
 body.debug-mode-hud .debug-rig-panel,
@@ -2537,11 +2549,13 @@ body.debug-active .battle-screen {
   min-height: min(100dvh - 24px, 764px);
   max-height: min(100dvh - 24px, 764px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 14px;
   border: 3px solid rgba(255, 211, 132, 0.62);
   border-radius: 24px;
   background: rgba(35, 10, 4, 0.72);
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28);
+  scrollbar-color: rgba(255, 211, 132, 0.72) rgba(22, 7, 3, 0.54);
 }
 
 .debug-app-panel h1 {
@@ -2559,7 +2573,11 @@ body.debug-active .battle-screen {
 
 .debug-app-panel .debug-panel {
   position: static;
+  min-height: 0;
   width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .debug-app-panel .debug-rig-editor {

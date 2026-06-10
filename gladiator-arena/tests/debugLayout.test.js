@@ -158,6 +158,14 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes("data-debug-reset-value"), true);
 });
 
+test("debug panel keeps long tuning sections scrollable", () => {
+  assert.match(stylesSource, /\.debug-app-panel\s*{[^}]*overflow-y: auto/s);
+  assert.match(stylesSource, /\.debug-app-panel \.debug-panel\s*{[^}]*overflow: visible/s);
+  assert.equal(stylesSource.includes("body.debug-mode-arena .debug-item-equipment-panel"), true);
+  assert.equal(stylesSource.includes("body.debug-mode-arena .debug-auto-equipment-panel"), true);
+  assert.equal(stylesSource.includes("overscroll-behavior: contain"), true);
+});
+
 test("debug panel exposes item equipment tuning separately", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 

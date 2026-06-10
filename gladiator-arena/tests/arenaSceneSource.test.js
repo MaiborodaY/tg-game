@@ -90,6 +90,18 @@ test("arena starts close between fighters and eases back to the normal camera", 
   assert.equal(arenaSceneSource.includes('target.arenaEntryTransitionState === "running"'), true);
 });
 
+test("arena parallax can be tuned from debug settings", () => {
+  assert.equal(arenaSceneSource.includes("function getArenaLayerParallax(tuning?: ArenaDebugTuning)"), true);
+  assert.equal(arenaSceneSource.includes("tuning?.arenaBackFollowY"), true);
+  assert.equal(arenaSceneSource.includes("tuning?.arenaMidLookUpY"), true);
+  assert.equal(arenaSceneSource.includes("tuning?.arenaGroundZoom"), true);
+  assert.equal(arenaSceneSource.includes("getArenaLayerTransforms(layers, cameraTarget, debug)"), true);
+  assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE, debug)"), true);
+  assert.equal(arenaSceneSource.includes("arenaMidZoomDarken"), true);
+  assert.equal(arenaSceneSource.includes("syncArenaMidLayerTint"), true);
+  assert.equal(arenaSceneSource.includes("ARENA_MID_LAYER_CLOSE_TINT"), true);
+});
+
 test("city shop camera zoom fits the hero inside the current viewport", () => {
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO"), true);
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO"), true);

@@ -6,6 +6,19 @@ import {
   DEFAULT_ACTION_ATTACK_ICON_SCALE,
   DEFAULT_ACTION_BACK_ANGLE,
   DEFAULT_ACTION_BUTTON_SCALE,
+  DEFAULT_ARENA_BACK_FOLLOW_X,
+  DEFAULT_ARENA_BACK_FOLLOW_Y,
+  DEFAULT_ARENA_BACK_LOOK_UP_Y,
+  DEFAULT_ARENA_BACK_ZOOM,
+  DEFAULT_ARENA_GROUND_FOLLOW_X,
+  DEFAULT_ARENA_GROUND_FOLLOW_Y,
+  DEFAULT_ARENA_GROUND_LOOK_UP_Y,
+  DEFAULT_ARENA_GROUND_ZOOM,
+  DEFAULT_ARENA_MID_FOLLOW_X,
+  DEFAULT_ARENA_MID_FOLLOW_Y,
+  DEFAULT_ARENA_MID_LOOK_UP_Y,
+  DEFAULT_ARENA_MID_ZOOM,
+  DEFAULT_ARENA_MID_ZOOM_DARKEN,
   DEFAULT_BACK_MOVE_DISTANCE,
   DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y,
   DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO,
@@ -191,6 +204,19 @@ export interface ArenaDebugTuning {
   cameraFeetScreenY: number;
   cameraCloseFeetShiftY: number;
   cameraFeetMinScreenRatio: number;
+  arenaBackFollowX: number;
+  arenaBackFollowY: number;
+  arenaBackZoom: number;
+  arenaBackLookUpY: number;
+  arenaMidFollowX: number;
+  arenaMidFollowY: number;
+  arenaMidZoom: number;
+  arenaMidLookUpY: number;
+  arenaMidZoomDarken: number;
+  arenaGroundFollowX: number;
+  arenaGroundFollowY: number;
+  arenaGroundZoom: number;
+  arenaGroundLookUpY: number;
   actionArcEditMode: boolean;
   actionArcRotation: number;
   actionArcRadius: number;
@@ -958,6 +984,19 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   cameraFeetScreenY: DEFAULT_CAMERA_FEET_SCREEN_Y,
   cameraCloseFeetShiftY: DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y,
   cameraFeetMinScreenRatio: DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO,
+  arenaBackFollowX: DEFAULT_ARENA_BACK_FOLLOW_X,
+  arenaBackFollowY: DEFAULT_ARENA_BACK_FOLLOW_Y,
+  arenaBackZoom: DEFAULT_ARENA_BACK_ZOOM,
+  arenaBackLookUpY: DEFAULT_ARENA_BACK_LOOK_UP_Y,
+  arenaMidFollowX: DEFAULT_ARENA_MID_FOLLOW_X,
+  arenaMidFollowY: DEFAULT_ARENA_MID_FOLLOW_Y,
+  arenaMidZoom: DEFAULT_ARENA_MID_ZOOM,
+  arenaMidLookUpY: DEFAULT_ARENA_MID_LOOK_UP_Y,
+  arenaMidZoomDarken: DEFAULT_ARENA_MID_ZOOM_DARKEN,
+  arenaGroundFollowX: DEFAULT_ARENA_GROUND_FOLLOW_X,
+  arenaGroundFollowY: DEFAULT_ARENA_GROUND_FOLLOW_Y,
+  arenaGroundZoom: DEFAULT_ARENA_GROUND_ZOOM,
+  arenaGroundLookUpY: DEFAULT_ARENA_GROUND_LOOK_UP_Y,
   actionArcEditMode: false,
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
   actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
@@ -1139,6 +1178,19 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     cameraFeetScreenY: clampNumber(input.cameraFeetScreenY, 260, 720, defaultDebugTuning.cameraFeetScreenY),
     cameraCloseFeetShiftY: clampNumber(input.cameraCloseFeetShiftY, -180, 180, defaultDebugTuning.cameraCloseFeetShiftY),
     cameraFeetMinScreenRatio: clampNumber(input.cameraFeetMinScreenRatio, 0.35, 0.75, defaultDebugTuning.cameraFeetMinScreenRatio),
+    arenaBackFollowX: clampNumber(input.arenaBackFollowX, -0.5, 1.5, defaultDebugTuning.arenaBackFollowX),
+    arenaBackFollowY: clampNumber(input.arenaBackFollowY, -0.5, 1.5, defaultDebugTuning.arenaBackFollowY),
+    arenaBackZoom: clampNumber(input.arenaBackZoom, 0, 1.5, defaultDebugTuning.arenaBackZoom),
+    arenaBackLookUpY: clampNumber(input.arenaBackLookUpY, -240, 240, defaultDebugTuning.arenaBackLookUpY),
+    arenaMidFollowX: clampNumber(input.arenaMidFollowX, -0.5, 1.5, defaultDebugTuning.arenaMidFollowX),
+    arenaMidFollowY: clampNumber(input.arenaMidFollowY, -0.5, 1.5, defaultDebugTuning.arenaMidFollowY),
+    arenaMidZoom: clampNumber(input.arenaMidZoom, 0, 1.5, defaultDebugTuning.arenaMidZoom),
+    arenaMidLookUpY: clampNumber(input.arenaMidLookUpY, -240, 240, defaultDebugTuning.arenaMidLookUpY),
+    arenaMidZoomDarken: clampNumber(input.arenaMidZoomDarken, 0, 1, defaultDebugTuning.arenaMidZoomDarken),
+    arenaGroundFollowX: clampNumber(input.arenaGroundFollowX, -0.5, 1.5, defaultDebugTuning.arenaGroundFollowX),
+    arenaGroundFollowY: clampNumber(input.arenaGroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaGroundFollowY),
+    arenaGroundZoom: clampNumber(input.arenaGroundZoom, 0, 1.5, defaultDebugTuning.arenaGroundZoom),
+    arenaGroundLookUpY: clampNumber(input.arenaGroundLookUpY, -240, 240, defaultDebugTuning.arenaGroundLookUpY),
     actionArcEditMode: typeof input.actionArcEditMode === "boolean" ? input.actionArcEditMode : defaultDebugTuning.actionArcEditMode,
     actionArcRotation: clampNumber(input.actionArcRotation, -180, 180, defaultDebugTuning.actionArcRotation),
     actionArcRadius: clampNumber(input.actionArcRadius, 24, 150, defaultDebugTuning.actionArcRadius),

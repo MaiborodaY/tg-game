@@ -213,6 +213,24 @@ const controlGroups: DebugControlGroup[] = [
     ],
   },
   {
+    title: "Arena parallax",
+    controls: [
+      { type: "range", key: "arenaBackFollowX", label: "Back follow X", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaBackFollowX },
+      { type: "range", key: "arenaBackFollowY", label: "Back follow Y", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaBackFollowY },
+      { type: "range", key: "arenaBackZoom", label: "Back zoom", min: 0, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaBackZoom },
+      { type: "range", key: "arenaBackLookUpY", label: "Back look up", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.arenaBackLookUpY },
+      { type: "range", key: "arenaMidFollowX", label: "Mid follow X", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaMidFollowX },
+      { type: "range", key: "arenaMidFollowY", label: "Mid follow Y", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaMidFollowY },
+      { type: "range", key: "arenaMidZoom", label: "Mid zoom", min: 0, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaMidZoom },
+      { type: "range", key: "arenaMidLookUpY", label: "Mid look up", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.arenaMidLookUpY },
+      { type: "range", key: "arenaMidZoomDarken", label: "Mid darken", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.arenaMidZoomDarken },
+      { type: "range", key: "arenaGroundFollowX", label: "Ground follow X", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaGroundFollowX },
+      { type: "range", key: "arenaGroundFollowY", label: "Ground follow Y", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaGroundFollowY },
+      { type: "range", key: "arenaGroundZoom", label: "Ground zoom", min: 0, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaGroundZoom },
+      { type: "range", key: "arenaGroundLookUpY", label: "Ground look up", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.arenaGroundLookUpY },
+    ],
+  },
+  {
     title: "Fighter shadow",
     controls: [
       { type: "range", key: "shadowOffsetX", label: "Shadow X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetX },

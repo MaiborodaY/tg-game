@@ -38,6 +38,19 @@ function loadDebugTuningModule() {
             DEFAULT_CAMERA_FEET_SCREEN_Y: 560,
             DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y: 70,
             DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO: 0.58,
+            DEFAULT_ARENA_BACK_FOLLOW_X: 0.06,
+            DEFAULT_ARENA_BACK_FOLLOW_Y: 0.04,
+            DEFAULT_ARENA_BACK_ZOOM: 0.3,
+            DEFAULT_ARENA_BACK_LOOK_UP_Y: 150,
+            DEFAULT_ARENA_MID_FOLLOW_X: 0.22,
+            DEFAULT_ARENA_MID_FOLLOW_Y: 0.16,
+            DEFAULT_ARENA_MID_ZOOM: 0.42,
+            DEFAULT_ARENA_MID_LOOK_UP_Y: 132,
+            DEFAULT_ARENA_MID_ZOOM_DARKEN: 0.42,
+            DEFAULT_ARENA_GROUND_FOLLOW_X: 0.6,
+            DEFAULT_ARENA_GROUND_FOLLOW_Y: 0.52,
+            DEFAULT_ARENA_GROUND_ZOOM: 0.74,
+            DEFAULT_ARENA_GROUND_LOOK_UP_Y: 10,
             DEFAULT_ACTION_ARC_ROTATION: 0,
             DEFAULT_ACTION_ARC_RADIUS: 62,
             DEFAULT_ACTION_BUTTON_SCALE: 1,
@@ -117,6 +130,19 @@ test("debug tuning normalizes unsafe values", () => {
     cameraFeetScreenY: 999,
     cameraCloseFeetShiftY: -999,
     cameraFeetMinScreenRatio: 99,
+    arenaBackFollowX: 99,
+    arenaBackFollowY: -99,
+    arenaBackZoom: 99,
+    arenaBackLookUpY: 999,
+    arenaMidFollowX: 99,
+    arenaMidFollowY: -99,
+    arenaMidZoom: -99,
+    arenaMidLookUpY: -999,
+    arenaMidZoomDarken: 99,
+    arenaGroundFollowX: 99,
+    arenaGroundFollowY: -99,
+    arenaGroundZoom: 99,
+    arenaGroundLookUpY: 999,
     actionArcRotation: 999,
     actionArcRadius: -5,
     actionButtonScale: 99,
@@ -183,6 +209,19 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.cameraFeetScreenY, 720);
   assert.equal(normalized.cameraCloseFeetShiftY, -180);
   assert.equal(normalized.cameraFeetMinScreenRatio, 0.75);
+  assert.equal(normalized.arenaBackFollowX, 1.5);
+  assert.equal(normalized.arenaBackFollowY, -0.5);
+  assert.equal(normalized.arenaBackZoom, 1.5);
+  assert.equal(normalized.arenaBackLookUpY, 240);
+  assert.equal(normalized.arenaMidFollowX, 1.5);
+  assert.equal(normalized.arenaMidFollowY, -0.5);
+  assert.equal(normalized.arenaMidZoom, 0);
+  assert.equal(normalized.arenaMidLookUpY, -240);
+  assert.equal(normalized.arenaMidZoomDarken, 1);
+  assert.equal(normalized.arenaGroundFollowX, 1.5);
+  assert.equal(normalized.arenaGroundFollowY, -0.5);
+  assert.equal(normalized.arenaGroundZoom, 1.5);
+  assert.equal(normalized.arenaGroundLookUpY, 240);
   assert.equal(normalized.actionArcRotation, 180);
   assert.equal(normalized.actionArcRadius, 24);
   assert.equal(normalized.actionButtonScale, 2);
@@ -246,6 +285,19 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetScreenY, 560);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraCloseFeetShiftY, 70);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetMinScreenRatio, 0.58);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaBackFollowX, 0.06);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaBackFollowY, 0.04);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaBackZoom, 0.3);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaBackLookUpY, 150);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaMidFollowX, 0.22);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaMidFollowY, 0.16);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaMidZoom, 0.42);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaMidLookUpY, 132);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaMidZoomDarken, 0.42);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaGroundFollowX, 0.6);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaGroundFollowY, 0.52);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaGroundZoom, 0.74);
+  assert.equal(debugTuningModule.defaultDebugTuning.arenaGroundLookUpY, 10);
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRotation, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRadius, 62);
   assert.equal(debugTuningModule.defaultDebugTuning.actionButtonScale, 1);
