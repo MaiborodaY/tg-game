@@ -774,6 +774,10 @@ h1 {
   pointer-events: none;
 }
 
+.city-menu--armory-open .city-menu__hero {
+  pointer-events: auto;
+}
+
 .city-menu__hero canvas {
   display: block;
   width: 100% !important;

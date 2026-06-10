@@ -94,3 +94,13 @@ test("debug character viewer has a compact shop preview mode", () => {
   assert.equal(arenaSceneSource.includes("private getShopCharacterLayout(): CityHeroLayout"), true);
   assert.equal(arenaSceneSource.includes("Phaser.Scale.RESIZE"), true);
 });
+
+test("city shop hero can be dragged vertically without changing city base layout", () => {
+  assert.equal(arenaSceneSource.includes("getShopHeroOffsetY"), true);
+  assert.equal(arenaSceneSource.includes("setShopHeroOffsetY(getShopHeroOffsetY() + deltaY)"), true);
+  assert.equal(arenaSceneSource.includes("enableCityShopHeroDrag"), true);
+  assert.equal(arenaSceneSource.includes("private beginShopHeroDrag"), true);
+  assert.equal(arenaSceneSource.includes("private dragShopHero"), true);
+  assert.match(arenaSceneSource, /shopOffsetY \/ shopZoom/);
+  assert.doesNotMatch(arenaSceneSource, /debugTuning\.cityHeroY\s*=/);
+});
