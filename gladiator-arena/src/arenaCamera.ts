@@ -1,4 +1,13 @@
-import { ARENA_WORLD_HEIGHT, ARENA_WORLD_TOP, DEFAULT_FIGHTER_HUD_GAP, GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
+import {
+  ARENA_WORLD_HEIGHT,
+  ARENA_WORLD_TOP,
+  DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y,
+  DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO,
+  DEFAULT_CAMERA_FEET_SCREEN_Y,
+  DEFAULT_FIGHTER_HUD_GAP,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+} from "./arenaLayout";
 import { START_DISTANCE, type CombatState } from "./combat";
 import type { ArenaDebugTuning } from "./debugTuning";
 import { getStageLayout } from "./stageLayout";
@@ -28,9 +37,6 @@ export interface CameraViewport {
 type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition">;
 
 const CLOSE_ZOOM = 2.75;
-const FIGHTER_FEET_SCREEN_Y = 560;
-const CLOSE_LOW_ANGLE_FEET_SHIFT_Y = 70;
-
 export function getPlayerWorldX(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): number {
   return getStageLayout(current, tuning).playerX;
 }
@@ -47,11 +53,14 @@ export function getCameraTarget(current: CameraState, tuning?: ArenaDebugTuning,
   const centerX = (fighterLayout.playerX + fighterLayout.enemyX) / 2;
   const fighterFeetY = (fighterLayout.playerY + fighterLayout.enemyY) / 2;
   const lowAngleAmount = easeInOut(closeness);
-  const fighterFeetTargetY = FIGHTER_FEET_SCREEN_Y + CLOSE_LOW_ANGLE_FEET_SHIFT_Y * lowAngleAmount;
+  const fighterFeetBaseScreenY = getFiniteNumber(tuning?.cameraFeetScreenY, DEFAULT_CAMERA_FEET_SCREEN_Y);
+  const closeFeetShiftY = getFiniteNumber(tuning?.cameraCloseFeetShiftY, DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y);
+  const fighterFeetTargetY = fighterFeetBaseScreenY + closeFeetShiftY * lowAngleAmount;
   const fighterHudGap = getFiniteNumber(tuning?.fighterHudGap, DEFAULT_FIGHTER_HUD_GAP);
   const zoomAwareSafeBottom = getFiniteNumber(cameraViewport.safeBottom, cameraViewport.height) - fighterHudGap * zoom;
   const fighterFeetMaxY = Math.min(cameraViewport.height - 112, zoomAwareSafeBottom);
-  const fighterFeetMinY = Math.min(cameraViewport.height * 0.58, fighterFeetMaxY);
+  const fighterFeetMinRatio = clamp(getFiniteNumber(tuning?.cameraFeetMinScreenRatio, DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO), 0.35, 0.75);
+  const fighterFeetMinY = Math.min(cameraViewport.height * fighterFeetMinRatio, fighterFeetMaxY);
   const fighterFeetScreenY = clamp(fighterFeetTargetY, fighterFeetMinY, fighterFeetMaxY);
   const centerY = fighterFeetY - (fighterFeetScreenY - cameraViewport.height / 2) / zoom;
   const scrollX = centerX - cameraViewport.width / (2 * zoom);

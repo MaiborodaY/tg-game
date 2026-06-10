@@ -35,6 +35,9 @@ function loadDebugTuningModule() {
             DEFAULT_PLAYER_SCALE: 1,
             DEFAULT_ENEMY_SCALE: 1,
             DEFAULT_FIGHTER_HUD_GAP: 0,
+            DEFAULT_CAMERA_FEET_SCREEN_Y: 560,
+            DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y: 70,
+            DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO: 0.58,
             DEFAULT_ACTION_ARC_ROTATION: 0,
             DEFAULT_ACTION_ARC_RADIUS: 62,
             DEFAULT_ACTION_BUTTON_SCALE: 1,
@@ -111,6 +114,9 @@ test("debug tuning normalizes unsafe values", () => {
     enemyStageY: -999,
     playerScale: 99,
     enemyScale: -4,
+    cameraFeetScreenY: 999,
+    cameraCloseFeetShiftY: -999,
+    cameraFeetMinScreenRatio: 99,
     actionArcRotation: 999,
     actionArcRadius: -5,
     actionButtonScale: 99,
@@ -174,6 +180,9 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.enemyStageY, -500);
   assert.equal(normalized.playerScale, 6);
   assert.equal(normalized.enemyScale, 0.1);
+  assert.equal(normalized.cameraFeetScreenY, 720);
+  assert.equal(normalized.cameraCloseFeetShiftY, -180);
+  assert.equal(normalized.cameraFeetMinScreenRatio, 0.75);
   assert.equal(normalized.actionArcRotation, 180);
   assert.equal(normalized.actionArcRadius, 24);
   assert.equal(normalized.actionButtonScale, 2);
@@ -200,7 +209,7 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.classicActionButtonSlots.distance.forward.x, 240);
   assert.equal(normalized.classicActionButtonSlots.distance.forward.y, -320);
   assert.equal(normalized.classicActionButtonSlots.distance.forward.rotation, 180);
-  assert.equal(normalized.classicActionButtonSlots.clinch.medium.y, -180);
+  assert.equal(normalized.classicActionButtonSlots.clinch.medium.y, -200);
   assert.equal(normalized.classicHudEditMode, false);
   assert.equal(normalized.classicHudOffsetX, 240);
   assert.equal(normalized.classicHudOffsetY, -160);
@@ -234,6 +243,9 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.playerStageY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageX, 130);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageY, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetScreenY, 560);
+  assert.equal(debugTuningModule.defaultDebugTuning.cameraCloseFeetShiftY, 70);
+  assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetMinScreenRatio, 0.58);
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRotation, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRadius, 62);
   assert.equal(debugTuningModule.defaultDebugTuning.actionButtonScale, 1);
@@ -257,8 +269,8 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionTokenStripeShine, 0.12);
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionWheelMode, "distance");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionButton, "forward");
-  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 70);
-  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -180);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 60);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -200);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, 118);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetX, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetY, 0);

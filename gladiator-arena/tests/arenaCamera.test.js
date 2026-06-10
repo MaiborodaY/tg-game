@@ -21,6 +21,9 @@ const layout = {
   DEFAULT_PLAYER_SCALE: 0.78,
   DEFAULT_ENEMY_SCALE: 1,
   DEFAULT_FIGHTER_HUD_GAP: 0,
+  DEFAULT_CAMERA_FEET_SCREEN_Y: 560,
+  DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y: 70,
+  DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO: 0.58,
   PLAYER_BASE_X: 85,
   ENEMY_BASE_X: 345,
 };
@@ -125,6 +128,24 @@ test("arena camera applies a zoom-aware fighter HUD gap", () => {
   const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
 
   assert.ok((fighterFeetY - target.scrollY) * target.zoom <= 500 - 20 * target.zoom);
+});
+
+test("arena camera lets debug tuning reframe fighter feet on screen", () => {
+  const start = { distance: 3, playerPosition: 0, enemyPosition: 3 };
+  const tuning = { cameraFeetScreenY: 500, cameraFeetMinScreenRatio: 0.45 };
+  const target = arenaCamera.getCameraTarget(start, tuning);
+  const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
+
+  assert.equal((fighterFeetY - target.scrollY) * target.zoom, 500);
+});
+
+test("arena camera applies close distance feet shift after the base framing", () => {
+  const closeState = { distance: 0, playerPosition: 3, enemyPosition: 3 };
+  const tuning = { cameraFeetScreenY: 500, cameraCloseFeetShiftY: -90, cameraFeetMinScreenRatio: 0.45 };
+  const target = arenaCamera.getCameraTarget(closeState, tuning, { width: 430, height: 764 });
+  const fighterFeetY = (layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_PLAYER_STAGE_Y + layout.DEFAULT_STAGE_ORIGIN_Y + layout.DEFAULT_ENEMY_STAGE_Y) / 2;
+
+  assert.equal(Math.round((fighterFeetY - target.scrollY) * target.zoom), 410);
 });
 
 test("arena camera centers the virtual viewport on the fighters while zooming", () => {

@@ -67,6 +67,14 @@ const ACTION_ATTACK_ICON_URLS: Partial<Record<ActionId, string>> = {
   medium: new URL("./assets/ui/action-icons/attack-medium.webp", import.meta.url).href,
   heavy: new URL("./assets/ui/action-icons/attack-heavy.webp", import.meta.url).href,
 };
+
+const ACTION_UTILITY_ICON_URLS: Partial<Record<ActionId, string>> = {
+  forward: new URL("./assets/ui/action-icons/move-forward.webp", import.meta.url).href,
+  back: new URL("./assets/ui/action-icons/move-forward.webp", import.meta.url).href,
+  lunge: new URL("./assets/ui/action-icons/lunge.webp", import.meta.url).href,
+  taunt: new URL("./assets/ui/action-icons/taunt.webp", import.meta.url).href,
+  rest: new URL("./assets/ui/action-icons/rest.webp", import.meta.url).href,
+};
 const ACTION_BUTTON_PRESS_MS = 140;
 const pressedButtonTimers = new WeakMap<HTMLButtonElement, number>();
 
@@ -107,38 +115,25 @@ function getAttackIconStyleTuning(actionId: ActionId, tuning?: StageLayoutTuning
   }
 }
 
-const LUNGE_ICON_LAYERS = [
-  { className: "action-arc__icon-layer action-arc__icon-layer--bolt", text: "/" },
-  { className: "action-arc__icon-layer action-arc__icon-layer--sword", text: "|" },
-] as const;
-
 function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId: ActionId): void {
   const attackIconUrl = ACTION_ATTACK_ICON_URLS[actionId];
+  const utilityIconUrl = ACTION_UTILITY_ICON_URLS[actionId];
+  const imageIconUrl = attackIconUrl ?? utilityIconUrl;
 
   icon.replaceChildren();
   delete button.dataset.icon;
   delete button.dataset.iconAlt;
   button.classList.toggle("action-arc__button--attack-token", Boolean(attackIconUrl));
+  button.classList.toggle("action-arc__button--image-token", Boolean(imageIconUrl));
 
-  if (attackIconUrl) {
-    const attackIcon = document.createElement("img");
+  if (imageIconUrl) {
+    const imageIcon = document.createElement("img");
 
-    attackIcon.className = "action-arc__attack-icon";
-    attackIcon.src = attackIconUrl;
-    attackIcon.alt = "";
-    attackIcon.draggable = false;
-    icon.append(attackIcon);
-    return;
-  }
-
-  if (actionId === "lunge") {
-    LUNGE_ICON_LAYERS.forEach((layerConfig) => {
-      const layer = document.createElement("span");
-
-      layer.className = layerConfig.className;
-      layer.textContent = layerConfig.text;
-      icon.append(layer);
-    });
+    imageIcon.className = attackIconUrl ? "action-arc__attack-icon" : "action-arc__image-icon";
+    imageIcon.src = imageIconUrl;
+    imageIcon.alt = "";
+    imageIcon.draggable = false;
+    icon.append(imageIcon);
     return;
   }
 

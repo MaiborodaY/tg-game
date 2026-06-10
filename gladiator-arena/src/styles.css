@@ -522,21 +522,12 @@ h1 {
 
 .classic-action-bar__wheel::before {
   inset: 0;
-  border: 4px solid rgba(126, 77, 25, 0.94);
-  border-top-color: rgba(230, 170, 72, 0.96);
   border-radius: 50%;
   background:
-    radial-gradient(ellipse at 50% 2%, rgba(255, 228, 145, 0.56) 0 2%, rgba(184, 110, 33, 0.28) 4%, transparent 9%),
-    radial-gradient(circle at 50% 22%, rgba(255, 218, 136, 0.22) 0 16%, transparent 17%),
-    linear-gradient(135deg, rgba(255, 200, 112, 0.14), transparent 28%),
-    linear-gradient(180deg, rgba(101, 47, 20, 0.97), rgba(54, 21, 9, 0.98) 44%, rgba(20, 7, 3, 0.99));
+    url("./assets/ui/classic-wheel/classic-wheel-skin.webp") center / 100% 100% no-repeat;
   box-shadow:
-    inset 0 0 0 2px rgba(255, 221, 123, 0.38),
-    inset 0 0 0 7px rgba(72, 34, 12, 0.28),
-    inset 0 5px 0 rgba(255, 232, 144, 0.22),
-    inset 0 -18px 24px rgba(0, 0, 0, 0.32),
-    0 -2px 0 rgba(255, 205, 93, 0.46),
-    0 -7px 16px rgba(106, 62, 20, 0.22);
+    0 -2px 0 rgba(255, 205, 93, 0.28),
+    0 -7px 16px rgba(44, 20, 8, 0.24);
 }
 
 .classic-action-bar__wheel::after {
@@ -3328,15 +3319,18 @@ body.debug-active .action-arc__center {
 .action-arc__button {
   --action-icon-size: 1.85rem;
   --action-icon-scale: 1;
+  --action-utility-icon-size: 40px;
+  --action-utility-icon-y: -1px;
+  --action-utility-icon-brightness: 1;
   --action-attack-icon-scale: 1;
   --action-attack-icon-rotation: 0deg;
   --action-attack-icon-brightness: 1;
-  --token-edge: #1e0d06;
-  --token-ring: rgba(193, 128, 54, 0.52);
+  --token-edge: #140905;
+  --token-ring: rgba(43, 22, 10, 0.92);
   --token-ring-width: 3px;
   --token-face-inset: 2px;
-  --token-rim-top: #6d3b17;
-  --token-rim-bottom: #241006;
+  --token-rim-top: #4a2710;
+  --token-rim-bottom: #160904;
   --token-face-top: #8b4b22;
   --token-face-mid: #5a2912;
   --token-face-bottom: #2a1008;
@@ -3351,15 +3345,15 @@ body.debug-active .action-arc__center {
   width: 58px;
   height: 58px;
   overflow: visible;
-  border: 3px solid var(--token-edge);
+  border: 4px solid var(--token-edge);
   border-radius: 999px;
   color: #f5d08b;
   background: linear-gradient(180deg, var(--token-rim-top), var(--token-rim-bottom));
   box-shadow:
-    inset 0 2px 0 rgba(255, 210, 139, var(--token-rim-shine-opacity)),
-    inset 0 -6px 0 rgba(11, 3, 1, 0.48),
-    0 5px 0 #170804,
-    0 0 0 2px rgba(255, 199, 107, var(--token-outer-shine-opacity));
+    inset 0 1px 0 rgba(255, 198, 112, var(--token-rim-shine-opacity)),
+    inset 0 -7px 0 rgba(8, 2, 1, 0.58),
+    0 5px 0 #0e0503,
+    0 0 0 2px rgba(65, 33, 12, var(--token-outer-shine-opacity));
   text-shadow: none;
 }
 
@@ -3419,7 +3413,9 @@ body.debug-active .action-arc__center {
 
 .action-arc__button[data-action="forward"],
 .action-arc__button[data-action="back"] {
-  --token-ring: rgba(200, 130, 54, 0.58);
+  --action-utility-icon-size: 39px;
+  --action-utility-icon-y: -1px;
+  --token-ring: rgba(45, 24, 11, 0.94);
   --token-face-top: #8e5526;
   --token-face-mid: #562611;
   --token-face-bottom: #2b1007;
@@ -3427,7 +3423,9 @@ body.debug-active .action-arc__center {
 }
 
 .action-arc__button[data-action="rest"] {
-  --token-ring: rgba(93, 194, 185, 0.56);
+  --action-utility-icon-size: 41px;
+  --action-utility-icon-y: 0px;
+  --token-ring: rgba(37, 25, 12, 0.9);
   --token-face-top: #406f65;
   --token-face-mid: #24423d;
   --token-face-bottom: #10221f;
@@ -3435,7 +3433,10 @@ body.debug-active .action-arc__center {
 }
 
 .action-arc__button[data-action="taunt"] {
-  --token-ring: rgba(166, 112, 215, 0.56);
+  --action-utility-icon-size: 42px;
+  --action-utility-icon-y: 0px;
+  --action-utility-icon-brightness: 0.95;
+  --token-ring: rgba(38, 22, 14, 0.9);
   --token-face-top: #654174;
   --token-face-mid: #3a254a;
   --token-face-bottom: #1b0d26;
@@ -3443,7 +3444,9 @@ body.debug-active .action-arc__center {
 }
 
 .action-arc__button[data-action="lunge"] {
-  --token-ring: rgba(213, 91, 63, 0.58);
+  --action-utility-icon-size: 43px;
+  --action-utility-icon-y: -1px;
+  --token-ring: rgba(49, 23, 11, 0.94);
   --token-face-top: #854325;
   --token-face-mid: #4f2012;
   --token-face-bottom: #250b06;
@@ -3459,24 +3462,24 @@ body.debug-active .action-arc__center {
 }
 
 .action-arc__button[data-action="light"] {
-  --token-ring: rgba(13, 86, 45, 0.96);
-  --token-ring-echo: rgba(13, 86, 45, 0.28);
+  --token-ring: rgba(21, 18, 10, 0.96);
+  --token-ring-echo: rgba(8, 5, 2, 0.12);
   --token-face-tint: rgba(10, 72, 38, 0.42);
   --token-accent: rgba(7, 55, 31, 0.58);
 }
 
 .action-arc__button[data-action="medium"] {
   --action-attack-icon-size: 45px;
-  --token-ring: rgba(128, 70, 16, 0.98);
-  --token-ring-echo: rgba(128, 70, 16, 0.3);
+  --token-ring: rgba(48, 25, 10, 0.98);
+  --token-ring-echo: rgba(12, 6, 2, 0.12);
   --token-face-tint: rgba(104, 55, 12, 0.4);
   --token-accent: rgba(76, 38, 8, 0.58);
 }
 
 .action-arc__button[data-action="heavy"] {
   --action-attack-icon-size: 47px;
-  --token-ring: rgba(100, 21, 16, 1);
-  --token-ring-echo: rgba(110, 23, 17, 0.34);
+  --token-ring: rgba(48, 17, 10, 1);
+  --token-ring-echo: rgba(12, 4, 2, 0.14);
   --token-face-tint: rgba(86, 16, 12, 0.46);
   --token-accent: rgba(67, 11, 8, 0.62);
 }
@@ -3549,16 +3552,28 @@ body.debug-active .action-arc__center {
   transform: translate(6px, -3px) rotate(19deg);
 }
 
+.action-arc__image-icon,
 .action-arc__attack-icon {
   display: block;
-  width: var(--action-attack-icon-size);
-  height: var(--action-attack-icon-size);
   object-fit: contain;
   pointer-events: none;
+  user-select: none;
+}
+
+.action-arc__image-icon {
+  width: var(--action-utility-icon-size);
+  height: var(--action-utility-icon-size);
+  filter: brightness(var(--action-utility-icon-brightness)) drop-shadow(1px 2px 0 rgba(11, 3, 1, 0.42));
+  transform: translateY(var(--action-utility-icon-y));
+  transform-origin: center;
+}
+
+.action-arc__attack-icon {
+  width: var(--action-attack-icon-size);
+  height: var(--action-attack-icon-size);
   filter: brightness(var(--action-attack-icon-brightness)) drop-shadow(1px 2px 0 rgba(11, 3, 1, 0.46));
   transform: translateY(-1px) rotate(var(--action-attack-icon-rotation)) scale(var(--action-attack-icon-scale));
   transform-origin: center;
-  user-select: none;
 }
 
 .classic-action-bar .action-arc__button {

@@ -20,10 +20,15 @@ test("debug action arc exposes a visible center marker", () => {
   assert.equal(actionArcSource.includes('className = "action-arc__center"'), true);
   assert.equal(stylesSource.includes('body.debug-active .action-arc__center'), true);
 });
-test("action arc renders emoji icons with action-specific colors", () => {
+test("action arc renders image icons with action-specific colors", () => {
   assert.equal(actionArcSource.includes("ACTION_ICONS"), true);
+  assert.equal(actionArcSource.includes("ACTION_UTILITY_ICON_URLS"), true);
   assert.equal(actionArcSource.includes('className = "action-arc__icon"'), true);
-  assert.equal(actionArcSource.includes("LUNGE_ICON_LAYERS"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/move-forward.webp"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/lunge.webp"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/taunt.webp"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/rest.webp"), true);
+  assert.equal(actionArcSource.includes('className = attackIconUrl ? "action-arc__attack-icon" : "action-arc__image-icon"'), true);
   assert.equal(stylesSource.includes('.action-arc__button[data-action="taunt"]'), true);
   assert.equal(stylesSource.includes('.action-arc__button[data-action="back"] .action-arc__icon'), true);
   assert.equal(stylesSource.includes('linear-gradient(180deg, #4ebfff'), true);
@@ -34,10 +39,10 @@ test("action arc buttons render icon-only content", () => {
   assert.equal(actionArcSource.includes('button.setAttribute("aria-label"'), true);
   assert.equal(stylesSource.includes(".action-arc__button > span:not(.action-arc__icon)"), true);
 });
-test("lunge icon is layered and button gradients avoid the old glare spot", () => {
+test("lunge icon uses a supplied image and button gradients avoid the old glare spot", () => {
   assert.equal(actionArcSource.includes("renderActionIcon"), true);
-  assert.equal(actionArcSource.includes("action-arc__icon-layer--bolt"), true);
-  assert.equal(actionArcSource.includes("action-arc__icon-layer--sword"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/lunge.webp"), true);
+  assert.equal(stylesSource.includes(".action-arc__image-icon"), true);
   assert.equal(stylesSource.includes("Icon-first action buttons: softer volume"), true);
   assert.equal(stylesSource.includes("font-size: 1.82rem"), true);
 });
@@ -46,6 +51,8 @@ test("leather token buttons keep icons inside a stable centered layer", () => {
   assert.equal(stylesSource.includes("Leather token action buttons"), true);
   assert.equal(stylesSource.includes("--token-ring"), true);
   assert.equal(stylesSource.includes("--token-ring-width"), true);
+  assert.equal(stylesSource.includes("--token-rim-top: #4a2710"), true);
+  assert.equal(stylesSource.includes("border: 4px solid var(--token-edge)"), true);
   assert.equal(stylesSource.includes("--token-face-inset"), true);
   assert.equal(stylesSource.includes("--action-attack-icon-rotation"), true);
   assert.equal(stylesSource.includes("--action-attack-icon-brightness"), true);
@@ -124,8 +131,7 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
   assert.equal(stylesSource.includes("top: var(--classic-wheel-top-bleed)"), true);
   assert.equal(stylesSource.includes("width: 58px"), true);
   assert.equal(stylesSource.includes("border-radius: 50%"), true);
-  assert.equal(stylesSource.includes("border-top-color: rgba(230, 170, 72, 0.96)"), true);
-  assert.equal(stylesSource.includes("inset 0 0 0 2px rgba(255, 221, 123, 0.38)"), true);
+  assert.equal(stylesSource.includes('url("./assets/ui/classic-wheel/classic-wheel-skin.webp")'), true);
   assert.equal(stylesSource.includes("rotate(var(--classic-wheel-angle))"), true);
   assert.equal(stylesSource.includes(".classic-action-bar--turning .classic-action-bar__button"), true);
   assert.equal(stylesSource.includes(".classic-action-bar__button--visible"), true);
@@ -155,11 +161,21 @@ test("attack actions render carved tally marks inside the token", () => {
   assert.equal(actionArcSource.includes("./assets/ui/action-icons/attack-light.webp"), true);
   assert.equal(actionArcSource.includes("./assets/ui/action-icons/attack-medium.webp"), true);
   assert.equal(actionArcSource.includes("./assets/ui/action-icons/attack-heavy.webp"), true);
-  assert.equal(actionArcSource.includes('className = "action-arc__attack-icon"'), true);
+  assert.equal(actionArcSource.includes('"action-arc__attack-icon"'), true);
   assert.equal(actionArcSource.includes("document.createElement(\"img\")"), true);
   assert.equal(actionArcSource.includes('button.classList.toggle("action-arc__button--attack-token"'), true);
   assert.equal(stylesSource.includes(".action-arc__attack-icon"), true);
   assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/attack-light.webp")), true);
   assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/attack-medium.webp")), true);
   assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/attack-heavy.webp")), true);
+});
+
+test("utility actions render supplied image icons", () => {
+  assert.equal(actionArcSource.includes("ACTION_UTILITY_ICON_URLS"), true);
+  assert.equal(actionArcSource.includes("back: new URL(\"./assets/ui/action-icons/move-forward.webp\""), true);
+  assert.equal(stylesSource.includes(".action-arc__image-icon"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/move-forward.webp")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/lunge.webp")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/taunt.webp")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/rest.webp")), true);
 });

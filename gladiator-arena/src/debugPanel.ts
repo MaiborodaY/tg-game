@@ -205,6 +205,14 @@ const controlGroups: DebugControlGroup[] = [
     ],
   },
   {
+    title: "Camera framing",
+    controls: [
+      { type: "range", key: "cameraFeetScreenY", label: "Feet Y", min: 260, max: 720, step: 1, resetValue: defaultDebugTuning.cameraFeetScreenY },
+      { type: "range", key: "cameraCloseFeetShiftY", label: "Close shift", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.cameraCloseFeetShiftY },
+      { type: "range", key: "cameraFeetMinScreenRatio", label: "Min ratio", min: 0.35, max: 0.75, step: 0.01, resetValue: defaultDebugTuning.cameraFeetMinScreenRatio },
+    ],
+  },
+  {
     title: "Fighter shadow",
     controls: [
       { type: "range", key: "shadowOffsetX", label: "Shadow X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetX },
