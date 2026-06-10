@@ -9,6 +9,7 @@ const indexHtml = readFileSync(resolve(currentDir, "../index.html"), "utf8");
 const debugHtml = readFileSync(resolve(currentDir, "../debug.html"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const debugMainSource = readFileSync(resolve(currentDir, "../src/debugMain.ts"), "utf8");
+const settingsMenuSource = readFileSync(resolve(currentDir, "../src/settingsMenu.ts"), "utf8");
 
 test("regular game does not mount debug controls", () => {
   assert.equal(indexHtml.includes("debugPanelHost"), false);
@@ -36,6 +37,25 @@ test("debug preview uses the same flask resource HUD as the game", () => {
   assert.equal(debugHtml.includes('class="resource-flask flask--hp"'), true);
   assert.equal(debugHtml.includes('class="resource-flask flask--armor"'), true);
   assert.equal(debugHtml.includes('class="resource-flask flask--stamina"'), true);
+});
+
+test("regular arena exposes switchable classic HUD markup", () => {
+  assert.equal(indexHtml.includes('data-setting-hud-mode'), true);
+  assert.equal(indexHtml.includes('value="immersive"'), true);
+  assert.equal(indexHtml.includes('value="classic"'), true);
+  assert.equal(indexHtml.includes('class="classic-combat-hud"'), true);
+  assert.equal(indexHtml.includes('data-classic-action-bar'), true);
+  assert.equal(indexHtml.includes('id="classicPlayerHpFill"'), true);
+  assert.equal(indexHtml.includes('id="classicEnemyStaText"'), true);
+  assert.equal(mainSource.includes("mountClassicActionBar"), true);
+});
+
+test("settings can persist the arena HUD mode", () => {
+  assert.equal(settingsMenuSource.includes('export type PlayerHudMode = "immersive" | "classic"'), true);
+  assert.equal(settingsMenuSource.includes('hudMode: "immersive"'), true);
+  assert.equal(settingsMenuSource.includes("data-setting-hud-mode"), true);
+  assert.equal(settingsMenuSource.includes("arena-hud-classic"), true);
+  assert.equal(settingsMenuSource.includes("isPlayerHudMode"), true);
 });
 
 test("arena turn flow waits for action animations instead of hardcoded enemy delay", () => {

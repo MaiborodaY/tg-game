@@ -10,6 +10,7 @@ import {
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
@@ -43,6 +44,7 @@ let hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
+let classicActionBar: ClassicActionBarApi | undefined;
 let turnSequenceToken = 0;
 let isTurnAnimationLocked = false;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
@@ -111,7 +113,10 @@ function syncTurnProbe(): void {
 }
 
 function syncActionArc(): void {
-  actionArc?.sync(isTurnAnimationLocked ? { ...state, activeTurn: "enemy" } : state);
+  const visibleState = isTurnAnimationLocked ? { ...state, activeTurn: "enemy" as const } : state;
+
+  actionArc?.sync(visibleState);
+  classicActionBar?.sync(visibleState);
 }
 
 function setTurnAnimationLocked(locked: boolean): void {
@@ -286,6 +291,7 @@ function startGame(): void {
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
+  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   restart({ syncArena: false });

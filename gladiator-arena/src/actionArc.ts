@@ -26,6 +26,7 @@ import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
+export type ActionTokenTuning = StageLayoutTuning;
 type TuningProvider = () => StageLayoutTuning;
 
 interface ScreenOffset {
@@ -141,6 +142,31 @@ function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId
 
   icon.textContent = ACTION_ICONS[actionId];
 }
+
+export function syncActionTokenButton(
+  button: HTMLButtonElement,
+  icon: HTMLElement,
+  actionId: ActionId,
+  tuning: ActionTokenTuning,
+  buttonScale: number,
+): void {
+  const attackIconStyle = getAttackIconStyleTuning(actionId, tuning);
+
+  button.style.setProperty("--action-button-scale", `${buttonScale}`);
+  button.style.setProperty("--action-icon-scale", `${tuning?.actionIconScale ?? DEFAULT_ACTION_ICON_SCALE}`);
+  button.style.setProperty("--action-attack-icon-scale", `${attackIconStyle.scale}`);
+  button.style.setProperty("--action-attack-icon-rotation", `${attackIconStyle.rotation}deg`);
+  button.style.setProperty("--action-attack-icon-brightness", `${attackIconStyle.brightness}`);
+  button.style.setProperty("--token-ring-width", `${tuning?.actionTokenRingWidth ?? DEFAULT_ACTION_TOKEN_RING_WIDTH}px`);
+  button.style.setProperty("--token-face-inset", `${tuning?.actionTokenFaceInset ?? DEFAULT_ACTION_TOKEN_FACE_INSET}px`);
+  button.style.setProperty("--token-rim-shine-opacity", `${tuning?.actionTokenRimShine ?? DEFAULT_ACTION_TOKEN_RIM_SHINE}`);
+  button.style.setProperty("--token-outer-shine-opacity", `${tuning?.actionTokenOuterShine ?? DEFAULT_ACTION_TOKEN_OUTER_SHINE}`);
+  button.style.setProperty("--token-face-shine-opacity", `${tuning?.actionTokenFaceShine ?? DEFAULT_ACTION_TOKEN_FACE_SHINE}`);
+  button.style.setProperty("--token-inner-shine-opacity", `${tuning?.actionTokenInnerShine ?? DEFAULT_ACTION_TOKEN_INNER_SHINE}`);
+  button.style.setProperty("--token-stripe-shine-opacity", `${tuning?.actionTokenStripeShine ?? DEFAULT_ACTION_TOKEN_STRIPE_SHINE}`);
+  renderActionIcon(button, icon, actionId);
+}
+
 export interface ActionArcApi {
   sync: (state: CombatState) => void;
   destroy: () => void;
@@ -234,20 +260,7 @@ export function mountActionArc(
       button.disabled = !editMode && !canUseAction(state, actionId, "player");
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
-      const attackIconStyle = getAttackIconStyleTuning(actionId, tuning);
-
-      button.style.setProperty("--action-button-scale", `${buttonLayout.scale}`);
-      button.style.setProperty("--action-icon-scale", `${tuning?.actionIconScale ?? DEFAULT_ACTION_ICON_SCALE}`);
-      button.style.setProperty("--action-attack-icon-scale", `${attackIconStyle.scale}`);
-      button.style.setProperty("--action-attack-icon-rotation", `${attackIconStyle.rotation}deg`);
-      button.style.setProperty("--action-attack-icon-brightness", `${attackIconStyle.brightness}`);
-      button.style.setProperty("--token-ring-width", `${tuning?.actionTokenRingWidth ?? DEFAULT_ACTION_TOKEN_RING_WIDTH}px`);
-      button.style.setProperty("--token-face-inset", `${tuning?.actionTokenFaceInset ?? DEFAULT_ACTION_TOKEN_FACE_INSET}px`);
-      button.style.setProperty("--token-rim-shine-opacity", `${tuning?.actionTokenRimShine ?? DEFAULT_ACTION_TOKEN_RIM_SHINE}`);
-      button.style.setProperty("--token-outer-shine-opacity", `${tuning?.actionTokenOuterShine ?? DEFAULT_ACTION_TOKEN_OUTER_SHINE}`);
-      button.style.setProperty("--token-face-shine-opacity", `${tuning?.actionTokenFaceShine ?? DEFAULT_ACTION_TOKEN_FACE_SHINE}`);
-      button.style.setProperty("--token-inner-shine-opacity", `${tuning?.actionTokenInnerShine ?? DEFAULT_ACTION_TOKEN_INNER_SHINE}`);
-      button.style.setProperty("--token-stripe-shine-opacity", `${tuning?.actionTokenStripeShine ?? DEFAULT_ACTION_TOKEN_STRIPE_SHINE}`);
+      syncActionTokenButton(button, icon, actionId, tuning, buttonLayout.scale);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
       button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
       button.title = `${buttonLayout.label} ${buttonLayout.detail} angle ${Math.round(buttonLayout.angle)} deg`;

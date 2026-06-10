@@ -1,11 +1,13 @@
 export type PlayerAnimationMode = "normal" | "half" | "off";
 export type PlayerShadowMode = "high" | "low" | "off";
+export type PlayerHudMode = "immersive" | "classic";
 
 export interface PlayerSettings {
   lowEffects: boolean;
   animationMode: PlayerAnimationMode;
   vfxEnabled: boolean;
   shadowMode: PlayerShadowMode;
+  hudMode: PlayerHudMode;
   showFps: boolean;
 }
 
@@ -17,6 +19,7 @@ const defaultSettings: PlayerSettings = {
   animationMode: "normal",
   vfxEnabled: true,
   shadowMode: "high",
+  hudMode: "immersive",
   showFps: false,
 };
 let cachedSettings: PlayerSettings | undefined;
@@ -35,8 +38,20 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   const fpsCounter = root.querySelector<HTMLElement>("[data-fps-counter]");
   const animationInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-animation]"));
   const shadowModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-shadow-mode]"));
+  const hudModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-hud-mode]"));
 
-  if (!menu || !button || !panel || !lowEffects || !vfx || !fps || !fpsCounter || animationInputs.length === 0 || shadowModeInputs.length === 0) {
+  if (
+    !menu ||
+    !button ||
+    !panel ||
+    !lowEffects ||
+    !vfx ||
+    !fps ||
+    !fpsCounter ||
+    animationInputs.length === 0 ||
+    shadowModeInputs.length === 0 ||
+    hudModeInputs.length === 0
+  ) {
     return;
   }
 
@@ -46,6 +61,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   fps.checked = settings.showFps;
   syncAnimationInputs(animationInputs, settings.animationMode);
   syncShadowModeInputs(shadowModeInputs, settings.shadowMode);
+  syncHudModeInputs(hudModeInputs, settings.hudMode);
   applySettings(settings);
   syncFpsCounter(fpsCounter, settings.showFps);
 
@@ -92,6 +108,16 @@ export function mountSettingsMenu(root: ParentNode = document): void {
     });
   });
 
+  hudModeInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      if (!input.checked || !isPlayerHudMode(input.value)) {
+        return;
+      }
+
+      updateSettings({ hudMode: input.value });
+    });
+  });
+
   document.addEventListener("pointerdown", (event) => {
     if (panel.hidden || !(event.target instanceof Node) || menu.contains(event.target)) {
       return;
@@ -126,6 +152,8 @@ function setMenuOpen(button: HTMLButtonElement, panel: HTMLElement, open: boolea
 
 function applySettings(settings: PlayerSettings): void {
   document.body.classList.toggle("arena-low-effects", settings.lowEffects);
+  document.body.classList.toggle("arena-hud-classic", settings.hudMode === "classic");
+  document.body.classList.toggle("arena-hud-immersive", settings.hudMode === "immersive");
 }
 
 function updateSettings(patch: Partial<PlayerSettings>): void {
@@ -162,6 +190,7 @@ function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
     animationMode: isPlayerAnimationMode(input.animationMode) ? input.animationMode : defaultSettings.animationMode,
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
     shadowMode: normalizeShadowMode(input),
+    hudMode: isPlayerHudMode(input.hudMode) ? input.hudMode : defaultSettings.hudMode,
     showFps: typeof input.showFps === "boolean" ? input.showFps : defaultSettings.showFps,
   };
 }
@@ -178,12 +207,22 @@ function syncShadowModeInputs(inputs: HTMLInputElement[], mode: PlayerShadowMode
   });
 }
 
+function syncHudModeInputs(inputs: HTMLInputElement[], mode: PlayerHudMode): void {
+  inputs.forEach((input) => {
+    input.checked = input.value === mode;
+  });
+}
+
 function isPlayerAnimationMode(value: unknown): value is PlayerAnimationMode {
   return value === "normal" || value === "half" || value === "off";
 }
 
 function isPlayerShadowMode(value: unknown): value is PlayerShadowMode {
   return value === "high" || value === "low" || value === "off";
+}
+
+function isPlayerHudMode(value: unknown): value is PlayerHudMode {
+  return value === "immersive" || value === "classic";
 }
 
 function normalizeShadowMode(input: Partial<PlayerSettings> & { shadowsEnabled?: boolean }): PlayerShadowMode {

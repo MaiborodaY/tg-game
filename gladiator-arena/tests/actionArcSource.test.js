@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const actionArcSource = readFileSync(resolve(currentDir, "../src/actionArc.ts"), "utf8");
+const classicActionBarSource = readFileSync(resolve(currentDir, "../src/classicActionBar.ts"), "utf8");
 const debugTuningSource = readFileSync(resolve(currentDir, "../src/debugTuning.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -64,6 +65,7 @@ test("leather token buttons keep icons inside a stable centered layer", () => {
 });
 
 test("debug tuning can scale token icons independently from the button", () => {
+  assert.equal(actionArcSource.includes("export function syncActionTokenButton"), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-button-scale"'), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-icon-scale"'), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-attack-icon-scale"'), true);
@@ -73,6 +75,16 @@ test("debug tuning can scale token icons independently from the button", () => {
   assert.equal(stylesSource.includes("scale(var(--action-icon-scale))"), true);
   assert.equal(stylesSource.includes("rotate(var(--action-attack-icon-rotation)) scale(var(--action-attack-icon-scale))"), true);
   assert.equal(stylesSource.includes("brightness(var(--action-attack-icon-brightness))"), true);
+});
+
+test("classic action bar reuses leather token rendering", () => {
+  assert.equal(classicActionBarSource.includes("mountClassicActionBar"), true);
+  assert.equal(classicActionBarSource.includes("syncActionTokenButton"), true);
+  assert.equal(classicActionBarSource.includes("data-classic-action-bar"), true);
+  assert.equal(classicActionBarSource.includes("arena-action-click"), true);
+  assert.equal(classicActionBarSource.includes("canUseAction"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar .action-arc__button"), true);
+  assert.equal(stylesSource.includes("body.arena-hud-classic .classic-action-bar"), true);
 });
 
 test("debug tuning can tune leather token fine details", () => {
