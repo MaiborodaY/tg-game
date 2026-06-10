@@ -313,13 +313,13 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
   }),
   clinch: createClassicActionButtonSlots({
     forward: { x: 0, y: 26, rotation: 0 },
-    back: { x: -70, y: -90, rotation: -12 },
+    back: { x: -70, y: -120, rotation: -12 },
     lunge: { x: 0, y: 18, rotation: 0 },
     light: { x: -70, y: -165, rotation: 0 },
     medium: { x: 0, y: -180, rotation: 0 },
     heavy: { x: 70, y: -165, rotation: 0 },
-    taunt: { x: 70, y: -90, rotation: 0 },
-    rest: { x: 0, y: -90, rotation: 12 },
+    taunt: { x: 70, y: -120, rotation: 0 },
+    rest: { x: 0, y: -120, rotation: 12 },
   }),
   bowDistance: createClassicActionButtonSlots({
     forward: { x: -40, y: -52, rotation: -6 },
@@ -698,7 +698,7 @@ export const DEFAULT_MEDIUM_ANIMATION: BodyAnimationTuning = {
   },
 };
 export const DEFAULT_HEAVY_ANIMATION: BodyAnimationTuning = {
-  enabled: false,
+  enabled: true,
   duration: 860,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },

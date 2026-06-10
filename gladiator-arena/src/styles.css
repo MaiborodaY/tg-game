@@ -482,7 +482,7 @@ h1 {
   position: absolute;
   left: calc(50% + var(--classic-hud-offset-x, 0px));
   right: auto;
-  bottom: max(-54px, calc(env(safe-area-inset-bottom) - 52px + var(--classic-hud-offset-y, 0px)));
+  bottom: max(-200px, calc(env(safe-area-inset-bottom) - 52px + var(--classic-hud-offset-y, 0px)));
   z-index: 7;
   width: var(--classic-wheel-diameter);
   height: calc(var(--classic-wheel-radius) + var(--classic-wheel-top-bleed));
