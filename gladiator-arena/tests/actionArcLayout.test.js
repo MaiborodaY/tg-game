@@ -82,6 +82,19 @@ test("clinch arc swaps approach controls for attacks", () => {
   );
 });
 
+test("bow distance arc shows ranged attacks instead of lunge", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, weaponClass: "bow" } }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["back", "heavy", "medium", "light", "taunt"],
+  );
+  assert.equal(labels.light, "SHOT");
+  assert.equal(labels.medium, "AIM");
+  assert.equal(labels.heavy, "POWER");
+});
+
 test("arc button centers stay inside the mobile game frame", () => {
   const layout = actionArcLayout.getActionArcLayout(makeState(3, { playerX: 10, playerY: 520 }));
 

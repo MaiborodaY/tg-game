@@ -278,6 +278,20 @@ export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
 export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "cloth_breastplate_01": { x: 0, y: 47, angle: 0, scaleX: 1.26, scaleY: 1.53, flipX: false, flipY: false },
   "auto_equipment_helmet_cloth_01": { x: -1, y: 21, angle: 0, scaleX: 1.12, scaleY: 1.12, flipX: false, flipY: false },
+  "auto_equipment_front_glove_chainmail_03": { x: -3, y: 9, angle: 5, scaleX: 0.75, scaleY: 0.9, flipX: false, flipY: false },
+  "auto_equipment_breastplate_chainmail_01": { x: 0, y: 43, angle: 0, scaleX: 1.16, scaleY: 1.55, flipX: false, flipY: false },
+  "auto_equipment_helmet_chainmail_01": { x: -1, y: 47, angle: 0, scaleX: 1.25, scaleY: 1.36, flipX: false, flipY: false },
+  "auto_equipment_front_shoulderguard_01": { x: 7, y: 36, angle: 11, scaleX: 3, scaleY: 1.87, flipX: false, flipY: false },
+  "auto_equipment_front_shoulderguard_cloth_light_01": { x: -3, y: 22, angle: -5, scaleX: 2.24, scaleY: 1.84, flipX: true, flipY: false },
+  "auto_equipment_front_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
+  "generated_equipment_front_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
+  "auto_equipment_back_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
+  "generated_equipment_back_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
+  "auto_equipment_front_glove_cloth_01": { x: 0, y: 13, angle: 0, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
+  "auto_equipment_back_glove_cloth_01": { x: 0, y: 13, angle: 0, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
+  "auto_equipment_helmet_cloth_02": { x: -1, y: 25, angle: 0, scaleX: 1.07, scaleY: 1.13, flipX: false, flipY: false },
+  "auto_equipment_weapon_axe_01": { x: -9, y: 13, angle: 110, scaleX: 1.25, scaleY: 1.51, flipX: false, flipY: false },
+  "training_sword": { x: 3, y: 35, angle: 55, scaleX: 0.5, scaleY: 0.5, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

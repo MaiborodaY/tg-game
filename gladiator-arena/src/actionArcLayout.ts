@@ -64,6 +64,14 @@ const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "utility" },
 ];
 
+const BOW_DISTANCE_SLOTS: ActionArcSlot[] = [
+  { actionId: "back" },
+  { actionId: "heavy" },
+  { actionId: "medium" },
+  { actionId: "light" },
+  { actionId: "utility" },
+];
+
 const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "back" },
   { actionId: "heavy" },
@@ -82,6 +90,12 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
+
+const BOW_ACTION_LABELS = {
+  light: { label: "SHOT", detail: "Quick" },
+  medium: { label: "AIM", detail: "Aimed" },
+  heavy: { label: "POWER", detail: "Shot" },
+} satisfies Partial<Record<ActionId, { label: string; detail: string }>>;
 
 function getSlotActionId(slot: ActionArcSlot, state: CombatState): ActionId {
   if (slot.actionId !== "utility") {
@@ -132,7 +146,7 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   const minY = ACTION_ARC_MIN_Y;
   const safeBottom = getFiniteNumber(actionViewport.safeBottom, actionViewport.height);
   const maxY = Math.max(minY, Math.min(actionViewport.height - (GAME_HEIGHT - ACTION_ARC_MAX_Y), safeBottom - buttonEdge));
-  const slots = state.activeTurn === "player" && state.result === "playing" ? (state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS) : [];
+  const slots = state.activeTurn === "player" && state.result === "playing" ? getActionArcSlots(state) : [];
   const playerButtons = getRawActionArcButtons(
     slots,
     state,
@@ -176,6 +190,14 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
   };
 }
 
+function getActionArcSlots(state: CombatState): ActionArcSlot[] {
+  if (state.distance > MELEE_RANGE && state.player.weaponClass === "bow") {
+    return BOW_DISTANCE_SLOTS;
+  }
+
+  return state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS;
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -194,7 +216,7 @@ function getRawActionArcButtons(
     const actionId = getSlotActionId(slot, state);
     const angle = getActionAngle(actionId, tuning) + actionArcRotation;
     const radians = (angle * Math.PI) / 180;
-    const label = ACTION_LABELS[actionId];
+    const label = getActionLabel(actionId, state);
     const offset = tuning?.actionButtonOffsets?.[actionId] ?? { x: 0, y: 0 };
     const rawX = centerX + Math.cos(radians) * radius + offset.x;
     const rawY = centerY + Math.sin(radians) * radius + offset.y;
@@ -211,6 +233,14 @@ function getRawActionArcButtons(
       angle,
     };
   });
+}
+
+function getActionLabel(actionId: ActionId, state: CombatState): { label: string; detail: string } {
+  if (state.player.weaponClass === "bow") {
+    return BOW_ACTION_LABELS[actionId] ?? ACTION_LABELS[actionId];
+  }
+
+  return ACTION_LABELS[actionId];
 }
 
 function getGroupShift(values: number[], minBound: number, maxBound: number): number {

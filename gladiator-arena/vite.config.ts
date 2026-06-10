@@ -238,6 +238,7 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  weaponClass?: "sword" | "axe" | "bow";
   assetKeys: Record<string, string>;
   equipmentTuning: RigPartTuning;
   asset: {
@@ -700,6 +701,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   const armorHp = kind === "armor" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.armorHp, "armorHp")))) : undefined;
   const damageBonus =
     kind === "weapon" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.damageBonus, "damageBonus")))) : undefined;
+  const weaponClass = kind === "weapon" ? readWeaponClass(item.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
   const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(promotion.price, "price"))));
   const addToShop = promotion.addToShop === true;
   const categoryId = getArmoryCategoryId(equipmentSlot);
@@ -725,6 +727,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
     ...(armorCategory ? { armorCategory } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
+    ...(weaponClass ? { weaponClass } : {}),
     equipmentSlot,
     assetKeys,
     equipmentTuning,
@@ -751,7 +754,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
             name,
             price,
             itemIds: [id],
-            categoryId: getWeaponCategoryId(assetKey, name),
+            categoryId: getWeaponCategoryId(assetKey, name, weaponClass),
           },
         }
       : {}),
@@ -968,6 +971,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     equipmentSlot: record.equipmentSlot,
     ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
     ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
+    ...(record.weaponClass ? { weaponClass: record.weaponClass } : {}),
   };
 
   return [
@@ -1010,6 +1014,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
       ? readAssetSourcePath(asset.lowSourcePath, getEquipmentAssetLowSourcePrefix(kind), "generated equipment asset.lowSourcePath")
       : undefined;
   const armorCategory = kind === "armor" ? readArmorCategory(record.armorCategory) : undefined;
+  const weaponClass = kind === "weapon" ? readWeaponClass(record.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
 
   validateGeneratedEquipmentSlot(kind, equipmentSlot);
 
@@ -1020,6 +1025,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(armorCategory ? { armorCategory } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
+    ...(weaponClass ? { weaponClass } : {}),
     equipmentSlot,
     assetKeys,
     equipmentTuning,
@@ -1485,6 +1491,21 @@ function readArmorCategory(value: unknown): GeneratedEquipmentJsonRecord["armorC
   throw new Error("Invalid armor category.");
 }
 
+function readWeaponClass(
+  value: unknown,
+  fallback: NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]> = "sword",
+): NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]> {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (value === "sword" || value === "axe" || value === "bow") {
+    return value;
+  }
+
+  throw new Error("Invalid weapon class.");
+}
+
 function readAssetSourcePath(value: unknown, expectedPrefix: string, label: string, allowedExtensions = [".webp"]): string {
   const sourcePath = readNonEmptyString(value, label).replace(/\\/g, "/").replace(/^\.\//, "");
   const hasAllowedExtension = allowedExtensions.some((extension) => sourcePath.endsWith(extension));
@@ -1558,18 +1579,30 @@ function getArmoryCategoryId(slotKey: EquipmentSlotKey): string | undefined {
   return undefined;
 }
 
-function getWeaponCategoryId(assetKey: string, name: string): string {
-  const haystack = `${assetKey} ${name}`.toLowerCase();
-
-  if (haystack.includes("axe")) {
+function getWeaponCategoryId(assetKey: string, name: string, weaponClass = getWeaponClassFromText(`${assetKey} ${name}`)): string {
+  if (weaponClass === "axe") {
     return "axes";
   }
 
-  if (haystack.includes("bow")) {
+  if (weaponClass === "bow") {
     return "bows";
   }
 
   return "swords";
+}
+
+function getWeaponClassFromText(value: string): NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]> {
+  const text = value.toLowerCase();
+
+  if (text.includes("bow")) {
+    return "bow";
+  }
+
+  if (text.includes("axe")) {
+    return "axe";
+  }
+
+  return "sword";
 }
 
 function toIdentifier(value: string): string {

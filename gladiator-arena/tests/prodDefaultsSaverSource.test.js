@@ -96,6 +96,9 @@ test("vite dev middleware can promote weapon equipment into the weapon shop", ()
   const weaponShopSource = readFileSync(join(root, "src", "weaponShopUi.ts"), "utf8");
 
   assert.match(source, /damageBonus/);
+  assert.match(source, /weaponClass/);
+  assert.match(source, /readWeaponClass/);
+  assert.match(source, /getWeaponClassFromText/);
   assert.match(source, /getEquipmentAssetSourcePrefix\(kind\)/);
   assert.match(source, /assets\/fighters\/weapons\//);
   assert.match(source, /weaponProduct/);

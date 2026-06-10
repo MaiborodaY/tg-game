@@ -1,6 +1,8 @@
 import { freshState, MAX_HP, MAX_STAMINA, type CombatState } from "./combat";
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS } from "./generated/equipmentItems.generated";
 
+export type HeroWeaponClass = "sword" | "axe" | "bow";
+
 export interface HeroState {
   id: string;
   name: string;
@@ -57,6 +59,7 @@ export interface HeroItemDefinition {
   id: HeroItemId;
   name: string;
   kind: "weapon" | "armor";
+  weaponClass?: HeroWeaponClass;
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
@@ -154,6 +157,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: TRAINING_WEAPON_ID,
     name: "Training Sword",
     kind: "weapon",
+    weaponClass: "sword",
     equipmentSlot: "weaponMain",
     damageBonus: TRAINING_WEAPON_DAMAGE_BONUS,
   },
@@ -414,11 +418,42 @@ export function getHeroEquipmentDamageBonus(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((damageBonus, item) => damageBonus + (item.damageBonus ?? 0), 0);
 }
 
+export function getHeroEquipmentWeaponClass(equipment: HeroEquipment): HeroWeaponClass {
+  const weaponItemId = equipment.weaponMain;
+  const weaponItem = weaponItemId ? HERO_ITEM_CATALOG[weaponItemId] : undefined;
+
+  return getHeroItemWeaponClass(weaponItem);
+}
+
+export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): HeroWeaponClass {
+  if (!item || item.kind !== "weapon") {
+    return "sword";
+  }
+
+  if (item.weaponClass) {
+    return item.weaponClass;
+  }
+
+  const haystack = `${item.id} ${item.name}`.toLowerCase();
+
+  if (haystack.includes("bow")) {
+    return "bow";
+  }
+
+  if (haystack.includes("axe")) {
+    return "axe";
+  }
+
+  return "sword";
+}
+
 export function createCombatStateFromHero(hero: HeroState): CombatState {
   const stats = deriveHeroStats(hero);
   const enemyLoadout = createRandomEnemyLoadout();
   const enemyArmor = getHeroEquipmentArmor(enemyLoadout.equipment);
   const enemyDamageBonus = getHeroEquipmentDamageBonus(enemyLoadout.equipment);
+  const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
+  const enemyWeaponClass = getHeroEquipmentWeaponClass(enemyLoadout.equipment);
   const state = freshState();
 
   return {
@@ -433,6 +468,7 @@ export function createCombatStateFromHero(hero: HeroState): CombatState {
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
       damageBonus: stats.damageBonus,
+      weaponClass: playerWeaponClass,
       equipment: { ...hero.equipment },
     },
     enemy: {
@@ -440,6 +476,7 @@ export function createCombatStateFromHero(hero: HeroState): CombatState {
       armor: enemyArmor,
       maxArmor: enemyArmor,
       damageBonus: enemyDamageBonus,
+      weaponClass: enemyWeaponClass,
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },
     },

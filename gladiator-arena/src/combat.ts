@@ -1,4 +1,4 @@
-import type { EnemyVisualPreset, HeroEquipment } from "./hero";
+import type { EnemyVisualPreset, HeroEquipment, HeroWeaponClass } from "./hero";
 
 export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "taunt" | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
@@ -34,6 +34,7 @@ export interface FighterState {
   stamina: number;
   maxStamina: number;
   damageBonus: number;
+  weaponClass?: HeroWeaponClass;
   equipment?: HeroEquipment;
   visualPreset?: EnemyVisualPreset;
 }
@@ -193,6 +194,7 @@ export function freshState(): CombatState {
       stamina: MAX_STAMINA,
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
+      weaponClass: "sword",
     },
     enemy: {
       name: "Grumbus",
@@ -203,6 +205,7 @@ export function freshState(): CombatState {
       stamina: MAX_STAMINA,
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
+      weaponClass: "sword",
     },
     round: 1,
     score: 0,
@@ -236,8 +239,37 @@ export function getFighterMaxStamina(fighter: FighterState): number {
   return Math.max(1, fighter.maxStamina);
 }
 
-export function getActionBlockChance(action: ActionConfig, _attacker?: FighterState, _defender?: FighterState): number {
+export function getActionBlockChance(action: ActionConfig, attacker?: FighterState, defender?: FighterState): number {
+  void attacker;
+  void defender;
+
   return clamp(action.blockChance ?? 0, 0, 0.95);
+}
+
+export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
+  return fighter.weaponClass ?? "sword";
+}
+
+export function isBowFighter(fighter: FighterState): boolean {
+  return getFighterWeaponClass(fighter) === "bow";
+}
+
+export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
+  if (actor && isBowFighter(actor)) {
+    if (actionId === "light") {
+      return "Quick Shot";
+    }
+
+    if (actionId === "medium") {
+      return "Aimed Shot";
+    }
+
+    if (actionId === "heavy") {
+      return "Power Shot";
+    }
+  }
+
+  return actions[actionId].title;
 }
 
 export function availableActionIds(state: CombatState, actor: TurnOwner): ActionId[] {
@@ -258,6 +290,8 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   const action = actions[actionId];
+  const fighter = actor === "player" ? state.player : state.enemy;
+  const actionRangeMax = getActionRangeMax(action, fighter);
 
   if (actionId === "forward") {
     return state.distance > MIN_DISTANCE;
@@ -268,11 +302,15 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionId === "lunge") {
+    if (isBowFighter(fighter)) {
+      return false;
+    }
+
     return state.distance > MELEE_RANGE;
   }
 
-  if (action.rangeMax !== undefined) {
-    return state.distance <= action.rangeMax;
+  if (actionRangeMax !== undefined) {
+    return state.distance <= actionRangeMax;
   }
 
   return true;
@@ -302,7 +340,7 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
   const state = cloneStateForTurn(current);
 
   if (!canUseAction(state, playerActionId, "player")) {
-    addLog(state, `${actions[playerActionId].title} is not available right now.`);
+    addLog(state, `${getActionTitle(playerActionId, state.player)} is not available right now.`);
     return state;
   }
 
@@ -362,10 +400,25 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyLowStamina = current.enemy.stamina <= 3;
   const enemyLowHp = current.enemy.hp <= 10;
   const playerLowHp = current.player.hp <= 9;
+  const enemyHasBow = isBowFighter(current.enemy);
 
   for (const id of available) {
     if (current.distance > MELEE_RANGE) {
-      if (id === "forward") {
+      if (enemyHasBow) {
+        if (id === "heavy") {
+          weighted.push(id, playerLowHp ? id : "medium");
+        } else if (id === "medium") {
+          weighted.push(id, id);
+        } else if (id === "light") {
+          weighted.push(id, id, id);
+        } else if (id === "back") {
+          weighted.push(current.distance < MAX_DISTANCE ? id : "light");
+        } else if (id === "rest" && enemyLowStamina) {
+          weighted.push(id, id);
+        } else if (id === "taunt" && !enemyLowHp) {
+          weighted.push(id);
+        }
+      } else if (id === "forward") {
         weighted.push(id, id, id);
       } else if (id === "lunge") {
         weighted.push(id, id);
@@ -403,6 +456,8 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   const actorLabel = actor === "player" ? "You" : "Grumbus";
   const defenderLabel = actor === "player" ? "Grumbus" : "you";
   const defenderOwner = actor === "player" ? "enemy" : "player";
+  const actionTitle = getActionTitle(actionId, attacker);
+  const actionRangeMax = getActionRangeMax(action, attacker);
 
   attacker.stamina = clamp(attacker.stamina - action.cost, 0, getFighterMaxStamina(attacker));
 
@@ -423,7 +478,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   }
 
   let damage = action.damage ? action.damage + Math.max(0, attacker.damageBonus ?? 0) : 0;
-  const inRange = action.rangeMax === undefined || state.distance <= action.rangeMax;
+  const inRange = actionRangeMax === undefined || state.distance <= actionRangeMax;
   let blocked = false;
 
   if (damage > 0 && !inRange) {
@@ -459,7 +514,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastEnemyBlocked = blocked;
   }
 
-  addActionLog(state, actorLabel, defenderLabel, action, actionMove, damage, inRange, blocked);
+  addActionLog(state, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked);
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
@@ -494,6 +549,7 @@ function addActionLog(
   actorLabel: string,
   defenderLabel: string,
   action: ActionConfig,
+  actionTitle: string,
   actionMove: number,
   damage: number,
   inRange: boolean,
@@ -502,7 +558,7 @@ function addActionLog(
   if (actionMove && action.damage) {
     addLog(
       state,
-      `${actorLabel} used ${action.title}, rushed to ${distanceLabel(state.distance)}, and ${
+      `${actorLabel} used ${actionTitle}, rushed to ${distanceLabel(state.distance)}, and ${
         blocked ? `${defenderLabel} blocked it` : damage > 0 ? `hit ${defenderLabel} for ${damage}` : "came up short"
       }.`,
       damage >= 4,
@@ -511,14 +567,14 @@ function addActionLog(
   }
 
   if (actionMove) {
-    addLog(state, `${actorLabel} used ${action.title}. Distance is now ${distanceLabel(state.distance)}.`);
+    addLog(state, `${actorLabel} used ${actionTitle}. Distance is now ${distanceLabel(state.distance)}.`);
     return;
   }
 
   if (action.damage) {
     addLog(
       state,
-      `${actorLabel} used ${action.title} and ${
+      `${actorLabel} used ${actionTitle} and ${
         !inRange ? "missed out of range" : blocked ? `${defenderLabel} blocked it` : `hit ${defenderLabel} for ${damage}`
       }.`,
       damage >= 7,
@@ -528,22 +584,30 @@ function addActionLog(
 
   if (action.restore || action.heal) {
     if (action.restore && action.heal) {
-      addLog(state, `${actorLabel} used ${action.title}, restored stamina, and recovered ${action.heal} HP.`);
+      addLog(state, `${actorLabel} used ${actionTitle}, restored stamina, and recovered ${action.heal} HP.`);
       return;
     }
 
     if (action.restore) {
-      addLog(state, `${actorLabel} used ${action.title} and restored stamina.`);
+      addLog(state, `${actorLabel} used ${actionTitle} and restored stamina.`);
       return;
     }
 
-    addLog(state, `${actorLabel} used ${action.title} and recovered ${action.heal} HP.`);
+    addLog(state, `${actorLabel} used ${actionTitle} and recovered ${action.heal} HP.`);
     return;
   }
 
   if (action.glory) {
-    addLog(state, `${actorLabel} used ${action.title}. The crowd loves bad decisions.`);
+    addLog(state, `${actorLabel} used ${actionTitle}. The crowd loves bad decisions.`);
   }
+}
+
+function getActionRangeMax(action: ActionConfig, attacker: FighterState): number | undefined {
+  return isBowFighter(attacker) && isAttackAction(action.id) ? MAX_DISTANCE : action.rangeMax;
+}
+
+function isAttackAction(actionId: ActionId): boolean {
+  return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
 function finishBattle(state: CombatState): void {

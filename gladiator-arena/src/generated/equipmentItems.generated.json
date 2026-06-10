@@ -101,6 +101,40 @@
     }
   },
   {
+    "id": "generated_equipment_breastplate_leather_01",
+    "name": "Leather Breastplate 01",
+    "kind": "armor",
+    "armorCategory": "leather",
+    "armorHp": 2,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-leather-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 30,
+      "angle": 0,
+      "scaleX": 1.17,
+      "scaleY": 1.32,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-leather-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-leather-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_leather_01",
+      "name": "Leather Breastplate 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_leather_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_chainmail_03",
     "name": "Chainmail front Glove",
     "kind": "armor",
@@ -202,39 +236,6 @@
     }
   },
   {
-    "id": "generated_equipment_helmet_chainmail_01",
-    "name": "Chainmail Helmet 01",
-    "kind": "armor",
-    "armorHp": 4,
-    "equipmentSlot": "helmet",
-    "assetKeys": {
-      "helmetAssetKey": "helmet-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": -1,
-      "y": 47,
-      "angle": 0,
-      "scaleX": 1.25,
-      "scaleY": 1.36,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "helmet-chainmail-01",
-      "sourcePath": "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_helmet_chainmail_01",
-      "name": "Chainmail Helmet 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_helmet_chainmail_01"
-      ],
-      "categoryId": "head"
-    }
-  },
-  {
     "id": "generated_equipment_helmet_cloth_01",
     "name": "Cloth Helmet 01",
     "kind": "armor",
@@ -307,6 +308,7 @@
     "name": "Axe 01",
     "kind": "weapon",
     "damageBonus": 10,
+    "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-01"
@@ -333,6 +335,40 @@
         "generated_equipment_weapon_axe_01"
       ],
       "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_01",
+    "name": "Bow 01",
+    "kind": "weapon",
+    "damageBonus": 1,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-bow-01"
+    },
+    "equipmentTuning": {
+      "x": -73,
+      "y": -3,
+      "angle": 90,
+      "scaleX": 1.3,
+      "scaleY": 1.3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-01",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-01.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-01.webp"
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_01",
+      "name": "Bow 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_01"
+      ],
+      "categoryId": "bows"
     }
   }
 ]

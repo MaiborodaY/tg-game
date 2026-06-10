@@ -74,3 +74,27 @@ test("hero equipment has empty glove slots separate from wrists", () => {
   assert.equal(hero.createStarterHeroEquipment().backGlove, null);
   assert.equal(hero.createStarterHeroEquipment().frontGlove, null);
 });
+
+test("weapon class defaults to sword and can be inferred for generated weapons", () => {
+  assert.equal(hero.HERO_ITEM_CATALOG[hero.TRAINING_WEAPON_ID]?.weaponClass, "sword");
+  assert.equal(
+    hero.getHeroItemWeaponClass({
+      id: "generated_equipment_weapon_bow_01",
+      name: "Bow 01",
+      kind: "weapon",
+      equipmentSlot: "weaponMain",
+      damageBonus: 1,
+    }),
+    "bow",
+  );
+  assert.equal(
+    hero.getHeroItemWeaponClass({
+      id: "generated_equipment_weapon_axe_01",
+      name: "Axe 01",
+      kind: "weapon",
+      equipmentSlot: "weaponMain",
+      damageBonus: 1,
+    }),
+    "axe",
+  );
+});

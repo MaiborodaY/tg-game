@@ -197,6 +197,7 @@ function createAutoItemDefinition(itemId: string, slotConfig: EquipmentAssetSlot
       id: itemId,
       name: formatWeaponName(suffix),
       kind: "weapon",
+      weaponClass: getWeaponClassFromText(suffix),
       equipmentSlot: slotConfig.slot,
       damageBonus: 1,
     };
@@ -262,6 +263,20 @@ function formatWeaponName(suffix: string): string {
     .join(" ");
 
   return `${name || "Weapon"} (Auto)`;
+}
+
+function getWeaponClassFromText(value: string): HeroItemDefinition["weaponClass"] {
+  const text = value.toLowerCase();
+
+  if (text.includes("bow")) {
+    return "bow";
+  }
+
+  if (text.includes("axe")) {
+    return "axe";
+  }
+
+  return "sword";
 }
 
 function formatNamePart(part: string): string {

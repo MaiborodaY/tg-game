@@ -22,6 +22,9 @@ test("auto equipment registry can expose weapon assets", () => {
   assert.match(registrySource, /slot: "weaponMain"/);
   assert.match(registrySource, /assetKey: "weaponMainAssetKey"/);
   assert.match(registrySource, /kind: "weapon"/);
+  assert.match(registrySource, /weaponClass: getWeaponClassFromText\(suffix\)/);
+  assert.match(registrySource, /text\.includes\("bow"\)/);
+  assert.match(registrySource, /text\.includes\("axe"\)/);
   assert.match(registrySource, /FIGHTER_WEAPON_SWORD_01_ASSET_KEY/);
 });
 
