@@ -1,6 +1,9 @@
 import {
+  ACTION_BUTTON_OFFSET_KEYS,
   ANIMATION_EDIT_MODES,
   BODY_ANIMATION_KEYS,
+  CLASSIC_ACTION_WHEEL_MODES,
+  DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS,
   DEFAULT_BODY_ANIMATIONS,
   DEFAULT_EQUIPMENT,
   DEFAULT_EQUIPMENT_ITEM_TUNING,
@@ -21,6 +24,9 @@ import {
   type ArenaDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type ClassicActionButtonSlotTuning,
+  type ClassicActionWheelMode,
+  type ActionButtonOffsetKey,
   type EquipmentSlotKey,
   type EquipmentTuning,
   type FacePartKey,
@@ -69,7 +75,15 @@ interface DebugToggleControlConfig {
   resetValue: boolean;
 }
 
-type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig;
+interface DebugSelectControlConfig {
+  type: "select";
+  key: keyof ArenaDebugTuning;
+  label: string;
+  options: { value: string; label: string }[];
+  resetValue: string;
+}
+
+type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig | DebugSelectControlConfig;
 type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
 type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetX" | "characterPreviewFeetY";
@@ -144,6 +158,25 @@ interface RigLimbRotateConfig {
   parts: RigPartKey[];
 }
 
+type ClassicSlotNumericKey = keyof ClassicActionButtonSlotTuning;
+
+const classicWheelModeLabels: Record<ClassicActionWheelMode, string> = {
+  distance: "Distance",
+  clinch: "Clinch",
+  bowDistance: "Bow distance",
+};
+
+const actionButtonLabels: Record<ActionButtonOffsetKey, string> = {
+  forward: "Forward",
+  back: "Back",
+  lunge: "Lunge",
+  light: "Light",
+  medium: "Medium",
+  heavy: "Heavy",
+  taunt: "Taunt",
+  rest: "Rest",
+};
+
 const controlGroups: DebugControlGroup[] = [
   {
     title: "Grid",
@@ -216,20 +249,6 @@ const controlGroups: DebugControlGroup[] = [
     ],
   },
   {
-    title: "HUD",
-    controls: [
-      { type: "toggle", key: "hudEditMode", label: "Edit HUD", resetValue: defaultDebugTuning.hudEditMode },
-      { type: "range", key: "hudBottomOffset", label: "HUD bottom", min: -96, max: 96, step: 1, resetValue: defaultDebugTuning.hudBottomOffset },
-      { type: "range", key: "hudSideInset", label: "HUD side", min: 0, max: 64, step: 1, resetValue: defaultDebugTuning.hudSideInset },
-      { type: "range", key: "hudScale", label: "HUD scale", min: 0.7, max: 1.25, step: 0.01, resetValue: defaultDebugTuning.hudScale },
-      { type: "range", key: "hudFlaskGap", label: "Flask gap", min: 0, max: 18, step: 1, resetValue: defaultDebugTuning.hudFlaskGap },
-      { type: "range", key: "hudNameGap", label: "Name gap", min: -12, max: 24, step: 1, resetValue: defaultDebugTuning.hudNameGap },
-      { type: "range", key: "hudSafeGapRatio", label: "Safe ratio", min: 0, max: 0.5, step: 0.01, resetValue: defaultDebugTuning.hudSafeGapRatio },
-      { type: "range", key: "hudSafeMinGap", label: "Safe min", min: 0, max: 80, step: 1, resetValue: defaultDebugTuning.hudSafeMinGap },
-      { type: "range", key: "fighterHudGap", label: "Fighter HUD gap", min: 0, max: 120, step: 1, resetValue: defaultDebugTuning.fighterHudGap },
-    ],
-  },
-  {
     title: "Combat movement",
     controls: [
       { type: "range", key: "forwardMoveDistance", label: "FWD distance", min: 0.1, max: 4, step: 0.1, resetValue: defaultDebugTuning.forwardMoveDistance },
@@ -248,6 +267,42 @@ const controlGroups: DebugControlGroup[] = [
       { type: "range", key: "actionHeavyArcAngle", label: "STRONG angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionHeavyArcAngle },
       { type: "range", key: "actionTauntArcAngle", label: "TAUNT angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionTauntArcAngle },
       { type: "range", key: "actionRestArcAngle", label: "REST angle", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.actionRestArcAngle },
+    ],
+  },
+];
+
+const hudControlGroups: DebugControlGroup[] = [
+  {
+    title: "Immersive flask HUD",
+    controls: [
+      {
+        type: "select",
+        key: "hudMode",
+        label: "Mode",
+        options: [
+          { value: "immersive", label: "Immersive" },
+          { value: "classic", label: "Classic" },
+        ],
+        resetValue: defaultDebugTuning.hudMode,
+      },
+      { type: "toggle", key: "hudEditMode", label: "Edit flasks", resetValue: defaultDebugTuning.hudEditMode },
+      { type: "range", key: "hudBottomOffset", label: "Bottom", min: -96, max: 96, step: 1, resetValue: defaultDebugTuning.hudBottomOffset },
+      { type: "range", key: "hudSideInset", label: "Side inset", min: 0, max: 64, step: 1, resetValue: defaultDebugTuning.hudSideInset },
+      { type: "range", key: "hudScale", label: "Scale", min: 0.7, max: 1.25, step: 0.01, resetValue: defaultDebugTuning.hudScale },
+      { type: "range", key: "hudFlaskGap", label: "Flask gap", min: 0, max: 18, step: 1, resetValue: defaultDebugTuning.hudFlaskGap },
+      { type: "range", key: "hudNameGap", label: "Name gap", min: -12, max: 24, step: 1, resetValue: defaultDebugTuning.hudNameGap },
+      { type: "range", key: "hudSafeGapRatio", label: "Safe ratio", min: 0, max: 0.5, step: 0.01, resetValue: defaultDebugTuning.hudSafeGapRatio },
+      { type: "range", key: "hudSafeMinGap", label: "Safe min", min: 0, max: 80, step: 1, resetValue: defaultDebugTuning.hudSafeMinGap },
+      { type: "range", key: "fighterHudGap", label: "Fighter gap", min: 0, max: 120, step: 1, resetValue: defaultDebugTuning.fighterHudGap },
+    ],
+  },
+  {
+    title: "Classic action wheel",
+    controls: [
+      { type: "toggle", key: "classicHudEditMode", label: "Edit wheel", resetValue: defaultDebugTuning.classicHudEditMode },
+      { type: "range", key: "classicHudOffsetX", label: "Wheel X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.classicHudOffsetX },
+      { type: "range", key: "classicHudOffsetY", label: "Wheel Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.classicHudOffsetY },
+      { type: "range", key: "classicHudScale", label: "Wheel scale", min: 0.6, max: 1.6, step: 0.01, resetValue: defaultDebugTuning.classicHudScale },
     ],
   },
 ];
@@ -379,6 +434,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="character" aria-pressed="true">Character</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="city" aria-pressed="false">City</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="arena" aria-pressed="false">Arena</button>
+      <button class="debug-panel__mode-tab" type="button" data-debug-mode="hud" aria-pressed="false">HUD</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="effects" aria-pressed="false">Effects</button>
     </nav>
     <details class="debug-rig-panel" open>
@@ -510,6 +566,11 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <summary>Arena tuning</summary>
       <div class="debug-panel__body"></div>
     </details>
+    <details class="debug-hud-panel" open>
+      <summary>HUD tuning</summary>
+      <div class="debug-panel__hud-body"></div>
+      <div class="debug-classic-slots"></div>
+    </details>
     <details class="debug-city-panel" open>
       <summary>City tuning</summary>
       <div class="debug-panel__city-body"></div>
@@ -541,6 +602,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   `;
 
   const body = panel.querySelector<HTMLElement>(".debug-panel__body");
+  const hudBody = panel.querySelector<HTMLElement>(".debug-panel__hud-body");
+  const classicSlotsBody = panel.querySelector<HTMLElement>(".debug-classic-slots");
   const cityBody = panel.querySelector<HTMLElement>(".debug-panel__city-body");
   const effectsBody = panel.querySelector<HTMLElement>(".debug-effects");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
@@ -554,6 +617,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
 
   if (
     !body ||
+    !hudBody ||
+    !classicSlotsBody ||
     !cityBody ||
     !effectsBody ||
     !rigEditor ||
@@ -571,6 +636,12 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   for (const group of controlGroups) {
     body.append(createControlGroup(group));
   }
+
+  for (const group of hudControlGroups) {
+    hudBody.append(createControlGroup(group));
+  }
+
+  mountClassicActionButtonEditor(classicSlotsBody);
 
   for (const group of cityControlGroups) {
     cityBody.append(createControlGroup(group));
@@ -805,7 +876,7 @@ function mountNudgeToolbar(toolbar: HTMLElement): void {
   });
 }
 
-type DebugMode = "character" | "city" | "arena" | "effects";
+type DebugMode = "character" | "city" | "arena" | "hud" | "effects";
 
 function mountModeTabs(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
@@ -824,11 +895,12 @@ function setDebugMode(mode: DebugMode): void {
   document.body.classList.toggle("debug-mode-character", mode === "character");
   document.body.classList.toggle("debug-mode-city", mode === "city");
   document.body.classList.toggle("debug-mode-arena", mode === "arena");
+  document.body.classList.toggle("debug-mode-hud", mode === "hud");
   document.body.classList.toggle("debug-mode-effects", mode === "effects");
 }
 
 function getDebugModeFromValue(value: string | undefined): DebugMode {
-  if (value === "city" || value === "arena" || value === "effects") {
+  if (value === "city" || value === "arena" || value === "hud" || value === "effects") {
     return value;
   }
 
@@ -853,6 +925,10 @@ function createControlGroup(group: DebugControlGroup): HTMLElement {
 function createControl(control: DebugControlConfig): HTMLElement {
   if (control.type === "toggle") {
     return createToggleControl(control);
+  }
+
+  if (control.type === "select") {
+    return createSelectControl(control);
   }
 
   return createRangeControl(control);
@@ -926,6 +1002,107 @@ function createRangeControl(control: DebugRangeControlConfig): HTMLElement {
   });
 
   return row;
+}
+
+function createSelectControl(control: DebugSelectControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <select class="debug-panel__number" data-debug-select-key="${control.key}">
+      ${control.options.map((option) => `<option value="${option.value}">${option.label}</option>`).join("")}
+    </select>
+    <button class="debug-panel__control-reset" type="button" data-debug-reset-key="${control.key}" data-debug-reset-value="${control.resetValue}">Reset</button>
+  `;
+
+  const select = row.querySelector<HTMLSelectElement>("select");
+  const reset = row.querySelector<HTMLButtonElement>(".debug-panel__control-reset");
+
+  select?.addEventListener("change", () => {
+    updateDebugTuning({ [control.key]: select.value } as Partial<ArenaDebugTuning>);
+  });
+
+  reset?.addEventListener("click", (event) => {
+    event.preventDefault();
+    updateDebugTuning({ [control.key]: control.resetValue } as Partial<ArenaDebugTuning>);
+  });
+
+  return row;
+}
+
+function mountClassicActionButtonEditor(root: HTMLElement): void {
+  root.innerHTML = `
+    <fieldset class="debug-panel__group debug-classic-slots__group">
+      <legend>Classic button slots</legend>
+      <label class="debug-panel__row">
+        <span>Wheel</span>
+        <select class="debug-panel__number" data-classic-slot-mode>
+          ${CLASSIC_ACTION_WHEEL_MODES.map((mode) => `<option value="${mode}">${classicWheelModeLabels[mode]}</option>`).join("")}
+        </select>
+        <span></span>
+        <span></span>
+      </label>
+      <label class="debug-panel__row">
+        <span>Button</span>
+        <select class="debug-panel__number" data-classic-slot-action>
+          ${ACTION_BUTTON_OFFSET_KEYS.map((actionId) => `<option value="${actionId}">${actionButtonLabels[actionId]}</option>`).join("")}
+        </select>
+        <span></span>
+        <span></span>
+      </label>
+      ${createClassicSlotNumberRow("x", "Slot X", -240, 240, 1)}
+      ${createClassicSlotNumberRow("y", "Slot Y", -180, 80, 1)}
+      ${createClassicSlotNumberRow("rotation", "Rotate", -180, 180, 1)}
+      <button class="debug-panel__reset debug-classic-slots__reset" type="button">Reset selected slot</button>
+    </fieldset>
+  `;
+
+  const modeSelect = root.querySelector<HTMLSelectElement>("[data-classic-slot-mode]");
+  const actionSelect = root.querySelector<HTMLSelectElement>("[data-classic-slot-action]");
+  const reset = root.querySelector<HTMLButtonElement>(".debug-classic-slots__reset");
+
+  modeSelect?.addEventListener("change", () => {
+    if (isClassicActionWheelMode(modeSelect.value)) {
+      updateDebugTuning({ selectedClassicActionWheelMode: modeSelect.value });
+    }
+  });
+
+  actionSelect?.addEventListener("change", () => {
+    if (isActionButtonOffsetKey(actionSelect.value)) {
+      updateDebugTuning({ selectedClassicActionButton: actionSelect.value });
+    }
+  });
+
+  root.querySelectorAll<HTMLInputElement>("[data-classic-slot-field]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const field = input.dataset.classicSlotField;
+
+      if (!isClassicSlotNumericKey(field)) {
+        return;
+      }
+
+      updateSelectedClassicActionButtonSlot({ [field]: Number(input.value) });
+    });
+  });
+
+  reset?.addEventListener("click", () => {
+    const mode = debugTuning.selectedClassicActionWheelMode;
+    const actionId = debugTuning.selectedClassicActionButton;
+    const defaultSlot = DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS[mode][actionId];
+
+    updateSelectedClassicActionButtonSlot(defaultSlot);
+  });
+}
+
+function createClassicSlotNumberRow(field: ClassicSlotNumericKey, label: string, min: number, max: number, step: number): string {
+  return `
+    <label class="debug-panel__row">
+      <span>${label}</span>
+      <input class="debug-panel__range" type="range" min="${min}" max="${max}" step="${step}" data-classic-slot-field="${field}" />
+      <input class="debug-panel__number" type="number" min="${min}" max="${max}" step="${step}" data-classic-slot-field="${field}" />
+      <span></span>
+    </label>
+  `;
 }
 
 function mountHeroEquipmentEditor(root: HTMLElement): void {
@@ -1778,6 +1955,26 @@ function resetSelectedSlashArc(): void {
   });
 }
 
+function updateSelectedClassicActionButtonSlot(patch: Partial<ClassicActionButtonSlotTuning>): void {
+  const mode = debugTuning.selectedClassicActionWheelMode;
+  const actionId = debugTuning.selectedClassicActionButton;
+  const currentModeSlots = debugTuning.classicActionButtonSlots[mode];
+  const currentSlot = currentModeSlots[actionId];
+
+  updateDebugTuning({
+    classicActionButtonSlots: {
+      ...debugTuning.classicActionButtonSlots,
+      [mode]: {
+        ...currentModeSlots,
+        [actionId]: {
+          ...currentSlot,
+          ...patch,
+        },
+      },
+    },
+  });
+}
+
 function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItemId | null): void {
   if (!debugHeroEquipment) {
     return;
@@ -2080,6 +2277,18 @@ function isAnimationEditMode(value: string | undefined): value is AnimationEditM
   return typeof value === "string" && ANIMATION_EDIT_MODES.includes(value as AnimationEditMode);
 }
 
+function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {
+  return typeof value === "string" && ACTION_BUTTON_OFFSET_KEYS.includes(value as ActionButtonOffsetKey);
+}
+
+function isClassicActionWheelMode(value: unknown): value is ClassicActionWheelMode {
+  return typeof value === "string" && CLASSIC_ACTION_WHEEL_MODES.includes(value as ClassicActionWheelMode);
+}
+
+function isClassicSlotNumericKey(value: unknown): value is ClassicSlotNumericKey {
+  return value === "x" || value === "y" || value === "rotation";
+}
+
 function isFacePartKey(value: string | undefined): value is FacePartKey {
   return typeof value === "string" && FACE_PART_KEYS.includes(value as FacePartKey);
 }
@@ -2252,6 +2461,7 @@ function syncDebugTools(panel: HTMLElement): void {
   syncFaceEditor(panel);
   syncEquipmentEditor(panel);
   syncEffectsEditor(panel);
+  syncClassicActionButtonEditor(panel);
   syncHeroEquipmentEditor(panel);
   syncAnimationEditor(panel);
   syncNudgeControls();
@@ -2466,11 +2676,13 @@ function createHeroEquipmentOption(value: string, label: string): HTMLOptionElem
 function syncModeTabs(panel: HTMLElement): void {
   const mode: DebugMode = document.body.classList.contains("debug-mode-arena")
     ? "arena"
-    : document.body.classList.contains("debug-mode-city")
-      ? "city"
-      : document.body.classList.contains("debug-mode-effects")
-        ? "effects"
-        : "character";
+    : document.body.classList.contains("debug-mode-hud")
+      ? "hud"
+      : document.body.classList.contains("debug-mode-city")
+        ? "city"
+        : document.body.classList.contains("debug-mode-effects")
+          ? "effects"
+          : "character";
 
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.debugMode === mode}`);
@@ -2494,6 +2706,36 @@ function syncInputs(): void {
     const value = debugTuning[key];
 
     input.value = typeof value === "number" && !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+  });
+
+  document.querySelectorAll<HTMLSelectElement>("select[data-debug-select-key]").forEach((select) => {
+    const key = select.dataset.debugSelectKey as keyof ArenaDebugTuning;
+
+    select.value = `${debugTuning[key]}`;
+  });
+}
+
+function syncClassicActionButtonEditor(panel: HTMLElement): void {
+  const modeSelect = panel.querySelector<HTMLSelectElement>("[data-classic-slot-mode]");
+  const actionSelect = panel.querySelector<HTMLSelectElement>("[data-classic-slot-action]");
+  const slot = debugTuning.classicActionButtonSlots[debugTuning.selectedClassicActionWheelMode][debugTuning.selectedClassicActionButton];
+
+  if (modeSelect) {
+    modeSelect.value = debugTuning.selectedClassicActionWheelMode;
+  }
+
+  if (actionSelect) {
+    actionSelect.value = debugTuning.selectedClassicActionButton;
+  }
+
+  panel.querySelectorAll<HTMLInputElement>("[data-classic-slot-field]").forEach((input) => {
+    const field = input.dataset.classicSlotField;
+
+    if (!isClassicSlotNumericKey(field)) {
+      return;
+    }
+
+    input.value = `${slot[field]}`;
   });
 }
 

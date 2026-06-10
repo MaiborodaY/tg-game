@@ -480,24 +480,79 @@ h1 {
 
 .classic-action-bar {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: max(8px, env(safe-area-inset-bottom));
+  left: calc(50% + var(--classic-hud-offset-x, 0px));
+  right: auto;
+  bottom: max(-54px, calc(env(safe-area-inset-bottom) - 52px + var(--classic-hud-offset-y, 0px)));
   z-index: 7;
+  width: var(--classic-wheel-diameter);
+  height: var(--classic-wheel-radius);
   display: none;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px 8px;
-  justify-items: center;
-  padding: 11px 10px 13px;
-  border: 3px solid rgba(53, 24, 13, 0.92);
-  border-radius: 9px 9px 0 0;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+  transform: translateX(-50%) scale(var(--classic-hud-scale, 1));
+  transform-origin: bottom center;
+  --classic-wheel-angle: 0deg;
+  --classic-wheel-diameter: min(420px, calc(100vw - 12px));
+  --classic-wheel-radius: calc(var(--classic-wheel-diameter) / 2);
+  --classic-wheel-inner-diameter: calc(var(--classic-wheel-diameter) * 0.72);
+}
+
+.classic-action-bar__wheel {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: var(--classic-wheel-diameter);
+  height: var(--classic-wheel-diameter);
+  pointer-events: none;
+  transform: translateX(-50%) rotate(var(--classic-wheel-angle));
+  transform-origin: center center;
+  transition: transform 520ms cubic-bezier(0.18, 0.86, 0.26, 1);
+  will-change: transform;
+}
+
+.classic-action-bar__wheel::before,
+.classic-action-bar__wheel::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.classic-action-bar__wheel::before {
+  inset: 0;
+  border: 4px solid rgba(42, 17, 8, 0.96);
+  border-radius: 50%;
   background:
-    linear-gradient(135deg, rgba(255, 214, 132, 0.12), transparent 28%),
-    linear-gradient(180deg, rgba(67, 25, 10, 0.94), rgba(24, 8, 3, 0.96));
+    radial-gradient(circle at 50% 22%, rgba(255, 218, 136, 0.22) 0 16%, transparent 17%),
+    linear-gradient(135deg, rgba(255, 200, 112, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(101, 47, 20, 0.97), rgba(54, 21, 9, 0.98) 44%, rgba(20, 7, 3, 0.99));
   box-shadow:
-    inset 0 1px 0 rgba(255, 222, 145, 0.18),
-    0 -4px 0 rgba(0, 0, 0, 0.24);
-  pointer-events: auto;
+    inset 0 4px 0 rgba(255, 218, 145, 0.16),
+    inset 0 -18px 24px rgba(0, 0, 0, 0.32),
+    0 -5px 0 rgba(0, 0, 0, 0.28),
+    0 -12px 26px rgba(0, 0, 0, 0.2);
+}
+
+.classic-action-bar__wheel::after {
+  left: calc((var(--classic-wheel-diameter) - var(--classic-wheel-inner-diameter)) / 2);
+  top: calc((var(--classic-wheel-diameter) - var(--classic-wheel-inner-diameter)) / 2);
+  width: var(--classic-wheel-inner-diameter);
+  height: var(--classic-wheel-inner-diameter);
+  border: 2px solid rgba(215, 146, 68, 0.28);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 4px 0 rgba(255, 225, 158, 0.08),
+    0 -2px 0 rgba(24, 8, 3, 0.48);
+}
+
+.classic-action-bar__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.classic-action-bar--turning .classic-action-bar__button {
+  pointer-events: none;
 }
 
 .flask-hud {
@@ -1696,6 +1751,9 @@ body.arena-active .shell {
 }
 
 .battle-screen {
+  --classic-hud-offset-x: 0px;
+  --classic-hud-offset-y: 0px;
+  --classic-hud-scale: 1;
   --hud-bottom-offset: -16px;
   --hud-flask-gap: 6px;
   --hud-name-gap: 3px;
@@ -1796,9 +1854,27 @@ body.arena-hud-classic .action-arc {
   display: none;
 }
 
-body.arena-hud-classic .classic-combat-hud,
-body.arena-hud-classic .classic-action-bar {
+body.arena-hud-classic .classic-combat-hud {
   display: grid;
+}
+
+body.arena-hud-classic .classic-action-bar {
+  display: block;
+}
+
+.battle-screen.classic-hud-editing .classic-action-bar {
+  display: block;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.battle-screen.classic-hud-editing .classic-action-bar:active {
+  cursor: grabbing;
+}
+
+.battle-screen.classic-hud-editing .classic-action-bar__wheel::before {
+  outline: 2px dashed rgba(0, 255, 255, 0.72);
+  outline-offset: 5px;
 }
 
 body.arena-hud-classic .battle-screen .stage-restart {
@@ -1856,7 +1932,7 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 
 .debug-panel__mode-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 7px;
 }
 
@@ -1879,6 +1955,7 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 }
 
 .debug-panel__body,
+.debug-panel__hud-body,
 .debug-panel__city-body,
 .debug-effects,
 .debug-item-equipment,
@@ -2026,27 +2103,50 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 
 body.debug-mode-character .debug-game-shell,
 body.debug-mode-character .debug-arena-panel,
+body.debug-mode-character .debug-hud-panel,
 body.debug-mode-character .debug-city-panel,
 body.debug-mode-character .debug-effects-panel,
 body.debug-mode-arena .debug-character-shell,
 body.debug-mode-arena .debug-rig-panel,
+body.debug-mode-arena .debug-hud-panel,
 body.debug-mode-arena .debug-city-panel,
 body.debug-mode-arena .debug-effects-panel,
 body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
 body.debug-mode-city .debug-rig-panel,
 body.debug-mode-city .debug-arena-panel,
+body.debug-mode-city .debug-hud-panel,
 body.debug-mode-city .debug-effects-panel,
 body.debug-mode-city .battle-screen,
+body.debug-mode-hud .debug-character-shell,
+body.debug-mode-hud .debug-rig-panel,
+body.debug-mode-hud .debug-city-panel,
+body.debug-mode-hud .debug-arena-panel,
+body.debug-mode-hud .debug-effects-panel,
+body.debug-mode-hud .debug-hero-equipment-panel,
+body.debug-mode-hud .debug-item-equipment-panel,
+body.debug-mode-hud .debug-auto-equipment-panel,
+body.debug-mode-hud .main-menu,
 body.debug-mode-effects .debug-character-shell,
 body.debug-mode-effects .debug-rig-panel,
 body.debug-mode-effects .debug-city-panel,
 body.debug-mode-effects .debug-arena-panel,
+body.debug-mode-effects .debug-hud-panel,
 body.debug-mode-effects .debug-hero-equipment-panel,
 body.debug-mode-effects .debug-item-equipment-panel,
 body.debug-mode-effects .debug-auto-equipment-panel,
 body.debug-mode-effects .main-menu {
   display: none;
+}
+
+body.debug-mode-hud .action-arc,
+body.debug-mode-hud .turn-probe,
+body.debug-mode-hud .debug-grid {
+  display: none !important;
+}
+
+body.debug-mode-hud .battle-screen .status-strip {
+  opacity: 0.58;
 }
 
 .debug-rig-editor__select,
@@ -3453,15 +3553,56 @@ body.debug-active .action-arc__center {
 }
 
 .classic-action-bar .action-arc__button {
-  position: relative;
-  left: auto;
-  top: auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  bottom: auto;
   width: clamp(48px, 13vw, 58px);
   height: clamp(48px, 13vw, 58px);
-  transform: scale(var(--action-button-scale, 1));
-  transition: filter 120ms ease, opacity 120ms ease, transform 120ms ease;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform:
+    translate(calc(-50% + var(--classic-slot-x, 0px)), calc(-50% + var(--classic-slot-y, 18px) + 14px))
+    rotate(var(--classic-slot-rotation, 0deg))
+    scale(calc(var(--action-button-scale, 1) * 0.78));
+  transition:
+    filter 120ms ease,
+    opacity 150ms ease,
+    visibility 150ms ease,
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+.classic-action-bar .action-arc__button.classic-action-bar__button--visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform:
+    translate(calc(-50% + var(--classic-slot-x, 0px)), calc(-50% + var(--classic-slot-y, 0px)))
+    rotate(var(--classic-slot-rotation, 0deg))
+    scale(var(--action-button-scale, 1));
+}
+
+.classic-action-bar .action-arc__button.classic-action-bar__button--visible:disabled {
+  opacity: 0.68;
+}
+
+.classic-action-bar .action-arc__button.classic-action-bar__button--dimmed {
+  opacity: 0.48;
+  filter: saturate(0.78) brightness(0.82);
+}
+
+.classic-action-bar .action-arc__button.classic-action-bar__button--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .classic-action-bar .action-arc__button:active:not(:disabled) {
-  transform: translateY(3px) scale(var(--action-button-scale, 1));
+  transform:
+    translate(calc(-50% + var(--classic-slot-x, 0px)), calc(-50% + var(--classic-slot-y, 0px) + 3px))
+    rotate(var(--classic-slot-rotation, 0deg))
+    scale(var(--action-button-scale, 1));
 }

@@ -6,6 +6,7 @@ import { defineConfig, type Plugin } from "vite";
 const arenaLayoutUrl = new URL("./src/arenaLayout.ts", import.meta.url);
 const combatUrl = new URL("./src/combat.ts", import.meta.url);
 const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
+const settingsMenuUrl = new URL("./src/settingsMenu.ts", import.meta.url);
 const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.generated.json", import.meta.url);
 const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
 const promotedEquipmentRuntimeWebpQuality = 86;
@@ -51,6 +52,9 @@ const prodDefaultFields = {
   DEFAULT_ACTION_TOKEN_FACE_SHINE: "actionTokenFaceShine",
   DEFAULT_ACTION_TOKEN_INNER_SHINE: "actionTokenInnerShine",
   DEFAULT_ACTION_TOKEN_STRIPE_SHINE: "actionTokenStripeShine",
+  DEFAULT_CLASSIC_HUD_OFFSET_X: "classicHudOffsetX",
+  DEFAULT_CLASSIC_HUD_OFFSET_Y: "classicHudOffsetY",
+  DEFAULT_CLASSIC_HUD_SCALE: "classicHudScale",
   DEFAULT_HUD_BOTTOM_OFFSET: "hudBottomOffset",
   DEFAULT_HUD_SIDE_INSET: "hudSideInset",
   DEFAULT_HUD_SCALE: "hudScale",
@@ -104,6 +108,15 @@ type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;
 type DebugTuningDefaultPayload = Record<(typeof debugTuningDefaultFields)[DebugTuningDefaultField], unknown>;
 type DebugTuningDefaultUpdates = Record<DebugTuningDefaultField, number>;
 
+const playerSettingDefaultFields = {
+  DEFAULT_PLAYER_HUD_MODE: "hudMode",
+} as const;
+
+type PlayerHudMode = "immersive" | "classic";
+type PlayerSettingDefaultConstant = keyof typeof playerSettingDefaultFields;
+type PlayerSettingDefaultPayload = Record<(typeof playerSettingDefaultFields)[PlayerSettingDefaultConstant], unknown>;
+type PlayerSettingDefaultUpdates = Record<PlayerSettingDefaultConstant, PlayerHudMode>;
+
 const rigPartKeys = [
   "head",
   "torso",
@@ -153,6 +166,9 @@ type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
 
 const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 type ActionButtonOffsetKey = (typeof actionButtonOffsetKeys)[number];
+
+const classicActionWheelModes = ["distance", "clinch", "bowDistance"] as const;
+type ClassicActionWheelMode = (typeof classicActionWheelModes)[number];
 
 const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
   idle: "DEFAULT_IDLE_ANIMATION",
@@ -205,6 +221,7 @@ type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
 type ActionButtonOffsetUpdates = Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
+type ClassicActionButtonSlotUpdates = Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
 
 interface SlashArcTuning {
   radius: number;
@@ -223,6 +240,12 @@ interface SlashArcTuning {
 interface ActionButtonOffsetTuning {
   x: number;
   y: number;
+}
+
+interface ClassicActionButtonSlotTuning {
+  x: number;
+  y: number;
+  rotation: number;
 }
 
 interface BodyAnimationUpdates {
@@ -299,6 +322,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const layoutUpdates = pickProdDefaultUpdates(payload);
           const combatUpdates = pickCombatDefaultUpdates(payload);
           const debugTuningDefaultUpdates = pickDebugTuningDefaultUpdates(payload);
+          const playerSettingDefaultUpdates = pickPlayerSettingDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const bodyAnimationUpdates = pickBodyAnimationUpdates(payload);
@@ -306,20 +330,29 @@ function saveProdDefaultsPlugin(): Plugin {
           const equipmentItemUpdates = pickEquipmentItemDefaultUpdates(payload);
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
           const actionButtonOffsetUpdates = pickActionButtonOffsetDefaultUpdates(payload);
-          const [layoutSource, combatSource, debugTuningSource] = await Promise.all([
+          const classicActionButtonSlotUpdates = pickClassicActionButtonSlotDefaultUpdates(payload);
+          const [layoutSource, combatSource, debugTuningSource, settingsMenuSource] = await Promise.all([
             readFile(arenaLayoutUrl, "utf8"),
             readFile(combatUrl, "utf8"),
             readFile(debugTuningUrl, "utf8"),
+            readFile(settingsMenuUrl, "utf8"),
           ]);
           const nextLayoutSource = applyProdDefaultUpdates(layoutSource, layoutUpdates);
           const nextCombatSource = applyCombatDefaultUpdates(combatSource, combatUpdates);
+          const nextSettingsMenuSource = applyPlayerSettingDefaultUpdates(settingsMenuSource, playerSettingDefaultUpdates);
           const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
             applySlashArcDefaultUpdates(
               applyEquipmentItemDefaultUpdates(
                 applyEquipmentDefaultUpdates(
                   applyFacePartDefaultUpdates(
                     applyBodyAnimationDefaultUpdates(
-                      applyRigPartDefaultUpdates(applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates), rigPartUpdates),
+                    applyRigPartDefaultUpdates(
+                      applyClassicActionButtonSlotDefaultUpdates(
+                        applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates),
+                        classicActionButtonSlotUpdates,
+                      ),
+                      rigPartUpdates,
+                    ),
                       bodyAnimationUpdates,
                     ),
                     facePartUpdates,
@@ -337,15 +370,18 @@ function saveProdDefaultsPlugin(): Plugin {
             writeFile(arenaLayoutUrl, nextLayoutSource, "utf8"),
             writeFile(combatUrl, nextCombatSource, "utf8"),
             writeFile(debugTuningUrl, nextDebugTuningSource, "utf8"),
+            writeFile(settingsMenuUrl, nextSettingsMenuSource, "utf8"),
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
               Object.keys(debugTuningDefaultUpdates).length +
+              Object.keys(playerSettingDefaultUpdates).length +
               Object.keys(actionButtonOffsetUpdates).length +
+              Object.keys(classicActionButtonSlotUpdates).length +
               Object.keys(rigPartUpdates).length +
               Object.keys(facePartUpdates).length +
               1 +
@@ -486,6 +522,31 @@ export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefa
       readFiniteNumber(payload as DebugTuningDefaultPayload, payloadField),
     ]),
   ) as DebugTuningDefaultUpdates;
+}
+
+export function applyPlayerSettingDefaultUpdates(source: string, updates: PlayerSettingDefaultUpdates): string {
+  return Object.entries(updates).reduce((nextSource, [constantName, value]) => {
+    const pattern = new RegExp(`export const ${constantName}: PlayerHudMode = "(?:immersive|classic)";`);
+
+    if (!pattern.test(nextSource)) {
+      throw new Error(`Could not find ${constantName} in settingsMenu.ts.`);
+    }
+
+    return nextSource.replace(pattern, `export const ${constantName}: PlayerHudMode = "${value}";`);
+  }, source);
+}
+
+export function pickPlayerSettingDefaultUpdates(payload: unknown): PlayerSettingDefaultUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(playerSettingDefaultFields).map(([constantName, payloadField]) => [
+      constantName,
+      readPlayerHudMode(payload as PlayerSettingDefaultPayload, payloadField),
+    ]),
+  ) as PlayerSettingDefaultUpdates;
 }
 
 export function applyRigPartDefaultUpdates(source: string, updates: RigPartUpdates): string {
@@ -639,6 +700,33 @@ export function pickActionButtonOffsetDefaultUpdates(payload: unknown): ActionBu
   }
 
   return Object.fromEntries(actionButtonOffsetKeys.map((key) => [key, readActionButtonOffsetTuning(offsets, key)])) as ActionButtonOffsetUpdates;
+}
+
+export function applyClassicActionButtonSlotDefaultUpdates(source: string, updates: ClassicActionButtonSlotUpdates): string {
+  const pattern =
+    /export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> = \{[\s\S]*?\n\};/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatClassicActionButtonSlotDefaults(updates));
+}
+
+export function pickClassicActionButtonSlotDefaultUpdates(payload: unknown): ClassicActionButtonSlotUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const slots = (payload as { classicActionButtonSlots?: unknown }).classicActionButtonSlots;
+
+  if (!slots || typeof slots !== "object" || Array.isArray(slots)) {
+    throw new Error("Expected classicActionButtonSlots in debug tuning payload.");
+  }
+
+  return Object.fromEntries(
+    classicActionWheelModes.map((mode) => [mode, readClassicActionButtonSlotModeTuning(slots, mode)]),
+  ) as ClassicActionButtonSlotUpdates;
 }
 
 export function applyBodyAnimationDefaultUpdates(source: string, updates: BodyAnimationUpdates): string {
@@ -1095,6 +1183,16 @@ function readFiniteNumber(payload: Record<string, unknown>, fieldName: string): 
   return value;
 }
 
+function readPlayerHudMode(payload: Record<string, unknown>, fieldName: string): PlayerHudMode {
+  const value = payload[fieldName];
+
+  if (value !== "immersive" && value !== "classic") {
+    throw new Error(`Invalid HUD mode tuning value: ${String(fieldName)}.`);
+  }
+
+  return value;
+}
+
 function formatNumber(value: number): string {
   const rounded = Math.round(value * 1000) / 1000;
 
@@ -1171,6 +1269,22 @@ function formatActionButtonOffsetDefaults(updates: ActionButtonOffsetUpdates): s
   });
 
   return `export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatClassicActionButtonSlotDefaults(updates: ClassicActionButtonSlotUpdates): string {
+  const rows = classicActionWheelModes.map((mode) => {
+    const slots = actionButtonOffsetKeys
+      .map((key) => {
+        const slot = updates[mode][key];
+
+        return `    ${key}: { x: ${formatNumber(slot.x)}, y: ${formatNumber(slot.y)}, rotation: ${formatNumber(slot.rotation)} },`;
+      })
+      .join("\n");
+
+    return [`  ${mode}: createClassicActionButtonSlots({`, slots, "  }),"].join("\n");
+  });
+
+  return `export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> = {\n${rows.join("\n")}\n};`;
 }
 
 function formatHexColor(value: number): string {
@@ -1365,6 +1479,35 @@ function readActionButtonOffsetTuning(offsets: object, key: ActionButtonOffsetKe
   };
 }
 
+function readClassicActionButtonSlotModeTuning(slots: object, mode: ClassicActionWheelMode): Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning> {
+  const modeSlots = (slots as Partial<Record<ClassicActionWheelMode, unknown>>)[mode];
+
+  if (!modeSlots || typeof modeSlots !== "object" || Array.isArray(modeSlots)) {
+    throw new Error(`Invalid classic action wheel slots: ${mode}.`);
+  }
+
+  return Object.fromEntries(
+    actionButtonOffsetKeys.map((key) => [key, readClassicActionButtonSlotTuning(modeSlots, mode, key)]),
+  ) as Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>;
+}
+
+function readClassicActionButtonSlotTuning(slots: object, mode: ClassicActionWheelMode, key: ActionButtonOffsetKey): ClassicActionButtonSlotTuning {
+  const slot = (slots as Partial<Record<ActionButtonOffsetKey, unknown>>)[key];
+
+  if (!slot || typeof slot !== "object" || Array.isArray(slot)) {
+    throw new Error(`Invalid classic action button slot value: ${mode}.${key}.`);
+  }
+
+  const tuning = slot as Partial<ClassicActionButtonSlotTuning>;
+  const label = `${mode}.${key}`;
+
+  return {
+    x: readFiniteClassicActionButtonSlotNumber(tuning, label, "x"),
+    y: readFiniteClassicActionButtonSlotNumber(tuning, label, "y"),
+    rotation: readFiniteClassicActionButtonSlotNumber(tuning, label, "rotation"),
+  };
+}
+
 function readSlashArcTuning(slashArcs: object, key: SlashArcAttackKey): SlashArcTuning {
   const arc = (slashArcs as Partial<Record<SlashArcAttackKey, unknown>>)[key];
 
@@ -1408,6 +1551,20 @@ function readFiniteActionButtonOffsetNumber(
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid action button offset value: ${buttonKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteClassicActionButtonSlotNumber(
+  payload: Partial<ClassicActionButtonSlotTuning>,
+  label: string,
+  fieldName: keyof ClassicActionButtonSlotTuning,
+): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid classic action button slot ${label}.${fieldName}.`);
   }
 
   return value;

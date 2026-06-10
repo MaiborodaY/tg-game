@@ -2,6 +2,10 @@ import type { ArenaDebugTuning } from "./debugTuning";
 
 type HudTuning = Pick<
   ArenaDebugTuning,
+  | "classicHudEditMode"
+  | "classicHudOffsetX"
+  | "classicHudOffsetY"
+  | "classicHudScale"
   | "hudEditMode"
   | "hudBottomOffset"
   | "hudSideInset"
@@ -26,7 +30,11 @@ export function syncHudTuning(root: HTMLElement | null | undefined, tuning: HudT
   battleScreen.style.setProperty("--hud-name-gap", `${tuning.hudNameGap}px`);
   battleScreen.style.setProperty("--hud-safe-gap-ratio", `${tuning.hudSafeGapRatio}`);
   battleScreen.style.setProperty("--hud-safe-min-gap", `${tuning.hudSafeMinGap}px`);
+  battleScreen.style.setProperty("--classic-hud-offset-x", `${tuning.classicHudOffsetX}px`);
+  battleScreen.style.setProperty("--classic-hud-offset-y", `${tuning.classicHudOffsetY}px`);
+  battleScreen.style.setProperty("--classic-hud-scale", `${tuning.classicHudScale}`);
   battleScreen.classList.toggle("hud-editing", tuning.hudEditMode);
+  battleScreen.classList.toggle("classic-hud-editing", tuning.classicHudEditMode);
 }
 
 function getBattleScreen(root: HTMLElement | null | undefined): HTMLElement | null {

@@ -10,6 +10,10 @@ const debugHtml = readFileSync(resolve(currentDir, "../debug.html"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const debugMainSource = readFileSync(resolve(currentDir, "../src/debugMain.ts"), "utf8");
 const settingsMenuSource = readFileSync(resolve(currentDir, "../src/settingsMenu.ts"), "utf8");
+const hudTuningSource = readFileSync(resolve(currentDir, "../src/hudTuning.ts"), "utf8");
+const arenaLayoutSource = readFileSync(resolve(currentDir, "../src/arenaLayout.ts"), "utf8");
+const viteConfigSource = readFileSync(resolve(currentDir, "../vite.config.ts"), "utf8");
+const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 test("regular game does not mount debug controls", () => {
   assert.equal(indexHtml.includes("debugPanelHost"), false);
@@ -39,6 +43,38 @@ test("debug preview uses the same flask resource HUD as the game", () => {
   assert.equal(debugHtml.includes('class="resource-flask flask--stamina"'), true);
 });
 
+test("debug preview can mount and tune the classic action wheel", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes('data-debug-mode="hud"'), true);
+  assert.equal(debugPanelSource.includes("debug-hud-panel"), true);
+  assert.equal(debugPanelSource.includes("debug-panel__hud-body"), true);
+  assert.equal(debugPanelSource.includes('title: "Immersive flask HUD"'), true);
+  assert.equal(debugPanelSource.includes('key: "hudMode"'), true);
+  assert.equal(debugPanelSource.includes('value: "classic"'), true);
+  assert.equal(debugHtml.includes('class="classic-combat-hud"'), true);
+  assert.equal(debugHtml.includes('data-classic-action-bar'), true);
+  assert.equal(debugMainSource.includes("mountClassicActionBar"), true);
+  assert.equal(debugMainSource.includes("mountClassicHudDebug"), true);
+  assert.equal(debugMainSource.includes("classicHudEditMode"), true);
+  assert.equal(debugPanelSource.includes('title: "Classic action wheel"'), true);
+  assert.equal(debugPanelSource.includes("Wheel X"), true);
+  assert.equal(debugPanelSource.includes("Wheel Y"), true);
+  assert.equal(debugPanelSource.includes("Wheel scale"), true);
+  assert.equal(debugPanelSource.includes("Classic button slots"), true);
+  assert.equal(debugPanelSource.includes("data-classic-slot-mode"), true);
+  assert.equal(debugPanelSource.includes("data-classic-slot-action"), true);
+  assert.equal(debugPanelSource.includes("data-classic-slot-field"), true);
+  assert.equal(hudTuningSource.includes("--classic-hud-offset-x"), true);
+  assert.equal(hudTuningSource.includes("--classic-hud-offset-y"), true);
+  assert.equal(hudTuningSource.includes("--classic-hud-scale"), true);
+  assert.equal(hudTuningSource.includes("classic-hud-editing"), true);
+  assert.equal(arenaLayoutSource.includes("DEFAULT_CLASSIC_HUD_OFFSET_X"), true);
+  assert.equal(viteConfigSource.includes('DEFAULT_CLASSIC_HUD_OFFSET_X: "classicHudOffsetX"'), true);
+  assert.equal(stylesSource.includes("body.debug-mode-hud .action-arc"), true);
+  assert.equal(stylesSource.includes(".debug-panel__hud-body"), true);
+});
+
 test("regular arena exposes switchable classic HUD markup", () => {
   assert.equal(indexHtml.includes('data-setting-hud-mode'), true);
   assert.equal(indexHtml.includes('value="immersive"'), true);
@@ -52,7 +88,8 @@ test("regular arena exposes switchable classic HUD markup", () => {
 
 test("settings can persist the arena HUD mode", () => {
   assert.equal(settingsMenuSource.includes('export type PlayerHudMode = "immersive" | "classic"'), true);
-  assert.equal(settingsMenuSource.includes('hudMode: "immersive"'), true);
+  assert.equal(settingsMenuSource.includes("DEFAULT_PLAYER_HUD_MODE: PlayerHudMode ="), true);
+  assert.equal(settingsMenuSource.includes("hudMode: DEFAULT_PLAYER_HUD_MODE"), true);
   assert.equal(settingsMenuSource.includes("data-setting-hud-mode"), true);
   assert.equal(settingsMenuSource.includes("arena-hud-classic"), true);
   assert.equal(settingsMenuSource.includes("isPlayerHudMode"), true);
@@ -107,6 +144,8 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes('title: "Grid"'), true);
   assert.equal(debugPanelSource.includes('title: "Origin"'), true);
   assert.equal(debugPanelSource.includes('title: "Fighters from origin"'), true);
+  assert.equal(debugPanelSource.includes('title: "Immersive flask HUD"'), true);
+  assert.equal(debugPanelSource.includes('title: "Classic action wheel"'), true);
   assert.equal(debugPanelSource.includes('title: "Action buttons relative to player"'), false);
   assert.equal(debugPanelSource.includes('title: "Action arc"'), true);
   assert.equal(debugPanelSource.includes('title: "Action button angles"'), true);

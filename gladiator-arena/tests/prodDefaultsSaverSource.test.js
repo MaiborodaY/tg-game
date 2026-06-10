@@ -49,8 +49,26 @@ test("vite dev middleware only writes whitelisted arena layout defaults", () => 
   assert.match(source, /DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS: "actionHeavyIconBrightness"/);
   assert.match(source, /DEFAULT_ACTION_TOKEN_RING_WIDTH: "actionTokenRingWidth"/);
   assert.match(source, /DEFAULT_ACTION_TOKEN_INNER_SHINE: "actionTokenInnerShine"/);
+  assert.match(source, /DEFAULT_CLASSIC_HUD_OFFSET_X: "classicHudOffsetX"/);
+  assert.match(source, /DEFAULT_CLASSIC_HUD_OFFSET_Y: "classicHudOffsetY"/);
+  assert.match(source, /DEFAULT_CLASSIC_HUD_SCALE: "classicHudScale"/);
+  assert.match(source, /DEFAULT_HUD_BOTTOM_OFFSET: "hudBottomOffset"/);
+  assert.match(source, /DEFAULT_FIGHTER_HUD_GAP: "fighterHudGap"/);
   assert.doesNotMatch(source, /gridStep/);
   assert.match(source, /applyProdDefaultUpdates/);
+});
+
+test("vite dev middleware persists the default player HUD mode", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const settingsSource = readFileSync(join(root, "src", "settingsMenu.ts"), "utf8");
+
+  assert.match(settingsSource, /DEFAULT_PLAYER_HUD_MODE: PlayerHudMode = "(?:immersive|classic)"/);
+  assert.match(source, /settingsMenuUrl/);
+  assert.match(source, /DEFAULT_PLAYER_HUD_MODE: "hudMode"/);
+  assert.match(source, /pickPlayerSettingDefaultUpdates/);
+  assert.match(source, /applyPlayerSettingDefaultUpdates/);
+  assert.match(source, /readPlayerHudMode/);
+  assert.match(source, /player setting defaults/);
 });
 
 test("vite dev middleware writes promoted equipment to generated files", () => {
@@ -81,6 +99,18 @@ test("save as prod defaults also persists the selected rig editor animation", ()
   assert.match(saveDefaultsRoute, /const bodyAnimationUpdates = pickBodyAnimationUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /applyBodyAnimationDefaultUpdates/);
   assert.match(saveDefaultsRoute, /bodyAnimationUpdates\.key/);
+});
+
+test("save as prod defaults persists classic action button slots", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
+
+  assert.match(debugTuningSource, /DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS/);
+  assert.match(debugTuningSource, /classicActionButtonSlots: cloneClassicActionButtonSlots/);
+  assert.match(source, /pickClassicActionButtonSlotDefaultUpdates/);
+  assert.match(source, /applyClassicActionButtonSlotDefaultUpdates/);
+  assert.match(source, /formatClassicActionButtonSlotDefaults/);
+  assert.match(source, /classic action wheels/);
 });
 
 test("vite dev middleware converts promoted png equipment to standardized webp assets", () => {

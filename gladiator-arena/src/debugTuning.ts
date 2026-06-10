@@ -31,6 +31,9 @@ import {
   DEFAULT_ACTION_TOKEN_RING_WIDTH,
   DEFAULT_ACTION_TOKEN_RIM_SHINE,
   DEFAULT_ACTION_TOKEN_STRIPE_SHINE,
+  DEFAULT_CLASSIC_HUD_OFFSET_X,
+  DEFAULT_CLASSIC_HUD_OFFSET_Y,
+  DEFAULT_CLASSIC_HUD_SCALE,
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
@@ -50,6 +53,7 @@ import {
   DEFAULT_STAGE_ORIGIN_X,
   DEFAULT_STAGE_ORIGIN_Y,
 } from "./arenaLayout";
+import { DEFAULT_PLAYER_HUD_MODE, type PlayerHudMode } from "./settingsMenu";
 
 export const RIG_PART_KEYS = [
   "head",
@@ -78,6 +82,9 @@ export type SlashArcAttackKey = (typeof SLASH_ARC_ATTACK_KEYS)[number];
 
 export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 export type ActionButtonOffsetKey = (typeof ACTION_BUTTON_OFFSET_KEYS)[number];
+
+export const CLASSIC_ACTION_WHEEL_MODES = ["distance", "clinch", "bowDistance"] as const;
+export type ClassicActionWheelMode = (typeof CLASSIC_ACTION_WHEEL_MODES)[number];
 
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
@@ -154,6 +161,12 @@ export interface ActionButtonOffsetTuning {
   y: number;
 }
 
+export interface ClassicActionButtonSlotTuning {
+  x: number;
+  y: number;
+  rotation: number;
+}
+
 export interface ArenaDebugTuning {
   showGrid: boolean;
   gridStep: number;
@@ -196,6 +209,14 @@ export interface ArenaDebugTuning {
   actionTokenInnerShine: number;
   actionTokenStripeShine: number;
   actionButtonOffsets: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
+  selectedClassicActionWheelMode: ClassicActionWheelMode;
+  selectedClassicActionButton: ActionButtonOffsetKey;
+  classicActionButtonSlots: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
+  classicHudEditMode: boolean;
+  classicHudOffsetX: number;
+  classicHudOffsetY: number;
+  classicHudScale: number;
+  hudMode: PlayerHudMode;
   hudEditMode: boolean;
   hudBottomOffset: number;
   hudSideInset: number;
@@ -269,6 +290,45 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   heavy: { x: 0, y: 18 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
+};
+
+export const defaultClassicActionButtonSlotTuning: ClassicActionButtonSlotTuning = {
+  x: 0,
+  y: 18,
+  rotation: 0,
+};
+
+export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> = {
+  distance: createClassicActionButtonSlots({
+    forward: { x: 70, y: -170, rotation: -10 },
+    back: { x: -70, y: -170, rotation: -12 },
+    lunge: { x: 0, y: -180, rotation: 10 },
+    light: { x: 70, y: 18, rotation: 0 },
+    medium: { x: 0, y: 18, rotation: 0 },
+    heavy: { x: 0, y: 18, rotation: 0 },
+    taunt: { x: 73, y: -100, rotation: 0 },
+    rest: { x: -68, y: -100, rotation: 12 },
+  }),
+  clinch: createClassicActionButtonSlots({
+    forward: { x: 0, y: 26, rotation: 0 },
+    back: { x: -70, y: -90, rotation: -12 },
+    lunge: { x: 0, y: 18, rotation: 0 },
+    light: { x: -70, y: -165, rotation: 0 },
+    medium: { x: 0, y: -180, rotation: 0 },
+    heavy: { x: 70, y: -165, rotation: 0 },
+    taunt: { x: 70, y: -90, rotation: 0 },
+    rest: { x: 0, y: -90, rotation: 12 },
+  }),
+  bowDistance: createClassicActionButtonSlots({
+    forward: { x: -40, y: -52, rotation: -6 },
+    back: { x: -118, y: -36, rotation: -14 },
+    lunge: { x: 0, y: 18, rotation: 0 },
+    light: { x: -78, y: -116, rotation: -14 },
+    medium: { x: 0, y: -132, rotation: 0 },
+    heavy: { x: 78, y: -116, rotation: 14 },
+    taunt: { x: 40, y: -52, rotation: 6 },
+    rest: { x: 118, y: -36, rotation: 14 },
+  }),
 };
 
 export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
@@ -636,7 +696,7 @@ export const DEFAULT_MEDIUM_ANIMATION: BodyAnimationTuning = {
   },
 };
 export const DEFAULT_HEAVY_ANIMATION: BodyAnimationTuning = {
-  enabled: true,
+  enabled: false,
   duration: 860,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
@@ -886,7 +946,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   shadowOffsetY: 76,
   shadowScaleX: 1.11,
   shadowScaleY: -0.68,
-  shadowAlpha: 0.09,
+  shadowAlpha: 0.34,
   actionArcEditMode: false,
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
   actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
@@ -912,6 +972,14 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionTokenInnerShine: DEFAULT_ACTION_TOKEN_INNER_SHINE,
   actionTokenStripeShine: DEFAULT_ACTION_TOKEN_STRIPE_SHINE,
   actionButtonOffsets: cloneActionButtonOffsets(DEFAULT_ACTION_BUTTON_OFFSETS),
+  selectedClassicActionWheelMode: "distance",
+  selectedClassicActionButton: "forward",
+  classicActionButtonSlots: cloneClassicActionButtonSlots(DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS),
+  classicHudEditMode: false,
+  classicHudOffsetX: DEFAULT_CLASSIC_HUD_OFFSET_X,
+  classicHudOffsetY: DEFAULT_CLASSIC_HUD_OFFSET_Y,
+  classicHudScale: DEFAULT_CLASSIC_HUD_SCALE,
+  hudMode: DEFAULT_PLAYER_HUD_MODE,
   hudEditMode: false,
   hudBottomOffset: DEFAULT_HUD_BOTTOM_OFFSET,
   hudSideInset: DEFAULT_HUD_SIDE_INSET,
@@ -1081,6 +1149,18 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionTokenInnerShine: clampNumber(input.actionTokenInnerShine, 0, 0.6, defaultDebugTuning.actionTokenInnerShine),
     actionTokenStripeShine: clampNumber(input.actionTokenStripeShine, 0, 0.6, defaultDebugTuning.actionTokenStripeShine),
     actionButtonOffsets: normalizeActionButtonOffsets(input.actionButtonOffsets),
+    selectedClassicActionWheelMode: isClassicActionWheelMode(input.selectedClassicActionWheelMode)
+      ? input.selectedClassicActionWheelMode
+      : defaultDebugTuning.selectedClassicActionWheelMode,
+    selectedClassicActionButton: isActionButtonOffsetKey(input.selectedClassicActionButton)
+      ? input.selectedClassicActionButton
+      : defaultDebugTuning.selectedClassicActionButton,
+    classicActionButtonSlots: normalizeClassicActionButtonSlots(input.classicActionButtonSlots),
+    classicHudEditMode: typeof input.classicHudEditMode === "boolean" ? input.classicHudEditMode : defaultDebugTuning.classicHudEditMode,
+    classicHudOffsetX: clampNumber(input.classicHudOffsetX, -240, 240, defaultDebugTuning.classicHudOffsetX),
+    classicHudOffsetY: clampNumber(input.classicHudOffsetY, -160, 160, defaultDebugTuning.classicHudOffsetY),
+    classicHudScale: clampNumber(input.classicHudScale, 0.6, 1.6, defaultDebugTuning.classicHudScale),
+    hudMode: isDebugHudMode(input.hudMode) ? input.hudMode : defaultDebugTuning.hudMode,
     hudEditMode: typeof input.hudEditMode === "boolean" ? input.hudEditMode : defaultDebugTuning.hudEditMode,
     hudBottomOffset: clampNumber(input.hudBottomOffset, -96, 96, defaultDebugTuning.hudBottomOffset),
     hudSideInset: clampNumber(input.hudSideInset, 0, 64, defaultDebugTuning.hudSideInset),
@@ -1135,11 +1215,33 @@ function createDefaultActionButtonOffsets(): Record<ActionButtonOffsetKey, Actio
   >;
 }
 
+function createClassicActionButtonSlots(
+  overrides: Partial<Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>,
+): Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning> {
+  return Object.fromEntries(
+    ACTION_BUTTON_OFFSET_KEYS.map((key) => [key, { ...defaultClassicActionButtonSlotTuning, ...(overrides[key] ?? {}) }]),
+  ) as Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>;
+}
+
 function cloneActionButtonOffsets(source: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>): Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> {
   return Object.fromEntries(ACTION_BUTTON_OFFSET_KEYS.map((key) => [key, { ...source[key] }])) as Record<
     ActionButtonOffsetKey,
     ActionButtonOffsetTuning
   >;
+}
+
+function cloneClassicActionButtonSlots(
+  source: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>,
+): Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> {
+  return Object.fromEntries(
+    CLASSIC_ACTION_WHEEL_MODES.map((mode) => [
+      mode,
+      Object.fromEntries(ACTION_BUTTON_OFFSET_KEYS.map((key) => [key, { ...source[mode][key] }])) as Record<
+        ActionButtonOffsetKey,
+        ClassicActionButtonSlotTuning
+      >,
+    ]),
+  ) as Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
 }
 
 function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
@@ -1183,6 +1285,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     ...source,
     selectedRigParts: [...source.selectedRigParts],
     actionButtonOffsets: cloneActionButtonOffsets(source.actionButtonOffsets),
+    classicActionButtonSlots: cloneClassicActionButtonSlots(source.classicActionButtonSlots),
     rigParts: cloneRigParts(source.rigParts),
     faceParts: cloneFaceParts(source.faceParts),
     equipment: cloneEquipment(source.equipment),
@@ -1254,6 +1357,41 @@ function normalizeActionButtonOffsets(
       ];
     }),
   ) as Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
+}
+
+function normalizeClassicActionButtonSlots(
+  input: unknown,
+  fallbackSlots = DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS,
+): Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> {
+  const source =
+    typeof input === "object" && input !== null
+      ? (input as Partial<Record<ClassicActionWheelMode, Partial<Record<ActionButtonOffsetKey, Partial<ClassicActionButtonSlotTuning>>>>>)
+      : {};
+
+  return Object.fromEntries(
+    CLASSIC_ACTION_WHEEL_MODES.map((mode) => {
+      const modeSlots = typeof source[mode] === "object" && source[mode] !== null ? source[mode] : {};
+
+      return [
+        mode,
+        Object.fromEntries(
+          ACTION_BUTTON_OFFSET_KEYS.map((key) => {
+            const slot = modeSlots[key] ?? {};
+            const fallback = fallbackSlots[mode]?.[key] ?? defaultClassicActionButtonSlotTuning;
+
+            return [
+              key,
+              {
+                x: clampNumber(slot.x, -240, 240, fallback.x),
+                y: clampNumber(slot.y, -180, 80, fallback.y),
+                rotation: clampNumber(slot.rotation, -180, 180, fallback.rotation),
+              },
+            ];
+          }),
+        ) as Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>,
+      ];
+    }),
+  ) as Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
 }
 
 function cloneIdleAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
@@ -1681,6 +1819,14 @@ function isRigPartKey(value: unknown): value is RigPartKey {
   return typeof value === "string" && RIG_PART_KEYS.includes(value as RigPartKey);
 }
 
+function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {
+  return typeof value === "string" && ACTION_BUTTON_OFFSET_KEYS.includes(value as ActionButtonOffsetKey);
+}
+
+function isClassicActionWheelMode(value: unknown): value is ClassicActionWheelMode {
+  return typeof value === "string" && CLASSIC_ACTION_WHEEL_MODES.includes(value as ClassicActionWheelMode);
+}
+
 function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {
   return typeof value === "string" && BODY_ANIMATION_KEYS.includes(value as BodyAnimationKey);
 }
@@ -1691,6 +1837,10 @@ export function isSlashArcAttackKey(value: unknown): value is SlashArcAttackKey 
 
 function isAnimationEditMode(value: unknown): value is AnimationEditMode {
   return typeof value === "string" && ANIMATION_EDIT_MODES.includes(value as AnimationEditMode);
+}
+
+function isDebugHudMode(value: unknown): value is PlayerHudMode {
+  return value === "immersive" || value === "classic";
 }
 
 function loadDebugTuning(): ArenaDebugTuning {

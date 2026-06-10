@@ -56,6 +56,9 @@ function loadDebugTuningModule() {
             DEFAULT_ACTION_TOKEN_FACE_SHINE: 0.24,
             DEFAULT_ACTION_TOKEN_INNER_SHINE: 0.2,
             DEFAULT_ACTION_TOKEN_STRIPE_SHINE: 0.12,
+            DEFAULT_CLASSIC_HUD_OFFSET_X: 0,
+            DEFAULT_CLASSIC_HUD_OFFSET_Y: 0,
+            DEFAULT_CLASSIC_HUD_SCALE: 1,
             DEFAULT_HUD_BOTTOM_OFFSET: -16,
             DEFAULT_HUD_SIDE_INSET: 8,
             DEFAULT_HUD_SCALE: 1,
@@ -70,9 +73,16 @@ function loadDebugTuningModule() {
             DEFAULT_ACTION_BACK_ANGLE: -166,
             DEFAULT_ACTION_LUNGE_ANGLE: -34,
             DEFAULT_ACTION_LIGHT_ANGLE: -34,
+            DEFAULT_ACTION_MEDIUM_ANGLE: -71,
             DEFAULT_ACTION_HEAVY_ANGLE: -108,
             DEFAULT_ACTION_TAUNT_ANGLE: 28,
             DEFAULT_ACTION_REST_ANGLE: 106,
+          };
+        }
+
+        if (id === "./settingsMenu") {
+          return {
+            DEFAULT_PLAYER_HUD_MODE: "immersive",
           };
         }
 
@@ -121,6 +131,18 @@ test("debug tuning normalizes unsafe values", () => {
     actionTokenFaceShine: 999,
     actionTokenInnerShine: -999,
     actionTokenStripeShine: 999,
+    selectedClassicActionWheelMode: "floating",
+    selectedClassicActionButton: "jump",
+    classicActionButtonSlots: {
+      distance: {
+        forward: { x: 999, y: -999, rotation: 999 },
+      },
+    },
+    classicHudEditMode: "yes",
+    classicHudOffsetX: 999,
+    classicHudOffsetY: -999,
+    classicHudScale: 99,
+    hudMode: "wide",
     hudEditMode: "true",
     hudBottomOffset: -999,
     hudSideInset: 999,
@@ -171,6 +193,17 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.actionTokenFaceShine, 0.6);
   assert.equal(normalized.actionTokenInnerShine, 0);
   assert.equal(normalized.actionTokenStripeShine, 0.6);
+  assert.equal(normalized.selectedClassicActionWheelMode, "distance");
+  assert.equal(normalized.selectedClassicActionButton, "forward");
+  assert.equal(normalized.classicActionButtonSlots.distance.forward.x, 240);
+  assert.equal(normalized.classicActionButtonSlots.distance.forward.y, -180);
+  assert.equal(normalized.classicActionButtonSlots.distance.forward.rotation, 180);
+  assert.equal(normalized.classicActionButtonSlots.clinch.medium.y, -113);
+  assert.equal(normalized.classicHudEditMode, false);
+  assert.equal(normalized.classicHudOffsetX, 240);
+  assert.equal(normalized.classicHudOffsetY, -160);
+  assert.equal(normalized.classicHudScale, 1.6);
+  assert.equal(normalized.hudMode, "immersive");
   assert.equal(normalized.hudEditMode, false);
   assert.equal(normalized.hudBottomOffset, -96);
   assert.equal(normalized.hudSideInset, 64);
@@ -219,6 +252,15 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionTokenFaceShine, 0.24);
   assert.equal(debugTuningModule.defaultDebugTuning.actionTokenInnerShine, 0.2);
   assert.equal(debugTuningModule.defaultDebugTuning.actionTokenStripeShine, 0.12);
+  assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionWheelMode, "distance");
+  assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionButton, "forward");
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 70);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -113);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, 118);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetX, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetY, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicHudScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.hudMode, "immersive");
   assert.equal(debugTuningModule.defaultDebugTuning.hudBottomOffset, -16);
   assert.equal(debugTuningModule.defaultDebugTuning.hudSideInset, 8);
   assert.equal(debugTuningModule.defaultDebugTuning.hudScale, 1);

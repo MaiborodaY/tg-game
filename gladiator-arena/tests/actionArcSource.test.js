@@ -81,10 +81,47 @@ test("classic action bar reuses leather token rendering", () => {
   assert.equal(classicActionBarSource.includes("mountClassicActionBar"), true);
   assert.equal(classicActionBarSource.includes("syncActionTokenButton"), true);
   assert.equal(classicActionBarSource.includes("data-classic-action-bar"), true);
+  assert.equal(classicActionBarSource.includes('wheel.className = "classic-action-bar__wheel"'), true);
   assert.equal(classicActionBarSource.includes("arena-action-click"), true);
   assert.equal(classicActionBarSource.includes("canUseAction"), true);
   assert.equal(stylesSource.includes(".classic-action-bar .action-arc__button"), true);
   assert.equal(stylesSource.includes("body.arena-hud-classic .classic-action-bar"), true);
+});
+
+test("classic action bar swaps semicircle wheel layouts by distance", () => {
+  assert.equal(classicActionBarSource.includes("MELEE_RANGE"), true);
+  assert.equal(classicActionBarSource.includes("CLASSIC_DISTANCE_SLOTS"), true);
+  assert.equal(classicActionBarSource.includes("CLASSIC_CLINCH_SLOTS"), true);
+  assert.equal(classicActionBarSource.includes("CLASSIC_BOW_DISTANCE_SLOTS"), true);
+  assert.equal(classicActionBarSource.includes("classicActionButtonSlots"), true);
+  assert.equal(classicActionBarSource.includes("classicWheelModeTuningKey"), true);
+  assert.equal(classicActionBarSource.includes("classic-action-bar--distance"), true);
+  assert.equal(classicActionBarSource.includes("classic-action-bar--clinch"), true);
+  assert.equal(classicActionBarSource.includes("classic-action-bar--bow-distance"), true);
+  assert.equal(classicActionBarSource.includes("CLASSIC_WHEEL_TURN_MS"), true);
+  assert.equal(classicActionBarSource.includes("createClassicButtonLayer"), true);
+  assert.equal(classicActionBarSource.includes("projectSlotForWheelAngle"), true);
+  assert.equal(classicActionBarSource.includes("const layers = [createClassicButtonLayer(onAction), createClassicButtonLayer(onAction)]"), true);
+  assert.equal(classicActionBarSource.includes('button.style.setProperty("--classic-slot-x"'), true);
+  assert.equal(classicActionBarSource.includes('button.style.setProperty("--classic-slot-y"'), true);
+  assert.equal(stylesSource.includes(".classic-action-bar__wheel::before"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar__layer"), true);
+  assert.equal(stylesSource.includes("--classic-wheel-diameter: min(420px, calc(100vw - 12px))"), true);
+  assert.equal(stylesSource.includes("--classic-wheel-radius: calc(var(--classic-wheel-diameter) / 2)"), true);
+  assert.equal(stylesSource.includes("height: var(--classic-wheel-radius)"), true);
+  assert.equal(stylesSource.includes("border-radius: 50%"), true);
+  assert.equal(stylesSource.includes("rotate(var(--classic-wheel-angle))"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar--turning .classic-action-bar__button"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar__button--visible"), true);
+  assert.equal(classicActionBarSource.includes("classic-action-bar__button--dimmed"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar__button--dimmed"), true);
+});
+
+test("classic bow distance layout keeps ranged attacks visible", () => {
+  assert.equal(classicActionBarSource.includes("isBowFighter(state.player) && state.distance > MELEE_RANGE"), true);
+  assert.equal(classicActionBarSource.includes('{ actionId: "light", x: -78'), true);
+  assert.equal(classicActionBarSource.includes('{ actionId: "medium", x: 0'), true);
+  assert.equal(classicActionBarSource.includes('{ actionId: "heavy", x: 78'), true);
 });
 
 test("debug tuning can tune leather token fine details", () => {

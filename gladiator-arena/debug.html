@@ -81,6 +81,48 @@
             <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
             <div class="battle-ui" aria-label="Battle overlay">
               <button id="restartButton" class="restart stage-restart" type="button">Restart</button>
+              <section class="classic-combat-hud" aria-label="Classic fighter stats">
+                <article class="classic-fighter-card classic-fighter-card--player">
+                  <strong id="classicPlayerName">Borshemir</strong>
+                  <div class="classic-stat classic-stat--hp">
+                    <span>HP</span>
+                    <div class="classic-stat__track"><div id="classicPlayerHpFill" class="classic-stat__fill hp-fill"></div></div>
+                    <em id="classicPlayerHpText">10/10</em>
+                  </div>
+                  <div class="classic-stat classic-stat--armor">
+                    <span>AR</span>
+                    <div class="classic-stat__track"><div id="classicPlayerArmorFill" class="classic-stat__fill armor-fill"></div></div>
+                    <em id="classicPlayerArmorText">0/0</em>
+                  </div>
+                  <div class="classic-stat classic-stat--stamina">
+                    <span>ST</span>
+                    <div class="classic-stat__track"><div id="classicPlayerStaFill" class="classic-stat__fill stamina-fill"></div></div>
+                    <em id="classicPlayerStaText">10/10</em>
+                  </div>
+                </article>
+                <div class="classic-distance-badge" aria-label="Arena range">
+                  <span>Distance</span>
+                  <strong id="classicDistanceText">Far</strong>
+                </div>
+                <article class="classic-fighter-card classic-fighter-card--enemy">
+                  <strong id="classicEnemyName">Grumbus</strong>
+                  <div class="classic-stat classic-stat--hp">
+                    <span>HP</span>
+                    <div class="classic-stat__track"><div id="classicEnemyHpFill" class="classic-stat__fill hp-fill"></div></div>
+                    <em id="classicEnemyHpText">10/10</em>
+                  </div>
+                  <div class="classic-stat classic-stat--armor">
+                    <span>AR</span>
+                    <div class="classic-stat__track"><div id="classicEnemyArmorFill" class="classic-stat__fill armor-fill"></div></div>
+                    <em id="classicEnemyArmorText">0/0</em>
+                  </div>
+                  <div class="classic-stat classic-stat--stamina">
+                    <span>ST</span>
+                    <div class="classic-stat__track"><div id="classicEnemyStaFill" class="classic-stat__fill stamina-fill"></div></div>
+                    <em id="classicEnemyStaText">10/10</em>
+                  </div>
+                </article>
+              </section>
               <section class="fighters-strip arena-fighters-strip flask-hud" aria-label="Fighter stats">
               <div class="fighter-flasks player-flasks">
                 <div class="flask-row" aria-label="Borshemir resources">
@@ -124,6 +166,7 @@
                 <strong class="fighter-name">Grumbus</strong>
               </div>
             </section>
+            <section class="classic-action-bar" aria-label="Combat actions" data-classic-action-bar></section>
             </div>
             <div id="resultBanner" class="result-banner" hidden></div>
             <button id="cityButton" class="restart city-return" type="button" hidden>Back to City</button>

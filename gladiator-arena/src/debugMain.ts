@@ -9,6 +9,7 @@ import {
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
 import {
@@ -59,6 +60,7 @@ let hero: HeroState = {
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
+let classicActionBar: ClassicActionBarApi | undefined;
 let turnSequenceToken = 0;
 let isTurnAnimationLocked = false;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
@@ -89,6 +91,14 @@ interface HudDragState {
 
 let hudDragState: HudDragState | undefined;
 
+interface ClassicHudDragState {
+  pointerId: number;
+  lastX: number;
+  lastY: number;
+}
+
+let classicHudDragState: ClassicHudDragState | undefined;
+
 function commitState(nextState: CombatState): Promise<void> {
   state = applyBattleRewardIfNeeded(nextState);
   renderDom(dom, state);
@@ -106,7 +116,10 @@ function syncTurnProbe(): void {
 }
 
 function syncActionArc(): void {
-  actionArc?.sync(isTurnAnimationLocked ? { ...state, activeTurn: "enemy" } : state);
+  const visibleState = isTurnAnimationLocked ? { ...state, activeTurn: "enemy" as const } : state;
+
+  actionArc?.sync(visibleState);
+  classicActionBar?.sync(visibleState);
 }
 
 function setTurnAnimationLocked(locked: boolean): void {
@@ -344,6 +357,8 @@ function finishHeroPortraitButtonDrag(event?: PointerEvent): void {
 
 function syncHud(): void {
   syncHudTuning(dom.gameScreen, debugTuning);
+  document.body.classList.toggle("arena-hud-classic", debugTuning.hudMode === "classic");
+  document.body.classList.toggle("arena-hud-immersive", debugTuning.hudMode === "immersive");
 }
 
 function mountHudDebug(): void {
@@ -405,6 +420,94 @@ function mountHudDebug(): void {
   );
 }
 
+function mountClassicHudDebug(): void {
+  const classicHud = dom.gameScreen.querySelector<HTMLElement>("[data-classic-action-bar]");
+
+  if (!classicHud) {
+    return;
+  }
+
+  classicHud.addEventListener(
+    "click",
+    (event) => {
+      if (!debugTuning.classicHudEditMode) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    true,
+  );
+
+  classicHud.addEventListener("pointerdown", (event) => {
+    if (!debugTuning.classicHudEditMode || event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    classicHud.setPointerCapture(event.pointerId);
+    beginDebugUndoGroup();
+    classicHudDragState = {
+      pointerId: event.pointerId,
+      lastX: event.clientX,
+      lastY: event.clientY,
+    };
+  });
+
+  classicHud.addEventListener("pointermove", (event) => {
+    if (!classicHudDragState || classicHudDragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - classicHudDragState.lastX;
+    const deltaY = event.clientY - classicHudDragState.lastY;
+
+    if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+      return;
+    }
+
+    updateDebugTuning({
+      classicHudOffsetX: debugTuning.classicHudOffsetX + deltaX,
+      classicHudOffsetY: debugTuning.classicHudOffsetY - deltaY,
+    });
+    classicHudDragState.lastX = event.clientX;
+    classicHudDragState.lastY = event.clientY;
+  });
+
+  classicHud.addEventListener("pointerup", finishClassicHudDrag);
+  classicHud.addEventListener("pointercancel", finishClassicHudDrag);
+  classicHud.addEventListener("lostpointercapture", () => finishClassicHudDrag());
+  classicHud.addEventListener(
+    "wheel",
+    (event) => {
+      if (!debugTuning.classicHudEditMode) {
+        return;
+      }
+
+      event.preventDefault();
+      updateDebugTuning({
+        classicHudScale: debugTuning.classicHudScale + (event.deltaY > 0 ? -0.03 : 0.03),
+      });
+    },
+    { passive: false },
+  );
+}
+
+function finishClassicHudDrag(event?: PointerEvent): void {
+  if (event && classicHudDragState?.pointerId !== event.pointerId) {
+    return;
+  }
+
+  if (!classicHudDragState) {
+    return;
+  }
+
+  classicHudDragState = undefined;
+  endDebugUndoGroup();
+}
+
 function finishHudDrag(event?: PointerEvent): void {
   if (event && hudDragState?.pointerId !== event.pointerId) {
     return;
@@ -435,6 +538,7 @@ function startDebugApp(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   mountHeroPortraitButtonDebug();
   mountHudDebug();
+  mountClassicHudDebug();
   if (cityMenu) {
     weaponShop = mountWeaponShop(cityMenu, {
       getHero: () => hero,
@@ -479,6 +583,7 @@ function startDebugApp(): void {
       });
     },
   });
+  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {

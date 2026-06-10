@@ -1,6 +1,7 @@
 export type PlayerAnimationMode = "normal" | "half" | "off";
 export type PlayerShadowMode = "high" | "low" | "off";
 export type PlayerHudMode = "immersive" | "classic";
+export const DEFAULT_PLAYER_HUD_MODE: PlayerHudMode = "classic";
 
 export interface PlayerSettings {
   lowEffects: boolean;
@@ -19,7 +20,7 @@ const defaultSettings: PlayerSettings = {
   animationMode: "normal",
   vfxEnabled: true,
   shadowMode: "high",
-  hudMode: "immersive",
+  hudMode: DEFAULT_PLAYER_HUD_MODE,
   showFps: false,
 };
 let cachedSettings: PlayerSettings | undefined;
