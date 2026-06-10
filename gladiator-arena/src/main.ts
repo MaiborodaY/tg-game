@@ -3,6 +3,7 @@ import {
   launchArena,
   mountCityHeroPreview,
   mountHeroPortraitPreview,
+  prewarmArenaAssetsForBrowserCache,
   setPlayerEquipment,
   type ArenaScene,
   type CitySceneApi,
@@ -58,6 +59,7 @@ const CITY_CURTAIN_TRANSITION_MS = 620;
 const CITY_CURTAIN_SWITCH_MS = 210;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
+let isArenaTransitionRunning = false;
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
@@ -233,11 +235,22 @@ function mountArena(): void {
   unmountArena?.();
   unmountArena = undefined;
   arenaScene = undefined;
+  dom.gameScreen.classList.add("battle-screen--arena-entry");
 
   window.requestAnimationFrame(() => {
     unmountArena = launchArena((scene) => {
       arenaScene = scene;
-      arenaScene.sync(state);
+      const arenaEntryAnimation = arenaScene.sync(state);
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          dom.gameScreen.classList.remove("battle-screen--arena-entry");
+        });
+      });
+
+      void arenaEntryAnimation.finally(() => {
+        dom.gameScreen.classList.remove("battle-screen--arena-entry");
+      });
       refreshArenaLayout();
     }, handleAction, hero.equipment);
   });
@@ -247,6 +260,7 @@ function unmountArenaScene(): void {
   unmountArena?.();
   unmountArena = undefined;
   arenaScene = undefined;
+  dom.gameScreen.classList.remove("battle-screen--arena-entry");
 }
 
 function startGame(): void {
@@ -257,6 +271,7 @@ function startGame(): void {
   if (hasStarted) {
     isInCity = false;
     dom.mainMenu.hidden = true;
+    dom.gameScreen.classList.add("battle-screen--arena-entry");
     dom.gameScreen.hidden = false;
     document.body.classList.add("arena-active");
     restart({ syncArena: false });
@@ -267,6 +282,7 @@ function startGame(): void {
   hasStarted = true;
   isInCity = false;
   dom.mainMenu.hidden = true;
+  dom.gameScreen.classList.add("battle-screen--arena-entry");
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
@@ -274,6 +290,31 @@ function startGame(): void {
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   restart({ syncArena: false });
   mountArena();
+}
+
+async function startGameWithCityTransition(): Promise<void> {
+  if (isArenaTransitionRunning) {
+    return;
+  }
+
+  if (!isInCity) {
+    startGame();
+    return;
+  }
+
+  isArenaTransitionRunning = true;
+  dom.startButton.disabled = true;
+  clearShopPreview();
+  void prewarmArenaAssetsForBrowserCache();
+  cityMenu?.classList.add("city-menu--arena-transition");
+
+  try {
+    await (cityScene?.focusArenaTransition() ?? Promise.resolve());
+  } finally {
+    startGame();
+    dom.startButton.disabled = false;
+    isArenaTransitionRunning = false;
+  }
 }
 
 function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
@@ -328,12 +369,16 @@ function clearShopPreview(): void {
 function returnToCity(): void {
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
+  isArenaTransitionRunning = false;
   isInCity = true;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
   unmountArenaScene();
   dom.gameScreen.hidden = true;
   dom.mainMenu.hidden = false;
+  dom.startButton.disabled = false;
+  dom.gameScreen.classList.remove("battle-screen--arena-entry");
+  cityMenu?.classList.remove("city-menu--arena-transition");
   document.body.classList.remove("arena-active");
   mountCityPreviews();
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
@@ -349,7 +394,9 @@ function restart(options: { syncArena?: boolean } = {}): void {
   void commitState(createCombatStateFromHero(hero), options);
 }
 
-dom.startButton.addEventListener("click", startGame);
+dom.startButton.addEventListener("click", () => {
+  void startGameWithCityTransition();
+});
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
 weaponShopButton?.addEventListener("click", () => {

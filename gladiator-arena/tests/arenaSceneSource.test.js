@@ -80,6 +80,15 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
 });
 
+test("arena starts close between fighters and eases back to the normal camera", () => {
+  assert.equal(arenaSceneSource.includes('type ArenaEntryTransitionState = "pending" | "running" | "done"'), true);
+  assert.equal(arenaSceneSource.includes("ARENA_ENTRY_START_ZOOM_MULTIPLIER"), true);
+  assert.equal(arenaSceneSource.includes("private startArenaEntryTransition(current: CombatState): Promise<void> | undefined"), true);
+  assert.equal(arenaSceneSource.includes("getArenaEntryStartCameraTarget(finalTarget)"), true);
+  assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS"), true);
+  assert.equal(arenaSceneSource.includes('target.arenaEntryTransitionState === "running"'), true);
+});
+
 test("city shop camera zoom fits the hero inside the current viewport", () => {
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO"), true);
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO"), true);
@@ -103,4 +112,26 @@ test("city shop hero can be dragged vertically without changing city base layout
   assert.equal(arenaSceneSource.includes("private dragShopHero"), true);
   assert.match(arenaSceneSource, /shopOffsetY \/ shopZoom/);
   assert.doesNotMatch(arenaSceneSource, /debugTuning\.cityHeroY\s*=/);
+});
+
+test("city scene can zoom the background camera into the coliseum for arena entry", () => {
+  assert.equal(arenaSceneSource.includes('type CityCameraMode = "default" | "armory" | "weaponShop" | "arena"'), true);
+  assert.equal(arenaSceneSource.includes("focusArenaTransition: () => Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("CITY_ARENA_FOCUS_X_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("CITY_ARENA_FOCUS_Y_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("CITY_ARENA_TRANSITION_ZOOM"), true);
+  assert.equal(arenaSceneSource.includes("focusArenaTransition(): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("private tweenArenaCameraToColiseum(): Promise<void>"), true);
+  assert.match(arenaSceneSource, /targets: camera[\s\S]*zoom[\s\S]*scrollX[\s\S]*scrollY/);
+});
+
+test("arena entry can prewarm arena image assets through the browser cache", () => {
+  assert.equal(arenaSceneSource.includes("export function prewarmArenaAssetsForBrowserCache(): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("arenaAssetPrewarmPromise ??="), true);
+  assert.equal(arenaSceneSource.includes("function getArenaAssetPrewarmUrls(): string[]"), true);
+  assert.equal(arenaSceneSource.includes("ARENA_BACKGROUND_BACK_LAYER_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("ARENA_BACKGROUND_MID_LAYER_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL"), true);
+  assert.match(arenaSceneSource, /const image = new Image\(\)/);
+  assert.match(arenaSceneSource, /image\.src = url/);
 });

@@ -59,7 +59,7 @@ import {
   PLAYER_AVATAR_FEET_Y_OFFSET,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
-import type { CameraViewport } from "./arenaCamera";
+import type { CameraTarget, CameraViewport } from "./arenaCamera";
 import { getBattleSafeArea } from "./battleSafeArea";
 import { getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
 import {
@@ -287,6 +287,8 @@ interface ArenaLayerTransform {
   scale: number;
 }
 
+type ArenaEntryTransitionState = "pending" | "running" | "done";
+
 const ARENA_LAYER_PARALLAX: Record<keyof Omit<ArenaLayers, "all">, ArenaLayerParallax> = {
   back: { followX: 0.06, followY: 0.04, zoom: 0.3, lookUpY: 150 },
   mid: { followX: 0.22, followY: 0.16, zoom: 0.42, lookUpY: 132 },
@@ -297,6 +299,10 @@ const ARENA_LAYER_PARALLAX: Record<keyof Omit<ArenaLayers, "all">, ArenaLayerPar
 
 const ARENA_CAMERA_TWEEN_DURATION_MS = 560;
 const ARENA_CAMERA_TWEEN_EASE = "Cubic.easeInOut";
+const ARENA_ENTRY_TRANSITION_DURATION_MS = 850;
+const ARENA_ENTRY_TRANSITION_EASE = "Cubic.easeInOut";
+const ARENA_ENTRY_START_ZOOM_MULTIPLIER = 10;
+const ARENA_ENTRY_START_CLOSENESS = 0.30;
 
 const PAPER_DOLL_BASE_SCALE = 0.52;
 const PAPER_DOLL_SHADOW_DEPTH = -1;
@@ -395,6 +401,10 @@ const CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO = 0.68;
 const CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO = 0.78;
 const CITY_CAMERA_SHOP_LOOK_UP_RATIO = 0.16;
 const CITY_CAMERA_TWEEN_DURATION = 420;
+const CITY_ARENA_TRANSITION_DURATION = 950;
+const CITY_ARENA_TRANSITION_ZOOM = 2.7;
+const CITY_ARENA_FOCUS_X_RATIO = 0.21;
+const CITY_ARENA_FOCUS_Y_RATIO = 0;
 const CITY_BACKGROUND_FADE_DURATION = 220;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 24;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 15;
@@ -659,6 +669,8 @@ let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
 let activePaperDollAssetsUseLowRes = false;
+let arenaAssetPrewarmPromise: Promise<void> | undefined;
+const arenaAssetPrewarmImages = new Set<HTMLImageElement>();
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -668,6 +680,12 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, ARENA_BACKGROUND_BACK_LAYER_ASSET_URL);
   target.load.image(ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, ARENA_BACKGROUND_MID_LAYER_ASSET_URL);
   target.load.image(ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL);
+}
+
+export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
+  arenaAssetPrewarmPromise ??= Promise.all(getArenaAssetPrewarmUrls().map(prewarmImageUrl)).then(() => undefined);
+
+  return arenaAssetPrewarmPromise;
 }
 
 function preloadCityAssets(target: Phaser.Scene): void {
@@ -727,6 +745,31 @@ function getPaperDollAssetLoadEntries(lowRes: boolean): PaperDollAssetLoadEntry[
   });
 
   return [...entries.entries()].map(([key, url]) => ({ key, url }));
+}
+
+function getArenaAssetPrewarmUrls(): string[] {
+  return [ARENA_BACKGROUND_BACK_LAYER_ASSET_URL, ARENA_BACKGROUND_MID_LAYER_ASSET_URL, ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL];
+}
+
+function prewarmImageUrl(url: string): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    const finish = () => {
+      arenaAssetPrewarmImages.delete(image);
+      resolve();
+    };
+
+    arenaAssetPrewarmImages.add(image);
+    image.decoding = "async";
+    image.loading = "eager";
+    image.onload = finish;
+    image.onerror = finish;
+    image.src = url;
+  });
 }
 
 function getActivePaperDollAssetKey(assetKey: string): string {
@@ -816,6 +859,7 @@ export class ArenaScene extends Phaser.Scene {
   arenaLayers?: ArenaLayers;
   currentState?: CombatState;
   cameraFrameInitialized?: boolean;
+  arenaEntryTransitionState: ArenaEntryTransitionState = "pending";
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
@@ -884,6 +928,12 @@ export class ArenaScene extends Phaser.Scene {
     resetDeathEffectsForLiveFighters(this, visuals, nextState);
     renderScene(this, nextState);
 
+    const entryTransition = this.startArenaEntryTransition(nextState);
+
+    if (entryTransition) {
+      actionAnimations.push(entryTransition);
+    }
+
     const lastPlayerAction = nextState.lastPlayerAction;
     const lastEnemyAction = nextState.lastEnemyAction;
 
@@ -912,6 +962,43 @@ export class ArenaScene extends Phaser.Scene {
     scheduleDeathEffects(this, nextState);
 
     return Promise.all(actionAnimations).then(() => undefined);
+  }
+
+  private startArenaEntryTransition(current: CombatState): Promise<void> | undefined {
+    const layers = this.arenaLayers;
+
+    if (this.arenaEntryTransitionState !== "pending") {
+      return undefined;
+    }
+
+    if (isDebugTuningActive()) {
+      this.arenaEntryTransitionState = "done";
+      return undefined;
+    }
+
+    if (!layers) {
+      return undefined;
+    }
+
+    this.arenaEntryTransitionState = "running";
+
+    const finalTarget = getCameraTarget(current, getActiveDebugTuning(), getArenaViewport(this));
+    const startTarget = getArenaEntryStartCameraTarget(finalTarget);
+
+    this.tweens.killTweensOf(layers.all);
+    applyArenaTransform(layers, startTarget);
+
+    return tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE)
+      .then(() => {
+        if (!this.currentState) {
+          return;
+        }
+
+        applyArenaTransform(layers, getCameraTarget(this.currentState, getActiveDebugTuning(), getArenaViewport(this)));
+      })
+      .finally(() => {
+        this.arenaEntryTransitionState = "done";
+      });
   }
 
   previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
@@ -954,7 +1041,7 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
   };
 }
 
-type CityCameraMode = "default" | "armory" | "weaponShop";
+type CityCameraMode = "default" | "armory" | "weaponShop" | "arena";
 
 interface CityHeroLayout {
   feetX: number;
@@ -977,6 +1064,7 @@ export interface CitySceneApi {
   focusDefault: (instant?: boolean) => void;
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
+  focusArenaTransition: () => Promise<void>;
   destroy: () => void;
 }
 
@@ -1069,6 +1157,8 @@ class CityHeroScene extends Phaser.Scene {
   focusDefault(instant = false): void {
     this.cameraMode = "default";
     this.endShopHeroDrag();
+    this.resetBackgroundCamera();
+    this.getHeroCamera().setAlpha(1);
     this.setCityHeroShadowEnabled(true);
     this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(1, instant);
@@ -1092,6 +1182,18 @@ class CityHeroScene extends Phaser.Scene {
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
     this.syncCamera(instant, 1);
+  }
+
+  focusArenaTransition(): Promise<void> {
+    this.cameraMode = "arena";
+    this.endShopHeroDrag();
+    this.cityHeroLiftTween?.remove();
+    this.cityHeroLiftTween = undefined;
+    this.setCityHeroShadowEnabled(false);
+    this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY, true);
+    this.transitionCityCloudsTo(0);
+
+    return this.tweenArenaCameraToColiseum();
   }
 
   private sync(): void {
@@ -1356,6 +1458,10 @@ class CityHeroScene extends Phaser.Scene {
     const duration = instant ? 0 : CITY_CAMERA_TWEEN_DURATION;
     const layout = this.getHeroLayout(targetLiftProgress);
 
+    if (this.cameraMode === "arena") {
+      return;
+    }
+
     if (this.cameraMode !== "default") {
       const shopZoom = this.getShopCameraZoom(layout);
       const shopOffsetY = getShopHeroOffsetY();
@@ -1389,6 +1495,45 @@ class CityHeroScene extends Phaser.Scene {
 
   private getHeroCamera(): Phaser.Cameras.Scene2D.Camera {
     return this.heroCamera ?? this.cameras.main;
+  }
+
+  private resetBackgroundCamera(): void {
+    const camera = this.cameras.main;
+
+    this.tweens.killTweensOf(camera);
+    camera.setZoom(CITY_CAMERA_DEFAULT_ZOOM);
+    camera.centerOn(this.sceneWidth / 2, this.sceneHeight / 2);
+  }
+
+  private tweenArenaCameraToColiseum(): Promise<void> {
+    const camera = this.cameras.main;
+    const focusX = this.sceneWidth * CITY_ARENA_FOCUS_X_RATIO;
+    const focusY = this.sceneHeight * CITY_ARENA_FOCUS_Y_RATIO;
+    const zoom = CITY_ARENA_TRANSITION_ZOOM;
+    const targetScrollX = focusX - this.sceneWidth / (2 * zoom);
+    const targetScrollY = focusY - this.sceneHeight / (2 * zoom);
+
+    this.tweens.killTweensOf(camera);
+    this.tweens.killTweensOf(this.getHeroCamera());
+    this.getHeroCamera().setAlpha(1);
+
+    return new Promise((resolve) => {
+      this.tweens.add({
+        targets: camera,
+        zoom,
+        scrollX: targetScrollX,
+        scrollY: targetScrollY,
+        duration: CITY_ARENA_TRANSITION_DURATION,
+        ease: "Cubic.easeInOut",
+        onComplete: () => resolve(),
+      });
+      this.tweens.add({
+        targets: this.getHeroCamera(),
+        alpha: 0.18,
+        duration: CITY_ARENA_TRANSITION_DURATION,
+        ease: "Sine.easeInOut",
+      });
+    });
   }
 
   private beginShopHeroDrag(pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
@@ -1510,6 +1655,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       pendingCameraMode = "weaponShop";
       scene?.focusWeaponShop(instant);
     },
+    focusArenaTransition: () => scene?.focusArenaTransition() ?? Promise.resolve(),
     destroy: () => {
       if (cityReadyCallback === readyCallbackForGame) {
         cityReadyCallback = undefined;
@@ -3487,6 +3633,10 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
 
   syncArenaMainCamera(target);
 
+  if (target.arenaEntryTransitionState === "running") {
+    return;
+  }
+
   if (isPendingEnemyResponse && target.cameraFrameInitialized) {
     target.tweens.killTweensOf(layers.all);
     return;
@@ -3511,6 +3661,68 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
       scaleY: transform.scale,
       duration: ARENA_CAMERA_TWEEN_DURATION_MS,
       ease: ARENA_CAMERA_TWEEN_EASE,
+    });
+  });
+}
+
+function getArenaEntryStartCameraTarget(cameraTarget: CameraTarget): CameraTarget {
+  const zoom = cameraTarget.zoom * ARENA_ENTRY_START_ZOOM_MULTIPLIER;
+
+  return {
+    ...cameraTarget,
+    zoom,
+    closeness: Math.max(cameraTarget.closeness, ARENA_ENTRY_START_CLOSENESS),
+    scrollX: cameraTarget.centerX - cameraTarget.viewportWidth / (2 * zoom),
+    scrollY: cameraTarget.centerY - cameraTarget.viewportHeight / (2 * zoom),
+  };
+}
+
+function tweenArenaTransform(
+  target: ArenaScene,
+  layers: ArenaLayers,
+  cameraTarget: CameraTarget,
+  duration: number,
+  ease: string,
+): Promise<void> {
+  const transforms = getArenaLayerTransforms(layers, cameraTarget);
+
+  if (transforms.length <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let remainingTweens = transforms.length;
+    let resolved = false;
+
+    function finish(): void {
+      if (resolved) {
+        return;
+      }
+
+      resolved = true;
+      target.events.off(Phaser.Scenes.Events.SHUTDOWN, finish);
+      resolve();
+    }
+
+    target.events.once(Phaser.Scenes.Events.SHUTDOWN, finish);
+
+    transforms.forEach((transform) => {
+      target.tweens.add({
+        targets: transform.layer,
+        x: transform.x,
+        y: transform.y,
+        scaleX: transform.scale,
+        scaleY: transform.scale,
+        duration,
+        ease,
+        onComplete: () => {
+          remainingTweens -= 1;
+
+          if (remainingTweens <= 0) {
+            finish();
+          }
+        },
+      });
     });
   });
 }
