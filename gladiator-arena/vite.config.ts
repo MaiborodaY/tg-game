@@ -16,6 +16,7 @@ const promotedEquipmentResizeRules = [
   { maxSide: 512, pattern: /^assets\/fighters\/armor\/arms\// },
   { maxSide: 512, pattern: /^assets\/fighters\/armor\/breastplate\// },
   { maxSide: 512, pattern: /^assets\/fighters\/armor\/legs\// },
+  { maxSide: 512, pattern: /^assets\/fighters\/weapons\// },
 ] as const;
 
 const prodDefaultFields = {
@@ -220,6 +221,7 @@ interface BodyAnimationUpdates {
 interface PromoteEquipmentItemPayload {
   name?: unknown;
   armorHp?: unknown;
+  damageBonus?: unknown;
   price?: unknown;
   addToShop?: unknown;
   item?: unknown;
@@ -231,10 +233,11 @@ interface PromoteEquipmentItemPayload {
 interface GeneratedEquipmentJsonRecord {
   id: string;
   name: string;
-  kind: "armor";
+  kind: "armor" | "weapon";
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: EquipmentSlotKey;
-  armorHp: number;
+  armorHp?: number;
+  damageBonus?: number;
   assetKeys: Record<string, string>;
   equipmentTuning: RigPartTuning;
   asset: {
@@ -243,6 +246,13 @@ interface GeneratedEquipmentJsonRecord {
     lowSourcePath?: string;
   };
   armoryProduct?: {
+    id: string;
+    name: string;
+    price: number;
+    itemIds: string[];
+    categoryId: string;
+  };
+  weaponProduct?: {
     id: string;
     name: string;
     price: number;
@@ -676,25 +686,26 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   const item = readPlainObject(promotion.item, "item");
   const asset = readPlainObject(promotion.asset, "asset");
   const assetKeys = readStringRecord(promotion.assetKeys, "assetKeys");
+  const kind = readGeneratedEquipmentKind(item.kind);
   const equipmentSlot = readEquipmentSlot(item.equipmentSlot);
   const equipmentTuning = readPromotedEquipmentTuning(promotion.equipmentTuning);
   const assetKey = readNonEmptyString(asset.key, "asset.key");
-  const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "asset.sourcePath", [".png", ".webp"]);
+  const sourcePath = readAssetSourcePath(asset.sourcePath, getEquipmentAssetSourcePrefix(kind), "asset.sourcePath", [".png", ".webp"]);
   const lowSourcePath =
     typeof asset.lowSourcePath === "string" && asset.lowSourcePath.trim()
-      ? readAssetSourcePath(asset.lowSourcePath, "assets-low/fighters/armor/", "asset.lowSourcePath")
+      ? readAssetSourcePath(asset.lowSourcePath, getEquipmentAssetLowSourcePrefix(kind), "asset.lowSourcePath")
       : undefined;
-  const armorCategory = readArmorCategory(item.armorCategory);
+  const armorCategory = kind === "armor" ? readArmorCategory(item.armorCategory) : undefined;
   const name = readNonEmptyString(promotion.name, "name").slice(0, 80);
-  const armorHp = Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.armorHp, "armorHp"))));
+  const armorHp = kind === "armor" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.armorHp, "armorHp")))) : undefined;
+  const damageBonus =
+    kind === "weapon" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.damageBonus, "damageBonus")))) : undefined;
   const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(promotion.price, "price"))));
   const addToShop = promotion.addToShop === true;
   const categoryId = getArmoryCategoryId(equipmentSlot);
   const id = `generated_equipment_${toIdentifier(assetKey)}`;
 
-  if (equipmentSlot === "weaponMain") {
-    throw new Error("Promoted armor item cannot use weaponMain slot.");
-  }
+  validateGeneratedEquipmentSlot(kind, equipmentSlot);
 
   if (!Object.values(assetKeys).includes(assetKey)) {
     throw new Error("Promoted item assetKeys must reference asset.key.");
@@ -710,10 +721,11 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   return {
     id,
     name,
-    kind: "armor",
+    kind,
     ...(armorCategory ? { armorCategory } : {}),
+    ...(armorHp !== undefined ? { armorHp } : {}),
+    ...(damageBonus !== undefined ? { damageBonus } : {}),
     equipmentSlot,
-    armorHp,
     assetKeys,
     equipmentTuning,
     asset: {
@@ -721,7 +733,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
       sourcePath: promotedAssetPaths.sourcePath,
       ...(promotedAssetPaths.lowSourcePath ? { lowSourcePath: promotedAssetPaths.lowSourcePath } : {}),
     },
-    ...(addToShop && categoryId
+    ...(addToShop && kind === "armor" && categoryId
       ? {
           armoryProduct: {
             id,
@@ -729,6 +741,17 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
             price,
             itemIds: [id],
             categoryId,
+          },
+        }
+      : {}),
+    ...(addToShop && kind === "weapon"
+      ? {
+          weaponProduct: {
+            id,
+            name,
+            price,
+            itemIds: [id],
+            categoryId: getWeaponCategoryId(assetKey, name),
           },
         }
       : {}),
@@ -819,7 +842,9 @@ function getGeneratedEquipmentAssetRemovalPaths(
 }
 
 function getGeneratedEquipmentSourcePngPath(sourcePath: string): string | undefined {
-  return sourcePath.startsWith("assets/fighters/armor/") && sourcePath.endsWith(".webp") ? sourcePath.replace(/\.webp$/i, ".png") : undefined;
+  const canHaveSourcePng = sourcePath.startsWith("assets/fighters/armor/") || sourcePath.startsWith("assets/fighters/weapons/");
+
+  return canHaveSourcePng && sourcePath.endsWith(".webp") ? sourcePath.replace(/\.webp$/i, ".png") : undefined;
 }
 
 async function convertPromotedEquipmentPngAsset(sourcePath: string): Promise<{ sourcePath: string; lowSourcePath: string }> {
@@ -889,12 +914,21 @@ export interface GeneratedArmoryProduct {
   categoryId: string;
 }
 
+export interface GeneratedWeaponProduct {
+  id: string;
+  name: string;
+  price: number;
+  itemIds: HeroItemId[];
+  categoryId: string;
+}
+
 export interface GeneratedEquipmentItemRecord {
   item: HeroItemDefinition;
   assetKeys: EquipmentItemAssetKeys;
   equipmentTuning?: EquipmentTuning;
   asset: EquipmentAssetDefinition;
   armoryProduct?: GeneratedArmoryProduct;
+  weaponProduct?: GeneratedWeaponProduct;
 }
 
 export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [${rows ? `\n${rows}\n` : ""}];
@@ -918,6 +952,10 @@ export const GENERATED_EQUIPMENT_ASSETS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((
 export const GENERATED_ARMORY_PRODUCTS = GENERATED_EQUIPMENT_ITEM_RECORDS.flatMap((record) =>
   record.armoryProduct ? [record.armoryProduct] : [],
 );
+
+export const GENERATED_WEAPON_PRODUCTS = GENERATED_EQUIPMENT_ITEM_RECORDS.flatMap((record) =>
+  record.weaponProduct ? [record.weaponProduct] : [],
+);
 `;
 }
 
@@ -928,7 +966,8 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     kind: record.kind,
     ...(record.armorCategory ? { armorCategory: record.armorCategory } : {}),
     equipmentSlot: record.equipmentSlot,
-    armorHp: record.armorHp,
+    ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
+    ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
   };
 
   return [
@@ -944,6 +983,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     ...(record.asset.lowSourcePath ? [`      lowSourcePath: ${JSON.stringify(record.asset.lowSourcePath)},`] : []),
     "    },",
     ...(record.armoryProduct ? [`    armoryProduct: ${JSON.stringify(record.armoryProduct)},`] : []),
+    ...(record.weaponProduct ? [`    weaponProduct: ${JSON.stringify(record.weaponProduct)},`] : []),
     "  }",
   ].join("\n");
 }
@@ -954,29 +994,33 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const equipmentSlot = readEquipmentSlot(record.equipmentSlot);
   const id = readNonEmptyString(record.id, "generated equipment id");
   const name = readNonEmptyString(record.name, "generated equipment name");
-  const kind = record.kind;
-  const armorHp = Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))));
+  const kind = readGeneratedEquipmentKind(record.kind);
+  const armorHp =
+    kind === "armor" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp")))) : undefined;
+  const damageBonus =
+    kind === "weapon"
+      ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.damageBonus, "generated equipment damageBonus"))))
+      : undefined;
   const assetKeys = readStringRecord(record.assetKeys, "generated equipment assetKeys");
   const equipmentTuning = readPromotedEquipmentTuning(record.equipmentTuning);
   const assetKey = readNonEmptyString(asset.key, "generated equipment asset.key");
-  const sourcePath = readAssetSourcePath(asset.sourcePath, "assets/fighters/armor/", "generated equipment asset.sourcePath");
+  const sourcePath = readAssetSourcePath(asset.sourcePath, getEquipmentAssetSourcePrefix(kind), "generated equipment asset.sourcePath");
   const lowSourcePath =
     typeof asset.lowSourcePath === "string" && asset.lowSourcePath.trim()
-      ? readAssetSourcePath(asset.lowSourcePath, "assets-low/fighters/armor/", "generated equipment asset.lowSourcePath")
+      ? readAssetSourcePath(asset.lowSourcePath, getEquipmentAssetLowSourcePrefix(kind), "generated equipment asset.lowSourcePath")
       : undefined;
-  const armorCategory = readArmorCategory(record.armorCategory);
+  const armorCategory = kind === "armor" ? readArmorCategory(record.armorCategory) : undefined;
 
-  if (kind !== "armor") {
-    throw new Error("Generated equipment kind must be armor.");
-  }
+  validateGeneratedEquipmentSlot(kind, equipmentSlot);
 
   return {
     id,
     name,
     kind,
     ...(armorCategory ? { armorCategory } : {}),
+    ...(armorHp !== undefined ? { armorHp } : {}),
+    ...(damageBonus !== undefined ? { damageBonus } : {}),
     equipmentSlot,
-    armorHp,
     assetKeys,
     equipmentTuning,
     asset: {
@@ -985,6 +1029,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
       ...(lowSourcePath ? { lowSourcePath } : {}),
     },
     ...(record.armoryProduct ? { armoryProduct: validateGeneratedArmoryProduct(record.armoryProduct, id, name) } : {}),
+    ...(record.weaponProduct ? { weaponProduct: validateGeneratedWeaponProduct(record.weaponProduct, id, name) } : {}),
   };
 }
 
@@ -996,6 +1041,20 @@ function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName
   return {
     id: readNonEmptyString(product.id, "generated armory product id"),
     name: readNonEmptyString(product.name, "generated armory product name") || itemName,
+    price,
+    itemIds: [itemId],
+    categoryId,
+  };
+}
+
+function validateGeneratedWeaponProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["weaponProduct"] {
+  const product = readPlainObject(input, "generated weapon product");
+  const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(product.price, "generated weapon product price"))));
+  const categoryId = readNonEmptyString(product.categoryId, "generated weapon product categoryId");
+
+  return {
+    id: readNonEmptyString(product.id, "generated weapon product id"),
+    name: readNonEmptyString(product.name, "generated weapon product name") || itemName,
     price,
     itemIds: [itemId],
     categoryId,
@@ -1406,6 +1465,14 @@ function readEquipmentSlot(value: unknown): EquipmentSlotKey {
   return value as EquipmentSlotKey;
 }
 
+function readGeneratedEquipmentKind(value: unknown): GeneratedEquipmentJsonRecord["kind"] {
+  if (value === "armor" || value === "weapon") {
+    return value;
+  }
+
+  throw new Error("Generated equipment kind must be armor or weapon.");
+}
+
 function readArmorCategory(value: unknown): GeneratedEquipmentJsonRecord["armorCategory"] | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
@@ -1431,14 +1498,36 @@ function readAssetSourcePath(value: unknown, expectedPrefix: string, label: stri
 
 function readGeneratedAssetRemovalPath(value: unknown): string {
   const sourcePath = readNonEmptyString(value, "generated equipment asset removal path").replace(/\\/g, "/").replace(/^\.\//, "");
-  const isArmorSourcePath = sourcePath.startsWith("assets/fighters/armor/") || sourcePath.startsWith("assets-low/fighters/armor/");
+  const isEquipmentSourcePath =
+    sourcePath.startsWith("assets/fighters/armor/") ||
+    sourcePath.startsWith("assets-low/fighters/armor/") ||
+    sourcePath.startsWith("assets/fighters/weapons/") ||
+    sourcePath.startsWith("assets-low/fighters/weapons/");
   const hasSupportedExtension = sourcePath.endsWith(".png") || sourcePath.endsWith(".webp");
 
-  if (sourcePath.includes("..") || !isArmorSourcePath || !hasSupportedExtension) {
+  if (sourcePath.includes("..") || !isEquipmentSourcePath || !hasSupportedExtension) {
     throw new Error("Invalid generated equipment asset removal path.");
   }
 
   return sourcePath;
+}
+
+function getEquipmentAssetSourcePrefix(kind: GeneratedEquipmentJsonRecord["kind"]): string {
+  return kind === "weapon" ? "assets/fighters/weapons/" : "assets/fighters/armor/";
+}
+
+function getEquipmentAssetLowSourcePrefix(kind: GeneratedEquipmentJsonRecord["kind"]): string {
+  return kind === "weapon" ? "assets-low/fighters/weapons/" : "assets-low/fighters/armor/";
+}
+
+function validateGeneratedEquipmentSlot(kind: GeneratedEquipmentJsonRecord["kind"], equipmentSlot: EquipmentSlotKey): void {
+  if (kind === "weapon" && equipmentSlot !== "weaponMain") {
+    throw new Error("Promoted weapon item must use weaponMain slot.");
+  }
+
+  if (kind === "armor" && equipmentSlot === "weaponMain") {
+    throw new Error("Promoted armor item cannot use weaponMain slot.");
+  }
 }
 
 function getArmoryCategoryId(slotKey: EquipmentSlotKey): string | undefined {
@@ -1467,6 +1556,20 @@ function getArmoryCategoryId(slotKey: EquipmentSlotKey): string | undefined {
   }
 
   return undefined;
+}
+
+function getWeaponCategoryId(assetKey: string, name: string): string {
+  const haystack = `${assetKey} ${name}`.toLowerCase();
+
+  if (haystack.includes("axe")) {
+    return "axes";
+  }
+
+  if (haystack.includes("bow")) {
+    return "bows";
+  }
+
+  return "swords";
 }
 
 function toIdentifier(value: string): string {

@@ -12,6 +12,7 @@ import {
   FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_HELMET_LIGHT_ASSET_KEY,
+  FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
 } from "./assets";
 import { GENERATED_EQUIPMENT_ITEM_ASSET_KEYS } from "./generated/equipmentItems.generated";
 import type { HeroEquipmentSlotKey, HeroItemDefinition, HeroItemId } from "./hero";
@@ -48,11 +49,12 @@ export interface AutoEquipmentItemRecord {
   asset: EquipmentAssetDefinition;
 }
 
-interface ArmorAssetSlotConfig {
+interface EquipmentAssetSlotConfig {
   prefix: string;
-  slot: Exclude<HeroEquipmentSlotKey, "weaponMain">;
+  slot: HeroEquipmentSlotKey;
   assetKey: keyof EquipmentItemAssetKeys;
   label: string;
+  kind: HeroItemDefinition["kind"];
 }
 
 const armorWebpAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.webp", {
@@ -73,24 +75,46 @@ const lowArmorAssetUrls = import.meta.glob("./assets-low/fighters/armor/**/*.web
   import: "default",
 }) as Record<string, string>;
 
-const armorAssetSlotConfigs: ArmorAssetSlotConfig[] = [
-  { prefix: "back-shoulderguard-", slot: "backShoulderguard", assetKey: "backShoulderguardAssetKey", label: "Back Shoulderguard" },
-  { prefix: "front-shoulderguard-", slot: "frontShoulderguard", assetKey: "frontShoulderguardAssetKey", label: "Front Shoulderguard" },
-  { prefix: "back-wrist-", slot: "backWrist", assetKey: "backWristAssetKey", label: "Back Wrist" },
-  { prefix: "front-wrist-", slot: "frontWrist", assetKey: "frontWristAssetKey", label: "Front Wrist" },
-  { prefix: "back-glove-", slot: "backGlove", assetKey: "backGloveAssetKey", label: "Back Glove" },
-  { prefix: "front-glove-", slot: "frontGlove", assetKey: "frontGloveAssetKey", label: "Front Glove" },
-  { prefix: "back-shinguard-", slot: "backShinguard", assetKey: "backShinguardAssetKey", label: "Back Shinguard" },
-  { prefix: "front-shinguard-", slot: "frontShinguard", assetKey: "frontShinguardAssetKey", label: "Front Shinguard" },
-  { prefix: "back-greave-", slot: "backGreave", assetKey: "backGreaveAssetKey", label: "Back Greave" },
-  { prefix: "front-greave-", slot: "frontGreave", assetKey: "frontGreaveAssetKey", label: "Front Greave" },
-  { prefix: "back-boot-", slot: "backBoot", assetKey: "backBootAssetKey", label: "Back Boot" },
-  { prefix: "front-boot-", slot: "frontBoot", assetKey: "frontBootAssetKey", label: "Front Boot" },
-  { prefix: "breastplate-", slot: "breastplate", assetKey: "breastplateAssetKey", label: "Breastplate" },
-  { prefix: "helmet-", slot: "helmet", assetKey: "helmetAssetKey", label: "Helmet" },
+const weaponWebpAssetUrls = import.meta.glob("./assets/fighters/weapons/**/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const weaponPngAssetUrls = import.meta.glob("./assets/fighters/weapons/**/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const lowWeaponAssetUrls = import.meta.glob("./assets-low/fighters/weapons/**/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const lowEquipmentAssetUrls = { ...lowArmorAssetUrls, ...lowWeaponAssetUrls };
+
+const equipmentAssetSlotConfigs: EquipmentAssetSlotConfig[] = [
+  { prefix: "weapon-", slot: "weaponMain", assetKey: "weaponMainAssetKey", label: "Weapon", kind: "weapon" },
+  { prefix: "back-shoulderguard-", slot: "backShoulderguard", assetKey: "backShoulderguardAssetKey", label: "Back Shoulderguard", kind: "armor" },
+  { prefix: "front-shoulderguard-", slot: "frontShoulderguard", assetKey: "frontShoulderguardAssetKey", label: "Front Shoulderguard", kind: "armor" },
+  { prefix: "back-wrist-", slot: "backWrist", assetKey: "backWristAssetKey", label: "Back Wrist", kind: "armor" },
+  { prefix: "front-wrist-", slot: "frontWrist", assetKey: "frontWristAssetKey", label: "Front Wrist", kind: "armor" },
+  { prefix: "back-glove-", slot: "backGlove", assetKey: "backGloveAssetKey", label: "Back Glove", kind: "armor" },
+  { prefix: "front-glove-", slot: "frontGlove", assetKey: "frontGloveAssetKey", label: "Front Glove", kind: "armor" },
+  { prefix: "back-shinguard-", slot: "backShinguard", assetKey: "backShinguardAssetKey", label: "Back Shinguard", kind: "armor" },
+  { prefix: "front-shinguard-", slot: "frontShinguard", assetKey: "frontShinguardAssetKey", label: "Front Shinguard", kind: "armor" },
+  { prefix: "back-greave-", slot: "backGreave", assetKey: "backGreaveAssetKey", label: "Back Greave", kind: "armor" },
+  { prefix: "front-greave-", slot: "frontGreave", assetKey: "frontGreaveAssetKey", label: "Front Greave", kind: "armor" },
+  { prefix: "back-boot-", slot: "backBoot", assetKey: "backBootAssetKey", label: "Back Boot", kind: "armor" },
+  { prefix: "front-boot-", slot: "frontBoot", assetKey: "frontBootAssetKey", label: "Front Boot", kind: "armor" },
+  { prefix: "breastplate-", slot: "breastplate", assetKey: "breastplateAssetKey", label: "Breastplate", kind: "armor" },
+  { prefix: "helmet-", slot: "helmet", assetKey: "helmetAssetKey", label: "Helmet", kind: "armor" },
 ];
 
 const manualEquipmentAssetKeys = new Set([
+  FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
   FIGHTER_HELMET_LIGHT_ASSET_KEY,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
   FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
@@ -114,7 +138,7 @@ const generatedEquipmentAssetKeys = new Set(
 
 const registeredEquipmentAssetKeys = new Set([...manualEquipmentAssetKeys, ...generatedEquipmentAssetKeys]);
 
-export const AUTO_EQUIPMENT_ITEM_RECORDS = createAutoArmorAssetEntries()
+export const AUTO_EQUIPMENT_ITEM_RECORDS = createAutoEquipmentAssetEntries()
   .flatMap(([assetPath, url]) => createAutoEquipmentItemRecord(assetPath, url))
   .sort((left, right) => left.item.name.localeCompare(right.item.name)) as AutoEquipmentItemRecord[];
 
@@ -138,7 +162,7 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
     return [];
   }
 
-  const slotConfig = armorAssetSlotConfigs.find((config) => assetKey.startsWith(config.prefix));
+  const slotConfig = equipmentAssetSlotConfigs.find((config) => assetKey.startsWith(config.prefix));
 
   if (!slotConfig) {
     return [];
@@ -148,7 +172,7 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
   const material = suffix.split("-")[0] ?? "armor";
   const itemId = `auto_equipment_${toIdentifier(assetKey)}`;
   const lowAssetPath = assetPath.replace("./assets/", "./assets-low/").replace(/\.(?:png|webp)$/i, ".webp");
-  const lowUrl = lowArmorAssetUrls[lowAssetPath];
+  const lowUrl = lowEquipmentAssetUrls[lowAssetPath];
   const asset: EquipmentAssetDefinition = {
     key: assetKey,
     url,
@@ -156,14 +180,7 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
     sourcePath: toSourcePath(assetPath),
     ...(lowUrl ? { lowSourcePath: toSourcePath(lowAssetPath) } : {}),
   };
-  const item: HeroItemDefinition = {
-    id: itemId,
-    name: formatEquipmentName(slotConfig.label, suffix),
-    kind: "armor",
-    ...(getArmorCategory(material) ? { armorCategory: getArmorCategory(material) } : {}),
-    equipmentSlot: slotConfig.slot,
-    armorHp: 0,
-  };
+  const item = createAutoItemDefinition(itemId, slotConfig, suffix, material);
 
   return [
     {
@@ -174,10 +191,31 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
   ];
 }
 
-function createAutoArmorAssetEntries(): [string, string][] {
+function createAutoItemDefinition(itemId: string, slotConfig: EquipmentAssetSlotConfig, suffix: string, material: string): HeroItemDefinition {
+  if (slotConfig.kind === "weapon") {
+    return {
+      id: itemId,
+      name: formatWeaponName(suffix),
+      kind: "weapon",
+      equipmentSlot: slotConfig.slot,
+      damageBonus: 1,
+    };
+  }
+
+  return {
+    id: itemId,
+    name: formatEquipmentName(slotConfig.label, suffix),
+    kind: "armor",
+    ...(getArmorCategory(material) ? { armorCategory: getArmorCategory(material) } : {}),
+    equipmentSlot: slotConfig.slot,
+    armorHp: 0,
+  };
+}
+
+function createAutoEquipmentAssetEntries(): [string, string][] {
   const entriesByAssetKey = new Map<string, [string, string]>();
 
-  Object.entries(armorWebpAssetUrls).forEach(([assetPath, url]) => {
+  Object.entries({ ...armorWebpAssetUrls, ...weaponWebpAssetUrls }).forEach(([assetPath, url]) => {
     const assetKey = getAssetKey(assetPath);
 
     if (assetKey) {
@@ -185,7 +223,7 @@ function createAutoArmorAssetEntries(): [string, string][] {
     }
   });
 
-  Object.entries(armorPngAssetUrls).forEach(([assetPath, url]) => {
+  Object.entries({ ...armorPngAssetUrls, ...weaponPngAssetUrls }).forEach(([assetPath, url]) => {
     const assetKey = getAssetKey(assetPath);
 
     if (assetKey && !entriesByAssetKey.has(assetKey)) {
@@ -214,6 +252,16 @@ function formatEquipmentName(slotLabel: string, suffix: string): string {
   const variant = parts.slice(1).map(formatNamePart).join(" ");
 
   return `${material} ${slotLabel}${variant ? ` ${variant}` : ""} (Auto)`;
+}
+
+function formatWeaponName(suffix: string): string {
+  const name = suffix
+    .split("-")
+    .filter(Boolean)
+    .map(formatNamePart)
+    .join(" ");
+
+  return `${name || "Weapon"} (Auto)`;
 }
 
 function formatNamePart(part: string): string {

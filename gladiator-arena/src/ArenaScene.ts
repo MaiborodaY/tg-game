@@ -139,6 +139,7 @@ interface FighterVisual {
 type PaperDollPartKey = RigPartKey;
 type AnimationRigPoseKey = "base" | "breath";
 type AttackBodyAnimationKey = SlashArcAttackKey;
+type PaperDollEquipmentAnchors = Partial<Record<PaperDollEquipmentSlotKey, FighterPart>>;
 
 interface DebugRigPartDragState {
   partKeys: RigPartKey[];
@@ -156,6 +157,7 @@ interface PaperDollRig {
   root: FighterPart;
   parts: Record<PaperDollPartKey, FighterPart>;
   equipment: PaperDollEquipment;
+  equipmentAnchors: PaperDollEquipmentAnchors;
   equipmentState?: HeroEquipment;
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
@@ -168,6 +170,7 @@ interface PaperDollShadowRig {
   root: FighterPart;
   parts: Record<PaperDollPartKey, FighterPart>;
   equipment: PaperDollEquipment;
+  equipmentAnchors: PaperDollEquipmentAnchors;
   faceParts: PaperDollFaceParts;
 }
 
@@ -597,6 +600,23 @@ const PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS: Record<PaperDollEquipmentSlotKey, Paper
     originY: BOOT_ORIGIN_Y,
   },
 };
+const PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS: Record<PaperDollEquipmentSlotKey, PaperDollPartKey> = {
+  weaponMain: "backHand",
+  helmet: "head",
+  breastplate: "torso",
+  backShoulderguard: "backUpperArm",
+  frontShoulderguard: "frontUpperArm",
+  backWrist: "backForearm",
+  frontWrist: "frontForearm",
+  backGlove: "backHand",
+  frontGlove: "frontHand",
+  backGreave: "backThigh",
+  frontGreave: "frontThigh",
+  backShinguard: "backShin",
+  frontShinguard: "frontShin",
+  backBoot: "backFoot",
+  frontBoot: "frontFoot",
+};
 const paperDollEquipmentSlotConfigs = new WeakMap<FighterPart, PaperDollPartAssetConfig>();
 
 const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipmentAssetKeys>> = {
@@ -835,16 +855,17 @@ export class ArenaScene extends Phaser.Scene {
     applyLoopingBodyAnimation(this.visuals.enemy, time, idle, animationAmount);
   }
 
-  sync(nextState: CombatState): void {
+  sync(nextState: CombatState): Promise<void> {
     const previousState = this.currentState;
 
     this.currentState = nextState;
 
     if (!this.visuals) {
-      return;
+      return Promise.resolve();
     }
 
     const visuals = this.visuals;
+    const actionAnimations: Promise<void>[] = [];
 
     syncEnemyVisualForState(this, visuals, previousState, nextState);
     resetDeathEffectsForLiveFighters(this, visuals, nextState);
@@ -854,11 +875,11 @@ export class ArenaScene extends Phaser.Scene {
     const lastEnemyAction = nextState.lastEnemyAction;
 
     if (lastPlayerAction) {
-      animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right");
+      actionAnimations.push(animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right"));
     }
 
     if (lastEnemyAction) {
-      animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left");
+      actionAnimations.push(animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left"));
     }
 
     if (nextState.lastPlayerDamage > 0) {
@@ -876,6 +897,8 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     scheduleDeathEffects(this, nextState);
+
+    return Promise.all(actionAnimations).then(() => undefined);
   }
 
   previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
@@ -1821,6 +1844,8 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const root = part(rootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
   const equipment: PaperDollEquipment = {};
+  const equipmentAnchors: PaperDollEquipmentAnchors = {};
+  const equipmentLayer = target.add.container(0, 0);
   const faceParts: PaperDollFaceParts = {};
   const selectionHighlights = options.enableSelectionHighlights
     ? ({} as Record<PaperDollPartKey, Phaser.GameObjects.Graphics>)
@@ -1830,7 +1855,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, options, equipment, faceParts);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayer, equipmentAnchors, faceParts);
     if (selectionHighlights) {
       selectionHighlights[key] = addRigPartSelectionHighlight(target, partContainer, key);
     }
@@ -1838,12 +1863,14 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     parts[key] = part(partContainer);
   });
 
+  rootContainer.add(equipmentLayer);
   root.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing;
   root.scaleY = PAPER_DOLL_BASE_SCALE;
   const paperDollRig: PaperDollRig = {
     root,
     parts,
     equipment,
+    equipmentAnchors,
     equipmentState: options.equipment ? { ...options.equipment } : undefined,
     faceParts,
     appearance,
@@ -1905,22 +1932,26 @@ function createPaperDollShadowRig(
   const shadowRoot = part(shadowRootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
   const equipment: PaperDollEquipment = {};
+  const equipmentAnchors: PaperDollEquipmentAnchors = {};
+  const equipmentLayer = target.add.container(0, 0);
   const faceParts: PaperDollFaceParts = {};
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, options, equipment, faceParts);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayer, equipmentAnchors, faceParts);
     tintPaperDollShadowObject(partContainer);
     shadowRootContainer.add(partContainer);
     parts[key] = part(partContainer);
   });
 
+  tintPaperDollShadowObject(equipmentLayer);
+  shadowRootContainer.add(equipmentLayer);
   shadowRoot.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing * debugTuning.shadowScaleX;
   shadowRoot.scaleY = PAPER_DOLL_BASE_SCALE * debugTuning.shadowScaleY;
 
-  return { root: shadowRoot, parts, equipment, faceParts };
+  return { root: shadowRoot, parts, equipment, equipmentAnchors, faceParts };
 }
 
 function tintPaperDollShadowObject(gameObject: Phaser.GameObjects.GameObject): void {
@@ -2080,6 +2111,11 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
       applyRigPartTransform(shadowPart, pivot, tuning);
     }
   });
+
+  syncPaperDollEquipmentAnchors(rig);
+  if (rig.shadow) {
+    syncPaperDollEquipmentAnchors(rig.shadow);
+  }
 
   applyFacePartTransform(rig.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
   applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
@@ -2291,6 +2327,11 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
     }
   });
 
+  syncPaperDollEquipmentAnchors(rig);
+  if (rig.shadow) {
+    syncPaperDollEquipmentAnchors(rig.shadow);
+  }
+
   const eyeLeft = interpolateFacePartTuning(animation.faceBase.eyeLeft, animation.faceBreath.eyeLeft, blend);
   const eyeRight = interpolateFacePartTuning(animation.faceBase.eyeRight, animation.faceBreath.eyeRight, blend);
 
@@ -2327,6 +2368,38 @@ function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number 
   part.angle = tuning.angle;
   part.scaleX = tuning.scaleX * (tuning.flipX ? -1 : 1);
   part.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
+}
+
+function syncPaperDollEquipmentAnchors(rig: Pick<PaperDollRig, "parts" | "equipmentAnchors">): void {
+  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    const anchor = rig.equipmentAnchors[slotKey];
+
+    if (!anchor) {
+      return;
+    }
+
+    syncPaperDollEquipmentAnchor(anchor, rig.parts[PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey]]);
+  });
+}
+
+function syncPaperDollEquipmentAnchor(anchor: FighterPart, sourcePart: FighterPart): void {
+  anchor.x = sourcePart.x;
+  anchor.y = sourcePart.y;
+  anchor.angle = sourcePart.angle;
+  anchor.scaleX = sourcePart.scaleX;
+  anchor.scaleY = sourcePart.scaleY;
+}
+
+function getPaperDollEquipmentAnchorParts(rig: Pick<PaperDollRig, "equipmentAnchors">): FighterPart[] {
+  return Object.values(rig.equipmentAnchors).flatMap((anchor) => (anchor ? [anchor] : []));
+}
+
+function getPaperDollEquipmentAnchorsForPart(rig: Pick<PaperDollRig, "equipmentAnchors">, partKey: PaperDollPartKey): FighterPart[] {
+  return PAPER_DOLL_EQUIPMENT_SLOT_KEYS.flatMap((slotKey) => {
+    const anchor = rig.equipmentAnchors[slotKey];
+
+    return anchor && PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey] === partKey ? [anchor] : [];
+  });
 }
 
 function applyFacePartTransform(part: FighterPart | undefined, baseX: number, baseY: number, tuning: FacePartTuning): void {
@@ -2563,13 +2636,15 @@ function addPaperDollPartVisual(
   key: PaperDollPartKey,
   options: PaperDollFighterOptions,
   equipment: PaperDollEquipment,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
   faceParts: PaperDollFaceParts,
 ): void {
   if (key === "head" && options.headAssetKey && target.textures.exists(options.headAssetKey)) {
     const image = target.add.image(0, HEAD_ASSET_LOCAL_BOTTOM_Y, options.headAssetKey);
     applyPaperDollPartImageConfig(image, PAPER_DOLL_HEAD_ASSET_CONFIG);
     partContainer.add(image);
-    addPaperDollHelmetVisual(target, partContainer, options.helmetAssetKey, equipment);
+    addPaperDollHelmetVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.helmetAssetKey, equipment);
     addPaperDollFaceOverlay(target, partContainer, faceParts, true);
     return;
   }
@@ -2578,7 +2653,7 @@ function addPaperDollPartVisual(
     const image = target.add.image(0, TORSO_ASSET_LOCAL_BOTTOM_Y, options.torsoAssetKey);
     applyPaperDollPartImageConfig(image, PAPER_DOLL_TORSO_ASSET_CONFIG);
     partContainer.add(image);
-    addPaperDollBreastplateVisual(target, partContainer, options.breastplateAssetKey, equipment);
+    addPaperDollBreastplateVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.breastplateAssetKey, equipment);
     return;
   }
 
@@ -2586,15 +2661,15 @@ function addPaperDollPartVisual(
   const assetConfig = PAPER_DOLL_PART_ASSET_CONFIGS[key];
 
   if (key === "backHand" && options.weaponMainAssetKey && target.textures.exists(options.weaponMainAssetKey)) {
-    addPaperDollWeaponVisual(target, partContainer, options.weaponMainAssetKey, equipment);
+    addPaperDollWeaponVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.weaponMainAssetKey, equipment);
   }
 
   if (assetKey && assetConfig && target.textures.exists(assetKey)) {
     const image = target.add.image(assetConfig.localX, assetConfig.localY, assetKey);
     applyPaperDollPartImageConfig(image, assetConfig);
     partContainer.add(image);
-    addPaperDollArmArmorVisual(target, partContainer, key, options, equipment);
-    addPaperDollLegArmorVisual(target, partContainer, key, options, equipment);
+    addPaperDollArmArmorVisual(target, partContainer, key, options, equipment, equipmentLayer, equipmentAnchors);
+    addPaperDollLegArmorVisual(target, partContainer, key, options, equipment, equipmentLayer, equipmentAnchors);
     return;
   }
 
@@ -2603,24 +2678,27 @@ function addPaperDollPartVisual(
 function addPaperDollWeaponVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
   assetKey: string,
   equipment: PaperDollEquipment,
 ): void {
-  const weaponContainer = target.add.container(0, 0);
+  const weaponContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayer, equipmentAnchors, "weaponMain");
   const image = createPaperDollEquipmentImage(target, assetKey, PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
 
   weaponContainer.add(image);
-  partContainer.add(weaponContainer);
   registerPaperDollEquipmentSlot(weaponContainer, equipment, "weaponMain", PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
 }
 
 function addPaperDollHelmetVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
   assetKey: string | undefined,
   equipment: PaperDollEquipment,
 ): void {
-  const helmetContainer = target.add.container(0, 0);
+  const helmetContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayer, equipmentAnchors, "helmet");
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.helmet;
 
   if (assetKey && target.textures.exists(assetKey)) {
@@ -2632,17 +2710,18 @@ function addPaperDollHelmetVisual(
     helmetContainer.add(graphics);
   }
 
-  partContainer.add(helmetContainer);
   registerPaperDollEquipmentSlot(helmetContainer, equipment, "helmet", config);
 }
 
 function addPaperDollBreastplateVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
   assetKey: string | undefined,
   equipment: PaperDollEquipment,
 ): void {
-  const breastplateContainer = target.add.container(0, 0);
+  const breastplateContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayer, equipmentAnchors, "breastplate");
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.breastplate;
 
   if (assetKey && target.textures.exists(assetKey)) {
@@ -2654,7 +2733,6 @@ function addPaperDollBreastplateVisual(
     breastplateContainer.add(graphics);
   }
 
-  partContainer.add(breastplateContainer);
   registerPaperDollEquipmentSlot(breastplateContainer, equipment, "breastplate", config);
 }
 
@@ -2664,34 +2742,36 @@ function addPaperDollArmArmorVisual(
   key: PaperDollPartKey,
   options: PaperDollFighterOptions,
   equipment: PaperDollEquipment,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
 ): void {
   if (key === "backUpperArm") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backShoulderguardAssetKey, "backShoulderguard", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.backShoulderguardAssetKey, "backShoulderguard", equipment);
     return;
   }
 
   if (key === "frontUpperArm") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShoulderguardAssetKey, "frontShoulderguard", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.frontShoulderguardAssetKey, "frontShoulderguard", equipment);
     return;
   }
 
   if (key === "backForearm") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backWristAssetKey, "backWrist", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.backWristAssetKey, "backWrist", equipment);
     return;
   }
 
   if (key === "frontForearm") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontWristAssetKey, "frontWrist", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.frontWristAssetKey, "frontWrist", equipment);
     return;
   }
 
   if (key === "backHand") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backGloveAssetKey, "backGlove", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.backGloveAssetKey, "backGlove", equipment);
     return;
   }
 
   if (key === "frontHand") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGloveAssetKey, "frontGlove", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.frontGloveAssetKey, "frontGlove", equipment);
   }
 }
 
@@ -2701,53 +2781,75 @@ function addPaperDollLegArmorVisual(
   key: PaperDollPartKey,
   options: PaperDollFighterOptions,
   equipment: PaperDollEquipment,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
 ): void {
   if (key === "backThigh") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backGreaveAssetKey, "backGreave", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.backGreaveAssetKey, "backGreave", equipment);
     return;
   }
 
   if (key === "frontThigh") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontGreaveAssetKey, "frontGreave", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.frontGreaveAssetKey, "frontGreave", equipment);
     return;
   }
 
   if (key === "backShin") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backShinguardAssetKey, "backShinguard", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.backShinguardAssetKey, "backShinguard", equipment);
     return;
   }
 
   if (key === "frontShin") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontShinguardAssetKey, "frontShinguard", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.frontShinguardAssetKey, "frontShinguard", equipment);
     return;
   }
 
   if (key === "backFoot") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.backBootAssetKey, "backBoot", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.backBootAssetKey, "backBoot", equipment);
     return;
   }
 
   if (key === "frontFoot") {
-    addPaperDollEquipmentImageVisual(target, partContainer, options.frontBootAssetKey, "frontBoot", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayer, equipmentAnchors, options.frontBootAssetKey, "frontBoot", equipment);
   }
 }
 
 function addPaperDollEquipmentImageVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
   assetKey: string | undefined,
   slotKey: PaperDollEquipmentSlotKey,
   equipment: PaperDollEquipment,
 ): void {
-  const armorContainer = target.add.container(0, 0);
+  const armorContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayer, equipmentAnchors, slotKey);
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
 
   if (assetKey && target.textures.exists(assetKey)) {
     armorContainer.add(createPaperDollEquipmentImage(target, assetKey, config));
   }
 
-  partContainer.add(armorContainer);
   registerPaperDollEquipmentSlot(armorContainer, equipment, slotKey, config);
+}
+
+function createPaperDollAnchoredEquipmentContainer(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  equipmentLayer: Phaser.GameObjects.Container,
+  equipmentAnchors: PaperDollEquipmentAnchors,
+  slotKey: PaperDollEquipmentSlotKey,
+): Phaser.GameObjects.Container {
+  const anchorContainer = target.add.container(0, 0);
+  const equipmentContainer = target.add.container(0, 0);
+  const anchor = part(anchorContainer);
+
+  syncPaperDollEquipmentAnchor(anchor, part(partContainer));
+  anchorContainer.add(equipmentContainer);
+  equipmentLayer.add(anchorContainer);
+  equipmentAnchors[slotKey] = anchor;
+
+  return equipmentContainer;
 }
 
 function createPaperDollEquipmentImage(target: Phaser.Scene, assetKey: string, config: PaperDollPartAssetConfig): Phaser.GameObjects.Image {
@@ -3072,7 +3174,7 @@ function resetFighterShatter(target: Phaser.Scene, fighter: FighterVisual): void
   const rig = fighter.paperDollRig;
 
   if (rig) {
-    target.tweens.killTweensOf(Object.values(rig.parts));
+    target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
   }
 
   setFighterAlpha(fighter, 1);
@@ -3092,7 +3194,7 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
   fighter.name.setVisible(false);
   fighter.shadow.setVisible(false);
   fighter.lowShadow.setVisible(false);
-  target.tweens.killTweensOf([rig.root, ...Object.values(rig.parts)]);
+  target.tweens.killTweensOf([rig.root, ...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
   setFighterAlpha(fighter, 1);
   createDust(target, rig.root.x, rig.root.y - 6);
 
@@ -3101,6 +3203,8 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
 
   RIG_PART_KEYS.forEach((key, index) => {
     const part = rig.parts[key];
+    const anchors = getPaperDollEquipmentAnchorsForPart(rig, key);
+    const targets = [part, ...anchors];
     const startX = part.x;
     const startY = part.y;
     const startAngle = part.angle;
@@ -3113,9 +3217,10 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
     const spin = (90 + Math.random() * 250) * (Math.random() < 0.5 ? -1 : 1);
 
     part.setVisible(true);
+    anchors.forEach((anchor) => anchor.setVisible(true));
 
     target.tweens.add({
-      targets: part,
+      targets,
       x: startX + scatterX * 0.42,
       y: liftY,
       angle: startAngle + spin * 0.28,
@@ -3125,7 +3230,7 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
     });
 
     target.tweens.add({
-      targets: part,
+      targets,
       x: startX + scatterX,
       y: landingY,
       angle: startAngle + spin,
@@ -3377,35 +3482,47 @@ function getFighterParts(fighter: FighterVisual): FighterPart[] {
   ] as FighterPart[];
 }
 
-function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, animation: BodyAnimationTuning): void {
+function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, animation: BodyAnimationTuning): Promise<void> {
   const rig = fighter.paperDollRig;
   const animationAmount = getArenaAnimationAmount();
 
   if (!rig || !animation.enabled || animationAmount <= 0) {
-    return;
+    return Promise.resolve();
   }
 
   const duration = Math.max(1, animation.duration);
   const lockedUntil = target.time.now + duration;
 
   fighter.bodyAnimationLockedUntil = lockedUntil;
-  target.tweens.killTweensOf(Object.values(rig.parts));
+  target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
   applyBodyAnimationBlend(fighter, animation, 0);
 
-  target.tweens.addCounter({
-    from: 0,
-    to: animationAmount,
-    duration: Math.max(1, duration / 2),
-    yoyo: true,
-    ease: "Sine.easeInOut",
-    onUpdate: (tween) => {
-      applyBodyAnimationBlend(fighter, animation, tween.getValue());
-    },
-    onComplete: () => {
+  return new Promise((resolve) => {
+    let isResolved = false;
+    const finish = (): void => {
+      if (isResolved) {
+        return;
+      }
+
+      isResolved = true;
       if (fighter.bodyAnimationLockedUntil === lockedUntil) {
         fighter.bodyAnimationLockedUntil = 0;
       }
-    },
+      resolve();
+    };
+
+    target.time.delayedCall(duration + 60, finish);
+    target.tweens.addCounter({
+      from: 0,
+      to: animationAmount,
+      duration: Math.max(1, duration / 2),
+      yoyo: true,
+      ease: "Sine.easeInOut",
+      onUpdate: (tween) => {
+        applyBodyAnimationBlend(fighter, animation, tween.getValue());
+      },
+      onComplete: finish,
+    });
   });
 }
 
@@ -3415,47 +3532,54 @@ function animateAction(
   _opponent: FighterVisual,
   actionId: ActionId,
   direction: "left" | "right",
-): void {
+): Promise<void> {
   const sign = direction === "right" ? 1 : -1;
   const animationAmount = getArenaAnimationAmount();
 
   if (actionId === "forward" || actionId === "back") {
-    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
+    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
+
     showFloatingText(target, actor.body.x, actor.body.y - 120, actionId === "forward" ? "STEP" : "BACK", "#ffe7a4");
-    return;
+    return actionAnimation;
   }
 
   if (actionId === "lunge") {
-    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"));
-    return;
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"));
   }
 
   if (actionId === "taunt") {
-    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"));
-    return;
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"));
   }
 
   if (actionId === "rest") {
-    playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"));
-    return;
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"));
   }
 
+  const actionAnimations: Promise<void>[] = [];
+
   if (isAttackBodyAnimationKey(actionId)) {
-    playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId));
+    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId)));
     if (areArenaVfxEnabled()) {
       showSlashArc(target, actor, actionId, direction);
     }
   }
 
   if (animationAmount > 0) {
-    target.tweens.add({
-      targets: actor.sword,
-      angle: actor.sword.angle - 32 * sign * animationAmount,
-      duration: 110,
-      yoyo: true,
-      ease: "Back.easeOut",
-    });
+    actionAnimations.push(
+      new Promise((resolve) => {
+        target.tweens.add({
+          targets: actor.sword,
+          angle: actor.sword.angle - 32 * sign * animationAmount,
+          duration: 110,
+          yoyo: true,
+          ease: "Back.easeOut",
+          onComplete: () => resolve(),
+        });
+      }),
+    );
   }
+
+  return Promise.all(actionAnimations).then(() => undefined);
 }
 
 function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAnimationKey {

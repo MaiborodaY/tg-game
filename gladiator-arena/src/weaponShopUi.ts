@@ -1,4 +1,5 @@
 import { HERO_ITEM_CATALOG, TRAINING_WEAPON_ID, type HeroItemId, type HeroState } from "./hero";
+import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 
 export interface WeaponProduct {
@@ -38,23 +39,32 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
     id: "swords",
     name: "Swords",
     shortLabel: "SW",
-    products: [{ id: "training-sword", name: "Training Sword", price: 0, itemIds: [TRAINING_WEAPON_ID] }],
+    products: [{ id: "training-sword", name: "Training Sword", price: 0, itemIds: [TRAINING_WEAPON_ID] }, ...getGeneratedWeaponProducts("swords")],
   },
   {
     id: "axes",
     name: "Axes",
     shortLabel: "AX",
-    products: [],
+    products: getGeneratedWeaponProducts("axes"),
     emptyText: "Axes soon",
   },
   {
     id: "bows",
     name: "Bows",
     shortLabel: "BW",
-    products: [],
+    products: getGeneratedWeaponProducts("bows"),
     emptyText: "Bows soon",
   },
 ];
+
+function getGeneratedWeaponProducts(categoryId: string): WeaponProduct[] {
+  return GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    itemIds: [...product.itemIds],
+  }));
+}
 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {
   let selectedCategoryId: string | undefined;

@@ -448,7 +448,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <input class="debug-auto-equipment__name" type="text" />
         </label>
         <label class="debug-panel__row debug-rig-editor__row">
-          <span>Armor HP</span>
+          <span class="debug-auto-equipment__stat-label">Armor HP</span>
           <input class="debug-panel__range" type="range" min="0" max="10" step="1" value="1" data-auto-equipment-armor />
           <input class="debug-panel__number" type="number" min="0" max="10" step="1" value="1" data-auto-equipment-armor-number />
         </label>
@@ -458,7 +458,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <input class="debug-panel__number" type="number" min="0" max="250" step="1" value="0" data-auto-equipment-price-number />
         </label>
         <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
-          <span>Armory</span>
+          <span class="debug-auto-equipment__shop-label">Armory</span>
           <input class="debug-auto-equipment__shop" type="checkbox" checked />
         </label>
         <fieldset class="debug-auto-equipment__transform">
@@ -991,11 +991,13 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
 function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const nameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__name");
+  const statLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__stat-label");
   const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
   const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
   const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
   const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
   const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const shopLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__shop-label");
   const transformControls = editor.querySelector<HTMLElement>(".debug-auto-equipment__transform-controls");
   const resetTransform = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__reset-transform");
   const preview = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__preview");
@@ -1007,11 +1009,13 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   if (
     !select ||
     !nameInput ||
+    !statLabel ||
     !armorRange ||
     !armorNumber ||
     !priceRange ||
     !priceNumber ||
     !addToShop ||
+    !shopLabel ||
     !transformControls ||
     !resetTransform ||
     !preview ||
@@ -1041,10 +1045,12 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
 
   equipmentNumericControls.forEach((control) => transformControls.append(createEquipmentRangeControl(control)));
   equipmentToggleControls.forEach((control) => transformControls.append(createEquipmentToggleControl(control)));
+  syncAutoEquipmentStatInputs(editor);
 
   syncAutoEquipmentEditor(editor);
 
   select.addEventListener("change", () => {
+    syncAutoEquipmentStatInputs(editor);
     previewSelectedAutoEquipment(editor);
     syncAutoEquipmentEditor(editor);
   });
@@ -1088,12 +1094,13 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     }
 
     promote.disabled = true;
-    status.textContent = "Promoting equipment...";
+    status.textContent = "Promoting item...";
 
     try {
       status.textContent = await savePromotedEquipmentItem({
         name: nameInput.value.trim() || record.item.name.replace(/\s+\(Auto\)$/u, ""),
         armorHp: clampNumber(Number(armorNumber.value), 0, 10),
+        damageBonus: clampNumber(Number(armorNumber.value), 0, 10),
         price: clampNumber(Number(priceNumber.value), 0, 250),
         addToShop: addToShop.checked,
         item: record.item,
@@ -1112,7 +1119,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     const record = getSelectedGeneratedEquipmentRecord(generatedSelect.value);
 
     if (!record) {
-      status.textContent = "No generated equipment item selected.";
+      status.textContent = "No generated item selected.";
       return;
     }
 
@@ -1121,7 +1128,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     }
 
     removeGenerated.disabled = true;
-    status.textContent = "Removing generated equipment...";
+    status.textContent = "Removing generated item...";
 
     try {
       status.textContent = await removePromotedEquipmentItem(record.item.id);
@@ -2285,11 +2292,13 @@ function syncHeroEquipmentEditor(panel: HTMLElement): void {
 function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const nameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__name");
+  const statLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__stat-label");
   const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
   const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
   const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
   const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
   const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const shopLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__shop-label");
   const buttons = editor.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__preview, .debug-auto-equipment__promote");
   const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
   const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
@@ -2315,6 +2324,14 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
     nameInput.disabled = !isAvailable;
   }
 
+  if (statLabel) {
+    statLabel.textContent = record?.item.kind === "weapon" ? "Damage" : "Armor HP";
+  }
+
+  if (shopLabel) {
+    shopLabel.textContent = record?.item.kind === "weapon" ? "Weapon shop" : "Armory";
+  }
+
   [armorRange, armorNumber, priceRange, priceNumber, addToShop].forEach((input) => {
     if (input) {
       input.disabled = !isAvailable;
@@ -2334,8 +2351,24 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   }
 
   if (status) {
-    status.textContent = isAvailable ? `${record?.asset.sourcePath ?? ""}` : "No unpromoted armor assets found.";
+    status.textContent = isAvailable ? `${record?.asset.sourcePath ?? ""}` : "No unpromoted equipment assets found.";
   }
+}
+
+function syncAutoEquipmentStatInputs(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
+  const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
+  const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
+  const record = getSelectedAutoEquipmentRecord(select?.value);
+
+  if (!armorRange || !armorNumber || !record) {
+    return;
+  }
+
+  const value = record.item.kind === "weapon" ? (record.item.damageBonus ?? 1) : (record.item.armorHp ?? 1);
+
+  armorRange.value = `${value}`;
+  armorNumber.value = `${value}`;
 }
 
 function previewSelectedAutoEquipment(editor: HTMLElement): void {

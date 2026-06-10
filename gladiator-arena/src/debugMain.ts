@@ -59,7 +59,8 @@ let hero: HeroState = {
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
-let enemyTurnTimer: number | undefined;
+let turnSequenceToken = 0;
+let isTurnAnimationLocked = false;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
 let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
@@ -88,29 +89,50 @@ interface HudDragState {
 
 let hudDragState: HudDragState | undefined;
 
-function commitState(nextState: CombatState): void {
+function commitState(nextState: CombatState): Promise<void> {
   state = applyBattleRewardIfNeeded(nextState);
   renderDom(dom, state);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
-  arenaScene?.sync(state);
-  actionArc?.sync(state);
+  const actionAnimation = arenaScene?.sync(state) ?? Promise.resolve();
+
+  syncActionArc();
   syncTurnProbe();
+
+  return actionAnimation;
 }
 
 function syncTurnProbe(): void {
   turnProbe?.sync(state, enemyTimerStatus, lastActionClick);
 }
 
+function syncActionArc(): void {
+  actionArc?.sync(isTurnAnimationLocked ? { ...state, activeTurn: "enemy" } : state);
+}
+
+function setTurnAnimationLocked(locked: boolean): void {
+  if (isTurnAnimationLocked === locked) {
+    return;
+  }
+
+  isTurnAnimationLocked = locked;
+  syncActionArc();
+}
+
 function handleAction(actionId: ActionId): void {
+  if (isTurnAnimationLocked) {
+    return;
+  }
+
   logTurnProbe("player-action", state, enemyTimerStatus, actionId);
 
   const nextState = resolvePlayerTurn(state, actionId);
 
-  commitState(nextState);
-  scheduleEnemyTurn(nextState);
+  const actionAnimation = commitState(nextState);
+
+  void scheduleEnemyTurn(nextState, actionAnimation);
 }
 
-function maybeAutoRestPlayerTurn(): void {
+async function maybeAutoRestPlayerTurn(): Promise<void> {
   if (!shouldAutoRestPlayer(state)) {
     return;
   }
@@ -120,55 +142,67 @@ function maybeAutoRestPlayerTurn(): void {
 
   const nextState = resolvePlayerTurn(state, "rest");
 
-  commitState(nextState);
-  scheduleEnemyTurn(nextState);
+  const actionAnimation = commitState(nextState);
+
+  await scheduleEnemyTurn(nextState, actionAnimation);
 }
 
-function scheduleEnemyTurn(enemyState: CombatState): void {
+async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimation: Promise<void> = Promise.resolve()): Promise<void> {
   if (enemyState.result !== "playing" || enemyState.activeTurn !== "enemy") {
     return;
   }
 
-  if (enemyTurnTimer) {
-    window.clearTimeout(enemyTurnTimer);
-  }
+  const token = ++turnSequenceToken;
 
+  setTurnAnimationLocked(true);
   enemyTimerStatus = "scheduled";
   syncTurnProbe();
   logTurnProbe("enemy-scheduled", enemyState, enemyTimerStatus);
 
-  enemyTurnTimer = window.setTimeout(() => {
-    enemyTurnTimer = undefined;
-    enemyTimerStatus = "running";
-    logTurnProbe("enemy-running", enemyState, enemyTimerStatus);
+  await previousActionAnimation;
 
-    const nextState = resolveEnemyTurn(enemyState);
+  if (turnSequenceToken !== token || state !== enemyState) {
+    return;
+  }
 
-    enemyTimerStatus = "idle";
-    commitState(nextState);
-    logTurnProbe("enemy-committed", nextState, enemyTimerStatus);
-    maybeAutoRestPlayerTurn();
-  }, 700);
+  enemyTimerStatus = "running";
+  logTurnProbe("enemy-running", enemyState, enemyTimerStatus);
+
+  const nextState = resolveEnemyTurn(enemyState);
+
+  enemyTimerStatus = "idle";
+  const enemyActionAnimation = commitState(nextState);
+  logTurnProbe("enemy-committed", nextState, enemyTimerStatus);
+
+  await enemyActionAnimation;
+
+  if (turnSequenceToken !== token || state !== nextState) {
+    return;
+  }
+
+  if (shouldAutoRestPlayer(state)) {
+    await maybeAutoRestPlayerTurn();
+    return;
+  }
+
+  setTurnAnimationLocked(false);
 }
 
 function refreshArenaLayout(): void {
   window.requestAnimationFrame(() => {
     arenaScene?.scale.refresh();
     arenaScene?.sync(state);
-    actionArc?.sync(state);
+    syncActionArc();
     syncTurnProbe();
   });
 }
 
 function restart(): void {
-  if (enemyTurnTimer) {
-    window.clearTimeout(enemyTurnTimer);
-    enemyTurnTimer = undefined;
-  }
-
+  turnSequenceToken += 1;
+  setTurnAnimationLocked(false);
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  commitState(createCombatStateFromHero(hero));
+  void commitState(createCombatStateFromHero(hero));
 }
 
 function handleActionArcClick(event: Event): void {
@@ -451,7 +485,7 @@ function startDebugApp(): void {
     setCombatMovementTuning(debugTuning);
     syncHud();
     arenaScene?.sync(state);
-    actionArc?.sync(state);
+    syncActionArc();
     syncHeroPortraitButton();
     syncTurnProbe();
   });

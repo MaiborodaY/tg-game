@@ -13,6 +13,7 @@ import {
   STARTER_FRONT_SHINGUARD_ID,
   STARTER_FRONT_SHOULDERGUARD_ID,
   STARTER_HELMET_ID,
+  type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
 } from "./hero";
@@ -49,6 +50,23 @@ interface ArmoryShopOptions {
   onClose?: () => void;
   transitionDelayMs?: number;
 }
+
+interface PairedArmorySlotConfig {
+  backSlot: HeroEquipmentSlotKey;
+  frontSlot: HeroEquipmentSlotKey;
+  token: string;
+  singularLabel: string;
+  pluralLabel: string;
+}
+
+const PAIRED_ARMORY_SLOT_CONFIGS: PairedArmorySlotConfig[] = [
+  { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", singularLabel: "Shoulderguard", pluralLabel: "Shoulderguards" },
+  { backSlot: "backWrist", frontSlot: "frontWrist", token: "wrist", singularLabel: "Wrist", pluralLabel: "Wrists" },
+  { backSlot: "backGlove", frontSlot: "frontGlove", token: "glove", singularLabel: "Glove", pluralLabel: "Gloves" },
+  { backSlot: "backGreave", frontSlot: "frontGreave", token: "greave", singularLabel: "Greave", pluralLabel: "Greaves" },
+  { backSlot: "backShinguard", frontSlot: "frontShinguard", token: "shinguard", singularLabel: "Shinguard", pluralLabel: "Shinguards" },
+  { backSlot: "backBoot", frontSlot: "frontBoot", token: "boot", singularLabel: "Boot", pluralLabel: "Boots" },
+];
 
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
@@ -124,12 +142,137 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
 ];
 
 function getGeneratedArmoryProducts(categoryId: string): ArmoryProduct[] {
-  return GENERATED_ARMORY_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
+  const products = GENERATED_ARMORY_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
     id: product.id,
     name: product.name,
     price: product.price,
     itemIds: [...product.itemIds],
   }));
+
+  return pairGeneratedArmoryProducts(products);
+}
+
+function pairGeneratedArmoryProducts(products: ArmoryProduct[]): ArmoryProduct[] {
+  const pairedProducts: ArmoryProduct[] = [];
+  const usedProductIds = new Set<string>();
+
+  products.forEach((product) => {
+    if (usedProductIds.has(product.id)) {
+      return;
+    }
+
+    const item = getArmoryProductItem(product);
+    const pairConfig = item ? getPairedArmorySlotConfig(item.equipmentSlot) : undefined;
+    const counterpart = pairConfig ? findArmoryProductPair(product, products, pairConfig, usedProductIds) : undefined;
+
+    if (pairConfig && !counterpart) {
+      usedProductIds.add(product.id);
+      return;
+    }
+
+    if (!pairConfig) {
+      pairedProducts.push(product);
+      usedProductIds.add(product.id);
+      return;
+    }
+
+    const pairedProduct = createPairedArmoryProduct(product, counterpart, pairConfig);
+
+    pairedProducts.push(pairedProduct ?? product);
+    usedProductIds.add(product.id);
+    usedProductIds.add(counterpart.id);
+  });
+
+  return pairedProducts;
+}
+
+function findArmoryProductPair(
+  product: ArmoryProduct,
+  products: ArmoryProduct[],
+  pairConfig: PairedArmorySlotConfig,
+  usedProductIds: ReadonlySet<string>,
+): ArmoryProduct | undefined {
+  const item = getArmoryProductItem(product);
+  const pairKey = getArmoryProductPairKey(product, pairConfig);
+
+  if (!item || !pairKey) {
+    return undefined;
+  }
+
+  const counterpartSlot = item.equipmentSlot === pairConfig.backSlot ? pairConfig.frontSlot : pairConfig.backSlot;
+
+  return products.find((candidate) => {
+    const candidateItem = getArmoryProductItem(candidate);
+
+    return (
+      candidate.id !== product.id &&
+      !usedProductIds.has(candidate.id) &&
+      candidateItem?.equipmentSlot === counterpartSlot &&
+      getArmoryProductPairKey(candidate, pairConfig) === pairKey
+    );
+  });
+}
+
+function createPairedArmoryProduct(
+  product: ArmoryProduct,
+  counterpart: ArmoryProduct,
+  pairConfig: PairedArmorySlotConfig,
+): ArmoryProduct | undefined {
+  const productItem = getArmoryProductItem(product);
+  const counterpartItem = getArmoryProductItem(counterpart);
+
+  if (!productItem || !counterpartItem) {
+    return undefined;
+  }
+
+  const backProduct = productItem.equipmentSlot === pairConfig.backSlot ? product : counterpart;
+  const frontProduct = productItem.equipmentSlot === pairConfig.frontSlot ? product : counterpart;
+  const backItemId = backProduct.itemIds[0];
+  const frontItemId = frontProduct.itemIds[0];
+  const pairKey = getArmoryProductPairKey(backProduct, pairConfig) ?? backProduct.id;
+
+  if (!backItemId || !frontItemId) {
+    return undefined;
+  }
+
+  return {
+    id: `${pairKey}-pair`,
+    name: getPairedArmoryProductName(backProduct, pairConfig),
+    price: backProduct.price + frontProduct.price,
+    itemIds: [backItemId, frontItemId],
+  };
+}
+
+function getArmoryProductItem(product: ArmoryProduct): (typeof HERO_ITEM_CATALOG)[HeroItemId] | undefined {
+  const itemId = product.itemIds[0];
+
+  return itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+}
+
+function getPairedArmorySlotConfig(slotKey: HeroEquipmentSlotKey): PairedArmorySlotConfig | undefined {
+  return PAIRED_ARMORY_SLOT_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
+}
+
+function getArmoryProductPairKey(product: ArmoryProduct, pairConfig: PairedArmorySlotConfig): string | undefined {
+  const itemId = product.itemIds[0];
+
+  return itemId ? normalizePairedArmoryText(itemId, pairConfig).toLowerCase() : undefined;
+}
+
+function getPairedArmoryProductName(product: ArmoryProduct, pairConfig: PairedArmorySlotConfig): string {
+  const sideFreeName = normalizePairedArmoryText(product.name, pairConfig);
+  const singularLabelPattern = new RegExp(`\\b${pairConfig.singularLabel}\\b`, "iu");
+
+  return singularLabelPattern.test(sideFreeName)
+    ? sideFreeName.replace(singularLabelPattern, pairConfig.pluralLabel)
+    : `${sideFreeName} Pair`;
+}
+
+function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotConfig): string {
+  return value
+    .replace(new RegExp(`(^|[_\\s-])(?:back|front)([_\\s-]+)${pairConfig.token}(?=$|[_\\s-])`, "giu"), `$1${pairConfig.token}`)
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {

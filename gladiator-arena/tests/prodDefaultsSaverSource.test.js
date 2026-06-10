@@ -86,7 +86,25 @@ test("vite dev middleware converts promoted png equipment to standardized webp a
   assert.match(source, /promotedEquipmentRuntimeWebpQuality = 86/);
   assert.match(source, /promotedEquipmentLowWebpQuality = 76/);
   assert.match(source, /promotedEquipmentLowMaxSide = 448/);
-  assert.match(source, /readAssetSourcePath\(asset\.sourcePath, "assets\/fighters\/armor\/", "asset\.sourcePath", \["\.png", "\.webp"\]\)/);
+  assert.match(source, /readAssetSourcePath\(asset\.sourcePath, getEquipmentAssetSourcePrefix\(kind\), "asset\.sourcePath", \["\.png", "\.webp"\]\)/);
+  assert.match(source, /getEquipmentAssetLowSourcePrefix\(kind\)/);
+});
+
+test("vite dev middleware can promote weapon equipment into the weapon shop", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const generatedSource = readFileSync(join(root, "src", "generated", "equipmentItems.generated.ts"), "utf8");
+  const weaponShopSource = readFileSync(join(root, "src", "weaponShopUi.ts"), "utf8");
+
+  assert.match(source, /damageBonus/);
+  assert.match(source, /getEquipmentAssetSourcePrefix\(kind\)/);
+  assert.match(source, /assets\/fighters\/weapons\//);
+  assert.match(source, /weaponProduct/);
+  assert.match(source, /getWeaponCategoryId/);
+  assert.match(source, /Promoted weapon item must use weaponMain slot/);
+  assert.match(generatedSource, /GeneratedWeaponProduct/);
+  assert.match(generatedSource, /GENERATED_WEAPON_PRODUCTS/);
+  assert.match(weaponShopSource, /GENERATED_WEAPON_PRODUCTS/);
+  assert.match(weaponShopSource, /getGeneratedWeaponProducts/);
 });
 
 test("vite dev middleware can persist item-specific equipment defaults", () => {

@@ -10,8 +10,19 @@ const registrySource = readFileSync(resolve(currentDir, "../src/equipmentAssetRe
 test("auto equipment registry can expose png-only armor assets", () => {
   assert.match(registrySource, /armorWebpAssetUrls/);
   assert.match(registrySource, /armorPngAssetUrls/);
-  assert.match(registrySource, /createAutoArmorAssetEntries/);
+  assert.match(registrySource, /createAutoEquipmentAssetEntries/);
   assert.match(registrySource, /entriesByAssetKey\.set\(assetKey, \[assetPath, url\]\)/);
+});
+
+test("auto equipment registry can expose weapon assets", () => {
+  assert.match(registrySource, /weaponWebpAssetUrls/);
+  assert.match(registrySource, /weaponPngAssetUrls/);
+  assert.match(registrySource, /lowWeaponAssetUrls/);
+  assert.match(registrySource, /prefix: "weapon-"/);
+  assert.match(registrySource, /slot: "weaponMain"/);
+  assert.match(registrySource, /assetKey: "weaponMainAssetKey"/);
+  assert.match(registrySource, /kind: "weapon"/);
+  assert.match(registrySource, /FIGHTER_WEAPON_SWORD_01_ASSET_KEY/);
 });
 
 test("auto equipment registry prefers low webp paths for png previews", () => {

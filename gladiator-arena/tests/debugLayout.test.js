@@ -38,6 +38,19 @@ test("debug preview uses the same flask resource HUD as the game", () => {
   assert.equal(debugHtml.includes('class="resource-flask flask--stamina"'), true);
 });
 
+test("arena turn flow waits for action animations instead of hardcoded enemy delay", () => {
+  assert.equal(mainSource.includes("const actionAnimation = commitState(nextState);"), true);
+  assert.equal(mainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
+  assert.equal(mainSource.includes("await previousActionAnimation;"), true);
+  assert.equal(mainSource.includes("setTurnAnimationLocked(true);"), true);
+  assert.equal(mainSource.includes("}, 700);"), false);
+  assert.equal(debugMainSource.includes("const actionAnimation = commitState(nextState);"), true);
+  assert.equal(debugMainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
+  assert.equal(debugMainSource.includes("await previousActionAnimation;"), true);
+  assert.equal(debugMainSource.includes("setTurnAnimationLocked(true);"), true);
+  assert.equal(debugMainSource.includes("}, 700);"), false);
+});
+
 test("debug panel source contains precision controls and grid", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 

@@ -10,6 +10,7 @@ interface SaveProdDefaultsResponse {
 export interface PromoteEquipmentItemPayload {
   name: string;
   armorHp: number;
+  damageBonus: number;
   price: number;
   addToShop: boolean;
   item: HeroItemDefinition;

@@ -36,6 +36,17 @@ test("paper doll parents wrist equipment to forearms and glove equipment to hand
   assert.equal(arenaSceneSource.includes("image = createPaperDollEquipmentImage(slotContainer.scene, textureKey, config);"), true);
 });
 
+test("paper doll draws equipment through a top overlay anchored to body parts", () => {
+  assert.equal(arenaSceneSource.includes("type PaperDollEquipmentAnchors"), true);
+  assert.equal(arenaSceneSource.includes("const equipmentLayer = target.add.container(0, 0);"), true);
+  assert.equal(arenaSceneSource.includes("rootContainer.add(equipmentLayer);"), true);
+  assert.equal(arenaSceneSource.includes("PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS"), true);
+  assert.equal(arenaSceneSource.includes("createPaperDollAnchoredEquipmentContainer"), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollEquipmentAnchors(rig);"), true);
+  assert.equal(arenaSceneSource.includes("equipmentLayer.add(anchorContainer);"), true);
+  assert.equal(arenaSceneSource.includes("partContainer.add(armorContainer);"), false);
+});
+
 test("paper doll loader includes generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ASSETS"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ASSETS"), true);
@@ -57,4 +68,14 @@ test("low effects can hot swap paper doll textures after preload", () => {
   assert.equal(arenaSceneSource.includes("syncFighterPaperDollTextureResolution"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollBodyPartImage"), true);
   assert.equal(arenaSceneSource.includes("activePaperDollAssetsUseLowRes = lowRes;"), true);
+});
+
+test("arena action turns can wait for animation completion", () => {
+  assert.equal(arenaSceneSource.includes("sync(nextState: CombatState): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
+  assert.equal(arenaSceneSource.includes("actionAnimations.push(animateAction"), true);
+  assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => undefined);"), true);
+  assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
+  assert.equal(arenaSceneSource.includes("): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("function animateAction("), true);
 });
