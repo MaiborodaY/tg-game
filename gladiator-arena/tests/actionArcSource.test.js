@@ -46,6 +46,13 @@ test("leather token buttons keep icons inside a stable centered layer", () => {
   assert.equal(stylesSource.includes("--token-ring"), true);
   assert.equal(stylesSource.includes("--token-ring-width"), true);
   assert.equal(stylesSource.includes("--token-face-inset"), true);
+  assert.equal(stylesSource.includes("--action-attack-icon-rotation"), true);
+  assert.equal(stylesSource.includes("--action-attack-icon-brightness"), true);
+  assert.equal(stylesSource.includes("--token-rim-shine-opacity"), true);
+  assert.equal(stylesSource.includes("--token-outer-shine-opacity"), true);
+  assert.equal(stylesSource.includes("--token-face-shine-opacity"), true);
+  assert.equal(stylesSource.includes("--token-inner-shine-opacity"), true);
+  assert.equal(stylesSource.includes("--token-stripe-shine-opacity"), true);
   assert.equal(stylesSource.includes("--action-icon-scale"), true);
   assert.equal(stylesSource.includes("--action-attack-icon-scale"), true);
   assert.equal(stylesSource.includes(".action-arc__button::before"), true);
@@ -60,8 +67,22 @@ test("debug tuning can scale token icons independently from the button", () => {
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-button-scale"'), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-icon-scale"'), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-attack-icon-scale"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--action-attack-icon-rotation"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--action-attack-icon-brightness"'), true);
+  assert.equal(actionArcSource.includes("getAttackIconStyleTuning"), true);
   assert.equal(stylesSource.includes("scale(var(--action-icon-scale))"), true);
-  assert.equal(stylesSource.includes("scale(var(--action-attack-icon-scale))"), true);
+  assert.equal(stylesSource.includes("rotate(var(--action-attack-icon-rotation)) scale(var(--action-attack-icon-scale))"), true);
+  assert.equal(stylesSource.includes("brightness(var(--action-attack-icon-brightness))"), true);
+});
+
+test("debug tuning can tune leather token fine details", () => {
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-ring-width"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-face-inset"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-rim-shine-opacity"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-outer-shine-opacity"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-face-shine-opacity"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-inner-shine-opacity"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--token-stripe-shine-opacity"'), true);
 });
 
 test("attack actions render carved tally marks inside the token", () => {

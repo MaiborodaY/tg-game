@@ -44,6 +44,11 @@ test("vite dev middleware only writes whitelisted arena layout defaults", () => 
   assert.match(source, /DEFAULT_ACTION_REST_ANGLE: "actionRestArcAngle"/);
   assert.match(source, /DEFAULT_ACTION_ICON_SCALE: "actionIconScale"/);
   assert.match(source, /DEFAULT_ACTION_ATTACK_ICON_SCALE: "actionAttackIconScale"/);
+  assert.match(source, /DEFAULT_ACTION_LIGHT_ICON_ROTATION: "actionLightIconRotation"/);
+  assert.match(source, /DEFAULT_ACTION_MEDIUM_ICON_SCALE: "actionMediumIconScale"/);
+  assert.match(source, /DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS: "actionHeavyIconBrightness"/);
+  assert.match(source, /DEFAULT_ACTION_TOKEN_RING_WIDTH: "actionTokenRingWidth"/);
+  assert.match(source, /DEFAULT_ACTION_TOKEN_INNER_SHINE: "actionTokenInnerShine"/);
   assert.doesNotMatch(source, /gridStep/);
   assert.match(source, /applyProdDefaultUpdates/);
 });

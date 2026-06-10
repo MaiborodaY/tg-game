@@ -40,6 +40,22 @@ function loadDebugTuningModule() {
             DEFAULT_ACTION_BUTTON_SCALE: 1,
             DEFAULT_ACTION_ICON_SCALE: 1,
             DEFAULT_ACTION_ATTACK_ICON_SCALE: 1,
+            DEFAULT_ACTION_LIGHT_ICON_SCALE: 1,
+            DEFAULT_ACTION_MEDIUM_ICON_SCALE: 1,
+            DEFAULT_ACTION_HEAVY_ICON_SCALE: 1,
+            DEFAULT_ACTION_LIGHT_ICON_ROTATION: 0,
+            DEFAULT_ACTION_MEDIUM_ICON_ROTATION: 0,
+            DEFAULT_ACTION_HEAVY_ICON_ROTATION: 0,
+            DEFAULT_ACTION_LIGHT_ICON_BRIGHTNESS: 1,
+            DEFAULT_ACTION_MEDIUM_ICON_BRIGHTNESS: 1,
+            DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS: 1,
+            DEFAULT_ACTION_TOKEN_RING_WIDTH: 3,
+            DEFAULT_ACTION_TOKEN_FACE_INSET: 2,
+            DEFAULT_ACTION_TOKEN_RIM_SHINE: 0.2,
+            DEFAULT_ACTION_TOKEN_OUTER_SHINE: 0.12,
+            DEFAULT_ACTION_TOKEN_FACE_SHINE: 0.24,
+            DEFAULT_ACTION_TOKEN_INNER_SHINE: 0.2,
+            DEFAULT_ACTION_TOKEN_STRIPE_SHINE: 0.12,
             DEFAULT_HUD_BOTTOM_OFFSET: -16,
             DEFAULT_HUD_SIDE_INSET: 8,
             DEFAULT_HUD_SCALE: 1,
@@ -89,6 +105,22 @@ test("debug tuning normalizes unsafe values", () => {
     actionButtonScale: 99,
     actionIconScale: 99,
     actionAttackIconScale: -99,
+    actionLightIconScale: 99,
+    actionMediumIconScale: -99,
+    actionHeavyIconScale: 99,
+    actionLightIconRotation: 999,
+    actionMediumIconRotation: -999,
+    actionHeavyIconRotation: 999,
+    actionLightIconBrightness: 99,
+    actionMediumIconBrightness: -99,
+    actionHeavyIconBrightness: 99,
+    actionTokenRingWidth: 999,
+    actionTokenFaceInset: -999,
+    actionTokenRimShine: 999,
+    actionTokenOuterShine: -999,
+    actionTokenFaceShine: 999,
+    actionTokenInnerShine: -999,
+    actionTokenStripeShine: 999,
     hudEditMode: "true",
     hudBottomOffset: -999,
     hudSideInset: 999,
@@ -123,6 +155,22 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.actionButtonScale, 2);
   assert.equal(normalized.actionIconScale, 2);
   assert.equal(normalized.actionAttackIconScale, 0.5);
+  assert.equal(normalized.actionLightIconScale, 2);
+  assert.equal(normalized.actionMediumIconScale, 0.5);
+  assert.equal(normalized.actionHeavyIconScale, 2);
+  assert.equal(normalized.actionLightIconRotation, 180);
+  assert.equal(normalized.actionMediumIconRotation, -180);
+  assert.equal(normalized.actionHeavyIconRotation, 180);
+  assert.equal(normalized.actionLightIconBrightness, 1.8);
+  assert.equal(normalized.actionMediumIconBrightness, 0.35);
+  assert.equal(normalized.actionHeavyIconBrightness, 1.8);
+  assert.equal(normalized.actionTokenRingWidth, 6);
+  assert.equal(normalized.actionTokenFaceInset, 0);
+  assert.equal(normalized.actionTokenRimShine, 0.6);
+  assert.equal(normalized.actionTokenOuterShine, 0);
+  assert.equal(normalized.actionTokenFaceShine, 0.6);
+  assert.equal(normalized.actionTokenInnerShine, 0);
+  assert.equal(normalized.actionTokenStripeShine, 0.6);
   assert.equal(normalized.hudEditMode, false);
   assert.equal(normalized.hudBottomOffset, -96);
   assert.equal(normalized.hudSideInset, 64);
@@ -155,6 +203,22 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionButtonScale, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.actionIconScale, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.actionAttackIconScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionLightIconScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionMediumIconScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyIconScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionLightIconRotation, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionMediumIconRotation, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyIconRotation, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionLightIconBrightness, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionMediumIconBrightness, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyIconBrightness, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenRingWidth, 3);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenFaceInset, 2);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenRimShine, 0.2);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenOuterShine, 0.12);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenFaceShine, 0.24);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenInnerShine, 0.2);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionTokenStripeShine, 0.12);
   assert.equal(debugTuningModule.defaultDebugTuning.hudBottomOffset, -16);
   assert.equal(debugTuningModule.defaultDebugTuning.hudSideInset, 8);
   assert.equal(debugTuningModule.defaultDebugTuning.hudScale, 1);

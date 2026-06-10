@@ -67,6 +67,14 @@ test("debug panel source contains precision controls and grid", () => {
   assert.equal(debugPanelSource.includes("Button scale"), true);
   assert.equal(debugPanelSource.includes("Icon scale"), true);
   assert.equal(debugPanelSource.includes("Attack icon"), true);
+  assert.equal(debugPanelSource.includes("Ring width"), true);
+  assert.equal(debugPanelSource.includes("Face inset"), true);
+  assert.equal(debugPanelSource.includes("Rim shine"), true);
+  assert.equal(debugPanelSource.includes("Outer shine"), true);
+  assert.equal(debugPanelSource.includes('title: "Attack icons"'), true);
+  assert.equal(debugPanelSource.includes("Light rotate"), true);
+  assert.equal(debugPanelSource.includes("Medium scale"), true);
+  assert.equal(debugPanelSource.includes("Heavy bright"), true);
   assert.equal(debugPanelSource.includes("FWD angle"), true);
   assert.equal(debugPanelSource.includes("LUNGE angle"), true);
   assert.equal(debugPanelSource.includes("MED angle"), true);

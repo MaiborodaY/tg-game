@@ -1,4 +1,25 @@
-import { GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
+import {
+  DEFAULT_ACTION_ATTACK_ICON_SCALE,
+  DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS,
+  DEFAULT_ACTION_HEAVY_ICON_ROTATION,
+  DEFAULT_ACTION_HEAVY_ICON_SCALE,
+  DEFAULT_ACTION_ICON_SCALE,
+  DEFAULT_ACTION_LIGHT_ICON_BRIGHTNESS,
+  DEFAULT_ACTION_LIGHT_ICON_ROTATION,
+  DEFAULT_ACTION_LIGHT_ICON_SCALE,
+  DEFAULT_ACTION_MEDIUM_ICON_BRIGHTNESS,
+  DEFAULT_ACTION_MEDIUM_ICON_ROTATION,
+  DEFAULT_ACTION_MEDIUM_ICON_SCALE,
+  DEFAULT_ACTION_TOKEN_FACE_INSET,
+  DEFAULT_ACTION_TOKEN_FACE_SHINE,
+  DEFAULT_ACTION_TOKEN_INNER_SHINE,
+  DEFAULT_ACTION_TOKEN_OUTER_SHINE,
+  DEFAULT_ACTION_TOKEN_RING_WIDTH,
+  DEFAULT_ACTION_TOKEN_RIM_SHINE,
+  DEFAULT_ACTION_TOKEN_STRIPE_SHINE,
+  GAME_HEIGHT,
+  GAME_WIDTH,
+} from "./arenaLayout";
 import { getBattleSafeArea } from "./battleSafeArea";
 import { actionOrder, canUseAction, type ActionId, type CombatState } from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
@@ -45,6 +66,43 @@ const ACTION_ATTACK_ICON_URLS: Partial<Record<ActionId, string>> = {
   medium: new URL("./assets/ui/action-icons/attack-medium.webp", import.meta.url).href,
   heavy: new URL("./assets/ui/action-icons/attack-heavy.webp", import.meta.url).href,
 };
+
+interface AttackIconStyleTuning {
+  scale: number;
+  rotation: number;
+  brightness: number;
+}
+
+function getAttackIconStyleTuning(actionId: ActionId, tuning?: StageLayoutTuning): AttackIconStyleTuning {
+  const globalScale = tuning?.actionAttackIconScale ?? DEFAULT_ACTION_ATTACK_ICON_SCALE;
+
+  switch (actionId) {
+    case "light":
+      return {
+        scale: globalScale * (tuning?.actionLightIconScale ?? DEFAULT_ACTION_LIGHT_ICON_SCALE),
+        rotation: tuning?.actionLightIconRotation ?? DEFAULT_ACTION_LIGHT_ICON_ROTATION,
+        brightness: tuning?.actionLightIconBrightness ?? DEFAULT_ACTION_LIGHT_ICON_BRIGHTNESS,
+      };
+    case "medium":
+      return {
+        scale: globalScale * (tuning?.actionMediumIconScale ?? DEFAULT_ACTION_MEDIUM_ICON_SCALE),
+        rotation: tuning?.actionMediumIconRotation ?? DEFAULT_ACTION_MEDIUM_ICON_ROTATION,
+        brightness: tuning?.actionMediumIconBrightness ?? DEFAULT_ACTION_MEDIUM_ICON_BRIGHTNESS,
+      };
+    case "heavy":
+      return {
+        scale: globalScale * (tuning?.actionHeavyIconScale ?? DEFAULT_ACTION_HEAVY_ICON_SCALE),
+        rotation: tuning?.actionHeavyIconRotation ?? DEFAULT_ACTION_HEAVY_ICON_ROTATION,
+        brightness: tuning?.actionHeavyIconBrightness ?? DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS,
+      };
+    default:
+      return {
+        scale: globalScale,
+        rotation: 0,
+        brightness: 1,
+      };
+  }
+}
 
 const LUNGE_ICON_LAYERS = [
   { className: "action-arc__icon-layer action-arc__icon-layer--bolt", text: "/" },
@@ -176,9 +234,20 @@ export function mountActionArc(
       button.disabled = !editMode && !canUseAction(state, actionId, "player");
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
+      const attackIconStyle = getAttackIconStyleTuning(actionId, tuning);
+
       button.style.setProperty("--action-button-scale", `${buttonLayout.scale}`);
-      button.style.setProperty("--action-icon-scale", `${tuning?.actionIconScale ?? 1}`);
-      button.style.setProperty("--action-attack-icon-scale", `${tuning?.actionAttackIconScale ?? 1}`);
+      button.style.setProperty("--action-icon-scale", `${tuning?.actionIconScale ?? DEFAULT_ACTION_ICON_SCALE}`);
+      button.style.setProperty("--action-attack-icon-scale", `${attackIconStyle.scale}`);
+      button.style.setProperty("--action-attack-icon-rotation", `${attackIconStyle.rotation}deg`);
+      button.style.setProperty("--action-attack-icon-brightness", `${attackIconStyle.brightness}`);
+      button.style.setProperty("--token-ring-width", `${tuning?.actionTokenRingWidth ?? DEFAULT_ACTION_TOKEN_RING_WIDTH}px`);
+      button.style.setProperty("--token-face-inset", `${tuning?.actionTokenFaceInset ?? DEFAULT_ACTION_TOKEN_FACE_INSET}px`);
+      button.style.setProperty("--token-rim-shine-opacity", `${tuning?.actionTokenRimShine ?? DEFAULT_ACTION_TOKEN_RIM_SHINE}`);
+      button.style.setProperty("--token-outer-shine-opacity", `${tuning?.actionTokenOuterShine ?? DEFAULT_ACTION_TOKEN_OUTER_SHINE}`);
+      button.style.setProperty("--token-face-shine-opacity", `${tuning?.actionTokenFaceShine ?? DEFAULT_ACTION_TOKEN_FACE_SHINE}`);
+      button.style.setProperty("--token-inner-shine-opacity", `${tuning?.actionTokenInnerShine ?? DEFAULT_ACTION_TOKEN_INNER_SHINE}`);
+      button.style.setProperty("--token-stripe-shine-opacity", `${tuning?.actionTokenStripeShine ?? DEFAULT_ACTION_TOKEN_STRIPE_SHINE}`);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
       button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
       button.title = `${buttonLayout.label} ${buttonLayout.detail} angle ${Math.round(buttonLayout.angle)} deg`;

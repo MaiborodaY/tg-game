@@ -9,12 +9,28 @@ import {
   DEFAULT_BACK_MOVE_DISTANCE,
   DEFAULT_ACTION_FORWARD_ANGLE,
   DEFAULT_ACTION_HEAVY_ANGLE,
+  DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS,
+  DEFAULT_ACTION_HEAVY_ICON_ROTATION,
+  DEFAULT_ACTION_HEAVY_ICON_SCALE,
   DEFAULT_ACTION_ICON_SCALE,
   DEFAULT_ACTION_LIGHT_ANGLE,
+  DEFAULT_ACTION_LIGHT_ICON_BRIGHTNESS,
+  DEFAULT_ACTION_LIGHT_ICON_ROTATION,
+  DEFAULT_ACTION_LIGHT_ICON_SCALE,
   DEFAULT_ACTION_LUNGE_ANGLE,
   DEFAULT_ACTION_MEDIUM_ANGLE,
+  DEFAULT_ACTION_MEDIUM_ICON_BRIGHTNESS,
+  DEFAULT_ACTION_MEDIUM_ICON_ROTATION,
+  DEFAULT_ACTION_MEDIUM_ICON_SCALE,
   DEFAULT_ACTION_REST_ANGLE,
   DEFAULT_ACTION_TAUNT_ANGLE,
+  DEFAULT_ACTION_TOKEN_FACE_INSET,
+  DEFAULT_ACTION_TOKEN_FACE_SHINE,
+  DEFAULT_ACTION_TOKEN_INNER_SHINE,
+  DEFAULT_ACTION_TOKEN_OUTER_SHINE,
+  DEFAULT_ACTION_TOKEN_RING_WIDTH,
+  DEFAULT_ACTION_TOKEN_RIM_SHINE,
+  DEFAULT_ACTION_TOKEN_STRIPE_SHINE,
   DEFAULT_ENEMY_SCALE,
   DEFAULT_ENEMY_STAGE_X,
   DEFAULT_ENEMY_STAGE_Y,
@@ -163,6 +179,22 @@ export interface ArenaDebugTuning {
   actionButtonScale: number;
   actionIconScale: number;
   actionAttackIconScale: number;
+  actionLightIconScale: number;
+  actionMediumIconScale: number;
+  actionHeavyIconScale: number;
+  actionLightIconRotation: number;
+  actionMediumIconRotation: number;
+  actionHeavyIconRotation: number;
+  actionLightIconBrightness: number;
+  actionMediumIconBrightness: number;
+  actionHeavyIconBrightness: number;
+  actionTokenRingWidth: number;
+  actionTokenFaceInset: number;
+  actionTokenRimShine: number;
+  actionTokenOuterShine: number;
+  actionTokenFaceShine: number;
+  actionTokenInnerShine: number;
+  actionTokenStripeShine: number;
   actionButtonOffsets: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
   hudEditMode: boolean;
   hudBottomOffset: number;
@@ -229,14 +261,14 @@ export const defaultActionButtonOffsetTuning: ActionButtonOffsetTuning = {
 };
 
 export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning> = {
-  forward: { x: -53, y: -37 },
-  back: { x: 56, y: -30 },
-  lunge: { x: -25, y: -27 },
+  forward: { x: -51, y: -45 },
+  back: { x: 54, y: -38 },
+  lunge: { x: -19.375, y: -26.803 },
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
-  taunt: { x: 29, y: -25 },
-  rest: { x: 25, y: -27 },
+  taunt: { x: 23, y: -24 },
+  rest: { x: 19, y: -29 },
 };
 
 export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {
@@ -863,6 +895,22 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
   actionIconScale: DEFAULT_ACTION_ICON_SCALE,
   actionAttackIconScale: DEFAULT_ACTION_ATTACK_ICON_SCALE,
+  actionLightIconScale: DEFAULT_ACTION_LIGHT_ICON_SCALE,
+  actionMediumIconScale: DEFAULT_ACTION_MEDIUM_ICON_SCALE,
+  actionHeavyIconScale: DEFAULT_ACTION_HEAVY_ICON_SCALE,
+  actionLightIconRotation: DEFAULT_ACTION_LIGHT_ICON_ROTATION,
+  actionMediumIconRotation: DEFAULT_ACTION_MEDIUM_ICON_ROTATION,
+  actionHeavyIconRotation: DEFAULT_ACTION_HEAVY_ICON_ROTATION,
+  actionLightIconBrightness: DEFAULT_ACTION_LIGHT_ICON_BRIGHTNESS,
+  actionMediumIconBrightness: DEFAULT_ACTION_MEDIUM_ICON_BRIGHTNESS,
+  actionHeavyIconBrightness: DEFAULT_ACTION_HEAVY_ICON_BRIGHTNESS,
+  actionTokenRingWidth: DEFAULT_ACTION_TOKEN_RING_WIDTH,
+  actionTokenFaceInset: DEFAULT_ACTION_TOKEN_FACE_INSET,
+  actionTokenRimShine: DEFAULT_ACTION_TOKEN_RIM_SHINE,
+  actionTokenOuterShine: DEFAULT_ACTION_TOKEN_OUTER_SHINE,
+  actionTokenFaceShine: DEFAULT_ACTION_TOKEN_FACE_SHINE,
+  actionTokenInnerShine: DEFAULT_ACTION_TOKEN_INNER_SHINE,
+  actionTokenStripeShine: DEFAULT_ACTION_TOKEN_STRIPE_SHINE,
   actionButtonOffsets: cloneActionButtonOffsets(DEFAULT_ACTION_BUTTON_OFFSETS),
   hudEditMode: false,
   hudBottomOffset: DEFAULT_HUD_BOTTOM_OFFSET,
@@ -1016,6 +1064,22 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),
     actionIconScale: clampNumber(input.actionIconScale, 0.5, 2, defaultDebugTuning.actionIconScale),
     actionAttackIconScale: clampNumber(input.actionAttackIconScale, 0.5, 2, defaultDebugTuning.actionAttackIconScale),
+    actionLightIconScale: clampNumber(input.actionLightIconScale, 0.5, 2, defaultDebugTuning.actionLightIconScale),
+    actionMediumIconScale: clampNumber(input.actionMediumIconScale, 0.5, 2, defaultDebugTuning.actionMediumIconScale),
+    actionHeavyIconScale: clampNumber(input.actionHeavyIconScale, 0.5, 2, defaultDebugTuning.actionHeavyIconScale),
+    actionLightIconRotation: clampNumber(input.actionLightIconRotation, -180, 180, defaultDebugTuning.actionLightIconRotation),
+    actionMediumIconRotation: clampNumber(input.actionMediumIconRotation, -180, 180, defaultDebugTuning.actionMediumIconRotation),
+    actionHeavyIconRotation: clampNumber(input.actionHeavyIconRotation, -180, 180, defaultDebugTuning.actionHeavyIconRotation),
+    actionLightIconBrightness: clampNumber(input.actionLightIconBrightness, 0.35, 1.8, defaultDebugTuning.actionLightIconBrightness),
+    actionMediumIconBrightness: clampNumber(input.actionMediumIconBrightness, 0.35, 1.8, defaultDebugTuning.actionMediumIconBrightness),
+    actionHeavyIconBrightness: clampNumber(input.actionHeavyIconBrightness, 0.35, 1.8, defaultDebugTuning.actionHeavyIconBrightness),
+    actionTokenRingWidth: clampNumber(input.actionTokenRingWidth, 0, 6, defaultDebugTuning.actionTokenRingWidth),
+    actionTokenFaceInset: clampNumber(input.actionTokenFaceInset, 0, 10, defaultDebugTuning.actionTokenFaceInset),
+    actionTokenRimShine: clampNumber(input.actionTokenRimShine, 0, 0.6, defaultDebugTuning.actionTokenRimShine),
+    actionTokenOuterShine: clampNumber(input.actionTokenOuterShine, 0, 0.6, defaultDebugTuning.actionTokenOuterShine),
+    actionTokenFaceShine: clampNumber(input.actionTokenFaceShine, 0, 0.6, defaultDebugTuning.actionTokenFaceShine),
+    actionTokenInnerShine: clampNumber(input.actionTokenInnerShine, 0, 0.6, defaultDebugTuning.actionTokenInnerShine),
+    actionTokenStripeShine: clampNumber(input.actionTokenStripeShine, 0, 0.6, defaultDebugTuning.actionTokenStripeShine),
     actionButtonOffsets: normalizeActionButtonOffsets(input.actionButtonOffsets),
     hudEditMode: typeof input.hudEditMode === "boolean" ? input.hudEditMode : defaultDebugTuning.hudEditMode,
     hudBottomOffset: clampNumber(input.hudBottomOffset, -96, 96, defaultDebugTuning.hudBottomOffset),

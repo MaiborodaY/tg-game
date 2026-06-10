@@ -3054,6 +3054,8 @@ body.debug-active .action-arc__center {
   --action-icon-size: 1.85rem;
   --action-icon-scale: 1;
   --action-attack-icon-scale: 1;
+  --action-attack-icon-rotation: 0deg;
+  --action-attack-icon-brightness: 1;
   --token-edge: #1e0d06;
   --token-ring: rgba(193, 128, 54, 0.52);
   --token-ring-width: 3px;
@@ -3066,6 +3068,11 @@ body.debug-active .action-arc__center {
   --token-accent: rgba(11, 3, 1, 0.42);
   --token-face-tint: rgba(0, 0, 0, 0);
   --token-ring-echo: rgba(0, 0, 0, 0);
+  --token-rim-shine-opacity: 0.2;
+  --token-outer-shine-opacity: 0.12;
+  --token-face-shine-opacity: 0.24;
+  --token-inner-shine-opacity: 0.2;
+  --token-stripe-shine-opacity: 0.12;
   width: 58px;
   height: 58px;
   overflow: visible;
@@ -3074,10 +3081,10 @@ body.debug-active .action-arc__center {
   color: #f5d08b;
   background: linear-gradient(180deg, var(--token-rim-top), var(--token-rim-bottom));
   box-shadow:
-    inset 0 2px 0 rgba(255, 210, 139, 0.2),
+    inset 0 2px 0 rgba(255, 210, 139, var(--token-rim-shine-opacity)),
     inset 0 -6px 0 rgba(11, 3, 1, 0.48),
     0 5px 0 #170804,
-    0 0 0 2px rgba(255, 199, 107, 0.12);
+    0 0 0 2px rgba(255, 199, 107, var(--token-outer-shine-opacity));
   text-shadow: none;
 }
 
@@ -3107,14 +3114,14 @@ body.debug-active .action-arc__center {
   border: 0;
   border-radius: inherit;
   background:
-    radial-gradient(circle at 32% 24%, rgba(255, 190, 104, 0.24) 0 10%, transparent 11%),
+    radial-gradient(circle at 32% 24%, rgba(255, 190, 104, var(--token-face-shine-opacity)) 0 10%, transparent 11%),
     radial-gradient(ellipse at 58% 76%, rgba(27, 7, 2, 0.36) 0 38%, transparent 39%),
     linear-gradient(145deg, rgba(255, 178, 94, 0.16), transparent 42%),
     linear-gradient(180deg, var(--token-face-top) 0%, var(--token-face-mid) 58%, var(--token-face-bottom) 100%);
   box-shadow:
     inset 0 0 0 var(--token-ring-width) var(--token-ring),
     inset 0 0 8px var(--token-ring-echo),
-    inset 0 2px 0 rgba(255, 205, 129, 0.2),
+    inset 0 2px 0 rgba(255, 205, 129, var(--token-inner-shine-opacity)),
     inset 0 -5px 0 rgba(13, 4, 1, 0.34);
 }
 
@@ -3128,7 +3135,7 @@ body.debug-active .action-arc__center {
   z-index: 1;
   border-radius: inherit;
   background:
-    linear-gradient(105deg, transparent 0 28%, rgba(255, 218, 144, 0.12) 29% 31%, transparent 32% 100%),
+    linear-gradient(105deg, transparent 0 28%, rgba(255, 218, 144, var(--token-stripe-shine-opacity)) 29% 31%, transparent 32% 100%),
     radial-gradient(circle at 50% 45%, var(--token-face-tint), transparent 66%),
     radial-gradient(circle at 50% 100%, var(--token-accent), transparent 58%);
   mix-blend-mode: multiply;
@@ -3271,8 +3278,8 @@ body.debug-active .action-arc__center {
   height: var(--action-attack-icon-size);
   object-fit: contain;
   pointer-events: none;
-  filter: drop-shadow(1px 2px 0 rgba(11, 3, 1, 0.46));
-  transform: translateY(-1px) scale(var(--action-attack-icon-scale));
+  filter: brightness(var(--action-attack-icon-brightness)) drop-shadow(1px 2px 0 rgba(11, 3, 1, 0.46));
+  transform: translateY(-1px) rotate(var(--action-attack-icon-rotation)) scale(var(--action-attack-icon-scale));
   transform-origin: center;
   user-select: none;
 }

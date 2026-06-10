@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
+const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 
 test("fighter alpha only touches Phaser game objects", () => {
   assert.equal(arenaSceneSource.includes("Object.values(fighter).forEach((part) => part.setAlpha(alpha))"), false);
@@ -134,4 +135,34 @@ test("arena entry can prewarm arena image assets through the browser cache", () 
   assert.equal(arenaSceneSource.includes("ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL"), true);
   assert.match(arenaSceneSource, /const image = new Image\(\)/);
   assert.match(arenaSceneSource, /image\.src = url/);
+});
+
+test("blocked hits use the shield icon popup instead of block text", () => {
+  assert.equal(assetsSource.includes("DAMAGE_BLOCK_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-block.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/damage-icons/damage-block.webp")), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_BLOCK_ICON_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_BLOCK_ICON_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.enemy)"), true);
+  assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.player)"), true);
+  assert.equal(arenaSceneSource.includes("BLOCK_POPUP_HEAD_OFFSET_Y"), true);
+  assert.equal(arenaSceneSource.includes("BLOCK_POPUP_SCREEN_SIZE"), true);
+  assert.equal(arenaSceneSource.includes("fighter.head.getWorldTransformMatrix()"), true);
+  assert.equal(arenaSceneSource.includes("effectsLayer.getWorldTransformMatrix().applyInverse"), true);
+  assert.equal(arenaSceneSource.includes("offsetY / layerScale"), true);
+  assert.equal(arenaSceneSource.includes('target.add.image(x, y, DAMAGE_BLOCK_ICON_ASSET_KEY)'), true);
+  assert.equal(arenaSceneSource.includes('"BLOCK"'), false);
+});
+
+test("damage hits use the hit icon popup from the fighter head", () => {
+  assert.equal(assetsSource.includes("DAMAGE_HIT_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-hit.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/damage-icons/damage-hit.webp")), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_HIT_ICON_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_HIT_ICON_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_POPUP_HEAD_OFFSET_Y"), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_HIT_POPUP_SCREEN_SIZE"), true);
+  assert.equal(arenaSceneSource.includes("showDamagePopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage)"), true);
+  assert.equal(arenaSceneSource.includes("showDamagePopupFromFighter(this, visuals.player, nextState.lastEnemyDamage)"), true);
+  assert.equal(arenaSceneSource.includes("target.add.image(0, 0, DAMAGE_HIT_ICON_ASSET_KEY)"), true);
 });

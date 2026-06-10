@@ -24,6 +24,10 @@ import {
   CITY_CLOUD_ASSETS,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL,
+  DAMAGE_BLOCK_ICON_ASSET_KEY,
+  DAMAGE_BLOCK_ICON_ASSET_URL,
+  DAMAGE_HIT_ICON_ASSET_KEY,
+  DAMAGE_HIT_ICON_ASSET_URL,
   FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
@@ -109,6 +113,10 @@ type FighterPart = Phaser.GameObjects.GameObject & {
   angle: number;
   setAlpha: (alpha: number) => FighterPart;
   setVisible: (visible: boolean) => FighterPart;
+  getWorldTransformMatrix: (
+    tempMatrix?: Phaser.GameObjects.Components.TransformMatrix,
+    parentMatrix?: Phaser.GameObjects.Components.TransformMatrix,
+  ) => Phaser.GameObjects.Components.TransformMatrix;
 };
 
 interface FighterVisual {
@@ -308,6 +316,10 @@ const PAPER_DOLL_BASE_SCALE = 0.52;
 const PAPER_DOLL_SHADOW_DEPTH = -1;
 const PAPER_DOLL_SHADOW_COLOR = 0x120805;
 const SLASH_ARC_DEPTH = 36;
+const BLOCK_POPUP_HEAD_OFFSET_Y = 18;
+const BLOCK_POPUP_SCREEN_SIZE = 88;
+const DAMAGE_POPUP_HEAD_OFFSET_Y = -10;
+const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
   skin: 0xefaa7b,
@@ -680,6 +692,8 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY, ARENA_BACKGROUND_BACK_LAYER_ASSET_URL);
   target.load.image(ARENA_BACKGROUND_MID_LAYER_ASSET_KEY, ARENA_BACKGROUND_MID_LAYER_ASSET_URL);
   target.load.image(ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY, ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL);
+  target.load.image(DAMAGE_BLOCK_ICON_ASSET_KEY, DAMAGE_BLOCK_ICON_ASSET_URL);
+  target.load.image(DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL);
 }
 
 export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
@@ -748,7 +762,13 @@ function getPaperDollAssetLoadEntries(lowRes: boolean): PaperDollAssetLoadEntry[
 }
 
 function getArenaAssetPrewarmUrls(): string[] {
-  return [ARENA_BACKGROUND_BACK_LAYER_ASSET_URL, ARENA_BACKGROUND_MID_LAYER_ASSET_URL, ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL];
+  return [
+    ARENA_BACKGROUND_BACK_LAYER_ASSET_URL,
+    ARENA_BACKGROUND_MID_LAYER_ASSET_URL,
+    ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL,
+    DAMAGE_BLOCK_ICON_ASSET_URL,
+    DAMAGE_HIT_ICON_ASSET_URL,
+  ];
 }
 
 function prewarmImageUrl(url: string): Promise<void> {
@@ -946,17 +966,17 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     if (nextState.lastPlayerDamage > 0) {
-      showDamagePopup(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, nextState.lastPlayerDamage);
+      showDamagePopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage);
       shakeFighter(this, visuals.enemy);
     } else if (nextState.lastPlayerBlocked) {
-      showFloatingText(this, visuals.enemy.body.x, visuals.enemy.body.y - 128, "BLOCK", "#dfe9ff");
+      showBlockPopupFromFighter(this, visuals.enemy);
     }
 
     if (nextState.lastEnemyDamage > 0) {
-      showDamagePopup(this, visuals.player.body.x, visuals.player.body.y - 128, nextState.lastEnemyDamage);
+      showDamagePopupFromFighter(this, visuals.player, nextState.lastEnemyDamage);
       shakeFighter(this, visuals.player);
     } else if (nextState.lastEnemyBlocked) {
-      showFloatingText(this, visuals.player.body.x, visuals.player.body.y - 128, "BLOCK", "#dfe9ff");
+      showBlockPopupFromFighter(this, visuals.player);
     }
 
     scheduleDeathEffects(this, nextState);
@@ -4059,6 +4079,71 @@ function showFloatingText(target: Phaser.Scene, x: number, y: number, text: stri
   });
 }
 
+function showBlockPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual): void {
+  const point = getFighterHeadPopupPoint(target, fighter, BLOCK_POPUP_HEAD_OFFSET_Y);
+
+  showBlockPopup(target, point.x, point.y);
+}
+
+function showDamagePopupFromFighter(target: Phaser.Scene, fighter: FighterVisual, amount: number): void {
+  const point = getFighterHeadPopupPoint(target, fighter, DAMAGE_POPUP_HEAD_OFFSET_Y);
+
+  showDamagePopup(target, point.x, point.y, amount);
+}
+
+function getFighterHeadPopupPoint(target: Phaser.Scene, fighter: FighterVisual, offsetY: number): { x: number; y: number } {
+  const headMatrix = fighter.head.getWorldTransformMatrix();
+  const worldX = headMatrix.getX(0, 0);
+  const worldY = headMatrix.getY(0, 0);
+  const effectsLayer = getArenaEffectsLayer(target);
+
+  if (!effectsLayer) {
+    return { x: worldX, y: worldY + offsetY };
+  }
+
+  const localPoint = effectsLayer.getWorldTransformMatrix().applyInverse(worldX, worldY);
+  const layerScale = getArenaEffectsLayerScale(target);
+
+  return { x: localPoint.x, y: localPoint.y + offsetY / layerScale };
+}
+
+function showBlockPopup(target: Phaser.Scene, x: number, y: number): void {
+  if (!target.textures.exists(DAMAGE_BLOCK_ICON_ASSET_KEY)) {
+    return;
+  }
+
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const liftY = 42 / layerScale;
+  const source = target.textures.get(DAMAGE_BLOCK_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
+  const sourceWidth = Math.max(1, source?.width ?? 256);
+  const endScale = (BLOCK_POPUP_SCREEN_SIZE / sourceWidth) * fixedScreenScale;
+  const startScale = endScale * 0.72;
+  const icon = target.add.image(x, y, DAMAGE_BLOCK_ICON_ASSET_KEY).setOrigin(0.5).setDepth(40);
+
+  addToArenaEffectsLayer(target, icon);
+  icon.setScale(startScale);
+  icon.setAngle(-5);
+
+  target.tweens.add({
+    targets: icon,
+    scale: endScale,
+    angle: 2,
+    duration: 140,
+    ease: "Back.easeOut",
+  });
+
+  target.tweens.add({
+    targets: icon,
+    y: y - liftY,
+    alpha: 0,
+    duration: 720,
+    delay: 160,
+    ease: "Quad.easeOut",
+    onComplete: () => icon.destroy(),
+  });
+}
+
 function getAnimatedFighterParts(fighter: FighterVisual): FighterPart[] {
   if (fighter.animatedParts) {
     return fighter.animatedParts;
@@ -4086,7 +4171,14 @@ function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: num
     })
     .setOrigin(0.5);
 
-  if (useBurst) {
+  if (useBurst && target.textures.exists(DAMAGE_HIT_ICON_ASSET_KEY)) {
+    const source = target.textures.get(DAMAGE_HIT_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
+    const sourceWidth = Math.max(1, source?.width ?? 256);
+    const icon = target.add.image(0, 0, DAMAGE_HIT_ICON_ASSET_KEY).setOrigin(0.5);
+
+    icon.setScale(DAMAGE_HIT_POPUP_SCREEN_SIZE / sourceWidth);
+    popup.add([icon, label]);
+  } else if (useBurst) {
     const shadow = target.add.graphics();
     const burst = target.add.graphics();
 
