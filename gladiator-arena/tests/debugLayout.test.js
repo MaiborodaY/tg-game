@@ -23,6 +23,14 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugHtml.includes('id="gameScreen" class="game-screen battle-screen"'), true);
   assert.equal(debugMainSource.includes("mountDebugPanel"), true);
 });
+
+test("debug app starts the hero without starter armor", () => {
+  assert.equal(debugMainSource.includes("equipment: createDebugHeroEquipment()"), true);
+  assert.equal(debugMainSource.includes("createDefaultHeroEquipment()"), true);
+  assert.equal(debugMainSource.includes("weaponMain: TRAINING_WEAPON_ID"), true);
+  assert.equal(debugMainSource.includes("equipment: createStarterHeroEquipment()"), false);
+});
+
 test("debug preview uses the same flask resource HUD as the game", () => {
   assert.equal(debugHtml.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
   assert.equal(debugHtml.includes('class="resource-flask flask--hp"'), true);
@@ -89,7 +97,12 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("debug-auto-equipment-panel"), true);
   assert.equal(debugPanelSource.includes("Auto equipment"), true);
   assert.equal(debugPanelSource.includes("savePromotedEquipmentItem"), true);
+  assert.equal(debugPanelSource.includes("removePromotedEquipmentItem"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ITEM_RECORDS"), true);
+  assert.equal(debugPanelSource.includes("GENERATED_EQUIPMENT_ITEM_RECORDS"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__transform-controls"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__generated-select"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__remove"), true);
+  assert.equal(debugPanelSource.includes("window.confirm"), true);
   assert.equal(debugPanelSource.includes("equipmentTuning: getCurrentEquipmentItemTuning"), true);
 });

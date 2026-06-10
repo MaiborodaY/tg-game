@@ -20,6 +20,19 @@ export interface GeneratedEquipmentItemRecord {
 
 export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [
   {
+    item: {"id":"generated_equipment_breastplate_chainmail_01","name":"Chainmail Breastplate 01","kind":"armor","equipmentSlot":"breastplate","armorHp":4},
+    assetKeys: {"breastplateAssetKey":"breastplate-chainmail-01"},
+    equipmentTuning: {"x":0,"y":43,"angle":0,"scaleX":1.16,"scaleY":1.55,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-chainmail-01",
+      url: new URL("../assets/fighters/armor/breastplate/breastplate-chainmail-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-chainmail-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_breastplate_chainmail_01","name":"Chainmail Breastplate 01","price":0,"itemIds":["generated_equipment_breastplate_chainmail_01"],"categoryId":"chest"},
+  },
+  {
     item: {"id":"generated_equipment_front_glove_chainmail_03","name":"Chainmail front Glove","kind":"armor","equipmentSlot":"frontGlove","armorHp":4},
     assetKeys: {"frontGloveAssetKey":"front-glove-chainmail-03"},
     equipmentTuning: {"x":-3,"y":9,"angle":5,"scaleX":0.75,"scaleY":0.9,"flipX":false,"flipY":false},
@@ -31,6 +44,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-chainmail-03.webp",
     },
     armoryProduct: {"id":"generated_equipment_front_glove_chainmail_03","name":"Chainmail front Glove","price":0,"itemIds":["generated_equipment_front_glove_chainmail_03"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Helmet 01","kind":"armor","equipmentSlot":"helmet","armorHp":4},
+    assetKeys: {"helmetAssetKey":"helmet-chainmail-01"},
+    equipmentTuning: {"x":-1,"y":47,"angle":0,"scaleX":1.25,"scaleY":1.36,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-chainmail-01",
+      url: new URL("../assets/fighters/armor/helmet/helmet-chainmail-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-chainmail-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Helmet 01","price":0,"itemIds":["generated_equipment_helmet_chainmail_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":1},

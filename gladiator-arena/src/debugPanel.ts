@@ -42,8 +42,8 @@ import {
   type HeroItemId,
 } from "./hero";
 import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_IDS, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equipmentAssetRegistry";
-import { GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
-import { saveProdAnimation, saveProdDefaults, savePromotedEquipmentItem } from "./prodDefaultsSaver";
+import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
+import { removePromotedEquipmentItem, saveProdAnimation, saveProdDefaults, savePromotedEquipmentItem } from "./prodDefaultsSaver";
 
 interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
@@ -470,6 +470,16 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <button class="debug-panel__reset debug-auto-equipment__preview" type="button">Preview</button>
           <button class="debug-panel__reset debug-auto-equipment__promote" type="button">Promote</button>
         </div>
+        <fieldset class="debug-auto-equipment__generated">
+          <legend>Generated</legend>
+          <label class="debug-rig-editor__part">
+            <span>Item</span>
+            <select class="debug-auto-equipment__generated-select"></select>
+          </label>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-auto-equipment__remove" type="button">Remove generated</button>
+          </div>
+        </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
       </div>
     </details>
@@ -990,6 +1000,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const resetTransform = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__reset-transform");
   const preview = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__preview");
   const promote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__promote");
+  const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
+  const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
 
   if (
@@ -1004,6 +1016,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !resetTransform ||
     !preview ||
     !promote ||
+    !generatedSelect ||
+    !removeGenerated ||
     !status
   ) {
     return;
@@ -1015,6 +1029,14 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     option.value = record.item.id;
     option.textContent = record.item.name;
     select.append(option);
+  });
+
+  GENERATED_EQUIPMENT_ITEM_RECORDS.forEach((record) => {
+    const option = document.createElement("option");
+
+    option.value = record.item.id;
+    option.textContent = record.item.name;
+    generatedSelect.append(option);
   });
 
   equipmentNumericControls.forEach((control) => transformControls.append(createEquipmentRangeControl(control)));
@@ -1083,6 +1105,30 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
       status.textContent = error instanceof Error ? error.message : "Could not promote equipment.";
     } finally {
       promote.disabled = false;
+    }
+  });
+
+  removeGenerated.addEventListener("click", async () => {
+    const record = getSelectedGeneratedEquipmentRecord(generatedSelect.value);
+
+    if (!record) {
+      status.textContent = "No generated equipment item selected.";
+      return;
+    }
+
+    if (!window.confirm(`Remove ${record.item.name}? This deletes the generated item and its asset files.`)) {
+      return;
+    }
+
+    removeGenerated.disabled = true;
+    status.textContent = "Removing generated equipment...";
+
+    try {
+      status.textContent = await removePromotedEquipmentItem(record.item.id);
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not remove generated equipment.";
+    } finally {
+      removeGenerated.disabled = false;
     }
   });
 }
@@ -2245,9 +2291,12 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
   const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
   const buttons = editor.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__preview, .debug-auto-equipment__promote");
+  const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
+  const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
   const record = getSelectedAutoEquipmentRecord(select?.value);
   const isAvailable = Boolean(record);
+  const hasGeneratedItems = GENERATED_EQUIPMENT_ITEM_RECORDS.length > 0;
 
   if (record && isEquipmentSlotKey(record.item.equipmentSlot)) {
     activeEquipmentSlot = record.item.equipmentSlot;
@@ -2276,6 +2325,14 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
     button.disabled = !isAvailable;
   });
 
+  if (generatedSelect) {
+    generatedSelect.disabled = !hasGeneratedItems;
+  }
+
+  if (removeGenerated) {
+    removeGenerated.disabled = !hasGeneratedItems;
+  }
+
   if (status) {
     status.textContent = isAvailable ? `${record?.asset.sourcePath ?? ""}` : "No unpromoted armor assets found.";
   }
@@ -2301,6 +2358,10 @@ function previewAutoEquipmentRecord(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)
 
 function getSelectedAutoEquipmentRecord(itemId: string | undefined): (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined {
   return AUTO_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId);
+}
+
+function getSelectedGeneratedEquipmentRecord(itemId: string | undefined): (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number] | undefined {
+  return GENERATED_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId);
 }
 
 function getCurrentEquipmentSlotTuning(slotKey: EquipmentSlotKey): EquipmentTuning {

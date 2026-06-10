@@ -28,6 +28,14 @@ test("client saver can promote auto equipment through the local dev endpoint", (
   assert.match(source, /savePromotedEquipmentItem/);
 });
 
+test("client saver can remove generated equipment through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/remove-equipment-item/);
+  assert.match(source, /removePromotedEquipmentItem/);
+  assert.match(source, /JSON\.stringify\(\{ itemId \}\)/);
+});
+
 test("vite dev middleware only writes whitelisted arena layout defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 
@@ -46,6 +54,17 @@ test("vite dev middleware writes promoted equipment to generated files", () => {
   assert.match(source, /equipmentItems\.generated\.ts/);
   assert.match(source, /pickPromotedEquipmentItem/);
   assert.match(source, /equipmentTuning/);
+});
+
+test("vite dev middleware removes generated equipment records and asset files", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /remove-equipment-item/);
+  assert.match(source, /pickGeneratedEquipmentRemovalId/);
+  assert.match(source, /removeGeneratedEquipmentItem/);
+  assert.match(source, /removeGeneratedEquipmentAssetFiles/);
+  assert.match(source, /rm\(getProjectSourceUrl\(sourcePath\), \{ force: true \}\)/);
+  assert.match(source, /Only generated equipment items can be removed/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {

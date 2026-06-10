@@ -1,5 +1,38 @@
 [
   {
+    "id": "generated_equipment_breastplate_chainmail_01",
+    "name": "Chainmail Breastplate 01",
+    "kind": "armor",
+    "equipmentSlot": "breastplate",
+    "armorHp": 4,
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 43,
+      "angle": 0,
+      "scaleX": 1.16,
+      "scaleY": 1.55,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-chainmail-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_chainmail_01",
+      "name": "Chainmail Breastplate 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_chainmail_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_chainmail_03",
     "name": "Chainmail front Glove",
     "kind": "armor",
@@ -30,6 +63,39 @@
         "generated_equipment_front_glove_chainmail_03"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_chainmail_01",
+    "name": "Chainmail Helmet 01",
+    "kind": "armor",
+    "equipmentSlot": "helmet",
+    "armorHp": 4,
+    "assetKeys": {
+      "helmetAssetKey": "helmet-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": -1,
+      "y": 47,
+      "angle": 0,
+      "scaleX": 1.25,
+      "scaleY": 1.36,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-chainmail-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_chainmail_01",
+      "name": "Chainmail Helmet 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_chainmail_01"
+      ],
+      "categoryId": "head"
     }
   },
   {

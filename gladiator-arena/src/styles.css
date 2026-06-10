@@ -1860,6 +1860,7 @@ body.debug-mode-effects .main-menu {
 .debug-rig-editor__animation-select,
 .debug-item-equipment__select,
 .debug-auto-equipment__select,
+.debug-auto-equipment__generated-select,
 .debug-auto-equipment__name,
 .debug-effects__slash-select {
   min-width: 0;
@@ -1879,6 +1880,7 @@ body.debug-mode-effects .main-menu {
 
 .debug-rig-editor__face,
 .debug-auto-equipment__transform,
+.debug-auto-equipment__generated,
 .debug-effects__group {
   display: grid;
   gap: 8px;
@@ -1894,6 +1896,7 @@ body.debug-mode-effects .main-menu {
 
 .debug-rig-editor__face legend,
 .debug-auto-equipment__transform legend,
+.debug-auto-equipment__generated legend,
 .debug-rig-editor__face-part legend,
 .debug-effects__group legend {
   padding: 0 4px;

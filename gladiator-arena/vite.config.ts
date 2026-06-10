@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import sharp from "sharp";
 import { defineConfig, type Plugin } from "vite";
@@ -368,6 +368,24 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote equipment item." });
         }
       });
+
+      server.middlewares.use("/__dust-arena/remove-equipment-item", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to remove equipment items." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const itemId = pickGeneratedEquipmentRemovalId(payload);
+          const removedItem = await removeGeneratedEquipmentItem(itemId);
+
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: `Removed ${removedItem.name}.`, updated: 1 });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not remove equipment item." });
+        }
+      });
     },
   };
 }
@@ -717,6 +735,17 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   };
 }
 
+function pickGeneratedEquipmentRemovalId(payload: unknown): string {
+  const removal = readPlainObject(payload, "equipment removal values");
+  const itemId = readNonEmptyString(removal.itemId, "itemId");
+
+  if (!itemId.startsWith("generated_equipment_")) {
+    throw new Error("Only generated equipment items can be removed.");
+  }
+
+  return itemId;
+}
+
 async function readGeneratedEquipmentRecords(): Promise<GeneratedEquipmentJsonRecord[]> {
   try {
     const source = await readFile(generatedEquipmentJsonUrl, "utf8");
@@ -741,6 +770,56 @@ function upsertGeneratedEquipmentRecord(records: GeneratedEquipmentJsonRecord[],
     ...records.filter((record) => record.id !== nextRecord.id && record.asset.sourcePath !== nextRecord.asset.sourcePath),
     nextRecord,
   ].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+async function removeGeneratedEquipmentItem(itemId: string): Promise<GeneratedEquipmentJsonRecord> {
+  const records = await readGeneratedEquipmentRecords();
+  const removedRecord = records.find((record) => record.id === itemId);
+
+  if (!removedRecord) {
+    throw new Error("Generated equipment item not found.");
+  }
+
+  const nextRecords = records.filter((record) => record.id !== itemId);
+
+  await writeGeneratedEquipmentRecords(nextRecords);
+  await removeGeneratedEquipmentAssetFiles(removedRecord, nextRecords);
+
+  return removedRecord;
+}
+
+async function removeGeneratedEquipmentAssetFiles(
+  removedRecord: GeneratedEquipmentJsonRecord,
+  remainingRecords: GeneratedEquipmentJsonRecord[],
+): Promise<void> {
+  const stillReferencedPaths = new Set(remainingRecords.flatMap((record) => getGeneratedEquipmentAssetRemovalPaths(record)));
+  const removalPaths = getGeneratedEquipmentAssetRemovalPaths(removedRecord, stillReferencedPaths);
+
+  await Promise.all(removalPaths.map((sourcePath) => rm(getProjectSourceUrl(sourcePath), { force: true })));
+}
+
+function getGeneratedEquipmentAssetRemovalPaths(
+  record: GeneratedEquipmentJsonRecord,
+  ignoredPaths: ReadonlySet<string> = new Set(),
+): string[] {
+  const candidates = [record.asset.sourcePath, record.asset.lowSourcePath, getGeneratedEquipmentSourcePngPath(record.asset.sourcePath)];
+  const uniquePaths = new Set(
+    candidates.flatMap((sourcePath) => {
+      if (!sourcePath) {
+        return [];
+      }
+
+      const removalPath = readGeneratedAssetRemovalPath(sourcePath);
+
+      return ignoredPaths.has(removalPath) ? [] : [removalPath];
+    }),
+  );
+
+  return [...uniquePaths];
+}
+
+function getGeneratedEquipmentSourcePngPath(sourcePath: string): string | undefined {
+  return sourcePath.startsWith("assets/fighters/armor/") && sourcePath.endsWith(".webp") ? sourcePath.replace(/\.webp$/i, ".png") : undefined;
 }
 
 async function convertPromotedEquipmentPngAsset(sourcePath: string): Promise<{ sourcePath: string; lowSourcePath: string }> {
@@ -1345,6 +1424,18 @@ function readAssetSourcePath(value: unknown, expectedPrefix: string, label: stri
 
   if (sourcePath.includes("..") || !sourcePath.startsWith(expectedPrefix) || !hasAllowedExtension) {
     throw new Error(`Invalid ${label}.`);
+  }
+
+  return sourcePath;
+}
+
+function readGeneratedAssetRemovalPath(value: unknown): string {
+  const sourcePath = readNonEmptyString(value, "generated equipment asset removal path").replace(/\\/g, "/").replace(/^\.\//, "");
+  const isArmorSourcePath = sourcePath.startsWith("assets/fighters/armor/") || sourcePath.startsWith("assets-low/fighters/armor/");
+  const hasSupportedExtension = sourcePath.endsWith(".png") || sourcePath.endsWith(".webp");
+
+  if (sourcePath.includes("..") || !isArmorSourcePath || !hasSupportedExtension) {
+    throw new Error("Invalid generated equipment asset removal path.");
   }
 
   return sourcePath;

@@ -21,6 +21,7 @@ export interface PromoteEquipmentItemPayload {
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
+const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
   const response = await fetch(saveProdDefaultsEndpoint, {
@@ -65,6 +66,21 @@ export async function savePromotedEquipmentItem(payload: PromoteEquipmentItemPay
   }
 
   return responsePayload.message ?? "Promoted equipment item.";
+}
+
+export async function removePromotedEquipmentItem(itemId: string): Promise<string> {
+  const response = await fetch(removeEquipmentItemEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ itemId }),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not remove equipment item. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Removed equipment item.";
 }
 
 async function readResponse(response: Response): Promise<SaveProdDefaultsResponse> {
