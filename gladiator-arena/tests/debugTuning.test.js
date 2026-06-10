@@ -198,7 +198,7 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.selectedClassicActionWheelMode, "distance");
   assert.equal(normalized.selectedClassicActionButton, "forward");
   assert.equal(normalized.classicActionButtonSlots.distance.forward.x, 240);
-  assert.equal(normalized.classicActionButtonSlots.distance.forward.y, -180);
+  assert.equal(normalized.classicActionButtonSlots.distance.forward.y, -320);
   assert.equal(normalized.classicActionButtonSlots.distance.forward.rotation, 180);
   assert.equal(normalized.classicActionButtonSlots.clinch.medium.y, -180);
   assert.equal(normalized.classicHudEditMode, false);

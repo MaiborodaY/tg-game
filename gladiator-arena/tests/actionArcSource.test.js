@@ -66,6 +66,9 @@ test("leather token buttons keep icons inside a stable centered layer", () => {
 
 test("debug tuning can scale token icons independently from the button", () => {
   assert.equal(actionArcSource.includes("export function syncActionTokenButton"), true);
+  assert.equal(actionArcSource.includes("export function pressActionTokenButton"), true);
+  assert.equal(actionArcSource.includes("ACTION_BUTTON_PRESS_MS = 140"), true);
+  assert.equal(actionArcSource.includes("action-arc__button--pressed"), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-button-scale"'), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-icon-scale"'), true);
   assert.equal(actionArcSource.includes('button.style.setProperty("--action-attack-icon-scale"'), true);
@@ -75,10 +78,13 @@ test("debug tuning can scale token icons independently from the button", () => {
   assert.equal(stylesSource.includes("scale(var(--action-icon-scale))"), true);
   assert.equal(stylesSource.includes("rotate(var(--action-attack-icon-rotation)) scale(var(--action-attack-icon-scale))"), true);
   assert.equal(stylesSource.includes("brightness(var(--action-attack-icon-brightness))"), true);
+  assert.equal(stylesSource.includes(".action-arc__button.action-arc__button--pressed"), true);
+  assert.equal(stylesSource.includes("scale(calc(var(--action-button-scale, 1) * 0.96))"), true);
 });
 
 test("classic action bar reuses leather token rendering", () => {
   assert.equal(classicActionBarSource.includes("mountClassicActionBar"), true);
+  assert.equal(classicActionBarSource.includes("pressActionTokenButton"), true);
   assert.equal(classicActionBarSource.includes("syncActionTokenButton"), true);
   assert.equal(classicActionBarSource.includes("data-classic-action-bar"), true);
   assert.equal(classicActionBarSource.includes('wheel.className = "classic-action-bar__wheel"'), true);
@@ -99,6 +105,9 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
   assert.equal(classicActionBarSource.includes("classic-action-bar--clinch"), true);
   assert.equal(classicActionBarSource.includes("classic-action-bar--bow-distance"), true);
   assert.equal(classicActionBarSource.includes("CLASSIC_WHEEL_TURN_MS"), true);
+  assert.equal(classicActionBarSource.includes("CLASSIC_WHEEL_BASE_DIAMETER = 420"), true);
+  assert.equal(classicActionBarSource.includes("syncClassicWheelFitScale"), true);
+  assert.equal(classicActionBarSource.includes('"--classic-wheel-fit-scale"'), true);
   assert.equal(classicActionBarSource.includes("createClassicButtonLayer"), true);
   assert.equal(classicActionBarSource.includes("projectSlotForWheelAngle"), true);
   assert.equal(classicActionBarSource.includes("const layers = [createClassicButtonLayer(onAction), createClassicButtonLayer(onAction)]"), true);
@@ -106,11 +115,14 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
   assert.equal(classicActionBarSource.includes('button.style.setProperty("--classic-slot-y"'), true);
   assert.equal(stylesSource.includes(".classic-action-bar__wheel::before"), true);
   assert.equal(stylesSource.includes(".classic-action-bar__layer"), true);
-  assert.equal(stylesSource.includes("--classic-wheel-diameter: min(420px, calc(100vw - 12px))"), true);
+  assert.equal(stylesSource.includes("--classic-wheel-fit-scale: 1"), true);
+  assert.equal(stylesSource.includes("--classic-wheel-diameter: 420px"), true);
   assert.equal(stylesSource.includes("--classic-wheel-radius: calc(var(--classic-wheel-diameter) / 2)"), true);
-  assert.equal(stylesSource.includes("--classic-wheel-top-bleed: clamp(38px, 10vw, 48px)"), true);
+  assert.equal(stylesSource.includes("--classic-wheel-top-bleed: 48px"), true);
+  assert.equal(stylesSource.includes("scale(var(--classic-wheel-fit-scale, 1)) scale(var(--classic-hud-scale, 1))"), true);
   assert.equal(stylesSource.includes("height: calc(var(--classic-wheel-radius) + var(--classic-wheel-top-bleed))"), true);
   assert.equal(stylesSource.includes("top: var(--classic-wheel-top-bleed)"), true);
+  assert.equal(stylesSource.includes("width: 58px"), true);
   assert.equal(stylesSource.includes("border-radius: 50%"), true);
   assert.equal(stylesSource.includes("border-top-color: rgba(230, 170, 72, 0.96)"), true);
   assert.equal(stylesSource.includes("inset 0 0 0 2px rgba(255, 221, 123, 0.38)"), true);

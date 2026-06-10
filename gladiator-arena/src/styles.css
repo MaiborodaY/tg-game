@@ -490,11 +490,12 @@ h1 {
   overflow: hidden;
   padding: 0;
   pointer-events: none;
-  transform: translateX(-50%) scale(var(--classic-hud-scale, 1));
+  transform: translateX(-50%) scale(var(--classic-wheel-fit-scale, 1)) scale(var(--classic-hud-scale, 1));
   transform-origin: bottom center;
   --classic-wheel-angle: 0deg;
-  --classic-wheel-top-bleed: clamp(38px, 10vw, 48px);
-  --classic-wheel-diameter: min(420px, calc(100vw - 12px));
+  --classic-wheel-fit-scale: 1;
+  --classic-wheel-top-bleed: 48px;
+  --classic-wheel-diameter: 420px;
   --classic-wheel-radius: calc(var(--classic-wheel-diameter) / 2);
   --classic-wheel-inner-diameter: calc(var(--classic-wheel-diameter) * 0.72);
 }
@@ -3484,13 +3485,15 @@ body.debug-active .action-arc__center {
   filter: brightness(1.08) saturate(1.04);
 }
 
-.action-arc__button:active:not(:disabled) {
-  transform: translate(-50%, calc(-50% + 3px)) scale(var(--action-button-scale, 1));
+.action-arc__button:active:not(:disabled),
+.action-arc__button.action-arc__button--pressed {
+  filter: brightness(0.93) saturate(0.96);
+  transform: translate(-50%, calc(-50% + 5px)) scale(calc(var(--action-button-scale, 1) * 0.96));
   box-shadow:
-    inset 0 2px 0 rgba(255, 210, 139, 0.14),
-    inset 0 -3px 0 rgba(11, 3, 1, 0.44),
-    0 2px 0 #170804,
-    0 0 0 2px rgba(255, 199, 107, 0.1);
+    inset 0 1px 0 rgba(255, 210, 139, 0.1),
+    inset 0 -2px 0 rgba(11, 3, 1, 0.48),
+    0 1px 0 #170804,
+    0 0 0 2px rgba(255, 199, 107, 0.08);
 }
 
 .action-arc__button:disabled {
@@ -3563,8 +3566,8 @@ body.debug-active .action-arc__center {
   left: 50%;
   top: 50%;
   bottom: auto;
-  width: clamp(48px, 13vw, 58px);
-  height: clamp(48px, 13vw, 58px);
+  width: 58px;
+  height: 58px;
   z-index: 2;
   opacity: 0;
   visibility: hidden;
@@ -3606,9 +3609,16 @@ body.debug-active .action-arc__center {
   pointer-events: none;
 }
 
-.classic-action-bar .action-arc__button:active:not(:disabled) {
+.classic-action-bar .action-arc__button:active:not(:disabled),
+.classic-action-bar .action-arc__button.action-arc__button--pressed {
+  filter: brightness(0.93) saturate(0.96);
   transform:
-    translate(calc(-50% + var(--classic-slot-x, 0px)), calc(-50% + var(--classic-slot-y, 0px) + 3px))
+    translate(calc(-50% + var(--classic-slot-x, 0px)), calc(-50% + var(--classic-slot-y, 0px) + 5px))
     rotate(var(--classic-slot-rotation, 0deg))
-    scale(var(--action-button-scale, 1));
+    scale(calc(var(--action-button-scale, 1) * 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 210, 139, 0.1),
+    inset 0 -2px 0 rgba(11, 3, 1, 0.48),
+    0 1px 0 #170804,
+    0 0 0 2px rgba(255, 199, 107, 0.08);
 }

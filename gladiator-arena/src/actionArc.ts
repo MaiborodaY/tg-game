@@ -67,6 +67,8 @@ const ACTION_ATTACK_ICON_URLS: Partial<Record<ActionId, string>> = {
   medium: new URL("./assets/ui/action-icons/attack-medium.webp", import.meta.url).href,
   heavy: new URL("./assets/ui/action-icons/attack-heavy.webp", import.meta.url).href,
 };
+const ACTION_BUTTON_PRESS_MS = 140;
+const pressedButtonTimers = new WeakMap<HTMLButtonElement, number>();
 
 interface AttackIconStyleTuning {
   scale: number;
@@ -167,6 +169,29 @@ export function syncActionTokenButton(
   renderActionIcon(button, icon, actionId);
 }
 
+export function pressActionTokenButton(button: HTMLButtonElement): void {
+  if (button.disabled) {
+    return;
+  }
+
+  const currentTimer = pressedButtonTimers.get(button);
+
+  if (currentTimer !== undefined) {
+    window.clearTimeout(currentTimer);
+  }
+
+  button.classList.remove("action-arc__button--pressed");
+  void button.offsetWidth;
+  button.classList.add("action-arc__button--pressed");
+
+  const nextTimer = window.setTimeout(() => {
+    button.classList.remove("action-arc__button--pressed");
+    pressedButtonTimers.delete(button);
+  }, ACTION_BUTTON_PRESS_MS);
+
+  pressedButtonTimers.set(button, nextTimer);
+}
+
 export interface ActionArcApi {
   sync: (state: CombatState) => void;
   destroy: () => void;
@@ -216,6 +241,7 @@ export function mountActionArc(
       button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
 
       if (!button.disabled) {
+        pressActionTokenButton(button);
         onAction(actionId);
       }
     });

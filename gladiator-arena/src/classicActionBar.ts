@@ -1,5 +1,5 @@
 import { DEFAULT_ACTION_BUTTON_SCALE } from "./arenaLayout";
-import { syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
+import { pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
 import {
   MELEE_RANGE,
   actionOrder,
@@ -17,6 +17,8 @@ type TuningProvider = () => ActionTokenTuning & { classicActionButtonSlots?: Cla
 type ClassicWheelMode = "distance" | "clinch" | "bow-distance";
 
 const CLASSIC_WHEEL_TURN_MS = 520;
+const CLASSIC_WHEEL_BASE_DIAMETER = 420;
+const CLASSIC_WHEEL_SCREEN_PADDING_X = 12;
 
 interface ClassicActionSlot {
   actionId: ActionId;
@@ -88,11 +90,14 @@ export function mountClassicActionBar(
   let wheelRotationAngle = 0;
   let isWheelTurning = false;
   let wheelTurnTimer: number | undefined;
+  const syncWheelFitScale = () => syncClassicWheelFitScale(root);
 
   root.replaceChildren();
   wheel.className = "classic-action-bar__wheel";
   layers.forEach((layer) => wheel.append(layer.element));
   root.append(wheel);
+  syncWheelFitScale();
+  window.addEventListener("resize", syncWheelFitScale);
 
   function sync(state: CombatState): void {
     const tuning = getTuning?.();
@@ -100,6 +105,8 @@ export function mountClassicActionBar(
     const wheelMode = getClassicWheelMode(state);
     const isBattleActive = state.result === "playing";
     const hasPlayerControl = isBattleActive && state.activeTurn === "player";
+
+    syncWheelFitScale();
 
     if (!activeLayer.mode) {
       activeLayer.mode = wheelMode;
@@ -231,9 +238,24 @@ export function mountClassicActionBar(
       }
 
       window.removeEventListener("arena-debug-tuning-change", syncFromDebugTuning);
+      window.removeEventListener("resize", syncWheelFitScale);
       root.replaceChildren();
     },
   };
+}
+
+function syncClassicWheelFitScale(root: HTMLElement): void {
+  const hostWidth = getClassicWheelHostWidth(root);
+  const fitScale = clamp((hostWidth - CLASSIC_WHEEL_SCREEN_PADDING_X) / CLASSIC_WHEEL_BASE_DIAMETER, 0.1, 1);
+
+  root.style.setProperty("--classic-wheel-fit-scale", formatCssNumber(fitScale));
+}
+
+function getClassicWheelHostWidth(root: HTMLElement): number {
+  const battleScreen = root.closest<HTMLElement>(".battle-screen");
+  const width = battleScreen?.getBoundingClientRect().width ?? (typeof window === "undefined" ? CLASSIC_WHEEL_BASE_DIAMETER : window.innerWidth);
+
+  return typeof width === "number" && Number.isFinite(width) && width > 0 ? width : CLASSIC_WHEEL_BASE_DIAMETER;
 }
 
 function getClassicWheelMode(state: CombatState): ClassicWheelMode {
@@ -283,6 +305,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
       button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
 
       if (!button.disabled) {
+        pressActionTokenButton(button);
         onAction(actionId);
       }
     });
@@ -312,4 +335,8 @@ function projectSlotForWheelAngle(slot: ClassicActionSlot, wheelAngle: number): 
 
 function formatCssNumber(value: number): string {
   return `${Math.round(value * 1000) / 1000}`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }

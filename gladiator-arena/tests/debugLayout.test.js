@@ -92,7 +92,8 @@ test("regular arena exposes switchable classic HUD markup", () => {
 
 test("settings can persist the arena HUD mode", () => {
   assert.equal(settingsMenuSource.includes('export type PlayerHudMode = "immersive" | "classic"'), true);
-  assert.equal(settingsMenuSource.includes("DEFAULT_PLAYER_HUD_MODE: PlayerHudMode ="), true);
+  assert.equal(settingsMenuSource.includes('DEFAULT_PLAYER_HUD_MODE: PlayerHudMode = "classic"'), true);
+  assert.equal(settingsMenuSource.includes("hudModeDefaultVersion"), true);
   assert.equal(settingsMenuSource.includes("hudMode: DEFAULT_PLAYER_HUD_MODE"), true);
   assert.equal(settingsMenuSource.includes("data-setting-hud-mode"), true);
   assert.equal(settingsMenuSource.includes("arena-hud-classic"), true);

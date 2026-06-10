@@ -1052,7 +1052,7 @@ function mountClassicActionButtonEditor(root: HTMLElement): void {
         <span></span>
       </label>
       ${createClassicSlotNumberRow("x", "Slot X", -240, 240, 1)}
-      ${createClassicSlotNumberRow("y", "Slot Y", -180, 80, 1)}
+      ${createClassicSlotNumberRow("y", "Slot Y", -320, 80, 1)}
       ${createClassicSlotNumberRow("rotation", "Rotate", -180, 180, 1)}
       <button class="debug-panel__reset debug-classic-slots__reset" type="button">Reset selected slot</button>
     </fieldset>

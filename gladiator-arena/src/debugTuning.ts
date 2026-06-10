@@ -302,24 +302,24 @@ export const defaultClassicActionButtonSlotTuning: ClassicActionButtonSlotTuning
 
 export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> = {
   distance: createClassicActionButtonSlots({
-    forward: { x: 70, y: -165, rotation: -10 },
-    back: { x: -70, y: -165, rotation: -12 },
-    lunge: { x: 0, y: -180, rotation: 10 },
+    forward: { x: 40, y: -195, rotation: -10 },
+    back: { x: -40, y: -195, rotation: -12 },
+    lunge: { x: 0, y: -205, rotation: 10 },
     light: { x: 70, y: 18, rotation: 0 },
     medium: { x: 0, y: 18, rotation: 0 },
     heavy: { x: 0, y: 18, rotation: 0 },
-    taunt: { x: 73, y: -100, rotation: 0 },
-    rest: { x: -68, y: -100, rotation: 12 },
+    taunt: { x: 20, y: -160, rotation: 0 },
+    rest: { x: -20, y: -160, rotation: 12 },
   }),
   clinch: createClassicActionButtonSlots({
     forward: { x: 0, y: 26, rotation: 0 },
-    back: { x: -70, y: -120, rotation: -12 },
-    lunge: { x: 0, y: 18, rotation: 0 },
-    light: { x: -70, y: -165, rotation: 0 },
-    medium: { x: 0, y: -180, rotation: 0 },
-    heavy: { x: 70, y: -165, rotation: 0 },
-    taunt: { x: 70, y: -120, rotation: 0 },
-    rest: { x: 0, y: -120, rotation: 12 },
+    back: { x: -109, y: -173, rotation: -12 },
+    lunge: { x: 20, y: 18, rotation: 0 },
+    light: { x: -40, y: -195, rotation: 0 },
+    medium: { x: 0, y: -205, rotation: 0 },
+    heavy: { x: 40, y: -195, rotation: 0 },
+    taunt: { x: 20, y: -160, rotation: 0 },
+    rest: { x: -20, y: -160, rotation: 12 },
   }),
   bowDistance: createClassicActionButtonSlots({
     forward: { x: -40, y: -52, rotation: -6 },
@@ -1387,7 +1387,7 @@ function normalizeClassicActionButtonSlots(
               key,
               {
                 x: clampNumber(slot.x, -240, 240, fallback.x),
-                y: clampNumber(slot.y, -180, 80, fallback.y),
+                y: clampNumber(slot.y, -320, 80, fallback.y),
                 rotation: clampNumber(slot.rotation, -180, 180, fallback.rotation),
               },
             ];

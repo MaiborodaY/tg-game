@@ -15,6 +15,7 @@ export interface PlayerSettings {
 const storageKey = "dust-arena-player-settings";
 const settingsChangedEvent = "dust-arena-player-settings-change";
 const fpsUpdateIntervalMs = 500;
+const hudModeDefaultVersion = 2;
 const defaultSettings: PlayerSettings = {
   lowEffects: false,
   animationMode: "normal",
@@ -173,16 +174,24 @@ function loadSettings(): PlayerSettings {
 
   try {
     const raw = window.localStorage.getItem(storageKey);
-    const parsed = raw ? (JSON.parse(raw) as Partial<PlayerSettings> & { shadowsEnabled?: boolean }) : {};
+    const parsed = raw ? (JSON.parse(raw) as Partial<PlayerSettings> & { hudModeDefaultVersion?: number; shadowsEnabled?: boolean }) : {};
+    const nextSettings = normalizeSettings({
+      ...parsed,
+      hudMode: parsed.hudModeDefaultVersion === hudModeDefaultVersion ? parsed.hudMode : undefined,
+    });
 
-    return normalizeSettings(parsed);
+    if (raw && parsed.hudModeDefaultVersion !== hudModeDefaultVersion) {
+      saveSettings(nextSettings);
+    }
+
+    return nextSettings;
   } catch {
     return { ...defaultSettings };
   }
 }
 
 function saveSettings(settings: PlayerSettings): void {
-  window.localStorage.setItem(storageKey, JSON.stringify(settings));
+  window.localStorage.setItem(storageKey, JSON.stringify({ ...settings, hudModeDefaultVersion }));
 }
 
 function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
