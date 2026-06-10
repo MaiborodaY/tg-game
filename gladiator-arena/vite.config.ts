@@ -33,6 +33,8 @@ const prodDefaultFields = {
   DEFAULT_ACTION_ARC_OFFSET_X: "actionArcOffsetX",
   DEFAULT_ACTION_ARC_OFFSET_Y: "actionArcOffsetY",
   DEFAULT_ACTION_BUTTON_SCALE: "actionButtonScale",
+  DEFAULT_ACTION_ICON_SCALE: "actionIconScale",
+  DEFAULT_ACTION_ATTACK_ICON_SCALE: "actionAttackIconScale",
   DEFAULT_HUD_BOTTOM_OFFSET: "hudBottomOffset",
   DEFAULT_HUD_SIDE_INSET: "hudSideInset",
   DEFAULT_HUD_SCALE: "hudScale",

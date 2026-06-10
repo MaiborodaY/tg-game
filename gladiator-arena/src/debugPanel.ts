@@ -190,6 +190,8 @@ const controlGroups: DebugControlGroup[] = [
       { type: "range", key: "actionArcOffsetX", label: "Arc X", min: -320, max: 320, step: 1, resetValue: defaultDebugTuning.actionArcOffsetX },
       { type: "range", key: "actionArcOffsetY", label: "Arc Y", min: -320, max: 320, step: 1, resetValue: defaultDebugTuning.actionArcOffsetY },
       { type: "range", key: "actionButtonScale", label: "Button scale", min: 0.5, max: 2, step: 0.01, resetValue: defaultDebugTuning.actionButtonScale },
+      { type: "range", key: "actionIconScale", label: "Icon scale", min: 0.5, max: 2, step: 0.01, resetValue: defaultDebugTuning.actionIconScale },
+      { type: "range", key: "actionAttackIconScale", label: "Attack icon", min: 0.5, max: 2, step: 0.01, resetValue: defaultDebugTuning.actionAttackIconScale },
     ],
   },
   {

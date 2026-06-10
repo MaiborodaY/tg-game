@@ -29,10 +29,59 @@ interface ActionArcDragState {
   lastY: number;
 }
 
-function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, _actionId: ActionId): void {
+const ACTION_ICONS: Record<ActionId, string> = {
+  forward: ">",
+  back: "<",
+  lunge: "/",
+  light: "",
+  medium: "",
+  heavy: "",
+  taunt: "!",
+  rest: "*",
+};
+
+const ACTION_ATTACK_ICON_URLS: Partial<Record<ActionId, string>> = {
+  light: new URL("./assets/ui/action-icons/attack-light.webp", import.meta.url).href,
+  medium: new URL("./assets/ui/action-icons/attack-medium.webp", import.meta.url).href,
+  heavy: new URL("./assets/ui/action-icons/attack-heavy.webp", import.meta.url).href,
+};
+
+const LUNGE_ICON_LAYERS = [
+  { className: "action-arc__icon-layer action-arc__icon-layer--bolt", text: "/" },
+  { className: "action-arc__icon-layer action-arc__icon-layer--sword", text: "|" },
+] as const;
+
+function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId: ActionId): void {
+  const attackIconUrl = ACTION_ATTACK_ICON_URLS[actionId];
+
   icon.replaceChildren();
   delete button.dataset.icon;
   delete button.dataset.iconAlt;
+  button.classList.toggle("action-arc__button--attack-token", Boolean(attackIconUrl));
+
+  if (attackIconUrl) {
+    const attackIcon = document.createElement("img");
+
+    attackIcon.className = "action-arc__attack-icon";
+    attackIcon.src = attackIconUrl;
+    attackIcon.alt = "";
+    attackIcon.draggable = false;
+    icon.append(attackIcon);
+    return;
+  }
+
+  if (actionId === "lunge") {
+    LUNGE_ICON_LAYERS.forEach((layerConfig) => {
+      const layer = document.createElement("span");
+
+      layer.className = layerConfig.className;
+      layer.textContent = layerConfig.text;
+      icon.append(layer);
+    });
+    return;
+  }
+
+  icon.textContent = ACTION_ICONS[actionId];
 }
 export interface ActionArcApi {
   sync: (state: CombatState) => void;
@@ -100,7 +149,8 @@ export function mountActionArc(
   function sync(state: CombatState): void {
     lastState = state;
     const viewport = getActionArcViewport(overlay);
-    const layout = getActionArcLayout(state, getTuning?.(), viewport);
+    const tuning = getTuning?.();
+    const layout = getActionArcLayout(state, tuning, viewport);
     const editMode = isDebugEditEnabled();
 
     lastLayout = layout;
@@ -127,6 +177,8 @@ export function mountActionArc(
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
       button.style.setProperty("--action-button-scale", `${buttonLayout.scale}`);
+      button.style.setProperty("--action-icon-scale", `${tuning?.actionIconScale ?? 1}`);
+      button.style.setProperty("--action-attack-icon-scale", `${tuning?.actionAttackIconScale ?? 1}`);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
       button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
       button.title = `${buttonLayout.label} ${buttonLayout.detail} angle ${Math.round(buttonLayout.angle)} deg`;

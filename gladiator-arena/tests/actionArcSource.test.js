@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -41,18 +41,39 @@ test("lunge icon is layered and button gradients avoid the old glare spot", () =
   assert.equal(stylesSource.includes("font-size: 1.82rem"), true);
 });
 
-test("emoji action icons reset inherited button text metrics", () => {
-  assert.equal(stylesSource.includes("Stabilize native emoji metrics inside the scaled round buttons."), true);
-  assert.equal(stylesSource.includes(".action-arc__icon,\n.action-arc__icon-layer"), true);
-  assert.equal(stylesSource.includes('font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;'), true);
+test("leather token buttons keep icons inside a stable centered layer", () => {
+  assert.equal(stylesSource.includes("Leather token action buttons"), true);
+  assert.equal(stylesSource.includes("--token-ring"), true);
+  assert.equal(stylesSource.includes("--token-ring-width"), true);
+  assert.equal(stylesSource.includes("--token-face-inset"), true);
+  assert.equal(stylesSource.includes("--action-icon-scale"), true);
+  assert.equal(stylesSource.includes("--action-attack-icon-scale"), true);
+  assert.equal(stylesSource.includes(".action-arc__button::before"), true);
+  assert.equal(stylesSource.includes(".action-arc__button::after"), true);
+  assert.equal(stylesSource.includes(".action-arc__icon {"), true);
+  assert.equal(stylesSource.includes("display: grid;"), true);
   assert.equal(stylesSource.includes("padding: 0;"), true);
-  assert.equal(stylesSource.includes("margin: 0;"), true);
+  assert.equal(stylesSource.includes("--action-icon-size"), true);
 });
 
-test("emoji action icons draw from button data attributes", () => {
-  assert.equal(actionArcSource.includes("button.dataset.icon = ACTION_ICONS[actionId]"), true);
-  assert.equal(actionArcSource.includes("button.dataset.iconAlt = LUNGE_ICON_LAYERS[1].text"), true);
-  assert.equal(stylesSource.includes("Draw action emoji on the button itself"), true);
-  assert.equal(stylesSource.includes("content: attr(data-icon);"), true);
-  assert.equal(stylesSource.includes("content: attr(data-icon-alt);"), true);
+test("debug tuning can scale token icons independently from the button", () => {
+  assert.equal(actionArcSource.includes('button.style.setProperty("--action-button-scale"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--action-icon-scale"'), true);
+  assert.equal(actionArcSource.includes('button.style.setProperty("--action-attack-icon-scale"'), true);
+  assert.equal(stylesSource.includes("scale(var(--action-icon-scale))"), true);
+  assert.equal(stylesSource.includes("scale(var(--action-attack-icon-scale))"), true);
+});
+
+test("attack actions render carved tally marks inside the token", () => {
+  assert.equal(actionArcSource.includes("ACTION_ATTACK_ICON_URLS"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/attack-light.webp"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/attack-medium.webp"), true);
+  assert.equal(actionArcSource.includes("./assets/ui/action-icons/attack-heavy.webp"), true);
+  assert.equal(actionArcSource.includes('className = "action-arc__attack-icon"'), true);
+  assert.equal(actionArcSource.includes("document.createElement(\"img\")"), true);
+  assert.equal(actionArcSource.includes('button.classList.toggle("action-arc__button--attack-token"'), true);
+  assert.equal(stylesSource.includes(".action-arc__attack-icon"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/attack-light.webp")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/attack-medium.webp")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/attack-heavy.webp")), true);
 });

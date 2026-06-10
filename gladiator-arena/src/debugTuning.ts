@@ -3,11 +3,13 @@ import {
   DEFAULT_ACTION_ARC_OFFSET_Y,
   DEFAULT_ACTION_ARC_RADIUS,
   DEFAULT_ACTION_ARC_ROTATION,
+  DEFAULT_ACTION_ATTACK_ICON_SCALE,
   DEFAULT_ACTION_BACK_ANGLE,
   DEFAULT_ACTION_BUTTON_SCALE,
   DEFAULT_BACK_MOVE_DISTANCE,
   DEFAULT_ACTION_FORWARD_ANGLE,
   DEFAULT_ACTION_HEAVY_ANGLE,
+  DEFAULT_ACTION_ICON_SCALE,
   DEFAULT_ACTION_LIGHT_ANGLE,
   DEFAULT_ACTION_LUNGE_ANGLE,
   DEFAULT_ACTION_MEDIUM_ANGLE,
@@ -159,6 +161,8 @@ export interface ArenaDebugTuning {
   actionArcOffsetX: number;
   actionArcOffsetY: number;
   actionButtonScale: number;
+  actionIconScale: number;
+  actionAttackIconScale: number;
   actionButtonOffsets: Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
   hudEditMode: boolean;
   hudBottomOffset: number;
@@ -292,6 +296,8 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_helmet_cloth_02": { x: -1, y: 25, angle: 0, scaleX: 1.07, scaleY: 1.13, flipX: false, flipY: false },
   "auto_equipment_weapon_axe_01": { x: -9, y: 13, angle: 110, scaleX: 1.25, scaleY: 1.51, flipX: false, flipY: false },
   "training_sword": { x: 3, y: 35, angle: 55, scaleX: 0.5, scaleY: 0.5, flipX: false, flipY: false },
+  "auto_equipment_breastplate_leather_01": { x: 0, y: 30, angle: 0, scaleX: 1.17, scaleY: 1.32, flipX: false, flipY: false },
+  "auto_equipment_weapon_bow_01": { x: -73, y: -3, angle: 90, scaleX: 1.3, scaleY: 1.3, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
@@ -855,6 +861,8 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionArcOffsetX: DEFAULT_ACTION_ARC_OFFSET_X,
   actionArcOffsetY: DEFAULT_ACTION_ARC_OFFSET_Y,
   actionButtonScale: DEFAULT_ACTION_BUTTON_SCALE,
+  actionIconScale: DEFAULT_ACTION_ICON_SCALE,
+  actionAttackIconScale: DEFAULT_ACTION_ATTACK_ICON_SCALE,
   actionButtonOffsets: cloneActionButtonOffsets(DEFAULT_ACTION_BUTTON_OFFSETS),
   hudEditMode: false,
   hudBottomOffset: DEFAULT_HUD_BOTTOM_OFFSET,
@@ -1006,6 +1014,8 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionArcOffsetX: clampNumber(input.actionArcOffsetX, -320, 320, defaultDebugTuning.actionArcOffsetX),
     actionArcOffsetY: clampNumber(input.actionArcOffsetY, -320, 320, defaultDebugTuning.actionArcOffsetY),
     actionButtonScale: clampNumber(input.actionButtonScale, 0.5, 2, defaultDebugTuning.actionButtonScale),
+    actionIconScale: clampNumber(input.actionIconScale, 0.5, 2, defaultDebugTuning.actionIconScale),
+    actionAttackIconScale: clampNumber(input.actionAttackIconScale, 0.5, 2, defaultDebugTuning.actionAttackIconScale),
     actionButtonOffsets: normalizeActionButtonOffsets(input.actionButtonOffsets),
     hudEditMode: typeof input.hudEditMode === "boolean" ? input.hudEditMode : defaultDebugTuning.hudEditMode,
     hudBottomOffset: clampNumber(input.hudBottomOffset, -96, 96, defaultDebugTuning.hudBottomOffset),

@@ -38,6 +38,8 @@ function loadDebugTuningModule() {
             DEFAULT_ACTION_ARC_ROTATION: 0,
             DEFAULT_ACTION_ARC_RADIUS: 62,
             DEFAULT_ACTION_BUTTON_SCALE: 1,
+            DEFAULT_ACTION_ICON_SCALE: 1,
+            DEFAULT_ACTION_ATTACK_ICON_SCALE: 1,
             DEFAULT_HUD_BOTTOM_OFFSET: -16,
             DEFAULT_HUD_SIDE_INSET: 8,
             DEFAULT_HUD_SCALE: 1,
@@ -85,6 +87,8 @@ test("debug tuning normalizes unsafe values", () => {
     actionArcRotation: 999,
     actionArcRadius: -5,
     actionButtonScale: 99,
+    actionIconScale: 99,
+    actionAttackIconScale: -99,
     hudEditMode: "true",
     hudBottomOffset: -999,
     hudSideInset: 999,
@@ -117,6 +121,8 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.actionArcRotation, 180);
   assert.equal(normalized.actionArcRadius, 24);
   assert.equal(normalized.actionButtonScale, 2);
+  assert.equal(normalized.actionIconScale, 2);
+  assert.equal(normalized.actionAttackIconScale, 0.5);
   assert.equal(normalized.hudEditMode, false);
   assert.equal(normalized.hudBottomOffset, -96);
   assert.equal(normalized.hudSideInset, 64);
@@ -147,6 +153,8 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRotation, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.actionArcRadius, 62);
   assert.equal(debugTuningModule.defaultDebugTuning.actionButtonScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionIconScale, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.actionAttackIconScale, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.hudBottomOffset, -16);
   assert.equal(debugTuningModule.defaultDebugTuning.hudSideInset, 8);
   assert.equal(debugTuningModule.defaultDebugTuning.hudScale, 1);

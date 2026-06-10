@@ -3048,3 +3048,231 @@ body.debug-active .action-arc__center {
 .action-arc__icon {
   display: none;
 }
+
+/* Leather token action buttons. Attack buttons use imported tally-mark icons. */
+.action-arc__button {
+  --action-icon-size: 1.85rem;
+  --action-icon-scale: 1;
+  --action-attack-icon-scale: 1;
+  --token-edge: #1e0d06;
+  --token-ring: rgba(193, 128, 54, 0.52);
+  --token-ring-width: 3px;
+  --token-face-inset: 2px;
+  --token-rim-top: #6d3b17;
+  --token-rim-bottom: #241006;
+  --token-face-top: #8b4b22;
+  --token-face-mid: #5a2912;
+  --token-face-bottom: #2a1008;
+  --token-accent: rgba(11, 3, 1, 0.42);
+  --token-face-tint: rgba(0, 0, 0, 0);
+  --token-ring-echo: rgba(0, 0, 0, 0);
+  width: 58px;
+  height: 58px;
+  overflow: visible;
+  border: 3px solid var(--token-edge);
+  border-radius: 999px;
+  color: #f5d08b;
+  background: linear-gradient(180deg, var(--token-rim-top), var(--token-rim-bottom));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 210, 139, 0.2),
+    inset 0 -6px 0 rgba(11, 3, 1, 0.48),
+    0 5px 0 #170804,
+    0 0 0 2px rgba(255, 199, 107, 0.12);
+  text-shadow: none;
+}
+
+.action-arc__button::before,
+.action-arc__button::after,
+.action-arc__button[data-action]::before,
+.action-arc__button[data-action]::after {
+  content: "";
+  position: absolute;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  pointer-events: none;
+  text-shadow: none;
+  transform: none;
+}
+
+.action-arc__button::before,
+.action-arc__button[data-action]::before {
+  inset: var(--token-face-inset);
+  z-index: 1;
+  border: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 190, 104, 0.24) 0 10%, transparent 11%),
+    radial-gradient(ellipse at 58% 76%, rgba(27, 7, 2, 0.36) 0 38%, transparent 39%),
+    linear-gradient(145deg, rgba(255, 178, 94, 0.16), transparent 42%),
+    linear-gradient(180deg, var(--token-face-top) 0%, var(--token-face-mid) 58%, var(--token-face-bottom) 100%);
+  box-shadow:
+    inset 0 0 0 var(--token-ring-width) var(--token-ring),
+    inset 0 0 8px var(--token-ring-echo),
+    inset 0 2px 0 rgba(255, 205, 129, 0.2),
+    inset 0 -5px 0 rgba(13, 4, 1, 0.34);
+}
+
+.action-arc__button::after,
+.action-arc__button[data-action]::after {
+  inset: 9px 9px 8px;
+  left: 9px;
+  top: 9px;
+  right: 9px;
+  bottom: 8px;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    linear-gradient(105deg, transparent 0 28%, rgba(255, 218, 144, 0.12) 29% 31%, transparent 32% 100%),
+    radial-gradient(circle at 50% 45%, var(--token-face-tint), transparent 66%),
+    radial-gradient(circle at 50% 100%, var(--token-accent), transparent 58%);
+  mix-blend-mode: multiply;
+  opacity: 0.8;
+}
+
+.action-arc__button[data-action="forward"],
+.action-arc__button[data-action="back"] {
+  --token-ring: rgba(200, 130, 54, 0.58);
+  --token-face-top: #8e5526;
+  --token-face-mid: #562611;
+  --token-face-bottom: #2b1007;
+  --token-accent: rgba(30, 9, 2, 0.46);
+}
+
+.action-arc__button[data-action="rest"] {
+  --token-ring: rgba(93, 194, 185, 0.56);
+  --token-face-top: #406f65;
+  --token-face-mid: #24423d;
+  --token-face-bottom: #10221f;
+  --token-accent: rgba(4, 30, 27, 0.48);
+}
+
+.action-arc__button[data-action="taunt"] {
+  --token-ring: rgba(166, 112, 215, 0.56);
+  --token-face-top: #654174;
+  --token-face-mid: #3a254a;
+  --token-face-bottom: #1b0d26;
+  --token-accent: rgba(20, 7, 34, 0.48);
+}
+
+.action-arc__button[data-action="lunge"] {
+  --token-ring: rgba(213, 91, 63, 0.58);
+  --token-face-top: #854325;
+  --token-face-mid: #4f2012;
+  --token-face-bottom: #250b06;
+  --token-accent: rgba(38, 8, 2, 0.52);
+}
+
+.action-arc__button--attack-token {
+  --action-attack-icon-size: 43px;
+  --token-face-top: #74401d;
+  --token-face-mid: #4b2110;
+  --token-face-bottom: #210b05;
+  --token-accent: rgba(16, 4, 1, 0.56);
+}
+
+.action-arc__button[data-action="light"] {
+  --token-ring: rgba(13, 86, 45, 0.96);
+  --token-ring-echo: rgba(13, 86, 45, 0.28);
+  --token-face-tint: rgba(10, 72, 38, 0.42);
+  --token-accent: rgba(7, 55, 31, 0.58);
+}
+
+.action-arc__button[data-action="medium"] {
+  --action-attack-icon-size: 45px;
+  --token-ring: rgba(128, 70, 16, 0.98);
+  --token-ring-echo: rgba(128, 70, 16, 0.3);
+  --token-face-tint: rgba(104, 55, 12, 0.4);
+  --token-accent: rgba(76, 38, 8, 0.58);
+}
+
+.action-arc__button[data-action="heavy"] {
+  --action-attack-icon-size: 47px;
+  --token-ring: rgba(100, 21, 16, 1);
+  --token-ring-echo: rgba(110, 23, 17, 0.34);
+  --token-face-tint: rgba(86, 16, 12, 0.46);
+  --token-accent: rgba(67, 11, 8, 0.62);
+}
+
+.action-arc__button:hover:not(:disabled) {
+  filter: brightness(1.08) saturate(1.04);
+}
+
+.action-arc__button:active:not(:disabled) {
+  transform: translate(-50%, calc(-50% + 3px)) scale(var(--action-button-scale, 1));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 210, 139, 0.14),
+    inset 0 -3px 0 rgba(11, 3, 1, 0.44),
+    0 2px 0 #170804,
+    0 0 0 2px rgba(255, 199, 107, 0.1);
+}
+
+.action-arc__button:disabled {
+  filter: grayscale(0.56) brightness(0.68);
+  opacity: 0.72;
+}
+
+.action-arc__icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: #f5d08b;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: var(--action-icon-size);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 2px 0 rgba(22, 7, 3, 0.78);
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y))) scale(var(--action-icon-scale));
+}
+
+.action-arc__button[data-action="back"] .action-arc__icon {
+  transform: translate(calc(-50% + var(--action-icon-x)), calc(-50% + var(--action-icon-y))) scaleX(-1) scale(var(--action-icon-scale));
+}
+
+.action-arc__button[data-action="lunge"] .action-arc__icon {
+  transform: translate(-50%, -50%) scale(var(--action-icon-scale));
+}
+
+.action-arc__icon-layer {
+  grid-area: 1 / 1;
+  display: block;
+  color: #f5d08b;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(22, 7, 3, 0.78);
+  transform-origin: center;
+}
+
+.action-arc__icon-layer--bolt {
+  z-index: 1;
+  font-size: 2rem;
+  transform: translate(-4px, 1px) rotate(-12deg);
+}
+
+.action-arc__icon-layer--sword {
+  z-index: 2;
+  font-size: 1.64rem;
+  transform: translate(6px, -3px) rotate(19deg);
+}
+
+.action-arc__attack-icon {
+  display: block;
+  width: var(--action-attack-icon-size);
+  height: var(--action-attack-icon-size);
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 0 rgba(11, 3, 1, 0.46));
+  transform: translateY(-1px) scale(var(--action-attack-icon-scale));
+  transform-origin: center;
+  user-select: none;
+}
