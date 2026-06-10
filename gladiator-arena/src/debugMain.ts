@@ -438,14 +438,14 @@ function startDebugApp(): void {
   if (cityMenu) {
     weaponShop = mountWeaponShop(cityMenu, {
       getHero: () => hero,
-      mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
+      mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment, { mode: "shop" }),
       onBuy: handleShopBuy,
       onPreview: handleShopPreview,
       onPreviewClear: clearShopPreview,
     });
     armoryShop = mountArmoryShop(cityMenu, {
       getHero: () => hero,
-      mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment),
+      mountPreview: (parent) => mountDebugCharacterViewer(parent, hero.equipment, { mode: "shop" }),
       onBuy: handleShopBuy,
       onPreview: handleShopPreview,
       onPreviewClear: clearShopPreview,

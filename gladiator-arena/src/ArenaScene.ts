@@ -373,14 +373,21 @@ const DEBUG_CHARACTER_VIEWER_WIDTH = 430;
 const DEBUG_CHARACTER_VIEWER_HEIGHT = 764;
 const DEBUG_CHARACTER_CENTER_X = DEBUG_CHARACTER_VIEWER_WIDTH / 2;
 const DEBUG_CHARACTER_FEET_Y = 690;
+const SHOP_CHARACTER_PREVIEW_MARGIN_X = 22;
+const SHOP_CHARACTER_PREVIEW_MARGIN_Y = 24;
 const CITY_HERO_VIEWER_WIDTH = 240;
 const CITY_HERO_VIEWER_HEIGHT = 360;
 const CITY_HERO_SLOT_MIN_WIDTH = 150;
 const CITY_HERO_SLOT_MAX_WIDTH = 190;
 const CITY_HERO_SLOT_WIDTH_RATIO = 0.38;
 const CITY_HERO_SLOT_BOTTOM = 82;
+const CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO = 0.62;
 const CITY_CAMERA_DEFAULT_ZOOM = 1;
 const CITY_CAMERA_ARMORY_ZOOM = 3.5;
+const CITY_CAMERA_SHOP_MIN_ZOOM = 1.25;
+const CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO = 0.68;
+const CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO = 0.78;
+const CITY_CAMERA_SHOP_LOOK_UP_RATIO = 0.16;
 const CITY_CAMERA_TWEEN_DURATION = 420;
 const CITY_BACKGROUND_FADE_DURATION = 220;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 24;
@@ -1334,17 +1341,21 @@ class CityHeroScene extends Phaser.Scene {
     const layout = this.getHeroLayout(targetLiftProgress);
 
     if (this.cameraMode !== "default") {
+      const shopZoom = this.getShopCameraZoom(layout);
       const targetX = layout.feetX + CITY_CAMERA_ARMORY_FOCUS_OFFSET_X * Math.max(0.7, layout.scale);
-      const targetY = layout.feetY - CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale);
+      const targetY =
+        layout.feetY -
+        CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale) -
+        CITY_HERO_VIEWER_HEIGHT * layout.scale * CITY_CAMERA_SHOP_LOOK_UP_RATIO;
 
       if (instant) {
-        camera.setZoom(CITY_CAMERA_ARMORY_ZOOM);
+        camera.setZoom(shopZoom);
         camera.centerOn(targetX, targetY);
         return;
       }
 
       camera.pan(targetX, targetY, duration, "Cubic.easeOut");
-      camera.zoomTo(CITY_CAMERA_ARMORY_ZOOM, duration, "Cubic.easeOut");
+      camera.zoomTo(shopZoom, duration, "Cubic.easeOut");
       return;
     }
 
@@ -1360,6 +1371,19 @@ class CityHeroScene extends Phaser.Scene {
 
   private getHeroCamera(): Phaser.Cameras.Scene2D.Camera {
     return this.heroCamera ?? this.cameras.main;
+  }
+
+  private getShopCameraZoom(layout: CityHeroLayout): number {
+    const visualHeight = Math.max(1, CITY_HERO_VIEWER_HEIGHT * layout.scale);
+    const visualWidth = Math.max(1, CITY_HERO_VIEWER_WIDTH * CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO * layout.scale);
+    const heightZoomLimit = (this.sceneHeight * CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO) / visualHeight;
+    const widthZoomLimit = (this.sceneWidth * CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO) / visualWidth;
+
+    return clampNumber(
+      Math.min(CITY_CAMERA_ARMORY_ZOOM, heightZoomLimit, widthZoomLimit),
+      CITY_CAMERA_SHOP_MIN_ZOOM,
+      CITY_CAMERA_ARMORY_ZOOM,
+    );
   }
 
   private getHeroLayout(liftProgress = this.cityHeroLiftProgress): CityHeroLayout {
@@ -1513,15 +1537,21 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
   return () => game.destroy(true);
 }
 
+interface DebugCharacterViewerOptions {
+  mode?: "debug" | "shop";
+}
+
 class DebugCharacterScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private dragState?: DebugRigPartDragState;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
+  private readonly viewerMode: NonNullable<DebugCharacterViewerOptions["mode"]>;
 
-  constructor() {
-    super("DebugCharacterScene");
+  constructor(viewerMode: NonNullable<DebugCharacterViewerOptions["mode"]> = "debug") {
+    super(`DebugCharacterScene-${viewerMode}`);
+    this.viewerMode = viewerMode;
   }
 
   preload(): void {
@@ -1530,30 +1560,38 @@ class DebugCharacterScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-    drawDebugCharacterBackdrop(this);
+    if (this.viewerMode === "debug") {
+      drawDebugCharacterBackdrop(this);
+    }
     this.fighter = createPaperDollFighter(this, {
       ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0),
       castsShadow: false,
-      enableSelectionHighlights: true,
+      enableSelectionHighlights: this.viewerMode === "debug",
     });
     this.fighter.name.setVisible(false);
-    enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
-    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) => this.handlePreviewPointerDown(pointer, gameObjects));
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.dragRigPart(pointer));
-    this.input.on("pointerup", () => this.endRigPartDrag());
-    this.input.on("pointerupoutside", () => this.endRigPartDrag());
-    this.input.on("wheel", (_pointer: Phaser.Input.Pointer, _gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
-      this.rotateSelectedRigPartsWithWheel(deltaY);
-    });
+    if (this.viewerMode === "debug") {
+      enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
+      this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) =>
+        this.handlePreviewPointerDown(pointer, gameObjects),
+      );
+      this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.dragRigPart(pointer));
+      this.input.on("pointerup", () => this.endRigPartDrag());
+      this.input.on("pointerupoutside", () => this.endRigPartDrag());
+      this.input.on("wheel", (_pointer: Phaser.Input.Pointer, _gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+        this.rotateSelectedRigPartsWithWheel(deltaY);
+      });
+    }
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
     });
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
       this.unsubscribePlayerSettings?.();
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     });
     this.sync();
   }
@@ -1562,6 +1600,16 @@ class DebugCharacterScene extends Phaser.Scene {
     const animation = getSelectedDebugBodyAnimation();
 
     if (!this.fighter) {
+      return;
+    }
+
+    if (this.viewerMode === "shop") {
+      const idle = getActiveBodyAnimation("idle");
+
+      if (idle.enabled) {
+        applyBodyAnimation(this.fighter, time, idle);
+      }
+
       return;
     }
 
@@ -1581,9 +1629,36 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
+    if (this.viewerMode === "shop") {
+      const layout = this.getShopCharacterLayout();
+
+      applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+      return;
+    }
+
     applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, debugTuning.characterPreviewFeetX);
     applySelectedDebugAnimationEditPose(this.fighter);
     syncPaperDollSelectionHighlight(this.fighter.paperDollRig, debugTuning.selectedRigParts);
+  }
+
+  private getShopCharacterLayout(): CityHeroLayout {
+    const width = Math.max(1, this.scale.width || DEBUG_CHARACTER_VIEWER_WIDTH);
+    const height = Math.max(1, this.scale.height || DEBUG_CHARACTER_VIEWER_HEIGHT);
+    const visualHeightAtScaleOne = CITY_HERO_VIEWER_HEIGHT * PAPER_DOLL_BASE_SCALE;
+    const visualWidthAtScaleOne = CITY_HERO_VIEWER_WIDTH * CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO * PAPER_DOLL_BASE_SCALE;
+    const heightScaleLimit = Math.max(0.1, height - SHOP_CHARACTER_PREVIEW_MARGIN_Y * 2) / visualHeightAtScaleOne;
+    const widthScaleLimit = Math.max(0.1, width - SHOP_CHARACTER_PREVIEW_MARGIN_X * 2) / visualWidthAtScaleOne;
+    const scale = clampNumber(Math.min(debugTuning.characterPreviewScale, heightScaleLimit, widthScaleLimit), 0.75, debugTuning.characterPreviewScale);
+
+    return {
+      feetX: width / 2,
+      feetY: height - SHOP_CHARACTER_PREVIEW_MARGIN_Y,
+      scale,
+    };
+  }
+
+  private handleResize(): void {
+    this.sync();
   }
 
   private beginRigPartDrag(partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
@@ -1672,21 +1747,23 @@ class DebugCharacterScene extends Phaser.Scene {
   }
 }
 
-export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?: HeroEquipment): () => void {
+export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?: HeroEquipment, options: DebugCharacterViewerOptions = {}): () => void {
   usePlayerEquipment(playerEquipment);
+  const viewerMode = options.mode ?? "debug";
+  const isShopMode = viewerMode === "shop";
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: DEBUG_CHARACTER_VIEWER_WIDTH,
-    height: DEBUG_CHARACTER_VIEWER_HEIGHT,
+    width: isShopMode ? Math.max(1, parent.clientWidth || DEBUG_CHARACTER_VIEWER_WIDTH) : DEBUG_CHARACTER_VIEWER_WIDTH,
+    height: isShopMode ? Math.max(1, parent.clientHeight || DEBUG_CHARACTER_VIEWER_HEIGHT) : DEBUG_CHARACTER_VIEWER_HEIGHT,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      mode: isShopMode ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,
+      autoCenter: isShopMode ? Phaser.Scale.NO_CENTER : Phaser.Scale.CENTER_BOTH,
     },
-    scene: DebugCharacterScene,
+    scene: new DebugCharacterScene(viewerMode),
   });
 
   return () => game.destroy(true);

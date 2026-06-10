@@ -79,3 +79,18 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
 });
+
+test("city shop camera zoom fits the hero inside the current viewport", () => {
+  assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("private getShopCameraZoom(layout: CityHeroLayout): number"), true);
+  assert.equal(arenaSceneSource.includes("const shopZoom = this.getShopCameraZoom(layout);"), true);
+  assert.equal(arenaSceneSource.includes("camera.zoomTo(shopZoom"), true);
+});
+
+test("debug character viewer has a compact shop preview mode", () => {
+  assert.equal(arenaSceneSource.includes('mode?: "debug" | "shop"'), true);
+  assert.equal(arenaSceneSource.includes('this.viewerMode === "shop"'), true);
+  assert.equal(arenaSceneSource.includes("private getShopCharacterLayout(): CityHeroLayout"), true);
+  assert.equal(arenaSceneSource.includes("Phaser.Scale.RESIZE"), true);
+});
