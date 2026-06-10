@@ -20,6 +20,19 @@ export interface GeneratedEquipmentItemRecord {
 
 export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [
   {
+    item: {"id":"generated_equipment_front_glove_chainmail_03","name":"Chainmail front Glove","kind":"armor","equipmentSlot":"frontGlove","armorHp":4},
+    assetKeys: {"frontGloveAssetKey":"front-glove-chainmail-03"},
+    equipmentTuning: {"x":-3,"y":9,"angle":5,"scaleX":0.75,"scaleY":0.9,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-glove-chainmail-03",
+      url: new URL("../assets/fighters/armor/arms/front-glove-chainmail-03.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-chainmail-03.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/arms/front-glove-chainmail-03.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-chainmail-03.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_front_glove_chainmail_03","name":"Chainmail front Glove","price":0,"itemIds":["generated_equipment_front_glove_chainmail_03"],"categoryId":"arms"},
+  },
+  {
     item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":1},
     assetKeys: {"helmetAssetKey":"helmet-cloth-01"},
     equipmentTuning: {"x":-1,"y":21,"angle":0,"scaleX":1.12,"scaleY":1.12,"flipX":false,"flipY":false},

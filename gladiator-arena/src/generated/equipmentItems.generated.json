@@ -1,5 +1,38 @@
 [
   {
+    "id": "generated_equipment_front_glove_chainmail_03",
+    "name": "Chainmail front Glove",
+    "kind": "armor",
+    "equipmentSlot": "frontGlove",
+    "armorHp": 4,
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-chainmail-03"
+    },
+    "equipmentTuning": {
+      "x": -3,
+      "y": 9,
+      "angle": 5,
+      "scaleX": 0.75,
+      "scaleY": 0.9,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-chainmail-03",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-chainmail-03.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-chainmail-03.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_chainmail_03",
+      "name": "Chainmail front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_chainmail_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_helmet_cloth_01",
     "name": "Cloth Helmet 01",
     "kind": "armor",
