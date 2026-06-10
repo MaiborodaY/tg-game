@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from "node:url";
 import vm from "node:vm";
 import ts from "typescript";
 
-function loadBattleSafeAreaModule(cssVars = {}) {
+function loadBattleSafeAreaModule(cssVars = {}, options = {}) {
   const filename = fileURLToPath(new URL("../src/battleSafeArea.ts", import.meta.url));
   const source = readFileSync(filename, "utf8");
   const { outputText } = ts.transpileModule(source, {
@@ -16,12 +16,25 @@ function loadBattleSafeAreaModule(cssVars = {}) {
     fileName: filename,
   });
   const module = { exports: {} };
-  const hud = {
+  const standardHud = {
     getBoundingClientRect: () => ({ top: 800, height: 100 }),
+  };
+  const classicHud = {
+    getBoundingClientRect: () => ({ top: 700, height: 220 }),
   };
   const battleScreen = {
     getBoundingClientRect: () => ({ top: 0, height: 1000 }),
-    querySelector: () => hud,
+    querySelector: (selector) => {
+      if (selector === ".classic-action-bar") {
+        return classicHud;
+      }
+
+      if (selector === ".arena-fighters-strip") {
+        return standardHud;
+      }
+
+      return undefined;
+    },
   };
   const root = {
     closest: () => battleScreen,
@@ -44,6 +57,11 @@ function loadBattleSafeAreaModule(cssVars = {}) {
         throw new Error(`Unexpected require: ${id}`);
       },
       document: {
+        body: {
+          classList: {
+            contains: (className) => Boolean(options.classicHudActive && className === "arena-hud-classic"),
+          },
+        },
         querySelector: () => battleScreen,
       },
       window: {
@@ -71,4 +89,16 @@ test("battle safe bottom falls back to default HUD clearance", () => {
   const { battleSafeArea, root } = loadBattleSafeAreaModule();
 
   assert.equal(battleSafeArea.getBattleSafeBottom(root, 1000), 776);
+});
+
+test("battle safe bottom uses the classic action wheel in classic HUD mode", () => {
+  const { battleSafeArea, root } = loadBattleSafeAreaModule(
+    {
+      "--hud-safe-gap-ratio": "0.1",
+      "--hud-safe-min-gap": "30px",
+    },
+    { classicHudActive: true },
+  );
+
+  assert.equal(battleSafeArea.getBattleSafeBottom(root, 1000), 670);
 });

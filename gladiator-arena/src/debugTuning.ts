@@ -300,8 +300,8 @@ export const defaultClassicActionButtonSlotTuning: ClassicActionButtonSlotTuning
 
 export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> = {
   distance: createClassicActionButtonSlots({
-    forward: { x: 70, y: -170, rotation: -10 },
-    back: { x: -70, y: -170, rotation: -12 },
+    forward: { x: 70, y: -165, rotation: -10 },
+    back: { x: -70, y: -165, rotation: -12 },
     lunge: { x: 0, y: -180, rotation: 10 },
     light: { x: 70, y: 18, rotation: 0 },
     medium: { x: 0, y: 18, rotation: 0 },

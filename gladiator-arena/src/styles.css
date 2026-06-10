@@ -485,7 +485,7 @@ h1 {
   bottom: max(-54px, calc(env(safe-area-inset-bottom) - 52px + var(--classic-hud-offset-y, 0px)));
   z-index: 7;
   width: var(--classic-wheel-diameter);
-  height: var(--classic-wheel-radius);
+  height: calc(var(--classic-wheel-radius) + var(--classic-wheel-top-bleed));
   display: none;
   overflow: hidden;
   padding: 0;
@@ -493,6 +493,7 @@ h1 {
   transform: translateX(-50%) scale(var(--classic-hud-scale, 1));
   transform-origin: bottom center;
   --classic-wheel-angle: 0deg;
+  --classic-wheel-top-bleed: clamp(38px, 10vw, 48px);
   --classic-wheel-diameter: min(420px, calc(100vw - 12px));
   --classic-wheel-radius: calc(var(--classic-wheel-diameter) / 2);
   --classic-wheel-inner-diameter: calc(var(--classic-wheel-diameter) * 0.72);
@@ -501,7 +502,7 @@ h1 {
 .classic-action-bar__wheel {
   position: absolute;
   left: 50%;
-  top: 0;
+  top: var(--classic-wheel-top-bleed);
   width: var(--classic-wheel-diameter);
   height: var(--classic-wheel-diameter);
   pointer-events: none;
@@ -520,7 +521,8 @@ h1 {
 
 .classic-action-bar__wheel::before {
   inset: 0;
-  border: 4px solid rgba(42, 17, 8, 0.96);
+  border: 3px solid rgba(59, 25, 11, 0.84);
+  border-top-color: rgba(93, 48, 23, 0.82);
   border-radius: 50%;
   background:
     radial-gradient(circle at 50% 22%, rgba(255, 218, 136, 0.22) 0 16%, transparent 17%),
@@ -529,8 +531,8 @@ h1 {
   box-shadow:
     inset 0 4px 0 rgba(255, 218, 145, 0.16),
     inset 0 -18px 24px rgba(0, 0, 0, 0.32),
-    0 -5px 0 rgba(0, 0, 0, 0.28),
-    0 -12px 26px rgba(0, 0, 0, 0.2);
+    0 -3px 0 rgba(74, 31, 13, 0.22),
+    0 -10px 22px rgba(71, 30, 11, 0.14);
 }
 
 .classic-action-bar__wheel::after {

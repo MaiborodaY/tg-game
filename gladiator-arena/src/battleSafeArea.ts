@@ -16,16 +16,15 @@ export function getBattleSafeBottom(root?: HTMLElement | null, viewportHeight = 
   }
 
   const battleScreen = getBattleScreen(root);
-  const hud = battleScreen?.querySelector<HTMLElement>(".arena-fighters-strip");
 
-  if (!battleScreen || !hud) {
+  if (!battleScreen) {
     return viewportHeight;
   }
 
   const battleRect = battleScreen.getBoundingClientRect();
-  const hudRect = hud.getBoundingClientRect();
+  const hudRect = getActiveBottomHudRect(battleScreen);
 
-  if (battleRect.height <= 0 || hudRect.height <= 0) {
+  if (!hudRect || battleRect.height <= 0 || hudRect.height <= 0) {
     return viewportHeight;
   }
 
@@ -41,6 +40,31 @@ export function getBattleSafeBottom(root?: HTMLElement | null, viewportHeight = 
 
 function getBattleScreen(root?: HTMLElement | null): HTMLElement | null {
   return root?.closest<HTMLElement>(".battle-screen") ?? document.querySelector<HTMLElement>(".battle-screen");
+}
+
+function getActiveBottomHudRect(battleScreen: HTMLElement): Pick<DOMRect, "top" | "height"> | undefined {
+  for (const hud of getBottomHudCandidates(battleScreen)) {
+    const rect = hud.getBoundingClientRect();
+
+    if (rect.height > 0) {
+      return rect;
+    }
+  }
+
+  return undefined;
+}
+
+function getBottomHudCandidates(battleScreen: HTMLElement): HTMLElement[] {
+  const standardHud = battleScreen.querySelector<HTMLElement>(".arena-fighters-strip");
+  const classicHud = battleScreen.querySelector<HTMLElement>(".classic-action-bar");
+  const isClassicHud = typeof document !== "undefined" && document.body?.classList.contains("arena-hud-classic");
+  const candidates = isClassicHud ? [classicHud, standardHud] : [standardHud, classicHud];
+
+  return candidates.filter(isHTMLElement);
+}
+
+function isHTMLElement(value: HTMLElement | null | undefined): value is HTMLElement {
+  return Boolean(value);
 }
 
 function clamp(value: number, min: number, max: number): number {
