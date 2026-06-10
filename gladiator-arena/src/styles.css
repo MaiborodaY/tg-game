@@ -521,18 +521,21 @@ h1 {
 
 .classic-action-bar__wheel::before {
   inset: 0;
-  border: 3px solid rgba(59, 25, 11, 0.84);
-  border-top-color: rgba(93, 48, 23, 0.82);
+  border: 4px solid rgba(126, 77, 25, 0.94);
+  border-top-color: rgba(230, 170, 72, 0.96);
   border-radius: 50%;
   background:
+    radial-gradient(ellipse at 50% 2%, rgba(255, 228, 145, 0.56) 0 2%, rgba(184, 110, 33, 0.28) 4%, transparent 9%),
     radial-gradient(circle at 50% 22%, rgba(255, 218, 136, 0.22) 0 16%, transparent 17%),
     linear-gradient(135deg, rgba(255, 200, 112, 0.14), transparent 28%),
     linear-gradient(180deg, rgba(101, 47, 20, 0.97), rgba(54, 21, 9, 0.98) 44%, rgba(20, 7, 3, 0.99));
   box-shadow:
-    inset 0 4px 0 rgba(255, 218, 145, 0.16),
+    inset 0 0 0 2px rgba(255, 221, 123, 0.38),
+    inset 0 0 0 7px rgba(72, 34, 12, 0.28),
+    inset 0 5px 0 rgba(255, 232, 144, 0.22),
     inset 0 -18px 24px rgba(0, 0, 0, 0.32),
-    0 -3px 0 rgba(74, 31, 13, 0.22),
-    0 -10px 22px rgba(71, 30, 11, 0.14);
+    0 -2px 0 rgba(255, 205, 93, 0.46),
+    0 -7px 16px rgba(106, 62, 20, 0.22);
 }
 
 .classic-action-bar__wheel::after {
@@ -540,11 +543,11 @@ h1 {
   top: calc((var(--classic-wheel-diameter) - var(--classic-wheel-inner-diameter)) / 2);
   width: var(--classic-wheel-inner-diameter);
   height: var(--classic-wheel-inner-diameter);
-  border: 2px solid rgba(215, 146, 68, 0.28);
+  border: 2px solid rgba(218, 153, 57, 0.42);
   border-radius: 50%;
   box-shadow:
-    inset 0 4px 0 rgba(255, 225, 158, 0.08),
-    0 -2px 0 rgba(24, 8, 3, 0.48);
+    inset 0 3px 0 rgba(255, 225, 139, 0.14),
+    0 -2px 0 rgba(91, 48, 16, 0.52);
 }
 
 .classic-action-bar__layer {

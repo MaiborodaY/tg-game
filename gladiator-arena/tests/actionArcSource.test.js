@@ -112,6 +112,8 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
   assert.equal(stylesSource.includes("height: calc(var(--classic-wheel-radius) + var(--classic-wheel-top-bleed))"), true);
   assert.equal(stylesSource.includes("top: var(--classic-wheel-top-bleed)"), true);
   assert.equal(stylesSource.includes("border-radius: 50%"), true);
+  assert.equal(stylesSource.includes("border-top-color: rgba(230, 170, 72, 0.96)"), true);
+  assert.equal(stylesSource.includes("inset 0 0 0 2px rgba(255, 221, 123, 0.38)"), true);
   assert.equal(stylesSource.includes("rotate(var(--classic-wheel-angle))"), true);
   assert.equal(stylesSource.includes(".classic-action-bar--turning .classic-action-bar__button"), true);
   assert.equal(stylesSource.includes(".classic-action-bar__button--visible"), true);
