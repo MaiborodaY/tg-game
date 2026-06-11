@@ -395,6 +395,38 @@ const cityControlGroups: DebugControlGroup[] = [
       { type: "range", key: "cityHeroScale", label: "Hero scale", min: 0.4, max: 1.6, step: 0.01, resetValue: defaultDebugTuning.cityHeroScale },
     ],
   },
+  {
+    title: "Armory background",
+    controls: [
+      {
+        type: "range",
+        key: "armoryBackgroundOffsetX",
+        label: "Offset X",
+        min: -240,
+        max: 240,
+        step: 1,
+        resetValue: defaultDebugTuning.armoryBackgroundOffsetX,
+      },
+      {
+        type: "range",
+        key: "armoryBackgroundOffsetY",
+        label: "Offset Y",
+        min: -240,
+        max: 240,
+        step: 1,
+        resetValue: defaultDebugTuning.armoryBackgroundOffsetY,
+      },
+      {
+        type: "range",
+        key: "armoryBackgroundScale",
+        label: "Scale",
+        min: 1,
+        max: 1.6,
+        step: 0.01,
+        resetValue: defaultDebugTuning.armoryBackgroundScale,
+      },
+    ],
+  },
 ];
 
 const rigNumericControls: RigNumericControlConfig[] = [

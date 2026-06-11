@@ -156,6 +156,7 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes('title: "Fighters from origin"'), true);
   assert.equal(debugPanelSource.includes('title: "Immersive flask HUD"'), true);
   assert.equal(debugPanelSource.includes('title: "Classic action wheel"'), true);
+  assert.equal(debugPanelSource.includes('title: "Armory background"'), true);
   assert.equal(debugPanelSource.includes('title: "Action buttons relative to player"'), false);
   assert.equal(debugPanelSource.includes('title: "Action arc"'), true);
   assert.equal(debugPanelSource.includes('title: "Action button angles"'), true);
@@ -204,6 +205,17 @@ test("debug hero equipment picker can list catalog-only items", () => {
   assert.equal(debugPanelSource.includes("ALL_HERO_ITEM_IDS"), true);
   assert.equal(debugPanelSource.includes("new Set(ALL_HERO_ITEM_IDS)"), true);
   assert.equal(debugPanelSource.includes("debugHeroInventory.flatMap"), true);
+});
+
+test("debug panel exposes armory background tuning controls", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes("armoryBackgroundOffsetX"), true);
+  assert.equal(debugPanelSource.includes("armoryBackgroundOffsetY"), true);
+  assert.equal(debugPanelSource.includes("armoryBackgroundScale"), true);
+  assert.equal(debugPanelSource.includes("Offset X"), true);
+  assert.equal(debugPanelSource.includes("Offset Y"), true);
+  assert.equal(debugPanelSource.includes('label: "Scale"'), true);
 });
 
 test("debug panel exposes auto equipment promotion controls", () => {

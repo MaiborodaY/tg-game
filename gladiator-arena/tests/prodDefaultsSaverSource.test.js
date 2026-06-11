@@ -88,6 +88,18 @@ test("vite dev middleware persists the default player HUD mode", () => {
   assert.match(source, /player setting defaults/);
 });
 
+test("save as prod defaults can persist armory background tuning", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
+
+  assert.match(source, /armoryBackgroundOffsetX: "armoryBackgroundOffsetX"/);
+  assert.match(source, /armoryBackgroundOffsetY: "armoryBackgroundOffsetY"/);
+  assert.match(source, /armoryBackgroundScale: "armoryBackgroundScale"/);
+  assert.match(debugTuningSource, /armoryBackgroundOffsetX: 0/);
+  assert.match(debugTuningSource, /armoryBackgroundOffsetY: 0/);
+  assert.match(debugTuningSource, /armoryBackgroundScale: 1/);
+});
+
 test("vite dev middleware writes promoted equipment to generated files", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 

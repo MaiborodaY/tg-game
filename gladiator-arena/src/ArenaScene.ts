@@ -476,7 +476,7 @@ const CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO = 0.62;
 const CITY_CAMERA_DEFAULT_ZOOM = 1;
 const CITY_CAMERA_ARMORY_ZOOM = 3.5;
 const CITY_CAMERA_SHOP_MIN_ZOOM = 1.25;
-const CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO = 0.68;
+const CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO = 0.58;
 const CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO = 0.78;
 const CITY_CAMERA_SHOP_LOOK_UP_RATIO = 0.16;
 const CITY_CAMERA_TWEEN_DURATION = 420;
@@ -1514,9 +1514,10 @@ class CityHeroScene extends Phaser.Scene {
     const source = texture.getSourceImage() as { width?: number; height?: number };
     const sourceWidth = source.width || this.sceneWidth;
     const sourceHeight = source.height || this.sceneHeight;
-    const scale = Math.max(this.sceneWidth / sourceWidth, this.sceneHeight / sourceHeight);
+    const transform = getCityBackgroundTransform(assetKey);
+    const scale = Math.max(this.sceneWidth / sourceWidth, this.sceneHeight / sourceHeight) * transform.scale;
 
-    background.setPosition(this.sceneWidth / 2, this.sceneHeight / 2);
+    background.setPosition(this.sceneWidth / 2 + transform.offsetX, this.sceneHeight / 2 + transform.offsetY);
     background.setScale(scale);
   }
 
@@ -1822,6 +1823,22 @@ class CityHeroScene extends Phaser.Scene {
   private get sceneHeight(): number {
     return Math.max(1, this.scale.height || GAME_HEIGHT);
   }
+}
+
+function getCityBackgroundTransform(assetKey: string): { offsetX: number; offsetY: number; scale: number } {
+  if (assetKey === CITY_ARMORY_BACKGROUND_ASSET_KEY) {
+    return {
+      offsetX: debugTuning.armoryBackgroundOffsetX,
+      offsetY: debugTuning.armoryBackgroundOffsetY,
+      scale: debugTuning.armoryBackgroundScale,
+    };
+  }
+
+  return {
+    offsetX: 0,
+    offsetY: 0,
+    scale: 1,
+  };
 }
 
 export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): CitySceneApi {

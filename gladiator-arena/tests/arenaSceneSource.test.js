@@ -184,6 +184,16 @@ test("city shop hero can be dragged vertically without changing city base layout
   assert.doesNotMatch(arenaSceneSource, /debugTuning\.cityHeroY\s*=/);
 });
 
+test("armory background can be tuned separately from the hero position", () => {
+  assert.equal(arenaSceneSource.includes("function getCityBackgroundTransform(assetKey: string)"), true);
+  assert.equal(arenaSceneSource.includes("assetKey === CITY_ARMORY_BACKGROUND_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("debugTuning.armoryBackgroundOffsetX"), true);
+  assert.equal(arenaSceneSource.includes("debugTuning.armoryBackgroundOffsetY"), true);
+  assert.equal(arenaSceneSource.includes("debugTuning.armoryBackgroundScale"), true);
+  assert.equal(arenaSceneSource.includes("this.sceneWidth / 2 + transform.offsetX"), true);
+  assert.equal(arenaSceneSource.includes("this.sceneHeight / 2 + transform.offsetY"), true);
+});
+
 test("city scene can zoom the background camera into the coliseum for arena entry", () => {
   assert.equal(arenaSceneSource.includes('type CityCameraMode = "default" | "armory" | "weaponShop" | "arena"'), true);
   assert.equal(arenaSceneSource.includes("focusArenaTransition: () => Promise<void>"), true);

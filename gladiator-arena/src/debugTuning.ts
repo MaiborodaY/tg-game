@@ -299,6 +299,9 @@ export interface ArenaDebugTuning {
   cityHeroX: number;
   cityHeroY: number;
   cityHeroScale: number;
+  armoryBackgroundOffsetX: number;
+  armoryBackgroundOffsetY: number;
+  armoryBackgroundScale: number;
   heroPortraitButtonX: number;
   heroPortraitButtonY: number;
   heroPortraitButtonScale: number;
@@ -1290,6 +1293,9 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   cityHeroX: 100,
   cityHeroY: 200,
   cityHeroScale: 1.6,
+  armoryBackgroundOffsetX: 0,
+  armoryBackgroundOffsetY: 0,
+  armoryBackgroundScale: 1,
   heroPortraitButtonX: 5,
   heroPortraitButtonY: 3,
   heroPortraitButtonScale: 1.2,
@@ -1500,6 +1506,9 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     cityHeroX: clampNumber(input.cityHeroX, 0, 240, defaultDebugTuning.cityHeroX),
     cityHeroY: clampNumber(input.cityHeroY, 0, 360, defaultDebugTuning.cityHeroY),
     cityHeroScale: clampNumber(input.cityHeroScale, 0.4, 1.6, defaultDebugTuning.cityHeroScale),
+    armoryBackgroundOffsetX: clampNumber(input.armoryBackgroundOffsetX, -240, 240, defaultDebugTuning.armoryBackgroundOffsetX),
+    armoryBackgroundOffsetY: clampNumber(input.armoryBackgroundOffsetY, -240, 240, defaultDebugTuning.armoryBackgroundOffsetY),
+    armoryBackgroundScale: clampNumber(input.armoryBackgroundScale, 1, 1.6, defaultDebugTuning.armoryBackgroundScale),
     heroPortraitButtonX: clampNumber(input.heroPortraitButtonX, 0, 430, defaultDebugTuning.heroPortraitButtonX),
     heroPortraitButtonY: clampNumber(input.heroPortraitButtonY, 0, 764, defaultDebugTuning.heroPortraitButtonY),
     heroPortraitButtonScale: clampNumber(input.heroPortraitButtonScale, 0.5, 1.8, defaultDebugTuning.heroPortraitButtonScale),

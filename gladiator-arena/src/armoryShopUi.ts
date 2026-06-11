@@ -17,6 +17,14 @@ import {
   type HeroItemId,
   type HeroState,
 } from "./hero";
+import {
+  DAMAGE_BLOCK_ICON_ASSET_URL,
+  SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
+  SHOP_CATEGORY_BODY_ICON_ASSET_URL,
+  SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
+  SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
+  SHOP_GOLD_COIN_ICON_ASSET_URL,
+} from "./assets";
 import { GENERATED_ARMORY_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
@@ -48,6 +56,7 @@ interface ArmoryCategory {
   id: string;
   name: string;
   shortLabel: string;
+  iconUrl?: string;
   subcategories: ArmorySubcategory[];
 }
 
@@ -91,6 +100,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "head",
     name: "Head",
     shortLabel: "HEAD",
+    iconUrl: SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
     subcategories: [
       {
         id: "head",
@@ -104,6 +114,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "body",
     name: "Body",
     shortLabel: "BODY",
+    iconUrl: SHOP_CATEGORY_BODY_ICON_ASSET_URL,
     subcategories: [
       {
         id: "chest",
@@ -121,6 +132,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "arms",
     name: "Arms",
     shortLabel: "ARMS",
+    iconUrl: SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
     subcategories: [
       {
         id: "shoulders",
@@ -162,6 +174,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "legs",
     name: "Legs",
     shortLabel: "LEGS",
+    iconUrl: SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
     subcategories: [
       {
         id: "thighs",
@@ -386,6 +399,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   const categoryRail = document.createElement("div");
   categoryRail.className = "armory-shop__category-rail";
+  categoryRail.style.setProperty("--shop-category-count", String(ARMORY_CATEGORIES.length));
 
   const tray = document.createElement("div");
   tray.className = "armory-shop__tray";
@@ -431,8 +445,13 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   });
 
   header.append(back, title, headerMeta);
-  tray.append(header, subcategories, selected, content);
-  menu.append(categoryRail, tray);
+  if (usesCityHeroPreview) {
+    tray.append(header, subcategories, content);
+    menu.append(tray, selected, categoryRail);
+  } else {
+    tray.append(header, subcategories, selected, content);
+    menu.append(categoryRail, tray);
+  }
   if (options.mountPreview) {
     panel.append(previewShell);
   }
@@ -528,7 +547,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function createCategoryButton(category: ArmoryCategory, isActive: boolean): HTMLButtonElement {
     const button = document.createElement("button");
-    const iconUrl = getShopProductIconUrl(getArmoryCategoryProducts(category).flatMap((product) => product.itemIds));
+    const iconUrl = category.iconUrl ?? getShopProductIconUrl(getArmoryCategoryProducts(category).flatMap((product) => product.itemIds));
 
     button.className = "armory-shop__category-button";
     button.classList.toggle("armory-shop__category-button--active", isActive);
@@ -593,10 +612,14 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.classList.toggle("armory-shop__option--selected", isSelected);
     button.classList.toggle("armory-shop__option--owned", actionState === "equip");
     button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
+    button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
     button.type = "button";
     button.title = product.name;
     button.setAttribute("aria-label", `${product.name}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${getShopProductActionLabel(actionState, product.price)}`);
-    button.append(createRarityBadge(rarity), createProductIcon(iconUrl), createProductStats("AR", armor, product.price));
+    button.append(createProductRarityBadge(rarity), createProductIcon(iconUrl));
+    if (actionState === "buy" || actionState === "no-gold") {
+      button.append(createProductStats("AR", armor, product.price));
+    }
     button.addEventListener("click", () => {
       previewProduct = product;
       options.onPreview?.(product);
@@ -678,16 +701,6 @@ function createCategoryLabel(text: string): HTMLElement {
   return label;
 }
 
-function createRarityBadge(rarity: ShopItemRarity): HTMLElement {
-  const badge = document.createElement("span");
-
-  badge.className = "armory-shop__rarity-badge";
-  badge.textContent = getShopRarityShortLabel(rarity);
-  badge.title = getShopRarityLabel(rarity);
-
-  return badge;
-}
-
 function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {
   if (!iconUrl) {
     const fallback = document.createElement("span");
@@ -709,16 +722,36 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   return icon;
 }
 
+function createProductRarityBadge(rarity: ShopItemRarity): HTMLElement {
+  const badge = document.createElement("span");
+
+  badge.className = "armory-shop__rarity-badge";
+  badge.textContent = getShopRarityShortLabel(rarity);
+  badge.setAttribute("aria-hidden", "true");
+
+  return badge;
+}
+
 function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {
   const stats = document.createElement("span");
   const statNode = document.createElement("span");
+  const statIcon = document.createElement("img");
+  const statValue = document.createElement("span");
   const priceNode = document.createElement("span");
 
   stats.className = "armory-shop__product-stats";
   statNode.className = "armory-shop__product-stat";
-  statNode.textContent = `${statLabel} ${stat}`;
+  statNode.setAttribute("aria-label", `${statLabel} ${stat}`);
+  statIcon.className = "armory-shop__product-stat-icon";
+  statIcon.src = DAMAGE_BLOCK_ICON_ASSET_URL;
+  statIcon.alt = "";
+  statIcon.decoding = "async";
+  statIcon.draggable = false;
+  statValue.className = "armory-shop__product-stat-value";
+  statValue.textContent = String(stat);
   priceNode.className = "armory-shop__product-price";
-  priceNode.textContent = `${price} G`;
+  appendPriceContent(priceNode, price);
+  statNode.append(statIcon, statValue);
   stats.append(statNode, priceNode);
 
   return stats;
@@ -736,10 +769,25 @@ function createSelectedMeta(rarity: ShopItemRarity, statLabel: string, stat: num
   statNode.className = "armory-shop__selected-stat";
   statNode.textContent = currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} > ${stat}`;
   priceNode.className = "armory-shop__selected-price";
-  priceNode.textContent = `${price} GOLD`;
+  appendPriceContent(priceNode, price);
   meta.append(rarityNode, statNode, priceNode);
 
   return meta;
+}
+
+function appendPriceContent(priceNode: HTMLElement, price: number): void {
+  const icon = document.createElement("img");
+  const amount = document.createElement("span");
+
+  priceNode.setAttribute("aria-label", `${price} gold`);
+  icon.className = "armory-shop__price-icon";
+  icon.src = SHOP_GOLD_COIN_ICON_ASSET_URL;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  amount.className = "armory-shop__price-amount";
+  amount.textContent = String(price);
+  priceNode.append(icon, amount);
 }
 
 function createEmptyState(text: string): HTMLButtonElement {

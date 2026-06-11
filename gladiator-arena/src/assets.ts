@@ -15,6 +15,11 @@ export const DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY = "damage-armor-absorb-icon";
 export const DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL = new URL("./assets/ui/damage-icons/damage-armor-absorb.webp", import.meta.url).href;
 export const DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY = "damage-armor-break-icon";
 export const DAMAGE_ARMOR_BREAK_ICON_ASSET_URL = new URL("./assets/ui/damage-icons/damage-armor-break.webp", import.meta.url).href;
+export const SHOP_GOLD_COIN_ICON_ASSET_URL = new URL("./assets/ui/shop/gold-coin.webp", import.meta.url).href;
+export const SHOP_CATEGORY_HEAD_ICON_ASSET_URL = new URL("./assets/ui/shop/category-head.webp", import.meta.url).href;
+export const SHOP_CATEGORY_BODY_ICON_ASSET_URL = new URL("./assets/ui/shop/category-body.webp", import.meta.url).href;
+export const SHOP_CATEGORY_ARMS_ICON_ASSET_URL = new URL("./assets/ui/shop/category-arms.webp", import.meta.url).href;
+export const SHOP_CATEGORY_LEGS_ICON_ASSET_URL = new URL("./assets/ui/shop/category-legs.webp", import.meta.url).href;
 
 export const CITY_BACKGROUND_ASSET_KEY = "city-menu-bg";
 export const CITY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city.webp", import.meta.url).href;
