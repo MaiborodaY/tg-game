@@ -414,10 +414,10 @@ h1 {
   grid-template-columns: 16px minmax(24px, 1fr) max-content;
   gap: 3px;
   align-items: center;
-  min-height: 14px;
+  min-height: 19px;
   margin-top: 5px;
   color: #ffe8ad;
-  font-size: 0.5rem;
+  font-size: 0.54rem;
   font-weight: 900;
   line-height: 1;
   text-shadow: 1px 1px 0 #160703;
@@ -442,11 +442,25 @@ h1 {
 
 .classic-stat__track {
   overflow: hidden;
-  height: 13px;
+  height: 18px;
   border: 1px solid #160703;
   border-radius: 999px;
   background: rgba(16, 7, 4, 0.84);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.54);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.54),
+    0 0 6px var(--classic-stat-glow, rgba(255, 255, 255, 0));
+}
+
+.classic-stat--hp {
+  --classic-stat-glow: rgba(232, 55, 45, 0.46);
+}
+
+.classic-stat--armor {
+  --classic-stat-glow: rgba(141, 187, 221, 0.4);
+}
+
+.classic-stat--stamina {
+  --classic-stat-glow: rgba(58, 222, 204, 0.46);
 }
 
 .classic-stat__fill {
@@ -462,22 +476,25 @@ h1 {
 }
 
 .classic-stat__fill.hp-fill {
-  --stat-flow-duration: 1900ms;
-  --stat-flow-angle: 108deg;
+  --stat-flow-duration: 7600ms;
+  --stat-fluid-opacity: 0.62;
+  --stat-fluid-texture: url("./assets/ui/stat-bars/health-fluid.webp");
   background:
     linear-gradient(90deg, #6f1715 0%, #b8211e 42%, #f3483c 74%, #ff8066 100%);
 }
 
 .classic-stat__fill.armor-fill {
-  --stat-flow-duration: 2500ms;
-  --stat-flow-angle: 96deg;
+  --stat-flow-duration: 9200ms;
+  --stat-fluid-opacity: 0.5;
+  --stat-fluid-texture: url("./assets/ui/stat-bars/armor-fluid.webp");
   background:
     linear-gradient(90deg, #29313a 0%, #586f84 44%, #9fb2c0 72%, #e1ecf3 100%);
 }
 
 .classic-stat__fill.stamina-fill {
-  --stat-flow-duration: 1600ms;
-  --stat-flow-angle: 116deg;
+  --stat-flow-duration: 6200ms;
+  --stat-fluid-opacity: 0.7;
+  --stat-fluid-texture: url("./assets/ui/stat-bars/stamina-fluid.webp");
   background:
     linear-gradient(90deg, #0b5558 0%, #159b9a 44%, #42d4c4 78%, #95fff0 100%);
 }
@@ -485,20 +502,15 @@ h1 {
 .classic-stat__fill::before {
   content: "";
   position: absolute;
-  inset: -7px -34px;
-  background:
-    radial-gradient(circle at 18% 50%, rgba(255, 244, 188, 0.22) 0 7%, transparent 8%),
-    radial-gradient(circle at 54% 44%, rgba(255, 255, 255, 0.16) 0 5%, transparent 6%),
-    repeating-linear-gradient(
-      var(--stat-flow-angle, 108deg),
-      rgba(255, 247, 192, 0.18) 0 8px,
-      rgba(34, 7, 3, 0.12) 8px 17px,
-      rgba(255, 247, 192, 0.08) 17px 25px
-    );
-  opacity: 0.56;
+  inset: 0 -256px;
+  background-image: var(--stat-fluid-texture);
+  background-repeat: repeat-x;
+  background-size: 256px 100%;
+  opacity: var(--stat-fluid-opacity, 0.62);
   pointer-events: none;
-  transform: translate3d(-18px, 0, 0);
+  transform: translate3d(-256px, 0, 0);
   animation: classic-stat-substance-flow var(--stat-flow-duration, 1900ms) linear infinite;
+  will-change: transform;
 }
 
 .classic-stat__fill::after {
@@ -512,18 +524,18 @@ h1 {
 }
 
 .classic-stat__fill.armor-fill::before {
-  opacity: 0.42;
+  opacity: var(--stat-fluid-opacity, 0.5);
 }
 
 .classic-stat__fill.stamina-fill::before {
-  opacity: 0.68;
+  opacity: var(--stat-fluid-opacity, 0.7);
 }
 
 .classic-stat em {
-  min-width: 31px;
+  min-width: 35px;
   overflow: hidden;
   color: #fff5c8;
-  font-size: 0.57rem;
+  font-size: 0.66rem;
   font-style: normal;
   text-align: right;
   text-overflow: clip;
@@ -574,11 +586,11 @@ h1 {
 
 @keyframes classic-stat-substance-flow {
   from {
-    transform: translate3d(-18px, 0, 0);
+    transform: translate3d(-256px, 0, 0);
   }
 
   to {
-    transform: translate3d(18px, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
