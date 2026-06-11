@@ -293,7 +293,7 @@ function updateFpsCounter(now: number): void {
   if (now - fpsLastTime >= fpsUpdateIntervalMs) {
     const fps = Math.round((fpsFrameCount * 1000) / Math.max(1, now - fpsLastTime));
 
-    fpsCounterElement.textContent = `FPS ${fps}`;
+    fpsCounterElement.textContent = `${fps}`;
     fpsFrameCount = 0;
     fpsLastTime = now;
   }
