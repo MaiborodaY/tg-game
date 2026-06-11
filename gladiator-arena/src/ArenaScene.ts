@@ -31,14 +31,14 @@ import {
   ARENA_BACKGROUND_MID_LAYER_ASSET_KEY,
   ARENA_BACKGROUND_MID_LAYER_ASSET_URL,
   CITY_ARMORY_BACKGROUND_ASSET_KEY,
-  CITY_ARMORY_BACKGROUND_ASSET_URL,
   CITY_BACKGROUND_ASSET_KEY,
   CITY_BACKGROUND_ASSET_URL,
   CITY_DAY_BACKGROUND_ASSET_KEY,
   CITY_DAY_BACKGROUND_ASSET_URL,
   CITY_CLOUD_ASSETS,
+  CITY_SHOP_BACKGROUND_ASSET_KEY,
+  CITY_SHOP_BACKGROUND_ASSET_URL,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
-  CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL,
   DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY,
   DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
   DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY,
@@ -780,8 +780,7 @@ export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
 function preloadCityAssets(target: Phaser.Scene): void {
   target.load.image(CITY_BACKGROUND_ASSET_KEY, CITY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_DAY_BACKGROUND_ASSET_KEY, CITY_DAY_BACKGROUND_ASSET_URL);
-  target.load.image(CITY_ARMORY_BACKGROUND_ASSET_KEY, CITY_ARMORY_BACKGROUND_ASSET_URL);
-  target.load.image(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL);
+  target.load.image(CITY_SHOP_BACKGROUND_ASSET_KEY, CITY_SHOP_BACKGROUND_ASSET_URL);
   CITY_CLOUD_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
 }
 
@@ -1547,7 +1546,7 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   private updateCityClouds(delta: number): void {
-    if (this.clouds.length === 0) {
+    if (this.clouds.length === 0 || this.cityCloudVisibility <= 0.01) {
       return;
     }
 
@@ -3120,55 +3119,60 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
     return;
   }
 
-  RIG_PART_KEYS.forEach((key) => {
+  for (const key of RIG_PART_KEYS) {
     if (!animation.activeParts[key]) {
-      return;
+      continue;
     }
 
     const part = rig.parts[key];
     const shadowPart = rig.shadow?.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
-    const tuning = interpolateRigPartTuning(animation.base[key] ?? defaultRigPartTuning, animation.breath[key] ?? defaultRigPartTuning, blend);
+    const base = animation.base[key] ?? defaultRigPartTuning;
+    const breath = animation.breath[key] ?? defaultRigPartTuning;
 
-    applyRigPartTransform(part, pivot, tuning);
+    applyRigPartTransformBlend(part, pivot, base, breath, blend);
     if (shadowPart) {
-      applyRigPartTransform(shadowPart, pivot, tuning);
+      applyRigPartTransformBlend(shadowPart, pivot, base, breath, blend);
     }
-  });
+  }
 
   syncPaperDollEquipmentAnchors(rig);
   if (rig.shadow) {
     syncPaperDollEquipmentAnchors(rig.shadow);
   }
 
-  const eyeLeft = interpolateFacePartTuning(animation.faceBase.eyeLeft, animation.faceBreath.eyeLeft, blend);
-  const eyeRight = interpolateFacePartTuning(animation.faceBase.eyeRight, animation.faceBreath.eyeRight, blend);
-
-  applyFacePartTransform(rig.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, eyeLeft);
-  applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, eyeRight);
-  applyFacePartTransform(rig.shadow?.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, eyeLeft);
-  applyFacePartTransform(rig.shadow?.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, eyeRight);
-}
-
-function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend: number): RigPartTuning {
-  return {
-    x: lerp(from.x, to.x, blend),
-    y: lerp(from.y, to.y, blend),
-    angle: lerp(from.angle, to.angle, blend),
-    scaleX: lerp(from.scaleX, to.scaleX, blend),
-    scaleY: lerp(from.scaleY, to.scaleY, blend),
-    flipX: blend < 0.5 ? from.flipX : to.flipX,
-    flipY: blend < 0.5 ? from.flipY : to.flipY,
-  };
-}
-
-function interpolateFacePartTuning(from: FacePartTuning, to: FacePartTuning, blend: number): FacePartTuning {
-  return {
-    x: lerp(from.x, to.x, blend),
-    y: lerp(from.y, to.y, blend),
-    scaleX: lerp(from.scaleX, to.scaleX, blend),
-    scaleY: lerp(from.scaleY, to.scaleY, blend),
-  };
+  applyFacePartTransformBlend(
+    rig.faceParts.eyeLeft,
+    HEAD_FACE_LEFT_EYE_X,
+    HEAD_FACE_EYE_Y,
+    animation.faceBase.eyeLeft,
+    animation.faceBreath.eyeLeft,
+    blend,
+  );
+  applyFacePartTransformBlend(
+    rig.faceParts.eyeRight,
+    HEAD_FACE_RIGHT_EYE_X,
+    HEAD_FACE_EYE_Y,
+    animation.faceBase.eyeRight,
+    animation.faceBreath.eyeRight,
+    blend,
+  );
+  applyFacePartTransformBlend(
+    rig.shadow?.faceParts.eyeLeft,
+    HEAD_FACE_LEFT_EYE_X,
+    HEAD_FACE_EYE_Y,
+    animation.faceBase.eyeLeft,
+    animation.faceBreath.eyeLeft,
+    blend,
+  );
+  applyFacePartTransformBlend(
+    rig.shadow?.faceParts.eyeRight,
+    HEAD_FACE_RIGHT_EYE_X,
+    HEAD_FACE_EYE_Y,
+    animation.faceBase.eyeRight,
+    animation.faceBreath.eyeRight,
+    blend,
+  );
 }
 
 function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number }, tuning: RigPartTuning): void {
@@ -3179,19 +3183,38 @@ function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number 
   part.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
 }
 
+function applyRigPartTransformBlend(part: FighterPart, pivot: { x: number; y: number }, from: RigPartTuning, to: RigPartTuning, blend: number): void {
+  const flipX = blend < 0.5 ? from.flipX : to.flipX;
+  const flipY = blend < 0.5 ? from.flipY : to.flipY;
+
+  part.x = pivot.x + lerp(from.x, to.x, blend);
+  part.y = pivot.y + lerp(from.y, to.y, blend);
+  part.angle = lerp(from.angle, to.angle, blend);
+  part.scaleX = lerp(from.scaleX, to.scaleX, blend) * (flipX ? -1 : 1);
+  part.scaleY = lerp(from.scaleY, to.scaleY, blend) * (flipY ? -1 : 1);
+}
+
 function syncPaperDollEquipmentAnchors(rig: Pick<PaperDollRig, "parts" | "equipmentAnchors">): void {
-  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+  for (const slotKey of PAPER_DOLL_EQUIPMENT_SLOT_KEYS) {
     const anchor = rig.equipmentAnchors[slotKey];
 
     if (!anchor) {
-      return;
+      continue;
     }
 
     syncPaperDollEquipmentAnchor(anchor, rig.parts[PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey]]);
-    paperDollLinkedEquipmentAnchors
-      .get(anchor)
-      ?.forEach((linkedAnchor) => syncPaperDollEquipmentAnchor(linkedAnchor, rig.parts[PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey]]));
-  });
+    const linkedAnchors = paperDollLinkedEquipmentAnchors.get(anchor);
+
+    if (!linkedAnchors) {
+      continue;
+    }
+
+    const sourcePart = rig.parts[PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey]];
+
+    for (const linkedAnchor of linkedAnchors) {
+      syncPaperDollEquipmentAnchor(linkedAnchor, sourcePart);
+    }
+  }
 }
 
 function syncPaperDollEquipmentAnchor(anchor: FighterPart, sourcePart: FighterPart): void {
@@ -3223,6 +3246,24 @@ function applyFacePartTransform(part: FighterPart | undefined, baseX: number, ba
   part.y = baseY + tuning.y;
   part.scaleX = tuning.scaleX;
   part.scaleY = tuning.scaleY;
+}
+
+function applyFacePartTransformBlend(
+  part: FighterPart | undefined,
+  baseX: number,
+  baseY: number,
+  from: FacePartTuning,
+  to: FacePartTuning,
+  blend: number,
+): void {
+  if (!part) {
+    return;
+  }
+
+  part.x = baseX + lerp(from.x, to.x, blend);
+  part.y = baseY + lerp(from.y, to.y, blend);
+  part.scaleX = lerp(from.scaleX, to.scaleX, blend);
+  part.scaleY = lerp(from.scaleY, to.scaleY, blend);
 }
 
 function applyEquipmentTransform(part: FighterPart | undefined, tuning: EquipmentTuning): void {
