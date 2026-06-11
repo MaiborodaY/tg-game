@@ -119,6 +119,16 @@ const debugTuningDefaultFields = {
   shadowScaleX: "shadowScaleX",
   shadowScaleY: "shadowScaleY",
   shadowAlpha: "shadowAlpha",
+  popupOffsetY: "popupOffsetY",
+  damagePopupOffsetY: "damagePopupOffsetY",
+  blockPopupOffsetY: "blockPopupOffsetY",
+  popupScale: "popupScale",
+  damagePopupScale: "damagePopupScale",
+  blockPopupScale: "blockPopupScale",
+  armorAbsorbPopupOffsetY: "armorAbsorbPopupOffsetY",
+  armorBreakPopupOffsetY: "armorBreakPopupOffsetY",
+  armorAbsorbPopupScale: "armorAbsorbPopupScale",
+  armorBreakPopupScale: "armorBreakPopupScale",
 } as const;
 
 type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;

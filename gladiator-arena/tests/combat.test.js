@@ -94,10 +94,10 @@ test("rest restores stamina and heals one hp without incoming penalty", () => {
   assert.equal(nextState.playerIncomingBonus, 0);
 });
 
-test("movement actions use half-distance steps", () => {
-  assert.equal(combat.actions.forward.move, -0.5);
-  assert.equal(combat.actions.back.move, 0.5);
-  assert.equal(combat.actions.lunge.move, -0.5);
+test("movement actions use default distance steps", () => {
+  assert.equal(combat.actions.forward.move, -combat.DEFAULT_FORWARD_MOVE_DISTANCE);
+  assert.equal(combat.actions.back.move, combat.DEFAULT_BACK_MOVE_DISTANCE);
+  assert.equal(combat.actions.lunge.move, -combat.DEFAULT_LUNGE_MOVE_DISTANCE);
 });
 
 test("lunge is available at any open distance", () => {
@@ -122,12 +122,12 @@ test("lunge closes half a step and only hits when it reaches clinch", () => {
 
   const missed = combat.resolvePlayerTurn(farState, "lunge");
 
-  assert.equal(missed.distance, 2.5);
+  assert.equal(missed.distance, 3 - combat.DEFAULT_LUNGE_MOVE_DISTANCE);
   assert.equal(missed.enemy.hp, combat.MAX_HP);
   assert.equal(missed.lastPlayerDamage, 0);
 
   const nearState = combat.freshState();
-  setConsistentDistance(nearState, 0.5);
+  setConsistentDistance(nearState, combat.DEFAULT_LUNGE_MOVE_DISTANCE);
 
   const hit = combat.resolvePlayerTurn(nearState, "lunge", () => 0.99);
 
@@ -165,6 +165,23 @@ test("damage depletes armor before health", () => {
   assert.equal(nextState.enemy.armor, 1);
   assert.equal(nextState.enemy.hp, combat.MAX_HP);
   assert.equal(nextState.lastPlayerDamage, combat.actions.light.damage);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, combat.actions.light.damage);
+  assert.equal(nextState.lastPlayerArmorBroken, false);
+});
+
+test("damage records armor break events", () => {
+  const state = combat.freshState();
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.enemy.armor = 2;
+  state.enemy.maxArmor = 2;
+
+  const nextState = combat.resolvePlayerTurn(state, "heavy", () => 0.99);
+
+  assert.equal(nextState.enemy.armor, 0);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
+  assert.equal(nextState.lastPlayerDamage, combat.actions.heavy.damage);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, 2);
+  assert.equal(nextState.lastPlayerArmorBroken, true);
 });
 
 test("blocked attacks deal no damage", () => {

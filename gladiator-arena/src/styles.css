@@ -37,6 +37,10 @@ select {
   font: inherit;
 }
 
+button {
+  touch-action: manipulation;
+}
+
 .shell {
   width: min(430px, 100vw);
   min-height: 100dvh;
@@ -639,6 +643,7 @@ h1 {
   overflow: hidden;
   padding: 0;
   pointer-events: none;
+  touch-action: none;
   transform: translateX(-50%) scale(var(--classic-wheel-fit-scale, 1)) scale(var(--classic-hud-scale, 1));
   transform-origin: bottom center;
   --classic-wheel-angle: 0deg;
@@ -2400,12 +2405,23 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
 .debug-effects__group {
-  display: grid;
-  gap: 8px;
   margin: 0;
   padding: 8px;
   border: 1px solid rgba(255, 211, 132, 0.32);
   border-radius: 10px;
+}
+
+.debug-rig-editor__face,
+.debug-auto-equipment__transform,
+.debug-auto-equipment__generated {
+  display: grid;
+  gap: 8px;
+}
+
+.debug-effects__group[open],
+.debug-classic-slots__group[open] {
+  display: grid;
+  gap: 8px;
 }
 
 .debug-rig-editor__face[hidden] {
@@ -2416,7 +2432,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__transform legend,
 .debug-auto-equipment__generated legend,
 .debug-rig-editor__face-part legend,
-.debug-effects__group legend {
+.debug-effects__group summary {
   padding: 0 4px;
   color: #ffd384;
   font-size: 0.6rem;
@@ -2945,10 +2961,7 @@ body.debug-active .battle-screen {
   pointer-events: none;
 }
 .debug-panel__group {
-  display: grid;
-  gap: 7px;
   margin: 0;
-  padding: 9px 0 10px;
   border: 0;
   border-top: 1px solid rgba(255, 211, 132, 0.25);
 }
@@ -2958,13 +2971,23 @@ body.debug-active .battle-screen {
   padding-top: 0;
 }
 
-.debug-panel__group legend {
-  padding: 0 0 5px;
+.debug-panel__group summary {
+  padding: 8px 0;
   color: #ffd384;
   font-size: 0.64rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.debug-panel__group summary::marker {
+  color: rgba(255, 211, 132, 0.72);
+}
+
+.debug-panel__group-body {
+  display: grid;
+  gap: 7px;
+  padding: 0 0 10px;
 }
 
 .debug-app-panel .debug-panel__row,
@@ -3015,6 +3038,10 @@ body.debug-active .battle-screen {
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 900;
   line-height: 1;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
   pointer-events: auto;
   text-align: center;
   text-shadow: 2px 2px 0 #35180d;

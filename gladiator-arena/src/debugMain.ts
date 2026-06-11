@@ -19,6 +19,7 @@ import {
   hydrateDebugTuningFromStorage,
   subscribeDebugTuning,
   updateDebugTuning,
+  type DebugPopupPreviewKind,
   type SlashArcAttackKey,
 } from "./debugTuning";
 import { getDomRefs, renderDom } from "./domUi";
@@ -277,6 +278,10 @@ function clearShopPreview(): void {
 
 function previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean): void {
   arenaScene?.previewSlashArc(actionId, withBodyAnimation);
+}
+
+function previewPopup(kind: DebugPopupPreviewKind): void {
+  arenaScene?.previewPopup(kind);
 }
 
 function syncHeroPortraitButton(): void {
@@ -563,6 +568,7 @@ function startDebugApp(): void {
       setPlayerEquipment(hero.equipment);
     },
     onPreviewSlashArc: previewSlashArc,
+    onPreviewPopup: previewPopup,
   });
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning, {
     isEnabled: () => debugTuning.actionArcEditMode,

@@ -25,6 +25,11 @@ export interface CombatMovementTuning {
   lungeMoveDistance: number;
 }
 
+interface DamageApplication {
+  armorAbsorbed: number;
+  armorBroken: boolean;
+}
+
 export interface FighterState {
   name: string;
   hp: number;
@@ -60,6 +65,10 @@ export interface CombatState {
   lastEnemyAction?: ActionId;
   lastPlayerDamage: number;
   lastEnemyDamage: number;
+  lastPlayerArmorAbsorbed: number;
+  lastEnemyArmorAbsorbed: number;
+  lastPlayerArmorBroken: boolean;
+  lastEnemyArmorBroken: boolean;
   lastPlayerBlocked: boolean;
   lastEnemyBlocked: boolean;
   log: LogEntry[];
@@ -220,6 +229,10 @@ export function freshState(): CombatState {
     enemyIncomingBonus: 0,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
+    lastPlayerArmorAbsorbed: 0,
+    lastEnemyArmorAbsorbed: 0,
+    lastPlayerArmorBroken: false,
+    lastEnemyArmorBroken: false,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
     log: [
@@ -398,6 +411,10 @@ function cloneStateForTurn(current: CombatState): CombatState {
     lastEnemyAction: undefined,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
+    lastPlayerArmorAbsorbed: 0,
+    lastEnemyArmorAbsorbed: 0,
+    lastPlayerArmorBroken: false,
+    lastEnemyArmorBroken: false,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
   };
@@ -497,6 +514,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   let damage = action.damage ? action.damage + Math.max(0, attacker.damageBonus ?? 0) : 0;
   const inRange = actionRangeMax === undefined || state.distance <= actionRangeMax;
   let blocked = false;
+  let appliedDamage: DamageApplication = { armorAbsorbed: 0, armorBroken: false };
 
   if (damage > 0 && !inRange) {
     damage = 0;
@@ -510,7 +528,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
       clearIncomingBonus(state, defenderOwner);
     } else {
       damage = applyIncomingBonus(state, actor, damage);
-      applyDamageToFighter(defender, damage);
+      appliedDamage = applyDamageToFighter(defender, damage);
     }
   } else {
     clearIncomingBonus(state, defenderOwner);
@@ -524,10 +542,14 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.score += damage * 90 + glory + riskBonus + staminaBonus;
     state.lastPlayerAction = actionId;
     state.lastPlayerDamage = damage;
+    state.lastPlayerArmorAbsorbed = appliedDamage.armorAbsorbed;
+    state.lastPlayerArmorBroken = appliedDamage.armorBroken;
     state.lastPlayerBlocked = blocked;
   } else {
     state.lastEnemyAction = actionId;
     state.lastEnemyDamage = damage;
+    state.lastEnemyArmorAbsorbed = appliedDamage.armorAbsorbed;
+    state.lastEnemyArmorBroken = appliedDamage.armorBroken;
     state.lastEnemyBlocked = blocked;
   }
 
@@ -544,11 +566,11 @@ function isActionBlocked(action: ActionConfig, attacker: FighterState, defender:
   return blockChance > 0 && random() < blockChance;
 }
 
-function applyDamageToFighter(defender: FighterState, damage: number): void {
+function applyDamageToFighter(defender: FighterState, damage: number): DamageApplication {
   let remainingDamage = Math.max(0, damage);
 
   if (remainingDamage <= 0) {
-    return;
+    return { armorAbsorbed: 0, armorBroken: false };
   }
 
   const currentArmor = Math.max(0, defender.armor ?? 0);
@@ -559,6 +581,11 @@ function applyDamageToFighter(defender: FighterState, damage: number): void {
   if (remainingDamage > 0) {
     defender.hp = clamp(defender.hp - remainingDamage, 0, getFighterMaxHp(defender));
   }
+
+  return {
+    armorAbsorbed: armorDamage,
+    armorBroken: currentArmor > 0 && armorDamage >= currentArmor,
+  };
 }
 
 function addActionLog(

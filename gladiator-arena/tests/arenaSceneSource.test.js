@@ -167,7 +167,7 @@ test("blocked hits use the shield icon popup instead of block text", () => {
   assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.enemy)"), true);
   assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.player)"), true);
   assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("block")'), true);
-  assert.equal(arenaSceneSource.includes("BLOCK_POPUP_HEAD_OFFSET_Y"), true);
+  assert.equal(arenaSceneSource.includes("getBlockPopupHeadOffsetY"), true);
   assert.equal(arenaSceneSource.includes("BLOCK_POPUP_SCREEN_SIZE"), true);
   assert.equal(arenaSceneSource.includes("fighter.head.getWorldTransformMatrix()"), true);
   assert.equal(arenaSceneSource.includes("effectsLayer.getWorldTransformMatrix().applyInverse"), true);
@@ -182,9 +182,54 @@ test("damage hits use the hit icon popup from the fighter head", () => {
   assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/damage-icons/damage-hit.webp")), true);
   assert.equal(arenaSceneSource.includes("DAMAGE_HIT_ICON_ASSET_KEY"), true);
   assert.equal(arenaSceneSource.includes("DAMAGE_HIT_ICON_ASSET_URL"), true);
-  assert.equal(arenaSceneSource.includes("DAMAGE_POPUP_HEAD_OFFSET_Y"), true);
   assert.equal(arenaSceneSource.includes("DAMAGE_HIT_POPUP_SCREEN_SIZE"), true);
-  assert.equal(arenaSceneSource.includes("showDamagePopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage)"), true);
-  assert.equal(arenaSceneSource.includes("showDamagePopupFromFighter(this, visuals.player, nextState.lastEnemyDamage)"), true);
+  assert.equal(arenaSceneSource.includes("getDamagePopupHeadOffsetY"), true);
+  assert.equal(
+    arenaSceneSource.includes(
+      "showDamageResultPopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage, nextState.lastPlayerArmorAbsorbed, nextState.lastPlayerArmorBroken)",
+    ),
+    true,
+  );
+  assert.equal(
+    arenaSceneSource.includes(
+      "showDamageResultPopupFromFighter(this, visuals.player, nextState.lastEnemyDamage, nextState.lastEnemyArmorAbsorbed, nextState.lastEnemyArmorBroken)",
+    ),
+    true,
+  );
+  assert.equal(arenaSceneSource.includes("getHealthPopupDamage(totalDamage, armorAbsorbed)"), true);
   assert.equal(arenaSceneSource.includes("target.add.image(0, 0, DAMAGE_HIT_ICON_ASSET_KEY)"), true);
+});
+
+test("armor damage uses absorb and break icon popups", () => {
+  assert.equal(assetsSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-armor-absorb.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/damage-icons/damage-armor-absorb.webp")), true);
+  assert.equal(assetsSource.includes("DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-armor-break.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/damage-icons/damage-armor-break.webp")), true);
+  assert.equal(arenaSceneSource.includes("showDamageResultPopupFromFighter"), true);
+  assert.equal(arenaSceneSource.includes("if (armorBroken)"), true);
+  assert.equal(arenaSceneSource.includes("showArmorBreakPopupFromFighter(target, fighter, totalDamage);"), true);
+  assert.equal(arenaSceneSource.includes("if (armorAbsorbed > 0)"), true);
+  assert.equal(arenaSceneSource.includes("showArmorAbsorbPopupFromFighter(target, fighter, armorAbsorbed);"), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastPlayerArmorAbsorbed"), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastEnemyArmorBroken"), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE"), true);
+  assert.equal(arenaSceneSource.includes("DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE"), true);
+  assert.equal(arenaSceneSource.includes("function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount: number): void"), true);
+  assert.match(arenaSceneSource, /function showArmorBreakPopup[\s\S]*\.text\(0,\s*-?\d+,\s*`\$\{amount\}`/);
+});
+
+test("debug popup tuning can preview each popup type", () => {
+  assert.equal(arenaSceneSource.includes("type DebugPopupPreviewKind"), true);
+  assert.equal(arenaSceneSource.includes("previewPopup(kind: DebugPopupPreviewKind)"), true);
+  assert.equal(arenaSceneSource.includes("showPopupPreviewFromFighter(this, this.visuals.enemy, kind)"), true);
+  assert.equal(arenaSceneSource.includes("POPUP_PREVIEW_DAMAGE_AMOUNT"), true);
+  assert.equal(arenaSceneSource.includes("POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT"), true);
+  assert.equal(arenaSceneSource.includes("POPUP_PREVIEW_SPACING_X"), true);
+  assert.equal(arenaSceneSource.includes('kind === "damage"'), true);
+  assert.equal(arenaSceneSource.includes('kind === "block"'), true);
+  assert.equal(arenaSceneSource.includes('kind === "armorAbsorb"'), true);
+  assert.equal(arenaSceneSource.includes("showArmorBreakPopupFromFighter(target, fighter, POPUP_PREVIEW_DAMAGE_AMOUNT"), true);
+  assert.equal(arenaSceneSource.includes("getPopupXWithScreenOffset"), true);
 });

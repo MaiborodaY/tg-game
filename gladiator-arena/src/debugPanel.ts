@@ -27,6 +27,7 @@ import {
   type BodyAnimationTuning,
   type ClassicActionButtonSlotTuning,
   type ClassicActionWheelMode,
+  type DebugPopupPreviewKind,
   type ActionButtonOffsetKey,
   type EquipmentSlotKey,
   type EquipmentTuning,
@@ -57,6 +58,7 @@ interface DebugPanelOptions {
   heroInventory?: HeroInventoryEntry[];
   onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
   onPreviewSlashArc?: (actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void;
+  onPreviewPopup?: (kind: DebugPopupPreviewKind) => void;
 }
 
 interface DebugRangeControlConfig {
@@ -304,6 +306,35 @@ const controlGroups: DebugControlGroup[] = [
   },
 ];
 
+const popupControlGroup: DebugControlGroup = {
+  title: "Popups",
+  controls: [
+    { type: "range", key: "popupOffsetY", label: "Popup Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.popupOffsetY },
+    { type: "range", key: "damagePopupOffsetY", label: "Damage Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.damagePopupOffsetY },
+    { type: "range", key: "blockPopupOffsetY", label: "Block Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.blockPopupOffsetY },
+    { type: "range", key: "popupScale", label: "Popup scale", min: 0.25, max: 2, step: 0.01, resetValue: defaultDebugTuning.popupScale },
+    { type: "range", key: "damagePopupScale", label: "Damage scale", min: 0.25, max: 2, step: 0.01, resetValue: defaultDebugTuning.damagePopupScale },
+    { type: "range", key: "blockPopupScale", label: "Block scale", min: 0.25, max: 2, step: 0.01, resetValue: defaultDebugTuning.blockPopupScale },
+    { type: "range", key: "armorAbsorbPopupOffsetY", label: "Armor absorb Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.armorAbsorbPopupOffsetY },
+    { type: "range", key: "armorBreakPopupOffsetY", label: "Armor break Y", min: -160, max: 160, step: 1, resetValue: defaultDebugTuning.armorBreakPopupOffsetY },
+    { type: "range", key: "armorAbsorbPopupScale", label: "Armor absorb scale", min: 0.25, max: 2, step: 0.01, resetValue: defaultDebugTuning.armorAbsorbPopupScale },
+    { type: "range", key: "armorBreakPopupScale", label: "Armor break scale", min: 0.25, max: 2, step: 0.01, resetValue: defaultDebugTuning.armorBreakPopupScale },
+  ],
+};
+
+const popupPreviewKindByKey = {
+  popupOffsetY: "all",
+  popupScale: "all",
+  damagePopupOffsetY: "damage",
+  damagePopupScale: "damage",
+  blockPopupOffsetY: "block",
+  blockPopupScale: "block",
+  armorAbsorbPopupOffsetY: "armorAbsorb",
+  armorAbsorbPopupScale: "armorAbsorb",
+  armorBreakPopupOffsetY: "armorBreak",
+  armorBreakPopupScale: "armorBreak",
+} satisfies Partial<Record<keyof ArenaDebugTuning, DebugPopupPreviewKind>>;
+
 const hudControlGroups: DebugControlGroup[] = [
   {
     title: "Immersive flask HUD",
@@ -436,6 +467,7 @@ let debugHeroEquipment: HeroEquipment | undefined;
 let debugHeroInventory: HeroInventoryEntry[] = createDefaultHeroInventory();
 let notifyHeroEquipmentChange: ((equipment: HeroEquipment) => void) | undefined;
 let previewSlashArc: ((actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void) | undefined;
+let previewPopup: ((kind: DebugPopupPreviewKind) => void) | undefined;
 let isSlashPreviewLoopRunning = false;
 let slashPreviewTimer: number | undefined;
 
@@ -612,8 +644,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     <details class="debug-effects-panel" open>
       <summary>Effects</summary>
       <div class="debug-effects">
-        <fieldset class="debug-effects__group">
-          <legend>Slash arc</legend>
+        <details class="debug-panel__group debug-effects__group">
+          <summary>Slash arc</summary>
           <label class="debug-rig-editor__part">
             <span>Attack</span>
             <select class="debug-effects__slash-select"></select>
@@ -624,7 +656,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
             <button class="debug-panel__reset debug-effects__stop" type="button">Stop</button>
           </div>
           <button class="debug-panel__reset debug-effects__reset-slash" type="button">Reset slash</button>
-        </fieldset>
+        </details>
+        <div class="debug-effects__popup-controls"></div>
       </div>
     </details>
     <div class="debug-panel__prod-actions">
@@ -747,6 +780,7 @@ function configureHeroEquipmentDebug(options: DebugPanelOptions): void {
   debugHeroInventory = options.heroInventory ? cloneHeroInventory(options.heroInventory) : createDefaultHeroInventory();
   notifyHeroEquipmentChange = options.onHeroEquipmentChange;
   previewSlashArc = options.onPreviewSlashArc;
+  previewPopup = options.onPreviewPopup;
 }
 
 function cloneHeroInventory(source: readonly HeroInventoryEntry[]): HeroInventoryEntry[] {
@@ -942,18 +976,23 @@ function getDebugModeFromValue(value: string | undefined): DebugMode {
 }
 
 function createControlGroup(group: DebugControlGroup): HTMLElement {
-  const fieldset = document.createElement("fieldset");
-  fieldset.className = "debug-panel__group";
+  const details = document.createElement("details");
+  const body = document.createElement("div");
 
-  const legend = document.createElement("legend");
-  legend.textContent = group.title;
-  fieldset.append(legend);
+  details.className = "debug-panel__group";
+  body.className = "debug-panel__group-body";
+
+  const summary = document.createElement("summary");
+  summary.textContent = group.title;
+  details.append(summary);
 
   for (const control of group.controls) {
-    fieldset.append(createControl(control));
+    body.append(createControl(control));
   }
 
-  return fieldset;
+  details.append(body);
+
+  return details;
 }
 
 function createControl(control: DebugControlConfig): HTMLElement {
@@ -1066,8 +1105,8 @@ function createSelectControl(control: DebugSelectControlConfig): HTMLElement {
 
 function mountClassicActionButtonEditor(root: HTMLElement): void {
   root.innerHTML = `
-    <fieldset class="debug-panel__group debug-classic-slots__group">
-      <legend>Classic button slots</legend>
+    <details class="debug-panel__group debug-classic-slots__group">
+      <summary>Classic button slots</summary>
       <label class="debug-panel__row">
         <span>Wheel</span>
         <select class="debug-panel__number" data-classic-slot-mode>
@@ -1086,7 +1125,7 @@ function mountClassicActionButtonEditor(root: HTMLElement): void {
       ${createClassicSlotNumberRow("y", "Slot Y", -320, 80, 1)}
       ${createClassicSlotNumberRow("rotation", "Rotate", -180, 180, 1)}
       <button class="debug-panel__reset debug-classic-slots__reset" type="button">Reset selected slot</button>
-    </fieldset>
+    </details>
   `;
 
   const modeSelect = root.querySelector<HTMLSelectElement>("[data-classic-slot-mode]");
@@ -1517,11 +1556,12 @@ function mountRigEditor(editor: HTMLElement): void {
 function mountEffectsEditor(editor: HTMLElement): void {
   const slashSelect = editor.querySelector<HTMLSelectElement>(".debug-effects__slash-select");
   const slashControls = editor.querySelector<HTMLElement>(".debug-effects__slash-controls");
+  const popupControls = editor.querySelector<HTMLElement>(".debug-effects__popup-controls");
   const start = editor.querySelector<HTMLButtonElement>(".debug-effects__start");
   const stop = editor.querySelector<HTMLButtonElement>(".debug-effects__stop");
   const resetSlash = editor.querySelector<HTMLButtonElement>(".debug-effects__reset-slash");
 
-  if (!slashSelect || !slashControls || !start || !stop || !resetSlash) {
+  if (!slashSelect || !slashControls || !popupControls || !start || !stop || !resetSlash) {
     return;
   }
 
@@ -1533,6 +1573,9 @@ function mountEffectsEditor(editor: HTMLElement): void {
   });
 
   slashArcNumericControls.forEach((control) => slashControls.append(createSlashArcRangeControl(control)));
+  const popupGroup = createControlGroup(popupControlGroup);
+  popupControls.append(popupGroup);
+  mountPopupPreviewTriggers(popupGroup);
 
   slashSelect.addEventListener("change", () => {
     if (isSlashArcAttackKey(slashSelect.value)) {
@@ -1551,6 +1594,36 @@ function mountEffectsEditor(editor: HTMLElement): void {
   resetSlash.addEventListener("click", () => {
     resetSelectedSlashArc();
   });
+}
+
+function mountPopupPreviewTriggers(root: HTMLElement): void {
+  root.querySelectorAll<HTMLInputElement>("[data-debug-key], [data-debug-number-key]").forEach((input) => {
+    input.addEventListener("input", () => {
+      previewPopupForTuningKey(getDebugTuningKeyFromControl(input));
+    });
+  });
+
+  root.querySelectorAll<HTMLButtonElement>("[data-debug-reset-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      previewPopupForTuningKey(getDebugTuningKeyFromControl(button));
+    });
+  });
+}
+
+function getDebugTuningKeyFromControl(element: HTMLElement): keyof ArenaDebugTuning | undefined {
+  const key = element.dataset.debugKey ?? element.dataset.debugNumberKey ?? element.dataset.debugResetKey;
+
+  return key as keyof ArenaDebugTuning | undefined;
+}
+
+function previewPopupForTuningKey(key: keyof ArenaDebugTuning | undefined): void {
+  const kind = key ? popupPreviewKindByKey[key] : undefined;
+
+  if (!kind) {
+    return;
+  }
+
+  previewPopup?.(kind);
 }
 
 function startSlashPreviewLoop(): void {

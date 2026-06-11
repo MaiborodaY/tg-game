@@ -162,6 +162,21 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes("data-debug-reset-value"), true);
 });
 
+test("popup tuning controls request live popup previews", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes("onPreviewPopup"), true);
+  assert.equal(debugPanelSource.includes("popupPreviewKindByKey"), true);
+  assert.equal(debugPanelSource.includes('popupOffsetY: "all"'), true);
+  assert.equal(debugPanelSource.includes('damagePopupOffsetY: "damage"'), true);
+  assert.equal(debugPanelSource.includes('blockPopupScale: "block"'), true);
+  assert.equal(debugPanelSource.includes('armorAbsorbPopupScale: "armorAbsorb"'), true);
+  assert.equal(debugPanelSource.includes('armorBreakPopupScale: "armorBreak"'), true);
+  assert.equal(debugPanelSource.includes("mountPopupPreviewTriggers(popupGroup)"), true);
+  assert.equal(debugPanelSource.includes('input.addEventListener("input"'), true);
+  assert.equal(debugPanelSource.includes('button.addEventListener("click"'), true);
+});
+
 test("debug panel keeps long tuning sections scrollable", () => {
   assert.match(stylesSource, /\.debug-app-panel\s*{[^}]*overflow-y: auto/s);
   assert.match(stylesSource, /\.debug-app-panel \.debug-panel\s*{[^}]*overflow: visible/s);

@@ -97,6 +97,8 @@ export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 export const SLASH_ARC_ATTACK_KEYS = ["light", "medium", "heavy"] as const;
 export type SlashArcAttackKey = (typeof SLASH_ARC_ATTACK_KEYS)[number];
 
+export type DebugPopupPreviewKind = "all" | "damage" | "block" | "armorAbsorb" | "armorBreak";
+
 export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 export type ActionButtonOffsetKey = (typeof ACTION_BUTTON_OFFSET_KEYS)[number];
 
@@ -277,6 +279,16 @@ export interface ArenaDebugTuning {
   actionHeavyArcAngle: number;
   actionTauntArcAngle: number;
   actionRestArcAngle: number;
+  popupOffsetY: number;
+  damagePopupOffsetY: number;
+  blockPopupOffsetY: number;
+  popupScale: number;
+  damagePopupScale: number;
+  blockPopupScale: number;
+  armorAbsorbPopupOffsetY: number;
+  armorBreakPopupOffsetY: number;
+  armorAbsorbPopupScale: number;
+  armorBreakPopupScale: number;
   characterPreviewScale: number;
   characterPreviewFeetX: number;
   characterPreviewFeetY: number;
@@ -1242,6 +1254,16 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   actionHeavyArcAngle: DEFAULT_ACTION_HEAVY_ANGLE,
   actionTauntArcAngle: DEFAULT_ACTION_TAUNT_ANGLE,
   actionRestArcAngle: DEFAULT_ACTION_REST_ANGLE,
+  popupOffsetY: 3,
+  damagePopupOffsetY: -50,
+  blockPopupOffsetY: -50,
+  popupScale: 1,
+  damagePopupScale: 0.85,
+  blockPopupScale: 0.7,
+  armorAbsorbPopupOffsetY: -40,
+  armorBreakPopupOffsetY: 0,
+  armorAbsorbPopupScale: 0.65,
+  armorBreakPopupScale: 1,
   characterPreviewScale: 1.8,
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
@@ -1440,6 +1462,16 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     actionHeavyArcAngle: clampNumber(input.actionHeavyArcAngle, -180, 180, defaultDebugTuning.actionHeavyArcAngle),
     actionTauntArcAngle: clampNumber(input.actionTauntArcAngle, -180, 180, defaultDebugTuning.actionTauntArcAngle),
     actionRestArcAngle: clampNumber(input.actionRestArcAngle, -180, 180, defaultDebugTuning.actionRestArcAngle),
+    popupOffsetY: clampNumber(input.popupOffsetY, -160, 160, defaultDebugTuning.popupOffsetY),
+    damagePopupOffsetY: clampNumber(input.damagePopupOffsetY, -160, 160, defaultDebugTuning.damagePopupOffsetY),
+    blockPopupOffsetY: clampNumber(input.blockPopupOffsetY, -160, 160, defaultDebugTuning.blockPopupOffsetY),
+    popupScale: clampNumber(input.popupScale, 0.25, 2, defaultDebugTuning.popupScale),
+    damagePopupScale: clampNumber(input.damagePopupScale, 0.25, 2, defaultDebugTuning.damagePopupScale),
+    blockPopupScale: clampNumber(input.blockPopupScale, 0.25, 2, defaultDebugTuning.blockPopupScale),
+    armorAbsorbPopupOffsetY: clampNumber(input.armorAbsorbPopupOffsetY, -160, 160, defaultDebugTuning.armorAbsorbPopupOffsetY),
+    armorBreakPopupOffsetY: clampNumber(input.armorBreakPopupOffsetY, -160, 160, defaultDebugTuning.armorBreakPopupOffsetY),
+    armorAbsorbPopupScale: clampNumber(input.armorAbsorbPopupScale, 0.25, 2, defaultDebugTuning.armorAbsorbPopupScale),
+    armorBreakPopupScale: clampNumber(input.armorBreakPopupScale, 0.25, 2, defaultDebugTuning.armorBreakPopupScale),
     characterPreviewScale: clampNumber(input.characterPreviewScale, 1, 2.6, defaultDebugTuning.characterPreviewScale),
     characterPreviewFeetX: clampNumber(input.characterPreviewFeetX, 0, 430, defaultDebugTuning.characterPreviewFeetX),
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
