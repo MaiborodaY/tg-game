@@ -7,6 +7,7 @@ import {
   setPlayerEquipment,
   type ArenaScene,
   type CitySceneApi,
+  type HeroPortraitPreviewApi,
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
@@ -59,15 +60,13 @@ let armoryShop: ArmoryShopApi | undefined;
 let weaponShop: WeaponShopApi | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
-let unmountHeroPortraitPreview: (() => void) | undefined;
+let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
 const CITY_CURTAIN_TRANSITION_MS = 620;
 const CITY_CURTAIN_SWITCH_MS = 210;
+const HERO_PORTRAIT_REFRESH_SLOTS = new Set(["helmet", "breastplate", "backShoulderguard", "frontShoulderguard"]);
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
-let cityShopFreezeImage: HTMLImageElement | undefined;
-let cityShopFreezeToken = 0;
-let isCityShopFrozen = false;
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
@@ -231,85 +230,20 @@ function mountCityPreviews(): void {
     cityScene = mountCityHeroPreview(cityHero, hero.equipment);
   }
 
-  if (cityHeroWidgetRefs.portrait && !unmountHeroPortraitPreview) {
-    unmountHeroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
+  if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
+    heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
   }
-}
-
-function ensureCityShopFreezeImage(): HTMLImageElement | undefined {
-  if (!cityHero) {
-    return undefined;
-  }
-
-  if (!cityShopFreezeImage) {
-    cityShopFreezeImage = document.createElement("img");
-    cityShopFreezeImage.className = "city-menu__hero-freeze";
-    cityShopFreezeImage.alt = "";
-    cityShopFreezeImage.draggable = false;
-    cityShopFreezeImage.hidden = true;
-    cityShopFreezeImage.setAttribute("aria-hidden", "true");
-    cityHero.append(cityShopFreezeImage);
-  }
-
-  return cityShopFreezeImage;
-}
-
-function resumeCityHeroRenderingForShop(): void {
-  cityShopFreezeToken += 1;
-  isCityShopFrozen = false;
-  cityScene?.setRenderingPaused(false);
-  cityHero?.classList.remove("city-menu__hero--frozen");
-
-  if (cityShopFreezeImage) {
-    cityShopFreezeImage.hidden = true;
-    cityShopFreezeImage.removeAttribute("src");
-  }
-}
-
-function freezeCityHeroRenderingForShop(): void {
-  const image = ensureCityShopFreezeImage();
-  const token = cityShopFreezeToken + 1;
-
-  cityShopFreezeToken = token;
-
-  if (!image) {
-    cityScene?.setRenderingPaused(true);
-    isCityShopFrozen = true;
-    return;
-  }
-
-  cityScene?.captureFrame((src) => {
-    if (token !== cityShopFreezeToken || !cityHero) {
-      return;
-    }
-
-    image.src = src;
-    image.hidden = false;
-    cityHero.classList.add("city-menu__hero--frozen");
-    cityScene?.setRenderingPaused(true);
-    isCityShopFrozen = true;
-  });
 }
 
 function focusCityShop(mode: "armory" | "weaponShop"): void {
-  if (isCityShopFrozen) {
-    resumeCityHeroRenderingForShop();
-  }
-
   if (mode === "armory") {
     cityScene?.focusArmory(true);
   } else {
     cityScene?.focusWeaponShop(true);
   }
-
-  freezeCityHeroRenderingForShop();
 }
 
 function focusCityDefaultFromShop(): void {
-  if (isCityShopFrozen) {
-    resumeCityHeroRenderingForShop();
-  }
-
   cityScene?.focusDefault(true);
 }
 
@@ -328,11 +262,10 @@ function prewarmShopItemIconsWhenIdle(): void {
 }
 
 function unmountCityPreviews(): void {
-  resumeCityHeroRenderingForShop();
   cityScene?.destroy();
-  unmountHeroPortraitPreview?.();
+  heroPortraitPreview?.destroy();
   cityScene = undefined;
-  unmountHeroPortraitPreview = undefined;
+  heroPortraitPreview = undefined;
 }
 
 function mountArena(): void {
@@ -446,9 +379,20 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
 
   hero = nextHero;
   setPlayerEquipment(hero.equipment);
+  if (shouldRefreshHeroPortrait(product)) {
+    heroPortraitPreview?.setEquipment(hero.equipment);
+  }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
   weaponShop?.render();
+}
+
+function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): boolean {
+  return product.itemIds.some((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    return Boolean(item && HERO_PORTRAIT_REFRESH_SLOTS.has(item.equipmentSlot));
+  });
 }
 
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {

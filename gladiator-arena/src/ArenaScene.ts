@@ -498,6 +498,15 @@ const HERO_PORTRAIT_VIEWER_SIZE = 112;
 const HERO_PORTRAIT_CENTER_X = HERO_PORTRAIT_VIEWER_SIZE / 2;
 const HERO_PORTRAIT_FEET_Y = 194;
 const HERO_PORTRAIT_SCALE = 1.18;
+const HERO_PORTRAIT_HIDDEN_PART_KEYS: PaperDollPartKey[] = ["backThigh", "frontThigh", "backShin", "frontShin", "backFoot", "frontFoot"];
+const HERO_PORTRAIT_HIDDEN_EQUIPMENT_SLOT_KEYS: PaperDollEquipmentSlotKey[] = [
+  "backGreave",
+  "frontGreave",
+  "backShinguard",
+  "frontShinguard",
+  "backBoot",
+  "frontBoot",
+];
 const PAPER_DOLL_SELECTION_FILL = 0xffc857;
 const PAPER_DOLL_SELECTION_STROKE = 0xfff1a8;
 
@@ -751,6 +760,7 @@ const CITY_TIME_OF_DAY_CHANGE_EVENT = "gladiator-city-time-of-day-change";
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
+let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
@@ -1207,8 +1217,6 @@ export interface CitySceneApi {
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
   focusArenaTransition: () => Promise<void>;
-  captureFrame: (callback: (src: string) => void) => void;
-  setRenderingPaused: (paused: boolean) => void;
   destroy: () => void;
 }
 
@@ -1864,21 +1872,6 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       scene?.focusWeaponShop(instant);
     },
     focusArenaTransition: () => scene?.focusArenaTransition() ?? Promise.resolve(),
-    captureFrame: (callback) => {
-      game.renderer.snapshot((snapshot) => {
-        if (snapshot instanceof HTMLImageElement && snapshot.src) {
-          callback(snapshot.src);
-        }
-      }, "image/jpeg", 0.82);
-    },
-    setRenderingPaused: (paused) => {
-      if (paused) {
-        game.loop.sleep();
-        return;
-      }
-
-      game.loop.wake();
-    },
     destroy: () => {
       if (cityReadyCallback === readyCallbackForGame) {
         cityReadyCallback = undefined;
@@ -1892,8 +1885,8 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
 class HeroPortraitScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private unsubscribeDebugTuning?: () => void;
-  private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
+  private equipment?: HeroEquipment;
 
   constructor() {
     super("HeroPortraitScene");
@@ -1905,29 +1898,39 @@ class HeroPortraitScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-    this.fighter = createPaperDollFighter(this, { ...createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0), castsShadow: false });
+    this.fighter = createPaperDollFighter(this, this.createPortraitOptions());
     this.fighter.name.setVisible(false);
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
-      this.unsubscribePlayerEquipment?.();
       this.unsubscribePlayerSettings?.();
     });
+    heroPortraitReadyCallback?.(this);
   }
 
-  update(time: number): void {
-    const idle = getActiveBodyAnimation("idle");
+  setEquipment(equipment: HeroEquipment): void {
+    this.equipment = { ...equipment };
+    const rig = this.fighter?.paperDollRig;
 
-    if (!this.fighter || !idle.enabled) {
-      return;
+    if (rig) {
+      rig.equipmentState = { ...equipment };
+      syncPaperDollEquipmentVisibility(rig);
     }
 
-    applyBodyAnimation(this.fighter, time, idle);
+    this.sync();
+  }
+
+  captureFrame(callback: (src: string) => void): void {
+    this.sync();
+    this.game.renderer.snapshot((snapshot) => {
+      if (snapshot instanceof HTMLImageElement && snapshot.src) {
+        callback(snapshot.src);
+      }
+    }, "image/png");
   }
 
   private sync(): void {
@@ -1936,11 +1939,86 @@ class HeroPortraitScene extends Phaser.Scene {
     }
 
     applyPaperDollRigTuning(this.fighter, HERO_PORTRAIT_SCALE, HERO_PORTRAIT_FEET_Y, HERO_PORTRAIT_CENTER_X);
+    applyBodyAnimationBlend(this.fighter, getActiveBodyAnimation("idle"), 0);
+    syncHeroPortraitCrop(this.fighter);
+  }
+
+  private createPortraitOptions(): PaperDollFighterOptions {
+    const equipment = this.equipment ?? activePlayerEquipment;
+
+    return {
+      ...createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0, equipment),
+      castsShadow: false,
+      equipment: equipment ? { ...equipment } : undefined,
+      usesPlayerEquipment: false,
+    };
   }
 }
 
-export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): () => void {
+function syncHeroPortraitCrop(fighter: FighterVisual): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  HERO_PORTRAIT_HIDDEN_PART_KEYS.forEach((partKey) => {
+    rig.parts[partKey]?.setVisible(false);
+  });
+
+  HERO_PORTRAIT_HIDDEN_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    setPaperDollEquipmentSlotVisible(rig.equipment[slotKey], false);
+  });
+}
+
+export interface HeroPortraitPreviewApi {
+  setEquipment: (equipment: HeroEquipment) => void;
+  destroy: () => void;
+}
+
+export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): HeroPortraitPreviewApi {
   usePlayerEquipment(playerEquipment);
+  let scene: HeroPortraitScene | undefined;
+  let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
+  let snapshotToken = 0;
+  let destroyed = false;
+  const snapshotImage = document.createElement("img");
+
+  snapshotImage.className = "city-menu__portrait-snapshot";
+  snapshotImage.alt = "";
+  snapshotImage.draggable = false;
+  snapshotImage.hidden = true;
+  snapshotImage.setAttribute("aria-hidden", "true");
+  parent.append(snapshotImage);
+
+  const refreshSnapshot = () => {
+    if (!scene || destroyed) {
+      return;
+    }
+
+    const token = snapshotToken + 1;
+    snapshotToken = token;
+    game.loop.wake();
+    scene.captureFrame((src) => {
+      if (destroyed || token !== snapshotToken) {
+        return;
+      }
+
+      snapshotImage.src = src;
+      snapshotImage.hidden = false;
+      parent.classList.add("city-menu__portrait--static");
+      game.loop.sleep();
+    });
+  };
+
+  const readyCallbackForGame = (readyScene: HeroPortraitScene) => {
+    scene = readyScene;
+    if (pendingEquipment) {
+      readyScene.setEquipment(pendingEquipment);
+    }
+    refreshSnapshot();
+  };
+  heroPortraitReadyCallback = readyCallbackForGame;
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -1955,8 +2033,25 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
     },
     scene: HeroPortraitScene,
   });
+  refreshSnapshot();
 
-  return () => game.destroy(true);
+  return {
+    setEquipment: (equipment) => {
+      pendingEquipment = { ...equipment };
+      scene?.setEquipment(equipment);
+      refreshSnapshot();
+    },
+    destroy: () => {
+      destroyed = true;
+      snapshotToken += 1;
+      if (heroPortraitReadyCallback === readyCallbackForGame) {
+        heroPortraitReadyCallback = undefined;
+      }
+      snapshotImage.remove();
+      parent.classList.remove("city-menu__portrait--static");
+      game.destroy(true);
+    },
+  };
 }
 
 interface DebugCharacterViewerOptions {

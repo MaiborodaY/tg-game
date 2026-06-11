@@ -1168,20 +1168,6 @@ h1 {
   height: 100% !important;
 }
 
-.city-menu__hero-freeze {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  pointer-events: none;
-}
-
-.city-menu__hero--frozen canvas {
-  visibility: hidden;
-}
-
 .city-menu__hero-widget {
   position: absolute;
   left: var(--hero-portrait-button-x, 10px);
@@ -1350,6 +1336,20 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+.city-menu__portrait-snapshot {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.city-menu__portrait--static canvas {
+  visibility: hidden;
 }
 
 .city-menu__hero-info {
