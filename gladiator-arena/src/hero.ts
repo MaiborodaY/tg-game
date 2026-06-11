@@ -53,12 +53,14 @@ export const HERO_EQUIPMENT_SLOT_KEYS = [
 
 export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
 export type HeroItemId = string;
+export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
 
 export interface HeroItemDefinition {
   id: HeroItemId;
   name: string;
   kind: "weapon" | "armor";
+  rarity?: HeroItemRarity;
   weaponClass?: HeroWeaponClass;
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: HeroEquipmentSlotKey;
@@ -157,6 +159,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: TRAINING_WEAPON_ID,
     name: "Training Sword",
     kind: "weapon",
+    rarity: "common",
     weaponClass: "sword",
     equipmentSlot: "weaponMain",
     damageBonus: TRAINING_WEAPON_DAMAGE_BONUS,
@@ -165,6 +168,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_HELMET_ID,
     name: "Starter Helmet",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "helmet",
     armorHp: STARTER_ARMOR_HP,
@@ -173,6 +177,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BREASTPLATE_ID,
     name: "Leather Breastplate",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "breastplate",
     armorHp: STARTER_ARMOR_HP,
@@ -181,6 +186,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: CLOTH_BREASTPLATE_ID,
     name: "Cloth Breastplate",
     kind: "armor",
+    rarity: "common",
     armorCategory: "cloth",
     equipmentSlot: "breastplate",
     armorHp: STARTER_ARMOR_HP,
@@ -189,6 +195,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_SHOULDERGUARD_ID,
     name: "Starter Back Shoulderguard",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "backShoulderguard",
     armorHp: STARTER_ARMOR_HP,
@@ -197,6 +204,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_SHOULDERGUARD_ID,
     name: "Starter Front Shoulderguard",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "frontShoulderguard",
     armorHp: STARTER_ARMOR_HP,
@@ -205,6 +213,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_WRIST_ID,
     name: "Starter Back Wrist",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "backWrist",
     armorHp: STARTER_ARMOR_HP,
@@ -213,6 +222,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_WRIST_ID,
     name: "Starter Front Wrist",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "frontWrist",
     armorHp: STARTER_ARMOR_HP,
@@ -221,6 +231,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_GREAVE_ID,
     name: "Starter Back Greave",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "backGreave",
     armorHp: STARTER_ARMOR_HP,
@@ -229,6 +240,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_GREAVE_ID,
     name: "Starter Front Greave",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "frontGreave",
     armorHp: STARTER_ARMOR_HP,
@@ -237,6 +249,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_SHINGUARD_ID,
     name: "Starter Back Shinguard",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "backShinguard",
     armorHp: STARTER_ARMOR_HP,
@@ -245,6 +258,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_SHINGUARD_ID,
     name: "Starter Front Shinguard",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "frontShinguard",
     armorHp: STARTER_ARMOR_HP,
@@ -253,6 +267,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_BACK_BOOT_ID,
     name: "Starter Back Boot",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "backBoot",
     armorHp: STARTER_ARMOR_HP,
@@ -261,6 +276,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_FRONT_BOOT_ID,
     name: "Starter Front Boot",
     kind: "armor",
+    rarity: "common",
     armorCategory: "leather",
     equipmentSlot: "frontBoot",
     armorHp: STARTER_ARMOR_HP,
@@ -399,6 +415,25 @@ export function getEquippedHeroItems(equipment: HeroEquipment): HeroItemDefiniti
   });
 }
 
+export function isHeroItemOwned(hero: HeroState, itemId: HeroItemId): boolean {
+  const item = HERO_ITEM_CATALOG[itemId];
+  const isEquipped = item ? hero.equipment[item.equipmentSlot] === itemId : false;
+
+  return isEquipped || hero.inventory.some((entry) => entry.itemId === itemId && entry.quantity > 0);
+}
+
+export function areHeroItemsOwned(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+  return itemIds.every((itemId) => isHeroItemOwned(hero, itemId));
+}
+
+export function areHeroItemsEquipped(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+  return itemIds.every((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    return Boolean(item && hero.equipment[item.equipmentSlot] === itemId);
+  });
+}
+
 export function getHeroEquipmentStatBonuses(equipment: HeroEquipment): HeroBaseStats {
   return getEquippedHeroItems(equipment).reduce(
     (bonuses, item) => ({
@@ -513,11 +548,13 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
 }
 
 export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase, now = new Date().toISOString()): HeroState {
-  if (purchase.price > hero.gold) {
+  const price = areHeroItemsOwned(hero, purchase.itemIds) ? 0 : purchase.price;
+
+  if (price > hero.gold) {
     return hero;
   }
 
-  const inventory = [...hero.inventory];
+  const inventory = hero.inventory.map((entry) => ({ ...entry }));
   const equipment = { ...hero.equipment };
 
   purchase.itemIds.forEach((itemId) => {
@@ -535,7 +572,7 @@ export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase
 
   return {
     ...hero,
-    gold: hero.gold - purchase.price,
+    gold: hero.gold - price,
     equipment,
     inventory,
     updatedAt: now,

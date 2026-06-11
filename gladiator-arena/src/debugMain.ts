@@ -9,6 +9,7 @@ import {
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { mountDebugPanel } from "./debugPanel";
@@ -49,6 +50,7 @@ const debugPanelHost = document.querySelector<HTMLElement>("#debugPanelHost");
 const debugCharacterViewer = document.querySelector<HTMLElement>("#debugCharacterViewer");
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
 const cityMenu = document.querySelector<HTMLElement>(".city-menu");
+const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
@@ -69,6 +71,8 @@ let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
 let weaponShop: WeaponShopApi | undefined;
 let armoryShop: ArmoryShopApi | undefined;
+
+mountCityTimeToggle(cityTimeToggle, cityMenu);
 
 function createDebugHeroEquipment(): HeroEquipment {
   return {

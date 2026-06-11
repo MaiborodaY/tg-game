@@ -57,7 +57,7 @@ import {
   type HeroItemDefinition,
   type HeroItemId,
 } from "./hero";
-import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_IDS, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equipmentAssetRegistry";
+import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
 import { removePromotedEquipmentItem, saveProdAnimation, saveProdDefaults, savePromotedEquipmentItem } from "./prodDefaultsSaver";
 
@@ -193,6 +193,11 @@ const bowDistanceActionButtonLabels: Partial<Record<ActionButtonOffsetKey, strin
   medium: "Aimed shot",
   heavy: "Power shot",
 };
+
+const AUTO_EQUIPMENT_STAT_MIN = 0;
+const AUTO_EQUIPMENT_ARMOR_MAX = 200;
+const AUTO_EQUIPMENT_DAMAGE_MAX = 100;
+const AUTO_EQUIPMENT_PRICE_MAX = 2000;
 
 const controlGroups: DebugControlGroup[] = [
   {
@@ -611,13 +616,13 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         </label>
         <label class="debug-panel__row debug-rig-editor__row">
           <span class="debug-auto-equipment__stat-label">Armor HP</span>
-          <input class="debug-panel__range" type="range" min="0" max="10" step="1" value="1" data-auto-equipment-armor />
-          <input class="debug-panel__number" type="number" min="0" max="10" step="1" value="1" data-auto-equipment-armor-number />
+          <input class="debug-panel__range" type="range" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="1" data-auto-equipment-armor />
+          <input class="debug-panel__number" type="number" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="1" data-auto-equipment-armor-number />
         </label>
         <label class="debug-panel__row debug-rig-editor__row">
           <span>Price</span>
-          <input class="debug-panel__range" type="range" min="0" max="250" step="1" value="0" data-auto-equipment-price />
-          <input class="debug-panel__number" type="number" min="0" max="250" step="1" value="0" data-auto-equipment-price-number />
+          <input class="debug-panel__range" type="range" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-auto-equipment-price />
+          <input class="debug-panel__number" type="number" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-auto-equipment-price-number />
         </label>
         <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
           <span class="debug-auto-equipment__shop-label">Armory</span>
@@ -1366,8 +1371,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     syncAutoEquipmentEditor(editor);
   });
 
-  syncLinkedNumberInputs(armorRange, armorNumber, 0, 10);
-  syncLinkedNumberInputs(priceRange, priceNumber, 0, 250);
+  syncLinkedNumberInputs(armorRange, armorNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
+  syncLinkedNumberInputs(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
 
   preview.addEventListener("click", () => {
     const record = getSelectedAutoEquipmentRecord(select.value);
@@ -1408,11 +1413,13 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     status.textContent = "Promoting item...";
 
     try {
+      const statValue = clampNumber(Number(armorNumber.value), AUTO_EQUIPMENT_STAT_MIN, getAutoEquipmentStatMax(record));
+
       status.textContent = await savePromotedEquipmentItem({
         name: nameInput.value.trim() || record.item.name.replace(/\s+\(Auto\)$/u, ""),
-        armorHp: clampNumber(Number(armorNumber.value), 0, 10),
-        damageBonus: clampNumber(Number(armorNumber.value), 0, 10),
-        price: clampNumber(Number(priceNumber.value), 0, 250),
+        armorHp: statValue,
+        damageBonus: statValue,
+        price: clampNumber(Number(priceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX),
         addToShop: addToShop.checked,
         item: record.item,
         assetKeys: record.assetKeys,
@@ -2557,9 +2564,7 @@ function getInventoryItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[]
 }
 
 function getDebugItemIdsForSlot(slotKey: EquipmentSlotKey): HeroItemId[] {
-  return [...ALL_HERO_ITEM_IDS, ...AUTO_EQUIPMENT_ITEM_IDS, ...GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id)].filter(
-    (itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey,
-  );
+  return [...new Set(ALL_HERO_ITEM_IDS)].filter((itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey);
 }
 
 function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItemDefinition | undefined {
@@ -2794,6 +2799,14 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
     statLabel.textContent = record?.item.kind === "weapon" ? "Damage" : "Armor HP";
   }
 
+  if (armorRange && armorNumber) {
+    setLinkedNumberInputBounds(armorRange, armorNumber, AUTO_EQUIPMENT_STAT_MIN, getAutoEquipmentStatMax(record));
+  }
+
+  if (priceRange && priceNumber) {
+    setLinkedNumberInputBounds(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
+  }
+
   if (shopLabel) {
     shopLabel.textContent = record?.item.kind === "weapon" ? "Weapon shop" : "Armory";
   }
@@ -2835,6 +2848,10 @@ function syncAutoEquipmentStatInputs(editor: HTMLElement): void {
 
   armorRange.value = `${value}`;
   armorNumber.value = `${value}`;
+}
+
+function getAutoEquipmentStatMax(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined): number {
+  return record?.item.kind === "weapon" ? AUTO_EQUIPMENT_DAMAGE_MAX : AUTO_EQUIPMENT_ARMOR_MAX;
 }
 
 function previewSelectedAutoEquipment(editor: HTMLElement): void {
@@ -2880,14 +2897,16 @@ function getCurrentEquipmentItemTuning(itemId: HeroItemId, slotKey: EquipmentSlo
 }
 
 function syncLinkedNumberInputs(range: HTMLInputElement, number: HTMLInputElement, min: number, max: number): void {
+  setLinkedNumberInputBounds(range, number, min, max);
+
   const syncFromRange = (): void => {
-    const value = clampNumber(Number(range.value), min, max);
+    const value = clampNumber(Number(range.value), getInputMin(range), getInputMax(range));
 
     range.value = `${value}`;
     number.value = `${value}`;
   };
   const syncFromNumber = (): void => {
-    const value = clampNumber(Number(number.value), min, max);
+    const value = clampNumber(Number(number.value), getInputMin(number), getInputMax(number));
 
     range.value = `${value}`;
     number.value = `${value}`;
@@ -2895,6 +2914,30 @@ function syncLinkedNumberInputs(range: HTMLInputElement, number: HTMLInputElemen
 
   range.addEventListener("input", syncFromRange);
   number.addEventListener("input", syncFromNumber);
+}
+
+function setLinkedNumberInputBounds(range: HTMLInputElement, number: HTMLInputElement, min: number, max: number): void {
+  range.min = `${min}`;
+  number.min = `${min}`;
+  range.max = `${max}`;
+  number.max = `${max}`;
+
+  const value = clampNumber(Number(number.value), min, max);
+
+  range.value = `${value}`;
+  number.value = `${value}`;
+}
+
+function getInputMin(input: HTMLInputElement): number {
+  const min = Number(input.min);
+
+  return Number.isFinite(min) ? min : 0;
+}
+
+function getInputMax(input: HTMLInputElement): number {
+  const max = Number(input.max);
+
+  return Number.isFinite(max) ? max : Number.MAX_SAFE_INTEGER;
 }
 
 function createHeroEquipmentOption(value: string, label: string): HTMLOptionElement {

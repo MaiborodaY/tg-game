@@ -1,12 +1,23 @@
-import { HERO_ITEM_CATALOG, TRAINING_WEAPON_ID, type HeroItemId, type HeroState } from "./hero";
+import { TRAINING_WEAPON_ID, type HeroItemId, type HeroState } from "./hero";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
+import {
+  getEquippedShopProductStat,
+  getShopProductActionLabel,
+  getShopProductActionState,
+  getShopProductRarity,
+  getShopProductStat,
+  getShopRarityLabel,
+  getShopRarityShortLabel,
+  type ShopItemRarity,
+} from "./shopPresentation";
 
 export interface WeaponProduct {
   id: string;
   name: string;
   price: number;
   itemIds: HeroItemId[];
+  rarity?: ShopItemRarity;
 }
 
 export interface WeaponShopApi {
@@ -110,13 +121,21 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   const level = document.createElement("span");
   level.className = "armory-shop__level";
 
+  const headerMeta = document.createElement("div");
+  headerMeta.className = "armory-shop__header-meta";
+  headerMeta.append(gold, level);
+
+  const selected = document.createElement("div");
+  selected.className = "armory-shop__selected";
+
   const content = document.createElement("div");
   content.className = "armory-shop__content";
 
   const back = document.createElement("button");
   back.className = "armory-shop__back";
   back.type = "button";
-  back.textContent = "Back";
+  back.textContent = "<";
+  back.setAttribute("aria-label", "Back");
   back.addEventListener("click", () => {
     if (previewProduct) {
       clearProductPreview();
@@ -127,8 +146,8 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     close();
   });
 
-  header.append(gold, title, level);
-  tray.append(header, content, back);
+  header.append(back, title, headerMeta);
+  tray.append(header, selected, content);
   menu.append(categoryRail, tray);
   if (options.mountPreview) {
     panel.append(previewShell);
@@ -180,18 +199,19 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     level.textContent = `LVL ${hero.level}`;
     categoryRail.replaceChildren();
     content.replaceChildren();
+    selected.replaceChildren();
+    selected.hidden = !previewProduct;
     content.classList.toggle("armory-shop__content--categories", false);
-    content.classList.toggle("armory-shop__content--products", !previewProduct);
-    content.classList.toggle("armory-shop__content--confirm", Boolean(previewProduct));
-    back.hidden = Boolean(previewProduct);
+    content.classList.toggle("armory-shop__content--products", true);
+    content.classList.toggle("armory-shop__content--has-selection", Boolean(previewProduct));
+    content.classList.toggle("armory-shop__content--confirm", false);
 
     WEAPON_CATEGORIES.forEach((category) => {
       categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
     });
 
     if (previewProduct) {
-      content.append(createPreviewBuyButton(previewProduct, hero), createPreviewBackButton());
-      return;
+      selected.append(createSelectedProductStrip(previewProduct, hero));
     }
 
     if (selectedCategory.products.length === 0) {
@@ -200,7 +220,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
 
     selectedCategory.products.forEach((product) => {
-      content.append(createProductButton(product, hero));
+      content.append(createProductButton(product, hero, previewProduct?.id === product.id));
     });
   }
 
@@ -246,26 +266,21 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     return button;
   }
 
-  function createProductButton(product: WeaponProduct, hero: HeroState): HTMLButtonElement {
+  function createProductButton(product: WeaponProduct, hero: HeroState, isSelected: boolean): HTMLButtonElement {
     const button = document.createElement("button");
-    const isEquipped = product.itemIds.every((itemId) => {
-      const item = HERO_ITEM_CATALOG[itemId];
-
-      return hero.equipment[item.equipmentSlot] === itemId;
-    });
     const iconUrl = getShopProductIconUrl(product.itemIds);
+    const rarity = getShopProductRarity(product.itemIds, product.rarity);
+    const damage = getShopProductStat(product.itemIds, "damage");
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
 
-    button.className = "armory-shop__option armory-shop__option--product";
+    button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
+    button.classList.toggle("armory-shop__option--selected", isSelected);
+    button.classList.toggle("armory-shop__option--owned", actionState === "equip");
+    button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
     button.type = "button";
-    button.disabled = isEquipped;
     button.title = product.name;
-    button.setAttribute("aria-label", `${product.name}, ${product.price} GOLD`);
-    button.innerHTML = iconUrl
-      ? `
-        <img class="armory-shop__product-icon" src="${iconUrl}" alt="" draggable="false" />
-        <span class="armory-shop__product-price">${product.price} GOLD</span>
-      `
-      : `<span class="armory-shop__product-price">${product.price} GOLD</span>`;
+    button.setAttribute("aria-label", `${product.name}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${getShopProductActionLabel(actionState, product.price)}`);
+    button.append(createRarityBadge(rarity), createProductIcon(iconUrl), createProductStats("DM", damage, product.price));
     button.addEventListener("click", () => {
       previewProduct = product;
       options.onPreview?.(product);
@@ -275,36 +290,30 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     return button;
   }
 
+  function createSelectedProductStrip(product: WeaponProduct, hero: HeroState): HTMLElement {
+    const strip = document.createElement("div");
+    const iconUrl = getShopProductIconUrl(product.itemIds);
+    const rarity = getShopProductRarity(product.itemIds, product.rarity);
+    const damage = getShopProductStat(product.itemIds, "damage");
+    const currentDamage = getEquippedShopProductStat(hero, product.itemIds, "damage");
+
+    strip.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
+    strip.append(createProductIcon(iconUrl, "armory-shop__selected-icon"), createSelectedMeta(rarity, "DM", damage, currentDamage, product.price), createPreviewBuyButton(product, hero));
+
+    return strip;
+  }
+
   function createPreviewBuyButton(product: WeaponProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
-    const isEquipped = product.itemIds.every((itemId) => {
-      const item = HERO_ITEM_CATALOG[itemId];
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
 
-      return hero.equipment[item.equipmentSlot] === itemId;
-    });
-    const canBuy = hero.gold >= product.price;
-
-    button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--buy";
+    button.className = "armory-shop__selected-buy";
     button.type = "button";
-    button.disabled = isEquipped || !canBuy;
-    button.textContent = `Buy - ${product.price} GOLD`;
+    button.disabled = actionState === "equipped" || actionState === "no-gold";
+    button.textContent = getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       previewProduct = undefined;
       options.onBuy(product);
-      render();
-    });
-
-    return button;
-  }
-
-  function createPreviewBackButton(): HTMLButtonElement {
-    const button = document.createElement("button");
-
-    button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--back";
-    button.type = "button";
-    button.textContent = "Back";
-    button.addEventListener("click", () => {
-      clearProductPreview();
       render();
     });
 
@@ -342,6 +351,69 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
 
   return { open, close, render };
+}
+
+function createRarityBadge(rarity: ShopItemRarity): HTMLElement {
+  const badge = document.createElement("span");
+
+  badge.className = "armory-shop__rarity-badge";
+  badge.textContent = getShopRarityShortLabel(rarity);
+  badge.title = getShopRarityLabel(rarity);
+
+  return badge;
+}
+
+function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {
+  if (!iconUrl) {
+    const fallback = document.createElement("span");
+
+    fallback.className = `${className} armory-shop__product-icon--missing`;
+    fallback.textContent = "?";
+
+    return fallback;
+  }
+
+  const icon = document.createElement("img");
+
+  icon.className = className;
+  icon.src = iconUrl;
+  icon.alt = "";
+  icon.draggable = false;
+
+  return icon;
+}
+
+function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {
+  const stats = document.createElement("span");
+  const statNode = document.createElement("span");
+  const priceNode = document.createElement("span");
+
+  stats.className = "armory-shop__product-stats";
+  statNode.className = "armory-shop__product-stat";
+  statNode.textContent = `${statLabel} ${stat}`;
+  priceNode.className = "armory-shop__product-price";
+  priceNode.textContent = `${price} G`;
+  stats.append(statNode, priceNode);
+
+  return stats;
+}
+
+function createSelectedMeta(rarity: ShopItemRarity, statLabel: string, stat: number, currentStat: number, price: number): HTMLElement {
+  const meta = document.createElement("div");
+  const rarityNode = document.createElement("span");
+  const statNode = document.createElement("span");
+  const priceNode = document.createElement("span");
+
+  meta.className = "armory-shop__selected-meta";
+  rarityNode.className = "armory-shop__selected-rarity";
+  rarityNode.textContent = getShopRarityLabel(rarity);
+  statNode.className = "armory-shop__selected-stat";
+  statNode.textContent = currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} > ${stat}`;
+  priceNode.className = "armory-shop__selected-price";
+  priceNode.textContent = `${price} GOLD`;
+  meta.append(rarityNode, statNode, priceNode);
+
+  return meta;
 }
 
 function createEmptyState(text: string): HTMLButtonElement {

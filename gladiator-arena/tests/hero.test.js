@@ -98,3 +98,40 @@ test("weapon class defaults to sword and can be inferred for generated weapons",
     "axe",
   );
 });
+
+test("starter cloth leather and training sword items are common rarity", () => {
+  assert.equal(hero.HERO_ITEM_CATALOG[hero.TRAINING_WEAPON_ID]?.rarity, "common");
+  assert.equal(hero.HERO_ITEM_CATALOG[hero.CLOTH_BREASTPLATE_ID]?.rarity, "common");
+
+  for (const itemId of hero.HERO_ITEM_IDS) {
+    const item = hero.HERO_ITEM_CATALOG[itemId];
+
+    if (item?.armorCategory === "cloth" || item?.armorCategory === "leather") {
+      assert.equal(item.rarity, "common");
+    }
+  }
+});
+
+test("owned shop items can be equipped without paying again", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 10,
+    inventory: [{ itemId: hero.STARTER_HELMET_ID, quantity: 1 }],
+  };
+
+  assert.equal(hero.areHeroItemsOwned(baseHero, [hero.STARTER_HELMET_ID]), true);
+  assert.equal(hero.areHeroItemsEquipped(baseHero, [hero.STARTER_HELMET_ID]), false);
+
+  const nextHero = hero.buyAndEquipHeroItems(
+    baseHero,
+    {
+      itemIds: [hero.STARTER_HELMET_ID],
+      price: 5,
+    },
+    "2026-01-01T00:01:00.000Z",
+  );
+
+  assert.equal(nextHero.gold, 10);
+  assert.equal(nextHero.equipment.helmet, hero.STARTER_HELMET_ID);
+  assert.equal(hero.areHeroItemsEquipped(nextHero, [hero.STARTER_HELMET_ID]), true);
+});

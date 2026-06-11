@@ -18,6 +18,8 @@ export const DAMAGE_ARMOR_BREAK_ICON_ASSET_URL = new URL("./assets/ui/damage-ico
 
 export const CITY_BACKGROUND_ASSET_KEY = "city-menu-bg";
 export const CITY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city.webp", import.meta.url).href;
+export const CITY_DAY_BACKGROUND_ASSET_KEY = "city-menu-bg-day";
+export const CITY_DAY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city-day.webp", import.meta.url).href;
 export const CITY_ARMORY_BACKGROUND_ASSET_KEY = "city-armory-bg";
 export const CITY_ARMORY_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-armory.webp", import.meta.url).href;
 export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY = "city-weapon-shop-bg";

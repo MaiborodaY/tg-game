@@ -202,7 +202,7 @@ test("debug hero equipment picker can list catalog-only items", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 
   assert.equal(debugPanelSource.includes("ALL_HERO_ITEM_IDS"), true);
-  assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ITEM_IDS"), true);
+  assert.equal(debugPanelSource.includes("new Set(ALL_HERO_ITEM_IDS)"), true);
   assert.equal(debugPanelSource.includes("debugHeroInventory.flatMap"), true);
 });
 
@@ -220,4 +220,7 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("debug-auto-equipment__remove"), true);
   assert.equal(debugPanelSource.includes("window.confirm"), true);
   assert.equal(debugPanelSource.includes("equipmentTuning: getCurrentEquipmentItemTuning"), true);
+  assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ARMOR_MAX = 200"), true);
+  assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_DAMAGE_MAX = 100"), true);
+  assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_PRICE_MAX = 2000"), true);
 });

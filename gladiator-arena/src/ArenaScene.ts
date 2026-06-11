@@ -34,6 +34,8 @@ import {
   CITY_ARMORY_BACKGROUND_ASSET_URL,
   CITY_BACKGROUND_ASSET_KEY,
   CITY_BACKGROUND_ASSET_URL,
+  CITY_DAY_BACKGROUND_ASSET_KEY,
+  CITY_DAY_BACKGROUND_ASSET_URL,
   CITY_CLOUD_ASSETS,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL,
@@ -491,6 +493,7 @@ const CITY_CLOUD_DEPTH = CITY_BACKGROUND_DEPTH + 4;
 const CITY_CLOUD_FADE_DURATION = 180;
 const CITY_HERO_BODY_TINT = 0xf0b892;
 const CITY_HERO_EQUIPMENT_TINT = 0xd3ad84;
+const CITY_LIGHTING_TWEEN_DURATION = 260;
 const HERO_PORTRAIT_VIEWER_SIZE = 112;
 const HERO_PORTRAIT_CENTER_X = HERO_PORTRAIT_VIEWER_SIZE / 2;
 const HERO_PORTRAIT_FEET_Y = 194;
@@ -741,11 +744,15 @@ function getHeroItemEquipmentAssetKeys(itemId: HeroItemId): PaperDollEquipmentAs
   return HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId] ?? GENERATED_EQUIPMENT_ITEM_ASSET_KEYS[itemId] ?? AUTO_EQUIPMENT_ITEM_ASSET_KEYS[itemId];
 }
 
+export type CityTimeOfDay = "night" | "day";
+
 const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
+const CITY_TIME_OF_DAY_CHANGE_EVENT = "gladiator-city-time-of-day-change";
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
+let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
 let arenaAssetPrewarmPromise: Promise<void> | undefined;
 const arenaAssetPrewarmImages = new Set<HTMLImageElement>();
@@ -772,6 +779,7 @@ export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
 
 function preloadCityAssets(target: Phaser.Scene): void {
   target.load.image(CITY_BACKGROUND_ASSET_KEY, CITY_BACKGROUND_ASSET_URL);
+  target.load.image(CITY_DAY_BACKGROUND_ASSET_KEY, CITY_DAY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_ARMORY_BACKGROUND_ASSET_KEY, CITY_ARMORY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, CITY_WEAPON_SHOP_BACKGROUND_ASSET_URL);
   CITY_CLOUD_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
@@ -886,6 +894,19 @@ export function setPlayerEquipment(equipment: HeroEquipment): void {
   notifyPlayerEquipmentChanged();
 }
 
+export function getCityTimeOfDay(): CityTimeOfDay {
+  return activeCityTimeOfDay;
+}
+
+export function setCityTimeOfDay(timeOfDay: CityTimeOfDay): void {
+  if (activeCityTimeOfDay === timeOfDay) {
+    return;
+  }
+
+  activeCityTimeOfDay = timeOfDay;
+  notifyCityTimeOfDayChanged();
+}
+
 function usePlayerEquipment(equipment: HeroEquipment | undefined): void {
   if (equipment) {
     setPlayerEquipment(equipment);
@@ -934,6 +955,14 @@ function notifyPlayerEquipmentChanged(): void {
   window.dispatchEvent(new CustomEvent(PLAYER_EQUIPMENT_CHANGE_EVENT));
 }
 
+function notifyCityTimeOfDayChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent<CityTimeOfDay>(CITY_TIME_OF_DAY_CHANGE_EVENT, { detail: activeCityTimeOfDay }));
+}
+
 function subscribePlayerEquipmentChanges(callback: () => void): () => void {
   if (typeof window === "undefined") {
     return () => undefined;
@@ -942,6 +971,18 @@ function subscribePlayerEquipmentChanges(callback: () => void): () => void {
   window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
 
   return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
+}
+
+export function subscribeCityTimeOfDayChanges(callback: (timeOfDay: CityTimeOfDay) => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handler = (event: Event) => callback(event instanceof CustomEvent ? (event.detail as CityTimeOfDay) : activeCityTimeOfDay);
+
+  window.addEventListener(CITY_TIME_OF_DAY_CHANGE_EVENT, handler);
+
+  return () => window.removeEventListener(CITY_TIME_OF_DAY_CHANGE_EVENT, handler);
 }
 
 export class ArenaScene extends Phaser.Scene {
@@ -1170,6 +1211,14 @@ export interface CitySceneApi {
   destroy: () => void;
 }
 
+function getCityDefaultBackgroundAssetKey(timeOfDay = activeCityTimeOfDay): string {
+  return timeOfDay === "day" ? CITY_DAY_BACKGROUND_ASSET_KEY : CITY_BACKGROUND_ASSET_KEY;
+}
+
+function getCityLightingAmount(timeOfDay = activeCityTimeOfDay): number {
+  return timeOfDay === "day" ? 0 : 1;
+}
+
 class CityHeroScene extends Phaser.Scene {
   private background?: Phaser.GameObjects.Image;
   private backgroundNext?: Phaser.GameObjects.Image;
@@ -1182,9 +1231,12 @@ class CityHeroScene extends Phaser.Scene {
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
   private unsubscribeShopHeroOffset?: () => void;
+  private unsubscribeCityTimeOfDay?: () => void;
   private cameraMode: CityCameraMode = "default";
-  private backgroundAssetKey = CITY_BACKGROUND_ASSET_KEY;
+  private backgroundAssetKey = getCityDefaultBackgroundAssetKey();
   private cityCloudVisibility = 1;
+  private cityLightingAmount = getCityLightingAmount();
+  private cityLightingTween?: Phaser.Tweens.Tween;
   private cityHeroLiftProgress = 0;
   private cityHeroLiftTween?: Phaser.Tweens.Tween;
   private shopHeroDragState?: CityShopHeroDragState;
@@ -1202,8 +1254,10 @@ class CityHeroScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
     this.heroCamera = this.cameras.add(0, 0, this.sceneWidth, this.sceneHeight, false, "CityHeroCamera");
     this.heroCamera.setBackgroundColor("rgba(0, 0, 0, 0)");
-    this.background = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH);
-    this.backgroundNext = this.add.image(0, 0, CITY_BACKGROUND_ASSET_KEY).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH + 1).setAlpha(0).setVisible(false);
+    this.backgroundAssetKey = getCityDefaultBackgroundAssetKey();
+    this.cityLightingAmount = getCityLightingAmount();
+    this.background = this.add.image(0, 0, this.backgroundAssetKey).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH);
+    this.backgroundNext = this.add.image(0, 0, this.backgroundAssetKey).setOrigin(0.5).setDepth(CITY_BACKGROUND_DEPTH + 1).setAlpha(0).setVisible(false);
     this.clouds = this.createCityClouds();
     this.fighter = createPaperDollFighter(
       this,
@@ -1211,7 +1265,7 @@ class CityHeroScene extends Phaser.Scene {
     );
     this.fighter.name.setVisible(false);
     enableCityShopHeroDrag(this.fighter.paperDollRig, (pointer, event) => this.beginShopHeroDrag(pointer, event));
-    applyCityHeroLighting(this.fighter);
+    applyCityHeroLighting(this.fighter, this.cityLightingAmount);
     this.syncCameraLayers();
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
@@ -1219,12 +1273,13 @@ class CityHeroScene extends Phaser.Scene {
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
         if (this.fighter) {
-          applyCityHeroLighting(this.fighter);
+          applyCityHeroLighting(this.fighter, this.cityLightingAmount);
         }
         this.sync();
       });
     });
     this.unsubscribeShopHeroOffset = subscribeShopHeroOffset(() => this.syncCamera(true));
+    this.unsubscribeCityTimeOfDay = subscribeCityTimeOfDayChanges((timeOfDay) => this.syncTimeOfDay(timeOfDay));
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.dragShopHero(pointer));
     this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => this.endShopHeroDrag(pointer));
@@ -1233,12 +1288,14 @@ class CityHeroScene extends Phaser.Scene {
       this.cityHeroLiftTween?.remove();
       this.backgroundFadeTween?.remove();
       this.cloudsAlphaTween?.remove();
+      this.cityLightingTween?.remove();
       this.heroCamera = undefined;
       this.shopHeroDragState = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
       this.unsubscribePlayerSettings?.();
       this.unsubscribeShopHeroOffset?.();
+      this.unsubscribeCityTimeOfDay?.();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     });
     cityReadyCallback?.(this);
@@ -1262,7 +1319,7 @@ class CityHeroScene extends Phaser.Scene {
     this.resetBackgroundCamera();
     this.getHeroCamera().setAlpha(1);
     this.setCityHeroShadowEnabled(true);
-    this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY, instant);
+    this.transitionBackgroundTo(getCityDefaultBackgroundAssetKey(), instant);
     this.transitionCityCloudsTo(1, instant);
     this.tweenHeroLiftTo(0, instant);
     this.syncCamera(instant, 0);
@@ -1292,7 +1349,7 @@ class CityHeroScene extends Phaser.Scene {
     this.cityHeroLiftTween?.remove();
     this.cityHeroLiftTween = undefined;
     this.setCityHeroShadowEnabled(false);
-    this.transitionBackgroundTo(CITY_BACKGROUND_ASSET_KEY, true);
+    this.transitionBackgroundTo(getCityDefaultBackgroundAssetKey(), true);
     this.transitionCityCloudsTo(0);
 
     return this.tweenArenaCameraToColiseum();
@@ -1309,8 +1366,53 @@ class CityHeroScene extends Phaser.Scene {
     this.syncCityClouds();
     this.syncCameraViewports();
     this.syncFighterLayout();
-    applyCityHeroLighting(fighter);
+    applyCityHeroLighting(fighter, this.cityLightingAmount);
     this.syncCamera(true);
+  }
+
+  private syncTimeOfDay(timeOfDay: CityTimeOfDay, instant = false): void {
+    if (this.cameraMode === "default" || this.cameraMode === "arena") {
+      this.transitionBackgroundTo(getCityDefaultBackgroundAssetKey(timeOfDay), instant);
+    }
+    this.transitionCityLightingTo(getCityLightingAmount(timeOfDay), instant);
+  }
+
+  private transitionCityLightingTo(amount: number, instant = false): void {
+    this.cityLightingTween?.remove();
+    this.cityLightingTween = undefined;
+
+    if (instant || !this.fighter) {
+      this.cityLightingAmount = amount;
+      if (this.fighter) {
+        applyCityHeroLighting(this.fighter, this.cityLightingAmount);
+      }
+      return;
+    }
+
+    if (Math.abs(this.cityLightingAmount - amount) < 0.01) {
+      this.cityLightingAmount = amount;
+      applyCityHeroLighting(this.fighter, this.cityLightingAmount);
+      return;
+    }
+
+    this.cityLightingTween = this.tweens.add({
+      targets: this,
+      cityLightingAmount: amount,
+      duration: CITY_LIGHTING_TWEEN_DURATION,
+      ease: "Sine.easeInOut",
+      onUpdate: () => {
+        if (this.fighter) {
+          applyCityHeroLighting(this.fighter, this.cityLightingAmount);
+        }
+      },
+      onComplete: () => {
+        this.cityLightingAmount = amount;
+        this.cityLightingTween = undefined;
+        if (this.fighter) {
+          applyCityHeroLighting(this.fighter, this.cityLightingAmount);
+        }
+      },
+    });
   }
 
   private syncFighterLayout(): void {
@@ -2631,7 +2733,7 @@ function applyPaperDollShadowBlur(shadowRoot: FighterPart): void {
   paperDollShadowBlurFilters.set(shadowRoot, nextFilter);
 }
 
-function applyCityHeroLighting(fighter: FighterVisual): void {
+function applyCityHeroLighting(fighter: FighterVisual, amount = getCityLightingAmount()): void {
   const rig = fighter.paperDollRig;
 
   if (!rig) {
@@ -2639,25 +2741,25 @@ function applyCityHeroLighting(fighter: FighterVisual): void {
   }
 
   RIG_PART_KEYS.forEach((key) => {
-    tintPaperDollImages(rig.parts[key], CITY_HERO_BODY_TINT);
+    tintPaperDollImages(rig.parts[key], CITY_HERO_BODY_TINT, amount);
   });
 
   PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    tintPaperDollImages(rig.equipment[slotKey], CITY_HERO_EQUIPMENT_TINT);
+    tintPaperDollImages(rig.equipment[slotKey], CITY_HERO_EQUIPMENT_TINT, amount);
   });
 }
 
-function tintPaperDollImages(gameObject: Phaser.GameObjects.GameObject | undefined, tint: number): void {
+function tintPaperDollImages(gameObject: Phaser.GameObjects.GameObject | undefined, tint: number, amount: number): void {
   if (!gameObject) {
     return;
   }
 
   if (gameObject instanceof Phaser.GameObjects.Image || gameObject instanceof Phaser.GameObjects.Sprite) {
-    gameObject.setTint(tint);
+    gameObject.setTint(mixColor(0xffffff, tint, clampNumber(amount, 0, 1)));
   }
 
   if (gameObject instanceof Phaser.GameObjects.Container) {
-    gameObject.list.forEach((child) => tintPaperDollImages(child, tint));
+    gameObject.list.forEach((child) => tintPaperDollImages(child, tint, amount));
   }
 }
 

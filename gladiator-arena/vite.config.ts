@@ -12,6 +12,9 @@ const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generate
 const promotedEquipmentRuntimeWebpQuality = 86;
 const promotedEquipmentLowWebpQuality = 76;
 const promotedEquipmentLowMaxSide = 448;
+const promotedEquipmentMaxArmorHp = 200;
+const promotedEquipmentMaxDamageBonus = 100;
+const promotedEquipmentMaxPrice = 2000;
 const promotedEquipmentResizeRules = [
   { maxSide: 768, pattern: /^assets\/fighters\/armor\/helmet\// },
   { maxSide: 512, pattern: /^assets\/fighters\/armor\/arms\// },
@@ -305,6 +308,7 @@ interface GeneratedEquipmentJsonRecord {
   id: string;
   name: string;
   kind: "armor" | "weapon";
+  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
@@ -834,11 +838,15 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
       : undefined;
   const armorCategory = kind === "armor" ? readArmorCategory(item.armorCategory) : undefined;
   const name = readNonEmptyString(promotion.name, "name").slice(0, 80);
-  const armorHp = kind === "armor" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.armorHp, "armorHp")))) : undefined;
+  const armorHp =
+    kind === "armor" ? Math.max(0, Math.min(promotedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(promotion.armorHp, "armorHp")))) : undefined;
   const damageBonus =
-    kind === "weapon" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(promotion.damageBonus, "damageBonus")))) : undefined;
+    kind === "weapon"
+      ? Math.max(0, Math.min(promotedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(promotion.damageBonus, "damageBonus"))))
+      : undefined;
   const weaponClass = kind === "weapon" ? readWeaponClass(item.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
-  const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(promotion.price, "price"))));
+  const rarity = readItemRarity(item.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
+  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(promotion.price, "price"))));
   const addToShop = promotion.addToShop === true;
   const categoryId = getArmoryCategoryId(equipmentSlot);
   const id = `generated_equipment_${toIdentifier(assetKey)}`;
@@ -860,6 +868,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
     id,
     name,
     kind,
+    rarity,
     ...(armorCategory ? { armorCategory } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
@@ -1103,6 +1112,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     id: record.id,
     name: record.name,
     kind: record.kind,
+    ...(record.rarity ? { rarity: record.rarity } : {}),
     ...(record.armorCategory ? { armorCategory: record.armorCategory } : {}),
     equipmentSlot: record.equipmentSlot,
     ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
@@ -1136,10 +1146,15 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const name = readNonEmptyString(record.name, "generated equipment name");
   const kind = readGeneratedEquipmentKind(record.kind);
   const armorHp =
-    kind === "armor" ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp")))) : undefined;
+    kind === "armor"
+      ? Math.max(0, Math.min(promotedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))))
+      : undefined;
   const damageBonus =
     kind === "weapon"
-      ? Math.max(0, Math.min(10, Math.floor(readFinitePayloadNumber(record.damageBonus, "generated equipment damageBonus"))))
+      ? Math.max(
+          0,
+          Math.min(promotedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(record.damageBonus, "generated equipment damageBonus"))),
+        )
       : undefined;
   const assetKeys = readStringRecord(record.assetKeys, "generated equipment assetKeys");
   const equipmentTuning = readPromotedEquipmentTuning(record.equipmentTuning);
@@ -1151,6 +1166,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
       : undefined;
   const armorCategory = kind === "armor" ? readArmorCategory(record.armorCategory) : undefined;
   const weaponClass = kind === "weapon" ? readWeaponClass(record.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
+  const rarity = readItemRarity(record.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
 
   validateGeneratedEquipmentSlot(kind, equipmentSlot);
 
@@ -1158,6 +1174,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     id,
     name,
     kind,
+    rarity,
     ...(armorCategory ? { armorCategory } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
@@ -1177,7 +1194,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
 
 function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["armoryProduct"] {
   const product = readPlainObject(input, "generated armory product");
-  const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(product.price, "generated armory product price"))));
+  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(product.price, "generated armory product price"))));
   const categoryId = readNonEmptyString(product.categoryId, "generated armory product categoryId");
 
   return {
@@ -1191,7 +1208,7 @@ function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName
 
 function validateGeneratedWeaponProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["weaponProduct"] {
   const product = readPlainObject(input, "generated weapon product");
-  const price = Math.max(0, Math.min(250, Math.floor(readFinitePayloadNumber(product.price, "generated weapon product price"))));
+  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(product.price, "generated weapon product price"))));
   const categoryId = readNonEmptyString(product.categoryId, "generated weapon product categoryId");
 
   return {
@@ -1696,6 +1713,21 @@ function readArmorCategory(value: unknown): GeneratedEquipmentJsonRecord["armorC
   throw new Error("Invalid armor category.");
 }
 
+function readItemRarity(
+  value: unknown,
+  fallback: NonNullable<GeneratedEquipmentJsonRecord["rarity"]> = "common",
+): NonNullable<GeneratedEquipmentJsonRecord["rarity"]> {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  if (value === "common" || value === "uncommon" || value === "rare" || value === "epic" || value === "legendary") {
+    return value;
+  }
+
+  throw new Error("Invalid item rarity.");
+}
+
 function readWeaponClass(
   value: unknown,
   fallback: NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]> = "sword",
@@ -1709,6 +1741,22 @@ function readWeaponClass(
   }
 
   throw new Error("Invalid weapon class.");
+}
+
+function getDefaultGeneratedItemRarity(
+  kind: GeneratedEquipmentJsonRecord["kind"],
+  armorCategory: GeneratedEquipmentJsonRecord["armorCategory"],
+  weaponClass: GeneratedEquipmentJsonRecord["weaponClass"],
+): NonNullable<GeneratedEquipmentJsonRecord["rarity"]> {
+  if (kind === "armor" && armorCategory === "chain") {
+    return "rare";
+  }
+
+  if (kind === "weapon" && weaponClass === "axe") {
+    return "epic";
+  }
+
+  return "common";
 }
 
 function readAssetSourcePath(value: unknown, expectedPrefix: string, label: string, allowedExtensions = [".webp"]): string {

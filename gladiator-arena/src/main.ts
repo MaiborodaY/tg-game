@@ -10,6 +10,7 @@ import {
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
 import { debugTuning } from "./debugTuning";
@@ -37,6 +38,7 @@ bootTelegramWebApp();
 const dom = getDomRefs();
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
 const cityMenu = document.querySelector<HTMLElement>(".city-menu");
+const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
@@ -65,6 +67,7 @@ let isArenaTransitionRunning = false;
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
+mountCityTimeToggle(cityTimeToggle, cityMenu);
 
 function playCityCurtainTransition(onCovered?: () => void): void {
   if (!cityMenu) {

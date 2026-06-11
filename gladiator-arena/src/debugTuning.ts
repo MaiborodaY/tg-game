@@ -445,7 +445,7 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "training_sword": { x: 3, y: 35, angle: 55, scaleX: 0.5, scaleY: 0.5, flipX: false, flipY: false },
   "auto_equipment_breastplate_leather_01": { x: 0, y: 30, angle: 0, scaleX: 1.17, scaleY: 1.32, flipX: false, flipY: false },
   "auto_equipment_weapon_bow_01": { x: -73, y: -3, angle: 90, scaleX: 1.3, scaleY: 1.3, flipX: false, flipY: false },
-  "generated_equipment_helmet_chainmail_01": { x: 0, y: 57, angle: 0, scaleX: 1.3, scaleY: 1.36, flipX: false, flipY: false },
+  "generated_equipment_helmet_chainmail_01": { x: -0.75, y: 53.219, angle: 0, scaleX: 1.19, scaleY: 1.32, flipX: false, flipY: false },
   "generated_equipment_breastplate_chainmail_01": { x: 0, y: 82, angle: 0, scaleX: 1.68, scaleY: 1.76, flipX: false, flipY: false },
   "generated_equipment_back_shoulderguard_chainmail_01": { x: 0, y: 13, angle: 0, scaleX: 1.5, scaleY: 1.4, flipX: true, flipY: false },
   "generated_equipment_front_shoulderguard_chainmail_01": { x: 0, y: 13, angle: 0, scaleX: 1.5, scaleY: 1.4, flipX: false, flipY: false },
@@ -459,6 +459,8 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "generated_equipment_front_shinguard_chainmail_01": { x: 0, y: 9, angle: 0, scaleX: 1.13, scaleY: 0.96, flipX: false, flipY: false },
   "generated_equipment_back_boot_chainmail_01": { x: -25, y: 3, angle: 0, scaleX: 0.83, scaleY: 0.8, flipX: true, flipY: false },
   "generated_equipment_front_boot_chainmail_01": { x: 3, y: 3, angle: 0, scaleX: 0.83, scaleY: 0.8, flipX: false, flipY: false },
+  "generated_equipment_front_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
+  "generated_equipment_back_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

@@ -19,12 +19,23 @@ import {
 } from "./hero";
 import { GENERATED_ARMORY_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
+import {
+  getEquippedShopProductStat,
+  getShopProductActionLabel,
+  getShopProductActionState,
+  getShopProductRarity,
+  getShopProductStat,
+  getShopRarityLabel,
+  getShopRarityShortLabel,
+  type ShopItemRarity,
+} from "./shopPresentation";
 
 export interface ArmoryProduct {
   id: string;
   name: string;
   price: number;
   itemIds: HeroItemId[];
+  rarity?: ShopItemRarity;
 }
 
 export interface ArmoryShopApi {
@@ -34,6 +45,13 @@ export interface ArmoryShopApi {
 }
 
 interface ArmoryCategory {
+  id: string;
+  name: string;
+  shortLabel: string;
+  subcategories: ArmorySubcategory[];
+}
+
+interface ArmorySubcategory {
   id: string;
   name: string;
   shortLabel: string;
@@ -72,84 +90,148 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
     id: "head",
     name: "Head",
-    shortLabel: "HD",
-    products: [{ id: "starter-helmet", name: "Training Helmet", price: 0, itemIds: [STARTER_HELMET_ID] }, ...getGeneratedArmoryProducts("head")],
-  },
-  {
-    id: "chest",
-    name: "Chest",
-    shortLabel: "CH",
-    products: [
-      { id: "starter-breastplate", name: "Leather Breastplate", price: 0, itemIds: [STARTER_BREASTPLATE_ID] },
-      { id: "cloth-breastplate", name: "Cloth Breastplate", price: 0, itemIds: [CLOTH_BREASTPLATE_ID] },
-      ...getGeneratedArmoryProducts("chest"),
+    shortLabel: "HEAD",
+    subcategories: [
+      {
+        id: "head",
+        name: "Head",
+        shortLabel: "HEAD",
+        products: [{ id: "starter-helmet", name: "Training Helmet", price: 0, itemIds: [STARTER_HELMET_ID] }, ...getGeneratedArmoryProductsForSlots(["helmet"])],
+      },
     ],
   },
   {
-    id: "shoulders",
-    name: "Shoulders",
-    shortLabel: "SH",
-    products: [
+    id: "body",
+    name: "Body",
+    shortLabel: "BODY",
+    subcategories: [
       {
-        id: "starter-shoulderguards",
-        name: "Training Shoulderguards",
-        price: 0,
-        itemIds: [STARTER_BACK_SHOULDERGUARD_ID, STARTER_FRONT_SHOULDERGUARD_ID],
+        id: "chest",
+        name: "Chest",
+        shortLabel: "CHEST",
+        products: [
+          { id: "starter-breastplate", name: "Leather Breastplate", price: 0, itemIds: [STARTER_BREASTPLATE_ID] },
+          { id: "cloth-breastplate", name: "Cloth Breastplate", price: 0, itemIds: [CLOTH_BREASTPLATE_ID] },
+          ...getGeneratedArmoryProductsForSlots(["breastplate"]),
+        ],
       },
-      ...getGeneratedArmoryProducts("shoulders"),
     ],
   },
   {
     id: "arms",
     name: "Arms",
-    shortLabel: "AR",
-    products: [
+    shortLabel: "ARMS",
+    subcategories: [
       {
-        id: "starter-wrists",
-        name: "Training Wrists",
-        price: 0,
-        itemIds: [STARTER_BACK_WRIST_ID, STARTER_FRONT_WRIST_ID],
+        id: "shoulders",
+        name: "Shoulders",
+        shortLabel: "SHLD",
+        products: [
+          {
+            id: "starter-shoulderguards",
+            name: "Training Shoulderguards",
+            price: 0,
+            itemIds: [STARTER_BACK_SHOULDERGUARD_ID, STARTER_FRONT_SHOULDERGUARD_ID],
+          },
+          ...getGeneratedArmoryProductsForSlots(["backShoulderguard", "frontShoulderguard"]),
+        ],
       },
-      ...getGeneratedArmoryProducts("arms"),
+      {
+        id: "forearms",
+        name: "Forearms",
+        shortLabel: "FORE",
+        products: [
+          {
+            id: "starter-wrists",
+            name: "Training Forearms",
+            price: 0,
+            itemIds: [STARTER_BACK_WRIST_ID, STARTER_FRONT_WRIST_ID],
+          },
+          ...getGeneratedArmoryProductsForSlots(["backWrist", "frontWrist"]),
+        ],
+      },
+      {
+        id: "hands",
+        name: "Hands",
+        shortLabel: "HAND",
+        products: getGeneratedArmoryProductsForSlots(["backGlove", "frontGlove"]),
+      },
     ],
   },
   {
     id: "legs",
     name: "Legs",
-    shortLabel: "LG",
-    products: [
+    shortLabel: "LEGS",
+    subcategories: [
       {
-        id: "starter-greaves",
-        name: "Training Greaves",
-        price: 0,
-        itemIds: [STARTER_BACK_GREAVE_ID, STARTER_FRONT_GREAVE_ID],
+        id: "thighs",
+        name: "Thighs",
+        shortLabel: "THIGH",
+        products: [
+          {
+            id: "starter-greaves",
+            name: "Training Thigh Guards",
+            price: 0,
+            itemIds: [STARTER_BACK_GREAVE_ID, STARTER_FRONT_GREAVE_ID],
+          },
+          ...getGeneratedArmoryProductsForSlots(["backGreave", "frontGreave"]),
+        ],
       },
       {
-        id: "starter-shinguards",
-        name: "Training Shinguards",
-        price: 0,
-        itemIds: [STARTER_BACK_SHINGUARD_ID, STARTER_FRONT_SHINGUARD_ID],
+        id: "shins",
+        name: "Shins",
+        shortLabel: "SHIN",
+        products: [
+          {
+            id: "starter-shinguards",
+            name: "Training Shinguards",
+            price: 0,
+            itemIds: [STARTER_BACK_SHINGUARD_ID, STARTER_FRONT_SHINGUARD_ID],
+          },
+          ...getGeneratedArmoryProductsForSlots(["backShinguard", "frontShinguard"]),
+        ],
       },
       {
-        id: "starter-boots",
-        name: "Training Boots",
-        price: 0,
-        itemIds: [STARTER_BACK_BOOT_ID, STARTER_FRONT_BOOT_ID],
+        id: "feet",
+        name: "Feet",
+        shortLabel: "FOOT",
+        products: [
+          {
+            id: "starter-boots",
+            name: "Training Boots",
+            price: 0,
+            itemIds: [STARTER_BACK_BOOT_ID, STARTER_FRONT_BOOT_ID],
+          },
+          ...getGeneratedArmoryProductsForSlots(["backBoot", "frontBoot"]),
+        ],
       },
-      ...getGeneratedArmoryProducts("legs"),
     ],
   },
 ];
 
-function getGeneratedArmoryProducts(categoryId: string): ArmoryProduct[] {
-  const products = GENERATED_ARMORY_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    itemIds: [...product.itemIds],
-  }));
+function getGeneratedArmoryProductsForSlots(slotKeys: readonly HeroEquipmentSlotKey[]): ArmoryProduct[] {
+  const products = GENERATED_ARMORY_PRODUCTS.flatMap((product) => {
+    const item = product.itemIds[0] ? HERO_ITEM_CATALOG[product.itemIds[0]] : undefined;
+
+    if (!item || !slotKeys.some((slotKey) => slotKey === item.equipmentSlot)) {
+      return [];
+    }
+
+    return [
+      {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        itemIds: [...product.itemIds],
+      },
+    ];
+  });
 
   return pairGeneratedArmoryProducts(products);
+}
+
+function getArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduct[] {
+  return category.subcategories.flatMap((subcategory) => subcategory.products);
 }
 
 function pairGeneratedArmoryProducts(products: ArmoryProduct[]): ArmoryProduct[] {
@@ -277,6 +359,7 @@ function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotCo
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
   let selectedCategoryId: string | undefined;
+  let selectedSubcategoryId: string | undefined;
   let previewProduct: ArmoryProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -319,13 +402,24 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   const level = document.createElement("span");
   level.className = "armory-shop__level";
 
+  const headerMeta = document.createElement("div");
+  headerMeta.className = "armory-shop__header-meta";
+  headerMeta.append(gold, level);
+
+  const selected = document.createElement("div");
+  selected.className = "armory-shop__selected";
+
+  const subcategories = document.createElement("div");
+  subcategories.className = "armory-shop__subcategories";
+
   const content = document.createElement("div");
   content.className = "armory-shop__content";
 
   const back = document.createElement("button");
   back.className = "armory-shop__back";
   back.type = "button";
-  back.textContent = "Back";
+  back.textContent = "<";
+  back.setAttribute("aria-label", "Back");
   back.addEventListener("click", () => {
     if (previewProduct) {
       clearProductPreview();
@@ -336,8 +430,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     close();
   });
 
-  header.append(gold, title, level);
-  tray.append(header, content, back);
+  header.append(back, title, headerMeta);
+  tray.append(header, subcategories, selected, content);
   menu.append(categoryRail, tray);
   if (options.mountPreview) {
     panel.append(previewShell);
@@ -349,6 +443,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   function open(): void {
     clearTransitionTimer();
     selectedCategoryId = ARMORY_CATEGORIES[0]?.id;
+    selectedSubcategoryId = ARMORY_CATEGORIES[0]?.subcategories[0]?.id;
     clearProductPreview();
     options.onOpen?.();
     scheduleShopTransition(() => {
@@ -382,29 +477,44 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   function render(): void {
     const hero = options.getHero();
     const selectedCategory = ARMORY_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? ARMORY_CATEGORIES[0]!;
+    const selectedSubcategory =
+      selectedCategory.subcategories.find((subcategory) => subcategory.id === selectedSubcategoryId) ?? selectedCategory.subcategories[0]!;
 
     selectedCategoryId = selectedCategory.id;
+    selectedSubcategoryId = selectedSubcategory.id;
     title.textContent = selectedCategory.name;
     gold.textContent = `GOLD ${hero.gold}`;
     level.textContent = `LVL ${hero.level}`;
     categoryRail.replaceChildren();
+    subcategories.replaceChildren();
     content.replaceChildren();
+    selected.replaceChildren();
+    subcategories.hidden = selectedCategory.subcategories.length <= 1;
+    selected.hidden = !previewProduct;
     content.classList.toggle("armory-shop__content--categories", false);
-    content.classList.toggle("armory-shop__content--products", !previewProduct);
-    content.classList.toggle("armory-shop__content--confirm", Boolean(previewProduct));
-    back.hidden = Boolean(previewProduct);
+    content.classList.toggle("armory-shop__content--products", true);
+    content.classList.toggle("armory-shop__content--has-selection", Boolean(previewProduct));
+    content.classList.toggle("armory-shop__content--confirm", false);
 
     ARMORY_CATEGORIES.forEach((category) => {
       categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
     });
 
+    selectedCategory.subcategories.forEach((subcategory) => {
+      subcategories.append(createSubcategoryButton(subcategory, subcategory.id === selectedSubcategory.id));
+    });
+
     if (previewProduct) {
-      content.append(createPreviewBuyButton(previewProduct, hero), createPreviewBackButton());
+      selected.append(createSelectedProductStrip(previewProduct, hero));
+    }
+
+    if (selectedSubcategory.products.length === 0) {
+      content.append(createEmptyState("No items"));
       return;
     }
 
-    selectedCategory.products.forEach((product) => {
-      content.append(createProductButton(product, hero));
+    selectedSubcategory.products.forEach((product) => {
+      content.append(createProductButton(product, hero, previewProduct?.id === product.id));
     });
   }
 
@@ -418,7 +528,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function createCategoryButton(category: ArmoryCategory, isActive: boolean): HTMLButtonElement {
     const button = document.createElement("button");
-    const iconUrl = getShopProductIconUrl(category.products.flatMap((product) => product.itemIds));
+    const iconUrl = getShopProductIconUrl(getArmoryCategoryProducts(category).flatMap((product) => product.itemIds));
 
     button.className = "armory-shop__category-button";
     button.classList.toggle("armory-shop__category-button--active", isActive);
@@ -441,8 +551,10 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       fallback.textContent = category.shortLabel;
       button.append(fallback);
     }
+    button.append(createCategoryLabel(category.shortLabel));
     button.addEventListener("click", () => {
       selectedCategoryId = category.id;
+      selectedSubcategoryId = category.subcategories[0]?.id;
       clearProductPreview();
       render();
     });
@@ -450,26 +562,40 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     return button;
   }
 
-  function createProductButton(product: ArmoryProduct, hero: HeroState): HTMLButtonElement {
+  function createSubcategoryButton(subcategory: ArmorySubcategory, isActive: boolean): HTMLButtonElement {
     const button = document.createElement("button");
-    const isEquipped = product.itemIds.every((itemId) => {
-      const item = HERO_ITEM_CATALOG[itemId];
 
-      return hero.equipment[item.equipmentSlot] === itemId;
-    });
-    const iconUrl = getShopProductIconUrl(product.itemIds);
-
-    button.className = "armory-shop__option armory-shop__option--product";
+    button.className = "armory-shop__subcategory-button";
+    button.classList.toggle("armory-shop__subcategory-button--active", isActive);
     button.type = "button";
-    button.disabled = isEquipped;
+    button.textContent = subcategory.name;
+    button.title = subcategory.name;
+    button.setAttribute("aria-label", subcategory.name);
+    button.setAttribute("aria-pressed", String(isActive));
+    button.addEventListener("click", () => {
+      selectedSubcategoryId = subcategory.id;
+      clearProductPreview();
+      render();
+    });
+
+    return button;
+  }
+
+  function createProductButton(product: ArmoryProduct, hero: HeroState, isSelected: boolean): HTMLButtonElement {
+    const button = document.createElement("button");
+    const iconUrl = getShopProductIconUrl(product.itemIds);
+    const rarity = getShopProductRarity(product.itemIds, product.rarity);
+    const armor = getShopProductStat(product.itemIds, "armor");
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+
+    button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
+    button.classList.toggle("armory-shop__option--selected", isSelected);
+    button.classList.toggle("armory-shop__option--owned", actionState === "equip");
+    button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
+    button.type = "button";
     button.title = product.name;
-    button.setAttribute("aria-label", `${product.name}, ${product.price} GOLD`);
-    button.innerHTML = iconUrl
-      ? `
-        <img class="armory-shop__product-icon" src="${iconUrl}" alt="" draggable="false" />
-        <span class="armory-shop__product-price">${product.price} GOLD</span>
-      `
-      : `<span class="armory-shop__product-price">${product.price} GOLD</span>`;
+    button.setAttribute("aria-label", `${product.name}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${getShopProductActionLabel(actionState, product.price)}`);
+    button.append(createRarityBadge(rarity), createProductIcon(iconUrl), createProductStats("AR", armor, product.price));
     button.addEventListener("click", () => {
       previewProduct = product;
       options.onPreview?.(product);
@@ -479,36 +605,30 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     return button;
   }
 
+  function createSelectedProductStrip(product: ArmoryProduct, hero: HeroState): HTMLElement {
+    const strip = document.createElement("div");
+    const iconUrl = getShopProductIconUrl(product.itemIds);
+    const rarity = getShopProductRarity(product.itemIds, product.rarity);
+    const armor = getShopProductStat(product.itemIds, "armor");
+    const currentArmor = getEquippedShopProductStat(hero, product.itemIds, "armor");
+
+    strip.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
+    strip.append(createProductIcon(iconUrl, "armory-shop__selected-icon"), createSelectedMeta(rarity, "AR", armor, currentArmor, product.price), createPreviewBuyButton(product, hero));
+
+    return strip;
+  }
+
   function createPreviewBuyButton(product: ArmoryProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
-    const isEquipped = product.itemIds.every((itemId) => {
-      const item = HERO_ITEM_CATALOG[itemId];
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
 
-      return hero.equipment[item.equipmentSlot] === itemId;
-    });
-    const canBuy = hero.gold >= product.price;
-
-    button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--buy";
+    button.className = "armory-shop__selected-buy";
     button.type = "button";
-    button.disabled = isEquipped || !canBuy;
-    button.textContent = `Buy - ${product.price} GOLD`;
+    button.disabled = actionState === "equipped" || actionState === "no-gold";
+    button.textContent = getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       previewProduct = undefined;
       options.onBuy(product);
-      render();
-    });
-
-    return button;
-  }
-
-  function createPreviewBackButton(): HTMLButtonElement {
-    const button = document.createElement("button");
-
-    button.className = "armory-shop__option armory-shop__confirm-button armory-shop__confirm-button--back";
-    button.type = "button";
-    button.textContent = "Back";
-    button.addEventListener("click", () => {
-      clearProductPreview();
       render();
     });
 
@@ -546,4 +666,87 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   return { open, close, render };
+}
+
+function createCategoryLabel(text: string): HTMLElement {
+  const label = document.createElement("span");
+
+  label.className = "armory-shop__category-label";
+  label.textContent = text;
+
+  return label;
+}
+
+function createRarityBadge(rarity: ShopItemRarity): HTMLElement {
+  const badge = document.createElement("span");
+
+  badge.className = "armory-shop__rarity-badge";
+  badge.textContent = getShopRarityShortLabel(rarity);
+  badge.title = getShopRarityLabel(rarity);
+
+  return badge;
+}
+
+function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {
+  if (!iconUrl) {
+    const fallback = document.createElement("span");
+
+    fallback.className = `${className} armory-shop__product-icon--missing`;
+    fallback.textContent = "?";
+
+    return fallback;
+  }
+
+  const icon = document.createElement("img");
+
+  icon.className = className;
+  icon.src = iconUrl;
+  icon.alt = "";
+  icon.draggable = false;
+
+  return icon;
+}
+
+function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {
+  const stats = document.createElement("span");
+  const statNode = document.createElement("span");
+  const priceNode = document.createElement("span");
+
+  stats.className = "armory-shop__product-stats";
+  statNode.className = "armory-shop__product-stat";
+  statNode.textContent = `${statLabel} ${stat}`;
+  priceNode.className = "armory-shop__product-price";
+  priceNode.textContent = `${price} G`;
+  stats.append(statNode, priceNode);
+
+  return stats;
+}
+
+function createSelectedMeta(rarity: ShopItemRarity, statLabel: string, stat: number, currentStat: number, price: number): HTMLElement {
+  const meta = document.createElement("div");
+  const rarityNode = document.createElement("span");
+  const statNode = document.createElement("span");
+  const priceNode = document.createElement("span");
+
+  meta.className = "armory-shop__selected-meta";
+  rarityNode.className = "armory-shop__selected-rarity";
+  rarityNode.textContent = getShopRarityLabel(rarity);
+  statNode.className = "armory-shop__selected-stat";
+  statNode.textContent = currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} > ${stat}`;
+  priceNode.className = "armory-shop__selected-price";
+  priceNode.textContent = `${price} GOLD`;
+  meta.append(rarityNode, statNode, priceNode);
+
+  return meta;
+}
+
+function createEmptyState(text: string): HTMLButtonElement {
+  const button = document.createElement("button");
+
+  button.className = "armory-shop__option armory-shop__option--empty";
+  button.type = "button";
+  button.disabled = true;
+  button.textContent = text;
+
+  return button;
 }

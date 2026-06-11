@@ -31,7 +31,8 @@
         "generated_equipment_helmet_chainmail_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_helmet_cloth_01",
@@ -65,7 +66,8 @@
         "generated_equipment_helmet_cloth_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "rarity": "common"
   },
   {
     "id": "generated_equipment_helmet_cloth_02",
@@ -99,7 +101,8 @@
         "generated_equipment_helmet_cloth_02"
       ],
       "categoryId": "head"
-    }
+    },
+    "rarity": "common"
   },
   {
     "id": "generated_equipment_breastplate_chainmail_01",
@@ -133,7 +136,8 @@
         "generated_equipment_breastplate_chainmail_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_back_shoulderguard_chainmail_01",
@@ -167,7 +171,8 @@
         "generated_equipment_back_shoulderguard_chainmail_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_front_shoulderguard_chainmail_01",
@@ -201,7 +206,8 @@
         "generated_equipment_front_shoulderguard_chainmail_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_back_shoulderguard_cloth_01",
@@ -235,7 +241,8 @@
         "generated_equipment_back_shoulderguard_cloth_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "rarity": "common"
   },
   {
     "id": "generated_equipment_front_shoulderguard_cloth_01",
@@ -269,7 +276,8 @@
         "generated_equipment_front_shoulderguard_cloth_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "rarity": "common"
   },
   {
     "id": "generated_equipment_back_wrist_chainmail_01",
@@ -303,7 +311,8 @@
         "generated_equipment_back_wrist_chainmail_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_front_wrist_chainmail_01",
@@ -337,7 +346,8 @@
         "generated_equipment_front_wrist_chainmail_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_back_glove_cloth_01",
@@ -371,7 +381,8 @@
         "generated_equipment_back_glove_cloth_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "rarity": "common"
   },
   {
     "id": "generated_equipment_front_glove_cloth_01",
@@ -405,7 +416,8 @@
         "generated_equipment_front_glove_cloth_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "rarity": "common"
   },
   {
     "id": "generated_equipment_back_glove_chainmail_03",
@@ -439,7 +451,8 @@
         "generated_equipment_back_glove_chainmail_03"
       ],
       "categoryId": "arms"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_front_glove_chainmail_03",
@@ -473,7 +486,8 @@
         "generated_equipment_front_glove_chainmail_03"
       ],
       "categoryId": "arms"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_back_greave_chainmail_01",
@@ -507,7 +521,8 @@
         "generated_equipment_back_greave_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_front_greave_chainmail_01",
@@ -541,7 +556,8 @@
         "generated_equipment_front_greave_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_back_shinguard_chainmail_01",
@@ -575,7 +591,8 @@
         "generated_equipment_back_shinguard_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_front_shinguard_chainmail_01",
@@ -609,7 +626,8 @@
         "generated_equipment_front_shinguard_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_back_boot_chainmail_01",
@@ -643,7 +661,8 @@
         "generated_equipment_back_boot_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_front_boot_chainmail_01",
@@ -677,7 +696,8 @@
         "generated_equipment_front_boot_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "rarity": "rare"
   },
   {
     "id": "generated_equipment_weapon_axe_01",
@@ -711,7 +731,8 @@
         "generated_equipment_weapon_axe_01"
       ],
       "categoryId": "axes"
-    }
+    },
+    "rarity": "epic"
   },
   {
     "id": "generated_equipment_weapon_bow_01",
@@ -745,6 +766,7 @@
         "generated_equipment_weapon_bow_01"
       ],
       "categoryId": "bows"
-    }
+    },
+    "rarity": "common"
   }
 ]
