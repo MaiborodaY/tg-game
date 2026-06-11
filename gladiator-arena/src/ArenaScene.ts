@@ -139,6 +139,12 @@ type FighterPart = Phaser.GameObjects.GameObject & {
   ) => Phaser.GameObjects.Components.TransformMatrix;
 };
 
+type ShadowFilterTarget = FighterPart & {
+  enableFilters?: () => ShadowFilterTarget;
+  filters?: Phaser.Types.GameObjects.FiltersInternalExternal | null;
+  setRenderFilters?: (value: boolean) => ShadowFilterTarget;
+};
+
 interface FighterVisual {
   body: FighterPart;
   head: FighterPart;
@@ -227,6 +233,8 @@ interface PaperDollEquipment {
 }
 
 interface PaperDollFaceParts {
+  eyeLeftCover?: FighterPart;
+  eyeRightCover?: FighterPart;
   eyeLeft?: FighterPart;
   eyeRight?: FighterPart;
 }
@@ -345,6 +353,9 @@ const ARENA_ENTRY_START_CLOSENESS = 0.30;
 const PAPER_DOLL_BASE_SCALE = 0.52;
 const PAPER_DOLL_SHADOW_DEPTH = -1;
 const PAPER_DOLL_SHADOW_COLOR = 0x120805;
+const PAPER_DOLL_SHADOW_BLUR_QUALITY = 0;
+const PAPER_DOLL_SHADOW_BLUR_STRENGTH = 0.75;
+const PAPER_DOLL_SHADOW_BLUR_STEPS = 2;
 const SLASH_ARC_DEPTH = 36;
 const BLOCK_POPUP_SCREEN_SIZE = 88;
 const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
@@ -353,6 +364,8 @@ const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
 const POPUP_PREVIEW_DAMAGE_AMOUNT = 10;
 const POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT = 7;
 const POPUP_PREVIEW_SPACING_X = 54;
+const paperDollShadowBlurFilters = new WeakMap<Phaser.GameObjects.GameObject, Phaser.Filters.Blur>();
+const paperDollShadowBlurValues = new WeakMap<Phaser.GameObjects.GameObject, number>();
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
   skin: 0xefaa7b,
@@ -2301,6 +2314,7 @@ function createPaperDollShadowRig(
   shadowRootContainer.add(equipmentLayer);
   shadowRoot.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing * debugTuning.shadowScaleX;
   shadowRoot.scaleY = PAPER_DOLL_BASE_SCALE * debugTuning.shadowScaleY;
+  applyPaperDollShadowBlur(shadowRoot);
 
   return { root: shadowRoot, parts, equipment, equipmentAnchors, faceParts };
 }
@@ -2319,6 +2333,68 @@ function tintPaperDollShadowObject(gameObject: Phaser.GameObjects.GameObject): v
   if (gameObject instanceof Phaser.GameObjects.Container) {
     gameObject.list.forEach((child) => tintPaperDollShadowObject(child));
   }
+}
+
+function applyPaperDollShadowBlur(shadowRoot: FighterPart): void {
+  const blur = Math.max(0, debugTuning.shadowBlur);
+  const previousBlur = paperDollShadowBlurValues.get(shadowRoot);
+
+  if (previousBlur === blur) {
+    return;
+  }
+
+  const target = shadowRoot as ShadowFilterTarget;
+  const currentFilter = paperDollShadowBlurFilters.get(shadowRoot);
+
+  paperDollShadowBlurValues.set(shadowRoot, blur);
+
+  if (blur <= 0) {
+    const filters = target.filters?.internal;
+
+    if (currentFilter && filters) {
+      filters.remove(currentFilter, true);
+    } else {
+      currentFilter?.destroy();
+    }
+
+    paperDollShadowBlurFilters.delete(shadowRoot);
+    target.setRenderFilters?.(false);
+    return;
+  }
+
+  if (!target.enableFilters) {
+    return;
+  }
+
+  target.enableFilters();
+  const filters = target.filters?.internal;
+
+  if (!filters) {
+    return;
+  }
+
+  target.setRenderFilters?.(true);
+
+  if (currentFilter) {
+    currentFilter.quality = PAPER_DOLL_SHADOW_BLUR_QUALITY;
+    currentFilter.x = blur;
+    currentFilter.y = blur * 0.7;
+    currentFilter.strength = PAPER_DOLL_SHADOW_BLUR_STRENGTH;
+    currentFilter.color = PAPER_DOLL_SHADOW_COLOR;
+    currentFilter.steps = PAPER_DOLL_SHADOW_BLUR_STEPS;
+    return;
+  }
+
+  const nextFilter = filters.addBlur(
+    PAPER_DOLL_SHADOW_BLUR_QUALITY,
+    blur,
+    blur * 0.7,
+    PAPER_DOLL_SHADOW_BLUR_STRENGTH,
+    PAPER_DOLL_SHADOW_COLOR,
+    PAPER_DOLL_SHADOW_BLUR_STEPS,
+  );
+
+  paperDollShadowBlurFilters.set(shadowRoot, nextFilter);
 }
 
 function applyCityHeroLighting(fighter: FighterVisual): void {
@@ -2434,6 +2510,7 @@ function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY
   fighter.shadow.angle = 0;
   fighter.shadow.setVisible(highShadowVisible);
   fighter.shadow.setAlpha(highShadowVisible ? debugTuning.shadowAlpha : 0);
+  applyPaperDollShadowBlur(fighter.shadow);
   fighter.lowShadow.x = centerX + debugTuning.shadowOffsetX * scale;
   fighter.lowShadow.y = feetY + 9 * scale;
   fighter.lowShadow.scaleX = lowShadowScale * 0.95;
@@ -2582,12 +2659,27 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
       : undefined;
 
   if (!visibility) {
+    syncPaperDollShadowSilhouette(rig.shadow);
     return;
   }
 
   PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
     rig.equipment[slotKey]?.setVisible(visibility[slotKey]);
-    rig.shadow?.equipment[slotKey]?.setVisible(visibility[slotKey]);
+  });
+  syncPaperDollShadowSilhouette(rig.shadow, visibility);
+}
+
+function syncPaperDollShadowSilhouette(
+  shadow: PaperDollShadowRig | undefined,
+  visibility?: Record<PaperDollEquipmentSlotKey, boolean>,
+): void {
+  if (!shadow) {
+    return;
+  }
+
+  Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));
+  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    shadow.equipment[slotKey]?.setVisible(slotKey === "weaponMain" && Boolean(visibility?.[slotKey]));
   });
 }
 
@@ -3331,6 +3423,8 @@ function addPaperDollFaceOverlay(
     const rightCover = target.add.ellipse(HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, HEAD_FACE_EYE_COVER_WIDTH, HEAD_FACE_EYE_COVER_HEIGHT, HEAD_FACE_EYE_WHITE);
 
     partContainer.add([leftCover, rightCover]);
+    faceParts.eyeLeftCover = part(leftCover);
+    faceParts.eyeRightCover = part(rightCover);
   }
 
   const eyeLeft = target.add.ellipse(HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, HEAD_FACE_EYE_WIDTH, HEAD_FACE_EYE_HEIGHT, HEAD_FACE_EYE_BLACK);

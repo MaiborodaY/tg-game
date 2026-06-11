@@ -48,6 +48,27 @@ test("paper doll draws equipment through a top overlay anchored to body parts", 
   assert.equal(arenaSceneSource.includes("partContainer.add(armorContainer);"), false);
 });
 
+test("paper doll high shadow hides armor equipment and face overlays", () => {
+  assert.equal(arenaSceneSource.includes("function syncPaperDollShadowSilhouette("), true);
+  assert.equal(arenaSceneSource.includes("function addPaperDollShadowPartVisual("), false);
+  assert.equal(arenaSceneSource.includes("function drawPaperDollShadowPart("), false);
+  assert.equal(arenaSceneSource.includes("eyeLeftCover?: FighterPart;"), true);
+  assert.equal(arenaSceneSource.includes("faceParts.eyeLeftCover = part(leftCover);"), true);
+  assert.equal(arenaSceneSource.includes("faceParts.eyeRightCover = part(rightCover);"), true);
+  assert.equal(arenaSceneSource.includes("Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));"), true);
+  assert.equal(arenaSceneSource.includes('slotKey === "weaponMain" && Boolean(visibility?.[slotKey])'), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(rig.shadow, visibility);"), true);
+  assert.doesNotMatch(arenaSceneSource, /rig\.shadow\?\.equipment\[slotKey\]\?\.setVisible\(visibility\[slotKey\]\)/);
+});
+
+test("paper doll high shadow can use a cached blur filter", () => {
+  assert.equal(arenaSceneSource.includes("const paperDollShadowBlurFilters = new WeakMap"), true);
+  assert.equal(arenaSceneSource.includes("function applyPaperDollShadowBlur("), true);
+  assert.equal(arenaSceneSource.includes("filters.addBlur("), true);
+  assert.equal(arenaSceneSource.includes("filters.remove(currentFilter, true);"), true);
+  assert.equal(arenaSceneSource.includes("applyPaperDollShadowBlur(fighter.shadow);"), true);
+});
+
 test("paper doll loader includes generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ASSETS"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ASSETS"), true);

@@ -127,6 +127,7 @@ test("debug panel source contains precision controls and grid", () => {
   assert.equal(debugPanelSource.includes("Origin Y"), true);
   assert.equal(debugPanelSource.includes("Player Y"), true);
   assert.equal(debugPanelSource.includes("Enemy Y"), true);
+  assert.equal(debugPanelSource.includes("Shadow blur"), true);
   assert.equal(debugPanelSource.includes("Buttons rel X"), false);
   assert.equal(debugPanelSource.includes("Arc rotation"), true);
   assert.equal(debugPanelSource.includes("Arc radius"), true);

@@ -127,6 +127,7 @@ test("debug tuning normalizes unsafe values", () => {
     enemyStageY: -999,
     playerScale: 99,
     enemyScale: -4,
+    shadowBlur: 999,
     cameraFeetScreenY: 999,
     cameraCloseFeetShiftY: -999,
     cameraFeetMinScreenRatio: 99,
@@ -206,6 +207,7 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.enemyStageY, -500);
   assert.equal(normalized.playerScale, 6);
   assert.equal(normalized.enemyScale, 0.1);
+  assert.equal(normalized.shadowBlur, 6);
   assert.equal(normalized.cameraFeetScreenY, 720);
   assert.equal(normalized.cameraCloseFeetShiftY, -180);
   assert.equal(normalized.cameraFeetMinScreenRatio, 0.75);
@@ -282,6 +284,7 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.playerStageY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageX, 130);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageY, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.shadowBlur, 1.2);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetScreenY, 560);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraCloseFeetShiftY, 70);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetMinScreenRatio, 0.58);

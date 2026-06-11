@@ -209,6 +209,7 @@ export interface ArenaDebugTuning {
   shadowScaleX: number;
   shadowScaleY: number;
   shadowAlpha: number;
+  shadowBlur: number;
   cameraFeetScreenY: number;
   cameraCloseFeetShiftY: number;
   cameraFeetMinScreenRatio: number;
@@ -1180,10 +1181,11 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   playerScale: DEFAULT_PLAYER_SCALE,
   enemyScale: DEFAULT_ENEMY_SCALE,
   shadowOffsetX: 0,
-  shadowOffsetY: 76,
-  shadowScaleX: 1.11,
-  shadowScaleY: -0.68,
-  shadowAlpha: 0.34,
+  shadowOffsetY: 66,
+  shadowScaleX: 1.08,
+  shadowScaleY: -0.49,
+  shadowAlpha: 0.8,
+  shadowBlur: 1.2,
   cameraFeetScreenY: DEFAULT_CAMERA_FEET_SCREEN_Y,
   cameraCloseFeetShiftY: DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y,
   cameraFeetMinScreenRatio: DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO,
@@ -1388,6 +1390,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     shadowScaleX: clampNumber(input.shadowScaleX, -4, 4, defaultDebugTuning.shadowScaleX),
     shadowScaleY: clampNumber(input.shadowScaleY, -1, 1, defaultDebugTuning.shadowScaleY),
     shadowAlpha: clampNumber(input.shadowAlpha, 0, 1, defaultDebugTuning.shadowAlpha),
+    shadowBlur: clampNumber(input.shadowBlur, 0, 6, defaultDebugTuning.shadowBlur),
     cameraFeetScreenY: clampNumber(input.cameraFeetScreenY, 260, 720, defaultDebugTuning.cameraFeetScreenY),
     cameraCloseFeetShiftY: clampNumber(input.cameraCloseFeetShiftY, -180, 180, defaultDebugTuning.cameraCloseFeetShiftY),
     cameraFeetMinScreenRatio: clampNumber(input.cameraFeetMinScreenRatio, 0.35, 0.75, defaultDebugTuning.cameraFeetMinScreenRatio),

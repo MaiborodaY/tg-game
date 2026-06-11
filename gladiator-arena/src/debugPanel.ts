@@ -247,6 +247,7 @@ const controlGroups: DebugControlGroup[] = [
       { type: "range", key: "shadowScaleX", label: "Shadow scale X", min: -4, max: 4, step: 0.01, resetValue: defaultDebugTuning.shadowScaleX },
       { type: "range", key: "shadowScaleY", label: "Shadow scale Y", min: -1, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowScaleY },
       { type: "range", key: "shadowAlpha", label: "Shadow alpha", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowAlpha },
+      { type: "range", key: "shadowBlur", label: "Shadow blur", min: 0, max: 6, step: 0.1, resetValue: defaultDebugTuning.shadowBlur },
     ],
   },
   {
