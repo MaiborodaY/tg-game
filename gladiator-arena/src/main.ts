@@ -28,6 +28,7 @@ import {
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { mountSettingsMenu } from "./settingsMenu";
+import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -232,6 +233,20 @@ function mountCityPreviews(): void {
   }
 }
 
+function prewarmShopItemIconsWhenIdle(): void {
+  const prewarm = () => {
+    void prewarmShopItemIconsForBrowserCache();
+  };
+  const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number };
+
+  if (idleWindow.requestIdleCallback) {
+    idleWindow.requestIdleCallback(prewarm, { timeout: 2000 });
+    return;
+  }
+
+  window.setTimeout(prewarm, 250);
+}
+
 function unmountCityPreviews(): void {
   cityScene?.destroy();
   unmountHeroPortraitPreview?.();
@@ -419,6 +434,7 @@ armoryButton?.addEventListener("click", () => {
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 renderCityHeroInfo(cityHeroWidgetRefs, hero);
 mountCityPreviews();
+prewarmShopItemIconsWhenIdle();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,

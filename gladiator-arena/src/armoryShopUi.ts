@@ -542,6 +542,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       icon.className = "armory-shop__category-icon";
       icon.src = iconUrl;
       icon.alt = "";
+      icon.decoding = "async";
       icon.draggable = false;
       button.append(icon);
     } else {
@@ -702,6 +703,7 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   icon.className = className;
   icon.src = iconUrl;
   icon.alt = "";
+  icon.decoding = "async";
   icon.draggable = false;
 
   return icon;
