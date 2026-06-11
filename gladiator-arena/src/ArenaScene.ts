@@ -1303,6 +1303,10 @@ class CityHeroScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     this.updateCityClouds(delta);
 
+    if (this.cameraMode !== "default") {
+      return;
+    }
+
     const idle = getActiveBodyAnimation("idle");
 
     if (!this.fighter || !idle.enabled) {
@@ -1331,6 +1335,7 @@ class CityHeroScene extends Phaser.Scene {
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
     this.syncCamera(instant, 1);
+    this.applyStaticIdlePose();
   }
 
   focusWeaponShop(instant = false): void {
@@ -1340,6 +1345,7 @@ class CityHeroScene extends Phaser.Scene {
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
     this.syncCamera(instant, 1);
+    this.applyStaticIdlePose();
   }
 
   focusArenaTransition(): Promise<void> {
@@ -1367,6 +1373,16 @@ class CityHeroScene extends Phaser.Scene {
     this.syncFighterLayout();
     applyCityHeroLighting(fighter, this.cityLightingAmount);
     this.syncCamera(true);
+  }
+
+  private applyStaticIdlePose(): void {
+    const idle = getActiveBodyAnimation("idle");
+
+    if (!this.fighter || !idle.enabled) {
+      return;
+    }
+
+    applyBodyAnimationBlend(this.fighter, idle, 0);
   }
 
   private syncTimeOfDay(timeOfDay: CityTimeOfDay, instant = false): void {
