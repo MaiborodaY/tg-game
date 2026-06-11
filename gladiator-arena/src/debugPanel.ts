@@ -2,6 +2,7 @@ import {
   ACTION_BUTTON_OFFSET_KEYS,
   ANIMATION_EDIT_MODES,
   BODY_ANIMATION_KEYS,
+  CHARACTER_CANVAS_EDIT_MODES,
   CLASSIC_ACTION_WHEEL_BUTTONS,
   CLASSIC_ACTION_WHEEL_MODES,
   DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS,
@@ -25,6 +26,7 @@ import {
   type ArenaDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type CharacterCanvasEditMode,
   type ClassicActionButtonSlotTuning,
   type ClassicActionWheelMode,
   type DebugPopupPreviewKind,
@@ -38,6 +40,12 @@ import {
   type SlashArcAttackKey,
   type SlashArcTuning,
 } from "./debugTuning";
+import {
+  subscribeDebugCharacterEquipmentDelta,
+  subscribeDebugCharacterEquipmentSelect,
+  type DebugCharacterEquipmentDelta,
+  type DebugCharacterEquipmentSelection,
+} from "./debugCharacterEquipmentBridge";
 import {
   createDefaultHeroInventory,
   ALL_HERO_ITEM_IDS,
@@ -464,6 +472,7 @@ let activeNudgeStep = 5;
 let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let activeEquipmentItemId: HeroItemId | "" = "";
 let isDebugUndoShortcutMounted = false;
+let isCharacterCanvasEquipmentBridgeMounted = false;
 let debugHeroEquipment: HeroEquipment | undefined;
 let debugHeroInventory: HeroInventoryEntry[] = createDefaultHeroInventory();
 let notifyHeroEquipmentChange: ((equipment: HeroEquipment) => void) | undefined;
@@ -507,6 +516,13 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     <details class="debug-rig-panel" open>
       <summary>Rig editor</summary>
       <div class="debug-rig-editor">
+        <fieldset class="debug-rig-editor__canvas-mode">
+          <legend>Canvas edit</legend>
+          <div class="debug-rig-editor__canvas-mode-options" role="group" aria-label="Character canvas edit mode">
+            <button class="debug-panel__reset" type="button" data-character-canvas-edit-mode="parts">Parts</button>
+            <button class="debug-panel__reset" type="button" data-character-canvas-edit-mode="equipment">Equipment</button>
+          </div>
+        </fieldset>
         <label class="debug-rig-editor__part">
           <span>Part</span>
           <select class="debug-rig-editor__select"></select>
@@ -736,6 +752,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountItemEquipmentEditor(itemEquipmentBody);
   mountAutoEquipmentEditor(autoEquipmentBody);
   mountNudgeToolbar(nudgeToolbar);
+  mountCharacterCanvasEquipmentBridge(panel);
   mountModeTabs(panel);
 
   saveButton.addEventListener("click", async () => {
@@ -942,6 +959,25 @@ function mountNudgeToolbar(toolbar: HTMLElement): void {
         nudgeSelectedRigPart(action);
       }
     });
+  });
+}
+
+function mountCharacterCanvasEquipmentBridge(panel: HTMLElement): void {
+  if (isCharacterCanvasEquipmentBridgeMounted) {
+    return;
+  }
+
+  isCharacterCanvasEquipmentBridgeMounted = true;
+
+  subscribeDebugCharacterEquipmentSelect((selection) => {
+    selectCharacterCanvasEquipment(selection);
+    syncEquipmentEditor(panel);
+  });
+
+  subscribeDebugCharacterEquipmentDelta((selection, delta) => {
+    selectCharacterCanvasEquipment(selection);
+    updateCharacterCanvasEquipmentDelta(delta);
+    syncEquipmentEditor(panel);
   });
 }
 
@@ -1426,6 +1462,7 @@ function mountRigEditor(editor: HTMLElement): void {
   const resetAnimationToIdle = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__reset-animation-to-idle");
   const resetFace = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__face-reset");
   const animationSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
+  const characterCanvasModeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-character-canvas-edit-mode]")];
   const animationModeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]")];
   const copyPoseAToB = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-pose-a-to-b");
   const animationEnabled = editor.querySelector<HTMLInputElement>("input[data-animation-enabled]");
@@ -1446,6 +1483,7 @@ function mountRigEditor(editor: HTMLElement): void {
     !resetAnimationToIdle ||
     !resetFace ||
     !animationSelect ||
+    characterCanvasModeButtons.length === 0 ||
     animationModeButtons.length === 0 ||
     !copyPoseAToB ||
     !animationEnabled ||
@@ -1482,6 +1520,16 @@ function mountRigEditor(editor: HTMLElement): void {
     const selectedRigPart = select.value as RigPartKey;
 
     updateDebugTuning({ selectedRigPart, selectedRigParts: [selectedRigPart] }, { undoable: false });
+  });
+
+  characterCanvasModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.characterCanvasEditMode;
+
+      if (isCharacterCanvasEditMode(mode)) {
+        updateDebugTuning({ characterCanvasEditMode: mode }, { undoable: false });
+      }
+    });
   });
 
   reset.addEventListener("click", () => {
@@ -2005,6 +2053,34 @@ function updateActiveEquipmentTuning(patch: Partial<EquipmentTuning>): void {
   updateEquipmentSlot(activeEquipmentSlot, patch);
 }
 
+function selectCharacterCanvasEquipment(selection: DebugCharacterEquipmentSelection): void {
+  activeEquipmentSlot = selection.slotKey;
+  const definition = getDebugHeroItemDefinition(selection.itemId);
+
+  activeEquipmentItemId = definition?.equipmentSlot === selection.slotKey ? definition.id : "";
+}
+
+function updateCharacterCanvasEquipmentDelta(delta: DebugCharacterEquipmentDelta): void {
+  const current = activeEquipmentItemId
+    ? getCurrentEquipmentItemTuning(activeEquipmentItemId, activeEquipmentSlot)
+    : getCurrentEquipmentSlotTuning(activeEquipmentSlot);
+  const patch: Partial<EquipmentTuning> = {};
+
+  if (delta.x !== undefined) {
+    patch.x = clampEquipmentNumericValue("x", current.x + delta.x);
+  }
+
+  if (delta.y !== undefined) {
+    patch.y = clampEquipmentNumericValue("y", current.y + delta.y);
+  }
+
+  if (delta.angle !== undefined) {
+    patch.angle = clampEquipmentNumericValue("angle", current.angle + delta.angle);
+  }
+
+  updateActiveEquipmentTuning(patch);
+}
+
 function updateEquipmentItemTuning(itemId: HeroItemId, slotKey: EquipmentSlotKey, patch: Partial<EquipmentTuning>): void {
   const current = getCurrentEquipmentItemTuning(itemId, slotKey);
 
@@ -2424,6 +2500,10 @@ function isAnimationEditMode(value: string | undefined): value is AnimationEditM
   return typeof value === "string" && ANIMATION_EDIT_MODES.includes(value as AnimationEditMode);
 }
 
+function isCharacterCanvasEditMode(value: string | undefined): value is CharacterCanvasEditMode {
+  return typeof value === "string" && CHARACTER_CANVAS_EDIT_MODES.includes(value as CharacterCanvasEditMode);
+}
+
 function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {
   return typeof value === "string" && ACTION_BUTTON_OFFSET_KEYS.includes(value as ActionButtonOffsetKey);
 }
@@ -2477,7 +2557,9 @@ function getInventoryItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[]
 }
 
 function getDebugItemIdsForSlot(slotKey: EquipmentSlotKey): HeroItemId[] {
-  return [...ALL_HERO_ITEM_IDS, ...AUTO_EQUIPMENT_ITEM_IDS].filter((itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey);
+  return [...ALL_HERO_ITEM_IDS, ...AUTO_EQUIPMENT_ITEM_IDS, ...GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id)].filter(
+    (itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey,
+  );
 }
 
 function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItemDefinition | undefined {
@@ -2485,7 +2567,11 @@ function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItem
     return undefined;
   }
 
-  return HERO_ITEM_CATALOG[itemId] ?? AUTO_EQUIPMENT_ITEM_CATALOG[itemId];
+  return (
+    HERO_ITEM_CATALOG[itemId] ??
+    AUTO_EQUIPMENT_ITEM_CATALOG[itemId] ??
+    GENERATED_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId)?.item
+  );
 }
 
 function getInventoryItemQuantity(itemId: HeroItemId): number {
@@ -2919,6 +3005,10 @@ function syncRigEditor(panel: HTMLElement): void {
     copyOpposite.disabled = !oppositePart || !isEditable;
     copyOpposite.textContent = oppositePart ? `Copy ${oppositePart}` : "No opposite";
   }
+
+  panel.querySelectorAll<HTMLButtonElement>("button[data-character-canvas-edit-mode]").forEach((button) => {
+    button.setAttribute("aria-pressed", `${button.dataset.characterCanvasEditMode === debugTuning.characterCanvasEditMode}`);
+  });
 
   panel.querySelectorAll<HTMLInputElement>("input[data-rig-key]").forEach((input) => {
     const key = input.dataset.rigKey as RigNumericControlKey;

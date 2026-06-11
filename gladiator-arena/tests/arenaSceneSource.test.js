@@ -37,15 +37,42 @@ test("paper doll parents wrist equipment to forearms and glove equipment to hand
   assert.equal(arenaSceneSource.includes("image = createPaperDollEquipmentImage(slotContainer.scene, textureKey, config);"), true);
 });
 
-test("paper doll draws equipment through a top overlay anchored to body parts", () => {
+test("paper doll draws equipment through ordered anchored layers", () => {
   assert.equal(arenaSceneSource.includes("type PaperDollEquipmentAnchors"), true);
-  assert.equal(arenaSceneSource.includes("const equipmentLayer = target.add.container(0, 0);"), true);
-  assert.equal(arenaSceneSource.includes("rootContainer.add(equipmentLayer);"), true);
+  assert.equal(arenaSceneSource.includes('type PaperDollEquipmentLayerKey = "legs" | "torso" | "head" | "weapon" | "arms" | "weaponTop";'), true);
+  assert.equal(arenaSceneSource.includes("const equipmentLayers = createPaperDollEquipmentLayers(target);"), true);
+  assert.equal(arenaSceneSource.includes("addPaperDollEquipmentLayersAfterPart(rootContainer, key, equipmentLayers);"), true);
+  assert.equal(arenaSceneSource.includes('partKey === "frontForearm"'), true);
+  assert.equal(arenaSceneSource.includes("rootContainer.add(layers.weapon);"), true);
+  assert.equal(arenaSceneSource.includes('partKey === "frontHand"'), true);
+  assert.equal(arenaSceneSource.includes("rootContainer.add(layers.arms);"), true);
+  assert.equal(arenaSceneSource.includes("rootContainer.add(layers.weaponTop);"), true);
+  assert.equal(arenaSceneSource.includes('slotKey === "weaponMain"'), true);
+  assert.equal(arenaSceneSource.includes("return layers.weapon;"), true);
+  assert.equal(arenaSceneSource.includes('slotKey === "breastplate"'), true);
+  assert.equal(arenaSceneSource.includes("return layers.torso;"), true);
   assert.equal(arenaSceneSource.includes("PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS"), true);
   assert.equal(arenaSceneSource.includes("createPaperDollAnchoredEquipmentContainer"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollEquipmentAnchors(rig);"), true);
   assert.equal(arenaSceneSource.includes("equipmentLayer.add(anchorContainer);"), true);
   assert.equal(arenaSceneSource.includes("partContainer.add(armorContainer);"), false);
+});
+
+test("paper doll weapon top overlay keeps long weapon heads above gloves", () => {
+  assert.equal(arenaSceneSource.includes("WEAPON_MAIN_TOP_OVERLAY_CROP_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("WEAPON_BOW_TOP_OVERLAY_CROP_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("WEAPON_BOW_BOTTOM_OVERLAY_CROP_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("const paperDollLinkedEquipmentAnchors = new WeakMap"), true);
+  assert.equal(arenaSceneSource.includes("const paperDollLinkedEquipmentSlots = new WeakMap"), true);
+  assert.equal(arenaSceneSource.includes("const paperDollWeaponOverlayCrops = new WeakMap"), true);
+  assert.equal(arenaSceneSource.includes("layer: equipmentLayers.weaponTop"), true);
+  assert.equal(arenaSceneSource.includes('"bowBottom"'), true);
+  assert.equal(arenaSceneSource.includes("applyPaperDollWeaponTopOverlayCrop(topImage, effectiveCrop);"), true);
+  assert.equal(arenaSceneSource.includes("applyPaperDollWeaponTopOverlayCrop(image, getPaperDollWeaponOverlayCrop(linkedSlot, textureKey));"), true);
+  assert.equal(arenaSceneSource.includes('assetKey.includes("weapon-bow")'), true);
+  assert.equal(arenaSceneSource.includes("visible && isPaperDollWeaponOverlayVisible(linkedSlot)"), true);
+  assert.equal(arenaSceneSource.includes("getLinkedPaperDollEquipmentSlots(part).forEach"), true);
+  assert.equal(arenaSceneSource.includes("paperDollLinkedEquipmentAnchors.get(anchor)"), true);
 });
 
 test("paper doll high shadow hides armor equipment and face overlays", () => {

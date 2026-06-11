@@ -2583,6 +2583,7 @@ body.debug-mode-hud .battle-screen .status-strip {
   line-height: 1;
 }
 
+.debug-rig-editor__canvas-mode,
 .debug-rig-editor__animation-mode {
   display: grid;
   gap: 7px;
@@ -2592,6 +2593,7 @@ body.debug-mode-hud .battle-screen .status-strip {
   border-radius: 10px;
 }
 
+.debug-rig-editor__canvas-mode legend,
 .debug-rig-editor__animation-mode legend {
   padding: 0 4px;
   color: #ffd384;
@@ -2601,12 +2603,21 @@ body.debug-mode-hud .battle-screen .status-strip {
   text-transform: uppercase;
 }
 
+.debug-rig-editor__canvas-mode-options,
 .debug-rig-editor__animation-mode-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
 
+.debug-rig-editor__canvas-mode-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.debug-rig-editor__animation-mode-options {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.debug-rig-editor__canvas-mode-options .debug-panel__reset,
 .debug-rig-editor__animation-mode-options .debug-panel__reset {
   width: 100%;
   min-height: 28px;
@@ -2617,6 +2628,7 @@ body.debug-mode-hud .battle-screen .status-strip {
   line-height: 1;
 }
 
+.debug-rig-editor__canvas-mode-options .debug-panel__reset[aria-pressed="true"],
 .debug-rig-editor__animation-mode-options .debug-panel__reset[aria-pressed="true"] {
   outline: 2px solid #ffe7a4;
   outline-offset: 1px;

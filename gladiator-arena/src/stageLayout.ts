@@ -20,7 +20,7 @@ export interface RuntimeStageLayout {
   enemyScale: number;
 }
 
-export const CLINCH_VISUAL_GAP = 44;
+export const CLINCH_VISUAL_GAP = 30;
 
 export function getStageLayout(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): RuntimeStageLayout {
   const originX = tuning?.originX ?? DEFAULT_STAGE_ORIGIN_X;

@@ -114,6 +114,9 @@ export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, Action
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
 
+export const CHARACTER_CANVAS_EDIT_MODES = ["parts", "equipment"] as const;
+export type CharacterCanvasEditMode = (typeof CHARACTER_CANVAS_EDIT_MODES)[number];
+
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
 export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 
@@ -299,6 +302,7 @@ export interface ArenaDebugTuning {
   heroPortraitButtonX: number;
   heroPortraitButtonY: number;
   heroPortraitButtonScale: number;
+  characterCanvasEditMode: CharacterCanvasEditMode;
   selectedRigPart: RigPartKey;
   selectedRigParts: RigPartKey[];
   rigParts: Record<RigPartKey, RigPartTuning>;
@@ -412,16 +416,16 @@ export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.31, flipX: false, flipY: false },
   backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
-  backWrist: { x: 0, y: -3, angle: -4, scaleX: 1.28, scaleY: 1.1, flipX: true, flipY: false },
-  frontWrist: { x: 0, y: -3, angle: -4, scaleX: 1.28, scaleY: 1.1, flipX: true, flipY: false },
+  backWrist: { x: 0, y: -3, angle: -4, scaleX: 1.26, scaleY: 1.1, flipX: true, flipY: false },
+  frontWrist: { x: 0, y: -3, angle: 14, scaleX: 1.5, scaleY: 1.1, flipX: true, flipY: false },
   backGlove: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
-  frontGlove: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  frontGlove: { x: 0, y: 0, angle: 0, scaleX: 1.19, scaleY: 1, flipX: false, flipY: false },
   backGreave: { x: -3, y: 0, angle: -8, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
   frontGreave: { x: -6, y: 3, angle: -11, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
   backShinguard: { x: -3, y: -3, angle: 4, scaleX: 1.5, scaleY: 1, flipX: false, flipY: false },
   frontShinguard: { x: -6, y: -3, angle: 0, scaleX: 1.5, scaleY: 1, flipX: false, flipY: false },
   backBoot: { x: 1, y: -1, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
-  frontBoot: { x: 1, y: 0, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
+  frontBoot: { x: 1, y: 0, angle: 0, scaleX: 0.88, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
@@ -433,9 +437,7 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_front_shoulderguard_01": { x: 7, y: 36, angle: 11, scaleX: 3, scaleY: 1.87, flipX: false, flipY: false },
   "auto_equipment_front_shoulderguard_cloth_light_01": { x: -3, y: 22, angle: -5, scaleX: 2.24, scaleY: 1.84, flipX: true, flipY: false },
   "auto_equipment_front_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
-  "generated_equipment_front_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
   "auto_equipment_back_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
-  "generated_equipment_back_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
   "auto_equipment_front_glove_cloth_01": { x: 0, y: 13, angle: 0, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
   "auto_equipment_back_glove_cloth_01": { x: 0, y: 13, angle: 0, scaleX: 0.6, scaleY: 0.6, flipX: false, flipY: false },
   "auto_equipment_helmet_cloth_02": { x: -1, y: 25, angle: 0, scaleX: 1.07, scaleY: 1.13, flipX: false, flipY: false },
@@ -443,6 +445,20 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "training_sword": { x: 3, y: 35, angle: 55, scaleX: 0.5, scaleY: 0.5, flipX: false, flipY: false },
   "auto_equipment_breastplate_leather_01": { x: 0, y: 30, angle: 0, scaleX: 1.17, scaleY: 1.32, flipX: false, flipY: false },
   "auto_equipment_weapon_bow_01": { x: -73, y: -3, angle: 90, scaleX: 1.3, scaleY: 1.3, flipX: false, flipY: false },
+  "generated_equipment_helmet_chainmail_01": { x: 0, y: 57, angle: 0, scaleX: 1.3, scaleY: 1.36, flipX: false, flipY: false },
+  "generated_equipment_breastplate_chainmail_01": { x: 0, y: 82, angle: 0, scaleX: 1.68, scaleY: 1.76, flipX: false, flipY: false },
+  "generated_equipment_back_shoulderguard_chainmail_01": { x: 0, y: 13, angle: 0, scaleX: 1.5, scaleY: 1.4, flipX: true, flipY: false },
+  "generated_equipment_front_shoulderguard_chainmail_01": { x: 0, y: 13, angle: 0, scaleX: 1.5, scaleY: 1.4, flipX: false, flipY: false },
+  "generated_equipment_back_wrist_chainmail_01": { x: 0, y: 16, angle: 2, scaleX: 1.5, scaleY: 1.1, flipX: true, flipY: false },
+  "generated_equipment_back_glove_chainmail_03": { x: 0, y: 16, angle: 0, scaleX: 1.45, scaleY: 1.5, flipX: true, flipY: false },
+  "generated_equipment_front_wrist_chainmail_01": { x: 0, y: 16, angle: -2, scaleX: 1.5, scaleY: 1.1, flipX: false, flipY: false },
+  "generated_equipment_front_glove_chainmail_03": { x: 0, y: 13, angle: 7, scaleX: 1.45, scaleY: 1.5, flipX: false, flipY: false },
+  "generated_equipment_back_greave_chainmail_01": { x: 0, y: 13, angle: -7, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  "generated_equipment_front_greave_chainmail_01": { x: 0, y: 13, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  "generated_equipment_back_shinguard_chainmail_01": { x: 0, y: 9, angle: -2, scaleX: 1.13, scaleY: 1, flipX: true, flipY: false },
+  "generated_equipment_front_shinguard_chainmail_01": { x: 0, y: 9, angle: 0, scaleX: 1.13, scaleY: 0.96, flipX: false, flipY: false },
+  "generated_equipment_back_boot_chainmail_01": { x: -25, y: 3, angle: 0, scaleX: 0.83, scaleY: 0.8, flipX: true, flipY: false },
+  "generated_equipment_front_boot_chainmail_01": { x: 3, y: 3, angle: 0, scaleX: 0.83, scaleY: 0.8, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
@@ -1275,6 +1291,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   heroPortraitButtonX: 5,
   heroPortraitButtonY: 3,
   heroPortraitButtonScale: 1.2,
+  characterCanvasEditMode: "parts",
   selectedRigPart: "torso",
   selectedRigParts: ["torso"],
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
@@ -1484,6 +1501,9 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     heroPortraitButtonX: clampNumber(input.heroPortraitButtonX, 0, 430, defaultDebugTuning.heroPortraitButtonX),
     heroPortraitButtonY: clampNumber(input.heroPortraitButtonY, 0, 764, defaultDebugTuning.heroPortraitButtonY),
     heroPortraitButtonScale: clampNumber(input.heroPortraitButtonScale, 0.5, 1.8, defaultDebugTuning.heroPortraitButtonScale),
+    characterCanvasEditMode: isCharacterCanvasEditMode(input.characterCanvasEditMode)
+      ? input.characterCanvasEditMode
+      : defaultDebugTuning.characterCanvasEditMode,
     selectedRigPart,
     selectedRigParts: normalizeSelectedRigParts(input.selectedRigParts, selectedRigPart),
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
@@ -2271,6 +2291,10 @@ export function isSlashArcAttackKey(value: unknown): value is SlashArcAttackKey 
 
 function isAnimationEditMode(value: unknown): value is AnimationEditMode {
   return typeof value === "string" && ANIMATION_EDIT_MODES.includes(value as AnimationEditMode);
+}
+
+function isCharacterCanvasEditMode(value: unknown): value is CharacterCanvasEditMode {
+  return typeof value === "string" && CHARACTER_CANVAS_EDIT_MODES.includes(value as CharacterCanvasEditMode);
 }
 
 function isDebugHudMode(value: unknown): value is PlayerHudMode {
