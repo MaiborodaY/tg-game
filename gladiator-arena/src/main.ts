@@ -65,6 +65,9 @@ const CITY_CURTAIN_SWITCH_MS = 210;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
+let cityShopFreezeImage: HTMLImageElement | undefined;
+let cityShopFreezeToken = 0;
+let isCityShopFrozen = false;
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
@@ -233,6 +236,83 @@ function mountCityPreviews(): void {
   }
 }
 
+function ensureCityShopFreezeImage(): HTMLImageElement | undefined {
+  if (!cityHero) {
+    return undefined;
+  }
+
+  if (!cityShopFreezeImage) {
+    cityShopFreezeImage = document.createElement("img");
+    cityShopFreezeImage.className = "city-menu__hero-freeze";
+    cityShopFreezeImage.alt = "";
+    cityShopFreezeImage.draggable = false;
+    cityShopFreezeImage.hidden = true;
+    cityShopFreezeImage.setAttribute("aria-hidden", "true");
+    cityHero.append(cityShopFreezeImage);
+  }
+
+  return cityShopFreezeImage;
+}
+
+function resumeCityHeroRenderingForShop(): void {
+  cityShopFreezeToken += 1;
+  isCityShopFrozen = false;
+  cityScene?.setRenderingPaused(false);
+  cityHero?.classList.remove("city-menu__hero--frozen");
+
+  if (cityShopFreezeImage) {
+    cityShopFreezeImage.hidden = true;
+    cityShopFreezeImage.removeAttribute("src");
+  }
+}
+
+function freezeCityHeroRenderingForShop(): void {
+  const image = ensureCityShopFreezeImage();
+  const token = cityShopFreezeToken + 1;
+
+  cityShopFreezeToken = token;
+
+  if (!image) {
+    cityScene?.setRenderingPaused(true);
+    isCityShopFrozen = true;
+    return;
+  }
+
+  cityScene?.captureFrame((src) => {
+    if (token !== cityShopFreezeToken || !cityHero) {
+      return;
+    }
+
+    image.src = src;
+    image.hidden = false;
+    cityHero.classList.add("city-menu__hero--frozen");
+    cityScene?.setRenderingPaused(true);
+    isCityShopFrozen = true;
+  });
+}
+
+function focusCityShop(mode: "armory" | "weaponShop"): void {
+  if (isCityShopFrozen) {
+    resumeCityHeroRenderingForShop();
+  }
+
+  if (mode === "armory") {
+    cityScene?.focusArmory(true);
+  } else {
+    cityScene?.focusWeaponShop(true);
+  }
+
+  freezeCityHeroRenderingForShop();
+}
+
+function focusCityDefaultFromShop(): void {
+  if (isCityShopFrozen) {
+    resumeCityHeroRenderingForShop();
+  }
+
+  cityScene?.focusDefault(true);
+}
+
 function prewarmShopItemIconsWhenIdle(): void {
   const prewarm = () => {
     void prewarmShopItemIconsForBrowserCache();
@@ -248,6 +328,7 @@ function prewarmShopItemIconsWhenIdle(): void {
 }
 
 function unmountCityPreviews(): void {
+  resumeCityHeroRenderingForShop();
   cityScene?.destroy();
   unmountHeroPortraitPreview?.();
   cityScene = undefined;
@@ -443,10 +524,10 @@ if (cityMenu) {
     onPreviewClear: clearShopPreview,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
-      playCityCurtainTransition(() => cityScene?.focusWeaponShop(true));
+      playCityCurtainTransition(() => focusCityShop("weaponShop"));
     },
     onClose: () => {
-      playCityCurtainTransition(() => cityScene?.focusDefault(true));
+      playCityCurtainTransition(focusCityDefaultFromShop);
     },
   });
   armoryShop = mountArmoryShop(cityMenu, {
@@ -456,10 +537,10 @@ if (cityMenu) {
     onPreviewClear: clearShopPreview,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
-      playCityCurtainTransition(() => cityScene?.focusArmory(true));
+      playCityCurtainTransition(() => focusCityShop("armory"));
     },
     onClose: () => {
-      playCityCurtainTransition(() => cityScene?.focusDefault(true));
+      playCityCurtainTransition(focusCityDefaultFromShop);
     },
   });
 }

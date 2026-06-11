@@ -1207,6 +1207,8 @@ export interface CitySceneApi {
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
   focusArenaTransition: () => Promise<void>;
+  captureFrame: (callback: (src: string) => void) => void;
+  setRenderingPaused: (paused: boolean) => void;
   destroy: () => void;
 }
 
@@ -1303,10 +1305,6 @@ class CityHeroScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     this.updateCityClouds(delta);
 
-    if (this.cameraMode !== "default") {
-      return;
-    }
-
     const idle = getActiveBodyAnimation("idle");
 
     if (!this.fighter || !idle.enabled) {
@@ -1335,7 +1333,6 @@ class CityHeroScene extends Phaser.Scene {
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
     this.syncCamera(instant, 1);
-    this.applyStaticIdlePose();
   }
 
   focusWeaponShop(instant = false): void {
@@ -1345,7 +1342,6 @@ class CityHeroScene extends Phaser.Scene {
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
     this.syncCamera(instant, 1);
-    this.applyStaticIdlePose();
   }
 
   focusArenaTransition(): Promise<void> {
@@ -1373,16 +1369,6 @@ class CityHeroScene extends Phaser.Scene {
     this.syncFighterLayout();
     applyCityHeroLighting(fighter, this.cityLightingAmount);
     this.syncCamera(true);
-  }
-
-  private applyStaticIdlePose(): void {
-    const idle = getActiveBodyAnimation("idle");
-
-    if (!this.fighter || !idle.enabled) {
-      return;
-    }
-
-    applyBodyAnimationBlend(this.fighter, idle, 0);
   }
 
   private syncTimeOfDay(timeOfDay: CityTimeOfDay, instant = false): void {
@@ -1878,6 +1864,21 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       scene?.focusWeaponShop(instant);
     },
     focusArenaTransition: () => scene?.focusArenaTransition() ?? Promise.resolve(),
+    captureFrame: (callback) => {
+      game.renderer.snapshot((snapshot) => {
+        if (snapshot instanceof HTMLImageElement && snapshot.src) {
+          callback(snapshot.src);
+        }
+      }, "image/jpeg", 0.82);
+    },
+    setRenderingPaused: (paused) => {
+      if (paused) {
+        game.loop.sleep();
+        return;
+      }
+
+      game.loop.wake();
+    },
     destroy: () => {
       if (cityReadyCallback === readyCallbackForGame) {
         cityReadyCallback = undefined;
