@@ -86,6 +86,7 @@ import {
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
+  type HeroWeaponClass,
   CLOTH_BREASTPLATE_ID,
 } from "./hero";
 import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
@@ -982,24 +983,26 @@ export class ArenaScene extends Phaser.Scene {
     const lastEnemyAction = nextState.lastEnemyAction;
 
     if (lastPlayerAction) {
-      actionAnimations.push(animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right"));
+      actionAnimations.push(animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right", nextState.player.weaponClass));
     }
 
     if (lastEnemyAction) {
-      actionAnimations.push(animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left"));
+      actionAnimations.push(animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left", nextState.enemy.weaponClass));
     }
 
     if (nextState.lastPlayerDamage > 0) {
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit")));
       showDamagePopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage);
-      shakeFighter(this, visuals.enemy);
     } else if (nextState.lastPlayerBlocked) {
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block")));
       showBlockPopupFromFighter(this, visuals.enemy);
     }
 
     if (nextState.lastEnemyDamage > 0) {
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit")));
       showDamagePopupFromFighter(this, visuals.player, nextState.lastEnemyDamage);
-      shakeFighter(this, visuals.player);
     } else if (nextState.lastEnemyBlocked) {
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block")));
       showBlockPopupFromFighter(this, visuals.player);
     }
 
@@ -4065,6 +4068,7 @@ function animateAction(
   _opponent: FighterVisual,
   actionId: ActionId,
   direction: "left" | "right",
+  weaponClass?: HeroWeaponClass,
 ): Promise<void> {
   const sign = direction === "right" ? 1 : -1;
   const animationAmount = getArenaAnimationAmount();
@@ -4091,13 +4095,15 @@ function animateAction(
   const actionAnimations: Promise<void>[] = [];
 
   if (isAttackBodyAnimationKey(actionId)) {
-    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(actionId)));
-    if (areArenaVfxEnabled()) {
+    const bodyAnimationKey: BodyAnimationKey = weaponClass === "bow" ? "bowShot" : actionId;
+
+    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey)));
+    if (weaponClass !== "bow" && areArenaVfxEnabled()) {
       showSlashArc(target, actor, actionId, direction);
     }
   }
 
-  if (animationAmount > 0) {
+  if (animationAmount > 0 && weaponClass !== "bow") {
     actionAnimations.push(
       new Promise((resolve) => {
         target.tweens.add({
@@ -4168,23 +4174,6 @@ function drawSlashArc(graphics: Phaser.GameObjects.Graphics, config: SlashArcTun
   graphics.beginPath();
   graphics.arc(0, 0, Math.max(1, config.radius - config.width * 0.55), config.startAngle + 0.08, config.endAngle - 0.08);
   graphics.strokePath();
-}
-
-function shakeFighter(target: Phaser.Scene, fighter: FighterVisual): void {
-  if (!areArenaVfxEnabled()) {
-    return;
-  }
-
-  const parts = getAnimatedFighterParts(fighter);
-
-  target.tweens.add({
-    targets: parts,
-    x: "+=10",
-    duration: 45,
-    yoyo: true,
-    repeat: 3,
-    ease: "Stepped",
-  });
 }
 
 function showFloatingText(target: Phaser.Scene, x: number, y: number, text: string, color: string): void {
@@ -4277,14 +4266,6 @@ function showBlockPopup(target: Phaser.Scene, x: number, y: number): void {
     ease: "Quad.easeOut",
     onComplete: () => icon.destroy(),
   });
-}
-
-function getAnimatedFighterParts(fighter: FighterVisual): FighterPart[] {
-  if (fighter.animatedParts) {
-    return fighter.animatedParts;
-  }
-
-  return getFighterParts(fighter).filter((part) => part !== fighter.shadow && part !== fighter.lowShadow && part !== fighter.name);
 }
 
 function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {

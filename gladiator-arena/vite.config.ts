@@ -175,7 +175,7 @@ const equipmentSlotKeys = [
 ] as const;
 type EquipmentSlotKey = (typeof equipmentSlotKeys)[number];
 
-const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
+const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 
 const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
@@ -194,6 +194,9 @@ const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
   light: "DEFAULT_LIGHT_ANIMATION",
   medium: "DEFAULT_MEDIUM_ANIMATION",
   heavy: "DEFAULT_HEAVY_ANIMATION",
+  bowShot: "DEFAULT_BOW_SHOT_ANIMATION",
+  hit: "DEFAULT_HIT_ANIMATION",
+  block: "DEFAULT_BLOCK_ANIMATION",
   taunt: "DEFAULT_TAUNT_ANIMATION",
   rest: "DEFAULT_REST_ANIMATION",
 };

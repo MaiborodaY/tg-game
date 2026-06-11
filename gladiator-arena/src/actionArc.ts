@@ -21,7 +21,7 @@ import {
   GAME_WIDTH,
 } from "./arenaLayout";
 import { getBattleSafeArea } from "./battleSafeArea";
-import { actionOrder, canUseAction, type ActionId, type CombatState } from "./combat";
+import { actionOrder, actions, canUseAction, getActionBlockChance, type ActionId, type CombatState } from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
 
@@ -164,6 +164,51 @@ export function syncActionTokenButton(
   renderActionIcon(button, icon, actionId);
 }
 
+export function syncActionChanceBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState): string | undefined {
+  const label = getActionHitChanceLabel(actionId, state);
+  const badge = getActionChanceBadge(button);
+
+  if (!label) {
+    badge.hidden = true;
+    badge.textContent = "";
+    button.classList.remove("action-arc__button--has-chance");
+    return undefined;
+  }
+
+  badge.hidden = false;
+  badge.textContent = label;
+  button.classList.add("action-arc__button--has-chance");
+  return label;
+}
+
+function getActionChanceBadge(button: HTMLButtonElement): HTMLSpanElement {
+  const existing = button.querySelector<HTMLSpanElement>(".action-arc__chance");
+
+  if (existing) {
+    return existing;
+  }
+
+  const badge = document.createElement("span");
+
+  badge.className = "action-arc__chance";
+  badge.setAttribute("aria-hidden", "true");
+  button.append(badge);
+  return badge;
+}
+
+export function getActionHitChanceLabel(actionId: ActionId, state: CombatState): string | undefined {
+  const action = actions[actionId];
+
+  if (action.blockChance === undefined) {
+    return undefined;
+  }
+
+  const blockChance = getActionBlockChance(action, state.player, state.enemy);
+  const hitChance = Math.round((1 - blockChance) * 100);
+
+  return `${hitChance}%`;
+}
+
 export function pressActionTokenButton(button: HTMLButtonElement): void {
   if (button.disabled) {
     return;
@@ -282,9 +327,10 @@ export function mountActionArc(
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
       syncActionTokenButton(button, icon, actionId, tuning, buttonLayout.scale);
+      const hitChanceLabel = syncActionChanceBadge(button, actionId, state);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
-      button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}`);
-      button.title = `${buttonLayout.label} ${buttonLayout.detail} angle ${Math.round(buttonLayout.angle)} deg`;
+      button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
+      button.title = `${buttonLayout.label} ${buttonLayout.detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""} angle ${Math.round(buttonLayout.angle)} deg`;
       renderActionIcon(button, icon, actionId);
     }
 

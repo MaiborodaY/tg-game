@@ -2,6 +2,7 @@ import {
   ACTION_BUTTON_OFFSET_KEYS,
   ANIMATION_EDIT_MODES,
   BODY_ANIMATION_KEYS,
+  CLASSIC_ACTION_WHEEL_BUTTONS,
   CLASSIC_ACTION_WHEEL_MODES,
   DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS,
   DEFAULT_BODY_ANIMATIONS,
@@ -175,6 +176,12 @@ const actionButtonLabels: Record<ActionButtonOffsetKey, string> = {
   heavy: "Heavy",
   taunt: "Taunt",
   rest: "Rest",
+};
+
+const bowDistanceActionButtonLabels: Partial<Record<ActionButtonOffsetKey, string>> = {
+  light: "Quick shot",
+  medium: "Aimed shot",
+  heavy: "Power shot",
 };
 
 const controlGroups: DebugControlGroup[] = [
@@ -1071,9 +1078,7 @@ function mountClassicActionButtonEditor(root: HTMLElement): void {
       </label>
       <label class="debug-panel__row">
         <span>Button</span>
-        <select class="debug-panel__number" data-classic-slot-action>
-          ${ACTION_BUTTON_OFFSET_KEYS.map((actionId) => `<option value="${actionId}">${actionButtonLabels[actionId]}</option>`).join("")}
-        </select>
+        <select class="debug-panel__number" data-classic-slot-action></select>
         <span></span>
         <span></span>
       </label>
@@ -1090,7 +1095,10 @@ function mountClassicActionButtonEditor(root: HTMLElement): void {
 
   modeSelect?.addEventListener("change", () => {
     if (isClassicActionWheelMode(modeSelect.value)) {
-      updateDebugTuning({ selectedClassicActionWheelMode: modeSelect.value });
+      const mode = modeSelect.value;
+      const actionId = getClassicWheelActionButton(mode, debugTuning.selectedClassicActionButton);
+
+      updateDebugTuning({ selectedClassicActionWheelMode: mode, selectedClassicActionButton: actionId });
     }
   });
 
@@ -1984,7 +1992,7 @@ function resetSelectedSlashArc(): void {
 
 function updateSelectedClassicActionButtonSlot(patch: Partial<ClassicActionButtonSlotTuning>): void {
   const mode = debugTuning.selectedClassicActionWheelMode;
-  const actionId = debugTuning.selectedClassicActionButton;
+  const actionId = getClassicWheelActionButton(mode, debugTuning.selectedClassicActionButton);
   const currentModeSlots = debugTuning.classicActionButtonSlots[mode];
   const currentSlot = currentModeSlots[actionId];
 
@@ -2000,6 +2008,44 @@ function updateSelectedClassicActionButtonSlot(patch: Partial<ClassicActionButto
       },
     },
   });
+}
+
+function getClassicWheelActionButtons(mode: ClassicActionWheelMode): ActionButtonOffsetKey[] {
+  return CLASSIC_ACTION_WHEEL_BUTTONS[mode] ?? ACTION_BUTTON_OFFSET_KEYS;
+}
+
+function getClassicWheelActionButton(mode: ClassicActionWheelMode, actionId: ActionButtonOffsetKey): ActionButtonOffsetKey {
+  const actions = getClassicWheelActionButtons(mode);
+
+  return actions.includes(actionId) ? actionId : actions[0];
+}
+
+function getClassicActionButtonLabel(mode: ClassicActionWheelMode, actionId: ActionButtonOffsetKey): string {
+  if (mode === "bowDistance") {
+    return bowDistanceActionButtonLabels[actionId] ?? actionButtonLabels[actionId];
+  }
+
+  return actionButtonLabels[actionId];
+}
+
+function syncClassicActionSelectOptions(select: HTMLSelectElement, mode: ClassicActionWheelMode, selectedActionId: ActionButtonOffsetKey): void {
+  const actionIds = getClassicWheelActionButtons(mode);
+  const currentValues = Array.from(select.options).map((option) => option.value);
+  const shouldRebuild = currentValues.length !== actionIds.length || actionIds.some((actionId, index) => currentValues[index] !== actionId);
+
+  if (shouldRebuild) {
+    select.replaceChildren(
+      ...actionIds.map((actionId) => {
+        const option = document.createElement("option");
+
+        option.value = actionId;
+        option.textContent = getClassicActionButtonLabel(mode, actionId);
+        return option;
+      }),
+    );
+  }
+
+  select.value = selectedActionId;
 }
 
 function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItemId | null): void {
@@ -2745,14 +2791,21 @@ function syncInputs(): void {
 function syncClassicActionButtonEditor(panel: HTMLElement): void {
   const modeSelect = panel.querySelector<HTMLSelectElement>("[data-classic-slot-mode]");
   const actionSelect = panel.querySelector<HTMLSelectElement>("[data-classic-slot-action]");
-  const slot = debugTuning.classicActionButtonSlots[debugTuning.selectedClassicActionWheelMode][debugTuning.selectedClassicActionButton];
+  const mode = debugTuning.selectedClassicActionWheelMode;
+  const actionId = getClassicWheelActionButton(mode, debugTuning.selectedClassicActionButton);
+  const slot = debugTuning.classicActionButtonSlots[mode][actionId];
 
   if (modeSelect) {
-    modeSelect.value = debugTuning.selectedClassicActionWheelMode;
+    modeSelect.value = mode;
   }
 
   if (actionSelect) {
-    actionSelect.value = debugTuning.selectedClassicActionButton;
+    syncClassicActionSelectOptions(actionSelect, mode, actionId);
+  }
+
+  if (actionId !== debugTuning.selectedClassicActionButton) {
+    updateDebugTuning({ selectedClassicActionButton: actionId });
+    return;
   }
 
   panel.querySelectorAll<HTMLInputElement>("[data-classic-slot-field]").forEach((input) => {

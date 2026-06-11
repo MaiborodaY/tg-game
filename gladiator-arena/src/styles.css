@@ -3594,6 +3594,47 @@ body.debug-active .action-arc__center {
   transform-origin: center;
 }
 
+.action-arc__chance {
+  position: absolute;
+  left: 50%;
+  top: -15px;
+  z-index: 5;
+  display: inline-flex;
+  min-width: 34px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1px solid rgba(217, 150, 58, 0.84);
+  border-radius: 6px;
+  color: #ffe3a0;
+  background:
+    linear-gradient(180deg, rgba(109, 50, 19, 0.96), rgba(37, 13, 5, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 219, 139, 0.24),
+    0 2px 0 rgba(15, 5, 2, 0.9),
+    0 0 0 1px rgba(43, 20, 8, 0.5);
+  font: 900 10px/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0;
+  pointer-events: none;
+  text-shadow: 0 1px 0 rgba(16, 5, 2, 0.9);
+  transform: translateX(-50%);
+}
+
+.action-arc__button > span.action-arc__chance:not([hidden]) {
+  display: inline-flex;
+  visibility: visible;
+}
+
+.action-arc__button > span.action-arc__chance[hidden] {
+  display: none;
+}
+
+.action-arc__button:disabled .action-arc__chance {
+  opacity: 0.72;
+  filter: saturate(0.78) brightness(0.9);
+}
+
 .classic-action-bar .action-arc__button {
   position: absolute;
   left: 50%;
@@ -3615,6 +3656,29 @@ body.debug-active .action-arc__center {
     visibility 150ms ease,
     transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
   will-change: transform, opacity;
+}
+
+.classic-action-bar .classic-action-bar__chance {
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  margin-top: 0;
+  transform:
+    translate(calc(-50% + var(--classic-chance-x, 0px)), calc(-50% + var(--classic-chance-y, -40px)))
+    rotate(var(--classic-chance-counter-rotation, 0deg));
+  transition:
+    filter 120ms ease,
+    opacity 150ms ease,
+    visibility 150ms ease,
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.classic-action-bar .classic-action-bar__chance[hidden] {
+  display: none;
+}
+
+.classic-action-bar .classic-action-bar__chance--dimmed {
+  opacity: 0.62;
 }
 
 .classic-action-bar .action-arc__button.classic-action-bar__button--visible {

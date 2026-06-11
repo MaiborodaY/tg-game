@@ -1,5 +1,5 @@
 import { DEFAULT_ACTION_BUTTON_SCALE } from "./arenaLayout";
-import { pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
+import { getActionHitChanceLabel, pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
 import {
   MELEE_RANGE,
   actionOrder,
@@ -16,9 +16,14 @@ type ClassicActionSlotTuning = Record<ClassicActionWheelMode, Record<ActionButto
 type TuningProvider = () => ActionTokenTuning & { classicActionButtonSlots?: ClassicActionSlotTuning };
 type ClassicWheelMode = "distance" | "clinch" | "bow-distance";
 
+interface ClassicActionBarOptions {
+  getPreviewWheelMode?: () => ClassicActionWheelMode | undefined;
+}
+
 const CLASSIC_WHEEL_TURN_MS = 520;
 const CLASSIC_WHEEL_BASE_DIAMETER = 420;
 const CLASSIC_WHEEL_SCREEN_PADDING_X = 12;
+const CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y = -40;
 
 interface ClassicActionSlot {
   actionId: ActionId;
@@ -30,6 +35,7 @@ interface ClassicActionSlot {
 interface ClassicButtonLayer {
   element: HTMLDivElement;
   buttons: Map<ActionId, HTMLButtonElement>;
+  chanceBadges: Map<ActionId, HTMLSpanElement>;
   mode?: ClassicWheelMode;
   angle: number;
 }
@@ -56,7 +62,6 @@ const CLASSIC_BOW_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "medium", x: 0, y: -132, rotation: 0 },
   { actionId: "heavy", x: 78, y: -116, rotation: 14 },
   { actionId: "back", x: -118, y: -36, rotation: -14 },
-  { actionId: "forward", x: -40, y: -52, rotation: -6 },
   { actionId: "taunt", x: 40, y: -52, rotation: 6 },
   { actionId: "rest", x: 118, y: -36, rotation: 14 },
 ];
@@ -76,6 +81,7 @@ export function mountClassicActionBar(
   host: HTMLElement,
   onAction: (actionId: ActionId) => void,
   getTuning?: TuningProvider,
+  options: ClassicActionBarOptions = {},
 ): ClassicActionBarApi | undefined {
   const root = host.querySelector<HTMLElement>("[data-classic-action-bar]");
 
@@ -102,7 +108,7 @@ export function mountClassicActionBar(
   function sync(state: CombatState): void {
     const tuning = getTuning?.();
     const buttonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
-    const wheelMode = getClassicWheelMode(state);
+    const wheelMode = getClassicWheelMode(state, options.getPreviewWheelMode?.());
     const isBattleActive = state.result === "playing";
     const hasPlayerControl = isBattleActive && state.activeTurn === "player";
 
@@ -154,12 +160,13 @@ export function mountClassicActionBar(
 
     for (const [actionId, button] of layer.buttons) {
       const icon = button.querySelector<HTMLElement>(".action-arc__icon");
+      const chanceBadge = layer.chanceBadges.get(actionId);
       const slot = visibleSlots.get(actionId);
       const isVisible = shouldShowButtons && Boolean(slot);
       const isDimmed = isVisible && !isInteractiveLayer;
       const projectedSlot = slot ? projectSlotForWheelAngle(slot, layer.angle) : undefined;
 
-      if (!icon) {
+      if (!icon || !chanceBadge) {
         continue;
       }
 
@@ -167,17 +174,19 @@ export function mountClassicActionBar(
       button.style.setProperty("--classic-slot-y", `${formatCssNumber(projectedSlot?.y ?? 18)}px`);
       button.style.setProperty("--classic-slot-rotation", `${formatCssNumber(projectedSlot?.rotation ?? 0)}deg`);
       syncActionTokenButton(button, icon, actionId, tuning, buttonScale);
+      const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, projectedSlot, isVisible, wheelRotationAngle);
       button.disabled = !isInteractiveLayer || !isVisible || !canUseAction(state, actionId, "player");
       button.tabIndex = isVisible && isInteractiveLayer ? 0 : -1;
       button.setAttribute("aria-hidden", isVisible ? "false" : "true");
       button.classList.toggle("classic-action-bar__button--visible", isVisible);
       button.classList.toggle("classic-action-bar__button--hidden", !isVisible);
       button.classList.toggle("classic-action-bar__button--dimmed", isDimmed);
+      chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
 
       const title = getActionTitle(actionId, state.player);
 
-      button.setAttribute("aria-label", `${title} ${actions[actionId].detail}`);
-      button.title = `${title} ${actions[actionId].detail}`;
+      button.setAttribute("aria-label", `${title} ${actions[actionId].detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
+      button.title = `${title} ${actions[actionId].detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
     }
   }
 
@@ -258,12 +267,26 @@ function getClassicWheelHostWidth(root: HTMLElement): number {
   return typeof width === "number" && Number.isFinite(width) && width > 0 ? width : CLASSIC_WHEEL_BASE_DIAMETER;
 }
 
-function getClassicWheelMode(state: CombatState): ClassicWheelMode {
+function getClassicWheelMode(state: CombatState, previewWheelMode?: ClassicActionWheelMode): ClassicWheelMode {
+  const forcedWheelMode = getClassicWheelModeFromTuningMode(previewWheelMode);
+
+  if (forcedWheelMode) {
+    return forcedWheelMode;
+  }
+
   if (isBowFighter(state.player) && state.distance > MELEE_RANGE) {
     return "bow-distance";
   }
 
   return state.distance <= MELEE_RANGE ? "clinch" : "distance";
+}
+
+function getClassicWheelModeFromTuningMode(mode?: ClassicActionWheelMode): ClassicWheelMode | undefined {
+  if (mode === "bowDistance") {
+    return "bow-distance";
+  }
+
+  return mode;
 }
 
 function getClassicActionSlots(wheelMode: ClassicWheelMode, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {
@@ -288,18 +311,23 @@ function getDefaultClassicActionSlots(wheelMode: ClassicWheelMode): ClassicActio
 function createClassicButtonLayer(onAction: (actionId: ActionId) => void): ClassicButtonLayer {
   const element = document.createElement("div");
   const buttons = new Map<ActionId, HTMLButtonElement>();
+  const chanceBadges = new Map<ActionId, HTMLSpanElement>();
 
   element.className = "classic-action-bar__layer";
 
   for (const actionId of actionOrder) {
     const button = document.createElement("button");
     const icon = document.createElement("span");
+    const chanceBadge = document.createElement("span");
 
     button.type = "button";
     button.className = "action-arc__button classic-action-bar__button classic-action-bar__button--hidden";
     button.dataset.action = actionId;
     icon.className = "action-arc__icon";
     icon.setAttribute("aria-hidden", "true");
+    chanceBadge.className = "action-arc__chance classic-action-bar__chance";
+    chanceBadge.hidden = true;
+    chanceBadge.setAttribute("aria-hidden", "true");
     button.append(icon);
     button.addEventListener("click", () => {
       button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
@@ -310,13 +338,53 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
       }
     });
     buttons.set(actionId, button);
+    chanceBadges.set(actionId, chanceBadge);
     element.append(button);
+    element.append(chanceBadge);
   }
 
   return {
     element,
     buttons,
+    chanceBadges,
     angle: 0,
+  };
+}
+
+function syncClassicActionChanceBadge(
+  badge: HTMLSpanElement,
+  actionId: ActionId,
+  state: CombatState,
+  slot: ClassicActionSlot | undefined,
+  isVisible: boolean,
+  wheelRotationAngle: number,
+): string | undefined {
+  const label = getActionHitChanceLabel(actionId, state);
+
+  if (!label || !slot || !isVisible) {
+    badge.hidden = true;
+    badge.textContent = "";
+    return undefined;
+  }
+
+  badge.hidden = false;
+  badge.textContent = label;
+  const screenOffset = projectPointForWheelAngle(0, CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y, wheelRotationAngle);
+
+  badge.style.setProperty("--classic-chance-x", `${formatCssNumber(slot.x + screenOffset.x)}px`);
+  badge.style.setProperty("--classic-chance-y", `${formatCssNumber(slot.y + screenOffset.y)}px`);
+  badge.style.setProperty("--classic-chance-counter-rotation", `${formatCssNumber(-wheelRotationAngle)}deg`);
+  return label;
+}
+
+function projectPointForWheelAngle(x: number, y: number, wheelAngle: number): { x: number; y: number } {
+  const radians = (-wheelAngle * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return {
+    x: x * cos - y * sin,
+    y: x * sin + y * cos,
   };
 }
 

@@ -73,6 +73,7 @@ test("leather token buttons keep icons inside a stable centered layer", () => {
 
 test("debug tuning can scale token icons independently from the button", () => {
   assert.equal(actionArcSource.includes("export function syncActionTokenButton"), true);
+  assert.equal(actionArcSource.includes("export function syncActionChanceBadge"), true);
   assert.equal(actionArcSource.includes("export function pressActionTokenButton"), true);
   assert.equal(actionArcSource.includes("ACTION_BUTTON_PRESS_MS = 140"), true);
   assert.equal(actionArcSource.includes("action-arc__button--pressed"), true);
@@ -87,6 +88,22 @@ test("debug tuning can scale token icons independently from the button", () => {
   assert.equal(stylesSource.includes("brightness(var(--action-attack-icon-brightness))"), true);
   assert.equal(stylesSource.includes(".action-arc__button.action-arc__button--pressed"), true);
   assert.equal(stylesSource.includes("scale(calc(var(--action-button-scale, 1) * 0.96))"), true);
+});
+
+test("attack buttons show hit chance badges from block chance", () => {
+  assert.equal(actionArcSource.includes("getActionBlockChance"), true);
+  assert.equal(actionArcSource.includes("getActionHitChanceLabel"), true);
+  assert.equal(actionArcSource.includes("action.blockChance === undefined"), true);
+  assert.equal(actionArcSource.includes("Math.round((1 - blockChance) * 100)"), true);
+  assert.equal(actionArcSource.includes('badge.className = "action-arc__chance"'), true);
+  assert.equal(classicActionBarSource.includes("getActionHitChanceLabel"), true);
+  assert.equal(classicActionBarSource.includes("syncClassicActionChanceBadge"), true);
+  assert.equal(classicActionBarSource.includes("CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y"), true);
+  assert.equal(classicActionBarSource.includes("projectPointForWheelAngle"), true);
+  assert.equal(classicActionBarSource.includes('"--classic-chance-counter-rotation"'), true);
+  assert.equal(stylesSource.includes(".action-arc__chance"), true);
+  assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__chance:not([hidden])"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__chance"), true);
 });
 
 test("classic action bar reuses leather token rendering", () => {
@@ -141,9 +158,12 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
 
 test("classic bow distance layout keeps ranged attacks visible", () => {
   assert.equal(classicActionBarSource.includes("isBowFighter(state.player) && state.distance > MELEE_RANGE"), true);
+  assert.equal(classicActionBarSource.includes("getClassicWheelMode(state, options.getPreviewWheelMode?.())"), true);
+  assert.equal(classicActionBarSource.includes("function getClassicWheelModeFromTuningMode"), true);
   assert.equal(classicActionBarSource.includes('{ actionId: "light", x: -78'), true);
   assert.equal(classicActionBarSource.includes('{ actionId: "medium", x: 0'), true);
   assert.equal(classicActionBarSource.includes('{ actionId: "heavy", x: 78'), true);
+  assert.equal(classicActionBarSource.includes('{ actionId: "forward", x: -40, y: -52'), false);
 });
 
 test("debug tuning can tune leather token fine details", () => {

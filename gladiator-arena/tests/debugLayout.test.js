@@ -66,6 +66,10 @@ test("debug preview can mount and tune the classic action wheel", () => {
   assert.equal(debugPanelSource.includes("data-classic-slot-mode"), true);
   assert.equal(debugPanelSource.includes("data-classic-slot-action"), true);
   assert.equal(debugPanelSource.includes("data-classic-slot-field"), true);
+  assert.equal(debugPanelSource.includes("CLASSIC_ACTION_WHEEL_BUTTONS"), true);
+  assert.equal(debugPanelSource.includes("syncClassicActionSelectOptions"), true);
+  assert.equal(debugPanelSource.includes("Quick shot"), true);
+  assert.equal(debugMainSource.includes("getPreviewWheelMode: () => debugTuning.selectedClassicActionWheelMode"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-offset-x"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-offset-y"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-scale"), true);

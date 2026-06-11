@@ -323,7 +323,7 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionButton, "forward");
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 60);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -200);
-  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, 118);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, -30);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetX, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudScale, 1);
@@ -344,4 +344,22 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyArcAngle, -108);
   assert.equal(debugTuningModule.defaultDebugTuning.actionTauntArcAngle, 28);
   assert.equal(debugTuningModule.defaultDebugTuning.actionRestArcAngle, 106);
+});
+
+test("debug tuning exposes dedicated bow shot, damage hit, and block body animations", () => {
+  assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("bowShot"), true);
+  assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("hit"), true);
+  assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("block"), true);
+  assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.bowShot), true);
+  assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.hit), true);
+  assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.block), true);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.bowShot.enabled, true);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.hit.enabled, true);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.block.enabled, true);
+});
+
+test("debug tuning exposes real classic wheel action sets", () => {
+  assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.distance), ["forward", "lunge", "back", "taunt", "rest"]);
+  assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.clinch), ["light", "medium", "heavy", "back", "taunt", "rest"]);
+  assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.bowDistance), ["light", "medium", "heavy", "back", "taunt", "rest"]);
 });

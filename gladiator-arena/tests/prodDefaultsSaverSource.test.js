@@ -116,6 +116,12 @@ test("save as prod defaults also persists the selected rig editor animation", ()
   assert.match(saveDefaultsRoute, /const bodyAnimationUpdates = pickBodyAnimationUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /applyBodyAnimationDefaultUpdates/);
   assert.match(saveDefaultsRoute, /bodyAnimationUpdates\.key/);
+  assert.match(source, /"bowShot"/);
+  assert.match(source, /"hit"/);
+  assert.match(source, /"block"/);
+  assert.match(source, /DEFAULT_BOW_SHOT_ANIMATION/);
+  assert.match(source, /DEFAULT_HIT_ANIMATION/);
+  assert.match(source, /DEFAULT_BLOCK_ANIMATION/);
 });
 
 test("save as prod defaults persists classic action button slots", () => {

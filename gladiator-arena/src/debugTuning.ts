@@ -91,7 +91,7 @@ export const RIG_PART_KEYS = [
 
 export type RigPartKey = (typeof RIG_PART_KEYS)[number];
 
-export const BODY_ANIMATION_KEYS = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
+export const BODY_ANIMATION_KEYS = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
 export type BodyAnimationKey = (typeof BODY_ANIMATION_KEYS)[number];
 
 export const SLASH_ARC_ATTACK_KEYS = ["light", "medium", "heavy"] as const;
@@ -102,6 +102,12 @@ export type ActionButtonOffsetKey = (typeof ACTION_BUTTON_OFFSET_KEYS)[number];
 
 export const CLASSIC_ACTION_WHEEL_MODES = ["distance", "clinch", "bowDistance"] as const;
 export type ClassicActionWheelMode = (typeof CLASSIC_ACTION_WHEEL_MODES)[number];
+
+export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, ActionButtonOffsetKey[]> = {
+  distance: ["forward", "lunge", "back", "taunt", "rest"],
+  clinch: ["light", "medium", "heavy", "back", "taunt", "rest"],
+  bowDistance: ["light", "medium", "heavy", "back", "taunt", "rest"],
+};
 
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
@@ -345,7 +351,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
   }),
   clinch: createClassicActionButtonSlots({
     forward: { x: 0, y: 26, rotation: 0 },
-    back: { x: -145, y: -136, rotation: -12 },
+    back: { x: -145, y: -135, rotation: -12 },
     lunge: { x: 20, y: 18, rotation: 0 },
     light: { x: -60, y: -185, rotation: 0 },
     medium: { x: 0, y: -200, rotation: 0 },
@@ -355,13 +361,13 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
   }),
   bowDistance: createClassicActionButtonSlots({
     forward: { x: -40, y: -52, rotation: -6 },
-    back: { x: -118, y: -36, rotation: -14 },
+    back: { x: -145, y: -135, rotation: -14 },
     lunge: { x: 0, y: 18, rotation: 0 },
-    light: { x: -78, y: -116, rotation: -14 },
-    medium: { x: 0, y: -132, rotation: 0 },
-    heavy: { x: 78, y: -116, rotation: 14 },
-    taunt: { x: 40, y: -52, rotation: 6 },
-    rest: { x: 118, y: -36, rotation: 14 },
+    light: { x: -60, y: -185, rotation: -14 },
+    medium: { x: 0, y: -200, rotation: 0 },
+    heavy: { x: 60, y: -185, rotation: 14 },
+    taunt: { x: 30, y: -130, rotation: 6 },
+    rest: { x: -30, y: -130, rotation: 14 },
   }),
 };
 
@@ -911,6 +917,188 @@ export const DEFAULT_REST_ANIMATION: BodyAnimationTuning = {
   },
 };
 
+export const DEFAULT_BOW_SHOT_ANIMATION: BodyAnimationTuning = {
+  enabled: true,
+  duration: 500,
+  base: {
+    head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+    backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+    backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+    frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+    frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+    backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+    backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  breath: {
+    head: { x: -62.578, y: 61.479, angle: -24, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    torso: { x: -19.215, y: 49.471, angle: -21, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+    backUpperArm: { x: -68.115, y: 100.785, angle: -66, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+    backForearm: { x: 17.783, y: 70.997, angle: -74, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backHand: { x: 84.812, y: 16.947, angle: -95, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+    frontUpperArm: { x: -33.723, y: 33.524, angle: -54, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+    frontForearm: { x: 13.171, y: 9.421, angle: -30, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontHand: { x: 28.814, y: 3.684, angle: 43, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+    backThigh: { x: -5.764, y: 54.945, angle: 42, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: -43.155, y: 61.42, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+    backFoot: { x: -65.115, y: 98.42, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -11.779, y: 61.576, angle: -30, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: 20.768, y: 83.156, angle: -30, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: 46.605, y: 112.63, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  faceBase: {
+    eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+    eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+  },
+  faceBreath: {
+    eyeLeft: { x: 0, y: -1, scaleX: 1.73, scaleY: 0.36 },
+    eyeRight: { x: 12.5, y: -2, scaleX: 1.3, scaleY: 0.97 },
+  },
+  activeParts: {
+    head: true,
+    torso: true,
+    backUpperArm: true,
+    backForearm: true,
+    backHand: true,
+    frontUpperArm: true,
+    frontForearm: true,
+    frontHand: true,
+    backThigh: true,
+    backShin: true,
+    backFoot: true,
+    frontThigh: true,
+    frontShin: true,
+    frontFoot: true,
+  },
+};
+export const DEFAULT_HIT_ANIMATION: BodyAnimationTuning = {
+  enabled: true,
+  duration: 400,
+  base: {
+    head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+    backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+    backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+    frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+    frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+    backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+    backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  breath: {
+    head: { x: 20.653, y: 13.954, angle: 35, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    torso: { x: -4.157, y: 1.999, angle: 13, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+    backUpperArm: { x: -16.353, y: -3.211, angle: 1, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+    backForearm: { x: -5.471, y: 5.895, angle: -7, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backHand: { x: 22.128, y: 7.789, angle: -14, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+    frontUpperArm: { x: 41.293, y: 30.893, angle: 2, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+    frontForearm: { x: 28.779, y: 40.946, angle: -2, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontHand: { x: 13.757, y: 41.893, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+    backThigh: { x: -3.039, y: 13.263, angle: 7, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: -6.647, y: 39.631, angle: -14, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+    backFoot: { x: -11.314, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -11.936, y: 5.684, angle: 7, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: -22.465, y: 38.631, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: -30.254, y: 72.842, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  faceBase: {
+    eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+    eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+  },
+  faceBreath: {
+    eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.37, scaleY: 0.87 },
+    eyeRight: { x: 3.5, y: -2, scaleX: 1.66, scaleY: 0.19 },
+  },
+  activeParts: {
+    head: true,
+    torso: true,
+    backUpperArm: true,
+    backForearm: true,
+    backHand: true,
+    frontUpperArm: true,
+    frontForearm: true,
+    frontHand: true,
+    backThigh: true,
+    backShin: true,
+    backFoot: true,
+    frontThigh: true,
+    frontShin: true,
+    frontFoot: true,
+  },
+};
+
+export const DEFAULT_BLOCK_ANIMATION: BodyAnimationTuning = {
+  enabled: true,
+  duration: 500,
+  base: {
+    head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+    backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+    backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+    frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+    frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+    backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+    backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  breath: {
+    head: { x: -21.423, y: -3.098, angle: 5, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    torso: { x: -3, y: -16, angle: -11, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+    backUpperArm: { x: -36.607, y: 17.998, angle: -76, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+    backForearm: { x: 49.84, y: -23.526, angle: -58, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    backHand: { x: 115.615, y: -61.262, angle: -76, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+    frontUpperArm: { x: 14.471, y: -15.211, angle: -28, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+    frontForearm: { x: 39.915, y: -19.947, angle: 19, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontHand: { x: 5.128, y: -27.369, angle: 36, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+    backThigh: { x: -2, y: 0, angle: 21, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+    backShin: { x: -24.901, y: 27.316, angle: 22, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+    backFoot: { x: -68.958, y: 61.474, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+    frontThigh: { x: -9.936, y: 2.842, angle: -33, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+    frontShin: { x: 21.729, y: 19.685, angle: -3, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+    frontFoot: { x: 16.822, y: 59.579, angle: 12, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  },
+  faceBase: {
+    eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+    eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+  },
+  faceBreath: {
+    eyeLeft: { x: -1, y: -1.5, scaleX: 1.3, scaleY: 0.7 },
+    eyeRight: { x: 12, y: -1.5, scaleX: 1.3, scaleY: 0.7 },
+  },
+  activeParts: {
+    head: true,
+    torso: true,
+    backUpperArm: true,
+    backForearm: true,
+    backHand: true,
+    frontUpperArm: true,
+    frontForearm: true,
+    frontHand: true,
+    backThigh: true,
+    backShin: true,
+    backFoot: true,
+    frontThigh: true,
+    frontShin: true,
+    frontFoot: true,
+  },
+};
+
 export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuning> = {
   idle: DEFAULT_IDLE_ANIMATION,
   walkCycle: DEFAULT_WALK_CYCLE_ANIMATION,
@@ -918,6 +1106,9 @@ export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuni
   light: DEFAULT_LIGHT_ANIMATION,
   medium: DEFAULT_MEDIUM_ANIMATION,
   heavy: DEFAULT_HEAVY_ANIMATION,
+  bowShot: DEFAULT_BOW_SHOT_ANIMATION,
+  hit: DEFAULT_HIT_ANIMATION,
+  block: DEFAULT_BLOCK_ANIMATION,
   taunt: DEFAULT_TAUNT_ANIMATION,
   rest: DEFAULT_REST_ANIMATION,
 };
@@ -1055,8 +1246,8 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
   cityHeroX: 100,
-  cityHeroY: 127,
-  cityHeroScale: 1.2,
+  cityHeroY: 200,
+  cityHeroScale: 1.6,
   heroPortraitButtonX: 5,
   heroPortraitButtonY: 3,
   heroPortraitButtonScale: 1.2,
@@ -1687,6 +1878,146 @@ function createDefaultMediumAnimation(): BodyAnimationTuning {
 
 function createDefaultHeavyAnimation(): BodyAnimationTuning {
   return createDefaultAttackAnimation(420, 1.18);
+}
+
+function createDefaultBowShotAnimation(): BodyAnimationTuning {
+  const base = cloneRigParts(DEFAULT_IDLE_ANIMATION.base);
+  const breath = cloneRigParts(DEFAULT_IDLE_ANIMATION.base);
+  const faceBase = cloneFaceParts(DEFAULT_IDLE_ANIMATION.faceBase);
+  const faceBreath = cloneFaceParts(DEFAULT_IDLE_ANIMATION.faceBase);
+
+  breath.head.x += 3;
+  breath.head.y -= 2;
+  breath.head.angle = 2;
+  breath.torso.x += 2;
+  breath.torso.y -= 3;
+  breath.torso.angle = 4;
+  breath.backUpperArm.x -= 14;
+  breath.backUpperArm.y -= 9;
+  breath.backUpperArm.angle = -30;
+  breath.backForearm.x -= 28;
+  breath.backForearm.y -= 13;
+  breath.backForearm.angle = -18;
+  breath.backHand.x -= 48;
+  breath.backHand.y -= 17;
+  breath.backHand.angle = -12;
+  breath.frontUpperArm.x += 10;
+  breath.frontUpperArm.y -= 8;
+  breath.frontUpperArm.angle = 32;
+  breath.frontForearm.x += 25;
+  breath.frontForearm.y -= 10;
+  breath.frontForearm.angle = 18;
+  breath.frontHand.x += 46;
+  breath.frontHand.y -= 13;
+  breath.frontHand.angle = 12;
+  breath.frontThigh.angle = -3;
+  breath.backThigh.angle = 3;
+  faceBreath.eyeLeft.x += 2;
+  faceBreath.eyeRight.x += 2;
+
+  return {
+    enabled: true,
+    duration: 360,
+    base,
+    breath,
+    faceBase,
+    faceBreath,
+    activeParts: createUpperBodyAttackActiveParts(),
+  };
+}
+
+function createDefaultHitAnimation(): BodyAnimationTuning {
+  const base = cloneRigParts(DEFAULT_IDLE_ANIMATION.base);
+  const breath = cloneRigParts(DEFAULT_IDLE_ANIMATION.base);
+  const faceBase = cloneFaceParts(DEFAULT_IDLE_ANIMATION.faceBase);
+  const faceBreath = cloneFaceParts(DEFAULT_IDLE_ANIMATION.faceBase);
+
+  breath.head.x -= 9;
+  breath.head.y -= 3;
+  breath.head.angle = -10;
+  breath.torso.x -= 8;
+  breath.torso.y -= 2;
+  breath.torso.angle = -8;
+  breath.backUpperArm.x -= 3;
+  breath.backUpperArm.y += 4;
+  breath.backUpperArm.angle = 16;
+  breath.backForearm.x -= 5;
+  breath.backForearm.y += 5;
+  breath.backForearm.angle = 14;
+  breath.backHand.x -= 6;
+  breath.backHand.y += 6;
+  breath.frontUpperArm.x += 2;
+  breath.frontUpperArm.y += 4;
+  breath.frontUpperArm.angle = -16;
+  breath.frontForearm.x += 6;
+  breath.frontForearm.y += 5;
+  breath.frontForearm.angle = -14;
+  breath.frontHand.x += 8;
+  breath.frontHand.y += 6;
+  breath.backThigh.x -= 4;
+  breath.backThigh.angle = -5;
+  breath.frontThigh.x -= 4;
+  breath.frontThigh.angle = -5;
+  faceBreath.eyeLeft.scaleY = 0.56;
+  faceBreath.eyeRight.scaleY = 0.56;
+
+  return {
+    enabled: true,
+    duration: 260,
+    base,
+    breath,
+    faceBase,
+    faceBreath,
+    activeParts: createDefaultIdleActiveParts(),
+  };
+}
+
+function createDefaultBlockAnimation(): BodyAnimationTuning {
+  const base = cloneRigParts(DEFAULT_IDLE_ANIMATION.base);
+  const breath = cloneRigParts(DEFAULT_IDLE_ANIMATION.base);
+  const faceBase = cloneFaceParts(DEFAULT_IDLE_ANIMATION.faceBase);
+  const faceBreath = cloneFaceParts(DEFAULT_IDLE_ANIMATION.faceBase);
+
+  breath.head.x -= 4;
+  breath.head.y -= 3;
+  breath.head.angle = -4;
+  breath.torso.x -= 3;
+  breath.torso.y -= 2;
+  breath.torso.angle = -5;
+  breath.backUpperArm.x -= 5;
+  breath.backUpperArm.y -= 7;
+  breath.backUpperArm.angle = -22;
+  breath.backForearm.x += 9;
+  breath.backForearm.y -= 14;
+  breath.backForearm.angle = -46;
+  breath.backHand.x += 26;
+  breath.backHand.y -= 28;
+  breath.backHand.angle = -52;
+  breath.frontUpperArm.x += 4;
+  breath.frontUpperArm.y -= 8;
+  breath.frontUpperArm.angle = 38;
+  breath.frontForearm.x -= 4;
+  breath.frontForearm.y -= 18;
+  breath.frontForearm.angle = 58;
+  breath.frontHand.x -= 16;
+  breath.frontHand.y -= 32;
+  breath.frontHand.angle = 48;
+  breath.backThigh.x -= 2;
+  breath.backThigh.angle = -3;
+  breath.frontThigh.x -= 2;
+  breath.frontThigh.angle = -3;
+  faceBreath.eyeLeft.scaleY = 0.7;
+  faceBreath.eyeRight.scaleY = 0.7;
+
+  return {
+    enabled: true,
+    duration: 300,
+    base,
+    breath,
+    faceBase,
+    faceBreath,
+    activeParts: createDefaultIdleActiveParts(),
+  };
 }
 
 function createDefaultAttackAnimation(duration: number, power: number): BodyAnimationTuning {

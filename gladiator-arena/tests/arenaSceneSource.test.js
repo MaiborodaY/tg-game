@@ -81,6 +81,15 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
 });
 
+test("bow attacks and damage reactions use dedicated body animations", () => {
+  assert.equal(arenaSceneSource.includes('type HeroWeaponClass'), true);
+  assert.equal(arenaSceneSource.includes('weaponClass === "bow" ? "bowShot" : actionId'), true);
+  assert.equal(arenaSceneSource.includes('weaponClass !== "bow" && areArenaVfxEnabled()'), true);
+  assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit")'), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
+});
+
 test("arena starts close between fighters and eases back to the normal camera", () => {
   assert.equal(arenaSceneSource.includes('type ArenaEntryTransitionState = "pending" | "running" | "done"'), true);
   assert.equal(arenaSceneSource.includes("ARENA_ENTRY_START_ZOOM_MULTIPLIER"), true);
@@ -157,6 +166,7 @@ test("blocked hits use the shield icon popup instead of block text", () => {
   assert.equal(arenaSceneSource.includes("DAMAGE_BLOCK_ICON_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.enemy)"), true);
   assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.player)"), true);
+  assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("block")'), true);
   assert.equal(arenaSceneSource.includes("BLOCK_POPUP_HEAD_OFFSET_Y"), true);
   assert.equal(arenaSceneSource.includes("BLOCK_POPUP_SCREEN_SIZE"), true);
   assert.equal(arenaSceneSource.includes("fighter.head.getWorldTransformMatrix()"), true);

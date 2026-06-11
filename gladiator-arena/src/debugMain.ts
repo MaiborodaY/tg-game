@@ -583,7 +583,9 @@ function startDebugApp(): void {
       });
     },
   });
-  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
+  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
+    getPreviewWheelMode: () => debugTuning.selectedClassicActionWheelMode,
+  });
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = mountTurnProbe(dom.gameScreen);
   subscribeDebugTuning(() => {
