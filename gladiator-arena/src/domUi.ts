@@ -1,4 +1,12 @@
-import { distanceLabel, getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type CombatState } from "./combat";
+import {
+  distanceBand,
+  distanceLabel,
+  getFighterMaxArmor,
+  getFighterMaxHp,
+  getFighterMaxStamina,
+  type CombatState,
+  type DistanceBand,
+} from "./combat";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -9,6 +17,7 @@ export interface DomRefs {
   restartButton: HTMLButtonElement;
   cityButton: HTMLButtonElement;
   distanceText: HTMLElement;
+  classicDistanceBadge: HTMLElement;
   classicDistanceText: HTMLElement;
   classicPlayerName: HTMLElement;
   classicEnemyName: HTMLElement;
@@ -48,6 +57,7 @@ export function getDomRefs(): DomRefs {
     restartButton: document.querySelector<HTMLButtonElement>("#restartButton"),
     cityButton: document.querySelector<HTMLButtonElement>("#cityButton"),
     distanceText: document.querySelector<HTMLElement>("#distanceText"),
+    classicDistanceBadge: document.querySelector<HTMLElement>(".classic-distance-badge"),
     classicDistanceText: document.querySelector<HTMLElement>("#classicDistanceText"),
     classicPlayerName: document.querySelector<HTMLElement>("#classicPlayerName"),
     classicEnemyName: document.querySelector<HTMLElement>("#classicEnemyName"),
@@ -88,12 +98,24 @@ export function getDomRefs(): DomRefs {
 
 export function renderDom(dom: DomRefs, state: CombatState): void {
   const distance = distanceLabel(state.distance);
+  const band = distanceBand(state.distance);
 
   dom.distanceText.textContent = distance;
   dom.classicDistanceText.textContent = distance;
+  syncClassicDistanceBadge(dom.classicDistanceBadge, band);
   renderStats(dom, state);
   renderLog(dom, state);
   renderResult(dom, state);
+}
+
+const CLASSIC_DISTANCE_BADGE_BANDS: DistanceBand[] = ["clinch", "melee", "near", "far", "very-far"];
+
+function syncClassicDistanceBadge(element: HTMLElement, band: DistanceBand): void {
+  element.dataset.distanceBand = band;
+
+  CLASSIC_DISTANCE_BADGE_BANDS.forEach((currentBand) => {
+    element.classList.toggle(`classic-distance-badge--${currentBand}`, currentBand === band);
+  });
 }
 
 function renderStats(dom: DomRefs, state: CombatState): void {

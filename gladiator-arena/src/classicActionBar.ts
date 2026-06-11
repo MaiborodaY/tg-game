@@ -5,6 +5,7 @@ import {
   actionOrder,
   actions,
   canUseAction,
+  distanceBand,
   getActionTitle,
   isBowFighter,
   type ActionId,
@@ -15,6 +16,7 @@ import type { ActionButtonOffsetKey, ClassicActionButtonSlotTuning, ClassicActio
 type ClassicActionSlotTuning = Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
 type TuningProvider = () => ActionTokenTuning & { classicActionButtonSlots?: ClassicActionSlotTuning };
 type ClassicWheelMode = "distance" | "clinch" | "bow-distance";
+type ClassicWheelRangeMode = "far" | "near" | "melee" | "clinch" | "bow";
 
 interface ClassicActionBarOptions {
   getPreviewWheelMode?: () => ClassicActionWheelMode | undefined;
@@ -24,6 +26,7 @@ const CLASSIC_WHEEL_TURN_MS = 520;
 const CLASSIC_WHEEL_BASE_DIAMETER = 420;
 const CLASSIC_WHEEL_SCREEN_PADDING_X = 12;
 const CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y = -40;
+const CLASSIC_WHEEL_RANGE_MODES: ClassicWheelRangeMode[] = ["far", "near", "melee", "clinch", "bow"];
 
 interface ClassicActionSlot {
   actionId: ActionId;
@@ -90,6 +93,7 @@ export function mountClassicActionBar(
   }
 
   const wheel = document.createElement("div");
+  const wheelShadow = document.createElement("div");
   const layers = [createClassicButtonLayer(onAction), createClassicButtonLayer(onAction)];
   let activeLayer = layers[0];
   let lastState: CombatState | undefined;
@@ -99,16 +103,18 @@ export function mountClassicActionBar(
   const syncWheelFitScale = () => syncClassicWheelFitScale(root);
 
   root.replaceChildren();
+  wheelShadow.className = "classic-action-bar__wheel-shadow";
   wheel.className = "classic-action-bar__wheel";
   layers.forEach((layer) => wheel.append(layer.element));
-  root.append(wheel);
+  root.append(wheelShadow, wheel);
   syncWheelFitScale();
   window.addEventListener("resize", syncWheelFitScale);
 
   function sync(state: CombatState): void {
     const tuning = getTuning?.();
     const buttonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
-    const wheelMode = getClassicWheelMode(state, options.getPreviewWheelMode?.());
+    const previewWheelMode = options.getPreviewWheelMode?.();
+    const wheelMode = getClassicWheelMode(state, previewWheelMode);
     const isBattleActive = state.result === "playing";
     const hasPlayerControl = isBattleActive && state.activeTurn === "player";
 
@@ -124,11 +130,16 @@ export function mountClassicActionBar(
     }
 
     const activeWheelMode = activeLayer.mode ?? wheelMode;
+    const activeWheelRangeMode = getClassicWheelRangeMode(state, wheelMode, previewWheelMode);
 
     root.dataset.classicWheelMode = activeWheelMode;
+    root.dataset.classicWheelRange = activeWheelRangeMode;
     root.classList.toggle("classic-action-bar--distance", activeWheelMode === "distance");
     root.classList.toggle("classic-action-bar--clinch", activeWheelMode === "clinch");
     root.classList.toggle("classic-action-bar--bow-distance", activeWheelMode === "bow-distance");
+    CLASSIC_WHEEL_RANGE_MODES.forEach((mode) => {
+      root.classList.toggle(`classic-action-bar--range-${mode}`, activeWheelRangeMode === mode);
+    });
     root.classList.toggle("classic-action-bar--turning", isWheelTurning);
     wheel.style.setProperty("--classic-wheel-angle", `${wheelRotationAngle}deg`);
 
@@ -287,6 +298,42 @@ function getClassicWheelModeFromTuningMode(mode?: ClassicActionWheelMode): Class
   }
 
   return mode;
+}
+
+function getClassicWheelRangeMode(
+  state: CombatState,
+  wheelMode: ClassicWheelMode,
+  previewWheelMode?: ClassicActionWheelMode,
+): ClassicWheelRangeMode {
+  const forcedRangeMode = getClassicWheelRangeModeFromTuningMode(previewWheelMode);
+
+  if (forcedRangeMode) {
+    return forcedRangeMode;
+  }
+
+  if (wheelMode === "bow-distance") {
+    return "bow";
+  }
+
+  const band = distanceBand(state.distance);
+
+  return band === "very-far" ? "far" : band;
+}
+
+function getClassicWheelRangeModeFromTuningMode(mode?: ClassicActionWheelMode): ClassicWheelRangeMode | undefined {
+  if (mode === "bowDistance") {
+    return "bow";
+  }
+
+  if (mode === "clinch") {
+    return "clinch";
+  }
+
+  if (mode === "distance") {
+    return "far";
+  }
+
+  return undefined;
 }
 
 function getClassicActionSlots(wheelMode: ClassicWheelMode, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {

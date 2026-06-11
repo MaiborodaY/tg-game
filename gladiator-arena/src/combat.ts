@@ -75,6 +75,8 @@ export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
 export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
 
+export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
+
 const defaultCombatMovementTuning: CombatMovementTuning = {
   forwardMoveDistance: DEFAULT_FORWARD_MOVE_DISTANCE,
   backMoveDistance: DEFAULT_BACK_MOVE_DISTANCE,
@@ -316,24 +318,39 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   return true;
 }
 
-export function distanceLabel(distance: number): string {
+export function distanceBand(distance: number): DistanceBand {
   if (distance <= 0) {
-    return "Clinch";
+    return "clinch";
   }
 
   if (distance <= 1) {
-    return "Melee";
+    return "melee";
   }
 
   if (distance <= 2) {
-    return "Near";
+    return "near";
   }
 
   if (distance <= 3) {
-    return "Far";
+    return "far";
   }
 
-  return "Very far";
+  return "very-far";
+}
+
+export function distanceLabel(distance: number): string {
+  switch (distanceBand(distance)) {
+    case "clinch":
+      return "Clinch";
+    case "melee":
+      return "Melee";
+    case "near":
+      return "Near";
+    case "far":
+      return "Far";
+    case "very-far":
+      return "Very far";
+  }
 }
 
 export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId, random = Math.random): CombatState {
