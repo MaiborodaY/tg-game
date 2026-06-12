@@ -2860,6 +2860,14 @@ body.debug-active .city-menu__portrait-button:active {
   --shop-rarity-dark: #53250b;
 }
 
+.armory-shop__selected-card--rarity-mythical,
+.armory-shop__option--rarity-mythical {
+  --shop-rarity: #9d1824;
+  --shop-rarity-light: #e1575d;
+  --shop-rarity-soft: rgba(157, 24, 36, 0.38);
+  --shop-rarity-dark: #33070c;
+}
+
 .armory-shop__selected-icon {
   position: relative;
   z-index: 1;
@@ -4175,6 +4183,12 @@ body.debug-mode-hud .battle-screen .status-strip {
   background: linear-gradient(180deg, rgba(176, 103, 24, 0.95), rgba(82, 42, 10, 0.92));
 }
 
+.debug-rarity-select[data-rarity="mythical"],
+.debug-shop-items__select[data-rarity="mythical"] {
+  border-color: rgba(255, 84, 91, 0.98);
+  background: linear-gradient(180deg, rgba(137, 24, 32, 0.95), rgba(48, 5, 10, 0.92));
+}
+
 .debug-rarity-option--common {
   color: #fff0bd;
   background: #3f3320;
@@ -4198,6 +4212,11 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-rarity-option--legendary {
   color: #fff0bd;
   background: #9a5b15;
+}
+
+.debug-rarity-option--mythical {
+  color: #ffe3df;
+  background: #7f121c;
 }
 
 .debug-rig-editor__face-part {

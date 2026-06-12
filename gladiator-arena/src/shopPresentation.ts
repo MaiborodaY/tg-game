@@ -18,6 +18,7 @@ const shopRarityLabels: Record<ShopItemRarity, string> = {
   rare: "Rare",
   epic: "Epic",
   legendary: "Legendary",
+  mythical: "Mythical",
 };
 
 const shopRarityShortLabels: Record<ShopItemRarity, string> = {
@@ -26,6 +27,7 @@ const shopRarityShortLabels: Record<ShopItemRarity, string> = {
   rare: "R",
   epic: "E",
   legendary: "L",
+  mythical: "M",
 };
 
 const shopRarityRanks: Record<ShopItemRarity, number> = {
@@ -34,6 +36,7 @@ const shopRarityRanks: Record<ShopItemRarity, number> = {
   rare: 3,
   epic: 4,
   legendary: 5,
+  mythical: 6,
 };
 
 export function getShopProductStat(itemIds: HeroItemId[], statKind: ShopProductStatKind): number {
@@ -99,6 +102,10 @@ export function getShopProductRarity(itemIds: HeroItemId[], explicitRarity?: Sho
       return Math.max(getShopItemStat(item, "armor"), getShopItemStat(item, "damage"));
     }),
   );
+
+  if (score >= 10) {
+    return "mythical";
+  }
 
   if (score >= 6) {
     return "legendary";

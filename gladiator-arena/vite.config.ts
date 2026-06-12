@@ -367,7 +367,7 @@ interface GeneratedEquipmentJsonRecord {
   id: string;
   name: string;
   kind: "armor" | "weapon";
-  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical";
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
@@ -2363,7 +2363,7 @@ function readItemRarity(
     return fallback;
   }
 
-  if (value === "common" || value === "uncommon" || value === "rare" || value === "epic" || value === "legendary") {
+  if (value === "common" || value === "uncommon" || value === "rare" || value === "epic" || value === "legendary" || value === "mythical") {
     return value;
   }
 

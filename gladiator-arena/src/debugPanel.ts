@@ -224,13 +224,14 @@ const AUTO_EQUIPMENT_STAT_MIN = 0;
 const AUTO_EQUIPMENT_ARMOR_MAX = 200;
 const AUTO_EQUIPMENT_DAMAGE_MAX = 100;
 const AUTO_EQUIPMENT_PRICE_MAX = 2000;
-const AUTO_EQUIPMENT_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+const AUTO_EQUIPMENT_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical"];
 const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
   common: "Common",
   uncommon: "Uncommon",
   rare: "Rare",
   epic: "Epic",
   legendary: "Legendary",
+  mythical: "Mythical",
 };
 const DEBUG_SHOP_ITEM_PAIR_CONFIGS: readonly DebugShopItemPairConfig[] = [
   { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", label: "Shoulderguard" },
@@ -246,6 +247,7 @@ const DEBUG_SHOP_ITEM_RARITY_RANKS: Record<HeroItemRarity, number> = {
   rare: 2,
   epic: 3,
   legendary: 4,
+  mythical: 5,
 };
 
 const controlGroups: DebugControlGroup[] = [

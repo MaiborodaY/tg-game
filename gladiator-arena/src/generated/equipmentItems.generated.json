@@ -175,6 +175,40 @@
     }
   },
   {
+    "id": "generated_equipment_back_glove_druid_01",
+    "name": "Druid Back Glove 01",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 50,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-druid-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 14,
+      "angle": 0,
+      "scaleX": 1.16,
+      "scaleY": 1.27,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-druid-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-druid-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-druid-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_druid_01",
+      "name": "Druid Back Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_druid_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_back_glove_leather_03",
     "name": "Leather Back Glove 03",
     "kind": "armor",
@@ -455,6 +489,40 @@
     }
   },
   {
+    "id": "generated_equipment_back_shoulderguard_druid_01",
+    "name": "Druid Back Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 50,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-druid-01"
+    },
+    "equipmentTuning": {
+      "x": 25,
+      "y": 7,
+      "angle": 47,
+      "scaleX": 2.75,
+      "scaleY": 1.8,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-druid-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-druid-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-druid-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_druid_01",
+      "name": "Druid Back Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_druid_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_chainmail_01",
     "name": "Chainmail Back Wrist 01",
     "kind": "armor",
@@ -555,6 +623,40 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_breastplate_chainmail_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_druid_01",
+    "name": "Druid Breastplate 01",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 50,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-druid-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 54,
+      "angle": 0,
+      "scaleX": 1.12,
+      "scaleY": 1.55,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-druid-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-druid-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-druid-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_druid_01",
+      "name": "Druid Breastplate 01",
+      "price": 2000,
+      "itemIds": [
+        "generated_equipment_breastplate_druid_01"
       ],
       "categoryId": "chest"
     }
@@ -695,6 +797,40 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_glove_cloth_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_druid_01",
+    "name": "Druid Front Glove 01",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-druid-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 14,
+      "angle": 0,
+      "scaleX": 1.16,
+      "scaleY": 1.27,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-druid-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-druid-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-druid-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_druid_01",
+      "name": "Druid Front Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_druid_01"
       ],
       "categoryId": "arms"
     }
@@ -980,6 +1116,40 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_druid_01",
+    "name": "Druid Front Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-druid-01"
+    },
+    "equipmentTuning": {
+      "x": 25,
+      "y": 7,
+      "angle": 47,
+      "scaleX": 2.75,
+      "scaleY": 1.8,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-druid-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-druid-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-druid-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_druid_01",
+      "name": "Druid Front Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_druid_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_chainmail_01",
     "name": "Chainmail Front Wrist 01",
     "kind": "armor",
@@ -1150,6 +1320,40 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_helmet_cloth_02"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_druid_01",
+    "name": "Druid Helmet 01",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 50,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-druid-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 57,
+      "angle": 0,
+      "scaleX": 1.51,
+      "scaleY": 1.74,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-druid-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-druid-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-druid-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_druid_01",
+      "name": "Druid Helmet 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_druid_01"
       ],
       "categoryId": "head"
     }

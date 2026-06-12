@@ -262,6 +262,8 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("debug-auto-equipment__transform-controls"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__rarity"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_RARITIES"), true);
+  assert.equal(debugPanelSource.includes('"mythical"'), true);
+  assert.equal(debugPanelSource.includes('mythical: "Mythical"'), true);
   assert.equal(debugPanelSource.includes("getSelectedAutoEquipmentRarity"), true);
   assert.equal(debugPanelSource.includes("rarity: getSelectedAutoEquipmentRarity"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__generated-select"), true);
@@ -322,5 +324,7 @@ test("debug panel exposes generated shop item editor", () => {
   assert.equal(debugPanelSource.includes("itemIds: product.itemIds"), true);
   assert.equal(debugPanelSource.includes("debug-rarity-option--"), true);
   assert.equal(stylesSource.includes('.debug-rarity-select[data-rarity="rare"]'), true);
+  assert.equal(stylesSource.includes('.debug-rarity-select[data-rarity="mythical"]'), true);
+  assert.equal(stylesSource.includes(".armory-shop__option--rarity-mythical"), true);
   assert.equal(stylesSource.includes(".debug-shop-items__select"), true);
 });

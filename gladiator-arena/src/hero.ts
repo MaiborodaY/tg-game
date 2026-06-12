@@ -53,7 +53,7 @@ export const HERO_EQUIPMENT_SLOT_KEYS = [
 
 export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
 export type HeroItemId = string;
-export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
 
 export interface HeroItemDefinition {

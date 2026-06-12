@@ -148,6 +148,7 @@ test("vite dev middleware updates generated shop item rarity stats and price", (
   assert.match(source, /targetIndex > 0 \? 0 : clampedStat/);
   assert.match(source, /armoryProduct: \{ \.\.\.record\.armoryProduct, price: update\.price \}/);
   assert.match(source, /weaponProduct: \{ \.\.\.record\.weaponProduct, price: update\.price \}/);
+  assert.match(source, /value === "mythical"/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {

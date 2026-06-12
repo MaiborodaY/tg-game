@@ -94,6 +94,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_cloth_01","name":"Cloth Back Glove 01","price":0,"itemIds":["generated_equipment_back_glove_cloth_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_glove_druid_01","name":"Druid Back Glove 01","kind":"armor","rarity":"mythical","equipmentSlot":"backGlove","armorHp":50},
+    assetKeys: {"backGloveAssetKey":"back-glove-druid-01"},
+    equipmentTuning: {"x":0,"y":14,"angle":0,"scaleX":1.16,"scaleY":1.27,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-glove-druid-01",
+      url: new URL("../assets/fighters/armor/arms/back-glove-druid-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-druid-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/arms/back-glove-druid-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-druid-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_back_glove_druid_01","name":"Druid Back Glove 01","price":0,"itemIds":["generated_equipment_back_glove_druid_01"],"categoryId":"arms"},
+  },
+  {
     item: {"id":"generated_equipment_back_glove_leather_03","name":"Leather Back Glove 03","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSlot":"backGlove","armorHp":2},
     assetKeys: {"backGloveAssetKey":"back-glove-leather-03"},
     equipmentTuning: {"x":0,"y":14,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
@@ -198,6 +211,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_cloth_01","name":"Cloth Back Shoulderguard 01","price":0,"itemIds":["generated_equipment_back_shoulderguard_cloth_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_back_shoulderguard_druid_01","name":"Druid Back Shoulderguard 01","kind":"armor","rarity":"mythical","equipmentSlot":"backShoulderguard","armorHp":50},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-druid-01"},
+    equipmentTuning: {"x":25,"y":7,"angle":47,"scaleX":2.75,"scaleY":1.8,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-druid-01",
+      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-druid-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-druid-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-druid-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-druid-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_druid_01","name":"Druid Back Shoulderguard 01","price":0,"itemIds":["generated_equipment_back_shoulderguard_druid_01"],"categoryId":"shoulders"},
+  },
+  {
     item: {"id":"generated_equipment_back_wrist_chainmail_01","name":"Chainmail Back Wrist 01","kind":"armor","rarity":"rare","armorCategory":"chain","equipmentSlot":"backWrist","armorHp":8},
     assetKeys: {"backWristAssetKey":"back-wrist-chainmail-01"},
     equipmentTuning: {"x":0,"y":16,"angle":2,"scaleX":1.5,"scaleY":1.1,"flipX":false,"flipY":false},
@@ -235,6 +261,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp",
     },
     armoryProduct: {"id":"generated_equipment_breastplate_chainmail_01","name":"Chainmail Hauberk 01","price":0,"itemIds":["generated_equipment_breastplate_chainmail_01"],"categoryId":"chest"},
+  },
+  {
+    item: {"id":"generated_equipment_breastplate_druid_01","name":"Druid Breastplate 01","kind":"armor","rarity":"mythical","equipmentSlot":"breastplate","armorHp":50},
+    assetKeys: {"breastplateAssetKey":"breastplate-druid-01"},
+    equipmentTuning: {"x":0,"y":54,"angle":0,"scaleX":1.12,"scaleY":1.55,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-druid-01",
+      url: new URL("../assets/fighters/armor/breastplate/breastplate-druid-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-druid-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-druid-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-druid-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_breastplate_druid_01","name":"Druid Breastplate 01","price":2000,"itemIds":["generated_equipment_breastplate_druid_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_front_boot_chainmail_01","name":"Chainmail Front Boot 01","kind":"armor","rarity":"rare","armorCategory":"chain","equipmentSlot":"frontBoot","armorHp":0},
@@ -287,6 +326,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-cloth-01.webp",
     },
     armoryProduct: {"id":"generated_equipment_front_glove_cloth_01","name":"Cloth Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_cloth_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_glove_druid_01","name":"Druid Front Glove 01","kind":"armor","rarity":"mythical","equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-druid-01"},
+    equipmentTuning: {"x":0,"y":14,"angle":0,"scaleX":1.16,"scaleY":1.27,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-glove-druid-01",
+      url: new URL("../assets/fighters/armor/arms/front-glove-druid-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-druid-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/arms/front-glove-druid-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-druid-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_front_glove_druid_01","name":"Druid Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_druid_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_front_glove_leather_03","name":"Leather Front Glove 03","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSlot":"frontGlove","armorHp":0},
@@ -393,6 +445,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_cloth_01","name":"Cloth Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_cloth_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_front_shoulderguard_druid_01","name":"Druid Front Shoulderguard 01","kind":"armor","rarity":"mythical","equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-druid-01"},
+    equipmentTuning: {"x":25,"y":7,"angle":47,"scaleX":2.75,"scaleY":1.8,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-druid-01",
+      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-druid-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-druid-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-druid-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-druid-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_front_shoulderguard_druid_01","name":"Druid Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_druid_01"],"categoryId":"shoulders"},
+  },
+  {
     item: {"id":"generated_equipment_front_wrist_chainmail_01","name":"Chainmail Front Wrist 01","kind":"armor","rarity":"rare","armorCategory":"chain","equipmentSlot":"frontWrist","armorHp":0},
     assetKeys: {"frontWristAssetKey":"front-wrist-chainmail-01"},
     equipmentTuning: {"x":0,"y":19,"angle":0,"scaleX":1.5,"scaleY":1.1,"flipX":true,"flipY":false},
@@ -456,6 +521,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-cloth-02.webp",
     },
     armoryProduct: {"id":"generated_equipment_helmet_cloth_02","name":"Cloth Helmet 02","price":0,"itemIds":["generated_equipment_helmet_cloth_02"],"categoryId":"head"},
+  },
+  {
+    item: {"id":"generated_equipment_helmet_druid_01","name":"Druid Helmet 01","kind":"armor","rarity":"mythical","equipmentSlot":"helmet","armorHp":50},
+    assetKeys: {"helmetAssetKey":"helmet-druid-01"},
+    equipmentTuning: {"x":0,"y":57,"angle":0,"scaleX":1.51,"scaleY":1.74,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-druid-01",
+      url: new URL("../assets/fighters/armor/helmet/helmet-druid-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-druid-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/helmet/helmet-druid-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-druid-01.webp",
+    },
+    armoryProduct: {"id":"generated_equipment_helmet_druid_01","name":"Druid Helmet 01","price":0,"itemIds":["generated_equipment_helmet_druid_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_01","name":"Axe 01","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"axe"},
