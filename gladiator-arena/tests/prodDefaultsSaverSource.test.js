@@ -125,10 +125,15 @@ test("vite dev middleware removes generated equipment records and asset files", 
 
   assert.match(source, /remove-equipment-item/);
   assert.match(source, /pickGeneratedEquipmentRemovalId/);
-  assert.match(source, /removeGeneratedEquipmentItem/);
+  assert.match(source, /removeGeneratedEquipmentItems/);
+  assert.match(source, /getLinkedGeneratedEquipmentRemovalRecords/);
+  assert.match(source, /findGeneratedEquipmentMirrorCounterpart/);
   assert.match(source, /removeGeneratedEquipmentAssetFiles/);
+  assert.match(source, /formatRemovedGeneratedEquipmentMessage/);
   assert.match(source, /rm\(getProjectSourceUrl\(sourcePath\), \{ force: true \}\)/);
-  assert.match(source, /Only generated equipment items can be removed/);
+  assert.doesNotMatch(source, /Only generated equipment items can be removed/);
+  assert.doesNotMatch(source, /itemId\.startsWith\("generated_equipment_"\)/);
+  assert.match(source, /updated: removedItems\.length/);
 });
 
 test("vite dev middleware updates generated shop item rarity stats and price", () => {
@@ -178,12 +183,14 @@ test("vite dev middleware converts promoted png equipment to standardized webp a
   assert.match(source, /import sharp from "sharp"/);
   assert.match(source, /await pickPromotedEquipmentItem/);
   assert.match(source, /ensureGeneratedEquipmentShopIcons\(promotedRecords\)/);
-  assert.match(source, /preparePromotedEquipmentAsset\(sourcePath, lowSourcePath, \{ bakeFlipX: sourceEquipmentTuning\.flipX \}\)/);
-  assert.match(source, /bakePromotedEquipmentTuning\(sourceEquipmentTuning\)/);
-  assert.match(source, /bakePromotedEquipmentWebpAssetFlipX/);
+  assert.match(source, /const mirrorPairFlipX = sourceEquipmentTuning\.flipX/);
+  assert.match(source, /const equipmentTuning = \{ \.\.\.sourceEquipmentTuning, flipX: false \}/);
+  assert.match(source, /preparePromotedEquipmentAsset\(sourcePath, lowSourcePath\)/);
+  assert.doesNotMatch(source, /bakePromotedEquipmentTuning/);
+  assert.doesNotMatch(source, /bakePromotedEquipmentWebpAssetFlipX/);
   assert.match(source, /convertPromotedEquipmentPngAsset/);
   assert.match(source, /sourcePath\.endsWith\("\.png"\)/);
-  assert.match(source, /options\.bakeFlipX \? await sharp\(source\)\.flop\(\)\.png\(\)\.toBuffer\(\) : source/);
+  assert.match(source, /const runtime = await createEquipmentWebp\(source,/);
   assert.match(source, /promotedEquipmentRuntimeWebpQuality = 86/);
   assert.match(source, /promotedEquipmentLowWebpQuality = 76/);
   assert.match(source, /promotedEquipmentLowMaxSide = 448/);
@@ -212,6 +219,10 @@ test("generated equipment shop icons exist as standardized square assets", async
 
 test("vite dev middleware auto-generates mirrored armor pairs during promotion", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const mirrorAssetsSource = source.slice(
+    source.indexOf("async function ensureMirroredPromotedEquipmentAssets"),
+    source.indexOf("async function writeMirroredPromotedEquipmentWebpAsset"),
+  );
 
   assert.match(source, /promotedEquipmentMirrorPairs/);
   assert.match(source, /createPromotedEquipmentRecords/);
@@ -222,6 +233,12 @@ test("vite dev middleware auto-generates mirrored armor pairs during promotion",
   assert.match(source, /angle: -tuning\.angle/);
   assert.match(source, /flipX: false/);
   assert.match(source, /\.flop\(\)/);
+  assert.match(source, /mirrorPairFlipX: boolean/);
+  assert.match(source, /if \(!mirrorPairFlipX\) \{/);
+  assert.match(source, /copyPromotedEquipmentWebpAsset\(sourcePath, targetPath\)/);
+  assert.match(source, /promotedItem\.armorHp !== undefined \? \{ armorHp: 0 \}/);
+  assert.doesNotMatch(source, /hasGeneratedEquipmentMirrorCounterpart/);
+  assert.doesNotMatch(mirrorAssetsSource, /projectSourceFileExists/);
   assert.match(source, /upsertGeneratedEquipmentRecords\(records, promotedRecords\)/);
   assert.match(source, /updated: promotedRecords\.length/);
   assert.match(source, /backShoulderguardAssetKey/);
@@ -257,8 +274,26 @@ test("vite dev middleware can persist item-specific equipment defaults", () => {
   assert.match(debugTuningSource, /DEFAULT_EQUIPMENT_ITEM_TUNING/);
   assert.match(debugTuningSource, /equipmentItems: cloneEquipmentItems/);
   assert.match(source, /pickEquipmentItemDefaultUpdates/);
+  assert.match(source, /pickEquipmentItemDefaultUpdates\(payload, generatedEquipmentItemIds\)/);
+  assert.match(source, /excludedItemIds\.has\(itemId\)/);
+  assert.match(source, /pickGeneratedEquipmentItemTuningUpdates\(payload, generatedEquipmentItemIds\)/);
+  assert.match(source, /applyGeneratedEquipmentItemTuningUpdates/);
+  assert.match(source, /writeGeneratedEquipmentRecords\(nextGeneratedEquipmentRecords\)/);
+  assert.match(source, /!generatedEquipmentItemIds\.has\(itemId\)/);
+  assert.match(source, /generated equipment item defaults/);
   assert.match(source, /applyEquipmentItemDefaultUpdates/);
   assert.match(source, /DEFAULT_EQUIPMENT_ITEM_TUNING/);
+  assert.doesNotMatch(debugTuningSource, /"generated_equipment_front_greave_cloth_01":/);
+});
+
+test("generated armor pair stats stay absolute instead of doubling front and back", () => {
+  const generatedRecords = JSON.parse(readFileSync(join(root, "src", "generated", "equipmentItems.generated.json"), "utf8"));
+  const frontPairRecords = generatedRecords.filter((record) => record.kind === "armor" && record.equipmentSlot.startsWith("front"));
+
+  assert.ok(frontPairRecords.length > 0);
+  frontPairRecords.forEach((record) => {
+    assert.equal(record.armorHp, 0, `${record.id} should not duplicate paired armor`);
+  });
 });
 
 test("vite dev middleware whitelists wrist and glove equipment slots for prod saves and promotion", () => {

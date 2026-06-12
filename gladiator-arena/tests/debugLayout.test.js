@@ -245,6 +245,8 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("removePromotedEquipmentItem"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ITEM_RECORDS"), true);
   assert.equal(debugPanelSource.includes("GENERATED_EQUIPMENT_ITEM_RECORDS"), true);
+  assert.equal(debugPanelSource.includes("return [...GENERATED_EQUIPMENT_ITEM_RECORDS];"), true);
+  assert.equal(debugPanelSource.includes('record.item.id.startsWith("generated_equipment_")'), false);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__transform-controls"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__rarity"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_RARITIES"), true);

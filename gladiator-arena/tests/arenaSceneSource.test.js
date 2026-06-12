@@ -112,6 +112,21 @@ test("generated equipment items can carry item-specific transform tuning", () =>
   assert.equal(arenaSceneSource.includes("equipmentItems[itemId] ?? GENERATED_EQUIPMENT_ITEM_TUNING[itemId]"), true);
 });
 
+test("debug equipment drag uses the equipment anchor local space", () => {
+  const equipmentDragSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("private dragEquipment"),
+    arenaSceneSource.indexOf("private endRigPartDrag"),
+  );
+
+  assert.equal(arenaSceneSource.includes("lastPointerLocalX"), true);
+  assert.equal(arenaSceneSource.includes("getEquipmentDragPointerLocalPoint"), true);
+  assert.equal(arenaSceneSource.includes("getPaperDollEquipmentDragLocalPoint"), true);
+  assert.equal(arenaSceneSource.includes("getPaperDollEquipmentSlotParent"), true);
+  assert.equal(arenaSceneSource.includes("parentContainer"), true);
+  assert.equal(arenaSceneSource.includes("parent.getWorldTransformMatrix().applyInverse(worldX, worldY)"), true);
+  assert.equal(equipmentDragSource.includes("x: deltaX / scaleX"), false);
+});
+
 test("low effects can hot swap paper doll textures after preload", () => {
   assert.equal(arenaSceneSource.includes("function ensurePaperDollAssetResolution("), true);
   assert.equal(arenaSceneSource.includes("target.load.start();"), true);

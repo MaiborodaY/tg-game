@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import sharp from "sharp";
 import { defineConfig, type Plugin } from "vite";
@@ -396,6 +396,11 @@ interface GeneratedEquipmentJsonRecord {
   };
 }
 
+interface PromotedEquipmentItem {
+  record: GeneratedEquipmentJsonRecord;
+  mirrorPairFlipX: boolean;
+}
+
 export default defineConfig({
   plugins: [saveProdDefaultsPlugin()],
 });
@@ -420,7 +425,14 @@ function saveProdDefaultsPlugin(): Plugin {
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const bodyAnimationUpdates = pickBodyAnimationUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
-          const equipmentItemUpdates = pickEquipmentItemDefaultUpdates(payload);
+          const generatedEquipmentRecords = await readGeneratedEquipmentRecords();
+          const generatedEquipmentItemIds = new Set(generatedEquipmentRecords.map((record) => record.id));
+          const equipmentItemUpdates = pickEquipmentItemDefaultUpdates(payload, generatedEquipmentItemIds);
+          const generatedEquipmentItemUpdates = pickGeneratedEquipmentItemTuningUpdates(payload, generatedEquipmentItemIds);
+          const nextGeneratedEquipmentRecords = applyGeneratedEquipmentItemTuningUpdates(
+            generatedEquipmentRecords,
+            generatedEquipmentItemUpdates,
+          );
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
           const actionButtonOffsetUpdates = pickActionButtonOffsetDefaultUpdates(payload);
           const classicActionButtonSlotUpdates = pickClassicActionButtonSlotDefaultUpdates(payload);
@@ -464,10 +476,13 @@ function saveProdDefaultsPlugin(): Plugin {
             writeFile(combatUrl, nextCombatSource, "utf8"),
             writeFile(debugTuningUrl, nextDebugTuningSource, "utf8"),
             writeFile(settingsMenuUrl, nextSettingsMenuSource, "utf8"),
+            Object.keys(generatedEquipmentItemUpdates).length > 0
+              ? writeGeneratedEquipmentRecords(nextGeneratedEquipmentRecords)
+              : Promise.resolve(),
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
@@ -480,6 +495,7 @@ function saveProdDefaultsPlugin(): Plugin {
               1 +
               Object.keys(equipmentUpdates).length +
               Object.keys(equipmentItemUpdates).length +
+              Object.keys(generatedEquipmentItemUpdates).length +
               Object.keys(slashArcUpdates).length,
           });
         } catch (error) {
@@ -515,9 +531,10 @@ function saveProdDefaultsPlugin(): Plugin {
 
         try {
           const payload = await readJson(request);
-          const promotedItem = await pickPromotedEquipmentItem(payload);
+          const promotion = await pickPromotedEquipmentItem(payload);
+          const promotedItem = promotion.record;
           const records = await readGeneratedEquipmentRecords();
-          const promotedRecords = await createPromotedEquipmentRecords(records, promotedItem);
+          const promotedRecords = await createPromotedEquipmentRecords(promotedItem, promotion.mirrorPairFlipX);
           await ensureGeneratedEquipmentShopIcons(promotedRecords);
           const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
 
@@ -538,10 +555,10 @@ function saveProdDefaultsPlugin(): Plugin {
         try {
           const payload = await readJson(request);
           const itemId = pickGeneratedEquipmentRemovalId(payload);
-          const removedItem = await removeGeneratedEquipmentItem(itemId);
+          const removedItems = await removeGeneratedEquipmentItems(itemId);
 
           server.ws.send({ type: "full-reload" });
-          sendJson(response, 200, { message: `Removed ${removedItem.name}.`, updated: 1 });
+          sendJson(response, 200, { message: formatRemovedGeneratedEquipmentMessage(removedItems), updated: removedItems.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not remove equipment item." });
         }
@@ -744,7 +761,7 @@ export function applyEquipmentItemDefaultUpdates(source: string, updates: Equipm
   return source.replace(pattern, formatEquipmentItemDefaults(updates));
 }
 
-export function pickEquipmentItemDefaultUpdates(payload: unknown): EquipmentItemUpdates {
+export function pickEquipmentItemDefaultUpdates(payload: unknown, excludedItemIds: ReadonlySet<string> = new Set()): EquipmentItemUpdates {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Expected a JSON object with debug tuning values.");
   }
@@ -757,13 +774,49 @@ export function pickEquipmentItemDefaultUpdates(payload: unknown): EquipmentItem
 
   return Object.fromEntries(
     Object.entries(equipmentItems).flatMap(([itemId, tuning]) => {
-      if (!itemId.trim()) {
+      if (!itemId.trim() || excludedItemIds.has(itemId)) {
         return [];
       }
 
       return [[itemId, readLooseEquipmentTuning(tuning, itemId)]];
     }),
   );
+}
+
+export function pickGeneratedEquipmentItemTuningUpdates(
+  payload: unknown,
+  generatedEquipmentItemIds: ReadonlySet<string>,
+): EquipmentItemUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const equipmentItems = (payload as { equipmentItems?: unknown }).equipmentItems;
+
+  if (!equipmentItems || typeof equipmentItems !== "object" || Array.isArray(equipmentItems)) {
+    throw new Error("Expected equipmentItems in debug tuning payload.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(equipmentItems).flatMap(([itemId, tuning]) => {
+      if (!itemId.trim() || !generatedEquipmentItemIds.has(itemId)) {
+        return [];
+      }
+
+      return [[itemId, readLooseEquipmentTuning(tuning, itemId)]];
+    }),
+  );
+}
+
+function applyGeneratedEquipmentItemTuningUpdates(
+  records: GeneratedEquipmentJsonRecord[],
+  updates: EquipmentItemUpdates,
+): GeneratedEquipmentJsonRecord[] {
+  return records.map((record) => {
+    const equipmentTuning = updates[record.id];
+
+    return equipmentTuning ? { ...record, equipmentTuning } : record;
+  });
 }
 
 export function applySlashArcDefaultUpdates(source: string, updates: SlashArcUpdates): string {
@@ -897,7 +950,7 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
   };
 }
 
-export async function pickPromotedEquipmentItem(payload: unknown): Promise<GeneratedEquipmentJsonRecord> {
+export async function pickPromotedEquipmentItem(payload: unknown): Promise<PromotedEquipmentItem> {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Expected a JSON object with equipment promotion values.");
   }
@@ -909,7 +962,8 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   const kind = readGeneratedEquipmentKind(item.kind);
   const equipmentSlot = readEquipmentSlot(item.equipmentSlot);
   const sourceEquipmentTuning = readPromotedEquipmentTuning(promotion.equipmentTuning);
-  const equipmentTuning = bakePromotedEquipmentTuning(sourceEquipmentTuning);
+  const mirrorPairFlipX = sourceEquipmentTuning.flipX;
+  const equipmentTuning = { ...sourceEquipmentTuning, flipX: false };
   const assetKey = readNonEmptyString(asset.key, "asset.key");
   const sourcePath = readAssetSourcePath(asset.sourcePath, getEquipmentAssetSourcePrefix(kind), "asset.sourcePath", [".png", ".webp"]);
   const lowSourcePath =
@@ -937,62 +991,65 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
     throw new Error("Promoted item assetKeys must reference asset.key.");
   }
 
-  const promotedAssetPaths = await preparePromotedEquipmentAsset(sourcePath, lowSourcePath, { bakeFlipX: sourceEquipmentTuning.flipX });
+  const promotedAssetPaths = await preparePromotedEquipmentAsset(sourcePath, lowSourcePath);
 
   return {
-    id,
-    name,
-    kind,
-    rarity,
-    ...(armorCategory ? { armorCategory } : {}),
-    ...(armorHp !== undefined ? { armorHp } : {}),
-    ...(damageBonus !== undefined ? { damageBonus } : {}),
-    ...(weaponClass ? { weaponClass } : {}),
-    equipmentSlot,
-    assetKeys,
-    equipmentTuning,
-    asset: {
-      key: assetKey,
-      sourcePath: promotedAssetPaths.sourcePath,
-      ...(promotedAssetPaths.lowSourcePath ? { lowSourcePath: promotedAssetPaths.lowSourcePath } : {}),
+    mirrorPairFlipX,
+    record: {
+      id,
+      name,
+      kind,
+      rarity,
+      ...(armorCategory ? { armorCategory } : {}),
+      ...(armorHp !== undefined ? { armorHp } : {}),
+      ...(damageBonus !== undefined ? { damageBonus } : {}),
+      ...(weaponClass ? { weaponClass } : {}),
+      equipmentSlot,
+      assetKeys,
+      equipmentTuning,
+      asset: {
+        key: assetKey,
+        sourcePath: promotedAssetPaths.sourcePath,
+        ...(promotedAssetPaths.lowSourcePath ? { lowSourcePath: promotedAssetPaths.lowSourcePath } : {}),
+      },
+      ...(addToShop && kind === "armor" && categoryId
+        ? {
+            armoryProduct: {
+              id,
+              name,
+              price,
+              itemIds: [id],
+              categoryId,
+            },
+          }
+        : {}),
+      ...(addToShop && kind === "weapon"
+        ? {
+            weaponProduct: {
+              id,
+              name,
+              price,
+              itemIds: [id],
+              categoryId: getWeaponCategoryId(assetKey, name, weaponClass),
+            },
+          }
+        : {}),
     },
-    ...(addToShop && kind === "armor" && categoryId
-      ? {
-          armoryProduct: {
-            id,
-            name,
-            price,
-            itemIds: [id],
-            categoryId,
-          },
-        }
-      : {}),
-    ...(addToShop && kind === "weapon"
-      ? {
-          weaponProduct: {
-            id,
-            name,
-            price,
-            itemIds: [id],
-            categoryId: getWeaponCategoryId(assetKey, name, weaponClass),
-          },
-        }
-      : {}),
   };
 }
 
 async function createPromotedEquipmentRecords(
-  records: GeneratedEquipmentJsonRecord[],
   promotedItem: GeneratedEquipmentJsonRecord,
+  mirrorPairFlipX: boolean,
 ): Promise<GeneratedEquipmentJsonRecord[]> {
-  const mirroredItem = await createMirroredPromotedEquipmentRecord(records, promotedItem);
+  const mirroredItem = await createMirroredPromotedEquipmentRecord(promotedItem, mirrorPairFlipX);
 
   return mirroredItem ? [promotedItem, mirroredItem] : [promotedItem];
 }
 
 async function createMirroredPromotedEquipmentRecord(
-  records: GeneratedEquipmentJsonRecord[],
   promotedItem: GeneratedEquipmentJsonRecord,
+  mirrorPairFlipX: boolean,
 ): Promise<GeneratedEquipmentJsonRecord | undefined> {
   if (promotedItem.kind !== "armor") {
     return undefined;
@@ -1025,10 +1082,6 @@ async function createMirroredPromotedEquipmentRecord(
     : undefined;
   const mirrorId = `generated_equipment_${toIdentifier(mirrorAssetKey)}`;
 
-  if (hasGeneratedEquipmentMirrorCounterpart(records, mirrorConfig, mirrorId, mirrorAssetKey, mirrorSourcePath)) {
-    return undefined;
-  }
-
   const mirrorName = formatPromotedEquipmentMirrorName(promotedItem.name, mirrorConfig);
   const categoryId = getArmoryCategoryId(mirrorConfig.target.slot) ?? promotedItem.armoryProduct?.categoryId;
   const mirroredItem: GeneratedEquipmentJsonRecord = {
@@ -1037,7 +1090,7 @@ async function createMirroredPromotedEquipmentRecord(
     kind: "armor",
     ...(promotedItem.rarity ? { rarity: promotedItem.rarity } : {}),
     ...(promotedItem.armorCategory ? { armorCategory: promotedItem.armorCategory } : {}),
-    ...(promotedItem.armorHp !== undefined ? { armorHp: promotedItem.armorHp } : {}),
+    ...(promotedItem.armorHp !== undefined ? { armorHp: 0 } : {}),
     equipmentSlot: mirrorConfig.target.slot,
     assetKeys: { [mirrorConfig.target.assetKeyName]: mirrorAssetKey },
     equipmentTuning: mirrorPromotedEquipmentTuning(promotedItem.equipmentTuning),
@@ -1059,7 +1112,7 @@ async function createMirroredPromotedEquipmentRecord(
       : {}),
   };
 
-  await ensureMirroredPromotedEquipmentAssets(promotedItem, mirroredItem);
+  await ensureMirroredPromotedEquipmentAssets(promotedItem, mirroredItem, mirrorPairFlipX);
 
   return mirroredItem;
 }
@@ -1078,25 +1131,6 @@ function getPromotedEquipmentMirrorConfig(equipmentSlot: EquipmentSlotKey): Prom
   return undefined;
 }
 
-function hasGeneratedEquipmentMirrorCounterpart(
-  records: GeneratedEquipmentJsonRecord[],
-  mirrorConfig: PromotedEquipmentMirrorConfig,
-  mirrorId: string,
-  mirrorAssetKey: string,
-  mirrorSourcePath: string,
-): boolean {
-  return records.some((record) => {
-    return (
-      record.id === mirrorId ||
-      record.asset.key === mirrorAssetKey ||
-      record.asset.sourcePath === mirrorSourcePath ||
-      (record.kind === "armor" &&
-        record.equipmentSlot === mirrorConfig.target.slot &&
-        record.assetKeys[mirrorConfig.target.assetKeyName] === mirrorAssetKey)
-    );
-  });
-}
-
 function replacePromotedEquipmentMirrorToken(value: string, sourceToken: string, targetToken: string, label: string): string {
   const mirroredValue = value.replace(sourceToken, targetToken);
 
@@ -1105,6 +1139,10 @@ function replacePromotedEquipmentMirrorToken(value: string, sourceToken: string,
   }
 
   return mirroredValue;
+}
+
+function tryReplacePromotedEquipmentMirrorToken(value: string, sourceToken: string, targetToken: string): string | undefined {
+  return value.includes(sourceToken) ? value.replace(sourceToken, targetToken) : undefined;
 }
 
 function formatPromotedEquipmentMirrorName(name: string, mirrorConfig: PromotedEquipmentMirrorConfig): string {
@@ -1135,26 +1173,38 @@ function mirrorPromotedEquipmentTuning(tuning: RigPartTuning): RigPartTuning {
 async function ensureMirroredPromotedEquipmentAssets(
   promotedItem: GeneratedEquipmentJsonRecord,
   mirroredItem: GeneratedEquipmentJsonRecord,
+  mirrorPairFlipX: boolean,
 ): Promise<void> {
-  const targetRuntimeExists = await projectSourceFileExists(mirroredItem.asset.sourcePath);
+  await writeMirroredPromotedEquipmentWebpAsset(
+    promotedItem.asset.sourcePath,
+    mirroredItem.asset.sourcePath,
+    promotedEquipmentRuntimeWebpQuality,
+    mirrorPairFlipX,
+  );
 
-  if (!targetRuntimeExists) {
-    await writeMirroredPromotedEquipmentWebpAsset(promotedItem.asset.sourcePath, mirroredItem.asset.sourcePath, promotedEquipmentRuntimeWebpQuality);
-  }
-
-  if (!promotedItem.asset.lowSourcePath || !mirroredItem.asset.lowSourcePath || (await projectSourceFileExists(mirroredItem.asset.lowSourcePath))) {
+  if (!promotedItem.asset.lowSourcePath || !mirroredItem.asset.lowSourcePath) {
     return;
   }
 
-  if (targetRuntimeExists) {
-    await writeResizedPromotedEquipmentLowAsset(mirroredItem.asset.sourcePath, mirroredItem.asset.lowSourcePath);
-    return;
-  }
-
-  await writeMirroredPromotedEquipmentWebpAsset(promotedItem.asset.lowSourcePath, mirroredItem.asset.lowSourcePath, promotedEquipmentLowWebpQuality);
+  await writeMirroredPromotedEquipmentWebpAsset(
+    promotedItem.asset.lowSourcePath,
+    mirroredItem.asset.lowSourcePath,
+    promotedEquipmentLowWebpQuality,
+    mirrorPairFlipX,
+  );
 }
 
-async function writeMirroredPromotedEquipmentWebpAsset(sourcePath: string, targetPath: string, quality: number): Promise<void> {
+async function writeMirroredPromotedEquipmentWebpAsset(
+  sourcePath: string,
+  targetPath: string,
+  quality: number,
+  mirrorPairFlipX: boolean,
+): Promise<void> {
+  if (!mirrorPairFlipX) {
+    await copyPromotedEquipmentWebpAsset(sourcePath, targetPath);
+    return;
+  }
+
   await writeFlippedPromotedEquipmentWebpAsset(sourcePath, targetPath, quality);
 }
 
@@ -1173,6 +1223,13 @@ async function writeFlippedPromotedEquipmentWebpAsset(sourcePath: string, target
 
   await mkdir(new URL(".", targetUrl), { recursive: true });
   await writeFile(targetUrl, mirrored);
+}
+
+async function copyPromotedEquipmentWebpAsset(sourcePath: string, targetPath: string): Promise<void> {
+  const targetUrl = getProjectSourceUrl(targetPath);
+
+  await mkdir(new URL(".", targetUrl), { recursive: true });
+  await copyFile(getProjectSourceUrl(sourcePath), targetUrl);
 }
 
 async function writeResizedPromotedEquipmentLowAsset(sourcePath: string, targetPath: string): Promise<void> {
@@ -1396,13 +1453,7 @@ function escapeRegExp(value: string): string {
 
 function pickGeneratedEquipmentRemovalId(payload: unknown): string {
   const removal = readPlainObject(payload, "equipment removal values");
-  const itemId = readNonEmptyString(removal.itemId, "itemId");
-
-  if (!itemId.startsWith("generated_equipment_")) {
-    throw new Error("Only generated equipment items can be removed.");
-  }
-
-  return itemId;
+  return readNonEmptyString(removal.itemId, "itemId");
 }
 
 async function readGeneratedEquipmentRecords(): Promise<GeneratedEquipmentJsonRecord[]> {
@@ -1437,7 +1488,7 @@ function upsertGeneratedEquipmentRecords(
   ].sort((left, right) => left.id.localeCompare(right.id));
 }
 
-async function removeGeneratedEquipmentItem(itemId: string): Promise<GeneratedEquipmentJsonRecord> {
+async function removeGeneratedEquipmentItems(itemId: string): Promise<GeneratedEquipmentJsonRecord[]> {
   const records = await readGeneratedEquipmentRecords();
   const removedRecord = records.find((record) => record.id === itemId);
 
@@ -1445,22 +1496,82 @@ async function removeGeneratedEquipmentItem(itemId: string): Promise<GeneratedEq
     throw new Error("Generated equipment item not found.");
   }
 
-  const nextRecords = records.filter((record) => record.id !== itemId);
+  const removedRecords = getLinkedGeneratedEquipmentRemovalRecords(records, removedRecord);
+  const removedIds = new Set(removedRecords.map((record) => record.id));
+  const nextRecords = records.filter((record) => !removedIds.has(record.id));
 
   await writeGeneratedEquipmentRecords(nextRecords);
-  await removeGeneratedEquipmentAssetFiles(removedRecord, nextRecords);
+  await removeGeneratedEquipmentAssetFiles(removedRecords, nextRecords);
 
-  return removedRecord;
+  return removedRecords;
+}
+
+function getLinkedGeneratedEquipmentRemovalRecords(
+  records: GeneratedEquipmentJsonRecord[],
+  removedRecord: GeneratedEquipmentJsonRecord,
+): GeneratedEquipmentJsonRecord[] {
+  const linkedRecords = [removedRecord];
+  const counterpart = findGeneratedEquipmentMirrorCounterpart(records, removedRecord);
+
+  if (counterpart) {
+    linkedRecords.push(counterpart);
+  }
+
+  return linkedRecords;
+}
+
+function findGeneratedEquipmentMirrorCounterpart(
+  records: GeneratedEquipmentJsonRecord[],
+  removedRecord: GeneratedEquipmentJsonRecord,
+): GeneratedEquipmentJsonRecord | undefined {
+  if (removedRecord.kind !== "armor") {
+    return undefined;
+  }
+
+  const mirrorConfig = getPromotedEquipmentMirrorConfig(removedRecord.equipmentSlot);
+
+  if (!mirrorConfig) {
+    return undefined;
+  }
+
+  const mirrorAssetKey = tryReplacePromotedEquipmentMirrorToken(removedRecord.asset.key, mirrorConfig.source.token, mirrorConfig.target.token);
+  const mirrorSourcePath = tryReplacePromotedEquipmentMirrorToken(removedRecord.asset.sourcePath, mirrorConfig.source.token, mirrorConfig.target.token);
+
+  if (!mirrorAssetKey && !mirrorSourcePath) {
+    return undefined;
+  }
+
+  return records.find((record) => {
+    return (
+      record.id !== removedRecord.id &&
+      record.kind === "armor" &&
+      record.equipmentSlot === mirrorConfig.target.slot &&
+      ((mirrorAssetKey !== undefined && record.asset.key === mirrorAssetKey) ||
+        (mirrorSourcePath !== undefined && record.asset.sourcePath === mirrorSourcePath))
+    );
+  });
 }
 
 async function removeGeneratedEquipmentAssetFiles(
-  removedRecord: GeneratedEquipmentJsonRecord,
+  removedRecords: GeneratedEquipmentJsonRecord[],
   remainingRecords: GeneratedEquipmentJsonRecord[],
 ): Promise<void> {
   const stillReferencedPaths = new Set(remainingRecords.flatMap((record) => getGeneratedEquipmentAssetRemovalPaths(record)));
-  const removalPaths = getGeneratedEquipmentAssetRemovalPaths(removedRecord, stillReferencedPaths);
+  const removalPaths = [...new Set(removedRecords.flatMap((record) => getGeneratedEquipmentAssetRemovalPaths(record, stillReferencedPaths)))];
 
   await Promise.all(removalPaths.map((sourcePath) => rm(getProjectSourceUrl(sourcePath), { force: true })));
+}
+
+function formatRemovedGeneratedEquipmentMessage(removedRecords: GeneratedEquipmentJsonRecord[]): string {
+  if (removedRecords.length === 0) {
+    return "Removed generated equipment.";
+  }
+
+  if (removedRecords.length === 1) {
+    return `Removed ${removedRecords[0]!.name}.`;
+  }
+
+  return `Removed ${removedRecords.length} linked generated equipment items.`;
 }
 
 function getGeneratedEquipmentAssetRemovalPaths(
@@ -1498,21 +1609,12 @@ function getGeneratedEquipmentShopIconPath(assetKey: string): string {
   return `assets/shop-icons/${assetKey}.webp`;
 }
 
-function bakePromotedEquipmentTuning(tuning: RigPartTuning): RigPartTuning {
-  return tuning.flipX ? { ...tuning, flipX: false } : tuning;
-}
-
 async function preparePromotedEquipmentAsset(
   sourcePath: string,
   lowSourcePath: string | undefined,
-  options: { bakeFlipX: boolean },
 ): Promise<{ sourcePath: string; lowSourcePath?: string }> {
   if (sourcePath.endsWith(".png")) {
-    return convertPromotedEquipmentPngAsset(sourcePath, options);
-  }
-
-  if (options.bakeFlipX) {
-    await bakePromotedEquipmentWebpAssetFlipX(sourcePath, lowSourcePath);
+    return convertPromotedEquipmentPngAsset(sourcePath);
   }
 
   return {
@@ -1521,30 +1623,14 @@ async function preparePromotedEquipmentAsset(
   };
 }
 
-async function bakePromotedEquipmentWebpAssetFlipX(sourcePath: string, lowSourcePath: string | undefined): Promise<void> {
-  await writeFlippedPromotedEquipmentWebpAsset(sourcePath, sourcePath, promotedEquipmentRuntimeWebpQuality);
-
-  if (!lowSourcePath) {
-    return;
-  }
-
-  if (await projectSourceFileExists(lowSourcePath)) {
-    await writeFlippedPromotedEquipmentWebpAsset(lowSourcePath, lowSourcePath, promotedEquipmentLowWebpQuality);
-    return;
-  }
-
-  await writeResizedPromotedEquipmentLowAsset(sourcePath, lowSourcePath);
-}
-
-async function convertPromotedEquipmentPngAsset(sourcePath: string, options: { bakeFlipX: boolean }): Promise<{ sourcePath: string; lowSourcePath: string }> {
+async function convertPromotedEquipmentPngAsset(sourcePath: string): Promise<{ sourcePath: string; lowSourcePath: string }> {
   const runtimeSourcePath = sourcePath.replace(/\.png$/i, ".webp");
   const lowSourcePath = sourcePath.replace(/^assets\//, "assets-low/").replace(/\.png$/i, ".webp");
   const sourceUrl = getProjectSourceUrl(sourcePath);
   const runtimeUrl = getProjectSourceUrl(runtimeSourcePath);
   const lowUrl = getProjectSourceUrl(lowSourcePath);
   const source = await readFile(sourceUrl);
-  const bakedSource = options.bakeFlipX ? await sharp(source).flop().png().toBuffer() : source;
-  const runtime = await createEquipmentWebp(bakedSource, getPromotedEquipmentRuntimeMaxSide(sourcePath), promotedEquipmentRuntimeWebpQuality);
+  const runtime = await createEquipmentWebp(source, getPromotedEquipmentRuntimeMaxSide(sourcePath), promotedEquipmentRuntimeWebpQuality);
   const low = await createEquipmentWebp(runtime, promotedEquipmentLowMaxSide, promotedEquipmentLowWebpQuality);
 
   await Promise.all([mkdir(new URL(".", runtimeUrl), { recursive: true }), mkdir(new URL(".", lowUrl), { recursive: true })]);

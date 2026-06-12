@@ -2312,7 +2312,7 @@ function resetActiveEquipmentTuning(): void {
 
 function resetEquipmentItemTuning(itemId: HeroItemId, slotKey: EquipmentSlotKey): void {
   updateEquipmentItemTuning(itemId, slotKey, {
-    ...(DEFAULT_EQUIPMENT_ITEM_TUNING[itemId] ?? GENERATED_EQUIPMENT_ITEM_TUNING[itemId] ?? DEFAULT_EQUIPMENT[slotKey]),
+    ...(GENERATED_EQUIPMENT_ITEM_TUNING[itemId] ?? DEFAULT_EQUIPMENT_ITEM_TUNING[itemId] ?? DEFAULT_EQUIPMENT[slotKey]),
   });
 }
 
@@ -3387,7 +3387,7 @@ function getSelectedGeneratedEquipmentRecord(itemId: string | undefined): (typeo
 }
 
 function getRemovableGeneratedEquipmentRecords(): (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number][] {
-  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.item.id.startsWith("generated_equipment_"));
+  return [...GENERATED_EQUIPMENT_ITEM_RECORDS];
 }
 
 function getCurrentEquipmentSlotTuning(slotKey: EquipmentSlotKey): EquipmentTuning {
@@ -3398,8 +3398,8 @@ function getCurrentEquipmentItemTuning(itemId: HeroItemId, slotKey: EquipmentSlo
   return {
     ...(
       debugTuning.equipmentItems[itemId] ??
-      DEFAULT_EQUIPMENT_ITEM_TUNING[itemId] ??
       GENERATED_EQUIPMENT_ITEM_TUNING[itemId] ??
+      DEFAULT_EQUIPMENT_ITEM_TUNING[itemId] ??
       debugTuning.equipment[slotKey] ??
       DEFAULT_EQUIPMENT[slotKey]
     ),

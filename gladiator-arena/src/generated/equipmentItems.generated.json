@@ -46,11 +46,11 @@
       "backBootAssetKey": "back-boot-chainmail-01"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 0,
+      "x": -2,
+      "y": 3,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
+      "scaleX": 0.83,
+      "scaleY": 0.8,
       "flipX": false,
       "flipY": false
     },
@@ -70,6 +70,41 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_cloth_01",
+    "name": "Cloth Back Boot 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 2,
+      "y": -4,
+      "angle": 0,
+      "scaleX": 0.93,
+      "scaleY": 1.05,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-cloth-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_cloth_01",
+      "name": "Cloth Back Boot 01",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_boot_cloth_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_glove_chainmail_03",
     "name": "Chainmail Back Glove 03",
     "kind": "armor",
@@ -82,10 +117,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 16,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
+      "scaleX": 1.45,
+      "scaleY": 1.5,
       "flipX": false,
       "flipY": false
     },
@@ -187,8 +222,8 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
-      "angle": 0,
+      "y": 13,
+      "angle": -7,
       "scaleX": 1,
       "scaleY": 1,
       "flipX": false,
@@ -210,6 +245,76 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_cloth_01",
+    "name": "Cloth Back Greave 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": -5,
+      "y": 15.781065088757398,
+      "angle": -15,
+      "scaleX": 1.85,
+      "scaleY": 1.18,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-cloth-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_cloth_01",
+      "name": "Cloth Back Greave 01",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_greave_cloth_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_leather_01",
+    "name": "Leather Back Greave 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorCategory": "leather",
+    "armorHp": 2,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-leather-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 11,
+      "angle": -1,
+      "scaleX": 1.65,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-leather-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_leather_01",
+      "name": "Leather Back Greave 01",
+      "price": 25,
+      "itemIds": [
+        "generated_equipment_back_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_chainmail_01",
     "name": "Chainmail Back Shinguard 01",
     "kind": "armor",
@@ -222,9 +327,9 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
+      "y": 9,
+      "angle": -2,
+      "scaleX": 1.13,
       "scaleY": 1,
       "flipX": false,
       "flipY": false
@@ -245,6 +350,41 @@
     }
   },
   {
+    "id": "generated_equipment_back_shinguard_cloth_01",
+    "name": "Cloth Back Shinguard 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1.35,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-cloth-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_cloth_01",
+      "name": "Cloth Back Shinguard 01",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_shinguard_cloth_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_shoulderguard_chainmail_01",
     "name": "Chainmail Back Shoulderguard 01",
     "kind": "armor",
@@ -257,10 +397,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 13,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
+      "scaleX": 1.5,
+      "scaleY": 1.4,
       "flipX": false,
       "flipY": false
     },
@@ -327,10 +467,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
+      "y": 16,
+      "angle": 2,
+      "scaleX": 1.5,
+      "scaleY": 1.1,
       "flipX": false,
       "flipY": false
     },
@@ -397,10 +537,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 82,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
+      "scaleX": 1.68,
+      "scaleY": 1.76,
       "flipX": false,
       "flipY": false
     },
@@ -431,12 +571,12 @@
       "frontBootAssetKey": "front-boot-chainmail-01"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 0,
+      "x": 25,
+      "y": 2,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
+      "scaleX": 0.83,
+      "scaleY": 0.8,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -455,6 +595,41 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_cloth_01",
+    "name": "Cloth Front Boot 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 4,
+      "y": -4,
+      "angle": 0,
+      "scaleX": 0.93,
+      "scaleY": 1.05,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-cloth-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_cloth_01",
+      "name": "Cloth Front Boot 01",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_boot_cloth_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_chainmail_03",
     "name": "Chainmail Front Glove 03",
     "kind": "armor",
@@ -467,11 +642,11 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
+      "y": 13,
+      "angle": 7,
+      "scaleX": 1.45,
+      "scaleY": 1.5,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -506,7 +681,7 @@
       "angle": 0,
       "scaleX": 0.6,
       "scaleY": 0.6,
-      "flipX": false,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -530,7 +705,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 0,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-leather-03"
@@ -541,7 +716,7 @@
       "angle": 0,
       "scaleX": 1,
       "scaleY": 1,
-      "flipX": false,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -572,7 +747,7 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 13,
       "angle": 0,
       "scaleX": 1,
       "scaleY": 1,
@@ -595,6 +770,76 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_cloth_01",
+    "name": "Cloth Front Greave 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": -6,
+      "y": 13,
+      "angle": -15,
+      "scaleX": 1.87,
+      "scaleY": 1.18,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-cloth-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_cloth_01",
+      "name": "Cloth Front Greave 01",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_greave_cloth_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_leather_01",
+    "name": "Leather Front Greave 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorCategory": "leather",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-leather-01"
+    },
+    "equipmentTuning": {
+      "x": 2,
+      "y": 10,
+      "angle": 1,
+      "scaleX": 1.65,
+      "scaleY": 1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-leather-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_leather_01",
+      "name": "Leather Front Greave 01",
+      "price": 25,
+      "itemIds": [
+        "generated_equipment_front_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_chainmail_01",
     "name": "Chainmail Front Shinguard 01",
     "kind": "armor",
@@ -607,11 +852,11 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 9,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
+      "scaleX": 1.13,
+      "scaleY": 0.96,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -630,6 +875,41 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_cloth_01",
+    "name": "Cloth Front Shinguard 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1.35,
+      "scaleY": 1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-cloth-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_cloth_01",
+      "name": "Cloth Front Shinguard 01",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_shinguard_cloth_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_chainmail_01",
     "name": "Chainmail Front Shoulderguard 01",
     "kind": "armor",
@@ -642,11 +922,11 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 13,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
+      "scaleX": 1.5,
+      "scaleY": 1.4,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -681,7 +961,7 @@
       "angle": 7,
       "scaleX": 1.98,
       "scaleY": 1.23,
-      "flipX": false,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -712,11 +992,11 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
+      "y": 19,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
+      "scaleX": 1.5,
+      "scaleY": 1.1,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -751,7 +1031,7 @@
       "angle": 4,
       "scaleX": 1.77,
       "scaleY": 1.18,
-      "flipX": false,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -781,11 +1061,11 @@
       "helmetAssetKey": "helmet-chainmail-01"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 0,
+      "x": -0.7501116445238396,
+      "y": 53.2189349112426,
       "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
+      "scaleX": 1.19,
+      "scaleY": 1.32,
       "flipX": false,
       "flipY": false
     },
@@ -980,41 +1260,6 @@
     }
   },
   {
-    "id": "leather_back_greave_01",
-    "name": "Leather Back Greave 01",
-    "kind": "armor",
-    "rarity": "uncommon",
-    "armorCategory": "leather",
-    "armorHp": 2,
-    "equipmentSlot": "backGreave",
-    "assetKeys": {
-      "backGreaveAssetKey": "back-greave-leather-01"
-    },
-    "equipmentTuning": {
-      "x": -3,
-      "y": 0,
-      "angle": -8,
-      "scaleX": 1.6,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-greave-leather-01",
-      "sourcePath": "assets/fighters/armor/legs/back-greave-leather-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-leather-01.webp"
-    },
-    "armoryProduct": {
-      "id": "leather_back_greave_01",
-      "name": "Leather Back Greave 01",
-      "price": 0,
-      "itemIds": [
-        "leather_back_greave_01"
-      ],
-      "categoryId": "legs"
-    }
-  },
-  {
     "id": "leather_back_shinguard_01",
     "name": "Leather Back Shinguard 01",
     "kind": "armor",
@@ -1026,12 +1271,12 @@
       "backShinguardAssetKey": "back-shinguard-leather-01"
     },
     "equipmentTuning": {
-      "x": -3,
-      "y": -3,
-      "angle": 4,
-      "scaleX": 1.5,
-      "scaleY": 1,
-      "flipX": false,
+      "x": -1.500223289047633,
+      "y": -7,
+      "angle": 0,
+      "scaleX": 1.7,
+      "scaleY": 1.1,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -1061,11 +1306,11 @@
       "backShoulderguardAssetKey": "back-shoulderguard-leather-01"
     },
     "equipmentTuning": {
-      "x": 6,
-      "y": 1,
-      "angle": 9,
-      "scaleX": 1,
-      "scaleY": 1,
+      "x": 0,
+      "y": 16,
+      "angle": -2,
+      "scaleX": 1.8,
+      "scaleY": 1.45,
       "flipX": false,
       "flipY": false
     },
@@ -1097,11 +1342,11 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": -3,
-      "angle": -4,
-      "scaleX": 1.26,
-      "scaleY": 1.1,
-      "flipX": false,
+      "y": 13,
+      "angle": -1,
+      "scaleX": 1.55,
+      "scaleY": 1.4,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -1132,10 +1377,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 30,
+      "y": 44,
       "angle": 0,
-      "scaleX": 1.04,
-      "scaleY": 1.31,
+      "scaleX": 1.28,
+      "scaleY": 1.45,
       "flipX": false,
       "flipY": false
     },
@@ -1166,12 +1411,12 @@
       "frontBootAssetKey": "front-boot-leather-01"
     },
     "equipmentTuning": {
-      "x": 1,
-      "y": 0,
+      "x": 28,
+      "y": -1,
       "angle": 0,
-      "scaleX": 0.88,
+      "scaleX": 0.93,
       "scaleY": 1,
-      "flipX": false,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -1190,41 +1435,6 @@
     }
   },
   {
-    "id": "leather_front_greave_01",
-    "name": "Leather Front Greave 01",
-    "kind": "armor",
-    "rarity": "uncommon",
-    "armorCategory": "leather",
-    "armorHp": 0,
-    "equipmentSlot": "frontGreave",
-    "assetKeys": {
-      "frontGreaveAssetKey": "front-greave-leather-01"
-    },
-    "equipmentTuning": {
-      "x": -6,
-      "y": 3,
-      "angle": -11,
-      "scaleX": 1.6,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-greave-leather-01",
-      "sourcePath": "assets/fighters/armor/legs/front-greave-leather-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-leather-01.webp"
-    },
-    "armoryProduct": {
-      "id": "leather_front_greave_01",
-      "name": "Leather Front Greave 01",
-      "price": 0,
-      "itemIds": [
-        "leather_front_greave_01"
-      ],
-      "categoryId": "legs"
-    }
-  },
-  {
     "id": "leather_front_shinguard_01",
     "name": "Leather Front Shinguard 01",
     "kind": "armor",
@@ -1236,11 +1446,11 @@
       "frontShinguardAssetKey": "front-shinguard-leather-01"
     },
     "equipmentTuning": {
-      "x": -6,
-      "y": -3,
+      "x": -1,
+      "y": -7,
       "angle": 0,
-      "scaleX": 1.5,
-      "scaleY": 1,
+      "scaleX": 1.7,
+      "scaleY": 1.1,
       "flipX": false,
       "flipY": false
     },
@@ -1271,12 +1481,12 @@
       "frontShoulderguardAssetKey": "front-shoulderguard-leather-01"
     },
     "equipmentTuning": {
-      "x": 8,
-      "y": -3,
-      "angle": 13,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.8,
+      "scaleY": 1.45,
+      "flipX": true,
       "flipY": false
     },
     "asset": {
@@ -1307,10 +1517,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": -3,
-      "angle": 14,
-      "scaleX": 1.5,
-      "scaleY": 1.1,
+      "y": 8,
+      "angle": 0,
+      "scaleX": 1.55,
+      "scaleY": 1.43,
       "flipX": false,
       "flipY": false
     },
@@ -1342,10 +1552,10 @@
     },
     "equipmentTuning": {
       "x": -1,
-      "y": 6,
+      "y": 16,
       "angle": 0,
-      "scaleX": 0.77,
-      "scaleY": 0.94,
+      "scaleX": 1.16,
+      "scaleY": 1.13,
       "flipX": false,
       "flipY": false
     },

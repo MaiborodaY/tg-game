@@ -189,8 +189,8 @@ interface DebugRigPartDragState {
 interface DebugEquipmentDragState {
   slotKey: PaperDollEquipmentSlotKey;
   itemId: HeroItemId | "";
-  lastPointerX: number;
-  lastPointerY: number;
+  lastPointerLocalX: number;
+  lastPointerLocalY: number;
 }
 
 interface DebugInputEvent {
@@ -2265,6 +2265,12 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
+    const localPointer = this.getEquipmentDragPointerLocalPoint(slotKey, pointer);
+
+    if (!localPointer) {
+      return;
+    }
+
     event?.stopPropagation();
     const itemId = this.getEquipmentItemId(slotKey);
 
@@ -2276,8 +2282,8 @@ class DebugCharacterScene extends Phaser.Scene {
     this.equipmentDragState = {
       slotKey,
       itemId,
-      lastPointerX: pointer.worldX,
-      lastPointerY: pointer.worldY,
+      lastPointerLocalX: localPointer.x,
+      lastPointerLocalY: localPointer.y,
     };
   }
 
@@ -2336,26 +2342,27 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
-    const pointerX = pointer.worldX;
-    const pointerY = pointer.worldY;
-    const deltaX = pointerX - this.equipmentDragState.lastPointerX;
-    const deltaY = pointerY - this.equipmentDragState.lastPointerY;
+    const localPointer = this.getEquipmentDragPointerLocalPoint(this.equipmentDragState.slotKey, pointer);
+
+    if (!localPointer) {
+      this.endEquipmentDrag();
+      return;
+    }
+
+    const deltaX = localPointer.x - this.equipmentDragState.lastPointerLocalX;
+    const deltaY = localPointer.y - this.equipmentDragState.lastPointerLocalY;
 
     if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
       return;
     }
 
-    const root = this.fighter.paperDollRig.root;
-    const scaleX = root.scaleX === 0 ? 1 : root.scaleX;
-    const scaleY = root.scaleY === 0 ? 1 : root.scaleY;
-
     emitDebugCharacterEquipmentDelta(this.equipmentDragState, {
-      x: deltaX / scaleX,
-      y: deltaY / scaleY,
+      x: deltaX,
+      y: deltaY,
     });
 
-    this.equipmentDragState.lastPointerX = pointerX;
-    this.equipmentDragState.lastPointerY = pointerY;
+    this.equipmentDragState.lastPointerLocalX = localPointer.x;
+    this.equipmentDragState.lastPointerLocalY = localPointer.y;
   }
 
   private endRigPartDrag(): void {
@@ -2413,6 +2420,19 @@ class DebugCharacterScene extends Phaser.Scene {
     const slot = this.fighter?.paperDollRig?.equipment[slotKey];
 
     return Boolean(slot && isPaperDollEquipmentSlotVisible(slot));
+  }
+
+  private getEquipmentDragPointerLocalPoint(
+    slotKey: PaperDollEquipmentSlotKey,
+    pointer: Phaser.Input.Pointer,
+  ): { x: number; y: number } | undefined {
+    const slot = this.fighter?.paperDollRig?.equipment[slotKey];
+
+    if (!slot) {
+      return undefined;
+    }
+
+    return getPaperDollEquipmentDragLocalPoint(slot, pointer.worldX, pointer.worldY);
   }
 }
 
@@ -3448,6 +3468,24 @@ function applySingleEquipmentTransform(part: FighterPart, tuning: EquipmentTunin
   part.angle = tuning.angle;
   part.scaleX = tuning.scaleX * (tuning.flipX ? -1 : 1);
   part.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
+}
+
+function getPaperDollEquipmentDragLocalPoint(slot: FighterPart, worldX: number, worldY: number): { x: number; y: number } {
+  const parent = getPaperDollEquipmentSlotParent(slot);
+
+  if (!parent) {
+    return { x: worldX, y: worldY };
+  }
+
+  const localPoint = parent.getWorldTransformMatrix().applyInverse(worldX, worldY);
+
+  return { x: localPoint.x, y: localPoint.y };
+}
+
+function getPaperDollEquipmentSlotParent(slot: FighterPart): FighterPart | undefined {
+  const parentContainer = (slot as Phaser.GameObjects.GameObject & { parentContainer?: Phaser.GameObjects.Container | null }).parentContainer;
+
+  return parentContainer ? part(parentContainer) : undefined;
 }
 
 function enableDebugPaperDollPartPicking(rig: PaperDollRig | undefined, onPick?: DebugRigPartPickHandler): void {
