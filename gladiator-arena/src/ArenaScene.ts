@@ -4866,7 +4866,7 @@ function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, ani
       yoyo: true,
       ease: "Sine.easeInOut",
       onUpdate: (tween) => {
-        applyBodyAnimationBlend(fighter, animation, tween.getValue());
+        applyBodyAnimationBlend(fighter, animation, tween.getValue() ?? 0);
       },
       onComplete: finish,
     });

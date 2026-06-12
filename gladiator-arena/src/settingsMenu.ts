@@ -74,7 +74,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    setMenuOpen(button, panel, panel.hidden);
+    setMenuOpen(button, panel, panel.hidden !== false);
   });
 
   lowEffects.addEventListener("change", () => {

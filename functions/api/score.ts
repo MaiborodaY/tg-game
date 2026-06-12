@@ -3,6 +3,11 @@ export interface Env {
   BOT_TOKEN: string; // зададите в Pages → Settings → Variables
 }
 
+type TelegramGameScoreResponse = {
+  ok?: boolean;
+  [key: string]: unknown;
+};
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const { score, payload } = await request.json<any>();
@@ -31,7 +36,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = await tg.json();
+    const data = (await tg.json()) as TelegramGameScoreResponse;
     return data?.ok ? json({ ok:true }) : json(data, 400);
   } catch (e:any) {
     return json({ ok:false, error:String(e?.message || e) }, 400);

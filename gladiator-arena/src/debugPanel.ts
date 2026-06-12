@@ -385,7 +385,7 @@ const popupControlGroup: DebugControlGroup = {
   ],
 };
 
-const popupPreviewKindByKey = {
+const popupPreviewKindByKey: Partial<Record<keyof ArenaDebugTuning, DebugPopupPreviewKind>> = {
   popupOffsetY: "all",
   popupScale: "all",
   damagePopupOffsetY: "damage",
@@ -396,7 +396,7 @@ const popupPreviewKindByKey = {
   armorAbsorbPopupScale: "armorAbsorb",
   armorBreakPopupOffsetY: "armorBreak",
   armorBreakPopupScale: "armorBreak",
-} satisfies Partial<Record<keyof ArenaDebugTuning, DebugPopupPreviewKind>>;
+};
 
 const hudControlGroups: DebugControlGroup[] = [
   {

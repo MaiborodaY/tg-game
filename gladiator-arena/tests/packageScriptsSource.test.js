@@ -14,6 +14,17 @@ test("gladiator dev scripts load the local Vite config", () => {
   assert.match(packageJson.scripts["gladiator:build"], /--config gladiator-arena\/vite\.config\.ts/);
 });
 
+test("typecheck scripts keep browser apps and functions in separate projects", () => {
+  const packageJson = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8"));
+
+  assert.equal(packageJson.scripts["gladiator:typecheck"], "tsc --noEmit --project gladiator-arena/tsconfig.json");
+  assert.equal(packageJson.scripts["farm-paws:typecheck"], "tsc --noEmit --project farm-paws/tsconfig.json");
+  assert.equal(packageJson.scripts["functions:typecheck"], "tsc --noEmit --project functions/tsconfig.json");
+  assert.match(packageJson.scripts.typecheck, /gladiator:typecheck/);
+  assert.match(packageJson.scripts.typecheck, /farm-paws:typecheck/);
+  assert.match(packageJson.scripts.typecheck, /functions:typecheck/);
+});
+
 test("debug start command launches the gladiator debug script", () => {
   const source = readFileSync(join(repoRoot, "start-gladiator-debug.cmd"), "utf8");
 

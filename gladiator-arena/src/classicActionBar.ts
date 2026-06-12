@@ -91,6 +91,7 @@ export function mountClassicActionBar(
   if (!root) {
     return undefined;
   }
+  const actionBarRoot = root;
 
   const wheel = document.createElement("div");
   const wheelShadow = document.createElement("div");
@@ -100,13 +101,13 @@ export function mountClassicActionBar(
   let wheelRotationAngle = 0;
   let isWheelTurning = false;
   let wheelTurnTimer: number | undefined;
-  const syncWheelFitScale = () => syncClassicWheelFitScale(root);
+  const syncWheelFitScale = () => syncClassicWheelFitScale(actionBarRoot);
 
-  root.replaceChildren();
+  actionBarRoot.replaceChildren();
   wheelShadow.className = "classic-action-bar__wheel-shadow";
   wheel.className = "classic-action-bar__wheel";
   layers.forEach((layer) => wheel.append(layer.element));
-  root.append(wheelShadow, wheel);
+  actionBarRoot.append(wheelShadow, wheel);
   syncWheelFitScale();
   window.addEventListener("resize", syncWheelFitScale);
 
@@ -132,15 +133,15 @@ export function mountClassicActionBar(
     const activeWheelMode = activeLayer.mode ?? wheelMode;
     const activeWheelRangeMode = getClassicWheelRangeMode(state, wheelMode, previewWheelMode);
 
-    root.dataset.classicWheelMode = activeWheelMode;
-    root.dataset.classicWheelRange = activeWheelRangeMode;
-    root.classList.toggle("classic-action-bar--distance", activeWheelMode === "distance");
-    root.classList.toggle("classic-action-bar--clinch", activeWheelMode === "clinch");
-    root.classList.toggle("classic-action-bar--bow-distance", activeWheelMode === "bow-distance");
+    actionBarRoot.dataset.classicWheelMode = activeWheelMode;
+    actionBarRoot.dataset.classicWheelRange = activeWheelRangeMode;
+    actionBarRoot.classList.toggle("classic-action-bar--distance", activeWheelMode === "distance");
+    actionBarRoot.classList.toggle("classic-action-bar--clinch", activeWheelMode === "clinch");
+    actionBarRoot.classList.toggle("classic-action-bar--bow-distance", activeWheelMode === "bow-distance");
     CLASSIC_WHEEL_RANGE_MODES.forEach((mode) => {
-      root.classList.toggle(`classic-action-bar--range-${mode}`, activeWheelRangeMode === mode);
+      actionBarRoot.classList.toggle(`classic-action-bar--range-${mode}`, activeWheelRangeMode === mode);
     });
-    root.classList.toggle("classic-action-bar--turning", isWheelTurning);
+    actionBarRoot.classList.toggle("classic-action-bar--turning", isWheelTurning);
     wheel.style.setProperty("--classic-wheel-angle", `${wheelRotationAngle}deg`);
 
     layers.forEach((layer) => {
@@ -259,7 +260,7 @@ export function mountClassicActionBar(
 
       window.removeEventListener("arena-debug-tuning-change", syncFromDebugTuning);
       window.removeEventListener("resize", syncWheelFitScale);
-      root.replaceChildren();
+      actionBarRoot.replaceChildren();
     },
   };
 }

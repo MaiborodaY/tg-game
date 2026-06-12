@@ -91,11 +91,11 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   rest: { label: "REST", detail: "Breath" },
 };
 
-const BOW_ACTION_LABELS = {
+const BOW_ACTION_LABELS: Partial<Record<ActionId, { label: string; detail: string }>> = {
   light: { label: "SHOT", detail: "Quick" },
   medium: { label: "AIM", detail: "Aimed" },
   heavy: { label: "POWER", detail: "Shot" },
-} satisfies Partial<Record<ActionId, { label: string; detail: string }>>;
+};
 
 function getSlotActionId(slot: ActionArcSlot, state: CombatState): ActionId {
   if (slot.actionId !== "utility") {
