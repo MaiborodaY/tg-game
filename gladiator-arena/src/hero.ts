@@ -79,6 +79,13 @@ export interface BattleReward {
   xp: number;
 }
 
+export interface ArenaTierDefinition {
+  id: number;
+  name: string;
+  enemyItemRarities: readonly HeroItemRarity[];
+  enemyEquipmentRollChance: number;
+}
+
 export interface HeroItemPurchase {
   itemIds: HeroItemId[];
   price: number;
@@ -98,9 +105,70 @@ export interface EnemyLoadout {
 
 export const DEFAULT_HERO_ID = "local-hero";
 export const DEFAULT_HERO_NAME = "Borshemir";
-export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = 100;
-export const HERO_XP_TO_NEXT_LEVEL_STEP = 50;
+export const HERO_MAX_LEVEL = 50;
+export const HERO_TOTAL_XP_TO_MAX_LEVEL = 1000;
+export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
+  10,
+  10,
+  10,
+  10,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  15,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  20,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  25,
+  30,
+  30,
+  30,
+  30,
+  30,
+];
+export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
 export const BATTLE_WIN_REWARD: BattleReward = { gold: 25, xp: 20 };
+export const DEFAULT_ARENA_TIER_ID = 1;
+export const ARENA_TIERS: readonly ArenaTierDefinition[] = [
+  {
+    id: 1,
+    name: "Dust Arena I",
+    enemyItemRarities: ["common"],
+    enemyEquipmentRollChance: 0.52,
+  },
+];
 export const HERO_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_IDS;
 export const ALL_HERO_ITEM_IDS = HERO_ITEM_IDS;
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = GENERATED_EQUIPMENT_ITEM_CATALOG;
@@ -114,20 +182,18 @@ export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
 
 export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [DEFAULT_ENEMY_VISUAL_PRESET];
 
-const ENEMY_ITEM_IDS_BY_SLOT = Object.fromEntries(
-  HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => [
-    slotKey,
-    GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.item.equipmentSlot === slotKey).map((record) => record.item.id),
-  ]),
-) as Record<HeroEquipmentSlotKey, HeroItemId[]>;
+export function getArenaTierDefinition(tierId = DEFAULT_ARENA_TIER_ID): ArenaTierDefinition {
+  return ARENA_TIERS.find((tier) => tier.id === tierId) ?? ARENA_TIERS[0]!;
+}
 
-export function createRandomEnemyLoadout(random = Math.random): EnemyLoadout {
+export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_ARENA_TIER_ID): EnemyLoadout {
+  const tier = getArenaTierDefinition(tierId);
   const equipment = createDefaultHeroEquipment();
 
   HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    const itemIds = ENEMY_ITEM_IDS_BY_SLOT[slotKey];
+    const itemIds = getEnemyItemIdsBySlot(slotKey, tier);
 
-    if (itemIds.length === 0 || random() >= 0.52) {
+    if (itemIds.length === 0 || random() >= tier.enemyEquipmentRollChance) {
       return;
     }
 
@@ -263,9 +329,9 @@ export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): He
   return "sword";
 }
 
-export function createCombatStateFromHero(hero: HeroState): CombatState {
+export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT_ARENA_TIER_ID): CombatState {
   const stats = deriveHeroStats(hero);
-  const enemyLoadout = createRandomEnemyLoadout();
+  const enemyLoadout = createRandomEnemyLoadout(Math.random, arenaTierId);
   const enemyArmor = getHeroEquipmentArmor(enemyLoadout.equipment);
   const enemyDamageBonus = getHeroEquipmentDamageBonus(enemyLoadout.equipment);
   const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
@@ -316,7 +382,7 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
     return hero;
   }
 
-  const progress = applyHeroXp(hero.level, hero.xp + reward.xp, hero.xpToNextLevel);
+  const progress = applyHeroXp(hero.level, hero.xp + reward.xp);
 
   return {
     ...hero,
@@ -361,18 +427,24 @@ export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase
 }
 
 export function getHeroXpToNextLevel(level: number): number {
-  return DEFAULT_HERO_XP_TO_NEXT_LEVEL + Math.max(0, level - 1) * HERO_XP_TO_NEXT_LEVEL_STEP;
+  const normalizedLevel = Math.max(1, Math.min(HERO_MAX_LEVEL, Math.floor(level)));
+
+  return HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[normalizedLevel - 1] ?? HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length - 1]!;
 }
 
-function applyHeroXp(level: number, xp: number, xpToNextLevel: number): Pick<HeroState, "level" | "xp" | "xpToNextLevel"> {
-  let nextLevel = Math.max(1, Math.floor(level));
-  let nextXp = Math.max(0, Math.floor(xp));
-  let nextXpToNextLevel = Math.max(1, Math.floor(xpToNextLevel));
+function applyHeroXp(level: number, xp: number): Pick<HeroState, "level" | "xp" | "xpToNextLevel"> {
+  let nextLevel = Math.max(1, Math.min(HERO_MAX_LEVEL, Math.floor(level)));
+  let nextXp = nextLevel >= HERO_MAX_LEVEL ? 0 : Math.max(0, Math.floor(xp));
+  let nextXpToNextLevel = getHeroXpToNextLevel(nextLevel);
 
-  while (nextXp >= nextXpToNextLevel) {
+  while (nextLevel < HERO_MAX_LEVEL && nextXp >= nextXpToNextLevel) {
     nextXp -= nextXpToNextLevel;
     nextLevel += 1;
     nextXpToNextLevel = getHeroXpToNextLevel(nextLevel);
+  }
+
+  if (nextLevel >= HERO_MAX_LEVEL) {
+    nextXp = 0;
   }
 
   return {
@@ -380,6 +452,16 @@ function applyHeroXp(level: number, xp: number, xpToNextLevel: number): Pick<Her
     xp: nextXp,
     xpToNextLevel: nextXpToNextLevel,
   };
+}
+
+function getEnemyItemIdsBySlot(slotKey: HeroEquipmentSlotKey, tier: ArenaTierDefinition): HeroItemId[] {
+  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter(
+    (record) => record.item.equipmentSlot === slotKey && tier.enemyItemRarities.includes(getHeroItemRarity(record.item)),
+  ).map((record) => record.item.id);
+}
+
+function getHeroItemRarity(item: HeroItemDefinition): HeroItemRarity {
+  return item.rarity ?? "common";
 }
 
 function pickRandom<T>(items: readonly T[], random: () => number): T {

@@ -162,6 +162,63 @@ test("cloth and sword stay common while leather catalog items are uncommon", () 
   }
 });
 
+test("arena tier one enemy loadouts only roll common equipment", () => {
+  const tierOneRarities = hero.getArenaTierDefinition(1).enemyItemRarities;
+
+  assert.equal(tierOneRarities.length, 1);
+  assert.equal(tierOneRarities[0], "common");
+
+  const loadout = hero.createRandomEnemyLoadout(() => 0, 1);
+  const equippedItemIds = Object.values(loadout.equipment).filter(Boolean);
+
+  assert.equal(loadout.equipment.weaponMain, "weapon_sword_01");
+  assert.equal(loadout.equipment.breastplate, "cloth_breastplate_01");
+  assert.equal(loadout.equipment.helmet, null);
+  assert.equal(loadout.equipment.backWrist, null);
+  assert.equal(loadout.equipment.frontWrist, null);
+
+  for (const itemId of equippedItemIds) {
+    assert.equal(hero.HERO_ITEM_CATALOG[itemId]?.rarity, "common");
+  }
+});
+
+test("hero level progression uses one thousand total xp across fifty levels", () => {
+  assert.equal(hero.HERO_MAX_LEVEL, 50);
+  assert.equal(hero.HERO_TOTAL_XP_TO_MAX_LEVEL, 1000);
+  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length, 49);
+  assert.equal(
+    hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.reduce((total, xp) => total + xp, 0),
+    1000,
+  );
+
+  assert.equal(hero.getHeroXpToNextLevel(1), 10);
+  assert.equal(hero.getHeroXpToNextLevel(5), 15);
+  assert.equal(hero.getHeroXpToNextLevel(15), 20);
+  assert.equal(hero.getHeroXpToNextLevel(33), 25);
+  assert.equal(hero.getHeroXpToNextLevel(45), 30);
+  assert.equal(hero.getHeroXpToNextLevel(50), 30);
+});
+
+test("battle xp follows the level table and caps at level fifty", () => {
+  const staleHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    xp: 9,
+    xpToNextLevel: 100,
+  };
+
+  const levelTwoHero = hero.applyBattleReward(staleHero, { gold: 0, xp: 1 }, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(levelTwoHero.level, 2);
+  assert.equal(levelTwoHero.xp, 0);
+  assert.equal(levelTwoHero.xpToNextLevel, 10);
+
+  const maxHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 1000 });
+
+  assert.equal(maxHero.level, 50);
+  assert.equal(maxHero.xp, 0);
+  assert.equal(maxHero.xpToNextLevel, 30);
+});
+
 test("owned shop items can be equipped without paying again", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
