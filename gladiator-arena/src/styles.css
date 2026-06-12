@@ -1049,16 +1049,30 @@ h1 {
   pointer-events: none;
 }
 
-.city-return:hover {
+.city-return:not(:disabled):hover {
   filter: brightness(1.07) saturate(1.06);
 }
 
-.city-return:active {
+.city-return:not(:disabled):active {
   box-shadow:
     0 2px 0 rgba(38, 10, 3, 0.92),
     0 5px 9px rgba(0, 0, 0, 0.24),
     inset 0 1px 0 rgba(255, 247, 202, 0.58),
     inset 0 -5px 9px rgba(79, 18, 4, 0.38);
+}
+
+.city-return:disabled {
+  color: rgba(255, 232, 170, 0.78);
+  background:
+    radial-gradient(ellipse at 50% 18%, rgba(255, 244, 185, 0.28) 0 12%, transparent 40%),
+    linear-gradient(180deg, rgba(108, 61, 30, 0.86) 0%, rgba(70, 32, 14, 0.88) 54%, rgba(34, 10, 4, 0.9) 100%);
+  box-shadow:
+    0 3px 0 rgba(28, 7, 2, 0.88),
+    0 7px 10px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 235, 178, 0.26),
+    inset 0 -7px 10px rgba(28, 7, 2, 0.42);
+  cursor: wait;
+  filter: saturate(0.84) brightness(0.86);
 }
 
 .battle-result__frame {
@@ -1268,6 +1282,8 @@ h1 {
 .battle-result__button {
   justify-self: center;
   margin-top: 2px;
+  padding-right: 22px;
+  padding-left: 22px;
   color: #361104;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 0.86rem;
@@ -1277,6 +1293,24 @@ h1 {
   text-shadow:
     0 1px 0 rgba(255, 244, 198, 0.74),
     0 -1px 0 rgba(75, 20, 5, 0.18);
+}
+
+.battle-result__button--waiting {
+  padding-right: 38px;
+}
+
+.battle-result__button--waiting::after {
+  content: "";
+  position: absolute;
+  right: 17px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border: 2px solid rgba(255, 231, 164, 0.34);
+  border-top-color: rgba(255, 244, 195, 0.9);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  animation: battle-result-button-wait 820ms linear infinite;
 }
 
 .battle-result--lose .battle-result__eyebrow {
@@ -1469,6 +1503,12 @@ h1 {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes battle-result-button-wait {
+  to {
+    transform: translateY(-50%) rotate(360deg);
   }
 }
 

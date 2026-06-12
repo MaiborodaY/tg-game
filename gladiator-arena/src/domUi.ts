@@ -118,10 +118,16 @@ export interface BattleResultPresentation {
   heroAfterReward?: HeroState;
 }
 
+export interface BattleResultReturnState {
+  ready: boolean;
+  label?: string;
+}
+
 export interface DomRenderContext {
   hero?: HeroState;
   reward?: BattleReward;
   resultPresentation?: BattleResultPresentation;
+  resultReturn?: BattleResultReturnState;
 }
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
@@ -212,6 +218,7 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
 
   if (state.result === "playing") {
     cancelResultAnimations();
+    syncResultReturnButton(dom.cityButton);
     dom.resultBanner.hidden = true;
     dom.cityButton.hidden = true;
     dom.resultBanner.classList.remove("battle-result--animating");
@@ -221,6 +228,7 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
 
   dom.resultBanner.hidden = false;
   dom.cityButton.hidden = false;
+  syncResultReturnButton(dom.cityButton, context.resultReturn);
   syncResultVariant(dom.resultBanner, state.result);
   dom.resultEyebrow.textContent = resultEyebrowText(state);
   dom.resultTitle.textContent = resultBannerText(state);
@@ -246,6 +254,17 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
   renderRewardAmount(dom.resultGoldReward, reward.gold);
   renderRewardAmount(dom.resultXpReward, reward.xp);
   renderResultXpProgress(dom, finalHero);
+}
+
+const RESULT_RETURN_READY_LABEL = "Return to City";
+
+function syncResultReturnButton(button: HTMLButtonElement, state?: BattleResultReturnState): void {
+  const ready = state?.ready ?? true;
+
+  button.disabled = !ready;
+  button.textContent = state?.label ?? RESULT_RETURN_READY_LABEL;
+  button.classList.toggle("battle-result__button--waiting", !ready);
+  button.setAttribute("aria-busy", ready ? "false" : "true");
 }
 
 function resultBannerText(state: CombatState): string {

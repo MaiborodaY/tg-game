@@ -743,7 +743,8 @@ let activePlayerEquipment: HeroEquipment | undefined;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
 let arenaAssetPrewarmPromise: Promise<void> | undefined;
-const arenaAssetPrewarmImages = new Set<HTMLImageElement>();
+let cityAssetPrewarmPromise: Promise<void> | undefined;
+const assetPrewarmImages = new Set<HTMLImageElement>();
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -763,6 +764,12 @@ export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
   arenaAssetPrewarmPromise ??= Promise.all(getArenaAssetPrewarmUrls().map(prewarmImageUrl)).then(() => undefined);
 
   return arenaAssetPrewarmPromise;
+}
+
+export function prewarmCityAssetsForBrowserCache(): Promise<void> {
+  cityAssetPrewarmPromise ??= Promise.all([...new Set(getCityAssetPrewarmUrls())].map(prewarmImageUrl)).then(() => undefined);
+
+  return cityAssetPrewarmPromise;
 }
 
 function preloadCityAssets(target: Phaser.Scene): void {
@@ -836,6 +843,16 @@ function getArenaAssetPrewarmUrls(): string[] {
   ];
 }
 
+function getCityAssetPrewarmUrls(): string[] {
+  return [
+    CITY_BACKGROUND_ASSET_URL,
+    CITY_DAY_BACKGROUND_ASSET_URL,
+    CITY_SHOP_BACKGROUND_ASSET_URL,
+    ...CITY_CLOUD_ASSETS.map((asset) => asset.url),
+    ...getPaperDollAssetLoadEntries(getPlayerSettings().lowEffects).map((asset) => asset.url),
+  ];
+}
+
 function prewarmImageUrl(url: string): Promise<void> {
   if (typeof window === "undefined") {
     return Promise.resolve();
@@ -844,11 +861,11 @@ function prewarmImageUrl(url: string): Promise<void> {
   return new Promise((resolve) => {
     const image = new Image();
     const finish = () => {
-      arenaAssetPrewarmImages.delete(image);
+      assetPrewarmImages.delete(image);
       resolve();
     };
 
-    arenaAssetPrewarmImages.add(image);
+    assetPrewarmImages.add(image);
     image.decoding = "async";
     image.loading = "eager";
     image.onload = finish;

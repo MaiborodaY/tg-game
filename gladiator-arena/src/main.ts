@@ -4,6 +4,7 @@ import {
   mountCityHeroPreview,
   mountHeroPortraitPreview,
   prewarmArenaAssetsForBrowserCache,
+  prewarmCityAssetsForBrowserCache,
   setPlayerEquipment,
   type ArenaScene,
   type CitySceneApi,
@@ -63,12 +64,19 @@ let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
 const CITY_CURTAIN_TRANSITION_MS = 620;
 const CITY_CURTAIN_SWITCH_MS = 210;
+const CITY_RETURN_MIN_READY_MS = 1800;
+const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
+const CITY_RETURN_READY_LABEL = "Return to City";
+const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const HERO_PORTRAIT_REFRESH_SLOTS = new Set(["helmet", "breastplate", "backShoulderguard", "frontShoulderguard"]);
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
 let battleResultPresentation: BattleResultPresentation | undefined;
 let battleResultPresentationId = 0;
+let battleResultReturnReady = true;
+let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
+let battleResultReturnGateToken = 0;
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
@@ -102,12 +110,24 @@ function playCityCurtainTransition(onCovered?: () => void): void {
   }, CITY_CURTAIN_TRANSITION_MS);
 }
 
+function renderCurrentDom(): void {
+  renderDom(dom, state, {
+    hero,
+    reward: getBattleReward(state),
+    resultPresentation: battleResultPresentation,
+    resultReturn: {
+      ready: battleResultReturnReady,
+      label: battleResultReturnLabel,
+    },
+  });
+}
+
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
   const syncArena = options.syncArena ?? true;
   const committedState = applyBattleRewardIfNeeded(nextState);
 
   state = committedState;
-  renderDom(dom, state, { hero, reward: getBattleReward(state), resultPresentation: battleResultPresentation });
+  renderCurrentDom();
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   const actionAnimation = syncArena ? (arenaScene?.sync(state) ?? Promise.resolve()) : Promise.resolve();
   syncActionArc();
@@ -267,6 +287,45 @@ function prewarmShopItemIconsWhenIdle(): void {
   window.setTimeout(prewarm, 250);
 }
 
+function startBattleResultReturnGate(): void {
+  const gateToken = ++battleResultReturnGateToken;
+
+  battleResultReturnReady = false;
+  battleResultReturnLabel = CITY_RETURN_WAITING_LABEL;
+
+  void Promise.all([
+    delay(CITY_RETURN_MIN_READY_MS),
+    waitForCityPrewarmWithTimeout(),
+  ]).then(() => {
+    if (battleResultReturnGateToken !== gateToken || isInCity || state.result === "playing") {
+      return;
+    }
+
+    battleResultReturnReady = true;
+    battleResultReturnLabel = CITY_RETURN_READY_LABEL;
+    renderCurrentDom();
+  });
+}
+
+function resetBattleResultReturnGate(): void {
+  battleResultReturnGateToken += 1;
+  battleResultReturnReady = true;
+  battleResultReturnLabel = CITY_RETURN_READY_LABEL;
+}
+
+function waitForCityPrewarmWithTimeout(): Promise<void> {
+  return Promise.race([
+    prewarmCityAssetsForBrowserCache().catch(() => undefined),
+    delay(CITY_RETURN_PREWARM_TIMEOUT_MS),
+  ]).then(() => undefined);
+}
+
+function delay(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, durationMs);
+  });
+}
+
 function unmountCityPreviews(): void {
   cityScene?.destroy();
   heroPortraitPreview?.destroy();
@@ -377,6 +436,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     heroBeforeReward,
     heroAfterReward,
   };
+  startBattleResultReturnGate();
   armoryShop?.render();
   weaponShop?.render();
 
@@ -432,8 +492,13 @@ function clearShopPreview(): void {
 }
 
 function returnToCity(): void {
+  if (!battleResultReturnReady) {
+    return;
+  }
+
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
+  resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   isArenaTransitionRunning = false;
   isInCity = true;
@@ -455,6 +520,7 @@ function returnToCity(): void {
 function restart(options: { syncArena?: boolean } = {}): void {
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
+  resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
@@ -508,4 +574,4 @@ if (cityMenu) {
     onLayoutChange: syncCityShopLayout,
   });
 }
-renderDom(dom, state, { hero, reward: getBattleReward(state), resultPresentation: battleResultPresentation });
+renderCurrentDom();

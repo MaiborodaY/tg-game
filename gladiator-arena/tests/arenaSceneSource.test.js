@@ -270,6 +270,17 @@ test("arena entry can prewarm arena image assets through the browser cache", () 
   assert.match(arenaSceneSource, /image\.src = url/);
 });
 
+test("city return can prewarm city and hero preview assets through the browser cache", () => {
+  assert.equal(arenaSceneSource.includes("export function prewarmCityAssetsForBrowserCache(): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("cityAssetPrewarmPromise ??="), true);
+  assert.equal(arenaSceneSource.includes("function getCityAssetPrewarmUrls(): string[]"), true);
+  assert.equal(arenaSceneSource.includes("CITY_BACKGROUND_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("CITY_DAY_BACKGROUND_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("CITY_SHOP_BACKGROUND_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("CITY_CLOUD_ASSETS.map((asset) => asset.url)"), true);
+  assert.equal(arenaSceneSource.includes("getPaperDollAssetLoadEntries(getPlayerSettings().lowEffects)"), true);
+});
+
 test("blocked hits use the shield icon popup instead of block text", () => {
   assert.equal(assetsSource.includes("DAMAGE_BLOCK_ICON_ASSET_KEY"), true);
   assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-block.webp"), true);

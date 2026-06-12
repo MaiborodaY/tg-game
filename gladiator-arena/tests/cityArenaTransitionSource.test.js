@@ -35,3 +35,15 @@ test("battle screen starts dark while the arena entry camera pulls back", () => 
   assert.match(stylesSource, /opacity: 1/);
   assert.match(stylesSource, /transition: opacity 760ms cubic-bezier/);
 });
+
+test("battle result waits briefly for city prewarm before enabling return", () => {
+  assert.match(mainSource, /prewarmCityAssetsForBrowserCache/);
+  assert.match(mainSource, /CITY_RETURN_MIN_READY_MS = 1800/);
+  assert.match(mainSource, /CITY_RETURN_PREWARM_TIMEOUT_MS = 3000/);
+  assert.match(mainSource, /CITY_RETURN_WAITING_LABEL = "Preparing City\.\.\."/);
+  assert.match(mainSource, /startBattleResultReturnGate\(\)/);
+  assert.match(mainSource, /waitForCityPrewarmWithTimeout/);
+  assert.match(mainSource, /resultReturn:/);
+  assert.match(stylesSource, /\.battle-result__button--waiting/);
+  assert.match(stylesSource, /@keyframes battle-result-button-wait/);
+});
