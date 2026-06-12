@@ -12,9 +12,13 @@ const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generate
 const promotedEquipmentRuntimeWebpQuality = 86;
 const promotedEquipmentLowWebpQuality = 76;
 const promotedEquipmentLowMaxSide = 448;
+const promotedEquipmentShopIconSize = 160;
+const promotedEquipmentShopIconContentSize = 136;
+const promotedEquipmentShopIconWebpQuality = 88;
 const promotedEquipmentMaxArmorHp = 200;
 const promotedEquipmentMaxDamageBonus = 100;
 const promotedEquipmentMaxPrice = 2000;
+const transparentBackground = { r: 0, g: 0, b: 0, alpha: 0 } as const;
 const promotedEquipmentResizeRules = [
   { maxSide: 768, pattern: /^assets\/fighters\/armor\/helmet\// },
   { maxSide: 512, pattern: /^assets\/fighters\/armor\/arms\// },
@@ -514,6 +518,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const promotedItem = await pickPromotedEquipmentItem(payload);
           const records = await readGeneratedEquipmentRecords();
           const promotedRecords = await createPromotedEquipmentRecords(records, promotedItem);
+          await ensureGeneratedEquipmentShopIcons(promotedRecords);
           const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
 
           await writeGeneratedEquipmentRecords(nextRecords);
@@ -903,7 +908,8 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   const assetKeys = readStringRecord(promotion.assetKeys, "assetKeys");
   const kind = readGeneratedEquipmentKind(item.kind);
   const equipmentSlot = readEquipmentSlot(item.equipmentSlot);
-  const equipmentTuning = readPromotedEquipmentTuning(promotion.equipmentTuning);
+  const sourceEquipmentTuning = readPromotedEquipmentTuning(promotion.equipmentTuning);
+  const equipmentTuning = bakePromotedEquipmentTuning(sourceEquipmentTuning);
   const assetKey = readNonEmptyString(asset.key, "asset.key");
   const sourcePath = readAssetSourcePath(asset.sourcePath, getEquipmentAssetSourcePrefix(kind), "asset.sourcePath", [".png", ".webp"]);
   const lowSourcePath =
@@ -931,12 +937,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
     throw new Error("Promoted item assetKeys must reference asset.key.");
   }
 
-  const promotedAssetPaths = sourcePath.endsWith(".png")
-    ? await convertPromotedEquipmentPngAsset(sourcePath)
-    : {
-        sourcePath,
-        ...(lowSourcePath ? { lowSourcePath } : {}),
-      };
+  const promotedAssetPaths = await preparePromotedEquipmentAsset(sourcePath, lowSourcePath, { bakeFlipX: sourceEquipmentTuning.flipX });
 
   return {
     id,
@@ -1127,6 +1128,7 @@ function mirrorPromotedEquipmentTuning(tuning: RigPartTuning): RigPartTuning {
     ...tuning,
     x: -tuning.x,
     angle: -tuning.angle,
+    flipX: false,
   };
 }
 
@@ -1153,6 +1155,10 @@ async function ensureMirroredPromotedEquipmentAssets(
 }
 
 async function writeMirroredPromotedEquipmentWebpAsset(sourcePath: string, targetPath: string, quality: number): Promise<void> {
+  await writeFlippedPromotedEquipmentWebpAsset(sourcePath, targetPath, quality);
+}
+
+async function writeFlippedPromotedEquipmentWebpAsset(sourcePath: string, targetPath: string, quality: number): Promise<void> {
   const source = await readFile(getProjectSourceUrl(sourcePath));
   const targetUrl = getProjectSourceUrl(targetPath);
   const mirrored = await sharp(source)
@@ -1176,6 +1182,88 @@ async function writeResizedPromotedEquipmentLowAsset(sourcePath: string, targetP
 
   await mkdir(new URL(".", targetUrl), { recursive: true });
   await writeFile(targetUrl, low);
+}
+
+async function ensureGeneratedEquipmentShopIcons(records: GeneratedEquipmentJsonRecord[]): Promise<void> {
+  await Promise.all(records.map((record) => writeGeneratedEquipmentShopIcon(record)));
+}
+
+async function writeGeneratedEquipmentShopIcon(record: GeneratedEquipmentJsonRecord): Promise<void> {
+  const source = await readFile(getProjectSourceUrl(record.asset.sourcePath));
+  const icon = await createEquipmentShopIconWebp(source);
+  const targetUrl = getProjectSourceUrl(getGeneratedEquipmentShopIconPath(record.asset.key));
+
+  await mkdir(new URL(".", targetUrl), { recursive: true });
+  await writeFile(targetUrl, icon);
+}
+
+async function createEquipmentShopIconWebp(input: Buffer): Promise<Buffer> {
+  const bounds = await getVisibleAlphaBounds(input);
+  const trimmed = bounds ? sharp(input).ensureAlpha().extract(bounds) : sharp(input).ensureAlpha();
+  const content = await trimmed
+    .resize({
+      fit: "inside",
+      height: promotedEquipmentShopIconContentSize,
+      width: promotedEquipmentShopIconContentSize,
+      withoutEnlargement: false,
+    })
+    .png()
+    .toBuffer();
+  const metadata = await sharp(content).metadata();
+  const width = metadata.width ?? promotedEquipmentShopIconContentSize;
+  const height = metadata.height ?? promotedEquipmentShopIconContentSize;
+  const left = Math.max(0, Math.floor((promotedEquipmentShopIconSize - width) / 2));
+  const top = Math.max(0, Math.floor((promotedEquipmentShopIconSize - height) / 2));
+  const right = Math.max(0, promotedEquipmentShopIconSize - width - left);
+  const bottom = Math.max(0, promotedEquipmentShopIconSize - height - top);
+
+  return sharp(content)
+    .extend({
+      background: transparentBackground,
+      bottom,
+      left,
+      right,
+      top,
+    })
+    .webp({
+      alphaQuality: 100,
+      effort: 6,
+      quality: promotedEquipmentShopIconWebpQuality,
+      smartSubsample: true,
+    })
+    .toBuffer();
+}
+
+async function getVisibleAlphaBounds(input: Buffer): Promise<{ left: number; top: number; width: number; height: number } | undefined> {
+  const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let left = info.width;
+  let top = info.height;
+  let right = -1;
+  let bottom = -1;
+
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const alpha = data[(y * info.width + x) * info.channels + 3];
+
+      if (alpha === undefined || alpha <= 8) {
+        continue;
+      }
+
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+  }
+
+  return right >= left && bottom >= top
+    ? {
+        height: bottom - top + 1,
+        left,
+        top,
+        width: right - left + 1,
+      }
+    : undefined;
 }
 
 async function projectSourceFileExists(sourcePath: string): Promise<boolean> {
@@ -1379,7 +1467,12 @@ function getGeneratedEquipmentAssetRemovalPaths(
   record: GeneratedEquipmentJsonRecord,
   ignoredPaths: ReadonlySet<string> = new Set(),
 ): string[] {
-  const candidates = [record.asset.sourcePath, record.asset.lowSourcePath, getGeneratedEquipmentSourcePngPath(record.asset.sourcePath)];
+  const candidates = [
+    record.asset.sourcePath,
+    record.asset.lowSourcePath,
+    getGeneratedEquipmentSourcePngPath(record.asset.sourcePath),
+    getGeneratedEquipmentShopIconPath(record.asset.key),
+  ];
   const uniquePaths = new Set(
     candidates.flatMap((sourcePath) => {
       if (!sourcePath) {
@@ -1401,14 +1494,57 @@ function getGeneratedEquipmentSourcePngPath(sourcePath: string): string | undefi
   return canHaveSourcePng && sourcePath.endsWith(".webp") ? sourcePath.replace(/\.webp$/i, ".png") : undefined;
 }
 
-async function convertPromotedEquipmentPngAsset(sourcePath: string): Promise<{ sourcePath: string; lowSourcePath: string }> {
+function getGeneratedEquipmentShopIconPath(assetKey: string): string {
+  return `assets/shop-icons/${assetKey}.webp`;
+}
+
+function bakePromotedEquipmentTuning(tuning: RigPartTuning): RigPartTuning {
+  return tuning.flipX ? { ...tuning, flipX: false } : tuning;
+}
+
+async function preparePromotedEquipmentAsset(
+  sourcePath: string,
+  lowSourcePath: string | undefined,
+  options: { bakeFlipX: boolean },
+): Promise<{ sourcePath: string; lowSourcePath?: string }> {
+  if (sourcePath.endsWith(".png")) {
+    return convertPromotedEquipmentPngAsset(sourcePath, options);
+  }
+
+  if (options.bakeFlipX) {
+    await bakePromotedEquipmentWebpAssetFlipX(sourcePath, lowSourcePath);
+  }
+
+  return {
+    sourcePath,
+    ...(lowSourcePath ? { lowSourcePath } : {}),
+  };
+}
+
+async function bakePromotedEquipmentWebpAssetFlipX(sourcePath: string, lowSourcePath: string | undefined): Promise<void> {
+  await writeFlippedPromotedEquipmentWebpAsset(sourcePath, sourcePath, promotedEquipmentRuntimeWebpQuality);
+
+  if (!lowSourcePath) {
+    return;
+  }
+
+  if (await projectSourceFileExists(lowSourcePath)) {
+    await writeFlippedPromotedEquipmentWebpAsset(lowSourcePath, lowSourcePath, promotedEquipmentLowWebpQuality);
+    return;
+  }
+
+  await writeResizedPromotedEquipmentLowAsset(sourcePath, lowSourcePath);
+}
+
+async function convertPromotedEquipmentPngAsset(sourcePath: string, options: { bakeFlipX: boolean }): Promise<{ sourcePath: string; lowSourcePath: string }> {
   const runtimeSourcePath = sourcePath.replace(/\.png$/i, ".webp");
   const lowSourcePath = sourcePath.replace(/^assets\//, "assets-low/").replace(/\.png$/i, ".webp");
   const sourceUrl = getProjectSourceUrl(sourcePath);
   const runtimeUrl = getProjectSourceUrl(runtimeSourcePath);
   const lowUrl = getProjectSourceUrl(lowSourcePath);
   const source = await readFile(sourceUrl);
-  const runtime = await createEquipmentWebp(source, getPromotedEquipmentRuntimeMaxSide(sourcePath), promotedEquipmentRuntimeWebpQuality);
+  const bakedSource = options.bakeFlipX ? await sharp(source).flop().png().toBuffer() : source;
+  const runtime = await createEquipmentWebp(bakedSource, getPromotedEquipmentRuntimeMaxSide(sourcePath), promotedEquipmentRuntimeWebpQuality);
   const low = await createEquipmentWebp(runtime, promotedEquipmentLowMaxSide, promotedEquipmentLowWebpQuality);
 
   await Promise.all([mkdir(new URL(".", runtimeUrl), { recursive: true }), mkdir(new URL(".", lowUrl), { recursive: true })]);
@@ -2196,7 +2332,8 @@ function readGeneratedAssetRemovalPath(value: unknown): string {
     sourcePath.startsWith("assets/fighters/armor/") ||
     sourcePath.startsWith("assets-low/fighters/armor/") ||
     sourcePath.startsWith("assets/fighters/weapons/") ||
-    sourcePath.startsWith("assets-low/fighters/weapons/");
+    sourcePath.startsWith("assets-low/fighters/weapons/") ||
+    sourcePath.startsWith("assets/shop-icons/");
   const hasSupportedExtension = sourcePath.endsWith(".png") || sourcePath.endsWith(".webp");
 
   if (sourcePath.includes("..") || !isEquipmentSourcePath || !hasSupportedExtension) {

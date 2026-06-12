@@ -953,7 +953,7 @@
     "armorHp": 2,
     "equipmentSlot": "backBoot",
     "assetKeys": {
-      "backBootAssetKey": "back-boot-light-01"
+      "backBootAssetKey": "back-boot-leather-01"
     },
     "equipmentTuning": {
       "x": 1,
@@ -965,9 +965,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "back-boot-light-01",
-      "sourcePath": "assets/fighters/armor/legs/back-boot-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-light-01.webp"
+      "key": "back-boot-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_back_boot_01",
@@ -988,7 +988,7 @@
     "armorHp": 2,
     "equipmentSlot": "backGreave",
     "assetKeys": {
-      "backGreaveAssetKey": "back-greave-light-01"
+      "backGreaveAssetKey": "back-greave-leather-01"
     },
     "equipmentTuning": {
       "x": -3,
@@ -1000,9 +1000,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "back-greave-light-01",
-      "sourcePath": "assets/fighters/armor/legs/back-greave-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-light-01.webp"
+      "key": "back-greave-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_back_greave_01",
@@ -1023,7 +1023,7 @@
     "armorHp": 2,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
-      "backShinguardAssetKey": "back-shinguard-light-01"
+      "backShinguardAssetKey": "back-shinguard-leather-01"
     },
     "equipmentTuning": {
       "x": -3,
@@ -1035,9 +1035,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "back-shinguard-light-01",
-      "sourcePath": "assets/fighters/armor/legs/back-shinguard-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-light-01.webp"
+      "key": "back-shinguard-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_back_shinguard_01",
@@ -1058,7 +1058,7 @@
     "armorHp": 2,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
-      "backShoulderguardAssetKey": "back-shoulderguard-light-01"
+      "backShoulderguardAssetKey": "back-shoulderguard-leather-01"
     },
     "equipmentTuning": {
       "x": 6,
@@ -1070,9 +1070,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "back-shoulderguard-light-01",
-      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-light-01.webp"
+      "key": "back-shoulderguard-leather-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_back_shoulderguard_01",
@@ -1093,7 +1093,7 @@
     "armorHp": 2,
     "equipmentSlot": "backWrist",
     "assetKeys": {
-      "backWristAssetKey": "back-wrist-light-01"
+      "backWristAssetKey": "back-wrist-leather-01"
     },
     "equipmentTuning": {
       "x": 0,
@@ -1101,13 +1101,13 @@
       "angle": -4,
       "scaleX": 1.26,
       "scaleY": 1.1,
-      "flipX": true,
+      "flipX": false,
       "flipY": false
     },
     "asset": {
-      "key": "back-wrist-light-01",
-      "sourcePath": "assets/fighters/armor/arms/back-wrist-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-light-01.webp"
+      "key": "back-wrist-leather-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_back_wrist_01",
@@ -1128,7 +1128,7 @@
     "armorHp": 1,
     "equipmentSlot": "breastplate",
     "assetKeys": {
-      "breastplateAssetKey": "breastplate-light-01"
+      "breastplateAssetKey": "breastplate-leather-01"
     },
     "equipmentTuning": {
       "x": 0,
@@ -1140,9 +1140,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "breastplate-light-01",
-      "sourcePath": "assets/fighters/armor/breastplate/breastplate-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-light-01.webp"
+      "key": "breastplate-leather-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_breastplate_01",
@@ -1163,7 +1163,7 @@
     "armorHp": 0,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
-      "frontBootAssetKey": "front-boot-light-01"
+      "frontBootAssetKey": "front-boot-leather-01"
     },
     "equipmentTuning": {
       "x": 1,
@@ -1175,9 +1175,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "front-boot-light-01",
-      "sourcePath": "assets/fighters/armor/legs/front-boot-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-light-01.webp"
+      "key": "front-boot-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_front_boot_01",
@@ -1198,7 +1198,7 @@
     "armorHp": 0,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
-      "frontGreaveAssetKey": "front-greave-light-01"
+      "frontGreaveAssetKey": "front-greave-leather-01"
     },
     "equipmentTuning": {
       "x": -6,
@@ -1210,9 +1210,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "front-greave-light-01",
-      "sourcePath": "assets/fighters/armor/legs/front-greave-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-light-01.webp"
+      "key": "front-greave-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_front_greave_01",
@@ -1233,7 +1233,7 @@
     "armorHp": 0,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
-      "frontShinguardAssetKey": "front-shinguard-light-01"
+      "frontShinguardAssetKey": "front-shinguard-leather-01"
     },
     "equipmentTuning": {
       "x": -6,
@@ -1245,9 +1245,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "front-shinguard-light-01",
-      "sourcePath": "assets/fighters/armor/legs/front-shinguard-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-light-01.webp"
+      "key": "front-shinguard-leather-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_front_shinguard_01",
@@ -1268,7 +1268,7 @@
     "armorHp": 0,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
-      "frontShoulderguardAssetKey": "front-shoulderguard-light-01"
+      "frontShoulderguardAssetKey": "front-shoulderguard-leather-01"
     },
     "equipmentTuning": {
       "x": 8,
@@ -1280,9 +1280,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "front-shoulderguard-light-01",
-      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-light-01.webp"
+      "key": "front-shoulderguard-leather-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_front_shoulderguard_01",
@@ -1303,7 +1303,7 @@
     "armorHp": 0,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
-      "frontWristAssetKey": "front-wrist-light-01"
+      "frontWristAssetKey": "front-wrist-leather-01"
     },
     "equipmentTuning": {
       "x": 0,
@@ -1311,13 +1311,13 @@
       "angle": 14,
       "scaleX": 1.5,
       "scaleY": 1.1,
-      "flipX": true,
+      "flipX": false,
       "flipY": false
     },
     "asset": {
-      "key": "front-wrist-light-01",
-      "sourcePath": "assets/fighters/armor/arms/front-wrist-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-light-01.webp"
+      "key": "front-wrist-leather-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_front_wrist_01",
@@ -1338,7 +1338,7 @@
     "armorHp": 1,
     "equipmentSlot": "helmet",
     "assetKeys": {
-      "helmetAssetKey": "helmet-light-01"
+      "helmetAssetKey": "helmet-leather-01"
     },
     "equipmentTuning": {
       "x": -1,
@@ -1350,9 +1350,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "helmet-light-01",
-      "sourcePath": "assets/fighters/armor/helmet/helmet-light-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-light-01.webp"
+      "key": "helmet-leather-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-leather-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-leather-01.webp"
     },
     "armoryProduct": {
       "id": "leather_helmet_01",

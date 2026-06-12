@@ -77,35 +77,35 @@ export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/bod
 export const FIGHTER_WEAPON_SWORD_01_ASSET_KEY = "weapon-sword-01";
 export const FIGHTER_WEAPON_SWORD_01_ASSET_URL = new URL("./assets/fighters/weapons/weapon-sword-01.webp", import.meta.url).href;
 
-export const FIGHTER_HELMET_LIGHT_ASSET_KEY = "helmet-light-01";
-export const FIGHTER_HELMET_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/helmet/helmet-light-01.webp", import.meta.url).href;
+export const FIGHTER_HELMET_LEATHER_ASSET_KEY = "helmet-leather-01";
+export const FIGHTER_HELMET_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/helmet/helmet-leather-01.webp", import.meta.url).href;
 
-export const FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY = "breastplate-light-01";
-export const FIGHTER_BREASTPLATE_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/breastplate/breastplate-light-01.webp", import.meta.url).href;
+export const FIGHTER_BREASTPLATE_LEATHER_ASSET_KEY = "breastplate-leather-01";
+export const FIGHTER_BREASTPLATE_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/breastplate/breastplate-leather-01.webp", import.meta.url).href;
 export const FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY = "breastplate-cloth-01";
 export const FIGHTER_BREASTPLATE_CLOTH_ASSET_URL = new URL("./assets/fighters/armor/breastplate/breastplate-cloth-01.webp", import.meta.url).href;
 
-export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY = "back-shoulderguard-light-01";
-export const FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/back-shoulderguard-light-01.webp", import.meta.url).href;
-export const FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY = "front-shoulderguard-light-01";
-export const FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/front-shoulderguard-light-01.webp", import.meta.url).href;
-export const FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY = "back-wrist-light-01";
-export const FIGHTER_BACK_WRIST_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/back-wrist-light-01.webp", import.meta.url).href;
-export const FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY = "front-wrist-light-01";
-export const FIGHTER_FRONT_WRIST_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/arms/front-wrist-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_SHOULDERGUARD_LEATHER_ASSET_KEY = "back-shoulderguard-leather-01";
+export const FIGHTER_BACK_SHOULDERGUARD_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/arms/back-shoulderguard-leather-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_SHOULDERGUARD_LEATHER_ASSET_KEY = "front-shoulderguard-leather-01";
+export const FIGHTER_FRONT_SHOULDERGUARD_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/arms/front-shoulderguard-leather-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_WRIST_LEATHER_ASSET_KEY = "back-wrist-leather-01";
+export const FIGHTER_BACK_WRIST_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/arms/back-wrist-leather-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_WRIST_LEATHER_ASSET_KEY = "front-wrist-leather-01";
+export const FIGHTER_FRONT_WRIST_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/arms/front-wrist-leather-01.webp", import.meta.url).href;
 
-export const FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY = "back-greave-light-01";
-export const FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/back-greave-light-01.webp", import.meta.url).href;
-export const FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY = "front-greave-light-01";
-export const FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/front-greave-light-01.webp", import.meta.url).href;
-export const FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY = "back-shinguard-light-01";
-export const FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/back-shinguard-light-01.webp", import.meta.url).href;
-export const FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY = "front-shinguard-light-01";
-export const FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/front-shinguard-light-01.webp", import.meta.url).href;
-export const FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY = "back-boot-light-01";
-export const FIGHTER_BACK_BOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/back-boot-light-01.webp", import.meta.url).href;
-export const FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY = "front-boot-light-01";
-export const FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/armor/legs/front-boot-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_GREAVE_LEATHER_ASSET_KEY = "back-greave-leather-01";
+export const FIGHTER_BACK_GREAVE_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/legs/back-greave-leather-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_GREAVE_LEATHER_ASSET_KEY = "front-greave-leather-01";
+export const FIGHTER_FRONT_GREAVE_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/legs/front-greave-leather-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_SHINGUARD_LEATHER_ASSET_KEY = "back-shinguard-leather-01";
+export const FIGHTER_BACK_SHINGUARD_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/legs/back-shinguard-leather-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_SHINGUARD_LEATHER_ASSET_KEY = "front-shinguard-leather-01";
+export const FIGHTER_FRONT_SHINGUARD_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/legs/front-shinguard-leather-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_BOOT_LEATHER_ASSET_KEY = "back-boot-leather-01";
+export const FIGHTER_BACK_BOOT_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/legs/back-boot-leather-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_BOOT_LEATHER_ASSET_KEY = "front-boot-leather-01";
+export const FIGHTER_FRONT_BOOT_LEATHER_ASSET_URL = new URL("./assets/fighters/armor/legs/front-boot-leather-01.webp", import.meta.url).href;
 
 export const FIGHTER_LOW_RES_ASSET_KEY_SUFFIX = "-low";
 export const FIGHTER_PAPER_DOLL_ASSETS = [
@@ -185,14 +185,14 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/weapons/weapon-sword-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_HELMET_LIGHT_ASSET_KEY,
-    url: FIGHTER_HELMET_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/helmet/helmet-light-01.webp", import.meta.url).href,
+    key: FIGHTER_HELMET_LEATHER_ASSET_KEY,
+    url: FIGHTER_HELMET_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/helmet/helmet-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
-    url: FIGHTER_BREASTPLATE_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/breastplate/breastplate-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BREASTPLATE_LEATHER_ASSET_KEY,
+    url: FIGHTER_BREASTPLATE_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/breastplate/breastplate-leather-01.webp", import.meta.url).href,
   },
   {
     key: FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
@@ -200,54 +200,54 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/armor/breastplate/breastplate-cloth-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
-    url: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/arms/back-shoulderguard-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BACK_SHOULDERGUARD_LEATHER_ASSET_KEY,
+    url: FIGHTER_BACK_SHOULDERGUARD_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/back-shoulderguard-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-    url: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/arms/front-shoulderguard-light-01.webp", import.meta.url).href,
+    key: FIGHTER_FRONT_SHOULDERGUARD_LEATHER_ASSET_KEY,
+    url: FIGHTER_FRONT_SHOULDERGUARD_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/front-shoulderguard-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
-    url: FIGHTER_BACK_WRIST_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/arms/back-wrist-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BACK_WRIST_LEATHER_ASSET_KEY,
+    url: FIGHTER_BACK_WRIST_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/back-wrist-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
-    url: FIGHTER_FRONT_WRIST_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/arms/front-wrist-light-01.webp", import.meta.url).href,
+    key: FIGHTER_FRONT_WRIST_LEATHER_ASSET_KEY,
+    url: FIGHTER_FRONT_WRIST_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/arms/front-wrist-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
-    url: FIGHTER_BACK_GREAVE_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/legs/back-greave-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BACK_GREAVE_LEATHER_ASSET_KEY,
+    url: FIGHTER_BACK_GREAVE_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/back-greave-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
-    url: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/legs/front-greave-light-01.webp", import.meta.url).href,
+    key: FIGHTER_FRONT_GREAVE_LEATHER_ASSET_KEY,
+    url: FIGHTER_FRONT_GREAVE_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/front-greave-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
-    url: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/legs/back-shinguard-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BACK_SHINGUARD_LEATHER_ASSET_KEY,
+    url: FIGHTER_BACK_SHINGUARD_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/back-shinguard-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
-    url: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/legs/front-shinguard-light-01.webp", import.meta.url).href,
+    key: FIGHTER_FRONT_SHINGUARD_LEATHER_ASSET_KEY,
+    url: FIGHTER_FRONT_SHINGUARD_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/front-shinguard-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
-    url: FIGHTER_BACK_BOOT_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/legs/back-boot-light-01.webp", import.meta.url).href,
+    key: FIGHTER_BACK_BOOT_LEATHER_ASSET_KEY,
+    url: FIGHTER_BACK_BOOT_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/back-boot-leather-01.webp", import.meta.url).href,
   },
   {
-    key: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
-    url: FIGHTER_FRONT_BOOT_LIGHT_ASSET_URL,
-    lowUrl: new URL("./assets-low/fighters/armor/legs/front-boot-light-01.webp", import.meta.url).href,
+    key: FIGHTER_FRONT_BOOT_LEATHER_ASSET_KEY,
+    url: FIGHTER_FRONT_BOOT_LEATHER_ASSET_URL,
+    lowUrl: new URL("./assets-low/fighters/armor/legs/front-boot-leather-01.webp", import.meta.url).href,
   },
 ] as const;
 

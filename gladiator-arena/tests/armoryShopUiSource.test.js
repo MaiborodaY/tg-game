@@ -8,6 +8,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const armoryShopSource = readFileSync(resolve(currentDir, "../src/armoryShopUi.ts"), "utf8");
 const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.ts"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
+const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 test("armory shop groups generated back and front equipment into one product", () => {
@@ -22,6 +23,13 @@ test("armory shop groups generated back and front equipment into one product", (
   assert.equal(armoryShopSource.includes("Math.max(backProduct.price, frontProduct.price)"), true);
   assert.equal(armoryShopSource.includes("price: backProduct.price + frontProduct.price"), false);
   assert.equal(armoryShopSource.includes("itemIds: [backItemId, frontItemId]"), true);
+});
+
+test("armory paired product cards prefer front equipment icons", () => {
+  assert.equal(shopItemIconsSource.includes("HERO_ITEM_CATALOG"), true);
+  assert.equal(shopItemIconsSource.includes("getRepresentativeShopItemIconId(itemIds)"), true);
+  assert.equal(shopItemIconsSource.includes('slot?.startsWith("front")'), true);
+  assert.equal(shopItemIconsSource.includes("return frontItemId ?? [...itemIds].reverse().find"), true);
 });
 
 test("city shops report their bottom menu position for hero centering", () => {

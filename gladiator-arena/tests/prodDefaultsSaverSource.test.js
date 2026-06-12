@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
+import sharp from "sharp";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -176,13 +177,37 @@ test("vite dev middleware converts promoted png equipment to standardized webp a
 
   assert.match(source, /import sharp from "sharp"/);
   assert.match(source, /await pickPromotedEquipmentItem/);
+  assert.match(source, /ensureGeneratedEquipmentShopIcons\(promotedRecords\)/);
+  assert.match(source, /preparePromotedEquipmentAsset\(sourcePath, lowSourcePath, \{ bakeFlipX: sourceEquipmentTuning\.flipX \}\)/);
+  assert.match(source, /bakePromotedEquipmentTuning\(sourceEquipmentTuning\)/);
+  assert.match(source, /bakePromotedEquipmentWebpAssetFlipX/);
   assert.match(source, /convertPromotedEquipmentPngAsset/);
   assert.match(source, /sourcePath\.endsWith\("\.png"\)/);
+  assert.match(source, /options\.bakeFlipX \? await sharp\(source\)\.flop\(\)\.png\(\)\.toBuffer\(\) : source/);
   assert.match(source, /promotedEquipmentRuntimeWebpQuality = 86/);
   assert.match(source, /promotedEquipmentLowWebpQuality = 76/);
   assert.match(source, /promotedEquipmentLowMaxSide = 448/);
+  assert.match(source, /promotedEquipmentShopIconSize = 160/);
+  assert.match(source, /promotedEquipmentShopIconContentSize = 136/);
+  assert.match(source, /createEquipmentShopIconWebp/);
+  assert.match(source, /getVisibleAlphaBounds/);
+  assert.match(source, /assets\/shop-icons\/\$\{assetKey\}\.webp/);
   assert.match(source, /readAssetSourcePath\(asset\.sourcePath, getEquipmentAssetSourcePrefix\(kind\), "asset\.sourcePath", \["\.png", "\.webp"\]\)/);
   assert.match(source, /getEquipmentAssetLowSourcePrefix\(kind\)/);
+});
+
+test("generated equipment shop icons exist as standardized square assets", async () => {
+  const generatedRecords = JSON.parse(readFileSync(join(root, "src", "generated", "equipmentItems.generated.json"), "utf8"));
+
+  for (const record of generatedRecords) {
+    const iconPath = join(root, "src", "assets", "shop-icons", `${record.asset.key}.webp`);
+
+    assert.equal(existsSync(iconPath), true, `Missing shop icon for ${record.asset.key}`);
+    const metadata = await sharp(iconPath).metadata();
+
+    assert.equal(metadata.width, 160, `Unexpected shop icon width for ${record.asset.key}`);
+    assert.equal(metadata.height, 160, `Unexpected shop icon height for ${record.asset.key}`);
+  }
 });
 
 test("vite dev middleware auto-generates mirrored armor pairs during promotion", () => {
@@ -195,6 +220,7 @@ test("vite dev middleware auto-generates mirrored armor pairs during promotion",
   assert.match(source, /mirrorPromotedEquipmentTuning/);
   assert.match(source, /x: -tuning\.x/);
   assert.match(source, /angle: -tuning\.angle/);
+  assert.match(source, /flipX: false/);
   assert.match(source, /\.flop\(\)/);
   assert.match(source, /upsertGeneratedEquipmentRecords\(records, promotedRecords\)/);
   assert.match(source, /updated: promotedRecords\.length/);

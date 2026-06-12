@@ -1,4 +1,4 @@
-import { type HeroItemId } from "./hero";
+import { HERO_ITEM_CATALOG, type HeroItemId } from "./hero";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
 
 const SHOP_ICON_ASSET_URLS = import.meta.glob("./assets/shop-icons/*.webp", {
@@ -14,10 +14,20 @@ const SHOP_ITEM_ICON_URLS = Object.fromEntries(
 let shopItemIconPrewarmPromise: Promise<void> | undefined;
 const shopItemIconPrewarmImages = new Set<HTMLImageElement>();
 
-export function getShopProductIconUrl(itemIds: HeroItemId[]): string | undefined {
-  const representativeItemId = [...itemIds].reverse().find((itemId) => SHOP_ITEM_ICON_URLS[itemId]);
+export function getShopProductIconUrl(itemIds: readonly HeroItemId[]): string | undefined {
+  const representativeItemId = getRepresentativeShopItemIconId(itemIds);
 
   return representativeItemId ? SHOP_ITEM_ICON_URLS[representativeItemId] : undefined;
+}
+
+function getRepresentativeShopItemIconId(itemIds: readonly HeroItemId[]): HeroItemId | undefined {
+  const frontItemId = itemIds.find((itemId) => {
+    const slot = HERO_ITEM_CATALOG[itemId]?.equipmentSlot;
+
+    return slot?.startsWith("front") && SHOP_ITEM_ICON_URLS[itemId];
+  });
+
+  return frontItemId ?? [...itemIds].reverse().find((itemId) => SHOP_ITEM_ICON_URLS[itemId]);
 }
 
 export function prewarmShopItemIconsForBrowserCache(): Promise<void> {
