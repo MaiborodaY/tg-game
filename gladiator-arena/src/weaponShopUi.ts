@@ -9,7 +9,6 @@ import {
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
-  getShopRarityShortLabel,
   type ShopItemRarity,
 } from "./shopPresentation";
 
@@ -289,7 +288,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.type = "button";
     button.title = product.name;
     button.setAttribute("aria-label", `${product.name}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${getShopProductActionLabel(actionState, product.price)}`);
-    button.append(createProductRarityBadge(rarity), createProductIcon(iconUrl));
+    button.append(createProductIcon(iconUrl));
     if (actionState === "buy" || actionState === "no-gold") {
       button.append(createProductStats("DM", damage, product.price));
     }
@@ -384,16 +383,6 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   icon.draggable = false;
 
   return icon;
-}
-
-function createProductRarityBadge(rarity: ShopItemRarity): HTMLElement {
-  const badge = document.createElement("span");
-
-  badge.className = "armory-shop__rarity-badge";
-  badge.textContent = getShopRarityShortLabel(rarity);
-  badge.setAttribute("aria-hidden", "true");
-
-  return badge;
 }
 
 function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {

@@ -168,7 +168,7 @@ export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
     id: STARTER_HELMET_ID,
     name: "Starter Helmet",
     kind: "armor",
-    rarity: "common",
+    rarity: "uncommon",
     armorCategory: "leather",
     equipmentSlot: "helmet",
     armorHp: STARTER_ARMOR_HP,

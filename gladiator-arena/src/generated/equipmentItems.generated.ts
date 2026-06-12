@@ -29,7 +29,7 @@ export interface GeneratedEquipmentItemRecord {
 
 export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [
   {
-    item: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","kind":"armor","armorCategory":"chain","equipmentSlot":"helmet","armorHp":4,"rarity":"rare"},
+    item: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","kind":"armor","armorCategory":"chain","equipmentSlot":"helmet","armorHp":100,"rarity":"rare"},
     assetKeys: {"helmetAssetKey":"helmet-chainmail-01"},
     equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -39,10 +39,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       sourcePath: "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp",
     },
-    armoryProduct: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","price":0,"itemIds":["generated_equipment_helmet_chainmail_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","price":100,"itemIds":["generated_equipment_helmet_chainmail_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":1,"rarity":"common"},
+    item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":1,"rarity":"epic"},
     assetKeys: {"helmetAssetKey":"helmet-cloth-01"},
     equipmentTuning: {"x":-1,"y":21,"angle":0,"scaleX":1.12,"scaleY":1.12,"flipX":false,"flipY":false},
     asset: {
@@ -55,7 +55,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","price":0,"itemIds":["generated_equipment_helmet_cloth_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_cloth_02","name":"Cloth Helmet 02","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":2,"rarity":"common"},
+    item: {"id":"generated_equipment_helmet_cloth_02","name":"Cloth Helmet 02","kind":"armor","armorCategory":"cloth","equipmentSlot":"helmet","armorHp":2,"rarity":"legendary"},
     assetKeys: {"helmetAssetKey":"helmet-cloth-02"},
     equipmentTuning: {"x":-1,"y":25,"angle":0,"scaleX":1.07,"scaleY":1.13,"flipX":false,"flipY":false},
     asset: {
