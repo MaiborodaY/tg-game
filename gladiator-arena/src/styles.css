@@ -1075,6 +1075,64 @@ h1 {
   filter: saturate(0.84) brightness(0.86);
 }
 
+.city-return-transition {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  width: min(430px, 100vw);
+  min-height: 100dvh;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 178, 76, 0.12), transparent 34%),
+    rgba(8, 2, 0, 0.88);
+  opacity: 0;
+  pointer-events: auto;
+  transform: translateX(-50%);
+  transition: opacity 260ms ease;
+}
+
+.city-return-transition[hidden] {
+  display: none;
+}
+
+.city-return-transition--active {
+  opacity: 1;
+}
+
+.city-return-transition--leaving {
+  opacity: 0;
+}
+
+.city-return-transition__panel {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: #ffe7a5;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow:
+    0 2px 0 #210803,
+    0 0 12px rgba(255, 190, 88, 0.35);
+}
+
+.city-return-transition__coin {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: url("./assets/ui/shop/gold-coin.webp") center / contain no-repeat;
+  filter:
+    drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 12px rgba(255, 184, 66, 0.42));
+  animation: city-return-coin-flip 920ms ease-in-out infinite;
+}
+
 .battle-result__frame {
   position: relative;
   display: grid;
@@ -1509,6 +1567,20 @@ h1 {
 @keyframes battle-result-button-wait {
   to {
     transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+@keyframes city-return-coin-flip {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  48% {
+    transform: rotateY(180deg) scale(0.92);
+  }
+
+  100% {
+    transform: rotateY(360deg) scale(1);
   }
 }
 

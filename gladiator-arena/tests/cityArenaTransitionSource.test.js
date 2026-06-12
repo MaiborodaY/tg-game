@@ -47,3 +47,27 @@ test("battle result waits briefly for city prewarm before enabling return", () =
   assert.match(stylesSource, /\.battle-result__button--waiting/);
   assert.match(stylesSource, /@keyframes battle-result-button-wait/);
 });
+
+test("return to city uses a coin fade until the city preview is ready", () => {
+  assert.match(mainSource, /function createCityReturnTransition/);
+  assert.match(mainSource, /city-return-transition__coin/);
+  assert.match(mainSource, /async function returnToCity/);
+  assert.match(mainSource, /showCityReturnTransition\(\)/);
+  assert.match(mainSource, /await mountCityPreviews\(\)/);
+  assert.match(mainSource, /await waitForCityReady\(\)/);
+  assert.match(mainSource, /hideCityReturnTransition\(\)/);
+  assert.match(mainSource, /cityScene\?\.ready/);
+  assert.match(mainSource, /waitForCityFirstPaint/);
+  assert.match(stylesSource, /\.city-return-transition/);
+  assert.match(stylesSource, /gold-coin\.webp/);
+  assert.match(stylesSource, /@keyframes city-return-coin-flip/);
+});
+
+test("first city entry uses the same coin fade until the city preview is ready", () => {
+  assert.match(mainSource, /city-return-transition city-return-transition--active/);
+  assert.match(mainSource, /async function finishInitialCityEntry/);
+  assert.match(mainSource, /await mountCityPreviews\(\)/);
+  assert.match(mainSource, /await waitForCityReady\(\)/);
+  assert.match(mainSource, /hideCityReturnTransition\(\)/);
+  assert.match(mainSource, /void finishInitialCityEntry\(\)/);
+});

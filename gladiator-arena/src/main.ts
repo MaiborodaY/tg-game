@@ -66,6 +66,8 @@ const CITY_CURTAIN_TRANSITION_MS = 620;
 const CITY_CURTAIN_SWITCH_MS = 210;
 const CITY_RETURN_MIN_READY_MS = 1800;
 const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
+const CITY_RETURN_TRANSITION_IN_MS = 260;
+const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const HERO_PORTRAIT_REFRESH_SLOTS = new Set(["helmet", "breastplate", "backShoulderguard", "frontShoulderguard"]);
@@ -77,10 +79,33 @@ let battleResultPresentationId = 0;
 let battleResultReturnReady = true;
 let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
+let isCityReturnTransitionRunning = false;
+let cityReturnTransitionToken = 0;
+
+const cityReturnTransition = createCityReturnTransition();
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
+
+function createCityReturnTransition(): HTMLElement {
+  const element = document.createElement("div");
+
+  element.className = "city-return-transition city-return-transition--active";
+  element.hidden = false;
+  element.setAttribute("role", "status");
+  element.setAttribute("aria-live", "polite");
+  element.innerHTML = `
+    <div class="city-return-transition__panel">
+      <span class="city-return-transition__coin" aria-hidden="true"></span>
+      <strong>Entering City...</strong>
+    </div>
+  `;
+
+  document.body.append(element);
+
+  return element;
+}
 
 function playCityCurtainTransition(onCovered?: () => void): void {
   if (!cityMenu) {
@@ -247,7 +272,7 @@ function handleActionArcClick(event: Event): void {
   logTurnProbe("button-click", state, enemyTimerStatus, actionId);
 }
 
-function mountCityPreviews(): void {
+function mountCityPreviews(): Promise<void> {
   if (cityHero && !cityScene) {
     cityScene = mountCityHeroPreview(cityHero, hero.equipment);
   }
@@ -255,6 +280,8 @@ function mountCityPreviews(): void {
   if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
     heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
   }
+
+  return cityScene?.ready ?? Promise.resolve();
 }
 
 function focusCityShop(mode: "armory" | "weaponShop"): void {
@@ -285,6 +312,35 @@ function prewarmShopItemIconsWhenIdle(): void {
   }
 
   window.setTimeout(prewarm, 250);
+}
+
+async function finishInitialCityEntry(): Promise<void> {
+  showCityReturnTransition();
+  await mountCityPreviews();
+  syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  await waitForCityReady();
+  hideCityReturnTransition();
+}
+
+function showCityReturnTransition(): void {
+  cityReturnTransition.hidden = false;
+  cityReturnTransition.classList.remove("city-return-transition--leaving");
+  void cityReturnTransition.offsetWidth;
+  cityReturnTransition.classList.add("city-return-transition--active");
+}
+
+function hideCityReturnTransition(): void {
+  cityReturnTransition.classList.add("city-return-transition--leaving");
+  cityReturnTransition.classList.remove("city-return-transition--active");
+  window.setTimeout(() => {
+    if (cityReturnTransition.classList.contains("city-return-transition--active")) {
+      return;
+    }
+
+    cityReturnTransition.hidden = true;
+    cityReturnTransition.classList.remove("city-return-transition--leaving");
+  }, CITY_RETURN_TRANSITION_IN_MS);
 }
 
 function startBattleResultReturnGate(): void {
@@ -324,6 +380,25 @@ function delay(durationMs: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, durationMs);
   });
+}
+
+function nextAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
+async function waitForCityFirstPaint(): Promise<void> {
+  await nextAnimationFrame();
+  await nextAnimationFrame();
+}
+
+async function waitForCityReady(): Promise<void> {
+  await Promise.race([
+    cityScene?.ready ?? Promise.resolve(),
+    delay(CITY_RETURN_TRANSITION_TIMEOUT_MS),
+  ]);
+  await waitForCityFirstPaint();
 }
 
 function unmountCityPreviews(): void {
@@ -491,8 +566,19 @@ function clearShopPreview(): void {
   setPlayerEquipment(hero.equipment);
 }
 
-function returnToCity(): void {
-  if (!battleResultReturnReady) {
+async function returnToCity(): Promise<void> {
+  if (!battleResultReturnReady || isCityReturnTransitionRunning) {
+    return;
+  }
+
+  const transitionToken = ++cityReturnTransitionToken;
+
+  isCityReturnTransitionRunning = true;
+  dom.cityButton.disabled = true;
+  showCityReturnTransition();
+  await delay(CITY_RETURN_TRANSITION_IN_MS);
+
+  if (cityReturnTransitionToken !== transitionToken) {
     return;
   }
 
@@ -511,13 +597,24 @@ function returnToCity(): void {
   dom.gameScreen.classList.remove("battle-screen--arena-entry");
   cityMenu?.classList.remove("city-menu--arena-transition");
   document.body.classList.remove("arena-active");
-  mountCityPreviews();
+  await mountCityPreviews();
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  await waitForCityReady();
+
+  if (cityReturnTransitionToken !== transitionToken) {
+    return;
+  }
+
+  hideCityReturnTransition();
+  isCityReturnTransitionRunning = false;
   syncTurnProbe();
 }
 
 function restart(options: { syncArena?: boolean } = {}): void {
+  cityReturnTransitionToken += 1;
+  isCityReturnTransitionRunning = false;
+  hideCityReturnTransition();
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
   resetBattleResultReturnGate();
@@ -542,7 +639,7 @@ armoryButton?.addEventListener("click", () => {
 });
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 renderCityHeroInfo(cityHeroWidgetRefs, hero);
-mountCityPreviews();
+void finishInitialCityEntry();
 prewarmShopItemIconsWhenIdle();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {

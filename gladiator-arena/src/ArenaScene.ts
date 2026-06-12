@@ -1223,6 +1223,7 @@ interface CityCloud {
 }
 
 export interface CitySceneApi {
+  ready: Promise<void>;
   focusDefault: (instant?: boolean) => void;
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
@@ -1871,10 +1872,24 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   let scene: CityHeroScene | undefined;
   let pendingCameraMode: CityCameraMode = "default";
   let pendingShopMenuTopY: number | undefined;
+  let resolveReady: () => void = () => undefined;
+  let isReady = false;
+  const ready = new Promise<void>((resolve) => {
+    resolveReady = resolve;
+  });
+  const resolveReadyOnce = () => {
+    if (isReady) {
+      return;
+    }
+
+    isReady = true;
+    resolveReady();
+  };
 
   const readyCallbackForGame = (readyScene: CityHeroScene) => {
     scene = readyScene;
     readyScene.setShopMenuTop(pendingShopMenuTopY);
+    resolveReadyOnce();
     if (pendingCameraMode === "armory") {
       readyScene.focusArmory();
       return;
@@ -1903,6 +1918,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   });
 
   return {
+    ready,
     focusDefault: (instant = false) => {
       pendingCameraMode = "default";
       scene?.focusDefault(instant);
@@ -1925,6 +1941,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
         cityReadyCallback = undefined;
       }
       scene = undefined;
+      resolveReadyOnce();
       game.destroy(true);
     },
   };

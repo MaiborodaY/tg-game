@@ -281,6 +281,13 @@ test("city return can prewarm city and hero preview assets through the browser c
   assert.equal(arenaSceneSource.includes("getPaperDollAssetLoadEntries(getPlayerSettings().lowEffects)"), true);
 });
 
+test("city hero preview exposes a ready promise for return transitions", () => {
+  assert.equal(arenaSceneSource.includes("ready: Promise<void>;"), true);
+  assert.equal(arenaSceneSource.includes("const ready = new Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("resolveReadyOnce();"), true);
+  assert.equal(arenaSceneSource.includes("return {\n    ready,"), true);
+});
+
 test("blocked hits use the shield icon popup instead of block text", () => {
   assert.equal(assetsSource.includes("DAMAGE_BLOCK_ICON_ASSET_KEY"), true);
   assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-block.webp"), true);
