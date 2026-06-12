@@ -1588,10 +1588,20 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode {
   --shop-city-product-columns: 4;
+  --shop-city-product-gap: 5px;
   --shop-city-product-row-height: clamp(104px, 15.8dvh, 124px);
   --shop-city-rail-width: 70px;
   --shop-city-panel-pad-x: 4px;
   --shop-city-rail-gap: 6px;
+  --shop-city-header-height: 28px;
+  --shop-city-subcategory-height: 24px;
+  --shop-city-active-subcategory-height: 0px;
+  --shop-city-products-height: calc(
+    var(--shop-city-product-row-height) + var(--shop-city-product-row-height) + var(--shop-city-product-gap)
+  );
+  --shop-city-tray-height: calc(
+    var(--shop-city-header-height) + var(--shop-city-active-subcategory-height) + var(--shop-city-products-height)
+  );
 
   z-index: 16;
   display: block;
@@ -1600,6 +1610,10 @@ body.debug-active .city-menu__portrait-button:active {
     radial-gradient(ellipse at 50% 46%, rgba(255, 211, 132, 0.08), transparent 44%),
     linear-gradient(180deg, rgba(53, 24, 13, 0.38) 0%, rgba(53, 24, 13, 0.56) 48%, rgba(22, 7, 3, 0.78) 100%);
   pointer-events: none;
+}
+
+.armory-shop--city-mode.armory-shop--has-subcategories {
+  --shop-city-active-subcategory-height: var(--shop-city-subcategory-height);
 }
 
 .armory-shop__panel {
@@ -1708,23 +1722,28 @@ body.debug-active .city-menu__portrait-button:active {
   bottom: auto;
   left: auto;
   order: 1;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows:
+    var(--shop-city-header-height)
+    var(--shop-city-active-subcategory-height)
+    var(--shop-city-products-height);
+  gap: 0;
   min-width: 0;
   width: 100%;
   max-width: 100%;
-  height: clamp(260px, 42dvh, 350px);
+  height: var(--shop-city-tray-height);
   max-height: none;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  overflow: visible;
   pointer-events: auto;
   animation: armory-shop-rise 320ms cubic-bezier(0.2, 0.88, 0.26, 1.08) both;
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__tray {
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: var(--shop-city-header-height) var(--shop-city-products-height);
 }
 
 .armory-shop__category-rail {
@@ -1743,10 +1762,10 @@ body.debug-active .city-menu__portrait-button:active {
   order: 2;
   grid-template-rows: repeat(var(--shop-category-count, 4), minmax(0, 1fr));
   align-content: stretch;
-  align-self: stretch;
+  align-self: end;
   gap: 5px;
   width: var(--shop-city-rail-width);
-  height: clamp(260px, 42dvh, 350px);
+  height: var(--shop-city-products-height);
   max-height: none;
   min-height: 0;
   overflow: hidden;
@@ -1815,11 +1834,11 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 8px;
   color: #fff0bd;
   background:
-    linear-gradient(135deg, rgba(255, 240, 189, 0.34), rgba(255, 211, 132, 0.08) 46%, transparent 47%),
-    radial-gradient(ellipse at 50% 16%, rgba(255, 211, 132, 0.22), transparent 58%),
-    linear-gradient(180deg, #b66a25 0%, #753316 62%, #35180d 100%);
+    linear-gradient(135deg, rgba(255, 240, 189, 0.18), rgba(255, 211, 132, 0.05) 46%, transparent 47%),
+    radial-gradient(ellipse at 50% 16%, rgba(255, 211, 132, 0.12), transparent 58%),
+    linear-gradient(180deg, #78401a 0%, #3e170b 64%, #170603 100%);
   box-shadow:
-    inset 0 2px 0 rgba(255, 240, 189, 0.32),
+    inset 0 2px 0 rgba(255, 240, 189, 0.2),
     inset 0 -3px 0 rgba(8, 2, 1, 0.36),
     0 2px 0 rgba(8, 2, 1, 0.74);
   text-shadow: 1px 1px 0 rgba(22, 7, 3, 0.9);
@@ -1834,6 +1853,14 @@ body.debug-active .city-menu__portrait-button:active {
     0 0 0 2px rgba(255, 211, 132, 0.34),
     0 0 12px rgba(255, 211, 132, 0.26),
     0 2px 0 rgba(8, 2, 1, 0.74);
+}
+
+.armory-shop--city-mode .armory-shop__category-button--active {
+  background:
+    linear-gradient(135deg, rgba(255, 240, 189, 0.34), rgba(255, 211, 132, 0.08) 46%, transparent 47%),
+    radial-gradient(ellipse at 50% 16%, rgba(255, 211, 132, 0.22), transparent 58%),
+    linear-gradient(180deg, #b66a25 0%, #753316 62%, #35180d 100%);
+  filter: brightness(1.08) saturate(1.06);
 }
 
 .armory-shop__category-button:active {
@@ -1897,6 +1924,51 @@ body.debug-active .city-menu__portrait-button:active {
   border-bottom: 1px solid rgba(255, 211, 132, 0.3);
 }
 
+.armory-shop--city-mode .armory-shop__header {
+  position: relative;
+  grid-row: 1;
+  grid-template-columns: 28px minmax(0, 1fr) max-content;
+  height: var(--shop-city-header-height);
+  min-height: 0;
+  padding: 1px 5px 2px;
+  overflow: visible;
+  border-bottom-color: rgba(255, 211, 132, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.1), transparent 27%, rgba(8, 2, 1, 0.32) 100%),
+    linear-gradient(90deg, rgba(22, 7, 3, 0.36), rgba(91, 40, 16, 0.2) 48%, rgba(22, 7, 3, 0.4)),
+    #3a180b;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.16),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.76),
+    0 1px 0 rgba(255, 211, 132, 0.12);
+  isolation: isolate;
+}
+
+.armory-shop--city-mode .armory-shop__header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 226, 142, 0.05) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 18% 42%, rgba(255, 211, 132, 0.1), transparent 36%),
+    radial-gradient(ellipse at 82% 50%, rgba(8, 2, 1, 0.16), transparent 42%);
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.armory-shop--city-mode .armory-shop__header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 211, 132, 0.32), transparent);
+  pointer-events: none;
+}
+
 .armory-shop__title {
   margin: 0;
   overflow: hidden;
@@ -1908,6 +1980,24 @@ body.debug-active .city-menu__portrait-button:active {
   text-shadow: 2px 2px 0 #35180d;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.armory-shop--city-mode .armory-shop__title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  max-width: calc(100% - 72px);
+  color: #e8c477;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 0.95;
+  text-shadow:
+    0 1px 0 #160703,
+    0 0 5px rgba(255, 211, 132, 0.18);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .armory-shop__gold,
@@ -1927,6 +2017,54 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: 0;
 }
 
+.armory-shop--city-mode .armory-shop__header-meta {
+  position: absolute;
+  top: 1px;
+  right: calc(-1 * (var(--shop-city-rail-width) + var(--shop-city-rail-gap)));
+  bottom: 1px;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1px;
+  width: var(--shop-city-rail-width);
+  min-width: 0;
+  padding: 2px 4px 1px;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 5px 0 0 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.06), rgba(8, 2, 1, 0.38)),
+    linear-gradient(90deg, rgba(8, 2, 1, 0.46), rgba(53, 24, 13, 0.3)),
+    rgba(16, 5, 2, 0.74);
+  box-shadow:
+    -1px 0 0 rgba(255, 211, 132, 0.18),
+    -4px 0 7px rgba(8, 2, 1, 0.28),
+    inset 1px 0 0 rgba(255, 240, 189, 0.08),
+    inset 0 1px 0 rgba(255, 240, 189, 0.06),
+    0 1px 0 rgba(255, 211, 132, 0.08);
+}
+
+.armory-shop--city-mode .armory-shop__header-meta::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: calc(-1 * var(--shop-city-rail-gap));
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(255, 211, 132, 0.36), transparent);
+  box-shadow: 1px 0 0 rgba(8, 2, 1, 0.72);
+  pointer-events: none;
+}
+
+.armory-shop--city-mode .armory-shop__gold,
+.armory-shop--city-mode .armory-shop__level {
+  color: #e9c77d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.53rem;
+  line-height: 0.92;
+  text-shadow: 0 1px 0 #160703;
+}
+
 .armory-shop__level {
   text-align: right;
 }
@@ -1939,7 +2077,8 @@ body.debug-active .city-menu__portrait-button:active {
   position: absolute;
   left: 4px;
   right: calc(var(--shop-city-rail-width) + var(--shop-city-rail-gap) + var(--shop-city-panel-pad-x));
-  bottom: calc(100% + 4px);
+  top: auto;
+  bottom: calc(var(--shop-city-products-height) + var(--shop-city-active-subcategory-height) - 1px);
   z-index: 4;
   width: auto;
   min-height: 0;
@@ -1959,6 +2098,20 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: 0;
   overflow-x: auto;
   padding-bottom: 1px;
+}
+
+.armory-shop--city-mode .armory-shop__subcategories {
+  position: absolute;
+  right: calc(-1 * var(--shop-city-rail-gap));
+  bottom: var(--shop-city-products-height);
+  left: 0;
+  z-index: 3;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  height: var(--shop-city-subcategory-height);
+  overflow: hidden;
+  padding: 0;
+  pointer-events: auto;
 }
 
 .armory-shop__subcategory-button {
@@ -1987,6 +2140,25 @@ body.debug-active .city-menu__portrait-button:active {
   white-space: nowrap;
 }
 
+.armory-shop--city-mode .armory-shop__subcategory-button {
+  height: 100%;
+  min-height: 0;
+  padding: 2px 6px;
+  border-width: 1px;
+  border-radius: 6px 6px 0 0;
+  color: #f0d08a;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.11), rgba(8, 2, 1, 0.34)),
+    rgba(35, 10, 4, 0.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.1),
+    0 1px 0 rgba(8, 2, 1, 0.62);
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 0.58rem;
+  line-height: 1;
+  text-shadow: 0 1px 0 #160703;
+}
+
 .armory-shop__subcategory-button--active {
   border-color: #fff0bd;
   color: #35180d;
@@ -1997,6 +2169,13 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 2px 0 rgba(255, 246, 210, 0.56),
     0 2px 0 rgba(22, 7, 3, 0.56);
   text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.78);
+}
+
+.armory-shop--city-mode .armory-shop__subcategory-button--active {
+  color: #2a1208;
+  background:
+    linear-gradient(180deg, #ffeab0 0%, #d8912f 100%);
+  text-shadow: 0 1px 0 rgba(255, 246, 210, 0.72);
 }
 
 .armory-shop__subcategory-button:active {
@@ -2187,6 +2366,14 @@ body.debug-active .city-menu__portrait-button:active {
   padding-right: 2px;
 }
 
+.armory-shop--city-mode .armory-shop__content {
+  grid-row: 3;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__content {
+  grid-row: 2;
+}
+
 .armory-shop__content--categories {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -2200,7 +2387,7 @@ body.debug-active .city-menu__portrait-button:active {
   grid-auto-columns: auto;
   grid-auto-rows: var(--shop-city-product-row-height);
   grid-template-columns: repeat(var(--shop-city-product-columns), minmax(0, 1fr));
-  gap: 5px;
+  gap: var(--shop-city-product-gap);
   justify-content: start;
   width: 100%;
   max-width: 100%;
@@ -2580,6 +2767,25 @@ body.debug-active .city-menu__portrait-button:active {
   text-align: center;
 }
 
+.armory-shop--city-mode .armory-shop__back {
+  position: relative;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border-color: #241007;
+  color: #f0d08a;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.26), rgba(101, 45, 17, 0.76)),
+    #4a1c0b;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.24),
+    inset 0 -2px 0 rgba(8, 2, 1, 0.28),
+    0 1px 0 rgba(8, 2, 1, 0.72);
+  font-size: 0.86rem;
+  text-shadow: 0 1px 0 #160703;
+}
+
 .armory-shop--city-mode .armory-shop__product-stat,
 .armory-shop--city-mode .armory-shop__product-price {
   min-height: 0;
@@ -2664,16 +2870,8 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 @media (max-height: 760px) {
-  .armory-shop--city-mode .armory-shop__tray {
-    height: clamp(244px, 40dvh, 318px);
-  }
-
   .armory-shop--city-mode {
     --shop-city-product-row-height: clamp(98px, 15dvh, 114px);
-  }
-
-  .armory-shop--city-mode .armory-shop__category-rail {
-    height: clamp(244px, 40dvh, 318px);
   }
 }
 

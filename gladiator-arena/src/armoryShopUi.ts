@@ -94,6 +94,32 @@ const PAIRED_ARMORY_SLOT_CONFIGS: PairedArmorySlotConfig[] = [
   { backSlot: "backBoot", frontSlot: "frontBoot", token: "boot", singularLabel: "Boot", pluralLabel: "Boots" },
 ];
 
+const ARMORY_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+};
+
+const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {
+  weaponMain: 0,
+  helmet: 0,
+  breastplate: 0,
+  backShoulderguard: 0,
+  frontShoulderguard: 0,
+  backWrist: 1,
+  frontWrist: 1,
+  backGlove: 2,
+  frontGlove: 2,
+  backGreave: 0,
+  frontGreave: 0,
+  backShinguard: 1,
+  frontShinguard: 1,
+  backBoot: 2,
+  frontBoot: 2,
+};
+
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
     id: "head",
@@ -246,6 +272,53 @@ function getArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduct[] {
   return category.subcategories.flatMap((subcategory) => subcategory.products);
 }
 
+function getSortedArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduct[] {
+  return [...getArmoryCategoryProducts(category)].sort(compareArmoryProducts);
+}
+
+function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): number {
+  const rarityDifference = getArmoryProductRarityOrder(left) - getArmoryProductRarityOrder(right);
+
+  if (rarityDifference !== 0) {
+    return rarityDifference;
+  }
+
+  const slotDifference = getArmoryProductSlotOrder(left) - getArmoryProductSlotOrder(right);
+
+  if (slotDifference !== 0) {
+    return slotDifference;
+  }
+
+  const armorDifference = getShopProductStat(left.itemIds, "armor") - getShopProductStat(right.itemIds, "armor");
+
+  if (armorDifference !== 0) {
+    return armorDifference;
+  }
+
+  const priceDifference = left.price - right.price;
+
+  if (priceDifference !== 0) {
+    return priceDifference;
+  }
+
+  return left.name.localeCompare(right.name);
+}
+
+function getArmoryProductRarityOrder(product: ArmoryProduct): number {
+  return ARMORY_RARITY_SORT_ORDER[getShopProductRarity(product.itemIds, product.rarity)];
+}
+
+function getArmoryProductSlotOrder(product: ArmoryProduct): number {
+  return Math.min(
+    Number.MAX_SAFE_INTEGER,
+    ...product.itemIds.map((itemId) => {
+      const slotKey = HERO_ITEM_CATALOG[itemId]?.equipmentSlot;
+
+      return slotKey ? ARMORY_SLOT_SORT_ORDER[slotKey] : Number.MAX_SAFE_INTEGER;
+    }),
+  );
+}
+
 function pairGeneratedArmoryProducts(products: ArmoryProduct[]): ArmoryProduct[] {
   const pairedProducts: ArmoryProduct[] = [];
   const usedProductIds = new Set<string>();
@@ -371,7 +444,6 @@ function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotCo
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
   let selectedCategoryId: string | undefined;
-  let selectedSubcategoryId: string | undefined;
   let previewProduct: ArmoryProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -461,7 +533,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   function open(): void {
     clearTransitionTimer();
     selectedCategoryId = ARMORY_CATEGORIES[0]?.id;
-    selectedSubcategoryId = ARMORY_CATEGORIES[0]?.subcategories[0]?.id;
     clearProductPreview();
     options.onOpen?.();
     scheduleShopTransition(() => {
@@ -495,11 +566,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   function render(): void {
     const hero = options.getHero();
     const selectedCategory = ARMORY_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? ARMORY_CATEGORIES[0]!;
-    const selectedSubcategory =
-      selectedCategory.subcategories.find((subcategory) => subcategory.id === selectedSubcategoryId) ?? selectedCategory.subcategories[0]!;
+    const selectedProducts = getSortedArmoryCategoryProducts(selectedCategory);
 
     selectedCategoryId = selectedCategory.id;
-    selectedSubcategoryId = selectedSubcategory.id;
     title.textContent = selectedCategory.name;
     gold.textContent = `GOLD ${hero.gold}`;
     level.textContent = `LVL ${hero.level}`;
@@ -507,7 +576,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     subcategories.replaceChildren();
     content.replaceChildren();
     selected.replaceChildren();
-    subcategories.hidden = selectedCategory.subcategories.length <= 1;
+    subcategories.hidden = true;
+    shop.classList.toggle("armory-shop--has-subcategories", false);
     selected.hidden = !previewProduct;
     content.classList.toggle("armory-shop__content--categories", false);
     content.classList.toggle("armory-shop__content--products", true);
@@ -518,20 +588,16 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
     });
 
-    selectedCategory.subcategories.forEach((subcategory) => {
-      subcategories.append(createSubcategoryButton(subcategory, subcategory.id === selectedSubcategory.id));
-    });
-
     if (previewProduct) {
       selected.append(createSelectedProductStrip(previewProduct, hero));
     }
 
-    if (selectedSubcategory.products.length === 0) {
+    if (selectedProducts.length === 0) {
       content.append(createEmptyState("No items"));
       return;
     }
 
-    selectedSubcategory.products.forEach((product) => {
+    selectedProducts.forEach((product) => {
       content.append(createProductButton(product, hero, previewProduct?.id === product.id));
     });
   }
@@ -573,26 +639,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.append(createCategoryLabel(category.shortLabel));
     button.addEventListener("click", () => {
       selectedCategoryId = category.id;
-      selectedSubcategoryId = category.subcategories[0]?.id;
-      clearProductPreview();
-      render();
-    });
-
-    return button;
-  }
-
-  function createSubcategoryButton(subcategory: ArmorySubcategory, isActive: boolean): HTMLButtonElement {
-    const button = document.createElement("button");
-
-    button.className = "armory-shop__subcategory-button";
-    button.classList.toggle("armory-shop__subcategory-button--active", isActive);
-    button.type = "button";
-    button.textContent = subcategory.name;
-    button.title = subcategory.name;
-    button.setAttribute("aria-label", subcategory.name);
-    button.setAttribute("aria-pressed", String(isActive));
-    button.addEventListener("click", () => {
-      selectedSubcategoryId = subcategory.id;
       clearProductPreview();
       render();
     });
