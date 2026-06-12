@@ -1,4 +1,4 @@
-import { TRAINING_WEAPON_ID, type HeroItemId, type HeroState } from "./hero";
+import { type HeroItemId, type HeroState } from "./hero";
 import { SHOP_GOLD_COIN_ICON_ASSET_URL } from "./assets";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
@@ -51,7 +51,7 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
     id: "swords",
     name: "Swords",
     shortLabel: "SW",
-    products: [{ id: "training-sword", name: "Training Sword", price: 0, itemIds: [TRAINING_WEAPON_ID] }, ...getGeneratedWeaponProducts("swords")],
+    products: getGeneratedWeaponProducts("swords"),
   },
   {
     id: "axes",

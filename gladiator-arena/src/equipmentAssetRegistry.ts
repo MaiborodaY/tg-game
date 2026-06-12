@@ -1,19 +1,3 @@
-import {
-  FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
-  FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_HELMET_LIGHT_ASSET_KEY,
-  FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
-} from "./assets";
 import { GENERATED_EQUIPMENT_ITEM_ASSET_KEYS } from "./generated/equipmentItems.generated";
 import type { HeroEquipmentSlotKey, HeroItemDefinition, HeroItemId } from "./hero";
 
@@ -113,30 +97,13 @@ const equipmentAssetSlotConfigs: EquipmentAssetSlotConfig[] = [
   { prefix: "helmet-", slot: "helmet", assetKey: "helmetAssetKey", label: "Helmet", kind: "armor" },
 ];
 
-const manualEquipmentAssetKeys = new Set([
-  FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
-  FIGHTER_HELMET_LIGHT_ASSET_KEY,
-  FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
-  FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
-  FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY,
-  FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY,
-  FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY,
-]);
-
 const generatedEquipmentAssetKeys = new Set(
   Object.values(GENERATED_EQUIPMENT_ITEM_ASSET_KEYS).flatMap((assetKeys) =>
     assetKeys ? Object.values(assetKeys).filter((assetKey): assetKey is string => typeof assetKey === "string") : [],
   ),
 );
 
-const registeredEquipmentAssetKeys = new Set([...manualEquipmentAssetKeys, ...generatedEquipmentAssetKeys]);
+const registeredEquipmentAssetKeys = generatedEquipmentAssetKeys;
 
 export const AUTO_EQUIPMENT_ITEM_RECORDS = createAutoEquipmentAssetEntries()
   .flatMap(([assetPath, url]) => createAutoEquipmentItemRecord(assetPath, url))

@@ -26,13 +26,10 @@ import {
 import { getDomRefs, renderDom } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
-  TRAINING_WEAPON_ID,
   applyBattleReward,
   buyAndEquipHeroItems,
   createCombatStateFromHero,
   createDefaultHero,
-  createDefaultHeroEquipment,
-  createStarterHeroInventory,
   getBattleReward,
   type HeroEquipment,
   type HeroItemId,
@@ -57,8 +54,6 @@ const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
 let hero: HeroState = {
   ...createDefaultHero(),
-  equipment: createDebugHeroEquipment(),
-  inventory: createStarterHeroInventory(),
 };
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
@@ -73,13 +68,6 @@ let weaponShop: WeaponShopApi | undefined;
 let armoryShop: ArmoryShopApi | undefined;
 
 mountCityTimeToggle(cityTimeToggle, cityMenu);
-
-function createDebugHeroEquipment(): HeroEquipment {
-  return {
-    ...createDefaultHeroEquipment(),
-    weaponMain: TRAINING_WEAPON_ID,
-  };
-}
 
 interface HeroPortraitButtonDragState {
   pointerId: number;

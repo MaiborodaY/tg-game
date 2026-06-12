@@ -25,7 +25,9 @@ test("auto equipment registry can expose weapon assets", () => {
   assert.match(registrySource, /weaponClass: getWeaponClassFromText\(suffix\)/);
   assert.match(registrySource, /text\.includes\("bow"\)/);
   assert.match(registrySource, /text\.includes\("axe"\)/);
-  assert.match(registrySource, /FIGHTER_WEAPON_SWORD_01_ASSET_KEY/);
+  assert.match(registrySource, /GENERATED_EQUIPMENT_ITEM_ASSET_KEYS/);
+  assert.match(registrySource, /const generatedEquipmentAssetKeys = new Set/);
+  assert.match(registrySource, /const registeredEquipmentAssetKeys = generatedEquipmentAssetKeys/);
 });
 
 test("auto equipment registry prefers low webp paths for png previews", () => {

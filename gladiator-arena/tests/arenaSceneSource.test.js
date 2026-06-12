@@ -179,6 +179,28 @@ test("debug character viewer has a compact shop preview mode", () => {
   assert.equal(arenaSceneSource.includes("Phaser.Scale.RESIZE"), true);
 });
 
+test("shop equipment preview updates gear without resetting the animated pose", () => {
+  const rigTuningSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function applyRigPartDebugTuning"),
+    arenaSceneSource.indexOf("function syncPaperDollEquipmentState"),
+  );
+  const equipmentSyncSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function syncPaperDollEquipmentState"),
+    arenaSceneSource.indexOf("function applyPaperDollEquipmentTuning"),
+  );
+
+  assert.equal(arenaSceneSource.includes("areHeroEquipmentStatesEqual(activePlayerEquipment, equipment)"), true);
+  assert.equal((arenaSceneSource.match(/subscribePlayerEquipmentChanges\(\(\) => this\.syncPlayerEquipment\(\)\)/g) ?? []).length, 2);
+  assert.equal(arenaSceneSource.includes("subscribePlayerEquipmentChanges(() => this.sync())"), false);
+  assert.equal(arenaSceneSource.includes("private syncPlayerEquipment(): void"), true);
+  assert.equal(rigTuningSource.includes("applyPaperDollEquipmentStateTuning(rig);"), true);
+  assert.equal(rigTuningSource.includes("applyPaperDollEquipmentTuning("), false);
+  assert.equal(equipmentSyncSource.includes("applyPaperDollEquipmentStateTuning(rig);"), true);
+  assert.equal(equipmentSyncSource.includes("syncPaperDollEquipmentVisibility(rig);"), true);
+  assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig\);[\s\S]*return;/);
+  assert.match(arenaSceneSource, /syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount\);/);
+});
+
 test("city shop hero is centered without manual drag offset", () => {
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 0"), true);
   assert.equal(arenaSceneSource.includes("getShopHeroOffsetY"), false);

@@ -51,9 +51,17 @@ function loadStageLayoutModule() {
 }
 
 const stageLayout = loadStageLayoutModule();
+const DEFAULT_STAGE_ORIGIN_X = 215;
+const DEFAULT_PLAYER_STAGE_X = -130;
+const DEFAULT_ENEMY_STAGE_X = 130;
+const START_DISTANCE = 3;
 
 function makeCombatState(playerPosition, enemyPosition, distance = 3) {
   return { playerPosition, enemyPosition, distance };
+}
+
+function getExpectedPositionStep(playerBaseX, enemyBaseX) {
+  return (enemyBaseX - playerBaseX - stageLayout.CLINCH_VISUAL_GAP) / START_DISTANCE;
 }
 
 test("stage layout uses default origin for the regular game", () => {
@@ -72,18 +80,21 @@ test("stage layout moves only the enemy when only the enemy approaches", () => {
   const enemyClose = stageLayout.getStageLayout(makeCombatState(0, 0));
 
   assert.equal(enemyClose.playerX, start.playerX);
-  assert.equal(enemyClose.enemyX, 129);
+  assert.equal(enemyClose.enemyX, start.playerX + stageLayout.CLINCH_VISUAL_GAP);
   assert.equal(enemyClose.enemyX - enemyClose.playerX, stageLayout.CLINCH_VISUAL_GAP);
 });
 
 test("stage layout applies combat movement without letting fighters cross", () => {
   const near = stageLayout.getStageLayout(makeCombatState(2, 3));
   const clinch = stageLayout.getStageLayout(makeCombatState(3, 3));
+  const playerBaseX = DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X;
+  const enemyBaseX = DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X;
+  const positionStep = getExpectedPositionStep(playerBaseX, enemyBaseX);
 
-  assert.equal(near.playerX, 229);
-  assert.equal(near.enemyX, 345);
-  assert.equal(clinch.playerX, 301);
-  assert.equal(clinch.enemyX, 345);
+  assert.equal(near.playerX, playerBaseX + 2 * positionStep);
+  assert.equal(near.enemyX, enemyBaseX);
+  assert.equal(clinch.playerX, playerBaseX + 3 * positionStep);
+  assert.equal(clinch.enemyX, enemyBaseX);
   assert.equal(clinch.enemyX - clinch.playerX, stageLayout.CLINCH_VISUAL_GAP);
 });
 
@@ -111,10 +122,13 @@ test("stage layout uses debug tuning as an override, not a separate coordinate s
     playerScale: 1.4,
     enemyScale: 0.8,
   });
+  const playerBaseX = 200 - 60;
+  const enemyBaseX = 200 + 80;
+  const positionStep = getExpectedPositionStep(playerBaseX, enemyBaseX);
 
-  assert.equal(layout.playerX, 172);
+  assert.equal(layout.playerX, playerBaseX + positionStep);
   assert.equal(layout.playerY, 520);
-  assert.equal(layout.enemyX, 248);
+  assert.equal(layout.enemyX, enemyBaseX - positionStep);
   assert.equal(layout.enemyY, 490);
   assert.equal(layout.playerScale, 1.4);
   assert.equal(layout.enemyScale, 0.8);

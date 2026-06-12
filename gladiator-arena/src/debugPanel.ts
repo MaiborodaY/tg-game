@@ -1468,7 +1468,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     select.append(option);
   });
 
-  GENERATED_EQUIPMENT_ITEM_RECORDS.forEach((record) => {
+  getRemovableGeneratedEquipmentRecords().forEach((record) => {
     const option = document.createElement("option");
 
     option.value = record.item.id;
@@ -2961,7 +2961,7 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
   const record = getSelectedAutoEquipmentRecord(select?.value);
   const isAvailable = Boolean(record);
-  const hasGeneratedItems = GENERATED_EQUIPMENT_ITEM_RECORDS.length > 0;
+  const hasGeneratedItems = getRemovableGeneratedEquipmentRecords().length > 0;
 
   if (record && isEquipmentSlotKey(record.item.equipmentSlot)) {
     activeEquipmentSlot = record.item.equipmentSlot;
@@ -3350,6 +3350,10 @@ function getSelectedAutoEquipmentRecord(itemId: string | undefined): (typeof AUT
 
 function getSelectedGeneratedEquipmentRecord(itemId: string | undefined): (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number] | undefined {
   return GENERATED_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId);
+}
+
+function getRemovableGeneratedEquipmentRecords(): (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number][] {
+  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.item.id.startsWith("generated_equipment_"));
 }
 
 function getCurrentEquipmentSlotTuning(slotKey: EquipmentSlotKey): EquipmentTuning {

@@ -29,11 +29,13 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugMainSource.includes("mountDebugPanel"), true);
 });
 
-test("debug app starts the hero without starter armor", () => {
-  assert.equal(debugMainSource.includes("equipment: createDebugHeroEquipment()"), true);
-  assert.equal(debugMainSource.includes("createDefaultHeroEquipment()"), true);
-  assert.equal(debugMainSource.includes("weaponMain: TRAINING_WEAPON_ID"), true);
-  assert.equal(debugMainSource.includes("equipment: createStarterHeroEquipment()"), false);
+test("debug app starts the hero from the empty default state", () => {
+  assert.equal(debugMainSource.includes("...createDefaultHero()"), true);
+  assert.equal(debugMainSource.includes("createDebugHeroEquipment()"), false);
+  assert.equal(debugMainSource.includes("TRAINING_WEAPON_ID"), false);
+  assert.equal(debugMainSource.includes("createStarterHeroEquipment()"), false);
+  assert.equal(debugMainSource.includes("createStarterHeroInventory()"), false);
+  assert.equal(debugMainSource.includes("weaponMain:"), false);
 });
 
 test("debug preview uses the same flask resource HUD as the game", () => {

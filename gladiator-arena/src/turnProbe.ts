@@ -1,4 +1,4 @@
-import type { ActionId, CombatState } from "./combat";
+import type { CombatState } from "./combat";
 
 export type EnemyTimerStatus = "idle" | "scheduled" | "running";
 
@@ -40,6 +40,7 @@ export function formatTurnProbe(state: CombatState, timerStatus: EnemyTimerStatu
   ].join(" | ");
 }
 
-export function logTurnProbe(_event: string, _state: CombatState, _timerStatus: EnemyTimerStatus, _actionId?: ActionId): void {
+export function logTurnProbe(..._args: unknown[]): void {
+  void _args;
   // Intentionally silent in production.
 }

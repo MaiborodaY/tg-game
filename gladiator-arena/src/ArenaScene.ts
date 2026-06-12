@@ -56,7 +56,6 @@ import {
   FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY,
   FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY,
-  FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
@@ -93,7 +92,6 @@ import {
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroWeaponClass,
-  CLOTH_BREASTPLATE_ID,
 } from "./hero";
 import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
@@ -729,25 +727,8 @@ const PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS: Record<PaperDollEquipmentSlotKey, Paper
 };
 const paperDollEquipmentSlotConfigs = new WeakMap<FighterPart, PaperDollPartAssetConfig>();
 
-const HERO_ITEM_EQUIPMENT_ASSET_KEYS: Partial<Record<HeroItemId, PaperDollEquipmentAssetKeys>> = {
-  training_sword: { weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY },
-  starter_helmet: { helmetAssetKey: FIGHTER_HELMET_LIGHT_ASSET_KEY },
-  starter_breastplate: { breastplateAssetKey: FIGHTER_BREASTPLATE_LIGHT_ASSET_KEY },
-  [CLOTH_BREASTPLATE_ID]: { breastplateAssetKey: FIGHTER_BREASTPLATE_CLOTH_ASSET_KEY },
-  starter_back_shoulderguard: { backShoulderguardAssetKey: FIGHTER_BACK_SHOULDERGUARD_LIGHT_ASSET_KEY },
-  starter_front_shoulderguard: { frontShoulderguardAssetKey: FIGHTER_FRONT_SHOULDERGUARD_LIGHT_ASSET_KEY },
-  starter_back_wrist: { backWristAssetKey: FIGHTER_BACK_WRIST_LIGHT_ASSET_KEY },
-  starter_front_wrist: { frontWristAssetKey: FIGHTER_FRONT_WRIST_LIGHT_ASSET_KEY },
-  starter_back_greave: { backGreaveAssetKey: FIGHTER_BACK_GREAVE_LIGHT_ASSET_KEY },
-  starter_front_greave: { frontGreaveAssetKey: FIGHTER_FRONT_GREAVE_LIGHT_ASSET_KEY },
-  starter_back_shinguard: { backShinguardAssetKey: FIGHTER_BACK_SHINGUARD_LIGHT_ASSET_KEY },
-  starter_front_shinguard: { frontShinguardAssetKey: FIGHTER_FRONT_SHINGUARD_LIGHT_ASSET_KEY },
-  starter_back_boot: { backBootAssetKey: FIGHTER_BACK_BOOT_LIGHT_ASSET_KEY },
-  starter_front_boot: { frontBootAssetKey: FIGHTER_FRONT_BOOT_LIGHT_ASSET_KEY },
-};
-
 function getHeroItemEquipmentAssetKeys(itemId: HeroItemId): PaperDollEquipmentAssetKeys | undefined {
-  return HERO_ITEM_EQUIPMENT_ASSET_KEYS[itemId] ?? GENERATED_EQUIPMENT_ITEM_ASSET_KEYS[itemId] ?? AUTO_EQUIPMENT_ITEM_ASSET_KEYS[itemId];
+  return GENERATED_EQUIPMENT_ITEM_ASSET_KEYS[itemId] ?? AUTO_EQUIPMENT_ITEM_ASSET_KEYS[itemId];
 }
 
 export type CityTimeOfDay = "night" | "day";
@@ -896,8 +877,16 @@ function getActivePaperDollEquipmentAssetKeys<T extends Partial<PaperDollEquipme
 }
 
 export function setPlayerEquipment(equipment: HeroEquipment): void {
+  if (activePlayerEquipment && areHeroEquipmentStatesEqual(activePlayerEquipment, equipment)) {
+    return;
+  }
+
   activePlayerEquipment = { ...equipment };
   notifyPlayerEquipmentChanged();
+}
+
+function areHeroEquipmentStatesEqual(left: HeroEquipment, right: HeroEquipment): boolean {
+  return HERO_EQUIPMENT_SLOT_KEYS.every((slotKey) => (left[slotKey] ?? null) === (right[slotKey] ?? null));
 }
 
 export function getCityTimeOfDay(): CityTimeOfDay {
@@ -1281,7 +1270,7 @@ class CityHeroScene extends Phaser.Scene {
     this.syncCameraLayers();
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.syncPlayerEquipment());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
         if (this.fighter) {
@@ -1389,6 +1378,13 @@ class CityHeroScene extends Phaser.Scene {
     this.syncFighterLayout();
     applyCityHeroLighting(fighter, this.cityLightingAmount);
     this.syncCamera(true);
+  }
+
+  private syncPlayerEquipment(): void {
+    syncPaperDollEquipmentState(this.fighter?.paperDollRig);
+    if (this.fighter) {
+      applyCityHeroLighting(this.fighter, this.cityLightingAmount);
+    }
   }
 
   private syncTimeOfDay(timeOfDay: CityTimeOfDay, instant = false): void {
@@ -2140,7 +2136,7 @@ class DebugCharacterScene extends Phaser.Scene {
       });
     }
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.sync());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.syncPlayerEquipment());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
     });
@@ -2200,6 +2196,15 @@ class DebugCharacterScene extends Phaser.Scene {
       this.fighter.paperDollRig,
       debugTuning.characterCanvasEditMode === "parts" ? debugTuning.selectedRigParts : [],
     );
+  }
+
+  private syncPlayerEquipment(): void {
+    if (this.viewerMode === "shop") {
+      syncPaperDollEquipmentState(this.fighter?.paperDollRig);
+      return;
+    }
+
+    this.sync();
   }
 
   private getShopCharacterLayout(): CityHeroLayout {
@@ -3006,9 +3011,6 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   const activeDebugTuning = getActiveDebugTuning();
   const rigParts = activeDebugTuning?.rigParts;
   const faceParts = activeDebugTuning?.faceParts ?? DEFAULT_FACE_PARTS;
-  const equipment = activeDebugTuning?.equipment ?? DEFAULT_EQUIPMENT;
-  const equipmentItems = activeDebugTuning?.equipmentItems ?? DEFAULT_EQUIPMENT_ITEM_TUNING;
-  const equipmentState = rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
 
   RIG_PART_KEYS.forEach((key) => {
     const part = rig.parts[key];
@@ -3031,6 +3033,24 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   applyFacePartTransform(rig.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
   applyFacePartTransform(rig.shadow?.faceParts.eyeLeft, HEAD_FACE_LEFT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeLeft);
   applyFacePartTransform(rig.shadow?.faceParts.eyeRight, HEAD_FACE_RIGHT_EYE_X, HEAD_FACE_EYE_Y, faceParts.eyeRight);
+  applyPaperDollEquipmentStateTuning(rig);
+}
+
+function syncPaperDollEquipmentState(rig: PaperDollRig | undefined): void {
+  if (!rig) {
+    return;
+  }
+
+  applyPaperDollEquipmentStateTuning(rig);
+  syncPaperDollEquipmentVisibility(rig);
+}
+
+function applyPaperDollEquipmentStateTuning(rig: PaperDollRig): void {
+  const activeDebugTuning = getActiveDebugTuning();
+  const equipment = activeDebugTuning?.equipment ?? DEFAULT_EQUIPMENT;
+  const equipmentItems = activeDebugTuning?.equipmentItems ?? DEFAULT_EQUIPMENT_ITEM_TUNING;
+  const equipmentState = rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
+
   applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState);
   if (rig.shadow) {
     applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment, equipmentItems, equipmentState);

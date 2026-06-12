@@ -2091,13 +2091,7 @@ function readNonEmptyStringArray(value: unknown, label: string): string[] {
   return [
     ...new Set(
       value.map((entry, index) => {
-        const item = readNonEmptyString(entry, `${label}.${index}`);
-
-        if (!item.startsWith("generated_equipment_")) {
-          throw new Error("Only generated equipment items can be edited.");
-        }
-
-        return item;
+        return readNonEmptyString(entry, `${label}.${index}`);
       }),
     ),
   ];

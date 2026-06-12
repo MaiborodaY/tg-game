@@ -10,5 +10,5 @@ test("fight log toast is hidden from the active battle layout", () => {
   const source = readFileSync(join(root, "src", "styles.css"), "utf8");
 
   assert.match(source, /\.battle-screen \.combat-toast \{\s*display: none;\s*\}/);
-  assert.match(source, /\.battle-screen \.arena-fighters-strip \{[^}]*bottom: calc\(8px \+ env\(safe-area-inset-bottom\)\);[^}]*\}/s);
+  assert.match(source, /\.battle-screen \.arena-fighters-strip \{[^}]*bottom: max\(6px, calc\(env\(safe-area-inset-bottom\) \+ var\(--hud-bottom-offset, -16px\)\)\);[^}]*\}/s);
 });

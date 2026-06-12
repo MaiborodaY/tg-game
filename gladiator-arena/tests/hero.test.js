@@ -32,6 +32,62 @@ function loadTypeScriptModule(modulePath, context = {}) {
 }
 
 const combat = loadTypeScriptModule("../src/combat.ts");
+const generatedItems = {
+  weapon_sword_01: {
+    id: "weapon_sword_01",
+    name: "Sword 01",
+    kind: "weapon",
+    rarity: "common",
+    weaponClass: "sword",
+    equipmentSlot: "weaponMain",
+    damageBonus: 1,
+  },
+  cloth_breastplate_01: {
+    id: "cloth_breastplate_01",
+    name: "Cloth Breastplate 01",
+    kind: "armor",
+    rarity: "common",
+    armorCategory: "cloth",
+    equipmentSlot: "breastplate",
+    armorHp: 1,
+  },
+  leather_helmet_01: {
+    id: "leather_helmet_01",
+    name: "Leather Helmet 01",
+    kind: "armor",
+    rarity: "uncommon",
+    armorCategory: "leather",
+    equipmentSlot: "helmet",
+    armorHp: 1,
+  },
+  leather_breastplate_01: {
+    id: "leather_breastplate_01",
+    name: "Leather Breastplate 01",
+    kind: "armor",
+    rarity: "uncommon",
+    armorCategory: "leather",
+    equipmentSlot: "breastplate",
+    armorHp: 1,
+  },
+  leather_back_wrist_01: {
+    id: "leather_back_wrist_01",
+    name: "Leather Back Wrist 01",
+    kind: "armor",
+    rarity: "uncommon",
+    armorCategory: "leather",
+    equipmentSlot: "backWrist",
+    armorHp: 2,
+  },
+  leather_front_wrist_01: {
+    id: "leather_front_wrist_01",
+    name: "Leather Front Wrist 01",
+    kind: "armor",
+    rarity: "uncommon",
+    armorCategory: "leather",
+    equipmentSlot: "frontWrist",
+    armorHp: 0,
+  },
+};
 const hero = loadTypeScriptModule("../src/hero.ts", {
   require: (id) => {
     if (id === "./combat") {
@@ -40,8 +96,9 @@ const hero = loadTypeScriptModule("../src/hero.ts", {
 
     if (id === "./generated/equipmentItems.generated") {
       return {
-        GENERATED_EQUIPMENT_ITEM_CATALOG: {},
-        GENERATED_EQUIPMENT_ITEM_IDS: [],
+        GENERATED_EQUIPMENT_ITEM_CATALOG: generatedItems,
+        GENERATED_EQUIPMENT_ITEM_IDS: Object.keys(generatedItems),
+        GENERATED_EQUIPMENT_ITEM_RECORDS: Object.values(generatedItems).map((item) => ({ item })),
       };
     }
 
@@ -49,34 +106,29 @@ const hero = loadTypeScriptModule("../src/hero.ts", {
   },
 });
 
-test("cloth breastplate is cataloged but not starter inventory", () => {
-  assert.equal(hero.HERO_ITEM_IDS.includes(hero.CLOTH_BREASTPLATE_ID), true);
-  assert.equal(hero.HERO_ITEM_CATALOG[hero.STARTER_BREASTPLATE_ID]?.name, "Leather Breastplate");
-  assert.equal(hero.HERO_ITEM_CATALOG[hero.CLOTH_BREASTPLATE_ID]?.name, "Cloth Breastplate");
-  assert.equal(hero.HERO_ITEM_CATALOG[hero.CLOTH_BREASTPLATE_ID]?.equipmentSlot, "breastplate");
-
-  const starterItemIds = hero.createStarterHeroInventory().map((entry) => entry.itemId);
-
-  assert.equal(starterItemIds.includes(hero.STARTER_BREASTPLATE_ID), true);
-  assert.equal(starterItemIds.includes(hero.CLOTH_BREASTPLATE_ID), false);
+test("equipment catalog is sourced from generated items", () => {
+  assert.equal(hero.HERO_ITEM_IDS.includes("cloth_breastplate_01"), true);
+  assert.equal(hero.HERO_ITEM_IDS.includes("leather_breastplate_01"), true);
+  assert.equal(hero.HERO_ITEM_CATALOG.leather_breastplate_01?.name, "Leather Breastplate 01");
+  assert.equal(hero.HERO_ITEM_CATALOG.cloth_breastplate_01?.name, "Cloth Breastplate 01");
+  assert.equal(hero.HERO_ITEM_CATALOG.cloth_breastplate_01?.equipmentSlot, "breastplate");
+  assert.equal(hero.createDefaultHeroInventory().length, 0);
 });
 
-test("hero equipment has empty glove slots separate from wrists", () => {
+test("hero starts with empty equipment including gloves and wrists", () => {
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backWrist"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontWrist"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backGlove"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontGlove"), true);
 
-  assert.equal(hero.createStarterHeroEquipment().backWrist, hero.STARTER_BACK_WRIST_ID);
-  assert.equal(hero.createStarterHeroEquipment().frontWrist, hero.STARTER_FRONT_WRIST_ID);
+  assert.equal(hero.createDefaultHeroEquipment().backWrist, null);
+  assert.equal(hero.createDefaultHeroEquipment().frontWrist, null);
   assert.equal(hero.createDefaultHeroEquipment().backGlove, null);
   assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
-  assert.equal(hero.createStarterHeroEquipment().backGlove, null);
-  assert.equal(hero.createStarterHeroEquipment().frontGlove, null);
 });
 
 test("weapon class defaults to sword and can be inferred for generated weapons", () => {
-  assert.equal(hero.HERO_ITEM_CATALOG[hero.TRAINING_WEAPON_ID]?.weaponClass, "sword");
+  assert.equal(hero.HERO_ITEM_CATALOG.weapon_sword_01?.weaponClass, "sword");
   assert.equal(
     hero.getHeroItemWeaponClass({
       id: "generated_equipment_weapon_bow_01",
@@ -99,9 +151,9 @@ test("weapon class defaults to sword and can be inferred for generated weapons",
   );
 });
 
-test("starter cloth and training sword stay common while leather catalog items are uncommon", () => {
-  assert.equal(hero.HERO_ITEM_CATALOG[hero.TRAINING_WEAPON_ID]?.rarity, "common");
-  assert.equal(hero.HERO_ITEM_CATALOG[hero.CLOTH_BREASTPLATE_ID]?.rarity, "common");
+test("cloth and sword stay common while leather catalog items are uncommon", () => {
+  assert.equal(hero.HERO_ITEM_CATALOG.weapon_sword_01?.rarity, "common");
+  assert.equal(hero.HERO_ITEM_CATALOG.cloth_breastplate_01?.rarity, "common");
 
   for (const item of Object.values(hero.HERO_ITEM_CATALOG)) {
     if (item?.armorCategory === "leather") {
@@ -114,22 +166,22 @@ test("owned shop items can be equipped without paying again", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
     gold: 10,
-    inventory: [{ itemId: hero.STARTER_HELMET_ID, quantity: 1 }],
+    inventory: [{ itemId: "leather_helmet_01", quantity: 1 }],
   };
 
-  assert.equal(hero.areHeroItemsOwned(baseHero, [hero.STARTER_HELMET_ID]), true);
-  assert.equal(hero.areHeroItemsEquipped(baseHero, [hero.STARTER_HELMET_ID]), false);
+  assert.equal(hero.areHeroItemsOwned(baseHero, ["leather_helmet_01"]), true);
+  assert.equal(hero.areHeroItemsEquipped(baseHero, ["leather_helmet_01"]), false);
 
   const nextHero = hero.buyAndEquipHeroItems(
     baseHero,
     {
-      itemIds: [hero.STARTER_HELMET_ID],
+      itemIds: ["leather_helmet_01"],
       price: 5,
     },
     "2026-01-01T00:01:00.000Z",
   );
 
   assert.equal(nextHero.gold, 10);
-  assert.equal(nextHero.equipment.helmet, hero.STARTER_HELMET_ID);
-  assert.equal(hero.areHeroItemsEquipped(nextHero, [hero.STARTER_HELMET_ID]), true);
+  assert.equal(nextHero.equipment.helmet, "leather_helmet_01");
+  assert.equal(hero.areHeroItemsEquipped(nextHero, ["leather_helmet_01"]), true);
 });
