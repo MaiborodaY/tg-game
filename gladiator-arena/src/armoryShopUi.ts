@@ -74,6 +74,7 @@ interface ArmoryShopOptions {
   onPreviewClear?: () => void;
   onOpen?: () => void;
   onClose?: () => void;
+  onLayoutChange?: (menuTopY?: number) => void;
   transitionDelayMs?: number;
 }
 
@@ -447,6 +448,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   let previewProduct: ArmoryProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
+  let scrollIndicatorTimer: number | undefined;
+  let layoutFrame: number | undefined;
   const usesCityHeroPreview = !options.mountPreview;
   const transitionDelayMs = options.transitionDelayMs ?? 0;
 
@@ -499,6 +502,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   const content = document.createElement("div");
   content.className = "armory-shop__content";
+  content.addEventListener("scroll", showScrollIndicator, { passive: true });
+
+  const scrollIndicator = document.createElement("span");
+  scrollIndicator.className = "armory-shop__scroll-indicator";
+  scrollIndicator.setAttribute("aria-hidden", "true");
 
   const back = document.createElement("button");
   back.className = "armory-shop__back";
@@ -517,10 +525,10 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   header.append(back, title, headerMeta);
   if (usesCityHeroPreview) {
-    tray.append(header, subcategories, content);
+    tray.append(header, subcategories, content, scrollIndicator);
     menu.append(tray, selected, categoryRail);
   } else {
-    tray.append(header, subcategories, selected, content);
+    tray.append(header, subcategories, selected, content, scrollIndicator);
     menu.append(categoryRail, tray);
   }
   if (options.mountPreview) {
@@ -529,11 +537,13 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   panel.append(menu);
   shop.append(panel);
   root.append(shop);
+  window.addEventListener("resize", scheduleLayoutSync);
 
   function open(): void {
     clearTransitionTimer();
     selectedCategoryId = ARMORY_CATEGORIES[0]?.id;
     clearProductPreview();
+    window.addEventListener("pointerdown", dismissPreviewFromPointerDown, true);
     options.onOpen?.();
     scheduleShopTransition(() => {
       if (usesCityHeroPreview) {
@@ -552,6 +562,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     clearTransitionTimer();
     clearProductPreview();
+    window.removeEventListener("pointerdown", dismissPreviewFromPointerDown, true);
     options.onClose?.();
     scheduleShopTransition(() => {
       if (usesCityHeroPreview) {
@@ -560,6 +571,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       shop.hidden = true;
       unmountPreview?.();
       unmountPreview = undefined;
+      clearScrollIndicator();
+      clearLayoutSync();
     });
   }
 
@@ -576,6 +589,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     subcategories.replaceChildren();
     content.replaceChildren();
     selected.replaceChildren();
+    clearScrollIndicator();
     subcategories.hidden = true;
     shop.classList.toggle("armory-shop--has-subcategories", false);
     selected.hidden = !previewProduct;
@@ -591,6 +605,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     if (previewProduct) {
       selected.append(createSelectedProductStrip(previewProduct, hero));
     }
+
+    scheduleLayoutSync();
 
     if (selectedProducts.length === 0) {
       content.append(createEmptyState("No items"));
@@ -713,6 +729,32 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     options.onPreviewClear?.();
   }
 
+  function dismissPreviewFromPointerDown(event: PointerEvent): void {
+    if (!previewProduct || shop.hidden) {
+      return;
+    }
+
+    const target = event.target;
+
+    if (!(target instanceof Node)) {
+      return;
+    }
+
+    if (selected.contains(target)) {
+      return;
+    }
+
+    const targetElement = target instanceof Element ? target : target.parentElement;
+    const shopAction = targetElement?.closest(".armory-shop__option--product, .armory-shop__category-button, .armory-shop__back");
+
+    if (shopAction && shop.contains(shopAction)) {
+      return;
+    }
+
+    clearProductPreview();
+    render();
+  }
+
   function scheduleShopTransition(callback: () => void): void {
     if (transitionDelayMs <= 0) {
       callback();
@@ -732,6 +774,85 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     window.clearTimeout(transitionTimer);
     transitionTimer = undefined;
+  }
+
+  function showScrollIndicator(): void {
+    if (!updateScrollIndicator()) {
+      clearScrollIndicator();
+      return;
+    }
+
+    tray.classList.add("armory-shop__tray--scrolling");
+    if (scrollIndicatorTimer) {
+      window.clearTimeout(scrollIndicatorTimer);
+    }
+    scrollIndicatorTimer = window.setTimeout(() => {
+      scrollIndicatorTimer = undefined;
+      tray.classList.remove("armory-shop__tray--scrolling");
+    }, 620);
+  }
+
+  function updateScrollIndicator(): boolean {
+    const scrollRange = content.scrollHeight - content.clientHeight;
+
+    if (scrollRange <= 1 || content.clientHeight <= 0) {
+      return false;
+    }
+
+    const trackPadding = 8;
+    const trackHeight = Math.max(24, content.clientHeight - trackPadding * 2);
+    const thumbHeight = Math.max(24, Math.min(trackHeight, (content.clientHeight / content.scrollHeight) * trackHeight));
+    const thumbTop = trackPadding + (content.scrollTop / scrollRange) * (trackHeight - thumbHeight);
+
+    tray.style.setProperty("--shop-scroll-thumb-height", `${thumbHeight}px`);
+    tray.style.setProperty("--shop-scroll-thumb-top", `${thumbTop}px`);
+
+    return true;
+  }
+
+  function scheduleLayoutSync(): void {
+    if (!usesCityHeroPreview || !options.onLayoutChange || shop.hidden) {
+      return;
+    }
+
+    if (layoutFrame) {
+      window.cancelAnimationFrame(layoutFrame);
+    }
+
+    layoutFrame = window.requestAnimationFrame(() => {
+      layoutFrame = undefined;
+      syncLayout();
+    });
+  }
+
+  function syncLayout(): void {
+    if (!usesCityHeroPreview || !options.onLayoutChange || shop.hidden) {
+      return;
+    }
+
+    const rootRect = root.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+
+    options.onLayoutChange(Math.max(0, menuRect.top - rootRect.top));
+  }
+
+  function clearLayoutSync(): void {
+    if (layoutFrame) {
+      window.cancelAnimationFrame(layoutFrame);
+      layoutFrame = undefined;
+    }
+
+    if (usesCityHeroPreview) {
+      options.onLayoutChange?.(undefined);
+    }
+  }
+
+  function clearScrollIndicator(): void {
+    if (scrollIndicatorTimer) {
+      window.clearTimeout(scrollIndicatorTimer);
+      scrollIndicatorTimer = undefined;
+    }
+    tray.classList.remove("armory-shop__tray--scrolling");
   }
 
   return { open, close, render };

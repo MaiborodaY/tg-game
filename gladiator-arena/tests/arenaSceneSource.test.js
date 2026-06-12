@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
 const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
+const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 test("fighter alpha only touches Phaser game objects", () => {
   assert.equal(arenaSceneSource.includes("Object.values(fighter).forEach((part) => part.setAlpha(alpha))"), false);
@@ -160,10 +161,14 @@ test("arena parallax can be tuned from debug settings", () => {
 });
 
 test("city shop camera zoom fits the hero inside the current viewport", () => {
-  assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO"), true);
+  assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_AVAILABLE_HEIGHT_RATIO"), true);
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO"), true);
-  assert.equal(arenaSceneSource.includes("private getShopCameraZoom(layout: CityHeroLayout): number"), true);
-  assert.equal(arenaSceneSource.includes("const shopZoom = this.getShopCameraZoom(layout);"), true);
+  assert.equal(arenaSceneSource.includes("setShopMenuTop: (menuTopY?: number) => void"), true);
+  assert.equal(arenaSceneSource.includes("private getShopCameraViewport(): CityShopCameraViewport"), true);
+  assert.equal(arenaSceneSource.includes("private getShopHeroWorldBounds(layout: CityHeroLayout): Phaser.Geom.Rectangle"), true);
+  assert.equal(arenaSceneSource.includes("private getShopCameraZoom(heroBounds: Phaser.Geom.Rectangle, viewport: CityShopCameraViewport): number"), true);
+  assert.equal(arenaSceneSource.includes("const shopZoom = this.getShopCameraZoom(heroBounds, viewport);"), true);
+  assert.equal(arenaSceneSource.includes("viewport.height * CITY_CAMERA_SHOP_MAX_AVAILABLE_HEIGHT_RATIO"), true);
   assert.equal(arenaSceneSource.includes("camera.zoomTo(shopZoom"), true);
 });
 
@@ -174,14 +179,17 @@ test("debug character viewer has a compact shop preview mode", () => {
   assert.equal(arenaSceneSource.includes("Phaser.Scale.RESIZE"), true);
 });
 
-test("city shop hero can be dragged vertically without changing city base layout", () => {
-  assert.equal(arenaSceneSource.includes("getShopHeroOffsetY"), true);
-  assert.equal(arenaSceneSource.includes("setShopHeroOffsetY(getShopHeroOffsetY() + deltaY)"), true);
-  assert.equal(arenaSceneSource.includes("enableCityShopHeroDrag"), true);
-  assert.equal(arenaSceneSource.includes("private beginShopHeroDrag"), true);
-  assert.equal(arenaSceneSource.includes("private dragShopHero"), true);
-  assert.match(arenaSceneSource, /shopOffsetY \/ shopZoom/);
+test("city shop hero is centered without manual drag offset", () => {
+  assert.equal(arenaSceneSource.includes("CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 0"), true);
+  assert.equal(arenaSceneSource.includes("getShopHeroOffsetY"), false);
+  assert.equal(arenaSceneSource.includes("setShopHeroOffsetY"), false);
+  assert.equal(arenaSceneSource.includes("enableCityShopHeroDrag"), false);
+  assert.equal(arenaSceneSource.includes("private beginShopHeroDrag"), false);
+  assert.equal(arenaSceneSource.includes("private dragShopHero"), false);
+  assert.doesNotMatch(arenaSceneSource, /shopOffsetY \/ shopZoom/);
   assert.doesNotMatch(arenaSceneSource, /debugTuning\.cityHeroY\s*=/);
+  assert.match(stylesSource, /\.city-menu__hero\s*\{[^}]*pointer-events: none;[^}]*\}/s);
+  assert.equal(stylesSource.includes(".city-menu--armory-open .city-menu__hero {"), false);
 });
 
 test("armory background can be tuned separately from the hero position", () => {
@@ -192,6 +200,15 @@ test("armory background can be tuned separately from the hero position", () => {
   assert.equal(arenaSceneSource.includes("debugTuning.armoryBackgroundScale"), true);
   assert.equal(arenaSceneSource.includes("this.sceneWidth / 2 + transform.offsetX"), true);
   assert.equal(arenaSceneSource.includes("this.sceneHeight / 2 + transform.offsetY"), true);
+});
+
+test("city shop background is subdued without overlaying the live hero", () => {
+  assert.equal(arenaSceneSource.includes("CITY_SHOP_BACKGROUND_TINT"), true);
+  assert.equal(arenaSceneSource.includes("function getCityBackgroundTint(assetKey: string): number"), true);
+  assert.equal(arenaSceneSource.includes("CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY ? CITY_SHOP_BACKGROUND_TINT"), true);
+  assert.equal(arenaSceneSource.includes("background.setTint(getCityBackgroundTint(assetKey));"), true);
+  assert.equal(arenaSceneSource.includes("shopHeroBackdrop"), false);
+  assert.equal(arenaSceneSource.includes("CITY_SHOP_HERO_BACKDROP"), false);
 });
 
 test("city scene can zoom the background camera into the coliseum for arena entry", () => {

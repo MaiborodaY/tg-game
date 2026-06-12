@@ -247,6 +247,10 @@ function focusCityDefaultFromShop(): void {
   cityScene?.focusDefault(true);
 }
 
+function syncCityShopLayout(menuTopY?: number): void {
+  cityScene?.setShopMenuTop(menuTopY);
+}
+
 function prewarmShopItemIconsWhenIdle(): void {
   const prewarm = () => {
     void prewarmShopItemIconsForBrowserCache();
@@ -473,6 +477,7 @@ if (cityMenu) {
     onClose: () => {
       playCityCurtainTransition(focusCityDefaultFromShop);
     },
+    onLayoutChange: syncCityShopLayout,
   });
   armoryShop = mountArmoryShop(cityMenu, {
     getHero: () => hero,
@@ -486,6 +491,7 @@ if (cityMenu) {
     onClose: () => {
       playCityCurtainTransition(focusCityDefaultFromShop);
     },
+    onLayoutChange: syncCityShopLayout,
   });
 }
 renderDom(dom, state);

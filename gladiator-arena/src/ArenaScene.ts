@@ -125,7 +125,6 @@ import {
 } from "./debugTuning";
 import { emitDebugCharacterEquipmentDelta, emitDebugCharacterEquipmentSelect } from "./debugCharacterEquipmentBridge";
 import { getPlayerSettings, subscribePlayerSettings } from "./settingsMenu";
-import { getShopHeroOffsetY, setShopHeroOffsetY, subscribeShopHeroOffset } from "./shopHeroOffset";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -198,11 +197,6 @@ interface DebugEquipmentDragState {
 
 interface DebugInputEvent {
   stopPropagation: () => void;
-}
-
-interface CityShopHeroDragState {
-  pointerId: number;
-  lastScreenY: number;
 }
 
 type DebugRigPartPickHandler = (partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent) => void;
@@ -474,22 +468,25 @@ const CITY_HERO_SLOT_WIDTH_RATIO = 0.38;
 const CITY_HERO_SLOT_BOTTOM = 82;
 const CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO = 0.62;
 const CITY_CAMERA_DEFAULT_ZOOM = 1;
-const CITY_CAMERA_ARMORY_ZOOM = 3.5;
+const CITY_CAMERA_ARMORY_ZOOM = 3.75;
 const CITY_CAMERA_SHOP_MIN_ZOOM = 1.25;
-const CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO = 0.58;
+const CITY_CAMERA_SHOP_MAX_AVAILABLE_HEIGHT_RATIO = 0.9;
 const CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO = 0.78;
-const CITY_CAMERA_SHOP_LOOK_UP_RATIO = 0.16;
+const CITY_CAMERA_SHOP_TOP_PADDING = 22;
+const CITY_CAMERA_SHOP_MENU_GAP = 20;
+const CITY_CAMERA_SHOP_FALLBACK_MENU_TOP_RATIO = 0.72;
 const CITY_CAMERA_TWEEN_DURATION = 420;
 const CITY_ARENA_TRANSITION_DURATION = 950;
 const CITY_ARENA_TRANSITION_ZOOM = 2.7;
 const CITY_ARENA_FOCUS_X_RATIO = 0.21;
 const CITY_ARENA_FOCUS_Y_RATIO = 0;
 const CITY_BACKGROUND_FADE_DURATION = 220;
-const CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 24;
+const CITY_CAMERA_ARMORY_FOCUS_OFFSET_X = 0;
 const CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y = 15;
 const CITY_ARMORY_HERO_LIFT_Y = 132;
 const CITY_BACKGROUND_DEPTH = -30;
 const CITY_CLOUD_DEPTH = CITY_BACKGROUND_DEPTH + 4;
+const CITY_SHOP_BACKGROUND_TINT = 0x8b7464;
 const CITY_CLOUD_FADE_DURATION = 180;
 const CITY_HERO_BODY_TINT = 0xf0b892;
 const CITY_HERO_EQUIPMENT_TINT = 0xd3ad84;
@@ -1201,6 +1198,13 @@ interface CityHeroLayout {
   scale: number;
 }
 
+interface CityShopCameraViewport {
+  topY: number;
+  bottomY: number;
+  centerY: number;
+  height: number;
+}
+
 interface CityCloud {
   image: Phaser.GameObjects.Image;
   speed: number;
@@ -1216,6 +1220,7 @@ export interface CitySceneApi {
   focusDefault: (instant?: boolean) => void;
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
+  setShopMenuTop: (menuTopY?: number) => void;
   focusArenaTransition: () => Promise<void>;
   destroy: () => void;
 }
@@ -1239,7 +1244,6 @@ class CityHeroScene extends Phaser.Scene {
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
-  private unsubscribeShopHeroOffset?: () => void;
   private unsubscribeCityTimeOfDay?: () => void;
   private cameraMode: CityCameraMode = "default";
   private backgroundAssetKey = getCityDefaultBackgroundAssetKey();
@@ -1248,7 +1252,7 @@ class CityHeroScene extends Phaser.Scene {
   private cityLightingTween?: Phaser.Tweens.Tween;
   private cityHeroLiftProgress = 0;
   private cityHeroLiftTween?: Phaser.Tweens.Tween;
-  private shopHeroDragState?: CityShopHeroDragState;
+  private shopMenuTopY?: number;
 
   constructor() {
     super("CityHeroScene");
@@ -1273,7 +1277,6 @@ class CityHeroScene extends Phaser.Scene {
       { ...createPlayerPaperDollOptions(0, -PLAYER_AVATAR_FEET_Y_OFFSET), castsShadow: true },
     );
     this.fighter.name.setVisible(false);
-    enableCityShopHeroDrag(this.fighter.paperDollRig, (pointer, event) => this.beginShopHeroDrag(pointer, event));
     applyCityHeroLighting(this.fighter, this.cityLightingAmount);
     this.syncCameraLayers();
     this.sync();
@@ -1287,23 +1290,17 @@ class CityHeroScene extends Phaser.Scene {
         this.sync();
       });
     });
-    this.unsubscribeShopHeroOffset = subscribeShopHeroOffset(() => this.syncCamera(true));
     this.unsubscribeCityTimeOfDay = subscribeCityTimeOfDayChanges((timeOfDay) => this.syncTimeOfDay(timeOfDay));
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.dragShopHero(pointer));
-    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => this.endShopHeroDrag(pointer));
-    this.input.on("pointerupoutside", (pointer: Phaser.Input.Pointer) => this.endShopHeroDrag(pointer));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.cityHeroLiftTween?.remove();
       this.backgroundFadeTween?.remove();
       this.cloudsAlphaTween?.remove();
       this.cityLightingTween?.remove();
       this.heroCamera = undefined;
-      this.shopHeroDragState = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
       this.unsubscribePlayerSettings?.();
-      this.unsubscribeShopHeroOffset?.();
       this.unsubscribeCityTimeOfDay?.();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     });
@@ -1324,7 +1321,6 @@ class CityHeroScene extends Phaser.Scene {
 
   focusDefault(instant = false): void {
     this.cameraMode = "default";
-    this.endShopHeroDrag();
     this.resetBackgroundCamera();
     this.getHeroCamera().setAlpha(1);
     this.setCityHeroShadowEnabled(true);
@@ -1343,6 +1339,23 @@ class CityHeroScene extends Phaser.Scene {
     this.syncCamera(instant, 1);
   }
 
+  setShopMenuTop(menuTopY?: number): void {
+    const nextMenuTopY =
+      typeof menuTopY === "number" && Number.isFinite(menuTopY)
+        ? clampNumber(menuTopY, CITY_CAMERA_SHOP_TOP_PADDING + 1, this.sceneHeight)
+        : undefined;
+
+    if (this.shopMenuTopY === nextMenuTopY) {
+      return;
+    }
+
+    this.shopMenuTopY = nextMenuTopY;
+
+    if (this.cameraMode !== "default" && this.cameraMode !== "arena") {
+      this.syncCamera(true);
+    }
+  }
+
   focusWeaponShop(instant = false): void {
     this.cameraMode = "weaponShop";
     this.setCityHeroShadowEnabled(false);
@@ -1354,7 +1367,6 @@ class CityHeroScene extends Phaser.Scene {
 
   focusArenaTransition(): Promise<void> {
     this.cameraMode = "arena";
-    this.endShopHeroDrag();
     this.cityHeroLiftTween?.remove();
     this.cityHeroLiftTween = undefined;
     this.setCityHeroShadowEnabled(false);
@@ -1519,6 +1531,7 @@ class CityHeroScene extends Phaser.Scene {
 
     background.setPosition(this.sceneWidth / 2 + transform.offsetX, this.sceneHeight / 2 + transform.offsetY);
     background.setScale(scale);
+    background.setTint(getCityBackgroundTint(assetKey));
   }
 
   private createCityClouds(): CityCloud[] {
@@ -1628,7 +1641,11 @@ class CityHeroScene extends Phaser.Scene {
     }
 
     this.cameras.main.ignore(getFighterParts(this.fighter) as unknown as Phaser.GameObjects.GameObject[]);
-    this.heroCamera.ignore([this.background, this.backgroundNext, ...this.clouds.map((cloud) => cloud.image)]);
+    this.heroCamera.ignore([
+      this.background,
+      this.backgroundNext,
+      ...this.clouds.map((cloud) => cloud.image),
+    ]);
   }
 
   private syncCameraViewports(): void {
@@ -1680,14 +1697,12 @@ class CityHeroScene extends Phaser.Scene {
     }
 
     if (this.cameraMode !== "default") {
-      const shopZoom = this.getShopCameraZoom(layout);
-      const shopOffsetY = getShopHeroOffsetY();
+      const viewport = this.getShopCameraViewport();
+      const heroBounds = this.getShopHeroWorldBounds(layout);
+      const shopZoom = this.getShopCameraZoom(heroBounds, viewport);
       const targetX = layout.feetX + CITY_CAMERA_ARMORY_FOCUS_OFFSET_X * Math.max(0.7, layout.scale);
-      const targetY =
-        layout.feetY -
-        CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale) -
-        CITY_HERO_VIEWER_HEIGHT * layout.scale * CITY_CAMERA_SHOP_LOOK_UP_RATIO -
-        shopOffsetY / shopZoom;
+      const heroCenterY = heroBounds.centerY - CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale);
+      const targetY = heroCenterY + (this.sceneHeight / 2 - viewport.centerY) / shopZoom;
 
       if (instant) {
         camera.setZoom(shopZoom);
@@ -1708,6 +1723,34 @@ class CityHeroScene extends Phaser.Scene {
 
     camera.pan(this.sceneWidth / 2, this.sceneHeight / 2, duration, "Sine.easeInOut");
     camera.zoomTo(CITY_CAMERA_DEFAULT_ZOOM, duration, "Sine.easeInOut");
+  }
+
+  private getShopCameraViewport(): CityShopCameraViewport {
+    const topY = CITY_CAMERA_SHOP_TOP_PADDING;
+    const menuTopY = this.shopMenuTopY ?? this.sceneHeight * CITY_CAMERA_SHOP_FALLBACK_MENU_TOP_RATIO;
+    const bottomY = clampNumber(menuTopY - CITY_CAMERA_SHOP_MENU_GAP, topY + 1, this.sceneHeight - CITY_CAMERA_SHOP_MENU_GAP);
+    const height = Math.max(1, bottomY - topY);
+
+    return {
+      topY,
+      bottomY,
+      centerY: topY + height / 2,
+      height,
+    };
+  }
+
+  private getShopHeroWorldBounds(layout: CityHeroLayout): Phaser.Geom.Rectangle {
+    const rigRoot = this.fighter?.paperDollRig?.root as Phaser.GameObjects.Container | undefined;
+    const rigBounds = rigRoot?.getBounds();
+
+    if (rigBounds && Number.isFinite(rigBounds.width) && Number.isFinite(rigBounds.height) && rigBounds.width > 1 && rigBounds.height > 1) {
+      return rigBounds;
+    }
+
+    const width = CITY_HERO_VIEWER_WIDTH * CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO * layout.scale;
+    const height = CITY_HERO_VIEWER_HEIGHT * layout.scale;
+
+    return new Phaser.Geom.Rectangle(layout.feetX - width / 2, layout.feetY - height, width, height);
   }
 
   private getHeroCamera(): Phaser.Cameras.Scene2D.Camera {
@@ -1753,45 +1796,10 @@ class CityHeroScene extends Phaser.Scene {
     });
   }
 
-  private beginShopHeroDrag(pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
-    if (this.cameraMode === "default" || !isPrimaryPointerDown(pointer)) {
-      return;
-    }
-
-    event?.stopPropagation();
-    this.shopHeroDragState = {
-      pointerId: getPointerId(pointer),
-      lastScreenY: pointer.y,
-    };
-  }
-
-  private dragShopHero(pointer: Phaser.Input.Pointer): void {
-    if (!this.shopHeroDragState || this.cameraMode === "default" || getPointerId(pointer) !== this.shopHeroDragState.pointerId) {
-      return;
-    }
-
-    const deltaY = pointer.y - this.shopHeroDragState.lastScreenY;
-
-    if (Math.abs(deltaY) < 0.1) {
-      return;
-    }
-
-    setShopHeroOffsetY(getShopHeroOffsetY() + deltaY);
-    this.shopHeroDragState.lastScreenY = pointer.y;
-  }
-
-  private endShopHeroDrag(pointer?: Phaser.Input.Pointer): void {
-    if (pointer && this.shopHeroDragState && getPointerId(pointer) !== this.shopHeroDragState.pointerId) {
-      return;
-    }
-
-    this.shopHeroDragState = undefined;
-  }
-
-  private getShopCameraZoom(layout: CityHeroLayout): number {
-    const visualHeight = Math.max(1, CITY_HERO_VIEWER_HEIGHT * layout.scale);
-    const visualWidth = Math.max(1, CITY_HERO_VIEWER_WIDTH * CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO * layout.scale);
-    const heightZoomLimit = (this.sceneHeight * CITY_CAMERA_SHOP_MAX_SCREEN_HEIGHT_RATIO) / visualHeight;
+  private getShopCameraZoom(heroBounds: Phaser.Geom.Rectangle, viewport: CityShopCameraViewport): number {
+    const visualHeight = Math.max(1, heroBounds.height);
+    const visualWidth = Math.max(1, heroBounds.width);
+    const heightZoomLimit = (viewport.height * CITY_CAMERA_SHOP_MAX_AVAILABLE_HEIGHT_RATIO) / visualHeight;
     const widthZoomLimit = (this.sceneWidth * CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO) / visualWidth;
 
     return clampNumber(
@@ -1841,13 +1849,19 @@ function getCityBackgroundTransform(assetKey: string): { offsetX: number; offset
   };
 }
 
+function getCityBackgroundTint(assetKey: string): number {
+  return assetKey === CITY_ARMORY_BACKGROUND_ASSET_KEY || assetKey === CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY ? CITY_SHOP_BACKGROUND_TINT : 0xffffff;
+}
+
 export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): CitySceneApi {
   usePlayerEquipment(playerEquipment);
   let scene: CityHeroScene | undefined;
   let pendingCameraMode: CityCameraMode = "default";
+  let pendingShopMenuTopY: number | undefined;
 
   const readyCallbackForGame = (readyScene: CityHeroScene) => {
     scene = readyScene;
+    readyScene.setShopMenuTop(pendingShopMenuTopY);
     if (pendingCameraMode === "armory") {
       readyScene.focusArmory();
       return;
@@ -1887,6 +1901,10 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     focusWeaponShop: (instant = false) => {
       pendingCameraMode = "weaponShop";
       scene?.focusWeaponShop(instant);
+    },
+    setShopMenuTop: (menuTopY?: number) => {
+      pendingShopMenuTopY = menuTopY;
+      scene?.setShopMenuTop(menuTopY);
     },
     focusArenaTransition: () => scene?.focusArenaTransition() ?? Promise.resolve(),
     destroy: () => {
@@ -3486,26 +3504,6 @@ function createPaperDollEquipmentHitArea(slot: FighterPart, slotKey: PaperDollEq
   return new Phaser.Geom.Rectangle(config.localX - width * config.originX, config.localY - height * config.originY, width, height);
 }
 
-function enableCityShopHeroDrag(rig: PaperDollRig | undefined, onDragStart: (pointer: Phaser.Input.Pointer, event?: DebugInputEvent) => void): void {
-  if (!rig) {
-    return;
-  }
-
-  RIG_PART_KEYS.forEach((key) => {
-    const partContainer = rig.parts[key] as Phaser.GameObjects.Container;
-
-    partContainer.setInteractive(PAPER_DOLL_PART_HIT_AREAS[key], Phaser.Geom.Rectangle.Contains);
-
-    if (partContainer.input) {
-      partContainer.input.cursor = "ns-resize";
-    }
-
-    partContainer.on("pointerdown", (pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event?: DebugInputEvent) => {
-      onDragStart(pointer, event);
-    });
-  });
-}
-
 function syncPaperDollSelectionHighlight(rig: PaperDollRig | undefined, highlightedParts: readonly RigPartKey[]): void {
   if (!rig?.selectionHighlights) {
     return;
@@ -3542,12 +3540,6 @@ function isPrimaryPointerDown(pointer: Phaser.Input.Pointer): boolean {
   }
 
   return typeof pointer.leftButtonDown === "function" ? pointer.leftButtonDown() : true;
-}
-
-function getPointerId(pointer: Phaser.Input.Pointer): number {
-  const pointerWithIds = pointer as Phaser.Input.Pointer & { id?: number; pointerId?: number };
-
-  return pointerWithIds.pointerId ?? pointerWithIds.id ?? 0;
 }
 
 function updateRigPartsWithInteractiveDelta(partKeys: readonly RigPartKey[], delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): void {
