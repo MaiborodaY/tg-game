@@ -108,6 +108,8 @@ const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {
   frontBoot: 2,
 };
 
+const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
+
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
     id: "head",
@@ -276,13 +278,13 @@ function pairGeneratedArmoryProducts(products: ArmoryProduct[]): ArmoryProduct[]
     const pairConfig = item ? getPairedArmorySlotConfig(item.equipmentSlot) : undefined;
     const counterpart = pairConfig ? findArmoryProductPair(product, products, pairConfig, usedProductIds) : undefined;
 
-    if (pairConfig && !counterpart) {
+    if (!pairConfig) {
+      pairedProducts.push(product);
       usedProductIds.add(product.id);
       return;
     }
 
-    if (!pairConfig) {
-      pairedProducts.push(product);
+    if (!counterpart) {
       usedProductIds.add(product.id);
       return;
     }
@@ -397,6 +399,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   let transitionTimer: number | undefined;
   let scrollIndicatorTimer: number | undefined;
   let layoutFrame: number | undefined;
+  let layoutSettleTimers: number[] = [];
   const usesCityHeroPreview = !options.mountPreview;
   const transitionDelayMs = options.transitionDelayMs ?? 0;
 
@@ -485,6 +488,13 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   shop.append(panel);
   root.append(shop);
   window.addEventListener("resize", scheduleLayoutSync);
+  window.visualViewport?.addEventListener("resize", scheduleLayoutSync);
+  window.visualViewport?.addEventListener("scroll", scheduleLayoutSync);
+
+  const layoutResizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(scheduleLayoutSync);
+  layoutResizeObserver?.observe(root);
+  layoutResizeObserver?.observe(menu);
+  layoutResizeObserver?.observe(tray);
 
   function open(): void {
     clearTransitionTimer();
@@ -499,6 +509,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       shop.hidden = false;
       ensurePreviewMounted();
       render();
+      scheduleSettledLayoutSync();
     });
   }
 
@@ -771,6 +782,25 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     });
   }
 
+  function scheduleSettledLayoutSync(): void {
+    if (!usesCityHeroPreview || !options.onLayoutChange || shop.hidden) {
+      return;
+    }
+
+    syncLayout();
+    scheduleLayoutSync();
+    clearLayoutSettleTimers();
+
+    SHOP_LAYOUT_SETTLE_DELAYS_MS.forEach((delayMs) => {
+      const timer = window.setTimeout(() => {
+        layoutSettleTimers = layoutSettleTimers.filter((activeTimer) => activeTimer !== timer);
+        scheduleLayoutSync();
+      }, delayMs);
+
+      layoutSettleTimers.push(timer);
+    });
+  }
+
   function syncLayout(): void {
     if (!usesCityHeroPreview || !options.onLayoutChange || shop.hidden) {
       return;
@@ -787,10 +817,16 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       window.cancelAnimationFrame(layoutFrame);
       layoutFrame = undefined;
     }
+    clearLayoutSettleTimers();
 
     if (usesCityHeroPreview) {
       options.onLayoutChange?.(undefined);
     }
+  }
+
+  function clearLayoutSettleTimers(): void {
+    layoutSettleTimers.forEach((timer) => window.clearTimeout(timer));
+    layoutSettleTimers = [];
   }
 
   function clearScrollIndicator(): void {

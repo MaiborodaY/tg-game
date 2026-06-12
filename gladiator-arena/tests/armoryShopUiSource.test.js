@@ -17,7 +17,7 @@ test("armory shop groups generated back and front equipment into one product", (
   assert.equal(armoryShopSource.includes('backSlot: "backGlove", frontSlot: "frontGlove"'), true);
   assert.equal(armoryShopSource.includes("findArmoryProductPair"), true);
   assert.equal(armoryShopSource.includes("getArmoryProductPairKey"), true);
-  assert.equal(armoryShopSource.includes("if (pairConfig && !counterpart)"), true);
+  assert.equal(armoryShopSource.includes("if (!counterpart)"), true);
   assert.equal(armoryShopSource.includes("price: getPairedArmoryProductPrice(backProduct, frontProduct)"), true);
   assert.equal(armoryShopSource.includes("Math.max(backProduct.price, frontProduct.price)"), true);
   assert.equal(armoryShopSource.includes("price: backProduct.price + frontProduct.price"), false);
@@ -28,6 +28,12 @@ test("city shops report their bottom menu position for hero centering", () => {
   [armoryShopSource, weaponShopSource].forEach((source) => {
     assert.equal(source.includes("onLayoutChange?: (menuTopY?: number) => void"), true);
     assert.equal(source.includes("window.addEventListener(\"resize\", scheduleLayoutSync);"), true);
+    assert.equal(source.includes("window.visualViewport?.addEventListener(\"resize\", scheduleLayoutSync);"), true);
+    assert.equal(source.includes("window.visualViewport?.addEventListener(\"scroll\", scheduleLayoutSync);"), true);
+    assert.equal(source.includes("new ResizeObserver(scheduleLayoutSync)"), true);
+    assert.equal(source.includes("scheduleSettledLayoutSync();"), true);
+    assert.equal(source.includes("SHOP_LAYOUT_SETTLE_DELAYS_MS"), true);
+    assert.equal(source.includes("clearLayoutSettleTimers();"), true);
     assert.equal(source.includes("const rootRect = root.getBoundingClientRect();"), true);
     assert.equal(source.includes("const menuRect = menu.getBoundingClientRect();"), true);
     assert.equal(source.includes("options.onLayoutChange(Math.max(0, menuRect.top - rootRect.top));"), true);

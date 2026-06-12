@@ -69,6 +69,8 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
   },
 ];
 
+const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
+
 function getGeneratedWeaponProducts(categoryId: string): WeaponProduct[] {
   return GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
     id: product.id,
@@ -85,6 +87,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   let transitionTimer: number | undefined;
   let scrollIndicatorTimer: number | undefined;
   let layoutFrame: number | undefined;
+  let layoutSettleTimers: number[] = [];
   const usesCityHeroPreview = !options.mountPreview;
   const transitionDelayMs = options.transitionDelayMs ?? 0;
 
@@ -170,6 +173,13 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   shop.append(panel);
   root.append(shop);
   window.addEventListener("resize", scheduleLayoutSync);
+  window.visualViewport?.addEventListener("resize", scheduleLayoutSync);
+  window.visualViewport?.addEventListener("scroll", scheduleLayoutSync);
+
+  const layoutResizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(scheduleLayoutSync);
+  layoutResizeObserver?.observe(root);
+  layoutResizeObserver?.observe(menu);
+  layoutResizeObserver?.observe(tray);
 
   function open(): void {
     clearTransitionTimer();
@@ -184,6 +194,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       shop.hidden = false;
       ensurePreviewMounted();
       render();
+      scheduleSettledLayoutSync();
     });
   }
 
@@ -452,6 +463,25 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     });
   }
 
+  function scheduleSettledLayoutSync(): void {
+    if (!usesCityHeroPreview || !options.onLayoutChange || shop.hidden) {
+      return;
+    }
+
+    syncLayout();
+    scheduleLayoutSync();
+    clearLayoutSettleTimers();
+
+    SHOP_LAYOUT_SETTLE_DELAYS_MS.forEach((delayMs) => {
+      const timer = window.setTimeout(() => {
+        layoutSettleTimers = layoutSettleTimers.filter((activeTimer) => activeTimer !== timer);
+        scheduleLayoutSync();
+      }, delayMs);
+
+      layoutSettleTimers.push(timer);
+    });
+  }
+
   function syncLayout(): void {
     if (!usesCityHeroPreview || !options.onLayoutChange || shop.hidden) {
       return;
@@ -468,10 +498,16 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       window.cancelAnimationFrame(layoutFrame);
       layoutFrame = undefined;
     }
+    clearLayoutSettleTimers();
 
     if (usesCityHeroPreview) {
       options.onLayoutChange?.(undefined);
     }
+  }
+
+  function clearLayoutSettleTimers(): void {
+    layoutSettleTimers.forEach((timer) => window.clearTimeout(timer));
+    layoutSettleTimers = [];
   }
 
   function clearScrollIndicator(): void {
