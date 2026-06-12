@@ -159,7 +159,8 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   30,
 ];
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
-export const BATTLE_WIN_REWARD: BattleReward = { gold: 25, xp: 20 };
+export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 10 };
+export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
 export const DEFAULT_ARENA_TIER_ID = 1;
 export const ARENA_TIERS: readonly ArenaTierDefinition[] = [
   {
@@ -372,6 +373,10 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
 export function getBattleReward(combat: CombatState): BattleReward {
   if (combat.result === "win") {
     return { ...BATTLE_WIN_REWARD };
+  }
+
+  if (combat.result === "lose") {
+    return { ...BATTLE_LOSS_REWARD };
   }
 
   return { gold: 0, xp: 0 };

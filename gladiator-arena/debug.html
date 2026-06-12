@@ -173,8 +173,31 @@
             </section>
             <section class="classic-action-bar" aria-label="Combat actions" data-classic-action-bar></section>
             </div>
-            <div id="resultBanner" class="result-banner" hidden></div>
-            <button id="cityButton" class="restart city-return" type="button" hidden>Back to City</button>
+            <div id="resultBanner" class="result-banner battle-result" hidden>
+              <div class="battle-result__frame">
+                <div id="resultEyebrow" class="battle-result__eyebrow">Victory</div>
+                <h2 id="resultTitle" class="battle-result__title">Borshemir wins!</h2>
+                <div class="battle-result__rewards" aria-label="Battle rewards">
+                  <div class="battle-result__reward">
+                    <span class="battle-result__icon battle-result__icon--gold" aria-hidden="true"></span>
+                    <strong id="resultGoldReward">+0</strong>
+                    <span>Gold</span>
+                  </div>
+                  <div class="battle-result__reward">
+                    <span class="battle-result__icon battle-result__icon--xp" aria-hidden="true"></span>
+                    <strong id="resultXpReward">+0</strong>
+                    <span>XP</span>
+                  </div>
+                </div>
+                <div id="resultXpProgress" class="battle-result__xp">
+                  <div id="resultXpProgressText" class="battle-result__xp-text">LVL 1 0 / 10 XP</div>
+                  <div class="battle-result__xp-track" aria-hidden="true">
+                    <div id="resultXpProgressFill" class="battle-result__xp-fill"></div>
+                  </div>
+                </div>
+                <button id="cityButton" class="restart city-return battle-result__button" type="button" hidden>Return to City</button>
+              </div>
+            </div>
           </section>
 
           <section class="combat-toast" aria-label="Fight log">

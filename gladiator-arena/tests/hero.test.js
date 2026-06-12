@@ -219,6 +219,29 @@ test("battle xp follows the level table and caps at level fifty", () => {
   assert.equal(maxHero.xpToNextLevel, 30);
 });
 
+test("battle rewards use small early arena numbers", () => {
+  const winState = combat.freshState();
+  winState.result = "win";
+  const winReward = hero.getBattleReward(winState);
+
+  assert.equal(winReward.gold, 5);
+  assert.equal(winReward.xp, 10);
+
+  const loseState = combat.freshState();
+  loseState.result = "lose";
+  const lossReward = hero.getBattleReward(loseState);
+
+  assert.equal(lossReward.gold, 1);
+  assert.equal(lossReward.xp, 2);
+
+  const drawState = combat.freshState();
+  drawState.result = "draw";
+  const drawReward = hero.getBattleReward(drawState);
+
+  assert.equal(drawReward.gold, 0);
+  assert.equal(drawReward.xp, 0);
+});
+
 test("owned shop items can be equipped without paying again", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),

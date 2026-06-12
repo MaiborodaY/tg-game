@@ -119,6 +119,18 @@ test("arena turn flow waits for action animations instead of hardcoded enemy del
   assert.equal(debugMainSource.includes("}, 700);"), false);
 });
 
+test("battle result transition moves combat UI away from the final panel", () => {
+  assert.equal(stylesSource.includes(".battle-screen.battle-screen--finished .stage-panel::before"), true);
+  assert.equal(stylesSource.includes(".battle-screen--finished .classic-combat-hud"), true);
+  assert.equal(stylesSource.includes(".battle-screen--finished .classic-action-bar"), true);
+  assert.equal(stylesSource.includes(".battle-screen--finished .action-arc"), true);
+  assert.equal(stylesSource.includes("translateY(calc(100% + 130px))"), true);
+  assert.equal(stylesSource.includes(".battle-result--animating .battle-result__frame"), true);
+  assert.equal(stylesSource.includes("@keyframes battle-result-xp-glow"), true);
+  assert.equal(mainSource.includes("heroBeforeReward"), true);
+  assert.equal(mainSource.includes("heroAfterReward"), true);
+});
+
 test("debug panel source contains precision controls and grid", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 

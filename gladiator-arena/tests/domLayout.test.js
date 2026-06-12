@@ -24,6 +24,16 @@ test("bottom action panel is removed", () => {
   assert.equal(html.includes('class="action-cluster"'), false);
   assert.equal(html.includes('id="actions"'), false);
 });
+
+test("battle result panel exposes rewards and xp progress", () => {
+  assert.equal(html.includes('id="resultEyebrow"'), true);
+  assert.equal(html.includes('id="resultTitle"'), true);
+  assert.equal(html.includes('id="resultGoldReward"'), true);
+  assert.equal(html.includes('id="resultXpReward"'), true);
+  assert.equal(html.includes('id="resultXpProgressFill"'), true);
+  assert.equal(html.includes('id="cityButton"'), true);
+});
+
 test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(html.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
   assert.equal(html.includes('class="resource-flask flask--hp"'), true);

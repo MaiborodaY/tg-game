@@ -23,7 +23,7 @@ import {
   type DebugPopupPreviewKind,
   type SlashArcAttackKey,
 } from "./debugTuning";
-import { getDomRefs, renderDom } from "./domUi";
+import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
   applyBattleReward,
@@ -91,10 +91,12 @@ interface ClassicHudDragState {
 }
 
 let classicHudDragState: ClassicHudDragState | undefined;
+let battleResultPresentation: BattleResultPresentation | undefined;
+let battleResultPresentationId = 0;
 
 function commitState(nextState: CombatState): Promise<void> {
   state = applyBattleRewardIfNeeded(nextState);
-  renderDom(dom, state);
+  renderDom(dom, state, { hero, reward: getBattleReward(state), resultPresentation: battleResultPresentation });
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   const actionAnimation = arenaScene?.sync(state) ?? Promise.resolve();
 
@@ -206,6 +208,7 @@ function refreshArenaLayout(): void {
 function restart(): void {
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
+  battleResultPresentation = undefined;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
   void commitState(createCombatStateFromHero(hero));
@@ -224,7 +227,17 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     return nextState;
   }
 
-  hero = applyBattleReward(hero, getBattleReward(nextState));
+  const reward = getBattleReward(nextState);
+  const heroBeforeReward = hero;
+  const heroAfterReward = applyBattleReward(hero, reward);
+
+  hero = heroAfterReward;
+  battleResultPresentation = {
+    id: `debug-battle-result-${++battleResultPresentationId}`,
+    reward,
+    heroBeforeReward,
+    heroAfterReward,
+  };
   weaponShop?.render();
   armoryShop?.render();
 
