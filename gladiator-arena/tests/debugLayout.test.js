@@ -166,6 +166,22 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes("data-debug-reset-value"), true);
 });
 
+test("character debug sections are collapsed by default", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const characterSectionClasses = [
+    "debug-rig-panel",
+    "debug-hero-equipment-panel",
+    "debug-item-equipment-panel",
+    "debug-auto-equipment-panel",
+    "debug-shop-items-panel",
+  ];
+
+  characterSectionClasses.forEach((className) => {
+    assert.match(debugPanelSource, new RegExp(`<details class="${className}">`));
+    assert.doesNotMatch(debugPanelSource, new RegExp(`<details class="${className}" open>`));
+  });
+});
+
 test("popup tuning controls request live popup previews", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 
@@ -241,6 +257,34 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ARMOR_MAX = 200"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_DAMAGE_MAX = 100"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_PRICE_MAX = 2000"), true);
+});
+
+test("auto equipment preview starts from fallback and isolates the selected asset", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const autoMountSource = debugPanelSource.slice(
+    debugPanelSource.indexOf("function mountAutoEquipmentEditor"),
+    debugPanelSource.indexOf("function mountGeneratedShopItemsEditor"),
+  );
+  const autoPreviewSource = debugPanelSource.slice(
+    debugPanelSource.indexOf("function previewSelectedAutoEquipment"),
+    debugPanelSource.indexOf("function getSelectedAutoEquipmentRecord"),
+  );
+  const shopItemsMountSource = debugPanelSource.slice(
+    debugPanelSource.indexOf("function mountGeneratedShopItemsEditor"),
+    debugPanelSource.indexOf("function mountRigEditor"),
+  );
+  const shopItemsInitialMountSource = shopItemsMountSource.slice(0, shopItemsMountSource.indexOf('select.addEventListener("change"'));
+
+  assert.equal(debugPanelSource.includes("createDefaultHeroEquipment"), true);
+  assert.equal(autoMountSource.includes('select.append(createHeroEquipmentOption("", "fallback"));'), true);
+  assert.equal(autoMountSource.includes("previewAutoEquipmentFallback();"), true);
+  assert.equal(autoPreviewSource.includes("const previewEquipment = createDefaultHeroEquipment();"), true);
+  assert.equal(autoPreviewSource.includes("previewEquipment[record.item.equipmentSlot] = record.item.id;"), true);
+  assert.equal(autoPreviewSource.includes("updateHeroEquipment(previewEquipment);"), true);
+  assert.equal(autoPreviewSource.includes("updateHeroEquipmentSlot(record.item.equipmentSlot"), false);
+  assert.equal(autoPreviewSource.includes("updateHeroEquipment(createDefaultHeroEquipment());"), true);
+  assert.equal(shopItemsInitialMountSource.includes("previewGeneratedShopProduct"), false);
+  assert.match(shopItemsMountSource, /select\.addEventListener\("change"[\s\S]*previewGeneratedShopProduct\(getSelectedGeneratedShopProduct\(products, select\.value\)\);/);
 });
 
 test("debug panel exposes generated shop item editor", () => {

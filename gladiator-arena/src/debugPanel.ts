@@ -48,6 +48,7 @@ import {
 } from "./debugCharacterEquipmentBridge";
 import {
   createDefaultHeroInventory,
+  createDefaultHeroEquipment,
   ALL_HERO_ITEM_IDS,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
@@ -598,7 +599,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="hud" aria-pressed="false">HUD</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="effects" aria-pressed="false">Effects</button>
     </nav>
-    <details class="debug-rig-panel" open>
+    <details class="debug-rig-panel">
       <summary>Rig editor</summary>
       <div class="debug-rig-editor">
         <fieldset class="debug-rig-editor__canvas-mode">
@@ -662,11 +663,11 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         </fieldset>
       </div>
     </details>
-    <details class="debug-hero-equipment-panel" open>
+    <details class="debug-hero-equipment-panel">
       <summary>Hero equipment</summary>
       <div class="debug-hero-equipment"></div>
     </details>
-    <details class="debug-item-equipment-panel" open>
+    <details class="debug-item-equipment-panel">
       <summary>Item equipment</summary>
       <div class="debug-item-equipment">
         <label class="debug-rig-editor__part">
@@ -683,7 +684,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         </div>
       </div>
     </details>
-    <details class="debug-auto-equipment-panel" open>
+    <details class="debug-auto-equipment-panel">
       <summary>Auto equipment</summary>
       <div class="debug-auto-equipment">
         <label class="debug-rig-editor__part">
@@ -734,7 +735,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
       </div>
     </details>
-    <details class="debug-shop-items-panel" open>
+    <details class="debug-shop-items-panel">
       <summary>Shop items</summary>
       <div class="debug-shop-items">
         <label class="debug-rig-editor__part">
@@ -1460,6 +1461,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     return;
   }
 
+  select.append(createHeroEquipmentOption("", "fallback"));
+
   AUTO_EQUIPMENT_ITEM_RECORDS.forEach((record) => {
     const option = document.createElement("option");
 
@@ -1482,6 +1485,14 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
 
   syncAutoEquipmentEditor(editor);
 
+  const autoEquipmentPanel = editor.closest<HTMLDetailsElement>(".debug-auto-equipment-panel");
+
+  autoEquipmentPanel?.addEventListener("toggle", () => {
+    if (autoEquipmentPanel.open && !getSelectedAutoEquipmentRecord(select.value)) {
+      previewAutoEquipmentFallback();
+    }
+  });
+
   select.addEventListener("change", () => {
     syncAutoEquipmentStatInputs(editor);
     previewSelectedAutoEquipment(editor);
@@ -1499,7 +1510,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     const record = getSelectedAutoEquipmentRecord(select.value);
 
     if (!record) {
-      status.textContent = "No auto equipment asset selected.";
+      previewAutoEquipmentFallback();
+      status.textContent = "Using fallback preview.";
       return;
     }
 
@@ -1605,7 +1617,6 @@ function mountGeneratedShopItemsEditor(editor: HTMLElement): void {
   syncLinkedNumberInputs(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
   syncLinkedNumberInputs(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
   syncGeneratedShopItemsEditor(editor, products);
-  previewGeneratedShopProduct(getSelectedGeneratedShopProduct(products, select.value));
 
   select.addEventListener("change", () => {
     syncGeneratedShopItemsEditor(editor, products);
@@ -2394,11 +2405,13 @@ function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItem
     return;
   }
 
-  const nextEquipment: HeroEquipment = {
+  updateHeroEquipment({
     ...debugHeroEquipment,
     [slotKey]: itemId,
-  };
+  });
+}
 
+function updateHeroEquipment(nextEquipment: HeroEquipment): void {
   debugHeroEquipment = nextEquipment;
   notifyHeroEquipmentChange?.({ ...nextEquipment });
 
@@ -3023,7 +3036,11 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   }
 
   if (status) {
-    status.textContent = isAvailable ? `${record?.asset.sourcePath ?? ""}` : "No unpromoted equipment assets found.";
+    status.textContent = isAvailable
+      ? `${record?.asset.sourcePath ?? ""}`
+      : AUTO_EQUIPMENT_ITEM_RECORDS.length === 0
+        ? "No unpromoted equipment assets found."
+        : "Using fallback preview.";
   }
 }
 
@@ -3095,7 +3112,13 @@ function syncAutoEquipmentStatInputs(editor: HTMLElement): void {
   const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
   const record = getSelectedAutoEquipmentRecord(select?.value);
 
-  if (!armorRange || !armorNumber || !record) {
+  if (!armorRange || !armorNumber) {
+    return;
+  }
+
+  if (!record) {
+    armorRange.value = "0";
+    armorNumber.value = "0";
     return;
   }
 
@@ -3330,9 +3353,12 @@ function previewSelectedAutoEquipment(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const record = getSelectedAutoEquipmentRecord(select?.value);
 
-  if (record) {
-    previewAutoEquipmentRecord(record);
+  if (!record) {
+    previewAutoEquipmentFallback();
+    return;
   }
+
+  previewAutoEquipmentRecord(record);
 }
 
 function previewAutoEquipmentRecord(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number]): void {
@@ -3341,7 +3367,15 @@ function previewAutoEquipmentRecord(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)
     activeEquipmentItemId = record.item.id;
   }
 
-  updateHeroEquipmentSlot(record.item.equipmentSlot, record.item.id);
+  const previewEquipment = createDefaultHeroEquipment();
+
+  previewEquipment[record.item.equipmentSlot] = record.item.id;
+  updateHeroEquipment(previewEquipment);
+}
+
+function previewAutoEquipmentFallback(): void {
+  activeEquipmentItemId = "";
+  updateHeroEquipment(createDefaultHeroEquipment());
 }
 
 function getSelectedAutoEquipmentRecord(itemId: string | undefined): (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined {
