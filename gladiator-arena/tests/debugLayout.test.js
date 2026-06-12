@@ -228,6 +228,10 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ITEM_RECORDS"), true);
   assert.equal(debugPanelSource.includes("GENERATED_EQUIPMENT_ITEM_RECORDS"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__transform-controls"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__rarity"), true);
+  assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_RARITIES"), true);
+  assert.equal(debugPanelSource.includes("getSelectedAutoEquipmentRarity"), true);
+  assert.equal(debugPanelSource.includes("rarity: getSelectedAutoEquipmentRarity"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__generated-select"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__remove"), true);
   assert.equal(debugPanelSource.includes("window.confirm"), true);
@@ -235,4 +239,28 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ARMOR_MAX = 200"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_DAMAGE_MAX = 100"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_PRICE_MAX = 2000"), true);
+});
+
+test("debug panel exposes generated shop item editor", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes("debug-shop-items-panel"), true);
+  assert.equal(debugPanelSource.includes("Shop items"), true);
+  assert.equal(debugPanelSource.includes("saveGeneratedShopItem"), true);
+  assert.equal(debugPanelSource.includes("mountGeneratedShopItemsEditor"), true);
+  assert.equal(debugPanelSource.includes("previewGeneratedShopProduct"), true);
+  assert.equal(debugPanelSource.includes("updateHeroEquipmentSlot(definition.equipmentSlot, definition.id)"), true);
+  assert.equal(debugPanelSource.includes("formatGeneratedShopProductOption"), true);
+  assert.equal(debugPanelSource.includes("setDebugRarityDataset"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedShopProducts"), true);
+  assert.equal(debugPanelSource.includes("DEBUG_SHOP_ITEM_PAIR_CONFIGS"), true);
+  assert.equal(debugPanelSource.includes("createDebugGeneratedShopPairProduct"), true);
+  assert.equal(debugPanelSource.includes("Math.max(getGeneratedShopRecordStat(backRecord), getGeneratedShopRecordStat(frontRecord))"), true);
+  assert.equal(debugPanelSource.includes("data-shop-item-stat"), true);
+  assert.equal(debugPanelSource.includes("data-shop-item-price"), true);
+  assert.equal(debugPanelSource.includes("debug-shop-items__rarity"), true);
+  assert.equal(debugPanelSource.includes("itemIds: product.itemIds"), true);
+  assert.equal(debugPanelSource.includes("debug-rarity-option--"), true);
+  assert.equal(stylesSource.includes('.debug-rarity-select[data-rarity="rare"]'), true);
+  assert.equal(stylesSource.includes(".debug-shop-items__select"), true);
 });

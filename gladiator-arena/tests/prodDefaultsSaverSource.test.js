@@ -36,6 +36,15 @@ test("client saver can remove generated equipment through the local dev endpoint
   assert.match(source, /JSON\.stringify\(\{ itemId \}\)/);
 });
 
+test("client saver can update generated shop items through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/update-generated-shop-item/);
+  assert.match(source, /UpdateGeneratedShopItemPayload/);
+  assert.match(source, /saveGeneratedShopItem/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("vite dev middleware only writes whitelisted arena layout defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 
@@ -121,6 +130,20 @@ test("vite dev middleware removes generated equipment records and asset files", 
   assert.match(source, /Only generated equipment items can be removed/);
 });
 
+test("vite dev middleware updates generated shop item rarity stats and price", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /update-generated-shop-item/);
+  assert.match(source, /pickGeneratedShopItemUpdate/);
+  assert.match(source, /updateGeneratedShopItems/);
+  assert.match(source, /updateGeneratedShopItemRecord/);
+  assert.match(source, /formatUpdatedGeneratedShopItemMessage/);
+  assert.match(source, /readNonEmptyStringArray/);
+  assert.match(source, /targetIndex > 0 \? 0 : clampedStat/);
+  assert.match(source, /armoryProduct: \{ \.\.\.record\.armoryProduct, price: update\.price \}/);
+  assert.match(source, /weaponProduct: \{ \.\.\.record\.weaponProduct, price: update\.price \}/);
+});
+
 test("save as prod defaults also persists the selected rig editor animation", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const saveDefaultsRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-defaults"'), source.indexOf('"/__dust-arena/save-prod-animation"'));
@@ -160,6 +183,25 @@ test("vite dev middleware converts promoted png equipment to standardized webp a
   assert.match(source, /promotedEquipmentLowMaxSide = 448/);
   assert.match(source, /readAssetSourcePath\(asset\.sourcePath, getEquipmentAssetSourcePrefix\(kind\), "asset\.sourcePath", \["\.png", "\.webp"\]\)/);
   assert.match(source, /getEquipmentAssetLowSourcePrefix\(kind\)/);
+});
+
+test("vite dev middleware auto-generates mirrored armor pairs during promotion", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /promotedEquipmentMirrorPairs/);
+  assert.match(source, /createPromotedEquipmentRecords/);
+  assert.match(source, /createMirroredPromotedEquipmentRecord/);
+  assert.match(source, /ensureMirroredPromotedEquipmentAssets/);
+  assert.match(source, /mirrorPromotedEquipmentTuning/);
+  assert.match(source, /x: -tuning\.x/);
+  assert.match(source, /angle: -tuning\.angle/);
+  assert.match(source, /\.flop\(\)/);
+  assert.match(source, /upsertGeneratedEquipmentRecords\(records, promotedRecords\)/);
+  assert.match(source, /updated: promotedRecords\.length/);
+  assert.match(source, /backShoulderguardAssetKey/);
+  assert.match(source, /frontShoulderguardAssetKey/);
+  assert.match(source, /backBootAssetKey/);
+  assert.match(source, /frontBootAssetKey/);
 });
 
 test("vite dev middleware can promote weapon equipment into the weapon shop", () => {

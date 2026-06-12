@@ -1,6 +1,6 @@
 import type { ArenaDebugTuning, EquipmentTuning } from "./debugTuning";
 import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
-import type { HeroItemDefinition } from "./hero";
+import type { HeroItemDefinition, HeroItemRarity } from "./hero";
 
 interface SaveProdDefaultsResponse {
   message?: string;
@@ -19,9 +19,17 @@ export interface PromoteEquipmentItemPayload {
   equipmentTuning: EquipmentTuning;
 }
 
+export interface UpdateGeneratedShopItemPayload {
+  itemIds: string[];
+  rarity: HeroItemRarity;
+  stat: number;
+  price: number;
+}
+
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
+const updateGeneratedShopItemEndpoint = "/__dust-arena/update-generated-shop-item";
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
@@ -82,6 +90,21 @@ export async function removePromotedEquipmentItem(itemId: string): Promise<strin
   }
 
   return responsePayload.message ?? "Removed equipment item.";
+}
+
+export async function saveGeneratedShopItem(payload: UpdateGeneratedShopItemPayload): Promise<string> {
+  const response = await fetch(updateGeneratedShopItemEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not update generated shop item. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Updated generated shop item.";
 }
 
 async function readResponse(response: Response): Promise<SaveProdDefaultsResponse> {

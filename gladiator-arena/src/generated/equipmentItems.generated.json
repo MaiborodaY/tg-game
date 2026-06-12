@@ -1,638 +1,9 @@
 [
   {
-    "id": "generated_equipment_helmet_chainmail_01",
-    "name": "Chainmail Coif 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "helmet",
-    "assetKeys": {
-      "helmetAssetKey": "helmet-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "helmet-chainmail-01",
-      "sourcePath": "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_helmet_chainmail_01",
-      "name": "Chainmail Coif 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_helmet_chainmail_01"
-      ],
-      "categoryId": "head"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_helmet_cloth_01",
-    "name": "Cloth Helmet 01",
-    "kind": "armor",
-    "armorCategory": "cloth",
-    "armorHp": 1,
-    "equipmentSlot": "helmet",
-    "assetKeys": {
-      "helmetAssetKey": "helmet-cloth-01"
-    },
-    "equipmentTuning": {
-      "x": -1,
-      "y": 21,
-      "angle": 0,
-      "scaleX": 1.12,
-      "scaleY": 1.12,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "helmet-cloth-01",
-      "sourcePath": "assets/fighters/armor/helmet/helmet-cloth-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-cloth-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_helmet_cloth_01",
-      "name": "Cloth Helmet 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_helmet_cloth_01"
-      ],
-      "categoryId": "head"
-    },
-    "rarity": "common"
-  },
-  {
-    "id": "generated_equipment_helmet_cloth_02",
-    "name": "Cloth Helmet 02",
-    "kind": "armor",
-    "armorCategory": "cloth",
-    "armorHp": 2,
-    "equipmentSlot": "helmet",
-    "assetKeys": {
-      "helmetAssetKey": "helmet-cloth-02"
-    },
-    "equipmentTuning": {
-      "x": -1,
-      "y": 25,
-      "angle": 0,
-      "scaleX": 1.07,
-      "scaleY": 1.13,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "helmet-cloth-02",
-      "sourcePath": "assets/fighters/armor/helmet/helmet-cloth-02.webp",
-      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-cloth-02.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_helmet_cloth_02",
-      "name": "Cloth Helmet 02",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_helmet_cloth_02"
-      ],
-      "categoryId": "head"
-    },
-    "rarity": "common"
-  },
-  {
-    "id": "generated_equipment_breastplate_chainmail_01",
-    "name": "Chainmail Hauberk 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "breastplate",
-    "assetKeys": {
-      "breastplateAssetKey": "breastplate-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "breastplate-chainmail-01",
-      "sourcePath": "assets/fighters/armor/breastplate/breastplate-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_breastplate_chainmail_01",
-      "name": "Chainmail Hauberk 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_breastplate_chainmail_01"
-      ],
-      "categoryId": "chest"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_back_shoulderguard_chainmail_01",
-    "name": "Chainmail Back Shoulderguard 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "backShoulderguard",
-    "assetKeys": {
-      "backShoulderguardAssetKey": "back-shoulderguard-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-shoulderguard-chainmail-01",
-      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_shoulderguard_chainmail_01",
-      "name": "Chainmail Back Shoulderguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_shoulderguard_chainmail_01"
-      ],
-      "categoryId": "shoulders"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_front_shoulderguard_chainmail_01",
-    "name": "Chainmail Front Shoulderguard 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "frontShoulderguard",
-    "assetKeys": {
-      "frontShoulderguardAssetKey": "front-shoulderguard-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-shoulderguard-chainmail-01",
-      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_shoulderguard_chainmail_01",
-      "name": "Chainmail Front Shoulderguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_shoulderguard_chainmail_01"
-      ],
-      "categoryId": "shoulders"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_back_shoulderguard_cloth_01",
-    "name": "Cloth Back Shoulderguard 01",
-    "kind": "armor",
-    "armorCategory": "cloth",
-    "armorHp": 1,
-    "equipmentSlot": "backShoulderguard",
-    "assetKeys": {
-      "backShoulderguardAssetKey": "back-shoulderguard-cloth-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 47,
-      "angle": 7,
-      "scaleX": 1.98,
-      "scaleY": 1.23,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-shoulderguard-cloth-01",
-      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-cloth-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-cloth-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_shoulderguard_cloth_01",
-      "name": "Cloth Back Shoulderguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_shoulderguard_cloth_01"
-      ],
-      "categoryId": "shoulders"
-    },
-    "rarity": "common"
-  },
-  {
-    "id": "generated_equipment_front_shoulderguard_cloth_01",
-    "name": "Cloth Front Shoulderguard 01",
-    "kind": "armor",
-    "armorCategory": "cloth",
-    "armorHp": 1,
-    "equipmentSlot": "frontShoulderguard",
-    "assetKeys": {
-      "frontShoulderguardAssetKey": "front-shoulderguard-cloth-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 47,
-      "angle": 7,
-      "scaleX": 1.98,
-      "scaleY": 1.23,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-shoulderguard-cloth-01",
-      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-cloth-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-cloth-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_shoulderguard_cloth_01",
-      "name": "Cloth Front Shoulderguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_shoulderguard_cloth_01"
-      ],
-      "categoryId": "shoulders"
-    },
-    "rarity": "common"
-  },
-  {
-    "id": "generated_equipment_back_wrist_chainmail_01",
-    "name": "Chainmail Back Wrist 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "backWrist",
-    "assetKeys": {
-      "backWristAssetKey": "back-wrist-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-wrist-chainmail-01",
-      "sourcePath": "assets/fighters/armor/arms/back-wrist-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_wrist_chainmail_01",
-      "name": "Chainmail Back Wrist 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_wrist_chainmail_01"
-      ],
-      "categoryId": "arms"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_front_wrist_chainmail_01",
-    "name": "Chainmail Front Wrist 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "frontWrist",
-    "assetKeys": {
-      "frontWristAssetKey": "front-wrist-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-wrist-chainmail-01",
-      "sourcePath": "assets/fighters/armor/arms/front-wrist-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_wrist_chainmail_01",
-      "name": "Chainmail Front Wrist 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_wrist_chainmail_01"
-      ],
-      "categoryId": "arms"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_back_glove_cloth_01",
-    "name": "Cloth Back Glove 01",
-    "kind": "armor",
-    "armorCategory": "cloth",
-    "armorHp": 1,
-    "equipmentSlot": "backGlove",
-    "assetKeys": {
-      "backGloveAssetKey": "back-glove-cloth-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 13,
-      "angle": 0,
-      "scaleX": 0.6,
-      "scaleY": 0.6,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-glove-cloth-01",
-      "sourcePath": "assets/fighters/armor/arms/back-glove-cloth-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-cloth-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_glove_cloth_01",
-      "name": "Cloth Back Glove 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_glove_cloth_01"
-      ],
-      "categoryId": "arms"
-    },
-    "rarity": "common"
-  },
-  {
-    "id": "generated_equipment_front_glove_cloth_01",
-    "name": "Cloth Front Glove 01",
-    "kind": "armor",
-    "armorCategory": "cloth",
-    "armorHp": 1,
-    "equipmentSlot": "frontGlove",
-    "assetKeys": {
-      "frontGloveAssetKey": "front-glove-cloth-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 13,
-      "angle": 0,
-      "scaleX": 0.6,
-      "scaleY": 0.6,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-glove-cloth-01",
-      "sourcePath": "assets/fighters/armor/arms/front-glove-cloth-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-cloth-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_glove_cloth_01",
-      "name": "Cloth Front Glove 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_glove_cloth_01"
-      ],
-      "categoryId": "arms"
-    },
-    "rarity": "common"
-  },
-  {
-    "id": "generated_equipment_back_glove_chainmail_03",
-    "name": "Chainmail Back Glove 03",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "backGlove",
-    "assetKeys": {
-      "backGloveAssetKey": "back-glove-chainmail-03"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-glove-chainmail-03",
-      "sourcePath": "assets/fighters/armor/arms/back-glove-chainmail-03.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-chainmail-03.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_glove_chainmail_03",
-      "name": "Chainmail Back Glove 03",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_glove_chainmail_03"
-      ],
-      "categoryId": "arms"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_front_glove_chainmail_03",
-    "name": "Chainmail Front Glove 03",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "frontGlove",
-    "assetKeys": {
-      "frontGloveAssetKey": "front-glove-chainmail-03"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-glove-chainmail-03",
-      "sourcePath": "assets/fighters/armor/arms/front-glove-chainmail-03.webp",
-      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-chainmail-03.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_glove_chainmail_03",
-      "name": "Chainmail Front Glove 03",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_glove_chainmail_03"
-      ],
-      "categoryId": "arms"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_back_greave_chainmail_01",
-    "name": "Chainmail Back Greave 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "backGreave",
-    "assetKeys": {
-      "backGreaveAssetKey": "back-greave-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-greave-chainmail-01",
-      "sourcePath": "assets/fighters/armor/legs/back-greave-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_greave_chainmail_01",
-      "name": "Chainmail Back Greave 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_greave_chainmail_01"
-      ],
-      "categoryId": "legs"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_front_greave_chainmail_01",
-    "name": "Chainmail Front Greave 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "frontGreave",
-    "assetKeys": {
-      "frontGreaveAssetKey": "front-greave-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-greave-chainmail-01",
-      "sourcePath": "assets/fighters/armor/legs/front-greave-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_greave_chainmail_01",
-      "name": "Chainmail Front Greave 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_greave_chainmail_01"
-      ],
-      "categoryId": "legs"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_back_shinguard_chainmail_01",
-    "name": "Chainmail Back Shinguard 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "backShinguard",
-    "assetKeys": {
-      "backShinguardAssetKey": "back-shinguard-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "back-shinguard-chainmail-01",
-      "sourcePath": "assets/fighters/armor/legs/back-shinguard-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_shinguard_chainmail_01",
-      "name": "Chainmail Back Shinguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_shinguard_chainmail_01"
-      ],
-      "categoryId": "legs"
-    },
-    "rarity": "rare"
-  },
-  {
-    "id": "generated_equipment_front_shinguard_chainmail_01",
-    "name": "Chainmail Front Shinguard 01",
-    "kind": "armor",
-    "armorCategory": "chain",
-    "armorHp": 4,
-    "equipmentSlot": "frontShinguard",
-    "assetKeys": {
-      "frontShinguardAssetKey": "front-shinguard-chainmail-01"
-    },
-    "equipmentTuning": {
-      "x": 0,
-      "y": 0,
-      "angle": 0,
-      "scaleX": 1,
-      "scaleY": 1,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "front-shinguard-chainmail-01",
-      "sourcePath": "assets/fighters/armor/legs/front-shinguard-chainmail-01.webp",
-      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-chainmail-01.webp"
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_shinguard_chainmail_01",
-      "name": "Chainmail Front Shinguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_shinguard_chainmail_01"
-      ],
-      "categoryId": "legs"
-    },
-    "rarity": "rare"
-  },
-  {
     "id": "generated_equipment_back_boot_chainmail_01",
     "name": "Chainmail Back Boot 01",
     "kind": "armor",
+    "rarity": "rare",
     "armorCategory": "chain",
     "armorHp": 4,
     "equipmentSlot": "backBoot",
@@ -661,13 +32,328 @@
         "generated_equipment_back_boot_chainmail_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_chainmail_03",
+    "name": "Chainmail Back Glove 03",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-chainmail-03"
     },
-    "rarity": "rare"
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-chainmail-03",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-chainmail-03.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-chainmail-03.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_chainmail_03",
+      "name": "Chainmail Back Glove 03",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_chainmail_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_cloth_01",
+    "name": "Cloth Back Glove 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 13,
+      "angle": 0,
+      "scaleX": 0.6,
+      "scaleY": 0.6,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-cloth-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_cloth_01",
+      "name": "Cloth Back Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_cloth_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_chainmail_01",
+    "name": "Chainmail Back Greave 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-chainmail-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_chainmail_01",
+      "name": "Chainmail Back Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_chainmail_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_chainmail_01",
+    "name": "Chainmail Back Shinguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-chainmail-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_chainmail_01",
+      "name": "Chainmail Back Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_chainmail_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_chainmail_01",
+    "name": "Chainmail Back Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-chainmail-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_chainmail_01",
+      "name": "Chainmail Back Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_chainmail_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_cloth_01",
+    "name": "Cloth Back Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 47,
+      "angle": 7,
+      "scaleX": 1.98,
+      "scaleY": 1.23,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-cloth-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_cloth_01",
+      "name": "Cloth Back Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_cloth_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_chainmail_01",
+    "name": "Chainmail Back Wrist 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-chainmail-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_chainmail_01",
+      "name": "Chainmail Back Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_chainmail_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_cloth_01",
+    "name": "Cloth Back Wrist 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": -1.2507815116668395,
+      "y": 21.40828402366864,
+      "angle": 4,
+      "scaleX": 1.77,
+      "scaleY": 1.18,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-cloth-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_cloth_01",
+      "name": "Cloth Back Wrist 01",
+      "price": 5,
+      "itemIds": [
+        "generated_equipment_back_wrist_cloth_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_chainmail_01",
+    "name": "Chainmail Hauberk 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-chainmail-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_chainmail_01",
+      "name": "Chainmail Hauberk 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_chainmail_01"
+      ],
+      "categoryId": "chest"
+    }
   },
   {
     "id": "generated_equipment_front_boot_chainmail_01",
     "name": "Chainmail Front Boot 01",
     "kind": "armor",
+    "rarity": "rare",
     "armorCategory": "chain",
     "armorHp": 4,
     "equipmentSlot": "frontBoot",
@@ -696,13 +382,398 @@
         "generated_equipment_front_boot_chainmail_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_chainmail_03",
+    "name": "Chainmail Front Glove 03",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-chainmail-03"
     },
-    "rarity": "rare"
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-chainmail-03",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-chainmail-03.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-chainmail-03.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_chainmail_03",
+      "name": "Chainmail Front Glove 03",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_chainmail_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_cloth_01",
+    "name": "Cloth Front Glove 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 13,
+      "angle": 0,
+      "scaleX": 0.6,
+      "scaleY": 0.6,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-cloth-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_cloth_01",
+      "name": "Cloth Front Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_cloth_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_chainmail_01",
+    "name": "Chainmail Front Greave 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-chainmail-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_chainmail_01",
+      "name": "Chainmail Front Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_chainmail_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_chainmail_01",
+    "name": "Chainmail Front Shinguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-chainmail-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_chainmail_01",
+      "name": "Chainmail Front Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_chainmail_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_chainmail_01",
+    "name": "Chainmail Front Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-chainmail-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_chainmail_01",
+      "name": "Chainmail Front Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_chainmail_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_cloth_01",
+    "name": "Cloth Front Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 47,
+      "angle": 7,
+      "scaleX": 1.98,
+      "scaleY": 1.23,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-cloth-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_cloth_01",
+      "name": "Cloth Front Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_cloth_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_chainmail_01",
+    "name": "Chainmail Front Wrist 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-chainmail-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_chainmail_01",
+      "name": "Chainmail Front Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_chainmail_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_cloth_01",
+    "name": "Cloth Front Wrist 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": -1.2507815116668395,
+      "y": 21.40828402366864,
+      "angle": 4,
+      "scaleX": 1.77,
+      "scaleY": 1.18,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-cloth-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_cloth_01",
+      "name": "Cloth Front Wrist 01",
+      "price": 5,
+      "itemIds": [
+        "generated_equipment_front_wrist_cloth_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_chainmail_01",
+    "name": "Chainmail Coif 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorCategory": "chain",
+    "armorHp": 4,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-chainmail-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-chainmail-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_chainmail_01",
+      "name": "Chainmail Coif 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_chainmail_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_cloth_01",
+    "name": "Cloth Helmet 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 1,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-cloth-01"
+    },
+    "equipmentTuning": {
+      "x": -1,
+      "y": 21,
+      "angle": 0,
+      "scaleX": 1.12,
+      "scaleY": 1.12,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-cloth-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-cloth-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-cloth-01.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_cloth_01",
+      "name": "Cloth Helmet 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_cloth_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_cloth_02",
+    "name": "Cloth Helmet 02",
+    "kind": "armor",
+    "rarity": "common",
+    "armorCategory": "cloth",
+    "armorHp": 2,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-cloth-02"
+    },
+    "equipmentTuning": {
+      "x": -1,
+      "y": 25,
+      "angle": 0,
+      "scaleX": 1.07,
+      "scaleY": 1.13,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-cloth-02",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-cloth-02.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-cloth-02.webp"
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_cloth_02",
+      "name": "Cloth Helmet 02",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_cloth_02"
+      ],
+      "categoryId": "head"
+    }
   },
   {
     "id": "generated_equipment_weapon_axe_01",
     "name": "Axe 01",
     "kind": "weapon",
+    "rarity": "epic",
     "damageBonus": 10,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
@@ -731,13 +802,13 @@
         "generated_equipment_weapon_axe_01"
       ],
       "categoryId": "axes"
-    },
-    "rarity": "epic"
+    }
   },
   {
     "id": "generated_equipment_weapon_bow_01",
     "name": "Bow 01",
     "kind": "weapon",
+    "rarity": "common",
     "damageBonus": 1,
     "weaponClass": "bow",
     "equipmentSlot": "weaponMain",
@@ -766,7 +837,6 @@
         "generated_equipment_weapon_bow_01"
       ],
       "categoryId": "bows"
-    },
-    "rarity": "common"
+    }
   }
 ]

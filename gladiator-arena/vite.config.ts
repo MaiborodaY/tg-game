@@ -191,6 +191,51 @@ const equipmentSlotKeys = [
 ] as const;
 type EquipmentSlotKey = (typeof equipmentSlotKeys)[number];
 
+interface PromotedEquipmentMirrorSideConfig {
+  slot: EquipmentSlotKey;
+  assetKeyName: string;
+  token: string;
+  label: string;
+  sideLabel: string;
+}
+
+interface PromotedEquipmentMirrorPairConfig {
+  back: PromotedEquipmentMirrorSideConfig;
+  front: PromotedEquipmentMirrorSideConfig;
+}
+
+interface PromotedEquipmentMirrorConfig {
+  source: PromotedEquipmentMirrorSideConfig;
+  target: PromotedEquipmentMirrorSideConfig;
+}
+
+const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[] = [
+  {
+    back: { slot: "backShoulderguard", assetKeyName: "backShoulderguardAssetKey", token: "back-shoulderguard", label: "Back Shoulderguard", sideLabel: "Back" },
+    front: { slot: "frontShoulderguard", assetKeyName: "frontShoulderguardAssetKey", token: "front-shoulderguard", label: "Front Shoulderguard", sideLabel: "Front" },
+  },
+  {
+    back: { slot: "backWrist", assetKeyName: "backWristAssetKey", token: "back-wrist", label: "Back Wrist", sideLabel: "Back" },
+    front: { slot: "frontWrist", assetKeyName: "frontWristAssetKey", token: "front-wrist", label: "Front Wrist", sideLabel: "Front" },
+  },
+  {
+    back: { slot: "backGlove", assetKeyName: "backGloveAssetKey", token: "back-glove", label: "Back Glove", sideLabel: "Back" },
+    front: { slot: "frontGlove", assetKeyName: "frontGloveAssetKey", token: "front-glove", label: "Front Glove", sideLabel: "Front" },
+  },
+  {
+    back: { slot: "backGreave", assetKeyName: "backGreaveAssetKey", token: "back-greave", label: "Back Greave", sideLabel: "Back" },
+    front: { slot: "frontGreave", assetKeyName: "frontGreaveAssetKey", token: "front-greave", label: "Front Greave", sideLabel: "Front" },
+  },
+  {
+    back: { slot: "backShinguard", assetKeyName: "backShinguardAssetKey", token: "back-shinguard", label: "Back Shinguard", sideLabel: "Back" },
+    front: { slot: "frontShinguard", assetKeyName: "frontShinguardAssetKey", token: "front-shinguard", label: "Front Shinguard", sideLabel: "Front" },
+  },
+  {
+    back: { slot: "backBoot", assetKeyName: "backBootAssetKey", token: "back-boot", label: "Back Boot", sideLabel: "Back" },
+    front: { slot: "frontBoot", assetKeyName: "frontBootAssetKey", token: "front-boot", label: "Front Boot", sideLabel: "Front" },
+  },
+] as const;
+
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 
@@ -305,6 +350,13 @@ interface PromoteEquipmentItemPayload {
   assetKeys?: unknown;
   asset?: unknown;
   equipmentTuning?: unknown;
+}
+
+interface UpdateGeneratedShopItemPayload {
+  itemIds?: unknown;
+  rarity?: unknown;
+  stat?: unknown;
+  price?: unknown;
 }
 
 interface GeneratedEquipmentJsonRecord {
@@ -461,11 +513,12 @@ function saveProdDefaultsPlugin(): Plugin {
           const payload = await readJson(request);
           const promotedItem = await pickPromotedEquipmentItem(payload);
           const records = await readGeneratedEquipmentRecords();
-          const nextRecords = upsertGeneratedEquipmentRecord(records, promotedItem);
+          const promotedRecords = await createPromotedEquipmentRecords(records, promotedItem);
+          const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
 
           await writeGeneratedEquipmentRecords(nextRecords);
           server.ws.send({ type: "full-reload" });
-          sendJson(response, 200, { message: `Promoted ${promotedItem.name}.`, updated: 1 });
+          sendJson(response, 200, { message: formatPromotedEquipmentMessage(promotedRecords), updated: promotedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote equipment item." });
         }
@@ -486,6 +539,24 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: `Removed ${removedItem.name}.`, updated: 1 });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not remove equipment item." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/update-generated-shop-item", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to update generated shop items." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const update = pickGeneratedShopItemUpdate(payload);
+          const updatedRecords = await updateGeneratedShopItems(update);
+
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatUpdatedGeneratedShopItemMessage(updatedRecords), updated: updatedRecords.length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated shop item." });
         }
       });
     },
@@ -909,6 +980,332 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Gener
   };
 }
 
+async function createPromotedEquipmentRecords(
+  records: GeneratedEquipmentJsonRecord[],
+  promotedItem: GeneratedEquipmentJsonRecord,
+): Promise<GeneratedEquipmentJsonRecord[]> {
+  const mirroredItem = await createMirroredPromotedEquipmentRecord(records, promotedItem);
+
+  return mirroredItem ? [promotedItem, mirroredItem] : [promotedItem];
+}
+
+async function createMirroredPromotedEquipmentRecord(
+  records: GeneratedEquipmentJsonRecord[],
+  promotedItem: GeneratedEquipmentJsonRecord,
+): Promise<GeneratedEquipmentJsonRecord | undefined> {
+  if (promotedItem.kind !== "armor") {
+    return undefined;
+  }
+
+  const mirrorConfig = getPromotedEquipmentMirrorConfig(promotedItem.equipmentSlot);
+
+  if (!mirrorConfig) {
+    return undefined;
+  }
+
+  if (promotedItem.assetKeys[mirrorConfig.source.assetKeyName] !== promotedItem.asset.key) {
+    throw new Error(`Promoted paired item must use ${mirrorConfig.source.assetKeyName}.`);
+  }
+
+  const mirrorAssetKey = replacePromotedEquipmentMirrorToken(
+    promotedItem.asset.key,
+    mirrorConfig.source.token,
+    mirrorConfig.target.token,
+    "asset.key",
+  );
+  const mirrorSourcePath = replacePromotedEquipmentMirrorToken(
+    promotedItem.asset.sourcePath,
+    mirrorConfig.source.token,
+    mirrorConfig.target.token,
+    "asset.sourcePath",
+  );
+  const mirrorLowSourcePath = promotedItem.asset.lowSourcePath
+    ? replacePromotedEquipmentMirrorToken(promotedItem.asset.lowSourcePath, mirrorConfig.source.token, mirrorConfig.target.token, "asset.lowSourcePath")
+    : undefined;
+  const mirrorId = `generated_equipment_${toIdentifier(mirrorAssetKey)}`;
+
+  if (hasGeneratedEquipmentMirrorCounterpart(records, mirrorConfig, mirrorId, mirrorAssetKey, mirrorSourcePath)) {
+    return undefined;
+  }
+
+  const mirrorName = formatPromotedEquipmentMirrorName(promotedItem.name, mirrorConfig);
+  const categoryId = getArmoryCategoryId(mirrorConfig.target.slot) ?? promotedItem.armoryProduct?.categoryId;
+  const mirroredItem: GeneratedEquipmentJsonRecord = {
+    id: mirrorId,
+    name: mirrorName,
+    kind: "armor",
+    ...(promotedItem.rarity ? { rarity: promotedItem.rarity } : {}),
+    ...(promotedItem.armorCategory ? { armorCategory: promotedItem.armorCategory } : {}),
+    ...(promotedItem.armorHp !== undefined ? { armorHp: promotedItem.armorHp } : {}),
+    equipmentSlot: mirrorConfig.target.slot,
+    assetKeys: { [mirrorConfig.target.assetKeyName]: mirrorAssetKey },
+    equipmentTuning: mirrorPromotedEquipmentTuning(promotedItem.equipmentTuning),
+    asset: {
+      key: mirrorAssetKey,
+      sourcePath: mirrorSourcePath,
+      ...(mirrorLowSourcePath ? { lowSourcePath: mirrorLowSourcePath } : {}),
+    },
+    ...(promotedItem.armoryProduct && categoryId
+      ? {
+          armoryProduct: {
+            id: mirrorId,
+            name: mirrorName,
+            price: promotedItem.armoryProduct.price,
+            itemIds: [mirrorId],
+            categoryId,
+          },
+        }
+      : {}),
+  };
+
+  await ensureMirroredPromotedEquipmentAssets(promotedItem, mirroredItem);
+
+  return mirroredItem;
+}
+
+function getPromotedEquipmentMirrorConfig(equipmentSlot: EquipmentSlotKey): PromotedEquipmentMirrorConfig | undefined {
+  for (const pair of promotedEquipmentMirrorPairs) {
+    if (pair.back.slot === equipmentSlot) {
+      return { source: pair.back, target: pair.front };
+    }
+
+    if (pair.front.slot === equipmentSlot) {
+      return { source: pair.front, target: pair.back };
+    }
+  }
+
+  return undefined;
+}
+
+function hasGeneratedEquipmentMirrorCounterpart(
+  records: GeneratedEquipmentJsonRecord[],
+  mirrorConfig: PromotedEquipmentMirrorConfig,
+  mirrorId: string,
+  mirrorAssetKey: string,
+  mirrorSourcePath: string,
+): boolean {
+  return records.some((record) => {
+    return (
+      record.id === mirrorId ||
+      record.asset.key === mirrorAssetKey ||
+      record.asset.sourcePath === mirrorSourcePath ||
+      (record.kind === "armor" &&
+        record.equipmentSlot === mirrorConfig.target.slot &&
+        record.assetKeys[mirrorConfig.target.assetKeyName] === mirrorAssetKey)
+    );
+  });
+}
+
+function replacePromotedEquipmentMirrorToken(value: string, sourceToken: string, targetToken: string, label: string): string {
+  const mirroredValue = value.replace(sourceToken, targetToken);
+
+  if (mirroredValue === value) {
+    throw new Error(`Could not mirror promoted equipment ${label}: expected ${sourceToken}.`);
+  }
+
+  return mirroredValue;
+}
+
+function formatPromotedEquipmentMirrorName(name: string, mirrorConfig: PromotedEquipmentMirrorConfig): string {
+  const labelPattern = new RegExp(`\\b${escapeRegExp(mirrorConfig.source.label)}\\b`, "i");
+
+  if (labelPattern.test(name)) {
+    return name.replace(labelPattern, mirrorConfig.target.label);
+  }
+
+  const sidePattern = new RegExp(`\\b${escapeRegExp(mirrorConfig.source.sideLabel)}\\b`, "i");
+
+  if (sidePattern.test(name)) {
+    return name.replace(sidePattern, mirrorConfig.target.sideLabel);
+  }
+
+  return `${name} ${mirrorConfig.target.sideLabel}`;
+}
+
+function mirrorPromotedEquipmentTuning(tuning: RigPartTuning): RigPartTuning {
+  return {
+    ...tuning,
+    x: -tuning.x,
+    angle: -tuning.angle,
+  };
+}
+
+async function ensureMirroredPromotedEquipmentAssets(
+  promotedItem: GeneratedEquipmentJsonRecord,
+  mirroredItem: GeneratedEquipmentJsonRecord,
+): Promise<void> {
+  const targetRuntimeExists = await projectSourceFileExists(mirroredItem.asset.sourcePath);
+
+  if (!targetRuntimeExists) {
+    await writeMirroredPromotedEquipmentWebpAsset(promotedItem.asset.sourcePath, mirroredItem.asset.sourcePath, promotedEquipmentRuntimeWebpQuality);
+  }
+
+  if (!promotedItem.asset.lowSourcePath || !mirroredItem.asset.lowSourcePath || (await projectSourceFileExists(mirroredItem.asset.lowSourcePath))) {
+    return;
+  }
+
+  if (targetRuntimeExists) {
+    await writeResizedPromotedEquipmentLowAsset(mirroredItem.asset.sourcePath, mirroredItem.asset.lowSourcePath);
+    return;
+  }
+
+  await writeMirroredPromotedEquipmentWebpAsset(promotedItem.asset.lowSourcePath, mirroredItem.asset.lowSourcePath, promotedEquipmentLowWebpQuality);
+}
+
+async function writeMirroredPromotedEquipmentWebpAsset(sourcePath: string, targetPath: string, quality: number): Promise<void> {
+  const source = await readFile(getProjectSourceUrl(sourcePath));
+  const targetUrl = getProjectSourceUrl(targetPath);
+  const mirrored = await sharp(source)
+    .flop()
+    .webp({
+      alphaQuality: 100,
+      effort: 6,
+      quality,
+      smartSubsample: true,
+    })
+    .toBuffer();
+
+  await mkdir(new URL(".", targetUrl), { recursive: true });
+  await writeFile(targetUrl, mirrored);
+}
+
+async function writeResizedPromotedEquipmentLowAsset(sourcePath: string, targetPath: string): Promise<void> {
+  const source = await readFile(getProjectSourceUrl(sourcePath));
+  const targetUrl = getProjectSourceUrl(targetPath);
+  const low = await createEquipmentWebp(source, promotedEquipmentLowMaxSide, promotedEquipmentLowWebpQuality);
+
+  await mkdir(new URL(".", targetUrl), { recursive: true });
+  await writeFile(targetUrl, low);
+}
+
+async function projectSourceFileExists(sourcePath: string): Promise<boolean> {
+  try {
+    await readFile(getProjectSourceUrl(sourcePath));
+    return true;
+  } catch (error) {
+    if (isFileNotFoundError(error)) {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+function isFileNotFoundError(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code?: unknown }).code === "ENOENT");
+}
+
+function formatPromotedEquipmentMessage(promotedRecords: GeneratedEquipmentJsonRecord[]): string {
+  const [promotedItem, ...generatedItems] = promotedRecords;
+
+  if (!promotedItem) {
+    return "Promoted equipment item.";
+  }
+
+  if (generatedItems.length === 0) {
+    return `Promoted ${promotedItem.name}.`;
+  }
+
+  return `Promoted ${promotedItem.name} and generated ${generatedItems.map((item) => item.name).join(", ")}.`;
+}
+
+interface GeneratedShopItemUpdate {
+  itemIds: string[];
+  rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
+  stat: number;
+  price: number;
+}
+
+function pickGeneratedShopItemUpdate(payload: unknown): GeneratedShopItemUpdate {
+  const update = readPlainObject(payload, "generated shop item update") as UpdateGeneratedShopItemPayload;
+  const itemIds = readNonEmptyStringArray(update.itemIds, "generated shop item ids");
+  const rarity = readItemRarity(update.rarity);
+  const stat = Math.max(0, Math.floor(readFinitePayloadNumber(update.stat, "generated shop item stat")));
+  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(update.price, "generated shop item price"))));
+
+  return {
+    itemIds,
+    rarity,
+    stat,
+    price,
+  };
+}
+
+async function updateGeneratedShopItems(update: GeneratedShopItemUpdate): Promise<GeneratedEquipmentJsonRecord[]> {
+  const records = await readGeneratedEquipmentRecords();
+  const targetRecords = update.itemIds.map((itemId) => {
+    const record = records.find((candidate) => candidate.id === itemId);
+
+    if (!record) {
+      throw new Error(`Generated shop item not found: ${itemId}.`);
+    }
+
+    if (!record.armoryProduct && !record.weaponProduct) {
+      throw new Error("Only generated shop items can be edited.");
+    }
+
+    return record;
+  });
+  const kind = targetRecords[0]?.kind;
+
+  if (!kind || !targetRecords.every((record) => record.kind === kind)) {
+    throw new Error("Generated shop item edit cannot mix armor and weapons.");
+  }
+
+  const maxStat = kind === "weapon" ? promotedEquipmentMaxDamageBonus : promotedEquipmentMaxArmorHp;
+  const clampedStat = Math.max(0, Math.min(maxStat, update.stat));
+  const targetIds = new Set(targetRecords.map((record) => record.id));
+  let targetIndex = 0;
+  const nextRecords = records.map((record) => {
+    if (!targetIds.has(record.id)) {
+      return record;
+    }
+
+    const nextRecord = updateGeneratedShopItemRecord(record, update, clampedStat, targetIndex);
+
+    targetIndex += 1;
+
+    return nextRecord;
+  });
+
+  await writeGeneratedEquipmentRecords(nextRecords);
+
+  return nextRecords.filter((record) => targetIds.has(record.id));
+}
+
+function updateGeneratedShopItemRecord(
+  record: GeneratedEquipmentJsonRecord,
+  update: GeneratedShopItemUpdate,
+  clampedStat: number,
+  targetIndex: number,
+): GeneratedEquipmentJsonRecord {
+  const itemStat = record.kind === "armor" && targetIndex > 0 ? 0 : clampedStat;
+
+  return {
+    ...record,
+    rarity: update.rarity,
+    ...(record.kind === "armor" ? { armorHp: itemStat } : { damageBonus: itemStat }),
+    ...(record.armoryProduct ? { armoryProduct: { ...record.armoryProduct, price: update.price } } : {}),
+    ...(record.weaponProduct ? { weaponProduct: { ...record.weaponProduct, price: update.price } } : {}),
+  };
+}
+
+function formatUpdatedGeneratedShopItemMessage(updatedRecords: GeneratedEquipmentJsonRecord[]): string {
+  if (updatedRecords.length === 0) {
+    return "Updated generated shop item.";
+  }
+
+  if (updatedRecords.length === 1) {
+    return `Updated ${updatedRecords[0]!.name}.`;
+  }
+
+  return `Updated ${updatedRecords.length} linked generated shop items.`;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function pickGeneratedEquipmentRemovalId(payload: unknown): string {
   const removal = readPlainObject(payload, "equipment removal values");
   const itemId = readNonEmptyString(removal.itemId, "itemId");
@@ -939,10 +1336,16 @@ async function readGeneratedEquipmentRecords(): Promise<GeneratedEquipmentJsonRe
   }
 }
 
-function upsertGeneratedEquipmentRecord(records: GeneratedEquipmentJsonRecord[], nextRecord: GeneratedEquipmentJsonRecord): GeneratedEquipmentJsonRecord[] {
+function upsertGeneratedEquipmentRecords(
+  records: GeneratedEquipmentJsonRecord[],
+  nextRecords: GeneratedEquipmentJsonRecord[],
+): GeneratedEquipmentJsonRecord[] {
+  const nextIds = new Set(nextRecords.map((record) => record.id));
+  const nextSourcePaths = new Set(nextRecords.map((record) => record.asset.sourcePath));
+
   return [
-    ...records.filter((record) => record.id !== nextRecord.id && record.asset.sourcePath !== nextRecord.asset.sourcePath),
-    nextRecord,
+    ...records.filter((record) => !nextIds.has(record.id) && !nextSourcePaths.has(record.asset.sourcePath)),
+    ...nextRecords,
   ].sort((left, right) => left.id.localeCompare(right.id));
 }
 
@@ -1678,6 +2081,26 @@ function readNonEmptyString(value: unknown, label: string): string {
   }
 
   return value.trim();
+}
+
+function readNonEmptyStringArray(value: unknown, label: string): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`Invalid ${label}.`);
+  }
+
+  return [
+    ...new Set(
+      value.map((entry, index) => {
+        const item = readNonEmptyString(entry, `${label}.${index}`);
+
+        if (!item.startsWith("generated_equipment_")) {
+          throw new Error("Only generated equipment items can be edited.");
+        }
+
+        return item;
+      }),
+    ),
+  ];
 }
 
 function readFinitePayloadNumber(value: unknown, label: string): number {

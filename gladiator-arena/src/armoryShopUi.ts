@@ -406,9 +406,13 @@ function createPairedArmoryProduct(
   return {
     id: `${pairKey}-pair`,
     name: getPairedArmoryProductName(backProduct, pairConfig),
-    price: backProduct.price + frontProduct.price,
+    price: getPairedArmoryProductPrice(backProduct, frontProduct),
     itemIds: [backItemId, frontItemId],
   };
+}
+
+function getPairedArmoryProductPrice(backProduct: ArmoryProduct, frontProduct: ArmoryProduct): number {
+  return Math.max(backProduct.price, frontProduct.price);
 }
 
 function getArmoryProductItem(product: ArmoryProduct): (typeof HERO_ITEM_CATALOG)[HeroItemId] | undefined {
@@ -652,7 +656,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       fallback.textContent = category.shortLabel;
       button.append(fallback);
     }
-    button.append(createCategoryLabel(category.shortLabel));
     button.addEventListener("click", () => {
       selectedCategoryId = category.id;
       clearProductPreview();
@@ -856,15 +859,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   return { open, close, render };
-}
-
-function createCategoryLabel(text: string): HTMLElement {
-  const label = document.createElement("span");
-
-  label.className = "armory-shop__category-label";
-  label.textContent = text;
-
-  return label;
 }
 
 function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {

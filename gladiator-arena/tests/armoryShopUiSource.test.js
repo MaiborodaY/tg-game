@@ -18,7 +18,9 @@ test("armory shop groups generated back and front equipment into one product", (
   assert.equal(armoryShopSource.includes("findArmoryProductPair"), true);
   assert.equal(armoryShopSource.includes("getArmoryProductPairKey"), true);
   assert.equal(armoryShopSource.includes("if (pairConfig && !counterpart)"), true);
-  assert.equal(armoryShopSource.includes("price: backProduct.price + frontProduct.price"), true);
+  assert.equal(armoryShopSource.includes("price: getPairedArmoryProductPrice(backProduct, frontProduct)"), true);
+  assert.equal(armoryShopSource.includes("Math.max(backProduct.price, frontProduct.price)"), true);
+  assert.equal(armoryShopSource.includes("price: backProduct.price + frontProduct.price"), false);
   assert.equal(armoryShopSource.includes("itemIds: [backItemId, frontItemId]"), true);
 });
 
@@ -43,6 +45,23 @@ test("city shop mode has a screen frame and compact title plaque", () => {
   assert.equal(stylesSource.includes('content: "ARMORY";'), true);
   assert.equal(stylesSource.includes(".weapon-shop.armory-shop--city-mode::after"), true);
   assert.equal(stylesSource.includes('content: "WEAPONSMITH";'), true);
-  assert.match(stylesSource, /\.armory-shop--city-mode::before\s*\{[\s\S]*border-top-width: 7px;[\s\S]*\}/);
+  assert.equal(stylesSource.includes("--shop-frame-side-width: 7px;"), true);
+  assert.equal(stylesSource.includes("--shop-frame-top-height: 16px;"), true);
+  assert.equal(stylesSource.includes("--shop-frame-bottom-height: 6px;"), true);
+  assert.match(stylesSource, /\.armory-shop--city-mode::before\s*\{[\s\S]*var\(--shop-frame-top-height\)[\s\S]*var\(--shop-frame-side-width\)[\s\S]*var\(--shop-frame-bottom-height\)[\s\S]*\}/);
   assert.match(stylesSource, /\.armory-shop--city-mode::after\s*\{[\s\S]*transform: translateX\(-50%\);[\s\S]*\}/);
+});
+
+test("city category buttons use icons without visible text labels", () => {
+  assert.equal(armoryShopSource.includes("button.setAttribute(\"aria-label\", category.name);"), true);
+  assert.equal(weaponShopSource.includes("button.setAttribute(\"aria-label\", category.name);"), true);
+  assert.equal(armoryShopSource.includes("createCategoryLabel"), false);
+  assert.equal(armoryShopSource.includes("armory-shop__category-label"), false);
+  assert.equal(stylesSource.includes("armory-shop__category-label"), false);
+  assert.match(stylesSource, /\.armory-shop__category-button\s*\{[\s\S]*place-items: center;[\s\S]*\}/);
+});
+
+test("city armory product cards use three columns while weapon shop keeps four", () => {
+  assert.equal(stylesSource.includes("--shop-city-product-columns: 3;"), true);
+  assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-product-columns: 4;[\s\S]*\}/);
 });

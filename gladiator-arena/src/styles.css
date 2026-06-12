@@ -1583,7 +1583,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode {
-  --shop-city-product-columns: 4;
+  --shop-city-product-columns: 3;
   --shop-city-product-gap: 5px;
   --shop-city-product-row-height: clamp(104px, 15.8dvh, 124px);
   --shop-city-rail-width: 70px;
@@ -1592,6 +1592,9 @@ body.debug-active .city-menu__portrait-button:active {
   --shop-city-header-height: 28px;
   --shop-city-subcategory-height: 24px;
   --shop-city-active-subcategory-height: 0px;
+  --shop-frame-side-width: 7px;
+  --shop-frame-top-height: 16px;
+  --shop-frame-bottom-height: 6px;
   --shop-city-products-height: calc(
     var(--shop-city-product-row-height) + var(--shop-city-product-row-height) + var(--shop-city-product-gap)
   );
@@ -1614,36 +1617,40 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode::before {
   content: "";
-  inset: 3px 2px 0;
+  inset: 0;
   z-index: 1;
-  border: 3px solid rgba(22, 7, 3, 0.9);
-  border-top-width: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 211, 132, 0.18) 0 1px, #7a3517 1px, #3b1207 58%, #160703 100%) top left / 100% var(--shop-frame-top-height) no-repeat,
+    linear-gradient(90deg, #160703 0%, #4b1a0b 48%, #160703 100%) left top / var(--shop-frame-side-width) 100% no-repeat,
+    linear-gradient(90deg, #160703 0%, #4b1a0b 52%, #160703 100%) right top / var(--shop-frame-side-width) 100% no-repeat,
+    linear-gradient(180deg, #4b1a0b 0%, #160703 100%) bottom left / 100% var(--shop-frame-bottom-height) no-repeat;
   box-shadow:
-    inset 0 1px 0 rgba(255, 211, 132, 0.18),
-    inset 0 0 0 1px rgba(141, 71, 28, 0.44),
-    0 0 0 1px rgba(255, 211, 132, 0.1);
+    inset 0 0 0 1px rgba(255, 211, 132, 0.12),
+    inset 0 0 0 3px rgba(22, 7, 3, 0.78),
+    inset 0 0 18px rgba(22, 7, 3, 0.42);
 }
 
 .armory-shop--city-mode::after {
   content: "ARMORY";
   left: 50%;
-  top: 3px;
+  top: 4px;
   z-index: 2;
-  min-width: 116px;
-  padding: 5px 14px 4px;
+  min-width: 142px;
+  padding: 4px 18px 5px;
   border: 2px solid rgba(22, 7, 3, 0.92);
   border-top: 0;
-  border-radius: 0 0 7px 7px;
+  border-radius: 0 0 6px 6px;
   color: #ffe8ad;
   background:
-    linear-gradient(90deg, rgba(22, 7, 3, 0.5), transparent 18% 82%, rgba(22, 7, 3, 0.5)),
-    linear-gradient(180deg, #6b2c12 0%, #321006 100%);
+    linear-gradient(90deg, rgba(22, 7, 3, 0.78), rgba(22, 7, 3, 0.06) 18% 82%, rgba(22, 7, 3, 0.78)),
+    linear-gradient(180deg, #7a3517 0%, #4b1a0b 48%, #240b04 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 211, 132, 0.22),
-    inset 0 -4px 0 rgba(22, 7, 3, 0.28),
-    0 2px 0 rgba(22, 7, 3, 0.46);
+    inset 0 1px 0 rgba(255, 211, 132, 0.28),
+    inset 0 -5px 0 rgba(22, 7, 3, 0.3),
+    0 2px 0 rgba(22, 7, 3, 0.62),
+    0 0 0 1px rgba(255, 211, 132, 0.08);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 900;
   line-height: 1;
   text-align: center;
@@ -1653,7 +1660,11 @@ body.debug-active .city-menu__portrait-button:active {
 
 .weapon-shop.armory-shop--city-mode::after {
   content: "WEAPONSMITH";
-  min-width: 138px;
+  min-width: 166px;
+}
+
+.weapon-shop.armory-shop--city-mode {
+  --shop-city-product-columns: 4;
 }
 
 .armory-shop--city-mode.armory-shop--has-subcategories {
@@ -1847,8 +1858,6 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop__category-button {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 2px;
   place-items: center;
   width: 54px;
   height: 54px;
@@ -1924,8 +1933,8 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__category-icon {
-  max-width: 38px;
-  max-height: 34px;
+  max-width: 48px;
+  max-height: 46px;
 }
 
 .armory-shop__category-fallback {
@@ -1933,30 +1942,6 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
   line-height: 1;
   text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.86);
-}
-
-.armory-shop__category-label {
-  display: block;
-  overflow: hidden;
-  max-width: 44px;
-  color: #35180d;
-  font-size: 0.44rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1;
-  pointer-events: none;
-  text-align: center;
-  text-overflow: ellipsis;
-  text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.72);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.armory-shop--city-mode .armory-shop__category-label {
-  max-width: 48px;
-  color: #fff0bd;
-  font-size: 0.44rem;
-  text-shadow: 1px 1px 0 rgba(22, 7, 3, 0.9);
 }
 
 .armory-shop__header {
@@ -2749,14 +2734,14 @@ body.debug-active .city-menu__portrait-button:active {
   min-height: 30px;
   overflow: visible;
   padding: 12px 7px 5px;
-  border: 1px solid rgba(255, 240, 189, 0.18);
+  border: 1px solid rgba(255, 240, 189, 0.1);
   border-width: 1px 0 0;
   border-radius: 0 0 6px 6px;
   background:
-    linear-gradient(180deg, rgba(55, 25, 12, 0.8), rgba(8, 2, 1, 0.9));
+    linear-gradient(180deg, rgba(55, 25, 12, 0.46), rgba(8, 2, 1, 0.68));
   box-shadow:
-    inset 0 1px 0 rgba(255, 246, 210, 0.12),
-    0 -1px 0 rgba(8, 2, 1, 0.36);
+    inset 0 1px 0 rgba(255, 246, 210, 0.07),
+    0 -1px 0 rgba(8, 2, 1, 0.2);
   pointer-events: none;
 }
 
@@ -3282,7 +3267,8 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 .debug-panel__city-body,
 .debug-effects,
 .debug-item-equipment,
-.debug-auto-equipment {
+.debug-auto-equipment,
+.debug-shop-items {
   display: grid;
   gap: 6px;
   min-height: 0;
@@ -3438,6 +3424,7 @@ body.debug-mode-arena .debug-effects-panel,
 body.debug-mode-arena .debug-hero-equipment-panel,
 body.debug-mode-arena .debug-item-equipment-panel,
 body.debug-mode-arena .debug-auto-equipment-panel,
+body.debug-mode-arena .debug-shop-items-panel,
 body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
 body.debug-mode-city .debug-rig-panel,
@@ -3447,6 +3434,7 @@ body.debug-mode-city .debug-effects-panel,
 body.debug-mode-city .debug-hero-equipment-panel,
 body.debug-mode-city .debug-item-equipment-panel,
 body.debug-mode-city .debug-auto-equipment-panel,
+body.debug-mode-city .debug-shop-items-panel,
 body.debug-mode-city .battle-screen,
 body.debug-mode-hud .debug-character-shell,
 body.debug-mode-hud .debug-rig-panel,
@@ -3456,6 +3444,7 @@ body.debug-mode-hud .debug-effects-panel,
 body.debug-mode-hud .debug-hero-equipment-panel,
 body.debug-mode-hud .debug-item-equipment-panel,
 body.debug-mode-hud .debug-auto-equipment-panel,
+body.debug-mode-hud .debug-shop-items-panel,
 body.debug-mode-hud .main-menu,
 body.debug-mode-effects .debug-character-shell,
 body.debug-mode-effects .debug-rig-panel,
@@ -3465,6 +3454,7 @@ body.debug-mode-effects .debug-hud-panel,
 body.debug-mode-effects .debug-hero-equipment-panel,
 body.debug-mode-effects .debug-item-equipment-panel,
 body.debug-mode-effects .debug-auto-equipment-panel,
+body.debug-mode-effects .debug-shop-items-panel,
 body.debug-mode-effects .main-menu {
   display: none;
 }
@@ -3484,6 +3474,9 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-item-equipment__select,
 .debug-auto-equipment__select,
 .debug-auto-equipment__generated-select,
+.debug-auto-equipment__rarity,
+.debug-shop-items__select,
+.debug-shop-items__rarity,
 .debug-auto-equipment__name,
 .debug-effects__slash-select {
   min-width: 0;
@@ -3550,12 +3543,82 @@ body.debug-mode-hud .battle-screen .status-strip {
   gap: 7px;
 }
 
-.debug-auto-equipment__status {
+.debug-auto-equipment__status,
+.debug-shop-items__ids,
+.debug-shop-items__status {
   min-height: 16px;
   margin: 0 10px 8px;
   color: #fff0bd;
   font-size: 0.58rem;
   font-weight: 800;
+}
+
+.debug-shop-items__ids {
+  word-break: break-word;
+  opacity: 0.82;
+}
+
+.debug-rarity-select,
+.debug-shop-items__select {
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+
+.debug-rarity-select[data-rarity="common"],
+.debug-shop-items__select[data-rarity="common"] {
+  border-color: rgba(230, 214, 174, 0.88);
+  background: linear-gradient(180deg, rgba(84, 70, 46, 0.92), rgba(34, 24, 14, 0.9));
+}
+
+.debug-rarity-select[data-rarity="uncommon"],
+.debug-shop-items__select[data-rarity="uncommon"] {
+  border-color: rgba(88, 214, 112, 0.9);
+  background: linear-gradient(180deg, rgba(48, 117, 54, 0.92), rgba(20, 55, 27, 0.9));
+}
+
+.debug-rarity-select[data-rarity="rare"],
+.debug-shop-items__select[data-rarity="rare"] {
+  border-color: rgba(96, 184, 255, 0.96);
+  background: linear-gradient(180deg, rgba(45, 118, 178, 0.94), rgba(17, 53, 92, 0.92));
+}
+
+.debug-rarity-select[data-rarity="epic"],
+.debug-shop-items__select[data-rarity="epic"] {
+  border-color: rgba(205, 103, 255, 0.96);
+  background: linear-gradient(180deg, rgba(117, 54, 154, 0.94), rgba(52, 22, 82, 0.92));
+}
+
+.debug-rarity-select[data-rarity="legendary"],
+.debug-shop-items__select[data-rarity="legendary"] {
+  border-color: rgba(255, 186, 64, 0.98);
+  background: linear-gradient(180deg, rgba(176, 103, 24, 0.95), rgba(82, 42, 10, 0.92));
+}
+
+.debug-rarity-option--common {
+  color: #fff0bd;
+  background: #3f3320;
+}
+
+.debug-rarity-option--uncommon {
+  color: #e6ffd8;
+  background: #245a2d;
+}
+
+.debug-rarity-option--rare {
+  color: #e2f4ff;
+  background: #1e5e99;
+}
+
+.debug-rarity-option--epic {
+  color: #f4dcff;
+  background: #6f2d95;
+}
+
+.debug-rarity-option--legendary {
+  color: #fff0bd;
+  background: #9a5b15;
 }
 
 .debug-rig-editor__face-part {

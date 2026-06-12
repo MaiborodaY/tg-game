@@ -99,15 +99,13 @@ test("weapon class defaults to sword and can be inferred for generated weapons",
   );
 });
 
-test("starter cloth leather and training sword items are common rarity", () => {
+test("starter cloth and training sword stay common while leather catalog items are uncommon", () => {
   assert.equal(hero.HERO_ITEM_CATALOG[hero.TRAINING_WEAPON_ID]?.rarity, "common");
   assert.equal(hero.HERO_ITEM_CATALOG[hero.CLOTH_BREASTPLATE_ID]?.rarity, "common");
 
-  for (const itemId of hero.HERO_ITEM_IDS) {
-    const item = hero.HERO_ITEM_CATALOG[itemId];
-
-    if (item?.armorCategory === "cloth" || item?.armorCategory === "leather") {
-      assert.equal(item.rarity, "common");
+  for (const item of Object.values(hero.HERO_ITEM_CATALOG)) {
+    if (item?.armorCategory === "leather") {
+      assert.equal(item.rarity, "uncommon");
     }
   }
 });

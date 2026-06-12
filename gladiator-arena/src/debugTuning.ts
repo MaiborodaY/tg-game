@@ -464,6 +464,8 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "generated_equipment_front_boot_chainmail_01": { x: 3, y: 3, angle: 0, scaleX: 0.83, scaleY: 0.8, flipX: false, flipY: false },
   "generated_equipment_front_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
   "generated_equipment_back_shoulderguard_cloth_01": { x: 0, y: 47, angle: 7, scaleX: 1.98, scaleY: 1.23, flipX: false, flipY: false },
+  "auto_equipment_back_wrist_cloth_01": { x: -1.251, y: 21.408, angle: 4, scaleX: 1.77, scaleY: 1.18, flipX: false, flipY: false },
+  "generated_equipment_front_wrist_cloth_01": { x: -1.251, y: 21.408, angle: 4, scaleX: 1.77, scaleY: 1.18, flipX: true, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

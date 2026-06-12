@@ -56,10 +56,17 @@ import {
   type HeroInventoryEntry,
   type HeroItemDefinition,
   type HeroItemId,
+  type HeroItemRarity,
 } from "./hero";
 import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
-import { removePromotedEquipmentItem, saveProdAnimation, saveProdDefaults, savePromotedEquipmentItem } from "./prodDefaultsSaver";
+import {
+  removePromotedEquipmentItem,
+  saveGeneratedShopItem,
+  saveProdAnimation,
+  saveProdDefaults,
+  savePromotedEquipmentItem,
+} from "./prodDefaultsSaver";
 
 interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
@@ -106,6 +113,7 @@ type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateR
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
 type AnimationRigPoseKey = "base" | "breath";
 type AnimationFacePoseKey = "faceBase" | "faceBreath";
+type DebugGeneratedShopItemRecord = (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number];
 
 interface DebugControlGroup {
   title: string;
@@ -169,6 +177,23 @@ interface RigLimbRotateConfig {
   parts: RigPartKey[];
 }
 
+interface DebugShopItemPairConfig {
+  backSlot: HeroEquipmentSlotKey;
+  frontSlot: HeroEquipmentSlotKey;
+  token: string;
+  label: string;
+}
+
+interface DebugGeneratedShopProduct {
+  id: string;
+  name: string;
+  itemIds: HeroItemId[];
+  kind: HeroItemDefinition["kind"];
+  rarity: HeroItemRarity;
+  stat: number;
+  price: number;
+}
+
 type ClassicSlotNumericKey = keyof ClassicActionButtonSlotTuning;
 
 const classicWheelModeLabels: Record<ClassicActionWheelMode, string> = {
@@ -198,6 +223,29 @@ const AUTO_EQUIPMENT_STAT_MIN = 0;
 const AUTO_EQUIPMENT_ARMOR_MAX = 200;
 const AUTO_EQUIPMENT_DAMAGE_MAX = 100;
 const AUTO_EQUIPMENT_PRICE_MAX = 2000;
+const AUTO_EQUIPMENT_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  epic: "Epic",
+  legendary: "Legendary",
+};
+const DEBUG_SHOP_ITEM_PAIR_CONFIGS: readonly DebugShopItemPairConfig[] = [
+  { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", label: "Shoulderguard" },
+  { backSlot: "backWrist", frontSlot: "frontWrist", token: "wrist", label: "Wrist" },
+  { backSlot: "backGlove", frontSlot: "frontGlove", token: "glove", label: "Glove" },
+  { backSlot: "backGreave", frontSlot: "frontGreave", token: "greave", label: "Greave" },
+  { backSlot: "backShinguard", frontSlot: "frontShinguard", token: "shinguard", label: "Shinguard" },
+  { backSlot: "backBoot", frontSlot: "frontBoot", token: "boot", label: "Boot" },
+];
+const DEBUG_SHOP_ITEM_RARITY_RANKS: Record<HeroItemRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+};
 
 const controlGroups: DebugControlGroup[] = [
   {
@@ -646,6 +694,10 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <span>Name</span>
           <input class="debug-auto-equipment__name" type="text" />
         </label>
+        <label class="debug-rig-editor__part">
+          <span>Rarity</span>
+          <select class="debug-auto-equipment__rarity debug-rarity-select">${formatAutoEquipmentRarityOptions()}</select>
+        </label>
         <label class="debug-panel__row debug-rig-editor__row">
           <span class="debug-auto-equipment__stat-label">Armor HP</span>
           <input class="debug-panel__range" type="range" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="1" data-auto-equipment-armor />
@@ -680,6 +732,34 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           </div>
         </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
+      </div>
+    </details>
+    <details class="debug-shop-items-panel" open>
+      <summary>Shop items</summary>
+      <div class="debug-shop-items">
+        <label class="debug-rig-editor__part">
+          <span>Item</span>
+          <select class="debug-shop-items__select"></select>
+        </label>
+        <label class="debug-rig-editor__part">
+          <span>Rarity</span>
+          <select class="debug-shop-items__rarity debug-rarity-select">${formatAutoEquipmentRarityOptions()}</select>
+        </label>
+        <label class="debug-panel__row debug-rig-editor__row">
+          <span class="debug-shop-items__stat-label">Armor HP</span>
+          <input class="debug-panel__range" type="range" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-shop-item-stat />
+          <input class="debug-panel__number" type="number" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-shop-item-stat-number />
+        </label>
+        <label class="debug-panel__row debug-rig-editor__row">
+          <span>Price</span>
+          <input class="debug-panel__range" type="range" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-shop-item-price />
+          <input class="debug-panel__number" type="number" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-shop-item-price-number />
+        </label>
+        <p class="debug-shop-items__ids"></p>
+        <div class="debug-rig-editor__actions">
+          <button class="debug-panel__reset debug-shop-items__save" type="button">Save shop item</button>
+        </div>
+        <p class="debug-shop-items__status" aria-live="polite"></p>
       </div>
     </details>
     <details class="debug-arena-panel">
@@ -731,6 +811,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const heroEquipmentBody = panel.querySelector<HTMLElement>(".debug-hero-equipment");
   const itemEquipmentBody = panel.querySelector<HTMLElement>(".debug-item-equipment");
   const autoEquipmentBody = panel.querySelector<HTMLElement>(".debug-auto-equipment");
+  const shopItemsBody = panel.querySelector<HTMLElement>(".debug-shop-items");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
   const saveAnimationButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod-animation");
   const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset-all");
@@ -746,6 +827,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     !heroEquipmentBody ||
     !itemEquipmentBody ||
     !autoEquipmentBody ||
+    !shopItemsBody ||
     !saveButton ||
     !saveAnimationButton ||
     !resetButton ||
@@ -788,6 +870,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountHeroEquipmentEditor(heroEquipmentBody);
   mountItemEquipmentEditor(itemEquipmentBody);
   mountAutoEquipmentEditor(autoEquipmentBody);
+  mountGeneratedShopItemsEditor(shopItemsBody);
   mountNudgeToolbar(nudgeToolbar);
   mountCharacterCanvasEquipmentBridge(panel);
   mountModeTabs(panel);
@@ -1339,6 +1422,7 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
 function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const nameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__name");
+  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__rarity");
   const statLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__stat-label");
   const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
   const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
@@ -1357,6 +1441,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   if (
     !select ||
     !nameInput ||
+    !raritySelect ||
     !statLabel ||
     !armorRange ||
     !armorNumber ||
@@ -1401,6 +1486,10 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     syncAutoEquipmentStatInputs(editor);
     previewSelectedAutoEquipment(editor);
     syncAutoEquipmentEditor(editor);
+  });
+
+  raritySelect.addEventListener("change", () => {
+    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
   });
 
   syncLinkedNumberInputs(armorRange, armorNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
@@ -1453,7 +1542,10 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
         damageBonus: statValue,
         price: clampNumber(Number(priceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX),
         addToShop: addToShop.checked,
-        item: record.item,
+        item: {
+          ...record.item,
+          rarity: getSelectedAutoEquipmentRarity(raritySelect.value, record),
+        },
         assetKeys: record.assetKeys,
         asset: record.asset,
         equipmentTuning: getCurrentEquipmentItemTuning(record.item.id, record.item.equipmentSlot),
@@ -1486,6 +1578,66 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
       status.textContent = error instanceof Error ? error.message : "Could not remove generated equipment.";
     } finally {
       removeGenerated.disabled = false;
+    }
+  });
+}
+
+function mountGeneratedShopItemsEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-shop-items__select");
+  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-shop-items__rarity");
+  const statRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat]");
+  const statNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat-number]");
+  const priceRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-price]");
+  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-price-number]");
+  const save = editor.querySelector<HTMLButtonElement>(".debug-shop-items__save");
+  const status = editor.querySelector<HTMLElement>(".debug-shop-items__status");
+
+  if (!select || !raritySelect || !statRange || !statNumber || !priceRange || !priceNumber || !save || !status) {
+    return;
+  }
+
+  const products = getGeneratedShopProducts();
+
+  products.forEach((product) => {
+    select.append(createGeneratedShopProductOption(product));
+  });
+
+  syncLinkedNumberInputs(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
+  syncLinkedNumberInputs(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
+  syncGeneratedShopItemsEditor(editor, products);
+  previewGeneratedShopProduct(getSelectedGeneratedShopProduct(products, select.value));
+
+  select.addEventListener("change", () => {
+    syncGeneratedShopItemsEditor(editor, products);
+    previewGeneratedShopProduct(getSelectedGeneratedShopProduct(products, select.value));
+  });
+
+  raritySelect.addEventListener("change", () => {
+    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
+  });
+
+  save.addEventListener("click", async () => {
+    const product = getSelectedGeneratedShopProduct(products, select.value);
+
+    if (!product) {
+      status.textContent = "No generated shop item selected.";
+      return;
+    }
+
+    save.disabled = true;
+    status.textContent = "Saving shop item...";
+
+    try {
+      status.textContent = await saveGeneratedShopItem({
+        itemIds: product.itemIds,
+        rarity: getDebugItemRarity(raritySelect.value, product.rarity),
+        stat: clampNumber(Number(statNumber.value), AUTO_EQUIPMENT_STAT_MIN, getGeneratedShopProductStatMax(product)),
+        price: clampNumber(Number(priceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX),
+      });
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not save generated shop item.";
+    } finally {
+      save.disabled = false;
     }
   });
 }
@@ -2795,6 +2947,7 @@ function syncHeroEquipmentEditor(panel: HTMLElement): void {
 function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const nameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__name");
+  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__rarity");
   const statLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__stat-label");
   const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
   const armorNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor-number]");
@@ -2825,6 +2978,14 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   if (nameInput) {
     nameInput.value = record?.item.name.replace(/\s+\(Auto\)$/u, "") ?? "";
     nameInput.disabled = !isAvailable;
+  }
+
+  if (raritySelect) {
+    const rarity = getDefaultAutoEquipmentRarity(record);
+
+    raritySelect.value = rarity;
+    raritySelect.disabled = !isAvailable;
+    setDebugRarityDataset(raritySelect, isAvailable ? rarity : undefined);
   }
 
   if (statLabel) {
@@ -2866,6 +3027,68 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   }
 }
 
+function syncGeneratedShopItemsEditor(editor: HTMLElement, products: readonly DebugGeneratedShopProduct[]): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-shop-items__select");
+  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-shop-items__rarity");
+  const statLabel = editor.querySelector<HTMLElement>(".debug-shop-items__stat-label");
+  const statRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat]");
+  const statNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat-number]");
+  const priceRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-price]");
+  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-price-number]");
+  const ids = editor.querySelector<HTMLElement>(".debug-shop-items__ids");
+  const save = editor.querySelector<HTMLButtonElement>(".debug-shop-items__save");
+  const status = editor.querySelector<HTMLElement>(".debug-shop-items__status");
+  const product = getSelectedGeneratedShopProduct(products, select?.value);
+  const isAvailable = Boolean(product);
+
+  if (select) {
+    select.disabled = products.length === 0;
+    setDebugRarityDataset(select, product?.rarity);
+  }
+
+  if (raritySelect) {
+    const rarity = product?.rarity ?? "common";
+
+    raritySelect.value = rarity;
+    raritySelect.disabled = !isAvailable;
+    setDebugRarityDataset(raritySelect, isAvailable ? rarity : undefined);
+  }
+
+  if (statLabel) {
+    statLabel.textContent = product?.kind === "weapon" ? "Damage" : "Armor HP";
+  }
+
+  if (statRange && statNumber) {
+    const maxStat = getGeneratedShopProductStatMax(product);
+
+    setLinkedNumberInputBounds(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, maxStat);
+    statRange.value = `${product?.stat ?? 0}`;
+    statNumber.value = `${product?.stat ?? 0}`;
+    statRange.disabled = !isAvailable;
+    statNumber.disabled = !isAvailable;
+  }
+
+  if (priceRange && priceNumber) {
+    setLinkedNumberInputBounds(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
+    priceRange.value = `${product?.price ?? 0}`;
+    priceNumber.value = `${product?.price ?? 0}`;
+    priceRange.disabled = !isAvailable;
+    priceNumber.disabled = !isAvailable;
+  }
+
+  if (ids) {
+    ids.textContent = product ? product.itemIds.join(" + ") : "No generated shop items.";
+  }
+
+  if (save) {
+    save.disabled = !isAvailable;
+  }
+
+  if (status) {
+    status.textContent = product?.itemIds.length === 2 ? "Merged generated pair." : isAvailable ? "Single generated item." : "";
+  }
+}
+
 function syncAutoEquipmentStatInputs(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
@@ -2880,6 +3103,223 @@ function syncAutoEquipmentStatInputs(editor: HTMLElement): void {
 
   armorRange.value = `${value}`;
   armorNumber.value = `${value}`;
+}
+
+function formatAutoEquipmentRarityOptions(): string {
+  return AUTO_EQUIPMENT_RARITIES.map((rarity) => `<option value="${rarity}">${AUTO_EQUIPMENT_RARITY_LABELS[rarity]}</option>`).join("");
+}
+
+function getSelectedAutoEquipmentRarity(value: string, record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number]): HeroItemRarity {
+  return getDebugItemRarity(value, getDefaultAutoEquipmentRarity(record));
+}
+
+function getDebugItemRarity(value: string, fallback: HeroItemRarity): HeroItemRarity {
+  return AUTO_EQUIPMENT_RARITIES.includes(value as HeroItemRarity) ? (value as HeroItemRarity) : fallback;
+}
+
+function getDefaultAutoEquipmentRarity(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined): HeroItemRarity {
+  if (record?.item.rarity) {
+    return record.item.rarity;
+  }
+
+  if (record?.item.kind === "armor" && record.item.armorCategory === "chain") {
+    return "rare";
+  }
+
+  if (record?.item.kind === "armor" && record.item.armorCategory === "leather") {
+    return "uncommon";
+  }
+
+  if (record?.item.kind === "weapon" && record.item.weaponClass === "axe") {
+    return "epic";
+  }
+
+  return "common";
+}
+
+function getGeneratedShopProducts(): DebugGeneratedShopProduct[] {
+  const records = GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.armoryProduct || record.weaponProduct);
+  const usedItemIds = new Set<HeroItemId>();
+  const products: DebugGeneratedShopProduct[] = [];
+
+  records.forEach((record) => {
+    if (usedItemIds.has(record.item.id)) {
+      return;
+    }
+
+    const pairConfig = record.item.kind === "armor" ? getDebugShopItemPairConfig(record.item.equipmentSlot) : undefined;
+    const counterpart = pairConfig ? findDebugShopItemPair(record, records, pairConfig, usedItemIds) : undefined;
+
+    if (pairConfig && counterpart) {
+      products.push(createDebugGeneratedShopPairProduct(record, counterpart, pairConfig));
+      usedItemIds.add(record.item.id);
+      usedItemIds.add(counterpart.item.id);
+      return;
+    }
+
+    products.push(createDebugGeneratedShopProduct(record));
+    usedItemIds.add(record.item.id);
+  });
+
+  return products.sort(compareDebugGeneratedShopProducts);
+}
+
+function getSelectedGeneratedShopProduct(
+  products: readonly DebugGeneratedShopProduct[],
+  productId: string | undefined,
+): DebugGeneratedShopProduct | undefined {
+  return products.find((product) => product.id === productId);
+}
+
+function createGeneratedShopProductOption(product: DebugGeneratedShopProduct): HTMLOptionElement {
+  const option = document.createElement("option");
+
+  option.value = product.id;
+  option.textContent = formatGeneratedShopProductOption(product);
+  option.className = `debug-rarity-option debug-rarity-option--${product.rarity}`;
+  option.dataset.rarity = product.rarity;
+
+  return option;
+}
+
+function formatGeneratedShopProductOption(product: DebugGeneratedShopProduct): string {
+  const statLabel = product.kind === "weapon" ? "DMG" : "AR";
+
+  return `${AUTO_EQUIPMENT_RARITY_LABELS[product.rarity]} | ${product.name} | ${statLabel} ${product.stat} | Gold ${product.price}`;
+}
+
+function setDebugRarityDataset(element: HTMLElement, rarity: HeroItemRarity | undefined): void {
+  if (rarity) {
+    element.dataset.rarity = rarity;
+    return;
+  }
+
+  delete element.dataset.rarity;
+}
+
+function previewGeneratedShopProduct(product: DebugGeneratedShopProduct | undefined): void {
+  if (!product) {
+    return;
+  }
+
+  product.itemIds.forEach((itemId) => {
+    const definition = getDebugHeroItemDefinition(itemId);
+
+    if (!definition) {
+      return;
+    }
+
+    if (isEquipmentSlotKey(definition.equipmentSlot)) {
+      activeEquipmentSlot = definition.equipmentSlot;
+      activeEquipmentItemId = definition.id;
+    }
+
+    updateHeroEquipmentSlot(definition.equipmentSlot, definition.id);
+  });
+}
+
+function createDebugGeneratedShopProduct(record: DebugGeneratedShopItemRecord): DebugGeneratedShopProduct {
+  return {
+    id: record.item.id,
+    name: record.item.name,
+    itemIds: [record.item.id],
+    kind: record.item.kind,
+    rarity: record.item.rarity ?? "common",
+    stat: getGeneratedShopRecordStat(record),
+    price: getGeneratedShopRecordPrice(record),
+  };
+}
+
+function createDebugGeneratedShopPairProduct(
+  record: DebugGeneratedShopItemRecord,
+  counterpart: DebugGeneratedShopItemRecord,
+  pairConfig: DebugShopItemPairConfig,
+): DebugGeneratedShopProduct {
+  const backRecord = record.item.equipmentSlot === pairConfig.backSlot ? record : counterpart;
+  const frontRecord = record.item.equipmentSlot === pairConfig.frontSlot ? record : counterpart;
+
+  return {
+    id: `${backRecord.item.id}+${frontRecord.item.id}`,
+    name: getDebugShopItemPairName(backRecord, pairConfig),
+    itemIds: [backRecord.item.id, frontRecord.item.id],
+    kind: "armor",
+    rarity: getHighestDebugShopItemRarity([backRecord, frontRecord]),
+    stat: Math.max(getGeneratedShopRecordStat(backRecord), getGeneratedShopRecordStat(frontRecord)),
+    price: Math.max(getGeneratedShopRecordPrice(backRecord), getGeneratedShopRecordPrice(frontRecord)),
+  };
+}
+
+function findDebugShopItemPair(
+  record: DebugGeneratedShopItemRecord,
+  records: readonly DebugGeneratedShopItemRecord[],
+  pairConfig: DebugShopItemPairConfig,
+  usedItemIds: ReadonlySet<HeroItemId>,
+): DebugGeneratedShopItemRecord | undefined {
+  const pairKey = getDebugShopItemPairKey(record, pairConfig);
+  const targetSlot = record.item.equipmentSlot === pairConfig.backSlot ? pairConfig.frontSlot : pairConfig.backSlot;
+
+  return records.find(
+    (candidate) =>
+      candidate.item.id !== record.item.id &&
+      !usedItemIds.has(candidate.item.id) &&
+      candidate.item.kind === "armor" &&
+      candidate.item.equipmentSlot === targetSlot &&
+      getDebugShopItemPairKey(candidate, pairConfig) === pairKey,
+  );
+}
+
+function getDebugShopItemPairConfig(slotKey: HeroEquipmentSlotKey): DebugShopItemPairConfig | undefined {
+  return DEBUG_SHOP_ITEM_PAIR_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
+}
+
+function getDebugShopItemPairKey(record: DebugGeneratedShopItemRecord, pairConfig: DebugShopItemPairConfig): string {
+  return normalizeDebugShopItemPairText(record.asset.key.replace(/-/g, " "), pairConfig);
+}
+
+function getDebugShopItemPairName(record: DebugGeneratedShopItemRecord, pairConfig: DebugShopItemPairConfig): string {
+  return formatDebugShopItemPairText(record.item.name, pairConfig);
+}
+
+function formatDebugShopItemPairText(value: string, pairConfig: DebugShopItemPairConfig): string {
+  const token = escapeDebugRegExp(pairConfig.token);
+
+  return value
+    .replace(new RegExp(`\\b(?:back|front)\\s+${token}\\b`, "giu"), pairConfig.label)
+    .replace(new RegExp(`\\b${token}\\s+(?:back|front)\\b`, "giu"), pairConfig.label)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeDebugShopItemPairText(value: string, pairConfig: DebugShopItemPairConfig): string {
+  return formatDebugShopItemPairText(value, pairConfig).toLowerCase();
+}
+
+function escapeDebugRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getHighestDebugShopItemRarity(records: readonly DebugGeneratedShopItemRecord[]): HeroItemRarity {
+  return records.reduce<HeroItemRarity>((highestRarity, record) => {
+    const rarity = record.item.rarity ?? "common";
+
+    return DEBUG_SHOP_ITEM_RARITY_RANKS[rarity] > DEBUG_SHOP_ITEM_RARITY_RANKS[highestRarity] ? rarity : highestRarity;
+  }, "common");
+}
+
+function getGeneratedShopRecordStat(record: DebugGeneratedShopItemRecord): number {
+  return record.item.kind === "weapon" ? (record.item.damageBonus ?? 0) : (record.item.armorHp ?? 0);
+}
+
+function getGeneratedShopRecordPrice(record: DebugGeneratedShopItemRecord): number {
+  return record.armoryProduct?.price ?? record.weaponProduct?.price ?? 0;
+}
+
+function getGeneratedShopProductStatMax(product: DebugGeneratedShopProduct | undefined): number {
+  return product?.kind === "weapon" ? AUTO_EQUIPMENT_DAMAGE_MAX : AUTO_EQUIPMENT_ARMOR_MAX;
+}
+
+function compareDebugGeneratedShopProducts(left: DebugGeneratedShopProduct, right: DebugGeneratedShopProduct): number {
+  return DEBUG_SHOP_ITEM_RARITY_RANKS[left.rarity] - DEBUG_SHOP_ITEM_RARITY_RANKS[right.rarity] || left.name.localeCompare(right.name);
 }
 
 function getAutoEquipmentStatMax(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined): number {
