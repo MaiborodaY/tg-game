@@ -15,6 +15,7 @@ import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armor
 import {
   getCityHeroWidgetRefs,
   mountCityHeroAttributeControls,
+  mountCityHeroEquipmentMenu,
   mountCityHeroProfile,
   renderCityHeroInfo,
   syncCityHeroWidgetPosition,
@@ -96,6 +97,10 @@ let cityReturnTransitionToken = 0;
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
+mountCityHeroEquipmentMenu(cityHeroWidgetRefs, {
+  getHero: () => hero,
+  onEquip: handleProfileEquipmentEquip,
+});
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
@@ -569,6 +574,25 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
 
   hero = nextHero;
   syncPlayerCityBodyScale();
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  armoryShop?.render();
+  weaponShop?.render();
+}
+
+function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
+  const nextHero = buyAndEquipHeroItems(hero, {
+    itemIds: [...itemIds],
+    price: 0,
+  });
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  syncPlayerCityBodyScale();
+  setPlayerEquipment(hero.equipment);
+  heroPortraitPreview?.setEquipment(hero.equipment);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
   weaponShop?.render();

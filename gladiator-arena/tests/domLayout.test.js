@@ -70,9 +70,13 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(html.includes('data-hero-profile-stat="damage"'), true);
   assert.equal(html.includes("data-hero-profile-equipment"), true);
   assert.equal(cityHeroUiSource.includes("mountCityHeroProfile"), true);
+  assert.equal(cityHeroUiSource.includes("mountCityHeroEquipmentMenu"), true);
+  assert.equal(cityHeroUiSource.includes("getOwnedCityEquipmentProducts"), true);
+  assert.equal(mainSource.includes("mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);
   assert.equal(mainSource.includes("mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : []"), true);
   assert.equal(mainSource.includes("heroProfilePortraitPreview"), false);
   assert.equal(stylesSource.includes(".city-profile__panel"), true);
+  assert.equal(stylesSource.includes(".city-equipment-menu__tray"), true);
   assert.equal(stylesSource.includes("@keyframes city-profile-panel-in"), true);
 });
 

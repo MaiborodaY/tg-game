@@ -194,7 +194,7 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
   },
 ];
 
-function getGeneratedArmoryProductsForSlots(slotKeys: readonly HeroEquipmentSlotKey[]): ArmoryProduct[] {
+export function getGeneratedArmoryProductsForSlots(slotKeys: readonly HeroEquipmentSlotKey[]): ArmoryProduct[] {
   const products = GENERATED_ARMORY_PRODUCTS.flatMap((product) => {
     const item = product.itemIds[0] ? HERO_ITEM_CATALOG[product.itemIds[0]] : undefined;
 
