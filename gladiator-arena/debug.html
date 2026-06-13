@@ -40,6 +40,84 @@
                   <span class="city-menu__time-toggle-thumb"></span>
                 </span>
               </button>
+              <section id="heroProfile" class="city-profile" role="dialog" aria-label="Character profile" hidden>
+                <div class="city-profile__panel">
+                  <div class="city-profile__title">PROFILE</div>
+                  <button id="heroProfileCloseIconButton" class="city-profile__close" type="button" aria-label="Close profile" data-hero-profile-close>x</button>
+                  <div class="city-profile__hero">
+                    <div id="heroProfilePortrait" class="city-profile__portrait" aria-hidden="true"></div>
+                    <div class="city-profile__summary">
+                      <div class="city-profile__summary-name-row">
+                        <strong id="heroProfileName" class="city-profile__name"></strong>
+                        <span class="city-profile__edit-mark" aria-hidden="true"></span>
+                      </div>
+                      <div class="city-profile__progress-row">
+                        <div id="heroProfileLevel" class="city-profile__level"></div>
+                        <div class="city-profile__xp">
+                          <div class="city-profile__xp-track" aria-hidden="true">
+                            <div id="heroProfileXpFill" class="city-profile__xp-fill"></div>
+                          </div>
+                          <span id="heroProfileXpText" class="city-profile__xp-text"></span>
+                        </div>
+                      </div>
+                      <div class="city-profile__currency-row">
+                        <span id="heroProfileGold" class="city-profile__gold"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="city-profile__section-heading city-profile__section-heading--attributes">
+                    <span>ATTRIBUTES</span>
+                    <strong id="heroProfileSkillPoints" class="city-profile__points"></strong>
+                  </div>
+                  <div class="city-profile__attributes" aria-label="Attributes">
+                    <div class="city-profile__attribute">
+                      <span class="city-profile__attribute-icon city-profile__attribute-icon--strength" aria-hidden="true">S</span>
+                      <div class="city-profile__attribute-copy">
+                        <strong>STRENGTH</strong>
+                        <span>Increases damage and reach.</span>
+                      </div>
+                      <span class="city-profile__attribute-value" data-hero-attribute-value="strength">0</span>
+                      <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="strength" aria-label="Increase strength">+</button>
+                    </div>
+                    <div class="city-profile__attribute">
+                      <span class="city-profile__attribute-icon city-profile__attribute-icon--agility" aria-hidden="true">A</span>
+                      <div class="city-profile__attribute-copy">
+                        <strong>AGILITY</strong>
+                        <span>Increases movement speed.</span>
+                      </div>
+                      <span class="city-profile__attribute-value" data-hero-attribute-value="agility">0</span>
+                      <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="agility" aria-label="Increase agility">+</button>
+                    </div>
+                    <div class="city-profile__attribute">
+                      <span class="city-profile__attribute-icon city-profile__attribute-icon--vitality" aria-hidden="true">V</span>
+                      <div class="city-profile__attribute-copy">
+                        <strong>VITALITY</strong>
+                        <span>Increases health and stamina.</span>
+                      </div>
+                      <span class="city-profile__attribute-value" data-hero-attribute-value="vitality">0</span>
+                      <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="vitality" aria-label="Increase vitality">+</button>
+                    </div>
+                  </div>
+                  <div class="city-profile__section-heading">
+                    <span>DERIVED STATS</span>
+                  </div>
+                  <div class="city-profile__derived" aria-label="Combat stats">
+                    <div class="city-profile__derived-card city-profile__derived-card--damage"><span class="city-profile__derived-icon" aria-hidden="true">D</span><span>DAMAGE</span><strong data-hero-profile-stat="damage">0</strong></div>
+                    <div class="city-profile__derived-card city-profile__derived-card--hp"><span class="city-profile__derived-icon" aria-hidden="true">H</span><span>HEALTH</span><strong data-hero-profile-stat="hp">0</strong></div>
+                    <div class="city-profile__derived-card city-profile__derived-card--movement"><span class="city-profile__derived-icon" aria-hidden="true">M</span><span>MOVEMENT</span><strong data-hero-profile-stat="movement">0</strong></div>
+                    <div class="city-profile__derived-card city-profile__derived-card--stamina"><span class="city-profile__derived-icon" aria-hidden="true">S</span><span>STAMINA</span><strong data-hero-profile-stat="stamina">0</strong></div>
+                    <div class="city-profile__derived-card city-profile__derived-card--armor"><span class="city-profile__derived-icon" aria-hidden="true">A</span><span>ARMOR</span><strong data-hero-profile-stat="armor">0</strong></div>
+                    <div class="city-profile__derived-card city-profile__derived-card--recovery"><span class="city-profile__derived-icon" aria-hidden="true">R</span><span>REST RECOVERY</span><strong data-hero-profile-stat="recovery">0</strong></div>
+                  </div>
+                  <div class="city-profile__section-heading">
+                    <span>EQUIPMENT SUMMARY</span>
+                  </div>
+                  <div class="city-profile__equipment" aria-label="Equipment">
+                    <div class="city-profile__equipment-list" data-hero-profile-equipment></div>
+                  </div>
+                  <button id="heroProfileCloseButton" class="city-profile__footer-close" type="button" data-hero-profile-close>CLOSE</button>
+                </div>
+              </section>
               <nav class="city-menu__nav" aria-label="City locations">
                 <button id="startButton" class="city-menu__button" type="button">
                   <span class="city-menu__icon" aria-hidden="true">A</span>

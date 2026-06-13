@@ -12,7 +12,13 @@ import {
   type HeroPortraitPreviewApi,
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
-import { getCityHeroWidgetRefs, mountCityHeroAttributeControls, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import {
+  getCityHeroWidgetRefs,
+  mountCityHeroAttributeControls,
+  mountCityHeroProfile,
+  renderCityHeroInfo,
+  syncCityHeroWidgetPosition,
+} from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
@@ -68,6 +74,7 @@ let weaponShop: WeaponShopApi | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
+let heroProfilePortraitPreview: HeroPortraitPreviewApi | undefined;
 const CITY_CURTAIN_TRANSITION_MS = 620;
 const CITY_CURTAIN_SWITCH_MS = 210;
 const CITY_RETURN_MIN_READY_MS = 1800;
@@ -89,6 +96,7 @@ let isCityReturnTransitionRunning = false;
 let cityReturnTransitionToken = 0;
 
 const cityReturnTransition = createCityReturnTransition();
+const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
@@ -291,6 +299,10 @@ function mountCityPreviews(): Promise<void> {
     heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
   }
 
+  if (cityHeroWidgetRefs.profilePortrait && !heroProfilePortraitPreview) {
+    heroProfilePortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.profilePortrait, hero.equipment);
+  }
+
   return cityScene?.ready ?? Promise.resolve();
 }
 
@@ -414,8 +426,10 @@ async function waitForCityReady(): Promise<void> {
 function unmountCityPreviews(): void {
   cityScene?.destroy();
   heroPortraitPreview?.destroy();
+  heroProfilePortraitPreview?.destroy();
   cityScene = undefined;
   heroPortraitPreview = undefined;
+  heroProfilePortraitPreview = undefined;
 }
 
 function mountArena(): void {
@@ -451,6 +465,7 @@ function unmountArenaScene(): void {
 }
 
 function startGame(): void {
+  cityHeroProfile?.close();
   unmountCityPreviews();
   weaponShop?.close();
   armoryShop?.close();
@@ -544,6 +559,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   setPlayerEquipment(hero.equipment);
   if (shouldRefreshHeroPortrait(product)) {
     heroPortraitPreview?.setEquipment(hero.equipment);
+    heroProfilePortraitPreview?.setEquipment(hero.equipment);
   }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
@@ -656,15 +672,18 @@ function restart(options: { syncArena?: boolean } = {}): void {
 }
 
 dom.startButton.addEventListener("click", () => {
+  cityHeroProfile?.close();
   void startGameWithCityTransition();
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
 weaponShopButton?.addEventListener("click", () => {
+  cityHeroProfile?.close();
   armoryShop?.close();
   weaponShop?.open();
 });
 armoryButton?.addEventListener("click", () => {
+  cityHeroProfile?.close();
   weaponShop?.close();
   armoryShop?.open();
 });

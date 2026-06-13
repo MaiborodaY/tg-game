@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(currentDir, "../index.html"), "utf8");
+const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
+const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"), "utf8");
 
 test("fighter stats are mounted inside the battle overlay", () => {
   const statusStripIndex = html.indexOf('<section class="status-strip"');
@@ -35,6 +37,10 @@ test("battle result panel exposes rewards and xp progress", () => {
 });
 
 test("city hero widget keeps the top HUD compact", () => {
+  const heroWidgetStart = html.indexOf('id="heroWidget"');
+  const heroWidgetEnd = html.indexOf('id="cityTimeToggle"');
+  const heroWidgetHtml = html.slice(heroWidgetStart, heroWidgetEnd);
+
   assert.equal(html.includes('id="heroWidget"'), true);
   assert.equal(html.includes('id="heroPortraitButton"'), true);
   assert.equal(html.includes('id="heroInfoName"'), true);
@@ -44,9 +50,27 @@ test("city hero widget keeps the top HUD compact", () => {
   assert.equal(html.includes('id="heroInfoSkillPoints"'), false);
 
   for (const attribute of ["strength", "agility", "vitality"]) {
-    assert.equal(html.includes(`data-hero-attribute-value="${attribute}"`), false);
-    assert.equal(html.includes(`data-hero-attribute-button="${attribute}"`), false);
+    assert.equal(heroWidgetHtml.includes(`data-hero-attribute-value="${attribute}"`), false);
+    assert.equal(heroWidgetHtml.includes(`data-hero-attribute-button="${attribute}"`), false);
   }
+});
+
+test("city hero portrait hints when skill points are unspent", () => {
+  assert.equal(cityHeroUiSource.includes('city-menu__portrait-button--has-points", hero.skillPoints > 0'), true);
+  assert.equal(stylesSource.includes(".city-menu__portrait-button--has-points"), true);
+  assert.equal(stylesSource.includes("@keyframes city-portrait-points-pulse"), true);
+});
+
+test("city hero profile exposes attributes combat stats and equipment", () => {
+  assert.equal(html.includes('id="heroProfile"'), true);
+  assert.equal(html.includes('role="dialog"'), true);
+  assert.equal(html.includes('id="heroProfilePortrait"'), true);
+  assert.equal(html.includes('id="heroProfileSkillPoints"'), true);
+  assert.equal(html.includes('data-hero-profile-stat="damage"'), true);
+  assert.equal(html.includes("data-hero-profile-equipment"), true);
+  assert.equal(cityHeroUiSource.includes("mountCityHeroProfile"), true);
+  assert.equal(stylesSource.includes(".city-profile__panel"), true);
+  assert.equal(stylesSource.includes("@keyframes city-profile-panel-in"), true);
 });
 
 test("church button can be wired while keeping the locked visual state", () => {
