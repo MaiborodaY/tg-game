@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(currentDir, "../index.html"), "utf8");
+const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"), "utf8");
 
@@ -69,6 +70,8 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(html.includes('data-hero-profile-stat="damage"'), true);
   assert.equal(html.includes("data-hero-profile-equipment"), true);
   assert.equal(cityHeroUiSource.includes("mountCityHeroProfile"), true);
+  assert.equal(mainSource.includes("mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : []"), true);
+  assert.equal(mainSource.includes("heroProfilePortraitPreview"), false);
   assert.equal(stylesSource.includes(".city-profile__panel"), true);
   assert.equal(stylesSource.includes("@keyframes city-profile-panel-in"), true);
 });

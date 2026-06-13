@@ -74,7 +74,6 @@ let weaponShop: WeaponShopApi | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
-let heroProfilePortraitPreview: HeroPortraitPreviewApi | undefined;
 const CITY_CURTAIN_TRANSITION_MS = 620;
 const CITY_CURTAIN_SWITCH_MS = 210;
 const CITY_RETURN_MIN_READY_MS = 1800;
@@ -296,11 +295,9 @@ function mountCityPreviews(): Promise<void> {
   }
 
   if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
-    heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
-  }
-
-  if (cityHeroWidgetRefs.profilePortrait && !heroProfilePortraitPreview) {
-    heroProfilePortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.profilePortrait, hero.equipment);
+    heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment, {
+      mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : [],
+    });
   }
 
   return cityScene?.ready ?? Promise.resolve();
@@ -426,10 +423,8 @@ async function waitForCityReady(): Promise<void> {
 function unmountCityPreviews(): void {
   cityScene?.destroy();
   heroPortraitPreview?.destroy();
-  heroProfilePortraitPreview?.destroy();
   cityScene = undefined;
   heroPortraitPreview = undefined;
-  heroProfilePortraitPreview = undefined;
 }
 
 function mountArena(): void {
@@ -559,7 +554,6 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   setPlayerEquipment(hero.equipment);
   if (shouldRefreshHeroPortrait(product)) {
     heroPortraitPreview?.setEquipment(hero.equipment);
-    heroProfilePortraitPreview?.setEquipment(hero.equipment);
   }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();

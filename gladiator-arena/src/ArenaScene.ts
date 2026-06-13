@@ -2098,13 +2098,11 @@ export interface HeroPortraitPreviewApi {
   destroy: () => void;
 }
 
-export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): HeroPortraitPreviewApi {
-  usePlayerEquipment(playerEquipment);
-  let scene: HeroPortraitScene | undefined;
-  let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
-  let lastSnapshotKey: string | undefined;
-  let snapshotToken = 0;
-  let destroyed = false;
+interface HeroPortraitPreviewOptions {
+  mirrorParents?: readonly HTMLElement[];
+}
+
+function createHeroPortraitSnapshotImage(parent: HTMLElement): HTMLImageElement {
   const snapshotImage = document.createElement("img");
 
   snapshotImage.className = "city-menu__portrait-snapshot";
@@ -2113,6 +2111,26 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
   snapshotImage.hidden = true;
   snapshotImage.setAttribute("aria-hidden", "true");
   parent.append(snapshotImage);
+
+  return snapshotImage;
+}
+
+export function mountHeroPortraitPreview(
+  parent: HTMLElement,
+  playerEquipment?: HeroEquipment,
+  options: HeroPortraitPreviewOptions = {},
+): HeroPortraitPreviewApi {
+  usePlayerEquipment(playerEquipment);
+  let scene: HeroPortraitScene | undefined;
+  let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
+  let lastSnapshotKey: string | undefined;
+  let snapshotToken = 0;
+  let destroyed = false;
+  const mirrorParents = (options.mirrorParents ?? []).filter((mirrorParent) => mirrorParent !== parent);
+  const snapshotTargets = [parent, ...mirrorParents].map((targetParent) => ({
+    parent: targetParent,
+    image: createHeroPortraitSnapshotImage(targetParent),
+  }));
 
   const refreshSnapshot = (equipment = pendingEquipment) => {
     if (!scene || destroyed) {
@@ -2134,9 +2152,11 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
         return;
       }
 
-      snapshotImage.src = src;
-      snapshotImage.hidden = false;
-      parent.classList.add("city-menu__portrait--static");
+      snapshotTargets.forEach((target) => {
+        target.image.src = src;
+        target.image.hidden = false;
+        target.parent.classList.add("city-menu__portrait--static");
+      });
       game.loop.sleep();
     });
   };
@@ -2185,8 +2205,10 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
       if (heroPortraitReadyCallback === readyCallbackForGame) {
         heroPortraitReadyCallback = undefined;
       }
-      snapshotImage.remove();
-      parent.classList.remove("city-menu__portrait--static");
+      snapshotTargets.forEach((target) => {
+        target.image.remove();
+        target.parent.classList.remove("city-menu__portrait--static");
+      });
       game.destroy(true);
     },
   };
