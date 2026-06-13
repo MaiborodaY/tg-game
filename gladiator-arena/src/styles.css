@@ -2587,10 +2587,10 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__hero {
-  grid-template-columns: 128px minmax(0, 1fr);
-  gap: 13px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 14px;
   align-items: center;
-  padding: 14px 11px 13px;
+  padding: 13px 12px 13px;
   border: 2px solid rgba(22, 7, 3, 0.88);
   border-radius: 7px;
   background:
@@ -2602,28 +2602,51 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__portrait {
-  width: 128px;
-  height: 128px;
-  border-width: 3px;
-  border-radius: 7px;
+  box-sizing: border-box;
+  width: 132px;
+  height: 156px;
+  padding: 8px;
+  border: 2px solid #120502;
+  border-radius: 9px;
   background:
-    radial-gradient(circle at 50% 52%, rgba(255, 220, 146, 0.14), transparent 45%),
-    linear-gradient(180deg, #5d8a82, #365951);
+    linear-gradient(180deg, rgba(151, 87, 39, 0.96) 0%, rgba(68, 25, 10, 0.98) 48%, #150502 100%);
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
   box-shadow:
-    inset 0 0 0 2px rgba(178, 123, 63, 0.3),
-    inset 0 5px 12px rgba(8, 2, 1, 0.52),
-    0 2px 0 rgba(255, 220, 146, 0.14);
+    inset 0 0 0 1px rgba(255, 218, 142, 0.2),
+    inset 0 0 0 4px rgba(31, 10, 4, 0.74),
+    inset 0 5px 10px rgba(255, 218, 142, 0.08),
+    inset 0 -10px 14px rgba(8, 2, 1, 0.56),
+    0 3px 0 rgba(8, 2, 1, 0.82),
+    0 8px 14px rgba(8, 2, 1, 0.34);
+}
+
+.city-profile__portrait::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: 0;
+  border: 2px solid rgba(13, 3, 1, 0.92);
+  border-radius: 4px;
+  background: url("./assets/ui/profile/portrait-backdrop-texture.webp") center / cover no-repeat;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 220, 146, 0.12),
+    inset 0 0 12px rgba(8, 2, 1, 0.18);
 }
 
 .city-profile__portrait canvas,
 .city-profile__portrait .city-menu__portrait-snapshot {
-  transform: scale(1.13);
-  transform-origin: 50% 46%;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  object-fit: cover;
+  transform: scale(0.95);
+  transform-origin: 50% 56%;
 }
 
 .city-profile__portrait .city-menu__portrait-snapshot {
-  object-position: 50% 46%;
+  object-position: 50% 56%;
 }
 
 .city-profile__summary {
