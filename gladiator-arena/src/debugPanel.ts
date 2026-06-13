@@ -224,7 +224,7 @@ const AUTO_EQUIPMENT_STAT_MIN = 0;
 const AUTO_EQUIPMENT_ARMOR_MAX = 200;
 const AUTO_EQUIPMENT_DAMAGE_MAX = 100;
 const AUTO_EQUIPMENT_PRICE_MAX = 2000;
-const AUTO_EQUIPMENT_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical"];
+const AUTO_EQUIPMENT_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
 const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
   common: "Common",
   uncommon: "Uncommon",
@@ -232,6 +232,7 @@ const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
   epic: "Epic",
   legendary: "Legendary",
   mythical: "Mythical",
+  unique: "Unique",
 };
 const DEBUG_SHOP_ITEM_PAIR_CONFIGS: readonly DebugShopItemPairConfig[] = [
   { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", label: "Shoulderguard" },
@@ -248,6 +249,7 @@ const DEBUG_SHOP_ITEM_RARITY_RANKS: Record<HeroItemRarity, number> = {
   epic: 3,
   legendary: 4,
   mythical: 5,
+  unique: 6,
 };
 
 const controlGroups: DebugControlGroup[] = [
@@ -714,6 +716,14 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
           <span class="debug-auto-equipment__shop-label">Armory</span>
           <input class="debug-auto-equipment__shop" type="checkbox" checked />
+        </label>
+        <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+          <span>Enemy pool</span>
+          <input class="debug-auto-equipment__enemy-pool" type="checkbox" />
+        </label>
+        <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+          <span>Boss unique</span>
+          <input class="debug-auto-equipment__boss-unique" type="checkbox" />
         </label>
         <fieldset class="debug-auto-equipment__transform">
           <legend>Transform</legend>
@@ -1432,6 +1442,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
   const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
   const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const enemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__enemy-pool");
+  const bossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__boss-unique");
   const shopLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__shop-label");
   const transformControls = editor.querySelector<HTMLElement>(".debug-auto-equipment__transform-controls");
   const resetTransform = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__reset-transform");
@@ -1451,6 +1463,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !priceRange ||
     !priceNumber ||
     !addToShop ||
+    !enemyPool ||
+    !bossUnique ||
     !shopLabel ||
     !transformControls ||
     !resetTransform ||
@@ -1505,6 +1519,14 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
   });
 
+  bossUnique.addEventListener("change", () => {
+    syncAutoEquipmentAvailabilityControls(editor);
+  });
+
+  addToShop.addEventListener("change", () => {
+    syncAutoEquipmentAvailabilityControls(editor);
+  });
+
   syncLinkedNumberInputs(armorRange, armorNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
   syncLinkedNumberInputs(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
 
@@ -1556,9 +1578,14 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
         damageBonus: statValue,
         price: clampNumber(Number(priceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX),
         addToShop: addToShop.checked,
+        availability: {
+          shop: addToShop.checked && !bossUnique.checked,
+          enemyPool: enemyPool.checked && !bossUnique.checked,
+          bossUnique: bossUnique.checked,
+        },
         item: {
           ...record.item,
-          rarity: getSelectedAutoEquipmentRarity(raritySelect.value, record),
+          rarity: bossUnique.checked ? "unique" : getSelectedAutoEquipmentRarity(raritySelect.value, record),
         },
         assetKeys: record.assetKeys,
         asset: record.asset,
@@ -2969,6 +2996,8 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
   const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
   const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const enemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__enemy-pool");
+  const bossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__boss-unique");
   const shopLabel = editor.querySelector<HTMLElement>(".debug-auto-equipment__shop-label");
   const buttons = editor.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__preview, .debug-auto-equipment__promote");
   const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
@@ -3019,11 +3048,25 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
     shopLabel.textContent = record?.item.kind === "weapon" ? "Weapon shop" : "Armory";
   }
 
-  [armorRange, armorNumber, priceRange, priceNumber, addToShop].forEach((input) => {
+  if (addToShop) {
+    addToShop.checked = isAvailable;
+  }
+
+  if (enemyPool) {
+    enemyPool.checked = false;
+  }
+
+  if (bossUnique) {
+    bossUnique.checked = false;
+  }
+
+  [armorRange, armorNumber, addToShop, enemyPool, bossUnique].forEach((input) => {
     if (input) {
       input.disabled = !isAvailable;
     }
   });
+
+  syncAutoEquipmentAvailabilityControls(editor);
 
   buttons.forEach((button) => {
     button.disabled = !isAvailable;
@@ -3043,6 +3086,48 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
       : AUTO_EQUIPMENT_ITEM_RECORDS.length === 0
         ? "No unpromoted equipment assets found."
         : "Using fallback preview.";
+  }
+}
+
+function syncAutoEquipmentAvailabilityControls(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
+  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__rarity");
+  const priceRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price]");
+  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-price-number]");
+  const addToShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__shop");
+  const enemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__enemy-pool");
+  const bossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__boss-unique");
+  const isAvailable = Boolean(getSelectedAutoEquipmentRecord(select?.value));
+  const isBossUnique = bossUnique?.checked === true;
+  const isShopItem = addToShop?.checked === true && !isBossUnique;
+
+  if (isBossUnique && raritySelect) {
+    raritySelect.value = "unique";
+    setDebugRarityDataset(raritySelect, "unique");
+  } else if (raritySelect) {
+    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
+  }
+
+  if (raritySelect) {
+    raritySelect.disabled = !isAvailable || isBossUnique;
+  }
+
+  if (addToShop) {
+    addToShop.disabled = !isAvailable || isBossUnique;
+  }
+
+  if (enemyPool) {
+    enemyPool.disabled = !isAvailable || isBossUnique;
+  }
+
+  if (priceRange && priceNumber) {
+    priceRange.disabled = !isAvailable || !isShopItem;
+    priceNumber.disabled = !isAvailable || !isShopItem;
+
+    if (!isShopItem) {
+      priceRange.value = "0";
+      priceNumber.value = "0";
+    }
   }
 }
 

@@ -54,9 +54,17 @@ export interface LogEntry {
   important?: boolean;
 }
 
+export interface CombatEncounterState {
+  id: string;
+  kind: "random" | "boss";
+  tierId: number;
+  opponentId: string;
+}
+
 export interface CombatState {
   player: FighterState;
   enemy: FighterState;
+  encounter?: CombatEncounterState;
   round: number;
   score: number;
   result: Result;

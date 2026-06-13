@@ -89,6 +89,7 @@ const ARMORY_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
   epic: 3,
   legendary: 4,
   mythical: 5,
+  unique: 6,
 };
 
 const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {

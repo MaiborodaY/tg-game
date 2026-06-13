@@ -350,6 +350,7 @@ interface PromoteEquipmentItemPayload {
   damageBonus?: unknown;
   price?: unknown;
   addToShop?: unknown;
+  availability?: unknown;
   item?: unknown;
   assetKeys?: unknown;
   asset?: unknown;
@@ -367,7 +368,7 @@ interface GeneratedEquipmentJsonRecord {
   id: string;
   name: string;
   kind: "armor" | "weapon";
-  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical";
+  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
@@ -380,6 +381,7 @@ interface GeneratedEquipmentJsonRecord {
     sourcePath: string;
     lowSourcePath?: string;
   };
+  availability?: GeneratedEquipmentAvailability;
   armoryProduct?: {
     id: string;
     name: string;
@@ -394,6 +396,12 @@ interface GeneratedEquipmentJsonRecord {
     itemIds: string[];
     categoryId: string;
   };
+}
+
+interface GeneratedEquipmentAvailability {
+  shop: boolean;
+  enemyPool: boolean;
+  bossUnique: boolean;
 }
 
 interface PromotedEquipmentItem {
@@ -979,9 +987,9 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Promo
       ? Math.max(0, Math.min(promotedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(promotion.damageBonus, "damageBonus"))))
       : undefined;
   const weaponClass = kind === "weapon" ? readWeaponClass(item.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
-  const rarity = readItemRarity(item.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
-  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(promotion.price, "price"))));
-  const addToShop = promotion.addToShop === true;
+  const availability = readPromotedEquipmentAvailability(promotion.availability, promotion.addToShop === true);
+  const rarity = availability.bossUnique ? "unique" : readItemRarity(item.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
+  const price = availability.shop ? Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(promotion.price, "price")))) : 0;
   const categoryId = getArmoryCategoryId(equipmentSlot);
   const id = `generated_equipment_${toIdentifier(assetKey)}`;
 
@@ -1012,7 +1020,8 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Promo
         sourcePath: promotedAssetPaths.sourcePath,
         ...(promotedAssetPaths.lowSourcePath ? { lowSourcePath: promotedAssetPaths.lowSourcePath } : {}),
       },
-      ...(addToShop && kind === "armor" && categoryId
+      availability,
+      ...(availability.shop && kind === "armor" && categoryId
         ? {
             armoryProduct: {
               id,
@@ -1023,7 +1032,7 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Promo
             },
           }
         : {}),
-      ...(addToShop && kind === "weapon"
+      ...(availability.shop && kind === "weapon"
         ? {
             weaponProduct: {
               id,
@@ -1099,6 +1108,7 @@ async function createMirroredPromotedEquipmentRecord(
       sourcePath: mirrorSourcePath,
       ...(mirrorLowSourcePath ? { lowSourcePath: mirrorLowSourcePath } : {}),
     },
+    ...(promotedItem.availability ? { availability: promotedItem.availability } : {}),
     ...(promotedItem.armoryProduct && categoryId
       ? {
           armoryProduct: {
@@ -1698,11 +1708,18 @@ export interface GeneratedWeaponProduct {
   categoryId: string;
 }
 
+export interface GeneratedEquipmentAvailability {
+  shop: boolean;
+  enemyPool: boolean;
+  bossUnique: boolean;
+}
+
 export interface GeneratedEquipmentItemRecord {
   item: HeroItemDefinition;
   assetKeys: EquipmentItemAssetKeys;
   equipmentTuning?: EquipmentTuning;
   asset: EquipmentAssetDefinition;
+  availability?: GeneratedEquipmentAvailability;
   armoryProduct?: GeneratedArmoryProduct;
   weaponProduct?: GeneratedWeaponProduct;
 }
@@ -1760,6 +1777,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     `      sourcePath: ${JSON.stringify(record.asset.sourcePath)},`,
     ...(record.asset.lowSourcePath ? [`      lowSourcePath: ${JSON.stringify(record.asset.lowSourcePath)},`] : []),
     "    },",
+    ...(record.availability ? [`    availability: ${JSON.stringify(record.availability)},`] : []),
     ...(record.armoryProduct ? [`    armoryProduct: ${JSON.stringify(record.armoryProduct)},`] : []),
     ...(record.weaponProduct ? [`    weaponProduct: ${JSON.stringify(record.weaponProduct)},`] : []),
     "  }",
@@ -1795,8 +1813,16 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const armorCategory = kind === "armor" ? readArmorCategory(record.armorCategory) : undefined;
   const weaponClass = kind === "weapon" ? readWeaponClass(record.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
   const rarity = readItemRarity(record.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
+  const availability = readGeneratedEquipmentAvailability(record.availability, {
+    shop: Boolean(record.armoryProduct || record.weaponProduct),
+    enemyPool: true,
+    bossUnique: false,
+  });
 
   validateGeneratedEquipmentSlot(kind, equipmentSlot);
+
+  const armoryProduct = availability.shop && record.armoryProduct ? validateGeneratedArmoryProduct(record.armoryProduct, id, name) : undefined;
+  const weaponProduct = availability.shop && record.weaponProduct ? validateGeneratedWeaponProduct(record.weaponProduct, id, name) : undefined;
 
   return {
     id,
@@ -1815,8 +1841,9 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
       sourcePath,
       ...(lowSourcePath ? { lowSourcePath } : {}),
     },
-    ...(record.armoryProduct ? { armoryProduct: validateGeneratedArmoryProduct(record.armoryProduct, id, name) } : {}),
-    ...(record.weaponProduct ? { weaponProduct: validateGeneratedWeaponProduct(record.weaponProduct, id, name) } : {}),
+    availability,
+    ...(armoryProduct ? { armoryProduct } : {}),
+    ...(weaponProduct ? { weaponProduct } : {}),
   };
 }
 
@@ -2355,6 +2382,43 @@ function readArmorCategory(value: unknown): GeneratedEquipmentJsonRecord["armorC
   throw new Error("Invalid armor category.");
 }
 
+function readPromotedEquipmentAvailability(value: unknown, legacyShopFallback: boolean): GeneratedEquipmentAvailability {
+  const fallback: GeneratedEquipmentAvailability = {
+    shop: legacyShopFallback,
+    enemyPool: false,
+    bossUnique: false,
+  };
+
+  return readGeneratedEquipmentAvailability(value, fallback);
+}
+
+function readGeneratedEquipmentAvailability(value: unknown, fallback: GeneratedEquipmentAvailability): GeneratedEquipmentAvailability {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+
+  const availability = readPlainObject(value, "generated equipment availability");
+  const bossUnique = readBooleanWithFallback(availability.bossUnique, fallback.bossUnique);
+
+  if (bossUnique) {
+    return {
+      shop: false,
+      enemyPool: false,
+      bossUnique: true,
+    };
+  }
+
+  return {
+    shop: readBooleanWithFallback(availability.shop, fallback.shop),
+    enemyPool: readBooleanWithFallback(availability.enemyPool, fallback.enemyPool),
+    bossUnique: false,
+  };
+}
+
+function readBooleanWithFallback(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function readItemRarity(
   value: unknown,
   fallback: NonNullable<GeneratedEquipmentJsonRecord["rarity"]> = "common",
@@ -2363,7 +2427,15 @@ function readItemRarity(
     return fallback;
   }
 
-  if (value === "common" || value === "uncommon" || value === "rare" || value === "epic" || value === "legendary" || value === "mythical") {
+  if (
+    value === "common" ||
+    value === "uncommon" ||
+    value === "rare" ||
+    value === "epic" ||
+    value === "legendary" ||
+    value === "mythical" ||
+    value === "unique"
+  ) {
     return value;
   }
 

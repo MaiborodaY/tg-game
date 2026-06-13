@@ -62,6 +62,7 @@ const CITY_EQUIPMENT_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
   epic: 3,
   legendary: 4,
   mythical: 5,
+  unique: 6,
 };
 
 const CITY_EQUIPMENT_WEAPON_CATEGORIES: readonly CityEquipmentCategory[] = [

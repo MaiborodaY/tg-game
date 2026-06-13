@@ -19,6 +19,7 @@ const shopRarityLabels: Record<ShopItemRarity, string> = {
   epic: "Epic",
   legendary: "Legendary",
   mythical: "Mythical",
+  unique: "Unique",
 };
 
 const shopRarityShortLabels: Record<ShopItemRarity, string> = {
@@ -28,6 +29,7 @@ const shopRarityShortLabels: Record<ShopItemRarity, string> = {
   epic: "E",
   legendary: "L",
   mythical: "M",
+  unique: "X",
 };
 
 const shopRarityRanks: Record<ShopItemRarity, number> = {
@@ -37,6 +39,7 @@ const shopRarityRanks: Record<ShopItemRarity, number> = {
   epic: 4,
   legendary: 5,
   mythical: 6,
+  unique: 7,
 };
 
 export function getShopProductStat(itemIds: HeroItemId[], statKind: ShopProductStatKind): number {

@@ -13,6 +13,11 @@ export interface PromoteEquipmentItemPayload {
   damageBonus: number;
   price: number;
   addToShop: boolean;
+  availability: {
+    shop: boolean;
+    enemyPool: boolean;
+    bossUnique: boolean;
+  };
   item: HeroItemDefinition;
   assetKeys: EquipmentItemAssetKeys;
   asset: EquipmentAssetDefinition;

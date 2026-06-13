@@ -32,6 +32,7 @@ function loadTypeScriptModule(modulePath, context = {}) {
 }
 
 const combat = loadTypeScriptModule("../src/combat.ts");
+const arenaOpponents = loadTypeScriptModule("../src/arenaOpponents.ts");
 const generatedItems = {
   weapon_sword_01: {
     id: "weapon_sword_01",
@@ -92,6 +93,10 @@ const hero = loadTypeScriptModule("../src/hero.ts", {
   require: (id) => {
     if (id === "./combat") {
       return combat;
+    }
+
+    if (id === "./arenaOpponents") {
+      return arenaOpponents;
     }
 
     if (id === "./generated/equipmentItems.generated") {
@@ -231,6 +236,90 @@ test("arena tier one enemy loadouts only roll common equipment", () => {
   for (const itemId of equippedItemIds) {
     assert.equal(hero.HERO_ITEM_CATALOG[itemId]?.rarity, "common");
   }
+});
+
+test("arena opponent model defines random opponents and boss hooks", () => {
+  const tier = hero.getArenaTierDefinition(1);
+  const randomOpponents = hero.getArenaRandomOpponentsForTier(1);
+  const boss = hero.getArenaBossDefinition(tier.bossIds[0]);
+
+  assert.equal(tier.randomOpponentIds.length, 1);
+  assert.equal(tier.randomOpponentIds[0], "dust_arena_brawler");
+  assert.equal(randomOpponents.length, 1);
+  assert.equal(randomOpponents[0].id, "dust_arena_brawler");
+  assert.deepEqual(randomOpponents[0].equipmentPool.itemRarities, tier.enemyItemRarities);
+  assert.equal(randomOpponents[0].equipmentPool.rollChance, tier.enemyEquipmentRollChance);
+
+  assert.equal(tier.bossIds.length, 1);
+  assert.equal(boss?.id, "dust_arena_champion");
+  assert.equal(boss?.tierId, 1);
+  assert.equal(boss?.equipment.helmet, "generated_equipment_helmet_wood_boss_01");
+  assert.equal(boss?.lootTable.length, 1);
+  assert.equal(boss?.lootTable[0].id, "dust_arena_champion_wood_helmet");
+  assert.equal(boss?.lootTable[0].itemIds.length, 1);
+  assert.equal(boss?.lootTable[0].itemIds[0], "generated_equipment_helmet_wood_boss_01");
+  assert.equal(boss?.lootTable[0].chance, 1);
+  assert.equal(boss?.lootTable[0].quantity, 1);
+});
+
+test("arena encounters can create combat states from random opponents and bosses", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const randomEncounter = hero.createArenaRandomEnemyEncounter(1, () => 0);
+  const randomState = hero.createCombatStateFromHero(baseHero, randomEncounter);
+
+  assert.equal(randomEncounter.kind, "random");
+  assert.equal(randomEncounter.name, "Grumbus");
+  assert.equal(randomState.encounter?.id, "random:dust_arena_brawler");
+  assert.equal(randomState.encounter?.kind, "random");
+  assert.equal(randomState.enemy.name, "Grumbus");
+  assert.equal(randomState.enemy.equipment?.weaponMain, "weapon_sword_01");
+
+  const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
+  const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);
+
+  assert.equal(bossEncounter.kind, "boss");
+  assert.equal(bossState.encounter?.id, "boss:dust_arena_champion");
+  assert.equal(bossState.enemy.name, "Dust Arena Champion");
+  assert.equal(bossState.enemy.equipment?.helmet, "generated_equipment_helmet_wood_boss_01");
+  assert.equal(bossState.enemy.equipment?.weaponMain, null);
+
+  bossState.result = "win";
+  assert.equal(hero.getBattleReward(bossState).gold, 15);
+  assert.equal(hero.getBattleReward(bossState).xp, 15);
+});
+
+test("arena encounter loot rolls into hero inventory", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: "leather_helmet_01", quantity: 1 }],
+  };
+  const bossEncounter = {
+    ...hero.createArenaBossEncounter("dust_arena_champion"),
+    lootTable: [
+      {
+        id: "guaranteed_leather_helmet",
+        itemIds: ["leather_helmet_01"],
+        chance: 1,
+        quantity: 2,
+      },
+      {
+        id: "missed_leather_breastplate",
+        itemIds: ["leather_breastplate_01"],
+        chance: 0,
+        quantity: 1,
+      },
+    ],
+  };
+  const loot = hero.rollArenaEncounterLoot(bossEncounter, () => 0);
+  const nextHero = hero.applyArenaLoot(baseHero, loot, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(loot.length, 1);
+  assert.equal(loot[0].sourceId, "guaranteed_leather_helmet");
+  assert.equal(loot[0].itemId, "leather_helmet_01");
+  assert.equal(loot[0].quantity, 2);
+  assert.equal(nextHero.inventory.find((entry) => entry.itemId === "leather_helmet_01")?.quantity, 3);
+  assert.equal(nextHero.inventory.some((entry) => entry.itemId === "leather_breastplate_01"), false);
+  assert.equal(nextHero.updatedAt, "2026-01-01T00:01:00.000Z");
 });
 
 test("hero level progression uses one thousand total xp across fifty levels", () => {

@@ -1,5 +1,46 @@
+import {
+  BATTLE_LOSS_REWARD,
+  BATTLE_WIN_REWARD,
+  DEFAULT_ARENA_TIER_ID,
+  getArenaBossDefinition as resolveArenaBossDefinition,
+  getArenaRandomOpponentDefinition as resolveArenaRandomOpponentDefinition,
+  getArenaRandomOpponentsForTier as resolveArenaRandomOpponentsForTier,
+  getArenaTierDefinition as resolveArenaTierDefinition,
+} from "./arenaOpponents";
+import type {
+  ArenaBossDefinition,
+  ArenaGeneratedEquipmentPool,
+  ArenaLootTableEntry,
+  ArenaOpponentRewards,
+  ArenaRandomOpponentDefinition,
+  ArenaTierDefinition,
+} from "./arenaOpponents";
 import { freshState, MAX_HP, MAX_STAMINA, type CombatState } from "./combat";
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
+
+export {
+  ARENA_BOSSES,
+  ARENA_RANDOM_OPPONENTS,
+  ARENA_TIERS,
+  BATTLE_LOSS_REWARD,
+  BATTLE_WIN_REWARD,
+  DEFAULT_ARENA_TIER_ID,
+  getArenaBossDefinition,
+  getArenaBossesForTier,
+  getArenaRandomOpponentDefinition,
+  getArenaRandomOpponentsForTier,
+  getArenaTierDefinition,
+} from "./arenaOpponents";
+export type {
+  ArenaBossDefinition,
+  ArenaBossId,
+  ArenaGeneratedEquipmentPool,
+  ArenaLootTableEntry,
+  ArenaOpponentId,
+  ArenaOpponentRewards,
+  ArenaRandomOpponentDefinition,
+  ArenaTierDefinition,
+} from "./arenaOpponents";
 
 export type HeroWeaponClass = "sword" | "axe" | "bow";
 
@@ -58,7 +99,7 @@ export const HERO_EQUIPMENT_SLOT_KEYS = [
 
 export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
 export type HeroItemId = string;
-export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical";
+export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
 
 export interface HeroItemDefinition {
@@ -84,13 +125,6 @@ export interface BattleReward {
   xp: number;
 }
 
-export interface ArenaTierDefinition {
-  id: number;
-  name: string;
-  enemyItemRarities: readonly HeroItemRarity[];
-  enemyEquipmentRollChance: number;
-}
-
 export interface HeroItemPurchase {
   itemIds: HeroItemId[];
   price: number;
@@ -106,6 +140,23 @@ export interface EnemyVisualPreset {
 export interface EnemyLoadout {
   equipment: HeroEquipment;
   visualPreset: EnemyVisualPreset;
+}
+
+export interface ArenaEncounter {
+  id: string;
+  kind: "random" | "boss";
+  tierId: number;
+  opponentId: string;
+  name: string;
+  enemyLoadout: EnemyLoadout;
+  rewards: ArenaOpponentRewards;
+  lootTable: readonly ArenaLootTableEntry[];
+}
+
+export interface ArenaLootDrop {
+  sourceId: string;
+  itemId: HeroItemId;
+  quantity: number;
 }
 
 export const DEFAULT_HERO_ID = "local-hero";
@@ -164,9 +215,6 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   30,
 ];
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
-export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 5 };
-export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
-export const DEFAULT_ARENA_TIER_ID = 1;
 export const HERO_STRENGTH_DAMAGE_BONUS = 1;
 export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.02;
 export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.01;
@@ -176,14 +224,6 @@ export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
-export const ARENA_TIERS: readonly ArenaTierDefinition[] = [
-  {
-    id: 1,
-    name: "Dust Arena I",
-    enemyItemRarities: ["common"],
-    enemyEquipmentRollChance: 0.52,
-  },
-];
 export const HERO_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_IDS;
 export const ALL_HERO_ITEM_IDS = HERO_ITEM_IDS;
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = GENERATED_EQUIPMENT_ITEM_CATALOG;
@@ -197,18 +237,59 @@ export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
 
 export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [DEFAULT_ENEMY_VISUAL_PRESET];
 
-export function getArenaTierDefinition(tierId = DEFAULT_ARENA_TIER_ID): ArenaTierDefinition {
-  return ARENA_TIERS.find((tier) => tier.id === tierId) ?? ARENA_TIERS[0]!;
+export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_ARENA_TIER_ID): EnemyLoadout {
+  const tier = resolveArenaTierDefinition(tierId);
+  const equipmentPool: ArenaGeneratedEquipmentPool = {
+    itemRarities: tier.enemyItemRarities,
+    rollChance: tier.enemyEquipmentRollChance,
+  };
+
+  return createRandomEnemyLoadoutFromPool(equipmentPool, random);
 }
 
-export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_ARENA_TIER_ID): EnemyLoadout {
-  const tier = getArenaTierDefinition(tierId);
+export function createArenaRandomEnemyEncounter(tierId = DEFAULT_ARENA_TIER_ID, random = Math.random): ArenaEncounter {
+  const tier = resolveArenaTierDefinition(tierId);
+  const opponents = resolveArenaRandomOpponentsForTier(tier.id);
+  const opponent = opponents.length > 0 ? pickRandom(opponents, random) : createFallbackRandomOpponent(tier);
+
+  return {
+    id: `random:${opponent.id}`,
+    kind: "random",
+    tierId: opponent.tierId,
+    opponentId: opponent.id,
+    name: opponent.name,
+    enemyLoadout: createRandomEnemyLoadoutFromPool(opponent.equipmentPool, random),
+    rewards: opponent.rewards,
+    lootTable: [],
+  };
+}
+
+export function createArenaBossEncounter(bossId: string): ArenaEncounter {
+  const boss = resolveArenaBossDefinition(bossId);
+
+  if (!boss) {
+    throw new Error(`Unknown arena boss: ${bossId}.`);
+  }
+
+  return {
+    id: `boss:${boss.id}`,
+    kind: "boss",
+    tierId: boss.tierId,
+    opponentId: boss.id,
+    name: boss.name,
+    enemyLoadout: createBossEnemyLoadout(boss),
+    rewards: boss.rewards,
+    lootTable: boss.lootTable,
+  };
+}
+
+function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipmentPool, random = Math.random): EnemyLoadout {
   const equipment = createDefaultHeroEquipment();
 
   HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    const itemIds = getEnemyItemIdsBySlot(slotKey, tier);
+    const itemIds = getEnemyItemIdsBySlot(slotKey, equipmentPool.itemRarities);
 
-    if (itemIds.length === 0 || random() >= tier.enemyEquipmentRollChance) {
+    if (itemIds.length === 0 || random() >= equipmentPool.rollChance) {
       return;
     }
 
@@ -218,6 +299,32 @@ export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_
   return {
     equipment,
     visualPreset: pickRandom(ENEMY_VISUAL_PRESETS, random),
+  };
+}
+
+function createBossEnemyLoadout(boss: ArenaBossDefinition): EnemyLoadout {
+  return {
+    equipment: {
+      ...createDefaultHeroEquipment(),
+      ...boss.equipment,
+    },
+    visualPreset: { ...DEFAULT_ENEMY_VISUAL_PRESET },
+  };
+}
+
+function createFallbackRandomOpponent(tier: ArenaTierDefinition): ArenaRandomOpponentDefinition {
+  return {
+    id: `tier_${tier.id}_fallback`,
+    tierId: tier.id,
+    name: "Grumbus",
+    equipmentPool: {
+      itemRarities: tier.enemyItemRarities,
+      rollChance: tier.enemyEquipmentRollChance,
+    },
+    rewards: {
+      win: BATTLE_WIN_REWARD,
+      loss: BATTLE_LOSS_REWARD,
+    },
   };
 }
 
@@ -347,9 +454,10 @@ export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): He
   return "sword";
 }
 
-export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT_ARENA_TIER_ID): CombatState {
+export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: ArenaEncounter | number = DEFAULT_ARENA_TIER_ID): CombatState {
   const stats = deriveHeroStats(hero);
-  const enemyLoadout = createRandomEnemyLoadout(Math.random, arenaTierId);
+  const encounter = typeof encounterOrTierId === "number" ? createArenaRandomEnemyEncounter(encounterOrTierId) : encounterOrTierId;
+  const enemyLoadout = encounter.enemyLoadout;
   const enemyArmor = getHeroEquipmentArmor(enemyLoadout.equipment);
   const enemyDamageBonus = getHeroEquipmentDamageBonus(enemyLoadout.equipment);
   const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
@@ -378,6 +486,7 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
     },
     enemy: {
       ...state.enemy,
+      name: encounter.name,
       armor: enemyArmor,
       maxArmor: enemyArmor,
       damageBonus: enemyDamageBonus,
@@ -390,8 +499,14 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },
     },
+    encounter: {
+      id: encounter.id,
+      kind: encounter.kind,
+      tierId: encounter.tierId,
+      opponentId: encounter.opponentId,
+    },
     log: [
-      { text: `The gate slams open. ${hero.name} and ${state.enemy.name} enter the sand.`, important: true },
+      { text: `The gate slams open. ${hero.name} and ${encounter.name} enter the sand.`, important: true },
       { text: "Move into range, strike, then survive the enemy turn." },
     ],
   };
@@ -399,14 +514,96 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
 
 export function getBattleReward(combat: CombatState): BattleReward {
   if (combat.result === "win") {
-    return { ...BATTLE_WIN_REWARD };
+    return { ...getCombatEncounterRewards(combat).win };
   }
 
   if (combat.result === "lose") {
-    return { ...BATTLE_LOSS_REWARD };
+    return { ...getCombatEncounterRewards(combat).loss };
   }
 
   return { gold: 0, xp: 0 };
+}
+
+export function rollArenaEncounterLoot(encounter: ArenaEncounter, random = Math.random): ArenaLootDrop[] {
+  return rollArenaLootTable(encounter.lootTable, random);
+}
+
+export function rollCombatEncounterLoot(combat: CombatState, random = Math.random): ArenaLootDrop[] {
+  return rollArenaLootTable(getCombatEncounterLootTable(combat), random);
+}
+
+export function applyArenaLoot(hero: HeroState, loot: readonly ArenaLootDrop[], now = new Date().toISOString()): HeroState {
+  if (loot.length === 0) {
+    return hero;
+  }
+
+  const inventory = hero.inventory.map((entry) => ({ ...entry }));
+  let applied = false;
+
+  loot.forEach((drop) => {
+    const quantity = Math.max(0, Math.floor(drop.quantity));
+
+    if (!drop.itemId || quantity <= 0) {
+      return;
+    }
+
+    const existingEntry = inventory.find((entry) => entry.itemId === drop.itemId);
+
+    if (existingEntry) {
+      existingEntry.quantity += quantity;
+    } else {
+      inventory.push({ itemId: drop.itemId, quantity });
+    }
+
+    applied = true;
+  });
+
+  if (!applied) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    inventory,
+    updatedAt: now,
+  };
+}
+
+function getCombatEncounterRewards(combat: CombatState): ArenaOpponentRewards {
+  if (combat.encounter?.kind === "boss") {
+    return resolveArenaBossDefinition(combat.encounter.opponentId)?.rewards ?? { win: BATTLE_WIN_REWARD, loss: BATTLE_LOSS_REWARD };
+  }
+
+  if (combat.encounter?.kind === "random") {
+    return resolveArenaRandomOpponentDefinition(combat.encounter.opponentId)?.rewards ?? { win: BATTLE_WIN_REWARD, loss: BATTLE_LOSS_REWARD };
+  }
+
+  return { win: BATTLE_WIN_REWARD, loss: BATTLE_LOSS_REWARD };
+}
+
+function getCombatEncounterLootTable(combat: CombatState): readonly ArenaLootTableEntry[] {
+  if (combat.encounter?.kind === "boss") {
+    return resolveArenaBossDefinition(combat.encounter.opponentId)?.lootTable ?? [];
+  }
+
+  return [];
+}
+
+function rollArenaLootTable(lootTable: readonly ArenaLootTableEntry[], random: () => number): ArenaLootDrop[] {
+  return lootTable.flatMap((entry) => {
+    const chance = Math.max(0, Math.min(1, entry.chance));
+    const quantity = Math.max(0, Math.floor(entry.quantity));
+
+    if (chance <= 0 || quantity <= 0 || random() >= chance) {
+      return [];
+    }
+
+    return entry.itemIds.map((itemId) => ({
+      sourceId: entry.id,
+      itemId,
+      quantity,
+    }));
+  });
 }
 
 function getHeroAttributeTotal(baseValue: number, equipmentBonus: number): number {
@@ -526,10 +723,17 @@ function applyHeroXp(level: number, xp: number): Pick<HeroState, "level" | "xp" 
   };
 }
 
-function getEnemyItemIdsBySlot(slotKey: HeroEquipmentSlotKey, tier: ArenaTierDefinition): HeroItemId[] {
+function getEnemyItemIdsBySlot(slotKey: HeroEquipmentSlotKey, itemRarities: readonly HeroItemRarity[]): HeroItemId[] {
   return GENERATED_EQUIPMENT_ITEM_RECORDS.filter(
-    (record) => record.item.equipmentSlot === slotKey && tier.enemyItemRarities.includes(getHeroItemRarity(record.item)),
+    (record) =>
+      canRollGeneratedEquipmentForEnemy(record) &&
+      record.item.equipmentSlot === slotKey &&
+      itemRarities.includes(getHeroItemRarity(record.item)),
   ).map((record) => record.item.id);
+}
+
+function canRollGeneratedEquipmentForEnemy(record: (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number]): boolean {
+  return record.availability?.enemyPool ?? true;
 }
 
 function getHeroItemRarity(item: HeroItemDefinition): HeroItemRarity {
