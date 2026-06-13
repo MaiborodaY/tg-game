@@ -142,7 +142,9 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultStats.damageBonus, 0);
   assert.equal(defaultStats.movementDistanceBonus, 0);
   assert.equal(defaultStats.bodyScaleBonus, 0);
-  assert.equal(defaultStats.attackReachBonus, 0);
+  assert.equal(defaultStats.clinchRangeBonus, 0);
+  assert.equal(defaultStats.restHpRestoreBonus, 0);
+  assert.equal(defaultStats.restStaminaRestoreBonus, 0);
 
   const tunedHero = {
     ...defaultHero,
@@ -156,15 +158,24 @@ test("hero base attributes derive combat stats", () => {
   const combatState = hero.createCombatStateFromHero(tunedHero);
 
   assert.equal(tunedStats.damageBonus, 3);
-  assert.equal(tunedStats.movementDistanceBonus, 0.8);
-  assert.equal(tunedStats.bodyScaleBonus, 0.12);
-  assert.equal(tunedStats.attackReachBonus, 0.3);
-  assert.equal(tunedStats.maxHp, combat.MAX_HP + 10);
+  assert.equal(tunedStats.movementDistanceBonus, 4 * hero.HERO_AGILITY_MOVEMENT_DISTANCE_BONUS);
+  assert.equal(tunedStats.bodyScaleBonus, 3 * hero.HERO_STRENGTH_BODY_SCALE_BONUS);
+  assert.equal(
+    tunedStats.clinchRangeBonus,
+    Math.min(hero.HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS, 3 * hero.HERO_STRENGTH_CLINCH_RANGE_BONUS),
+  );
+  assert.equal(tunedStats.maxHp, combat.MAX_HP + 2 * hero.HERO_VITALITY_HP_BONUS);
+  assert.equal(tunedStats.maxStamina, combat.MAX_STAMINA + 2 * hero.HERO_VITALITY_STAMINA_BONUS);
+  assert.equal(tunedStats.restHpRestoreBonus, 2 * hero.HERO_VITALITY_REST_HP_BONUS);
+  assert.equal(tunedStats.restStaminaRestoreBonus, 2 * hero.HERO_VITALITY_REST_STAMINA_BONUS);
   assert.equal(combatState.player.damageBonus, tunedStats.damageBonus);
   assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
   assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
-  assert.equal(combatState.player.attackReachBonus, tunedStats.attackReachBonus);
+  assert.equal(combatState.player.clinchRangeBonus, tunedStats.clinchRangeBonus);
+  assert.equal(combatState.player.restHpRestoreBonus, tunedStats.restHpRestoreBonus);
+  assert.equal(combatState.player.restStaminaRestoreBonus, tunedStats.restStaminaRestoreBonus);
   assert.equal(combatState.player.maxHp, tunedStats.maxHp);
+  assert.equal(combatState.player.maxStamina, tunedStats.maxStamina);
 });
 
 test("weapon class defaults to sword and can be inferred for generated weapons", () => {
@@ -279,9 +290,12 @@ test("hero can spend level-up skill points on base attributes", () => {
   assert.equal(vitalityHero.baseStats.strength, 1);
   assert.equal(vitalityHero.baseStats.vitality, 1);
   assert.equal(hero.deriveHeroStats(vitalityHero).damageBonus, 1);
-  assert.equal(hero.deriveHeroStats(vitalityHero).bodyScaleBonus, 0.04);
-  assert.equal(hero.deriveHeroStats(vitalityHero).attackReachBonus, 0.1);
-  assert.equal(hero.deriveHeroStats(vitalityHero).maxHp, combat.MAX_HP + 5);
+  assert.equal(hero.deriveHeroStats(vitalityHero).bodyScaleBonus, hero.HERO_STRENGTH_BODY_SCALE_BONUS);
+  assert.equal(hero.deriveHeroStats(vitalityHero).clinchRangeBonus, hero.HERO_STRENGTH_CLINCH_RANGE_BONUS);
+  assert.equal(hero.deriveHeroStats(vitalityHero).maxHp, combat.MAX_HP + hero.HERO_VITALITY_HP_BONUS);
+  assert.equal(hero.deriveHeroStats(vitalityHero).maxStamina, combat.MAX_STAMINA + hero.HERO_VITALITY_STAMINA_BONUS);
+  assert.equal(hero.deriveHeroStats(vitalityHero).restHpRestoreBonus, hero.HERO_VITALITY_REST_HP_BONUS);
+  assert.equal(hero.deriveHeroStats(vitalityHero).restStaminaRestoreBonus, hero.HERO_VITALITY_REST_STAMINA_BONUS);
 
   assert.equal(exhaustedHero, vitalityHero);
 });

@@ -41,7 +41,9 @@ export interface FighterState {
   damageBonus: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
-  attackReachBonus: number;
+  clinchRangeBonus: number;
+  restHpRestoreBonus: number;
+  restStaminaRestoreBonus: number;
   weaponClass?: HeroWeaponClass;
   equipment?: HeroEquipment;
   visualPreset?: EnemyVisualPreset;
@@ -86,6 +88,8 @@ export const MELEE_RANGE = 0;
 export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
 export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
+export const MOVE_DISTANCE_PER_STAMINA = 0.2;
+export const DAMAGE_BONUS_PER_ATTACK_STAMINA = 10;
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -101,22 +105,22 @@ export const actions: Record<ActionId, ActionConfig> = {
   forward: {
     id: "forward",
     title: "Step Forward",
-    detail: "Cost 1 - Distance -0.5",
+    detail: "Move forward",
     cost: 1,
     move: -DEFAULT_FORWARD_MOVE_DISTANCE,
   },
   back: {
     id: "back",
     title: "Step Back",
-    detail: "Cost 1 - Distance +0.5",
+    detail: "Move back",
     cost: 1,
     move: DEFAULT_BACK_MOVE_DISTANCE,
   },
   lunge: {
     id: "lunge",
     title: "Lunge",
-    detail: "Cost 4 - Half dash + hit in clinch",
-    cost: 4,
+    detail: "Dash + hit in clinch",
+    cost: 2,
     move: -DEFAULT_LUNGE_MOVE_DISTANCE,
     damage: 4,
     blockChance: 0.5,
@@ -125,7 +129,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   light: {
     id: "light",
     title: "Weak Slash",
-    detail: "Cost 2 - Clinch only - Damage 1",
+    detail: "Clinch only - Damage 1",
     cost: 2,
     damage: 1,
     blockChance: 0.25,
@@ -134,7 +138,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   medium: {
     id: "medium",
     title: "Medium Slash",
-    detail: "Cost 3 - Clinch only - Damage 2",
+    detail: "Clinch only - Damage 2",
     cost: 3,
     damage: 2,
     blockChance: 0.5,
@@ -143,7 +147,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   heavy: {
     id: "heavy",
     title: "Grand Bonk",
-    detail: "Cost 5 - Clinch only - Damage 4",
+    detail: "Clinch only - Damage 4",
     cost: 5,
     damage: 4,
     blockChance: 0.75,
@@ -199,6 +203,32 @@ export function getActionMove(actionId: ActionId, actor?: FighterState): number 
   return actions[actionId].move ?? 0;
 }
 
+export function getActionStaminaCost(actionId: ActionId, actor?: FighterState): number {
+  const actionMove = Math.abs(getActionMove(actionId, actor));
+
+  if (actionMove > 0) {
+    return Math.max(1, Math.round(roundStaminaCostRatio(actionMove / MOVE_DISTANCE_PER_STAMINA)));
+  }
+
+  if (actions[actionId].damage) {
+    return actions[actionId].cost + Math.floor(Math.max(0, actor?.damageBonus ?? 0) / DAMAGE_BONUS_PER_ATTACK_STAMINA);
+  }
+
+  return actions[actionId].cost;
+}
+
+export function getActionStaminaRestore(actionId: ActionId, actor?: FighterState): number {
+  const baseRestore = actions[actionId].restore ?? 0;
+
+  return baseRestore > 0 ? baseRestore + Math.max(0, actor?.restStaminaRestoreBonus ?? 0) : 0;
+}
+
+export function getActionHeal(actionId: ActionId, actor?: FighterState): number {
+  const baseHeal = actions[actionId].heal ?? 0;
+
+  return baseHeal > 0 ? baseHeal + Math.max(0, actor?.restHpRestoreBonus ?? 0) : 0;
+}
+
 export function freshState(): CombatState {
   return {
     player: {
@@ -212,7 +242,9 @@ export function freshState(): CombatState {
       damageBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
-      attackReachBonus: 0,
+      clinchRangeBonus: 0,
+      restHpRestoreBonus: 0,
+      restStaminaRestoreBonus: 0,
       weaponClass: "sword",
     },
     enemy: {
@@ -226,7 +258,9 @@ export function freshState(): CombatState {
       damageBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
-      attackReachBonus: 0,
+      clinchRangeBonus: 0,
+      restHpRestoreBonus: 0,
+      restStaminaRestoreBonus: 0,
       weaponClass: "sword",
     },
     round: 1,
@@ -302,6 +336,16 @@ export function availableActionIds(state: CombatState, actor: TurnOwner): Action
   return actionOrder.filter((id) => canUseAction(state, id, actor));
 }
 
+export function getFighterClinchRange(fighter?: FighterState): number {
+  return Math.min(MAX_DISTANCE, MELEE_RANGE + Math.max(0, fighter?.clinchRangeBonus ?? 0));
+}
+
+export function isFighterInClinchRange(state: CombatState, actor: TurnOwner): boolean {
+  const fighter = actor === "player" ? state.player : state.enemy;
+
+  return state.distance <= getFighterClinchRange(fighter);
+}
+
 export function shouldAutoRestPlayer(state: CombatState): boolean {
   return state.result === "playing" && state.activeTurn === "player" && state.player.stamina <= 0 && canUseAction(state, "rest", "player");
 }
@@ -318,9 +362,10 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   const action = actions[actionId];
   const fighter = actor === "player" ? state.player : state.enemy;
   const actionRangeMax = getActionRangeMax(action, fighter);
+  const fighterClinchRange = getFighterClinchRange(fighter);
 
   if (actionId === "forward") {
-    return state.distance > MIN_DISTANCE;
+    return state.distance > fighterClinchRange;
   }
 
   if (actionId === "back") {
@@ -332,7 +377,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
       return false;
     }
 
-    return state.distance > MELEE_RANGE;
+    return state.distance > fighterClinchRange;
   }
 
   if (actionRangeMax !== undefined) {
@@ -342,8 +387,8 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   return true;
 }
 
-export function distanceBand(distance: number): DistanceBand {
-  if (distance <= 0) {
+export function distanceBand(distance: number, clinchRange = MELEE_RANGE): DistanceBand {
+  if (distance <= Math.max(MELEE_RANGE, clinchRange)) {
     return "clinch";
   }
 
@@ -362,8 +407,8 @@ export function distanceBand(distance: number): DistanceBand {
   return "very-far";
 }
 
-export function distanceLabel(distance: number): string {
-  switch (distanceBand(distance)) {
+export function distanceLabel(distance: number, clinchRange = MELEE_RANGE): string {
+  switch (distanceBand(distance, clinchRange)) {
     case "clinch":
       return "Clinch";
     case "melee":
@@ -448,7 +493,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyHasBow = isBowFighter(current.enemy);
 
   for (const id of available) {
-    if (current.distance > MELEE_RANGE) {
+    if (!isFighterInClinchRange(current, "enemy")) {
       if (enemyHasBow) {
         if (id === "heavy") {
           weighted.push(id, playerLowHp ? id : "medium");
@@ -503,19 +548,21 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   const defenderOwner = actor === "player" ? "enemy" : "player";
   const actionTitle = getActionTitle(actionId, attacker);
   const actionRangeMax = getActionRangeMax(action, attacker);
+  const staminaRestore = getActionStaminaRestore(actionId, attacker);
+  const heal = getActionHeal(actionId, attacker);
 
-  attacker.stamina = clamp(attacker.stamina - action.cost, 0, getFighterMaxStamina(attacker));
+  attacker.stamina = clamp(attacker.stamina - getActionStaminaCost(actionId, attacker), 0, getFighterMaxStamina(attacker));
 
   if (actionMove) {
     moveActor(state, actor, actionMove);
   }
 
-  if (action.restore) {
-    attacker.stamina = clamp(attacker.stamina + action.restore, 0, getFighterMaxStamina(attacker));
+  if (staminaRestore > 0) {
+    attacker.stamina = clamp(attacker.stamina + staminaRestore, 0, getFighterMaxStamina(attacker));
   }
 
-  if (action.heal) {
-    attacker.hp = clamp(attacker.hp + action.heal, 0, getFighterMaxHp(attacker));
+  if (heal > 0) {
+    attacker.hp = clamp(attacker.hp + heal, 0, getFighterMaxHp(attacker));
   }
 
   if (action.vulnerability) {
@@ -564,7 +611,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastEnemyBlocked = blocked;
   }
 
-  addActionLog(state, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked);
+  addActionLog(state, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked, getFighterClinchRange(attacker), staminaRestore, heal);
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
@@ -609,11 +656,14 @@ function addActionLog(
   damage: number,
   inRange: boolean,
   blocked: boolean,
+  actorClinchRange: number,
+  staminaRestore: number,
+  heal: number,
 ): void {
   if (actionMove && action.damage) {
     addLog(
       state,
-      `${actorLabel} used ${actionTitle}, rushed to ${distanceLabel(state.distance)}, and ${
+      `${actorLabel} used ${actionTitle}, rushed to ${distanceLabel(state.distance, actorClinchRange)}, and ${
         blocked ? `${defenderLabel} blocked it` : damage > 0 ? `hit ${defenderLabel} for ${damage}` : "came up short"
       }.`,
       damage >= 4,
@@ -622,7 +672,7 @@ function addActionLog(
   }
 
   if (actionMove) {
-    addLog(state, `${actorLabel} used ${actionTitle}. Distance is now ${distanceLabel(state.distance)}.`);
+    addLog(state, `${actorLabel} used ${actionTitle}. Distance is now ${distanceLabel(state.distance, actorClinchRange)}.`);
     return;
   }
 
@@ -637,18 +687,18 @@ function addActionLog(
     return;
   }
 
-  if (action.restore || action.heal) {
-    if (action.restore && action.heal) {
-      addLog(state, `${actorLabel} used ${actionTitle}, restored stamina, and recovered ${action.heal} HP.`);
+  if (staminaRestore > 0 || heal > 0) {
+    if (staminaRestore > 0 && heal > 0) {
+      addLog(state, `${actorLabel} used ${actionTitle}, restored stamina, and recovered ${heal} HP.`);
       return;
     }
 
-    if (action.restore) {
+    if (staminaRestore > 0) {
       addLog(state, `${actorLabel} used ${actionTitle} and restored stamina.`);
       return;
     }
 
-    addLog(state, `${actorLabel} used ${actionTitle} and recovered ${action.heal} HP.`);
+    addLog(state, `${actorLabel} used ${actionTitle} and recovered ${heal} HP.`);
     return;
   }
 
@@ -666,7 +716,7 @@ function getActionRangeMax(action: ActionConfig, attacker: FighterState): number
     return undefined;
   }
 
-  return Math.min(MAX_DISTANCE, action.rangeMax + Math.max(0, attacker.attackReachBonus ?? 0));
+  return action.rangeMax === MELEE_RANGE ? getFighterClinchRange(attacker) : action.rangeMax;
 }
 
 function isAttackAction(actionId: ActionId): boolean {
@@ -707,8 +757,8 @@ function applyIncomingBonus(state: CombatState, attacker: TurnOwner, damage: num
 }
 
 function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number): void {
-  const nextDistance = clamp(state.distance + distanceDelta, MIN_DISTANCE, MAX_DISTANCE);
-  const actualDistanceDelta = nextDistance - state.distance;
+  const nextDistance = roundCombatDistance(clamp(state.distance + distanceDelta, MIN_DISTANCE, MAX_DISTANCE));
+  const actualDistanceDelta = roundCombatDistance(nextDistance - state.distance);
 
   if (actualDistanceDelta === 0) {
     return;
@@ -720,7 +770,7 @@ function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number):
     state.enemyPosition = Math.max(state.enemyPosition + actualDistanceDelta, state.playerPosition);
   }
 
-  state.distance = clamp(state.enemyPosition - state.playerPosition, MIN_DISTANCE, MAX_DISTANCE);
+  state.distance = roundCombatDistance(clamp(state.enemyPosition - state.playerPosition, MIN_DISTANCE, MAX_DISTANCE));
 }
 
 function addIncomingBonus(state: CombatState, actor: TurnOwner, value: number): void {
@@ -759,4 +809,12 @@ function applyMovementDistanceBonus(distanceDelta: number, distanceBonus: number
   }
 
   return Math.round((Math.abs(distanceDelta) + distanceBonus) * direction * 1000) / 1000;
+}
+
+function roundCombatDistance(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+function roundStaminaCostRatio(value: number): number {
+  return Math.round(value * 1000) / 1000;
 }

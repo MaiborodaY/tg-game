@@ -50,18 +50,25 @@ test("melee attacks only work in clinch", () => {
   assert.equal(combat.canUseAction(state, "heavy"), true);
 });
 
-test("attack reach bonus lets melee attacks start slightly outside clinch", () => {
+test("clinch range bonus starts clinch slightly outside physical contact", () => {
   const state = combat.freshState();
 
-  state.player.attackReachBonus = 0.3;
+  state.player.clinchRangeBonus = 0.3;
   state.distance = 0.3;
 
+  assert.equal(combat.isFighterInClinchRange(state, "player"), true);
   assert.equal(combat.canUseAction(state, "light"), true);
   assert.equal(combat.canUseAction(state, "heavy"), true);
+  assert.equal(combat.canUseAction(state, "forward"), false);
+  assert.equal(combat.canUseAction(state, "lunge"), false);
+  assert.equal(combat.distanceLabel(state.distance, combat.getFighterClinchRange(state.player)), "Clinch");
 
   state.distance = 0.4;
 
+  assert.equal(combat.isFighterInClinchRange(state, "player"), false);
   assert.equal(combat.canUseAction(state, "light"), false);
+  assert.equal(combat.canUseAction(state, "forward"), true);
+  assert.equal(combat.canUseAction(state, "lunge"), true);
 });
 
 test("clinch attacks have weak medium and strong damage tiers", () => {
@@ -70,6 +77,19 @@ test("clinch attacks have weak medium and strong damage tiers", () => {
   assert.equal(combat.actions.heavy.damage, 4);
   assert.ok(combat.actions.light.cost < combat.actions.medium.cost);
   assert.ok(combat.actions.medium.cost < combat.actions.heavy.cost);
+});
+
+test("attack stamina costs scale from damage bonus", () => {
+  const fighter = {
+    ...combat.freshState().player,
+    damageBonus: 50,
+  };
+
+  assert.equal(combat.DAMAGE_BONUS_PER_ATTACK_STAMINA, 10);
+  assert.equal(combat.getActionStaminaCost("light", fighter), 7);
+  assert.equal(combat.getActionStaminaCost("medium", fighter), 8);
+  assert.equal(combat.getActionStaminaCost("heavy", fighter), 10);
+  assert.equal(combat.getActionStaminaCost("lunge", fighter), 2);
 });
 
 test("attacks define base block chances", () => {
@@ -100,6 +120,9 @@ test("rest restores stamina and heals one hp without incoming penalty", () => {
   state.player.hp = 6;
   state.player.stamina = 0;
 
+  assert.equal(combat.getActionStaminaRestore("rest", state.player), 5);
+  assert.equal(combat.getActionHeal("rest", state.player), 1);
+
   const nextState = combat.resolvePlayerTurn(state, "rest");
 
   assert.equal(nextState.player.stamina, 5);
@@ -107,10 +130,34 @@ test("rest restores stamina and heals one hp without incoming penalty", () => {
   assert.equal(nextState.playerIncomingBonus, 0);
 });
 
+test("rest restore bonuses increase stamina and hp recovery", () => {
+  const state = combat.freshState();
+
+  state.player.hp = 6;
+  state.player.maxHp = 20;
+  state.player.stamina = 0;
+  state.player.maxStamina = 20;
+  state.player.restHpRestoreBonus = 3;
+  state.player.restStaminaRestoreBonus = 4;
+
+  assert.equal(combat.getActionStaminaRestore("rest", state.player), 9);
+  assert.equal(combat.getActionHeal("rest", state.player), 4);
+
+  const nextState = combat.resolvePlayerTurn(state, "rest");
+
+  assert.equal(nextState.player.stamina, 9);
+  assert.equal(nextState.player.hp, 10);
+  assert.equal(nextState.log.some((entry) => entry.text.includes("recovered 4 HP")), true);
+});
+
 test("movement actions use default distance steps", () => {
   assert.equal(combat.actions.forward.move, -combat.DEFAULT_FORWARD_MOVE_DISTANCE);
   assert.equal(combat.actions.back.move, combat.DEFAULT_BACK_MOVE_DISTANCE);
   assert.equal(combat.actions.lunge.move, -combat.DEFAULT_LUNGE_MOVE_DISTANCE);
+  assert.equal(combat.MOVE_DISTANCE_PER_STAMINA, 0.2);
+  assert.equal(combat.getActionStaminaCost("forward"), 1);
+  assert.equal(combat.getActionStaminaCost("back"), 1);
+  assert.equal(combat.getActionStaminaCost("lunge"), 2);
 });
 
 test("fighter movement distance bonus adds to forward back and lunge movement", () => {
@@ -123,6 +170,9 @@ test("fighter movement distance bonus adds to forward back and lunge movement", 
   assert.equal(combat.getActionMove("forward", fighter), -0.4);
   assert.equal(combat.getActionMove("back", fighter), 0.3);
   assert.equal(combat.getActionMove("lunge", fighter), -0.5);
+  assert.equal(combat.getActionStaminaCost("forward", fighter), 2);
+  assert.equal(combat.getActionStaminaCost("back", fighter), 2);
+  assert.equal(combat.getActionStaminaCost("lunge", fighter), 3);
 
   setConsistentDistance(state, 3);
   state.player.movementDistanceBonus = 0.2;
@@ -130,6 +180,7 @@ test("fighter movement distance bonus adds to forward back and lunge movement", 
   const nextState = combat.resolvePlayerTurn(state, "forward");
 
   assert.equal(nextState.distance, 2.6);
+  assert.equal(nextState.player.stamina, combat.MAX_STAMINA - 2);
 });
 
 test("lunge is available at any open distance", () => {
@@ -155,6 +206,7 @@ test("lunge closes half a step and only hits when it reaches clinch", () => {
   const missed = combat.resolvePlayerTurn(farState, "lunge");
 
   assert.equal(missed.distance, 3 - combat.DEFAULT_LUNGE_MOVE_DISTANCE);
+  assert.equal(missed.player.stamina, combat.MAX_STAMINA - combat.getActionStaminaCost("lunge", farState.player));
   assert.equal(missed.enemy.hp, combat.MAX_HP);
   assert.equal(missed.lastPlayerDamage, 0);
 
@@ -167,6 +219,18 @@ test("lunge closes half a step and only hits when it reaches clinch", () => {
   assert.equal(hit.playerPosition, hit.enemyPosition);
   assert.equal(hit.enemy.hp, combat.MAX_HP - combat.actions.lunge.damage);
   assert.equal(hit.lastPlayerDamage, combat.actions.lunge.damage);
+});
+
+test("lunge hits when it reaches expanded clinch range", () => {
+  const state = combat.freshState();
+  state.player.clinchRangeBonus = 0.3;
+  setConsistentDistance(state, 0.6);
+
+  const nextState = combat.resolvePlayerTurn(state, "lunge", () => 0.99);
+
+  assert.equal(nextState.distance, 0.3);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - combat.actions.lunge.damage);
+  assert.equal(nextState.lastPlayerDamage, combat.actions.lunge.damage);
 });
 
 test("lunge cannot move a fighter past the opponent", () => {

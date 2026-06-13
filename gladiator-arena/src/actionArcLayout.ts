@@ -14,7 +14,7 @@ import {
   GAME_WIDTH,
 } from "./arenaLayout";
 import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
-import { MAX_STAMINA, MELEE_RANGE, type ActionId, type CombatState } from "./combat";
+import { MAX_STAMINA, isFighterInClinchRange, type ActionId, type CombatState } from "./combat";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
@@ -191,11 +191,13 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
 }
 
 function getActionArcSlots(state: CombatState): ActionArcSlot[] {
-  if (state.distance > MELEE_RANGE && state.player.weaponClass === "bow") {
+  const isPlayerInClinch = isFighterInClinchRange(state, "player");
+
+  if (!isPlayerInClinch && state.player.weaponClass === "bow") {
     return BOW_DISTANCE_SLOTS;
   }
 
-  return state.distance <= MELEE_RANGE ? CLINCH_SLOTS : DISTANCE_SLOTS;
+  return isPlayerInClinch ? CLINCH_SLOTS : DISTANCE_SLOTS;
 }
 
 function clamp(value: number, min: number, max: number): number {

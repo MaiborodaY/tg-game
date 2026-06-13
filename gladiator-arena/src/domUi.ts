@@ -1,6 +1,7 @@
 import {
   distanceBand,
   distanceLabel,
+  getFighterClinchRange,
   getFighterMaxArmor,
   getFighterMaxHp,
   getFighterMaxStamina,
@@ -131,8 +132,9 @@ export interface DomRenderContext {
 }
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
-  const distance = distanceLabel(state.distance);
-  const band = distanceBand(state.distance);
+  const playerClinchRange = getFighterClinchRange(state.player);
+  const distance = distanceLabel(state.distance, playerClinchRange);
+  const band = distanceBand(state.distance, playerClinchRange);
 
   dom.distanceText.textContent = distance;
   dom.classicDistanceText.textContent = distance;

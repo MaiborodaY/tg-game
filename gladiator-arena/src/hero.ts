@@ -33,7 +33,9 @@ export interface HeroStats {
   damageBonus: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
-  attackReachBonus: number;
+  clinchRangeBonus: number;
+  restHpRestoreBonus: number;
+  restStaminaRestoreBonus: number;
 }
 
 export const HERO_EQUIPMENT_SLOT_KEYS = [
@@ -166,11 +168,14 @@ export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 10 };
 export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
 export const DEFAULT_ARENA_TIER_ID = 1;
 export const HERO_STRENGTH_DAMAGE_BONUS = 1;
-export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.04;
-export const HERO_STRENGTH_ATTACK_REACH_BONUS = 0.1;
-export const HERO_STRENGTH_ATTACK_REACH_MAX_BONUS = 1;
-export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.2;
-export const HERO_VITALITY_HP_BONUS = 5;
+export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.02;
+export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.01;
+export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
+export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.015;
+export const HERO_VITALITY_HP_BONUS = 1;
+export const HERO_VITALITY_STAMINA_BONUS = 1;
+export const HERO_VITALITY_REST_HP_BONUS = 1;
+export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const ARENA_TIERS: readonly ArenaTierDefinition[] = [
   {
     id: 1,
@@ -256,11 +261,13 @@ export function deriveHeroStats(hero: HeroState): HeroStats {
   return {
     maxHp: MAX_HP + vitalityBonus * HERO_VITALITY_HP_BONUS,
     maxArmor: armorBonus,
-    maxStamina: MAX_STAMINA,
+    maxStamina: MAX_STAMINA + vitalityBonus * HERO_VITALITY_STAMINA_BONUS,
     damageBonus: equipmentDamageBonus + strengthBonus * HERO_STRENGTH_DAMAGE_BONUS,
     movementDistanceBonus: roundStatBonus(agilityBonus * HERO_AGILITY_MOVEMENT_DISTANCE_BONUS),
     bodyScaleBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_BODY_SCALE_BONUS),
-    attackReachBonus: roundStatBonus(Math.min(HERO_STRENGTH_ATTACK_REACH_MAX_BONUS, strengthBonus * HERO_STRENGTH_ATTACK_REACH_BONUS)),
+    clinchRangeBonus: roundStatBonus(Math.min(HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS, strengthBonus * HERO_STRENGTH_CLINCH_RANGE_BONUS)),
+    restHpRestoreBonus: vitalityBonus * HERO_VITALITY_REST_HP_BONUS,
+    restStaminaRestoreBonus: vitalityBonus * HERO_VITALITY_REST_STAMINA_BONUS,
   };
 }
 
@@ -363,7 +370,9 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
       damageBonus: stats.damageBonus,
       movementDistanceBonus: stats.movementDistanceBonus,
       bodyScaleBonus: stats.bodyScaleBonus,
-      attackReachBonus: stats.attackReachBonus,
+      clinchRangeBonus: stats.clinchRangeBonus,
+      restHpRestoreBonus: stats.restHpRestoreBonus,
+      restStaminaRestoreBonus: stats.restStaminaRestoreBonus,
       weaponClass: playerWeaponClass,
       equipment: { ...hero.equipment },
     },
@@ -374,7 +383,9 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
       damageBonus: enemyDamageBonus,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
-      attackReachBonus: 0,
+      clinchRangeBonus: 0,
+      restHpRestoreBonus: 0,
+      restStaminaRestoreBonus: 0,
       weaponClass: enemyWeaponClass,
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },

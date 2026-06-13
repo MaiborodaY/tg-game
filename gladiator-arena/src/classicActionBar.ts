@@ -1,12 +1,13 @@
 import { DEFAULT_ACTION_BUTTON_SCALE } from "./arenaLayout";
 import { getActionHitChanceLabel, pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
 import {
-  MELEE_RANGE,
   actionOrder,
   actions,
   canUseAction,
   distanceBand,
+  getFighterClinchRange,
   getActionTitle,
+  isFighterInClinchRange,
   isBowFighter,
   type ActionId,
   type CombatState,
@@ -286,11 +287,13 @@ function getClassicWheelMode(state: CombatState, previewWheelMode?: ClassicActio
     return forcedWheelMode;
   }
 
-  if (isBowFighter(state.player) && state.distance > MELEE_RANGE) {
+  const isPlayerInClinch = isFighterInClinchRange(state, "player");
+
+  if (isBowFighter(state.player) && !isPlayerInClinch) {
     return "bow-distance";
   }
 
-  return state.distance <= MELEE_RANGE ? "clinch" : "distance";
+  return isPlayerInClinch ? "clinch" : "distance";
 }
 
 function getClassicWheelModeFromTuningMode(mode?: ClassicActionWheelMode): ClassicWheelMode | undefined {
@@ -316,7 +319,7 @@ function getClassicWheelRangeMode(
     return "bow";
   }
 
-  const band = distanceBand(state.distance);
+  const band = distanceBand(state.distance, getFighterClinchRange(state.player));
 
   return band === "very-far" ? "far" : band;
 }

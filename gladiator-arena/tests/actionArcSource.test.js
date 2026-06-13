@@ -119,7 +119,8 @@ test("classic action bar reuses leather token rendering", () => {
 });
 
 test("classic action bar swaps semicircle wheel layouts by distance", () => {
-  assert.equal(classicActionBarSource.includes("MELEE_RANGE"), true);
+  assert.equal(classicActionBarSource.includes("isFighterInClinchRange"), true);
+  assert.equal(classicActionBarSource.includes("getFighterClinchRange"), true);
   assert.equal(classicActionBarSource.includes("CLASSIC_DISTANCE_SLOTS"), true);
   assert.equal(classicActionBarSource.includes("CLASSIC_CLINCH_SLOTS"), true);
   assert.equal(classicActionBarSource.includes("CLASSIC_BOW_DISTANCE_SLOTS"), true);
@@ -157,7 +158,7 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
 });
 
 test("classic bow distance layout keeps ranged attacks visible", () => {
-  assert.equal(classicActionBarSource.includes("isBowFighter(state.player) && state.distance > MELEE_RANGE"), true);
+  assert.equal(classicActionBarSource.includes("isBowFighter(state.player) && !isPlayerInClinch"), true);
   assert.equal(classicActionBarSource.includes("const previewWheelMode = options.getPreviewWheelMode?.();"), true);
   assert.equal(classicActionBarSource.includes("getClassicWheelMode(state, previewWheelMode)"), true);
   assert.equal(classicActionBarSource.includes("function getClassicWheelModeFromTuningMode"), true);

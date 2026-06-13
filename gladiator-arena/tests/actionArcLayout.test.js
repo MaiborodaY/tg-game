@@ -36,7 +36,10 @@ function loadActionArcLayoutModule() {
         }
 
         if (id === "./combat") {
-          return { MAX_STAMINA: 10, MELEE_RANGE: 0 };
+          return {
+            MAX_STAMINA: 10,
+            isFighterInClinchRange: (state, actor) => state.distance <= Math.max(0, state[actor]?.clinchRangeBonus ?? 0),
+          };
         }
 
         if (id === "./stageLayout") {
@@ -75,6 +78,15 @@ test("distance arc shows movement controls plus lunge", () => {
 
 test("clinch arc swaps approach controls for attacks", () => {
   const layout = actionArcLayout.getActionArcLayout(makeState(0));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["back", "heavy", "medium", "light", "taunt"],
+  );
+});
+
+test("expanded clinch range swaps to attack controls before physical contact", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(0.3, { player: { stamina: 10, clinchRangeBonus: 0.3 } }));
 
   assert.deepEqual(
     Array.from(layout.buttons, (button) => button.actionId),
