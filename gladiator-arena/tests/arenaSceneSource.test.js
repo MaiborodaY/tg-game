@@ -187,6 +187,27 @@ test("city shop camera zoom fits the hero inside the current viewport", () => {
   assert.equal(arenaSceneSource.includes("camera.zoomTo(shopZoom"), true);
 });
 
+test("city body scale normalizes as the hero moves into shop mode", () => {
+  const portraitSceneSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("class HeroPortraitScene"),
+    arenaSceneSource.indexOf("function syncHeroPortraitCrop"),
+  );
+  const debugCharacterSceneSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("class DebugCharacterScene"),
+    arenaSceneSource.indexOf("function drawDebugCharacterBackdrop"),
+  );
+
+  assert.equal(arenaSceneSource.includes("export function setPlayerBodyScaleBonus(bodyScaleBonus: number): void"), true);
+  assert.equal(arenaSceneSource.includes("function getCityPlayerBodyScaleMultiplier(liftProgress: number): number"), true);
+  assert.equal(arenaSceneSource.includes("activePlayerBodyScaleBonus * clampNumber(1 - liftProgress, 0, 1)"), true);
+  assert.equal(arenaSceneSource.includes("subscribePlayerBodyScaleChanges(() => this.syncFighterLayout())"), true);
+  assert.equal(arenaSceneSource.includes("debugTuning.cityHeroScale * slotScale * getCityPlayerBodyScaleMultiplier(liftProgress)"), true);
+  assert.equal(portraitSceneSource.includes("subscribePlayerBodyScaleChanges"), false);
+  assert.equal(portraitSceneSource.includes("getCityPlayerBodyScaleMultiplier"), false);
+  assert.equal(debugCharacterSceneSource.includes("subscribePlayerBodyScaleChanges"), false);
+  assert.equal(debugCharacterSceneSource.includes("getCityPlayerBodyScaleMultiplier"), false);
+});
+
 test("debug character viewer has a compact shop preview mode", () => {
   assert.equal(arenaSceneSource.includes('mode?: "debug" | "shop"'), true);
   assert.equal(arenaSceneSource.includes('this.viewerMode === "shop"'), true);

@@ -745,12 +745,14 @@ function getHeroItemEquipmentAssetKeys(itemId: HeroItemId): PaperDollEquipmentAs
 export type CityTimeOfDay = "night" | "day";
 
 const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
+const PLAYER_BODY_SCALE_CHANGE_EVENT = "gladiator-player-body-scale-change";
 const CITY_TIME_OF_DAY_CHANGE_EVENT = "gladiator-city-time-of-day-change";
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
+let activePlayerBodyScaleBonus = 0;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
 let arenaAssetPrewarmPromise: Promise<void> | undefined;
@@ -913,6 +915,21 @@ export function setPlayerEquipment(equipment: HeroEquipment): void {
   notifyPlayerEquipmentChanged();
 }
 
+export function setPlayerBodyScaleBonus(bodyScaleBonus: number): void {
+  const nextBodyScaleBonus = Math.max(0, Number.isFinite(bodyScaleBonus) ? bodyScaleBonus : 0);
+
+  if (Math.abs(activePlayerBodyScaleBonus - nextBodyScaleBonus) < 0.001) {
+    return;
+  }
+
+  activePlayerBodyScaleBonus = nextBodyScaleBonus;
+  notifyPlayerBodyScaleChanged();
+}
+
+function getCityPlayerBodyScaleMultiplier(liftProgress: number): number {
+  return 1 + activePlayerBodyScaleBonus * clampNumber(1 - liftProgress, 0, 1);
+}
+
 function areHeroEquipmentStatesEqual(left: HeroEquipment, right: HeroEquipment): boolean {
   return HERO_EQUIPMENT_SLOT_KEYS.every((slotKey) => (left[slotKey] ?? null) === (right[slotKey] ?? null));
 }
@@ -978,6 +995,14 @@ function notifyPlayerEquipmentChanged(): void {
   window.dispatchEvent(new CustomEvent(PLAYER_EQUIPMENT_CHANGE_EVENT));
 }
 
+function notifyPlayerBodyScaleChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(PLAYER_BODY_SCALE_CHANGE_EVENT));
+}
+
 function notifyCityTimeOfDayChanged(): void {
   if (typeof window === "undefined") {
     return;
@@ -994,6 +1019,16 @@ function subscribePlayerEquipmentChanges(callback: () => void): () => void {
   window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
 
   return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
+}
+
+function subscribePlayerBodyScaleChanges(callback: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  window.addEventListener(PLAYER_BODY_SCALE_CHANGE_EVENT, callback);
+
+  return () => window.removeEventListener(PLAYER_BODY_SCALE_CHANGE_EVENT, callback);
 }
 
 export function subscribeCityTimeOfDayChanges(callback: (timeOfDay: CityTimeOfDay) => void): () => void {
@@ -1261,6 +1296,7 @@ class CityHeroScene extends Phaser.Scene {
   private heroCamera?: Phaser.Cameras.Scene2D.Camera;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerBodyScale?: () => void;
   private unsubscribePlayerSettings?: () => void;
   private unsubscribeCityTimeOfDay?: () => void;
   private cameraMode: CityCameraMode = "default";
@@ -1300,6 +1336,7 @@ class CityHeroScene extends Phaser.Scene {
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.syncPlayerEquipment());
+    this.unsubscribePlayerBodyScale = subscribePlayerBodyScaleChanges(() => this.syncFighterLayout());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
         if (this.fighter) {
@@ -1318,6 +1355,7 @@ class CityHeroScene extends Phaser.Scene {
       this.heroCamera = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerBodyScale?.();
       this.unsubscribePlayerSettings?.();
       this.unsubscribeCityTimeOfDay?.();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
@@ -1849,7 +1887,7 @@ class CityHeroScene extends Phaser.Scene {
     return {
       feetX: slotLeft + debugTuning.cityHeroX * slotScale,
       feetY: slotTop + debugTuning.cityHeroY * slotScale - CITY_ARMORY_HERO_LIFT_Y * liftProgress,
-      scale: debugTuning.cityHeroScale * slotScale,
+      scale: debugTuning.cityHeroScale * slotScale * getCityPlayerBodyScaleMultiplier(liftProgress),
     };
   }
 

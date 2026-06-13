@@ -2148,11 +2148,11 @@ body.debug-active .city-menu__portrait-button:active {
   display: none;
 }
 
-.city-menu__button:hover:not(:disabled) {
+.city-menu__button:hover:not(:disabled):not(.city-menu__button--locked) {
   filter: brightness(1.08);
 }
 
-.city-menu__button:active:not(:disabled) {
+.city-menu__button:active:not(:disabled):not(.city-menu__button--locked) {
   transform: translateY(2px);
   box-shadow:
     inset 0 0 0 2px rgba(255, 205, 106, 0.15),
@@ -2161,7 +2161,8 @@ body.debug-active .city-menu__portrait-button:active {
     0 3px 5px rgba(0, 0, 0, 0.2);
 }
 
-.city-menu__button:disabled {
+.city-menu__button:disabled,
+.city-menu__button--locked {
   cursor: default;
   filter: grayscale(0.32) brightness(0.78);
   opacity: 0.88;

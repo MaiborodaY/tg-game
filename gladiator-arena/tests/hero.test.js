@@ -286,6 +286,15 @@ test("hero can spend level-up skill points on base attributes", () => {
   assert.equal(exhaustedHero, vitalityHero);
 });
 
+test("hero can receive temporary skill points", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const boostedHero = hero.grantHeroSkillPoints(baseHero, 10, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(boostedHero.skillPoints, 10);
+  assert.equal(boostedHero.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(hero.grantHeroSkillPoints(boostedHero, 0), boostedHero);
+});
+
 test("battle rewards use small early arena numbers", () => {
   const winState = combat.freshState();
   winState.result = "win";

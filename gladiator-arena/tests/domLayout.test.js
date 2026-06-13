@@ -43,6 +43,11 @@ test("city hero widget exposes skill point allocation controls", () => {
   }
 });
 
+test("church button can be wired while keeping the locked visual state", () => {
+  assert.equal(html.includes('id="churchButton"'), true);
+  assert.equal(html.includes('city-menu__button city-menu__button--locked" type="button" aria-disabled="true"'), true);
+});
+
 test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(html.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
   assert.equal(html.includes('class="resource-flask flask--hp"'), true);

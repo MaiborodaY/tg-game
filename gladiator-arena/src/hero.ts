@@ -441,6 +441,20 @@ export function allocateHeroSkillPoint(hero: HeroState, attribute: HeroAttribute
   };
 }
 
+export function grantHeroSkillPoints(hero: HeroState, amount: number, now = new Date().toISOString()): HeroState {
+  const skillPoints = Number.isFinite(amount) ? Math.floor(amount) : 0;
+
+  if (skillPoints <= 0) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    skillPoints: hero.skillPoints + skillPoints,
+    updatedAt: now,
+  };
+}
+
 export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase, now = new Date().toISOString()): HeroState {
   const price = areHeroItemsOwned(hero, purchase.itemIds) ? 0 : purchase.price;
 

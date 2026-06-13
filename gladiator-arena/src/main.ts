@@ -5,6 +5,7 @@ import {
   mountHeroPortraitPreview,
   prewarmArenaAssetsForBrowserCache,
   prewarmCityAssetsForBrowserCache,
+  setPlayerBodyScaleBonus,
   setPlayerEquipment,
   type ArenaScene,
   type CitySceneApi,
@@ -24,6 +25,8 @@ import {
   buyAndEquipHeroItems,
   createCombatStateFromHero,
   createDefaultHero,
+  deriveHeroStats,
+  grantHeroSkillPoints,
   getBattleReward,
   type HeroEquipment,
   type HeroItemId,
@@ -46,6 +49,7 @@ const cityMenu = document.querySelector<HTMLElement>(".city-menu");
 const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
+const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 let hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
@@ -147,6 +151,10 @@ function renderCurrentDom(): void {
       label: battleResultReturnLabel,
     },
   });
+}
+
+function syncPlayerCityBodyScale(): void {
+  setPlayerBodyScaleBonus(deriveHeroStats(hero).bodyScaleBonus);
 }
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
@@ -507,6 +515,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   const heroAfterReward = applyBattleReward(hero, reward);
 
   hero = heroAfterReward;
+  syncPlayerCityBodyScale();
   battleResultPresentation = {
     id: `battle-result-${++battleResultPresentationId}`,
     reward,
@@ -531,6 +540,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   }
 
   hero = nextHero;
+  syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
   if (shouldRefreshHeroPortrait(product)) {
     heroPortraitPreview?.setEquipment(hero.equipment);
@@ -548,9 +558,15 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
   }
 
   hero = nextHero;
+  syncPlayerCityBodyScale();
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
   weaponShop?.render();
+}
+
+function handleTemporaryChurchSkillGrant(): void {
+  hero = grantHeroSkillPoints(hero, 10);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
 }
 
 function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): boolean {
@@ -652,7 +668,9 @@ armoryButton?.addEventListener("click", () => {
   weaponShop?.close();
   armoryShop?.open();
 });
+churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
+syncPlayerCityBodyScale();
 renderCityHeroInfo(cityHeroWidgetRefs, hero);
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
 void finishInitialCityEntry();

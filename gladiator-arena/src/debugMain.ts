@@ -4,6 +4,7 @@ import {
   mountCityHeroPreview,
   mountDebugCharacterViewer,
   mountHeroPortraitPreview,
+  setPlayerBodyScaleBonus,
   setPlayerEquipment,
   type ArenaScene,
 } from "./ArenaScene";
@@ -31,6 +32,8 @@ import {
   buyAndEquipHeroItems,
   createCombatStateFromHero,
   createDefaultHero,
+  deriveHeroStats,
+  grantHeroSkillPoints,
   getBattleReward,
   type HeroEquipment,
   type HeroItemId,
@@ -52,6 +55,7 @@ const cityMenu = document.querySelector<HTMLElement>(".city-menu");
 const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
+const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
 let hero: HeroState = {
@@ -110,6 +114,10 @@ function commitState(nextState: CombatState): Promise<void> {
 
 function syncTurnProbe(): void {
   turnProbe?.sync(state, enemyTimerStatus, lastActionClick);
+}
+
+function syncPlayerCityBodyScale(): void {
+  setPlayerBodyScaleBonus(deriveHeroStats(hero).bodyScaleBonus);
 }
 
 function syncActionArc(): void {
@@ -234,6 +242,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   const heroAfterReward = applyBattleReward(hero, reward);
 
   hero = heroAfterReward;
+  syncPlayerCityBodyScale();
   battleResultPresentation = {
     id: `debug-battle-result-${++battleResultPresentationId}`,
     reward,
@@ -257,6 +266,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   }
 
   hero = nextHero;
+  syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
@@ -271,10 +281,16 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
   }
 
   hero = nextHero;
+  syncPlayerCityBodyScale();
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   armoryShop?.render();
   restart();
+}
+
+function handleTemporaryChurchSkillGrant(): void {
+  hero = grantHeroSkillPoints(hero, 10);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
 }
 
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
@@ -561,6 +577,7 @@ function startDebugApp(): void {
   if (cityHeroWidgetRefs.portrait) {
     mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
   }
+  syncPlayerCityBodyScale();
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
   mountHeroPortraitButtonDebug();
@@ -645,4 +662,5 @@ armoryButton?.addEventListener("click", () => {
   weaponShop?.close();
   armoryShop?.open();
 });
+churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 startDebugApp();
