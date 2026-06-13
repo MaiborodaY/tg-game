@@ -11,7 +11,7 @@ import {
   type HeroPortraitPreviewApi,
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
-import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import { getCityHeroWidgetRefs, mountCityHeroAttributeControls, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
@@ -19,6 +19,7 @@ import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
+  allocateHeroSkillPoint,
   applyBattleReward,
   buyAndEquipHeroItems,
   createCombatStateFromHero,
@@ -27,6 +28,7 @@ import {
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
+  type HeroAttributeKey,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { mountSettingsMenu } from "./settingsMenu";
@@ -538,6 +540,19 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   weaponShop?.render();
 }
 
+function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
+  const nextHero = allocateHeroSkillPoint(hero, attribute);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  armoryShop?.render();
+  weaponShop?.render();
+}
+
 function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): boolean {
   return product.itemIds.some((itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
@@ -639,6 +654,7 @@ armoryButton?.addEventListener("click", () => {
 });
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 renderCityHeroInfo(cityHeroWidgetRefs, hero);
+mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
 void finishInitialCityEntry();
 prewarmShopItemIconsWhenIdle();
 if (cityMenu) {

@@ -39,6 +39,9 @@ export interface FighterState {
   stamina: number;
   maxStamina: number;
   damageBonus: number;
+  movementDistanceBonus: number;
+  bodyScaleBonus: number;
+  attackReachBonus: number;
   weaponClass?: HeroWeaponClass;
   equipment?: HeroEquipment;
   visualPreset?: EnemyVisualPreset;
@@ -178,17 +181,19 @@ export function getCombatMovementTuning(): CombatMovementTuning {
   return { ...combatMovementTuning };
 }
 
-export function getActionMove(actionId: ActionId): number {
+export function getActionMove(actionId: ActionId, actor?: FighterState): number {
+  const movementDistanceBonus = Math.max(0, actor?.movementDistanceBonus ?? 0);
+
   if (actionId === "forward") {
-    return -combatMovementTuning.forwardMoveDistance;
+    return applyMovementDistanceBonus(-combatMovementTuning.forwardMoveDistance, movementDistanceBonus);
   }
 
   if (actionId === "back") {
-    return combatMovementTuning.backMoveDistance;
+    return applyMovementDistanceBonus(combatMovementTuning.backMoveDistance, movementDistanceBonus);
   }
 
   if (actionId === "lunge") {
-    return -combatMovementTuning.lungeMoveDistance;
+    return applyMovementDistanceBonus(-combatMovementTuning.lungeMoveDistance, movementDistanceBonus);
   }
 
   return actions[actionId].move ?? 0;
@@ -205,6 +210,9 @@ export function freshState(): CombatState {
       stamina: MAX_STAMINA,
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
+      movementDistanceBonus: 0,
+      bodyScaleBonus: 0,
+      attackReachBonus: 0,
       weaponClass: "sword",
     },
     enemy: {
@@ -216,6 +224,9 @@ export function freshState(): CombatState {
       stamina: MAX_STAMINA,
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
+      movementDistanceBonus: 0,
+      bodyScaleBonus: 0,
+      attackReachBonus: 0,
       weaponClass: "sword",
     },
     round: 1,
@@ -484,9 +495,9 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
 
 function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, random: () => number): void {
   const action = actions[actionId];
-  const actionMove = getActionMove(actionId);
   const attacker = actor === "player" ? state.player : state.enemy;
   const defender = actor === "player" ? state.enemy : state.player;
+  const actionMove = getActionMove(actionId, attacker);
   const actorLabel = actor === "player" ? "You" : "Grumbus";
   const defenderLabel = actor === "player" ? "Grumbus" : "you";
   const defenderOwner = actor === "player" ? "enemy" : "player";
@@ -647,7 +658,15 @@ function addActionLog(
 }
 
 function getActionRangeMax(action: ActionConfig, attacker: FighterState): number | undefined {
-  return isBowFighter(attacker) && isAttackAction(action.id) ? MAX_DISTANCE : action.rangeMax;
+  if (isBowFighter(attacker) && isAttackAction(action.id)) {
+    return MAX_DISTANCE;
+  }
+
+  if (action.rangeMax === undefined) {
+    return undefined;
+  }
+
+  return Math.min(MAX_DISTANCE, action.rangeMax + Math.max(0, attacker.attackReachBonus ?? 0));
 }
 
 function isAttackAction(actionId: ActionId): boolean {
@@ -730,4 +749,14 @@ function clamp(value: number, min: number, max: number): number {
 
 function clampMoveDistance(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? clamp(value, 0.1, MAX_DISTANCE) : fallback;
+}
+
+function applyMovementDistanceBonus(distanceDelta: number, distanceBonus: number): number {
+  const direction = Math.sign(distanceDelta);
+
+  if (direction === 0) {
+    return 0;
+  }
+
+  return Math.round((Math.abs(distanceDelta) + distanceBonus) * direction * 1000) / 1000;
 }

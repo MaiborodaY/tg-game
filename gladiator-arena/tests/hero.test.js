@@ -127,6 +127,46 @@ test("hero starts with empty equipment including gloves and wrists", () => {
   assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
 });
 
+test("hero base attributes derive combat stats", () => {
+  const defaultHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+
+  assert.equal(defaultHero.baseStats.strength, 0);
+  assert.equal(defaultHero.baseStats.agility, 0);
+  assert.equal(defaultHero.baseStats.vitality, 0);
+  assert.equal(defaultHero.skillPoints, 0);
+
+  const defaultStats = hero.deriveHeroStats(defaultHero);
+
+  assert.equal(defaultStats.maxHp, combat.MAX_HP);
+  assert.equal(defaultStats.maxStamina, combat.MAX_STAMINA);
+  assert.equal(defaultStats.damageBonus, 0);
+  assert.equal(defaultStats.movementDistanceBonus, 0);
+  assert.equal(defaultStats.bodyScaleBonus, 0);
+  assert.equal(defaultStats.attackReachBonus, 0);
+
+  const tunedHero = {
+    ...defaultHero,
+    baseStats: {
+      strength: 3,
+      agility: 4,
+      vitality: 2,
+    },
+  };
+  const tunedStats = hero.deriveHeroStats(tunedHero);
+  const combatState = hero.createCombatStateFromHero(tunedHero);
+
+  assert.equal(tunedStats.damageBonus, 3);
+  assert.equal(tunedStats.movementDistanceBonus, 0.8);
+  assert.equal(tunedStats.bodyScaleBonus, 0.12);
+  assert.equal(tunedStats.attackReachBonus, 0.3);
+  assert.equal(tunedStats.maxHp, combat.MAX_HP + 10);
+  assert.equal(combatState.player.damageBonus, tunedStats.damageBonus);
+  assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
+  assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
+  assert.equal(combatState.player.attackReachBonus, tunedStats.attackReachBonus);
+  assert.equal(combatState.player.maxHp, tunedStats.maxHp);
+});
+
 test("weapon class defaults to sword and can be inferred for generated weapons", () => {
   assert.equal(hero.HERO_ITEM_CATALOG.weapon_sword_01?.weaponClass, "sword");
   assert.equal(
@@ -211,12 +251,39 @@ test("battle xp follows the level table and caps at level fifty", () => {
   assert.equal(levelTwoHero.level, 2);
   assert.equal(levelTwoHero.xp, 0);
   assert.equal(levelTwoHero.xpToNextLevel, 10);
+  assert.equal(levelTwoHero.skillPoints, 1);
 
   const maxHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 1000 });
 
   assert.equal(maxHero.level, 50);
   assert.equal(maxHero.xp, 0);
   assert.equal(maxHero.xpToNextLevel, 30);
+  assert.equal(maxHero.skillPoints, 49);
+});
+
+test("hero can spend level-up skill points on base attributes", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    skillPoints: 2,
+  };
+  const strengthHero = hero.allocateHeroSkillPoint(baseHero, "strength", "2026-01-01T00:01:00.000Z");
+  const vitalityHero = hero.allocateHeroSkillPoint(strengthHero, "vitality", "2026-01-01T00:02:00.000Z");
+  const exhaustedHero = hero.allocateHeroSkillPoint(vitalityHero, "agility", "2026-01-01T00:03:00.000Z");
+
+  assert.equal(strengthHero.skillPoints, 1);
+  assert.equal(strengthHero.baseStats.strength, 1);
+  assert.equal(strengthHero.baseStats.agility, 0);
+  assert.equal(strengthHero.updatedAt, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(vitalityHero.skillPoints, 0);
+  assert.equal(vitalityHero.baseStats.strength, 1);
+  assert.equal(vitalityHero.baseStats.vitality, 1);
+  assert.equal(hero.deriveHeroStats(vitalityHero).damageBonus, 1);
+  assert.equal(hero.deriveHeroStats(vitalityHero).bodyScaleBonus, 0.04);
+  assert.equal(hero.deriveHeroStats(vitalityHero).attackReachBonus, 0.1);
+  assert.equal(hero.deriveHeroStats(vitalityHero).maxHp, combat.MAX_HP + 5);
+
+  assert.equal(exhaustedHero, vitalityHero);
 });
 
 test("battle rewards use small early arena numbers", () => {

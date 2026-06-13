@@ -304,7 +304,7 @@ test("city hero preview exposes a ready promise for return transitions", () => {
   assert.equal(arenaSceneSource.includes("ready: Promise<void>;"), true);
   assert.equal(arenaSceneSource.includes("const ready = new Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("resolveReadyOnce();"), true);
-  assert.equal(arenaSceneSource.includes("return {\n    ready,"), true);
+  assert.match(arenaSceneSource, /return \{\s*ready,/);
 });
 
 test("hero portrait skips unchanged snapshot equipment", () => {

@@ -4564,12 +4564,16 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
   const shouldSnap = isDebugTuningActive();
 
   if (!visuals.player.isShattered) {
-    positionFighterForLayout(target, visuals.player, layout.playerX, layout.playerScale, layout.playerY, shouldSnap);
+    positionFighterForLayout(target, visuals.player, layout.playerX, layout.playerScale * getFighterBodyScaleMultiplier(current.player), layout.playerY, shouldSnap);
   }
 
   if (!visuals.enemy.isShattered) {
-    positionFighterForLayout(target, visuals.enemy, layout.enemyX, layout.enemyScale, layout.enemyY, shouldSnap);
+    positionFighterForLayout(target, visuals.enemy, layout.enemyX, layout.enemyScale * getFighterBodyScaleMultiplier(current.enemy), layout.enemyY, shouldSnap);
   }
+}
+
+function getFighterBodyScaleMultiplier(fighter: FighterState): number {
+  return 1 + Math.max(0, fighter.bodyScaleBonus ?? 0);
 }
 
 function positionFighterForLayout(

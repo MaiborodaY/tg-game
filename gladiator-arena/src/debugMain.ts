@@ -8,7 +8,7 @@ import {
   type ArenaScene,
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
-import { getCityHeroWidgetRefs, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
+import { getCityHeroWidgetRefs, mountCityHeroAttributeControls, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
@@ -26,6 +26,7 @@ import {
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
+  allocateHeroSkillPoint,
   applyBattleReward,
   buyAndEquipHeroItems,
   createCombatStateFromHero,
@@ -34,6 +35,7 @@ import {
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
+  type HeroAttributeKey,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { logTurnProbe, mountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
@@ -259,6 +261,20 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   armoryShop?.render();
+}
+
+function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
+  const nextHero = allocateHeroSkillPoint(hero, attribute);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  weaponShop?.render();
+  armoryShop?.render();
+  restart();
 }
 
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
@@ -546,6 +562,7 @@ function startDebugApp(): void {
     mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
   }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
   mountHeroPortraitButtonDebug();
   mountHudDebug();
   mountClassicHudDebug();

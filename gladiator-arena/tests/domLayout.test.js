@@ -34,6 +34,15 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(html.includes('id="cityButton"'), true);
 });
 
+test("city hero widget exposes skill point allocation controls", () => {
+  assert.equal(html.includes('id="heroInfoSkillPoints"'), true);
+
+  for (const attribute of ["strength", "agility", "vitality"]) {
+    assert.equal(html.includes(`data-hero-attribute-value="${attribute}"`), true);
+    assert.equal(html.includes(`data-hero-attribute-button="${attribute}"`), true);
+  }
+});
+
 test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(html.includes('class="fighters-strip arena-fighters-strip flask-hud"'), true);
   assert.equal(html.includes('class="resource-flask flask--hp"'), true);

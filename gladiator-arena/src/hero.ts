@@ -9,6 +9,7 @@ export interface HeroState {
   level: number;
   xp: number;
   xpToNextLevel: number;
+  skillPoints: number;
   gold: number;
   baseStats: HeroBaseStats;
   equipment: HeroEquipment;
@@ -19,18 +20,20 @@ export interface HeroState {
 
 export interface HeroBaseStats {
   strength: number;
-  endurance: number;
   agility: number;
+  vitality: number;
 }
+
+export type HeroAttributeKey = keyof HeroBaseStats;
 
 export interface HeroStats {
   maxHp: number;
   maxArmor: number;
   maxStamina: number;
   damageBonus: number;
-  lightDamageBonus: number;
-  mediumDamageBonus: number;
-  heavyDamageBonus: number;
+  movementDistanceBonus: number;
+  bodyScaleBonus: number;
+  attackReachBonus: number;
 }
 
 export const HERO_EQUIPMENT_SLOT_KEYS = [
@@ -162,6 +165,12 @@ export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
 export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 10 };
 export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
 export const DEFAULT_ARENA_TIER_ID = 1;
+export const HERO_STRENGTH_DAMAGE_BONUS = 1;
+export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.04;
+export const HERO_STRENGTH_ATTACK_REACH_BONUS = 0.1;
+export const HERO_STRENGTH_ATTACK_REACH_MAX_BONUS = 1;
+export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.2;
+export const HERO_VITALITY_HP_BONUS = 5;
 export const ARENA_TIERS: readonly ArenaTierDefinition[] = [
   {
     id: 1,
@@ -222,11 +231,12 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     level: 1,
     xp: 0,
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
+    skillPoints: 0,
     gold: 0,
     baseStats: {
-      strength: 1,
-      endurance: 1,
-      agility: 1,
+      strength: 0,
+      agility: 0,
+      vitality: 0,
     },
     equipment: createDefaultHeroEquipment(),
     inventory: createDefaultHeroInventory(),
@@ -238,19 +248,19 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
 export function deriveHeroStats(hero: HeroState): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
   const armorBonus = getHeroEquipmentArmor(hero.equipment);
-  const damageBonus = getHeroEquipmentDamageBonus(hero.equipment);
-  const strengthBonus = Math.max(0, hero.baseStats.strength + equipmentBonuses.strength - 1);
-  const enduranceBonus = Math.max(0, hero.baseStats.endurance + equipmentBonuses.endurance - 1);
-  const agilityBonus = Math.max(0, hero.baseStats.agility + equipmentBonuses.agility - 1);
+  const equipmentDamageBonus = getHeroEquipmentDamageBonus(hero.equipment);
+  const strengthBonus = getHeroAttributeTotal(hero.baseStats.strength, equipmentBonuses.strength);
+  const agilityBonus = getHeroAttributeTotal(hero.baseStats.agility, equipmentBonuses.agility);
+  const vitalityBonus = getHeroAttributeTotal(hero.baseStats.vitality, equipmentBonuses.vitality);
 
   return {
-    maxHp: MAX_HP + enduranceBonus * 4,
+    maxHp: MAX_HP + vitalityBonus * HERO_VITALITY_HP_BONUS,
     maxArmor: armorBonus,
-    maxStamina: MAX_STAMINA + agilityBonus,
-    damageBonus,
-    lightDamageBonus: Math.floor(strengthBonus / 2),
-    mediumDamageBonus: strengthBonus,
-    heavyDamageBonus: strengthBonus * 2,
+    maxStamina: MAX_STAMINA,
+    damageBonus: equipmentDamageBonus + strengthBonus * HERO_STRENGTH_DAMAGE_BONUS,
+    movementDistanceBonus: roundStatBonus(agilityBonus * HERO_AGILITY_MOVEMENT_DISTANCE_BONUS),
+    bodyScaleBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_BODY_SCALE_BONUS),
+    attackReachBonus: roundStatBonus(Math.min(HERO_STRENGTH_ATTACK_REACH_MAX_BONUS, strengthBonus * HERO_STRENGTH_ATTACK_REACH_BONUS)),
   };
 }
 
@@ -286,10 +296,10 @@ export function getHeroEquipmentStatBonuses(equipment: HeroEquipment): HeroBaseS
   return getEquippedHeroItems(equipment).reduce(
     (bonuses, item) => ({
       strength: bonuses.strength + (item.statBonuses?.strength ?? 0),
-      endurance: bonuses.endurance + (item.statBonuses?.endurance ?? 0),
       agility: bonuses.agility + (item.statBonuses?.agility ?? 0),
+      vitality: bonuses.vitality + (item.statBonuses?.vitality ?? 0),
     }),
-    { strength: 0, endurance: 0, agility: 0 },
+    { strength: 0, agility: 0, vitality: 0 },
   );
 }
 
@@ -351,6 +361,9 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
       damageBonus: stats.damageBonus,
+      movementDistanceBonus: stats.movementDistanceBonus,
+      bodyScaleBonus: stats.bodyScaleBonus,
+      attackReachBonus: stats.attackReachBonus,
       weaponClass: playerWeaponClass,
       equipment: { ...hero.equipment },
     },
@@ -359,6 +372,9 @@ export function createCombatStateFromHero(hero: HeroState, arenaTierId = DEFAULT
       armor: enemyArmor,
       maxArmor: enemyArmor,
       damageBonus: enemyDamageBonus,
+      movementDistanceBonus: 0,
+      bodyScaleBonus: 0,
+      attackReachBonus: 0,
       weaponClass: enemyWeaponClass,
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },
@@ -382,12 +398,21 @@ export function getBattleReward(combat: CombatState): BattleReward {
   return { gold: 0, xp: 0 };
 }
 
+function getHeroAttributeTotal(baseValue: number, equipmentBonus: number): number {
+  return Math.max(0, baseValue + equipmentBonus);
+}
+
+function roundStatBonus(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
 export function applyBattleReward(hero: HeroState, reward: BattleReward, now = new Date().toISOString()): HeroState {
   if (reward.gold <= 0 && reward.xp <= 0) {
     return hero;
   }
 
   const progress = applyHeroXp(hero.level, hero.xp + reward.xp);
+  const earnedSkillPoints = Math.max(0, progress.level - hero.level);
 
   return {
     ...hero,
@@ -395,6 +420,23 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
     level: progress.level,
     xp: progress.xp,
     xpToNextLevel: progress.xpToNextLevel,
+    skillPoints: hero.skillPoints + earnedSkillPoints,
+    updatedAt: now,
+  };
+}
+
+export function allocateHeroSkillPoint(hero: HeroState, attribute: HeroAttributeKey, now = new Date().toISOString()): HeroState {
+  if (hero.skillPoints <= 0) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    skillPoints: hero.skillPoints - 1,
+    baseStats: {
+      ...hero.baseStats,
+      [attribute]: hero.baseStats[attribute] + 1,
+    },
     updatedAt: now,
   };
 }

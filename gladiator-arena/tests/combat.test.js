@@ -50,6 +50,19 @@ test("melee attacks only work in clinch", () => {
   assert.equal(combat.canUseAction(state, "heavy"), true);
 });
 
+test("attack reach bonus lets melee attacks start slightly outside clinch", () => {
+  const state = combat.freshState();
+
+  state.player.attackReachBonus = 0.3;
+  state.distance = 0.3;
+
+  assert.equal(combat.canUseAction(state, "light"), true);
+  assert.equal(combat.canUseAction(state, "heavy"), true);
+
+  state.distance = 0.4;
+
+  assert.equal(combat.canUseAction(state, "light"), false);
+});
 
 test("clinch attacks have weak medium and strong damage tiers", () => {
   assert.equal(combat.actions.light.damage, 1);
@@ -98,6 +111,25 @@ test("movement actions use default distance steps", () => {
   assert.equal(combat.actions.forward.move, -combat.DEFAULT_FORWARD_MOVE_DISTANCE);
   assert.equal(combat.actions.back.move, combat.DEFAULT_BACK_MOVE_DISTANCE);
   assert.equal(combat.actions.lunge.move, -combat.DEFAULT_LUNGE_MOVE_DISTANCE);
+});
+
+test("fighter movement distance bonus adds to forward back and lunge movement", () => {
+  const fighter = {
+    ...combat.freshState().player,
+    movementDistanceBonus: 0.2,
+  };
+  const state = combat.freshState();
+
+  assert.equal(combat.getActionMove("forward", fighter), -0.4);
+  assert.equal(combat.getActionMove("back", fighter), 0.3);
+  assert.equal(combat.getActionMove("lunge", fighter), -0.5);
+
+  setConsistentDistance(state, 3);
+  state.player.movementDistanceBonus = 0.2;
+
+  const nextState = combat.resolvePlayerTurn(state, "forward");
+
+  assert.equal(nextState.distance, 2.6);
 });
 
 test("lunge is available at any open distance", () => {
