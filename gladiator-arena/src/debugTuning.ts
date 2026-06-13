@@ -458,6 +458,9 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_helmet_druid_01": { x: 0, y: 57, angle: 0, scaleX: 1.51, scaleY: 1.74, flipX: false, flipY: false },
   "auto_equipment_back_shoulderguard_druid_01": { x: 14, y: 7, angle: 47, scaleX: 2.76, scaleY: 1.66, flipX: true, flipY: false },
   "auto_equipment_back_glove_druid_01": { x: 0, y: 14, angle: 0, scaleX: 1.16, scaleY: 1.27, flipX: false, flipY: false },
+  "auto_equipment_back_greave_druid_01": { x: -4, y: 11, angle: -8, scaleX: 1.57, scaleY: 1.18, flipX: true, flipY: false },
+  "auto_equipment_back_wrist_druid_01": { x: 0, y: 21, angle: -11, scaleX: 1.27, scaleY: 1.1, flipX: true, flipY: false },
+  "auto_equipment_back_shinguard_druid_01": { x: 0, y: 0, angle: 4, scaleX: 1.59, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

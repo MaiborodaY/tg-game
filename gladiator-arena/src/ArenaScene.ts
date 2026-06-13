@@ -502,6 +502,17 @@ const HERO_PORTRAIT_HIDDEN_EQUIPMENT_SLOT_KEYS: PaperDollEquipmentSlotKey[] = [
   "backBoot",
   "frontBoot",
 ];
+const HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS: HeroEquipmentSlotKey[] = [
+  "weaponMain",
+  "helmet",
+  "breastplate",
+  "backShoulderguard",
+  "frontShoulderguard",
+  "backWrist",
+  "frontWrist",
+  "backGlove",
+  "frontGlove",
+];
 const PAPER_DOLL_SELECTION_FILL = 0xffc857;
 const PAPER_DOLL_SELECTION_STROKE = 0xfff1a8;
 
@@ -1376,6 +1387,9 @@ class CityHeroScene extends Phaser.Scene {
     this.cameraMode = "arena";
     this.cityHeroLiftTween?.remove();
     this.cityHeroLiftTween = undefined;
+    this.cityHeroLiftProgress = 0;
+    this.syncFighterLayout();
+    this.freezeHeroCameraForArenaTransition();
     this.setCityHeroShadowEnabled(false);
     this.transitionBackgroundTo(getCityDefaultBackgroundAssetKey(), true);
     this.transitionCityCloudsTo(0);
@@ -1654,7 +1668,7 @@ class CityHeroScene extends Phaser.Scene {
       return;
     }
 
-    this.cameras.main.ignore(getFighterParts(this.fighter) as unknown as Phaser.GameObjects.GameObject[]);
+    this.cameras.main.ignore(getFighterCameraIgnoreTargets(this.fighter));
     this.heroCamera.ignore([
       this.background,
       this.backgroundNext,
@@ -1779,6 +1793,15 @@ class CityHeroScene extends Phaser.Scene {
     camera.centerOn(this.sceneWidth / 2, this.sceneHeight / 2);
   }
 
+  private freezeHeroCameraForArenaTransition(): void {
+    const heroCamera = this.getHeroCamera();
+
+    this.tweens.killTweensOf(heroCamera);
+    heroCamera.setAlpha(1);
+    heroCamera.setZoom(CITY_CAMERA_DEFAULT_ZOOM);
+    heroCamera.centerOn(this.sceneWidth / 2, this.sceneHeight / 2);
+  }
+
   private tweenArenaCameraToColiseum(): Promise<void> {
     const camera = this.cameras.main;
     const focusX = this.sceneWidth * CITY_ARENA_FOCUS_X_RATIO;
@@ -1788,8 +1811,6 @@ class CityHeroScene extends Phaser.Scene {
     const targetScrollY = focusY - this.sceneHeight / (2 * zoom);
 
     this.tweens.killTweensOf(camera);
-    this.tweens.killTweensOf(this.getHeroCamera());
-    this.getHeroCamera().setAlpha(1);
 
     return new Promise((resolve) => {
       this.tweens.add({
@@ -1800,12 +1821,6 @@ class CityHeroScene extends Phaser.Scene {
         duration: CITY_ARENA_TRANSITION_DURATION,
         ease: "Cubic.easeInOut",
         onComplete: () => resolve(),
-      });
-      this.tweens.add({
-        targets: this.getHeroCamera(),
-        alpha: 0.18,
-        duration: CITY_ARENA_TRANSITION_DURATION,
-        ease: "Sine.easeInOut",
       });
     });
   }
@@ -2036,6 +2051,10 @@ function syncHeroPortraitCrop(fighter: FighterVisual): void {
   });
 }
 
+function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined): string {
+  return HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS.map((slotKey) => `${slotKey}:${equipment?.[slotKey] ?? ""}`).join("|");
+}
+
 export interface HeroPortraitPreviewApi {
   setEquipment: (equipment: HeroEquipment) => void;
   destroy: () => void;
@@ -2045,6 +2064,7 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
   usePlayerEquipment(playerEquipment);
   let scene: HeroPortraitScene | undefined;
   let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
+  let lastSnapshotKey: string | undefined;
   let snapshotToken = 0;
   let destroyed = false;
   const snapshotImage = document.createElement("img");
@@ -2056,11 +2076,18 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
   snapshotImage.setAttribute("aria-hidden", "true");
   parent.append(snapshotImage);
 
-  const refreshSnapshot = () => {
+  const refreshSnapshot = (equipment = pendingEquipment) => {
     if (!scene || destroyed) {
       return;
     }
 
+    const snapshotKey = getHeroPortraitSnapshotKey(equipment);
+
+    if (snapshotKey === lastSnapshotKey) {
+      return;
+    }
+
+    lastSnapshotKey = snapshotKey;
     const token = snapshotToken + 1;
     snapshotToken = token;
     game.loop.wake();
@@ -2102,9 +2129,17 @@ export function mountHeroPortraitPreview(parent: HTMLElement, playerEquipment?: 
 
   return {
     setEquipment: (equipment) => {
-      pendingEquipment = { ...equipment };
-      scene?.setEquipment(equipment);
-      refreshSnapshot();
+      const nextEquipment = { ...equipment };
+      const nextSnapshotKey = getHeroPortraitSnapshotKey(nextEquipment);
+
+      pendingEquipment = nextEquipment;
+
+      if (nextSnapshotKey === lastSnapshotKey) {
+        return;
+      }
+
+      scene?.setEquipment(nextEquipment);
+      refreshSnapshot(nextEquipment);
     },
     destroy: () => {
       destroyed = true;
@@ -4899,6 +4934,42 @@ function getFighterParts(fighter: FighterVisual): FighterPart[] {
     fighter.name,
     ...(fighter.extraParts ?? []),
   ] as FighterPart[];
+}
+
+function getFighterCameraIgnoreTargets(fighter: FighterVisual): Phaser.GameObjects.GameObject[] {
+  const targets = new Set<Phaser.GameObjects.GameObject>();
+  const addTarget = (target: Phaser.GameObjects.GameObject | undefined): void => {
+    if (!target || targets.has(target)) {
+      return;
+    }
+
+    targets.add(target);
+
+    if (target instanceof Phaser.GameObjects.Container) {
+      target.list.forEach((child) => addTarget(child as Phaser.GameObjects.GameObject));
+    }
+  };
+  const addPaperDollRig = (rig: PaperDollRig | PaperDollShadowRig | undefined): void => {
+    if (!rig) {
+      return;
+    }
+
+    addTarget(rig.root as unknown as Phaser.GameObjects.GameObject);
+    Object.values(rig.parts).forEach((part) => addTarget(part as unknown as Phaser.GameObjects.GameObject));
+    Object.values(rig.equipment).forEach((part) => addTarget(part as unknown as Phaser.GameObjects.GameObject));
+    Object.values(rig.equipmentAnchors).forEach((part) => addTarget(part as unknown as Phaser.GameObjects.GameObject));
+    Object.values(rig.faceParts).forEach((part) => addTarget(part as unknown as Phaser.GameObjects.GameObject));
+
+    if ("selectionHighlights" in rig) {
+      Object.values(rig.selectionHighlights ?? {}).forEach((part) => addTarget(part));
+    }
+  };
+
+  getFighterParts(fighter).forEach((part) => addTarget(part as unknown as Phaser.GameObjects.GameObject));
+  addPaperDollRig(fighter.paperDollRig);
+  addPaperDollRig(fighter.paperDollRig?.shadow);
+
+  return [...targets];
 }
 
 function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, animation: BodyAnimationTuning): Promise<void> {

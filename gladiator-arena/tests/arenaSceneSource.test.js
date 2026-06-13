@@ -259,6 +259,25 @@ test("city scene can zoom the background camera into the coliseum for arena entr
   assert.match(arenaSceneSource, /targets: camera[\s\S]*zoom[\s\S]*scrollX[\s\S]*scrollY/);
 });
 
+test("arena entry leaves the city hero camera stationary", () => {
+  assert.equal(arenaSceneSource.includes("this.tweens.killTweensOf(camera);"), true);
+  assert.equal(arenaSceneSource.includes("private freezeHeroCameraForArenaTransition(): void"), true);
+  assert.equal(arenaSceneSource.includes("const heroCamera = this.getHeroCamera();"), true);
+  assert.equal(arenaSceneSource.includes("this.tweens.killTweensOf(heroCamera);"), true);
+  assert.equal(arenaSceneSource.includes("heroCamera.setZoom(CITY_CAMERA_DEFAULT_ZOOM);"), true);
+  assert.equal(arenaSceneSource.includes("heroCamera.centerOn(this.sceneWidth / 2, this.sceneHeight / 2);"), true);
+  assert.equal(arenaSceneSource.includes("targets: this.getHeroCamera()"), false);
+  assert.equal(arenaSceneSource.includes("alpha: 0.18"), false);
+});
+
+test("city background camera ignores the full hero display tree", () => {
+  assert.equal(arenaSceneSource.includes("function getFighterCameraIgnoreTargets(fighter: FighterVisual): Phaser.GameObjects.GameObject[]"), true);
+  assert.equal(arenaSceneSource.includes("this.cameras.main.ignore(getFighterCameraIgnoreTargets(this.fighter));"), true);
+  assert.match(arenaSceneSource, /target instanceof Phaser\.GameObjects\.Container[\s\S]*target\.list\.forEach/);
+  assert.equal(arenaSceneSource.includes("addPaperDollRig(fighter.paperDollRig);"), true);
+  assert.equal(arenaSceneSource.includes("addPaperDollRig(fighter.paperDollRig?.shadow);"), true);
+});
+
 test("arena entry can prewarm arena image assets through the browser cache", () => {
   assert.equal(arenaSceneSource.includes("export function prewarmArenaAssetsForBrowserCache(): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("arenaAssetPrewarmPromise ??="), true);
@@ -286,6 +305,15 @@ test("city hero preview exposes a ready promise for return transitions", () => {
   assert.equal(arenaSceneSource.includes("const ready = new Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("resolveReadyOnce();"), true);
   assert.equal(arenaSceneSource.includes("return {\n    ready,"), true);
+});
+
+test("hero portrait skips unchanged snapshot equipment", () => {
+  assert.equal(arenaSceneSource.includes("HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS"), true);
+  assert.equal(arenaSceneSource.includes("function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined): string"), true);
+  assert.equal(arenaSceneSource.includes("let lastSnapshotKey: string | undefined;"), true);
+  assert.match(arenaSceneSource, /if \(snapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
+  assert.match(arenaSceneSource, /if \(nextSnapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
+  assert.match(arenaSceneSource, /scene\?\.setEquipment\(nextEquipment\);\s*refreshSnapshot\(nextEquipment\);/);
 });
 
 test("blocked hits use the shield icon popup instead of block text", () => {
