@@ -69,7 +69,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState): v
   }
 
   if (refs.gold) {
-    refs.gold.textContent = `GOLD ${hero.gold}`;
+    refs.gold.textContent = String(hero.gold);
   }
 
   if (refs.xpFill) {
@@ -77,7 +77,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState): v
   }
 
   if (refs.xpText) {
-    refs.xpText.textContent = `XP ${hero.xp}/${xpToNextLevel}`;
+    refs.xpText.textContent = `${hero.xp}/${xpToNextLevel}`;
   }
 
   if (refs.skillPoints) {

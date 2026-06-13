@@ -314,15 +314,15 @@ test("battle rewards use small early arena numbers", () => {
   winState.result = "win";
   const winReward = hero.getBattleReward(winState);
 
-  assert.equal(winReward.gold, 5);
-  assert.equal(winReward.xp, 10);
+  assert.equal(winReward.gold, hero.BATTLE_WIN_REWARD.gold);
+  assert.equal(winReward.xp, hero.BATTLE_WIN_REWARD.xp);
 
   const loseState = combat.freshState();
   loseState.result = "lose";
   const lossReward = hero.getBattleReward(loseState);
 
-  assert.equal(lossReward.gold, 1);
-  assert.equal(lossReward.xp, 2);
+  assert.equal(lossReward.gold, hero.BATTLE_LOSS_REWARD.gold);
+  assert.equal(lossReward.xp, hero.BATTLE_LOSS_REWARD.xp);
 
   const drawState = combat.freshState();
   drawState.result = "draw";

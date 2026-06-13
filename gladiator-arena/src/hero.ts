@@ -164,7 +164,7 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   30,
 ];
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
-export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 10 };
+export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 5 };
 export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
 export const DEFAULT_ARENA_TIER_ID = 1;
 export const HERO_STRENGTH_DAMAGE_BONUS = 1;

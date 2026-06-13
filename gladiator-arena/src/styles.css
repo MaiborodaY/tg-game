@@ -1651,6 +1651,7 @@ h1 {
 }
 
 .city-menu {
+  --city-top-hud-height: 98px;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -1736,23 +1737,56 @@ h1 {
 
 .city-menu__hero-widget {
   position: absolute;
-  left: var(--hero-portrait-button-x, 10px);
-  top: var(--hero-portrait-button-y, 10px);
+  left: 0;
+  top: 0;
   z-index: 4;
   display: grid;
-  grid-template-columns: auto minmax(142px, 1fr);
-  gap: 7px;
+  box-sizing: border-box;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  width: min(282px, calc(100% - 20px));
-  transform: scale(var(--hero-portrait-button-scale, 1));
-  transform-origin: top left;
+  width: 100%;
+  height: var(--city-top-hud-height);
+  padding: 10px 13px 11px 9px;
+  border: 0;
+  border-bottom: 4px solid #1d0a05;
+  border-radius: 0 0 16px 16px;
+  color: #ffe8a9;
+  background:
+    linear-gradient(90deg, rgba(25, 8, 3, 0.48) 0 101px, rgba(255, 214, 129, 0.1) 101px 103px, transparent 103px),
+    radial-gradient(circle at 22% 6%, rgba(255, 197, 95, 0.24), transparent 34%),
+    repeating-linear-gradient(0deg, rgba(255, 234, 180, 0.035) 0 1px, transparent 1px 5px),
+    linear-gradient(180deg, #6f3518 0%, #401708 58%, #2b0d05 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 219, 144, 0.28),
+    inset 0 -6px 14px rgba(16, 5, 2, 0.42),
+    0 4px 0 rgba(22, 7, 3, 0.58),
+    0 10px 18px rgba(22, 7, 3, 0.26);
+  isolation: isolate;
+  overflow: visible;
+  pointer-events: auto;
+  text-shadow: 1px 2px 0 rgba(22, 7, 3, 0.82);
+  text-transform: uppercase;
   transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.city-menu__hero-widget::before {
+  content: "";
+  position: absolute;
+  inset: 4px 6px 6px;
+  z-index: 0;
+  border: 1px solid rgba(255, 220, 146, 0.36);
+  border-radius: 0 0 12px 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(31, 11, 5, 0.42),
+    inset 0 0 18px rgba(255, 202, 104, 0.07);
+  pointer-events: none;
 }
 
 .city-menu--armory-open .city-menu__hero-widget {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-10px) scale(var(--hero-portrait-button-scale, 1));
+  transform: translateY(-10px);
 }
 
 .city-menu--day::after {
@@ -1761,22 +1795,23 @@ h1 {
 
 .city-menu__time-toggle {
   position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  right: 10px;
+  top: calc(var(--city-top-hud-height) - 8px);
+  right: 16px;
+  left: auto;
   z-index: 5;
   display: grid;
   place-items: center;
-  width: 66px;
-  height: 36px;
+  width: 58px;
+  height: 31px;
   padding: 0;
   border: 3px solid #35180d;
   border-radius: 999px;
-  color: #35180d;
+  color: #ffe8a9;
   background:
-    radial-gradient(circle at 22% 22%, rgba(255, 246, 198, 0.55), transparent 32%),
-    linear-gradient(180deg, #fff0bd, #d58a2f);
+    radial-gradient(circle at 22% 22%, rgba(255, 220, 146, 0.34), transparent 32%),
+    linear-gradient(180deg, #7d3c1a, #341207);
   box-shadow:
-    inset 0 2px 0 rgba(255, 246, 210, 0.58),
+    inset 0 2px 0 rgba(255, 220, 146, 0.3),
     0 3px 0 rgba(22, 7, 3, 0.54),
     0 8px 16px rgba(22, 7, 3, 0.24);
   cursor: pointer;
@@ -1846,19 +1881,22 @@ h1 {
   position: relative;
   z-index: 1;
   overflow: hidden;
-  width: clamp(68px, 18vw, 82px);
-  aspect-ratio: 1;
+  justify-self: center;
+  box-sizing: border-box;
+  width: 76px;
+  height: 76px;
   padding: 0;
-  border: 4px solid #35180d;
-  border-radius: 50%;
-  color: #35180d;
+  border: 2px solid #241008;
+  border-radius: 14px;
+  color: #ffe8a9;
   background:
-    radial-gradient(circle at 50% 48%, rgba(255, 224, 160, 0.62), rgba(155, 82, 32, 0.16) 58%, rgba(35, 10, 4, 0.7) 100%),
-    linear-gradient(180deg, #fff0bd, #e99c33);
+    radial-gradient(circle at 50% 43%, rgba(255, 209, 128, 0.24), rgba(65, 24, 10, 0.28) 54%, rgba(16, 5, 2, 0.72) 100%),
+    linear-gradient(180deg, #7a3a19, #260c04);
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px);
   box-shadow:
-    inset 0 2px 0 rgba(255, 246, 210, 0.52),
-    0 4px 0 rgba(22, 7, 3, 0.52),
-    0 8px 18px rgba(22, 7, 3, 0.34);
+    inset 0 4px 8px rgba(8, 2, 1, 0.58),
+    inset 0 -1px 0 rgba(255, 220, 146, 0.2),
+    0 1px 0 rgba(255, 220, 146, 0.24);
   cursor: pointer;
   touch-action: manipulation;
   transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
@@ -1871,9 +1909,9 @@ h1 {
 .city-menu__portrait-button:active {
   transform: translateY(2px);
   box-shadow:
-    inset 0 2px 0 rgba(255, 246, 210, 0.52),
-    0 2px 0 rgba(22, 7, 3, 0.52),
-    0 5px 12px rgba(22, 7, 3, 0.3);
+    inset 0 5px 10px rgba(8, 2, 1, 0.66),
+    inset 0 -1px 0 rgba(255, 220, 146, 0.14),
+    0 1px 0 rgba(255, 220, 146, 0.16);
 }
 
 .city-menu__portrait-button--selected {
@@ -1919,30 +1957,20 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-menu__hero-info {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
-  padding: 7px 8px 8px;
-  border: 3px solid #35180d;
-  border-radius: 10px 14px 14px 10px;
-  color: #35180d;
-  background:
-    linear-gradient(135deg, rgba(255, 246, 203, 0.86), rgba(255, 246, 203, 0.24) 48%, transparent 50%),
-    linear-gradient(180deg, #fff0bd 0%, #f0b354 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 246, 210, 0.62),
-    0 4px 0 rgba(22, 7, 3, 0.5),
-    0 8px 16px rgba(22, 7, 3, 0.26);
+  padding: 3px 0 2px;
   pointer-events: auto;
-  text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.86);
-  text-transform: uppercase;
 }
 
 .city-menu__hero-info-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 7px;
-  align-items: baseline;
+  gap: 8px;
+  align-items: center;
 }
 
 .city-menu__hero-name,
@@ -1957,34 +1985,54 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-menu__hero-name {
-  font-size: clamp(0.58rem, 2.4vw, 0.74rem);
+  color: #ffe4a1;
+  font-size: clamp(0.68rem, 2.8vw, 0.86rem);
   letter-spacing: 0.06em;
 }
 
 .city-menu__hero-gold {
-  font-size: clamp(0.56rem, 2.2vw, 0.7rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  justify-content: flex-end;
+  min-width: 34px;
+  color: #fff0bd;
+  font-size: clamp(0.6rem, 2.3vw, 0.74rem);
+}
+
+.city-menu__hero-gold::before {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  background: url("./assets/ui/shop/gold-coin.webp") center / contain no-repeat;
+  filter: drop-shadow(0 1px 0 rgba(53, 24, 13, 0.45));
 }
 
 .city-menu__hero-level,
 .city-menu__hero-xp-text {
-  color: #633019;
-  font-size: clamp(0.5rem, 2vw, 0.62rem);
+  color: #f2c978;
+  font-size: clamp(0.54rem, 2.05vw, 0.66rem);
   letter-spacing: 0.07em;
 }
 
 .city-menu__hero-xp {
   display: grid;
-  grid-template-columns: minmax(48px, 1fr) auto;
+  grid-template-columns: minmax(64px, 1fr) auto;
   gap: 6px;
   align-items: center;
 }
 
 .city-menu__hero-xp-track {
   overflow: hidden;
-  height: 8px;
-  border: 2px solid #35180d;
+  height: 9px;
+  border: 2px solid #170703;
   border-radius: 999px;
-  background: rgba(53, 24, 13, 0.8);
+  background: rgba(19, 6, 3, 0.84);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.52),
+    0 1px 0 rgba(255, 220, 146, 0.12);
 }
 
 .city-menu__hero-xp-fill {

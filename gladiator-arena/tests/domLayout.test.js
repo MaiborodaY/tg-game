@@ -34,12 +34,18 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(html.includes('id="cityButton"'), true);
 });
 
-test("city hero widget exposes skill point allocation controls", () => {
-  assert.equal(html.includes('id="heroInfoSkillPoints"'), true);
+test("city hero widget keeps the top HUD compact", () => {
+  assert.equal(html.includes('id="heroWidget"'), true);
+  assert.equal(html.includes('id="heroPortraitButton"'), true);
+  assert.equal(html.includes('id="heroInfoName"'), true);
+  assert.equal(html.includes('id="heroInfoGold"'), true);
+  assert.equal(html.includes('id="heroInfoLevel"'), true);
+  assert.equal(html.includes('id="heroInfoXpText"'), true);
+  assert.equal(html.includes('id="heroInfoSkillPoints"'), false);
 
   for (const attribute of ["strength", "agility", "vitality"]) {
-    assert.equal(html.includes(`data-hero-attribute-value="${attribute}"`), true);
-    assert.equal(html.includes(`data-hero-attribute-button="${attribute}"`), true);
+    assert.equal(html.includes(`data-hero-attribute-value="${attribute}"`), false);
+    assert.equal(html.includes(`data-hero-attribute-button="${attribute}"`), false);
   }
 });
 
