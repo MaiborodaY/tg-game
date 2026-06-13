@@ -1827,6 +1827,12 @@ h1 {
   transform: translateY(-10px);
 }
 
+.city-menu--profile-open .city-menu__hero-widget {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px);
+}
+
 .city-menu--day::after {
   background: linear-gradient(180deg, rgba(32, 13, 6, 0) 62%, rgba(32, 13, 6, 0.16) 100%);
 }
@@ -2496,16 +2502,21 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile {
-  align-items: start;
-  padding: calc(var(--city-top-hud-height) + 25px) 12px 104px;
+  z-index: 8;
+  align-items: stretch;
+  padding: max(10px, env(safe-area-inset-top)) 6px max(10px, env(safe-area-inset-bottom));
   background:
-    radial-gradient(circle at 50% 18%, rgba(255, 190, 84, 0.1), transparent 26%),
-    linear-gradient(180deg, rgba(10, 3, 1, 0.32), rgba(10, 3, 1, 0.66));
+    radial-gradient(circle at 50% 8%, rgba(255, 190, 84, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(10, 3, 1, 0.76), rgba(10, 3, 1, 0.88));
+  backdrop-filter: blur(1.5px);
 }
 
 .city-profile__panel {
-  width: min(372px, calc(100% - 8px));
-  padding: 31px 12px 14px;
+  width: min(404px, calc(100% - 8px));
+  height: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 37px 14px 12px;
   border: 3px solid #160703;
   border-radius: 6px;
   background:
@@ -2519,6 +2530,12 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 -10px 22px rgba(0, 0, 0, 0.38),
     0 5px 0 rgba(8, 2, 1, 0.82),
     0 20px 30px rgba(8, 2, 1, 0.48);
+  scrollbar-width: none;
+}
+
+.city-profile__panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .city-profile__panel::before {
@@ -2544,9 +2561,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__title {
-  top: -8px;
-  min-width: 152px;
-  padding: 8px 22px 9px;
+  top: -3px;
+  min-width: 158px;
+  padding: 8px 24px 9px;
   border-width: 3px;
   border-radius: 4px;
   background:
@@ -2570,15 +2587,23 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__hero {
-  grid-template-columns: 126px minmax(0, 1fr);
-  gap: 14px;
-  align-items: start;
-  padding: 4px 30px 0 0;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  padding: 14px 11px 13px;
+  border: 2px solid rgba(22, 7, 3, 0.88);
+  border-radius: 7px;
+  background:
+    linear-gradient(90deg, rgba(255, 220, 146, 0.08), transparent 46%),
+    linear-gradient(180deg, rgba(58, 23, 10, 0.62), rgba(19, 6, 3, 0.32));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 146, 0.12),
+    inset 0 -8px 16px rgba(8, 2, 1, 0.24);
 }
 
 .city-profile__portrait {
-  width: 126px;
-  height: 126px;
+  width: 128px;
+  height: 128px;
   border-width: 3px;
   border-radius: 7px;
   background:
@@ -2593,17 +2618,17 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-profile__portrait canvas,
 .city-profile__portrait .city-menu__portrait-snapshot {
-  transform: scale(1.52);
-  transform-origin: 50% 38%;
+  transform: scale(1.13);
+  transform-origin: 50% 46%;
 }
 
 .city-profile__portrait .city-menu__portrait-snapshot {
-  object-position: 50% 38%;
+  object-position: 50% 46%;
 }
 
 .city-profile__summary {
-  gap: 8px;
-  padding: 8px 0 0;
+  gap: 9px;
+  padding: 0;
 }
 
 .city-profile__summary-name-row {
@@ -2614,8 +2639,11 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__name {
-  font-size: clamp(0.96rem, 3.9vw, 1.16rem);
+  overflow: visible;
+  font-size: clamp(0.86rem, 3.45vw, 1.08rem);
   letter-spacing: 0.04em;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .city-profile__edit-mark {
@@ -2644,16 +2672,16 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-profile__progress-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 47px minmax(0, 1fr);
+  gap: 9px;
   align-items: center;
 }
 
 .city-profile__level {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border: 2px solid #160703;
   border-radius: 6px;
   color: #fff0bd;
@@ -2663,10 +2691,27 @@ body.debug-active .city-menu__portrait-button:active {
   box-shadow:
     inset 0 1px 0 rgba(255, 220, 146, 0.18),
     0 2px 0 rgba(8, 2, 1, 0.56);
-  font-size: 0.56rem;
+  font-size: 0.58rem;
   line-height: 1.05;
   text-align: center;
   white-space: normal;
+}
+
+.city-profile__level span,
+.city-profile__level strong {
+  display: block;
+  line-height: 0.9;
+}
+
+.city-profile__level span {
+  color: #d4a762;
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+}
+
+.city-profile__level strong {
+  color: #fff0bd;
+  font-size: 0.95rem;
 }
 
 .city-profile__xp {
@@ -2675,7 +2720,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__xp-track {
-  height: 11px;
+  height: 12px;
 }
 
 .city-profile__xp-text {
@@ -2691,7 +2736,14 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__gold {
+  overflow: visible;
+  width: max-content;
+  padding: 3px 8px 4px 4px;
+  border: 1px solid rgba(255, 220, 146, 0.18);
+  border-radius: 999px;
+  background: rgba(18, 5, 2, 0.38);
   font-size: clamp(0.7rem, 2.7vw, 0.84rem);
+  text-overflow: clip;
 }
 
 .city-profile__gold::before {
@@ -2706,7 +2758,7 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 8px;
   align-items: center;
   justify-content: space-between;
-  margin-top: 13px;
+  margin-top: 12px;
   color: #f2c978;
   font-size: clamp(0.58rem, 2.2vw, 0.68rem);
   font-weight: 900;
@@ -2742,14 +2794,14 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__attributes {
-  gap: 8px;
+  gap: 7px;
   margin-top: 8px;
 }
 
 .city-profile__attribute {
-  grid-template-columns: 46px minmax(0, 1fr) 38px 36px;
+  grid-template-columns: 48px minmax(0, 1fr) 34px 34px;
   gap: 8px;
-  min-height: 61px;
+  min-height: 58px;
   padding: 7px 8px;
   border-color: #160703;
   border-radius: 6px;
@@ -2759,23 +2811,30 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__attribute-icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-color: #120502;
-  font-size: 0.82rem;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
+    linear-gradient(180deg, #7c4a25, #230904);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 68%, auto, auto;
+  font-size: 0;
 }
 
 .city-profile__attribute-copy {
-  gap: 4px;
+  gap: 3px;
 }
 
 .city-profile__attribute-copy strong {
-  font-size: clamp(0.72rem, 2.75vw, 0.84rem);
+  font-size: clamp(0.7rem, 2.62vw, 0.82rem);
 }
 
 .city-profile__attribute-copy span {
   color: #d3a061;
-  font-size: clamp(0.48rem, 1.82vw, 0.56rem);
+  font-size: clamp(0.47rem, 1.76vw, 0.55rem);
+  line-height: 1.12;
   white-space: normal;
 }
 
@@ -2784,17 +2843,38 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__attribute-button {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   font-size: 1.25rem;
 }
 
+.city-profile__attribute-icon--strength {
+  background-image:
+    url("./assets/ui/action-icons/attack-heavy.webp"),
+    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
+    linear-gradient(180deg, #7c4a25, #230904);
+}
+
+.city-profile__attribute-icon--agility {
+  background-image:
+    url("./assets/ui/action-icons/lunge.webp"),
+    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
+    linear-gradient(180deg, #395f38, #150804);
+}
+
+.city-profile__attribute-icon--vitality {
+  background-image:
+    url("./assets/ui/action-icons/rest.webp"),
+    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
+    linear-gradient(180deg, #73311f, #190704);
+}
+
 .city-profile__derived {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 7px;
   margin-top: 8px;
-  padding: 7px;
+  padding: 8px;
   border: 2px solid #160703;
   border-radius: 7px;
   background: rgba(17, 6, 3, 0.36);
@@ -2802,11 +2882,11 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__derived div {
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 27px minmax(0, 1fr) auto;
   gap: 6px;
   align-items: center;
-  min-height: 39px;
-  padding: 6px;
+  min-height: 38px;
+  padding: 6px 7px;
   border-width: 1px;
   border-radius: 5px;
   text-align: left;
@@ -2815,8 +2895,8 @@ body.debug-active .city-menu__portrait-button:active {
 .city-profile__derived-icon {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 23px;
+  height: 23px;
   border-radius: 50%;
   color: #fff0bd;
   background: linear-gradient(180deg, #70401f, #230904);
@@ -2826,11 +2906,12 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__derived span:not(.city-profile__derived-icon) {
-  overflow: hidden;
+  overflow: visible;
   color: #d2a15f;
-  font-size: clamp(0.48rem, 1.78vw, 0.56rem);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: clamp(0.45rem, 1.6vw, 0.54rem);
+  line-height: 1.08;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .city-profile__derived strong {
@@ -2856,8 +2937,8 @@ body.debug-active .city-menu__portrait-button:active {
   display: grid;
   gap: 3px;
   justify-items: center;
-  min-height: 70px;
-  padding: 6px 4px 5px;
+  min-height: 76px;
+  padding: 7px 4px 6px;
   border: 2px solid #160703;
   border-radius: 6px;
   color: #d2a15f;
@@ -2873,14 +2954,37 @@ body.debug-active .city-menu__portrait-button:active {
 .city-profile__equipment-icon {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 1px solid rgba(255, 220, 146, 0.22);
   border-radius: 6px;
   color: #fff0bd;
   background: rgba(12, 3, 1, 0.38);
-  font-size: 0.72rem;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 86%;
+  font-size: 0;
   font-weight: 900;
+}
+
+.city-profile__equipment-card--head .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-head.webp");
+}
+
+.city-profile__equipment-card--body .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-body.webp");
+}
+
+.city-profile__equipment-card--arms .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-arms.webp");
+}
+
+.city-profile__equipment-card--legs .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-legs.webp");
+}
+
+.city-profile__equipment-card--weapon .city-profile__equipment-icon {
+  background-image: url("./assets/shop-icons/weapon-sword-01.webp");
 }
 
 .city-profile__equipment-card strong,
@@ -2928,11 +3032,12 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__footer-close {
-  position: relative;
+  position: sticky;
+  bottom: 0;
   z-index: 2;
   display: block;
   min-width: 134px;
-  margin: 14px auto 0;
+  margin: 16px auto 0;
   padding: 9px 22px 10px;
   border: 3px solid #160703;
   border-radius: 7px;
@@ -3127,6 +3232,12 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-menu--armory-open .city-menu__nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(100% + 18px));
+}
+
+.city-menu--profile-open .city-menu__nav {
   opacity: 0;
   pointer-events: none;
   transform: translateY(calc(100% + 18px));

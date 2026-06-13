@@ -45,7 +45,6 @@ export interface CityHeroWidgetRefs {
   xpText: HTMLElement | null;
   skillPoints: HTMLElement | null;
   profile: HTMLElement | null;
-  profileCloseButton: HTMLButtonElement | null;
   profilePortrait: HTMLElement | null;
   profileName: HTMLElement | null;
   profileGold: HTMLElement | null;
@@ -70,7 +69,6 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     xpText: root.querySelector<HTMLElement>("#heroInfoXpText"),
     skillPoints: root.querySelector<HTMLElement>("#heroProfileSkillPoints"),
     profile: root.querySelector<HTMLElement>("#heroProfile"),
-    profileCloseButton: root.querySelector<HTMLButtonElement>("#heroProfileCloseButton"),
     profilePortrait: root.querySelector<HTMLElement>("#heroProfilePortrait"),
     profileName: root.querySelector<HTMLElement>("#heroProfileName"),
     profileGold: root.querySelector<HTMLElement>("#heroProfileGold"),
@@ -143,7 +141,12 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState): v
   }
 
   if (refs.profileLevel) {
-    refs.profileLevel.textContent = `LVL ${hero.level}`;
+    const label = document.createElement("span");
+    const value = document.createElement("strong");
+
+    label.textContent = "LVL";
+    value.textContent = String(hero.level);
+    refs.profileLevel.replaceChildren(label, value);
   }
 
   if (refs.profileGold) {
@@ -193,7 +196,7 @@ export interface CityHeroProfileApi {
 }
 
 export function mountCityHeroProfile(refs: CityHeroWidgetRefs): CityHeroProfileApi {
-  const { profile, profileCloseButton, portraitButton } = refs;
+  const { profile, portraitButton } = refs;
   const cityMenu = profile?.closest<HTMLElement>(".city-menu") ?? null;
   const profileCloseButtons = Array.from(profile?.querySelectorAll<HTMLButtonElement>("[data-hero-profile-close]") ?? []);
   let isProfileOpen = false;
@@ -230,7 +233,6 @@ export function mountCityHeroProfile(refs: CityHeroWidgetRefs): CityHeroProfileA
   portraitButton?.setAttribute("aria-controls", "heroProfile");
   portraitButton?.setAttribute("aria-expanded", "false");
   portraitButton?.addEventListener("click", handlePortraitClick);
-  profileCloseButton?.addEventListener("click", close);
   profileCloseButtons.forEach((button) => button.addEventListener("click", close));
   profile?.addEventListener("click", handleProfileClick);
   document.addEventListener("keydown", handleKeyDown);
@@ -243,7 +245,6 @@ export function mountCityHeroProfile(refs: CityHeroWidgetRefs): CityHeroProfileA
     destroy: () => {
       close();
       portraitButton?.removeEventListener("click", handlePortraitClick);
-      profileCloseButton?.removeEventListener("click", close);
       profileCloseButtons.forEach((button) => button.removeEventListener("click", close));
       profile?.removeEventListener("click", handleProfileClick);
       document.removeEventListener("keydown", handleKeyDown);
