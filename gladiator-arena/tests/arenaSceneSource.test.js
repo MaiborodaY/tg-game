@@ -94,7 +94,7 @@ test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("return Boolean(rig.shadow?.root.visible);"), true);
   assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment && shadow\) \{[\s\S]*tintPaperDollShadowObject\(shadow\.root\)[\s\S]*\}/);
   assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(shadow, visibility, slotKeys)"), true);
-  assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment\) \{[\s\S]*paperDoll\.slot\.\$\{slotKey\}\.syncShadowSlot[\s\S]*syncPaperDollEquipmentSlot\(rig\.shadow\?\.equipment\[slotKey\], slotKey, textureKey\)[\s\S]*\}/);
+  assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment\) \{[\s\S]*syncPaperDollEquipmentSlot\(rig\.shadow\?\.equipment\[slotKey\], slotKey, textureKey\);[\s\S]*\}/);
   assert.match(arenaSceneSource, /!wasHighShadowVisible && this\.fighter\.shadow\.visible[\s\S]*syncPaperDollEquipmentState\(this\.fighter\.paperDollRig\);/);
   assert.doesNotMatch(arenaSceneSource, /rig\.shadow\?\.equipment\[slotKey\]\?\.setVisible\(visibility\[slotKey\]\)/);
 });
@@ -263,7 +263,7 @@ test("shop equipment preview updates gear without resetting the animated pose", 
   assert.equal(equipmentSyncSource.includes("syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride)"), true);
   assert.equal(arenaSceneSource.includes("getPlayerEquipmentSlotAssetKey(equipmentState, slotKey)"), true);
   assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots\);[\s\S]*return;/);
-  assert.match(arenaSceneSource, /city\.syncPlayerEquipment\.syncPaperDollEquipmentState[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\)[\s\S]*city\.syncPlayerEquipment\.applyCityHeroLighting[\s\S]*applyCityHeroLighting\(this\.fighter!, this\.cityLightingAmount, changedSlots\)/);
+  assert.match(arenaSceneSource, /private syncPlayerEquipment\(changedSlots\?: readonly PaperDollEquipmentSlotKey\[\]\): void \{[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount, changedSlots\);/);
   assert.match(arenaSceneSource, /function applyCityHeroLighting\([\s\S]*equipmentSlotKeys\?: readonly PaperDollEquipmentSlotKey\[\],[\s\S]*if \(equipmentSlotKeys\) \{[\s\S]*tintPaperDollImages\(rig\.equipment\[slotKey\], CITY_HERO_EQUIPMENT_TINT, amount\);[\s\S]*return;/);
   assert.equal(mainSource.includes("function getShopPreviewItemIds(product: ArmoryProduct | WeaponProduct): HeroItemId[]"), false);
   assert.equal(mainSource.includes('equipmentSlot.startsWith("front")'), false);
@@ -271,8 +271,11 @@ test("shop equipment preview updates gear without resetting the animated pose", 
   assert.equal(mainSource.includes("PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS"), false);
   assert.equal(mainSource.includes("shopPreviewAnimationTimer"), false);
   assert.equal(mainSource.includes("shopPreviewAnimationToken"), false);
-  assert.equal(mainSource.includes('const phase = isArmoryShopProduct(product) && product.itemIds.length > 1 ? "paired" : "single";'), true);
-  assert.equal(mainSource.includes('previewShopEquipment(equipment, phase);'), true);
+  assert.equal(mainSource.includes("profileArmoryPreviewSpan"), false);
+  assert.equal(arenaSceneSource.includes("profileArmoryPreviewSpan"), false);
+  assert.equal(mainSource.includes('const phase = isArmoryShopProduct(product) && product.itemIds.length > 1 ? "paired" : "single";'), false);
+  assert.equal(mainSource.includes("previewShopEquipment(createShopPreviewEquipment(product.itemIds));"), true);
+  assert.equal(mainSource.includes("previewShopEquipment(equipment, phase);"), false);
   assert.equal(mainSource.includes("cityScene?.previewEquipment(equipment);"), true);
   assert.equal(mainSource.includes("cityScene?.clearEquipmentPreview();"), true);
   assert.equal(mainSource.includes("setPlayerEquipment(createShopPreviewEquipment(product.itemIds));"), false);

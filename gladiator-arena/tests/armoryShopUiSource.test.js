@@ -10,6 +10,7 @@ const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.t
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
 const shopPresentationSource = readFileSync(resolve(currentDir, "../src/shopPresentation.ts"), "utf8");
+const shopPreviewProfilerSource = readFileSync(resolve(currentDir, "../src/shopPreviewProfiler.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 test("armory shop groups generated back and front equipment into one product", () => {
@@ -229,6 +230,12 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(armoryShopSource.includes("function renderPreviewSelection"), true);
   assert.equal(armoryShopSource.includes("function previewArmoryProduct"), true);
   assert.match(armoryShopSource, /profileArmoryPreviewClick\(product, \(\) => previewArmoryProduct\(product\)\);[\s\S]*previewArmoryProduct\(product\);/);
+  assert.equal(shopPreviewProfilerSource.includes('title.textContent = "FRAME PROFILER"'), true);
+  assert.equal(shopPreviewProfilerSource.includes('"to raf 1"'), true);
+  assert.equal(shopPreviewProfilerSource.includes('"longtask"'), true);
+  assert.equal(shopPreviewProfilerSource.includes("profileArmoryPreviewSpan"), false);
+  assert.equal(stylesSource.includes(".armory-frame-profiler"), true);
+  assert.equal(stylesSource.includes(".armory-preview-profiler"), false);
   assert.match(armoryShopSource, /function renderPreviewSelection[\s\S]*renderSelectedProduct\(hero\);[\s\S]*updateProductButtonSelection\(previousProductId\);/);
   assert.match(armoryShopSource, /function updateSelectedMeta[\s\S]*meta\.name\.textContent = productName;[\s\S]*meta\.priceAmount\.textContent = String\(price\);/);
   assert.equal(armoryShopSource.includes("armory-shop__selected-stat-value--positive"), true);

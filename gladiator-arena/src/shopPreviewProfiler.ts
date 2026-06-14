@@ -6,53 +6,58 @@ interface ArmoryPreviewProfileProduct {
   itemIds: readonly HeroItemId[];
 }
 
-interface ActiveArmoryPreviewProfile {
+interface ArmoryFrameProfileStep {
+  label: string;
+  elapsedMs: number;
+  durationMs: number;
+}
+
+interface ArmoryFrameProfileLongTask {
+  elapsedMs: number;
+  durationMs: number;
+}
+
+interface ActiveArmoryFrameProfile {
   id: number;
   productId: string;
   productName: string;
   itemIds: HeroItemId[];
   startedAt: number;
-  spans: ArmoryPreviewProfileSpan[];
+  lastMeasuredAt: number;
+  steps: ArmoryFrameProfileStep[];
+  longTasks: ArmoryFrameProfileLongTask[];
 }
 
-interface ArmoryPreviewProfileSpan {
-  label: string;
-  elapsedMs: number;
-  durationMs: number;
-  details?: Record<string, unknown>;
-}
-
-interface CompletedArmoryPreviewProfile {
-  id: number;
-  productId: string;
-  productName: string;
-  itemIds: HeroItemId[];
+interface CompletedArmoryFrameProfile extends ActiveArmoryFrameProfile {
   reason: string;
   totalMs: number;
-  spans: ArmoryPreviewProfileSpan[];
 }
 
-interface ArmoryPreviewProfilerOverlayElements {
+interface ArmoryFrameProfilerOverlayElements {
   root: HTMLElement;
   list: HTMLElement;
   clearButton: HTMLButtonElement;
 }
 
-const ARMORY_PREVIEW_PROFILE_SLOT_PAIRS: Array<readonly [HeroEquipmentSlotKey, HeroEquipmentSlotKey]> = [
+const ARMORY_FRAME_PROFILE_SLOT_PAIRS: Array<readonly [HeroEquipmentSlotKey, HeroEquipmentSlotKey]> = [
   ["backShoulderguard", "frontShoulderguard"],
   ["backWrist", "frontWrist"],
   ["backGlove", "frontGlove"],
 ];
 
-const ARMORY_PREVIEW_PROFILE_PREFIX = "[armory paired profiler]";
-const ARMORY_PREVIEW_PROFILE_HISTORY_LIMIT = 3;
-const ARMORY_PREVIEW_PROFILE_VISIBLE_SPANS = 6;
-const ARMORY_PREVIEW_PROFILE_WARN_MS = 24;
-const ARMORY_PREVIEW_PROFILE_HOT_MS = 80;
-let nextArmoryPreviewProfileId = 0;
-let activeArmoryPreviewProfile: ActiveArmoryPreviewProfile | undefined;
-let completedArmoryPreviewProfiles: CompletedArmoryPreviewProfile[] = [];
-let overlayElements: ArmoryPreviewProfilerOverlayElements | undefined;
+const ARMORY_FRAME_PROFILE_HISTORY_LIMIT = 3;
+const ARMORY_FRAME_PROFILE_SAMPLE_COUNT = 4;
+const ARMORY_FRAME_PROFILE_WARN_MS = 24;
+const ARMORY_FRAME_PROFILE_HOT_MS = 45;
+const ARMORY_FRAME_PROFILE_LONG_TASK_MIN_MS = 30;
+const ARMORY_FRAME_PROFILE_PREFIX = "[armory frame profiler]";
+
+let nextArmoryFrameProfileId = 0;
+let armoryFrameProfileToken = 0;
+let activeArmoryFrameProfile: ActiveArmoryFrameProfile | undefined;
+let completedArmoryFrameProfiles: CompletedArmoryFrameProfile[] = [];
+let overlayElements: ArmoryFrameProfilerOverlayElements | undefined;
+let longTaskObserver: PerformanceObserver | undefined;
 
 export function isArmoryPreviewProfileTarget(product: ArmoryPreviewProfileProduct): boolean {
   if (product.itemIds.length !== 2) {
@@ -67,153 +72,172 @@ export function isArmoryPreviewProfileTarget(product: ArmoryPreviewProfileProduc
 
   const slots = new Set(items.map((item) => item?.equipmentSlot));
 
-  return ARMORY_PREVIEW_PROFILE_SLOT_PAIRS.some(([backSlot, frontSlot]) => slots.has(backSlot) && slots.has(frontSlot));
+  return ARMORY_FRAME_PROFILE_SLOT_PAIRS.some(([backSlot, frontSlot]) => slots.has(backSlot) && slots.has(frontSlot));
 }
 
 export function profileArmoryPreviewClick(product: ArmoryPreviewProfileProduct, callback: () => void): void {
-  if (!isArmoryPreviewProfileTarget(product)) {
+  if (!isArmoryPreviewProfileTarget(product) || typeof performance === "undefined") {
     callback();
     return;
   }
 
-  ensureArmoryPreviewProfile(product, "ui.click");
-  profileArmoryPreviewSpan("ui.click handler", callback);
+  const profile = startArmoryFrameProfile(product);
+  const logicStartedAt = performance.now();
+
+  try {
+    callback();
+  } finally {
+    const logicEndedAt = performance.now();
+
+    pushArmoryFrameProfileStep(profile, "logic", logicStartedAt, logicEndedAt);
+    scheduleArmoryFrameProfileSamples(profile, logicEndedAt);
+  }
 }
 
-export function ensureArmoryPreviewProfile(product: ArmoryPreviewProfileProduct, source: string): boolean {
-  if (!isArmoryPreviewProfileTarget(product)) {
-    return false;
+function startArmoryFrameProfile(product: ArmoryPreviewProfileProduct): ActiveArmoryFrameProfile {
+  const startedAt = performance.now();
+
+  if (activeArmoryFrameProfile) {
+    finishArmoryFrameProfile(activeArmoryFrameProfile, "interrupted", startedAt);
   }
 
-  if (activeArmoryPreviewProfile?.productId === product.id) {
-    markArmoryPreviewProfile("profile.reuse", { source });
-    return true;
-  }
-
-  finishArmoryPreviewProfile("interrupted by new profile");
-
-  activeArmoryPreviewProfile = {
-    id: ++nextArmoryPreviewProfileId,
+  armoryFrameProfileToken += 1;
+  activeArmoryFrameProfile = {
+    id: ++nextArmoryFrameProfileId,
     productId: product.id,
     productName: product.name,
     itemIds: [...product.itemIds],
-    startedAt: performance.now(),
-    spans: [],
+    startedAt,
+    lastMeasuredAt: startedAt,
+    steps: [],
+    longTasks: [],
   };
 
-  console.groupCollapsed(`${ARMORY_PREVIEW_PROFILE_PREFIX} #${activeArmoryPreviewProfile.id} ${product.name}`);
-  markArmoryPreviewProfile("profile.start", {
-    source,
-    itemIds: activeArmoryPreviewProfile.itemIds,
+  ensureArmoryFrameLongTaskObserver();
+  renderArmoryFrameProfilerOverlay();
+  console.groupCollapsed(`${ARMORY_FRAME_PROFILE_PREFIX} #${activeArmoryFrameProfile.id} ${product.name}`);
+
+  return activeArmoryFrameProfile;
+}
+
+function scheduleArmoryFrameProfileSamples(profile: ActiveArmoryFrameProfile, previousMeasuredAt: number, sampleIndex = 1): void {
+  const token = armoryFrameProfileToken;
+
+  if (typeof window === "undefined" || typeof window.requestAnimationFrame !== "function") {
+    finishArmoryFrameProfile(profile, "no raf", previousMeasuredAt);
+    return;
+  }
+
+  window.requestAnimationFrame((frameStartedAt) => {
+    if (token !== armoryFrameProfileToken || activeArmoryFrameProfile?.id !== profile.id) {
+      return;
+    }
+
+    pushArmoryFrameProfileStep(profile, sampleIndex === 1 ? "to raf 1" : `raf ${sampleIndex - 1} -> ${sampleIndex}`, previousMeasuredAt, frameStartedAt);
+    renderArmoryFrameProfilerOverlay();
+
+    if (sampleIndex >= ARMORY_FRAME_PROFILE_SAMPLE_COUNT) {
+      finishArmoryFrameProfile(profile, "frame profile complete", frameStartedAt);
+      return;
+    }
+
+    scheduleArmoryFrameProfileSamples(profile, frameStartedAt, sampleIndex + 1);
   });
-  renderArmoryPreviewProfilerOverlay();
-
-  return true;
 }
 
-export function profileArmoryPreviewSpan<T>(label: string, callback: () => T, details?: Record<string, unknown>): T {
-  if (!activeArmoryPreviewProfile) {
-    return callback();
-  }
+function pushArmoryFrameProfileStep(
+  profile: ActiveArmoryFrameProfile,
+  label: string,
+  startedAt: number,
+  endedAt: number,
+): void {
+  const durationMs = Math.max(0, endedAt - startedAt);
 
-  const startedAt = performance.now();
-
-  try {
-    return callback();
-  } finally {
-    logArmoryPreviewSpan(label, startedAt, details);
-  }
+  profile.lastMeasuredAt = endedAt;
+  profile.steps.push({
+    label,
+    elapsedMs: endedAt - profile.startedAt,
+    durationMs,
+  });
+  console.log(`${label}: ${roundArmoryFrameProfileMs(durationMs)}ms`);
+  renderArmoryFrameProfilerOverlay();
 }
 
-export function markArmoryPreviewProfile(label: string, details?: Record<string, unknown>): void {
-  if (!activeArmoryPreviewProfile) {
-    return;
+function finishArmoryFrameProfile(profile: ActiveArmoryFrameProfile, reason: string, endedAt = performance.now()): void {
+  if (activeArmoryFrameProfile?.id === profile.id) {
+    activeArmoryFrameProfile = undefined;
   }
 
-  const elapsedMs = performance.now() - activeArmoryPreviewProfile.startedAt;
-
-  console.log(formatArmoryPreviewProfileLine(label, elapsedMs), details ?? "");
-  renderArmoryPreviewProfilerOverlay();
-}
-
-export function finishArmoryPreviewProfile(reason: string): void {
-  if (!activeArmoryPreviewProfile) {
-    return;
-  }
-
-  const elapsedMs = performance.now() - activeArmoryPreviewProfile.startedAt;
-  const completedProfile: CompletedArmoryPreviewProfile = {
-    id: activeArmoryPreviewProfile.id,
-    productId: activeArmoryPreviewProfile.productId,
-    productName: activeArmoryPreviewProfile.productName,
-    itemIds: activeArmoryPreviewProfile.itemIds,
+  const completedProfile: CompletedArmoryFrameProfile = {
+    ...profile,
     reason,
-    totalMs: elapsedMs,
-    spans: [...activeArmoryPreviewProfile.spans],
+    totalMs: Math.max(0, endedAt - profile.startedAt),
   };
 
-  console.log(formatArmoryPreviewProfileLine(`profile.end: ${reason}`, elapsedMs), {
-    productId: activeArmoryPreviewProfile.productId,
-    itemIds: activeArmoryPreviewProfile.itemIds,
-    totalMs: roundArmoryPreviewProfileMs(elapsedMs),
+  console.log(`total: ${roundArmoryFrameProfileMs(completedProfile.totalMs)}ms`, {
+    productId: profile.productId,
+    itemIds: profile.itemIds,
+    longTasks: profile.longTasks,
+    reason,
   });
   console.groupEnd();
-  activeArmoryPreviewProfile = undefined;
-  completedArmoryPreviewProfiles = [completedProfile, ...completedArmoryPreviewProfiles].slice(0, ARMORY_PREVIEW_PROFILE_HISTORY_LIMIT);
-  renderArmoryPreviewProfilerOverlay();
+
+  completedArmoryFrameProfiles = [completedProfile, ...completedArmoryFrameProfiles].slice(0, ARMORY_FRAME_PROFILE_HISTORY_LIMIT);
+  renderArmoryFrameProfilerOverlay();
 }
 
-function logArmoryPreviewSpan(label: string, startedAt: number, details?: Record<string, unknown>): void {
-  if (!activeArmoryPreviewProfile) {
+function ensureArmoryFrameLongTaskObserver(): void {
+  if (longTaskObserver || typeof PerformanceObserver === "undefined") {
     return;
   }
 
-  const endedAt = performance.now();
-  const elapsedMs = endedAt - activeArmoryPreviewProfile.startedAt;
-  const durationMs = endedAt - startedAt;
+  try {
+    longTaskObserver = new PerformanceObserver((list) => {
+      const profile = activeArmoryFrameProfile;
 
-  activeArmoryPreviewProfile.spans.push({
-    label,
-    elapsedMs,
-    durationMs,
-    details,
-  });
-  console.log(formatArmoryPreviewProfileLine(label, elapsedMs, durationMs), details ?? "");
-  renderArmoryPreviewProfilerOverlay();
-}
+      if (!profile) {
+        return;
+      }
 
-function formatArmoryPreviewProfileLine(label: string, elapsedMs: number, durationMs?: number): string {
-  const elapsed = `${roundArmoryPreviewProfileMs(elapsedMs)}ms`;
+      list.getEntries().forEach((entry) => {
+        if (entry.duration < ARMORY_FRAME_PROFILE_LONG_TASK_MIN_MS) {
+          return;
+        }
 
-  if (typeof durationMs !== "number") {
-    return `${elapsed} ${label}`;
+        const elapsedMs = entry.startTime - profile.startedAt;
+
+        if (elapsedMs < -1 || entry.startTime > profile.lastMeasuredAt + 200) {
+          return;
+        }
+
+        profile.longTasks.push({ elapsedMs, durationMs: entry.duration });
+      });
+      renderArmoryFrameProfilerOverlay();
+    });
+    longTaskObserver.observe({ entryTypes: ["longtask"] });
+  } catch {
+    longTaskObserver = undefined;
   }
-
-  return `${elapsed} +${roundArmoryPreviewProfileMs(durationMs)}ms ${label}`;
 }
 
-function roundArmoryPreviewProfileMs(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function renderArmoryPreviewProfilerOverlay(): void {
-  const elements = ensureArmoryPreviewProfilerOverlay();
+function renderArmoryFrameProfilerOverlay(): void {
+  const elements = ensureArmoryFrameProfilerOverlay();
 
   if (!elements) {
     return;
   }
 
   const profiles = [
-    ...(activeArmoryPreviewProfile ? [createLiveArmoryPreviewProfile(activeArmoryPreviewProfile)] : []),
-    ...completedArmoryPreviewProfiles,
-  ].slice(0, ARMORY_PREVIEW_PROFILE_HISTORY_LIMIT);
+    ...(activeArmoryFrameProfile ? [createLiveArmoryFrameProfile(activeArmoryFrameProfile)] : []),
+    ...completedArmoryFrameProfiles,
+  ].slice(0, ARMORY_FRAME_PROFILE_HISTORY_LIMIT);
 
   elements.root.hidden = profiles.length === 0;
   elements.clearButton.disabled = profiles.length === 0;
-  elements.list.replaceChildren(...profiles.map(createArmoryPreviewProfileElement));
+  elements.list.replaceChildren(...profiles.map(createArmoryFrameProfileElement));
 }
 
-function ensureArmoryPreviewProfilerOverlay(): ArmoryPreviewProfilerOverlayElements | undefined {
+function ensureArmoryFrameProfilerOverlay(): ArmoryFrameProfilerOverlayElements | undefined {
   if (overlayElements || typeof document === "undefined") {
     return overlayElements;
   }
@@ -226,28 +250,28 @@ function ensureArmoryPreviewProfilerOverlay(): ArmoryPreviewProfilerOverlayEleme
   const closeButton = document.createElement("button");
   const list = document.createElement("div");
 
-  root.className = "armory-preview-profiler";
+  root.className = "armory-frame-profiler";
   root.hidden = true;
   root.setAttribute("aria-live", "polite");
-  header.className = "armory-preview-profiler__header";
-  title.textContent = "ARM PROFILER";
-  actions.className = "armory-preview-profiler__actions";
+  header.className = "armory-frame-profiler__header";
+  title.textContent = "FRAME PROFILER";
+  actions.className = "armory-frame-profiler__actions";
   clearButton.type = "button";
   clearButton.textContent = "CLEAR";
   clearButton.addEventListener("click", () => {
-    completedArmoryPreviewProfiles = [];
-    if (!activeArmoryPreviewProfile) {
+    completedArmoryFrameProfiles = [];
+    if (!activeArmoryFrameProfile) {
       root.hidden = true;
     }
-    renderArmoryPreviewProfilerOverlay();
+    renderArmoryFrameProfilerOverlay();
   });
   closeButton.type = "button";
   closeButton.textContent = "X";
-  closeButton.setAttribute("aria-label", "Hide arm profiler");
+  closeButton.setAttribute("aria-label", "Hide frame profiler");
   closeButton.addEventListener("click", () => {
     root.hidden = true;
   });
-  list.className = "armory-preview-profiler__list";
+  list.className = "armory-frame-profiler__list";
 
   actions.append(clearButton, closeButton);
   header.append(title, actions);
@@ -259,109 +283,115 @@ function ensureArmoryPreviewProfilerOverlay(): ArmoryPreviewProfilerOverlayEleme
   return overlayElements;
 }
 
-function createLiveArmoryPreviewProfile(profile: ActiveArmoryPreviewProfile): CompletedArmoryPreviewProfile {
+function createLiveArmoryFrameProfile(profile: ActiveArmoryFrameProfile): CompletedArmoryFrameProfile {
   return {
-    id: profile.id,
-    productId: profile.productId,
-    productName: profile.productName,
-    itemIds: profile.itemIds,
+    ...profile,
     reason: "running",
     totalMs: performance.now() - profile.startedAt,
-    spans: [...profile.spans],
   };
 }
 
-function createArmoryPreviewProfileElement(profile: CompletedArmoryPreviewProfile): HTMLElement {
+function createArmoryFrameProfileElement(profile: CompletedArmoryFrameProfile): HTMLElement {
   const item = document.createElement("article");
   const title = document.createElement("div");
   const name = document.createElement("strong");
   const total = document.createElement("span");
   const reason = document.createElement("span");
-  const spans = document.createElement("div");
-  const topSpans = getTopArmoryPreviewProfileSpans(profile.spans);
+  const steps = document.createElement("div");
 
-  item.className = "armory-preview-profiler__profile";
-  title.className = "armory-preview-profiler__profile-title";
-  name.textContent = normalizeArmoryPreviewProfileName(profile.productName);
-  total.className = `armory-preview-profiler__total ${getArmoryPreviewProfileSeverityClass(profile.totalMs)}`;
-  total.textContent = `${roundArmoryPreviewProfileMs(profile.totalMs)}ms`;
-  reason.className = "armory-preview-profiler__reason";
-  reason.textContent = profile.reason;
-  spans.className = "armory-preview-profiler__spans";
-  spans.append(
-    ...(topSpans.length > 0
-      ? topSpans.map(createArmoryPreviewSpanElement)
-      : [createArmoryPreviewEmptySpanElement(profile.reason === "running" ? "waiting..." : "no spans")]),
+  item.className = "armory-frame-profiler__profile";
+  title.className = "armory-frame-profiler__profile-title";
+  name.textContent = normalizeArmoryFrameProfileName(profile.productName);
+  total.className = `armory-frame-profiler__total ${getArmoryFrameProfileSeverityClass(getWorstArmoryFrameProfileStep(profile))}`;
+  total.textContent = `${roundArmoryFrameProfileMs(profile.totalMs)}ms`;
+  reason.className = "armory-frame-profiler__reason";
+  reason.textContent = getArmoryFrameProfileSummary(profile);
+  steps.className = "armory-frame-profiler__steps";
+  steps.append(
+    ...(profile.steps.length > 0
+      ? profile.steps.map(createArmoryFrameProfileStepElement)
+      : [createArmoryFrameProfileEmptyStepElement("waiting for frames")]),
+    ...profile.longTasks.map(createArmoryFrameProfileLongTaskElement),
   );
   title.append(name, total);
-  item.append(title, reason, spans);
+  item.append(title, reason, steps);
 
   return item;
 }
 
-function createArmoryPreviewSpanElement(span: ArmoryPreviewProfileSpan): HTMLElement {
+function createArmoryFrameProfileStepElement(step: ArmoryFrameProfileStep): HTMLElement {
   const row = document.createElement("div");
   const label = document.createElement("span");
   const value = document.createElement("strong");
 
-  row.className = `armory-preview-profiler__span ${getArmoryPreviewProfileSeverityClass(span.durationMs)}`;
-  label.textContent = simplifyArmoryPreviewProfileLabel(span.label);
-  value.textContent = `${roundArmoryPreviewProfileMs(span.durationMs)}ms`;
+  row.className = `armory-frame-profiler__step ${getArmoryFrameProfileSeverityClass(step.durationMs)}`;
+  label.textContent = step.label;
+  value.textContent = `${roundArmoryFrameProfileMs(step.durationMs)}ms`;
   row.append(label, value);
 
   return row;
 }
 
-function createArmoryPreviewEmptySpanElement(text: string): HTMLElement {
+function createArmoryFrameProfileLongTaskElement(longTask: ArmoryFrameProfileLongTask): HTMLElement {
+  const row = document.createElement("div");
+  const label = document.createElement("span");
+  const value = document.createElement("strong");
+
+  row.className = `armory-frame-profiler__step ${getArmoryFrameProfileSeverityClass(longTask.durationMs)}`;
+  label.textContent = `longtask +${roundArmoryFrameProfileMs(longTask.elapsedMs)}ms`;
+  value.textContent = `${roundArmoryFrameProfileMs(longTask.durationMs)}ms`;
+  row.append(label, value);
+
+  return row;
+}
+
+function createArmoryFrameProfileEmptyStepElement(text: string): HTMLElement {
   const empty = document.createElement("div");
 
-  empty.className = "armory-preview-profiler__empty";
+  empty.className = "armory-frame-profiler__empty";
   empty.textContent = text;
 
   return empty;
 }
 
-function getTopArmoryPreviewProfileSpans(spans: readonly ArmoryPreviewProfileSpan[]): ArmoryPreviewProfileSpan[] {
-  return [...spans]
-    .filter((span) => span.durationMs > 0)
-    .sort((left, right) => right.durationMs - left.durationMs)
-    .slice(0, ARMORY_PREVIEW_PROFILE_VISIBLE_SPANS);
-}
+function getArmoryFrameProfileSummary(profile: CompletedArmoryFrameProfile): string {
+  const worstStep = getWorstArmoryFrameProfileStep(profile);
+  const longTaskTotal = profile.longTasks.reduce((total, longTask) => total + longTask.durationMs, 0);
 
-function getArmoryPreviewProfileSeverityClass(durationMs: number): string {
-  if (durationMs >= ARMORY_PREVIEW_PROFILE_HOT_MS) {
-    return "armory-preview-profiler__value--hot";
+  if (longTaskTotal > 0) {
+    return `${profile.reason}, worst frame ${roundArmoryFrameProfileMs(worstStep)}ms, longtask ${roundArmoryFrameProfileMs(longTaskTotal)}ms`;
   }
 
-  if (durationMs >= ARMORY_PREVIEW_PROFILE_WARN_MS) {
-    return "armory-preview-profiler__value--warn";
+  return `${profile.reason}, worst frame ${roundArmoryFrameProfileMs(worstStep)}ms`;
+}
+
+function getWorstArmoryFrameProfileStep(profile: CompletedArmoryFrameProfile): number {
+  const frameSteps = profile.steps.filter((step) => step.label !== "logic");
+  const stepDurations = frameSteps.length > 0 ? frameSteps.map((step) => step.durationMs) : profile.steps.map((step) => step.durationMs);
+  const longTaskDurations = profile.longTasks.map((longTask) => longTask.durationMs);
+
+  return Math.max(0, ...stepDurations, ...longTaskDurations);
+}
+
+function getArmoryFrameProfileSeverityClass(durationMs: number): string {
+  if (durationMs >= ARMORY_FRAME_PROFILE_HOT_MS) {
+    return "armory-frame-profiler__value--hot";
+  }
+
+  if (durationMs >= ARMORY_FRAME_PROFILE_WARN_MS) {
+    return "armory-frame-profiler__value--warn";
   }
 
   return "";
 }
 
-function normalizeArmoryPreviewProfileName(value: string): string {
+function roundArmoryFrameProfileMs(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function normalizeArmoryFrameProfileName(value: string): string {
   return value
     .replace(/\s+01\b/gu, "")
     .replace(/\bshoulderguards?\b/giu, "Shoulders")
     .trim();
-}
-
-function simplifyArmoryPreviewProfileLabel(label: string): string {
-  return label
-    .replace(/^paperDoll\./u, "")
-    .replace(/^city\./u, "")
-    .replace(/^main\./u, "")
-    .replace(/^syncPlayerEquipment\./u, "")
-    .replace(/^syncEquipmentVisibility\./u, "")
-    .replace(/^syncEquipmentState\./u, "")
-    .replace(/^previewPlayerEquipment\./u, "")
-    .replace(/^previewShopEquipment\./u, "")
-    .replace(/^slot\./u, "")
-    .replace(/\.syncVisibleSlot$/u, " visible")
-    .replace(/\.getTextureKey$/u, " key")
-    .replace(/\.applyCityHeroLighting$/u, " lighting")
-    .replace(/\.syncPaperDollEquipmentState$/u, " sync rig")
-    .replace(/paired\./u, "")
-    .replace(/[._]/gu, " ");
 }

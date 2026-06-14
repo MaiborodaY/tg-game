@@ -54,11 +54,6 @@ import {
 import { syncHudTuning } from "./hudTuning";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
-import {
-  ensureArmoryPreviewProfile,
-  finishArmoryPreviewProfile,
-  profileArmoryPreviewSpan,
-} from "./shopPreviewProfiler";
 import { isShopProductSealed } from "./shopPresentation";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
@@ -764,24 +759,14 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
-  ensureArmoryPreviewProfile(product, "main.handleShopPreview");
-  profileArmoryPreviewSpan("main.cancelArmoryPreviewPrewarm", cancelArmoryPreviewPrewarm);
-  const phase = isArmoryShopProduct(product) && product.itemIds.length > 1 ? "paired" : "single";
-  const equipment = profileArmoryPreviewSpan(
-    `main.createPreviewEquipment.${phase}`,
-    () => createShopPreviewEquipment(product.itemIds),
-    { itemIds: product.itemIds },
-  );
-
-  previewShopEquipment(equipment, phase);
-  finishArmoryPreviewProfile(`${phase} preview complete`);
+  cancelArmoryPreviewPrewarm();
+  previewShopEquipment(createShopPreviewEquipment(product.itemIds));
 }
 
 function clearShopPreview(): void {
   cancelArmoryPreviewPrewarm();
   activeShopPreviewEquipment = undefined;
   cityScene?.clearEquipmentPreview();
-  finishArmoryPreviewProfile("preview cleared");
 }
 
 function handleArmoryProductPrewarm(products: readonly ArmoryProduct[]): void {
@@ -852,11 +837,9 @@ function cancelArmoryPreviewPrewarm(): void {
   }
 }
 
-function previewShopEquipment(equipment: HeroEquipment, phase = "preview"): void {
+function previewShopEquipment(equipment: HeroEquipment): void {
   activeShopPreviewEquipment = equipment;
-  profileArmoryPreviewSpan(`main.previewShopEquipment.${phase}`, () => {
-    cityScene?.previewEquipment(equipment);
-  });
+  cityScene?.previewEquipment(equipment);
 }
 
 async function returnToCity(): Promise<void> {
