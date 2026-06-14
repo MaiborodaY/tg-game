@@ -266,8 +266,13 @@ test("shop equipment preview updates gear without resetting the animated pose", 
   assert.match(arenaSceneSource, /syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount, changedSlots\);/);
   assert.match(arenaSceneSource, /function applyCityHeroLighting\([\s\S]*equipmentSlotKeys\?: readonly PaperDollEquipmentSlotKey\[\],[\s\S]*if \(equipmentSlotKeys\) \{[\s\S]*tintPaperDollImages\(rig\.equipment\[slotKey\], CITY_HERO_EQUIPMENT_TINT, amount\);[\s\S]*return;/);
   assert.equal(mainSource.includes("function getShopPreviewItemIds(product: ArmoryProduct | WeaponProduct): HeroItemId[]"), false);
-  assert.equal(mainSource.includes('equipmentSlot.startsWith("front")'), false);
-  assert.equal(mainSource.includes("cityScene?.previewEquipment(createShopPreviewEquipment(product.itemIds));"), true);
+  assert.equal(mainSource.includes('equipmentSlot.startsWith("front")'), true);
+  assert.equal(mainSource.includes("shouldStaggerArmoryPreview(product)"), true);
+  assert.equal(mainSource.includes("PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS"), true);
+  assert.equal(mainSource.includes("previewShopEquipment(stagedEquipment);"), true);
+  assert.equal(mainSource.includes("previewShopEquipment(finalEquipment);"), true);
+  assert.equal(mainSource.includes("cancelShopPreviewAnimation();"), true);
+  assert.equal(mainSource.includes("cityScene?.previewEquipment(equipment);"), true);
   assert.equal(mainSource.includes("cityScene?.clearEquipmentPreview();"), true);
   assert.equal(mainSource.includes("setPlayerEquipment(createShopPreviewEquipment(product.itemIds));"), false);
 });

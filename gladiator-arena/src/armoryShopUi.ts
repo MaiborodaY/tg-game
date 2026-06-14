@@ -133,7 +133,6 @@ const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {
 };
 
 const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
-const DIAGNOSTIC_HIDE_SAND_ARMORY_PRODUCTS = true;
 
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
@@ -220,10 +219,6 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
 
 export function getGeneratedArmoryProductsForSlots(slotKeys: readonly HeroEquipmentSlotKey[]): ArmoryProduct[] {
   const products = GENERATED_ARMORY_PRODUCTS.flatMap((product) => {
-    if (DIAGNOSTIC_HIDE_SAND_ARMORY_PRODUCTS && isSandArmoryProduct(product.itemIds)) {
-      return [];
-    }
-
     const item = product.itemIds[0] ? HERO_ITEM_CATALOG[product.itemIds[0]] : undefined;
 
     if (!item || !slotKeys.some((slotKey) => slotKey === item.equipmentSlot)) {
@@ -241,10 +236,6 @@ export function getGeneratedArmoryProductsForSlots(slotKeys: readonly HeroEquipm
   });
 
   return pairGeneratedArmoryProducts(products);
-}
-
-function isSandArmoryProduct(itemIds: readonly HeroItemId[]): boolean {
-  return itemIds.some((itemId) => itemId.includes("_sand_"));
 }
 
 function getArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduct[] {

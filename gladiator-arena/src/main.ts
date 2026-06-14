@@ -104,6 +104,7 @@ const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const HERO_PORTRAIT_REFRESH_SLOTS = new Set(["helmet", "breastplate", "backShoulderguard", "frontShoulderguard"]);
+const PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS = 48;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
@@ -114,6 +115,9 @@ let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
 let isCityReturnTransitionRunning = false;
 let cityReturnTransitionToken = 0;
+let shopPreviewAnimationToken = 0;
+let shopPreviewAnimationTimer: number | undefined;
+let activeShopPreviewEquipment: HeroEquipment | undefined;
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
@@ -672,6 +676,8 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     return;
   }
 
+  cancelShopPreviewAnimation();
+  activeShopPreviewEquipment = undefined;
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
@@ -713,6 +719,8 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
     return;
   }
 
+  cancelShopPreviewAnimation();
+  activeShopPreviewEquipment = undefined;
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
@@ -736,8 +744,8 @@ function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): bool
   });
 }
 
-function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
-  const equipment: HeroEquipment = { ...hero.equipment };
+function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipment: HeroEquipment = hero.equipment): HeroEquipment {
+  const equipment: HeroEquipment = { ...baseEquipment };
 
   itemIds.forEach((itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
@@ -749,11 +757,67 @@ function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
-  cityScene?.previewEquipment(createShopPreviewEquipment(product.itemIds));
+  const sequenceToken = beginShopPreviewAnimation();
+
+  if (!shouldStaggerArmoryPreview(product)) {
+    previewShopEquipment(createShopPreviewEquipment(product.itemIds));
+    return;
+  }
+
+  const firstItemId = getFirstPairedArmoryPreviewItemId(product.itemIds);
+
+  if (!firstItemId) {
+    previewShopEquipment(createShopPreviewEquipment(product.itemIds));
+    return;
+  }
+
+  const currentEquipment = activeShopPreviewEquipment ?? hero.equipment;
+  const stagedEquipment = createShopPreviewEquipment([firstItemId], currentEquipment);
+  const finalEquipment = createShopPreviewEquipment(product.itemIds);
+
+  previewShopEquipment(stagedEquipment);
+  shopPreviewAnimationTimer = window.setTimeout(() => {
+    shopPreviewAnimationTimer = undefined;
+
+    if (shopPreviewAnimationToken !== sequenceToken) {
+      return;
+    }
+
+    previewShopEquipment(finalEquipment);
+  }, PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS);
 }
 
 function clearShopPreview(): void {
+  cancelShopPreviewAnimation();
+  activeShopPreviewEquipment = undefined;
   cityScene?.clearEquipmentPreview();
+}
+
+function shouldStaggerArmoryPreview(product: ArmoryProduct | WeaponProduct): boolean {
+  return isArmoryShopProduct(product) && product.itemIds.length > 1;
+}
+
+function getFirstPairedArmoryPreviewItemId(itemIds: readonly HeroItemId[]): HeroItemId | undefined {
+  return itemIds.find((itemId) => HERO_ITEM_CATALOG[itemId]?.equipmentSlot.startsWith("front")) ?? itemIds[0];
+}
+
+function beginShopPreviewAnimation(): number {
+  cancelShopPreviewAnimation();
+  shopPreviewAnimationToken += 1;
+
+  return shopPreviewAnimationToken;
+}
+
+function cancelShopPreviewAnimation(): void {
+  if (shopPreviewAnimationTimer !== undefined) {
+    window.clearTimeout(shopPreviewAnimationTimer);
+    shopPreviewAnimationTimer = undefined;
+  }
+}
+
+function previewShopEquipment(equipment: HeroEquipment): void {
+  activeShopPreviewEquipment = equipment;
+  cityScene?.previewEquipment(equipment);
 }
 
 async function returnToCity(): Promise<void> {
