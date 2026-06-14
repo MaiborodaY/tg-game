@@ -749,11 +749,11 @@ function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
-  setPlayerEquipment(createShopPreviewEquipment(product.itemIds));
+  cityScene?.previewEquipment(createShopPreviewEquipment(product.itemIds));
 }
 
 function clearShopPreview(): void {
-  setPlayerEquipment(hero.equipment);
+  cityScene?.clearEquipmentPreview();
 }
 
 async function returnToCity(): Promise<void> {

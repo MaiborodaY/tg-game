@@ -756,6 +756,10 @@ const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
 const PLAYER_BODY_SCALE_CHANGE_EVENT = "gladiator-player-body-scale-change";
 const CITY_TIME_OF_DAY_CHANGE_EVENT = "gladiator-city-time-of-day-change";
 
+interface PlayerEquipmentChangeDetail {
+  changedSlots?: readonly PaperDollEquipmentSlotKey[];
+}
+
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
@@ -919,8 +923,10 @@ export function setPlayerEquipment(equipment: HeroEquipment): void {
     return;
   }
 
+  const changedSlots = activePlayerEquipment ? getChangedHeroEquipmentSlots(activePlayerEquipment, equipment) : undefined;
+
   activePlayerEquipment = { ...equipment };
-  notifyPlayerEquipmentChanged();
+  notifyPlayerEquipmentChanged(changedSlots);
 }
 
 export function setPlayerBodyScaleBonus(bodyScaleBonus: number): void {
@@ -940,6 +946,10 @@ function getCityPlayerBodyScaleMultiplier(liftProgress: number): number {
 
 function areHeroEquipmentStatesEqual(left: HeroEquipment, right: HeroEquipment): boolean {
   return HERO_EQUIPMENT_SLOT_KEYS.every((slotKey) => (left[slotKey] ?? null) === (right[slotKey] ?? null));
+}
+
+function getChangedHeroEquipmentSlots(left: HeroEquipment, right: HeroEquipment): PaperDollEquipmentSlotKey[] {
+  return PAPER_DOLL_EQUIPMENT_SLOT_KEYS.filter((slotKey) => (left[slotKey] ?? null) !== (right[slotKey] ?? null));
 }
 
 export function getCityTimeOfDay(): CityTimeOfDay {
@@ -979,6 +989,15 @@ function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): Pape
   }, defaultAssetKeys);
 }
 
+function getPlayerEquipmentSlotAssetKey(equipment: HeroEquipment, slotKey: PaperDollEquipmentSlotKey): string | undefined {
+  const assetKey = PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey];
+  const itemId = equipment[slotKey];
+  const itemAssetKeys = itemId ? getHeroItemEquipmentAssetKeys(itemId) : undefined;
+  const textureKey = itemAssetKeys?.[assetKey] ?? DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS[assetKey];
+
+  return typeof textureKey === "string" ? getActivePaperDollAssetKey(textureKey) : undefined;
+}
+
 function createPlayerEquipmentVisibility(equipment = activePlayerEquipment): Record<PaperDollEquipmentSlotKey, boolean> {
   if (!equipment) {
     return Object.fromEntries(PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, false])) as Record<PaperDollEquipmentSlotKey, boolean>;
@@ -995,12 +1014,12 @@ function createPlayerEquipmentVisibility(equipment = activePlayerEquipment): Rec
   ) as Record<PaperDollEquipmentSlotKey, boolean>;
 }
 
-function notifyPlayerEquipmentChanged(): void {
+function notifyPlayerEquipmentChanged(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.dispatchEvent(new CustomEvent(PLAYER_EQUIPMENT_CHANGE_EVENT));
+  window.dispatchEvent(new CustomEvent<PlayerEquipmentChangeDetail>(PLAYER_EQUIPMENT_CHANGE_EVENT, { detail: { changedSlots } }));
 }
 
 function notifyPlayerBodyScaleChanged(): void {
@@ -1019,14 +1038,18 @@ function notifyCityTimeOfDayChanged(): void {
   window.dispatchEvent(new CustomEvent<CityTimeOfDay>(CITY_TIME_OF_DAY_CHANGE_EVENT, { detail: activeCityTimeOfDay }));
 }
 
-function subscribePlayerEquipmentChanges(callback: () => void): () => void {
+function subscribePlayerEquipmentChanges(callback: (detail: PlayerEquipmentChangeDetail) => void): () => void {
   if (typeof window === "undefined") {
     return () => undefined;
   }
 
-  window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
+  const listener = (event: Event): void => {
+    callback(event instanceof CustomEvent ? ((event as CustomEvent<PlayerEquipmentChangeDetail>).detail ?? {}) : {});
+  };
 
-  return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, callback);
+  window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, listener);
+
+  return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, listener);
 }
 
 function subscribePlayerBodyScaleChanges(callback: () => void): () => void {
@@ -1081,7 +1104,9 @@ export class ArenaScene extends Phaser.Scene {
         renderScene(this, this.currentState);
       }
     });
-    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => syncFighterEquipmentVisibility(this.visuals?.player));
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(({ changedSlots }) =>
+      syncFighterEquipmentVisibility(this.visuals?.player, changedSlots),
+    );
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.visuals?.player, this.visuals?.enemy], () => {
         if (this.currentState) {
@@ -1282,6 +1307,8 @@ export interface CitySceneApi {
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
   setShopMenuTop: (menuTopY?: number) => void;
+  previewEquipment: (equipment: HeroEquipment) => void;
+  clearEquipmentPreview: () => void;
   focusArenaTransition: () => Promise<void>;
   destroy: () => void;
 }
@@ -1315,6 +1342,7 @@ class CityHeroScene extends Phaser.Scene {
   private cityHeroLiftProgress = 0;
   private cityHeroLiftTween?: Phaser.Tweens.Tween;
   private shopMenuTopY?: number;
+  private previewEquipment?: HeroEquipment;
 
   constructor() {
     super("CityHeroScene");
@@ -1343,7 +1371,10 @@ class CityHeroScene extends Phaser.Scene {
     this.syncCameraLayers();
     this.sync();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.syncPlayerEquipment());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(({ changedSlots }) => {
+      this.previewEquipment = undefined;
+      this.syncPlayerEquipment(changedSlots);
+    });
     this.unsubscribePlayerBodyScale = subscribePlayerBodyScaleChanges(() => this.syncFighterLayout());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
@@ -1429,6 +1460,31 @@ class CityHeroScene extends Phaser.Scene {
     this.syncCamera(instant, 1);
   }
 
+  previewPlayerEquipment(equipment: HeroEquipment): void {
+    const changedSlots = getChangedHeroEquipmentSlots(this.getDisplayedEquipment(), equipment);
+
+    if (changedSlots.length === 0) {
+      return;
+    }
+
+    this.previewEquipment = { ...equipment };
+    this.syncPlayerEquipment(changedSlots);
+  }
+
+  clearPlayerEquipmentPreview(): void {
+    if (!this.previewEquipment || !activePlayerEquipment) {
+      this.previewEquipment = undefined;
+      return;
+    }
+
+    const changedSlots = getChangedHeroEquipmentSlots(this.previewEquipment, activePlayerEquipment);
+
+    this.previewEquipment = undefined;
+    if (changedSlots.length > 0) {
+      this.syncPlayerEquipment(changedSlots);
+    }
+  }
+
   focusArenaTransition(): Promise<void> {
     this.cameraMode = "arena";
     this.cityHeroLiftTween?.remove();
@@ -1458,11 +1514,15 @@ class CityHeroScene extends Phaser.Scene {
     this.syncCamera(true);
   }
 
-  private syncPlayerEquipment(): void {
-    syncPaperDollEquipmentState(this.fighter?.paperDollRig);
+  private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
+    syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots, this.previewEquipment);
     if (this.fighter) {
       applyCityHeroLighting(this.fighter, this.cityLightingAmount);
     }
+  }
+
+  private getDisplayedEquipment(): HeroEquipment {
+    return this.previewEquipment ?? activePlayerEquipment ?? createDefaultHeroEquipment();
   }
 
   private syncTimeOfDay(timeOfDay: CityTimeOfDay, instant = false): void {
@@ -1996,6 +2056,12 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       pendingShopMenuTopY = menuTopY;
       scene?.setShopMenuTop(menuTopY);
     },
+    previewEquipment: (equipment: HeroEquipment) => {
+      scene?.previewPlayerEquipment(equipment);
+    },
+    clearEquipmentPreview: () => {
+      scene?.clearPlayerEquipmentPreview();
+    },
     focusArenaTransition: () => scene?.focusArenaTransition() ?? Promise.resolve(),
     destroy: () => {
       if (cityReadyCallback === readyCallbackForGame) {
@@ -2273,7 +2339,7 @@ class DebugCharacterScene extends Phaser.Scene {
       });
     }
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(() => this.syncPlayerEquipment());
+    this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(({ changedSlots }) => this.syncPlayerEquipment(changedSlots));
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
     });
@@ -2335,9 +2401,9 @@ class DebugCharacterScene extends Phaser.Scene {
     );
   }
 
-  private syncPlayerEquipment(): void {
+  private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
     if (this.viewerMode === "shop") {
-      syncPaperDollEquipmentState(this.fighter?.paperDollRig);
+      syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots);
       return;
     }
 
@@ -3193,24 +3259,32 @@ function applyRigPartDebugTuning(rig: PaperDollRig): void {
   applyPaperDollEquipmentStateTuning(rig);
 }
 
-function syncPaperDollEquipmentState(rig: PaperDollRig | undefined): void {
+function syncPaperDollEquipmentState(
+  rig: PaperDollRig | undefined,
+  slotKeys?: readonly PaperDollEquipmentSlotKey[],
+  equipmentOverride?: HeroEquipment,
+): void {
   if (!rig) {
     return;
   }
 
-  applyPaperDollEquipmentStateTuning(rig);
-  syncPaperDollEquipmentVisibility(rig);
+  applyPaperDollEquipmentStateTuning(rig, slotKeys, equipmentOverride);
+  syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride);
 }
 
-function applyPaperDollEquipmentStateTuning(rig: PaperDollRig): void {
+function applyPaperDollEquipmentStateTuning(
+  rig: PaperDollRig,
+  slotKeys?: readonly PaperDollEquipmentSlotKey[],
+  equipmentOverride?: HeroEquipment,
+): void {
   const activeDebugTuning = getActiveDebugTuning();
   const equipment = activeDebugTuning?.equipment ?? DEFAULT_EQUIPMENT;
   const equipmentItems = activeDebugTuning?.equipmentItems ?? DEFAULT_EQUIPMENT_ITEM_TUNING;
-  const equipmentState = rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
+  const equipmentState = equipmentOverride ?? (rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState);
 
-  applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState);
+  applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState, slotKeys);
   if (rig.shadow) {
-    applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment, equipmentItems, equipmentState);
+    applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment, equipmentItems, equipmentState, slotKeys);
   }
 }
 
@@ -3219,22 +3293,11 @@ function applyPaperDollEquipmentTuning(
   equipment: Record<EquipmentSlotKey, EquipmentTuning>,
   equipmentItems: Record<string, EquipmentTuning>,
   equipmentState?: HeroEquipment,
+  slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS,
 ): void {
-  applyEquipmentTransform(equipmentParts.weaponMain, getEquipmentTransformTuning("weaponMain", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.helmet, getEquipmentTransformTuning("helmet", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.breastplate, getEquipmentTransformTuning("breastplate", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backShoulderguard, getEquipmentTransformTuning("backShoulderguard", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontShoulderguard, getEquipmentTransformTuning("frontShoulderguard", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backWrist, getEquipmentTransformTuning("backWrist", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontWrist, getEquipmentTransformTuning("frontWrist", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backGlove, getEquipmentTransformTuning("backGlove", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontGlove, getEquipmentTransformTuning("frontGlove", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backGreave, getEquipmentTransformTuning("backGreave", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontGreave, getEquipmentTransformTuning("frontGreave", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backShinguard, getEquipmentTransformTuning("backShinguard", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontShinguard, getEquipmentTransformTuning("frontShinguard", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.backBoot, getEquipmentTransformTuning("backBoot", equipment, equipmentItems, equipmentState));
-  applyEquipmentTransform(equipmentParts.frontBoot, getEquipmentTransformTuning("frontBoot", equipment, equipmentItems, equipmentState));
+  slotKeys.forEach((slotKey) => {
+    applyEquipmentTransform(equipmentParts[slotKey], getEquipmentTransformTuning(slotKey, equipment, equipmentItems, equipmentState));
+  });
 }
 
 function getEquipmentTransformTuning(
@@ -3248,8 +3311,8 @@ function getEquipmentTransformTuning(
   return (itemId ? equipmentItems[itemId] ?? GENERATED_EQUIPMENT_ITEM_TUNING[itemId] : undefined) ?? equipment[slotKey];
 }
 
-function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined): void {
-  syncPaperDollEquipmentVisibility(fighter?.paperDollRig);
+function syncFighterEquipmentVisibility(fighter: FighterVisual | undefined, slotKeys?: readonly PaperDollEquipmentSlotKey[]): void {
+  syncPaperDollEquipmentVisibility(fighter?.paperDollRig, slotKeys);
 }
 
 function syncFighterPaperDollTextureResolution(fighter: FighterVisual | undefined): void {
@@ -3301,20 +3364,26 @@ function syncPaperDollBodyPartImage(part: FighterPart | undefined, textureKey: s
   applyPaperDollPartImageConfig(image, config);
 }
 
-function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
+function syncPaperDollEquipmentVisibility(
+  rig: PaperDollRig | undefined,
+  slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS,
+  equipmentOverride?: HeroEquipment,
+): void {
   if (!rig) {
     return;
   }
 
-  syncPaperDollEquipmentVisuals(rig);
+  syncPaperDollEquipmentVisuals(rig, slotKeys, equipmentOverride);
   if (rig.shadow) {
     tintPaperDollShadowObject(rig.shadow.root);
   }
 
-  const visibility = rig.usesPlayerEquipment
-    ? createPlayerEquipmentVisibility()
-    : rig.equipmentState
-      ? createPlayerEquipmentVisibility(rig.equipmentState)
+  const visibility = equipmentOverride
+    ? createPlayerEquipmentVisibility(equipmentOverride)
+    : rig.usesPlayerEquipment
+      ? createPlayerEquipmentVisibility()
+      : rig.equipmentState
+        ? createPlayerEquipmentVisibility(rig.equipmentState)
       : undefined;
 
   if (!visibility) {
@@ -3322,22 +3391,23 @@ function syncPaperDollEquipmentVisibility(rig: PaperDollRig | undefined): void {
     return;
   }
 
-  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+  slotKeys.forEach((slotKey) => {
     setPaperDollEquipmentSlotVisible(rig.equipment[slotKey], visibility[slotKey]);
   });
-  syncPaperDollShadowSilhouette(rig.shadow, visibility);
+  syncPaperDollShadowSilhouette(rig.shadow, visibility, slotKeys);
 }
 
 function syncPaperDollShadowSilhouette(
   shadow: PaperDollShadowRig | undefined,
   visibility?: Record<PaperDollEquipmentSlotKey, boolean>,
+  slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS,
 ): void {
   if (!shadow) {
     return;
   }
 
   Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));
-  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+  slotKeys.forEach((slotKey) => {
     const slotVisible = slotKey === "weaponMain" && Boolean(visibility?.[slotKey]);
 
     shadow.equipment[slotKey]?.setVisible(slotVisible);
@@ -3350,15 +3420,18 @@ function setPaperDollEquipmentSlotVisible(slot: FighterPart | undefined, visible
   getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => linkedSlot.setVisible(visible && isPaperDollWeaponOverlayVisible(linkedSlot)));
 }
 
-function syncPaperDollEquipmentVisuals(rig: PaperDollRig): void {
-  const equipmentState = rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
+function syncPaperDollEquipmentVisuals(
+  rig: PaperDollRig,
+  slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS,
+  equipmentOverride?: HeroEquipment,
+): void {
+  const equipmentState = equipmentOverride ?? (rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState);
   if (!equipmentState) {
     return;
   }
 
-  const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipmentState);
-  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    const textureKey = equipmentAssetKeys[PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey]];
+  slotKeys.forEach((slotKey) => {
+    const textureKey = getPlayerEquipmentSlotAssetKey(equipmentState, slotKey);
     syncPaperDollEquipmentSlot(rig.equipment[slotKey], slotKey, textureKey);
     syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], slotKey, textureKey);
   });

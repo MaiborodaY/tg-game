@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
+const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -85,7 +86,7 @@ test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("faceParts.eyeRightCover = part(rightCover);"), true);
   assert.equal(arenaSceneSource.includes("Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));"), true);
   assert.equal(arenaSceneSource.includes('slotKey === "weaponMain" && Boolean(visibility?.[slotKey])'), true);
-  assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(rig.shadow, visibility);"), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(rig.shadow, visibility, slotKeys);"), true);
   assert.doesNotMatch(arenaSceneSource, /rig\.shadow\?\.equipment\[slotKey\]\?\.setVisible\(visibility\[slotKey\]\)/);
 });
 
@@ -227,15 +228,26 @@ test("shop equipment preview updates gear without resetting the animated pose", 
   );
 
   assert.equal(arenaSceneSource.includes("areHeroEquipmentStatesEqual(activePlayerEquipment, equipment)"), true);
-  assert.equal((arenaSceneSource.match(/subscribePlayerEquipmentChanges\(\(\) => this\.syncPlayerEquipment\(\)\)/g) ?? []).length, 2);
+  assert.equal(arenaSceneSource.includes("getChangedHeroEquipmentSlots(activePlayerEquipment, equipment)"), true);
+  assert.equal(arenaSceneSource.includes("notifyPlayerEquipmentChanged(changedSlots)"), true);
+  assert.equal(arenaSceneSource.includes("previewEquipment: (equipment: HeroEquipment) => void"), true);
+  assert.equal(arenaSceneSource.includes("clearEquipmentPreview: () => void"), true);
+  assert.equal(arenaSceneSource.includes("previewPlayerEquipment(equipment: HeroEquipment): void"), true);
+  assert.equal(arenaSceneSource.includes("clearPlayerEquipmentPreview(): void"), true);
+  assert.equal(arenaSceneSource.includes("this.previewEquipment = undefined;"), true);
+  assert.equal((arenaSceneSource.match(/syncPlayerEquipment\(changedSlots\)/g) ?? []).length >= 2, true);
   assert.equal(arenaSceneSource.includes("subscribePlayerEquipmentChanges(() => this.sync())"), false);
-  assert.equal(arenaSceneSource.includes("private syncPlayerEquipment(): void"), true);
+  assert.equal(arenaSceneSource.includes("private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void"), true);
   assert.equal(rigTuningSource.includes("applyPaperDollEquipmentStateTuning(rig);"), true);
   assert.equal(rigTuningSource.includes("applyPaperDollEquipmentTuning("), false);
-  assert.equal(equipmentSyncSource.includes("applyPaperDollEquipmentStateTuning(rig);"), true);
-  assert.equal(equipmentSyncSource.includes("syncPaperDollEquipmentVisibility(rig);"), true);
-  assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig\);[\s\S]*return;/);
-  assert.match(arenaSceneSource, /syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount\);/);
+  assert.equal(equipmentSyncSource.includes("applyPaperDollEquipmentStateTuning(rig, slotKeys, equipmentOverride);"), true);
+  assert.equal(equipmentSyncSource.includes("syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride);"), true);
+  assert.equal(arenaSceneSource.includes("getPlayerEquipmentSlotAssetKey(equipmentState, slotKey)"), true);
+  assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots\);[\s\S]*return;/);
+  assert.match(arenaSceneSource, /syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount\);/);
+  assert.equal(mainSource.includes("cityScene?.previewEquipment(createShopPreviewEquipment(product.itemIds));"), true);
+  assert.equal(mainSource.includes("cityScene?.clearEquipmentPreview();"), true);
+  assert.equal(mainSource.includes("setPlayerEquipment(createShopPreviewEquipment(product.itemIds));"), false);
 });
 
 test("city shop hero is centered without manual drag offset", () => {
