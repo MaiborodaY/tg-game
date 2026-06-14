@@ -231,12 +231,6 @@ function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): numbe
     return rarityDifference;
   }
 
-  const slotDifference = getArmoryProductSlotOrder(left) - getArmoryProductSlotOrder(right);
-
-  if (slotDifference !== 0) {
-    return slotDifference;
-  }
-
   const armorDifference = getShopProductStat(left.itemIds, "armor") - getShopProductStat(right.itemIds, "armor");
 
   if (armorDifference !== 0) {
@@ -247,6 +241,12 @@ function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): numbe
 
   if (priceDifference !== 0) {
     return priceDifference;
+  }
+
+  const slotDifference = getArmoryProductSlotOrder(left) - getArmoryProductSlotOrder(right);
+
+  if (slotDifference !== 0) {
+    return slotDifference;
   }
 
   return left.name.localeCompare(right.name);

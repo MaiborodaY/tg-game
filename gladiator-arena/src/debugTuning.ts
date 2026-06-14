@@ -419,8 +419,8 @@ export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.31, flipX: false, flipY: false },
   backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
-  backWrist: { x: 0, y: -3, angle: -4, scaleX: 1.26, scaleY: 1.1, flipX: true, flipY: false },
-  frontWrist: { x: 0, y: -3, angle: 14, scaleX: 1.5, scaleY: 1.1, flipX: true, flipY: false },
+  backWrist: { x: -1, y: -3, angle: -4, scaleX: 1.26, scaleY: 1.1, flipX: true, flipY: false },
+  frontWrist: { x: 0, y: -3, angle: 14, scaleX: 1.5, scaleY: 1.11, flipX: true, flipY: false },
   backGlove: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontGlove: { x: 0, y: 0, angle: 0, scaleX: 1.19, scaleY: 1, flipX: false, flipY: false },
   backGreave: { x: -3, y: 0, angle: -8, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
@@ -461,6 +461,14 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_greave_druid_01": { x: -4, y: 11, angle: -8, scaleX: 1.57, scaleY: 1.18, flipX: true, flipY: false },
   "auto_equipment_back_wrist_druid_01": { x: 0, y: 21, angle: -11, scaleX: 1.27, scaleY: 1.1, flipX: true, flipY: false },
   "auto_equipment_back_shinguard_druid_01": { x: 0, y: 0, angle: 4, scaleX: 1.59, scaleY: 1, flipX: false, flipY: false },
+  "auto_equipment_back_boot_druid_01": { x: 12, y: -6, angle: 0, scaleX: 1.92, scaleY: 1.72, flipX: false, flipY: false },
+  "auto_equipment_helmet_wood_boss_01": { x: 0, y: 25, angle: 0, scaleX: 1.16, scaleY: 1.12, flipX: false, flipY: false },
+  "auto_equipment_helmet_sand_01": { x: 1, y: 36, angle: 0, scaleX: 1.05, scaleY: 1.22, flipX: false, flipY: false },
+  "auto_equipment_breastplate_sand_01": { x: 0, y: 61, angle: 0, scaleX: 1.64, scaleY: 1.77, flipX: false, flipY: false },
+  "auto_equipment_back_shoulderguard_sand_01": { x: 3, y: 18, angle: 1, scaleX: 1.6, scaleY: 1.48, flipX: false, flipY: false },
+  "auto_equipment_back_wrist_sand_01": { x: -2, y: 14, angle: -3, scaleX: 1.55, scaleY: 1.51, flipX: false, flipY: false },
+  "auto_equipment_back_glove_sand_01": { x: 0, y: 15, angle: 0, scaleX: 1.13, scaleY: 1.1, flipX: false, flipY: false },
+  "auto_equipment_back_greave_sand_01": { x: -6, y: 0, angle: -4, scaleX: 1.29, scaleY: 1.29, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

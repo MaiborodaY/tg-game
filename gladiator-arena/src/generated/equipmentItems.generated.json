@@ -5,7 +5,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorCategory": "cloth",
-    "armorHp": 1,
+    "armorHp": 2,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-cloth-01"
@@ -32,7 +32,7 @@
     "armoryProduct": {
       "id": "cloth_breastplate_01",
       "name": "Cloth Breastplate 01",
-      "price": 0,
+      "price": 10,
       "itemIds": [
         "cloth_breastplate_01"
       ],
@@ -112,7 +112,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_cloth_01",
       "name": "Cloth Back Boot 01",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_back_boot_cloth_01"
       ],
@@ -204,7 +204,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorCategory": "cloth",
-    "armorHp": 2,
+    "armorHp": 1,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-cloth-01"
@@ -231,7 +231,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_cloth_01",
       "name": "Cloth Back Glove 01",
-      "price": 0,
+      "price": 5,
       "itemIds": [
         "generated_equipment_back_glove_cloth_01"
       ],
@@ -318,6 +318,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_glove_sand_01",
+    "name": "Sand Glove",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 2,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 15,
+      "angle": 0,
+      "scaleX": 1.13,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-sand-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_sand_01",
+      "name": "Sand Glove",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_glove_sand_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_chainmail_01",
     "name": "Chainmail Back Greave 01",
     "kind": "armor",
@@ -390,7 +429,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_cloth_01",
       "name": "Cloth Back Greave 01",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_back_greave_cloth_01"
       ],
@@ -472,6 +511,45 @@
       "price": 25,
       "itemIds": [
         "generated_equipment_back_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_sand_01",
+    "name": "Sand Greave",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 2,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-sand-01"
+    },
+    "equipmentTuning": {
+      "x": -6,
+      "y": 0,
+      "angle": -4,
+      "scaleX": 1.29,
+      "scaleY": 1.29,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-sand-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_sand_01",
+      "name": "Sand Greave",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_greave_sand_01"
       ],
       "categoryId": "legs"
     }
@@ -641,7 +719,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorCategory": "cloth",
-    "armorHp": 2,
+    "armorHp": 1,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-cloth-01"
@@ -668,7 +746,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_cloth_01",
       "name": "Cloth Back Shoulderguard 01",
-      "price": 0,
+      "price": 5,
       "itemIds": [
         "generated_equipment_back_shoulderguard_cloth_01"
       ],
@@ -710,6 +788,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_back_shoulderguard_druid_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_sand_01",
+    "name": "Sand Shoulderguard",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 2,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 3,
+      "y": 18,
+      "angle": 1,
+      "scaleX": 1.6,
+      "scaleY": 1.48,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-sand-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_sand_01",
+      "name": "Sand Shoulderguard",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_sand_01"
       ],
       "categoryId": "shoulders"
     }
@@ -760,7 +877,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorCategory": "cloth",
-    "armorHp": 2,
+    "armorHp": 1,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-cloth-01"
@@ -829,6 +946,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_back_wrist_druid_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_sand_01",
+    "name": "Sand Wrist",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 2,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 1,
+      "scaleX": 1.43,
+      "scaleY": 1.32,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-sand-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_sand_01",
+      "name": "Sand Wrist",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_back_wrist_sand_01"
       ],
       "categoryId": "arms"
     }
@@ -913,6 +1069,45 @@
     }
   },
   {
+    "id": "generated_equipment_breastplate_sand_01",
+    "name": "Sand Breastplate",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 4,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 66,
+      "angle": 0,
+      "scaleX": 1.45,
+      "scaleY": 1.84,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-sand-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_sand_01",
+      "name": "Sand Breastplate",
+      "price": 20,
+      "itemIds": [
+        "generated_equipment_breastplate_sand_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_chainmail_01",
     "name": "Chainmail Front Boot 01",
     "kind": "armor",
@@ -985,7 +1180,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_boot_cloth_01",
       "name": "Cloth Front Boot 01",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_front_boot_cloth_01"
       ],
@@ -1104,7 +1299,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_glove_cloth_01",
       "name": "Cloth Front Glove 01",
-      "price": 0,
+      "price": 5,
       "itemIds": [
         "generated_equipment_front_glove_cloth_01"
       ],
@@ -1191,6 +1386,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_sand_01",
+    "name": "Sand Glove Front",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 15,
+      "angle": 0,
+      "scaleX": 1.13,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-sand-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_sand_01",
+      "name": "Sand Glove Front",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_glove_sand_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_chainmail_01",
     "name": "Chainmail Front Greave 01",
     "kind": "armor",
@@ -1263,7 +1497,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_greave_cloth_01",
       "name": "Cloth Front Greave 01",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_front_greave_cloth_01"
       ],
@@ -1345,6 +1579,45 @@
       "price": 25,
       "itemIds": [
         "generated_equipment_front_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_sand_01",
+    "name": "Sand Greave Front",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-sand-01"
+    },
+    "equipmentTuning": {
+      "x": -6,
+      "y": 0,
+      "angle": -4,
+      "scaleX": 1.29,
+      "scaleY": 1.29,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-sand-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_sand_01",
+      "name": "Sand Greave Front",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_greave_sand_01"
       ],
       "categoryId": "legs"
     }
@@ -1541,7 +1814,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_shoulderguard_cloth_01",
       "name": "Cloth Front Shoulderguard 01",
-      "price": 0,
+      "price": 5,
       "itemIds": [
         "generated_equipment_front_shoulderguard_cloth_01"
       ],
@@ -1583,6 +1856,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_shoulderguard_druid_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_sand_01",
+    "name": "Sand Shoulderguard Front",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 1,
+      "y": 18,
+      "angle": -1,
+      "scaleX": 1.6,
+      "scaleY": 1.48,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-sand-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_sand_01",
+      "name": "Sand Shoulderguard Front",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_sand_01"
       ],
       "categoryId": "shoulders"
     }
@@ -1707,6 +2019,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_sand_01",
+    "name": "Sand Wrist Front",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-sand-01"
+    },
+    "equipmentTuning": {
+      "x": -1,
+      "y": 16,
+      "angle": -2,
+      "scaleX": 1.43,
+      "scaleY": 1.32,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-sand-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_sand_01",
+      "name": "Sand Wrist Front",
+      "price": 10,
+      "itemIds": [
+        "generated_equipment_front_wrist_sand_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_helmet_chainmail_01",
     "name": "Chainmail Coif 01",
     "kind": "armor",
@@ -1779,7 +2130,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_cloth_01",
       "name": "Cloth Helmet 01",
-      "price": 0,
+      "price": 3,
       "itemIds": [
         "generated_equipment_helmet_cloth_01"
       ],
@@ -1838,10 +2189,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 57,
+      "y": 92,
       "angle": 0,
       "scaleX": 1.51,
-      "scaleY": 1.74,
+      "scaleY": 2.22,
       "flipX": false,
       "flipY": false
     },
@@ -1861,6 +2212,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_helmet_druid_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_sand_01",
+    "name": "Sand Helmet 01",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 3,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-sand-01"
+    },
+    "equipmentTuning": {
+      "x": 1,
+      "y": 36,
+      "angle": 0,
+      "scaleX": 1.05,
+      "scaleY": 1.22,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-sand-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-sand-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-sand-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_sand_01",
+      "name": "Sand Helmet 01",
+      "price": 15,
+      "itemIds": [
+        "generated_equipment_helmet_sand_01"
       ],
       "categoryId": "head"
     }
