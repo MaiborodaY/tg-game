@@ -57,9 +57,7 @@ import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import {
   ensureArmoryPreviewProfile,
   finishArmoryPreviewProfile,
-  markArmoryPreviewProfile,
   profileArmoryPreviewSpan,
-  startArmoryPreviewSpan,
 } from "./shopPreviewProfiler";
 import { isShopProductSealed } from "./shopPresentation";
 import { bootTelegramWebApp } from "./telegram";
@@ -111,7 +109,6 @@ const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const HERO_PORTRAIT_REFRESH_SLOTS = new Set(["helmet", "breastplate", "backShoulderguard", "frontShoulderguard"]);
-const PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS = 48;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
@@ -122,8 +119,6 @@ let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
 let isCityReturnTransitionRunning = false;
 let cityReturnTransitionToken = 0;
-let shopPreviewAnimationToken = 0;
-let shopPreviewAnimationTimer: number | undefined;
 let activeShopPreviewEquipment: HeroEquipment | undefined;
 let armoryPreviewPrewarmToken = 0;
 let armoryPreviewPrewarmFrame: number | undefined;
@@ -689,7 +684,6 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     return;
   }
 
-  cancelShopPreviewAnimation();
   activeShopPreviewEquipment = undefined;
   hero = nextHero;
   syncPlayerCityBodyScale();
@@ -733,7 +727,6 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   }
 
   cancelArmoryPreviewPrewarm();
-  cancelShopPreviewAnimation();
   activeShopPreviewEquipment = undefined;
   hero = nextHero;
   syncPlayerCityBodyScale();
@@ -773,58 +766,19 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
   ensureArmoryPreviewProfile(product, "main.handleShopPreview");
   profileArmoryPreviewSpan("main.cancelArmoryPreviewPrewarm", cancelArmoryPreviewPrewarm);
-  const sequenceToken = profileArmoryPreviewSpan("main.beginShopPreviewAnimation", beginShopPreviewAnimation);
-
-  if (!shouldStaggerArmoryPreview(product)) {
-    const equipment = profileArmoryPreviewSpan("main.createPreviewEquipment.single", () => createShopPreviewEquipment(product.itemIds));
-
-    previewShopEquipment(equipment, "single");
-    finishArmoryPreviewProfile("single preview complete");
-    return;
-  }
-
-  const firstItemId = profileArmoryPreviewSpan("main.getFirstPairedItem", () => getFirstPairedArmoryPreviewItemId(product.itemIds));
-
-  if (!firstItemId) {
-    const equipment = profileArmoryPreviewSpan("main.createPreviewEquipment.fallback", () => createShopPreviewEquipment(product.itemIds));
-
-    previewShopEquipment(equipment, "fallback");
-    finishArmoryPreviewProfile("paired fallback preview complete");
-    return;
-  }
-
-  const currentEquipment = activeShopPreviewEquipment ?? hero.equipment;
-  const stagedEquipment = profileArmoryPreviewSpan(
-    "main.createPreviewEquipment.paired.staged",
-    () => createShopPreviewEquipment([firstItemId], currentEquipment),
-    { firstItemId },
-  );
-  const finalEquipment = profileArmoryPreviewSpan(
-    "main.createPreviewEquipment.paired.final",
+  const phase = isArmoryShopProduct(product) && product.itemIds.length > 1 ? "paired" : "single";
+  const equipment = profileArmoryPreviewSpan(
+    `main.createPreviewEquipment.${phase}`,
     () => createShopPreviewEquipment(product.itemIds),
     { itemIds: product.itemIds },
   );
 
-  previewShopEquipment(stagedEquipment, "paired.staged");
-  markArmoryPreviewProfile("main.schedulePairedFinalPreview", { delayMs: PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS });
-  const finishFinalPreviewWait = startArmoryPreviewSpan("main.waitPairedFinalPreviewTimer", { delayMs: PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS });
-  shopPreviewAnimationTimer = window.setTimeout(() => {
-    shopPreviewAnimationTimer = undefined;
-    finishFinalPreviewWait();
-
-    if (shopPreviewAnimationToken !== sequenceToken) {
-      finishArmoryPreviewProfile("paired final preview skipped by stale token");
-      return;
-    }
-
-    previewShopEquipment(finalEquipment, "paired.final");
-    finishArmoryPreviewProfile("paired final preview complete");
-  }, PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS);
+  previewShopEquipment(equipment, phase);
+  finishArmoryPreviewProfile(`${phase} preview complete`);
 }
 
 function clearShopPreview(): void {
   cancelArmoryPreviewPrewarm();
-  cancelShopPreviewAnimation();
   activeShopPreviewEquipment = undefined;
   cityScene?.clearEquipmentPreview();
   finishArmoryPreviewProfile("preview cleared");
@@ -895,28 +849,6 @@ function cancelArmoryPreviewPrewarm(): void {
   if (armoryPreviewPrewarmFrame !== undefined) {
     window.cancelAnimationFrame(armoryPreviewPrewarmFrame);
     armoryPreviewPrewarmFrame = undefined;
-  }
-}
-
-function shouldStaggerArmoryPreview(product: ArmoryProduct | WeaponProduct): boolean {
-  return isArmoryShopProduct(product) && product.itemIds.length > 1;
-}
-
-function getFirstPairedArmoryPreviewItemId(itemIds: readonly HeroItemId[]): HeroItemId | undefined {
-  return itemIds.find((itemId) => HERO_ITEM_CATALOG[itemId]?.equipmentSlot.startsWith("front")) ?? itemIds[0];
-}
-
-function beginShopPreviewAnimation(): number {
-  cancelShopPreviewAnimation();
-  shopPreviewAnimationToken += 1;
-
-  return shopPreviewAnimationToken;
-}
-
-function cancelShopPreviewAnimation(): void {
-  if (shopPreviewAnimationTimer !== undefined) {
-    window.clearTimeout(shopPreviewAnimationTimer);
-    shopPreviewAnimationTimer = undefined;
   }
 }
 

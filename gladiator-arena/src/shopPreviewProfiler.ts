@@ -125,16 +125,6 @@ export function profileArmoryPreviewSpan<T>(label: string, callback: () => T, de
   }
 }
 
-export function startArmoryPreviewSpan(label: string, details?: Record<string, unknown>): () => void {
-  if (!activeArmoryPreviewProfile) {
-    return () => undefined;
-  }
-
-  const startedAt = performance.now();
-
-  return () => logArmoryPreviewSpan(label, startedAt, details);
-}
-
 export function markArmoryPreviewProfile(label: string, details?: Record<string, unknown>): void {
   if (!activeArmoryPreviewProfile) {
     return;
