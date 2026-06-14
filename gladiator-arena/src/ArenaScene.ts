@@ -5357,6 +5357,16 @@ function animateAction(
     return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"));
   }
 
+  if (actionId === "switchWeapon") {
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "MELEE", "#ffe7a4");
+    return Promise.resolve();
+  }
+
+  if (actionId === "shuriken") {
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "SHURIKEN", "#ffe7a4");
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"));
+  }
+
   const actionAnimations: Promise<void>[] = [];
 
   if (isAttackBodyAnimationKey(actionId)) {

@@ -213,6 +213,8 @@ const actionButtonLabels: Record<ActionButtonOffsetKey, string> = {
   light: "Light",
   medium: "Medium",
   heavy: "Heavy",
+  switchWeapon: "Swap",
+  shuriken: "Shuriken",
   taunt: "Taunt",
   rest: "Rest",
 };
@@ -221,6 +223,8 @@ const bowDistanceActionButtonLabels: Partial<Record<ActionButtonOffsetKey, strin
   light: "Quick shot",
   medium: "Aimed shot",
   heavy: "Power shot",
+  switchWeapon: "Swap",
+  shuriken: "Shuriken",
 };
 
 const AUTO_EQUIPMENT_STAT_MIN = 0;

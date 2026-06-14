@@ -17,11 +17,13 @@ import { MAX_HP, MAX_STAMINA, actions } from "./combat";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import {
   areHeroItemsEquipped,
+  areHeroItemsConsumable,
   areHeroItemsOwned,
   deriveHeroStats,
   getHeroItemWeaponClass,
   getHeroEquipmentStatBonuses,
   HERO_ITEM_CATALOG,
+  isHeroConsumableItem,
   type HeroAttributeKey,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -836,8 +838,9 @@ function getOwnedCityEquipmentProducts(hero: HeroState, category: CityEquipmentC
     category.side === "armor"
       ? getGeneratedArmoryProductsForSlots(category.slots ?? []).map(toCityEquipmentProduct)
       : GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === category.id).map(toCityEquipmentProduct);
-  const inventoryProducts = getInventoryCityEquipmentProducts(hero, category, shopProducts);
-  const products = [...shopProducts, ...inventoryProducts];
+  const equipmentShopProducts = shopProducts.filter((product) => !areHeroItemsConsumable(product.itemIds));
+  const inventoryProducts = getInventoryCityEquipmentProducts(hero, category, equipmentShopProducts);
+  const products = [...equipmentShopProducts, ...inventoryProducts];
 
   return products.filter((product) => areHeroItemsOwned(hero, product.itemIds)).sort(compareCityEquipmentProducts);
 }
@@ -881,7 +884,7 @@ function isInventoryItemInCityEquipmentCategory(
     return item.kind === "armor" && Boolean(category.slots?.some((slotKey) => slotKey === item.equipmentSlot));
   }
 
-  return item.kind === "weapon" && item.equipmentSlot === "weaponMain" && getCityWeaponCategoryId(item) === category.id;
+  return item.kind === "weapon" && !isHeroConsumableItem(item) && item.equipmentSlot === "weaponMain" && getCityWeaponCategoryId(item) === category.id;
 }
 
 function getCityWeaponCategoryId(item: (typeof HERO_ITEM_CATALOG)[HeroItemId]): CityEquipmentCategoryId {

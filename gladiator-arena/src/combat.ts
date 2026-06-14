@@ -1,6 +1,6 @@
-import type { EnemyVisualPreset, HeroEquipment, HeroWeaponClass } from "./hero";
+import type { EnemyVisualPreset, HeroEquipment, HeroItemId, HeroWeaponClass } from "./hero";
 
-export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "taunt" | "rest";
+export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "switchWeapon" | "shuriken" | "taunt" | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
 
@@ -39,12 +39,18 @@ export interface FighterState {
   stamina: number;
   maxStamina: number;
   damageBonus: number;
+  weaponDamageBonus?: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
   restHpRestoreBonus: number;
   restStaminaRestoreBonus: number;
   weaponClass?: HeroWeaponClass;
+  bowShotsRemaining?: number;
+  bowMaxShots?: number;
+  shurikenCount?: number;
+  shurikenDamage?: number;
+  shurikenItemId?: HeroItemId;
   equipment?: HeroEquipment;
   visualPreset?: EnemyVisualPreset;
 }
@@ -98,6 +104,7 @@ export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
 export const MOVE_DISTANCE_PER_STAMINA = 0.2;
 export const DAMAGE_BONUS_PER_ATTACK_STAMINA = 10;
+export const BOW_SHOTS_PER_BATTLE = 5;
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -161,6 +168,21 @@ export const actions: Record<ActionId, ActionConfig> = {
     blockChance: 0.75,
     rangeMax: MELEE_RANGE,
   },
+  switchWeapon: {
+    id: "switchWeapon",
+    title: "Draw Steel",
+    detail: "Switch to melee",
+    cost: 0,
+  },
+  shuriken: {
+    id: "shuriken",
+    title: "Throw Shuriken",
+    detail: "Consumable - always hits",
+    cost: 0,
+    damage: 0,
+    blockChance: 0,
+    rangeMax: MAX_DISTANCE,
+  },
   taunt: {
     id: "taunt",
     title: "Taunt Crowd",
@@ -179,7 +201,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   },
 };
 
-export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"];
+export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"];
 
 export function setCombatMovementTuning(nextTuning: Partial<CombatMovementTuning>): void {
   combatMovementTuning = {
@@ -219,7 +241,7 @@ export function getActionStaminaCost(actionId: ActionId, actor?: FighterState): 
   }
 
   if (actions[actionId].damage) {
-    return actions[actionId].cost + Math.floor(Math.max(0, actor?.damageBonus ?? 0) / DAMAGE_BONUS_PER_ATTACK_STAMINA);
+    return actions[actionId].cost + Math.floor(getActionDamageBonus(actor) / DAMAGE_BONUS_PER_ATTACK_STAMINA);
   }
 
   return actions[actionId].cost;
@@ -248,6 +270,7 @@ export function freshState(): CombatState {
       stamina: MAX_STAMINA,
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
+      weaponDamageBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
       clinchRangeBonus: 0,
@@ -264,6 +287,7 @@ export function freshState(): CombatState {
       stamina: MAX_STAMINA,
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
+      weaponDamageBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
       clinchRangeBonus: 0,
@@ -319,7 +343,7 @@ export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
 }
 
 export function isRangedWeaponClass(weaponClass: HeroWeaponClass | undefined): boolean {
-  return weaponClass === "bow" || weaponClass === "shuriken";
+  return weaponClass === "bow";
 }
 
 export function isRangedFighter(fighter: FighterState): boolean {
@@ -328,6 +352,16 @@ export function isRangedFighter(fighter: FighterState): boolean {
 
 export function isBowFighter(fighter: FighterState): boolean {
   return getFighterWeaponClass(fighter) === "bow";
+}
+
+export function getBowShotsRemaining(fighter: FighterState): number {
+  const fallbackShots = isBowFighter(fighter) ? BOW_SHOTS_PER_BATTLE : 0;
+
+  return Math.max(0, Math.floor(fighter.bowShotsRemaining ?? fallbackShots));
+}
+
+export function getFighterShurikenCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.shurikenCount ?? 0));
 }
 
 export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
@@ -394,6 +428,18 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
     }
 
     return state.distance > fighterClinchRange;
+  }
+
+  if (actionId === "switchWeapon") {
+    return isBowFighter(fighter);
+  }
+
+  if (actionId === "shuriken") {
+    return getFighterShurikenCount(fighter) > 0;
+  }
+
+  if (isAttackAction(actionId) && isBowFighter(fighter) && getBowShotsRemaining(fighter) <= 0) {
+    return false;
   }
 
   if (actionRangeMax !== undefined) {
@@ -509,6 +555,18 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
 
   for (const id of available) {
+    if (id === "switchWeapon") {
+      if (enemyHasRangedWeapon && getBowShotsRemaining(current.enemy) <= 0) {
+        weighted.push(id, id, id);
+      }
+      continue;
+    }
+
+    if (id === "shuriken") {
+      weighted.push(id, playerLowHp ? id : "light");
+      continue;
+    }
+
     if (!isFighterInClinchRange(current, "enemy")) {
       if (enemyHasRangedWeapon) {
         if (id === "heavy") {
@@ -569,6 +627,10 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
 
   attacker.stamina = clamp(attacker.stamina - getActionStaminaCost(actionId, attacker), 0, getFighterMaxStamina(attacker));
 
+  if (actionId === "switchWeapon") {
+    attacker.weaponClass = "sword";
+  }
+
   if (actionMove) {
     moveActor(state, actor, actionMove);
   }
@@ -585,10 +647,18 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     addIncomingBonus(state, actor, action.vulnerability);
   }
 
-  let damage = action.damage ? action.damage + Math.max(0, attacker.damageBonus ?? 0) : 0;
+  let damage = getActionDamage(actionId, attacker);
   const inRange = actionRangeMax === undefined || state.distance <= actionRangeMax;
   let blocked = false;
   let appliedDamage: DamageApplication = { armorAbsorbed: 0, armorBroken: false };
+
+  if (actionId === "shuriken" && getFighterShurikenCount(attacker) > 0) {
+    attacker.shurikenCount = getFighterShurikenCount(attacker) - 1;
+  }
+
+  if (isAttackAction(actionId) && isBowFighter(attacker) && getBowShotsRemaining(attacker) > 0) {
+    attacker.bowShotsRemaining = getBowShotsRemaining(attacker) - 1;
+  }
 
   if (damage > 0 && !inRange) {
     damage = 0;
@@ -638,6 +708,28 @@ function isActionBlocked(action: ActionConfig, attacker: FighterState, defender:
   const blockChance = getActionBlockChance(action, attacker, defender);
 
   return blockChance > 0 && random() < blockChance;
+}
+
+function getActionDamageBonus(attacker?: FighterState): number {
+  if (!attacker) {
+    return 0;
+  }
+
+  if (isRangedFighter(attacker)) {
+    return Math.max(0, attacker.weaponDamageBonus ?? 0);
+  }
+
+  return Math.max(0, attacker.damageBonus ?? 0);
+}
+
+function getActionDamage(actionId: ActionId, attacker: FighterState): number {
+  if (actionId === "shuriken") {
+    return Math.max(0, Math.floor(attacker.shurikenDamage ?? 0));
+  }
+
+  const actionDamage = actions[actionId].damage ?? 0;
+
+  return actionDamage > 0 ? actionDamage + getActionDamageBonus(attacker) : 0;
 }
 
 function applyDamageToFighter(defender: FighterState, damage: number): DamageApplication {
@@ -692,7 +784,7 @@ function addActionLog(
     return;
   }
 
-  if (action.damage) {
+  if (action.damage || action.id === "shuriken") {
     addLog(
       state,
       `${actorLabel} used ${actionTitle} and ${
@@ -720,6 +812,11 @@ function addActionLog(
 
   if (action.glory) {
     addLog(state, `${actorLabel} used ${actionTitle}. The crowd loves bad decisions.`);
+    return;
+  }
+
+  if (action.id === "switchWeapon") {
+    addLog(state, `${actorLabel} used ${actionTitle} and switched to melee.`);
   }
 }
 

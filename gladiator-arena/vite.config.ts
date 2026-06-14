@@ -375,6 +375,7 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  requirements?: Partial<Record<"strength" | "agility" | "vitality", number>>;
   weaponClass?: "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken";
   assetKeys: Record<string, string>;
   equipmentTuning: RigPartTuning;
@@ -1869,6 +1870,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     equipmentSlot: record.equipmentSlot,
     ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
     ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
+    ...(record.requirements ? { requirements: record.requirements } : {}),
     ...(record.weaponClass ? { weaponClass: record.weaponClass } : {}),
   };
 
@@ -2033,6 +2035,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const armorCategory = kind === "armor" ? readArmorCategory(record.armorCategory) : undefined;
   const weaponClass = kind === "weapon" ? readWeaponClass(record.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
   const rarity = readItemRarity(record.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
+  const requirements = validateGeneratedEquipmentRequirements(record.requirements);
   const availability = readGeneratedEquipmentAvailability(record.availability, {
     shop: Boolean(record.armoryProduct || record.weaponProduct),
     enemyPool: true,
@@ -2052,6 +2055,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(armorCategory ? { armorCategory } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
+    ...(requirements ? { requirements } : {}),
     ...(weaponClass ? { weaponClass } : {}),
     equipmentSlot,
     assetKeys,
@@ -2065,6 +2069,30 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(armoryProduct ? { armoryProduct } : {}),
     ...(weaponProduct ? { weaponProduct } : {}),
   };
+}
+
+function validateGeneratedEquipmentRequirements(input: unknown): GeneratedEquipmentJsonRecord["requirements"] {
+  if (input === undefined || input === null || input === "") {
+    return undefined;
+  }
+
+  const source = readPlainObject(input, "generated equipment requirements");
+  const requirements = {
+    strength: readOptionalRequirementValue(source.strength, "generated equipment requirements.strength"),
+    agility: readOptionalRequirementValue(source.agility, "generated equipment requirements.agility"),
+    vitality: readOptionalRequirementValue(source.vitality, "generated equipment requirements.vitality"),
+  };
+  const entries = Object.entries(requirements).filter(([, value]) => value !== undefined);
+
+  return entries.length > 0 ? Object.fromEntries(entries) as GeneratedEquipmentJsonRecord["requirements"] : undefined;
+}
+
+function readOptionalRequirementValue(value: unknown, label: string): number | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  return Math.max(0, Math.min(200, Math.floor(readFinitePayloadNumber(value, label))));
 }
 
 function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["armoryProduct"] {

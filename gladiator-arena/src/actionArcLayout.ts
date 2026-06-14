@@ -14,7 +14,7 @@ import {
   GAME_WIDTH,
 } from "./arenaLayout";
 import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
-import { MAX_STAMINA, isFighterInClinchRange, isRangedFighter, type ActionId, type CombatState } from "./combat";
+import { MAX_STAMINA, getFighterShurikenCount, isBowFighter, isFighterInClinchRange, isRangedFighter, type ActionId, type CombatState } from "./combat";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
@@ -61,6 +61,7 @@ const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "forward" },
   { actionId: "back" },
   { actionId: "lunge" },
+  { actionId: "shuriken" },
   { actionId: "utility" },
 ];
 
@@ -69,6 +70,8 @@ const BOW_DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "heavy" },
   { actionId: "medium" },
   { actionId: "light" },
+  { actionId: "switchWeapon" },
+  { actionId: "shuriken" },
   { actionId: "utility" },
 ];
 
@@ -77,6 +80,7 @@ const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "heavy" },
   { actionId: "medium" },
   { actionId: "light" },
+  { actionId: "shuriken" },
   { actionId: "utility" },
 ];
 
@@ -87,6 +91,8 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   light: { label: "LOW", detail: "1 dmg" },
   medium: { label: "MED", detail: "2 dmg" },
   heavy: { label: "STRONG", detail: "4 dmg" },
+  switchWeapon: { label: "SWAP", detail: "Melee" },
+  shuriken: { label: "STAR", detail: "Throw" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
@@ -119,6 +125,10 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
       return tuning?.actionMediumArcAngle ?? DEFAULT_ACTION_MEDIUM_ANGLE;
     case "heavy":
       return tuning?.actionHeavyArcAngle ?? DEFAULT_ACTION_HEAVY_ANGLE;
+    case "switchWeapon":
+      return -7;
+    case "shuriken":
+      return 21;
     case "taunt":
       return tuning?.actionTauntArcAngle ?? DEFAULT_ACTION_TAUNT_ANGLE;
     case "rest":
@@ -192,12 +202,21 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
 
 function getActionArcSlots(state: CombatState): ActionArcSlot[] {
   const isPlayerInClinch = isFighterInClinchRange(state, "player");
+  const slots = !isPlayerInClinch && isRangedFighter(state.player) ? BOW_DISTANCE_SLOTS : isPlayerInClinch ? CLINCH_SLOTS : DISTANCE_SLOTS;
 
-  if (!isPlayerInClinch && isRangedFighter(state.player)) {
-    return BOW_DISTANCE_SLOTS;
+  return slots.filter((slot) => slot.actionId === "utility" || shouldShowActionArcSlot(state, slot.actionId));
+}
+
+function shouldShowActionArcSlot(state: CombatState, actionId: ActionId): boolean {
+  if (actionId === "switchWeapon") {
+    return isBowFighter(state.player);
   }
 
-  return isPlayerInClinch ? CLINCH_SLOTS : DISTANCE_SLOTS;
+  if (actionId === "shuriken") {
+    return getFighterShurikenCount(state.player) > 0;
+  }
+
+  return true;
 }
 
 function clamp(value: number, min: number, max: number): number {

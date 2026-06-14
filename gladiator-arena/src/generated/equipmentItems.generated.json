@@ -2330,7 +2330,10 @@
     "name": "Bow 01",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 5,
+    "damageBonus": 1,
+    "requirements": {
+      "agility": 10
+    },
     "weaponClass": "bow",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -2358,7 +2361,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_01",
       "name": "Bow 01",
-      "price": 100,
+      "price": 50,
       "itemIds": [
         "generated_equipment_weapon_bow_01"
       ],

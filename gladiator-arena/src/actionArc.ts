@@ -20,10 +20,12 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
 } from "./arenaLayout";
+import { SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL, SHOP_CATEGORY_SWORD_ICON_ASSET_URL } from "./assets";
 import { getBattleSafeArea } from "./battleSafeArea";
 import { actionOrder, actions, canUseAction, getActionBlockChance, type ActionId, type CombatState } from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
+import { getShopProductIconUrl } from "./shopItemIcons";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 export type ActionTokenTuning = StageLayoutTuning;
@@ -58,6 +60,8 @@ const ACTION_ICONS: Record<ActionId, string> = {
   light: "",
   medium: "",
   heavy: "",
+  switchWeapon: "S",
+  shuriken: "*",
   taunt: "!",
   rest: "*",
 };
@@ -72,6 +76,7 @@ const ACTION_UTILITY_ICON_URLS: Partial<Record<ActionId, string>> = {
   forward: new URL("./assets/ui/action-icons/move-forward.webp", import.meta.url).href,
   back: new URL("./assets/ui/action-icons/move-forward.webp", import.meta.url).href,
   lunge: new URL("./assets/ui/action-icons/lunge.webp", import.meta.url).href,
+  switchWeapon: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   taunt: new URL("./assets/ui/action-icons/taunt.webp", import.meta.url).href,
   rest: new URL("./assets/ui/action-icons/rest.webp", import.meta.url).href,
 };
@@ -115,10 +120,10 @@ function getAttackIconStyleTuning(actionId: ActionId, tuning?: StageLayoutTuning
   }
 }
 
-function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId: ActionId): void {
+function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId: ActionId, dynamicIconUrl?: string): void {
   const attackIconUrl = ACTION_ATTACK_ICON_URLS[actionId];
   const utilityIconUrl = ACTION_UTILITY_ICON_URLS[actionId];
-  const imageIconUrl = attackIconUrl ?? utilityIconUrl;
+  const imageIconUrl = dynamicIconUrl ?? attackIconUrl ?? utilityIconUrl;
 
   icon.replaceChildren();
   delete button.dataset.icon;
@@ -146,6 +151,7 @@ export function syncActionTokenButton(
   actionId: ActionId,
   tuning: ActionTokenTuning,
   buttonScale: number,
+  dynamicIconUrl?: string,
 ): void {
   const attackIconStyle = getAttackIconStyleTuning(actionId, tuning);
 
@@ -161,7 +167,7 @@ export function syncActionTokenButton(
   button.style.setProperty("--token-face-shine-opacity", `${tuning?.actionTokenFaceShine ?? DEFAULT_ACTION_TOKEN_FACE_SHINE}`);
   button.style.setProperty("--token-inner-shine-opacity", `${tuning?.actionTokenInnerShine ?? DEFAULT_ACTION_TOKEN_INNER_SHINE}`);
   button.style.setProperty("--token-stripe-shine-opacity", `${tuning?.actionTokenStripeShine ?? DEFAULT_ACTION_TOKEN_STRIPE_SHINE}`);
-  renderActionIcon(button, icon, actionId);
+  renderActionIcon(button, icon, actionId, dynamicIconUrl);
 }
 
 export function syncActionChanceBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState): string | undefined {
@@ -326,12 +332,12 @@ export function mountActionArc(
       button.disabled = !editMode && !canUseAction(state, actionId, "player");
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
-      syncActionTokenButton(button, icon, actionId, tuning, buttonLayout.scale);
+      syncActionTokenButton(button, icon, actionId, tuning, buttonLayout.scale, getActionTokenIconUrl(actionId, state));
       const hitChanceLabel = syncActionChanceBadge(button, actionId, state);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
       button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
       button.title = `${buttonLayout.label} ${buttonLayout.detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""} angle ${Math.round(buttonLayout.angle)} deg`;
-      renderActionIcon(button, icon, actionId);
+      renderActionIcon(button, icon, actionId, getActionTokenIconUrl(actionId, state));
     }
 
     updateEditClasses();
@@ -510,6 +516,16 @@ export function mountActionArc(
       );
     }
   }
+}
+
+export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): string | undefined {
+  if (actionId !== "shuriken") {
+    return undefined;
+  }
+
+  return state.player.shurikenItemId
+    ? getShopProductIconUrl([state.player.shurikenItemId]) ?? SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL
+    : SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL;
 }
 
 function getActionArcViewport(host: HTMLElement): { width: number; height: number; safeBottom: number } {

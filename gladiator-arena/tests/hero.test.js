@@ -52,6 +52,25 @@ const generatedItems = {
     equipmentSlot: "weaponMain",
     damageBonus: 1,
   },
+  generated_equipment_weapon_bow_01: {
+    id: "generated_equipment_weapon_bow_01",
+    name: "Bow 01",
+    kind: "weapon",
+    rarity: "common",
+    weaponClass: "bow",
+    equipmentSlot: "weaponMain",
+    damageBonus: 5,
+    requirements: { agility: 10 },
+  },
+  generated_equipment_weapon_shuriken_01: {
+    id: "generated_equipment_weapon_shuriken_01",
+    name: "Rusty Shuriken",
+    kind: "weapon",
+    rarity: "common",
+    weaponClass: "shuriken",
+    equipmentSlot: "weaponMain",
+    damageBonus: 2,
+  },
   cloth_breastplate_01: {
     id: "cloth_breastplate_01",
     name: "Cloth Breastplate 01",
@@ -163,6 +182,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultStats.maxHp, combat.MAX_HP);
   assert.equal(defaultStats.maxStamina, combat.MAX_STAMINA);
   assert.equal(defaultStats.damageBonus, 0);
+  assert.equal(defaultStats.weaponDamageBonus, 0);
   assert.equal(defaultStats.movementDistanceBonus, 0);
   assert.equal(defaultStats.bodyScaleBonus, 0);
   assert.equal(defaultStats.clinchRangeBonus, 0);
@@ -181,6 +201,7 @@ test("hero base attributes derive combat stats", () => {
   const combatState = hero.createCombatStateFromHero(tunedHero);
 
   assert.equal(tunedStats.damageBonus, 3);
+  assert.equal(tunedStats.weaponDamageBonus, 0);
   assert.equal(tunedStats.movementDistanceBonus, 4 * hero.HERO_AGILITY_MOVEMENT_DISTANCE_BONUS);
   assert.equal(tunedStats.bodyScaleBonus, 3 * hero.HERO_STRENGTH_BODY_SCALE_BONUS);
   assert.equal(
@@ -192,6 +213,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(tunedStats.restHpRestoreBonus, 2 * hero.HERO_VITALITY_REST_HP_BONUS);
   assert.equal(tunedStats.restStaminaRestoreBonus, 2 * hero.HERO_VITALITY_REST_STAMINA_BONUS);
   assert.equal(combatState.player.damageBonus, tunedStats.damageBonus);
+  assert.equal(combatState.player.weaponDamageBonus, tunedStats.weaponDamageBonus);
   assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
   assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
   assert.equal(combatState.player.clinchRangeBonus, tunedStats.clinchRangeBonus);
@@ -563,4 +585,93 @@ test("owned shop items can be equipped without paying again", () => {
   assert.equal(nextHero.gold, 10);
   assert.equal(nextHero.equipment.helmet, "leather_helmet_01");
   assert.equal(hero.areHeroItemsEquipped(nextHero, ["leather_helmet_01"]), true);
+});
+
+test("weapon requirements block bow purchases until agility is high enough", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 150,
+  };
+  const requirementChecks = hero.getHeroItemRequirementChecks(baseHero, ["generated_equipment_weapon_bow_01"]);
+
+  assert.equal(hero.canHeroEquipItems(baseHero, ["generated_equipment_weapon_bow_01"]), false);
+  assert.equal(requirementChecks.length, 1);
+  assert.equal(requirementChecks[0].attribute, "agility");
+  assert.equal(requirementChecks[0].required, 10);
+  assert.equal(requirementChecks[0].current, 0);
+  assert.equal(
+    hero.buyAndEquipHeroItems(baseHero, { itemIds: ["generated_equipment_weapon_bow_01"], price: 100 }, "2026-01-01T00:01:00.000Z"),
+    baseHero,
+  );
+
+  const agileHero = {
+    ...baseHero,
+    baseStats: {
+      ...baseHero.baseStats,
+      agility: 10,
+    },
+  };
+  const nextHero = hero.buyAndEquipHeroItems(
+    agileHero,
+    { itemIds: ["generated_equipment_weapon_bow_01"], price: 100 },
+    "2026-01-01T00:02:00.000Z",
+  );
+
+  assert.equal(hero.canHeroEquipItems(agileHero, ["generated_equipment_weapon_bow_01"]), true);
+  assert.equal(nextHero.gold, 50);
+  assert.equal(nextHero.equipment.weaponMain, "generated_equipment_weapon_bow_01");
+  assert.equal(hero.deriveHeroStats(nextHero).weaponDamageBonus, 5);
+});
+
+test("shurikens buy as capped consumables without equipping", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 20,
+  };
+  const firstPurchase = hero.buyAndEquipHeroItems(
+    baseHero,
+    { itemIds: ["generated_equipment_weapon_shuriken_01"], price: 5 },
+    "2026-01-01T00:01:00.000Z",
+  );
+  const secondPurchase = hero.buyAndEquipHeroItems(
+    firstPurchase,
+    { itemIds: ["generated_equipment_weapon_shuriken_01"], price: 5 },
+    "2026-01-01T00:02:00.000Z",
+  );
+  const blockedPurchase = hero.buyAndEquipHeroItems(
+    secondPurchase,
+    { itemIds: ["generated_equipment_weapon_shuriken_01"], price: 5 },
+    "2026-01-01T00:03:00.000Z",
+  );
+
+  assert.equal(hero.areHeroItemsConsumable(["generated_equipment_weapon_shuriken_01"]), true);
+  assert.equal(firstPurchase.gold, 15);
+  assert.equal(secondPurchase.gold, 10);
+  assert.equal(secondPurchase.equipment.weaponMain, null);
+  assert.equal(hero.getHeroItemQuantity(secondPurchase, "generated_equipment_weapon_shuriken_01"), 2);
+  assert.equal(blockedPurchase, secondPurchase);
+});
+
+test("combat state exposes shuriken count and rewards persist spent consumables", () => {
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: "generated_equipment_weapon_shuriken_01", quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.shurikenCount, 2);
+  assert.equal(combatState.player.shurikenDamage, 2);
+  assert.equal(combatState.player.shurikenItemId, "generated_equipment_weapon_shuriken_01");
+
+  const spentCombatState = {
+    ...combatState,
+    result: "lose",
+    player: {
+      ...combatState.player,
+      shurikenCount: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, "generated_equipment_weapon_shuriken_01"), 1);
 });

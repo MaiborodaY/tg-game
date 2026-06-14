@@ -3,6 +3,12 @@ import {
   HERO_ITEM_CATALOG,
   areHeroItemsEquipped,
   areHeroItemsOwned,
+  areHeroItemsConsumable,
+  canHeroEquipItems,
+  getHeroConsumableMaxQuantity,
+  getHeroItemQuantity,
+  getHeroItemRequirementChecks,
+  type HeroAttributeKey,
   type HeroItemDefinition,
   type HeroItemId,
   type HeroItemRarity,
@@ -10,7 +16,7 @@ import {
 } from "./hero";
 
 export type ShopItemRarity = HeroItemRarity;
-export type ShopProductActionState = "buy" | "equip" | "equipped" | "no-gold" | "sealed";
+export type ShopProductActionState = "buy" | "equip" | "equipped" | "no-gold" | "sealed" | "locked" | "max";
 export type ShopProductStatKind = "armor" | "damage";
 
 const shopRarityLabels: Record<ShopItemRarity, string> = {
@@ -43,6 +49,18 @@ const shopRarityRanks: Record<ShopItemRarity, number> = {
   unique: 7,
 };
 
+const shopRequirementShortLabels: Record<HeroAttributeKey, string> = {
+  strength: "STR",
+  agility: "AGI",
+  vitality: "VIT",
+};
+
+const shopRequirementLabels: Record<HeroAttributeKey, string> = {
+  strength: "Strength",
+  agility: "Agility",
+  vitality: "Vitality",
+};
+
 const shopRarityUnlockBossTier: Partial<Record<ShopItemRarity, number>> = {
   uncommon: 1,
   rare: 2,
@@ -67,8 +85,16 @@ export function getEquippedShopProductStat(hero: HeroState, itemIds: HeroItemId[
 }
 
 export function getShopProductActionState(hero: HeroState, itemIds: HeroItemId[], price: number): ShopProductActionState {
+  if (areHeroItemsConsumable(itemIds)) {
+    return isShopConsumableAtMax(hero, itemIds) ? "max" : hero.gold >= price ? "buy" : "no-gold";
+  }
+
   if (areHeroItemsEquipped(hero, itemIds)) {
     return "equipped";
+  }
+
+  if (!canHeroEquipItems(hero, itemIds)) {
+    return "locked";
   }
 
   if (areHeroItemsOwned(hero, itemIds)) {
@@ -91,7 +117,29 @@ export function getShopProductActionLabel(actionState: ShopProductActionState, p
     return "Equip";
   }
 
+  if (actionState === "locked") {
+    return "Locked";
+  }
+
+  if (actionState === "max") {
+    return "Max";
+  }
+
   return actionState === "buy" ? `Buy ${price}` : "No gold";
+}
+
+export function getShopProductRequirementLabel(hero: HeroState, itemIds: readonly HeroItemId[]): string {
+  return getHeroItemRequirementChecks(hero, itemIds)
+    .filter((requirement) => requirement.current < requirement.required)
+    .map((requirement) => `${shopRequirementShortLabels[requirement.attribute]} ${requirement.required}`)
+    .join(" / ");
+}
+
+export function getShopProductRequirementDescription(hero: HeroState, itemIds: readonly HeroItemId[]): string {
+  return getHeroItemRequirementChecks(hero, itemIds)
+    .filter((requirement) => requirement.current < requirement.required)
+    .map((requirement) => `Requires ${shopRequirementLabels[requirement.attribute]} ${requirement.required}`)
+    .join(", ");
 }
 
 export function getShopProductDisplayName(productName: string): string {
@@ -187,6 +235,14 @@ function getShopItemStat(item: HeroItemDefinition | undefined, statKind: ShopPro
   }
 
   return statKind === "armor" ? item.armorHp ?? 0 : item.damageBonus ?? 0;
+}
+
+function isShopConsumableAtMax(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+  return itemIds.every((itemId) => {
+    const maxQuantity = getHeroConsumableMaxQuantity(itemId);
+
+    return maxQuantity > 0 && getHeroItemQuantity(hero, itemId) >= maxQuantity;
+  });
 }
 
 function getHighestShopRarity(rarities: ShopItemRarity[]): ShopItemRarity | undefined {

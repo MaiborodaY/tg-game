@@ -1,12 +1,14 @@
 import { DEFAULT_ACTION_BUTTON_SCALE } from "./arenaLayout";
-import { getActionHitChanceLabel, pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
+import { getActionHitChanceLabel, getActionTokenIconUrl, pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
 import {
   actionOrder,
   actions,
   canUseAction,
   distanceBand,
+  getFighterShurikenCount,
   getFighterClinchRange,
   getActionTitle,
+  isBowFighter,
   isFighterInClinchRange,
   isRangedFighter,
   type ActionId,
@@ -48,6 +50,7 @@ const CLASSIC_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "forward", x: -44, y: -104, rotation: -10 },
   { actionId: "lunge", x: 44, y: -104, rotation: 10 },
   { actionId: "back", x: -88, y: -38, rotation: -12 },
+  { actionId: "shuriken", x: 88, y: -92, rotation: 12 },
   { actionId: "taunt", x: 0, y: -54, rotation: 0 },
   { actionId: "rest", x: 88, y: -38, rotation: 12 },
 ];
@@ -57,6 +60,7 @@ const CLASSIC_CLINCH_SLOTS: ClassicActionSlot[] = [
   { actionId: "medium", x: 0, y: -128, rotation: 0 },
   { actionId: "heavy", x: 76, y: -112, rotation: 14 },
   { actionId: "back", x: -90, y: -38, rotation: -12 },
+  { actionId: "shuriken", x: 90, y: -88, rotation: 12 },
   { actionId: "taunt", x: 0, y: -50, rotation: 0 },
   { actionId: "rest", x: 90, y: -38, rotation: 12 },
 ];
@@ -66,6 +70,8 @@ const CLASSIC_BOW_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "medium", x: 0, y: -132, rotation: 0 },
   { actionId: "heavy", x: 78, y: -116, rotation: 14 },
   { actionId: "back", x: -118, y: -36, rotation: -14 },
+  { actionId: "switchWeapon", x: -78, y: -58, rotation: -10 },
+  { actionId: "shuriken", x: 78, y: -58, rotation: 10 },
   { actionId: "taunt", x: 40, y: -52, rotation: 6 },
   { actionId: "rest", x: 118, y: -36, rotation: 14 },
 ];
@@ -166,7 +172,7 @@ export function mountClassicActionBar(
     isInteractiveLayer: boolean,
   ): void {
     const visibleSlots = new Map(
-      layer.mode ? getClassicActionSlots(layer.mode, tuning?.classicActionButtonSlots).map((slot) => [slot.actionId, slot]) : [],
+      layer.mode ? getClassicActionSlots(layer.mode, state, tuning?.classicActionButtonSlots).map((slot) => [slot.actionId, slot]) : [],
     );
 
     layer.element.classList.toggle("classic-action-bar__layer--active", Boolean(layer.mode));
@@ -186,7 +192,7 @@ export function mountClassicActionBar(
       button.style.setProperty("--classic-slot-x", `${formatCssNumber(projectedSlot?.x ?? 0)}px`);
       button.style.setProperty("--classic-slot-y", `${formatCssNumber(projectedSlot?.y ?? 18)}px`);
       button.style.setProperty("--classic-slot-rotation", `${formatCssNumber(projectedSlot?.rotation ?? 0)}deg`);
-      syncActionTokenButton(button, icon, actionId, tuning, buttonScale);
+      syncActionTokenButton(button, icon, actionId, tuning, buttonScale, getActionTokenIconUrl(actionId, state));
       const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, projectedSlot, isVisible, wheelRotationAngle);
       button.disabled = !isInteractiveLayer || !isVisible || !canUseAction(state, actionId, "player");
       button.tabIndex = isVisible && isInteractiveLayer ? 0 : -1;
@@ -340,15 +346,27 @@ function getClassicWheelRangeModeFromTuningMode(mode?: ClassicActionWheelMode): 
   return undefined;
 }
 
-function getClassicActionSlots(wheelMode: ClassicWheelMode, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {
+function getClassicActionSlots(wheelMode: ClassicWheelMode, state: CombatState, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {
   const modeSlots = slotsTuning?.[classicWheelModeTuningKey[wheelMode]];
-  const slots = getDefaultClassicActionSlots(wheelMode);
+  const slots = getDefaultClassicActionSlots(wheelMode).filter((slot) => shouldShowClassicActionSlot(state, slot.actionId));
 
   if (!modeSlots) {
     return slots;
   }
 
   return slots.map((slot) => ({ ...slot, ...(modeSlots[slot.actionId] ?? {}) }));
+}
+
+function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId): boolean {
+  if (actionId === "switchWeapon") {
+    return isBowFighter(state.player);
+  }
+
+  if (actionId === "shuriken") {
+    return getFighterShurikenCount(state.player) > 0;
+  }
+
+  return true;
 }
 
 function getDefaultClassicActionSlots(wheelMode: ClassicWheelMode): ClassicActionSlot[] {

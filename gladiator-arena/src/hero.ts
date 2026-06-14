@@ -15,7 +15,7 @@ import type {
   ArenaRandomOpponentDefinition,
   ArenaTierDefinition,
 } from "./arenaOpponents";
-import { freshState, MAX_HP, MAX_STAMINA, type CombatState } from "./combat";
+import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatState } from "./combat";
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
 
 export {
@@ -66,13 +66,21 @@ export interface HeroBaseStats {
   vitality: number;
 }
 
-export type HeroAttributeKey = keyof HeroBaseStats;
+export const HERO_ATTRIBUTE_KEYS = ["strength", "agility", "vitality"] as const;
+export type HeroAttributeKey = (typeof HERO_ATTRIBUTE_KEYS)[number];
+
+export interface HeroItemRequirementCheck {
+  attribute: HeroAttributeKey;
+  required: number;
+  current: number;
+}
 
 export interface HeroStats {
   maxHp: number;
   maxArmor: number;
   maxStamina: number;
   damageBonus: number;
+  weaponDamageBonus: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
@@ -113,6 +121,7 @@ export interface HeroItemDefinition {
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  requirements?: Partial<HeroBaseStats>;
   statBonuses?: Partial<HeroBaseStats>;
 }
 
@@ -233,6 +242,7 @@ export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
+export const HERO_SHURIKEN_MAX_QUANTITY = 2;
 export const HERO_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_IDS;
 export const ALL_HERO_ITEM_IDS = HERO_ITEM_IDS;
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = GENERATED_EQUIPMENT_ITEM_CATALOG;
@@ -385,6 +395,7 @@ function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment):
     maxArmor: armorBonus,
     maxStamina: MAX_STAMINA + vitalityBonus * HERO_VITALITY_STAMINA_BONUS,
     damageBonus: equipmentDamageBonus + strengthBonus * HERO_STRENGTH_DAMAGE_BONUS,
+    weaponDamageBonus: equipmentDamageBonus,
     movementDistanceBonus: roundStatBonus(agilityBonus * HERO_AGILITY_MOVEMENT_DISTANCE_BONUS),
     bodyScaleBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_BODY_SCALE_BONUS),
     clinchRangeBonus: roundStatBonus(Math.min(HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS, strengthBonus * HERO_STRENGTH_CLINCH_RANGE_BONUS)),
@@ -398,13 +409,13 @@ export function getEquippedHeroItems(equipment: HeroEquipment): HeroItemDefiniti
     const itemId = equipment[slotKey];
     const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
 
-    return item && item.equipmentSlot === slotKey ? [item] : [];
+    return item && item.equipmentSlot === slotKey && !isHeroConsumableItem(item) ? [item] : [];
   });
 }
 
 export function isHeroItemOwned(hero: HeroState, itemId: HeroItemId): boolean {
   const item = HERO_ITEM_CATALOG[itemId];
-  const isEquipped = item ? hero.equipment[item.equipmentSlot] === itemId : false;
+  const isEquipped = item && !isHeroConsumableItem(item) ? hero.equipment[item.equipmentSlot] === itemId : false;
 
   return isEquipped || hero.inventory.some((entry) => entry.itemId === itemId && entry.quantity > 0);
 }
@@ -417,7 +428,7 @@ export function areHeroItemsEquipped(hero: HeroState, itemIds: readonly HeroItem
   return itemIds.every((itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
 
-    return Boolean(item && hero.equipment[item.equipmentSlot] === itemId);
+    return Boolean(item && !isHeroConsumableItem(item) && hero.equipment[item.equipmentSlot] === itemId);
   });
 }
 
@@ -440,11 +451,95 @@ export function getHeroEquipmentDamageBonus(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((damageBonus, item) => damageBonus + (item.damageBonus ?? 0), 0);
 }
 
+export function getHeroAttributeTotals(hero: HeroState): HeroBaseStats {
+  const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
+
+  return {
+    strength: getHeroAttributeTotal(hero.baseStats.strength, equipmentBonuses.strength),
+    agility: getHeroAttributeTotal(hero.baseStats.agility, equipmentBonuses.agility),
+    vitality: getHeroAttributeTotal(hero.baseStats.vitality, equipmentBonuses.vitality),
+  };
+}
+
+export function getHeroItemRequirements(itemIds: readonly HeroItemId[]): HeroBaseStats {
+  const requirements: HeroBaseStats = { strength: 0, agility: 0, vitality: 0 };
+
+  itemIds.forEach((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    HERO_ATTRIBUTE_KEYS.forEach((attribute) => {
+      const required = Math.max(0, Math.floor(item?.requirements?.[attribute] ?? 0));
+
+      requirements[attribute] = Math.max(requirements[attribute], required);
+    });
+  });
+
+  return requirements;
+}
+
+export function getHeroItemRequirementChecks(hero: HeroState, itemIds: readonly HeroItemId[]): HeroItemRequirementCheck[] {
+  const requirements = getHeroItemRequirements(itemIds);
+  const current = getHeroAttributeTotals(hero);
+
+  return HERO_ATTRIBUTE_KEYS.flatMap((attribute) => {
+    const required = requirements[attribute];
+
+    return required > 0 ? [{ attribute, required, current: current[attribute] }] : [];
+  });
+}
+
+export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+  if (itemIds.some((itemId) => !HERO_ITEM_CATALOG[itemId])) {
+    return false;
+  }
+
+  return getHeroItemRequirementChecks(hero, itemIds).every((requirement) => requirement.current >= requirement.required);
+}
+
+export function isHeroConsumableItem(item: HeroItemDefinition | undefined): boolean {
+  return getHeroItemWeaponClass(item) === "shuriken";
+}
+
+export function isHeroConsumableItemId(itemId: HeroItemId): boolean {
+  return isHeroConsumableItem(HERO_ITEM_CATALOG[itemId]);
+}
+
+export function areHeroItemsConsumable(itemIds: readonly HeroItemId[]): boolean {
+  return itemIds.length > 0 && itemIds.every(isHeroConsumableItemId);
+}
+
+export function getHeroItemQuantity(hero: HeroState, itemId: HeroItemId): number {
+  const quantity = hero.inventory.find((entry) => entry.itemId === itemId)?.quantity ?? 0;
+
+  return Math.max(0, Math.floor(quantity));
+}
+
+export function getHeroConsumableMaxQuantity(itemId: HeroItemId): number {
+  return isHeroConsumableItemId(itemId) ? HERO_SHURIKEN_MAX_QUANTITY : 0;
+}
+
+export function getHeroShurikenItemId(): HeroItemId | undefined {
+  return GENERATED_EQUIPMENT_ITEM_IDS.find((itemId) => isHeroConsumableItemId(itemId));
+}
+
+export function getHeroShurikenCount(hero: HeroState): number {
+  const shurikenItemId = getHeroShurikenItemId();
+
+  return shurikenItemId ? getHeroItemQuantity(hero, shurikenItemId) : 0;
+}
+
+export function getHeroShurikenDamage(): number {
+  const shurikenItemId = getHeroShurikenItemId();
+  const shurikenItem = shurikenItemId ? HERO_ITEM_CATALOG[shurikenItemId] : undefined;
+
+  return Math.max(0, Math.floor(shurikenItem?.damageBonus ?? 0));
+}
+
 export function getHeroEquipmentWeaponClass(equipment: HeroEquipment): HeroWeaponClass {
   const weaponItemId = equipment.weaponMain;
   const weaponItem = weaponItemId ? HERO_ITEM_CATALOG[weaponItemId] : undefined;
 
-  return getHeroItemWeaponClass(weaponItem);
+  return isHeroConsumableItem(weaponItem) ? "sword" : getHeroItemWeaponClass(weaponItem);
 }
 
 export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): HeroWeaponClass {
@@ -488,6 +583,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyLoadout.equipment);
   const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
   const enemyWeaponClass = getHeroEquipmentWeaponClass(enemyLoadout.equipment);
+  const playerShurikenItemId = getHeroShurikenItemId();
   const state = freshState();
 
   return {
@@ -502,12 +598,18 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
       damageBonus: stats.damageBonus,
+      weaponDamageBonus: stats.weaponDamageBonus,
       movementDistanceBonus: stats.movementDistanceBonus,
       bodyScaleBonus: stats.bodyScaleBonus,
       clinchRangeBonus: stats.clinchRangeBonus,
       restHpRestoreBonus: stats.restHpRestoreBonus,
       restStaminaRestoreBonus: stats.restStaminaRestoreBonus,
       weaponClass: playerWeaponClass,
+      bowShotsRemaining: playerWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      bowMaxShots: playerWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      shurikenCount: getHeroShurikenCount(hero),
+      shurikenDamage: getHeroShurikenDamage(),
+      shurikenItemId: playerShurikenItemId,
       equipment: { ...hero.equipment },
     },
     enemy: {
@@ -520,12 +622,17 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       stamina: enemyStats.maxStamina,
       maxStamina: enemyStats.maxStamina,
       damageBonus: enemyStats.damageBonus,
+      weaponDamageBonus: enemyStats.weaponDamageBonus,
       movementDistanceBonus: enemyStats.movementDistanceBonus,
       bodyScaleBonus: enemyStats.bodyScaleBonus,
       clinchRangeBonus: enemyStats.clinchRangeBonus,
       restHpRestoreBonus: enemyStats.restHpRestoreBonus,
       restStaminaRestoreBonus: enemyStats.restStaminaRestoreBonus,
       weaponClass: enemyWeaponClass,
+      bowShotsRemaining: enemyWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      bowMaxShots: enemyWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      shurikenCount: 0,
+      shurikenDamage: 0,
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },
     },
@@ -570,7 +677,8 @@ export function applyCombatReward(
 ): CombatRewardApplication {
   const reward = getBattleReward(combat);
   const rolledLoot = combat.result === "win" ? rollCombatEncounterLoot(combat, random) : [];
-  const heroWithReward = applyBattleReward(hero, reward, now);
+  const heroAfterConsumables = applyCombatConsumableUsage(hero, combat, now);
+  const heroWithReward = applyBattleReward(heroAfterConsumables, reward, now);
   const heroWithBossProgress = combat.result === "win" && combat.encounter?.kind === "boss" ? recordArenaBossDefeat(heroWithReward, combat.encounter.opponentId, now) : heroWithReward;
   const lootApplication = applyArenaLootWithAppliedDrops(heroWithBossProgress, rolledLoot, now);
 
@@ -643,6 +751,29 @@ function applyArenaLootWithAppliedDrops(
       updatedAt: now,
     },
     loot: appliedLoot,
+  };
+}
+
+function applyCombatConsumableUsage(hero: HeroState, combat: CombatState, now: string): HeroState {
+  const shurikenItemId = combat.player.shurikenItemId;
+
+  if (!shurikenItemId || !isHeroConsumableItemId(shurikenItemId)) {
+    return hero;
+  }
+
+  const currentQuantity = getHeroItemQuantity(hero, shurikenItemId);
+  const remainingQuantity = Math.min(currentQuantity, Math.max(0, Math.floor(combat.player.shurikenCount ?? currentQuantity)));
+
+  if (remainingQuantity >= currentQuantity) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    inventory: hero.inventory
+      .map((entry) => (entry.itemId === shurikenItemId ? { ...entry, quantity: remainingQuantity } : { ...entry }))
+      .filter((entry) => entry.quantity > 0),
+    updatedAt: now,
   };
 }
 
@@ -748,7 +879,15 @@ export function grantHeroSkillPoints(hero: HeroState, amount: number, now = new 
 }
 
 export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase, now = new Date().toISOString()): HeroState {
+  if (areHeroItemsConsumable(purchase.itemIds)) {
+    return buyHeroConsumableItems(hero, purchase, now);
+  }
+
   const price = areHeroItemsOwned(hero, purchase.itemIds) ? 0 : purchase.price;
+
+  if (!canHeroEquipItems(hero, purchase.itemIds)) {
+    return hero;
+  }
 
   if (price > hero.gold) {
     return hero;
@@ -774,6 +913,44 @@ export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase
     ...hero,
     gold: hero.gold - price,
     equipment,
+    inventory,
+    updatedAt: now,
+  };
+}
+
+function buyHeroConsumableItems(hero: HeroState, purchase: HeroItemPurchase, now: string): HeroState {
+  if (purchase.price <= 0 || purchase.price > hero.gold) {
+    return hero;
+  }
+
+  const inventory = hero.inventory.map((entry) => ({ ...entry }));
+  let hasChange = false;
+
+  for (const itemId of purchase.itemIds) {
+    const maxQuantity = getHeroConsumableMaxQuantity(itemId);
+    const existingEntry = inventory.find((entry) => entry.itemId === itemId);
+    const currentQuantity = Math.max(0, Math.floor(existingEntry?.quantity ?? 0));
+
+    if (maxQuantity <= 0 || currentQuantity >= maxQuantity) {
+      return hero;
+    }
+
+    if (existingEntry) {
+      existingEntry.quantity = Math.min(maxQuantity, currentQuantity + 1);
+    } else {
+      inventory.push({ itemId, quantity: 1 });
+    }
+
+    hasChange = true;
+  }
+
+  if (!hasChange) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold - purchase.price,
     inventory,
     updatedAt: now,
   };

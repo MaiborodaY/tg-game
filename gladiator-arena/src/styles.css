@@ -4790,6 +4790,17 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.weapon-shop.armory-shop--city-mode .armory-shop__title {
+  width: min(226px, calc(100% - 20px));
+  min-width: 0;
+  max-width: calc(100% - 20px);
+  padding: 10px 24px 11px;
+  border-color: rgba(255, 211, 132, 0.22);
+  border-radius: 10px;
+  font-size: 1.22rem;
+  letter-spacing: 0.11em;
+}
+
 .armory-shop--city-mode.armory-shop--has-selection .armory-shop__title {
   opacity: 0;
 }
@@ -5783,7 +5794,8 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__product-stat,
-.armory-shop__product-price {
+.armory-shop__product-price,
+.armory-shop__product-requirement {
   display: grid;
   grid-auto-flow: column;
   gap: 2px;
@@ -5818,6 +5830,13 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop__product-price {
   grid-column: 2;
   color: #ffd384;
+  justify-content: center;
+  text-align: right;
+}
+
+.armory-shop__product-requirement {
+  grid-column: 2;
+  color: #b8ffd0;
   justify-content: center;
   text-align: right;
 }
@@ -5932,7 +5951,8 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__product-stat,
-.armory-shop--city-mode .armory-shop__product-price {
+.armory-shop--city-mode .armory-shop__product-price,
+.armory-shop--city-mode .armory-shop__product-requirement {
   min-height: 0;
   font-size: 0.78rem;
 }

@@ -169,6 +169,12 @@ test("city shops keep product cards wide around their side rails", () => {
   assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__category-rail--melee\s*\{[\s\S]*order: 3;[\s\S]*\}/);
 });
 
+test("weapon shop product cards use the damage icon instead of a DM label", () => {
+  assert.equal(weaponShopSource.includes('createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price, requirementLabel)'), true);
+  assert.equal(weaponShopSource.includes('createProductStats("DM"'), false);
+  assert.match(weaponShopSource, /statIcon\.className = "armory-shop__product-stat-icon";[\s\S]*statIcon\.src = statIconUrl;[\s\S]*statValue\.textContent = String\(stat\);/);
+});
+
 test("shop product cards keep lightweight rarity gradients without the profile backdrop texture", () => {
   const productRule = stylesSource.match(/\.armory-shop__option--product\s*\{[\s\S]*?\}/)?.[0] ?? "";
   const cityProductRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__option--product\s*\{[\s\S]*?\}/)?.[0] ?? "";

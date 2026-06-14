@@ -38,8 +38,10 @@ function loadActionArcLayoutModule() {
         if (id === "./combat") {
           return {
             MAX_STAMINA: 10,
+            getFighterShurikenCount: (fighter) => Math.max(0, fighter?.shurikenCount ?? 0),
+            isBowFighter: (fighter) => fighter?.weaponClass === "bow",
             isFighterInClinchRange: (state, actor) => state.distance <= Math.max(0, state[actor]?.clinchRangeBonus ?? 0),
-            isRangedFighter: (fighter) => fighter?.weaponClass === "bow" || fighter?.weaponClass === "shuriken",
+            isRangedFighter: (fighter) => fighter?.weaponClass === "bow",
           };
         }
 
@@ -101,24 +103,23 @@ test("bow distance arc shows ranged attacks instead of lunge", () => {
 
   assert.deepEqual(
     Array.from(layout.buttons, (button) => button.actionId),
-    ["back", "heavy", "medium", "light", "taunt"],
+    ["back", "heavy", "medium", "light", "switchWeapon", "taunt"],
   );
   assert.equal(labels.light, "SHOT");
   assert.equal(labels.medium, "AIM");
   assert.equal(labels.heavy, "POWER");
+  assert.equal(labels.switchWeapon, "SWAP");
 });
 
-test("shuriken distance arc uses ranged attacks like bows", () => {
-  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, weaponClass: "shuriken" } }));
+test("shuriken consumables add a throw button without making the fighter ranged", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, shurikenCount: 1 } }));
   const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
 
   assert.deepEqual(
     Array.from(layout.buttons, (button) => button.actionId),
-    ["back", "heavy", "medium", "light", "taunt"],
+    ["forward", "back", "lunge", "shuriken", "taunt"],
   );
-  assert.equal(labels.light, "SHOT");
-  assert.equal(labels.medium, "AIM");
-  assert.equal(labels.heavy, "POWER");
+  assert.equal(labels.shuriken, "STAR");
 });
 
 test("arc button centers stay inside the mobile game frame", () => {

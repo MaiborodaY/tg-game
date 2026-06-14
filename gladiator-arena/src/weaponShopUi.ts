@@ -16,6 +16,8 @@ import {
   getShopProductActionLabel,
   getShopProductActionState,
   getShopProductDisplayName,
+  getShopProductRequirementDescription,
+  getShopProductRequirementLabel,
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
@@ -394,18 +396,25 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const damage = getShopProductStat(product.itemIds, "damage");
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
     const displayName = getShopProductDisplayName(product.name);
+    const requirementLabel = getShopProductRequirementLabel(hero, product.itemIds);
+    const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
     button.classList.toggle("armory-shop__option--selected", isSelected);
     button.classList.toggle("armory-shop__option--owned", actionState === "equip");
     button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
+    button.classList.toggle("armory-shop__option--max", actionState === "max");
     button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
+    button.classList.toggle("armory-shop__option--locked", actionState === "locked");
     button.type = "button";
-    button.title = displayName;
-    button.setAttribute("aria-label", `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${getShopProductActionLabel(actionState, product.price)}`);
+    button.title = requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
+    button.setAttribute(
+      "aria-label",
+      `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(actionState, product.price)}`,
+    );
     button.append(createProductIcon(iconUrl));
-    if (actionState === "buy" || actionState === "no-gold") {
-      button.append(createProductStats("DM", damage, product.price));
+    if (actionState === "buy" || actionState === "no-gold" || actionState === "locked") {
+      button.append(createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price, requirementLabel));
     }
     button.addEventListener("click", () => {
       previewProduct = product;
@@ -437,11 +446,12 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function createPreviewBuyButton(product: WeaponProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const requirementLabel = getShopProductRequirementLabel(hero, product.itemIds);
 
     button.className = "armory-shop__selected-buy";
     button.type = "button";
-    button.disabled = actionState === "equipped" || actionState === "no-gold";
-    button.textContent = getShopProductActionLabel(actionState, product.price);
+    button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "locked" || actionState === "max";
+    button.textContent = actionState === "locked" && requirementLabel ? requirementLabel : getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       previewProduct = undefined;
       options.onBuy(product);
@@ -635,16 +645,30 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   return icon;
 }
 
-function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {
+function createProductStats(statLabel: string, statIconUrl: string, stat: number, price: number, requirementLabel = ""): HTMLElement {
   const stats = document.createElement("span");
   const statNode = document.createElement("span");
+  const statIcon = document.createElement("img");
+  const statValue = document.createElement("span");
   const priceNode = document.createElement("span");
 
   stats.className = "armory-shop__product-stats";
   statNode.className = "armory-shop__product-stat";
-  statNode.textContent = `${statLabel} ${stat}`;
-  priceNode.className = "armory-shop__product-price";
-  appendPriceContent(priceNode, price);
+  statNode.setAttribute("aria-label", `${statLabel} ${stat}`);
+  statIcon.className = "armory-shop__product-stat-icon";
+  statIcon.src = statIconUrl;
+  statIcon.alt = "";
+  statIcon.decoding = "async";
+  statIcon.draggable = false;
+  statValue.className = "armory-shop__product-stat-value";
+  statValue.textContent = String(stat);
+  priceNode.className = requirementLabel ? "armory-shop__product-requirement" : "armory-shop__product-price";
+  if (requirementLabel) {
+    priceNode.textContent = requirementLabel;
+  } else {
+    appendPriceContent(priceNode, price);
+  }
+  statNode.append(statIcon, statValue);
   stats.append(statNode, priceNode);
 
   return stats;

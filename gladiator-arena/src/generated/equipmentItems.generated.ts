@@ -861,7 +861,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_axe_01","name":"Axe 01","price":0,"itemIds":["generated_equipment_weapon_axe_01"],"categoryId":"axes"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"requirements":{"agility":10},"weaponClass":"bow"},
     assetKeys: {"weaponMainAssetKey":"weapon-bow-01"},
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
@@ -872,7 +872,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":100,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":50,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"shuriken"},

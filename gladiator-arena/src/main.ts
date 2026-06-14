@@ -31,6 +31,7 @@ import {
   DEFAULT_ARENA_TIER_ID,
   allocateHeroSkillPoints,
   applyCombatReward,
+  areHeroItemsConsumable,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
   createArenaBossEncounter,
@@ -43,6 +44,7 @@ import {
   getArenaRandomOpponentsForTier,
   getArenaTierDefinition,
   getBattleReward,
+  isHeroConsumableItem,
   type ArenaBossDefinition,
   type ArenaBossId,
   type ArenaEncounter,
@@ -742,7 +744,7 @@ function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): bool
   return product.itemIds.some((itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
 
-    return Boolean(item && HERO_PORTRAIT_REFRESH_SLOTS.has(item.equipmentSlot));
+    return Boolean(item && !isHeroConsumableItem(item) && HERO_PORTRAIT_REFRESH_SLOTS.has(item.equipmentSlot));
   });
 }
 
@@ -752,7 +754,9 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
   itemIds.forEach((itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
 
-    equipment[item.equipmentSlot] = itemId;
+    if (item && !isHeroConsumableItem(item)) {
+      equipment[item.equipmentSlot] = itemId;
+    }
   });
 
   return equipment;
@@ -760,6 +764,11 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
   cancelArmoryPreviewPrewarm();
+  if (areHeroItemsConsumable(product.itemIds)) {
+    clearShopPreview();
+    return;
+  }
+
   previewShopEquipment(createShopPreviewEquipment(product.itemIds));
 }
 
