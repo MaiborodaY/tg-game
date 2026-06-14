@@ -83,7 +83,15 @@ import {
 import { getCameraTarget } from "./arenaCamera";
 import type { CameraTarget, CameraViewport } from "./arenaCamera";
 import { getBattleSafeArea } from "./battleSafeArea";
-import { getFighterMaxArmor, getFighterMaxHp, getFighterMaxStamina, type ActionId, type CombatState, type FighterState } from "./combat";
+import {
+  getFighterMaxArmor,
+  getFighterMaxHp,
+  getFighterMaxStamina,
+  isRangedWeaponClass,
+  type ActionId,
+  type CombatState,
+  type FighterState,
+} from "./combat";
 import {
   createDefaultHeroEquipment,
   DEFAULT_ENEMY_VISUAL_PRESET,
@@ -5113,15 +5121,16 @@ function animateAction(
   const actionAnimations: Promise<void>[] = [];
 
   if (isAttackBodyAnimationKey(actionId)) {
-    const bodyAnimationKey: BodyAnimationKey = weaponClass === "bow" ? "bowShot" : actionId;
+    const isRangedWeapon = isRangedWeaponClass(weaponClass);
+    const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
 
     actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey)));
-    if (weaponClass !== "bow" && areArenaVfxEnabled()) {
+    if (!isRangedWeapon && areArenaVfxEnabled()) {
       showSlashArc(target, actor, actionId, direction);
     }
   }
 
-  if (animationAmount > 0 && weaponClass !== "bow") {
+  if (animationAmount > 0 && !isRangedWeaponClass(weaponClass)) {
     actionAnimations.push(
       new Promise((resolve) => {
         target.tweens.add({

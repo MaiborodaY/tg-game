@@ -111,6 +111,16 @@ test("city shop mode has a screen frame and compact title plaque", () => {
 test("city category buttons use icons without visible text labels", () => {
   assert.equal(armoryShopSource.includes("button.setAttribute(\"aria-label\", category.name);"), true);
   assert.equal(weaponShopSource.includes("button.setAttribute(\"aria-label\", category.name);"), true);
+  assert.equal(weaponShopSource.includes('id: "maces"'), true);
+  assert.equal(weaponShopSource.includes('name: "Maces"'), true);
+  assert.equal(weaponShopSource.includes('products: getGeneratedWeaponProducts("maces")'), true);
+  assert.equal(weaponShopSource.includes('id: "spears"'), true);
+  assert.equal(weaponShopSource.includes('name: "Spears"'), true);
+  assert.equal(weaponShopSource.includes('products: getGeneratedWeaponProducts("spears")'), true);
+  assert.equal(weaponShopSource.includes('id: "shurikens"'), true);
+  assert.equal(weaponShopSource.includes('name: "Shurikens"'), true);
+  assert.equal(weaponShopSource.includes('products: getGeneratedWeaponProducts("shurikens")'), true);
+  assert.equal(weaponShopSource.includes('range: "ranged"'), true);
   assert.equal(armoryShopSource.includes("createCategoryLabel"), false);
   assert.equal(armoryShopSource.includes("armory-shop__category-label"), false);
   assert.equal(stylesSource.includes("armory-shop__category-label"), false);
@@ -148,10 +158,13 @@ test("city shop meta panel stacks gold and level as readable counters", () => {
   assert.equal(stylesSource.includes(".armory-shop--city-mode .armory-shop__level-value"), true);
 });
 
-test("city armory product cards use three columns while weapon shop keeps four", () => {
+test("city shops keep product cards wide around their side rails", () => {
   assert.equal(stylesSource.includes("--shop-city-product-columns: 3;"), true);
   assert.equal(stylesSource.includes("--shop-city-product-row-height: clamp(104px, 15.8dvh, 124px);"), true);
-  assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-product-columns: 4;[\s\S]*\}/);
+  assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-product-columns: 3;[\s\S]*\}/);
+  assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__menu\s*\{[\s\S]*var\(--shop-city-rail-width\) minmax\(0, 1fr\) var\(--shop-city-rail-width\);[\s\S]*\}/);
+  assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__category-rail--ranged\s*\{[\s\S]*order: 1;[\s\S]*\}/);
+  assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__category-rail--melee\s*\{[\s\S]*order: 3;[\s\S]*\}/);
 });
 
 test("shop product cards reuse the profile backdrop texture with deeper rarity color", () => {
@@ -186,11 +199,12 @@ test("city shop confirm strip is embedded in the shop header while back floats o
 
   [armoryShopSource, weaponShopSource].forEach((source) => {
     assert.equal(source.includes("header.append(title, selected, headerMeta);"), true);
-    assert.equal(source.includes("menu.append(tray, categoryRail, back);"), true);
     assert.equal(source.includes("header.append(back, title, selected, headerMeta);"), false);
     assert.equal(source.includes("panel.append(selected);"), false);
     assert.equal(source.includes("menu.append(tray, selected, categoryRail);"), false);
   });
+  assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail, back);"), true);
+  assert.equal(weaponShopSource.includes("menu.append(rangedCategoryRail, tray, meleeCategoryRail, back);"), true);
 
   assert.equal(stylesSource.includes("--shop-city-header-height: 72px;"), true);
   assert.match(cityHeaderRule, /overflow: visible;/);

@@ -8,7 +8,7 @@ import {
   getFighterClinchRange,
   getActionTitle,
   isFighterInClinchRange,
-  isBowFighter,
+  isRangedFighter,
   type ActionId,
   type CombatState,
 } from "./combat";
@@ -289,7 +289,7 @@ function getClassicWheelMode(state: CombatState, previewWheelMode?: ClassicActio
 
   const isPlayerInClinch = isFighterInClinchRange(state, "player");
 
-  if (isBowFighter(state.player) && !isPlayerInClinch) {
+  if (isRangedFighter(state.player) && !isPlayerInClinch) {
     return "bow-distance";
   }
 

@@ -223,6 +223,36 @@ test("weapon class defaults to sword and can be inferred for generated weapons",
     }),
     "axe",
   );
+  assert.equal(
+    hero.getHeroItemWeaponClass({
+      id: "generated_equipment_weapon_mace_01",
+      name: "Mace 01",
+      kind: "weapon",
+      equipmentSlot: "weaponMain",
+      damageBonus: 1,
+    }),
+    "mace",
+  );
+  assert.equal(
+    hero.getHeroItemWeaponClass({
+      id: "generated_equipment_weapon_spear_01",
+      name: "Spear 01",
+      kind: "weapon",
+      equipmentSlot: "weaponMain",
+      damageBonus: 1,
+    }),
+    "spear",
+  );
+  assert.equal(
+    hero.getHeroItemWeaponClass({
+      id: "generated_equipment_weapon_shuriken_01",
+      name: "Shuriken 01",
+      kind: "weapon",
+      equipmentSlot: "weaponMain",
+      damageBonus: 1,
+    }),
+    "shuriken",
+  );
 });
 
 test("cloth and sword stay common while leather catalog items are uncommon", () => {

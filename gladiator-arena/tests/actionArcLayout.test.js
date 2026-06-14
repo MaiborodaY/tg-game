@@ -39,6 +39,7 @@ function loadActionArcLayoutModule() {
           return {
             MAX_STAMINA: 10,
             isFighterInClinchRange: (state, actor) => state.distance <= Math.max(0, state[actor]?.clinchRangeBonus ?? 0),
+            isRangedFighter: (fighter) => fighter?.weaponClass === "bow" || fighter?.weaponClass === "shuriken",
           };
         }
 
@@ -96,6 +97,19 @@ test("expanded clinch range swaps to attack controls before physical contact", (
 
 test("bow distance arc shows ranged attacks instead of lunge", () => {
   const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, weaponClass: "bow" } }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["back", "heavy", "medium", "light", "taunt"],
+  );
+  assert.equal(labels.light, "SHOT");
+  assert.equal(labels.medium, "AIM");
+  assert.equal(labels.heavy, "POWER");
+});
+
+test("shuriken distance arc uses ranged attacks like bows", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, weaponClass: "shuriken" } }));
   const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
 
   assert.deepEqual(

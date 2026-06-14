@@ -147,8 +147,9 @@ test("arena action turns can wait for animation completion", () => {
 
 test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes('type HeroWeaponClass'), true);
-  assert.equal(arenaSceneSource.includes('weaponClass === "bow" ? "bowShot" : actionId'), true);
-  assert.equal(arenaSceneSource.includes('weaponClass !== "bow" && areArenaVfxEnabled()'), true);
+  assert.equal(arenaSceneSource.includes('isRangedWeaponClass(weaponClass)'), true);
+  assert.equal(arenaSceneSource.includes('isRangedWeapon ? "bowShot" : actionId'), true);
+  assert.equal(arenaSceneSource.includes("!isRangedWeapon && areArenaVfxEnabled()"), true);
   assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit")'), true);
   assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);

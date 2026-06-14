@@ -64,3 +64,16 @@ test("enemy bow fighters also use ranged attack rules", () => {
   assert.equal(combat.canUseAction(state, "heavy", "enemy"), true);
   assert.equal(combat.canUseAction(state, "lunge", "enemy"), false);
 });
+
+test("shuriken fighters use bow-style ranged attack rules", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "shuriken";
+  state.distance = 3;
+  state.enemyPosition = 3;
+
+  assert.equal(combat.canUseAction(state, "light"), true);
+  assert.equal(combat.canUseAction(state, "medium"), true);
+  assert.equal(combat.canUseAction(state, "heavy"), true);
+  assert.equal(combat.canUseAction(state, "lunge"), false);
+});

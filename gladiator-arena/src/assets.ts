@@ -20,6 +20,12 @@ export const SHOP_CATEGORY_HEAD_ICON_ASSET_URL = new URL("./assets/ui/shop/categ
 export const SHOP_CATEGORY_BODY_ICON_ASSET_URL = new URL("./assets/ui/shop/category-body.webp", import.meta.url).href;
 export const SHOP_CATEGORY_ARMS_ICON_ASSET_URL = new URL("./assets/ui/shop/category-arms.webp", import.meta.url).href;
 export const SHOP_CATEGORY_LEGS_ICON_ASSET_URL = new URL("./assets/ui/shop/category-legs.webp", import.meta.url).href;
+export const SHOP_CATEGORY_SWORD_ICON_ASSET_URL = new URL("./assets/ui/shop/category-sword.webp", import.meta.url).href;
+export const SHOP_CATEGORY_AXE_ICON_ASSET_URL = new URL("./assets/ui/shop/category-axe.webp", import.meta.url).href;
+export const SHOP_CATEGORY_MACE_ICON_ASSET_URL = new URL("./assets/ui/shop/category-mace.webp", import.meta.url).href;
+export const SHOP_CATEGORY_SPEAR_ICON_ASSET_URL = new URL("./assets/ui/shop/category-spear.webp", import.meta.url).href;
+export const SHOP_CATEGORY_BOW_ICON_ASSET_URL = new URL("./assets/ui/shop/category-bow.webp", import.meta.url).href;
+export const SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL = new URL("./assets/ui/shop/category-shuriken.webp", import.meta.url).href;
 
 export const CITY_BACKGROUND_ASSET_KEY = "city-menu-bg";
 export const CITY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city.webp", import.meta.url).href;

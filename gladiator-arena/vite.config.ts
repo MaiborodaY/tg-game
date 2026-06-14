@@ -375,7 +375,7 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
-  weaponClass?: "sword" | "axe" | "bow";
+  weaponClass?: "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken";
   assetKeys: Record<string, string>;
   equipmentTuning: RigPartTuning;
   asset: {
@@ -2674,7 +2674,7 @@ function readWeaponClass(
     return fallback;
   }
 
-  if (value === "sword" || value === "axe" || value === "bow") {
+  if (value === "sword" || value === "axe" || value === "bow" || value === "mace" || value === "spear" || value === "shuriken") {
     return value;
   }
 
@@ -2780,6 +2780,18 @@ function getWeaponCategoryId(assetKey: string, name: string, weaponClass = getWe
     return "bows";
   }
 
+  if (weaponClass === "shuriken") {
+    return "shurikens";
+  }
+
+  if (weaponClass === "mace") {
+    return "maces";
+  }
+
+  if (weaponClass === "spear") {
+    return "spears";
+  }
+
   return "swords";
 }
 
@@ -2790,8 +2802,20 @@ function getWeaponClassFromText(value: string): NonNullable<GeneratedEquipmentJs
     return "bow";
   }
 
+  if (text.includes("shuriken")) {
+    return "shuriken";
+  }
+
   if (text.includes("axe")) {
     return "axe";
+  }
+
+  if (text.includes("mace")) {
+    return "mace";
+  }
+
+  if (text.includes("spear")) {
+    return "spear";
   }
 
   return "sword";

@@ -160,6 +160,18 @@ test("city equipment inventory uses display names instead of raw item names", ()
   assert.equal(cityHeroUiSource.includes('button.setAttribute("aria-label", getShopProductDisplayName(product.name));'), true);
 });
 
+test("city equipment inventory exposes generated weapon categories", () => {
+  assert.equal(cityHeroUiSource.includes('id: "shurikens", label: "Shurikens", side: "weapon", iconUrl: SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL'), true);
+  assert.equal(cityHeroUiSource.includes('id: "maces", label: "Maces", side: "weapon", iconUrl: SHOP_CATEGORY_MACE_ICON_ASSET_URL'), true);
+  assert.equal(cityHeroUiSource.includes('id: "spears", label: "Spears", side: "weapon", iconUrl: SHOP_CATEGORY_SPEAR_ICON_ASSET_URL'), true);
+  assert.equal(cityHeroUiSource.includes('weaponClass === "shuriken"'), true);
+  assert.equal(cityHeroUiSource.includes('return "shurikens";'), true);
+  assert.equal(cityHeroUiSource.includes('weaponClass === "mace"'), true);
+  assert.equal(cityHeroUiSource.includes('return "maces";'), true);
+  assert.equal(cityHeroUiSource.includes('weaponClass === "spear"'), true);
+  assert.equal(cityHeroUiSource.includes('return "spears";'), true);
+});
+
 test("church button can be wired while keeping the locked visual state", () => {
   assert.equal(html.includes('id="churchButton"'), true);
   assert.equal(html.includes('city-menu__button city-menu__button--locked" type="button" aria-disabled="true"'), true);

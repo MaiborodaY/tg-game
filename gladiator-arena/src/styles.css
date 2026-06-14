@@ -4378,7 +4378,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop.armory-shop--city-mode {
-  --shop-city-product-columns: 4;
+  --shop-city-product-columns: 3;
 }
 
 .armory-shop--city-mode.armory-shop--has-subcategories {
@@ -4512,6 +4512,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__tray {
+  order: 2;
   grid-template-rows: var(--shop-city-header-height) var(--shop-city-products-height);
 }
 
@@ -4553,6 +4554,23 @@ body.debug-active .city-menu__portrait-button:active {
     -8px 0 16px rgba(22, 7, 3, 0.34);
   pointer-events: auto;
   animation: armory-shop-slide-in 260ms cubic-bezier(0.22, 0.9, 0.26, 1) both;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__category-rail--ranged {
+  order: 1;
+  border-right: 2px solid #1b0703;
+  border-left: 0;
+  border-radius: 0 10px 0 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 211, 132, 0.18),
+    inset -5px 0 9px rgba(255, 211, 132, 0.08),
+    inset 4px 0 8px rgba(0, 0, 0, 0.42),
+    8px 0 16px rgba(22, 7, 3, 0.34);
+  animation-name: armory-shop-slide-in-left;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__category-rail--melee {
+  order: 3;
 }
 
 .armory-shop--city-mode .armory-shop__category-rail::before {
@@ -4702,6 +4720,17 @@ body.debug-active .city-menu__portrait-button:active {
     radial-gradient(ellipse at 50% 16%, rgba(255, 211, 132, 0.1), transparent 58%);
   opacity: 0.9;
   pointer-events: none;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__category-rail--ranged::before {
+  border-radius: 0 7px 0 0;
+  background:
+    linear-gradient(270deg, rgba(255, 240, 189, 0.08), transparent 18%),
+    linear-gradient(180deg, rgba(255, 211, 132, 0.06), transparent 38%, rgba(0, 0, 0, 0.16));
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__menu {
+  grid-template-columns: var(--shop-city-rail-width) minmax(0, 1fr) var(--shop-city-rail-width);
 }
 
 .armory-shop--city-mode .armory-shop__header::after {
@@ -5958,6 +5987,18 @@ body.debug-active .city-menu__portrait-button:active {
   from {
     opacity: 0;
     transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes armory-shop-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
   }
 
   to {

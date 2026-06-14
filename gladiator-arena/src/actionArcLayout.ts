@@ -14,7 +14,7 @@ import {
   GAME_WIDTH,
 } from "./arenaLayout";
 import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
-import { MAX_STAMINA, isFighterInClinchRange, type ActionId, type CombatState } from "./combat";
+import { MAX_STAMINA, isFighterInClinchRange, isRangedFighter, type ActionId, type CombatState } from "./combat";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
@@ -193,7 +193,7 @@ export function getActionArcLayout(state: CombatState, tuning?: StageLayoutTunin
 function getActionArcSlots(state: CombatState): ActionArcSlot[] {
   const isPlayerInClinch = isFighterInClinchRange(state, "player");
 
-  if (!isPlayerInClinch && state.player.weaponClass === "bow") {
+  if (!isPlayerInClinch && isRangedFighter(state.player)) {
     return BOW_DISTANCE_SLOTS;
   }
 
@@ -238,7 +238,7 @@ function getRawActionArcButtons(
 }
 
 function getActionLabel(actionId: ActionId, state: CombatState): { label: string; detail: string } {
-  if (state.player.weaponClass === "bow") {
+  if (isRangedFighter(state.player)) {
     return BOW_ACTION_LABELS[actionId] ?? ACTION_LABELS[actionId];
   }
 

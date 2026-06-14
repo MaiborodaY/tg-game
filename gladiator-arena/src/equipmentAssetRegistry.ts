@@ -239,8 +239,20 @@ function getWeaponClassFromText(value: string): HeroItemDefinition["weaponClass"
     return "bow";
   }
 
+  if (text.includes("shuriken")) {
+    return "shuriken";
+  }
+
   if (text.includes("axe")) {
     return "axe";
+  }
+
+  if (text.includes("mace")) {
+    return "mace";
+  }
+
+  if (text.includes("spear")) {
+    return "spear";
   }
 
   return "sword";

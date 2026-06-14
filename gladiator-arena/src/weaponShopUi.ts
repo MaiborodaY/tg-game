@@ -1,5 +1,14 @@
 import { type HeroItemId, type HeroState } from "./hero";
-import { DAMAGE_HIT_ICON_ASSET_URL, SHOP_GOLD_COIN_ICON_ASSET_URL } from "./assets";
+import {
+  DAMAGE_HIT_ICON_ASSET_URL,
+  SHOP_CATEGORY_AXE_ICON_ASSET_URL,
+  SHOP_CATEGORY_BOW_ICON_ASSET_URL,
+  SHOP_CATEGORY_MACE_ICON_ASSET_URL,
+  SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
+  SHOP_CATEGORY_SPEAR_ICON_ASSET_URL,
+  SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
+  SHOP_GOLD_COIN_ICON_ASSET_URL,
+} from "./assets";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
@@ -31,6 +40,8 @@ interface WeaponCategory {
   id: string;
   name: string;
   shortLabel: string;
+  range: "melee" | "ranged";
+  iconUrl?: string;
   products: WeaponProduct[];
   emptyText?: string;
 }
@@ -52,23 +63,59 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
     id: "swords",
     name: "Swords",
     shortLabel: "SW",
+    range: "melee",
+    iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("swords"),
   },
   {
     id: "axes",
     name: "Axes",
     shortLabel: "AX",
+    range: "melee",
+    iconUrl: SHOP_CATEGORY_AXE_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("axes"),
     emptyText: "Axes soon",
+  },
+  {
+    id: "maces",
+    name: "Maces",
+    shortLabel: "MC",
+    range: "melee",
+    iconUrl: SHOP_CATEGORY_MACE_ICON_ASSET_URL,
+    products: getGeneratedWeaponProducts("maces"),
+    emptyText: "Maces soon",
+  },
+  {
+    id: "spears",
+    name: "Spears",
+    shortLabel: "SP",
+    range: "melee",
+    iconUrl: SHOP_CATEGORY_SPEAR_ICON_ASSET_URL,
+    products: getGeneratedWeaponProducts("spears"),
+    emptyText: "Spears soon",
   },
   {
     id: "bows",
     name: "Bows",
     shortLabel: "BW",
+    range: "ranged",
+    iconUrl: SHOP_CATEGORY_BOW_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("bows"),
     emptyText: "Bows soon",
   },
+  {
+    id: "shurikens",
+    name: "Shurikens",
+    shortLabel: "SH",
+    range: "ranged",
+    iconUrl: SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
+    products: getGeneratedWeaponProducts("shurikens"),
+    emptyText: "Shurikens soon",
+  },
 ];
+
+const MELEE_WEAPON_CATEGORIES = WEAPON_CATEGORIES.filter((category) => category.range === "melee");
+const RANGED_WEAPON_CATEGORIES = WEAPON_CATEGORIES.filter((category) => category.range === "ranged");
 
 const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
 
@@ -113,6 +160,14 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   const categoryRail = document.createElement("div");
   categoryRail.className = "armory-shop__category-rail";
   categoryRail.style.setProperty("--shop-category-count", String(WEAPON_CATEGORIES.length));
+
+  const rangedCategoryRail = document.createElement("div");
+  rangedCategoryRail.className = "armory-shop__category-rail armory-shop__category-rail--ranged";
+  rangedCategoryRail.style.setProperty("--shop-category-count", String(RANGED_WEAPON_CATEGORIES.length));
+
+  const meleeCategoryRail = document.createElement("div");
+  meleeCategoryRail.className = "armory-shop__category-rail armory-shop__category-rail--melee";
+  meleeCategoryRail.style.setProperty("--shop-category-count", String(MELEE_WEAPON_CATEGORIES.length));
 
   const tray = document.createElement("div");
   tray.className = "armory-shop__tray";
@@ -179,7 +234,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   if (usesCityHeroPreview) {
     header.append(title, selected, headerMeta);
     tray.append(header, content, scrollIndicator);
-    menu.append(tray, categoryRail, back);
+    menu.append(rangedCategoryRail, tray, meleeCategoryRail, back);
   } else {
     header.append(back, title, headerMeta);
     tray.append(header, selected, content, scrollIndicator);
@@ -249,6 +304,8 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     levelValue.textContent = String(hero.level);
     level.setAttribute("aria-label", `Level ${hero.level}`);
     categoryRail.replaceChildren();
+    rangedCategoryRail.replaceChildren();
+    meleeCategoryRail.replaceChildren();
     content.replaceChildren();
     selected.replaceChildren();
     clearScrollIndicator();
@@ -259,9 +316,12 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     content.classList.toggle("armory-shop__content--has-selection", Boolean(previewProduct));
     content.classList.toggle("armory-shop__content--confirm", false);
 
-    WEAPON_CATEGORIES.forEach((category) => {
-      categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
-    });
+    if (usesCityHeroPreview) {
+      renderCategoryRail(rangedCategoryRail, RANGED_WEAPON_CATEGORIES, selectedCategory.id);
+      renderCategoryRail(meleeCategoryRail, MELEE_WEAPON_CATEGORIES, selectedCategory.id);
+    } else {
+      renderCategoryRail(categoryRail, WEAPON_CATEGORIES, selectedCategory.id);
+    }
 
     if (previewProduct) {
       selected.append(createSelectedProductStrip(previewProduct, hero));
@@ -287,9 +347,14 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     unmountPreview = options.mountPreview(preview);
   }
 
+  function renderCategoryRail(rail: HTMLElement, categories: readonly WeaponCategory[], activeCategoryId: string): void {
+    rail.style.setProperty("--shop-category-count", String(categories.length));
+    rail.replaceChildren(...categories.map((category) => createCategoryButton(category, category.id === activeCategoryId)));
+  }
+
   function createCategoryButton(category: WeaponCategory, isActive: boolean): HTMLButtonElement {
     const button = document.createElement("button");
-    const iconUrl = getShopProductIconUrl(category.products.flatMap((product) => product.itemIds));
+    const iconUrl = category.iconUrl ?? getShopProductIconUrl(category.products.flatMap((product) => product.itemIds));
 
     button.className = "armory-shop__category-button";
     button.classList.toggle("armory-shop__category-button--active", isActive);

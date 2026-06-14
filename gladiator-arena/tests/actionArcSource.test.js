@@ -158,7 +158,7 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
 });
 
 test("classic bow distance layout keeps ranged attacks visible", () => {
-  assert.equal(classicActionBarSource.includes("isBowFighter(state.player) && !isPlayerInClinch"), true);
+  assert.equal(classicActionBarSource.includes("isRangedFighter(state.player) && !isPlayerInClinch"), true);
   assert.equal(classicActionBarSource.includes("const previewWheelMode = options.getPreviewWheelMode?.();"), true);
   assert.equal(classicActionBarSource.includes("getClassicWheelMode(state, previewWheelMode)"), true);
   assert.equal(classicActionBarSource.includes("function getClassicWheelModeFromTuningMode"), true);

@@ -282,6 +282,12 @@ test("vite dev middleware can promote weapon equipment into the weapon shop", ()
   assert.match(source, /weaponClass/);
   assert.match(source, /readWeaponClass/);
   assert.match(source, /getWeaponClassFromText/);
+  assert.match(source, /value === "mace"/);
+  assert.match(source, /value === "spear"/);
+  assert.match(source, /value === "shuriken"/);
+  assert.match(source, /return "maces"/);
+  assert.match(source, /return "spears"/);
+  assert.match(source, /return "shurikens"/);
   assert.match(source, /getEquipmentAssetSourcePrefix\(kind\)/);
   assert.match(source, /assets\/fighters\/weapons\//);
   assert.match(source, /weaponProduct/);

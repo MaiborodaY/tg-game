@@ -318,12 +318,20 @@ export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
   return fighter.weaponClass ?? "sword";
 }
 
+export function isRangedWeaponClass(weaponClass: HeroWeaponClass | undefined): boolean {
+  return weaponClass === "bow" || weaponClass === "shuriken";
+}
+
+export function isRangedFighter(fighter: FighterState): boolean {
+  return isRangedWeaponClass(getFighterWeaponClass(fighter));
+}
+
 export function isBowFighter(fighter: FighterState): boolean {
   return getFighterWeaponClass(fighter) === "bow";
 }
 
 export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
-  if (actor && isBowFighter(actor)) {
+  if (actor && isRangedFighter(actor)) {
     if (actionId === "light") {
       return "Quick Shot";
     }
@@ -381,7 +389,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionId === "lunge") {
-    if (isBowFighter(fighter)) {
+    if (isRangedFighter(fighter)) {
       return false;
     }
 
@@ -498,11 +506,11 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyLowStamina = current.enemy.stamina <= 3;
   const enemyLowHp = current.enemy.hp <= 10;
   const playerLowHp = current.player.hp <= 9;
-  const enemyHasBow = isBowFighter(current.enemy);
+  const enemyHasRangedWeapon = isRangedFighter(current.enemy);
 
   for (const id of available) {
     if (!isFighterInClinchRange(current, "enemy")) {
-      if (enemyHasBow) {
+      if (enemyHasRangedWeapon) {
         if (id === "heavy") {
           weighted.push(id, playerLowHp ? id : "medium");
         } else if (id === "medium") {
@@ -716,7 +724,7 @@ function addActionLog(
 }
 
 function getActionRangeMax(action: ActionConfig, attacker: FighterState): number | undefined {
-  if (isBowFighter(attacker) && isAttackAction(action.id)) {
+  if (isRangedFighter(attacker) && isAttackAction(action.id)) {
     return MAX_DISTANCE;
   }
 

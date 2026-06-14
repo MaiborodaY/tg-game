@@ -1,10 +1,16 @@
 import type { ArenaDebugTuning } from "./debugTuning";
 import {
   DAMAGE_BLOCK_ICON_ASSET_URL,
+  SHOP_CATEGORY_AXE_ICON_ASSET_URL,
   SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
+  SHOP_CATEGORY_BOW_ICON_ASSET_URL,
   SHOP_CATEGORY_BODY_ICON_ASSET_URL,
   SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
   SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
+  SHOP_CATEGORY_MACE_ICON_ASSET_URL,
+  SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
+  SHOP_CATEGORY_SPEAR_ICON_ASSET_URL,
+  SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
 } from "./assets";
 import { getGeneratedArmoryProductsForSlots, type ArmoryProduct } from "./armoryShopUi";
 import { MAX_HP, MAX_STAMINA, actions } from "./combat";
@@ -32,7 +38,7 @@ const HERO_PROFILE_BASE_REST_HP = actions.rest.heal ?? 0;
 const HERO_PROFILE_BASE_REST_STAMINA = actions.rest.restore ?? 0;
 
 type CityHeroProfileStatKey = "damage" | "hp" | "stamina" | "movement" | "recovery";
-type CityEquipmentCategoryId = "swords" | "bows" | "axes" | "head" | "body" | "arms" | "legs";
+type CityEquipmentCategoryId = "swords" | "bows" | "shurikens" | "axes" | "maces" | "spears" | "head" | "body" | "arms" | "legs";
 type CityEquipmentCategorySide = "weapon" | "armor";
 
 interface CityEquipmentCategory {
@@ -73,9 +79,12 @@ const CITY_EQUIPMENT_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
 };
 
 const CITY_EQUIPMENT_WEAPON_CATEGORIES: readonly CityEquipmentCategory[] = [
-  { id: "swords", label: "Swords", side: "weapon" },
-  { id: "bows", label: "Bows", side: "weapon" },
-  { id: "axes", label: "Axes", side: "weapon" },
+  { id: "swords", label: "Swords", side: "weapon", iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL },
+  { id: "bows", label: "Bows", side: "weapon", iconUrl: SHOP_CATEGORY_BOW_ICON_ASSET_URL },
+  { id: "shurikens", label: "Shurikens", side: "weapon", iconUrl: SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL },
+  { id: "axes", label: "Axes", side: "weapon", iconUrl: SHOP_CATEGORY_AXE_ICON_ASSET_URL },
+  { id: "maces", label: "Maces", side: "weapon", iconUrl: SHOP_CATEGORY_MACE_ICON_ASSET_URL },
+  { id: "spears", label: "Spears", side: "weapon", iconUrl: SHOP_CATEGORY_SPEAR_ICON_ASSET_URL },
 ];
 
 const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
@@ -882,8 +891,20 @@ function getCityWeaponCategoryId(item: (typeof HERO_ITEM_CATALOG)[HeroItemId]): 
     return "bows";
   }
 
+  if (weaponClass === "shuriken") {
+    return "shurikens";
+  }
+
   if (weaponClass === "axe") {
     return "axes";
+  }
+
+  if (weaponClass === "mace") {
+    return "maces";
+  }
+
+  if (weaponClass === "spear") {
+    return "spears";
   }
 
   return "swords";
@@ -952,8 +973,20 @@ function getProfileEquipmentCategoryId(
     return "bows";
   }
 
+  if (weaponClass === "shuriken") {
+    return "shurikens";
+  }
+
   if (weaponClass === "axe") {
     return "axes";
+  }
+
+  if (weaponClass === "mace") {
+    return "maces";
+  }
+
+  if (weaponClass === "spear") {
+    return "spears";
   }
 
   return "swords";
