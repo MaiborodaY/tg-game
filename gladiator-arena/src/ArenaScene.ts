@@ -131,6 +131,7 @@ import {
 } from "./debugTuning";
 import { emitDebugCharacterEquipmentDelta, emitDebugCharacterEquipmentSelect } from "./debugCharacterEquipmentBridge";
 import { getPlayerSettings, subscribePlayerSettings } from "./settingsMenu";
+import { markArmoryPreviewProfile, profileArmoryPreviewSpan } from "./shopPreviewProfiler";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -1489,14 +1490,25 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   previewPlayerEquipment(equipment: HeroEquipment): void {
-    const changedSlots = getChangedHeroEquipmentSlots(this.getDisplayedEquipment(), equipment);
+    const changedSlots = profileArmoryPreviewSpan(
+      "city.previewPlayerEquipment.changedSlots",
+      () => getChangedHeroEquipmentSlots(this.getDisplayedEquipment(), equipment),
+    );
+    markArmoryPreviewProfile("city.previewPlayerEquipment.changedSlots.result", { changedSlots });
 
     if (changedSlots.length === 0) {
+      markArmoryPreviewProfile("city.previewPlayerEquipment.noChangedSlots");
       return;
     }
 
-    this.previewEquipment = { ...equipment };
-    this.syncPlayerEquipment(changedSlots);
+    profileArmoryPreviewSpan("city.previewPlayerEquipment.copyEquipment", () => {
+      this.previewEquipment = { ...equipment };
+    });
+    profileArmoryPreviewSpan(
+      "city.previewPlayerEquipment.syncPlayerEquipment",
+      () => this.syncPlayerEquipment(changedSlots),
+      { changedSlots },
+    );
   }
 
   prewarmPlayerEquipmentItem(itemId: HeroItemId): void {
@@ -1558,9 +1570,17 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
-    syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots, this.previewEquipment);
+    profileArmoryPreviewSpan(
+      "city.syncPlayerEquipment.syncPaperDollEquipmentState",
+      () => syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots, this.previewEquipment),
+      { changedSlots },
+    );
     if (this.fighter) {
-      applyCityHeroLighting(this.fighter, this.cityLightingAmount, changedSlots);
+      profileArmoryPreviewSpan(
+        "city.syncPlayerEquipment.applyCityHeroLighting",
+        () => applyCityHeroLighting(this.fighter!, this.cityLightingAmount, changedSlots),
+        { changedSlots },
+      );
     }
   }
 
@@ -3348,8 +3368,16 @@ function syncPaperDollEquipmentState(
     return;
   }
 
-  applyPaperDollEquipmentStateTuning(rig, slotKeys, equipmentOverride);
-  syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride);
+  profileArmoryPreviewSpan(
+    "paperDoll.syncEquipmentState.applyTuning",
+    () => applyPaperDollEquipmentStateTuning(rig, slotKeys, equipmentOverride),
+    { slotKeys },
+  );
+  profileArmoryPreviewSpan(
+    "paperDoll.syncEquipmentState.syncVisibility",
+    () => syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride),
+    { slotKeys },
+  );
 }
 
 function applyPaperDollEquipmentStateTuning(
@@ -3362,9 +3390,19 @@ function applyPaperDollEquipmentStateTuning(
   const equipmentItems = activeDebugTuning?.equipmentItems ?? DEFAULT_EQUIPMENT_ITEM_TUNING;
   const equipmentState = equipmentOverride ?? (rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState);
 
-  applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState, slotKeys);
-  if (rig.shadow && shouldSyncPaperDollShadowEquipment(rig)) {
-    applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment, equipmentItems, equipmentState, slotKeys);
+  profileArmoryPreviewSpan(
+    "paperDoll.applyEquipmentStateTuning.visibleRig",
+    () => applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState, slotKeys),
+    { slotKeys },
+  );
+  const shadow = rig.shadow;
+
+  if (shadow && shouldSyncPaperDollShadowEquipment(rig)) {
+    profileArmoryPreviewSpan(
+      "paperDoll.applyEquipmentStateTuning.shadowRig",
+      () => applyPaperDollEquipmentTuning(shadow.equipment, equipment, equipmentItems, equipmentState, slotKeys),
+      { slotKeys },
+    );
   }
 }
 
@@ -3453,33 +3491,54 @@ function syncPaperDollEquipmentVisibility(
     return;
   }
 
-  const shouldSyncShadowEquipment = shouldSyncPaperDollShadowEquipment(rig);
+  const shouldSyncShadowEquipment = profileArmoryPreviewSpan(
+    "paperDoll.syncEquipmentVisibility.shouldSyncShadow",
+    () => shouldSyncPaperDollShadowEquipment(rig),
+  );
 
-  syncPaperDollEquipmentVisuals(rig, slotKeys, equipmentOverride);
-  if (shouldSyncShadowEquipment && rig.shadow) {
-    tintPaperDollShadowObject(rig.shadow.root);
+  profileArmoryPreviewSpan(
+    "paperDoll.syncEquipmentVisibility.syncVisuals",
+    () => syncPaperDollEquipmentVisuals(rig, slotKeys, equipmentOverride),
+    { slotKeys, shouldSyncShadowEquipment },
+  );
+  const shadow = rig.shadow;
+
+  if (shouldSyncShadowEquipment && shadow) {
+    profileArmoryPreviewSpan("paperDoll.syncEquipmentVisibility.tintShadow", () => tintPaperDollShadowObject(shadow.root));
   }
 
-  const visibility = equipmentOverride
-    ? createPlayerEquipmentVisibility(equipmentOverride)
-    : rig.usesPlayerEquipment
-      ? createPlayerEquipmentVisibility()
-      : rig.equipmentState
-        ? createPlayerEquipmentVisibility(rig.equipmentState)
-      : undefined;
+  const visibility = profileArmoryPreviewSpan("paperDoll.syncEquipmentVisibility.createVisibility", () => (
+    equipmentOverride
+      ? createPlayerEquipmentVisibility(equipmentOverride)
+      : rig.usesPlayerEquipment
+        ? createPlayerEquipmentVisibility()
+        : rig.equipmentState
+          ? createPlayerEquipmentVisibility(rig.equipmentState)
+        : undefined
+  ));
 
   if (!visibility) {
     if (shouldSyncShadowEquipment) {
-      syncPaperDollShadowSilhouette(rig.shadow);
+      profileArmoryPreviewSpan("paperDoll.syncEquipmentVisibility.syncShadowSilhouette.empty", () => syncPaperDollShadowSilhouette(rig.shadow));
     }
     return;
   }
 
-  slotKeys.forEach((slotKey) => {
-    setPaperDollEquipmentSlotVisible(rig.equipment[slotKey], visibility[slotKey]);
-  });
+  profileArmoryPreviewSpan(
+    "paperDoll.syncEquipmentVisibility.applySlotVisibility",
+    () => {
+      slotKeys.forEach((slotKey) => {
+        setPaperDollEquipmentSlotVisible(rig.equipment[slotKey], visibility[slotKey]);
+      });
+    },
+    { slotKeys },
+  );
   if (shouldSyncShadowEquipment) {
-    syncPaperDollShadowSilhouette(rig.shadow, visibility, slotKeys);
+    profileArmoryPreviewSpan(
+      "paperDoll.syncEquipmentVisibility.syncShadowSilhouette",
+      () => syncPaperDollShadowSilhouette(shadow, visibility, slotKeys),
+      { slotKeys },
+    );
   }
 }
 
@@ -3529,10 +3588,23 @@ function syncPaperDollEquipmentVisuals(
   const shouldSyncShadowEquipment = shouldSyncPaperDollShadowEquipment(rig);
 
   slotKeys.forEach((slotKey) => {
-    const textureKey = getPlayerEquipmentSlotAssetKey(equipmentState, slotKey);
-    syncPaperDollEquipmentSlot(rig.equipment[slotKey], slotKey, textureKey);
+    const textureKey = profileArmoryPreviewSpan(
+      `paperDoll.slot.${slotKey}.getTextureKey`,
+      () => getPlayerEquipmentSlotAssetKey(equipmentState, slotKey),
+      { slotKey },
+    );
+
+    profileArmoryPreviewSpan(
+      `paperDoll.slot.${slotKey}.syncVisibleSlot`,
+      () => syncPaperDollEquipmentSlot(rig.equipment[slotKey], slotKey, textureKey),
+      { slotKey, textureKey },
+    );
     if (shouldSyncShadowEquipment) {
-      syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], slotKey, textureKey);
+      profileArmoryPreviewSpan(
+        `paperDoll.slot.${slotKey}.syncShadowSlot`,
+        () => syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], slotKey, textureKey),
+        { slotKey, textureKey },
+      );
     }
   });
 }

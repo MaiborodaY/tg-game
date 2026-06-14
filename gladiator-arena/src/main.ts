@@ -54,6 +54,13 @@ import {
 import { syncHudTuning } from "./hudTuning";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
+import {
+  ensureArmoryPreviewProfile,
+  finishArmoryPreviewProfile,
+  markArmoryPreviewProfile,
+  profileArmoryPreviewSpan,
+  startArmoryPreviewSpan,
+} from "./shopPreviewProfiler";
 import { isShopProductSealed } from "./shopPresentation";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
@@ -764,34 +771,54 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
-  cancelArmoryPreviewPrewarm();
-  const sequenceToken = beginShopPreviewAnimation();
+  ensureArmoryPreviewProfile(product, "main.handleShopPreview");
+  profileArmoryPreviewSpan("main.cancelArmoryPreviewPrewarm", cancelArmoryPreviewPrewarm);
+  const sequenceToken = profileArmoryPreviewSpan("main.beginShopPreviewAnimation", beginShopPreviewAnimation);
 
   if (!shouldStaggerArmoryPreview(product)) {
-    previewShopEquipment(createShopPreviewEquipment(product.itemIds));
+    const equipment = profileArmoryPreviewSpan("main.createPreviewEquipment.single", () => createShopPreviewEquipment(product.itemIds));
+
+    previewShopEquipment(equipment, "single");
+    finishArmoryPreviewProfile("single preview complete");
     return;
   }
 
-  const firstItemId = getFirstPairedArmoryPreviewItemId(product.itemIds);
+  const firstItemId = profileArmoryPreviewSpan("main.getFirstPairedItem", () => getFirstPairedArmoryPreviewItemId(product.itemIds));
 
   if (!firstItemId) {
-    previewShopEquipment(createShopPreviewEquipment(product.itemIds));
+    const equipment = profileArmoryPreviewSpan("main.createPreviewEquipment.fallback", () => createShopPreviewEquipment(product.itemIds));
+
+    previewShopEquipment(equipment, "fallback");
+    finishArmoryPreviewProfile("paired fallback preview complete");
     return;
   }
 
   const currentEquipment = activeShopPreviewEquipment ?? hero.equipment;
-  const stagedEquipment = createShopPreviewEquipment([firstItemId], currentEquipment);
-  const finalEquipment = createShopPreviewEquipment(product.itemIds);
+  const stagedEquipment = profileArmoryPreviewSpan(
+    "main.createPreviewEquipment.paired.staged",
+    () => createShopPreviewEquipment([firstItemId], currentEquipment),
+    { firstItemId },
+  );
+  const finalEquipment = profileArmoryPreviewSpan(
+    "main.createPreviewEquipment.paired.final",
+    () => createShopPreviewEquipment(product.itemIds),
+    { itemIds: product.itemIds },
+  );
 
-  previewShopEquipment(stagedEquipment);
+  previewShopEquipment(stagedEquipment, "paired.staged");
+  markArmoryPreviewProfile("main.schedulePairedFinalPreview", { delayMs: PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS });
+  const finishFinalPreviewWait = startArmoryPreviewSpan("main.waitPairedFinalPreviewTimer", { delayMs: PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS });
   shopPreviewAnimationTimer = window.setTimeout(() => {
     shopPreviewAnimationTimer = undefined;
+    finishFinalPreviewWait();
 
     if (shopPreviewAnimationToken !== sequenceToken) {
+      finishArmoryPreviewProfile("paired final preview skipped by stale token");
       return;
     }
 
-    previewShopEquipment(finalEquipment);
+    previewShopEquipment(finalEquipment, "paired.final");
+    finishArmoryPreviewProfile("paired final preview complete");
   }, PAIRED_ARMORY_PREVIEW_STEP_DELAY_MS);
 }
 
@@ -800,6 +827,7 @@ function clearShopPreview(): void {
   cancelShopPreviewAnimation();
   activeShopPreviewEquipment = undefined;
   cityScene?.clearEquipmentPreview();
+  finishArmoryPreviewProfile("preview cleared");
 }
 
 function handleArmoryProductPrewarm(products: readonly ArmoryProduct[]): void {
@@ -892,9 +920,11 @@ function cancelShopPreviewAnimation(): void {
   }
 }
 
-function previewShopEquipment(equipment: HeroEquipment): void {
+function previewShopEquipment(equipment: HeroEquipment, phase = "preview"): void {
   activeShopPreviewEquipment = equipment;
-  cityScene?.previewEquipment(equipment);
+  profileArmoryPreviewSpan(`main.previewShopEquipment.${phase}`, () => {
+    cityScene?.previewEquipment(equipment);
+  });
 }
 
 async function returnToCity(): Promise<void> {

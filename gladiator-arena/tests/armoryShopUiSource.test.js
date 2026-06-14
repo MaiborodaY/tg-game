@@ -228,7 +228,7 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(armoryShopSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL"), false);
   assert.equal(armoryShopSource.includes("function renderPreviewSelection"), true);
   assert.equal(armoryShopSource.includes("function previewArmoryProduct"), true);
-  assert.match(armoryShopSource, /button\.addEventListener\("click", \(\) => \{\s*previewArmoryProduct\(product\);\s*\}\);/);
+  assert.match(armoryShopSource, /profileArmoryPreviewClick\(product, \(\) => previewArmoryProduct\(product\)\);[\s\S]*previewArmoryProduct\(product\);/);
   assert.match(armoryShopSource, /function renderPreviewSelection[\s\S]*renderSelectedProduct\(hero\);[\s\S]*updateProductButtonSelection\(previousProductId\);/);
   assert.match(armoryShopSource, /function updateSelectedMeta[\s\S]*meta\.name\.textContent = productName;[\s\S]*meta\.priceAmount\.textContent = String\(price\);/);
   assert.equal(armoryShopSource.includes("armory-shop__selected-stat-value--positive"), true);

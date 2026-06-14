@@ -26,6 +26,7 @@ import {
   type ShopProductActionState,
   type ShopItemRarity,
 } from "./shopPresentation";
+import { isArmoryPreviewProfileTarget, profileArmoryPreviewClick } from "./shopPreviewProfiler";
 
 export interface ArmoryProduct {
   id: string;
@@ -774,6 +775,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       button.append(createProductStats("AR", armor, product.price));
     }
     button.addEventListener("click", () => {
+      if (isArmoryPreviewProfileTarget(product) && previewProduct?.id !== product.id) {
+        profileArmoryPreviewClick(product, () => previewArmoryProduct(product));
+        return;
+      }
+
       previewArmoryProduct(product);
     });
 
