@@ -24,6 +24,8 @@ import {
   FIGHTER_BASE_Y,
 } from "./arenaLayout";
 import {
+  ARROW_ICON_ASSET_KEY,
+  ARROW_ICON_ASSET_URL,
   ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY,
   ARENA_BACKGROUND_BACK_LAYER_ASSET_URL,
   ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY,
@@ -87,6 +89,8 @@ import {
   getFighterMaxArmor,
   getFighterMaxHp,
   getFighterMaxStamina,
+  getBowShotsRemaining,
+  isBowFighter,
   isRangedWeaponClass,
   type ActionId,
   type CombatState,
@@ -169,6 +173,7 @@ interface FighterVisual {
   shadow: FighterPart;
   lowShadow: FighterPart;
   name: FighterPart;
+  arrowCounter?: FighterArrowCounterVisual;
   extraParts?: FighterPart[];
   movableParts?: FighterPart[];
   animatedParts?: FighterPart[];
@@ -178,6 +183,13 @@ interface FighterVisual {
   bodyAnimationLockedUntil?: number;
   isShattered?: boolean;
   isShatterScheduled?: boolean;
+}
+
+interface FighterArrowCounterVisual {
+  container: Phaser.GameObjects.Container;
+  icon: Phaser.GameObjects.Image;
+  text: Phaser.GameObjects.Text;
+  baseScale: number;
 }
 
 type PaperDollPartKey = RigPartKey;
@@ -372,6 +384,8 @@ const PAPER_DOLL_SHADOW_COLOR = 0x120805;
 const PAPER_DOLL_SHADOW_BLUR_QUALITY = 0;
 const PAPER_DOLL_SHADOW_BLUR_STRENGTH = 0.75;
 const PAPER_DOLL_SHADOW_BLUR_STEPS = 2;
+const FIGHTER_ARROW_COUNTER_LOCAL_Y = -246;
+const FIGHTER_ARROW_COUNTER_SCALE_MIN = 0.86;
 const SLASH_ARC_DEPTH = 36;
 const BLOCK_POPUP_SCREEN_SIZE = 88;
 const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
@@ -798,6 +812,7 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL);
+  target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);
 }
 
 export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
@@ -880,6 +895,7 @@ function getArenaAssetPrewarmUrls(): string[] {
     DAMAGE_HIT_ICON_ASSET_URL,
     DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
     DAMAGE_ARMOR_BREAK_ICON_ASSET_URL,
+    ARROW_ICON_ASSET_URL,
   ];
 }
 
@@ -1149,6 +1165,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   update(time: number): void {
+    applyFighterArrowCountersSceneScale(this);
+
     const idle = getActiveBodyAnimation("idle");
     const animationAmount = getArenaAnimationAmount();
 
@@ -2829,6 +2847,10 @@ function buildVisuals(target: ArenaScene): ArenaVisuals {
   const enemy = createPaperDollFighter(target, createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y), target.arenaLayers?.actors);
   const playerHud = createHud(target, 30, 46, "BORSHEMIR");
   const enemyHud = createHud(target, 680, 46, "GRUMBUS");
+
+  attachFighterArrowCounter(target, player);
+  attachFighterArrowCounter(target, enemy);
+
   return { player, enemy, playerHud, enemyHud };
 }
 
@@ -2861,6 +2883,34 @@ function createHud(target: Phaser.Scene, x: number, y: number, label: string): H
   [panel, hpTrack, armorTrack, staminaTrack, hpFill, armorFill, staminaFill, text, name].forEach((part) => part.setVisible(false));
 
   return { hpFill, armorFill, staminaFill, label: text };
+}
+
+function attachFighterArrowCounter(target: ArenaScene, fighter: FighterVisual): void {
+  const counter = createFighterArrowCounter(target);
+  const counterPart = part(counter.container);
+
+  fighter.arrowCounter = counter;
+  fighter.movableParts = [...(fighter.movableParts ?? []), counterPart];
+  target.arenaLayers?.actors.add(counter.container);
+}
+
+function createFighterArrowCounter(target: Phaser.Scene): FighterArrowCounterVisual {
+  const container = target.add.container(0, 0).setVisible(false).setDepth(24);
+  const icon = target.add.image(-7, 0, ARROW_ICON_ASSET_KEY).setDisplaySize(18, 18);
+  const text = target.add
+    .text(4, 0, "0", {
+      color: "#ffe6a0",
+      fontFamily: "Georgia",
+      fontSize: "15px",
+      fontStyle: "900",
+      stroke: "#2a1207",
+      strokeThickness: 2,
+    })
+    .setOrigin(0, 0.5);
+
+  container.add([icon, text]);
+
+  return { container, icon, text, baseScale: 1 };
 }
 
 function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterOptions, parentLayer?: Phaser.GameObjects.Container): FighterVisual {
@@ -4649,8 +4699,11 @@ function renderScene(target: ArenaScene, current: CombatState): void {
 
   positionFightersForState(target, target.visuals, current);
   updateCamera(target, current);
+  applyFighterArrowCountersSceneScale(target);
   setHud(target.visuals.playerHud, current.player);
   setHud(target.visuals.enemyHud, current.enemy);
+  setFighterArrowCounter(target.visuals.player, current.player);
+  setFighterArrowCounter(target.visuals.enemy, current.enemy);
 
   if (!target.visuals.player.isShattered) {
     setFighterAlpha(target.visuals.player, 1);
@@ -4694,6 +4747,7 @@ function syncEnemyVisualForState(
     createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y, current.enemy),
     target.arenaLayers?.actors,
   );
+  attachFighterArrowCounter(target, visuals.enemy);
 }
 
 function getFighterLoadoutKey(fighter: FighterState): string {
@@ -4784,6 +4838,7 @@ function shatterFighter(target: Phaser.Scene, fighter: FighterVisual, worldDirec
   fighter.isShattered = true;
   fighter.bodyAnimationLockedUntil = Number.POSITIVE_INFINITY;
   fighter.name.setVisible(false);
+  fighter.arrowCounter?.container.setVisible(false);
   fighter.shadow.setVisible(false);
   fighter.lowShadow.setVisible(false);
   target.tweens.killTweensOf([rig.root, ...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
@@ -4842,6 +4897,24 @@ function setHud(hud: HudVisual, fighter: FighterState): void {
   hud.armorFill.displayWidth = maxArmor > 0 ? 226 * (fighter.armor / maxArmor) : 0;
   hud.staminaFill.displayWidth = 226 * (fighter.stamina / maxStamina);
   hud.label.setText(`HP ${fighter.hp}/${maxHp}  ARM ${fighter.armor}/${maxArmor}  STA ${fighter.stamina}/${maxStamina}`);
+}
+
+function setFighterArrowCounter(fighter: FighterVisual, state: FighterState): void {
+  const counter = fighter.arrowCounter;
+
+  if (!counter) {
+    return;
+  }
+
+  const visible = state.hp > 0 && isBowFighter(state);
+
+  counter.container.setVisible(visible);
+
+  if (!visible) {
+    return;
+  }
+
+  counter.text.setText(`${getBowShotsRemaining(state)}`);
 }
 
 function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
@@ -4904,6 +4977,45 @@ function applyFighterTuning(fighter: FighterVisual, scale: number, feetY: number
   if (fighter.paperDollRig) {
     applyPaperDollRigTuning(fighter, scale, feetY);
   }
+
+  applyFighterArrowCounterTuning(fighter, scale, feetY);
+}
+
+function applyFighterArrowCounterTuning(fighter: FighterVisual, scale: number, feetY: number): void {
+  const counter = fighter.arrowCounter;
+
+  if (!counter) {
+    return;
+  }
+
+  counter.baseScale = Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE);
+
+  counter.container.x = fighter.body.x;
+  counter.container.y = feetY + FIGHTER_ARROW_COUNTER_LOCAL_Y * PAPER_DOLL_BASE_SCALE * scale;
+  counter.container.setScale(counter.baseScale);
+}
+
+function applyFighterArrowCounterSceneScale(target: ArenaScene, fighter: FighterVisual): void {
+  const counter = fighter.arrowCounter;
+
+  if (!counter) {
+    return;
+  }
+
+  const sceneScale = Math.max(0.001, Math.abs(target.arenaLayers?.actors.scaleX ?? 1));
+
+  counter.container.setScale(counter.baseScale / sceneScale);
+}
+
+function applyFighterArrowCountersSceneScale(target: ArenaScene): void {
+  const visuals = target.visuals;
+
+  if (!visuals) {
+    return;
+  }
+
+  applyFighterArrowCounterSceneScale(target, visuals.player);
+  applyFighterArrowCounterSceneScale(target, visuals.enemy);
 }
 
 function updateCamera(target: ArenaScene, current: CombatState): void {

@@ -52,6 +52,7 @@ export interface HeroState {
   xpToNextLevel: number;
   skillPoints: number;
   gold: number;
+  bowShotCapacity?: number;
   baseStats: HeroBaseStats;
   equipment: HeroEquipment;
   inventory: HeroInventoryEntry[];
@@ -243,6 +244,9 @@ export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
+export const HERO_BOW_SHOT_CAPACITY_BASE = BOW_SHOTS_PER_BATTLE;
+export const HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX = 10;
+export const HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE = 500;
 export const HERO_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_IDS;
 export const ALL_HERO_ITEM_IDS = HERO_ITEM_IDS;
 export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = GENERATED_EQUIPMENT_ITEM_CATALOG;
@@ -365,6 +369,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
     skillPoints: 0,
     gold: 0,
+    bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
     baseStats: {
       strength: 0,
       agility: 0,
@@ -535,6 +540,33 @@ export function getHeroShurikenDamage(): number {
   return Math.max(0, Math.floor(shurikenItem?.damageBonus ?? 0));
 }
 
+export function getHeroBowShotCapacity(hero: HeroState): number {
+  const capacity = hero.bowShotCapacity;
+
+  if (typeof capacity !== "number" || !Number.isFinite(capacity)) {
+    return HERO_BOW_SHOT_CAPACITY_BASE;
+  }
+
+  return Math.max(HERO_BOW_SHOT_CAPACITY_BASE, Math.min(HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX, Math.floor(capacity)));
+}
+
+export function canUpgradeHeroBowShotCapacity(hero: HeroState): boolean {
+  return getHeroBowShotCapacity(hero) < HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX && hero.gold >= HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE;
+}
+
+export function upgradeHeroBowShotCapacity(hero: HeroState, now = new Date().toISOString()): HeroState {
+  if (!canUpgradeHeroBowShotCapacity(hero)) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold - HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE,
+    bowShotCapacity: HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX,
+    updatedAt: now,
+  };
+}
+
 export function getHeroEquipmentWeaponClass(equipment: HeroEquipment): HeroWeaponClass {
   const weaponItemId = equipment.weaponMain;
   const weaponItem = weaponItemId ? HERO_ITEM_CATALOG[weaponItemId] : undefined;
@@ -584,6 +616,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
   const enemyWeaponClass = getHeroEquipmentWeaponClass(enemyLoadout.equipment);
   const playerShurikenItemId = getHeroShurikenItemId();
+  const playerBowShotCapacity = getHeroBowShotCapacity(hero);
   const state = freshState();
 
   return {
@@ -605,8 +638,8 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       restHpRestoreBonus: stats.restHpRestoreBonus,
       restStaminaRestoreBonus: stats.restStaminaRestoreBonus,
       weaponClass: playerWeaponClass,
-      bowShotsRemaining: playerWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
-      bowMaxShots: playerWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      bowShotsRemaining: playerWeaponClass === "bow" ? playerBowShotCapacity : 0,
+      bowMaxShots: playerWeaponClass === "bow" ? playerBowShotCapacity : 0,
       shurikenCount: getHeroShurikenCount(hero),
       shurikenDamage: getHeroShurikenDamage(),
       shurikenItemId: playerShurikenItemId,

@@ -355,7 +355,7 @@ export function isBowFighter(fighter: FighterState): boolean {
 }
 
 export function getBowShotsRemaining(fighter: FighterState): number {
-  const fallbackShots = isBowFighter(fighter) ? BOW_SHOTS_PER_BATTLE : 0;
+  const fallbackShots = isBowFighter(fighter) ? fighter.bowMaxShots ?? BOW_SHOTS_PER_BATTLE : 0;
 
   return Math.max(0, Math.floor(fighter.bowShotsRemaining ?? fallbackShots));
 }

@@ -4710,6 +4710,11 @@ body.debug-active .city-menu__portrait-button:active {
   isolation: isolate;
 }
 
+.weapon-shop.armory-shop--city-mode .armory-shop__header {
+  left: calc(-1 * (var(--shop-city-rail-width) + var(--shop-city-rail-gap)));
+  width: calc(100% + var(--shop-city-rail-width) + var(--shop-city-rail-gap));
+}
+
 .armory-shop--city-mode .armory-shop__header::before {
   content: "";
   position: absolute;
@@ -4964,6 +4969,138 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode .armory-shop__selected[hidden] {
   display: none;
+}
+
+.weapon-shop__bow-upgrade[hidden] {
+  display: none;
+}
+
+.weapon-shop.armory-shop--city-mode .weapon-shop__bow-upgrade {
+  position: absolute;
+  right: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-bottom) + 8px);
+  left: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  pointer-events: auto;
+}
+
+.weapon-shop__bow-upgrade-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(72px, auto);
+  gap: 8px;
+  align-items: center;
+  width: min(100%, 390px);
+  min-height: 66px;
+  padding: 7px 8px;
+  border: 2px solid rgba(255, 211, 132, 0.34);
+  border-radius: 8px;
+  color: #f7d792;
+  background:
+    linear-gradient(135deg, rgba(255, 240, 189, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(74, 28, 11, 0.92), rgba(22, 7, 3, 0.9)),
+    var(--ui-panel-wood-texture) center / 220px 220px repeat;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.22),
+    inset 0 -4px 0 rgba(8, 2, 1, 0.24),
+    0 2px 0 rgba(8, 2, 1, 0.7),
+    0 0 0 1px rgba(8, 2, 1, 0.7);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.weapon-shop__bow-upgrade-icon {
+  width: 42px;
+  height: 42px;
+  padding: 4px;
+  border: 1px solid rgba(255, 211, 132, 0.26);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 42% 28%, rgba(255, 246, 210, 0.16), transparent 55%),
+    rgba(8, 2, 1, 0.38);
+  object-fit: contain;
+}
+
+.weapon-shop__bow-upgrade-meta {
+  display: grid;
+  grid-template-areas:
+    "name price"
+    "capacity price";
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  min-width: 0;
+  align-items: center;
+}
+
+.weapon-shop__bow-upgrade-name {
+  grid-area: name;
+  overflow: hidden;
+  color: #ffe6a0;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 #160703;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.weapon-shop__bow-upgrade-capacity {
+  grid-area: capacity;
+  color: #f0d08a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 #160703;
+}
+
+.weapon-shop__bow-upgrade-price {
+  grid-area: price;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 3px;
+  align-items: center;
+  color: #ffd384;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 #160703;
+}
+
+.weapon-shop__bow-upgrade-price .armory-shop__price-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+}
+
+.weapon-shop__bow-upgrade-button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 10px;
+  border: 2px solid #2a1208;
+  border-radius: 7px;
+  color: #35180d;
+  background:
+    linear-gradient(135deg, rgba(255, 246, 203, 0.8), rgba(255, 246, 203, 0.12) 48%, transparent 50%),
+    linear-gradient(180deg, #fff0bd 0%, #e99c33 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 246, 210, 0.58),
+    0 2px 0 rgba(8, 2, 1, 0.7);
+  cursor: pointer;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.84);
+  text-transform: uppercase;
+}
+
+.weapon-shop__bow-upgrade-button:disabled {
+  cursor: default;
+  filter: grayscale(0.35) brightness(0.82);
+  opacity: 0.82;
 }
 
 .armory-shop__subcategories {

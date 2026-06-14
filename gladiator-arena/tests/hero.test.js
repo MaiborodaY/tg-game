@@ -675,3 +675,45 @@ test("combat state exposes shuriken count and rewards persist spent consumables"
 
   assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, "generated_equipment_weapon_shuriken_01"), 1);
 });
+
+test("bow capacity upgrade costs gold and expands combat shots", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const bowHero = {
+    ...baseHero,
+    equipment: {
+      ...baseHero.equipment,
+      weaponMain: "generated_equipment_weapon_bow_01",
+    },
+  };
+  const defaultCombatState = hero.createCombatStateFromHero(bowHero, 1);
+  const poorHero = {
+    ...baseHero,
+    gold: hero.HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE - 1,
+  };
+  const fundedHero = {
+    ...baseHero,
+    gold: hero.HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE,
+  };
+
+  assert.equal(hero.getHeroBowShotCapacity({ ...baseHero, bowShotCapacity: undefined }), combat.BOW_SHOTS_PER_BATTLE);
+  assert.equal(defaultCombatState.player.bowShotsRemaining, combat.BOW_SHOTS_PER_BATTLE);
+  assert.equal(defaultCombatState.player.bowMaxShots, combat.BOW_SHOTS_PER_BATTLE);
+  assert.equal(hero.canUpgradeHeroBowShotCapacity(poorHero), false);
+  assert.equal(hero.upgradeHeroBowShotCapacity(poorHero, "2026-01-01T00:01:00.000Z"), poorHero);
+
+  const upgradedHero = hero.upgradeHeroBowShotCapacity(fundedHero, "2026-01-01T00:02:00.000Z");
+  const upgradedBowHero = {
+    ...upgradedHero,
+    equipment: {
+      ...upgradedHero.equipment,
+      weaponMain: "generated_equipment_weapon_bow_01",
+    },
+  };
+  const upgradedCombatState = hero.createCombatStateFromHero(upgradedBowHero, 1);
+
+  assert.equal(upgradedHero.gold, 0);
+  assert.equal(hero.getHeroBowShotCapacity(upgradedHero), hero.HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX);
+  assert.equal(upgradedCombatState.player.bowShotsRemaining, hero.HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX);
+  assert.equal(upgradedCombatState.player.bowMaxShots, hero.HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX);
+  assert.equal(hero.upgradeHeroBowShotCapacity(upgradedHero, "2026-01-01T00:03:00.000Z"), upgradedHero);
+});

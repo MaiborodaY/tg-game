@@ -175,6 +175,21 @@ test("weapon shop product cards use the damage icon instead of a DM label", () =
   assert.match(weaponShopSource, /statIcon\.className = "armory-shop__product-stat-icon";[\s\S]*statIcon\.src = statIconUrl;[\s\S]*statValue\.textContent = String\(stat\);/);
 });
 
+test("weapon shop shows bow capacity upgrade only for the bows category", () => {
+  assert.equal(weaponShopSource.includes('const BOW_CATEGORY_ID = "bows";'), true);
+  assert.equal(weaponShopSource.includes("ARROW_ICON_ASSET_URL"), true);
+  assert.equal(weaponShopSource.includes("onBowCapacityUpgrade?: () => void"), true);
+  assert.match(weaponShopSource, /selectedCategoryId === BOW_CATEGORY_ID[\s\S]*bowUpgrade\.hidden = !isVisible;/);
+  assert.match(weaponShopSource, /getHeroBowShotCapacity\(hero\)[\s\S]*HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX[\s\S]*HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE/);
+  assert.equal(weaponShopSource.includes('name.textContent = "Arrows";'), true);
+  assert.match(weaponShopSource, /button\.addEventListener\("click", \(\) => \{[\s\S]*options\.onBowCapacityUpgrade\?\.\(\);[\s\S]*render\(\);[\s\S]*\}\);/);
+  assert.equal(mainSource.includes("function handleBowCapacityUpgrade(): void"), true);
+  assert.equal(mainSource.includes("upgradeHeroBowShotCapacity(hero)"), true);
+  assert.equal(mainSource.includes("onBowCapacityUpgrade: handleBowCapacityUpgrade"), true);
+  assert.equal(stylesSource.includes(".weapon-shop.armory-shop--city-mode .weapon-shop__bow-upgrade"), true);
+  assert.equal(stylesSource.includes(".weapon-shop__bow-upgrade-card"), true);
+});
+
 test("shop product cards keep lightweight rarity gradients without the profile backdrop texture", () => {
   const productRule = stylesSource.match(/\.armory-shop__option--product\s*\{[\s\S]*?\}/)?.[0] ?? "";
   const cityProductRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__option--product\s*\{[\s\S]*?\}/)?.[0] ?? "";

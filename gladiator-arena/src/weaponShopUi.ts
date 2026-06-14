@@ -1,5 +1,12 @@
-import { type HeroItemId, type HeroState } from "./hero";
 import {
+  HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX,
+  HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE,
+  getHeroBowShotCapacity,
+  type HeroItemId,
+  type HeroState,
+} from "./hero";
+import {
+  ARROW_ICON_ASSET_URL,
   DAMAGE_HIT_ICON_ASSET_URL,
   SHOP_CATEGORY_AXE_ICON_ASSET_URL,
   SHOP_CATEGORY_BOW_ICON_ASSET_URL,
@@ -52,6 +59,7 @@ interface WeaponShopOptions {
   getHero: () => HeroState;
   mountPreview?: (parent: HTMLElement) => () => void;
   onBuy: (product: WeaponProduct) => void;
+  onBowCapacityUpgrade?: () => void;
   onPreview?: (product: WeaponProduct) => void;
   onPreviewClear?: () => void;
   onOpen?: () => void;
@@ -119,6 +127,7 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
 const MELEE_WEAPON_CATEGORIES = WEAPON_CATEGORIES.filter((category) => category.range === "melee");
 const RANGED_WEAPON_CATEGORIES = WEAPON_CATEGORIES.filter((category) => category.range === "ranged");
 
+const BOW_CATEGORY_ID = "bows";
 const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
 
 function getGeneratedWeaponProducts(categoryId: string): WeaponProduct[] {
@@ -210,6 +219,10 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   const selected = document.createElement("div");
   selected.className = "armory-shop__selected";
 
+  const bowUpgrade = document.createElement("div");
+  bowUpgrade.className = "weapon-shop__bow-upgrade";
+  bowUpgrade.hidden = true;
+
   const content = document.createElement("div");
   content.className = "armory-shop__content";
   content.addEventListener("scroll", showScrollIndicator, { passive: true });
@@ -244,6 +257,8 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
   if (options.mountPreview) {
     panel.append(previewShell);
+  } else {
+    panel.append(bowUpgrade);
   }
   panel.append(menu);
   shop.append(panel);
@@ -310,6 +325,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     meleeCategoryRail.replaceChildren();
     content.replaceChildren();
     selected.replaceChildren();
+    bowUpgrade.replaceChildren();
     clearScrollIndicator();
     shop.classList.toggle("armory-shop--has-selection", Boolean(previewProduct));
     selected.hidden = !previewProduct;
@@ -329,6 +345,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       selected.append(createSelectedProductStrip(previewProduct, hero));
     }
 
+    renderBowCapacityUpgrade(hero, selectedCategory.id);
     scheduleLayoutSync();
 
     if (selectedCategory.products.length === 0) {
@@ -339,6 +356,22 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     selectedCategory.products.forEach((product) => {
       content.append(createProductButton(product, hero, previewProduct?.id === product.id));
     });
+  }
+
+  function renderBowCapacityUpgrade(hero: HeroState, selectedCategoryId: string): void {
+    if (!usesCityHeroPreview) {
+      return;
+    }
+
+    const isVisible = selectedCategoryId === BOW_CATEGORY_ID;
+
+    bowUpgrade.hidden = !isVisible;
+
+    if (!isVisible) {
+      return;
+    }
+
+    bowUpgrade.append(createBowCapacityUpgrade(hero));
   }
 
   function ensurePreviewMounted(): void {
@@ -459,6 +492,47 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     });
 
     return button;
+  }
+
+  function createBowCapacityUpgrade(hero: HeroState): HTMLElement {
+    const currentCapacity = getHeroBowShotCapacity(hero);
+    const isMaxed = currentCapacity >= HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX;
+    const canBuy = !isMaxed && hero.gold >= HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE;
+    const card = document.createElement("div");
+    const icon = document.createElement("img");
+    const meta = document.createElement("div");
+    const name = document.createElement("span");
+    const capacity = document.createElement("span");
+    const price = document.createElement("span");
+    const button = document.createElement("button");
+
+    card.className = "weapon-shop__bow-upgrade-card";
+    card.classList.toggle("weapon-shop__bow-upgrade-card--max", isMaxed);
+    card.classList.toggle("weapon-shop__bow-upgrade-card--no-gold", !isMaxed && !canBuy);
+    icon.className = "weapon-shop__bow-upgrade-icon";
+    icon.src = ARROW_ICON_ASSET_URL;
+    icon.alt = "";
+    icon.decoding = "async";
+    icon.draggable = false;
+    meta.className = "weapon-shop__bow-upgrade-meta";
+    name.className = "weapon-shop__bow-upgrade-name";
+    name.textContent = "Arrows";
+    capacity.className = "weapon-shop__bow-upgrade-capacity";
+    capacity.textContent = isMaxed ? `${currentCapacity} / ${HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX}` : `${currentCapacity} > ${HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX}`;
+    price.className = "weapon-shop__bow-upgrade-price";
+    appendPriceContent(price, HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE);
+    button.className = "weapon-shop__bow-upgrade-button";
+    button.type = "button";
+    button.disabled = isMaxed || !canBuy || !options.onBowCapacityUpgrade;
+    button.textContent = isMaxed ? "Max" : canBuy ? "Buy" : "No gold";
+    button.addEventListener("click", () => {
+      options.onBowCapacityUpgrade?.();
+      render();
+    });
+    meta.append(name, capacity, price);
+    card.append(icon, meta, button);
+
+    return card;
   }
 
   function clearProductPreview(): void {

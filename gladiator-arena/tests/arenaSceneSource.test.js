@@ -165,6 +165,23 @@ test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
 });
 
+test("arena shows bow arrow counts above bow fighters", () => {
+  assert.equal(assetsSource.includes("ARROW_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/action-icons/arrow.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/action-icons/arrow.webp")), true);
+  assert.equal(arenaSceneSource.includes("target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("attachFighterArrowCounter(target, player);"), true);
+  assert.equal(arenaSceneSource.includes("attachFighterArrowCounter(target, enemy);"), true);
+  assert.equal(arenaSceneSource.includes("function setFighterArrowCounter"), true);
+  assert.equal(arenaSceneSource.includes("isBowFighter(state)"), true);
+  assert.equal(arenaSceneSource.includes("getBowShotsRemaining(state)"), true);
+  assert.equal(arenaSceneSource.includes("container.add([icon, text]);"), true);
+  assert.equal(arenaSceneSource.includes("counter.text.setText(`${getBowShotsRemaining(state)}`);"), true);
+  assert.equal(arenaSceneSource.includes("Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE)"), true);
+  assert.equal(arenaSceneSource.includes("applyFighterArrowCountersSceneScale(this);"), true);
+  assert.equal(arenaSceneSource.includes("counter.container.setScale(counter.baseScale / sceneScale);"), true);
+});
+
 test("arena starts close between fighters and eases back to the normal camera", () => {
   assert.equal(arenaSceneSource.includes('type ArenaEntryTransitionState = "pending" | "running" | "done"'), true);
   assert.equal(arenaSceneSource.includes("ARENA_ENTRY_START_ZOOM_MULTIPLIER"), true);

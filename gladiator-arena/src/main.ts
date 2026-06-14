@@ -45,6 +45,7 @@ import {
   getArenaTierDefinition,
   getBattleReward,
   isHeroConsumableItem,
+  upgradeHeroBowShotCapacity,
   type ArenaBossDefinition,
   type ArenaBossId,
   type ArenaEncounter,
@@ -116,7 +117,6 @@ let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
 let isCityReturnTransitionRunning = false;
 let cityReturnTransitionToken = 0;
-let activeShopPreviewEquipment: HeroEquipment | undefined;
 let armoryPreviewPrewarmToken = 0;
 let armoryPreviewPrewarmFrame: number | undefined;
 let armoryPreviewPrewarmItemIds: HeroItemId[] = [];
@@ -681,7 +681,6 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     return;
   }
 
-  activeShopPreviewEquipment = undefined;
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
@@ -690,6 +689,19 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   }
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
+  weaponShop?.render();
+  cityHeroEquipmentMenu.render();
+}
+
+function handleBowCapacityUpgrade(): void {
+  const nextHero = upgradeHeroBowShotCapacity(hero);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
 }
@@ -724,7 +736,6 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   }
 
   cancelArmoryPreviewPrewarm();
-  activeShopPreviewEquipment = undefined;
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
@@ -774,7 +785,6 @@ function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
 
 function clearShopPreview(): void {
   cancelArmoryPreviewPrewarm();
-  activeShopPreviewEquipment = undefined;
   cityScene?.clearEquipmentPreview();
 }
 
@@ -847,7 +857,6 @@ function cancelArmoryPreviewPrewarm(): void {
 }
 
 function previewShopEquipment(equipment: HeroEquipment): void {
-  activeShopPreviewEquipment = equipment;
   cityScene?.previewEquipment(equipment);
 }
 
@@ -941,6 +950,7 @@ if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
+    onBowCapacityUpgrade: handleBowCapacityUpgrade,
     onPreview: handleShopPreview,
     onPreviewClear: clearShopPreview,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
