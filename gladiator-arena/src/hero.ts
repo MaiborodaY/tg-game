@@ -55,6 +55,7 @@ export interface HeroState {
   baseStats: HeroBaseStats;
   equipment: HeroEquipment;
   inventory: HeroInventoryEntry[];
+  defeatedArenaBossIds: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -361,6 +362,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     },
     equipment: createDefaultHeroEquipment(),
     inventory: createDefaultHeroInventory(),
+    defeatedArenaBossIds: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -557,7 +559,8 @@ export function applyCombatReward(
   const reward = getBattleReward(combat);
   const rolledLoot = combat.result === "win" ? rollCombatEncounterLoot(combat, random) : [];
   const heroWithReward = applyBattleReward(hero, reward, now);
-  const lootApplication = applyArenaLootWithAppliedDrops(heroWithReward, rolledLoot, now);
+  const heroWithBossProgress = combat.result === "win" && combat.encounter?.kind === "boss" ? recordArenaBossDefeat(heroWithReward, combat.encounter.opponentId, now) : heroWithReward;
+  const lootApplication = applyArenaLootWithAppliedDrops(heroWithBossProgress, rolledLoot, now);
 
   return {
     reward,
@@ -569,6 +572,22 @@ export function applyCombatReward(
 
 export function applyArenaLoot(hero: HeroState, loot: readonly ArenaLootDrop[], now = new Date().toISOString()): HeroState {
   return applyArenaLootWithAppliedDrops(hero, loot, now).hero;
+}
+
+export function hasHeroDefeatedArenaBoss(hero: HeroState, bossId: string): boolean {
+  return (hero.defeatedArenaBossIds ?? []).includes(bossId);
+}
+
+export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new Date().toISOString()): HeroState {
+  if (!bossId || hasHeroDefeatedArenaBoss(hero, bossId)) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    defeatedArenaBossIds: [...(hero.defeatedArenaBossIds ?? []), bossId],
+    updatedAt: now,
+  };
 }
 
 function applyArenaLootWithAppliedDrops(

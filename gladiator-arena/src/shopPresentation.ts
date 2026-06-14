@@ -1,3 +1,4 @@
+import { getArenaBossesForTier } from "./arenaOpponents";
 import {
   HERO_ITEM_CATALOG,
   areHeroItemsEquipped,
@@ -9,7 +10,7 @@ import {
 } from "./hero";
 
 export type ShopItemRarity = HeroItemRarity;
-export type ShopProductActionState = "buy" | "equip" | "equipped" | "no-gold";
+export type ShopProductActionState = "buy" | "equip" | "equipped" | "no-gold" | "sealed";
 export type ShopProductStatKind = "armor" | "damage";
 
 const shopRarityLabels: Record<ShopItemRarity, string> = {
@@ -42,6 +43,15 @@ const shopRarityRanks: Record<ShopItemRarity, number> = {
   unique: 7,
 };
 
+const shopRarityUnlockBossTier: Partial<Record<ShopItemRarity, number>> = {
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythical: 5,
+  unique: 6,
+};
+
 export function getShopProductStat(itemIds: HeroItemId[], statKind: ShopProductStatKind): number {
   return itemIds.reduce((total, itemId) => total + getShopItemStat(HERO_ITEM_CATALOG[itemId], statKind), 0);
 }
@@ -69,6 +79,10 @@ export function getShopProductActionState(hero: HeroState, itemIds: HeroItemId[]
 }
 
 export function getShopProductActionLabel(actionState: ShopProductActionState, price: number): string {
+  if (actionState === "sealed") {
+    return "Sealed";
+  }
+
   if (actionState === "equipped") {
     return "Equipped";
   }
@@ -86,6 +100,28 @@ export function getShopProductDisplayName(productName: string): string {
     .replace(/\s+01\b/gu, "")
     .replace(/\s+/gu, " ")
     .trim();
+}
+
+export function isShopProductSealed(hero: HeroState, itemIds: HeroItemId[], explicitRarity?: ShopItemRarity): boolean {
+  return isShopRaritySealed(hero, getShopProductRarity(itemIds, explicitRarity));
+}
+
+export function isShopRaritySealed(hero: HeroState, rarity: ShopItemRarity): boolean {
+  const unlockBossTier = shopRarityUnlockBossTier[rarity];
+
+  if (!unlockBossTier) {
+    return false;
+  }
+
+  const bosses = getArenaBossesForTier(unlockBossTier);
+
+  if (bosses.length === 0) {
+    return true;
+  }
+
+  const defeatedBossIds = new Set(hero.defeatedArenaBossIds ?? []);
+
+  return !bosses.some((boss) => defeatedBossIds.has(boss.id));
 }
 
 export function getShopProductRarity(itemIds: HeroItemId[], explicitRarity?: ShopItemRarity): ShopItemRarity {

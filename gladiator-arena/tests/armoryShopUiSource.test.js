@@ -49,10 +49,29 @@ test("shop product display names hide technical variants and rename shoulder gua
   [armoryShopSource, weaponShopSource].forEach((source) => {
     assert.equal(source.includes("getShopProductDisplayName"), true);
     assert.equal(source.includes("const displayName = getShopProductDisplayName(product.name);"), true);
-    assert.equal(source.includes("button.title = displayName;"), true);
+    assert.equal(source.includes("button.title = displayName;") || source.includes(": displayName;"), true);
     assert.equal(source.includes("createSelectedMeta(displayName"), true);
     assert.equal(source.includes("button.title = product.name;"), false);
   });
+});
+
+test("armory shop seals boss-locked rarity tiers before purchase", () => {
+  assert.equal(shopPresentationSource.includes("const shopRarityUnlockBossTier"), true);
+  assert.equal(shopPresentationSource.includes("uncommon: 1"), true);
+  assert.equal(shopPresentationSource.includes("rare: 2"), true);
+  assert.equal(shopPresentationSource.includes("getArenaBossesForTier(unlockBossTier)"), true);
+  assert.equal(shopPresentationSource.includes("hero.defeatedArenaBossIds ?? []"), true);
+
+  assert.equal(armoryShopSource.includes("getArmoryProductActionState(hero, product)"), true);
+  assert.equal(armoryShopSource.includes('armory-shop__option--sealed'), true);
+  assert.equal(armoryShopSource.includes('ribbon.textContent = "SEALED";'), true);
+  assert.equal(armoryShopSource.includes('button.disabled = actionState === "sealed";'), true);
+  assert.equal(armoryShopSource.includes('actionState === "buy" || actionState === "no-gold"'), true);
+  assert.equal(armoryShopSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
+
+  assert.equal(mainSource.includes("isSealedArmoryPurchase"), true);
+  assert.equal(mainSource.includes("!areHeroItemsOwned(hero, product.itemIds)"), true);
+  assert.equal(mainSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
 });
 
 test("city shops report their bottom menu position for hero centering", () => {
@@ -150,6 +169,14 @@ test("shop product cards reuse the profile backdrop texture with deeper rarity c
   assert.match(cityProductRule, /background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;/);
   assert.match(cityProductRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 48%/);
   assert.match(cityProductRule, /inset 0 -6px 10px rgba\(8, 2, 1, 0\.26\)/);
+});
+
+test("sealed armory cards show a centered ribbon and dark item silhouette", () => {
+  assert.equal(stylesSource.includes(".armory-shop__sealed-ribbon"), true);
+  assert.equal(stylesSource.includes(".armory-shop__option--sealed .armory-shop__product-icon"), true);
+  assert.equal(stylesSource.includes("brightness(0.24)"), true);
+  assert.equal(stylesSource.includes('transform: translate(-50%, -50%) rotate(-5deg);'), true);
+  assert.equal(stylesSource.includes(".armory-shop__option--product.armory-shop__option--sealed:disabled"), true);
 });
 
 test("city shop confirm strip is embedded in the shop header while back floats outside it", () => {

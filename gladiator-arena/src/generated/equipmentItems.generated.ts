@@ -257,7 +257,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-cloth-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_cloth_01","name":"Cloth Back Shinguard 01","price":10,"itemIds":["generated_equipment_back_shinguard_cloth_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_cloth_01","name":"Cloth Back Shinguard 01","price":5,"itemIds":["generated_equipment_back_shinguard_cloth_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_druid_01","name":"Druid Back Shinguard 01","kind":"armor","rarity":"mythical","equipmentSlot":"backShinguard","armorHp":50},
@@ -635,7 +635,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-cloth-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_front_shinguard_cloth_01","name":"Cloth Front Shinguard 01","price":10,"itemIds":["generated_equipment_front_shinguard_cloth_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_front_shinguard_cloth_01","name":"Cloth Front Shinguard 01","price":5,"itemIds":["generated_equipment_front_shinguard_cloth_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_front_shinguard_druid_01","name":"Druid Front Shinguard 01","kind":"armor","rarity":"mythical","equipmentSlot":"frontShinguard","armorHp":0},

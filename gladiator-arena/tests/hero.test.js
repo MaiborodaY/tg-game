@@ -147,6 +147,7 @@ test("hero starts with empty equipment including gloves and wrists", () => {
   assert.equal(hero.createDefaultHeroEquipment().frontWrist, null);
   assert.equal(hero.createDefaultHeroEquipment().backGlove, null);
   assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
+  assert.deepEqual([...hero.createDefaultHero().defeatedArenaBossIds], []);
 });
 
 test("hero base attributes derive combat stats", () => {
@@ -378,7 +379,19 @@ test("combat reward application stores shown boss loot in hero inventory", () =>
   assert.equal(rewardApplication.loot.length, 1);
   assert.equal(rewardApplication.loot[0].itemId, bossHelmetId);
   assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === bossHelmetId)?.quantity, 1);
+  assert.equal(rewardApplication.heroAfterReward.defeatedArenaBossIds.includes("dust_arena_champion"), true);
+  assert.equal(hero.hasHeroDefeatedArenaBoss(rewardApplication.heroAfterReward, "dust_arena_champion"), true);
   assert.equal(hero.isHeroItemOwned(rewardApplication.heroAfterReward, bossHelmetId), true);
+});
+
+test("boss victories are recorded once in hero progression", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const firstRecord = hero.recordArenaBossDefeat(baseHero, "dust_arena_champion", "2026-01-01T00:01:00.000Z");
+  const secondRecord = hero.recordArenaBossDefeat(firstRecord, "dust_arena_champion", "2026-01-01T00:02:00.000Z");
+
+  assert.deepEqual([...firstRecord.defeatedArenaBossIds], ["dust_arena_champion"]);
+  assert.equal(firstRecord.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(secondRecord, firstRecord);
 });
 
 test("hero level progression uses one thousand total xp across fifty levels", () => {

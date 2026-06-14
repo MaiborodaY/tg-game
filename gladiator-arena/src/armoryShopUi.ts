@@ -23,6 +23,8 @@ import {
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
+  isShopProductSealed,
+  type ShopProductActionState,
   type ShopItemRarity,
 } from "./shopPresentation";
 
@@ -649,7 +651,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const iconUrl = getShopProductIconUrl(product.itemIds);
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const armor = getShopProductStat(product.itemIds, "armor");
-    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const actionState = getArmoryProductActionState(hero, product);
     const displayName = getShopProductDisplayName(product.name);
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
@@ -657,10 +659,15 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.classList.toggle("armory-shop__option--owned", actionState === "equip");
     button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
     button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
+    button.classList.toggle("armory-shop__option--sealed", actionState === "sealed");
     button.type = "button";
-    button.title = displayName;
+    button.disabled = actionState === "sealed";
+    button.title = actionState === "sealed" ? `${displayName} - SEALED` : displayName;
     button.setAttribute("aria-label", `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${getShopProductActionLabel(actionState, product.price)}`);
     button.append(createProductIcon(iconUrl));
+    if (actionState === "sealed") {
+      button.append(createSealedRibbon());
+    }
     if (actionState === "buy" || actionState === "no-gold") {
       button.append(createProductStats("AR", armor, product.price));
     }
@@ -693,11 +700,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function createPreviewBuyButton(product: ArmoryProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
-    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const actionState = getArmoryProductActionState(hero, product);
 
     button.className = "armory-shop__selected-buy";
     button.type = "button";
-    button.disabled = actionState === "equipped" || actionState === "no-gold";
+    button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "sealed";
     button.textContent = getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       previewProduct = undefined;
@@ -715,6 +722,16 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     previewProduct = undefined;
     options.onPreviewClear?.();
+  }
+
+  function getArmoryProductActionState(hero: HeroState, product: ArmoryProduct): ShopProductActionState {
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+
+    if ((actionState === "buy" || actionState === "no-gold") && isShopProductSealed(hero, product.itemIds, product.rarity)) {
+      return "sealed";
+    }
+
+    return actionState;
   }
 
   function dismissPreviewFromPointerDown(event: PointerEvent): void {
@@ -890,6 +907,15 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   icon.draggable = false;
 
   return icon;
+}
+
+function createSealedRibbon(): HTMLElement {
+  const ribbon = document.createElement("span");
+
+  ribbon.className = "armory-shop__sealed-ribbon";
+  ribbon.textContent = "SEALED";
+
+  return ribbon;
 }
 
 function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {

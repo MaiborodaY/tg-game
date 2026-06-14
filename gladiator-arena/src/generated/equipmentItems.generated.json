@@ -627,7 +627,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_cloth_01",
       "name": "Cloth Back Shinguard 01",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_back_shinguard_cloth_01"
       ],
@@ -1695,7 +1695,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_shinguard_cloth_01",
       "name": "Cloth Front Shinguard 01",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_front_shinguard_cloth_01"
       ],

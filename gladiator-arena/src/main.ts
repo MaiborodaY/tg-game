@@ -31,6 +31,7 @@ import {
   DEFAULT_ARENA_TIER_ID,
   allocateHeroSkillPoint,
   applyCombatReward,
+  areHeroItemsOwned,
   buyAndEquipHeroItems,
   createArenaBossEncounter,
   createArenaRandomEnemyEncounter,
@@ -53,6 +54,7 @@ import {
 import { syncHudTuning } from "./hudTuning";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
+import { isShopProductSealed } from "./shopPresentation";
 import { bootTelegramWebApp } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -652,6 +654,15 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
 }
 
 function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
+  const isSealedArmoryPurchase =
+    isArmoryShopProduct(product) &&
+    !areHeroItemsOwned(hero, product.itemIds) &&
+    isShopProductSealed(hero, product.itemIds, product.rarity);
+
+  if (isSealedArmoryPurchase) {
+    return;
+  }
+
   const nextHero = buyAndEquipHeroItems(hero, {
     itemIds: product.itemIds,
     price: product.price,
@@ -671,6 +682,10 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
+}
+
+function isArmoryShopProduct(product: ArmoryProduct | WeaponProduct): product is ArmoryProduct {
+  return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
