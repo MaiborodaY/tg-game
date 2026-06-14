@@ -394,7 +394,7 @@ h1 {
 
 .armory-frame-profiler__modes {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   padding: 5px 6px;
   border-bottom: 1px solid rgba(255, 230, 170, 0.16);

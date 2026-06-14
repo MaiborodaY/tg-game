@@ -642,6 +642,10 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   function previewArmoryProduct(product: ArmoryProduct, renderMode: ArmoryPreviewRenderMode = "full"): void {
+    if (renderMode === "noop") {
+      return;
+    }
+
     if (renderMode === "doll") {
       clearVisibleProductPrewarm();
       options.onPreview?.(product);
@@ -790,7 +794,10 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.addEventListener("click", () => {
       const renderMode = getArmoryPreviewRenderMode();
 
-      if (isArmoryPreviewProfileTarget(product) && (renderMode === "doll" || previewProduct?.id !== product.id)) {
+      if (
+        isArmoryPreviewProfileTarget(product) &&
+        (renderMode === "doll" || renderMode === "noop" || previewProduct?.id !== product.id)
+      ) {
         profileArmoryPreviewClick(product, (profileRenderMode) => previewArmoryProduct(product, profileRenderMode));
         return;
       }

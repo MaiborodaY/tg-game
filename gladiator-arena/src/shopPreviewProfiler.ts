@@ -6,7 +6,7 @@ interface ArmoryPreviewProfileProduct {
   itemIds: readonly HeroItemId[];
 }
 
-export type ArmoryPreviewRenderMode = "full" | "dom" | "doll";
+export type ArmoryPreviewRenderMode = "full" | "dom" | "doll" | "noop";
 
 interface ArmoryFrameProfileStep {
   label: string;
@@ -59,6 +59,7 @@ const ARMORY_FRAME_PROFILE_RENDER_MODES: Array<{ mode: ArmoryPreviewRenderMode; 
   { mode: "full", label: "FULL" },
   { mode: "dom", label: "DOM" },
   { mode: "doll", label: "DOLL" },
+  { mode: "noop", label: "NOOP" },
 ];
 
 let nextArmoryFrameProfileId = 0;

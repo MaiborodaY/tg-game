@@ -233,10 +233,13 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(armoryShopSource.includes("function renderPreviewSelection"), true);
   assert.equal(armoryShopSource.includes("function previewArmoryProduct"), true);
   assert.match(armoryShopSource, /profileArmoryPreviewClick\(product, \(profileRenderMode\) => previewArmoryProduct\(product, profileRenderMode\)\);[\s\S]*previewArmoryProduct\(product\);/);
+  assert.match(armoryShopSource, /if \(renderMode === "noop"\) \{[\s\S]*return;[\s\S]*\}/);
   assert.match(armoryShopSource, /function previewArmoryProduct\(product: ArmoryProduct, renderMode: ArmoryPreviewRenderMode = "full"\)[\s\S]*if \(renderMode === "doll"\)[\s\S]*options\.onPreview\?\.\(product\);[\s\S]*return;/);
+  assert.match(armoryShopSource, /renderMode === "doll" \|\| renderMode === "noop" \|\| previewProduct\?\.id !== product\.id/);
   assert.match(armoryShopSource, /if \(renderMode !== "dom"\) \{[\s\S]*options\.onPreview\?\.\(product\);[\s\S]*\}/);
   assert.equal(shopPreviewProfilerSource.includes('title.textContent = "FRAME PROFILER"'), true);
-  assert.equal(shopPreviewProfilerSource.includes('export type ArmoryPreviewRenderMode = "full" | "dom" | "doll";'), true);
+  assert.equal(shopPreviewProfilerSource.includes('export type ArmoryPreviewRenderMode = "full" | "dom" | "doll" | "noop";'), true);
+  assert.equal(shopPreviewProfilerSource.includes('{ mode: "noop", label: "NOOP" }'), true);
   assert.equal(shopPreviewProfilerSource.includes("ARMORY_FRAME_PROFILE_RENDER_MODES"), true);
   assert.equal(shopPreviewProfilerSource.includes("callback(profile.renderMode)"), true);
   assert.equal(shopPreviewProfilerSource.includes('"to raf 1"'), true);
@@ -244,6 +247,7 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(shopPreviewProfilerSource.includes("profileArmoryPreviewSpan"), false);
   assert.equal(stylesSource.includes(".armory-frame-profiler"), true);
   assert.equal(stylesSource.includes(".armory-frame-profiler__modes"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: repeat(4, 1fr);"), true);
   assert.equal(stylesSource.includes(".armory-preview-profiler"), false);
   assert.match(armoryShopSource, /function renderPreviewSelection[\s\S]*renderSelectedProduct\(hero\);[\s\S]*updateProductButtonSelection\(previousProductId\);/);
   assert.match(armoryShopSource, /function updateSelectedMeta[\s\S]*meta\.name\.textContent = productName;[\s\S]*meta\.priceAmount\.textContent = String\(price\);/);
