@@ -392,10 +392,35 @@ h1 {
   opacity: 0.44;
 }
 
+.armory-frame-profiler__modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(255, 230, 170, 0.16);
+}
+
+.armory-frame-profiler__modes button {
+  height: 20px;
+  border: 1px solid rgba(255, 230, 170, 0.24);
+  border-radius: 4px;
+  color: rgba(249, 230, 176, 0.72);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 0.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.armory-frame-profiler__modes .armory-frame-profiler__mode--active {
+  border-color: rgba(255, 230, 170, 0.62);
+  color: #d7ffd0;
+  background: rgba(71, 31, 15, 0.92);
+}
+
 .armory-frame-profiler__list {
   display: grid;
   gap: 5px;
-  max-height: calc(min(36dvh, 320px) - 32px);
+  max-height: calc(min(36dvh, 320px) - 58px);
   overflow: auto;
   padding: 5px;
 }

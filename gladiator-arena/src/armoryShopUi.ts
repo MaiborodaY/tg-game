@@ -26,7 +26,12 @@ import {
   type ShopProductActionState,
   type ShopItemRarity,
 } from "./shopPresentation";
-import { isArmoryPreviewProfileTarget, profileArmoryPreviewClick } from "./shopPreviewProfiler";
+import {
+  getArmoryPreviewRenderMode,
+  isArmoryPreviewProfileTarget,
+  profileArmoryPreviewClick,
+  type ArmoryPreviewRenderMode,
+} from "./shopPreviewProfiler";
 
 export interface ArmoryProduct {
   id: string;
@@ -636,7 +641,13 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     scheduleVisibleProductPrewarm();
   }
 
-  function previewArmoryProduct(product: ArmoryProduct): void {
+  function previewArmoryProduct(product: ArmoryProduct, renderMode: ArmoryPreviewRenderMode = "full"): void {
+    if (renderMode === "doll") {
+      clearVisibleProductPrewarm();
+      options.onPreview?.(product);
+      return;
+    }
+
     if (previewProduct?.id === product.id) {
       return;
     }
@@ -645,7 +656,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     clearVisibleProductPrewarm();
     previewProduct = product;
-    options.onPreview?.(product);
+    if (renderMode !== "dom") {
+      options.onPreview?.(product);
+    }
     renderPreviewSelection(previousProductId);
   }
 
@@ -775,8 +788,10 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       button.append(createProductStats("AR", armor, product.price));
     }
     button.addEventListener("click", () => {
-      if (isArmoryPreviewProfileTarget(product) && previewProduct?.id !== product.id) {
-        profileArmoryPreviewClick(product, () => previewArmoryProduct(product));
+      const renderMode = getArmoryPreviewRenderMode();
+
+      if (isArmoryPreviewProfileTarget(product) && (renderMode === "doll" || previewProduct?.id !== product.id)) {
+        profileArmoryPreviewClick(product, (profileRenderMode) => previewArmoryProduct(product, profileRenderMode));
         return;
       }
 

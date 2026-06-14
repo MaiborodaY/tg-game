@@ -6,6 +6,8 @@ interface ArmoryPreviewProfileProduct {
   itemIds: readonly HeroItemId[];
 }
 
+export type ArmoryPreviewRenderMode = "full" | "dom" | "doll";
+
 interface ArmoryFrameProfileStep {
   label: string;
   elapsedMs: number;
@@ -22,6 +24,7 @@ interface ActiveArmoryFrameProfile {
   productId: string;
   productName: string;
   itemIds: HeroItemId[];
+  renderMode: ArmoryPreviewRenderMode;
   startedAt: number;
   lastMeasuredAt: number;
   steps: ArmoryFrameProfileStep[];
@@ -37,6 +40,7 @@ interface ArmoryFrameProfilerOverlayElements {
   root: HTMLElement;
   list: HTMLElement;
   clearButton: HTMLButtonElement;
+  modeButtons: Record<ArmoryPreviewRenderMode, HTMLButtonElement>;
 }
 
 const ARMORY_FRAME_PROFILE_SLOT_PAIRS: Array<readonly [HeroEquipmentSlotKey, HeroEquipmentSlotKey]> = [
@@ -51,9 +55,15 @@ const ARMORY_FRAME_PROFILE_WARN_MS = 24;
 const ARMORY_FRAME_PROFILE_HOT_MS = 45;
 const ARMORY_FRAME_PROFILE_LONG_TASK_MIN_MS = 30;
 const ARMORY_FRAME_PROFILE_PREFIX = "[armory frame profiler]";
+const ARMORY_FRAME_PROFILE_RENDER_MODES: Array<{ mode: ArmoryPreviewRenderMode; label: string }> = [
+  { mode: "full", label: "FULL" },
+  { mode: "dom", label: "DOM" },
+  { mode: "doll", label: "DOLL" },
+];
 
 let nextArmoryFrameProfileId = 0;
 let armoryFrameProfileToken = 0;
+let armoryFrameProfileRenderMode: ArmoryPreviewRenderMode = "full";
 let activeArmoryFrameProfile: ActiveArmoryFrameProfile | undefined;
 let completedArmoryFrameProfiles: CompletedArmoryFrameProfile[] = [];
 let overlayElements: ArmoryFrameProfilerOverlayElements | undefined;
@@ -75,9 +85,13 @@ export function isArmoryPreviewProfileTarget(product: ArmoryPreviewProfileProduc
   return ARMORY_FRAME_PROFILE_SLOT_PAIRS.some(([backSlot, frontSlot]) => slots.has(backSlot) && slots.has(frontSlot));
 }
 
-export function profileArmoryPreviewClick(product: ArmoryPreviewProfileProduct, callback: () => void): void {
+export function getArmoryPreviewRenderMode(): ArmoryPreviewRenderMode {
+  return armoryFrameProfileRenderMode;
+}
+
+export function profileArmoryPreviewClick(product: ArmoryPreviewProfileProduct, callback: (renderMode: ArmoryPreviewRenderMode) => void): void {
   if (!isArmoryPreviewProfileTarget(product) || typeof performance === "undefined") {
-    callback();
+    callback("full");
     return;
   }
 
@@ -85,7 +99,7 @@ export function profileArmoryPreviewClick(product: ArmoryPreviewProfileProduct, 
   const logicStartedAt = performance.now();
 
   try {
-    callback();
+    callback(profile.renderMode);
   } finally {
     const logicEndedAt = performance.now();
 
@@ -107,6 +121,7 @@ function startArmoryFrameProfile(product: ArmoryPreviewProfileProduct): ActiveAr
     productId: product.id,
     productName: product.name,
     itemIds: [...product.itemIds],
+    renderMode: armoryFrameProfileRenderMode,
     startedAt,
     lastMeasuredAt: startedAt,
     steps: [],
@@ -114,8 +129,8 @@ function startArmoryFrameProfile(product: ArmoryPreviewProfileProduct): ActiveAr
   };
 
   ensureArmoryFrameLongTaskObserver();
-  renderArmoryFrameProfilerOverlay();
-  console.groupCollapsed(`${ARMORY_FRAME_PROFILE_PREFIX} #${activeArmoryFrameProfile.id} ${product.name}`);
+  ensureArmoryFrameProfilerOverlay();
+  console.groupCollapsed(`${ARMORY_FRAME_PROFILE_PREFIX} #${activeArmoryFrameProfile.id} ${product.name} ${activeArmoryFrameProfile.renderMode}`);
 
   return activeArmoryFrameProfile;
 }
@@ -134,7 +149,6 @@ function scheduleArmoryFrameProfileSamples(profile: ActiveArmoryFrameProfile, pr
     }
 
     pushArmoryFrameProfileStep(profile, sampleIndex === 1 ? "to raf 1" : `raf ${sampleIndex - 1} -> ${sampleIndex}`, previousMeasuredAt, frameStartedAt);
-    renderArmoryFrameProfilerOverlay();
 
     if (sampleIndex >= ARMORY_FRAME_PROFILE_SAMPLE_COUNT) {
       finishArmoryFrameProfile(profile, "frame profile complete", frameStartedAt);
@@ -159,8 +173,6 @@ function pushArmoryFrameProfileStep(
     elapsedMs: endedAt - profile.startedAt,
     durationMs,
   });
-  console.log(`${label}: ${roundArmoryFrameProfileMs(durationMs)}ms`);
-  renderArmoryFrameProfilerOverlay();
 }
 
 function finishArmoryFrameProfile(profile: ActiveArmoryFrameProfile, reason: string, endedAt = performance.now()): void {
@@ -212,7 +224,6 @@ function ensureArmoryFrameLongTaskObserver(): void {
 
         profile.longTasks.push({ elapsedMs, durationMs: entry.duration });
       });
-      renderArmoryFrameProfilerOverlay();
     });
     longTaskObserver.observe({ entryTypes: ["longtask"] });
   } catch {
@@ -248,7 +259,9 @@ function ensureArmoryFrameProfilerOverlay(): ArmoryFrameProfilerOverlayElements 
   const actions = document.createElement("div");
   const clearButton = document.createElement("button");
   const closeButton = document.createElement("button");
+  const modeBar = document.createElement("div");
   const list = document.createElement("div");
+  const modeButtons = {} as Record<ArmoryPreviewRenderMode, HTMLButtonElement>;
 
   root.className = "armory-frame-profiler";
   root.hidden = true;
@@ -271,16 +284,41 @@ function ensureArmoryFrameProfilerOverlay(): ArmoryFrameProfilerOverlayElements 
   closeButton.addEventListener("click", () => {
     root.hidden = true;
   });
+  modeBar.className = "armory-frame-profiler__modes";
+  ARMORY_FRAME_PROFILE_RENDER_MODES.forEach(({ mode, label }) => {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      armoryFrameProfileRenderMode = mode;
+      syncArmoryFrameProfilerModeButtons(modeButtons);
+      renderArmoryFrameProfilerOverlay();
+    });
+    modeButtons[mode] = button;
+    modeBar.append(button);
+  });
   list.className = "armory-frame-profiler__list";
 
   actions.append(clearButton, closeButton);
   header.append(title, actions);
-  root.append(header, list);
+  root.append(header, modeBar, list);
   document.body.append(root);
 
-  overlayElements = { root, list, clearButton };
+  overlayElements = { root, list, clearButton, modeButtons };
+  syncArmoryFrameProfilerModeButtons(modeButtons);
 
   return overlayElements;
+}
+
+function syncArmoryFrameProfilerModeButtons(modeButtons: Record<ArmoryPreviewRenderMode, HTMLButtonElement>): void {
+  ARMORY_FRAME_PROFILE_RENDER_MODES.forEach(({ mode }) => {
+    const button = modeButtons[mode];
+    const isActive = mode === armoryFrameProfileRenderMode;
+
+    button.classList.toggle("armory-frame-profiler__mode--active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
 }
 
 function createLiveArmoryFrameProfile(profile: ActiveArmoryFrameProfile): CompletedArmoryFrameProfile {
@@ -305,7 +343,7 @@ function createArmoryFrameProfileElement(profile: CompletedArmoryFrameProfile): 
   total.className = `armory-frame-profiler__total ${getArmoryFrameProfileSeverityClass(getWorstArmoryFrameProfileStep(profile))}`;
   total.textContent = `${roundArmoryFrameProfileMs(profile.totalMs)}ms`;
   reason.className = "armory-frame-profiler__reason";
-  reason.textContent = getArmoryFrameProfileSummary(profile);
+  reason.textContent = `${profile.renderMode.toUpperCase()}: ${getArmoryFrameProfileSummary(profile)}`;
   steps.className = "armory-frame-profiler__steps";
   steps.append(
     ...(profile.steps.length > 0
