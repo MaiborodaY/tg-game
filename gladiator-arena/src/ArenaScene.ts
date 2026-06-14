@@ -1013,6 +1013,17 @@ function getPlayerEquipmentSlotAssetKey(equipment: HeroEquipment, slotKey: Paper
   return typeof textureKey === "string" ? getActivePaperDollAssetKey(textureKey) : undefined;
 }
 
+function getHeroItemEquipmentTextureKeys(itemId: HeroItemId): string[] {
+  const itemAssetKeys = getHeroItemEquipmentAssetKeys(itemId);
+
+  if (!itemAssetKeys) {
+    return [];
+  }
+
+  return Object.values(getActivePaperDollEquipmentAssetKeys(itemAssetKeys))
+    .filter((textureKey): textureKey is string => typeof textureKey === "string");
+}
+
 function createPlayerEquipmentVisibility(equipment = activePlayerEquipment): Record<PaperDollEquipmentSlotKey, boolean> {
   if (!equipment) {
     return Object.fromEntries(PAPER_DOLL_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, false])) as Record<PaperDollEquipmentSlotKey, boolean>;
@@ -1323,6 +1334,7 @@ export interface CitySceneApi {
   focusWeaponShop: (instant?: boolean) => void;
   setShopMenuTop: (menuTopY?: number) => void;
   previewEquipment: (equipment: HeroEquipment) => void;
+  prewarmEquipmentItem: (itemId: HeroItemId) => void;
   clearEquipmentPreview: () => void;
   focusArenaTransition: () => Promise<void>;
   destroy: () => void;
@@ -1358,6 +1370,7 @@ class CityHeroScene extends Phaser.Scene {
   private cityHeroLiftTween?: Phaser.Tweens.Tween;
   private shopMenuTopY?: number;
   private previewEquipment?: HeroEquipment;
+  private equipmentTexturePrewarmImage?: Phaser.GameObjects.Image;
 
   constructor() {
     super("CityHeroScene");
@@ -1486,6 +1499,21 @@ class CityHeroScene extends Phaser.Scene {
     this.syncPlayerEquipment(changedSlots);
   }
 
+  prewarmPlayerEquipmentItem(itemId: HeroItemId): void {
+    const textureKey = getHeroItemEquipmentTextureKeys(itemId).find((key) => this.textures.exists(key));
+
+    if (!textureKey) {
+      return;
+    }
+
+    const image = this.equipmentTexturePrewarmImage ?? this.createEquipmentTexturePrewarmImage(textureKey);
+
+    if (image.texture.key !== textureKey) {
+      image.setTexture(textureKey);
+    }
+    image.setVisible(true);
+  }
+
   clearPlayerEquipmentPreview(): void {
     if (!this.previewEquipment || !activePlayerEquipment) {
       this.previewEquipment = undefined;
@@ -1534,6 +1562,20 @@ class CityHeroScene extends Phaser.Scene {
     if (this.fighter) {
       applyCityHeroLighting(this.fighter, this.cityLightingAmount, changedSlots);
     }
+  }
+
+  private createEquipmentTexturePrewarmImage(textureKey: string): Phaser.GameObjects.Image {
+    const image = this.add.image(1, 1, textureKey)
+      .setOrigin(0.5)
+      .setAlpha(0.001)
+      .setScale(0.001)
+      .setDepth(Number.MIN_SAFE_INTEGER)
+      .setScrollFactor(0);
+
+    this.cameras.main.ignore(image);
+    this.equipmentTexturePrewarmImage = image;
+
+    return image;
   }
 
   private getDisplayedEquipment(): HeroEquipment {
@@ -2078,6 +2120,9 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     },
     previewEquipment: (equipment: HeroEquipment) => {
       scene?.previewPlayerEquipment(equipment);
+    },
+    prewarmEquipmentItem: (itemId: HeroItemId) => {
+      scene?.prewarmPlayerEquipmentItem(itemId);
     },
     clearEquipmentPreview: () => {
       scene?.clearPlayerEquipmentPreview();

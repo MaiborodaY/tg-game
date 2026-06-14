@@ -118,6 +118,11 @@ let cityReturnTransitionToken = 0;
 let shopPreviewAnimationToken = 0;
 let shopPreviewAnimationTimer: number | undefined;
 let activeShopPreviewEquipment: HeroEquipment | undefined;
+let armoryPreviewPrewarmToken = 0;
+let armoryPreviewPrewarmFrame: number | undefined;
+let armoryPreviewPrewarmItemIds: HeroItemId[] = [];
+let activeArmoryPreviewPrewarmSignature = "";
+let completedArmoryPreviewPrewarmSignature = "";
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
@@ -667,6 +672,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     return;
   }
 
+  cancelArmoryPreviewPrewarm();
   const nextHero = buyAndEquipHeroItems(hero, {
     itemIds: product.itemIds,
     price: product.price,
@@ -719,6 +725,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
     return;
   }
 
+  cancelArmoryPreviewPrewarm();
   cancelShopPreviewAnimation();
   activeShopPreviewEquipment = undefined;
   hero = nextHero;
@@ -757,6 +764,7 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
+  cancelArmoryPreviewPrewarm();
   const sequenceToken = beginShopPreviewAnimation();
 
   if (!shouldStaggerArmoryPreview(product)) {
@@ -788,9 +796,78 @@ function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
 }
 
 function clearShopPreview(): void {
+  cancelArmoryPreviewPrewarm();
   cancelShopPreviewAnimation();
   activeShopPreviewEquipment = undefined;
   cityScene?.clearEquipmentPreview();
+}
+
+function handleArmoryProductPrewarm(products: readonly ArmoryProduct[]): void {
+  const itemIds = products
+    .filter((product) => product.itemIds.length > 1 && !isShopProductSealed(hero, product.itemIds, product.rarity))
+    .flatMap((product) => product.itemIds);
+
+  scheduleArmoryPreviewPrewarm(itemIds);
+}
+
+function scheduleArmoryPreviewPrewarm(itemIds: readonly HeroItemId[]): void {
+  const uniqueItemIds = [...new Set(itemIds)]
+    .filter((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
+  const signature = uniqueItemIds.join("|");
+
+  if (!signature) {
+    cancelArmoryPreviewPrewarm();
+    return;
+  }
+
+  if (signature === activeArmoryPreviewPrewarmSignature || signature === completedArmoryPreviewPrewarmSignature) {
+    return;
+  }
+
+  cancelArmoryPreviewPrewarm();
+  activeArmoryPreviewPrewarmSignature = signature;
+  armoryPreviewPrewarmItemIds = uniqueItemIds;
+  requestArmoryPreviewPrewarmStep();
+}
+
+function requestArmoryPreviewPrewarmStep(): void {
+  if (armoryPreviewPrewarmFrame !== undefined) {
+    return;
+  }
+
+  const token = armoryPreviewPrewarmToken;
+
+  armoryPreviewPrewarmFrame = window.requestAnimationFrame(() => {
+    armoryPreviewPrewarmFrame = undefined;
+
+    if (token !== armoryPreviewPrewarmToken) {
+      return;
+    }
+
+    const itemId = armoryPreviewPrewarmItemIds.shift();
+
+    if (itemId) {
+      cityScene?.prewarmEquipmentItem(itemId);
+    }
+
+    if (armoryPreviewPrewarmItemIds.length > 0) {
+      requestArmoryPreviewPrewarmStep();
+      return;
+    }
+
+    completedArmoryPreviewPrewarmSignature = activeArmoryPreviewPrewarmSignature;
+    activeArmoryPreviewPrewarmSignature = "";
+  });
+}
+
+function cancelArmoryPreviewPrewarm(): void {
+  armoryPreviewPrewarmToken += 1;
+  activeArmoryPreviewPrewarmSignature = "";
+  armoryPreviewPrewarmItemIds = [];
+  if (armoryPreviewPrewarmFrame !== undefined) {
+    window.cancelAnimationFrame(armoryPreviewPrewarmFrame);
+    armoryPreviewPrewarmFrame = undefined;
+  }
 }
 
 function shouldStaggerArmoryPreview(product: ArmoryProduct | WeaponProduct): boolean {
@@ -926,6 +1003,7 @@ if (cityMenu) {
     onBuy: handleShopBuy,
     onPreview: handleShopPreview,
     onPreviewClear: clearShopPreview,
+    onPrewarmProducts: handleArmoryProductPrewarm,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("armory"));

@@ -169,21 +169,23 @@ test("city shops keep product cards wide around their side rails", () => {
   assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__category-rail--melee\s*\{[\s\S]*order: 3;[\s\S]*\}/);
 });
 
-test("shop product cards reuse the profile backdrop texture with deeper rarity color", () => {
+test("shop product cards keep lightweight rarity gradients without the profile backdrop texture", () => {
   const productRule = stylesSource.match(/\.armory-shop__option--product\s*\{[\s\S]*?\}/)?.[0] ?? "";
   const cityProductRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__option--product\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const productBeforeRule = stylesSource.match(/\.armory-shop__option--product::before\s*\{[\s\S]*?\}/)?.[0] ?? "";
 
   assert.equal(stylesSource.includes('--ui-profile-backdrop-texture: url("./assets/ui/profile/portrait-backdrop-texture.webp");'), true);
   assert.equal(stylesSource.includes("--ui-profile-backdrop-size: 280px 280px;"), true);
   assert.match(stylesSource, /\.city-profile__portrait::before\s*\{[\s\S]*var\(--ui-profile-backdrop-texture\) center \/ cover no-repeat;/);
-  assert.match(productRule, /var\(--ui-profile-backdrop-texture\) center \/ var\(--ui-profile-backdrop-size\) repeat/);
-  assert.match(productRule, /background-blend-mode: screen, screen, multiply, soft-light, normal;/);
-  assert.match(productRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 56%/);
-  assert.match(productRule, /inset 0 -8px 13px rgba\(8, 2, 1, 0\.24\)/);
-  assert.match(cityProductRule, /var\(--ui-profile-backdrop-texture\) center \/ var\(--ui-profile-backdrop-size\) repeat/);
-  assert.match(cityProductRule, /background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;/);
+  assert.doesNotMatch(productRule, /var\(--ui-profile-backdrop-texture\)/);
+  assert.doesNotMatch(productRule, /background-blend-mode/);
+  assert.match(productRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 58%/);
+  assert.match(productRule, /inset 0 -6px 0 rgba\(53, 24, 13, 0\.16\)/);
+  assert.doesNotMatch(cityProductRule, /var\(--ui-profile-backdrop-texture\)/);
+  assert.doesNotMatch(cityProductRule, /background-blend-mode/);
   assert.match(cityProductRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 48%/);
-  assert.match(cityProductRule, /inset 0 -6px 10px rgba\(8, 2, 1, 0\.26\)/);
+  assert.match(cityProductRule, /inset 0 -4px 0 rgba\(8, 2, 1, 0\.24\)/);
+  assert.match(productBeforeRule, /content: none;/);
 });
 
 test("sealed armory cards show a centered ribbon and dark item silhouette", () => {
@@ -215,7 +217,8 @@ test("city shop confirm strip is embedded in the shop header while back floats o
   assert.doesNotMatch(citySelectedRule, /position: absolute;/);
   assert.match(cityBackRule, /position: absolute;/);
   assert.match(cityBackRule, /width: 38px;/);
-  assert.match(stylesSource, /\.armory-shop__selected-card\s*\{[\s\S]*var\(--ui-panel-wood-texture\)/);
+  assert.doesNotMatch(stylesSource.match(/\.armory-shop__selected-card\s*\{[\s\S]*?\}/)?.[0] ?? "", /var\(--ui-panel-wood-texture\)/);
+  assert.match(stylesSource.match(/\.armory-shop__selected-card::before\s*\{[\s\S]*?\}/)?.[0] ?? "", /content: none;/);
 });
 
 test("armory confirm strip omits the extra armor icon and updates preview without grid rerender", () => {
@@ -233,4 +236,18 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.match(citySelectedMetaRule, /"name name name"/);
   assert.match(citySelectedMetaRule, /"rarity stat price"/);
   assert.equal(stylesSource.includes(".armory-shop__selected-stat-value--positive"), true);
+});
+
+test("armory shop lazily prewarms visible paired products", () => {
+  assert.equal(armoryShopSource.includes("onPrewarmProducts?: (products: readonly ArmoryProduct[]) => void"), true);
+  assert.equal(armoryShopSource.includes("SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6"), true);
+  assert.equal(armoryShopSource.includes("SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140"), true);
+  assert.equal(armoryShopSource.includes("function getVisibleProductPrewarmCandidates(): ArmoryProduct[]"), true);
+  assert.equal(armoryShopSource.includes("content.getBoundingClientRect()"), true);
+  assert.equal(armoryShopSource.includes("!button || button.disabled"), true);
+  assert.equal(mainSource.includes("function handleArmoryProductPrewarm(products: readonly ArmoryProduct[]): void"), true);
+  assert.equal(mainSource.includes("product.itemIds.length > 1"), true);
+  assert.equal(mainSource.includes("!isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
+  assert.equal(mainSource.includes("cityScene?.prewarmEquipmentItem(itemId);"), true);
+  assert.equal(mainSource.includes("onPrewarmProducts: handleArmoryProductPrewarm"), true);
 });
