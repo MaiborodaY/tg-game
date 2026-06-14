@@ -86,7 +86,12 @@ test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("faceParts.eyeRightCover = part(rightCover);"), true);
   assert.equal(arenaSceneSource.includes("Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));"), true);
   assert.equal(arenaSceneSource.includes('slotKey === "weaponMain" && Boolean(visibility?.[slotKey])'), true);
+  assert.equal(arenaSceneSource.includes("function shouldSyncPaperDollShadowEquipment("), true);
+  assert.equal(arenaSceneSource.includes("return Boolean(rig.shadow?.root.visible);"), true);
+  assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment && rig\.shadow\) \{[\s\S]*tintPaperDollShadowObject\(rig\.shadow\.root\);[\s\S]*\}/);
   assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(rig.shadow, visibility, slotKeys);"), true);
+  assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment\) \{[\s\S]*syncPaperDollEquipmentSlot\(rig\.shadow\?\.equipment\[slotKey\], slotKey, textureKey\);[\s\S]*\}/);
+  assert.match(arenaSceneSource, /!wasHighShadowVisible && this\.fighter\.shadow\.visible[\s\S]*syncPaperDollEquipmentState\(this\.fighter\.paperDollRig\);/);
   assert.doesNotMatch(arenaSceneSource, /rig\.shadow\?\.equipment\[slotKey\]\?\.setVisible\(visibility\[slotKey\]\)/);
 });
 

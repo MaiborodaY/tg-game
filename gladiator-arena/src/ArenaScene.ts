@@ -139,6 +139,7 @@ type FighterPart = Phaser.GameObjects.GameObject & {
   scaleX: number;
   scaleY: number;
   angle: number;
+  visible: boolean;
   setAlpha: (alpha: number) => FighterPart;
   setVisible: (visible: boolean) => FighterPart;
   getWorldTransformMatrix: (
@@ -1584,8 +1585,13 @@ class CityHeroScene extends Phaser.Scene {
       return;
     }
 
+    const wasHighShadowVisible = this.fighter.shadow.visible;
+
     this.fighter.castsShadow = enabled;
     syncFighterShadowVisibility(this.fighter, 1);
+    if (!wasHighShadowVisible && this.fighter.shadow.visible) {
+      syncPaperDollEquipmentState(this.fighter.paperDollRig);
+    }
   }
 
   private handleResize(): void {
@@ -3212,6 +3218,7 @@ function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY
   const highShadowVisible = fighter.castsShadow && shadowMode === "high" && !fighter.isShattered;
   const lowShadowVisible = fighter.castsShadow && shadowMode === "low" && !fighter.isShattered;
   const lowShadowScale = Math.max(0.62, scale / DEFAULT_PLAYER_SCALE);
+  const wasHighShadowVisible = fighter.shadow.visible;
 
   fighter.shadow.x = centerX + debugTuning.shadowOffsetX * scale;
   fighter.shadow.y = feetY + debugTuning.shadowOffsetY * scale;
@@ -3221,6 +3228,9 @@ function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY
   fighter.shadow.setVisible(highShadowVisible);
   fighter.shadow.setAlpha(highShadowVisible ? debugTuning.shadowAlpha : 0);
   applyPaperDollShadowBlur(fighter.shadow);
+  if (highShadowVisible && !wasHighShadowVisible) {
+    syncPaperDollEquipmentState(fighter.paperDollRig);
+  }
   fighter.lowShadow.x = centerX + debugTuning.shadowOffsetX * scale;
   fighter.lowShadow.y = feetY + 9 * scale;
   fighter.lowShadow.scaleX = lowShadowScale * 0.95;
@@ -3373,8 +3383,10 @@ function syncPaperDollEquipmentVisibility(
     return;
   }
 
+  const shouldSyncShadowEquipment = shouldSyncPaperDollShadowEquipment(rig);
+
   syncPaperDollEquipmentVisuals(rig, slotKeys, equipmentOverride);
-  if (rig.shadow) {
+  if (shouldSyncShadowEquipment && rig.shadow) {
     tintPaperDollShadowObject(rig.shadow.root);
   }
 
@@ -3387,14 +3399,22 @@ function syncPaperDollEquipmentVisibility(
       : undefined;
 
   if (!visibility) {
-    syncPaperDollShadowSilhouette(rig.shadow);
+    if (shouldSyncShadowEquipment) {
+      syncPaperDollShadowSilhouette(rig.shadow);
+    }
     return;
   }
 
   slotKeys.forEach((slotKey) => {
     setPaperDollEquipmentSlotVisible(rig.equipment[slotKey], visibility[slotKey]);
   });
-  syncPaperDollShadowSilhouette(rig.shadow, visibility, slotKeys);
+  if (shouldSyncShadowEquipment) {
+    syncPaperDollShadowSilhouette(rig.shadow, visibility, slotKeys);
+  }
+}
+
+function shouldSyncPaperDollShadowEquipment(rig: PaperDollRig): boolean {
+  return Boolean(rig.shadow?.root.visible);
 }
 
 function syncPaperDollShadowSilhouette(
@@ -3430,10 +3450,14 @@ function syncPaperDollEquipmentVisuals(
     return;
   }
 
+  const shouldSyncShadowEquipment = shouldSyncPaperDollShadowEquipment(rig);
+
   slotKeys.forEach((slotKey) => {
     const textureKey = getPlayerEquipmentSlotAssetKey(equipmentState, slotKey);
     syncPaperDollEquipmentSlot(rig.equipment[slotKey], slotKey, textureKey);
-    syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], slotKey, textureKey);
+    if (shouldSyncShadowEquipment) {
+      syncPaperDollEquipmentSlot(rig.shadow?.equipment[slotKey], slotKey, textureKey);
+    }
   });
 }
 
