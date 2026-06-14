@@ -215,6 +215,17 @@ test("fighter resources use flask HUD while preserving stat ids", () => {
   }
 });
 
+test("battle resource fills animate through transforms instead of layout sizes", () => {
+  assert.equal(domUiSource.includes("element.style.transform = `scaleY(${safeRatio})`;"), true);
+  assert.equal(domUiSource.includes("element.style.transform = `scaleX(${safeRatio})`;"), true);
+  assert.equal(domUiSource.includes("element.style.width = `${safeRatio * 100}%`;"), false);
+  assert.equal(domUiSource.includes("element.style.height = `${safeRatio * 100}%`;"), false);
+  assert.equal(stylesSource.includes("transform-origin: left center;"), true);
+  assert.equal(stylesSource.includes("transition: transform 180ms ease;"), true);
+  assert.equal(stylesSource.includes("transform-origin: center bottom;"), true);
+  assert.equal(stylesSource.includes("transition: transform 220ms ease;"), true);
+});
+
 test("arena background is rendered inside the Phaser battle scene", () => {
   const gameScreenIndex = html.indexOf('id="gameScreen" class="game-screen battle-screen"');
   const gameFrameIndex = html.indexOf('id="game" class="game-frame"');

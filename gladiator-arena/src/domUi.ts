@@ -197,14 +197,12 @@ function renderStats(dom: DomRefs, state: CombatState): void {
 
 function setFlaskFill(element: HTMLElement, ratio: number): void {
   const safeRatio = Math.max(0, Math.min(1, ratio));
-  element.style.width = "100%";
-  element.style.height = `${safeRatio * 100}%`;
+  element.style.transform = `scaleY(${safeRatio})`;
 }
 
 function setBarFill(element: HTMLElement, ratio: number): void {
   const safeRatio = Math.max(0, Math.min(1, ratio));
-  element.style.width = `${safeRatio * 100}%`;
-  element.style.height = "100%";
+  element.style.transform = `scaleX(${safeRatio})`;
 }
 
 function renderLog(dom: DomRefs, state: CombatState): void {

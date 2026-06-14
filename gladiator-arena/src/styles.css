@@ -480,7 +480,9 @@ h1 {
   box-shadow:
     inset 0 1px 0 rgba(255, 230, 165, 0.22),
     inset 0 -3px 0 rgba(31, 6, 4, 0.28);
-  transition: width 180ms ease;
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform 180ms ease;
 }
 
 .classic-stat__fill.hp-fill {
@@ -828,7 +830,9 @@ h1 {
   z-index: 1;
   width: 100%;
   height: 100%;
-  transition: height 220ms ease;
+  transform: scaleY(1);
+  transform-origin: center bottom;
+  transition: transform 220ms ease;
 }
 
 .flask--hp .flask-fill {
