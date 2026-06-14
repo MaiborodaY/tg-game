@@ -20,6 +20,10 @@ test("equipment texture swaps reapply slot image sizing", () => {
   assert.equal(arenaSceneSource.includes("applyPaperDollEquipmentImageConfig(image,"), true);
   assert.equal(arenaSceneSource.includes("image.displayHeight = config.displayHeight;"), true);
   assert.equal(arenaSceneSource.includes("image.scaleX = image.scaleY;"), true);
+  assert.equal(arenaSceneSource.includes("const paperDollEquipmentSlotImageStates = new WeakMap"), true);
+  assert.equal(arenaSceneSource.includes("createPaperDollEquipmentSlotImageState(textureKey, config)"), true);
+  assert.equal(arenaSceneSource.includes("arePaperDollEquipmentSlotImageStatesEqual(previousState, nextState)"), true);
+  assert.match(arenaSceneSource, /if \(image && previousState && image\.texture\.key === textureKey && arePaperDollEquipmentSlotImageStatesEqual\(previousState, nextState\)\) \{[\s\S]*return image;[\s\S]*\}/);
 });
 
 test("paper doll parents wrist equipment to forearms and glove equipment to hands", () => {
@@ -84,7 +88,7 @@ test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("eyeLeftCover?: FighterPart;"), true);
   assert.equal(arenaSceneSource.includes("faceParts.eyeLeftCover = part(leftCover);"), true);
   assert.equal(arenaSceneSource.includes("faceParts.eyeRightCover = part(rightCover);"), true);
-  assert.equal(arenaSceneSource.includes("Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));"), true);
+  assert.equal(arenaSceneSource.includes("Object.values(shadow.faceParts).forEach((facePart) => setFighterPartVisible(facePart, false));"), true);
   assert.equal(arenaSceneSource.includes('slotKey === "weaponMain" && Boolean(visibility?.[slotKey])'), true);
   assert.equal(arenaSceneSource.includes("function shouldSyncPaperDollShadowEquipment("), true);
   assert.equal(arenaSceneSource.includes("return Boolean(rig.shadow?.root.visible);"), true);
@@ -194,6 +198,16 @@ test("city shop camera zoom fits the hero inside the current viewport", () => {
   assert.equal(arenaSceneSource.includes("camera.zoomTo(shopZoom"), true);
 });
 
+test("paper doll equipment sync skips unchanged transforms and hidden shadow tuning", () => {
+  assert.equal(arenaSceneSource.includes("const paperDollEquipmentTransformStates = new WeakMap"), true);
+  assert.equal(arenaSceneSource.includes("createPaperDollEquipmentTransformState(tuning)"), true);
+  assert.equal(arenaSceneSource.includes("arePaperDollEquipmentTransformStatesEqual(previousState, nextState)"), true);
+  assert.match(arenaSceneSource, /if \(previousState && arePaperDollEquipmentTransformStatesEqual\(previousState, nextState\)\) \{[\s\S]*return;[\s\S]*\}/);
+  assert.match(arenaSceneSource, /if \(rig\.shadow && shouldSyncPaperDollShadowEquipment\(rig\)\) \{[\s\S]*applyPaperDollEquipmentTuning\(rig\.shadow\.equipment/);
+  assert.equal(arenaSceneSource.includes("function setFighterPartVisible("), true);
+  assert.match(arenaSceneSource, /if \(part && part\.visible !== visible\) \{[\s\S]*part\.setVisible\(visible\);[\s\S]*\}/);
+});
+
 test("city body scale normalizes as the hero moves into shop mode", () => {
   const portraitSceneSource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("class HeroPortraitScene"),
@@ -249,7 +263,8 @@ test("shop equipment preview updates gear without resetting the animated pose", 
   assert.equal(equipmentSyncSource.includes("syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride);"), true);
   assert.equal(arenaSceneSource.includes("getPlayerEquipmentSlotAssetKey(equipmentState, slotKey)"), true);
   assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots\);[\s\S]*return;/);
-  assert.match(arenaSceneSource, /syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount\);/);
+  assert.match(arenaSceneSource, /syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount, changedSlots\);/);
+  assert.match(arenaSceneSource, /function applyCityHeroLighting\([\s\S]*equipmentSlotKeys\?: readonly PaperDollEquipmentSlotKey\[\],[\s\S]*if \(equipmentSlotKeys\) \{[\s\S]*tintPaperDollImages\(rig\.equipment\[slotKey\], CITY_HERO_EQUIPMENT_TINT, amount\);[\s\S]*return;/);
   assert.equal(mainSource.includes("cityScene?.previewEquipment(createShopPreviewEquipment(product.itemIds));"), true);
   assert.equal(mainSource.includes("cityScene?.clearEquipmentPreview();"), true);
   assert.equal(mainSource.includes("setPlayerEquipment(createShopPreviewEquipment(product.itemIds));"), false);

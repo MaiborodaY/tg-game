@@ -385,6 +385,8 @@ const paperDollShadowBlurValues = new WeakMap<Phaser.GameObjects.GameObject, num
 const paperDollLinkedEquipmentAnchors = new WeakMap<FighterPart, FighterPart[]>();
 const paperDollLinkedEquipmentSlots = new WeakMap<FighterPart, FighterPart[]>();
 const paperDollWeaponOverlayCrops = new WeakMap<FighterPart, PaperDollWeaponOverlayCrop>();
+const paperDollEquipmentSlotImageStates = new WeakMap<FighterPart, PaperDollEquipmentSlotImageState>();
+const paperDollEquipmentTransformStates = new WeakMap<FighterPart, PaperDollEquipmentTransformState>();
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
   skin: 0xefaa7b,
@@ -531,6 +533,18 @@ interface PaperDollPartAssetConfig {
   localY: number;
   originX: number;
   originY: number;
+}
+
+interface PaperDollEquipmentSlotImageState extends PaperDollPartAssetConfig {
+  textureKey: string;
+}
+
+interface PaperDollEquipmentTransformState {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
 }
 
 interface PaperDollAssetLoadEntry {
@@ -1518,7 +1532,7 @@ class CityHeroScene extends Phaser.Scene {
   private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
     syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots, this.previewEquipment);
     if (this.fighter) {
-      applyCityHeroLighting(this.fighter, this.cityLightingAmount);
+      applyCityHeroLighting(this.fighter, this.cityLightingAmount, changedSlots);
     }
   }
 
@@ -3113,10 +3127,21 @@ function applyPaperDollShadowBlur(shadowRoot: FighterPart): void {
   paperDollShadowBlurFilters.set(shadowRoot, nextFilter);
 }
 
-function applyCityHeroLighting(fighter: FighterVisual, amount = getCityLightingAmount()): void {
+function applyCityHeroLighting(
+  fighter: FighterVisual,
+  amount = getCityLightingAmount(),
+  equipmentSlotKeys?: readonly PaperDollEquipmentSlotKey[],
+): void {
   const rig = fighter.paperDollRig;
 
   if (!rig) {
+    return;
+  }
+
+  if (equipmentSlotKeys) {
+    equipmentSlotKeys.forEach((slotKey) => {
+      tintPaperDollImages(rig.equipment[slotKey], CITY_HERO_EQUIPMENT_TINT, amount);
+    });
     return;
   }
 
@@ -3293,7 +3318,7 @@ function applyPaperDollEquipmentStateTuning(
   const equipmentState = equipmentOverride ?? (rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState);
 
   applyPaperDollEquipmentTuning(rig.equipment, equipment, equipmentItems, equipmentState, slotKeys);
-  if (rig.shadow) {
+  if (rig.shadow && shouldSyncPaperDollShadowEquipment(rig)) {
     applyPaperDollEquipmentTuning(rig.shadow.equipment, equipment, equipmentItems, equipmentState, slotKeys);
   }
 }
@@ -3426,18 +3451,24 @@ function syncPaperDollShadowSilhouette(
     return;
   }
 
-  Object.values(shadow.faceParts).forEach((facePart) => facePart?.setVisible(false));
+  Object.values(shadow.faceParts).forEach((facePart) => setFighterPartVisible(facePart, false));
   slotKeys.forEach((slotKey) => {
     const slotVisible = slotKey === "weaponMain" && Boolean(visibility?.[slotKey]);
 
-    shadow.equipment[slotKey]?.setVisible(slotVisible);
-    getLinkedPaperDollEquipmentSlots(shadow.equipment[slotKey]).forEach((slot) => slot.setVisible(false));
+    setFighterPartVisible(shadow.equipment[slotKey], slotVisible);
+    getLinkedPaperDollEquipmentSlots(shadow.equipment[slotKey]).forEach((slot) => setFighterPartVisible(slot, false));
   });
 }
 
 function setPaperDollEquipmentSlotVisible(slot: FighterPart | undefined, visible: boolean): void {
-  slot?.setVisible(visible);
-  getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => linkedSlot.setVisible(visible && isPaperDollWeaponOverlayVisible(linkedSlot)));
+  setFighterPartVisible(slot, visible);
+  getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => setFighterPartVisible(linkedSlot, visible && isPaperDollWeaponOverlayVisible(linkedSlot)));
+}
+
+function setFighterPartVisible(part: FighterPart | undefined, visible: boolean): void {
+  if (part && part.visible !== visible) {
+    part.setVisible(visible);
+  }
 }
 
 function syncPaperDollEquipmentVisuals(
@@ -3472,7 +3503,7 @@ function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, slotKey: Pape
 
     if (slotKey === "weaponMain" && image) {
       applyPaperDollWeaponTopOverlayCrop(image, getPaperDollWeaponOverlayCrop(linkedSlot, textureKey));
-      linkedSlot.setVisible(isPaperDollEquipmentSlotVisible(slot) && isPaperDollWeaponOverlayVisible(linkedSlot));
+      setFighterPartVisible(linkedSlot, isPaperDollEquipmentSlotVisible(slot) && isPaperDollWeaponOverlayVisible(linkedSlot));
     }
   });
 }
@@ -3494,9 +3525,17 @@ function syncSinglePaperDollEquipmentSlot(
     return undefined;
   }
 
+  const nextState = createPaperDollEquipmentSlotImageState(textureKey, config);
+  const previousState = paperDollEquipmentSlotImageStates.get(slot);
+
+  if (image && previousState && image.texture.key === textureKey && arePaperDollEquipmentSlotImageStatesEqual(previousState, nextState)) {
+    return image;
+  }
+
   if (!image) {
     image = createPaperDollEquipmentImage(slotContainer.scene, textureKey, config);
     slotContainer.add(image);
+    paperDollEquipmentSlotImageStates.set(slot, nextState);
     return image;
   }
 
@@ -3505,8 +3544,32 @@ function syncSinglePaperDollEquipmentSlot(
   }
 
   applyPaperDollEquipmentImageConfig(image, config);
+  paperDollEquipmentSlotImageStates.set(slot, nextState);
 
   return image;
+}
+
+function createPaperDollEquipmentSlotImageState(textureKey: string, config: PaperDollPartAssetConfig): PaperDollEquipmentSlotImageState {
+  return {
+    textureKey,
+    displayHeight: config.displayHeight,
+    localX: config.localX,
+    localY: config.localY,
+    originX: config.originX,
+    originY: config.originY,
+  };
+}
+
+function arePaperDollEquipmentSlotImageStatesEqual(
+  previousState: PaperDollEquipmentSlotImageState,
+  nextState: PaperDollEquipmentSlotImageState,
+): boolean {
+  return previousState.textureKey === nextState.textureKey
+    && previousState.displayHeight === nextState.displayHeight
+    && previousState.localX === nextState.localX
+    && previousState.localY === nextState.localY
+    && previousState.originX === nextState.originX
+    && previousState.originY === nextState.originY;
 }
 
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
@@ -3697,11 +3760,40 @@ function applyEquipmentTransform(part: FighterPart | undefined, tuning: Equipmen
 }
 
 function applySingleEquipmentTransform(part: FighterPart, tuning: EquipmentTuning): void {
-  part.x = tuning.x;
-  part.y = tuning.y;
-  part.angle = tuning.angle;
-  part.scaleX = tuning.scaleX * (tuning.flipX ? -1 : 1);
-  part.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
+  const nextState = createPaperDollEquipmentTransformState(tuning);
+  const previousState = paperDollEquipmentTransformStates.get(part);
+
+  if (previousState && arePaperDollEquipmentTransformStatesEqual(previousState, nextState)) {
+    return;
+  }
+
+  part.x = nextState.x;
+  part.y = nextState.y;
+  part.angle = nextState.angle;
+  part.scaleX = nextState.scaleX;
+  part.scaleY = nextState.scaleY;
+  paperDollEquipmentTransformStates.set(part, nextState);
+}
+
+function createPaperDollEquipmentTransformState(tuning: EquipmentTuning): PaperDollEquipmentTransformState {
+  return {
+    x: tuning.x,
+    y: tuning.y,
+    angle: tuning.angle,
+    scaleX: tuning.scaleX * (tuning.flipX ? -1 : 1),
+    scaleY: tuning.scaleY * (tuning.flipY ? -1 : 1),
+  };
+}
+
+function arePaperDollEquipmentTransformStatesEqual(
+  previousState: PaperDollEquipmentTransformState,
+  nextState: PaperDollEquipmentTransformState,
+): boolean {
+  return previousState.x === nextState.x
+    && previousState.y === nextState.y
+    && previousState.angle === nextState.angle
+    && previousState.scaleX === nextState.scaleX
+    && previousState.scaleY === nextState.scaleY;
 }
 
 function getPaperDollEquipmentDragLocalPoint(slot: FighterPart, worldX: number, worldY: number): { x: number; y: number } {
