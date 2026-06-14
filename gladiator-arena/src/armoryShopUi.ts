@@ -26,12 +26,6 @@ import {
   type ShopProductActionState,
   type ShopItemRarity,
 } from "./shopPresentation";
-import {
-  getArmoryPreviewRenderMode,
-  isArmoryPreviewProfileTarget,
-  profileArmoryPreviewClick,
-  type ArmoryPreviewRenderMode,
-} from "./shopPreviewProfiler";
 
 export interface ArmoryProduct {
   id: string;
@@ -641,17 +635,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     scheduleVisibleProductPrewarm();
   }
 
-  function previewArmoryProduct(product: ArmoryProduct, renderMode: ArmoryPreviewRenderMode = "full"): void {
-    if (renderMode === "noop") {
-      return;
-    }
-
-    if (renderMode === "doll") {
-      clearVisibleProductPrewarm();
-      options.onPreview?.(product);
-      return;
-    }
-
+  function previewArmoryProduct(product: ArmoryProduct): void {
     if (previewProduct?.id === product.id) {
       return;
     }
@@ -660,9 +644,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     clearVisibleProductPrewarm();
     previewProduct = product;
-    if (renderMode !== "dom") {
-      options.onPreview?.(product);
-    }
+    options.onPreview?.(product);
     renderPreviewSelection(previousProductId);
   }
 
@@ -791,19 +773,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     if (actionState === "buy" || actionState === "no-gold") {
       button.append(createProductStats("AR", armor, product.price));
     }
-    button.addEventListener("click", () => {
-      const renderMode = getArmoryPreviewRenderMode();
-
-      if (
-        isArmoryPreviewProfileTarget(product) &&
-        (renderMode === "doll" || renderMode === "noop" || previewProduct?.id !== product.id)
-      ) {
-        profileArmoryPreviewClick(product, (profileRenderMode) => previewArmoryProduct(product, profileRenderMode));
-        return;
-      }
-
-      previewArmoryProduct(product);
-    });
+    button.addEventListener("click", () => previewArmoryProduct(product));
 
     return button;
   }

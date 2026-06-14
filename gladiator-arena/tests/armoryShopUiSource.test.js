@@ -10,7 +10,6 @@ const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.t
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
 const shopPresentationSource = readFileSync(resolve(currentDir, "../src/shopPresentation.ts"), "utf8");
-const shopPreviewProfilerSource = readFileSync(resolve(currentDir, "../src/shopPreviewProfiler.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 test("armory shop groups generated back and front equipment into one product", () => {
@@ -232,22 +231,12 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(armoryShopSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL"), false);
   assert.equal(armoryShopSource.includes("function renderPreviewSelection"), true);
   assert.equal(armoryShopSource.includes("function previewArmoryProduct"), true);
-  assert.match(armoryShopSource, /profileArmoryPreviewClick\(product, \(profileRenderMode\) => previewArmoryProduct\(product, profileRenderMode\)\);[\s\S]*previewArmoryProduct\(product\);/);
-  assert.match(armoryShopSource, /if \(renderMode === "noop"\) \{[\s\S]*return;[\s\S]*\}/);
-  assert.match(armoryShopSource, /function previewArmoryProduct\(product: ArmoryProduct, renderMode: ArmoryPreviewRenderMode = "full"\)[\s\S]*if \(renderMode === "doll"\)[\s\S]*options\.onPreview\?\.\(product\);[\s\S]*return;/);
-  assert.match(armoryShopSource, /renderMode === "doll" \|\| renderMode === "noop" \|\| previewProduct\?\.id !== product\.id/);
-  assert.match(armoryShopSource, /if \(renderMode !== "dom"\) \{[\s\S]*options\.onPreview\?\.\(product\);[\s\S]*\}/);
-  assert.equal(shopPreviewProfilerSource.includes('title.textContent = "FRAME PROFILER"'), true);
-  assert.equal(shopPreviewProfilerSource.includes('export type ArmoryPreviewRenderMode = "full" | "dom" | "doll" | "noop";'), true);
-  assert.equal(shopPreviewProfilerSource.includes('{ mode: "noop", label: "NOOP" }'), true);
-  assert.equal(shopPreviewProfilerSource.includes("ARMORY_FRAME_PROFILE_RENDER_MODES"), true);
-  assert.equal(shopPreviewProfilerSource.includes("callback(profile.renderMode)"), true);
-  assert.equal(shopPreviewProfilerSource.includes('"to raf 1"'), true);
-  assert.equal(shopPreviewProfilerSource.includes('"longtask"'), true);
-  assert.equal(shopPreviewProfilerSource.includes("profileArmoryPreviewSpan"), false);
-  assert.equal(stylesSource.includes(".armory-frame-profiler"), true);
-  assert.equal(stylesSource.includes(".armory-frame-profiler__modes"), true);
-  assert.equal(stylesSource.includes("grid-template-columns: repeat(4, 1fr);"), true);
+  assert.match(armoryShopSource, /button\.addEventListener\("click", \(\) => previewArmoryProduct\(product\)\);/);
+  assert.match(armoryShopSource, /function previewArmoryProduct\(product: ArmoryProduct\)[\s\S]*if \(previewProduct\?\.id === product\.id\)[\s\S]*clearVisibleProductPrewarm\(\);[\s\S]*options\.onPreview\?\.\(product\);[\s\S]*renderPreviewSelection\(previousProductId\);/);
+  assert.equal(armoryShopSource.includes("shopPreviewProfiler"), false);
+  assert.equal(armoryShopSource.includes("profileArmoryPreviewClick"), false);
+  assert.equal(armoryShopSource.includes("ArmoryPreviewRenderMode"), false);
+  assert.equal(stylesSource.includes(".armory-frame-profiler"), false);
   assert.equal(stylesSource.includes(".armory-preview-profiler"), false);
   assert.match(armoryShopSource, /function renderPreviewSelection[\s\S]*renderSelectedProduct\(hero\);[\s\S]*updateProductButtonSelection\(previousProductId\);/);
   assert.match(armoryShopSource, /function updateSelectedMeta[\s\S]*meta\.name\.textContent = productName;[\s\S]*meta\.priceAmount\.textContent = String\(price\);/);
