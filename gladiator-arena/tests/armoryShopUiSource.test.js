@@ -185,7 +185,10 @@ test("shop product cards keep lightweight rarity gradients without the profile b
   assert.doesNotMatch(cityProductRule, /var\(--ui-profile-backdrop-texture\)/);
   assert.doesNotMatch(cityProductRule, /background-blend-mode/);
   assert.match(cityProductRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 48%/);
-  assert.match(cityProductRule, /inset 0 -4px 0 rgba\(8, 2, 1, 0\.24\)/);
+  assert.doesNotMatch(cityProductRule, /radial-gradient/);
+  assert.doesNotMatch(cityProductRule, /repeating-linear-gradient/);
+  assert.doesNotMatch(cityProductRule, /inset 0 -4px 0 rgba\(8, 2, 1, 0\.24\)/);
+  assert.match(cityProductRule, /inset 0 0 0 1px rgba\(255, 246, 210, 0\.16\)/);
   assert.match(productBeforeRule, /content: none;/);
 });
 
