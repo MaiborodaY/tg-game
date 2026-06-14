@@ -748,18 +748,8 @@ function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
   return equipment;
 }
 
-function getShopPreviewItemIds(product: ArmoryProduct | WeaponProduct): HeroItemId[] {
-  if (product.itemIds.length <= 1) {
-    return product.itemIds;
-  }
-
-  const frontItemId = product.itemIds.find((itemId) => HERO_ITEM_CATALOG[itemId]?.equipmentSlot.startsWith("front"));
-
-  return frontItemId ? [frontItemId] : [product.itemIds[0]!];
-}
-
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
-  cityScene?.previewEquipment(createShopPreviewEquipment(getShopPreviewItemIds(product)));
+  cityScene?.previewEquipment(createShopPreviewEquipment(product.itemIds));
 }
 
 function clearShopPreview(): void {
