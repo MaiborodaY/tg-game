@@ -90,6 +90,26 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(stylesSource.includes("@keyframes city-profile-panel-in"), true);
 });
 
+test("city equipment inventory cards share the textured rarity standard", () => {
+  const inventoryItemRule = stylesSource.match(/\.city-equipment-menu__item\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const selectedOrbRule = stylesSource.match(/\.city-equipment-menu__selected-orb\s*\{[\s\S]*?\}/)?.[0] ?? "";
+
+  assert.match(inventoryItemRule, /var\(--ui-profile-backdrop-texture\) center \/ var\(--ui-profile-backdrop-size\) repeat/);
+  assert.match(inventoryItemRule, /background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;/);
+  assert.match(inventoryItemRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 48%/);
+  assert.match(inventoryItemRule, /inset 0 -6px 10px rgba\(8, 2, 1, 0\.26\)/);
+  assert.match(selectedOrbRule, /var\(--ui-profile-backdrop-texture\) center \/ var\(--ui-profile-backdrop-size\) repeat/);
+  assert.match(selectedOrbRule, /background-blend-mode: screen, screen, multiply, multiply, soft-light, normal;/);
+  assert.match(selectedOrbRule, /var\(--shop-rarity-light, #75401d\) 0%, var\(--shop-rarity, #3a1508\) 52%/);
+});
+
+test("city equipment inventory uses display names instead of raw item names", () => {
+  assert.equal(cityHeroUiSource.includes("getShopProductDisplayName"), true);
+  assert.equal(cityHeroUiSource.includes("items.map((item) => getShopProductDisplayName(item.name))"), true);
+  assert.equal(cityHeroUiSource.includes("product ? getShopProductDisplayName(product.name).toUpperCase()"), true);
+  assert.equal(cityHeroUiSource.includes('button.setAttribute("aria-label", getShopProductDisplayName(product.name));'), true);
+});
+
 test("church button can be wired while keeping the locked visual state", () => {
   assert.equal(html.includes('id="churchButton"'), true);
   assert.equal(html.includes('city-menu__button city-menu__button--locked" type="button" aria-disabled="true"'), true);

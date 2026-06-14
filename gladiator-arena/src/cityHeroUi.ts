@@ -21,7 +21,7 @@ import {
   type HeroState,
 } from "./hero";
 import { getShopProductIconUrl } from "./shopItemIcons";
-import { getShopProductRarity, getShopProductStat, getShopRarityLabel, type ShopItemRarity } from "./shopPresentation";
+import { getShopProductDisplayName, getShopProductRarity, getShopProductStat, getShopRarityLabel, type ShopItemRarity } from "./shopPresentation";
 
 const HERO_ATTRIBUTE_KEYS: readonly HeroAttributeKey[] = ["strength", "agility", "vitality"];
 type CityHeroProfileStatKey = "damage" | "armor" | "hp" | "stamina" | "movement" | "recovery";
@@ -556,7 +556,7 @@ function renderCityHeroProfileEquipment(refs: CityHeroWidgetRefs, hero: HeroStat
     ]
       .filter(Boolean)
       .join(" ");
-    card.title = items.length > 0 ? `${group.label}: ${items.map((item) => item.name).join(", ")}` : `${group.label}: empty`;
+    card.title = items.length > 0 ? `${group.label}: ${items.map((item) => getShopProductDisplayName(item.name)).join(", ")}` : `${group.label}: empty`;
     card.setAttribute("aria-label", card.title);
     card.dataset.heroEquipmentCategory = getProfileEquipmentCategoryId(group, hero.equipment);
     icon.className = "city-profile__equipment-icon";
@@ -640,7 +640,7 @@ function renderCityEquipmentSelected(
     menu.selectedIcon.textContent = iconUrl ? "" : category.label.slice(0, 1);
   }
 
-  setText(menu.selectedName, product?.name.toUpperCase() ?? category.label.toUpperCase());
+  setText(menu.selectedName, product ? getShopProductDisplayName(product.name).toUpperCase() : category.label.toUpperCase());
   if (menu.selectedRarity) {
     menu.selectedRarity.className = [
       "city-equipment-menu__selected-rarity",
@@ -730,7 +730,7 @@ function renderCityEquipmentProducts(
         .filter(Boolean)
         .join(" ");
       button.dataset.cityEquipmentProduct = product.id;
-      button.setAttribute("aria-label", product.name);
+      button.setAttribute("aria-label", getShopProductDisplayName(product.name));
       icon.className = "city-equipment-menu__item-icon";
 
       if (iconUrl) {

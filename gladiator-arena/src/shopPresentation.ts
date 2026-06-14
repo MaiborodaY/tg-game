@@ -80,6 +80,14 @@ export function getShopProductActionLabel(actionState: ShopProductActionState, p
   return actionState === "buy" ? `Buy ${price}` : "No gold";
 }
 
+export function getShopProductDisplayName(productName: string): string {
+  return productName
+    .replace(/\bshoulderguards?\b/giu, "Shoulders")
+    .replace(/\s+01\b/gu, "")
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
 export function getShopProductRarity(itemIds: HeroItemId[], explicitRarity?: ShopItemRarity): ShopItemRarity {
   if (explicitRarity) {
     return explicitRarity;

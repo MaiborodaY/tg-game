@@ -9,6 +9,8 @@
   --teal: #42b7aa;
   --ui-panel-wood-texture: url("./assets/ui/panels/ui-panel-wood.webp");
   --ui-panel-wood-size: 256px 256px;
+  --ui-profile-backdrop-texture: url("./assets/ui/profile/portrait-backdrop-texture.webp");
+  --ui-profile-backdrop-size: 280px 280px;
 }
 
 * {
@@ -2929,7 +2931,7 @@ body.debug-active .city-menu__portrait-button:active {
   z-index: 0;
   border: 2px solid rgba(13, 3, 1, 0.92);
   border-radius: 4px;
-  background: url("./assets/ui/profile/portrait-backdrop-texture.webp") center / cover no-repeat;
+  background: var(--ui-profile-backdrop-texture) center / cover no-repeat;
   box-shadow:
     inset 0 0 0 1px rgba(255, 220, 146, 0.12),
     inset 0 0 12px rgba(8, 2, 1, 0.18);
@@ -3533,14 +3535,18 @@ body.debug-active .city-menu__portrait-button:active {
   border: 4px solid #120502;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 48%, rgba(255, 246, 210, 0.22), transparent 34%),
-    radial-gradient(circle at 35% 28%, rgba(255, 246, 210, 0.3), transparent 24%),
-    radial-gradient(circle at 65% 78%, rgba(8, 2, 1, 0.34), transparent 28%),
+    radial-gradient(circle at 50% 48%, rgba(255, 246, 210, 0.24), transparent 34%),
+    radial-gradient(circle at 35% 28%, rgba(255, 246, 210, 0.32), transparent 24%),
+    radial-gradient(circle at 65% 78%, rgba(8, 2, 1, 0.3), transparent 28%),
+    linear-gradient(180deg, rgba(255, 240, 189, 0.06), transparent 36%, rgba(8, 2, 1, 0.18) 100%),
+    var(--ui-profile-backdrop-texture) center / var(--ui-profile-backdrop-size) repeat,
     linear-gradient(180deg, var(--shop-rarity-light, #75401d) 0%, var(--shop-rarity, #3a1508) 52%, var(--shop-rarity-dark, #120502) 100%);
+  background-blend-mode: screen, screen, multiply, multiply, soft-light, normal;
   box-shadow:
     inset 0 0 0 2px rgba(255, 246, 210, 0.2),
     inset 0 0 0 7px rgba(18, 5, 2, 0.28),
-    inset 0 -14px 20px rgba(8, 2, 1, 0.36),
+    inset 0 -14px 20px rgba(8, 2, 1, 0.32),
+    inset 0 0 18px rgba(8, 2, 1, 0.12),
     0 0 0 2px rgba(149, 89, 42, 0.82),
     0 0 18px 3px var(--shop-rarity-soft, rgba(255, 220, 146, 0.18)),
     0 0 34px 6px var(--shop-rarity-soft, rgba(255, 220, 146, 0.12)),
@@ -3753,18 +3759,22 @@ body.debug-active .city-menu__portrait-button:active {
   border: 2px solid #1c0c06;
   border-radius: 7px;
   background:
-    radial-gradient(circle at 22% 24%, rgba(255, 246, 210, 0.2), transparent 19%),
+    radial-gradient(circle at 22% 24%, rgba(255, 246, 210, 0.22), transparent 19%),
     radial-gradient(circle at 78% 36%, rgba(8, 2, 1, 0.18), transparent 23%),
-    radial-gradient(ellipse at 48% 18%, rgba(255, 246, 210, 0.16), transparent 50%),
-    radial-gradient(circle at 35% 72%, rgba(8, 2, 1, 0.2), transparent 27%),
+    radial-gradient(ellipse at 48% 18%, rgba(255, 246, 210, 0.17), transparent 50%),
+    radial-gradient(circle at 35% 72%, rgba(8, 2, 1, 0.22), transparent 28%),
     repeating-linear-gradient(115deg, rgba(255, 246, 210, 0.035) 0 1px, transparent 1px 5px),
-    linear-gradient(135deg, rgba(255, 240, 189, 0.12), rgba(255, 240, 189, 0.03) 35%, transparent 36%),
+    linear-gradient(135deg, rgba(255, 240, 189, 0.13), rgba(255, 240, 189, 0.04) 35%, transparent 36%),
+    linear-gradient(180deg, rgba(255, 240, 189, 0.06), transparent 36%, rgba(8, 2, 1, 0.18) 100%),
+    var(--ui-profile-backdrop-texture) center / var(--ui-profile-backdrop-size) repeat,
     linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 48%, var(--shop-rarity-dark, #4d4232) 100%);
+  background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 246, 210, 0.2),
-    inset 0 3px 0 rgba(255, 246, 210, 0.16),
-    inset 0 -4px 0 rgba(8, 2, 1, 0.24),
-    0 2px 0 rgba(8, 2, 1, 0.74);
+    inset 0 0 0 1px rgba(255, 246, 210, 0.22),
+    inset 0 3px 0 rgba(255, 246, 210, 0.18),
+    inset 0 -6px 10px rgba(8, 2, 1, 0.26),
+    inset 0 0 13px rgba(8, 2, 1, 0.12),
+    0 2px 0 rgba(8, 2, 1, 0.76);
   cursor: pointer;
 }
 
@@ -4195,9 +4205,11 @@ body.debug-active .city-menu__portrait-button:active {
   --shop-city-rail-width: 77px;
   --shop-city-panel-pad-x: 4px;
   --shop-city-rail-gap: 6px;
-  --shop-city-header-height: 28px;
+  --shop-city-header-height: 72px;
   --shop-city-subcategory-height: 24px;
   --shop-city-active-subcategory-height: 0px;
+  --shop-city-menu-pad-top: 7px;
+  --shop-city-menu-pad-bottom: max(4px, env(safe-area-inset-bottom));
   --shop-frame-side-width: 7px;
   --shop-frame-top-height: 16px;
   --shop-frame-bottom-height: 6px;
@@ -4346,7 +4358,7 @@ body.debug-active .city-menu__portrait-button:active {
   gap: var(--shop-city-rail-gap);
   isolation: isolate;
   overflow: visible;
-  padding: 7px var(--shop-city-panel-pad-x) max(4px, env(safe-area-inset-bottom)) var(--shop-city-panel-pad-x);
+  padding: var(--shop-city-menu-pad-top) var(--shop-city-panel-pad-x) var(--shop-city-menu-pad-bottom) var(--shop-city-panel-pad-x);
   border: 0;
   border-radius: 0;
   background:
@@ -4562,19 +4574,24 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop--city-mode .armory-shop__header {
   position: relative;
   grid-row: 1;
-  grid-template-columns: 28px minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+  align-items: center;
   height: var(--shop-city-header-height);
   min-height: 0;
-  padding: 1px 5px 2px;
+  padding: 4px 5px;
   overflow: visible;
   border-bottom-color: rgba(255, 211, 132, 0.28);
   background:
-    linear-gradient(180deg, rgba(255, 226, 142, 0.1), transparent 27%, rgba(8, 2, 1, 0.32) 100%),
-    linear-gradient(90deg, rgba(22, 7, 3, 0.36), rgba(91, 40, 16, 0.2) 48%, rgba(22, 7, 3, 0.4)),
+    radial-gradient(ellipse at 50% 0, rgba(255, 211, 132, 0.16), transparent 56%),
+    linear-gradient(90deg, rgba(8, 2, 1, 0.5), transparent 18% 82%, rgba(8, 2, 1, 0.5)),
+    linear-gradient(180deg, rgba(255, 226, 142, 0.12), rgba(8, 2, 1, 0.42)),
+    var(--ui-panel-wood-texture) center / 220px 220px repeat,
     #3a180b;
   box-shadow:
-    inset 0 1px 0 rgba(255, 240, 189, 0.16),
-    inset 0 -1px 0 rgba(8, 2, 1, 0.76),
+    inset 0 1px 0 rgba(255, 240, 189, 0.2),
+    inset 0 -2px 0 rgba(8, 2, 1, 0.78),
+    inset 0 0 18px rgba(8, 2, 1, 0.3),
     0 1px 0 rgba(255, 211, 132, 0.12);
   isolation: isolate;
 }
@@ -4585,10 +4602,9 @@ body.debug-active .city-menu__portrait-button:active {
   inset: 0;
   z-index: 0;
   background:
-    repeating-linear-gradient(0deg, rgba(255, 226, 142, 0.05) 0 1px, transparent 1px 4px),
-    radial-gradient(ellipse at 18% 42%, rgba(255, 211, 132, 0.1), transparent 36%),
-    radial-gradient(ellipse at 82% 50%, rgba(8, 2, 1, 0.16), transparent 42%);
-  opacity: 0.78;
+    linear-gradient(180deg, rgba(255, 240, 189, 0.08), transparent 42%, rgba(8, 2, 1, 0.2)),
+    radial-gradient(ellipse at 50% 16%, rgba(255, 211, 132, 0.1), transparent 58%);
+  opacity: 0.9;
   pointer-events: none;
 }
 
@@ -4622,17 +4638,35 @@ body.debug-active .city-menu__portrait-button:active {
   top: 50%;
   left: 50%;
   z-index: 2;
-  max-width: calc(100% - 72px);
-  color: #e8c477;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.94rem;
+  min-width: 138px;
+  max-width: min(260px, calc(100% - 34px));
+  padding: 8px 30px 9px;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 9px;
+  color: #d9ad67;
+  background:
+    linear-gradient(180deg, rgba(8, 2, 1, 0.34), rgba(255, 226, 142, 0.04) 42%, rgba(255, 226, 142, 0.08)),
+    rgba(8, 2, 1, 0.16);
+  box-shadow:
+    inset 0 2px 3px rgba(8, 2, 1, 0.72),
+    inset 0 -1px 0 rgba(255, 240, 189, 0.12),
+    0 1px 0 rgba(255, 240, 189, 0.08);
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, "Times New Roman", serif;
+  font-size: 1.16rem;
   font-weight: 900;
-  line-height: 0.95;
+  letter-spacing: 0.08em;
+  line-height: 1;
   text-shadow:
-    0 1px 0 #160703,
-    0 0 5px rgba(255, 211, 132, 0.18);
+    0 -1px 0 rgba(8, 2, 1, 0.9),
+    0 1px 0 rgba(255, 240, 189, 0.16),
+    1px 0 0 rgba(22, 7, 3, 0.24),
+    -1px 0 0 rgba(22, 7, 3, 0.24);
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+.armory-shop--city-mode.armory-shop--has-selection .armory-shop__title {
+  opacity: 0;
 }
 
 .armory-shop__gold,
@@ -4659,12 +4693,13 @@ body.debug-active .city-menu__portrait-button:active {
   bottom: 1px;
   z-index: 2;
   display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 1px;
+  grid-template-rows: minmax(0, 1fr) 1px minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  gap: 4px;
   width: var(--shop-city-rail-width);
   min-width: 0;
-  padding: 2px 4px 1px;
+  padding: 6px 7px 5px;
   border: 1px solid rgba(255, 211, 132, 0.18);
   border-radius: 5px 0 0 5px;
   background:
@@ -4691,17 +4726,87 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.armory-shop--city-mode .armory-shop__header-meta::after {
+  content: "";
+  grid-row: 2;
+  width: 100%;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 211, 132, 0.44), transparent);
+  box-shadow: 0 1px 0 rgba(8, 2, 1, 0.78);
+  pointer-events: none;
+}
+
 .armory-shop--city-mode .armory-shop__gold,
 .armory-shop--city-mode .armory-shop__level {
+  position: relative;
   color: #e9c77d;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.53rem;
-  line-height: 0.92;
+  line-height: 1;
   text-shadow: 0 1px 0 #160703;
+}
+
+.armory-shop--city-mode .armory-shop__gold {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+}
+
+.armory-shop__gold-icon {
+  display: none;
+}
+
+.armory-shop--city-mode .armory-shop__gold-icon {
+  display: block;
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.72))
+    drop-shadow(0 0 4px rgba(255, 174, 45, 0.22));
+}
+
+.armory-shop__gold-amount,
+.armory-shop__level-label,
+.armory-shop__level-value {
+  display: inline-block;
+}
+
+.armory-shop--city-mode .armory-shop__gold-amount {
+  min-width: 0;
+  color: #ffe6a0;
+  font-size: 0.76rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
 .armory-shop__level {
   text-align: right;
+}
+
+.armory-shop--city-mode .armory-shop__level {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.armory-shop--city-mode .armory-shop__level-label {
+  color: #c49152;
+  font-size: 0.46rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+}
+
+.armory-shop--city-mode .armory-shop__level-value {
+  color: #ffe6a0;
+  font-size: 0.78rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
 .armory-shop__selected {
@@ -4709,13 +4814,13 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__selected {
-  position: absolute;
-  left: 4px;
-  right: calc(var(--shop-city-rail-width) + var(--shop-city-rail-gap) + var(--shop-city-panel-pad-x));
-  top: auto;
-  bottom: calc(var(--shop-city-products-height) + var(--shop-city-active-subcategory-height) - 1px);
-  z-index: 4;
-  width: auto;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-column: 1;
+  align-self: stretch;
+  min-width: 0;
+  width: 100%;
   min-height: 0;
   pointer-events: auto;
   animation: armory-shop-confirm-rise 160ms ease-out both;
@@ -4828,32 +4933,55 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) minmax(76px, auto);
+  grid-template-columns: 50px minmax(0, 1fr) minmax(78px, auto);
   gap: 7px;
   align-items: center;
-  min-height: 56px;
-  padding: 6px;
+  min-height: 62px;
+  padding: 6px 7px;
   border: 2px solid var(--shop-rarity);
-  border-radius: 8px;
+  border-radius: 9px;
   background:
-    radial-gradient(circle at 14% 28%, rgba(255, 246, 210, 0.16), transparent 28%),
-    radial-gradient(circle at 82% 34%, rgba(8, 2, 1, 0.2), transparent 30%),
-    linear-gradient(135deg, rgba(255, 240, 189, 0.14), transparent 38%),
-    linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 42%, var(--shop-rarity-dark, #4d4232) 100%);
+    radial-gradient(circle at 12% 24%, rgba(255, 240, 189, 0.22), transparent 22%),
+    radial-gradient(circle at 84% 34%, var(--shop-rarity-soft, rgba(255, 240, 189, 0.2)), transparent 26%),
+    linear-gradient(90deg, rgba(255, 240, 189, 0.12), transparent 18% 82%, rgba(8, 2, 1, 0.34)),
+    linear-gradient(180deg, rgba(255, 226, 142, 0.2), rgba(8, 2, 1, 0.44)),
+    var(--ui-panel-wood-texture) center / 220px 220px repeat,
+    linear-gradient(180deg, #50301b 0%, #241008 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 246, 210, 0.24),
-    inset 0 2px 0 rgba(255, 246, 210, 0.18),
-    inset 0 -9px 16px rgba(8, 2, 1, 0.28),
+    inset 0 0 0 1px rgba(255, 246, 210, 0.22),
+    inset 0 0 0 3px rgba(22, 7, 3, 0.28),
+    inset 0 2px 0 rgba(255, 246, 210, 0.24),
+    inset 0 -10px 18px rgba(8, 2, 1, 0.34),
     0 0 0 1px rgba(8, 2, 1, 0.56),
-    0 0 12px 1px var(--shop-rarity-soft, rgba(255, 240, 189, 0.2)),
-    0 2px 0 rgba(22, 7, 3, 0.62);
+    0 0 0 2px var(--shop-rarity-soft, rgba(255, 240, 189, 0.12)),
+    0 0 14px 1px var(--shop-rarity-soft, rgba(255, 240, 189, 0.2)),
+    0 3px 0 rgba(22, 7, 3, 0.68);
+}
+
+.armory-shop__selected-card::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  z-index: 0;
+  border: 1px solid rgba(255, 240, 189, 0.22);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 189, 0.12), transparent 36%),
+    radial-gradient(ellipse at 50% 0, rgba(255, 211, 132, 0.18), transparent 58%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.14),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.46);
+  pointer-events: none;
 }
 
 .armory-shop--city-mode .armory-shop__selected-card {
-  grid-template-columns: 46px minmax(0, 1fr) minmax(62px, auto);
+  grid-template-columns: 40px minmax(0, 1fr) minmax(58px, auto);
   gap: 6px;
-  min-height: 54px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   padding: 5px 6px;
+  border-radius: 8px;
 }
 
 .armory-shop__selected-card--rarity-common,
@@ -4916,14 +5044,15 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   z-index: 1;
   display: block;
-  width: 46px;
-  height: 44px;
+  width: 48px;
+  height: 46px;
   padding: 3px;
-  border: 1px solid rgba(255, 240, 189, 0.24);
+  border: 1px solid rgba(255, 240, 189, 0.32);
   border-radius: 6px;
   background:
-    radial-gradient(circle at 45% 20%, rgba(255, 246, 210, 0.16), transparent 54%),
-    rgba(22, 7, 3, 0.34);
+    radial-gradient(circle at 45% 20%, rgba(255, 246, 210, 0.22), transparent 54%),
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(8, 2, 1, 0.4)),
+    rgba(22, 7, 3, 0.44);
   box-shadow:
     inset 0 1px 0 rgba(255, 246, 210, 0.1),
     0 1px 0 rgba(8, 2, 1, 0.58);
@@ -4932,25 +5061,76 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__selected-icon {
-  width: 46px;
+  width: 38px;
   height: 42px;
+}
+
+.armory-shop--city-mode .armory-shop__selected-name {
+  font-size: 0.72rem;
+}
+
+.armory-shop--city-mode .armory-shop__selected-rarity {
+  padding: 2px 6px 3px;
+  font-size: 0.5rem;
+}
+
+.armory-shop--city-mode .armory-shop__selected-stat {
+  gap: 3px;
+  padding: 2px 6px 3px;
+  font-size: 0.64rem;
+}
+
+.armory-shop--city-mode .armory-shop__selected-stat-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.armory-shop--city-mode .armory-shop__selected-price {
+  font-size: 0.58rem;
 }
 
 .armory-shop__selected-meta {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 2px;
+  grid-template-columns: auto auto minmax(0, auto);
+  grid-template-areas:
+    "name name name"
+    "rarity stat price";
+  gap: 4px 5px;
   align-content: center;
+  align-items: center;
+  justify-content: start;
   min-width: 0;
   line-height: 1;
   text-transform: uppercase;
 }
 
-.armory-shop__selected-rarity {
+.armory-shop__selected-name {
+  grid-area: name;
   overflow: hidden;
-  color: #fff0bd;
-  font-size: clamp(0.56rem, 2.3vw, 0.7rem);
+  color: #ffe8ad;
+  font-size: clamp(0.6rem, 2.35vw, 0.76rem);
+  font-weight: 900;
+  line-height: 1.06;
+  text-overflow: ellipsis;
+  text-shadow:
+    1px 1px 0 #160703,
+    0 0 5px rgba(255, 211, 132, 0.16);
+  white-space: nowrap;
+}
+
+.armory-shop__selected-rarity {
+  grid-area: rarity;
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 7px 3px;
+  border: 1px solid rgba(255, 240, 189, 0.2);
+  border-radius: 999px;
+  color: var(--shop-rarity-light, #fff0bd);
+  background: rgba(8, 2, 1, 0.34);
+  font-size: clamp(0.48rem, 1.95vw, 0.6rem);
   font-weight: 900;
   text-overflow: ellipsis;
   text-shadow:
@@ -4960,20 +5140,63 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-stat {
+  grid-area: stat;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  width: fit-content;
+  min-width: 0;
+  padding: 2px 6px 3px;
+  border: 1px solid rgba(255, 240, 189, 0.18);
+  border-radius: 5px;
   color: #fff0bd;
-  font-size: clamp(0.68rem, 2.8vw, 0.84rem);
+  background: rgba(8, 2, 1, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 189, 0.08);
+  font-size: clamp(0.62rem, 2.45vw, 0.78rem);
   font-weight: 900;
   text-shadow: 1px 1px 0 #160703;
 }
 
+.armory-shop__selected-stat-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.74));
+}
+
+.armory-shop__selected-stat-value {
+  color: #fff0bd;
+}
+
+.armory-shop__selected-stat-arrow {
+  color: rgba(255, 240, 189, 0.62);
+  font-size: 0.74em;
+}
+
+.armory-shop__selected-stat-value--positive {
+  color: #8cff7a;
+  text-shadow:
+    1px 1px 0 #0f2c0a,
+    0 0 5px rgba(112, 255, 96, 0.42);
+}
+
+.armory-shop__selected-stat-value--negative {
+  color: #ff866f;
+  text-shadow:
+    1px 1px 0 #351007,
+    0 0 5px rgba(255, 95, 67, 0.36);
+}
+
 .armory-shop__selected-price {
+  grid-area: price;
   display: inline-grid;
   grid-auto-flow: column;
   gap: 3px;
   align-items: center;
-  justify-content: start;
+  justify-content: end;
   color: #ffd384;
-  font-size: clamp(0.56rem, 2.3vw, 0.68rem);
+  font-size: clamp(0.54rem, 2.1vw, 0.66rem);
   font-weight: 900;
   text-shadow: 1px 1px 0 #160703;
 }
@@ -4989,8 +5212,11 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop__selected-buy {
   position: relative;
   z-index: 1;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
   min-width: 0;
-  min-height: 38px;
+  min-height: 42px;
   padding: 6px 8px;
   border: 2px solid rgba(255, 211, 132, 0.42);
   border-radius: 8px;
@@ -5014,10 +5240,10 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__selected-buy {
-  min-height: 32px;
-  padding: 5px 7px;
+  min-height: 42px;
+  padding: 4px 5px;
   border-radius: 6px;
-  font-size: 0.58rem;
+  font-size: 0.62rem;
 }
 
 .armory-shop__selected-buy:active:not(:disabled) {
@@ -5154,13 +5380,17 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 9px;
   text-align: center;
   background:
-    linear-gradient(135deg, rgba(255, 246, 203, 0.28), rgba(255, 246, 203, 0.06) 45%, transparent 46%),
-    radial-gradient(circle at 50% 13%, rgba(255, 246, 210, 0.26), transparent 52%),
-    linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 58%, var(--shop-rarity-dark, #4d4232) 100%);
+    linear-gradient(135deg, rgba(255, 246, 203, 0.3), rgba(255, 246, 203, 0.07) 45%, transparent 46%),
+    radial-gradient(circle at 50% 13%, rgba(255, 246, 210, 0.28), transparent 52%),
+    linear-gradient(180deg, rgba(255, 240, 189, 0.08), transparent 38%, rgba(8, 2, 1, 0.16) 100%),
+    var(--ui-profile-backdrop-texture) center / var(--ui-profile-backdrop-size) repeat,
+    linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 56%, var(--shop-rarity-dark, #4d4232) 100%);
+  background-blend-mode: screen, screen, multiply, soft-light, normal;
   box-shadow:
-    inset 0 2px 0 rgba(255, 246, 210, 0.62),
-    inset 0 -6px 0 rgba(53, 24, 13, 0.16),
-    0 3px 0 rgba(22, 7, 3, 0.62);
+    inset 0 2px 0 rgba(255, 246, 210, 0.6),
+    inset 0 -8px 13px rgba(8, 2, 1, 0.24),
+    inset 0 0 14px rgba(8, 2, 1, 0.12),
+    0 3px 0 rgba(22, 7, 3, 0.66);
 }
 
 .armory-shop--city-mode .armory-shop__option--product {
@@ -5174,18 +5404,22 @@ body.debug-active .city-menu__portrait-button:active {
   border-color: #1c0c06;
   border-radius: 7px;
   background:
-    radial-gradient(circle at 22% 24%, rgba(255, 246, 210, 0.2), transparent 19%),
+    radial-gradient(circle at 22% 24%, rgba(255, 246, 210, 0.22), transparent 19%),
     radial-gradient(circle at 78% 36%, rgba(8, 2, 1, 0.18), transparent 23%),
-    radial-gradient(ellipse at 48% 18%, rgba(255, 246, 210, 0.16), transparent 50%),
-    radial-gradient(circle at 35% 72%, rgba(8, 2, 1, 0.2), transparent 27%),
+    radial-gradient(ellipse at 48% 18%, rgba(255, 246, 210, 0.17), transparent 50%),
+    radial-gradient(circle at 35% 72%, rgba(8, 2, 1, 0.22), transparent 28%),
     repeating-linear-gradient(115deg, rgba(255, 246, 210, 0.035) 0 1px, transparent 1px 5px),
-    linear-gradient(135deg, rgba(255, 240, 189, 0.12), rgba(255, 240, 189, 0.03) 35%, transparent 36%),
+    linear-gradient(135deg, rgba(255, 240, 189, 0.13), rgba(255, 240, 189, 0.04) 35%, transparent 36%),
+    linear-gradient(180deg, rgba(255, 240, 189, 0.06), transparent 36%, rgba(8, 2, 1, 0.18) 100%),
+    var(--ui-profile-backdrop-texture) center / var(--ui-profile-backdrop-size) repeat,
     linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 48%, var(--shop-rarity-dark, #4d4232) 100%);
+  background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;
   box-shadow:
     inset 0 0 0 1px rgba(255, 246, 210, 0.22),
     inset 0 3px 0 rgba(255, 246, 210, 0.18),
-    inset 0 -4px 0 rgba(8, 2, 1, 0.24),
-    0 2px 0 rgba(8, 2, 1, 0.74);
+    inset 0 -6px 10px rgba(8, 2, 1, 0.26),
+    inset 0 0 13px rgba(8, 2, 1, 0.12),
+    0 2px 0 rgba(8, 2, 1, 0.76);
 }
 
 .armory-shop--city-mode .armory-shop__option--for-sale {
@@ -5511,11 +5745,13 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__back {
-  position: relative;
-  z-index: 2;
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
+  position: absolute;
+  left: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 4px);
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-bottom) + 8px);
+  z-index: 7;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   border-color: #241007;
   color: #f0d08a;
   background:
@@ -5523,9 +5759,11 @@ body.debug-active .city-menu__portrait-button:active {
     #4a1c0b;
   box-shadow:
     inset 0 1px 0 rgba(255, 240, 189, 0.24),
-    inset 0 -2px 0 rgba(8, 2, 1, 0.28),
-    0 1px 0 rgba(8, 2, 1, 0.72);
-  font-size: 0.86rem;
+    inset 0 -4px 0 rgba(8, 2, 1, 0.28),
+    0 3px 0 rgba(8, 2, 1, 0.72),
+    0 0 0 1px rgba(255, 211, 132, 0.12);
+  font-size: 1.18rem;
+  pointer-events: auto;
   text-shadow: 0 1px 0 #160703;
 }
 
