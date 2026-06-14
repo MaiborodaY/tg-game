@@ -49,9 +49,11 @@ import {
 import {
   createDefaultHeroInventory,
   createDefaultHeroEquipment,
+  ARENA_BOSSES,
   ALL_HERO_ITEM_IDS,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
+  type ArenaBossDefinition,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroInventoryEntry,
@@ -63,6 +65,7 @@ import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equi
 import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
 import {
   removePromotedEquipmentItem,
+  saveArenaBoss,
   saveGeneratedShopItem,
   saveProdAnimation,
   saveProdDefaults,
@@ -250,6 +253,27 @@ const DEBUG_SHOP_ITEM_RARITY_RANKS: Record<HeroItemRarity, number> = {
   legendary: 4,
   mythical: 5,
   unique: 6,
+};
+const DEBUG_BOSS_STAT_MAX = 200;
+const DEBUG_BOSS_TIER_MAX = 50;
+const DEBUG_BOSS_REWARD_MAX = 100000;
+const DEBUG_BOSS_LOOT_CHANCE_STEP = 0.01;
+const DEBUG_BOSS_EQUIPMENT_SLOT_LABELS: Record<HeroEquipmentSlotKey, string> = {
+  weaponMain: "Weapon",
+  helmet: "Helmet",
+  breastplate: "Body",
+  backShoulderguard: "Back shoulder",
+  frontShoulderguard: "Front shoulder",
+  backWrist: "Back wrist",
+  frontWrist: "Front wrist",
+  backGlove: "Back glove",
+  frontGlove: "Front glove",
+  backGreave: "Back greave",
+  frontGreave: "Front greave",
+  backShinguard: "Back shin",
+  frontShinguard: "Front shin",
+  backBoot: "Back boot",
+  frontBoot: "Front boot",
 };
 
 const controlGroups: DebugControlGroup[] = [
@@ -561,6 +585,7 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
 let activeNudgeStep = 5;
 let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let activeEquipmentItemId: HeroItemId | "" = "";
+let debugArenaBosses: ArenaBossDefinition[] = ARENA_BOSSES.map(cloneArenaBossDefinition);
 let isDebugUndoShortcutMounted = false;
 let isCharacterCanvasEquipmentBridgeMounted = false;
 let debugHeroEquipment: HeroEquipment | undefined;
@@ -775,6 +800,59 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         <p class="debug-shop-items__status" aria-live="polite"></p>
       </div>
     </details>
+    <details class="debug-boss-editor-panel">
+      <summary>Boss editor</summary>
+      <div class="debug-boss-editor">
+        <div class="debug-boss-editor__boss-row">
+          <label class="debug-rig-editor__part debug-boss-editor__boss-select">
+            <span>Boss</span>
+            <select class="debug-boss-editor__select"></select>
+          </label>
+          <button class="debug-panel__reset debug-boss-editor__new" type="button">New</button>
+        </div>
+        <label class="debug-rig-editor__part">
+          <span>ID</span>
+          <input class="debug-boss-editor__id" type="text" />
+        </label>
+        <label class="debug-rig-editor__part">
+          <span>Name</span>
+          <input class="debug-boss-editor__name" type="text" />
+        </label>
+        <label class="debug-panel__row debug-rig-editor__row">
+          <span>Tier</span>
+          <input class="debug-panel__range" type="range" min="1" max="${DEBUG_BOSS_TIER_MAX}" step="1" value="1" data-boss-tier />
+          <input class="debug-panel__number" type="number" min="1" max="${DEBUG_BOSS_TIER_MAX}" step="1" value="1" data-boss-tier-number />
+        </label>
+        <fieldset class="debug-boss-editor__stats">
+          <legend>Stats</legend>
+          ${formatBossEditorNumberRow("STR", "strength", 0, DEBUG_BOSS_STAT_MAX)}
+          ${formatBossEditorNumberRow("AGI", "agility", 0, DEBUG_BOSS_STAT_MAX)}
+          ${formatBossEditorNumberRow("VIT", "vitality", 0, DEBUG_BOSS_STAT_MAX)}
+        </fieldset>
+        <fieldset class="debug-boss-editor__equipment">
+          <legend>Equipment</legend>
+          <div class="debug-boss-editor__equipment-controls"></div>
+        </fieldset>
+        <fieldset class="debug-boss-editor__rewards">
+          <legend>Rewards</legend>
+          ${formatBossEditorNumberRow("Win gold", "win-gold", 0, DEBUG_BOSS_REWARD_MAX)}
+          ${formatBossEditorNumberRow("Win XP", "win-xp", 0, DEBUG_BOSS_REWARD_MAX)}
+          ${formatBossEditorNumberRow("Loss gold", "loss-gold", 0, DEBUG_BOSS_REWARD_MAX)}
+          ${formatBossEditorNumberRow("Loss XP", "loss-xp", 0, DEBUG_BOSS_REWARD_MAX)}
+        </fieldset>
+        <label class="debug-panel__row debug-rig-editor__row">
+          <span>Loot chance</span>
+          <input class="debug-panel__range" type="range" min="0" max="1" step="${DEBUG_BOSS_LOOT_CHANCE_STEP}" value="1" data-boss-loot-chance />
+          <input class="debug-panel__number" type="number" min="0" max="1" step="${DEBUG_BOSS_LOOT_CHANCE_STEP}" value="1" data-boss-loot-chance-number />
+        </label>
+        <p class="debug-boss-editor__loot"></p>
+        <div class="debug-boss-editor__actions">
+          <button class="debug-panel__reset debug-boss-editor__preview" type="button">Preview</button>
+          <button class="debug-panel__reset debug-boss-editor__save" type="button">Save boss</button>
+        </div>
+        <p class="debug-boss-editor__status" aria-live="polite"></p>
+      </div>
+    </details>
     <details class="debug-arena-panel">
       <summary>Arena tuning</summary>
       <div class="debug-panel__body"></div>
@@ -825,6 +903,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const itemEquipmentBody = panel.querySelector<HTMLElement>(".debug-item-equipment");
   const autoEquipmentBody = panel.querySelector<HTMLElement>(".debug-auto-equipment");
   const shopItemsBody = panel.querySelector<HTMLElement>(".debug-shop-items");
+  const bossEditorBody = panel.querySelector<HTMLElement>(".debug-boss-editor");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
   const saveAnimationButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod-animation");
   const resetButton = panel.querySelector<HTMLButtonElement>(".debug-panel__reset-all");
@@ -841,6 +920,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     !itemEquipmentBody ||
     !autoEquipmentBody ||
     !shopItemsBody ||
+    !bossEditorBody ||
     !saveButton ||
     !saveAnimationButton ||
     !resetButton ||
@@ -884,6 +964,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountItemEquipmentEditor(itemEquipmentBody);
   mountAutoEquipmentEditor(autoEquipmentBody);
   mountGeneratedShopItemsEditor(shopItemsBody);
+  mountBossEditor(bossEditorBody);
   mountNudgeToolbar(nudgeToolbar);
   mountCharacterCanvasEquipmentBridge(panel);
   mountModeTabs(panel);
@@ -1676,6 +1757,84 @@ function mountGeneratedShopItemsEditor(editor: HTMLElement): void {
       });
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Could not save generated shop item.";
+    } finally {
+      save.disabled = false;
+    }
+  });
+}
+
+function mountBossEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-boss-editor__select");
+  const createNew = editor.querySelector<HTMLButtonElement>(".debug-boss-editor__new");
+  const preview = editor.querySelector<HTMLButtonElement>(".debug-boss-editor__preview");
+  const save = editor.querySelector<HTMLButtonElement>(".debug-boss-editor__save");
+  const equipmentControls = editor.querySelector<HTMLElement>(".debug-boss-editor__equipment-controls");
+  const status = editor.querySelector<HTMLElement>(".debug-boss-editor__status");
+  const tierRange = editor.querySelector<HTMLInputElement>("input[data-boss-tier]");
+  const tierNumber = editor.querySelector<HTMLInputElement>("input[data-boss-tier-number]");
+  const lootChanceRange = editor.querySelector<HTMLInputElement>("input[data-boss-loot-chance]");
+  const lootChanceNumber = editor.querySelector<HTMLInputElement>("input[data-boss-loot-chance-number]");
+
+  if (!select || !createNew || !preview || !save || !equipmentControls || !status || !tierRange || !tierNumber || !lootChanceRange || !lootChanceNumber) {
+    return;
+  }
+
+  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    equipmentControls.append(createBossEquipmentControl(slotKey));
+  });
+
+  syncBossSelectOptions(select, debugArenaBosses[0]?.id);
+  syncLinkedNumberInputs(tierRange, tierNumber, 1, DEBUG_BOSS_TIER_MAX);
+  syncLinkedNumberInputs(lootChanceRange, lootChanceNumber, 0, 1);
+  editor.querySelectorAll<HTMLInputElement>("input[data-boss-field]").forEach((range) => {
+    const field = range.dataset.bossField;
+    const number = field ? editor.querySelector<HTMLInputElement>(`input[data-boss-number-field="${field}"]`) : null;
+    const max = field?.includes("gold") || field?.includes("xp") ? DEBUG_BOSS_REWARD_MAX : DEBUG_BOSS_STAT_MAX;
+
+    if (number) {
+      syncLinkedNumberInputs(range, number, 0, max);
+    }
+  });
+
+  applyBossToEditor(editor, getSelectedArenaBoss(select.value) ?? createDefaultArenaBossDraft());
+
+  select.addEventListener("change", () => {
+    applyBossToEditor(editor, getSelectedArenaBoss(select.value) ?? createDefaultArenaBossDraft());
+    previewBossFromEditor(editor);
+  });
+
+  createNew.addEventListener("click", () => {
+    applyBossToEditor(editor, createDefaultArenaBossDraft());
+    select.value = "";
+    status.textContent = "New boss draft.";
+    previewBossFromEditor(editor);
+  });
+
+  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slot]").forEach((equipmentSelect) => {
+    equipmentSelect.addEventListener("change", () => {
+      syncBossLootSummary(editor);
+      previewBossFromEditor(editor);
+    });
+  });
+
+  preview.addEventListener("click", () => {
+    previewBossFromEditor(editor);
+    status.textContent = `Previewing ${readBossEditorDraft(editor).name}.`;
+  });
+
+  save.addEventListener("click", async () => {
+    const boss = readBossEditorDraft(editor);
+
+    save.disabled = true;
+    status.textContent = "Saving boss...";
+
+    try {
+      status.textContent = await saveArenaBoss(boss);
+      debugArenaBosses = upsertDebugArenaBoss(debugArenaBosses, boss);
+      syncBossSelectOptions(select, boss.id);
+      applyBossToEditor(editor, boss);
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not save boss.";
     } finally {
       save.disabled = false;
     }
@@ -2927,6 +3086,7 @@ function syncDebugTools(panel: HTMLElement): void {
   syncEffectsEditor(panel);
   syncClassicActionButtonEditor(panel);
   syncHeroEquipmentEditor(panel);
+  syncBossEditor(panel);
   syncAnimationEditor(panel);
   syncNudgeControls();
   syncGrid();
@@ -3191,6 +3351,294 @@ function syncGeneratedShopItemsEditor(editor: HTMLElement, products: readonly De
   if (status) {
     status.textContent = product?.itemIds.length === 2 ? "Merged generated pair." : isAvailable ? "Single generated item." : "";
   }
+}
+
+function syncBossEditor(panel: HTMLElement): void {
+  const editor = panel.querySelector<HTMLElement>(".debug-boss-editor");
+
+  if (!editor) {
+    return;
+  }
+
+  syncBossLootSummary(editor);
+}
+
+function formatBossEditorNumberRow(label: string, field: string, min: number, max: number): string {
+  return `
+    <label class="debug-panel__row debug-rig-editor__row">
+      <span>${label}</span>
+      <input class="debug-panel__range" type="range" min="${min}" max="${max}" step="1" value="${min}" data-boss-field="${field}" />
+      <input class="debug-panel__number" type="number" min="${min}" max="${max}" step="1" value="${min}" data-boss-number-field="${field}" />
+    </label>
+  `;
+}
+
+function createBossEquipmentControl(slotKey: HeroEquipmentSlotKey): HTMLElement {
+  const label = document.createElement("label");
+  const name = document.createElement("span");
+  const select = document.createElement("select");
+
+  label.className = "debug-rig-editor__part debug-boss-editor__equipment-row";
+  name.textContent = formatBossEquipmentSlotLabel(slotKey);
+  select.dataset.bossEquipmentSlot = slotKey;
+  select.append(createHeroEquipmentOption("", "empty"));
+
+  getBossUniqueItemIdsForSlot(slotKey).forEach((itemId) => {
+    const definition = getDebugHeroItemDefinition(itemId);
+
+    if (definition) {
+      select.append(createHeroEquipmentOption(itemId, `${AUTO_EQUIPMENT_RARITY_LABELS[definition.rarity ?? "unique"]} | ${definition.name}`));
+    }
+  });
+
+  label.append(name, select);
+  return label;
+}
+
+function syncBossSelectOptions(select: HTMLSelectElement, selectedBossId: string | undefined): void {
+  select.replaceChildren(createHeroEquipmentOption("", "new boss"));
+
+  debugArenaBosses.forEach((boss) => {
+    select.append(createHeroEquipmentOption(boss.id, `${boss.tierId} | ${boss.name}`));
+  });
+
+  select.value = selectedBossId && debugArenaBosses.some((boss) => boss.id === selectedBossId) ? selectedBossId : "";
+}
+
+function applyBossToEditor(editor: HTMLElement, boss: ArenaBossDefinition): void {
+  const idInput = editor.querySelector<HTMLInputElement>(".debug-boss-editor__id");
+  const nameInput = editor.querySelector<HTMLInputElement>(".debug-boss-editor__name");
+
+  if (idInput) {
+    idInput.value = boss.id;
+  }
+
+  if (nameInput) {
+    nameInput.value = boss.name;
+  }
+
+  setBossEditorLinkedValue(editor, "tier", boss.tierId);
+  setBossEditorLinkedValue(editor, "strength", boss.baseStats.strength);
+  setBossEditorLinkedValue(editor, "agility", boss.baseStats.agility);
+  setBossEditorLinkedValue(editor, "vitality", boss.baseStats.vitality);
+  setBossEditorLinkedValue(editor, "win-gold", boss.rewards.win.gold);
+  setBossEditorLinkedValue(editor, "win-xp", boss.rewards.win.xp);
+  setBossEditorLinkedValue(editor, "loss-gold", boss.rewards.loss.gold);
+  setBossEditorLinkedValue(editor, "loss-xp", boss.rewards.loss.xp);
+  setBossEditorLinkedValue(editor, "loot-chance", boss.lootTable[0]?.chance ?? 1);
+
+  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slot]").forEach((select) => {
+    const slotKey = select.dataset.bossEquipmentSlot;
+
+    select.value = isHeroEquipmentSlotKey(slotKey) ? (boss.equipment[slotKey] ?? "") : "";
+  });
+
+  syncBossLootSummary(editor);
+}
+
+function readBossEditorDraft(editor: HTMLElement): ArenaBossDefinition {
+  const idInput = editor.querySelector<HTMLInputElement>(".debug-boss-editor__id");
+  const nameInput = editor.querySelector<HTMLInputElement>(".debug-boss-editor__name");
+  const name = nameInput?.value.trim() || "Arena Boss";
+  const id = normalizeDebugIdentifier(idInput?.value || name);
+  const equipment = readBossEditorEquipment(editor);
+  const lootChance = clampNumber(getBossEditorLinkedValue(editor, "loot-chance"), 0, 1);
+
+  return {
+    id,
+    tierId: Math.round(clampNumber(getBossEditorLinkedValue(editor, "tier"), 1, DEBUG_BOSS_TIER_MAX)),
+    name,
+    baseStats: {
+      strength: Math.round(clampNumber(getBossEditorLinkedValue(editor, "strength"), 0, DEBUG_BOSS_STAT_MAX)),
+      agility: Math.round(clampNumber(getBossEditorLinkedValue(editor, "agility"), 0, DEBUG_BOSS_STAT_MAX)),
+      vitality: Math.round(clampNumber(getBossEditorLinkedValue(editor, "vitality"), 0, DEBUG_BOSS_STAT_MAX)),
+    },
+    equipment,
+    rewards: {
+      win: {
+        gold: Math.round(clampNumber(getBossEditorLinkedValue(editor, "win-gold"), 0, DEBUG_BOSS_REWARD_MAX)),
+        xp: Math.round(clampNumber(getBossEditorLinkedValue(editor, "win-xp"), 0, DEBUG_BOSS_REWARD_MAX)),
+      },
+      loss: {
+        gold: Math.round(clampNumber(getBossEditorLinkedValue(editor, "loss-gold"), 0, DEBUG_BOSS_REWARD_MAX)),
+        xp: Math.round(clampNumber(getBossEditorLinkedValue(editor, "loss-xp"), 0, DEBUG_BOSS_REWARD_MAX)),
+      },
+    },
+    lootTable: createBossEditorLootTable(id, equipment, lootChance),
+  };
+}
+
+function readBossEditorEquipment(editor: HTMLElement): ArenaBossDefinition["equipment"] {
+  const equipment: Partial<Record<HeroEquipmentSlotKey, HeroItemId>> = {};
+
+  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slot]").forEach((select) => {
+    const slotKey = select.dataset.bossEquipmentSlot;
+    const item = getDebugHeroItemDefinition(select.value);
+
+    if (!isHeroEquipmentSlotKey(slotKey) || !item || item.equipmentSlot !== slotKey || !isBossUniqueItem(item.id)) {
+      return;
+    }
+
+    equipment[slotKey] = item.id;
+  });
+
+  return equipment;
+}
+
+function createBossEditorLootTable(
+  bossId: string,
+  equipment: ArenaBossDefinition["equipment"],
+  lootChance: number,
+): ArenaBossDefinition["lootTable"] {
+  const itemIds = [...new Set(Object.values(equipment).filter((itemId): itemId is HeroItemId => Boolean(itemId)))];
+
+  return itemIds.map((itemId) => ({
+    id: `${bossId}_${normalizeDebugIdentifier(itemId)}_drop`,
+    itemIds: [itemId],
+    chance: lootChance,
+    quantity: 1,
+  }));
+}
+
+function previewBossFromEditor(editor: HTMLElement): void {
+  const boss = readBossEditorDraft(editor);
+  const previewEquipment = createDefaultHeroEquipment();
+
+  Object.entries(boss.equipment).forEach(([slotKey, itemId]) => {
+    if (isHeroEquipmentSlotKey(slotKey) && itemId) {
+      previewEquipment[slotKey] = itemId;
+    }
+  });
+
+  updateHeroEquipment(previewEquipment);
+}
+
+function syncBossLootSummary(editor: HTMLElement): void {
+  const loot = editor.querySelector<HTMLElement>(".debug-boss-editor__loot");
+
+  if (!loot) {
+    return;
+  }
+
+  const boss = readBossEditorDraft(editor);
+
+  loot.textContent =
+    boss.lootTable.length > 0
+      ? `Drops: ${boss.lootTable.map((entry) => `${entry.itemIds.join(" + ")} @ ${Math.round(entry.chance * 100)}%`).join(", ")}`
+      : "Drops: none";
+}
+
+function setBossEditorLinkedValue(editor: HTMLElement, field: string, value: number): void {
+  const range =
+    field === "tier"
+      ? editor.querySelector<HTMLInputElement>("input[data-boss-tier]")
+      : field === "loot-chance"
+        ? editor.querySelector<HTMLInputElement>("input[data-boss-loot-chance]")
+        : editor.querySelector<HTMLInputElement>(`input[data-boss-field="${field}"]`);
+  const number =
+    field === "tier"
+      ? editor.querySelector<HTMLInputElement>("input[data-boss-tier-number]")
+      : field === "loot-chance"
+        ? editor.querySelector<HTMLInputElement>("input[data-boss-loot-chance-number]")
+        : editor.querySelector<HTMLInputElement>(`input[data-boss-number-field="${field}"]`);
+
+  if (range) {
+    range.value = `${value}`;
+  }
+
+  if (number) {
+    number.value = `${value}`;
+  }
+}
+
+function getBossEditorLinkedValue(editor: HTMLElement, field: string): number {
+  const input =
+    field === "tier"
+      ? editor.querySelector<HTMLInputElement>("input[data-boss-tier-number]")
+      : field === "loot-chance"
+        ? editor.querySelector<HTMLInputElement>("input[data-boss-loot-chance-number]")
+        : editor.querySelector<HTMLInputElement>(`input[data-boss-number-field="${field}"]`);
+  const value = Number(input?.value);
+
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getSelectedArenaBoss(bossId: string | undefined): ArenaBossDefinition | undefined {
+  return debugArenaBosses.find((boss) => boss.id === bossId);
+}
+
+function createDefaultArenaBossDraft(): ArenaBossDefinition {
+  const nextIndex = debugArenaBosses.length + 1;
+
+  return {
+    id: `arena_boss_${nextIndex}`,
+    tierId: 1,
+    name: `Arena Boss ${nextIndex}`,
+    baseStats: {
+      strength: 0,
+      agility: 0,
+      vitality: 0,
+    },
+    equipment: {},
+    rewards: {
+      win: { gold: 15, xp: 15 },
+      loss: { gold: 1, xp: 2 },
+    },
+    lootTable: [],
+  };
+}
+
+function cloneArenaBossDefinition(boss: ArenaBossDefinition): ArenaBossDefinition {
+  return {
+    ...boss,
+    baseStats: { ...boss.baseStats },
+    equipment: { ...boss.equipment },
+    rewards: {
+      win: { ...boss.rewards.win },
+      loss: { ...boss.rewards.loss },
+    },
+    lootTable: boss.lootTable.map((entry) => ({
+      ...entry,
+      itemIds: [...entry.itemIds],
+    })),
+  };
+}
+
+function upsertDebugArenaBoss(bosses: ArenaBossDefinition[], boss: ArenaBossDefinition): ArenaBossDefinition[] {
+  return [...bosses.filter((candidate) => candidate.id !== boss.id), cloneArenaBossDefinition(boss)].sort(
+    (left, right) => left.tierId - right.tierId || left.id.localeCompare(right.id),
+  );
+}
+
+function getBossUniqueItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[] {
+  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.item.equipmentSlot === slotKey && isBossUniqueItem(record.item.id))
+    .map((record) => record.item.id)
+    .sort((left, right) => {
+      const leftItem = getDebugHeroItemDefinition(left);
+      const rightItem = getDebugHeroItemDefinition(right);
+
+      return (leftItem?.name ?? left).localeCompare(rightItem?.name ?? right);
+    });
+}
+
+function isBossUniqueItem(itemId: HeroItemId): boolean {
+  const record = GENERATED_EQUIPMENT_ITEM_RECORDS.find((candidate) => candidate.item.id === itemId);
+
+  return Boolean(record && (record.availability?.bossUnique || record.item.rarity === "unique"));
+}
+
+function formatBossEquipmentSlotLabel(slotKey: HeroEquipmentSlotKey): string {
+  return DEBUG_BOSS_EQUIPMENT_SLOT_LABELS[slotKey];
+}
+
+function normalizeDebugIdentifier(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return normalized || "arena_boss";
 }
 
 function syncAutoEquipmentStatInputs(editor: HTMLElement): void {

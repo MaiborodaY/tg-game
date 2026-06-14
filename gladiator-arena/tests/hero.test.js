@@ -32,7 +32,16 @@ function loadTypeScriptModule(modulePath, context = {}) {
 }
 
 const combat = loadTypeScriptModule("../src/combat.ts");
-const arenaOpponents = loadTypeScriptModule("../src/arenaOpponents.ts");
+const generatedArenaBosses = loadTypeScriptModule("../src/generated/arenaBosses.generated.ts");
+const arenaOpponents = loadTypeScriptModule("../src/arenaOpponents.ts", {
+  require: (id) => {
+    if (id === "./generated/arenaBosses.generated") {
+      return generatedArenaBosses;
+    }
+
+    throw new Error(`Unsupported arena opponent test import: ${id}`);
+  },
+});
 const generatedItems = {
   weapon_sword_01: {
     id: "weapon_sword_01",
@@ -87,6 +96,14 @@ const generatedItems = {
     armorCategory: "leather",
     equipmentSlot: "frontWrist",
     armorHp: 0,
+  },
+  generated_equipment_helmet_wood_boss_01: {
+    id: "generated_equipment_helmet_wood_boss_01",
+    name: "Wood Helmet Boss 01",
+    kind: "armor",
+    rarity: "unique",
+    equipmentSlot: "helmet",
+    armorHp: 5,
   },
 };
 const hero = loadTypeScriptModule("../src/hero.ts", {
@@ -255,7 +272,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(boss?.tierId, 1);
   assert.equal(boss?.equipment.helmet, "generated_equipment_helmet_wood_boss_01");
   assert.equal(boss?.lootTable.length, 1);
-  assert.equal(boss?.lootTable[0].id, "dust_arena_champion_wood_helmet");
+  assert.equal(boss?.lootTable[0].id, "dust_arena_champion_generated_equipment_helmet_wood_boss_01_drop");
   assert.equal(boss?.lootTable[0].itemIds.length, 1);
   assert.equal(boss?.lootTable[0].itemIds[0], "generated_equipment_helmet_wood_boss_01");
   assert.equal(boss?.lootTable[0].chance, 1);
@@ -282,10 +299,35 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(bossState.enemy.name, "Dust Arena Champion");
   assert.equal(bossState.enemy.equipment?.helmet, "generated_equipment_helmet_wood_boss_01");
   assert.equal(bossState.enemy.equipment?.weaponMain, null);
+  assert.equal(bossState.enemy.armor, 5);
 
   bossState.result = "win";
-  assert.equal(hero.getBattleReward(bossState).gold, 15);
-  assert.equal(hero.getBattleReward(bossState).xp, 15);
+  assert.equal(hero.getBattleReward(bossState).gold, 50);
+  assert.equal(hero.getBattleReward(bossState).xp, 100);
+});
+
+test("arena encounter enemy base stats derive combat stats", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const encounter = {
+    ...hero.createArenaRandomEnemyEncounter(1, () => 0),
+    enemyLoadout: {
+      equipment: hero.createDefaultHeroEquipment(),
+      baseStats: {
+        strength: 2,
+        agility: 3,
+        vitality: 4,
+      },
+      visualPreset: { skin: 0, skinDark: 0, hair: 0 },
+    },
+  };
+  const combatState = hero.createCombatStateFromHero(baseHero, encounter);
+
+  assert.equal(combatState.enemy.maxHp, 14);
+  assert.equal(combatState.enemy.maxStamina, 14);
+  assert.equal(combatState.enemy.damageBonus, 2);
+  assert.equal(combatState.enemy.movementDistanceBonus, 0.045);
+  assert.equal(combatState.enemy.restHpRestoreBonus, 4);
+  assert.equal(combatState.enemy.restStaminaRestoreBonus, 4);
 });
 
 test("arena encounter loot rolls into hero inventory", () => {
@@ -320,6 +362,23 @@ test("arena encounter loot rolls into hero inventory", () => {
   assert.equal(nextHero.inventory.find((entry) => entry.itemId === "leather_helmet_01")?.quantity, 3);
   assert.equal(nextHero.inventory.some((entry) => entry.itemId === "leather_breastplate_01"), false);
   assert.equal(nextHero.updatedAt, "2026-01-01T00:01:00.000Z");
+});
+
+test("combat reward application stores shown boss loot in hero inventory", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const bossState = hero.createCombatStateFromHero(baseHero, hero.createArenaBossEncounter("dust_arena_champion"));
+
+  bossState.result = "win";
+
+  const rewardApplication = hero.applyCombatReward(baseHero, bossState, "2026-01-01T00:01:00.000Z", () => 0);
+  const bossHelmetId = "generated_equipment_helmet_wood_boss_01";
+
+  assert.equal(rewardApplication.reward.gold, 50);
+  assert.equal(rewardApplication.reward.xp, 100);
+  assert.equal(rewardApplication.loot.length, 1);
+  assert.equal(rewardApplication.loot[0].itemId, bossHelmetId);
+  assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === bossHelmetId)?.quantity, 1);
+  assert.equal(hero.isHeroItemOwned(rewardApplication.heroAfterReward, bossHelmetId), true);
 });
 
 test("hero level progression uses one thousand total xp across fifty levels", () => {

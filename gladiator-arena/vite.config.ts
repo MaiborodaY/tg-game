@@ -9,6 +9,8 @@ const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
 const settingsMenuUrl = new URL("./src/settingsMenu.ts", import.meta.url);
 const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.generated.json", import.meta.url);
 const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
+const generatedArenaBossesJsonUrl = new URL("./src/generated/arenaBosses.generated.json", import.meta.url);
+const generatedArenaBossesTsUrl = new URL("./src/generated/arenaBosses.generated.ts", import.meta.url);
 const promotedEquipmentRuntimeWebpQuality = 86;
 const promotedEquipmentLowWebpQuality = 76;
 const promotedEquipmentLowMaxSide = 448;
@@ -404,6 +406,34 @@ interface GeneratedEquipmentAvailability {
   bossUnique: boolean;
 }
 
+interface ArenaBossJsonRecord {
+  id: string;
+  tierId: number;
+  name: string;
+  baseStats: {
+    strength: number;
+    agility: number;
+    vitality: number;
+  };
+  equipment: Partial<Record<EquipmentSlotKey, string>>;
+  rewards: {
+    win: {
+      gold: number;
+      xp: number;
+    };
+    loss: {
+      gold: number;
+      xp: number;
+    };
+  };
+  lootTable: {
+    id: string;
+    itemIds: string[];
+    chance: number;
+    quantity: number;
+  }[];
+}
+
 interface PromotedEquipmentItem {
   record: GeneratedEquipmentJsonRecord;
   mirrorPairFlipX: boolean;
@@ -587,6 +617,26 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatUpdatedGeneratedShopItemMessage(updatedRecords), updated: updatedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated shop item." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/save-arena-boss", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save arena bosses." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const boss = validateArenaBossRecord(payload);
+          const records = await readGeneratedArenaBossRecords();
+          const nextRecords = upsertGeneratedArenaBossRecords(records, boss);
+
+          await writeGeneratedArenaBossRecords(nextRecords);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: `Saved arena boss ${boss.name}.`, updated: 1 });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save arena boss." });
         }
       });
     },
@@ -1466,6 +1516,63 @@ function pickGeneratedEquipmentRemovalId(payload: unknown): string {
   return readNonEmptyString(removal.itemId, "itemId");
 }
 
+async function readGeneratedArenaBossRecords(): Promise<ArenaBossJsonRecord[]> {
+  try {
+    const source = await readFile(generatedArenaBossesJsonUrl, "utf8");
+    const records = JSON.parse(source) as unknown;
+
+    if (!Array.isArray(records)) {
+      throw new Error("Generated arena bosses JSON must contain an array.");
+    }
+
+    return records.map((record) => validateArenaBossRecord(record));
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function upsertGeneratedArenaBossRecords(records: ArenaBossJsonRecord[], boss: ArenaBossJsonRecord): ArenaBossJsonRecord[] {
+  return [...records.filter((record) => record.id !== boss.id), boss].sort((left, right) => left.tierId - right.tierId || left.id.localeCompare(right.id));
+}
+
+async function writeGeneratedArenaBossRecords(records: ArenaBossJsonRecord[]): Promise<void> {
+  const sortedRecords = [...records].sort((left, right) => left.tierId - right.tierId || left.id.localeCompare(right.id));
+
+  await writeFile(generatedArenaBossesJsonUrl, `${JSON.stringify(sortedRecords, null, 2)}\n`, "utf8");
+  await writeFile(generatedArenaBossesTsUrl, formatGeneratedArenaBossesSource(sortedRecords), "utf8");
+}
+
+function formatGeneratedArenaBossesSource(records: ArenaBossJsonRecord[]): string {
+  const rows = records.map(formatGeneratedArenaBossRecord).join(",\n");
+
+  return `import type { ArenaBossDefinition } from "../arenaOpponents";
+
+export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [${rows ? `\n${rows}\n` : ""}];
+`;
+}
+
+function formatGeneratedArenaBossRecord(record: ArenaBossJsonRecord): string {
+  const lootRows = record.lootTable.map((entry) => `      ${JSON.stringify(entry)},`);
+
+  return [
+    "  {",
+    `    id: ${JSON.stringify(record.id)},`,
+    `    tierId: ${record.tierId},`,
+    `    name: ${JSON.stringify(record.name)},`,
+    `    baseStats: ${JSON.stringify(record.baseStats)},`,
+    `    equipment: ${JSON.stringify(record.equipment)},`,
+    `    rewards: ${JSON.stringify(record.rewards)},`,
+    "    lootTable: [",
+    ...lootRows,
+    "    ],",
+    "  }",
+  ].join("\n");
+}
+
 async function readGeneratedEquipmentRecords(): Promise<GeneratedEquipmentJsonRecord[]> {
   try {
     const source = await readFile(generatedEquipmentJsonUrl, "utf8");
@@ -1782,6 +1889,119 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     ...(record.weaponProduct ? [`    weaponProduct: ${JSON.stringify(record.weaponProduct)},`] : []),
     "  }",
   ].join("\n");
+}
+
+function validateArenaBossRecord(input: unknown): ArenaBossJsonRecord {
+  const record = readPlainObject(input, "arena boss record");
+  const id = readArenaBossId(record.id);
+  const name = readNonEmptyString(record.name, "arena boss name").slice(0, 80);
+  const tierId = readClampedInteger(record.tierId, "arena boss tier", 1, 50);
+  const baseStats = validateArenaBossBaseStats(record.baseStats);
+  const equipment = validateArenaBossEquipment(record.equipment);
+  const rewards = validateArenaBossRewards(record.rewards);
+  const lootTable = validateArenaBossLootTable(record.lootTable, id);
+
+  return {
+    id,
+    tierId,
+    name,
+    baseStats,
+    equipment,
+    rewards,
+    lootTable,
+  };
+}
+
+function validateArenaBossBaseStats(input: unknown): ArenaBossJsonRecord["baseStats"] {
+  const stats = readPlainObject(input, "arena boss stats");
+
+  return {
+    strength: readClampedInteger(stats.strength, "arena boss strength", 0, 200),
+    agility: readClampedInteger(stats.agility, "arena boss agility", 0, 200),
+    vitality: readClampedInteger(stats.vitality, "arena boss vitality", 0, 200),
+  };
+}
+
+function validateArenaBossEquipment(input: unknown): ArenaBossJsonRecord["equipment"] {
+  if (input === undefined || input === null || input === "") {
+    return {};
+  }
+
+  const equipment = readPlainObject(input, "arena boss equipment");
+
+  return Object.fromEntries(
+    Object.entries(equipment).flatMap(([slotKey, itemId]) => {
+      if (!equipmentSlotKeys.includes(slotKey as EquipmentSlotKey)) {
+        throw new Error(`Invalid arena boss equipment slot: ${slotKey}.`);
+      }
+
+      if (itemId === undefined || itemId === null || itemId === "") {
+        return [];
+      }
+
+      return [[slotKey, readNonEmptyString(itemId, `arena boss equipment.${slotKey}`)]];
+    }),
+  ) as ArenaBossJsonRecord["equipment"];
+}
+
+function validateArenaBossRewards(input: unknown): ArenaBossJsonRecord["rewards"] {
+  const rewards = readPlainObject(input, "arena boss rewards");
+
+  return {
+    win: validateArenaBossReward(rewards.win, "arena boss win reward"),
+    loss: validateArenaBossReward(rewards.loss, "arena boss loss reward"),
+  };
+}
+
+function validateArenaBossReward(input: unknown, label: string): ArenaBossJsonRecord["rewards"]["win"] {
+  const reward = readPlainObject(input, label);
+
+  return {
+    gold: readClampedInteger(reward.gold, `${label}.gold`, 0, 100000),
+    xp: readClampedInteger(reward.xp, `${label}.xp`, 0, 100000),
+  };
+}
+
+function validateArenaBossLootTable(input: unknown, bossId: string): ArenaBossJsonRecord["lootTable"] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return input
+    .map((entry, index) => validateArenaBossLootEntry(entry, `${bossId}_loot_${index}`))
+    .filter((entry) => entry.itemIds.length > 0);
+}
+
+function validateArenaBossLootEntry(input: unknown, fallbackId: string): ArenaBossJsonRecord["lootTable"][number] {
+  const entry = readPlainObject(input, "arena boss loot entry");
+  const chance = Math.max(0, Math.min(1, readFinitePayloadNumber(entry.chance, "arena boss loot chance")));
+
+  return {
+    id: typeof entry.id === "string" && entry.id.trim() ? readArenaLootId(entry.id) : fallbackId,
+    itemIds: readNonEmptyStringArray(entry.itemIds, "arena boss loot item ids"),
+    chance,
+    quantity: readClampedInteger(entry.quantity, "arena boss loot quantity", 1, 999),
+  };
+}
+
+function readArenaBossId(value: unknown): string {
+  const id = readNonEmptyString(value, "arena boss id").toLowerCase();
+
+  if (!/^[a-z0-9_]+$/.test(id)) {
+    throw new Error("Arena boss id must use lowercase letters, numbers, and underscores.");
+  }
+
+  return id;
+}
+
+function readArenaLootId(value: unknown): string {
+  const id = readNonEmptyString(value, "arena boss loot id").toLowerCase();
+
+  if (!/^[a-z0-9_]+$/.test(id)) {
+    throw new Error("Arena boss loot id must use lowercase letters, numbers, and underscores.");
+  }
+
+  return id;
 }
 
 function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJsonRecord {
@@ -2352,6 +2572,10 @@ function readFinitePayloadNumber(value: unknown, label: string): number {
   }
 
   return value;
+}
+
+function readClampedInteger(value: unknown, label: string, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.floor(readFinitePayloadNumber(value, label))));
 }
 
 function readEquipmentSlot(value: unknown): EquipmentSlotKey {

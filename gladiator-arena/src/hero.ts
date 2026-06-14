@@ -139,6 +139,7 @@ export interface EnemyVisualPreset {
 
 export interface EnemyLoadout {
   equipment: HeroEquipment;
+  baseStats?: HeroBaseStats;
   visualPreset: EnemyVisualPreset;
 }
 
@@ -157,6 +158,13 @@ export interface ArenaLootDrop {
   sourceId: string;
   itemId: HeroItemId;
   quantity: number;
+}
+
+export interface CombatRewardApplication {
+  reward: BattleReward;
+  loot: ArenaLootDrop[];
+  heroBeforeReward: HeroState;
+  heroAfterReward: HeroState;
 }
 
 export const DEFAULT_HERO_ID = "local-hero";
@@ -304,6 +312,7 @@ function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipment
 
 function createBossEnemyLoadout(boss: ArenaBossDefinition): EnemyLoadout {
   return {
+    baseStats: { ...boss.baseStats },
     equipment: {
       ...createDefaultHeroEquipment(),
       ...boss.equipment,
@@ -358,12 +367,16 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
 }
 
 export function deriveHeroStats(hero: HeroState): HeroStats {
-  const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
-  const armorBonus = getHeroEquipmentArmor(hero.equipment);
-  const equipmentDamageBonus = getHeroEquipmentDamageBonus(hero.equipment);
-  const strengthBonus = getHeroAttributeTotal(hero.baseStats.strength, equipmentBonuses.strength);
-  const agilityBonus = getHeroAttributeTotal(hero.baseStats.agility, equipmentBonuses.agility);
-  const vitalityBonus = getHeroAttributeTotal(hero.baseStats.vitality, equipmentBonuses.vitality);
+  return deriveFighterStats(hero.baseStats, hero.equipment);
+}
+
+function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment): HeroStats {
+  const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
+  const armorBonus = getHeroEquipmentArmor(equipment);
+  const equipmentDamageBonus = getHeroEquipmentDamageBonus(equipment);
+  const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength);
+  const agilityBonus = getHeroAttributeTotal(baseStats.agility, equipmentBonuses.agility);
+  const vitalityBonus = getHeroAttributeTotal(baseStats.vitality, equipmentBonuses.vitality);
 
   return {
     maxHp: MAX_HP + vitalityBonus * HERO_VITALITY_HP_BONUS,
@@ -458,8 +471,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const stats = deriveHeroStats(hero);
   const encounter = typeof encounterOrTierId === "number" ? createArenaRandomEnemyEncounter(encounterOrTierId) : encounterOrTierId;
   const enemyLoadout = encounter.enemyLoadout;
-  const enemyArmor = getHeroEquipmentArmor(enemyLoadout.equipment);
-  const enemyDamageBonus = getHeroEquipmentDamageBonus(enemyLoadout.equipment);
+  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyLoadout.equipment);
   const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
   const enemyWeaponClass = getHeroEquipmentWeaponClass(enemyLoadout.equipment);
   const state = freshState();
@@ -487,14 +499,18 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
     enemy: {
       ...state.enemy,
       name: encounter.name,
-      armor: enemyArmor,
-      maxArmor: enemyArmor,
-      damageBonus: enemyDamageBonus,
-      movementDistanceBonus: 0,
-      bodyScaleBonus: 0,
-      clinchRangeBonus: 0,
-      restHpRestoreBonus: 0,
-      restStaminaRestoreBonus: 0,
+      hp: enemyStats.maxHp,
+      maxHp: enemyStats.maxHp,
+      armor: enemyStats.maxArmor,
+      maxArmor: enemyStats.maxArmor,
+      stamina: enemyStats.maxStamina,
+      maxStamina: enemyStats.maxStamina,
+      damageBonus: enemyStats.damageBonus,
+      movementDistanceBonus: enemyStats.movementDistanceBonus,
+      bodyScaleBonus: enemyStats.bodyScaleBonus,
+      clinchRangeBonus: enemyStats.clinchRangeBonus,
+      restHpRestoreBonus: enemyStats.restHpRestoreBonus,
+      restStaminaRestoreBonus: enemyStats.restStaminaRestoreBonus,
       weaponClass: enemyWeaponClass,
       equipment: { ...enemyLoadout.equipment },
       visualPreset: { ...enemyLoadout.visualPreset },
@@ -532,18 +548,45 @@ export function rollCombatEncounterLoot(combat: CombatState, random = Math.rando
   return rollArenaLootTable(getCombatEncounterLootTable(combat), random);
 }
 
+export function applyCombatReward(
+  hero: HeroState,
+  combat: CombatState,
+  now = new Date().toISOString(),
+  random = Math.random,
+): CombatRewardApplication {
+  const reward = getBattleReward(combat);
+  const rolledLoot = combat.result === "win" ? rollCombatEncounterLoot(combat, random) : [];
+  const heroWithReward = applyBattleReward(hero, reward, now);
+  const lootApplication = applyArenaLootWithAppliedDrops(heroWithReward, rolledLoot, now);
+
+  return {
+    reward,
+    loot: lootApplication.loot,
+    heroBeforeReward: hero,
+    heroAfterReward: lootApplication.hero,
+  };
+}
+
 export function applyArenaLoot(hero: HeroState, loot: readonly ArenaLootDrop[], now = new Date().toISOString()): HeroState {
+  return applyArenaLootWithAppliedDrops(hero, loot, now).hero;
+}
+
+function applyArenaLootWithAppliedDrops(
+  hero: HeroState,
+  loot: readonly ArenaLootDrop[],
+  now = new Date().toISOString(),
+): { hero: HeroState; loot: ArenaLootDrop[] } {
   if (loot.length === 0) {
-    return hero;
+    return { hero, loot: [] };
   }
 
   const inventory = hero.inventory.map((entry) => ({ ...entry }));
-  let applied = false;
+  const appliedLoot: ArenaLootDrop[] = [];
 
   loot.forEach((drop) => {
     const quantity = Math.max(0, Math.floor(drop.quantity));
 
-    if (!drop.itemId || quantity <= 0) {
+    if (!drop.itemId || quantity <= 0 || !HERO_ITEM_CATALOG[drop.itemId]) {
       return;
     }
 
@@ -555,17 +598,20 @@ export function applyArenaLoot(hero: HeroState, loot: readonly ArenaLootDrop[], 
       inventory.push({ itemId: drop.itemId, quantity });
     }
 
-    applied = true;
+    appliedLoot.push({ ...drop, quantity });
   });
 
-  if (!applied) {
-    return hero;
+  if (appliedLoot.length === 0) {
+    return { hero, loot: [] };
   }
 
   return {
-    ...hero,
-    inventory,
-    updatedAt: now,
+    hero: {
+      ...hero,
+      inventory,
+      updatedAt: now,
+    },
+    loot: appliedLoot,
   };
 }
 

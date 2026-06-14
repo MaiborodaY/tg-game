@@ -747,12 +747,74 @@ function renderCityEquipmentProducts(
 }
 
 function getOwnedCityEquipmentProducts(hero: HeroState, category: CityEquipmentCategory): CityEquipmentProduct[] {
-  const products =
+  const shopProducts =
     category.side === "armor"
       ? getGeneratedArmoryProductsForSlots(category.slots ?? []).map(toCityEquipmentProduct)
       : GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === category.id).map(toCityEquipmentProduct);
+  const inventoryProducts = getInventoryCityEquipmentProducts(hero, category, shopProducts);
+  const products = [...shopProducts, ...inventoryProducts];
 
   return products.filter((product) => areHeroItemsOwned(hero, product.itemIds)).sort(compareCityEquipmentProducts);
+}
+
+function getInventoryCityEquipmentProducts(
+  hero: HeroState,
+  category: CityEquipmentCategory,
+  shopProducts: readonly CityEquipmentProduct[],
+): CityEquipmentProduct[] {
+  const usedProductKeys = new Set(shopProducts.map(getCityEquipmentProductKey));
+
+  return hero.inventory.flatMap((entry) => {
+    const item = HERO_ITEM_CATALOG[entry.itemId];
+
+    if (!item || entry.quantity <= 0 || !isInventoryItemInCityEquipmentCategory(item, category)) {
+      return [];
+    }
+
+    const product: CityEquipmentProduct = {
+      id: `inventory-${entry.itemId}`,
+      name: item.name,
+      itemIds: [entry.itemId],
+    };
+    const productKey = getCityEquipmentProductKey(product);
+    const isCoveredByShopProduct = shopProducts.some((shopProduct) => shopProduct.itemIds.includes(entry.itemId) && areHeroItemsOwned(hero, shopProduct.itemIds));
+
+    if (usedProductKeys.has(productKey) || isCoveredByShopProduct) {
+      return [];
+    }
+
+    usedProductKeys.add(productKey);
+    return [product];
+  });
+}
+
+function isInventoryItemInCityEquipmentCategory(
+  item: (typeof HERO_ITEM_CATALOG)[HeroItemId],
+  category: CityEquipmentCategory,
+): boolean {
+  if (category.side === "armor") {
+    return item.kind === "armor" && Boolean(category.slots?.some((slotKey) => slotKey === item.equipmentSlot));
+  }
+
+  return item.kind === "weapon" && item.equipmentSlot === "weaponMain" && getCityWeaponCategoryId(item) === category.id;
+}
+
+function getCityWeaponCategoryId(item: (typeof HERO_ITEM_CATALOG)[HeroItemId]): CityEquipmentCategoryId {
+  const weaponClass = getHeroItemWeaponClass(item);
+
+  if (weaponClass === "bow") {
+    return "bows";
+  }
+
+  if (weaponClass === "axe") {
+    return "axes";
+  }
+
+  return "swords";
+}
+
+function getCityEquipmentProductKey(product: CityEquipmentProduct): string {
+  return product.itemIds.slice().sort().join("|");
 }
 
 function toCityEquipmentProduct(product: ArmoryProduct | { id: string; name: string; itemIds: HeroItemId[] }): CityEquipmentProduct {

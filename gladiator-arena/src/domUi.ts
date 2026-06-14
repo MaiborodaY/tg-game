@@ -8,7 +8,8 @@ import {
   type CombatState,
   type DistanceBand,
 } from "./combat";
-import { HERO_MAX_LEVEL, getHeroXpToNextLevel, type BattleReward, type HeroState } from "./hero";
+import { getShopProductIconUrl } from "./shopItemIcons";
+import { HERO_ITEM_CATALOG, HERO_MAX_LEVEL, getHeroXpToNextLevel, type ArenaLootDrop, type BattleReward, type HeroState } from "./hero";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -20,6 +21,7 @@ export interface DomRefs {
   resultTitle: HTMLElement;
   resultGoldReward: HTMLElement;
   resultXpReward: HTMLElement;
+  resultLoot: HTMLElement;
   resultXpProgress: HTMLElement;
   resultXpProgressText: HTMLElement;
   resultXpProgressFill: HTMLElement;
@@ -67,6 +69,7 @@ export function getDomRefs(): DomRefs {
     resultTitle: document.querySelector<HTMLElement>("#resultTitle"),
     resultGoldReward: document.querySelector<HTMLElement>("#resultGoldReward"),
     resultXpReward: document.querySelector<HTMLElement>("#resultXpReward"),
+    resultLoot: document.querySelector<HTMLElement>("#resultLoot"),
     resultXpProgress: document.querySelector<HTMLElement>("#resultXpProgress"),
     resultXpProgressText: document.querySelector<HTMLElement>("#resultXpProgressText"),
     resultXpProgressFill: document.querySelector<HTMLElement>("#resultXpProgressFill"),
@@ -115,6 +118,7 @@ export function getDomRefs(): DomRefs {
 export interface BattleResultPresentation {
   id: string;
   reward: BattleReward;
+  loot?: readonly ArenaLootDrop[];
   heroBeforeReward?: HeroState;
   heroAfterReward?: HeroState;
 }
@@ -237,8 +241,10 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
 
   const presentation = context.resultPresentation;
   const reward = presentation?.reward ?? context.reward ?? { gold: 0, xp: 0 };
+  const loot = presentation?.loot ?? [];
   const finalHero = presentation?.heroAfterReward ?? context.hero;
-  const animationKey = presentation?.id ?? `static:${state.result}:${reward.gold}:${reward.xp}:${finalHero?.level ?? 0}:${finalHero?.xp ?? 0}`;
+  const animationKey =
+    presentation?.id ?? `static:${state.result}:${reward.gold}:${reward.xp}:${loot.map((drop) => `${drop.itemId}:${drop.quantity}`).join("|")}:${finalHero?.level ?? 0}:${finalHero?.xp ?? 0}`;
 
   if (dom.resultBanner.dataset.resultAnimationKey === animationKey) {
     return;
@@ -255,6 +261,7 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
   dom.resultBanner.classList.remove("battle-result--animating");
   renderRewardAmount(dom.resultGoldReward, reward.gold);
   renderRewardAmount(dom.resultXpReward, reward.xp);
+  renderResultLoot(dom.resultLoot, loot);
   renderResultXpProgress(dom, finalHero);
 }
 
@@ -330,11 +337,46 @@ function animateResultPresentation(dom: DomRefs, presentation: BattleResultPrese
   dom.resultBanner.classList.add("battle-result--animating");
   renderRewardAmount(dom.resultGoldReward, 0);
   renderRewardAmount(dom.resultXpReward, 0);
+  renderResultLoot(dom.resultLoot, presentation.loot ?? []);
   renderResultXpProgress(dom, presentation.heroBeforeReward ?? presentation.heroAfterReward);
 
   animateResultNumber(dom.resultGoldReward, 0, presentation.reward.gold, 720, 1160);
   animateResultNumber(dom.resultXpReward, 0, presentation.reward.xp, 760, 1300);
   scheduleResultAnimation(1480, () => animateResultXpProgress(dom, presentation));
+}
+
+function renderResultLoot(element: HTMLElement, loot: readonly ArenaLootDrop[]): void {
+  element.replaceChildren();
+
+  if (loot.length === 0) {
+    element.hidden = true;
+    return;
+  }
+
+  element.hidden = false;
+
+  loot.forEach((drop) => {
+    const item = HERO_ITEM_CATALOG[drop.itemId];
+    const row = document.createElement("div");
+    const icon = document.createElement("span");
+    const label = document.createElement("strong");
+    const quantity = Math.max(1, drop.quantity);
+
+    row.className = "battle-result__loot-item";
+    icon.className = "battle-result__loot-icon";
+    label.textContent = item ? `Dropped ${item.name}${quantity > 1 ? ` x${quantity}` : ""}` : `Dropped ${drop.itemId}${quantity > 1 ? ` x${quantity}` : ""}`;
+
+    const iconUrl = getShopProductIconUrl([drop.itemId]);
+
+    if (iconUrl) {
+      icon.style.backgroundImage = `url("${iconUrl}")`;
+    } else {
+      icon.textContent = "?";
+    }
+
+    row.append(icon, label);
+    element.append(row);
+  });
 }
 
 function animateResultNumber(element: HTMLElement, fromValue: number, toValue: number, durationMs: number, delayMs: number): void {

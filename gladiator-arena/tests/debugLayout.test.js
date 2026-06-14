@@ -338,3 +338,27 @@ test("debug panel exposes generated shop item editor", () => {
   assert.equal(stylesSource.includes(".armory-shop__option--rarity-mythical"), true);
   assert.equal(stylesSource.includes(".debug-shop-items__select"), true);
 });
+
+test("debug panel exposes arena boss editor", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const bossEditorSource = debugPanelSource.slice(
+    debugPanelSource.indexOf("function mountBossEditor"),
+    debugPanelSource.indexOf("function mountRigEditor"),
+  );
+
+  assert.equal(debugPanelSource.includes("debug-boss-editor-panel"), true);
+  assert.equal(debugPanelSource.includes("Boss editor"), true);
+  assert.equal(debugPanelSource.includes("debug-boss-editor__boss-row"), true);
+  assert.equal(debugPanelSource.includes("debug-boss-editor__actions"), true);
+  assert.equal(debugPanelSource.includes("DEBUG_BOSS_EQUIPMENT_SLOT_LABELS"), true);
+  assert.equal(stylesSource.includes(".debug-boss-editor__boss-row"), true);
+  assert.equal(stylesSource.includes(".debug-boss-editor__equipment-row"), true);
+  assert.equal(debugPanelSource.includes("saveArenaBoss"), true);
+  assert.equal(debugPanelSource.includes("ARENA_BOSSES"), true);
+  assert.equal(debugPanelSource.includes("DEBUG_BOSS_STAT_MAX"), true);
+  assert.equal(debugPanelSource.includes("DEBUG_BOSS_LOOT_CHANCE_STEP"), true);
+  assert.equal(debugPanelSource.includes("getBossUniqueItemIdsForSlot"), true);
+  assert.equal(bossEditorSource.includes("previewBossFromEditor"), true);
+  assert.equal(debugPanelSource.includes("createBossEditorLootTable"), true);
+  assert.equal(debugPanelSource.includes('record.availability?.bossUnique || record.item.rarity === "unique"'), true);
+});

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(currentDir, "../index.html"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
+const domUiSource = readFileSync(resolve(currentDir, "../src/domUi.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"), "utf8");
 
@@ -33,8 +34,13 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(html.includes('id="resultTitle"'), true);
   assert.equal(html.includes('id="resultGoldReward"'), true);
   assert.equal(html.includes('id="resultXpReward"'), true);
+  assert.equal(html.includes('id="resultLoot"'), true);
   assert.equal(html.includes('id="resultXpProgressFill"'), true);
   assert.equal(html.includes('id="cityButton"'), true);
+  assert.equal(domUiSource.includes("loot?: readonly ArenaLootDrop[]"), true);
+  assert.equal(domUiSource.includes("renderResultLoot"), true);
+  assert.equal(mainSource.includes("applyCombatReward(hero, nextState, rewardTimestamp)"), true);
+  assert.equal(mainSource.includes("loot,"), true);
 });
 
 test("city hero widget keeps the top HUD compact", () => {
@@ -72,7 +78,11 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(cityHeroUiSource.includes("mountCityHeroProfile"), true);
   assert.equal(cityHeroUiSource.includes("mountCityHeroEquipmentMenu"), true);
   assert.equal(cityHeroUiSource.includes("getOwnedCityEquipmentProducts"), true);
+  assert.equal(cityHeroUiSource.includes("getInventoryCityEquipmentProducts"), true);
+  assert.equal(cityHeroUiSource.includes("hero.inventory.flatMap"), true);
   assert.equal(mainSource.includes("mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);
+  assert.equal(mainSource.includes("const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);
+  assert.equal((mainSource.match(/cityHeroEquipmentMenu\.render\(\);/g) ?? []).length >= 4, true);
   assert.equal(mainSource.includes("mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : []"), true);
   assert.equal(mainSource.includes("heroProfilePortraitPreview"), false);
   assert.equal(stylesSource.includes(".city-profile__panel"), true);
@@ -83,6 +93,20 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
 test("church button can be wired while keeping the locked visual state", () => {
   assert.equal(html.includes('id="churchButton"'), true);
   assert.equal(html.includes('city-menu__button city-menu__button--locked" type="button" aria-disabled="true"'), true);
+});
+
+test("city arena menu exposes random fights and boss entries", () => {
+  assert.equal(html.includes('id="cityArenaMenu"'), true);
+  assert.equal(html.includes('id="cityArenaRandomButton"'), true);
+  assert.equal(html.includes('id="cityArenaBossList"'), true);
+  assert.equal(mainSource.includes("type ArenaMenuSelection"), true);
+  assert.equal(mainSource.includes("createArenaEncounterForSelection"), true);
+  assert.equal(mainSource.includes("createArenaBossEncounter(selection.bossId)"), true);
+  assert.equal(mainSource.includes("createArenaRandomEnemyEncounter(selection.tierId)"), true);
+  assert.equal(mainSource.includes("getArenaBossesForTier"), true);
+  assert.equal(mainSource.includes("city-menu--arena-select-open"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__boss"), true);
+  assert.equal(stylesSource.includes(".city-menu--arena-select-open .city-menu__nav"), true);
 });
 
 test("fighter resources use flask HUD while preserving stat ids", () => {

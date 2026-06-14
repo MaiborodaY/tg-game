@@ -28,15 +28,13 @@ import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
   allocateHeroSkillPoint,
-  applyArenaLoot,
-  applyBattleReward,
+  applyCombatReward,
   buyAndEquipHeroItems,
   createCombatStateFromHero,
   createDefaultHero,
   deriveHeroStats,
   grantHeroSkillPoints,
   getBattleReward,
-  rollCombatEncounterLoot,
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
@@ -239,17 +237,16 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     return nextState;
   }
 
-  const reward = getBattleReward(nextState);
-  const loot = nextState.result === "win" ? rollCombatEncounterLoot(nextState) : [];
   const rewardTimestamp = new Date().toISOString();
-  const heroBeforeReward = hero;
-  const heroAfterReward = applyArenaLoot(applyBattleReward(hero, reward, rewardTimestamp), loot, rewardTimestamp);
+  const rewardApplication = applyCombatReward(hero, nextState, rewardTimestamp);
+  const { reward, loot, heroBeforeReward, heroAfterReward } = rewardApplication;
 
   hero = heroAfterReward;
   syncPlayerCityBodyScale();
   battleResultPresentation = {
     id: `debug-battle-result-${++battleResultPresentationId}`,
     reward,
+    loot,
     heroBeforeReward,
     heroAfterReward,
   };

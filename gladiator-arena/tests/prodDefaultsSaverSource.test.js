@@ -46,6 +46,15 @@ test("client saver can update generated shop items through the local dev endpoin
   assert.match(source, /JSON\.stringify\(payload\)/);
 });
 
+test("client saver can save generated arena bosses through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/save-arena-boss/);
+  assert.match(source, /saveArenaBoss/);
+  assert.match(source, /ArenaBossDefinition/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("vite dev middleware only writes whitelisted arena layout defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 
@@ -149,6 +158,22 @@ test("vite dev middleware updates generated shop item rarity stats and price", (
   assert.match(source, /armoryProduct: \{ \.\.\.record\.armoryProduct, price: update\.price \}/);
   assert.match(source, /weaponProduct: \{ \.\.\.record\.weaponProduct, price: update\.price \}/);
   assert.match(source, /value === "mythical"/);
+});
+
+test("vite dev middleware writes generated arena bosses", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const generatedBossSource = readFileSync(join(root, "src", "generated", "arenaBosses.generated.ts"), "utf8");
+  const generatedBossJson = readFileSync(join(root, "src", "generated", "arenaBosses.generated.json"), "utf8");
+
+  assert.match(source, /save-arena-boss/);
+  assert.match(source, /generatedArenaBossesJsonUrl/);
+  assert.match(source, /generatedArenaBossesTsUrl/);
+  assert.match(source, /validateArenaBossRecord/);
+  assert.match(source, /writeGeneratedArenaBossRecords/);
+  assert.match(source, /formatGeneratedArenaBossesSource/);
+  assert.match(source, /upsertGeneratedArenaBossRecords/);
+  assert.match(generatedBossSource, /GENERATED_ARENA_BOSSES/);
+  assert.match(generatedBossJson, /dust_arena_champion/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {

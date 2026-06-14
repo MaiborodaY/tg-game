@@ -19,6 +19,7 @@ import {
   mountCityHeroProfile,
   renderCityHeroInfo,
   syncCityHeroWidgetPosition,
+  type CityHeroEquipmentMenuApi,
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
@@ -27,16 +28,23 @@ import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
+  DEFAULT_ARENA_TIER_ID,
   allocateHeroSkillPoint,
-  applyArenaLoot,
-  applyBattleReward,
+  applyCombatReward,
   buyAndEquipHeroItems,
+  createArenaBossEncounter,
+  createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
   createDefaultHero,
   deriveHeroStats,
   grantHeroSkillPoints,
+  getArenaBossesForTier,
+  getArenaRandomOpponentsForTier,
+  getArenaTierDefinition,
   getBattleReward,
-  rollCombatEncounterLoot,
+  type ArenaBossDefinition,
+  type ArenaBossId,
+  type ArenaEncounter,
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
@@ -56,12 +64,20 @@ const dom = getDomRefs();
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
 const cityMenu = document.querySelector<HTMLElement>(".city-menu");
 const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
+const cityArenaMenu = document.querySelector<HTMLElement>("#cityArenaMenu");
+const cityArenaCloseButton = document.querySelector<HTMLButtonElement>("#cityArenaCloseButton");
+const cityArenaTierName = document.querySelector<HTMLElement>("#cityArenaTierName");
+const cityArenaRandomReward = document.querySelector<HTMLElement>("#cityArenaRandomReward");
+const cityArenaRandomButton = document.querySelector<HTMLButtonElement>("#cityArenaRandomButton");
+const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
+type ArenaMenuSelection = { kind: "random"; tierId: number } | { kind: "boss"; bossId: ArenaBossId };
 let hero: HeroState = createDefaultHero();
-let state: CombatState = createCombatStateFromHero(hero);
+let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID };
+let state: CombatState = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
 let classicActionBar: ClassicActionBarApi | undefined;
@@ -99,9 +115,14 @@ let cityReturnTransitionToken = 0;
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
-mountCityHeroEquipmentMenu(cityHeroWidgetRefs, {
+const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMenu(cityHeroWidgetRefs, {
   getHero: () => hero,
   onEquip: handleProfileEquipmentEquip,
+});
+cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) => {
+  if ((event as CustomEvent<{ open?: boolean }>).detail?.open) {
+    closeCityArenaMenu();
+  }
 });
 
 syncHudTuning(dom.gameScreen, debugTuning);
@@ -340,11 +361,92 @@ function prewarmShopItemIconsWhenIdle(): void {
   window.setTimeout(prewarm, 250);
 }
 
+function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaEncounter {
+  return selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId);
+}
+
+function renderCityArenaMenu(): void {
+  if (!cityArenaTierName || !cityArenaRandomReward || !cityArenaBossList) {
+    return;
+  }
+
+  const tier = getArenaTierDefinition(DEFAULT_ARENA_TIER_ID);
+  const randomOpponent = getArenaRandomOpponentsForTier(tier.id)[0];
+  const bosses = getArenaBossesForTier(tier.id);
+
+  cityArenaTierName.textContent = tier.name;
+  cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 5, xp: 5 })}`;
+  cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
+}
+
+function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement {
+  const button = document.createElement("button");
+  const eyebrow = document.createElement("span");
+  const name = document.createElement("strong");
+  const stats = document.createElement("span");
+  const reward = document.createElement("span");
+
+  button.className = "city-arena-menu__boss";
+  button.type = "button";
+  eyebrow.className = "city-arena-menu__eyebrow";
+  eyebrow.textContent = `Tier ${boss.tierId} Boss`;
+  name.textContent = boss.name;
+  stats.className = "city-arena-menu__boss-stats";
+  stats.textContent = `STR ${boss.baseStats.strength} / AGI ${boss.baseStats.agility} / VIT ${boss.baseStats.vitality}`;
+  reward.className = "city-arena-menu__reward";
+  reward.textContent = `Win ${formatCityArenaReward(boss.rewards.win)}`;
+  button.append(eyebrow, name, stats, reward);
+  button.addEventListener("click", () => {
+    startSelectedArena({ kind: "boss", bossId: boss.id });
+  });
+
+  return button;
+}
+
+function createCityArenaEmptyBossMessage(): HTMLElement {
+  const message = document.createElement("p");
+
+  message.className = "city-arena-menu__empty";
+  message.textContent = "No boss in this tier yet.";
+
+  return message;
+}
+
+function formatCityArenaReward(reward: { gold: number; xp: number }): string {
+  return `${reward.gold} Gold / ${reward.xp} XP`;
+}
+
+function openCityArenaMenu(): void {
+  if (!cityArenaMenu || isArenaTransitionRunning) {
+    return;
+  }
+
+  cityHeroProfile?.close();
+  weaponShop?.close();
+  armoryShop?.close();
+  clearShopPreview();
+  renderCityArenaMenu();
+  cityArenaMenu.hidden = false;
+  cityMenu?.classList.add("city-menu--arena-select-open");
+}
+
+function closeCityArenaMenu(): void {
+  cityArenaMenu?.setAttribute("hidden", "");
+  cityMenu?.classList.remove("city-menu--arena-select-open");
+}
+
+function startSelectedArena(selection: ArenaMenuSelection): void {
+  activeArenaSelection = selection;
+  closeCityArenaMenu();
+  void startGameWithCityTransition();
+}
+
 async function finishInitialCityEntry(): Promise<void> {
   showCityReturnTransition();
   await mountCityPreviews();
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  cityHeroEquipmentMenu.render();
   await waitForCityReady();
   hideCityReturnTransition();
 }
@@ -468,6 +570,7 @@ function unmountArenaScene(): void {
 
 function startGame(): void {
   cityHeroProfile?.close();
+  closeCityArenaMenu();
   unmountCityPreviews();
   weaponShop?.close();
   armoryShop?.close();
@@ -527,23 +630,23 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     return nextState;
   }
 
-  const reward = getBattleReward(nextState);
-  const loot = nextState.result === "win" ? rollCombatEncounterLoot(nextState) : [];
   const rewardTimestamp = new Date().toISOString();
-  const heroBeforeReward = hero;
-  const heroAfterReward = applyArenaLoot(applyBattleReward(hero, reward, rewardTimestamp), loot, rewardTimestamp);
+  const rewardApplication = applyCombatReward(hero, nextState, rewardTimestamp);
+  const { reward, loot, heroBeforeReward, heroAfterReward } = rewardApplication;
 
   hero = heroAfterReward;
   syncPlayerCityBodyScale();
   battleResultPresentation = {
     id: `battle-result-${++battleResultPresentationId}`,
     reward,
+    loot,
     heroBeforeReward,
     heroAfterReward,
   };
   startBattleResultReturnGate();
   armoryShop?.render();
   weaponShop?.render();
+  cityHeroEquipmentMenu.render();
 
   return nextState;
 }
@@ -567,6 +670,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
   weaponShop?.render();
+  cityHeroEquipmentMenu.render();
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
@@ -581,6 +685,7 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
   weaponShop?.render();
+  cityHeroEquipmentMenu.render();
 }
 
 function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
@@ -600,6 +705,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   armoryShop?.render();
   weaponShop?.render();
+  cityHeroEquipmentMenu.render();
 }
 
 function handleTemporaryChurchSkillGrant(): void {
@@ -690,22 +796,27 @@ function restart(options: { syncArena?: boolean } = {}): void {
   battleResultPresentation = undefined;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  void commitState(createCombatStateFromHero(hero), options);
+  void commitState(createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection)), options);
 }
 
 dom.startButton.addEventListener("click", () => {
-  cityHeroProfile?.close();
-  void startGameWithCityTransition();
+  openCityArenaMenu();
+});
+cityArenaCloseButton?.addEventListener("click", closeCityArenaMenu);
+cityArenaRandomButton?.addEventListener("click", () => {
+  startSelectedArena({ kind: "random", tierId: DEFAULT_ARENA_TIER_ID });
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
 weaponShopButton?.addEventListener("click", () => {
   cityHeroProfile?.close();
+  closeCityArenaMenu();
   armoryShop?.close();
   weaponShop?.open();
 });
 armoryButton?.addEventListener("click", () => {
   cityHeroProfile?.close();
+  closeCityArenaMenu();
   weaponShop?.close();
   armoryShop?.open();
 });
