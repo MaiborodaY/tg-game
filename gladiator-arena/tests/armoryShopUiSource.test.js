@@ -50,9 +50,11 @@ test("shop product display names hide technical variants and rename shoulder gua
     assert.equal(source.includes("getShopProductDisplayName"), true);
     assert.equal(source.includes("const displayName = getShopProductDisplayName(product.name);"), true);
     assert.equal(source.includes("button.title = displayName;") || source.includes(": displayName;"), true);
-    assert.equal(source.includes("createSelectedMeta(displayName"), true);
     assert.equal(source.includes("button.title = product.name;"), false);
   });
+
+  assert.equal(armoryShopSource.includes("meta.name.textContent = productName;"), true);
+  assert.equal(weaponShopSource.includes("createSelectedMeta(displayName"), true);
 });
 
 test("armory shop seals boss-locked rarity tiers before purchase", () => {
@@ -216,16 +218,19 @@ test("city shop confirm strip is embedded in the shop header while back floats o
   assert.match(stylesSource, /\.armory-shop__selected-card\s*\{[\s\S]*var\(--ui-panel-wood-texture\)/);
 });
 
-test("armory confirm strip uses an armor icon and highlights stat gains", () => {
+test("armory confirm strip omits the extra armor icon and updates preview without grid rerender", () => {
   const citySelectedCardRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__selected-card\s*\{[\s\S]*?\}/)?.[0] ?? "";
   const citySelectedMetaRule = stylesSource.match(/\.armory-shop__selected-meta\s*\{[\s\S]*?\}/)?.[0] ?? "";
 
-  assert.equal(armoryShopSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL"), true);
-  assert.match(armoryShopSource, /createSelectedMeta\([\s\S]*displayName[\s\S]*"armor"[\s\S]*DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL/);
+  assert.equal(armoryShopSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL"), false);
+  assert.equal(armoryShopSource.includes("function renderPreviewSelection"), true);
+  assert.equal(armoryShopSource.includes("function previewArmoryProduct"), true);
+  assert.match(armoryShopSource, /button\.addEventListener\("click", \(\) => \{\s*previewArmoryProduct\(product\);\s*\}\);/);
+  assert.match(armoryShopSource, /function renderPreviewSelection[\s\S]*renderSelectedProduct\(hero\);[\s\S]*updateProductButtonSelection\(previousProductId\);/);
+  assert.match(armoryShopSource, /function updateSelectedMeta[\s\S]*meta\.name\.textContent = productName;[\s\S]*meta\.priceAmount\.textContent = String\(price\);/);
   assert.equal(armoryShopSource.includes("armory-shop__selected-stat-value--positive"), true);
   assert.match(citySelectedCardRule, /grid-template-columns: 40px minmax\(0, 1fr\) minmax\(58px, auto\);/);
   assert.match(citySelectedMetaRule, /"name name name"/);
   assert.match(citySelectedMetaRule, /"rarity stat price"/);
-  assert.equal(stylesSource.includes(".armory-shop__selected-stat-icon"), true);
   assert.equal(stylesSource.includes(".armory-shop__selected-stat-value--positive"), true);
 });

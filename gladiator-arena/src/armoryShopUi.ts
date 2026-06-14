@@ -5,7 +5,6 @@ import {
   type HeroState,
 } from "./hero";
 import {
-  DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
   DAMAGE_BLOCK_ICON_ASSET_URL,
   SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
   SHOP_CATEGORY_BODY_ICON_ASSET_URL,
@@ -67,6 +66,25 @@ interface ArmoryShopOptions {
   onClose?: () => void;
   onLayoutChange?: (menuTopY?: number) => void;
   transitionDelayMs?: number;
+}
+
+interface ArmorySelectedMetaElements {
+  root: HTMLElement;
+  name: HTMLElement;
+  rarity: HTMLElement;
+  stat: HTMLElement;
+  currentStat: HTMLElement;
+  arrow: HTMLElement;
+  nextStat: HTMLElement;
+  price: HTMLElement;
+  priceAmount: HTMLElement;
+}
+
+interface ArmorySelectedStripElements {
+  card: HTMLElement;
+  icon: HTMLImageElement;
+  meta: ArmorySelectedMetaElements;
+  buyButton: HTMLButtonElement;
 }
 
 interface PairedArmorySlotConfig {
@@ -406,6 +424,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   let scrollIndicatorTimer: number | undefined;
   let layoutFrame: number | undefined;
   let layoutSettleTimers: number[] = [];
+  let selectedStripElements: ArmorySelectedStripElements | undefined;
+  let productButtons = new Map<string, HTMLButtonElement>();
   const usesCityHeroPreview = !options.mountPreview;
   const transitionDelayMs = options.transitionDelayMs ?? 0;
 
@@ -488,8 +508,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   back.setAttribute("aria-label", "Back");
   back.addEventListener("click", () => {
     if (previewProduct) {
-      clearProductPreview();
-      render();
+      const previousProductId = clearProductPreview();
+
+      renderPreviewSelection(previousProductId);
       return;
     }
 
@@ -572,24 +593,20 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     categoryRail.replaceChildren();
     subcategories.replaceChildren();
     content.replaceChildren();
-    selected.replaceChildren();
+    productButtons = new Map();
     clearScrollIndicator();
     subcategories.hidden = true;
     shop.classList.toggle("armory-shop--has-subcategories", false);
-    shop.classList.toggle("armory-shop--has-selection", Boolean(previewProduct));
-    selected.hidden = !previewProduct;
     content.classList.toggle("armory-shop__content--categories", false);
     content.classList.toggle("armory-shop__content--products", true);
-    content.classList.toggle("armory-shop__content--has-selection", Boolean(previewProduct));
     content.classList.toggle("armory-shop__content--confirm", false);
+    syncSelectionState();
 
     ARMORY_CATEGORIES.forEach((category) => {
       categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
     });
 
-    if (previewProduct) {
-      selected.append(createSelectedProductStrip(previewProduct, hero));
-    }
+    renderSelectedProduct(hero);
 
     scheduleLayoutSync();
 
@@ -599,8 +616,80 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     }
 
     selectedProducts.forEach((product) => {
-      content.append(createProductButton(product, hero, previewProduct?.id === product.id));
+      const button = createProductButton(product, hero, previewProduct?.id === product.id);
+
+      productButtons.set(product.id, button);
+      content.append(button);
     });
+  }
+
+  function previewArmoryProduct(product: ArmoryProduct): void {
+    if (previewProduct?.id === product.id) {
+      return;
+    }
+
+    const previousProductId = previewProduct?.id;
+
+    previewProduct = product;
+    options.onPreview?.(product);
+    renderPreviewSelection(previousProductId);
+  }
+
+  function renderPreviewSelection(previousProductId?: string): void {
+    const hero = options.getHero();
+
+    renderSelectedProduct(hero);
+    updateProductButtonSelection(previousProductId);
+    scheduleLayoutSync();
+  }
+
+  function syncSelectionState(): void {
+    const hasSelection = Boolean(previewProduct);
+
+    shop.classList.toggle("armory-shop--has-selection", hasSelection);
+    selected.hidden = !hasSelection;
+    content.classList.toggle("armory-shop__content--has-selection", hasSelection);
+  }
+
+  function renderSelectedProduct(hero: HeroState): void {
+    syncSelectionState();
+
+    if (!previewProduct) {
+      return;
+    }
+
+    updateSelectedProductStrip(ensureSelectedStripElements(), previewProduct, hero);
+  }
+
+  function ensureSelectedStripElements(): ArmorySelectedStripElements {
+    if (!selectedStripElements) {
+      selectedStripElements = createSelectedProductStrip(() => {
+        if (!previewProduct) {
+          return;
+        }
+
+        const product = previewProduct;
+
+        previewProduct = undefined;
+        options.onBuy(product);
+        render();
+      });
+      selected.replaceChildren(selectedStripElements.card);
+    }
+
+    return selectedStripElements;
+  }
+
+  function updateProductButtonSelection(previousProductId?: string): void {
+    const nextProductId = previewProduct?.id;
+
+    if (previousProductId && previousProductId !== nextProductId) {
+      productButtons.get(previousProductId)?.classList.remove("armory-shop__option--selected");
+    }
+
+    if (nextProductId) {
+      productButtons.get(nextProductId)?.classList.add("armory-shop__option--selected");
+    }
   }
 
   function ensurePreviewMounted(): void {
@@ -672,56 +761,88 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       button.append(createProductStats("AR", armor, product.price));
     }
     button.addEventListener("click", () => {
-      previewProduct = product;
-      options.onPreview?.(product);
-      render();
+      previewArmoryProduct(product);
     });
 
     return button;
   }
 
-  function createSelectedProductStrip(product: ArmoryProduct, hero: HeroState): HTMLElement {
+  function createSelectedProductStrip(onBuy: () => void): ArmorySelectedStripElements {
     const strip = document.createElement("div");
+    const icon = document.createElement("img");
+    const meta = createSelectedMeta();
+    const button = document.createElement("button");
+
+    strip.className = "armory-shop__selected-card";
+    icon.className = "armory-shop__selected-icon";
+    icon.alt = "";
+    icon.decoding = "async";
+    icon.draggable = false;
+    button.className = "armory-shop__selected-buy";
+    button.type = "button";
+    button.addEventListener("click", onBuy);
+    strip.append(icon, meta.root, button);
+
+    return {
+      card: strip,
+      icon,
+      meta,
+      buyButton: button,
+    };
+  }
+
+  function updateSelectedProductStrip(elements: ArmorySelectedStripElements, product: ArmoryProduct, hero: HeroState): void {
     const iconUrl = getShopProductIconUrl(product.itemIds);
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const armor = getShopProductStat(product.itemIds, "armor");
     const currentArmor = getEquippedShopProductStat(hero, product.itemIds, "armor");
     const displayName = getShopProductDisplayName(product.name);
-
-    strip.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
-    strip.append(
-      createProductIcon(iconUrl, "armory-shop__selected-icon"),
-      createSelectedMeta(displayName, rarity, "armor", DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL, armor, currentArmor, product.price),
-      createPreviewBuyButton(product, hero),
-    );
-
-    return strip;
-  }
-
-  function createPreviewBuyButton(product: ArmoryProduct, hero: HeroState): HTMLButtonElement {
-    const button = document.createElement("button");
     const actionState = getArmoryProductActionState(hero, product);
 
-    button.className = "armory-shop__selected-buy";
-    button.type = "button";
-    button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "sealed";
-    button.textContent = getShopProductActionLabel(actionState, product.price);
-    button.addEventListener("click", () => {
-      previewProduct = undefined;
-      options.onBuy(product);
-      render();
-    });
+    elements.card.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
+    elements.icon.hidden = !iconUrl;
+    if (iconUrl && elements.icon.src !== iconUrl) {
+      elements.icon.src = iconUrl;
+    }
 
-    return button;
+    updateSelectedMeta(elements.meta, displayName, rarity, "armor", armor, currentArmor, product.price);
+    elements.buyButton.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "sealed";
+    elements.buyButton.textContent = getShopProductActionLabel(actionState, product.price);
   }
 
-  function clearProductPreview(): void {
+  function updateSelectedMeta(
+    meta: ArmorySelectedMetaElements,
+    productName: string,
+    rarity: ShopItemRarity,
+    statLabel: string,
+    stat: number,
+    currentStat: number,
+    price: number,
+  ): void {
+    meta.name.textContent = productName;
+    meta.rarity.textContent = getShopRarityLabel(rarity);
+    meta.stat.setAttribute("aria-label", currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
+    meta.currentStat.textContent = String(currentStat);
+    meta.nextStat.classList.toggle("armory-shop__selected-stat-value--positive", stat > currentStat);
+    meta.nextStat.classList.toggle("armory-shop__selected-stat-value--negative", stat < currentStat);
+    meta.nextStat.textContent = String(stat);
+    meta.arrow.hidden = currentStat === stat;
+    meta.nextStat.hidden = currentStat === stat;
+    meta.price.setAttribute("aria-label", `${price} gold`);
+    meta.priceAmount.textContent = String(price);
+  }
+
+  function clearProductPreview(): string | undefined {
     if (!previewProduct) {
-      return;
+      return undefined;
     }
+
+    const previousProductId = previewProduct.id;
 
     previewProduct = undefined;
     options.onPreviewClear?.();
+
+    return previousProductId;
   }
 
   function getArmoryProductActionState(hero: HeroState, product: ArmoryProduct): ShopProductActionState {
@@ -756,8 +877,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       return;
     }
 
-    clearProductPreview();
-    render();
+    const previousProductId = clearProductPreview();
+
+    renderPreviewSelection(previousProductId);
   }
 
   function scheduleShopTransition(callback: () => void): void {
@@ -943,55 +1065,40 @@ function createProductStats(statLabel: string, stat: number, price: number): HTM
   return stats;
 }
 
-function createSelectedMeta(
-  productName: string,
-  rarity: ShopItemRarity,
-  statLabel: string,
-  statIconUrl: string,
-  stat: number,
-  currentStat: number,
-  price: number,
-): HTMLElement {
+function createSelectedMeta(): ArmorySelectedMetaElements {
   const meta = document.createElement("div");
   const nameNode = document.createElement("span");
   const rarityNode = document.createElement("span");
   const statNode = document.createElement("span");
-  const statIcon = document.createElement("img");
   const currentStatNode = document.createElement("span");
+  const arrowNode = document.createElement("span");
   const nextStatNode = document.createElement("span");
   const priceNode = document.createElement("span");
 
   meta.className = "armory-shop__selected-meta";
   nameNode.className = "armory-shop__selected-name";
-  nameNode.textContent = productName;
   rarityNode.className = "armory-shop__selected-rarity";
-  rarityNode.textContent = getShopRarityLabel(rarity);
   statNode.className = "armory-shop__selected-stat";
-  statNode.setAttribute("aria-label", currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
-  statIcon.className = "armory-shop__selected-stat-icon";
-  statIcon.src = statIconUrl;
-  statIcon.alt = "";
-  statIcon.decoding = "async";
-  statIcon.draggable = false;
   currentStatNode.className = "armory-shop__selected-stat-value";
-  currentStatNode.textContent = String(currentStat);
+  arrowNode.className = "armory-shop__selected-stat-arrow";
+  arrowNode.textContent = ">";
   nextStatNode.className = "armory-shop__selected-stat-value";
-  nextStatNode.classList.toggle("armory-shop__selected-stat-value--positive", stat > currentStat);
-  nextStatNode.classList.toggle("armory-shop__selected-stat-value--negative", stat < currentStat);
-  nextStatNode.textContent = String(stat);
-  statNode.append(statIcon, currentStatNode);
-  if (currentStat !== stat) {
-    const arrowNode = document.createElement("span");
-
-    arrowNode.className = "armory-shop__selected-stat-arrow";
-    arrowNode.textContent = ">";
-    statNode.append(arrowNode, nextStatNode);
-  }
   priceNode.className = "armory-shop__selected-price";
-  appendPriceContent(priceNode, price);
+  appendPriceContent(priceNode, 0);
+  statNode.append(currentStatNode, arrowNode, nextStatNode);
   meta.append(nameNode, rarityNode, statNode, priceNode);
 
-  return meta;
+  return {
+    root: meta,
+    name: nameNode,
+    rarity: rarityNode,
+    stat: statNode,
+    currentStat: currentStatNode,
+    arrow: arrowNode,
+    nextStat: nextStatNode,
+    price: priceNode,
+    priceAmount: priceNode.querySelector<HTMLElement>(".armory-shop__price-amount")!,
+  };
 }
 
 function appendPriceContent(priceNode: HTMLElement, price: number): void {
