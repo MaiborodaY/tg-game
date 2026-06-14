@@ -699,16 +699,23 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
 }
 
 export function allocateHeroSkillPoint(hero: HeroState, attribute: HeroAttributeKey, now = new Date().toISOString()): HeroState {
-  if (hero.skillPoints <= 0) {
+  return allocateHeroSkillPoints(hero, attribute, 1, now);
+}
+
+export function allocateHeroSkillPoints(hero: HeroState, attribute: HeroAttributeKey, amount: number, now = new Date().toISOString()): HeroState {
+  const requestedPoints = Number.isFinite(amount) ? Math.floor(amount) : 0;
+  const spentPoints = Math.min(hero.skillPoints, Math.max(0, requestedPoints));
+
+  if (spentPoints <= 0) {
     return hero;
   }
 
   return {
     ...hero,
-    skillPoints: hero.skillPoints - 1,
+    skillPoints: hero.skillPoints - spentPoints,
     baseStats: {
       ...hero.baseStats,
-      [attribute]: hero.baseStats[attribute] + 1,
+      [attribute]: hero.baseStats[attribute] + spentPoints,
     },
     updatedAt: now,
   };

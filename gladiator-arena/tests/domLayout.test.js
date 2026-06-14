@@ -68,12 +68,25 @@ test("city hero portrait hints when skill points are unspent", () => {
   assert.equal(stylesSource.includes("@keyframes city-portrait-points-pulse"), true);
 });
 
+test("city hero profile pulses unspent points and available attribute buttons", () => {
+  assert.equal(stylesSource.includes("@keyframes city-profile-points-ready-pulse"), true);
+  assert.equal(stylesSource.includes("@keyframes city-profile-attribute-plus-pulse"), true);
+  assert.equal(stylesSource.includes("animation: city-profile-points-ready-pulse 1.25s ease-in-out infinite;"), true);
+  assert.equal(stylesSource.includes(".city-profile__attribute-button:not(:disabled)"), true);
+  assert.equal(stylesSource.includes("animation: city-profile-attribute-plus-pulse 1.25s ease-in-out infinite;"), true);
+});
+
 test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(html.includes('id="heroProfile"'), true);
   assert.equal(html.includes('role="dialog"'), true);
   assert.equal(html.includes('id="heroProfilePortrait"'), true);
   assert.equal(html.includes('id="heroProfileSkillPoints"'), true);
   assert.equal(html.includes('data-hero-profile-stat="damage"'), true);
+  assert.equal(html.includes('data-hero-profile-stat="armor"'), false);
+  assert.equal(html.includes("DERIVED STATS"), false);
+  assert.equal(html.includes(">STATS<"), true);
+  assert.equal(html.includes("HEALTH (HP)"), true);
+  assert.equal(html.includes("MOVEMENT SPEED"), true);
   assert.equal(html.includes("data-hero-profile-equipment"), true);
   assert.equal(cityHeroUiSource.includes("mountCityHeroProfile"), true);
   assert.equal(cityHeroUiSource.includes("mountCityHeroEquipmentMenu"), true);
@@ -88,6 +101,43 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(stylesSource.includes(".city-profile__panel"), true);
   assert.equal(stylesSource.includes(".city-equipment-menu__tray"), true);
   assert.equal(stylesSource.includes("@keyframes city-profile-panel-in"), true);
+  assert.equal(stylesSource.includes("grid-template-rows: auto auto;"), true);
+  assert.equal(stylesSource.includes("grid-row: 1 / span 2;"), true);
+});
+
+test("city hero profile uses generated medallion icons for attributes and derived stats", () => {
+  ["attribute-strength", "attribute-agility", "attribute-vitality"].forEach((iconName) => {
+    assert.equal(stylesSource.includes(`./assets/ui/profile/${iconName}.webp`), true);
+  });
+
+  ["stat-damage", "stat-health", "stat-movement", "stat-stamina", "stat-recovery"].forEach((iconName) => {
+    assert.equal(stylesSource.includes(`./assets/ui/profile/${iconName}.webp`), true);
+  });
+
+  assert.equal(stylesSource.includes("stat-armor.webp"), false);
+  assert.equal(cityHeroUiSource.includes("formatMovementSpeedPercent(stats.movementDistanceBonus)"), true);
+  assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.hp, String(MAX_HP))"), true);
+  assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.stamina, String(MAX_STAMINA))"), true);
+  assert.equal(cityHeroUiSource.includes("HERO_PROFILE_BASE_REST_HP + stats.restHpRestoreBonus"), true);
+  assert.equal(cityHeroUiSource.includes("HERO_PROFILE_BASE_REST_STAMINA + stats.restStaminaRestoreBonus"), true);
+  assert.equal(cityHeroUiSource.includes("renderProfileRecoveryStat("), true);
+  assert.equal(cityHeroUiSource.includes("refs.profileStats.recovery"), true);
+  assert.equal(stylesSource.includes(".city-profile__resource-bonus"), false);
+  assert.equal(stylesSource.includes(".city-profile__recovery-value--hp::before"), true);
+  assert.equal(stylesSource.includes(".city-profile__recovery-value--stamina::before"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: 38px minmax(0, 1fr);"), true);
+  assert.equal(stylesSource.includes("min-height: 50px;"), true);
+  assert.equal(stylesSource.includes(".city-profile__derived .city-profile__recovery-value"), true);
+  assert.equal(stylesSource.includes("width: 22px;"), true);
+});
+
+test("city hero attribute buttons support bulk and hold allocation", () => {
+  assert.equal(cityHeroUiSource.includes("ATTRIBUTE_CTRL_ALLOCATE_AMOUNT = 10"), true);
+  assert.equal(cityHeroUiSource.includes("ATTRIBUTE_HOLD_REPEAT_DELAY_MS"), true);
+  assert.equal(cityHeroUiSource.includes("event.ctrlKey ? ATTRIBUTE_CTRL_ALLOCATE_AMOUNT : 1"), true);
+  assert.equal(cityHeroUiSource.includes("window.setInterval(() => allocate(amount), ATTRIBUTE_HOLD_REPEAT_INTERVAL_MS)"), true);
+  assert.equal(cityHeroUiSource.includes('button.addEventListener("pointerdown", handlePointerDown)'), true);
+  assert.equal(mainSource.includes("allocateHeroSkillPoints(hero, attribute, amount)"), true);
 });
 
 test("city equipment inventory cards share the textured rarity standard", () => {

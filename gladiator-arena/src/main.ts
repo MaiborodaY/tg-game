@@ -29,7 +29,7 @@ import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
   DEFAULT_ARENA_TIER_ID,
-  allocateHeroSkillPoint,
+  allocateHeroSkillPoints,
   applyCombatReward,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
@@ -688,8 +688,8 @@ function isArmoryShopProduct(product: ArmoryProduct | WeaponProduct): product is
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
 }
 
-function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
-  const nextHero = allocateHeroSkillPoint(hero, attribute);
+function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
+  const nextHero = allocateHeroSkillPoints(hero, attribute, amount);
 
   if (nextHero === hero) {
     return;

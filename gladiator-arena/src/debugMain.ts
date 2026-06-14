@@ -27,7 +27,7 @@ import {
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
-  allocateHeroSkillPoint,
+  allocateHeroSkillPoints,
   applyCombatReward,
   buyAndEquipHeroItems,
   createCombatStateFromHero,
@@ -274,8 +274,8 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   armoryShop?.render();
 }
 
-function handleHeroAttributeAllocate(attribute: HeroAttributeKey): void {
-  const nextHero = allocateHeroSkillPoint(hero, attribute);
+function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
+  const nextHero = allocateHeroSkillPoints(hero, attribute, amount);
 
   if (nextHero === hero) {
     return;

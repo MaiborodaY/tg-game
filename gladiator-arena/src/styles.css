@@ -1688,6 +1688,45 @@ h1 {
   }
 }
 
+@keyframes city-profile-points-ready-pulse {
+  0%,
+  100% {
+    border-color: rgba(90, 240, 199, 0.48);
+    box-shadow:
+      inset 0 0 10px rgba(90, 240, 199, 0.12),
+      0 0 0 rgba(90, 240, 199, 0);
+    filter: brightness(1);
+  }
+
+  50% {
+    border-color: rgba(166, 255, 224, 0.98);
+    box-shadow:
+      inset 0 0 12px rgba(90, 240, 199, 0.26),
+      0 0 9px rgba(90, 240, 199, 0.42);
+    filter: brightness(1.16);
+  }
+}
+
+@keyframes city-profile-attribute-plus-pulse {
+  0%,
+  100% {
+    border-color: #170703;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.38),
+      0 2px 0 rgba(12, 3, 1, 0.52);
+    filter: brightness(1);
+  }
+
+  50% {
+    border-color: rgba(255, 226, 148, 0.9);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.52),
+      0 2px 0 rgba(12, 3, 1, 0.52),
+      0 0 10px rgba(255, 181, 73, 0.46);
+    filter: brightness(1.12);
+  }
+}
+
 @keyframes battle-result-xp-glow {
   0% {
     box-shadow: 0 0 0 rgba(89, 193, 255, 0);
@@ -2576,6 +2615,7 @@ body.debug-active .city-menu__portrait-button:active {
   border-color: rgba(90, 240, 199, 0.48);
   background: rgba(31, 105, 82, 0.28);
   box-shadow: inset 0 0 10px rgba(90, 240, 199, 0.12);
+  animation: city-profile-points-ready-pulse 1.25s ease-in-out infinite;
 }
 
 .city-profile__attributes {
@@ -2676,6 +2716,10 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
+}
+
+.city-profile__attribute-button:not(:disabled) {
+  animation: city-profile-attribute-plus-pulse 1.25s ease-in-out infinite;
 }
 
 .city-profile__attribute-button:disabled {
@@ -3142,13 +3186,11 @@ body.debug-active .city-menu__portrait-button:active {
 .city-profile__attribute-icon {
   width: 44px;
   height: 44px;
-  border-color: #120502;
-  background:
-    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
-    linear-gradient(180deg, #7c4a25, #230904);
+  border-color: rgba(18, 5, 2, 0.94);
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 68%, auto, auto;
+  background-size: contain;
+  filter: drop-shadow(0 2px 0 rgba(8, 2, 1, 0.72));
   font-size: 0;
 }
 
@@ -3179,31 +3221,22 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__attribute-icon--strength {
-  background-image:
-    url("./assets/ui/action-icons/attack-heavy.webp"),
-    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
-    linear-gradient(180deg, #7c4a25, #230904);
+  background-image: url("./assets/ui/profile/attribute-strength.webp");
 }
 
 .city-profile__attribute-icon--agility {
-  background-image:
-    url("./assets/ui/action-icons/lunge.webp"),
-    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
-    linear-gradient(180deg, #395f38, #150804);
+  background-image: url("./assets/ui/profile/attribute-agility.webp");
 }
 
 .city-profile__attribute-icon--vitality {
-  background-image:
-    url("./assets/ui/action-icons/rest.webp"),
-    radial-gradient(circle at 50% 24%, rgba(255, 234, 180, 0.22), transparent 38%),
-    linear-gradient(180deg, #73311f, #190704);
+  background-image: url("./assets/ui/profile/attribute-vitality.webp");
 }
 
 .city-profile__derived {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
+  gap: 8px;
   margin-top: 8px;
-  padding: 8px;
+  padding: 9px;
   border: 2px solid #160703;
   border-radius: 7px;
   background:
@@ -3213,40 +3246,103 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__derived div {
-  grid-template-columns: 27px minmax(0, 1fr) auto;
-  gap: 6px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  row-gap: 1px;
   align-items: center;
-  min-height: 38px;
-  padding: 6px 7px;
+  min-height: 50px;
+  padding: 7px 9px 7px 7px;
   border-width: 1px;
   border-radius: 5px;
   text-align: left;
 }
 
 .city-profile__derived-icon {
+  grid-row: 1 / span 2;
   display: grid;
   place-items: center;
-  width: 23px;
-  height: 23px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  color: #fff0bd;
-  background: linear-gradient(180deg, #70401f, #230904);
-  box-shadow: inset 0 1px 0 rgba(255, 220, 146, 0.16);
-  font-size: 0.62rem;
-  font-weight: 900;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.72));
+  font-size: 0;
+}
+
+.city-profile__derived-card--damage .city-profile__derived-icon {
+  background-image: url("./assets/ui/profile/stat-damage.webp");
+}
+
+.city-profile__derived-card--hp .city-profile__derived-icon {
+  background-image: url("./assets/ui/profile/stat-health.webp");
+}
+
+.city-profile__derived-card--movement .city-profile__derived-icon {
+  background-image: url("./assets/ui/profile/stat-movement.webp");
+}
+
+.city-profile__derived-card--stamina .city-profile__derived-icon {
+  background-image: url("./assets/ui/profile/stat-stamina.webp");
+}
+
+.city-profile__derived-card--recovery .city-profile__derived-icon {
+  background-image: url("./assets/ui/profile/stat-recovery.webp");
 }
 
 .city-profile__derived span:not(.city-profile__derived-icon) {
+  align-self: end;
   overflow: visible;
   color: #d2a15f;
-  font-size: clamp(0.45rem, 1.6vw, 0.54rem);
+  font-size: clamp(0.52rem, 1.88vw, 0.62rem);
   line-height: 1.08;
   text-overflow: clip;
   white-space: normal;
 }
 
 .city-profile__derived strong {
-  font-size: clamp(0.62rem, 2.35vw, 0.76rem);
+  align-self: start;
+  grid-column: 2;
+  font-size: clamp(0.72rem, 2.75vw, 0.88rem);
+  text-align: left;
+}
+
+.city-profile__derived-recovery-values {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.city-profile__derived .city-profile__recovery-value {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: #fff0bd;
+  font-size: clamp(0.82rem, 3vw, 0.96rem);
+  line-height: 1;
+}
+
+.city-profile__recovery-value::before {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.72));
+}
+
+.city-profile__recovery-value--hp::before {
+  background-image: url("./assets/ui/profile/stat-health.webp");
+}
+
+.city-profile__recovery-value--stamina::before {
+  background-image: url("./assets/ui/profile/stat-stamina.webp");
 }
 
 .city-profile__equipment {
@@ -6018,6 +6114,11 @@ body.arena-low-effects .classic-distance-badge {
   .classic-stat__fill::before {
     animation: none;
     transform: none;
+  }
+
+  .city-profile__points--ready,
+  .city-profile__attribute-button:not(:disabled) {
+    animation: none;
   }
 }
 

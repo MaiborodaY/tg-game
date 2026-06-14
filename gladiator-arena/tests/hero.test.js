@@ -461,6 +461,24 @@ test("hero can spend level-up skill points on base attributes", () => {
   assert.equal(exhaustedHero, vitalityHero);
 });
 
+test("hero can spend multiple skill points on one base attribute", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    skillPoints: 12,
+  };
+  const bulkHero = hero.allocateHeroSkillPoints(baseHero, "agility", 10, "2026-01-01T00:01:00.000Z");
+  const cappedHero = hero.allocateHeroSkillPoints(bulkHero, "agility", 10, "2026-01-01T00:02:00.000Z");
+
+  assert.equal(bulkHero.skillPoints, 2);
+  assert.equal(bulkHero.baseStats.agility, 10);
+  assert.equal(bulkHero.updatedAt, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(cappedHero.skillPoints, 0);
+  assert.equal(cappedHero.baseStats.agility, 12);
+  assert.equal(cappedHero.updatedAt, "2026-01-01T00:02:00.000Z");
+  assert.equal(hero.allocateHeroSkillPoints(cappedHero, "agility", 0), cappedHero);
+});
+
 test("hero can receive temporary skill points", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
   const boostedHero = hero.grantHeroSkillPoints(baseHero, 10, "2026-01-01T00:01:00.000Z");

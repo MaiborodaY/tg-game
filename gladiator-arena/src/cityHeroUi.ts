@@ -7,6 +7,7 @@ import {
   SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
 } from "./assets";
 import { getGeneratedArmoryProductsForSlots, type ArmoryProduct } from "./armoryShopUi";
+import { MAX_HP, MAX_STAMINA, actions } from "./combat";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import {
   areHeroItemsEquipped,
@@ -24,7 +25,13 @@ import { getShopProductIconUrl } from "./shopItemIcons";
 import { getShopProductDisplayName, getShopProductRarity, getShopProductStat, getShopRarityLabel, type ShopItemRarity } from "./shopPresentation";
 
 const HERO_ATTRIBUTE_KEYS: readonly HeroAttributeKey[] = ["strength", "agility", "vitality"];
-type CityHeroProfileStatKey = "damage" | "armor" | "hp" | "stamina" | "movement" | "recovery";
+const ATTRIBUTE_CTRL_ALLOCATE_AMOUNT = 10;
+const ATTRIBUTE_HOLD_REPEAT_DELAY_MS = 360;
+const ATTRIBUTE_HOLD_REPEAT_INTERVAL_MS = 95;
+const HERO_PROFILE_BASE_REST_HP = actions.rest.heal ?? 0;
+const HERO_PROFILE_BASE_REST_STAMINA = actions.rest.restore ?? 0;
+
+type CityHeroProfileStatKey = "damage" | "hp" | "stamina" | "movement" | "recovery";
 type CityEquipmentCategoryId = "swords" | "bows" | "axes" | "head" | "body" | "arms" | "legs";
 type CityEquipmentCategorySide = "weapon" | "armor";
 
@@ -162,7 +169,6 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     profileEquipment: root.querySelector<HTMLElement>("[data-hero-profile-equipment]"),
     profileStats: {
       damage: root.querySelector<HTMLElement>('[data-hero-profile-stat="damage"]'),
-      armor: root.querySelector<HTMLElement>('[data-hero-profile-stat="armor"]'),
       hp: root.querySelector<HTMLElement>('[data-hero-profile-stat="hp"]'),
       stamina: root.querySelector<HTMLElement>('[data-hero-profile-stat="stamina"]'),
       movement: root.querySelector<HTMLElement>('[data-hero-profile-stat="movement"]'),
@@ -479,7 +485,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   };
 }
 
-export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAllocate: (attribute: HeroAttributeKey) => void): () => void {
+export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAllocate: (attribute: HeroAttributeKey, amount: number) => void): () => void {
   const cleanups = HERO_ATTRIBUTE_KEYS.flatMap((attribute) => {
     const button = refs.attributeButtons[attribute];
 
@@ -487,11 +493,78 @@ export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAlloc
       return [];
     }
 
-    const handleClick = () => onAllocate(attribute);
+    let holdDelayId: number | undefined;
+    let holdIntervalId: number | undefined;
+    let suppressNextClick = false;
 
+    const clearHoldRepeat = () => {
+      if (holdDelayId !== undefined) {
+        window.clearTimeout(holdDelayId);
+        holdDelayId = undefined;
+      }
+
+      if (holdIntervalId !== undefined) {
+        window.clearInterval(holdIntervalId);
+        holdIntervalId = undefined;
+      }
+    };
+
+    const allocate = (amount: number) => {
+      if (!button.disabled) {
+        onAllocate(attribute, amount);
+      }
+    };
+
+    const getAllocateAmount = (event: MouseEvent | PointerEvent) => (event.ctrlKey ? ATTRIBUTE_CTRL_ALLOCATE_AMOUNT : 1);
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || button.disabled) {
+        return;
+      }
+
+      const amount = getAllocateAmount(event);
+
+      suppressNextClick = true;
+      allocate(amount);
+      clearHoldRepeat();
+      try {
+        button.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture is best-effort; regular pointerup/cancel still clears the repeat.
+      }
+      holdDelayId = window.setTimeout(() => {
+        allocate(amount);
+        holdIntervalId = window.setInterval(() => allocate(amount), ATTRIBUTE_HOLD_REPEAT_INTERVAL_MS);
+      }, ATTRIBUTE_HOLD_REPEAT_DELAY_MS);
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+
+      allocate(getAllocateAmount(event));
+    };
+
+    button.addEventListener("pointerdown", handlePointerDown);
+    button.addEventListener("pointerup", clearHoldRepeat);
+    button.addEventListener("pointercancel", clearHoldRepeat);
+    button.addEventListener("lostpointercapture", clearHoldRepeat);
+    button.addEventListener("blur", clearHoldRepeat);
     button.addEventListener("click", handleClick);
 
-    return [() => button.removeEventListener("click", handleClick)];
+    return [
+      () => {
+        clearHoldRepeat();
+        button.removeEventListener("pointerdown", handlePointerDown);
+        button.removeEventListener("pointerup", clearHoldRepeat);
+        button.removeEventListener("pointercancel", clearHoldRepeat);
+        button.removeEventListener("lostpointercapture", clearHoldRepeat);
+        button.removeEventListener("blur", clearHoldRepeat);
+        button.removeEventListener("click", handleClick);
+      },
+    ];
   });
 
   return () => cleanups.forEach((cleanup) => cleanup());
@@ -507,11 +580,14 @@ function renderCityHeroProfileStats(refs: CityHeroWidgetRefs, hero: HeroState): 
   };
 
   setText(refs.profileStats.damage, `+${stats.damageBonus}`);
-  setText(refs.profileStats.armor, String(stats.maxArmor));
-  setText(refs.profileStats.hp, String(stats.maxHp));
-  setText(refs.profileStats.stamina, String(stats.maxStamina));
-  setText(refs.profileStats.movement, formatSignedDecimal(stats.movementDistanceBonus));
-  setText(refs.profileStats.recovery, `+${stats.restHpRestoreBonus}/+${stats.restStaminaRestoreBonus}`);
+  setText(refs.profileStats.hp, String(MAX_HP));
+  setText(refs.profileStats.stamina, String(MAX_STAMINA));
+  setText(refs.profileStats.movement, formatMovementSpeedPercent(stats.movementDistanceBonus));
+  renderProfileRecoveryStat(
+    refs.profileStats.recovery,
+    HERO_PROFILE_BASE_REST_HP + stats.restHpRestoreBonus,
+    HERO_PROFILE_BASE_REST_STAMINA + stats.restStaminaRestoreBonus,
+  );
 
   HERO_ATTRIBUTE_KEYS.forEach((attribute) => {
     const value = refs.attributeValues[attribute];
@@ -901,10 +977,39 @@ function getCityEquipmentCategoryIconUrl(category: CityEquipmentCategory): strin
   return product ? getShopProductIconUrl(product.itemIds) : undefined;
 }
 
-function formatSignedDecimal(value: number): string {
-  const formattedValue = value.toFixed(3).replace(/\.?0+$/, "");
+function renderProfileRecoveryStat(target: HTMLElement | null, hpRestore: number, staminaRestore: number): void {
+  if (!target) {
+    return;
+  }
 
-  return `+${formattedValue || "0"}`;
+  const hpValue = document.createElement("span");
+  const staminaValue = document.createElement("span");
+
+  hpValue.className = "city-profile__recovery-value city-profile__recovery-value--hp";
+  hpValue.textContent = formatSignedInteger(hpRestore);
+  staminaValue.className = "city-profile__recovery-value city-profile__recovery-value--stamina";
+  staminaValue.textContent = formatSignedInteger(staminaRestore);
+
+  target.classList.add("city-profile__derived-recovery-values");
+  target.setAttribute("aria-label", `${formatSignedInteger(hpRestore)} health, ${formatSignedInteger(staminaRestore)} stamina`);
+  target.replaceChildren(hpValue, staminaValue);
+}
+
+function formatMovementSpeedPercent(value: number): string {
+  const percent = Math.round(value * 1000) / 10;
+  const formattedValue = percent.toFixed(1).replace(/\.0$/u, "");
+
+  if (percent === 0) {
+    return "0%";
+  }
+
+  return `${percent > 0 ? "+" : ""}${formattedValue}%`;
+}
+
+function formatSignedInteger(value: number): string {
+  const formattedValue = String(Math.round(value));
+
+  return value >= 0 ? `+${formattedValue}` : formattedValue;
 }
 
 function setText(target: HTMLElement | null, value: string): void {
