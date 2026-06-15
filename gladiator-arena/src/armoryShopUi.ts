@@ -6,6 +6,7 @@ import {
 } from "./hero";
 import {
   DAMAGE_BLOCK_ICON_ASSET_URL,
+  SHOP_BACK_ICON_ASSET_URL,
   SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
   SHOP_CATEGORY_BODY_ICON_ASSET_URL,
   SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
@@ -508,10 +509,16 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   scrollIndicator.setAttribute("aria-hidden", "true");
 
   const back = document.createElement("button");
+  const backIcon = document.createElement("img");
   back.className = "armory-shop__back";
   back.type = "button";
-  back.textContent = "<";
   back.setAttribute("aria-label", "Back");
+  backIcon.className = "armory-shop__back-icon";
+  backIcon.src = SHOP_BACK_ICON_ASSET_URL;
+  backIcon.alt = "";
+  backIcon.decoding = "async";
+  backIcon.draggable = false;
+  back.append(backIcon);
   back.addEventListener("click", () => {
     if (previewProduct) {
       const previousProductId = clearProductPreview();
@@ -526,7 +533,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   if (usesCityHeroPreview) {
     header.append(title, selected, headerMeta);
     tray.append(header, subcategories, content, scrollIndicator);
-    menu.append(tray, categoryRail, back);
+    menu.append(tray, categoryRail);
   } else {
     header.append(back, title, headerMeta);
     tray.append(header, subcategories, selected, content, scrollIndicator);
@@ -536,6 +543,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     panel.append(previewShell);
   }
   panel.append(menu);
+  if (usesCityHeroPreview) {
+    panel.append(back);
+  }
   shop.append(panel);
   root.append(shop);
   window.addEventListener("resize", scheduleLayoutSync);

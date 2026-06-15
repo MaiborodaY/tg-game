@@ -8,6 +8,7 @@ import {
 import {
   ARROW_ICON_ASSET_URL,
   DAMAGE_HIT_ICON_ASSET_URL,
+  SHOP_BACK_ICON_ASSET_URL,
   SHOP_CATEGORY_AXE_ICON_ASSET_URL,
   SHOP_CATEGORY_BOW_ICON_ASSET_URL,
   SHOP_CATEGORY_MACE_ICON_ASSET_URL,
@@ -233,10 +234,16 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   scrollIndicator.setAttribute("aria-hidden", "true");
 
   const back = document.createElement("button");
+  const backIcon = document.createElement("img");
   back.className = "armory-shop__back";
   back.type = "button";
-  back.textContent = "<";
   back.setAttribute("aria-label", "Back");
+  backIcon.className = "armory-shop__back-icon";
+  backIcon.src = SHOP_BACK_ICON_ASSET_URL;
+  backIcon.alt = "";
+  backIcon.decoding = "async";
+  backIcon.draggable = false;
+  back.append(backIcon);
   back.addEventListener("click", () => {
     if (previewProduct) {
       clearProductPreview();
@@ -250,7 +257,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   if (usesCityHeroPreview) {
     header.append(title, selected, headerMeta);
     tray.append(header, content, scrollIndicator);
-    menu.append(rangedCategoryRail, tray, meleeCategoryRail, back);
+    menu.append(rangedCategoryRail, tray, meleeCategoryRail);
   } else {
     header.append(back, title, headerMeta);
     tray.append(header, selected, content, scrollIndicator);
@@ -262,6 +269,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     panel.append(bowUpgrade);
   }
   panel.append(menu);
+  if (usesCityHeroPreview) {
+    panel.append(back);
+  }
   shop.append(panel);
   root.append(shop);
   window.addEventListener("resize", scheduleLayoutSync);

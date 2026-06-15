@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const armoryShopSource = readFileSync(resolve(currentDir, "../src/armoryShopUi.ts"), "utf8");
 const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.ts"), "utf8");
+const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
 const shopPresentationSource = readFileSync(resolve(currentDir, "../src/shopPresentation.ts"), "utf8");
@@ -247,10 +248,13 @@ test("city shop confirm strip is embedded in the shop header while back floats o
     assert.equal(source.includes("header.append(title, selected, headerMeta);"), true);
     assert.equal(source.includes("header.append(back, title, selected, headerMeta);"), false);
     assert.equal(source.includes("panel.append(selected);"), false);
+    assert.equal(source.includes("panel.append(back);"), true);
     assert.equal(source.includes("menu.append(tray, selected, categoryRail);"), false);
   });
-  assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail, back);"), true);
-  assert.equal(weaponShopSource.includes("menu.append(rangedCategoryRail, tray, meleeCategoryRail, back);"), true);
+  assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail);"), true);
+  assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail, back);"), false);
+  assert.equal(weaponShopSource.includes("menu.append(rangedCategoryRail, tray, meleeCategoryRail);"), true);
+  assert.equal(weaponShopSource.includes("menu.append(rangedCategoryRail, tray, meleeCategoryRail, back);"), false);
 
   assert.equal(stylesSource.includes("--shop-city-header-height: 72px;"), true);
   assert.match(cityHeaderRule, /overflow: visible;/);
@@ -258,9 +262,25 @@ test("city shop confirm strip is embedded in the shop header while back floats o
   assert.match(citySelectedRule, /align-self: stretch;/);
   assert.doesNotMatch(citySelectedRule, /position: absolute;/);
   assert.match(cityBackRule, /position: absolute;/);
-  assert.match(cityBackRule, /width: 38px;/);
+  assert.match(cityBackRule, /top: calc\(var\(--shop-frame-top-height\) \+ 10px\);/);
+  assert.match(cityBackRule, /left: calc\(var\(--shop-frame-side-width\) \+ 10px\);/);
+  assert.match(cityBackRule, /width: 52px;/);
+  assert.match(cityBackRule, /height: 52px;/);
   assert.doesNotMatch(stylesSource.match(/\.armory-shop__selected-card\s*\{[\s\S]*?\}/)?.[0] ?? "", /var\(--ui-panel-wood-texture\)/);
   assert.match(stylesSource.match(/\.armory-shop__selected-card::before\s*\{[\s\S]*?\}/)?.[0] ?? "", /content: none;/);
+});
+
+test("city shop back buttons use the shop back icon asset", () => {
+  assert.equal(assetsSource.includes('SHOP_BACK_ICON_ASSET_URL = new URL("./assets/ui/shop/back.webp", import.meta.url).href'), true);
+  assert.equal(stylesSource.includes(".armory-shop__back-icon"), true);
+
+  [armoryShopSource, weaponShopSource].forEach((source) => {
+    assert.equal(source.includes("SHOP_BACK_ICON_ASSET_URL"), true);
+    assert.equal(source.includes('backIcon.className = "armory-shop__back-icon";'), true);
+    assert.equal(source.includes("backIcon.src = SHOP_BACK_ICON_ASSET_URL;"), true);
+    assert.equal(source.includes("back.append(backIcon);"), true);
+    assert.equal(source.includes('back.textContent = "<";'), false);
+  });
 });
 
 test("armory confirm strip omits the extra armor icon and updates preview without grid rerender", () => {
