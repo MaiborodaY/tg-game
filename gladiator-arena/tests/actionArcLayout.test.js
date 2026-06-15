@@ -133,6 +133,27 @@ test("main weapon distance arc can switch to equipped bow", () => {
   assert.equal(labels.switchWeapon, "BOW");
 });
 
+test("clinch arc hides weapon switch and uses melee labels for active bow fighters", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(0, {
+    player: {
+      stamina: 10,
+      weaponClass: "bow",
+      mainWeaponClass: "sword",
+      bowWeaponClass: "bow",
+      bowShotsRemaining: 5,
+    },
+  }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["back", "heavy", "medium", "light", "taunt"],
+  );
+  assert.equal(labels.light, "LOW");
+  assert.equal(labels.medium, "MED");
+  assert.equal(labels.heavy, "STRONG");
+});
+
 test("shuriken consumables add a throw button without making the fighter ranged", () => {
   const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, shurikenCount: 1 } }));
   const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));

@@ -416,7 +416,7 @@ const PAPER_DOLL_SHADOW_COLOR = 0x120805;
 const PAPER_DOLL_SHADOW_BLUR_QUALITY = 0;
 const PAPER_DOLL_SHADOW_BLUR_STRENGTH = 0.75;
 const PAPER_DOLL_SHADOW_BLUR_STEPS = 2;
-const FIGHTER_ARROW_COUNTER_LOCAL_Y = -246;
+const FIGHTER_ARROW_COUNTER_LOCAL_Y = -318;
 const FIGHTER_ARROW_COUNTER_SCALE_MIN = 0.86;
 const SLASH_ARC_DEPTH = 36;
 const BLOCK_POPUP_SCREEN_SIZE = 88;
@@ -4782,9 +4782,9 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
     return;
   }
 
+  positionFightersForState(target, target.visuals, current, playerSettings);
   syncFighterCombatEquipment(target.visuals.player, current.player);
   syncFighterCombatEquipment(target.visuals.enemy, current.enemy);
-  positionFightersForState(target, target.visuals, current, playerSettings);
   updateCamera(target, current);
   applyFighterArrowCountersSceneScale(target);
   setHud(target.visuals.playerHud, current.player);

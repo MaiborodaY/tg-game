@@ -180,6 +180,7 @@ test("arena shows bow arrow counts above bow fighters", () => {
   assert.equal(arenaSceneSource.includes("attachFighterArrowCounter(target, player);"), true);
   assert.equal(arenaSceneSource.includes("attachFighterArrowCounter(target, enemy);"), true);
   assert.equal(arenaSceneSource.includes("function setFighterArrowCounter"), true);
+  assert.equal(arenaSceneSource.includes("const FIGHTER_ARROW_COUNTER_LOCAL_Y = -318;"), true);
   assert.equal(arenaSceneSource.includes("isBowFighter(state)"), true);
   assert.equal(arenaSceneSource.includes("getBowShotsRemaining(state)"), true);
   assert.equal(arenaSceneSource.includes("container.add([icon, text]);"), true);
@@ -188,6 +189,20 @@ test("arena shows bow arrow counts above bow fighters", () => {
   assert.equal(arenaSceneSource.includes("applyFighterArrowCountersSceneScale(this);"), true);
   assert.equal(arenaSceneSource.includes("setGameObjectScaleIfChanged(counter.container, counter.baseScale / sceneScale);"), true);
   assert.equal(arenaSceneSource.includes("function setGameObjectScaleIfChanged"), true);
+});
+
+test("arena applies active combat weapon visibility after paper doll tuning", () => {
+  const renderSceneSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function renderScene("),
+    arenaSceneSource.indexOf("function syncFighterCombatEquipment("),
+  );
+
+  assert.ok(renderSceneSource.indexOf("positionFightersForState(target, target.visuals, current, playerSettings);") >= 0);
+  assert.ok(renderSceneSource.indexOf("syncFighterCombatEquipment(target.visuals.player, current.player);") >= 0);
+  assert.ok(
+    renderSceneSource.indexOf("positionFightersForState(target, target.visuals, current, playerSettings);") <
+      renderSceneSource.indexOf("syncFighterCombatEquipment(target.visuals.player, current.player);"),
+  );
 });
 
 test("arena reuses player settings snapshots during frame work", () => {

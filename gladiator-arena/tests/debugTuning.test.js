@@ -394,7 +394,15 @@ test("debug tuning exposes dedicated bow shot, damage hit, and block body animat
 });
 
 test("debug tuning exposes real classic wheel action sets", () => {
-  assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.distance), ["forward", "lunge", "back", "shuriken", "taunt", "rest"]);
+  assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.distance), [
+    "forward",
+    "lunge",
+    "back",
+    "switchWeapon",
+    "shuriken",
+    "taunt",
+    "rest",
+  ]);
   assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.clinch), ["light", "medium", "heavy", "back", "shuriken", "taunt", "rest"]);
   assert.deepEqual(Array.from(debugTuningModule.CLASSIC_ACTION_WHEEL_BUTTONS.bowDistance), [
     "light",

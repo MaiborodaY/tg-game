@@ -175,6 +175,7 @@ test("city equipment inventory exposes generated weapon categories", () => {
 test("church button can be wired while keeping the locked visual state", () => {
   assert.equal(html.includes('id="churchButton"'), true);
   assert.equal(html.includes('city-menu__button city-menu__button--locked" type="button" aria-disabled="true"'), true);
+  assert.equal(mainSource.includes("grantHeroGold(grantHeroSkillPoints(hero, 10, now), 1000, now)"), true);
 });
 
 test("city arena menu exposes random fights and boss entries", () => {

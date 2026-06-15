@@ -19,6 +19,7 @@ test("regular game does not mount debug controls", () => {
   assert.equal(indexHtml.includes("debugPanelHost"), false);
   assert.equal(indexHtml.includes("/src/debugMain.ts"), false);
   assert.equal(mainSource.includes("mountDebugPanel"), false);
+  assert.equal(mainSource.includes("showUnavailableSwitchWeaponSlot: true"), false);
 });
 
 test("debug app mounts the same arena with a separate tuning host", () => {
@@ -73,6 +74,7 @@ test("debug preview can mount and tune the classic action wheel", () => {
   assert.equal(debugPanelSource.includes("syncClassicActionSelectOptions"), true);
   assert.equal(debugPanelSource.includes("Quick shot"), true);
   assert.equal(debugMainSource.includes("getPreviewWheelMode: () => debugTuning.selectedClassicActionWheelMode"), true);
+  assert.equal(debugMainSource.includes("showUnavailableSwitchWeaponSlot: true"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-offset-x"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-offset-y"), true);
   assert.equal(hudTuningSource.includes("--classic-hud-scale"), true);

@@ -39,6 +39,7 @@ import {
   createCombatStateFromHero,
   createDefaultHero,
   deriveHeroStats,
+  grantHeroGold,
   grantHeroSkillPoints,
   getArenaBossesForTier,
   getArenaRandomOpponentsForTier,
@@ -747,8 +748,13 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
 }
 
 function handleTemporaryChurchSkillGrant(): void {
-  hero = grantHeroSkillPoints(hero, 10);
+  const now = new Date().toISOString();
+
+  hero = grantHeroGold(grantHeroSkillPoints(hero, 10, now), 1000, now);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  armoryShop?.render();
+  weaponShop?.render();
+  cityHeroEquipmentMenu.render();
 }
 
 function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): boolean {

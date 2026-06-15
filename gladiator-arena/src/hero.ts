@@ -939,6 +939,20 @@ export function grantHeroSkillPoints(hero: HeroState, amount: number, now = new 
   };
 }
 
+export function grantHeroGold(hero: HeroState, amount: number, now = new Date().toISOString()): HeroState {
+  const gold = Number.isFinite(amount) ? Math.floor(amount) : 0;
+
+  if (gold <= 0) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold + gold,
+    updatedAt: now,
+  };
+}
+
 export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase, now = new Date().toISOString()): HeroState {
   if (areHeroItemsConsumable(purchase.itemIds)) {
     return buyHeroConsumableItems(hero, purchase, now);

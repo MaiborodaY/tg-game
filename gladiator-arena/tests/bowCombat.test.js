@@ -73,6 +73,7 @@ test("bow attacks stop after five shots until the fighter switches to melee", ()
   const switched = combat.resolvePlayerTurn(state, "switchWeapon");
 
   assert.equal(switched.player.weaponClass, "sword");
+  assert.equal(switched.activeTurn, "player");
   assert.equal(combat.canUseAction({ ...switched, activeTurn: "player" }, "lunge"), true);
 });
 
@@ -92,13 +93,34 @@ test("fighters can switch between main weapon and equipped bow", () => {
   state = combat.resolvePlayerTurn(state, "switchWeapon");
 
   assert.equal(state.player.weaponClass, "bow");
+  assert.equal(state.activeTurn, "player");
   assert.equal(combat.canUseAction({ ...state, activeTurn: "player" }, "lunge"), false);
 
-  state.activeTurn = "player";
   state = combat.resolvePlayerTurn(state, "switchWeapon");
 
   assert.equal(state.player.weaponClass, "axe");
+  assert.equal(state.activeTurn, "player");
   assert.equal(combat.canUseAction({ ...state, activeTurn: "player" }, "lunge"), true);
+});
+
+test("enemy weapon switch resolves as a free action before its real turn action", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.weaponClass = "sword";
+  state.enemy.mainWeaponClass = "sword";
+  state.enemy.bowWeaponClass = "bow";
+  state.enemy.bowShotsRemaining = 5;
+  state.enemy.bowMaxShots = 5;
+  state.distance = 3;
+  state.enemyPosition = 3;
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0.7);
+
+  assert.equal(nextState.enemy.weaponClass, "bow");
+  assert.equal(nextState.activeTurn, "player");
+  assert.equal(nextState.player.hp < combat.MAX_HP, true);
+  assert.match(nextState.log[1].text, /Draw Bow/);
 });
 
 test("fighters cannot switch from main weapon to an empty bow", () => {
@@ -111,6 +133,45 @@ test("fighters cannot switch from main weapon to an empty bow", () => {
   state.player.bowMaxShots = 5;
 
   assert.equal(combat.canUseAction(state, "switchWeapon"), false);
+});
+
+test("bow fighters are forced to melee in clinch", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "bow";
+  state.player.mainWeaponClass = "axe";
+  state.player.bowWeaponClass = "bow";
+  state.player.bowShotsRemaining = 5;
+  state.player.bowMaxShots = 5;
+  state.player.damageBonus = 3;
+  state.player.weaponDamageBonus = 20;
+  state.distance = 0;
+  state.enemyPosition = 0;
+
+  assert.equal(combat.canUseAction(state, "switchWeapon"), false);
+  assert.equal(combat.canUseAction(state, "light"), false);
+
+  const nextState = combat.resolvePlayerTurn(state, "light", () => 0.99);
+
+  assert.equal(nextState.player.weaponClass, "axe");
+  assert.equal(nextState.player.bowShotsRemaining, 5);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 4);
+});
+
+test("moving into clinch holsters active bows", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "bow";
+  state.player.mainWeaponClass = "sword";
+  state.player.bowWeaponClass = "bow";
+  state.player.bowShotsRemaining = 5;
+  state.distance = 0.1;
+  state.enemyPosition = 0.1;
+
+  const nextState = combat.resolvePlayerTurn(state, "forward");
+
+  assert.equal(nextState.distance, 0);
+  assert.equal(nextState.player.weaponClass, "sword");
 });
 
 test("bow attacks ignore strength damage bonus and use only weapon damage", () => {

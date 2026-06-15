@@ -1041,10 +1041,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 54,
+      "y": 76,
       "angle": 0,
       "scaleX": 1.12,
-      "scaleY": 1.55,
+      "scaleY": 1.78,
       "flipX": false,
       "flipY": false
     },

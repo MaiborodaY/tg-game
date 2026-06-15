@@ -33,6 +33,7 @@ import {
   createCombatStateFromHero,
   createDefaultHero,
   deriveHeroStats,
+  grantHeroGold,
   grantHeroSkillPoints,
   getBattleReward,
   type HeroEquipment,
@@ -290,8 +291,12 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
 }
 
 function handleTemporaryChurchSkillGrant(): void {
-  hero = grantHeroSkillPoints(hero, 10);
+  const now = new Date().toISOString();
+
+  hero = grantHeroGold(grantHeroSkillPoints(hero, 10, now), 1000, now);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  weaponShop?.render();
+  armoryShop?.render();
 }
 
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
@@ -631,6 +636,7 @@ function startDebugApp(): void {
   });
   classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
     getPreviewWheelMode: () => debugTuning.selectedClassicActionWheelMode,
+    showUnavailableSwitchWeaponSlot: true,
   });
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = mountTurnProbe(dom.gameScreen);

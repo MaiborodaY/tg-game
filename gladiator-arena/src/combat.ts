@@ -364,6 +364,28 @@ export function getFighterSwitchTargetWeaponClass(fighter: FighterState): HeroWe
   return isBowFighter(fighter) ? getFighterMainWeaponClass(fighter) : "bow";
 }
 
+function getFighterClinchWeaponClass(fighter: FighterState): HeroWeaponClass {
+  const mainWeaponClass = getFighterMainWeaponClass(fighter);
+
+  return isRangedWeaponClass(mainWeaponClass) ? "sword" : mainWeaponClass;
+}
+
+function forceFighterClinchWeapon(fighter: FighterState): void {
+  if (isBowFighter(fighter)) {
+    fighter.weaponClass = getFighterClinchWeaponClass(fighter);
+  }
+}
+
+function forceClinchWeapons(state: CombatState): void {
+  if (isFighterInClinchRange(state, "player")) {
+    forceFighterClinchWeapon(state.player);
+  }
+
+  if (isFighterInClinchRange(state, "enemy")) {
+    forceFighterClinchWeapon(state.enemy);
+  }
+}
+
 export function isRangedWeaponClass(weaponClass: HeroWeaponClass | undefined): boolean {
   return weaponClass === "bow";
 }
@@ -412,6 +434,10 @@ export function availableActionIds(state: CombatState, actor: TurnOwner): Action
   return actionOrder.filter((id) => canUseAction(state, id, actor));
 }
 
+function doesActionEndTurn(actionId: ActionId): boolean {
+  return actionId !== "switchWeapon";
+}
+
 export function getFighterClinchRange(fighter?: FighterState): number {
   return Math.min(MAX_DISTANCE, MELEE_RANGE + Math.max(0, fighter?.clinchRangeBonus ?? 0));
 }
@@ -439,6 +465,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   const fighter = actor === "player" ? state.player : state.enemy;
   const actionRangeMax = getActionRangeMax(action, fighter);
   const fighterClinchRange = getFighterClinchRange(fighter);
+  const fighterInClinch = isFighterInClinchRange(state, actor);
 
   if (actionId === "forward") {
     return state.distance > fighterClinchRange;
@@ -457,15 +484,15 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionId === "switchWeapon") {
-    return canFighterSwitchWeapon(fighter);
+    return !fighterInClinch && canFighterSwitchWeapon(fighter);
   }
 
   if (actionId === "shuriken") {
     return getFighterShurikenCount(fighter) > 0;
   }
 
-  if (isAttackAction(actionId) && isBowFighter(fighter) && getBowShotsRemaining(fighter) <= 0) {
-    return false;
+  if (isAttackAction(actionId) && isBowFighter(fighter)) {
+    return !fighterInClinch && getBowShotsRemaining(fighter) > 0;
   }
 
   if (actionRangeMax !== undefined) {
@@ -513,6 +540,8 @@ export function distanceLabel(distance: number, clinchRange = MELEE_RANGE): stri
 export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId, random = Math.random): CombatState {
   const state = cloneStateForTurn(current);
 
+  forceClinchWeapons(state);
+
   if (!canUseAction(state, playerActionId, "player")) {
     addLog(state, `${getActionTitle(playerActionId, state.player)} is not available right now.`);
     return state;
@@ -520,7 +549,7 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
 
   applyAction(state, "player", playerActionId, random);
 
-  if (state.result === "playing") {
+  if (state.result === "playing" && doesActionEndTurn(playerActionId)) {
     state.activeTurn = "enemy";
   }
 
@@ -534,7 +563,15 @@ export function resolveEnemyTurn(current: CombatState, random = Math.random): Co
     return state;
   }
 
-  applyAction(state, "enemy", chooseEnemyAction(state, random), random);
+  forceClinchWeapons(state);
+  let enemyActionId = chooseEnemyAction(state, random);
+
+  applyAction(state, "enemy", enemyActionId, random);
+
+  if (state.result === "playing" && !doesActionEndTurn(enemyActionId)) {
+    enemyActionId = chooseEnemyAction(state, random);
+    applyAction(state, "enemy", enemyActionId, random);
+  }
 
   if (state.result !== "playing") {
     return state;
@@ -662,6 +699,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
 
   if (actionMove) {
     moveActor(state, actor, actionMove);
+    forceClinchWeapons(state);
   }
 
   if (staminaRestore > 0) {

@@ -90,7 +90,6 @@ const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "heavy" },
   { actionId: "medium" },
   { actionId: "light" },
-  { actionId: "switchWeapon" },
   { actionId: "shuriken" },
   { actionId: "utility" },
 ];
@@ -272,7 +271,7 @@ function getActionLabel(actionId: ActionId, state: CombatState): { label: string
     return isBowFighter(state.player) ? { label: "MELEE", detail: "Main" } : { label: "BOW", detail: "Range" };
   }
 
-  if (isRangedFighter(state.player)) {
+  if (isRangedFighter(state.player) && !isFighterInClinchRange(state, "player")) {
     return BOW_ACTION_LABELS[actionId] ?? ACTION_LABELS[actionId];
   }
 

@@ -542,6 +542,15 @@ test("hero can receive temporary skill points", () => {
   assert.equal(hero.grantHeroSkillPoints(boostedHero, 0), boostedHero);
 });
 
+test("hero can receive temporary gold", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const boostedHero = hero.grantHeroGold(baseHero, 1000, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(boostedHero.gold, 1000);
+  assert.equal(boostedHero.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(hero.grantHeroGold(boostedHero, 0), boostedHero);
+});
+
 test("battle rewards use small early arena numbers", () => {
   const winState = combat.freshState();
   winState.result = "win";

@@ -402,7 +402,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_breastplate_druid_01","name":"Druid Breastplate 01","kind":"armor","rarity":"mythical","equipmentSlot":"breastplate","armorHp":50},
     assetKeys: {"breastplateAssetKey":"breastplate-druid-01"},
-    equipmentTuning: {"x":0,"y":54,"angle":0,"scaleX":1.12,"scaleY":1.55,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":76,"angle":0,"scaleX":1.12,"scaleY":1.78,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-druid-01",
       url: new URL("../assets/fighters/armor/breastplate/breastplate-druid-01.webp", import.meta.url).href,

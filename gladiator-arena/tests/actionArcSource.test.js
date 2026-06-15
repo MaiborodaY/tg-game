@@ -162,6 +162,8 @@ test("classic bow distance layout keeps ranged attacks visible", () => {
   assert.equal(classicActionBarSource.includes("const previewWheelMode = options.getPreviewWheelMode?.();"), true);
   assert.equal(classicActionBarSource.includes("getClassicWheelMode(state, previewWheelMode)"), true);
   assert.equal(classicActionBarSource.includes("function getClassicWheelModeFromTuningMode"), true);
+  assert.equal(classicActionBarSource.includes("showUnavailableSwitchWeaponSlot"), true);
+  assert.equal(classicActionBarSource.includes("showUnavailableSwitchWeaponSlot || canFighterSwitchWeapon(state.player)"), true);
   assert.equal(classicActionBarSource.includes('{ actionId: "light", x: -78'), true);
   assert.equal(classicActionBarSource.includes('{ actionId: "medium", x: 0'), true);
   assert.equal(classicActionBarSource.includes('{ actionId: "heavy", x: 78'), true);

@@ -106,7 +106,7 @@ export const CLASSIC_ACTION_WHEEL_MODES = ["distance", "clinch", "bowDistance"] 
 export type ClassicActionWheelMode = (typeof CLASSIC_ACTION_WHEEL_MODES)[number];
 
 export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, ActionButtonOffsetKey[]> = {
-  distance: ["forward", "lunge", "back", "shuriken", "taunt", "rest"],
+  distance: ["forward", "lunge", "back", "switchWeapon", "shuriken", "taunt", "rest"],
   clinch: ["light", "medium", "heavy", "back", "shuriken", "taunt", "rest"],
   bowDistance: ["light", "medium", "heavy", "switchWeapon", "shuriken", "back", "taunt", "rest"],
 };
@@ -349,8 +349,6 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
-  switchWeapon: { x: 0, y: 0 },
-  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -371,8 +369,6 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     light: { x: 70, y: 18, rotation: 0 },
     medium: { x: 0, y: 18, rotation: 0 },
     heavy: { x: 0, y: 18, rotation: 0 },
-    switchWeapon: { x: -105, y: -130, rotation: -14 },
-    shuriken: { x: 100, y: -148, rotation: 12 },
     taunt: { x: 30, y: -130, rotation: 0 },
     rest: { x: -30, y: -130, rotation: 12 },
   }),
@@ -383,8 +379,6 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     light: { x: -60, y: -185, rotation: 0 },
     medium: { x: 0, y: -200, rotation: 0 },
     heavy: { x: 60, y: -185, rotation: 0 },
-    switchWeapon: { x: -120, y: -92, rotation: -18 },
-    shuriken: { x: 100, y: -148, rotation: 12 },
     taunt: { x: 30, y: -130, rotation: 0 },
     rest: { x: -30, y: -130, rotation: 12 },
   }),
@@ -395,10 +389,8 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     light: { x: -60, y: -185, rotation: -14 },
     medium: { x: 0, y: -200, rotation: 0 },
     heavy: { x: 60, y: -185, rotation: 14 },
-    switchWeapon: { x: -125, y: -82, rotation: -16 },
-    shuriken: { x: 95, y: -118, rotation: 10 },
-    taunt: { x: 30, y: -130, rotation: 6 },
-    rest: { x: -30, y: -130, rotation: 14 },
+    taunt: { x: 30, y: -130, rotation: 5 },
+    rest: { x: -30, y: -130, rotation: -5 },
   }),
 };
 
@@ -481,6 +473,7 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_wrist_sand_01": { x: -2, y: 14, angle: -3, scaleX: 1.55, scaleY: 1.51, flipX: false, flipY: false },
   "auto_equipment_back_glove_sand_01": { x: 0, y: 15, angle: 0, scaleX: 1.13, scaleY: 1.1, flipX: false, flipY: false },
   "auto_equipment_back_greave_sand_01": { x: -6, y: 0, angle: -4, scaleX: 1.29, scaleY: 1.29, flipX: false, flipY: false },
+  "auto_equipment_weapon_shuriken_01": { x: -11, y: 29, angle: 91, scaleX: 0.35, scaleY: 0.35, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
