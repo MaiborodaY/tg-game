@@ -23,7 +23,6 @@ type ClassicWheelRangeMode = "far" | "near" | "melee" | "clinch" | "bow";
 
 interface ClassicActionBarOptions {
   getPreviewWheelMode?: () => ClassicActionWheelMode | undefined;
-  showUnavailableSwitchWeaponSlot?: boolean;
 }
 
 const CLASSIC_WHEEL_TURN_MS = 520;
@@ -124,7 +123,6 @@ export function mountClassicActionBar(
     const tuning = getTuning?.();
     const buttonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
     const previewWheelMode = options.getPreviewWheelMode?.();
-    const showUnavailableSwitchWeaponSlot = options.showUnavailableSwitchWeaponSlot === true && previewWheelMode !== undefined;
     const wheelMode = getClassicWheelMode(state, previewWheelMode);
     const isBattleActive = state.result === "playing";
     const hasPlayerControl = isBattleActive && state.activeTurn === "player";
@@ -162,7 +160,6 @@ export function mountClassicActionBar(
         buttonScale,
         isBattleActive,
         layer === activeLayer && hasPlayerControl && !isWheelTurning,
-        showUnavailableSwitchWeaponSlot,
       );
     });
   }
@@ -174,15 +171,9 @@ export function mountClassicActionBar(
     buttonScale: number,
     shouldShowButtons: boolean,
     isInteractiveLayer: boolean,
-    showUnavailableSwitchWeaponSlot: boolean,
   ): void {
     const visibleSlots = new Map(
-      layer.mode
-        ? getClassicActionSlots(layer.mode, state, tuning?.classicActionButtonSlots, showUnavailableSwitchWeaponSlot).map((slot) => [
-            slot.actionId,
-            slot,
-          ])
-        : [],
+      layer.mode ? getClassicActionSlots(layer.mode, state, tuning?.classicActionButtonSlots).map((slot) => [slot.actionId, slot]) : [],
     );
 
     layer.element.classList.toggle("classic-action-bar__layer--active", Boolean(layer.mode));
@@ -356,16 +347,9 @@ function getClassicWheelRangeModeFromTuningMode(mode?: ClassicActionWheelMode): 
   return undefined;
 }
 
-function getClassicActionSlots(
-  wheelMode: ClassicWheelMode,
-  state: CombatState,
-  slotsTuning?: ClassicActionSlotTuning,
-  showUnavailableSwitchWeaponSlot = false,
-): ClassicActionSlot[] {
+function getClassicActionSlots(wheelMode: ClassicWheelMode, state: CombatState, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {
   const modeSlots = slotsTuning?.[classicWheelModeTuningKey[wheelMode]];
-  const slots = getDefaultClassicActionSlots(wheelMode).filter((slot) =>
-    shouldShowClassicActionSlot(state, slot.actionId, showUnavailableSwitchWeaponSlot),
-  );
+  const slots = getDefaultClassicActionSlots(wheelMode).filter((slot) => shouldShowClassicActionSlot(state, slot.actionId));
 
   if (!modeSlots) {
     return slots;
@@ -374,9 +358,9 @@ function getClassicActionSlots(
   return slots.map((slot) => ({ ...slot, ...(modeSlots[slot.actionId] ?? {}) }));
 }
 
-function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId, showUnavailableSwitchWeaponSlot = false): boolean {
+function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId): boolean {
   if (actionId === "switchWeapon") {
-    return showUnavailableSwitchWeaponSlot || canFighterSwitchWeapon(state.player);
+    return canFighterSwitchWeapon(state.player);
   }
 
   if (actionId === "shuriken") {

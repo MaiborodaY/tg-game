@@ -180,12 +180,13 @@ test("arena shows bow arrow counts above bow fighters", () => {
   assert.equal(arenaSceneSource.includes("attachFighterArrowCounter(target, player);"), true);
   assert.equal(arenaSceneSource.includes("attachFighterArrowCounter(target, enemy);"), true);
   assert.equal(arenaSceneSource.includes("function setFighterArrowCounter"), true);
-  assert.equal(arenaSceneSource.includes("const FIGHTER_ARROW_COUNTER_LOCAL_Y = -318;"), true);
+  assert.equal(arenaSceneSource.includes("const FIGHTER_ARROW_COUNTER_LOCAL_Y = -366;"), true);
   assert.equal(arenaSceneSource.includes("isBowFighter(state)"), true);
   assert.equal(arenaSceneSource.includes("getBowShotsRemaining(state)"), true);
   assert.equal(arenaSceneSource.includes("container.add([icon, text]);"), true);
   assert.equal(arenaSceneSource.includes("setPhaserTextIfChanged(counter.text, `${getBowShotsRemaining(state)}`);"), true);
-  assert.equal(arenaSceneSource.includes("Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE)"), true);
+  assert.equal(arenaSceneSource.includes("FIGHTER_ARROW_COUNTER_SCALE_MULTIPLIER = 1.2"), true);
+  assert.equal(arenaSceneSource.includes("Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE) * FIGHTER_ARROW_COUNTER_SCALE_MULTIPLIER"), true);
   assert.equal(arenaSceneSource.includes("applyFighterArrowCountersSceneScale(this);"), true);
   assert.equal(arenaSceneSource.includes("setGameObjectScaleIfChanged(counter.container, counter.baseScale / sceneScale);"), true);
   assert.equal(arenaSceneSource.includes("function setGameObjectScaleIfChanged"), true);

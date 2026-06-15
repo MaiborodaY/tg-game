@@ -12,7 +12,17 @@ import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armor
 import { getCityHeroWidgetRefs, mountCityHeroAttributeControls, renderCityHeroInfo, syncCityHeroWidgetPosition } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { resolveEnemyTurn, resolvePlayerTurn, setCombatMovementTuning, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
+import {
+  BOW_SHOTS_PER_BATTLE,
+  MELEE_RANGE,
+  START_DISTANCE,
+  resolveEnemyTurn,
+  resolvePlayerTurn,
+  setCombatMovementTuning,
+  shouldAutoRestPlayer,
+  type ActionId,
+  type CombatState,
+} from "./combat";
 import { mountDebugPanel } from "./debugPanel";
 import {
   beginDebugUndoGroup,
@@ -125,7 +135,62 @@ function syncActionArc(): void {
   const visibleState = isTurnAnimationLocked ? { ...state, activeTurn: "enemy" as const } : state;
 
   actionArc?.sync(visibleState);
-  classicActionBar?.sync(visibleState);
+  classicActionBar?.sync(createClassicActionBarPreviewState(visibleState));
+}
+
+function createClassicActionBarPreviewState(source: CombatState): CombatState {
+  const previewMode = debugTuning.selectedClassicActionWheelMode;
+  const mainWeaponClass = source.player.mainWeaponClass && source.player.mainWeaponClass !== "bow" ? source.player.mainWeaponClass : "sword";
+  const bowShots = Math.max(1, source.player.bowShotsRemaining ?? source.player.bowMaxShots ?? BOW_SHOTS_PER_BATTLE);
+  const bowMaxShots = Math.max(bowShots, source.player.bowMaxShots ?? BOW_SHOTS_PER_BATTLE);
+  const playerWithBow = {
+    ...source.player,
+    mainWeaponClass,
+    bowWeaponClass: "bow" as const,
+    bowShotsRemaining: bowShots,
+    bowMaxShots,
+  };
+
+  if (previewMode === "bowDistance") {
+    return {
+      ...source,
+      distance: START_DISTANCE,
+      playerPosition: 0,
+      enemyPosition: START_DISTANCE,
+      player: {
+        ...playerWithBow,
+        weaponClass: "bow",
+      },
+    };
+  }
+
+  if (previewMode === "distance") {
+    return {
+      ...source,
+      distance: START_DISTANCE,
+      playerPosition: 0,
+      enemyPosition: START_DISTANCE,
+      player: {
+        ...playerWithBow,
+        weaponClass: mainWeaponClass,
+      },
+    };
+  }
+
+  if (previewMode === "clinch") {
+    return {
+      ...source,
+      distance: MELEE_RANGE,
+      playerPosition: START_DISTANCE,
+      enemyPosition: START_DISTANCE + MELEE_RANGE,
+      player: {
+        ...playerWithBow,
+        weaponClass: mainWeaponClass,
+      },
+    };
+  }
+
+  return source;
 }
 
 function setTurnAnimationLocked(locked: boolean): void {
@@ -636,7 +701,6 @@ function startDebugApp(): void {
   });
   classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
     getPreviewWheelMode: () => debugTuning.selectedClassicActionWheelMode,
-    showUnavailableSwitchWeaponSlot: true,
   });
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = mountTurnProbe(dom.gameScreen);

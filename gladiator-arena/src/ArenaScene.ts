@@ -416,8 +416,9 @@ const PAPER_DOLL_SHADOW_COLOR = 0x120805;
 const PAPER_DOLL_SHADOW_BLUR_QUALITY = 0;
 const PAPER_DOLL_SHADOW_BLUR_STRENGTH = 0.75;
 const PAPER_DOLL_SHADOW_BLUR_STEPS = 2;
-const FIGHTER_ARROW_COUNTER_LOCAL_Y = -318;
+const FIGHTER_ARROW_COUNTER_LOCAL_Y = -366;
 const FIGHTER_ARROW_COUNTER_SCALE_MIN = 0.86;
+const FIGHTER_ARROW_COUNTER_SCALE_MULTIPLIER = 1.2;
 const SLASH_ARC_DEPTH = 36;
 const BLOCK_POPUP_SCREEN_SIZE = 88;
 const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
@@ -5113,7 +5114,7 @@ function applyFighterArrowCounterTuning(fighter: FighterVisual, scale: number, f
     return;
   }
 
-  counter.baseScale = Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE);
+  counter.baseScale = Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE) * FIGHTER_ARROW_COUNTER_SCALE_MULTIPLIER;
 
   counter.container.x = fighter.body.x;
   counter.container.y = feetY + FIGHTER_ARROW_COUNTER_LOCAL_Y * PAPER_DOLL_BASE_SCALE * scale;

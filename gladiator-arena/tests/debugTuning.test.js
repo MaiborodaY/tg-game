@@ -325,11 +325,15 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionWheelMode, "distance");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionButton, "forward");
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 60);
-  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.switchWeapon.y, -130);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.switchWeapon.x, -145);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.switchWeapon.y, -200);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.shuriken.y, -148);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -200);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.switchWeapon.y, -92);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, -30);
-  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.switchWeapon.y, -82);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.switchWeapon.x, -145);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.switchWeapon.y, -200);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.shuriken.y, -118);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetX, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudScale, 1);
