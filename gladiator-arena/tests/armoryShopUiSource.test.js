@@ -171,6 +171,7 @@ test("city shops keep product cards wide around their side rails", () => {
 });
 
 test("weapon shop product cards use the damage icon instead of a DM label", () => {
+  assert.equal(weaponShopSource.includes('getShopProductDisplayStat(hero, product.itemIds, "damage")'), true);
   assert.equal(weaponShopSource.includes('createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price)'), true);
   assert.equal(weaponShopSource.includes('createProductStats("DM"'), false);
   assert.match(weaponShopSource, /statIcon\.className = "armory-shop__product-stat-icon";[\s\S]*statIcon\.src = statIconUrl;[\s\S]*statValue\.textContent = String\(stat\);/);
@@ -193,6 +194,7 @@ test("weapon shop consumable cards show owned cap badge", () => {
 
 test("weapon shop consumable confirm strip shows unit purchase and flat damage", () => {
   assert.equal(weaponShopSource.includes("const isConsumable = areHeroItemsConsumable(product.itemIds);"), true);
+  assert.equal(weaponShopSource.includes('getEquippedShopProductDisplayStat(hero, product.itemIds, "damage")'), true);
   assert.equal(weaponShopSource.includes("compareStat: !isConsumable"), true);
   assert.equal(weaponShopSource.includes('unitLabel: isConsumable ? "x1" : undefined'), true);
   assert.equal(weaponShopSource.includes("createPreviewBuyButton(product, hero)"), true);

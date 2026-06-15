@@ -8,6 +8,8 @@ import {
   getHeroConsumableMaxQuantity,
   getHeroItemQuantity,
   getHeroItemRequirementChecks,
+  deriveHeroStats,
+  getHeroItemWeaponClass,
   type HeroAttributeKey,
   type HeroItemDefinition,
   type HeroItemId,
@@ -79,6 +81,10 @@ export function getShopProductStat(itemIds: HeroItemId[], statKind: ShopProductS
   return itemIds.reduce((total, itemId) => total + getShopItemStat(HERO_ITEM_CATALOG[itemId], statKind), 0);
 }
 
+export function getShopProductDisplayStat(hero: HeroState, itemIds: HeroItemId[], statKind: ShopProductStatKind): number {
+  return itemIds.reduce((total, itemId) => total + getShopItemDisplayStat(hero, HERO_ITEM_CATALOG[itemId], statKind), 0);
+}
+
 export function getEquippedShopProductStat(hero: HeroState, itemIds: HeroItemId[], statKind: ShopProductStatKind): number {
   return itemIds.reduce((total, itemId) => {
     const item = HERO_ITEM_CATALOG[itemId];
@@ -86,6 +92,16 @@ export function getEquippedShopProductStat(hero: HeroState, itemIds: HeroItemId[
     const equippedItem = equippedItemId ? HERO_ITEM_CATALOG[equippedItemId] : undefined;
 
     return total + getShopItemStat(equippedItem, statKind);
+  }, 0);
+}
+
+export function getEquippedShopProductDisplayStat(hero: HeroState, itemIds: HeroItemId[], statKind: ShopProductStatKind): number {
+  return itemIds.reduce((total, itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+    const equippedItemId = item ? hero.equipment[item.equipmentSlot] : null;
+    const equippedItem = equippedItemId ? HERO_ITEM_CATALOG[equippedItemId] : undefined;
+
+    return total + getShopItemDisplayStat(hero, equippedItem, statKind);
   }, 0);
 }
 
@@ -246,6 +262,30 @@ function getShopItemStat(item: HeroItemDefinition | undefined, statKind: ShopPro
   }
 
   return statKind === "armor" ? item.armorHp ?? 0 : item.damageBonus ?? 0;
+}
+
+function getShopItemDisplayStat(hero: HeroState, item: HeroItemDefinition | undefined, statKind: ShopProductStatKind): number {
+  const stat = getShopItemStat(item, statKind);
+
+  if (statKind !== "damage" || !isMeleeWeaponShopItem(item)) {
+    return stat;
+  }
+
+  return Math.ceil(stat * getHeroMeleeDamageDisplayMultiplier(hero));
+}
+
+function getHeroMeleeDamageDisplayMultiplier(hero: HeroState): number {
+  return 1 + Math.max(0, deriveHeroStats(hero).meleeDamagePercentBonus);
+}
+
+function isMeleeWeaponShopItem(item: HeroItemDefinition | undefined): boolean {
+  if (!item || item.kind !== "weapon") {
+    return false;
+  }
+
+  const weaponClass = getHeroItemWeaponClass(item);
+
+  return weaponClass !== "bow" && weaponClass !== "shuriken";
 }
 
 function isShopConsumableAtMax(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {

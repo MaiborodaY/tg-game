@@ -155,7 +155,7 @@ test("bow fighters are forced to melee in clinch", () => {
 
   assert.equal(nextState.player.weaponClass, "axe");
   assert.equal(nextState.player.bowShotsRemaining, 5);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 3);
 });
 
 test("moving into clinch holsters active bows", () => {
@@ -174,11 +174,12 @@ test("moving into clinch holsters active bows", () => {
   assert.equal(nextState.player.weaponClass, "sword");
 });
 
-test("bow attacks ignore strength damage bonus and use only weapon damage", () => {
+test("bow attacks ignore melee damage bonuses and use only bow weapon damage", () => {
   const state = combat.freshState();
 
   state.player.weaponClass = "bow";
   state.player.damageBonus = 50;
+  state.player.meleeDamagePercentBonus = 2;
   state.player.weaponDamageBonus = 5;
   state.distance = 3;
   state.enemyPosition = 3;

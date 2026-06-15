@@ -13,7 +13,7 @@ import {
   SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
 } from "./assets";
 import { getGeneratedArmoryProductsForSlots, type ArmoryProduct } from "./armoryShopUi";
-import { MAX_HP, MAX_STAMINA, actions } from "./combat";
+import { actions } from "./combat";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import {
   areHeroItemsEquipped,
@@ -30,7 +30,7 @@ import {
   type HeroState,
 } from "./hero";
 import { getShopProductIconUrl } from "./shopItemIcons";
-import { getShopProductDisplayName, getShopProductRarity, getShopProductStat, getShopRarityLabel, type ShopItemRarity } from "./shopPresentation";
+import { getShopProductDisplayName, getShopProductDisplayStat, getShopProductRarity, getShopProductStat, getShopRarityLabel, type ShopItemRarity } from "./shopPresentation";
 
 const HERO_ATTRIBUTE_KEYS: readonly HeroAttributeKey[] = ["strength", "agility", "vitality"];
 const ATTRIBUTE_CTRL_ALLOCATE_AMOUNT = 10;
@@ -473,7 +473,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     const selectedProduct = getSelectedCityEquipmentProduct(hero, products, selectedProductId);
 
     selectedProductId = selectedProduct?.id;
-    renderCityEquipmentSelected(menu, category, selectedProduct);
+    renderCityEquipmentSelected(menu, category, selectedProduct, hero);
     renderCityEquipmentCategories(menu.weaponCategories, CITY_EQUIPMENT_WEAPON_CATEGORIES, activeCategoryId);
     renderCityEquipmentCategories(menu.armorCategories, CITY_EQUIPMENT_ARMOR_CATEGORIES, activeCategoryId);
     renderCityEquipmentProducts(menu.productGrid, category, products, selectedProduct, hero);
@@ -591,9 +591,9 @@ function renderCityHeroProfileStats(refs: CityHeroWidgetRefs, hero: HeroState): 
     vitality: hero.baseStats.vitality + equipmentBonuses.vitality,
   };
 
-  setText(refs.profileStats.damage, `+${stats.damageBonus}`);
-  setText(refs.profileStats.hp, String(MAX_HP));
-  setText(refs.profileStats.stamina, String(MAX_STAMINA));
+  setText(refs.profileStats.damage, formatMeleeDamageProfileStat(stats.meleeDamagePercentBonus));
+  setText(refs.profileStats.hp, String(stats.maxHp));
+  setText(refs.profileStats.stamina, String(stats.maxStamina));
   setText(refs.profileStats.movement, formatMovementSpeedPercent(stats.movementDistanceBonus));
   renderProfileRecoveryStat(
     refs.profileStats.recovery,
@@ -608,6 +608,12 @@ function renderCityHeroProfileStats(refs: CityHeroWidgetRefs, hero: HeroState): 
       value.textContent = String(attributeTotals[attribute]);
     }
   });
+}
+
+function formatMeleeDamageProfileStat(percentDamageBonus: number): string {
+  const percentBonus = Math.round(Math.max(0, percentDamageBonus) * 100);
+
+  return `+${percentBonus}%`;
 }
 
 function renderCityHeroProfileEquipment(refs: CityHeroWidgetRefs, hero: HeroState): void {
@@ -709,12 +715,13 @@ function renderCityEquipmentSelected(
   menu: CityEquipmentMenuElements,
   category: CityEquipmentCategory,
   product: CityEquipmentProduct | undefined,
+  hero: HeroState,
 ): void {
   const rarity = product ? getShopProductRarity(product.itemIds) : undefined;
   const iconUrl = product ? getShopProductIconUrl(product.itemIds) : getCityEquipmentCategoryIconUrl(category);
   const statKind = category.side === "weapon" ? "damage" : "armor";
   const statLabel = category.side === "weapon" ? "DAMAGE" : "ARMOR";
-  const statValue = product ? getShopProductStat(product.itemIds, statKind) : 0;
+  const statValue = product ? getShopProductDisplayStat(hero, product.itemIds, statKind) : 0;
 
   if (menu.selectedOrb) {
     menu.selectedOrb.className = [

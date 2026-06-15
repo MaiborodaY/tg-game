@@ -10,6 +10,7 @@ export interface ActionConfig {
   detail: string;
   cost: number;
   damage?: number;
+  meleeDamageMultiplier?: number;
   blockChance?: number;
   restore?: number;
   heal?: number;
@@ -40,6 +41,7 @@ export interface FighterState {
   maxStamina: number;
   damageBonus: number;
   weaponDamageBonus?: number;
+  meleeDamagePercentBonus?: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
@@ -105,8 +107,13 @@ export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
 export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
 export const MOVE_DISTANCE_PER_STAMINA = 0.2;
-export const DAMAGE_BONUS_PER_ATTACK_STAMINA = 10;
 export const BOW_SHOTS_PER_BATTLE = 5;
+const MIN_MELEE_WEAPON_DAMAGE = 1;
+const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
+  light: 0.05,
+  medium: 0.1,
+  heavy: 0.15,
+};
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -146,27 +153,30 @@ export const actions: Record<ActionId, ActionConfig> = {
   light: {
     id: "light",
     title: "Weak Slash",
-    detail: "Clinch only - Damage 1",
+    detail: "Clinch only - Weapon damage 100%",
     cost: 2,
     damage: 1,
+    meleeDamageMultiplier: 1,
     blockChance: 0.25,
     rangeMax: MELEE_RANGE,
   },
   medium: {
     id: "medium",
     title: "Medium Slash",
-    detail: "Clinch only - Damage 2",
+    detail: "Clinch only - Weapon damage 150%",
     cost: 3,
     damage: 2,
+    meleeDamageMultiplier: 1.5,
     blockChance: 0.5,
     rangeMax: MELEE_RANGE,
   },
   heavy: {
     id: "heavy",
     title: "Grand Bonk",
-    detail: "Clinch only - Damage 4",
+    detail: "Clinch only - Weapon damage 200%",
     cost: 5,
     damage: 4,
+    meleeDamageMultiplier: 2,
     blockChance: 0.75,
     rangeMax: MELEE_RANGE,
   },
@@ -242,10 +252,6 @@ export function getActionStaminaCost(actionId: ActionId, actor?: FighterState): 
     return Math.max(1, Math.round(roundStaminaCostRatio(actionMove / MOVE_DISTANCE_PER_STAMINA)));
   }
 
-  if (actions[actionId].damage) {
-    return actions[actionId].cost + Math.floor(getActionDamageBonus(actor) / DAMAGE_BONUS_PER_ATTACK_STAMINA);
-  }
-
   return actions[actionId].cost;
 }
 
@@ -273,6 +279,7 @@ export function freshState(): CombatState {
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
       weaponDamageBonus: 0,
+      meleeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
       clinchRangeBonus: 0,
@@ -290,6 +297,7 @@ export function freshState(): CombatState {
       maxStamina: MAX_STAMINA,
       damageBonus: 0,
       weaponDamageBonus: 0,
+      meleeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
       clinchRangeBonus: 0,
@@ -334,10 +342,11 @@ export function getFighterMaxStamina(fighter: FighterState): number {
 }
 
 export function getActionBlockChance(action: ActionConfig, attacker?: FighterState, defender?: FighterState): number {
-  void attacker;
   void defender;
 
-  return clamp(action.blockChance ?? 0, 0, 0.95);
+  const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
+
+  return clamp((action.blockChance ?? 0) - swordBlockChanceReduction, 0, 0.95);
 }
 
 export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
@@ -789,6 +798,14 @@ function getActionDamageBonus(attacker?: FighterState): number {
   return Math.max(0, attacker.damageBonus ?? 0);
 }
 
+function getActionMeleeDamageMultiplier(attacker: FighterState): number {
+  return 1 + Math.max(0, attacker.meleeDamagePercentBonus ?? 0);
+}
+
+function getMeleeWeaponDamage(attacker: FighterState): number {
+  return Math.max(MIN_MELEE_WEAPON_DAMAGE, Math.max(0, attacker.damageBonus ?? 0));
+}
+
 function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   if (actionId === "shuriken") {
     return Math.max(0, Math.floor(attacker.shurikenDamage ?? 0));
@@ -796,7 +813,19 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
 
   const actionDamage = actions[actionId].damage ?? 0;
 
-  return actionDamage > 0 ? actionDamage + getActionDamageBonus(attacker) : 0;
+  if (actionDamage <= 0) {
+    return 0;
+  }
+
+  const meleeDamageMultiplier = actions[actionId].meleeDamageMultiplier;
+
+  if (!isRangedFighter(attacker) && meleeDamageMultiplier !== undefined) {
+    return Math.ceil(getMeleeWeaponDamage(attacker) * meleeDamageMultiplier * getActionMeleeDamageMultiplier(attacker));
+  }
+
+  const baseDamage = actionDamage + getActionDamageBonus(attacker);
+
+  return isRangedFighter(attacker) ? baseDamage : Math.ceil(baseDamage * getActionMeleeDamageMultiplier(attacker));
 }
 
 function applyDamageToFighter(defender: FighterState, damage: number): DamageApplication {

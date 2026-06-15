@@ -82,6 +82,7 @@ export interface HeroStats {
   maxStamina: number;
   damageBonus: number;
   weaponDamageBonus: number;
+  meleeDamagePercentBonus: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
@@ -235,7 +236,7 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   30,
 ];
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
-export const HERO_STRENGTH_DAMAGE_BONUS = 1;
+export const HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS = 0.05;
 export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.02;
 export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.01;
 export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
@@ -391,7 +392,8 @@ export function deriveHeroStats(hero: HeroState): HeroStats {
 function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
   const armorBonus = getHeroEquipmentArmor(equipment);
-  const equipmentDamageBonus = getHeroEquipmentDamageBonus(equipment);
+  const mainWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponMain");
+  const bowWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponBow");
   const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength);
   const agilityBonus = getHeroAttributeTotal(baseStats.agility, equipmentBonuses.agility);
   const vitalityBonus = getHeroAttributeTotal(baseStats.vitality, equipmentBonuses.vitality);
@@ -400,8 +402,9 @@ function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment):
     maxHp: MAX_HP + vitalityBonus * HERO_VITALITY_HP_BONUS,
     maxArmor: armorBonus,
     maxStamina: MAX_STAMINA + vitalityBonus * HERO_VITALITY_STAMINA_BONUS,
-    damageBonus: equipmentDamageBonus + strengthBonus * HERO_STRENGTH_DAMAGE_BONUS,
-    weaponDamageBonus: equipmentDamageBonus,
+    damageBonus: mainWeaponDamageBonus,
+    weaponDamageBonus: bowWeaponDamageBonus,
+    meleeDamagePercentBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS),
     movementDistanceBonus: roundStatBonus(agilityBonus * HERO_AGILITY_MOVEMENT_DISTANCE_BONUS),
     bodyScaleBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_BODY_SCALE_BONUS),
     clinchRangeBonus: roundStatBonus(Math.min(HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS, strengthBonus * HERO_STRENGTH_CLINCH_RANGE_BONUS)),
@@ -638,9 +641,6 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyWeaponClass = enemyEquipment.weaponMain ? enemyMainWeaponClass : enemyBowWeaponClass ?? enemyMainWeaponClass;
   const playerShurikenItemId = getHeroShurikenItemId();
   const playerBowShotCapacity = getHeroBowShotCapacity(hero);
-  const heroStrength = getHeroAttributeTotals(hero).strength;
-  const enemyBaseStats = enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 };
-  const enemyStrength = getHeroAttributeTotal(enemyBaseStats.strength, getHeroEquipmentStatBonuses(enemyEquipment).strength);
   const state = freshState();
 
   return {
@@ -654,8 +654,9 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       maxArmor: stats.maxArmor,
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
-      damageBonus: getHeroEquipmentSlotDamageBonus(heroEquipment, "weaponMain") + heroStrength * HERO_STRENGTH_DAMAGE_BONUS,
-      weaponDamageBonus: getHeroEquipmentSlotDamageBonus(heroEquipment, "weaponBow"),
+      damageBonus: stats.damageBonus,
+      weaponDamageBonus: stats.weaponDamageBonus,
+      meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
       mainWeaponClass: playerMainWeaponClass,
       bowWeaponClass: playerBowWeaponClass,
       movementDistanceBonus: stats.movementDistanceBonus,
@@ -680,8 +681,9 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       maxArmor: enemyStats.maxArmor,
       stamina: enemyStats.maxStamina,
       maxStamina: enemyStats.maxStamina,
-      damageBonus: getHeroEquipmentSlotDamageBonus(enemyEquipment, "weaponMain") + enemyStrength * HERO_STRENGTH_DAMAGE_BONUS,
-      weaponDamageBonus: getHeroEquipmentSlotDamageBonus(enemyEquipment, "weaponBow"),
+      damageBonus: enemyStats.damageBonus,
+      weaponDamageBonus: enemyStats.weaponDamageBonus,
+      meleeDamagePercentBonus: enemyStats.meleeDamagePercentBonus,
       mainWeaponClass: enemyMainWeaponClass,
       bowWeaponClass: enemyBowWeaponClass,
       movementDistanceBonus: enemyStats.movementDistanceBonus,

@@ -185,6 +185,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultStats.maxStamina, combat.MAX_STAMINA);
   assert.equal(defaultStats.damageBonus, 0);
   assert.equal(defaultStats.weaponDamageBonus, 0);
+  assert.equal(defaultStats.meleeDamagePercentBonus, 0);
   assert.equal(defaultStats.movementDistanceBonus, 0);
   assert.equal(defaultStats.bodyScaleBonus, 0);
   assert.equal(defaultStats.clinchRangeBonus, 0);
@@ -202,8 +203,9 @@ test("hero base attributes derive combat stats", () => {
   const tunedStats = hero.deriveHeroStats(tunedHero);
   const combatState = hero.createCombatStateFromHero(tunedHero);
 
-  assert.equal(tunedStats.damageBonus, 3);
+  assert.equal(tunedStats.damageBonus, 0);
   assert.equal(tunedStats.weaponDamageBonus, 0);
+  assert.equal(tunedStats.meleeDamagePercentBonus, 0.15);
   assert.equal(tunedStats.movementDistanceBonus, 4 * hero.HERO_AGILITY_MOVEMENT_DISTANCE_BONUS);
   assert.equal(tunedStats.bodyScaleBonus, 3 * hero.HERO_STRENGTH_BODY_SCALE_BONUS);
   assert.equal(
@@ -216,6 +218,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(tunedStats.restStaminaRestoreBonus, 2 * hero.HERO_VITALITY_REST_STAMINA_BONUS);
   assert.equal(combatState.player.damageBonus, tunedStats.damageBonus);
   assert.equal(combatState.player.weaponDamageBonus, tunedStats.weaponDamageBonus);
+  assert.equal(combatState.player.meleeDamagePercentBonus, tunedStats.meleeDamagePercentBonus);
   assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
   assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
   assert.equal(combatState.player.clinchRangeBonus, tunedStats.clinchRangeBonus);
@@ -379,7 +382,8 @@ test("arena encounter enemy base stats derive combat stats", () => {
 
   assert.equal(combatState.enemy.maxHp, 14);
   assert.equal(combatState.enemy.maxStamina, 14);
-  assert.equal(combatState.enemy.damageBonus, 2);
+  assert.equal(combatState.enemy.damageBonus, 0);
+  assert.equal(combatState.enemy.meleeDamagePercentBonus, 2 * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS);
   assert.equal(combatState.enemy.movementDistanceBonus, 0.045);
   assert.equal(combatState.enemy.restHpRestoreBonus, 4);
   assert.equal(combatState.enemy.restStaminaRestoreBonus, 4);
@@ -504,7 +508,8 @@ test("hero can spend level-up skill points on base attributes", () => {
   assert.equal(vitalityHero.skillPoints, 0);
   assert.equal(vitalityHero.baseStats.strength, 1);
   assert.equal(vitalityHero.baseStats.vitality, 1);
-  assert.equal(hero.deriveHeroStats(vitalityHero).damageBonus, 1);
+  assert.equal(hero.deriveHeroStats(vitalityHero).damageBonus, 0);
+  assert.equal(hero.deriveHeroStats(vitalityHero).meleeDamagePercentBonus, hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS);
   assert.equal(hero.deriveHeroStats(vitalityHero).bodyScaleBonus, hero.HERO_STRENGTH_BODY_SCALE_BONUS);
   assert.equal(hero.deriveHeroStats(vitalityHero).clinchRangeBonus, hero.HERO_STRENGTH_CLINCH_RANGE_BONUS);
   assert.equal(hero.deriveHeroStats(vitalityHero).maxHp, combat.MAX_HP + hero.HERO_VITALITY_HP_BONUS);

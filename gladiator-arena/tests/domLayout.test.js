@@ -115,9 +115,10 @@ test("city hero profile uses generated medallion icons for attributes and derive
   });
 
   assert.equal(stylesSource.includes("stat-armor.webp"), false);
+  assert.equal(cityHeroUiSource.includes("formatMeleeDamageProfileStat(stats.meleeDamagePercentBonus)"), true);
   assert.equal(cityHeroUiSource.includes("formatMovementSpeedPercent(stats.movementDistanceBonus)"), true);
-  assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.hp, String(MAX_HP))"), true);
-  assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.stamina, String(MAX_STAMINA))"), true);
+  assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.hp, String(stats.maxHp))"), true);
+  assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.stamina, String(stats.maxStamina))"), true);
   assert.equal(cityHeroUiSource.includes("HERO_PROFILE_BASE_REST_HP + stats.restHpRestoreBonus"), true);
   assert.equal(cityHeroUiSource.includes("HERO_PROFILE_BASE_REST_STAMINA + stats.restStaminaRestoreBonus"), true);
   assert.equal(cityHeroUiSource.includes("renderProfileRecoveryStat("), true);
@@ -155,6 +156,7 @@ test("city equipment inventory cards share the textured rarity standard", () => 
 
 test("city equipment inventory uses display names instead of raw item names", () => {
   assert.equal(cityHeroUiSource.includes("getShopProductDisplayName"), true);
+  assert.equal(cityHeroUiSource.includes("getShopProductDisplayStat(hero, product.itemIds, statKind)"), true);
   assert.equal(cityHeroUiSource.includes("items.map((item) => getShopProductDisplayName(item.name))"), true);
   assert.equal(cityHeroUiSource.includes("product ? getShopProductDisplayName(product.name).toUpperCase()"), true);
   assert.equal(cityHeroUiSource.includes('button.setAttribute("aria-label", getShopProductDisplayName(product.name));'), true);

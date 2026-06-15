@@ -71,24 +71,36 @@ test("clinch range bonus starts clinch slightly outside physical contact", () =>
   assert.equal(combat.canUseAction(state, "lunge"), true);
 });
 
-test("clinch attacks have weak medium and strong damage tiers", () => {
-  assert.equal(combat.actions.light.damage, 1);
-  assert.equal(combat.actions.medium.damage, 2);
-  assert.equal(combat.actions.heavy.damage, 4);
+test("clinch attacks scale melee weapon damage by attack tier", () => {
+  assert.equal(combat.actions.light.meleeDamageMultiplier, 1);
+  assert.equal(combat.actions.medium.meleeDamageMultiplier, 1.5);
+  assert.equal(combat.actions.heavy.meleeDamageMultiplier, 2);
   assert.ok(combat.actions.light.cost < combat.actions.medium.cost);
   assert.ok(combat.actions.medium.cost < combat.actions.heavy.cost);
 });
 
-test("attack stamina costs scale from damage bonus", () => {
+test("melee attack damage scales weapon damage by tier and strength with ceiling", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.damageBonus = 4;
+  state.player.meleeDamagePercentBonus = 0.25;
+
+  const nextState = combat.resolvePlayerTurn(state, "medium", () => 0.99);
+
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 8);
+  assert.equal(nextState.lastPlayerDamage, 8);
+});
+
+test("attack stamina costs stay tied to action type", () => {
   const fighter = {
     ...combat.freshState().player,
     damageBonus: 50,
   };
 
-  assert.equal(combat.DAMAGE_BONUS_PER_ATTACK_STAMINA, 10);
-  assert.equal(combat.getActionStaminaCost("light", fighter), 7);
-  assert.equal(combat.getActionStaminaCost("medium", fighter), 8);
-  assert.equal(combat.getActionStaminaCost("heavy", fighter), 10);
+  assert.equal(combat.getActionStaminaCost("light", fighter), 2);
+  assert.equal(combat.getActionStaminaCost("medium", fighter), 3);
+  assert.equal(combat.getActionStaminaCost("heavy", fighter), 5);
   assert.equal(combat.getActionStaminaCost("lunge", fighter), 2);
 });
 
@@ -97,6 +109,24 @@ test("attacks define base block chances", () => {
   assert.equal(combat.actions.light.blockChance, 0.25);
   assert.equal(combat.actions.medium.blockChance, 0.5);
   assert.equal(combat.actions.heavy.blockChance, 0.75);
+});
+
+test("swords improve light medium and heavy hit chances", () => {
+  const swordFighter = {
+    ...combat.freshState().player,
+    weaponClass: "sword",
+  };
+  const axeFighter = {
+    ...combat.freshState().player,
+    weaponClass: "axe",
+  };
+
+  assert.equal(combat.getActionBlockChance(combat.actions.light, swordFighter), 0.2);
+  assert.equal(combat.getActionBlockChance(combat.actions.medium, swordFighter), 0.4);
+  assert.equal(combat.getActionBlockChance(combat.actions.heavy, swordFighter), 0.6);
+  assert.equal(combat.getActionBlockChance(combat.actions.light, axeFighter), 0.25);
+  assert.equal(combat.getActionBlockChance(combat.actions.medium, axeFighter), 0.5);
+  assert.equal(combat.getActionBlockChance(combat.actions.heavy, axeFighter), 0.75);
 });
 
 test("stamina does not block attacks", () => {
@@ -110,8 +140,8 @@ test("stamina does not block attacks", () => {
   const nextState = combat.resolvePlayerTurn(state, "heavy", () => 0.99);
 
   assert.equal(nextState.player.stamina, 0);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - combat.actions.heavy.damage);
-  assert.equal(nextState.lastPlayerDamage, combat.actions.heavy.damage);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
+  assert.equal(nextState.lastPlayerDamage, 2);
 });
 
 test("rest restores stamina and heals one hp without incoming penalty", () => {
@@ -268,6 +298,7 @@ test("damage depletes armor before health", () => {
 test("damage records armor break events", () => {
   const state = combat.freshState();
   setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.damageBonus = 2;
   state.enemy.armor = 2;
   state.enemy.maxArmor = 2;
 
@@ -275,7 +306,7 @@ test("damage records armor break events", () => {
 
   assert.equal(nextState.enemy.armor, 0);
   assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
-  assert.equal(nextState.lastPlayerDamage, combat.actions.heavy.damage);
+  assert.equal(nextState.lastPlayerDamage, 4);
   assert.equal(nextState.lastPlayerArmorAbsorbed, 2);
   assert.equal(nextState.lastPlayerArmorBroken, true);
 });

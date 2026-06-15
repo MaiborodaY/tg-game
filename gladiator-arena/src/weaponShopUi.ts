@@ -23,14 +23,14 @@ import {
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
-  getEquippedShopProductStat,
+  getEquippedShopProductDisplayStat,
   getShopProductActionLabel,
   getShopProductActionState,
+  getShopProductDisplayStat,
   getShopProductDisplayName,
   getShopProductRequirementBadge,
   getShopProductRequirementDescription,
   getShopProductRarity,
-  getShopProductStat,
   getShopRarityLabel,
   type ShopProductRequirementBadge,
   type ShopItemRarity,
@@ -454,7 +454,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const button = document.createElement("button");
     const iconUrl = getShopProductIconUrl(product.itemIds);
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
-    const damage = getShopProductStat(product.itemIds, "damage");
+    const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
     const displayName = getShopProductDisplayName(product.name);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
@@ -504,8 +504,8 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const strip = document.createElement("div");
     const iconUrl = getShopProductIconUrl(product.itemIds);
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
-    const damage = getShopProductStat(product.itemIds, "damage");
-    const currentDamage = getEquippedShopProductStat(hero, product.itemIds, "damage");
+    const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
+    const currentDamage = getEquippedShopProductDisplayStat(hero, product.itemIds, "damage");
     const displayName = getShopProductDisplayName(product.name);
     const isConsumable = areHeroItemsConsumable(product.itemIds);
 
