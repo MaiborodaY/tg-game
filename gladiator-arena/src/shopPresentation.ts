@@ -10,6 +10,7 @@ import {
   getHeroItemRequirementChecks,
   deriveHeroStats,
   getHeroItemWeaponClass,
+  hasHeroUnlockedShopRarity,
   type HeroAttributeKey,
   type HeroItemDefinition,
   type HeroItemId,
@@ -182,6 +183,10 @@ export function isShopProductSealed(hero: HeroState, itemIds: HeroItemId[], expl
 }
 
 export function isShopRaritySealed(hero: HeroState, rarity: ShopItemRarity): boolean {
+  if (hasHeroUnlockedShopRarity(hero, rarity)) {
+    return false;
+  }
+
   const unlockBossTier = shopRarityUnlockBossTier[rarity];
 
   if (!unlockBossTier) {

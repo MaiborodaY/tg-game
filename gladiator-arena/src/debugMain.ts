@@ -46,6 +46,7 @@ import {
   grantHeroGold,
   grantHeroSkillPoints,
   getBattleReward,
+  unlockAllHeroShopRarities,
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
@@ -358,7 +359,7 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
 function handleTemporaryChurchSkillGrant(): void {
   const now = new Date().toISOString();
 
-  hero = grantHeroGold(grantHeroSkillPoints(hero, 10, now), 1000, now);
+  hero = unlockAllHeroShopRarities(grantHeroGold(grantHeroSkillPoints(hero, 50, now), 1000, now), now);
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   armoryShop?.render();

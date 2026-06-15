@@ -56,6 +56,7 @@ export interface HeroState {
   baseStats: HeroBaseStats;
   equipment: HeroEquipment;
   inventory: HeroInventoryEntry[];
+  unlockedShopRarities: HeroItemRarity[];
   defeatedArenaBossIds: string[];
   createdAt: string;
   updatedAt: string;
@@ -113,6 +114,8 @@ export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
 export type HeroItemId = string;
 export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
+
+export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
 
 export interface HeroItemDefinition {
   id: HeroItemId;
@@ -380,6 +383,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     },
     equipment: createDefaultHeroEquipment(),
     inventory: createDefaultHeroInventory(),
+    unlockedShopRarities: [],
     defeatedArenaBossIds: [],
     createdAt: now,
     updatedAt: now,
@@ -770,6 +774,24 @@ export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new
   return {
     ...hero,
     defeatedArenaBossIds: [...(hero.defeatedArenaBossIds ?? []), bossId],
+    updatedAt: now,
+  };
+}
+
+export function hasHeroUnlockedShopRarity(hero: HeroState, rarity: HeroItemRarity): boolean {
+  return (hero.unlockedShopRarities ?? []).includes(rarity);
+}
+
+export function unlockAllHeroShopRarities(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const unlockedShopRarities = [...HERO_ITEM_RARITIES];
+
+  if (unlockedShopRarities.every((rarity) => hasHeroUnlockedShopRarity(hero, rarity))) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    unlockedShopRarities,
     updatedAt: now,
   };
 }

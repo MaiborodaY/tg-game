@@ -202,6 +202,7 @@ test("hero starts with empty equipment including gloves and wrists", () => {
   assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
   assert.equal(hero.createDefaultHeroEquipment().weaponBow, null);
   assert.deepEqual([...hero.createDefaultHero().defeatedArenaBossIds], []);
+  assert.deepEqual([...hero.createDefaultHero().unlockedShopRarities], []);
 });
 
 test("hero base attributes derive combat stats", () => {
@@ -530,6 +531,17 @@ test("boss victories are recorded once in hero progression", () => {
   assert.deepEqual([...firstRecord.defeatedArenaBossIds], ["dust_arena_champion"]);
   assert.equal(firstRecord.updatedAt, "2026-01-01T00:01:00.000Z");
   assert.equal(secondRecord, firstRecord);
+});
+
+test("hero can unlock all shop rarity tiers", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const unlockedHero = hero.unlockAllHeroShopRarities(baseHero, "2026-01-01T00:01:00.000Z");
+
+  assert.deepEqual([...unlockedHero.unlockedShopRarities], [...hero.HERO_ITEM_RARITIES]);
+  assert.deepEqual([...unlockedHero.defeatedArenaBossIds], []);
+  assert.equal(hero.hasHeroUnlockedShopRarity(unlockedHero, "mythical"), true);
+  assert.equal(unlockedHero.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(hero.unlockAllHeroShopRarities(unlockedHero, "2026-01-01T00:02:00.000Z"), unlockedHero);
 });
 
 test("hero level progression uses one thousand total xp across fifty levels", () => {

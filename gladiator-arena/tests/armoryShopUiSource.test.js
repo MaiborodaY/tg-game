@@ -64,6 +64,7 @@ test("armory shop seals boss-locked rarity tiers before purchase", () => {
   assert.equal(shopPresentationSource.includes("rare: 2"), true);
   assert.equal(shopPresentationSource.includes("getArenaBossesForTier(unlockBossTier)"), true);
   assert.equal(shopPresentationSource.includes("hero.defeatedArenaBossIds ?? []"), true);
+  assert.equal(shopPresentationSource.includes("hasHeroUnlockedShopRarity(hero, rarity)"), true);
 
   assert.equal(armoryShopSource.includes("getArmoryProductActionState(hero, product)"), true);
   assert.equal(armoryShopSource.includes('armory-shop__option--sealed'), true);

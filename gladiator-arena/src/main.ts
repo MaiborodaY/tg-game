@@ -48,6 +48,7 @@ import {
   getArenaTierDefinition,
   getBattleReward,
   isHeroConsumableItem,
+  unlockAllHeroShopRarities,
   upgradeHeroBowShotCapacity,
   type ArenaBossDefinition,
   type ArenaBossId,
@@ -829,7 +830,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
 function handleTemporaryChurchSkillGrant(): void {
   const now = new Date().toISOString();
 
-  hero = grantHeroGold(grantHeroSkillPoints(hero, 10, now), 1000, now);
+  hero = unlockAllHeroShopRarities(grantHeroGold(grantHeroSkillPoints(hero, 50, now), 1000, now), now);
   renderCityHero();
   armoryShop?.render();
   weaponShop?.render();
