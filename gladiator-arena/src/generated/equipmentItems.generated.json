@@ -555,6 +555,36 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_wood_boss_01",
+    "name": "Wooden greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "armorHp": 5,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-wood-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -3,
+      "y": 4,
+      "angle": -2,
+      "scaleX": 1.53,
+      "scaleY": 1.27,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-wood-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-wood-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-wood-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_chainmail_01",
     "name": "Chainmail Back Shinguard 01",
     "kind": "armor",
@@ -1108,6 +1138,36 @@
     }
   },
   {
+    "id": "generated_equipment_breastplate_wood_boss_01",
+    "name": "Wood Breastplate Boss 01",
+    "kind": "armor",
+    "rarity": "unique",
+    "armorHp": 10,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-wood-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 61,
+      "angle": 0,
+      "scaleX": 1.46,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-wood-boss-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-wood-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-wood-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_chainmail_01",
     "name": "Chainmail Front Boot 01",
     "kind": "armor",
@@ -1620,6 +1680,36 @@
         "generated_equipment_front_greave_sand_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_wood_boss_01",
+    "name": "Wooden greave Front",
+    "kind": "armor",
+    "rarity": "unique",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-wood-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 3,
+      "y": 4,
+      "angle": 2,
+      "scaleX": 1.53,
+      "scaleY": 1.27,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-wood-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-wood-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-wood-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {

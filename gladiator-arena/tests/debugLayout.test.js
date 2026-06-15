@@ -358,7 +358,9 @@ test("debug panel exposes generated boss item editor", () => {
   assert.equal(debugPanelSource.includes("data-boss-item-stat"), true);
   assert.equal(debugPanelSource.includes("getGeneratedBossItemStatMax"), true);
   assert.equal(debugPanelSource.includes("isBossUniqueItem(record.item.id)"), true);
-  assert.equal(debugPanelSource.includes("itemId: item.id"), true);
+  assert.equal(debugPanelSource.includes("itemIds: item.itemIds"), true);
+  assert.equal(debugPanelSource.includes("createDebugGeneratedBossPairItem"), true);
+  assert.equal(debugPanelSource.includes("Merged boss pair."), true);
   assert.equal(stylesSource.includes(".debug-boss-items__select"), true);
   assert.equal(stylesSource.includes(".debug-boss-items-panel"), true);
 });
@@ -381,7 +383,10 @@ test("debug panel exposes arena boss editor", () => {
   assert.equal(debugPanelSource.includes("ARENA_BOSSES"), true);
   assert.equal(debugPanelSource.includes("DEBUG_BOSS_STAT_MAX"), true);
   assert.equal(debugPanelSource.includes("DEBUG_BOSS_LOOT_CHANCE_STEP"), true);
-  assert.equal(debugPanelSource.includes("getBossUniqueItemIdsForSlot"), true);
+  assert.equal(debugPanelSource.includes("getBossEquipmentControlConfigs"), true);
+  assert.equal(debugPanelSource.includes("select.dataset.bossEquipmentSlots"), true);
+  assert.equal(debugPanelSource.includes("getSelectedBossEquipmentProductForSlots"), true);
+  assert.equal(debugPanelSource.includes("getBossEquipmentProductsForEquipment"), true);
   assert.equal(bossEditorSource.includes("previewBossFromEditor"), true);
   assert.equal(debugPanelSource.includes("createBossEditorLootTable"), true);
   assert.equal(debugPanelSource.includes('record.availability?.bossUnique || record.item.rarity === "unique"'), true);

@@ -232,6 +232,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_sand_01","name":"Sand Greave","price":10,"itemIds":["generated_equipment_back_greave_sand_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_greave_wood_boss_01","name":"Wooden greave","kind":"armor","rarity":"unique","equipmentSlot":"backGreave","armorHp":5},
+    assetKeys: {"backGreaveAssetKey":"back-greave-wood-boss-01"},
+    equipmentTuning: {"x":-3,"y":4,"angle":-2,"scaleX":1.53,"scaleY":1.27,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-wood-boss-01",
+      url: new URL("../assets/fighters/armor/legs/back-greave-wood-boss-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-wood-boss-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/legs/back-greave-wood-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-wood-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shinguard_chainmail_01","name":"Chainmail Back Shinguard 01","kind":"armor","rarity":"rare","armorCategory":"chain","equipmentSlot":"backShinguard","armorHp":8},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-chainmail-01"},
     equipmentTuning: {"x":0,"y":9,"angle":-2,"scaleX":1.13,"scaleY":1,"flipX":false,"flipY":false},
@@ -428,6 +441,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_sand_01","name":"Sand Breastplate","price":20,"itemIds":["generated_equipment_breastplate_sand_01"],"categoryId":"chest"},
   },
   {
+    item: {"id":"generated_equipment_breastplate_wood_boss_01","name":"Wood Breastplate Boss 01","kind":"armor","rarity":"unique","equipmentSlot":"breastplate","armorHp":10},
+    assetKeys: {"breastplateAssetKey":"breastplate-wood-boss-01"},
+    equipmentTuning: {"x":0,"y":61,"angle":0,"scaleX":1.46,"scaleY":1.61,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-wood-boss-01",
+      url: new URL("../assets/fighters/armor/breastplate/breastplate-wood-boss-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-wood-boss-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-wood-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-wood-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_boot_chainmail_01","name":"Chainmail Front Boot 01","kind":"armor","rarity":"rare","armorCategory":"chain","equipmentSlot":"frontBoot","armorHp":0},
     assetKeys: {"frontBootAssetKey":"front-boot-chainmail-01"},
     equipmentTuning: {"x":25,"y":2,"angle":0,"scaleX":0.83,"scaleY":0.8,"flipX":true,"flipY":false},
@@ -608,6 +634,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_greave_sand_01","name":"Sand Greave Front","price":10,"itemIds":["generated_equipment_front_greave_sand_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_greave_wood_boss_01","name":"Wooden greave Front","kind":"armor","rarity":"unique","equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-wood-boss-01"},
+    equipmentTuning: {"x":3,"y":4,"angle":2,"scaleX":1.53,"scaleY":1.27,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-greave-wood-boss-01",
+      url: new URL("../assets/fighters/armor/legs/front-greave-wood-boss-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-wood-boss-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/armor/legs/front-greave-wood-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-wood-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_shinguard_chainmail_01","name":"Chainmail Front Shinguard 01","kind":"armor","rarity":"rare","armorCategory":"chain","equipmentSlot":"frontShinguard","armorHp":0},

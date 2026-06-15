@@ -32,7 +32,7 @@ export interface UpdateGeneratedShopItemPayload {
 }
 
 export interface UpdateGeneratedBossItemPayload {
-  itemId: string;
+  itemIds: string[];
   stat: number;
 }
 

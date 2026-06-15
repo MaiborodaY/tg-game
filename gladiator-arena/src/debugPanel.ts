@@ -200,11 +200,19 @@ interface DebugGeneratedShopProduct {
 }
 
 interface DebugGeneratedBossItem {
-  id: HeroItemId;
+  id: string;
   name: string;
+  itemIds: HeroItemId[];
+  slotKeys: HeroEquipmentSlotKey[];
   kind: HeroItemDefinition["kind"];
   rarity: HeroItemRarity;
   stat: number;
+}
+
+interface DebugBossEquipmentControlConfig {
+  id: string;
+  label: string;
+  slotKeys: HeroEquipmentSlotKey[];
 }
 
 type ClassicSlotNumericKey = keyof ClassicActionButtonSlotTuning;
@@ -1837,7 +1845,7 @@ function mountGeneratedBossItemsEditor(editor: HTMLElement): void {
 
     try {
       status.textContent = await saveGeneratedBossItem({
-        itemId: item.id,
+        itemIds: item.itemIds,
         stat: clampNumber(Number(statNumber.value), AUTO_EQUIPMENT_STAT_MIN, getGeneratedBossItemStatMax(item)),
       });
     } catch (error) {
@@ -1864,8 +1872,8 @@ function mountBossEditor(editor: HTMLElement): void {
     return;
   }
 
-  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    equipmentControls.append(createBossEquipmentControl(slotKey));
+  getBossEquipmentControlConfigs().forEach((control) => {
+    equipmentControls.append(createBossEquipmentControl(control));
   });
 
   syncBossSelectOptions(select, debugArenaBosses[0]?.id);
@@ -1895,7 +1903,7 @@ function mountBossEditor(editor: HTMLElement): void {
     previewBossFromEditor(editor);
   });
 
-  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slot]").forEach((equipmentSelect) => {
+  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slots]").forEach((equipmentSelect) => {
     equipmentSelect.addEventListener("change", () => {
       syncBossLootSummary(editor);
       previewBossFromEditor(editor);
@@ -3469,7 +3477,7 @@ function syncGeneratedBossItemsEditor(editor: HTMLElement, items: readonly Debug
   }
 
   if (id) {
-    id.textContent = item?.id ?? "No generated boss items.";
+    id.textContent = item ? item.itemIds.join(" + ") : "No generated boss items.";
   }
 
   if (save) {
@@ -3477,7 +3485,7 @@ function syncGeneratedBossItemsEditor(editor: HTMLElement, items: readonly Debug
   }
 
   if (status) {
-    status.textContent = isAvailable ? "Single boss item." : "";
+    status.textContent = item?.itemIds.length === 2 ? "Merged boss pair." : isAvailable ? "Single boss item." : "";
   }
 }
 
@@ -3501,22 +3509,18 @@ function formatBossEditorNumberRow(label: string, field: string, min: number, ma
   `;
 }
 
-function createBossEquipmentControl(slotKey: HeroEquipmentSlotKey): HTMLElement {
+function createBossEquipmentControl(control: DebugBossEquipmentControlConfig): HTMLElement {
   const label = document.createElement("label");
   const name = document.createElement("span");
   const select = document.createElement("select");
 
   label.className = "debug-rig-editor__part debug-boss-editor__equipment-row";
-  name.textContent = formatBossEquipmentSlotLabel(slotKey);
-  select.dataset.bossEquipmentSlot = slotKey;
+  name.textContent = control.label;
+  select.dataset.bossEquipmentSlots = control.slotKeys.join("+");
   select.append(createHeroEquipmentOption("", "empty"));
 
-  getBossUniqueItemIdsForSlot(slotKey).forEach((itemId) => {
-    const definition = getDebugHeroItemDefinition(itemId);
-
-    if (definition) {
-      select.append(createHeroEquipmentOption(itemId, `${AUTO_EQUIPMENT_RARITY_LABELS[definition.rarity ?? "unique"]} | ${definition.name}`));
-    }
+  getBossEquipmentProductsForSlots(control.slotKeys).forEach((product) => {
+    select.append(createBossEquipmentProductOption(product));
   });
 
   label.append(name, select);
@@ -3555,10 +3559,11 @@ function applyBossToEditor(editor: HTMLElement, boss: ArenaBossDefinition): void
   setBossEditorLinkedValue(editor, "loss-xp", boss.rewards.loss.xp);
   setBossEditorLinkedValue(editor, "loot-chance", boss.lootTable[0]?.chance ?? 1);
 
-  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slot]").forEach((select) => {
-    const slotKey = select.dataset.bossEquipmentSlot;
+  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slots]").forEach((select) => {
+    const slotKeys = getBossEquipmentSelectSlotKeys(select);
+    const product = getSelectedBossEquipmentProductForEquipment(slotKeys, boss.equipment);
 
-    select.value = isHeroEquipmentSlotKey(slotKey) ? (boss.equipment[slotKey] ?? "") : "";
+    select.value = product?.id ?? "";
   });
 
   syncBossLootSummary(editor);
@@ -3599,15 +3604,21 @@ function readBossEditorDraft(editor: HTMLElement): ArenaBossDefinition {
 function readBossEditorEquipment(editor: HTMLElement): ArenaBossDefinition["equipment"] {
   const equipment: Partial<Record<HeroEquipmentSlotKey, HeroItemId>> = {};
 
-  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slot]").forEach((select) => {
-    const slotKey = select.dataset.bossEquipmentSlot;
-    const item = getDebugHeroItemDefinition(select.value);
+  editor.querySelectorAll<HTMLSelectElement>("select[data-boss-equipment-slots]").forEach((select) => {
+    const slotKeys = getBossEquipmentSelectSlotKeys(select);
+    const product = getSelectedBossEquipmentProductForSlots(slotKeys, select.value);
 
-    if (!isHeroEquipmentSlotKey(slotKey) || !item || item.equipmentSlot !== slotKey || !isBossUniqueItem(item.id)) {
+    if (!product) {
       return;
     }
 
-    equipment[slotKey] = item.id;
+    product.itemIds.forEach((itemId) => {
+      const item = getDebugHeroItemDefinition(itemId);
+
+      if (item && isHeroEquipmentSlotKey(item.equipmentSlot) && slotKeys.includes(item.equipmentSlot) && isBossUniqueItem(item.id)) {
+        equipment[item.equipmentSlot] = item.id;
+      }
+    });
   });
 
   return equipment;
@@ -3618,11 +3629,11 @@ function createBossEditorLootTable(
   equipment: ArenaBossDefinition["equipment"],
   lootChance: number,
 ): ArenaBossDefinition["lootTable"] {
-  const itemIds = [...new Set(Object.values(equipment).filter((itemId): itemId is HeroItemId => Boolean(itemId)))];
+  const products = getBossEquipmentProductsForEquipment(equipment);
 
-  return itemIds.map((itemId) => ({
-    id: `${bossId}_${normalizeDebugIdentifier(itemId)}_drop`,
-    itemIds: [itemId],
+  return products.map((product) => ({
+    id: `${bossId}_${normalizeDebugIdentifier(product.id)}_drop`,
+    itemIds: [...product.itemIds],
     chance: lootChance,
     quantity: 1,
   }));
@@ -3738,15 +3749,82 @@ function upsertDebugArenaBoss(bosses: ArenaBossDefinition[], boss: ArenaBossDefi
   );
 }
 
-function getBossUniqueItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[] {
-  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.item.equipmentSlot === slotKey && isBossUniqueItem(record.item.id))
-    .map((record) => record.item.id)
-    .sort((left, right) => {
-      const leftItem = getDebugHeroItemDefinition(left);
-      const rightItem = getDebugHeroItemDefinition(right);
+function getBossEquipmentControlConfigs(): DebugBossEquipmentControlConfig[] {
+  const usedSlots = new Set<HeroEquipmentSlotKey>();
 
-      return (leftItem?.name ?? left).localeCompare(rightItem?.name ?? right);
-    });
+  return HERO_EQUIPMENT_SLOT_KEYS.flatMap((slotKey) => {
+    if (usedSlots.has(slotKey)) {
+      return [];
+    }
+
+    const pairConfig = getDebugShopItemPairConfig(slotKey);
+
+    if (pairConfig) {
+      const slotKeys = [pairConfig.backSlot, pairConfig.frontSlot];
+
+      slotKeys.forEach((pairedSlotKey) => usedSlots.add(pairedSlotKey));
+
+      return [{
+        id: `${pairConfig.backSlot}+${pairConfig.frontSlot}`,
+        label: pairConfig.label,
+        slotKeys,
+      }];
+    }
+
+    usedSlots.add(slotKey);
+
+    return [{
+      id: slotKey,
+      label: formatBossEquipmentSlotLabel(slotKey),
+      slotKeys: [slotKey],
+    }];
+  });
+}
+
+function getBossEquipmentSelectSlotKeys(select: HTMLSelectElement): HeroEquipmentSlotKey[] {
+  return (select.dataset.bossEquipmentSlots ?? "")
+    .split("+")
+    .filter((slotKey): slotKey is HeroEquipmentSlotKey => isHeroEquipmentSlotKey(slotKey));
+}
+
+function getBossEquipmentProductsForSlots(slotKeys: readonly HeroEquipmentSlotKey[]): DebugGeneratedBossItem[] {
+  const slotKeySet = new Set(slotKeys);
+
+  return getGeneratedBossItems().filter((product) => product.slotKeys.some((slotKey) => slotKeySet.has(slotKey)));
+}
+
+function getSelectedBossEquipmentProductForSlots(
+  slotKeys: readonly HeroEquipmentSlotKey[],
+  productId: string | undefined,
+): DebugGeneratedBossItem | undefined {
+  return getBossEquipmentProductsForSlots(slotKeys).find((product) => product.id === productId);
+}
+
+function getSelectedBossEquipmentProductForEquipment(
+  slotKeys: readonly HeroEquipmentSlotKey[],
+  equipment: ArenaBossDefinition["equipment"],
+): DebugGeneratedBossItem | undefined {
+  const selectedItemIds = new Set(slotKeys.flatMap((slotKey) => equipment[slotKey] ? [equipment[slotKey]!] : []));
+  const products = getBossEquipmentProductsForSlots(slotKeys);
+
+  return products.find((product) => product.itemIds.every((itemId) => selectedItemIds.has(itemId))) ??
+    products.find((product) => product.itemIds.some((itemId) => selectedItemIds.has(itemId)));
+}
+
+function getBossEquipmentProductsForEquipment(equipment: ArenaBossDefinition["equipment"]): DebugGeneratedBossItem[] {
+  const selectedItemIds = new Set(Object.values(equipment).filter((itemId): itemId is HeroItemId => Boolean(itemId)));
+  const usedItemIds = new Set<HeroItemId>();
+
+  return getGeneratedBossItems().filter((product) => {
+    const isSelected = product.itemIds.some((itemId) => selectedItemIds.has(itemId));
+
+    if (!isSelected || product.itemIds.some((itemId) => usedItemIds.has(itemId))) {
+      return false;
+    }
+
+    product.itemIds.forEach((itemId) => usedItemIds.add(itemId));
+    return true;
+  });
 }
 
 function isBossUniqueItem(itemId: HeroItemId): boolean {
@@ -3824,15 +3902,30 @@ function getDefaultAutoEquipmentRarity(record: (typeof AUTO_EQUIPMENT_ITEM_RECOR
 }
 
 function getGeneratedBossItems(): DebugGeneratedBossItem[] {
-  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => isBossUniqueItem(record.item.id))
-    .map((record) => ({
-      id: record.item.id,
-      name: record.item.name,
-      kind: record.item.kind,
-      rarity: record.item.rarity ?? "unique",
-      stat: getGeneratedShopRecordStat(record),
-    }))
-    .sort(compareDebugGeneratedBossItems);
+  const records = GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => isBossUniqueItem(record.item.id));
+  const usedItemIds = new Set<HeroItemId>();
+  const items: DebugGeneratedBossItem[] = [];
+
+  records.forEach((record) => {
+    if (usedItemIds.has(record.item.id)) {
+      return;
+    }
+
+    const pairConfig = record.item.kind === "armor" ? getDebugShopItemPairConfig(record.item.equipmentSlot) : undefined;
+    const counterpart = pairConfig ? findDebugShopItemPair(record, records, pairConfig, usedItemIds) : undefined;
+
+    if (pairConfig && counterpart) {
+      items.push(createDebugGeneratedBossPairItem(record, counterpart, pairConfig));
+      usedItemIds.add(record.item.id);
+      usedItemIds.add(counterpart.item.id);
+      return;
+    }
+
+    items.push(createDebugGeneratedBossItem(record));
+    usedItemIds.add(record.item.id);
+  });
+
+  return items.sort(compareDebugGeneratedBossItems);
 }
 
 function getSelectedGeneratedBossItem(
@@ -3853,6 +3946,15 @@ function createGeneratedBossItemOption(item: DebugGeneratedBossItem): HTMLOption
   return option;
 }
 
+function createBossEquipmentProductOption(product: DebugGeneratedBossItem): HTMLOptionElement {
+  const option = createHeroEquipmentOption(product.id, formatGeneratedBossItemOption(product));
+
+  option.className = `debug-rarity-option debug-rarity-option--${product.rarity}`;
+  option.dataset.rarity = product.rarity;
+
+  return option;
+}
+
 function formatGeneratedBossItemOption(item: DebugGeneratedBossItem): string {
   const statLabel = item.kind === "weapon" ? "DMG" : "AR";
 
@@ -3860,18 +3962,24 @@ function formatGeneratedBossItemOption(item: DebugGeneratedBossItem): string {
 }
 
 function previewGeneratedBossItem(item: DebugGeneratedBossItem | undefined): void {
-  const definition = item ? getDebugHeroItemDefinition(item.id) : undefined;
-
-  if (!definition) {
+  if (!item) {
     return;
   }
 
-  if (isEquipmentSlotKey(definition.equipmentSlot)) {
-    activeEquipmentSlot = definition.equipmentSlot;
-    activeEquipmentItemId = definition.id;
-  }
+  item.itemIds.forEach((itemId) => {
+    const definition = getDebugHeroItemDefinition(itemId);
 
-  updateHeroEquipmentSlot(definition.equipmentSlot, definition.id);
+    if (!definition) {
+      return;
+    }
+
+    if (isEquipmentSlotKey(definition.equipmentSlot)) {
+      activeEquipmentSlot = definition.equipmentSlot;
+      activeEquipmentItemId = definition.id;
+    }
+
+    updateHeroEquipmentSlot(definition.equipmentSlot, definition.id);
+  });
 }
 
 function getGeneratedBossItemStatMax(item: DebugGeneratedBossItem | undefined): number {
@@ -3880,6 +3988,37 @@ function getGeneratedBossItemStatMax(item: DebugGeneratedBossItem | undefined): 
 
 function compareDebugGeneratedBossItems(left: DebugGeneratedBossItem, right: DebugGeneratedBossItem): number {
   return DEBUG_SHOP_ITEM_RARITY_RANKS[left.rarity] - DEBUG_SHOP_ITEM_RARITY_RANKS[right.rarity] || left.name.localeCompare(right.name);
+}
+
+function createDebugGeneratedBossItem(record: DebugGeneratedShopItemRecord): DebugGeneratedBossItem {
+  return {
+    id: record.item.id,
+    name: record.item.name,
+    itemIds: [record.item.id],
+    slotKeys: [record.item.equipmentSlot],
+    kind: record.item.kind,
+    rarity: record.item.rarity ?? "unique",
+    stat: getGeneratedShopRecordStat(record),
+  };
+}
+
+function createDebugGeneratedBossPairItem(
+  record: DebugGeneratedShopItemRecord,
+  counterpart: DebugGeneratedShopItemRecord,
+  pairConfig: DebugShopItemPairConfig,
+): DebugGeneratedBossItem {
+  const backRecord = record.item.equipmentSlot === pairConfig.backSlot ? record : counterpart;
+  const frontRecord = record.item.equipmentSlot === pairConfig.frontSlot ? record : counterpart;
+
+  return {
+    id: `${backRecord.item.id}+${frontRecord.item.id}`,
+    name: getDebugShopItemPairName(backRecord, pairConfig),
+    itemIds: [backRecord.item.id, frontRecord.item.id],
+    slotKeys: [pairConfig.backSlot, pairConfig.frontSlot],
+    kind: "armor",
+    rarity: getHighestDebugShopItemRarity([backRecord, frontRecord]),
+    stat: Math.max(getGeneratedShopRecordStat(backRecord), getGeneratedShopRecordStat(frontRecord)),
+  };
 }
 
 function getGeneratedShopProducts(): DebugGeneratedShopProduct[] {

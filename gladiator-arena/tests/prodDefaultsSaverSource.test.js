@@ -176,10 +176,13 @@ test("vite dev middleware updates generated boss item stats", () => {
   assert.match(source, /pickGeneratedBossItemUpdate/);
   assert.match(source, /updateGeneratedBossItem/);
   assert.match(source, /isGeneratedBossItemRecord/);
+  assert.match(source, /updateGeneratedBossItemRecord/);
   assert.match(source, /formatUpdatedGeneratedBossItemMessage/);
+  assert.match(source, /readNonEmptyStringArray/);
   assert.match(source, /Only generated boss items can be edited/);
   assert.match(source, /record\.availability\?\.bossUnique === true \|\| record\.rarity === "unique"/);
-  assert.match(source, /targetRecord\.kind === "armor" \? \{ armorHp: clampedStat \} : \{ damageBonus: clampedStat \}/);
+  assert.match(source, /targetIndex > 0 \? 0 : clampedStat/);
+  assert.match(source, /updatedRecords\.length/);
 });
 
 test("vite dev middleware writes generated arena bosses", () => {

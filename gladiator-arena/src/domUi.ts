@@ -377,6 +377,7 @@ function renderResultLoot(element: HTMLElement, loot: readonly ArenaLootDrop[]):
   element.hidden = false;
 
   loot.forEach((drop) => {
+    const itemIds = drop.itemIds && drop.itemIds.length > 0 ? drop.itemIds : [drop.itemId];
     const item = HERO_ITEM_CATALOG[drop.itemId];
     const row = document.createElement("div");
     const icon = document.createElement("span");
@@ -387,7 +388,7 @@ function renderResultLoot(element: HTMLElement, loot: readonly ArenaLootDrop[]):
     icon.className = "battle-result__loot-icon";
     label.textContent = item ? `Dropped ${item.name}${quantity > 1 ? ` x${quantity}` : ""}` : `Dropped ${drop.itemId}${quantity > 1 ? ` x${quantity}` : ""}`;
 
-    const iconUrl = getShopProductIconUrl([drop.itemId]);
+    const iconUrl = getShopProductIconUrl(itemIds);
 
     if (iconUrl) {
       icon.style.backgroundImage = `url("${iconUrl}")`;

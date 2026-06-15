@@ -170,6 +170,7 @@ export interface ArenaEncounter {
 export interface ArenaLootDrop {
   sourceId: string;
   itemId: HeroItemId;
+  itemIds?: HeroItemId[];
   quantity: number;
 }
 
@@ -739,8 +740,8 @@ export function applyCombatReward(
   random = Math.random,
 ): CombatRewardApplication {
   const reward = getBattleReward(combat);
-  const rolledLoot = combat.result === "win" ? rollCombatEncounterLoot(combat, random) : [];
   const heroAfterConsumables = applyCombatConsumableUsage(hero, combat, now);
+  const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterConsumables, combat, random) : [];
   const heroWithReward = applyBattleReward(heroAfterConsumables, reward, now);
   const heroWithBossProgress = combat.result === "win" && combat.encounter?.kind === "boss" ? recordArenaBossDefeat(heroWithReward, combat.encounter.opponentId, now) : heroWithReward;
   const lootApplication = applyArenaLootWithAppliedDrops(heroWithBossProgress, rolledLoot, now);
@@ -787,20 +788,28 @@ function applyArenaLootWithAppliedDrops(
 
   loot.forEach((drop) => {
     const quantity = Math.max(0, Math.floor(drop.quantity));
+    const itemIds = getArenaLootDropItemIds(drop).filter((itemId) => Boolean(HERO_ITEM_CATALOG[itemId]));
 
-    if (!drop.itemId || quantity <= 0 || !HERO_ITEM_CATALOG[drop.itemId]) {
+    if (itemIds.length === 0 || quantity <= 0) {
       return;
     }
 
-    const existingEntry = inventory.find((entry) => entry.itemId === drop.itemId);
+    itemIds.forEach((itemId) => {
+      const existingEntry = inventory.find((entry) => entry.itemId === itemId);
 
-    if (existingEntry) {
-      existingEntry.quantity += quantity;
-    } else {
-      inventory.push({ itemId: drop.itemId, quantity });
-    }
+      if (existingEntry) {
+        existingEntry.quantity += quantity;
+      } else {
+        inventory.push({ itemId, quantity });
+      }
+    });
 
-    appliedLoot.push({ ...drop, quantity });
+    appliedLoot.push({
+      ...drop,
+      itemId: itemIds[0]!,
+      ...(itemIds.length > 1 ? { itemIds } : {}),
+      quantity,
+    });
   });
 
   if (appliedLoot.length === 0) {
@@ -860,6 +869,38 @@ function getCombatEncounterLootTable(combat: CombatState): readonly ArenaLootTab
   return [];
 }
 
+function rollCombatRewardLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
+  if (combat.encounter?.kind === "boss") {
+    return rollBossCombatLoot(hero, combat);
+  }
+
+  return rollCombatEncounterLoot(combat, random);
+}
+
+function rollBossCombatLoot(hero: HeroState, combat: CombatState): ArenaLootDrop[] {
+  const entry = getCombatEncounterLootTable(combat).find((candidate) => canHeroReceiveBossLootEntry(hero, candidate));
+
+  return entry ? [createGuaranteedBossLootDrop(entry)] : [];
+}
+
+function canHeroReceiveBossLootEntry(hero: HeroState, entry: ArenaLootTableEntry): boolean {
+  const itemIds = getValidArenaLootEntryItemIds(entry);
+
+  return itemIds.length > 0 && !itemIds.some((itemId) => isHeroItemOwned(hero, itemId));
+}
+
+function createGuaranteedBossLootDrop(entry: ArenaLootTableEntry): ArenaLootDrop {
+  const itemIds = getValidArenaLootEntryItemIds(entry);
+  const itemId = itemIds[0]!;
+
+  return {
+    sourceId: entry.id,
+    itemId,
+    ...(itemIds.length > 1 ? { itemIds } : {}),
+    quantity: 1,
+  };
+}
+
 function rollArenaLootTable(lootTable: readonly ArenaLootTableEntry[], random: () => number): ArenaLootDrop[] {
   return lootTable.flatMap((entry) => {
     const chance = Math.max(0, Math.min(1, entry.chance));
@@ -875,6 +916,14 @@ function rollArenaLootTable(lootTable: readonly ArenaLootTableEntry[], random: (
       quantity,
     }));
   });
+}
+
+function getValidArenaLootEntryItemIds(entry: ArenaLootTableEntry): HeroItemId[] {
+  return entry.itemIds.filter((itemId) => Boolean(HERO_ITEM_CATALOG[itemId]));
+}
+
+function getArenaLootDropItemIds(drop: ArenaLootDrop): HeroItemId[] {
+  return drop.itemIds && drop.itemIds.length > 0 ? [...new Set(drop.itemIds)] : [drop.itemId];
 }
 
 function getHeroAttributeTotal(baseValue: number, equipmentBonus: number): number {

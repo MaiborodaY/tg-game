@@ -368,7 +368,7 @@ interface UpdateGeneratedShopItemPayload {
 }
 
 interface UpdateGeneratedBossItemPayload {
-  itemId?: unknown;
+  itemIds?: unknown;
   stat?: unknown;
 }
 
@@ -636,10 +636,10 @@ function saveProdDefaultsPlugin(): Plugin {
         try {
           const payload = await readJson(request);
           const update = pickGeneratedBossItemUpdate(payload);
-          const updatedRecord = await updateGeneratedBossItem(update);
+          const updatedRecords = await updateGeneratedBossItem(update);
 
           server.ws.send({ type: "full-reload" });
-          sendJson(response, 200, { message: formatUpdatedGeneratedBossItemMessage(updatedRecord), updated: 1 });
+          sendJson(response, 200, { message: formatUpdatedGeneratedBossItemMessage(updatedRecords), updated: updatedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated boss item." });
         }
@@ -1533,52 +1533,90 @@ function formatUpdatedGeneratedShopItemMessage(updatedRecords: GeneratedEquipmen
 }
 
 interface GeneratedBossItemUpdate {
-  itemId: string;
+  itemIds: string[];
   stat: number;
 }
 
 function pickGeneratedBossItemUpdate(payload: unknown): GeneratedBossItemUpdate {
   const update = readPlainObject(payload, "generated boss item update") as UpdateGeneratedBossItemPayload;
-  const itemId = readNonEmptyString(update.itemId, "generated boss item id");
+  const itemIds = readNonEmptyStringArray(update.itemIds, "generated boss item ids");
   const stat = Math.max(0, Math.floor(readFinitePayloadNumber(update.stat, "generated boss item stat")));
 
   return {
-    itemId,
+    itemIds,
     stat,
   };
 }
 
-async function updateGeneratedBossItem(update: GeneratedBossItemUpdate): Promise<GeneratedEquipmentJsonRecord> {
+async function updateGeneratedBossItem(update: GeneratedBossItemUpdate): Promise<GeneratedEquipmentJsonRecord[]> {
   const records = await readGeneratedEquipmentRecords();
-  const targetRecord = records.find((record) => record.id === update.itemId);
+  const targetRecords = update.itemIds.map((itemId) => {
+    const record = records.find((candidate) => candidate.id === itemId);
 
-  if (!targetRecord) {
-    throw new Error(`Generated boss item not found: ${update.itemId}.`);
+    if (!record) {
+      throw new Error(`Generated boss item not found: ${itemId}.`);
+    }
+
+    if (!isGeneratedBossItemRecord(record)) {
+      throw new Error("Only generated boss items can be edited.");
+    }
+
+    return record;
+  });
+  const kind = targetRecords[0]?.kind;
+
+  if (!kind || !targetRecords.every((record) => record.kind === kind)) {
+    throw new Error("Generated boss item edit cannot mix armor and weapons.");
   }
 
-  if (!isGeneratedBossItemRecord(targetRecord)) {
-    throw new Error("Only generated boss items can be edited.");
-  }
-
-  const maxStat = targetRecord.kind === "weapon" ? promotedEquipmentMaxDamageBonus : promotedEquipmentMaxArmorHp;
+  const maxStat = kind === "weapon" ? promotedEquipmentMaxDamageBonus : promotedEquipmentMaxArmorHp;
   const clampedStat = Math.max(0, Math.min(maxStat, update.stat));
-  const nextRecord: GeneratedEquipmentJsonRecord = {
-    ...targetRecord,
-    ...(targetRecord.kind === "armor" ? { armorHp: clampedStat } : { damageBonus: clampedStat }),
-  };
-  const nextRecords = records.map((record) => (record.id === update.itemId ? nextRecord : record));
+  const targetIds = new Set(targetRecords.map((record) => record.id));
+  let targetIndex = 0;
+  const nextRecords = records.map((record) => {
+    if (!targetIds.has(record.id)) {
+      return record;
+    }
+
+    const nextRecord = updateGeneratedBossItemRecord(record, clampedStat, targetIndex);
+
+    targetIndex += 1;
+
+    return nextRecord;
+  });
 
   await writeGeneratedEquipmentRecords(nextRecords);
 
-  return nextRecord;
+  return nextRecords.filter((record) => targetIds.has(record.id));
 }
 
 function isGeneratedBossItemRecord(record: GeneratedEquipmentJsonRecord): boolean {
   return record.availability?.bossUnique === true || record.rarity === "unique";
 }
 
-function formatUpdatedGeneratedBossItemMessage(updatedRecord: GeneratedEquipmentJsonRecord): string {
-  return `Updated ${updatedRecord.name}.`;
+function updateGeneratedBossItemRecord(
+  record: GeneratedEquipmentJsonRecord,
+  clampedStat: number,
+  targetIndex: number,
+): GeneratedEquipmentJsonRecord {
+  const itemStat = record.kind === "armor" && targetIndex > 0 ? 0 : clampedStat;
+
+  return {
+    ...record,
+    ...(record.kind === "armor" ? { armorHp: itemStat } : { damageBonus: itemStat }),
+  };
+}
+
+function formatUpdatedGeneratedBossItemMessage(updatedRecords: GeneratedEquipmentJsonRecord[]): string {
+  if (updatedRecords.length === 0) {
+    return "Updated generated boss item.";
+  }
+
+  if (updatedRecords.length === 1) {
+    return `Updated ${updatedRecords[0]!.name}.`;
+  }
+
+  return `Updated ${updatedRecords.length} linked generated boss items.`;
 }
 
 function escapeRegExp(value: string): string {
