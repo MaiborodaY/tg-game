@@ -140,8 +140,8 @@ export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderCo
   const distance = distanceLabel(state.distance, playerClinchRange);
   const band = distanceBand(state.distance, playerClinchRange);
 
-  dom.distanceText.textContent = distance;
-  dom.classicDistanceText.textContent = distance;
+  setText(dom.distanceText, distance);
+  setText(dom.classicDistanceText, distance);
   syncClassicDistanceBadge(dom.classicDistanceBadge, band);
   renderStats(dom, state);
   renderLog(dom, state);
@@ -151,6 +151,10 @@ export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderCo
 const CLASSIC_DISTANCE_BADGE_BANDS: DistanceBand[] = ["clinch", "melee", "near", "far", "very-far"];
 
 function syncClassicDistanceBadge(element: HTMLElement, band: DistanceBand): void {
+  if (element.dataset.distanceBand === band) {
+    return;
+  }
+
   element.dataset.distanceBand = band;
 
   CLASSIC_DISTANCE_BADGE_BANDS.forEach((currentBand) => {
@@ -166,20 +170,27 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   const enemyMaxArmor = getFighterMaxArmor(state.enemy);
   const enemyMaxStamina = getFighterMaxStamina(state.enemy);
 
-  dom.classicPlayerName.textContent = state.player.name;
-  dom.classicEnemyName.textContent = state.enemy.name;
-  dom.playerHpText.textContent = `${state.player.hp}/${playerMaxHp}`;
-  dom.playerArmorText.textContent = `${state.player.armor}/${playerMaxArmor}`;
-  dom.playerStaText.textContent = `${state.player.stamina}/${playerMaxStamina}`;
-  dom.classicPlayerHpText.textContent = `${state.player.hp}/${playerMaxHp}`;
-  dom.classicPlayerArmorText.textContent = `${state.player.armor}/${playerMaxArmor}`;
-  dom.classicPlayerStaText.textContent = `${state.player.stamina}/${playerMaxStamina}`;
-  dom.enemyHpText.textContent = `${state.enemy.hp}/${enemyMaxHp}`;
-  dom.enemyArmorText.textContent = `${state.enemy.armor}/${enemyMaxArmor}`;
-  dom.enemyStaText.textContent = `${state.enemy.stamina}/${enemyMaxStamina}`;
-  dom.classicEnemyHpText.textContent = `${state.enemy.hp}/${enemyMaxHp}`;
-  dom.classicEnemyArmorText.textContent = `${state.enemy.armor}/${enemyMaxArmor}`;
-  dom.classicEnemyStaText.textContent = `${state.enemy.stamina}/${enemyMaxStamina}`;
+  const playerHpText = `${state.player.hp}/${playerMaxHp}`;
+  const playerArmorText = `${state.player.armor}/${playerMaxArmor}`;
+  const playerStaminaText = `${state.player.stamina}/${playerMaxStamina}`;
+  const enemyHpText = `${state.enemy.hp}/${enemyMaxHp}`;
+  const enemyArmorText = `${state.enemy.armor}/${enemyMaxArmor}`;
+  const enemyStaminaText = `${state.enemy.stamina}/${enemyMaxStamina}`;
+
+  setText(dom.classicPlayerName, state.player.name);
+  setText(dom.classicEnemyName, state.enemy.name);
+  setText(dom.playerHpText, playerHpText);
+  setText(dom.playerArmorText, playerArmorText);
+  setText(dom.playerStaText, playerStaminaText);
+  setText(dom.classicPlayerHpText, playerHpText);
+  setText(dom.classicPlayerArmorText, playerArmorText);
+  setText(dom.classicPlayerStaText, playerStaminaText);
+  setText(dom.enemyHpText, enemyHpText);
+  setText(dom.enemyArmorText, enemyArmorText);
+  setText(dom.enemyStaText, enemyStaminaText);
+  setText(dom.classicEnemyHpText, enemyHpText);
+  setText(dom.classicEnemyArmorText, enemyArmorText);
+  setText(dom.classicEnemyStaText, enemyStaminaText);
 
   setFlaskFill(dom.playerHpFill, state.player.hp / playerMaxHp);
   setFlaskFill(dom.playerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
@@ -197,12 +208,24 @@ function renderStats(dom: DomRefs, state: CombatState): void {
 
 function setFlaskFill(element: HTMLElement, ratio: number): void {
   const safeRatio = Math.max(0, Math.min(1, ratio));
-  element.style.transform = `scaleY(${safeRatio})`;
+  setStyleTransform(element, `scaleY(${safeRatio})`);
 }
 
 function setBarFill(element: HTMLElement, ratio: number): void {
   const safeRatio = Math.max(0, Math.min(1, ratio));
-  element.style.transform = `scaleX(${safeRatio})`;
+  setStyleTransform(element, `scaleX(${safeRatio})`);
+}
+
+function setText(element: HTMLElement, value: string): void {
+  if (element.textContent !== value) {
+    element.textContent = value;
+  }
+}
+
+function setStyleTransform(element: HTMLElement, value: string): void {
+  if (element.style.transform !== value) {
+    element.style.transform = value;
+  }
 }
 
 function renderLog(dom: DomRefs, state: CombatState): void {

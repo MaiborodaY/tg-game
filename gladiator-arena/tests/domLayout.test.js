@@ -216,14 +216,23 @@ test("fighter resources use flask HUD while preserving stat ids", () => {
 });
 
 test("battle resource fills animate through transforms instead of layout sizes", () => {
-  assert.equal(domUiSource.includes("element.style.transform = `scaleY(${safeRatio})`;"), true);
-  assert.equal(domUiSource.includes("element.style.transform = `scaleX(${safeRatio})`;"), true);
+  assert.equal(domUiSource.includes("setStyleTransform(element, `scaleY(${safeRatio})`);"), true);
+  assert.equal(domUiSource.includes("setStyleTransform(element, `scaleX(${safeRatio})`);"), true);
   assert.equal(domUiSource.includes("element.style.width = `${safeRatio * 100}%`;"), false);
   assert.equal(domUiSource.includes("element.style.height = `${safeRatio * 100}%`;"), false);
   assert.equal(stylesSource.includes("transform-origin: left center;"), true);
   assert.equal(stylesSource.includes("transition: transform 180ms ease;"), true);
   assert.equal(stylesSource.includes("transform-origin: center bottom;"), true);
   assert.equal(stylesSource.includes("transition: transform 220ms ease;"), true);
+});
+
+test("battle HUD DOM updates skip unchanged values", () => {
+  assert.equal(domUiSource.includes("function setText(element: HTMLElement, value: string): void"), true);
+  assert.equal(domUiSource.includes("if (element.textContent !== value)"), true);
+  assert.equal(domUiSource.includes("function setStyleTransform(element: HTMLElement, value: string): void"), true);
+  assert.equal(domUiSource.includes("if (element.style.transform !== value)"), true);
+  assert.equal(domUiSource.includes("if (element.dataset.distanceBand === band)"), true);
+  assert.equal(domUiSource.includes("setText(dom.playerHpText, playerHpText);"), true);
 });
 
 test("arena background is rendered inside the Phaser battle scene", () => {

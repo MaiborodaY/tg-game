@@ -155,11 +155,18 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
 });
 
+test("movement steps do not spawn floating step text", () => {
+  assert.equal(arenaSceneSource.includes('actionId === "forward" || actionId === "back"'), true);
+  assert.equal(arenaSceneSource.includes('actionId === "forward" ? "STEP" : "BACK"'), false);
+  assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "MELEE"'), true);
+  assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "SHURIKEN"'), true);
+});
+
 test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes('type HeroWeaponClass'), true);
   assert.equal(arenaSceneSource.includes('isRangedWeaponClass(weaponClass)'), true);
   assert.equal(arenaSceneSource.includes('isRangedWeapon ? "bowShot" : actionId'), true);
-  assert.equal(arenaSceneSource.includes("!isRangedWeapon && areArenaVfxEnabled()"), true);
+  assert.equal(arenaSceneSource.includes("!isRangedWeapon && areArenaVfxEnabled(playerSettings)"), true);
   assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit")'), true);
   assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
@@ -176,10 +183,19 @@ test("arena shows bow arrow counts above bow fighters", () => {
   assert.equal(arenaSceneSource.includes("isBowFighter(state)"), true);
   assert.equal(arenaSceneSource.includes("getBowShotsRemaining(state)"), true);
   assert.equal(arenaSceneSource.includes("container.add([icon, text]);"), true);
-  assert.equal(arenaSceneSource.includes("counter.text.setText(`${getBowShotsRemaining(state)}`);"), true);
+  assert.equal(arenaSceneSource.includes("setPhaserTextIfChanged(counter.text, `${getBowShotsRemaining(state)}`);"), true);
   assert.equal(arenaSceneSource.includes("Math.max(FIGHTER_ARROW_COUNTER_SCALE_MIN, scale / DEFAULT_PLAYER_SCALE)"), true);
   assert.equal(arenaSceneSource.includes("applyFighterArrowCountersSceneScale(this);"), true);
-  assert.equal(arenaSceneSource.includes("counter.container.setScale(counter.baseScale / sceneScale);"), true);
+  assert.equal(arenaSceneSource.includes("setGameObjectScaleIfChanged(counter.container, counter.baseScale / sceneScale);"), true);
+  assert.equal(arenaSceneSource.includes("function setGameObjectScaleIfChanged"), true);
+});
+
+test("arena reuses player settings snapshots during frame work", () => {
+  assert.equal(arenaSceneSource.includes("const playerSettings = getPlayerSettings();"), true);
+  assert.equal(arenaSceneSource.includes("getArenaAnimationAmount(playerSettings)"), true);
+  assert.equal(arenaSceneSource.includes("renderScene(this, nextState, playerSettings);"), true);
+  assert.equal(arenaSceneSource.includes("playerSettings.shadowMode"), true);
+  assert.equal(arenaSceneSource.includes("function getArenaAnimationAmount(playerSettings = getPlayerSettings())"), true);
 });
 
 test("arena starts close between fighters and eases back to the normal camera", () => {
@@ -412,7 +428,8 @@ test("blocked hits use the shield icon popup instead of block text", () => {
   assert.equal(arenaSceneSource.includes("fighter.head.getWorldTransformMatrix()"), true);
   assert.equal(arenaSceneSource.includes("effectsLayer.getWorldTransformMatrix().applyInverse"), true);
   assert.equal(arenaSceneSource.includes("offsetY / layerScale"), true);
-  assert.equal(arenaSceneSource.includes('target.add.image(x, y, DAMAGE_BLOCK_ICON_ASSET_KEY)'), true);
+  assert.equal(arenaSceneSource.includes("acquireBlockPopupIcon(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseBlockPopupIcon(target, icon)"), true);
   assert.equal(arenaSceneSource.includes('"BLOCK"'), false);
 });
 
@@ -424,20 +441,15 @@ test("damage hits use the hit icon popup from the fighter head", () => {
   assert.equal(arenaSceneSource.includes("DAMAGE_HIT_ICON_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("DAMAGE_HIT_POPUP_SCREEN_SIZE"), true);
   assert.equal(arenaSceneSource.includes("getDamagePopupHeadOffsetY"), true);
-  assert.equal(
-    arenaSceneSource.includes(
-      "showDamageResultPopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage, nextState.lastPlayerArmorAbsorbed, nextState.lastPlayerArmorBroken)",
-    ),
-    true,
-  );
-  assert.equal(
-    arenaSceneSource.includes(
-      "showDamageResultPopupFromFighter(this, visuals.player, nextState.lastEnemyDamage, nextState.lastEnemyArmorAbsorbed, nextState.lastEnemyArmorBroken)",
-    ),
-    true,
-  );
+  assert.equal(arenaSceneSource.includes("showDamageResultPopupFromFighter("), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage,"), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage,"), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastPlayerArmorAbsorbed,"), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastEnemyArmorAbsorbed,"), true);
+  assert.equal(arenaSceneSource.includes("playerSettings,"), true);
   assert.equal(arenaSceneSource.includes("getHealthPopupDamage(totalDamage, armorAbsorbed)"), true);
-  assert.equal(arenaSceneSource.includes("target.add.image(0, 0, DAMAGE_HIT_ICON_ASSET_KEY)"), true);
+  assert.equal(arenaSceneSource.includes("acquireDamageIconPopup(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseDamageIconPopup(target, popup)"), true);
 });
 
 test("armor damage uses absorb and break icon popups", () => {
@@ -457,7 +469,22 @@ test("armor damage uses absorb and break icon popups", () => {
   assert.equal(arenaSceneSource.includes("DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE"), true);
   assert.equal(arenaSceneSource.includes("DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE"), true);
   assert.equal(arenaSceneSource.includes("function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount: number): void"), true);
-  assert.match(arenaSceneSource, /function showArmorBreakPopup[\s\S]*\.text\(0,\s*-?\d+,\s*`\$\{amount\}`/);
+  assert.equal(arenaSceneSource.includes("acquireArmorAbsorbPopup(target)"), true);
+  assert.equal(arenaSceneSource.includes("acquireArmorBreakPopup(target)"), true);
+  assert.equal(arenaSceneSource.includes("setPhaserTextIfChanged(popup.label, `${amount}`);"), true);
+});
+
+test("arena pools transient popup and effect objects", () => {
+  assert.equal(arenaSceneSource.includes("const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();"), true);
+  assert.equal(arenaSceneSource.includes("function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools"), true);
+  assert.equal(arenaSceneSource.includes("floatingLabels: Phaser.GameObjects.Text[]"), true);
+  assert.equal(arenaSceneSource.includes("damageTextPopups: ArenaTextPopupVisual[]"), true);
+  assert.equal(arenaSceneSource.includes("acquireFloatingTextLabel(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseFloatingTextLabel(target, label)"), true);
+  assert.equal(arenaSceneSource.includes("acquireSlashArc(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseSlashArc(target, slash)"), true);
+  assert.equal(arenaSceneSource.includes("acquireDustDot(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseDustDot(target, dot)"), true);
 });
 
 test("debug popup tuning can preview each popup type", () => {

@@ -134,7 +134,7 @@ import {
   type SlashArcTuning,
 } from "./debugTuning";
 import { emitDebugCharacterEquipmentDelta, emitDebugCharacterEquipmentSelect } from "./debugCharacterEquipmentBridge";
-import { getPlayerSettings, subscribePlayerSettings } from "./settingsMenu";
+import { getPlayerSettings, subscribePlayerSettings, type PlayerSettings } from "./settingsMenu";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -319,6 +319,36 @@ interface HudVisual {
   armorFill: Phaser.GameObjects.Rectangle;
   staminaFill: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
+}
+
+interface ArenaIconTextPopupVisual {
+  container: Phaser.GameObjects.Container;
+  icon: Phaser.GameObjects.Image;
+  label: Phaser.GameObjects.Text;
+}
+
+interface ArenaDamageBurstPopupVisual {
+  container: Phaser.GameObjects.Container;
+  shadow: Phaser.GameObjects.Graphics;
+  burst: Phaser.GameObjects.Graphics;
+  label: Phaser.GameObjects.Text;
+}
+
+interface ArenaTextPopupVisual {
+  container: Phaser.GameObjects.Container;
+  label: Phaser.GameObjects.Text;
+}
+
+interface ArenaEffectPools {
+  floatingLabels: Phaser.GameObjects.Text[];
+  slashArcs: Phaser.GameObjects.Graphics[];
+  blockIcons: Phaser.GameObjects.Image[];
+  armorAbsorbPopups: ArenaIconTextPopupVisual[];
+  armorBreakPopups: ArenaIconTextPopupVisual[];
+  damageIconPopups: ArenaIconTextPopupVisual[];
+  damageBurstPopups: ArenaDamageBurstPopupVisual[];
+  damageTextPopups: ArenaTextPopupVisual[];
+  dustDots: Phaser.GameObjects.Arc[];
 }
 
 interface ArenaMidLayerShadeState {
@@ -799,6 +829,7 @@ let activePaperDollAssetsUseLowRes = false;
 let arenaAssetPrewarmPromise: Promise<void> | undefined;
 let cityAssetPrewarmPromise: Promise<void> | undefined;
 const assetPrewarmImages = new Set<HTMLImageElement>();
+const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -1165,10 +1196,12 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   update(time: number): void {
+    const playerSettings = getPlayerSettings();
+
     applyFighterArrowCountersSceneScale(this);
 
     const idle = getActiveBodyAnimation("idle");
-    const animationAmount = getArenaAnimationAmount();
+    const animationAmount = getArenaAnimationAmount(playerSettings);
 
     if (!this.visuals || !idle.enabled || animationAmount <= 0) {
       return;
@@ -1187,12 +1220,13 @@ export class ArenaScene extends Phaser.Scene {
       return Promise.resolve();
     }
 
+    const playerSettings = getPlayerSettings();
     const visuals = this.visuals;
     const actionAnimations: Promise<void>[] = [];
 
     syncEnemyVisualForState(this, visuals, previousState, nextState);
     resetDeathEffectsForLiveFighters(this, visuals, nextState);
-    renderScene(this, nextState);
+    renderScene(this, nextState, playerSettings);
 
     const entryTransition = this.startArenaEntryTransition(nextState);
 
@@ -1204,26 +1238,40 @@ export class ArenaScene extends Phaser.Scene {
     const lastEnemyAction = nextState.lastEnemyAction;
 
     if (lastPlayerAction) {
-      actionAnimations.push(animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right", nextState.player.weaponClass));
+      actionAnimations.push(animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right", nextState.player.weaponClass, playerSettings));
     }
 
     if (lastEnemyAction) {
-      actionAnimations.push(animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left", nextState.enemy.weaponClass));
+      actionAnimations.push(animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left", nextState.enemy.weaponClass, playerSettings));
     }
 
     if (nextState.lastPlayerDamage > 0) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit")));
-      showDamageResultPopupFromFighter(this, visuals.enemy, nextState.lastPlayerDamage, nextState.lastPlayerArmorAbsorbed, nextState.lastPlayerArmorBroken);
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit"), playerSettings));
+      showDamageResultPopupFromFighter(
+        this,
+        visuals.enemy,
+        nextState.lastPlayerDamage,
+        nextState.lastPlayerArmorAbsorbed,
+        nextState.lastPlayerArmorBroken,
+        playerSettings,
+      );
     } else if (nextState.lastPlayerBlocked) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block")));
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block"), playerSettings));
       showBlockPopupFromFighter(this, visuals.enemy);
     }
 
     if (nextState.lastEnemyDamage > 0) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit")));
-      showDamageResultPopupFromFighter(this, visuals.player, nextState.lastEnemyDamage, nextState.lastEnemyArmorAbsorbed, nextState.lastEnemyArmorBroken);
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit"), playerSettings));
+      showDamageResultPopupFromFighter(
+        this,
+        visuals.player,
+        nextState.lastEnemyDamage,
+        nextState.lastEnemyArmorAbsorbed,
+        nextState.lastEnemyArmorBroken,
+        playerSettings,
+      );
     } else if (nextState.lastEnemyBlocked) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block")));
+      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block"), playerSettings));
       showBlockPopupFromFighter(this, visuals.player);
     }
 
@@ -1277,7 +1325,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     if (withBodyAnimation) {
-      animateAction(this, this.visuals.player, this.visuals.enemy, actionId, "right");
+      animateAction(this, this.visuals.player, this.visuals.enemy, actionId, "right", undefined, getPlayerSettings());
       return;
     }
 
@@ -3314,7 +3362,13 @@ const PAPER_DOLL_PART_HIT_AREAS: Record<PaperDollPartKey, Phaser.Geom.Rectangle>
   frontFoot: new Phaser.Geom.Rectangle(-30, -18, 86, 52),
 };
 
-function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: number, centerX = fighter.body.x): void {
+function applyPaperDollRigTuning(
+  fighter: FighterVisual,
+  scale: number,
+  feetY: number,
+  centerX = fighter.body.x,
+  playerSettings = getPlayerSettings(),
+): void {
   const rig = fighter.paperDollRig;
 
   if (!rig) {
@@ -3327,14 +3381,19 @@ function applyPaperDollRigTuning(fighter: FighterVisual, scale: number, feetY: n
   rig.root.scaleY = PAPER_DOLL_BASE_SCALE * scale;
   applyRigPartDebugTuning(rig);
   syncPaperDollEquipmentVisibility(rig);
-  applyPaperDollShadowTuning(fighter, scale, feetY, centerX);
+  applyPaperDollShadowTuning(fighter, scale, feetY, centerX, playerSettings.shadowMode);
   fighter.name.x = centerX;
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
 }
 
-function applyPaperDollShadowTuning(fighter: FighterVisual, scale: number, feetY: number, centerX: number): void {
-  const shadowMode = getArenaShadowMode();
+function applyPaperDollShadowTuning(
+  fighter: FighterVisual,
+  scale: number,
+  feetY: number,
+  centerX: number,
+  shadowMode = getArenaShadowMode(),
+): void {
   const highShadowVisible = fighter.castsShadow && shadowMode === "high" && !fighter.isShattered;
   const lowShadowVisible = fighter.castsShadow && shadowMode === "low" && !fighter.isShattered;
   const lowShadowScale = Math.max(0.62, scale / DEFAULT_PLAYER_SCALE);
@@ -4692,12 +4751,12 @@ function createEllipsePoints(
   return points;
 }
 
-function renderScene(target: ArenaScene, current: CombatState): void {
+function renderScene(target: ArenaScene, current: CombatState, playerSettings = getPlayerSettings()): void {
   if (!target.visuals) {
     return;
   }
 
-  positionFightersForState(target, target.visuals, current);
+  positionFightersForState(target, target.visuals, current, playerSettings);
   updateCamera(target, current);
   applyFighterArrowCountersSceneScale(target);
   setHud(target.visuals.playerHud, current.player);
@@ -4706,11 +4765,11 @@ function renderScene(target: ArenaScene, current: CombatState): void {
   setFighterArrowCounter(target.visuals.enemy, current.enemy);
 
   if (!target.visuals.player.isShattered) {
-    setFighterAlpha(target.visuals.player, 1);
+    setFighterAlpha(target.visuals.player, 1, playerSettings.shadowMode);
   }
 
   if (!target.visuals.enemy.isShattered) {
-    setFighterAlpha(target.visuals.enemy, 1);
+    setFighterAlpha(target.visuals.enemy, 1, playerSettings.shadowMode);
   }
 }
 
@@ -4892,11 +4951,14 @@ function setHud(hud: HudVisual, fighter: FighterState): void {
   const maxHp = getFighterMaxHp(fighter);
   const maxArmor = getFighterMaxArmor(fighter);
   const maxStamina = getFighterMaxStamina(fighter);
+  const hpWidth = 226 * (fighter.hp / maxHp);
+  const armorWidth = maxArmor > 0 ? 226 * (fighter.armor / maxArmor) : 0;
+  const staminaWidth = 226 * (fighter.stamina / maxStamina);
 
-  hud.hpFill.displayWidth = 226 * (fighter.hp / maxHp);
-  hud.armorFill.displayWidth = maxArmor > 0 ? 226 * (fighter.armor / maxArmor) : 0;
-  hud.staminaFill.displayWidth = 226 * (fighter.stamina / maxStamina);
-  hud.label.setText(`HP ${fighter.hp}/${maxHp}  ARM ${fighter.armor}/${maxArmor}  STA ${fighter.stamina}/${maxStamina}`);
+  setDisplayWidthIfChanged(hud.hpFill, hpWidth);
+  setDisplayWidthIfChanged(hud.armorFill, armorWidth);
+  setDisplayWidthIfChanged(hud.staminaFill, staminaWidth);
+  setPhaserTextIfChanged(hud.label, `HP ${fighter.hp}/${maxHp}  ARM ${fighter.armor}/${maxArmor}  STA ${fighter.stamina}/${maxStamina}`);
 }
 
 function setFighterArrowCounter(fighter: FighterVisual, state: FighterState): void {
@@ -4914,13 +4976,13 @@ function setFighterArrowCounter(fighter: FighterVisual, state: FighterState): vo
     return;
   }
 
-  counter.text.setText(`${getBowShotsRemaining(state)}`);
+  setPhaserTextIfChanged(counter.text, `${getBowShotsRemaining(state)}`);
 }
 
-function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
+function setFighterAlpha(fighter: FighterVisual, alpha: number, shadowMode = getArenaShadowMode()): void {
   getFighterParts(fighter).forEach((part) => {
     if (part === fighter.shadow) {
-      const shadowVisible = fighter.castsShadow && getArenaShadowMode() === "high" && !fighter.isShattered;
+      const shadowVisible = fighter.castsShadow && shadowMode === "high" && !fighter.isShattered;
 
       part.setVisible(shadowVisible);
       part.setAlpha(shadowVisible ? alpha * debugTuning.shadowAlpha : 0);
@@ -4928,7 +4990,7 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
     }
 
     if (part === fighter.lowShadow) {
-      const shadowVisible = fighter.castsShadow && getArenaShadowMode() === "low" && !fighter.isShattered;
+      const shadowVisible = fighter.castsShadow && shadowMode === "low" && !fighter.isShattered;
 
       part.setVisible(shadowVisible);
       part.setAlpha(shadowVisible ? alpha * 0.26 : 0);
@@ -4939,16 +5001,32 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number): void {
   });
 }
 
-function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState): void {
+function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState, playerSettings = getPlayerSettings()): void {
   const layout = getStageLayout(current, getActiveDebugTuning());
   const shouldSnap = isDebugTuningActive();
 
   if (!visuals.player.isShattered) {
-    positionFighterForLayout(target, visuals.player, layout.playerX, layout.playerScale * getFighterBodyScaleMultiplier(current.player), layout.playerY, shouldSnap);
+    positionFighterForLayout(
+      target,
+      visuals.player,
+      layout.playerX,
+      layout.playerScale * getFighterBodyScaleMultiplier(current.player),
+      layout.playerY,
+      shouldSnap,
+      playerSettings,
+    );
   }
 
   if (!visuals.enemy.isShattered) {
-    positionFighterForLayout(target, visuals.enemy, layout.enemyX, layout.enemyScale * getFighterBodyScaleMultiplier(current.enemy), layout.enemyY, shouldSnap);
+    positionFighterForLayout(
+      target,
+      visuals.enemy,
+      layout.enemyX,
+      layout.enemyScale * getFighterBodyScaleMultiplier(current.enemy),
+      layout.enemyY,
+      shouldSnap,
+      playerSettings,
+    );
   }
 }
 
@@ -4963,6 +5041,7 @@ function positionFighterForLayout(
   scale: number,
   feetY: number,
   shouldSnap: boolean,
+  playerSettings = getPlayerSettings(),
 ): void {
   if (shouldSnap) {
     setFighterXImmediate(fighter, x);
@@ -4970,12 +5049,12 @@ function positionFighterForLayout(
     setFighterX(target, fighter, x);
   }
 
-  applyFighterTuning(fighter, scale, feetY);
+  applyFighterTuning(fighter, scale, feetY, playerSettings);
 }
 
-function applyFighterTuning(fighter: FighterVisual, scale: number, feetY: number): void {
+function applyFighterTuning(fighter: FighterVisual, scale: number, feetY: number, playerSettings = getPlayerSettings()): void {
   if (fighter.paperDollRig) {
-    applyPaperDollRigTuning(fighter, scale, feetY);
+    applyPaperDollRigTuning(fighter, scale, feetY, fighter.body.x, playerSettings);
   }
 
   applyFighterArrowCounterTuning(fighter, scale, feetY);
@@ -4992,7 +5071,7 @@ function applyFighterArrowCounterTuning(fighter: FighterVisual, scale: number, f
 
   counter.container.x = fighter.body.x;
   counter.container.y = feetY + FIGHTER_ARROW_COUNTER_LOCAL_Y * PAPER_DOLL_BASE_SCALE * scale;
-  counter.container.setScale(counter.baseScale);
+  setGameObjectScaleIfChanged(counter.container, counter.baseScale);
 }
 
 function applyFighterArrowCounterSceneScale(target: ArenaScene, fighter: FighterVisual): void {
@@ -5004,7 +5083,25 @@ function applyFighterArrowCounterSceneScale(target: ArenaScene, fighter: Fighter
 
   const sceneScale = Math.max(0.001, Math.abs(target.arenaLayers?.actors.scaleX ?? 1));
 
-  counter.container.setScale(counter.baseScale / sceneScale);
+  setGameObjectScaleIfChanged(counter.container, counter.baseScale / sceneScale);
+}
+
+function setDisplayWidthIfChanged(target: { displayWidth: number }, width: number): void {
+  if (target.displayWidth !== width) {
+    target.displayWidth = width;
+  }
+}
+
+function setPhaserTextIfChanged(target: Phaser.GameObjects.Text, text: string): void {
+  if (target.text !== text) {
+    target.setText(text);
+  }
+}
+
+function setGameObjectScaleIfChanged(target: Phaser.GameObjects.Components.Transform, scale: number): void {
+  if (target.scaleX !== scale || target.scaleY !== scale) {
+    target.setScale(scale);
+  }
 }
 
 function applyFighterArrowCountersSceneScale(target: ArenaScene): void {
@@ -5395,9 +5492,14 @@ function getFighterCameraIgnoreTargets(fighter: FighterVisual): Phaser.GameObjec
   return [...targets];
 }
 
-function playBodyAnimationOnce(target: Phaser.Scene, fighter: FighterVisual, animation: BodyAnimationTuning): Promise<void> {
+function playBodyAnimationOnce(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  animation: BodyAnimationTuning,
+  playerSettings = getPlayerSettings(),
+): Promise<void> {
   const rig = fighter.paperDollRig;
-  const animationAmount = getArenaAnimationAmount();
+  const animationAmount = getArenaAnimationAmount(playerSettings);
 
   if (!rig || !animation.enabled || animationAmount <= 0) {
     return Promise.resolve();
@@ -5446,27 +5548,27 @@ function animateAction(
   actionId: ActionId,
   direction: "left" | "right",
   weaponClass?: HeroWeaponClass,
+  playerSettings = getPlayerSettings(),
 ): Promise<void> {
   const sign = direction === "right" ? 1 : -1;
-  const animationAmount = getArenaAnimationAmount();
+  const animationAmount = getArenaAnimationAmount(playerSettings);
 
   if (actionId === "forward" || actionId === "back") {
-    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
+    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"), playerSettings);
 
-    showFloatingText(target, actor.body.x, actor.body.y - 120, actionId === "forward" ? "STEP" : "BACK", "#ffe7a4");
     return actionAnimation;
   }
 
   if (actionId === "lunge") {
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"));
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"), playerSettings);
   }
 
   if (actionId === "taunt") {
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"));
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"), playerSettings);
   }
 
   if (actionId === "rest") {
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"));
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), playerSettings);
   }
 
   if (actionId === "switchWeapon") {
@@ -5476,7 +5578,7 @@ function animateAction(
 
   if (actionId === "shuriken") {
     showFloatingText(target, actor.body.x, actor.body.y - 120, "SHURIKEN", "#ffe7a4");
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"));
+    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"), playerSettings);
   }
 
   const actionAnimations: Promise<void>[] = [];
@@ -5485,9 +5587,9 @@ function animateAction(
     const isRangedWeapon = isRangedWeaponClass(weaponClass);
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
 
-    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey)));
-    if (!isRangedWeapon && areArenaVfxEnabled()) {
-      showSlashArc(target, actor, actionId, direction);
+    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey), playerSettings));
+    if (!isRangedWeapon && areArenaVfxEnabled(playerSettings)) {
+      showSlashArc(target, actor, actionId, direction, playerSettings);
     }
   }
 
@@ -5513,8 +5615,306 @@ function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAni
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
-function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: AttackBodyAnimationKey, direction: "left" | "right"): void {
-  if (!areArenaVfxEnabled()) {
+function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
+  let pools = arenaEffectPoolsByScene.get(target);
+
+  if (!pools) {
+    pools = {
+      floatingLabels: [],
+      slashArcs: [],
+      blockIcons: [],
+      armorAbsorbPopups: [],
+      armorBreakPopups: [],
+      damageIconPopups: [],
+      damageBurstPopups: [],
+      damageTextPopups: [],
+      dustDots: [],
+    };
+    arenaEffectPoolsByScene.set(target, pools);
+  }
+
+  return pools;
+}
+
+function acquireFloatingTextLabel(target: Phaser.Scene): Phaser.GameObjects.Text {
+  const pool = getArenaEffectPools(target).floatingLabels;
+  const label = pool.pop() ?? createFloatingTextLabel(target);
+
+  target.tweens.killTweensOf(label);
+  label.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return label;
+}
+
+function createFloatingTextLabel(target: Phaser.Scene): Phaser.GameObjects.Text {
+  const label = target.add
+    .text(0, 0, "", {
+      color: "#ffe7a4",
+      fontFamily: "Georgia",
+      fontSize: "24px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 4,
+    })
+    .setOrigin(0.5)
+    .setActive(false)
+    .setVisible(false);
+
+  addToArenaEffectsLayer(target, label);
+
+  return label;
+}
+
+function releaseFloatingTextLabel(target: Phaser.Scene, label: Phaser.GameObjects.Text): void {
+  label.setActive(false).setVisible(false).setAlpha(1);
+  getArenaEffectPools(target).floatingLabels.push(label);
+}
+
+function acquireSlashArc(target: Phaser.Scene): Phaser.GameObjects.Graphics {
+  const pool = getArenaEffectPools(target).slashArcs;
+  const slash = pool.pop() ?? createPooledSlashArc(target);
+
+  target.tweens.killTweensOf(slash);
+  slash.clear();
+  slash.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return slash;
+}
+
+function createPooledSlashArc(target: Phaser.Scene): Phaser.GameObjects.Graphics {
+  const slash = target.add.graphics().setActive(false).setVisible(false);
+
+  addToArenaEffectsLayer(target, slash);
+
+  return slash;
+}
+
+function releaseSlashArc(target: Phaser.Scene, slash: Phaser.GameObjects.Graphics): void {
+  slash.clear();
+  slash.setActive(false).setVisible(false).setAlpha(1);
+  getArenaEffectPools(target).slashArcs.push(slash);
+}
+
+function acquireBlockPopupIcon(target: Phaser.Scene): Phaser.GameObjects.Image {
+  const pool = getArenaEffectPools(target).blockIcons;
+  const icon = pool.pop() ?? createPooledBlockPopupIcon(target);
+
+  target.tweens.killTweensOf(icon);
+  icon.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return icon;
+}
+
+function createPooledBlockPopupIcon(target: Phaser.Scene): Phaser.GameObjects.Image {
+  const icon = target.add
+    .image(0, 0, DAMAGE_BLOCK_ICON_ASSET_KEY)
+    .setOrigin(0.5)
+    .setActive(false)
+    .setVisible(false);
+
+  addToArenaEffectsLayer(target, icon);
+
+  return icon;
+}
+
+function releaseBlockPopupIcon(target: Phaser.Scene, icon: Phaser.GameObjects.Image): void {
+  icon.setActive(false).setVisible(false).setAlpha(1);
+  getArenaEffectPools(target).blockIcons.push(icon);
+}
+
+function acquireArmorAbsorbPopup(target: Phaser.Scene): ArenaIconTextPopupVisual {
+  const pool = getArenaEffectPools(target).armorAbsorbPopups;
+  const popup = pool.pop() ?? createIconTextPopup(target, DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, -10, {
+    color: "#f7fbff",
+    fontFamily: "Georgia",
+    fontSize: "28px",
+    fontStyle: "900",
+    stroke: "#1b3040",
+    strokeThickness: 5,
+  });
+
+  resetIconTextPopup(target, popup);
+
+  return popup;
+}
+
+function releaseArmorAbsorbPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
+  releaseIconTextPopup(target, popup, getArenaEffectPools(target).armorAbsorbPopups);
+}
+
+function acquireArmorBreakPopup(target: Phaser.Scene): ArenaIconTextPopupVisual {
+  const pool = getArenaEffectPools(target).armorBreakPopups;
+  const popup = pool.pop() ?? createIconTextPopup(target, DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, -8, {
+    color: "#fff4cf",
+    fontFamily: "Georgia",
+    fontSize: "30px",
+    fontStyle: "900",
+    stroke: "#35180d",
+    strokeThickness: 5,
+  });
+
+  resetIconTextPopup(target, popup);
+
+  return popup;
+}
+
+function releaseArmorBreakPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
+  releaseIconTextPopup(target, popup, getArenaEffectPools(target).armorBreakPopups);
+}
+
+function acquireDamageIconPopup(target: Phaser.Scene): ArenaIconTextPopupVisual {
+  const pool = getArenaEffectPools(target).damageIconPopups;
+  const popup = pool.pop() ?? createIconTextPopup(target, DAMAGE_HIT_ICON_ASSET_KEY, -2, {
+    color: "#fff4cf",
+    fontFamily: "Georgia",
+    fontSize: "30px",
+    fontStyle: "900",
+    stroke: "#35180d",
+    strokeThickness: 5,
+  });
+
+  resetIconTextPopup(target, popup);
+
+  return popup;
+}
+
+function releaseDamageIconPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
+  releaseIconTextPopup(target, popup, getArenaEffectPools(target).damageIconPopups);
+}
+
+function acquireDamageTextPopup(target: Phaser.Scene): ArenaTextPopupVisual {
+  const pool = getArenaEffectPools(target).damageTextPopups;
+  const popup = pool.pop() ?? createDamageTextPopup(target);
+
+  target.tweens.killTweensOf(popup.container);
+  popup.container.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return popup;
+}
+
+function createDamageTextPopup(target: Phaser.Scene): ArenaTextPopupVisual {
+  const container = target.add.container(0, 0).setDepth(40).setActive(false).setVisible(false);
+  const label = target.add
+    .text(0, -2, "", {
+      color: "#fff4cf",
+      fontFamily: "Georgia",
+      fontSize: "30px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 5,
+    })
+    .setOrigin(0.5);
+
+  container.add(label);
+  addToArenaEffectsLayer(target, container);
+
+  return { container, label };
+}
+
+function releaseDamageTextPopup(target: Phaser.Scene, popup: ArenaTextPopupVisual): void {
+  popup.container.setActive(false).setVisible(false).setAlpha(1);
+  getArenaEffectPools(target).damageTextPopups.push(popup);
+}
+
+function createIconTextPopup(
+  target: Phaser.Scene,
+  textureKey: string,
+  labelY: number,
+  labelStyle: Phaser.Types.GameObjects.Text.TextStyle,
+): ArenaIconTextPopupVisual {
+  const container = target.add.container(0, 0).setDepth(40).setActive(false).setVisible(false);
+  const icon = target.add.image(0, 0, textureKey).setOrigin(0.5);
+  const label = target.add.text(0, labelY, "", labelStyle).setOrigin(0.5);
+
+  container.add([icon, label]);
+  addToArenaEffectsLayer(target, container);
+
+  return { container, icon, label };
+}
+
+function resetIconTextPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
+  target.tweens.killTweensOf(popup.container);
+  popup.container.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+}
+
+function releaseIconTextPopup(
+  target: Phaser.Scene,
+  popup: ArenaIconTextPopupVisual,
+  pool: ArenaIconTextPopupVisual[],
+): void {
+  popup.container.setActive(false).setVisible(false).setAlpha(1);
+  pool.push(popup);
+}
+
+function acquireDamageBurstPopup(target: Phaser.Scene): ArenaDamageBurstPopupVisual {
+  const pool = getArenaEffectPools(target).damageBurstPopups;
+  const popup = pool.pop() ?? createDamageBurstPopup(target);
+
+  target.tweens.killTweensOf(popup.container);
+  popup.container.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return popup;
+}
+
+function createDamageBurstPopup(target: Phaser.Scene): ArenaDamageBurstPopupVisual {
+  const container = target.add.container(0, 0).setDepth(40).setActive(false).setVisible(false);
+  const shadow = target.add.graphics();
+  const burst = target.add.graphics();
+  const label = target.add
+    .text(0, -2, "", {
+      color: "#fff4cf",
+      fontFamily: "Georgia",
+      fontSize: "30px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 5,
+    })
+    .setOrigin(0.5);
+
+  drawDamageBurst(shadow, 4, 5, 0x35180d, 0.92);
+  drawDamageBurst(burst, 0, 0, 0xd52b1f, 1);
+  container.add([shadow, burst, label]);
+  addToArenaEffectsLayer(target, container);
+
+  return { container, shadow, burst, label };
+}
+
+function releaseDamageBurstPopup(target: Phaser.Scene, popup: ArenaDamageBurstPopupVisual): void {
+  popup.container.setActive(false).setVisible(false).setAlpha(1);
+  getArenaEffectPools(target).damageBurstPopups.push(popup);
+}
+
+function acquireDustDot(target: Phaser.Scene): Phaser.GameObjects.Arc {
+  const pool = getArenaEffectPools(target).dustDots;
+  const dot = pool.pop() ?? createPooledDustDot(target);
+
+  target.tweens.killTweensOf(dot);
+  dot.setActive(true).setVisible(true).setAlpha(0.72).setScale(1);
+
+  return dot;
+}
+
+function createPooledDustDot(target: Phaser.Scene): Phaser.GameObjects.Arc {
+  const dot = target.add.circle(0, 0, 1, 0xf0bd72, 0.72).setActive(false).setVisible(false);
+
+  addToArenaEffectsLayer(target, dot);
+
+  return dot;
+}
+
+function releaseDustDot(target: Phaser.Scene, dot: Phaser.GameObjects.Arc): void {
+  dot.setActive(false).setVisible(false).setAlpha(0.72);
+  getArenaEffectPools(target).dustDots.push(dot);
+}
+
+function showSlashArc(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  actionId: AttackBodyAnimationKey,
+  direction: "left" | "right",
+  playerSettings = getPlayerSettings(),
+): void {
+  if (!areArenaVfxEnabled(playerSettings)) {
     return;
   }
 
@@ -5523,7 +5923,7 @@ function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: Atta
   const visualScale = Math.max(0.65, Math.min(1.45, actor.debugScale / 0.3));
   const x = actor.body.x + sign * config.offsetX * visualScale;
   const y = actor.body.y + config.offsetY * visualScale;
-  const slash = target.add.graphics();
+  const slash = acquireSlashArc(target);
 
   slash.setPosition(x, y);
   slash.setDepth(SLASH_ARC_DEPTH);
@@ -5533,7 +5933,6 @@ function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: Atta
   slash.setScale(sign * 0.82 * visualScale, 0.82 * visualScale);
 
   drawSlashArc(slash, config);
-  addToArenaEffectsLayer(target, slash);
 
   target.tweens.add({
     targets: slash,
@@ -5543,7 +5942,7 @@ function showSlashArc(target: Phaser.Scene, actor: FighterVisual, actionId: Atta
     angle: slash.angle + config.sweep * sign,
     duration: config.duration,
     ease: "Quad.easeOut",
-    onComplete: () => slash.destroy(),
+    onComplete: () => releaseSlashArc(target, slash),
   });
 }
 
@@ -5568,18 +5967,11 @@ function showFloatingText(target: Phaser.Scene, x: number, y: number, text: stri
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = 1 / layerScale;
   const liftY = 48 / layerScale;
-  const label = target.add
-    .text(x, y, text, {
-      color,
-      fontFamily: "Georgia",
-      fontSize: "24px",
-      fontStyle: "900",
-      stroke: "#35180d",
-      strokeThickness: 4,
-    })
-    .setOrigin(0.5);
+  const label = acquireFloatingTextLabel(target);
 
-  addToArenaEffectsLayer(target, label);
+  label.setPosition(x, y);
+  setPhaserTextIfChanged(label, text);
+  label.setColor(color);
   label.setScale(fixedScreenScale);
   target.tweens.add({
     targets: label,
@@ -5587,7 +5979,7 @@ function showFloatingText(target: Phaser.Scene, x: number, y: number, text: stri
     alpha: 0,
     duration: 720,
     ease: "Quad.easeOut",
-    onComplete: () => label.destroy(),
+    onComplete: () => releaseFloatingTextLabel(target, label),
   });
 }
 
@@ -5624,14 +6016,20 @@ function showBlockPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual,
   showBlockPopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y);
 }
 
-function showDamagePopupFromFighter(target: Phaser.Scene, fighter: FighterVisual, amount: number, screenOffsetX = 0): void {
+function showDamagePopupFromFighter(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  amount: number,
+  screenOffsetX = 0,
+  playerSettings = getPlayerSettings(),
+): void {
   if (amount <= 0) {
     return;
   }
 
   const point = getFighterHeadPopupPoint(target, fighter, getDamagePopupHeadOffsetY());
 
-  showDamagePopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y, amount);
+  showDamagePopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y, amount, playerSettings);
 }
 
 function showDamageResultPopupFromFighter(
@@ -5640,6 +6038,7 @@ function showDamageResultPopupFromFighter(
   totalDamage: number,
   armorAbsorbed: number,
   armorBroken: boolean,
+  playerSettings = getPlayerSettings(),
 ): void {
   if (armorBroken) {
     showArmorBreakPopupFromFighter(target, fighter, totalDamage);
@@ -5651,7 +6050,7 @@ function showDamageResultPopupFromFighter(
     return;
   }
 
-  showDamagePopupFromFighter(target, fighter, getHealthPopupDamage(totalDamage, armorAbsorbed));
+  showDamagePopupFromFighter(target, fighter, getHealthPopupDamage(totalDamage, armorAbsorbed), 0, playerSettings);
 }
 
 function showArmorAbsorbPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual, amount: number, screenOffsetX = 0): void {
@@ -5735,9 +6134,10 @@ function showBlockPopup(target: Phaser.Scene, x: number, y: number): void {
   const sourceWidth = Math.max(1, source?.width ?? 256);
   const endScale = (BLOCK_POPUP_SCREEN_SIZE / sourceWidth) * fixedScreenScale * popupScale;
   const startScale = endScale * 0.72;
-  const icon = target.add.image(x, y, DAMAGE_BLOCK_ICON_ASSET_KEY).setOrigin(0.5).setDepth(40);
+  const icon = acquireBlockPopupIcon(target);
 
-  addToArenaEffectsLayer(target, icon);
+  icon.setPosition(x, y);
+  icon.setDepth(40);
   icon.setScale(startScale);
   icon.setAngle(-5);
 
@@ -5756,7 +6156,7 @@ function showBlockPopup(target: Phaser.Scene, x: number, y: number): void {
     duration: 720,
     delay: 160,
     ease: "Quad.easeOut",
-    onComplete: () => icon.destroy(),
+    onComplete: () => releaseBlockPopupIcon(target, icon),
   });
 }
 
@@ -5773,27 +6173,16 @@ function showArmorAbsorbPopup(target: Phaser.Scene, x: number, y: number, amount
   const endScale = fixedScreenScale * popupScale;
   const startScale = endScale * 0.72;
   const liftY = 36 / layerScale;
-  const popup = target.add.container(x, y).setDepth(40);
-  const icon = target.add.image(0, 0, DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY).setOrigin(0.5);
-  const label = target.add
-    .text(0, -10, `${amount}`, {
-      color: "#f7fbff",
-      fontFamily: "Georgia",
-      fontSize: "28px",
-      fontStyle: "900",
-      stroke: "#1b3040",
-      strokeThickness: 5,
-    })
-    .setOrigin(0.5);
+  const popup = acquireArmorAbsorbPopup(target);
 
-  icon.setScale(DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE / sourceWidth);
-  popup.add([icon, label]);
-  addToArenaEffectsLayer(target, popup);
-  popup.setScale(startScale);
-  popup.setAngle(-3);
+  popup.container.setPosition(x, y).setDepth(40);
+  setPhaserTextIfChanged(popup.label, `${amount}`);
+  popup.icon.setScale(DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE / sourceWidth);
+  popup.container.setScale(startScale);
+  popup.container.setAngle(-3);
 
   target.tweens.add({
-    targets: popup,
+    targets: popup.container,
     scale: endScale,
     angle: 2,
     duration: 140,
@@ -5801,13 +6190,13 @@ function showArmorAbsorbPopup(target: Phaser.Scene, x: number, y: number, amount
   });
 
   target.tweens.add({
-    targets: popup,
+    targets: popup.container,
     y: y - liftY,
     alpha: 0,
     duration: 700,
     delay: 180,
     ease: "Quad.easeIn",
-    onComplete: () => popup.destroy(),
+    onComplete: () => releaseArmorAbsorbPopup(target, popup),
   });
 }
 
@@ -5824,27 +6213,16 @@ function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount:
   const sourceWidth = Math.max(1, source?.width ?? 256);
   const endScale = fixedScreenScale * popupScale;
   const startScale = endScale * 0.7;
-  const popup = target.add.container(x, y).setDepth(40);
-  const icon = target.add.image(0, 0, DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY).setOrigin(0.5);
-  const label = target.add
-    .text(0, -8, `${amount}`, {
-      color: "#fff4cf",
-      fontFamily: "Georgia",
-      fontSize: "30px",
-      fontStyle: "900",
-      stroke: "#35180d",
-      strokeThickness: 5,
-    })
-    .setOrigin(0.5);
+  const popup = acquireArmorBreakPopup(target);
 
-  icon.setScale(DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE / sourceWidth);
-  popup.add([icon, label]);
-  addToArenaEffectsLayer(target, popup);
-  popup.setScale(startScale);
-  popup.setAngle(-6);
+  popup.container.setPosition(x, y).setDepth(40);
+  setPhaserTextIfChanged(popup.label, `${amount}`);
+  popup.icon.setScale(DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE / sourceWidth);
+  popup.container.setScale(startScale);
+  popup.container.setAngle(-6);
 
   target.tweens.add({
-    targets: popup,
+    targets: popup.container,
     scale: endScale,
     angle: 3,
     duration: 150,
@@ -5852,73 +6230,69 @@ function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount:
   });
 
   target.tweens.add({
-    targets: popup,
+    targets: popup.container,
     y: y - liftY,
     alpha: 0,
     duration: 760,
     delay: 180,
     ease: "Quad.easeOut",
-    onComplete: () => popup.destroy(),
+    onComplete: () => releaseArmorBreakPopup(target, popup),
   });
 }
 
-function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {
-  const useBurst = areArenaVfxEnabled();
+function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number, playerSettings = getPlayerSettings()): void {
+  const useBurst = areArenaVfxEnabled(playerSettings);
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = 1 / layerScale;
   const popupScale = getDamagePopupScale();
   const startScale = (useBurst ? 0.58 : 0.9) * fixedScreenScale * popupScale;
   const endScale = fixedScreenScale * popupScale;
   const liftY = 34 / layerScale;
-  const popup = target.add.container(x, y).setDepth(40);
-  const label = target.add
-    .text(0, -2, `${amount}`, {
-      color: "#fff4cf",
-      fontFamily: "Georgia",
-      fontSize: "30px",
-      fontStyle: "900",
-      stroke: "#35180d",
-      strokeThickness: 5,
-    })
-    .setOrigin(0.5);
+  let popupContainer: Phaser.GameObjects.Container;
+  let releasePopup: () => void;
 
   if (useBurst && target.textures.exists(DAMAGE_HIT_ICON_ASSET_KEY)) {
     const source = target.textures.get(DAMAGE_HIT_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
     const sourceWidth = Math.max(1, source?.width ?? 256);
-    const icon = target.add.image(0, 0, DAMAGE_HIT_ICON_ASSET_KEY).setOrigin(0.5);
+    const popup = acquireDamageIconPopup(target);
 
-    icon.setScale(DAMAGE_HIT_POPUP_SCREEN_SIZE / sourceWidth);
-    popup.add([icon, label]);
+    setPhaserTextIfChanged(popup.label, `${amount}`);
+    popup.icon.setScale(DAMAGE_HIT_POPUP_SCREEN_SIZE / sourceWidth);
+    popupContainer = popup.container;
+    releasePopup = () => releaseDamageIconPopup(target, popup);
   } else if (useBurst) {
-    const shadow = target.add.graphics();
-    const burst = target.add.graphics();
+    const popup = acquireDamageBurstPopup(target);
 
-    drawDamageBurst(shadow, 4, 5, 0x35180d, 0.92);
-    drawDamageBurst(burst, 0, 0, 0xd52b1f, 1);
-    popup.add([shadow, burst, label]);
+    setPhaserTextIfChanged(popup.label, `${amount}`);
+    popupContainer = popup.container;
+    releasePopup = () => releaseDamageBurstPopup(target, popup);
   } else {
-    popup.add(label);
+    const popup = acquireDamageTextPopup(target);
+
+    setPhaserTextIfChanged(popup.label, `${amount}`);
+    popupContainer = popup.container;
+    releasePopup = () => releaseDamageTextPopup(target, popup);
   }
 
-  addToArenaEffectsLayer(target, popup);
-  popup.setScale(startScale);
-  popup.setAngle(useBurst ? -4 : 0);
+  popupContainer.setPosition(x, y).setDepth(40);
+  popupContainer.setScale(startScale);
+  popupContainer.setAngle(useBurst ? -4 : 0);
 
   target.tweens.add({
-    targets: popup,
+    targets: popupContainer,
     scale: endScale,
     duration: 130,
     ease: "Back.easeOut",
   });
 
   target.tweens.add({
-    targets: popup,
+    targets: popupContainer,
     y: y - liftY,
     alpha: 0,
     duration: 680,
     delay: 180,
     ease: "Quad.easeIn",
-    onComplete: () => popup.destroy(),
+    onComplete: releasePopup,
   });
 }
 
@@ -5963,8 +6337,12 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
   }
 
   for (let i = 0; i < 7; i += 1) {
-    const dot = target.add.circle(x + Math.random() * 36 - 18, y + Math.random() * 16, 5 + Math.random() * 7, 0xf0bd72, 0.72);
-    addToArenaEffectsLayer(target, dot);
+    const radius = 5 + Math.random() * 7;
+    const dot = acquireDustDot(target);
+
+    dot.setPosition(x + Math.random() * 36 - 18, y + Math.random() * 16);
+    dot.setRadius(radius);
+    dot.setFillStyle(0xf0bd72, 0.72);
 
     target.tweens.add({
       targets: dot,
@@ -5972,13 +6350,13 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
       y: dot.y - 26 - Math.random() * 24,
       alpha: 0,
       duration: 480 + Math.random() * 180,
-      onComplete: () => dot.destroy(),
+      onComplete: () => releaseDustDot(target, dot),
     });
   }
 }
 
-function getArenaAnimationAmount(): number {
-  const { animationMode } = getPlayerSettings();
+function getArenaAnimationAmount(playerSettings = getPlayerSettings()): number {
+  const { animationMode } = playerSettings;
 
   if (animationMode === "off") {
     return 0;
@@ -5987,11 +6365,11 @@ function getArenaAnimationAmount(): number {
   return animationMode === "half" ? 0.5 : 1;
 }
 
-function areArenaVfxEnabled(): boolean {
-  return getPlayerSettings().vfxEnabled;
+function areArenaVfxEnabled(playerSettings = getPlayerSettings()): boolean {
+  return playerSettings.vfxEnabled;
 }
 
-function getArenaShadowMode(): ReturnType<typeof getPlayerSettings>["shadowMode"] {
+function getArenaShadowMode(): PlayerSettings["shadowMode"] {
   return getPlayerSettings().shadowMode;
 }
 
