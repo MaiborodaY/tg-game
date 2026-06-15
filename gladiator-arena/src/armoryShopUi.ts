@@ -118,6 +118,7 @@ const ARMORY_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
 
 const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {
   weaponMain: 0,
+  weaponBow: 0,
   helmet: 0,
   breastplate: 0,
   backShoulderguard: 0,

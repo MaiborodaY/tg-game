@@ -180,6 +180,7 @@ type FacePartKey = (typeof facePartKeys)[number];
 
 const equipmentSlotKeys = [
   "weaponMain",
+  "weaponBow",
   "helmet",
   "breastplate",
   "backShoulderguard",
@@ -2762,12 +2763,12 @@ function getEquipmentAssetLowSourcePrefix(kind: GeneratedEquipmentJsonRecord["ki
 }
 
 function validateGeneratedEquipmentSlot(kind: GeneratedEquipmentJsonRecord["kind"], equipmentSlot: EquipmentSlotKey): void {
-  if (kind === "weapon" && equipmentSlot !== "weaponMain") {
-    throw new Error("Promoted weapon item must use weaponMain slot.");
+  if (kind === "weapon" && equipmentSlot !== "weaponMain" && equipmentSlot !== "weaponBow") {
+    throw new Error("Promoted weapon item must use weaponMain or weaponBow slot.");
   }
 
-  if (kind === "armor" && equipmentSlot === "weaponMain") {
-    throw new Error("Promoted armor item cannot use weaponMain slot.");
+  if (kind === "armor" && (equipmentSlot === "weaponMain" || equipmentSlot === "weaponBow")) {
+    throw new Error("Promoted armor item cannot use weapon slots.");
   }
 }
 

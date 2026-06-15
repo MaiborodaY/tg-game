@@ -325,8 +325,11 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionWheelMode, "distance");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedClassicActionButton, "forward");
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.forward.x, 60);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.distance.switchWeapon.y, -130);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.medium.y, -200);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.clinch.switchWeapon.y, -92);
   assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.rest.x, -30);
+  assert.equal(debugTuningModule.defaultDebugTuning.classicActionButtonSlots.bowDistance.switchWeapon.y, -82);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetX, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudOffsetY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.classicHudScale, 1);
@@ -347,6 +350,35 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyArcAngle, -108);
   assert.equal(debugTuningModule.defaultDebugTuning.actionTauntArcAngle, 28);
   assert.equal(debugTuningModule.defaultDebugTuning.actionRestArcAngle, 106);
+});
+
+test("debug tuning lifts saved classic switch buttons out of the hidden wheel area", () => {
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    classicActionButtonSlots: {
+      distance: {
+        switchWeapon: { x: 0, y: 18, rotation: 0 },
+      },
+      clinch: {
+        switchWeapon: { x: 0, y: 18, rotation: 0 },
+      },
+      bowDistance: {
+        switchWeapon: { x: 0, y: 18, rotation: 0 },
+      },
+    },
+  });
+
+  assert.deepEqual(
+    normalized.classicActionButtonSlots.distance.switchWeapon,
+    debugTuningModule.DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS.distance.switchWeapon,
+  );
+  assert.deepEqual(
+    normalized.classicActionButtonSlots.clinch.switchWeapon,
+    debugTuningModule.DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS.clinch.switchWeapon,
+  );
+  assert.deepEqual(
+    normalized.classicActionButtonSlots.bowDistance.switchWeapon,
+    debugTuningModule.DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS.bowDistance.switchWeapon,
+  );
 });
 
 test("debug tuning exposes dedicated bow shot, damage hit, and block body animations", () => {

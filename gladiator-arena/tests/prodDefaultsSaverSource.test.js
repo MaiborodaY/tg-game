@@ -292,7 +292,7 @@ test("vite dev middleware can promote weapon equipment into the weapon shop", ()
   assert.match(source, /assets\/fighters\/weapons\//);
   assert.match(source, /weaponProduct/);
   assert.match(source, /getWeaponCategoryId/);
-  assert.match(source, /Promoted weapon item must use weaponMain slot/);
+  assert.match(source, /Promoted weapon item must use weaponMain or weaponBow slot/);
   assert.match(generatedSource, /GeneratedWeaponProduct/);
   assert.match(generatedSource, /GENERATED_WEAPON_PRODUCTS/);
   assert.match(weaponShopSource, /GENERATED_WEAPON_PRODUCTS/);

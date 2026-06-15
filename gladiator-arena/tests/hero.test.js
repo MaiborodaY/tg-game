@@ -58,7 +58,7 @@ const generatedItems = {
     kind: "weapon",
     rarity: "common",
     weaponClass: "bow",
-    equipmentSlot: "weaponMain",
+    equipmentSlot: "weaponBow",
     damageBonus: 5,
     requirements: { agility: 10 },
   },
@@ -157,6 +157,7 @@ test("equipment catalog is sourced from generated items", () => {
 });
 
 test("hero starts with empty equipment including gloves and wrists", () => {
+  assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("weaponBow"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backWrist"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontWrist"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backGlove"), true);
@@ -166,6 +167,7 @@ test("hero starts with empty equipment including gloves and wrists", () => {
   assert.equal(hero.createDefaultHeroEquipment().frontWrist, null);
   assert.equal(hero.createDefaultHeroEquipment().backGlove, null);
   assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
+  assert.equal(hero.createDefaultHeroEquipment().weaponBow, null);
   assert.deepEqual([...hero.createDefaultHero().defeatedArenaBossIds], []);
 });
 
@@ -230,7 +232,7 @@ test("weapon class defaults to sword and can be inferred for generated weapons",
       id: "generated_equipment_weapon_bow_01",
       name: "Bow 01",
       kind: "weapon",
-      equipmentSlot: "weaponMain",
+      equipmentSlot: "weaponBow",
       damageBonus: 1,
     }),
     "bow",
@@ -619,7 +621,8 @@ test("weapon requirements block bow purchases until agility is high enough", () 
 
   assert.equal(hero.canHeroEquipItems(agileHero, ["generated_equipment_weapon_bow_01"]), true);
   assert.equal(nextHero.gold, 50);
-  assert.equal(nextHero.equipment.weaponMain, "generated_equipment_weapon_bow_01");
+  assert.equal(nextHero.equipment.weaponMain, null);
+  assert.equal(nextHero.equipment.weaponBow, "generated_equipment_weapon_bow_01");
   assert.equal(hero.deriveHeroStats(nextHero).weaponDamageBonus, 5);
 });
 
@@ -682,7 +685,7 @@ test("bow capacity upgrade costs gold and expands combat shots", () => {
     ...baseHero,
     equipment: {
       ...baseHero.equipment,
-      weaponMain: "generated_equipment_weapon_bow_01",
+      weaponBow: "generated_equipment_weapon_bow_01",
     },
   };
   const defaultCombatState = hero.createCombatStateFromHero(bowHero, 1);
@@ -706,7 +709,7 @@ test("bow capacity upgrade costs gold and expands combat shots", () => {
     ...upgradedHero,
     equipment: {
       ...upgradedHero.equipment,
-      weaponMain: "generated_equipment_weapon_bow_01",
+      weaponBow: "generated_equipment_weapon_bow_01",
     },
   };
   const upgradedCombatState = hero.createCombatStateFromHero(upgradedBowHero, 1);

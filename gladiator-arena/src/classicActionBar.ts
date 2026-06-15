@@ -4,11 +4,11 @@ import {
   actionOrder,
   actions,
   canUseAction,
+  canFighterSwitchWeapon,
   distanceBand,
   getFighterShurikenCount,
   getFighterClinchRange,
   getActionTitle,
-  isBowFighter,
   isFighterInClinchRange,
   isRangedFighter,
   type ActionId,
@@ -50,6 +50,7 @@ const CLASSIC_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "forward", x: -44, y: -104, rotation: -10 },
   { actionId: "lunge", x: 44, y: -104, rotation: 10 },
   { actionId: "back", x: -88, y: -38, rotation: -12 },
+  { actionId: "switchWeapon", x: -104, y: -96, rotation: -16 },
   { actionId: "shuriken", x: 88, y: -92, rotation: 12 },
   { actionId: "taunt", x: 0, y: -54, rotation: 0 },
   { actionId: "rest", x: 88, y: -38, rotation: 12 },
@@ -60,6 +61,7 @@ const CLASSIC_CLINCH_SLOTS: ClassicActionSlot[] = [
   { actionId: "medium", x: 0, y: -128, rotation: 0 },
   { actionId: "heavy", x: 76, y: -112, rotation: 14 },
   { actionId: "back", x: -90, y: -38, rotation: -12 },
+  { actionId: "switchWeapon", x: -140, y: -86, rotation: -18 },
   { actionId: "shuriken", x: 90, y: -88, rotation: 12 },
   { actionId: "taunt", x: 0, y: -50, rotation: 0 },
   { actionId: "rest", x: 90, y: -38, rotation: 12 },
@@ -70,7 +72,7 @@ const CLASSIC_BOW_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "medium", x: 0, y: -132, rotation: 0 },
   { actionId: "heavy", x: 78, y: -116, rotation: 14 },
   { actionId: "back", x: -118, y: -36, rotation: -14 },
-  { actionId: "switchWeapon", x: -78, y: -58, rotation: -10 },
+  { actionId: "switchWeapon", x: -130, y: -78, rotation: -16 },
   { actionId: "shuriken", x: 78, y: -58, rotation: 10 },
   { actionId: "taunt", x: 40, y: -52, rotation: 6 },
   { actionId: "rest", x: 118, y: -36, rotation: 14 },
@@ -359,7 +361,7 @@ function getClassicActionSlots(wheelMode: ClassicWheelMode, state: CombatState, 
 
 function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId): boolean {
   if (actionId === "switchWeapon") {
-    return isBowFighter(state.player);
+    return canFighterSwitchWeapon(state.player);
   }
 
   if (actionId === "shuriken") {

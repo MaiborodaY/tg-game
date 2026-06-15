@@ -176,22 +176,18 @@ test("weapon shop product cards use the damage icon instead of a DM label", () =
   assert.match(weaponShopSource, /statIcon\.className = "armory-shop__product-stat-icon";[\s\S]*statIcon\.src = statIconUrl;[\s\S]*statValue\.textContent = String\(stat\);/);
 });
 
-test("weapon shop consumable cards show purchase unit and owned cap badges", () => {
+test("weapon shop consumable cards show owned cap badge", () => {
   assert.equal(weaponShopSource.includes("areHeroItemsConsumable"), true);
   assert.equal(weaponShopSource.includes("getHeroItemQuantity"), true);
   assert.equal(weaponShopSource.includes("getHeroConsumableMaxQuantity"), true);
   assert.equal(weaponShopSource.includes("const consumableInfo = getConsumableCardInfo(hero, product.itemIds);"), true);
   assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--consumable", Boolean(consumableInfo));'), true);
   assert.match(weaponShopSource, /if \(consumableInfo\) \{[\s\S]*button\.append\(createConsumableCardBadges\(consumableInfo\)\);[\s\S]*\}/);
-  assert.equal(weaponShopSource.includes('unitPrefix.className = "armory-shop__product-consumable-prefix";'), true);
-  assert.equal(weaponShopSource.includes('unitPrefix.textContent = "x";'), true);
-  assert.equal(weaponShopSource.includes('unitAmount.className = "armory-shop__product-consumable-amount";'), true);
-  assert.equal(weaponShopSource.includes('unitAmount.textContent = "1";'), true);
+  assert.equal(weaponShopSource.includes("armory-shop__product-consumable-unit"), false);
+  assert.equal(weaponShopSource.includes("armory-shop__product-consumable-prefix"), false);
+  assert.equal(weaponShopSource.includes("armory-shop__product-consumable-amount"), false);
   assert.equal(weaponShopSource.includes("quantity.textContent = `${info.quantity}/${info.maxQuantity}`;"), true);
   assert.equal(stylesSource.includes(".armory-shop__product-consumable-badges"), true);
-  assert.equal(stylesSource.includes(".armory-shop__product-consumable-unit"), true);
-  assert.equal(stylesSource.includes(".armory-shop__product-consumable-prefix"), true);
-  assert.equal(stylesSource.includes(".armory-shop__product-consumable-amount"), true);
   assert.equal(stylesSource.includes(".armory-shop__product-consumable-quantity"), true);
 });
 
@@ -207,6 +203,20 @@ test("weapon shop consumable confirm strip shows unit purchase and flat damage",
   assert.equal(weaponShopSource.includes("if (comparesStat && currentStat !== stat)"), true);
   assert.equal(stylesSource.includes(".armory-shop__selected-unit"), true);
   assert.equal(stylesSource.includes(".armory-shop__selected-buy--unit"), false);
+});
+
+test("weapon shop purchase keeps the selected product preview open", () => {
+  const start = weaponShopSource.indexOf("function createPreviewBuyButton");
+  const end = weaponShopSource.indexOf("function createBowCapacityUpgrade", start);
+  const previewBuyButtonSource = weaponShopSource.slice(start, end);
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  assert.match(
+    previewBuyButtonSource,
+    /button\.addEventListener\("click", \(\) => \{\s*options\.onBuy\(product\);\s*render\(\);\s*\}\);/,
+  );
+  assert.equal(previewBuyButtonSource.includes("previewProduct = undefined"), false);
 });
 
 test("weapon shop locked products are dimmed and show centered stat requirement ribbons", () => {

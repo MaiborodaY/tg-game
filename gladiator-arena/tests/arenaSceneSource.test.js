@@ -53,7 +53,7 @@ test("paper doll draws equipment through ordered anchored layers", () => {
   assert.equal(arenaSceneSource.includes('partKey === "frontHand"'), true);
   assert.equal(arenaSceneSource.includes("rootContainer.add(layers.arms);"), true);
   assert.equal(arenaSceneSource.includes("rootContainer.add(layers.weaponTop);"), true);
-  assert.equal(arenaSceneSource.includes('slotKey === "weaponMain"'), true);
+  assert.equal(arenaSceneSource.includes('return slotKey === "weaponMain" || slotKey === "weaponBow";'), true);
   assert.equal(arenaSceneSource.includes("return layers.weapon;"), true);
   assert.equal(arenaSceneSource.includes('slotKey === "breastplate"'), true);
   assert.equal(arenaSceneSource.includes("return layers.torso;"), true);
@@ -89,7 +89,7 @@ test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("faceParts.eyeLeftCover = part(leftCover);"), true);
   assert.equal(arenaSceneSource.includes("faceParts.eyeRightCover = part(rightCover);"), true);
   assert.equal(arenaSceneSource.includes("Object.values(shadow.faceParts).forEach((facePart) => setFighterPartVisible(facePart, false));"), true);
-  assert.equal(arenaSceneSource.includes('slotKey === "weaponMain" && Boolean(visibility?.[slotKey])'), true);
+  assert.equal(arenaSceneSource.includes("isPaperDollWeaponSlot(slotKey) && Boolean(visibility?.[slotKey])"), true);
   assert.equal(arenaSceneSource.includes("function shouldSyncPaperDollShadowEquipment("), true);
   assert.equal(arenaSceneSource.includes("return Boolean(rig.shadow?.root.visible);"), true);
   assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment && shadow\) \{[\s\S]*tintPaperDollShadowObject\(shadow\.root\)[\s\S]*\}/);

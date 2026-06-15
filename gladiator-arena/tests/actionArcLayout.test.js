@@ -38,6 +38,9 @@ function loadActionArcLayoutModule() {
         if (id === "./combat") {
           return {
             MAX_STAMINA: 10,
+            canFighterSwitchWeapon: (fighter) =>
+              (fighter?.weaponClass === "bow" || (fighter?.bowWeaponClass === "bow" && (fighter?.bowShotsRemaining ?? 0) > 0)) &&
+              (fighter?.mainWeaponClass ?? "sword") !== "bow",
             getFighterShurikenCount: (fighter) => Math.max(0, fighter?.shurikenCount ?? 0),
             isBowFighter: (fighter) => fighter?.weaponClass === "bow",
             isFighterInClinchRange: (state, actor) => state.distance <= Math.max(0, state[actor]?.clinchRangeBonus ?? 0),
@@ -108,7 +111,26 @@ test("bow distance arc shows ranged attacks instead of lunge", () => {
   assert.equal(labels.light, "SHOT");
   assert.equal(labels.medium, "AIM");
   assert.equal(labels.heavy, "POWER");
-  assert.equal(labels.switchWeapon, "SWAP");
+  assert.equal(labels.switchWeapon, "MELEE");
+});
+
+test("main weapon distance arc can switch to equipped bow", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, {
+    player: {
+      stamina: 10,
+      weaponClass: "sword",
+      mainWeaponClass: "sword",
+      bowWeaponClass: "bow",
+      bowShotsRemaining: 5,
+    },
+  }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["forward", "back", "lunge", "switchWeapon", "taunt"],
+  );
+  assert.equal(labels.switchWeapon, "BOW");
 });
 
 test("shuriken consumables add a throw button without making the fighter ranged", () => {

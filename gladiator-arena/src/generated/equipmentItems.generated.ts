@@ -861,8 +861,8 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_axe_01","name":"Axe 01","price":0,"itemIds":["generated_equipment_weapon_axe_01"],"categoryId":"axes"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"requirements":{"agility":10},"weaponClass":"bow"},
-    assetKeys: {"weaponMainAssetKey":"weapon-bow-01"},
+    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"requirements":{"agility":10},"weaponClass":"bow"},
+    assetKeys: {"weaponBowAssetKey":"weapon-bow-01"},
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-bow-01",

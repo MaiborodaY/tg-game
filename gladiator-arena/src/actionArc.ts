@@ -20,9 +20,9 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
 } from "./arenaLayout";
-import { SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL, SHOP_CATEGORY_SWORD_ICON_ASSET_URL } from "./assets";
+import { SHOP_CATEGORY_BOW_ICON_ASSET_URL, SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL, SHOP_CATEGORY_SWORD_ICON_ASSET_URL } from "./assets";
 import { getBattleSafeArea } from "./battleSafeArea";
-import { actionOrder, actions, canUseAction, getActionBlockChance, type ActionId, type CombatState } from "./combat";
+import { actionOrder, actions, canUseAction, getActionBlockChance, isBowFighter, type ActionId, type CombatState } from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
 import { getShopProductIconUrl } from "./shopItemIcons";
@@ -519,6 +519,16 @@ export function mountActionArc(
 }
 
 export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): string | undefined {
+  if (actionId === "switchWeapon") {
+    const targetItemId = isBowFighter(state.player) ? state.player.equipment?.weaponMain : state.player.equipment?.weaponBow;
+
+    return targetItemId
+      ? getShopProductIconUrl([targetItemId]) ?? (isBowFighter(state.player) ? SHOP_CATEGORY_SWORD_ICON_ASSET_URL : SHOP_CATEGORY_BOW_ICON_ASSET_URL)
+      : isBowFighter(state.player)
+        ? SHOP_CATEGORY_SWORD_ICON_ASSET_URL
+        : SHOP_CATEGORY_BOW_ICON_ASSET_URL;
+  }
+
   if (actionId !== "shuriken") {
     return undefined;
   }

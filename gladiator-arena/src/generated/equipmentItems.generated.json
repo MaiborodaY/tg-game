@@ -2335,9 +2335,9 @@
       "agility": 10
     },
     "weaponClass": "bow",
-    "equipmentSlot": "weaponMain",
+    "equipmentSlot": "weaponBow",
     "assetKeys": {
-      "weaponMainAssetKey": "weapon-bow-01"
+      "weaponBowAssetKey": "weapon-bow-01"
     },
     "equipmentTuning": {
       "x": -73,

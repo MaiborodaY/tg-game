@@ -14,7 +14,16 @@ import {
   GAME_WIDTH,
 } from "./arenaLayout";
 import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
-import { MAX_STAMINA, getFighterShurikenCount, isBowFighter, isFighterInClinchRange, isRangedFighter, type ActionId, type CombatState } from "./combat";
+import {
+  MAX_STAMINA,
+  canFighterSwitchWeapon,
+  getFighterShurikenCount,
+  isBowFighter,
+  isFighterInClinchRange,
+  isRangedFighter,
+  type ActionId,
+  type CombatState,
+} from "./combat";
 import { getStageLayout } from "./stageLayout";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
@@ -61,6 +70,7 @@ const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "forward" },
   { actionId: "back" },
   { actionId: "lunge" },
+  { actionId: "switchWeapon" },
   { actionId: "shuriken" },
   { actionId: "utility" },
 ];
@@ -80,6 +90,7 @@ const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "heavy" },
   { actionId: "medium" },
   { actionId: "light" },
+  { actionId: "switchWeapon" },
   { actionId: "shuriken" },
   { actionId: "utility" },
 ];
@@ -91,7 +102,7 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   light: { label: "LOW", detail: "1 dmg" },
   medium: { label: "MED", detail: "2 dmg" },
   heavy: { label: "STRONG", detail: "4 dmg" },
-  switchWeapon: { label: "SWAP", detail: "Melee" },
+  switchWeapon: { label: "SWAP", detail: "Weapon" },
   shuriken: { label: "STAR", detail: "Throw" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
@@ -209,7 +220,7 @@ function getActionArcSlots(state: CombatState): ActionArcSlot[] {
 
 function shouldShowActionArcSlot(state: CombatState, actionId: ActionId): boolean {
   if (actionId === "switchWeapon") {
-    return isBowFighter(state.player);
+    return canFighterSwitchWeapon(state.player);
   }
 
   if (actionId === "shuriken") {
@@ -257,6 +268,10 @@ function getRawActionArcButtons(
 }
 
 function getActionLabel(actionId: ActionId, state: CombatState): { label: string; detail: string } {
+  if (actionId === "switchWeapon") {
+    return isBowFighter(state.player) ? { label: "MELEE", detail: "Main" } : { label: "BOW", detail: "Range" };
+  }
+
   if (isRangedFighter(state.player)) {
     return BOW_ACTION_LABELS[actionId] ?? ACTION_LABELS[actionId];
   }

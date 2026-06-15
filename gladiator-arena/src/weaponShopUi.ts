@@ -531,7 +531,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "locked" || actionState === "max";
     button.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
-      previewProduct = undefined;
       options.onBuy(product);
       render();
     });
@@ -789,21 +788,12 @@ function getConsumableCardInfo(hero: HeroState, itemIds: readonly HeroItemId[]):
 
 function createConsumableCardBadges(info: ConsumableCardInfo): HTMLElement {
   const badges = document.createElement("span");
-  const unit = document.createElement("span");
-  const unitPrefix = document.createElement("span");
-  const unitAmount = document.createElement("span");
   const quantity = document.createElement("span");
 
   badges.className = "armory-shop__product-consumable-badges";
-  unit.className = "armory-shop__product-consumable-unit";
-  unitPrefix.className = "armory-shop__product-consumable-prefix";
-  unitPrefix.textContent = "x";
-  unitAmount.className = "armory-shop__product-consumable-amount";
-  unitAmount.textContent = "1";
   quantity.className = "armory-shop__product-consumable-quantity";
   quantity.textContent = `${info.quantity}/${info.maxQuantity}`;
-  unit.append(unitPrefix, unitAmount);
-  badges.append(unit, quantity);
+  badges.append(quantity);
 
   return badges;
 }

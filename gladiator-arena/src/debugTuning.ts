@@ -122,6 +122,7 @@ export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 
 export const EQUIPMENT_SLOT_KEYS = [
   "weaponMain",
+  "weaponBow",
   "helmet",
   "breastplate",
   "backShoulderguard",
@@ -360,6 +361,8 @@ export const defaultClassicActionButtonSlotTuning: ClassicActionButtonSlotTuning
   rotation: 0,
 };
 
+const CLASSIC_SWITCH_HIDDEN_Y_THRESHOLD = -20;
+
 export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>> = {
   distance: createClassicActionButtonSlots({
     forward: { x: 60, y: -185, rotation: -10 },
@@ -368,7 +371,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     light: { x: 70, y: 18, rotation: 0 },
     medium: { x: 0, y: 18, rotation: 0 },
     heavy: { x: 0, y: 18, rotation: 0 },
-    switchWeapon: { x: 0, y: 18, rotation: 0 },
+    switchWeapon: { x: -105, y: -130, rotation: -14 },
     shuriken: { x: 100, y: -148, rotation: 12 },
     taunt: { x: 30, y: -130, rotation: 0 },
     rest: { x: -30, y: -130, rotation: 12 },
@@ -380,7 +383,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     light: { x: -60, y: -185, rotation: 0 },
     medium: { x: 0, y: -200, rotation: 0 },
     heavy: { x: 60, y: -185, rotation: 0 },
-    switchWeapon: { x: 0, y: 18, rotation: 0 },
+    switchWeapon: { x: -120, y: -92, rotation: -18 },
     shuriken: { x: 100, y: -148, rotation: 12 },
     taunt: { x: 30, y: -130, rotation: 0 },
     rest: { x: -30, y: -130, rotation: 12 },
@@ -392,7 +395,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     light: { x: -60, y: -185, rotation: -14 },
     medium: { x: 0, y: -200, rotation: 0 },
     heavy: { x: 60, y: -185, rotation: 14 },
-    switchWeapon: { x: -95, y: -118, rotation: -10 },
+    switchWeapon: { x: -125, y: -82, rotation: -16 },
     shuriken: { x: 95, y: -118, rotation: 10 },
     taunt: { x: 30, y: -130, rotation: 6 },
     rest: { x: -30, y: -130, rotation: 14 },
@@ -423,6 +426,7 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
+  weaponBow: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
   helmet: { x: -1, y: 6, angle: 0, scaleX: 0.77, scaleY: 0.94, flipX: false, flipY: false },
   breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.31, flipX: false, flipY: false },
   backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
@@ -1709,14 +1713,15 @@ function normalizeClassicActionButtonSlots(
           ACTION_BUTTON_OFFSET_KEYS.map((key) => {
             const slot = modeSlots[key] ?? {};
             const fallback = fallbackSlots[mode]?.[key] ?? defaultClassicActionButtonSlotTuning;
+            const nextSlot = {
+              x: clampNumber(slot.x, -240, 240, fallback.x),
+              y: clampNumber(slot.y, -320, 80, fallback.y),
+              rotation: clampNumber(slot.rotation, -180, 180, fallback.rotation),
+            };
 
             return [
               key,
-              {
-                x: clampNumber(slot.x, -240, 240, fallback.x),
-                y: clampNumber(slot.y, -320, 80, fallback.y),
-                rotation: clampNumber(slot.rotation, -180, 180, fallback.rotation),
-              },
+              key === "switchWeapon" && nextSlot.y > CLASSIC_SWITCH_HIDDEN_Y_THRESHOLD ? { ...fallback } : nextSlot,
             ];
           }),
         ) as Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>,

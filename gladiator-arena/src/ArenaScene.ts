@@ -244,6 +244,7 @@ interface PaperDollShadowRig {
 
 interface PaperDollEquipment {
   weaponMain?: FighterPart;
+  weaponBow?: FighterPart;
   helmet?: FighterPart;
   breastplate?: FighterPart;
   backShoulderguard?: FighterPart;
@@ -302,6 +303,7 @@ interface PaperDollFighterOptions {
   frontBootAssetKey?: string;
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
+  weaponBowAssetKey?: string;
   equipment?: HeroEquipment;
   usesPlayerEquipment?: boolean;
   castsShadow?: boolean;
@@ -559,6 +561,7 @@ const HERO_PORTRAIT_HIDDEN_EQUIPMENT_SLOT_KEYS: PaperDollEquipmentSlotKey[] = [
 ];
 const HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS: HeroEquipmentSlotKey[] = [
   "weaponMain",
+  "weaponBow",
   "helmet",
   "breastplate",
   "backShoulderguard",
@@ -659,10 +662,11 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
 };
 
 const PAPER_DOLL_EQUIPMENT_SLOT_KEYS = HERO_EQUIPMENT_SLOT_KEYS;
-const PAPER_DOLL_DRAGGABLE_ARMOR_SLOT_KEYS = PAPER_DOLL_EQUIPMENT_SLOT_KEYS.filter((slotKey) => slotKey !== "weaponMain");
+const PAPER_DOLL_DRAGGABLE_ARMOR_SLOT_KEYS = PAPER_DOLL_EQUIPMENT_SLOT_KEYS.filter((slotKey) => !isPaperDollWeaponSlot(slotKey));
 
 const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, PaperDollEquipmentAssetKey> = {
   weaponMain: "weaponMainAssetKey",
+  weaponBow: "weaponBowAssetKey",
   helmet: "helmetAssetKey",
   breastplate: "breastplateAssetKey",
   backShoulderguard: "backShoulderguardAssetKey",
@@ -681,6 +685,13 @@ const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, Pape
 
 const PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS: Record<PaperDollEquipmentSlotKey, PaperDollPartAssetConfig> = {
   weaponMain: {
+    displayHeight: WEAPON_MAIN_DISPLAY_HEIGHT,
+    localX: 0,
+    localY: 0,
+    originX: WEAPON_MAIN_ORIGIN_X,
+    originY: WEAPON_MAIN_ORIGIN_Y,
+  },
+  weaponBow: {
     displayHeight: WEAPON_MAIN_DISPLAY_HEIGHT,
     localX: 0,
     localY: 0,
@@ -788,6 +799,7 @@ const PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS: Record<PaperDollEquipmentSlotKey, Paper
 };
 const PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS: Record<PaperDollEquipmentSlotKey, PaperDollPartKey> = {
   weaponMain: "backHand",
+  weaponBow: "backHand",
   helmet: "head",
   breastplate: "torso",
   backShoulderguard: "backUpperArm",
@@ -1081,8 +1093,9 @@ function createPlayerEquipmentVisibility(equipment = activePlayerEquipment): Rec
       const itemId = equipment[slotKey];
       const assetKey = PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey];
       const hasVisualAsset = Boolean(itemId && getHeroItemEquipmentAssetKeys(itemId)?.[assetKey]);
+      const isInactiveAuxiliaryBow = slotKey === "weaponBow" && Boolean(equipment.weaponMain);
 
-      return [slotKey, hasVisualAsset];
+      return [slotKey, hasVisualAsset && !isInactiveAuxiliaryBow];
     }),
   ) as Record<PaperDollEquipmentSlotKey, boolean>;
 }
@@ -2240,7 +2253,7 @@ class HeroPortraitScene extends Phaser.Scene {
     const rig = this.fighter?.paperDollRig;
 
     if (rig) {
-      rig.equipmentState = { ...equipment };
+      rig.equipmentState = { ...this.equipment };
       syncPaperDollEquipmentVisibility(rig);
     }
 
@@ -3136,7 +3149,7 @@ function addPaperDollEquipmentLayersAfterPart(
 }
 
 function getPaperDollEquipmentLayer(layers: PaperDollEquipmentLayers, slotKey: PaperDollEquipmentSlotKey): Phaser.GameObjects.Container {
-  if (slotKey === "weaponMain") {
+  if (isPaperDollWeaponSlot(slotKey)) {
     return layers.weapon;
   }
 
@@ -3461,6 +3474,10 @@ function syncPaperDollEquipmentState(
   syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride);
 }
 
+function isPaperDollWeaponSlot(slotKey: PaperDollEquipmentSlotKey): boolean {
+  return slotKey === "weaponMain" || slotKey === "weaponBow";
+}
+
 function applyPaperDollEquipmentStateTuning(
   rig: PaperDollRig,
   slotKeys?: readonly PaperDollEquipmentSlotKey[],
@@ -3611,7 +3628,7 @@ function syncPaperDollShadowSilhouette(
 
   Object.values(shadow.faceParts).forEach((facePart) => setFighterPartVisible(facePart, false));
   slotKeys.forEach((slotKey) => {
-    const slotVisible = slotKey === "weaponMain" && Boolean(visibility?.[slotKey]);
+    const slotVisible = isPaperDollWeaponSlot(slotKey) && Boolean(visibility?.[slotKey]);
 
     setFighterPartVisible(shadow.equipment[slotKey], slotVisible);
     getLinkedPaperDollEquipmentSlots(shadow.equipment[slotKey]).forEach((slot) => setFighterPartVisible(slot, false));
@@ -3660,7 +3677,7 @@ function syncPaperDollEquipmentSlot(slot: FighterPart | undefined, slotKey: Pape
   getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => {
     const image = syncSinglePaperDollEquipmentSlot(linkedSlot, slotKey, textureKey);
 
-    if (slotKey === "weaponMain" && image) {
+    if (isPaperDollWeaponSlot(slotKey) && image) {
       applyPaperDollWeaponTopOverlayCrop(image, getPaperDollWeaponOverlayCrop(linkedSlot, textureKey));
       setFighterPartVisible(linkedSlot, isPaperDollEquipmentSlotVisible(slot) && isPaperDollWeaponOverlayVisible(linkedSlot));
     }
@@ -4266,8 +4283,13 @@ function addPaperDollPartVisual(
   const assetKey = options.bodyPartAssetKeys?.[key];
   const assetConfig = PAPER_DOLL_PART_ASSET_CONFIGS[key];
 
-  if (key === "backHand" && options.weaponMainAssetKey && target.textures.exists(options.weaponMainAssetKey)) {
-    addPaperDollWeaponVisual(target, partContainer, equipmentLayers, equipmentAnchors, options.weaponMainAssetKey, equipment);
+  if (key === "backHand") {
+    if (options.weaponMainAssetKey && target.textures.exists(options.weaponMainAssetKey)) {
+      addPaperDollWeaponVisual(target, partContainer, equipmentLayers, equipmentAnchors, "weaponMain", options.weaponMainAssetKey, equipment);
+    }
+    if (options.weaponBowAssetKey && target.textures.exists(options.weaponBowAssetKey)) {
+      addPaperDollWeaponVisual(target, partContainer, equipmentLayers, equipmentAnchors, "weaponBow", options.weaponBowAssetKey, equipment);
+    }
   }
 
   if (assetKey && assetConfig && target.textures.exists(assetKey)) {
@@ -4286,17 +4308,19 @@ function addPaperDollWeaponVisual(
   partContainer: Phaser.GameObjects.Container,
   equipmentLayers: PaperDollEquipmentLayers,
   equipmentAnchors: PaperDollEquipmentAnchors,
+  slotKey: PaperDollEquipmentSlotKey,
   assetKey: string,
   equipment: PaperDollEquipment,
 ): void {
-  const weaponContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayers, equipmentAnchors, "weaponMain");
+  const weaponContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayers, equipmentAnchors, slotKey);
   const weaponSlot = part(weaponContainer);
-  const image = createPaperDollEquipmentImage(target, assetKey, PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
+  const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
+  const image = createPaperDollEquipmentImage(target, assetKey, config);
 
   weaponContainer.add(image);
-  addPaperDollWeaponTopOverlay(target, partContainer, equipmentLayers, equipmentAnchors, weaponSlot, assetKey, "mainTop");
-  addPaperDollWeaponTopOverlay(target, partContainer, equipmentLayers, equipmentAnchors, weaponSlot, assetKey, "bowBottom");
-  registerPaperDollEquipmentSlot(weaponContainer, equipment, "weaponMain", PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
+  addPaperDollWeaponTopOverlay(target, partContainer, equipmentLayers, equipmentAnchors, slotKey, weaponSlot, assetKey, "mainTop");
+  addPaperDollWeaponTopOverlay(target, partContainer, equipmentLayers, equipmentAnchors, slotKey, weaponSlot, assetKey, "bowBottom");
+  registerPaperDollEquipmentSlot(weaponContainer, equipment, slotKey, config);
 }
 
 function addPaperDollWeaponTopOverlay(
@@ -4304,24 +4328,26 @@ function addPaperDollWeaponTopOverlay(
   partContainer: Phaser.GameObjects.Container,
   equipmentLayers: PaperDollEquipmentLayers,
   equipmentAnchors: PaperDollEquipmentAnchors,
+  slotKey: PaperDollEquipmentSlotKey,
   weaponSlot: FighterPart,
   assetKey: string,
   crop: PaperDollWeaponOverlayCrop,
 ): void {
-  const topContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayers, equipmentAnchors, "weaponMain", {
+  const topContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayers, equipmentAnchors, slotKey, {
     layer: equipmentLayers.weaponTop,
-    linkToAnchor: equipmentAnchors.weaponMain,
+    linkToAnchor: equipmentAnchors[slotKey],
     linkToSlot: weaponSlot,
     registerAnchor: false,
   });
   const topSlot = part(topContainer);
-  const topImage = createPaperDollEquipmentImage(target, assetKey, PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
+  const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
+  const topImage = createPaperDollEquipmentImage(target, assetKey, config);
   const effectiveCrop = isPaperDollBowWeaponAssetKey(assetKey) && crop === "mainTop" ? "bowTop" : crop;
 
   paperDollWeaponOverlayCrops.set(topSlot, effectiveCrop);
   applyPaperDollWeaponTopOverlayCrop(topImage, effectiveCrop);
   topContainer.add(topImage);
-  paperDollEquipmentSlotConfigs.set(topSlot, PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS.weaponMain);
+  paperDollEquipmentSlotConfigs.set(topSlot, config);
   topSlot.setVisible(isPaperDollWeaponOverlayVisible(topSlot));
 }
 
@@ -4756,6 +4782,8 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
     return;
   }
 
+  syncFighterCombatEquipment(target.visuals.player, current.player);
+  syncFighterCombatEquipment(target.visuals.enemy, current.enemy);
   positionFightersForState(target, target.visuals, current, playerSettings);
   updateCamera(target, current);
   applyFighterArrowCountersSceneScale(target);
@@ -4770,6 +4798,24 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
 
   if (!target.visuals.enemy.isShattered) {
     setFighterAlpha(target.visuals.enemy, 1, playerSettings.shadowMode);
+  }
+}
+
+function syncFighterCombatEquipment(fighter: FighterVisual, state: FighterState): void {
+  const rig = fighter.paperDollRig;
+  const equipment = state.equipment;
+
+  if (!rig || !equipment) {
+    return;
+  }
+
+  rig.equipmentState = equipment;
+  syncPaperDollEquipmentState(rig, ["weaponMain", "weaponBow"], equipment);
+  setPaperDollEquipmentSlotVisible(rig.equipment.weaponMain, !isBowFighter(state) && Boolean(equipment.weaponMain));
+  setPaperDollEquipmentSlotVisible(rig.equipment.weaponBow, isBowFighter(state) && Boolean(equipment.weaponBow));
+  if (rig.shadow) {
+    setPaperDollEquipmentSlotVisible(rig.shadow.equipment.weaponMain, !isBowFighter(state) && Boolean(equipment.weaponMain));
+    setPaperDollEquipmentSlotVisible(rig.shadow.equipment.weaponBow, isBowFighter(state) && Boolean(equipment.weaponBow));
   }
 }
 

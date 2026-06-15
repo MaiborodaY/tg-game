@@ -91,6 +91,7 @@ export interface HeroStats {
 
 export const HERO_EQUIPMENT_SLOT_KEYS = [
   "weaponMain",
+  "weaponBow",
   "helmet",
   "breastplate",
   "backShoulderguard",
@@ -456,6 +457,13 @@ export function getHeroEquipmentDamageBonus(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((damageBonus, item) => damageBonus + (item.damageBonus ?? 0), 0);
 }
 
+export function getHeroEquipmentSlotDamageBonus(equipment: HeroEquipment, slotKey: HeroEquipmentSlotKey): number {
+  const itemId = equipment[slotKey];
+  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  return item && item.equipmentSlot === slotKey && !isHeroConsumableItem(item) ? Math.max(0, item.damageBonus ?? 0) : 0;
+}
+
 export function getHeroAttributeTotals(hero: HeroState): HeroBaseStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
 
@@ -574,6 +582,13 @@ export function getHeroEquipmentWeaponClass(equipment: HeroEquipment): HeroWeapo
   return isHeroConsumableItem(weaponItem) ? "sword" : getHeroItemWeaponClass(weaponItem);
 }
 
+export function getHeroEquipmentBowWeaponClass(equipment: HeroEquipment): HeroWeaponClass | undefined {
+  const weaponItemId = equipment.weaponBow;
+  const weaponItem = weaponItemId ? HERO_ITEM_CATALOG[weaponItemId] : undefined;
+
+  return getHeroItemWeaponClass(weaponItem) === "bow" ? "bow" : undefined;
+}
+
 export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): HeroWeaponClass {
   if (!item || item.kind !== "weapon") {
     return "sword";
@@ -612,11 +627,20 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const stats = deriveHeroStats(hero);
   const encounter = typeof encounterOrTierId === "number" ? createArenaRandomEnemyEncounter(encounterOrTierId) : encounterOrTierId;
   const enemyLoadout = encounter.enemyLoadout;
-  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyLoadout.equipment);
-  const playerWeaponClass = getHeroEquipmentWeaponClass(hero.equipment);
-  const enemyWeaponClass = getHeroEquipmentWeaponClass(enemyLoadout.equipment);
+  const heroEquipment = hero.equipment;
+  const enemyEquipment = enemyLoadout.equipment;
+  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyEquipment);
+  const playerMainWeaponClass = getHeroEquipmentWeaponClass(heroEquipment);
+  const playerBowWeaponClass = getHeroEquipmentBowWeaponClass(heroEquipment);
+  const playerWeaponClass = heroEquipment.weaponMain ? playerMainWeaponClass : playerBowWeaponClass ?? playerMainWeaponClass;
+  const enemyMainWeaponClass = getHeroEquipmentWeaponClass(enemyEquipment);
+  const enemyBowWeaponClass = getHeroEquipmentBowWeaponClass(enemyEquipment);
+  const enemyWeaponClass = enemyEquipment.weaponMain ? enemyMainWeaponClass : enemyBowWeaponClass ?? enemyMainWeaponClass;
   const playerShurikenItemId = getHeroShurikenItemId();
   const playerBowShotCapacity = getHeroBowShotCapacity(hero);
+  const heroStrength = getHeroAttributeTotals(hero).strength;
+  const enemyBaseStats = enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 };
+  const enemyStrength = getHeroAttributeTotal(enemyBaseStats.strength, getHeroEquipmentStatBonuses(enemyEquipment).strength);
   const state = freshState();
 
   return {
@@ -630,20 +654,22 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       maxArmor: stats.maxArmor,
       stamina: stats.maxStamina,
       maxStamina: stats.maxStamina,
-      damageBonus: stats.damageBonus,
-      weaponDamageBonus: stats.weaponDamageBonus,
+      damageBonus: getHeroEquipmentSlotDamageBonus(heroEquipment, "weaponMain") + heroStrength * HERO_STRENGTH_DAMAGE_BONUS,
+      weaponDamageBonus: getHeroEquipmentSlotDamageBonus(heroEquipment, "weaponBow"),
+      mainWeaponClass: playerMainWeaponClass,
+      bowWeaponClass: playerBowWeaponClass,
       movementDistanceBonus: stats.movementDistanceBonus,
       bodyScaleBonus: stats.bodyScaleBonus,
       clinchRangeBonus: stats.clinchRangeBonus,
       restHpRestoreBonus: stats.restHpRestoreBonus,
       restStaminaRestoreBonus: stats.restStaminaRestoreBonus,
       weaponClass: playerWeaponClass,
-      bowShotsRemaining: playerWeaponClass === "bow" ? playerBowShotCapacity : 0,
-      bowMaxShots: playerWeaponClass === "bow" ? playerBowShotCapacity : 0,
+      bowShotsRemaining: playerBowWeaponClass === "bow" ? playerBowShotCapacity : 0,
+      bowMaxShots: playerBowWeaponClass === "bow" ? playerBowShotCapacity : 0,
       shurikenCount: getHeroShurikenCount(hero),
       shurikenDamage: getHeroShurikenDamage(),
       shurikenItemId: playerShurikenItemId,
-      equipment: { ...hero.equipment },
+      equipment: { ...heroEquipment },
     },
     enemy: {
       ...state.enemy,
@@ -654,19 +680,21 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       maxArmor: enemyStats.maxArmor,
       stamina: enemyStats.maxStamina,
       maxStamina: enemyStats.maxStamina,
-      damageBonus: enemyStats.damageBonus,
-      weaponDamageBonus: enemyStats.weaponDamageBonus,
+      damageBonus: getHeroEquipmentSlotDamageBonus(enemyEquipment, "weaponMain") + enemyStrength * HERO_STRENGTH_DAMAGE_BONUS,
+      weaponDamageBonus: getHeroEquipmentSlotDamageBonus(enemyEquipment, "weaponBow"),
+      mainWeaponClass: enemyMainWeaponClass,
+      bowWeaponClass: enemyBowWeaponClass,
       movementDistanceBonus: enemyStats.movementDistanceBonus,
       bodyScaleBonus: enemyStats.bodyScaleBonus,
       clinchRangeBonus: enemyStats.clinchRangeBonus,
       restHpRestoreBonus: enemyStats.restHpRestoreBonus,
       restStaminaRestoreBonus: enemyStats.restStaminaRestoreBonus,
       weaponClass: enemyWeaponClass,
-      bowShotsRemaining: enemyWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
-      bowMaxShots: enemyWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      bowShotsRemaining: enemyBowWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+      bowMaxShots: enemyBowWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
       shurikenCount: 0,
       shurikenDamage: 0,
-      equipment: { ...enemyLoadout.equipment },
+      equipment: { ...enemyEquipment },
       visualPreset: { ...enemyLoadout.visualPreset },
     },
     encounter: {

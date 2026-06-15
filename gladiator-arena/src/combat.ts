@@ -46,6 +46,8 @@ export interface FighterState {
   restHpRestoreBonus: number;
   restStaminaRestoreBonus: number;
   weaponClass?: HeroWeaponClass;
+  mainWeaponClass?: HeroWeaponClass;
+  bowWeaponClass?: HeroWeaponClass;
   bowShotsRemaining?: number;
   bowMaxShots?: number;
   shurikenCount?: number;
@@ -170,8 +172,8 @@ export const actions: Record<ActionId, ActionConfig> = {
   },
   switchWeapon: {
     id: "switchWeapon",
-    title: "Draw Steel",
-    detail: "Switch to melee",
+    title: "Switch Weapon",
+    detail: "Swap bow / melee",
     cost: 0,
   },
   shuriken: {
@@ -342,6 +344,26 @@ export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
   return fighter.weaponClass ?? "sword";
 }
 
+export function getFighterMainWeaponClass(fighter: FighterState): HeroWeaponClass {
+  return fighter.mainWeaponClass ?? "sword";
+}
+
+export function hasFighterBowWeapon(fighter: FighterState): boolean {
+  return fighter.bowWeaponClass === "bow" || (fighter.weaponClass === "bow" && getFighterMainWeaponClass(fighter) !== "bow");
+}
+
+export function canFighterSwitchWeapon(fighter: FighterState): boolean {
+  if (!hasFighterBowWeapon(fighter) || getFighterMainWeaponClass(fighter) === "bow") {
+    return false;
+  }
+
+  return isBowFighter(fighter) || getBowShotsRemaining(fighter) > 0;
+}
+
+export function getFighterSwitchTargetWeaponClass(fighter: FighterState): HeroWeaponClass {
+  return isBowFighter(fighter) ? getFighterMainWeaponClass(fighter) : "bow";
+}
+
 export function isRangedWeaponClass(weaponClass: HeroWeaponClass | undefined): boolean {
   return weaponClass === "bow";
 }
@@ -365,6 +387,10 @@ export function getFighterShurikenCount(fighter: FighterState): number {
 }
 
 export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
+  if (actionId === "switchWeapon" && actor) {
+    return isBowFighter(actor) ? "Draw Steel" : "Draw Bow";
+  }
+
   if (actor && isRangedFighter(actor)) {
     if (actionId === "light") {
       return "Quick Shot";
@@ -431,7 +457,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionId === "switchWeapon") {
-    return isBowFighter(fighter);
+    return canFighterSwitchWeapon(fighter);
   }
 
   if (actionId === "shuriken") {
@@ -553,10 +579,13 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyLowHp = current.enemy.hp <= 10;
   const playerLowHp = current.player.hp <= 9;
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
+  const enemyCanSwitchWeapon = canFighterSwitchWeapon(current.enemy);
 
   for (const id of available) {
     if (id === "switchWeapon") {
-      if (enemyHasRangedWeapon && getBowShotsRemaining(current.enemy) <= 0) {
+      if (!isFighterInClinchRange(current, "enemy") && enemyCanSwitchWeapon && !enemyHasRangedWeapon) {
+        weighted.push(id, id, id);
+      } else if (enemyHasRangedWeapon && getBowShotsRemaining(current.enemy) <= 0) {
         weighted.push(id, id, id);
       }
       continue;
@@ -628,7 +657,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   attacker.stamina = clamp(attacker.stamina - getActionStaminaCost(actionId, attacker), 0, getFighterMaxStamina(attacker));
 
   if (actionId === "switchWeapon") {
-    attacker.weaponClass = "sword";
+    attacker.weaponClass = getFighterSwitchTargetWeaponClass(attacker);
   }
 
   if (actionMove) {
@@ -816,7 +845,7 @@ function addActionLog(
   }
 
   if (action.id === "switchWeapon") {
-    addLog(state, `${actorLabel} used ${actionTitle} and switched to melee.`);
+    addLog(state, `${actorLabel} used ${actionTitle} and switched to ${actionTitle === "Draw Bow" ? "bow" : "melee"}.`);
   }
 }
 

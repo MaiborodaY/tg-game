@@ -76,6 +76,43 @@ test("bow attacks stop after five shots until the fighter switches to melee", ()
   assert.equal(combat.canUseAction({ ...switched, activeTurn: "player" }, "lunge"), true);
 });
 
+test("fighters can switch between main weapon and equipped bow", () => {
+  let state = combat.freshState();
+
+  state.player.weaponClass = "axe";
+  state.player.mainWeaponClass = "axe";
+  state.player.bowWeaponClass = "bow";
+  state.player.bowShotsRemaining = 5;
+  state.player.bowMaxShots = 5;
+  state.distance = 3;
+  state.enemyPosition = 3;
+
+  assert.equal(combat.canUseAction(state, "switchWeapon"), true);
+
+  state = combat.resolvePlayerTurn(state, "switchWeapon");
+
+  assert.equal(state.player.weaponClass, "bow");
+  assert.equal(combat.canUseAction({ ...state, activeTurn: "player" }, "lunge"), false);
+
+  state.activeTurn = "player";
+  state = combat.resolvePlayerTurn(state, "switchWeapon");
+
+  assert.equal(state.player.weaponClass, "axe");
+  assert.equal(combat.canUseAction({ ...state, activeTurn: "player" }, "lunge"), true);
+});
+
+test("fighters cannot switch from main weapon to an empty bow", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "sword";
+  state.player.mainWeaponClass = "sword";
+  state.player.bowWeaponClass = "bow";
+  state.player.bowShotsRemaining = 0;
+  state.player.bowMaxShots = 5;
+
+  assert.equal(combat.canUseAction(state, "switchWeapon"), false);
+});
+
 test("bow attacks ignore strength damage bonus and use only weapon damage", () => {
   const state = combat.freshState();
 

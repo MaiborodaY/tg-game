@@ -264,6 +264,7 @@ const DEBUG_BOSS_REWARD_MAX = 100000;
 const DEBUG_BOSS_LOOT_CHANCE_STEP = 0.01;
 const DEBUG_BOSS_EQUIPMENT_SLOT_LABELS: Record<HeroEquipmentSlotKey, string> = {
   weaponMain: "Weapon",
+  weaponBow: "Bow",
   helmet: "Helmet",
   breastplate: "Body",
   backShoulderguard: "Back shoulder",

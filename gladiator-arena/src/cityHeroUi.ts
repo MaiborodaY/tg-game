@@ -134,6 +134,7 @@ const HERO_PROFILE_EQUIPMENT_GROUPS: readonly {
     slots: ["backGreave", "frontGreave", "backShinguard", "frontShinguard", "backBoot", "frontBoot"],
   },
   { label: "Weapon", icon: "W", modifier: "weapon", categoryId: "swords", slots: ["weaponMain"] },
+  { label: "Bow", icon: "B", modifier: "bow", categoryId: "bows", slots: ["weaponBow"] },
 ];
 
 export interface CityHeroWidgetRefs {
@@ -884,7 +885,7 @@ function isInventoryItemInCityEquipmentCategory(
     return item.kind === "armor" && Boolean(category.slots?.some((slotKey) => slotKey === item.equipmentSlot));
   }
 
-  return item.kind === "weapon" && !isHeroConsumableItem(item) && item.equipmentSlot === "weaponMain" && getCityWeaponCategoryId(item) === category.id;
+  return item.kind === "weapon" && !isHeroConsumableItem(item) && getCityWeaponCategoryId(item) === category.id;
 }
 
 function getCityWeaponCategoryId(item: (typeof HERO_ITEM_CATALOG)[HeroItemId]): CityEquipmentCategoryId {
@@ -965,11 +966,14 @@ function getProfileEquipmentCategoryId(
   group: (typeof HERO_PROFILE_EQUIPMENT_GROUPS)[number],
   equipment: HeroState["equipment"],
 ): CityEquipmentCategoryId {
-  if (group.modifier !== "weapon") {
+  const weaponSlot = group.slots.find((slotKey) => slotKey === "weaponMain" || slotKey === "weaponBow");
+
+  if (!weaponSlot) {
     return group.categoryId;
   }
 
-  const weapon = equipment.weaponMain ? HERO_ITEM_CATALOG[equipment.weaponMain] : undefined;
+  const weaponItemId = equipment[weaponSlot];
+  const weapon = weaponItemId ? HERO_ITEM_CATALOG[weaponItemId] : undefined;
   const weaponClass = getHeroItemWeaponClass(weapon);
 
   if (weaponClass === "bow") {

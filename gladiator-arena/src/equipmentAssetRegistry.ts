@@ -3,6 +3,7 @@ import type { HeroEquipmentSlotKey, HeroItemDefinition, HeroItemId } from "./her
 
 export interface EquipmentItemAssetKeys {
   weaponMainAssetKey?: string;
+  weaponBowAssetKey?: string;
   helmetAssetKey?: string;
   breastplateAssetKey?: string;
   backShoulderguardAssetKey?: string;
@@ -148,11 +149,12 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
     ...(lowUrl ? { lowSourcePath: toSourcePath(lowAssetPath) } : {}),
   };
   const item = createAutoItemDefinition(itemId, slotConfig, suffix, material);
+  const itemAssetKey = getAutoEquipmentItemAssetKey(item, slotConfig.assetKey);
 
   return [
     {
       item,
-      assetKeys: { [slotConfig.assetKey]: assetKey },
+      assetKeys: { [itemAssetKey]: assetKey },
       asset,
     },
   ];
@@ -160,12 +162,14 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
 
 function createAutoItemDefinition(itemId: string, slotConfig: EquipmentAssetSlotConfig, suffix: string, material: string): HeroItemDefinition {
   if (slotConfig.kind === "weapon") {
+    const weaponClass = getWeaponClassFromText(suffix);
+
     return {
       id: itemId,
       name: formatWeaponName(suffix),
       kind: "weapon",
-      weaponClass: getWeaponClassFromText(suffix),
-      equipmentSlot: slotConfig.slot,
+      weaponClass,
+      equipmentSlot: weaponClass === "bow" ? "weaponBow" : slotConfig.slot,
       damageBonus: 1,
     };
   }
@@ -178,6 +182,10 @@ function createAutoItemDefinition(itemId: string, slotConfig: EquipmentAssetSlot
     equipmentSlot: slotConfig.slot,
     armorHp: 0,
   };
+}
+
+function getAutoEquipmentItemAssetKey(item: HeroItemDefinition, fallback: keyof EquipmentItemAssetKeys): keyof EquipmentItemAssetKeys {
+  return item.kind === "weapon" && item.weaponClass === "bow" ? "weaponBowAssetKey" : fallback;
 }
 
 function createAutoEquipmentAssetEntries(): [string, string][] {
