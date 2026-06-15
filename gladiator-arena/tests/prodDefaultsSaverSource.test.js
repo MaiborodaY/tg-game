@@ -46,6 +46,15 @@ test("client saver can update generated shop items through the local dev endpoin
   assert.match(source, /JSON\.stringify\(payload\)/);
 });
 
+test("client saver can update generated boss items through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/update-generated-boss-item/);
+  assert.match(source, /UpdateGeneratedBossItemPayload/);
+  assert.match(source, /saveGeneratedBossItem/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("client saver can save generated arena bosses through the local dev endpoint", () => {
   const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
 
@@ -158,6 +167,19 @@ test("vite dev middleware updates generated shop item rarity stats and price", (
   assert.match(source, /armoryProduct: \{ \.\.\.record\.armoryProduct, price: update\.price \}/);
   assert.match(source, /weaponProduct: \{ \.\.\.record\.weaponProduct, price: update\.price \}/);
   assert.match(source, /value === "mythical"/);
+});
+
+test("vite dev middleware updates generated boss item stats", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /update-generated-boss-item/);
+  assert.match(source, /pickGeneratedBossItemUpdate/);
+  assert.match(source, /updateGeneratedBossItem/);
+  assert.match(source, /isGeneratedBossItemRecord/);
+  assert.match(source, /formatUpdatedGeneratedBossItemMessage/);
+  assert.match(source, /Only generated boss items can be edited/);
+  assert.match(source, /record\.availability\?\.bossUnique === true \|\| record\.rarity === "unique"/);
+  assert.match(source, /targetRecord\.kind === "armor" \? \{ armorHp: clampedStat \} : \{ damageBonus: clampedStat \}/);
 });
 
 test("vite dev middleware writes generated arena bosses", () => {

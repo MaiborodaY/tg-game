@@ -2373,7 +2373,7 @@
     "name": "Big Wooden mace",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 20,
+    "damageBonus": 5,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {

@@ -31,10 +31,16 @@ export interface UpdateGeneratedShopItemPayload {
   price: number;
 }
 
+export interface UpdateGeneratedBossItemPayload {
+  itemId: string;
+  stat: number;
+}
+
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
 const updateGeneratedShopItemEndpoint = "/__dust-arena/update-generated-shop-item";
+const updateGeneratedBossItemEndpoint = "/__dust-arena/update-generated-boss-item";
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
 const saveArenaBossEndpoint = "/__dust-arena/save-arena-boss";
 
@@ -111,6 +117,21 @@ export async function saveGeneratedShopItem(payload: UpdateGeneratedShopItemPayl
   }
 
   return responsePayload.message ?? "Updated generated shop item.";
+}
+
+export async function saveGeneratedBossItem(payload: UpdateGeneratedBossItemPayload): Promise<string> {
+  const response = await fetch(updateGeneratedBossItemEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not update generated boss item. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Updated generated boss item.";
 }
 
 export async function saveArenaBoss(payload: ArenaBossDefinition): Promise<string> {

@@ -6640,7 +6640,8 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 .debug-effects,
 .debug-item-equipment,
 .debug-auto-equipment,
-.debug-shop-items {
+.debug-shop-items,
+.debug-boss-items {
   display: grid;
   gap: 6px;
   min-height: 0;
@@ -6797,6 +6798,7 @@ body.debug-mode-arena .debug-hero-equipment-panel,
 body.debug-mode-arena .debug-item-equipment-panel,
 body.debug-mode-arena .debug-auto-equipment-panel,
 body.debug-mode-arena .debug-shop-items-panel,
+body.debug-mode-arena .debug-boss-items-panel,
 body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
 body.debug-mode-city .debug-rig-panel,
@@ -6807,6 +6809,7 @@ body.debug-mode-city .debug-hero-equipment-panel,
 body.debug-mode-city .debug-item-equipment-panel,
 body.debug-mode-city .debug-auto-equipment-panel,
 body.debug-mode-city .debug-shop-items-panel,
+body.debug-mode-city .debug-boss-items-panel,
 body.debug-mode-city .battle-screen,
 body.debug-mode-hud .debug-character-shell,
 body.debug-mode-hud .debug-rig-panel,
@@ -6817,6 +6820,7 @@ body.debug-mode-hud .debug-hero-equipment-panel,
 body.debug-mode-hud .debug-item-equipment-panel,
 body.debug-mode-hud .debug-auto-equipment-panel,
 body.debug-mode-hud .debug-shop-items-panel,
+body.debug-mode-hud .debug-boss-items-panel,
 body.debug-mode-hud .main-menu,
 body.debug-mode-effects .debug-character-shell,
 body.debug-mode-effects .debug-rig-panel,
@@ -6827,6 +6831,7 @@ body.debug-mode-effects .debug-hero-equipment-panel,
 body.debug-mode-effects .debug-item-equipment-panel,
 body.debug-mode-effects .debug-auto-equipment-panel,
 body.debug-mode-effects .debug-shop-items-panel,
+body.debug-mode-effects .debug-boss-items-panel,
 body.debug-mode-effects .main-menu {
   display: none;
 }
@@ -6849,6 +6854,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__rarity,
 .debug-shop-items__select,
 .debug-shop-items__rarity,
+.debug-boss-items__select,
 .debug-auto-equipment__name,
 .debug-effects__slash-select {
   min-width: 0;
@@ -6917,7 +6923,9 @@ body.debug-mode-hud .battle-screen .status-strip {
 
 .debug-auto-equipment__status,
 .debug-shop-items__ids,
-.debug-shop-items__status {
+.debug-shop-items__status,
+.debug-boss-items__id,
+.debug-boss-items__status {
   min-height: 16px;
   margin: 0 10px 8px;
   color: #fff0bd;
@@ -6925,13 +6933,15 @@ body.debug-mode-hud .battle-screen .status-strip {
   font-weight: 800;
 }
 
-.debug-shop-items__ids {
+.debug-shop-items__ids,
+.debug-boss-items__id {
   word-break: break-word;
   opacity: 0.82;
 }
 
 .debug-rarity-select,
-.debug-shop-items__select {
+.debug-shop-items__select,
+.debug-boss-items__select {
   transition:
     border-color 120ms ease,
     box-shadow 120ms ease,
@@ -6939,43 +6949,50 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="common"],
-.debug-shop-items__select[data-rarity="common"] {
+.debug-shop-items__select[data-rarity="common"],
+.debug-boss-items__select[data-rarity="common"] {
   border-color: rgba(230, 214, 174, 0.88);
   background: linear-gradient(180deg, rgba(84, 70, 46, 0.92), rgba(34, 24, 14, 0.9));
 }
 
 .debug-rarity-select[data-rarity="uncommon"],
-.debug-shop-items__select[data-rarity="uncommon"] {
+.debug-shop-items__select[data-rarity="uncommon"],
+.debug-boss-items__select[data-rarity="uncommon"] {
   border-color: rgba(88, 214, 112, 0.9);
   background: linear-gradient(180deg, rgba(48, 117, 54, 0.92), rgba(20, 55, 27, 0.9));
 }
 
 .debug-rarity-select[data-rarity="rare"],
-.debug-shop-items__select[data-rarity="rare"] {
+.debug-shop-items__select[data-rarity="rare"],
+.debug-boss-items__select[data-rarity="rare"] {
   border-color: rgba(96, 184, 255, 0.96);
   background: linear-gradient(180deg, rgba(45, 118, 178, 0.94), rgba(17, 53, 92, 0.92));
 }
 
 .debug-rarity-select[data-rarity="epic"],
-.debug-shop-items__select[data-rarity="epic"] {
+.debug-shop-items__select[data-rarity="epic"],
+.debug-boss-items__select[data-rarity="epic"] {
   border-color: rgba(205, 103, 255, 0.96);
   background: linear-gradient(180deg, rgba(117, 54, 154, 0.94), rgba(52, 22, 82, 0.92));
 }
 
 .debug-rarity-select[data-rarity="legendary"],
-.debug-shop-items__select[data-rarity="legendary"] {
+.debug-shop-items__select[data-rarity="legendary"],
+.debug-boss-items__select[data-rarity="legendary"] {
   border-color: rgba(255, 186, 64, 0.98);
   background: linear-gradient(180deg, rgba(176, 103, 24, 0.95), rgba(82, 42, 10, 0.92));
 }
 
 .debug-rarity-select[data-rarity="mythical"],
-.debug-shop-items__select[data-rarity="mythical"] {
+.debug-shop-items__select[data-rarity="mythical"],
+.debug-boss-items__select[data-rarity="mythical"] {
   border-color: rgba(255, 84, 91, 0.98);
   background: linear-gradient(180deg, rgba(137, 24, 32, 0.95), rgba(48, 5, 10, 0.92));
 }
 
 .debug-rarity-select[data-rarity="unique"],
-.debug-shop-items__select[data-rarity="unique"] {
+.debug-shop-items__select[data-rarity="unique"],
+.debug-boss-items__select[data-rarity="unique"] {
   border-color: rgba(88, 232, 222, 0.98);
   background: linear-gradient(180deg, rgba(22, 139, 134, 0.95), rgba(4, 50, 49, 0.92));
 }

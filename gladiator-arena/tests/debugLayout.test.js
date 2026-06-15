@@ -192,6 +192,7 @@ test("character debug sections are collapsed by default", () => {
     "debug-item-equipment-panel",
     "debug-auto-equipment-panel",
     "debug-shop-items-panel",
+    "debug-boss-items-panel",
   ];
 
   characterSectionClasses.forEach((className) => {
@@ -343,6 +344,23 @@ test("debug panel exposes generated shop item editor", () => {
   assert.equal(stylesSource.includes('.debug-rarity-select[data-rarity="mythical"]'), true);
   assert.equal(stylesSource.includes(".armory-shop__option--rarity-mythical"), true);
   assert.equal(stylesSource.includes(".debug-shop-items__select"), true);
+});
+
+test("debug panel exposes generated boss item editor", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes("debug-boss-items-panel"), true);
+  assert.equal(debugPanelSource.includes("Boss items"), true);
+  assert.equal(debugPanelSource.includes("saveGeneratedBossItem"), true);
+  assert.equal(debugPanelSource.includes("mountGeneratedBossItemsEditor"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedBossItems"), true);
+  assert.equal(debugPanelSource.includes("previewGeneratedBossItem"), true);
+  assert.equal(debugPanelSource.includes("data-boss-item-stat"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedBossItemStatMax"), true);
+  assert.equal(debugPanelSource.includes("isBossUniqueItem(record.item.id)"), true);
+  assert.equal(debugPanelSource.includes("itemId: item.id"), true);
+  assert.equal(stylesSource.includes(".debug-boss-items__select"), true);
+  assert.equal(stylesSource.includes(".debug-boss-items-panel"), true);
 });
 
 test("debug panel exposes arena boss editor", () => {

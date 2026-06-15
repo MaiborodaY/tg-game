@@ -328,13 +328,19 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(tier.bossIds.length, 1);
   assert.equal(boss?.id, "dust_arena_champion");
   assert.equal(boss?.tierId, 1);
+  assert.equal(boss?.equipment.weaponMain, "generated_equipment_weapon_mace_wood_boss_01");
   assert.equal(boss?.equipment.helmet, "generated_equipment_helmet_wood_boss_01");
-  assert.equal(boss?.lootTable.length, 1);
-  assert.equal(boss?.lootTable[0].id, "dust_arena_champion_generated_equipment_helmet_wood_boss_01_drop");
+  assert.equal(boss?.lootTable.length, 2);
+  assert.equal(boss?.lootTable[0].id, "dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop");
   assert.equal(boss?.lootTable[0].itemIds.length, 1);
-  assert.equal(boss?.lootTable[0].itemIds[0], "generated_equipment_helmet_wood_boss_01");
+  assert.equal(boss?.lootTable[0].itemIds[0], "generated_equipment_weapon_mace_wood_boss_01");
   assert.equal(boss?.lootTable[0].chance, 1);
   assert.equal(boss?.lootTable[0].quantity, 1);
+  assert.equal(boss?.lootTable[1].id, "dust_arena_champion_generated_equipment_helmet_wood_boss_01_drop");
+  assert.equal(boss?.lootTable[1].itemIds.length, 1);
+  assert.equal(boss?.lootTable[1].itemIds[0], "generated_equipment_helmet_wood_boss_01");
+  assert.equal(boss?.lootTable[1].chance, 1);
+  assert.equal(boss?.lootTable[1].quantity, 1);
 });
 
 test("arena encounters can create combat states from random opponents and bosses", () => {
@@ -356,7 +362,7 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(bossState.encounter?.id, "boss:dust_arena_champion");
   assert.equal(bossState.enemy.name, "Dust Arena Champion");
   assert.equal(bossState.enemy.equipment?.helmet, "generated_equipment_helmet_wood_boss_01");
-  assert.equal(bossState.enemy.equipment?.weaponMain, null);
+  assert.equal(bossState.enemy.equipment?.weaponMain, "generated_equipment_weapon_mace_wood_boss_01");
   assert.equal(bossState.enemy.armor, 5);
 
   bossState.result = "win";

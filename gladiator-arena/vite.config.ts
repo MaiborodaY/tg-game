@@ -367,6 +367,11 @@ interface UpdateGeneratedShopItemPayload {
   price?: unknown;
 }
 
+interface UpdateGeneratedBossItemPayload {
+  itemId?: unknown;
+  stat?: unknown;
+}
+
 interface GeneratedEquipmentJsonRecord {
   id: string;
   name: string;
@@ -619,6 +624,24 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatUpdatedGeneratedShopItemMessage(updatedRecords), updated: updatedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated shop item." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/update-generated-boss-item", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to update generated boss items." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const update = pickGeneratedBossItemUpdate(payload);
+          const updatedRecord = await updateGeneratedBossItem(update);
+
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatUpdatedGeneratedBossItemMessage(updatedRecord), updated: 1 });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated boss item." });
         }
       });
 
@@ -1507,6 +1530,55 @@ function formatUpdatedGeneratedShopItemMessage(updatedRecords: GeneratedEquipmen
   }
 
   return `Updated ${updatedRecords.length} linked generated shop items.`;
+}
+
+interface GeneratedBossItemUpdate {
+  itemId: string;
+  stat: number;
+}
+
+function pickGeneratedBossItemUpdate(payload: unknown): GeneratedBossItemUpdate {
+  const update = readPlainObject(payload, "generated boss item update") as UpdateGeneratedBossItemPayload;
+  const itemId = readNonEmptyString(update.itemId, "generated boss item id");
+  const stat = Math.max(0, Math.floor(readFinitePayloadNumber(update.stat, "generated boss item stat")));
+
+  return {
+    itemId,
+    stat,
+  };
+}
+
+async function updateGeneratedBossItem(update: GeneratedBossItemUpdate): Promise<GeneratedEquipmentJsonRecord> {
+  const records = await readGeneratedEquipmentRecords();
+  const targetRecord = records.find((record) => record.id === update.itemId);
+
+  if (!targetRecord) {
+    throw new Error(`Generated boss item not found: ${update.itemId}.`);
+  }
+
+  if (!isGeneratedBossItemRecord(targetRecord)) {
+    throw new Error("Only generated boss items can be edited.");
+  }
+
+  const maxStat = targetRecord.kind === "weapon" ? promotedEquipmentMaxDamageBonus : promotedEquipmentMaxArmorHp;
+  const clampedStat = Math.max(0, Math.min(maxStat, update.stat));
+  const nextRecord: GeneratedEquipmentJsonRecord = {
+    ...targetRecord,
+    ...(targetRecord.kind === "armor" ? { armorHp: clampedStat } : { damageBonus: clampedStat }),
+  };
+  const nextRecords = records.map((record) => (record.id === update.itemId ? nextRecord : record));
+
+  await writeGeneratedEquipmentRecords(nextRecords);
+
+  return nextRecord;
+}
+
+function isGeneratedBossItemRecord(record: GeneratedEquipmentJsonRecord): boolean {
+  return record.availability?.bossUnique === true || record.rarity === "unique";
+}
+
+function formatUpdatedGeneratedBossItemMessage(updatedRecord: GeneratedEquipmentJsonRecord): string {
+  return `Updated ${updatedRecord.name}.`;
 }
 
 function escapeRegExp(value: string): string {
