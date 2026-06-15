@@ -176,6 +176,39 @@ test("weapon shop product cards use the damage icon instead of a DM label", () =
   assert.match(weaponShopSource, /statIcon\.className = "armory-shop__product-stat-icon";[\s\S]*statIcon\.src = statIconUrl;[\s\S]*statValue\.textContent = String\(stat\);/);
 });
 
+test("weapon shop consumable cards show purchase unit and owned cap badges", () => {
+  assert.equal(weaponShopSource.includes("areHeroItemsConsumable"), true);
+  assert.equal(weaponShopSource.includes("getHeroItemQuantity"), true);
+  assert.equal(weaponShopSource.includes("getHeroConsumableMaxQuantity"), true);
+  assert.equal(weaponShopSource.includes("const consumableInfo = getConsumableCardInfo(hero, product.itemIds);"), true);
+  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--consumable", Boolean(consumableInfo));'), true);
+  assert.match(weaponShopSource, /if \(consumableInfo\) \{[\s\S]*button\.append\(createConsumableCardBadges\(consumableInfo\)\);[\s\S]*\}/);
+  assert.equal(weaponShopSource.includes('unitPrefix.className = "armory-shop__product-consumable-prefix";'), true);
+  assert.equal(weaponShopSource.includes('unitPrefix.textContent = "x";'), true);
+  assert.equal(weaponShopSource.includes('unitAmount.className = "armory-shop__product-consumable-amount";'), true);
+  assert.equal(weaponShopSource.includes('unitAmount.textContent = "1";'), true);
+  assert.equal(weaponShopSource.includes("quantity.textContent = `${info.quantity}/${info.maxQuantity}`;"), true);
+  assert.equal(stylesSource.includes(".armory-shop__product-consumable-badges"), true);
+  assert.equal(stylesSource.includes(".armory-shop__product-consumable-unit"), true);
+  assert.equal(stylesSource.includes(".armory-shop__product-consumable-prefix"), true);
+  assert.equal(stylesSource.includes(".armory-shop__product-consumable-amount"), true);
+  assert.equal(stylesSource.includes(".armory-shop__product-consumable-quantity"), true);
+});
+
+test("weapon shop consumable confirm strip shows unit purchase and flat damage", () => {
+  assert.equal(weaponShopSource.includes("const isConsumable = areHeroItemsConsumable(product.itemIds);"), true);
+  assert.equal(weaponShopSource.includes("compareStat: !isConsumable"), true);
+  assert.equal(weaponShopSource.includes('unitLabel: isConsumable ? "x1" : undefined'), true);
+  assert.equal(weaponShopSource.includes("createPreviewBuyButton(product, hero)"), true);
+  assert.equal(weaponShopSource.includes('button.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);'), true);
+  assert.equal(weaponShopSource.includes("Buy x1"), false);
+  assert.equal(weaponShopSource.includes('unitNode.className = "armory-shop__selected-unit";'), true);
+  assert.equal(weaponShopSource.includes("const comparesStat = options.compareStat ?? true;"), true);
+  assert.equal(weaponShopSource.includes("if (comparesStat && currentStat !== stat)"), true);
+  assert.equal(stylesSource.includes(".armory-shop__selected-unit"), true);
+  assert.equal(stylesSource.includes(".armory-shop__selected-buy--unit"), false);
+});
+
 test("weapon shop locked products are dimmed and show centered stat requirement ribbons", () => {
   assert.equal(shopPresentationSource.includes("export function getShopProductRequirementBadge"), true);
   assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--locked", actionState === "locked");'), true);
@@ -300,7 +333,8 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.match(armoryShopSource, /function renderPreviewSelection[\s\S]*renderSelectedProduct\(hero\);[\s\S]*updateProductButtonSelection\(previousProductId\);/);
   assert.match(armoryShopSource, /function updateSelectedMeta[\s\S]*meta\.name\.textContent = productName;[\s\S]*meta\.priceAmount\.textContent = String\(price\);/);
   assert.equal(armoryShopSource.includes("armory-shop__selected-stat-value--positive"), true);
-  assert.match(citySelectedCardRule, /grid-template-columns: 40px minmax\(0, 1fr\) minmax\(58px, auto\);/);
+  assert.match(citySelectedCardRule, /grid-template-columns: clamp\(38px, 10vw, 44px\) minmax\(0, 1fr\) clamp\(50px, 13vw, 62px\);/);
+  assert.match(citySelectedMetaRule, /grid-template-columns: minmax\(0, auto\) minmax\(0, auto\) minmax\(0, 1fr\);/);
   assert.match(citySelectedMetaRule, /"name name name"/);
   assert.match(citySelectedMetaRule, /"rarity stat price"/);
   assert.equal(stylesSource.includes(".armory-shop__selected-stat-value--positive"), true);

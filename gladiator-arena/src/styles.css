@@ -5236,12 +5236,12 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__selected-card {
-  grid-template-columns: 40px minmax(0, 1fr) minmax(58px, auto);
-  gap: 6px;
+  grid-template-columns: clamp(38px, 10vw, 44px) minmax(0, 1fr) clamp(50px, 13vw, 62px);
+  gap: clamp(5px, 1.4vw, 8px);
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding: 5px 6px;
+  padding: 6px clamp(5px, 1.6vw, 7px);
   border-radius: 8px;
   background:
     linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 50%, var(--shop-rarity-dark, #4d4232) 100%);
@@ -5327,37 +5327,61 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode .armory-shop__selected-icon {
-  width: 38px;
-  height: 42px;
+  width: clamp(36px, 9.4vw, 42px);
+  height: clamp(38px, 10vw, 44px);
   background: rgba(22, 7, 3, 0.42);
   box-shadow: none;
   filter: none;
 }
 
 .armory-shop--city-mode .armory-shop__selected-name {
-  font-size: 0.72rem;
+  font-size: 0.9rem;
+}
+
+.armory-shop--city-mode .armory-shop__selected-unit {
+  padding: 2px 5px 3px;
+  border: 1px solid rgba(255, 211, 132, 0.46);
+  border-radius: 999px;
+  color: #ffe08a;
+  background: rgba(35, 10, 4, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.14),
+    0 1px 0 rgba(8, 2, 1, 0.66);
+  font-size: 0.78rem;
+  text-shadow:
+    1px 1px 0 #160703,
+    0 0 5px rgba(255, 211, 132, 0.26);
 }
 
 .armory-shop--city-mode .armory-shop__selected-rarity {
-  padding: 2px 6px 3px;
-  font-size: 0.5rem;
+  max-width: clamp(46px, 14vw, 68px);
+  padding: 2px 5px 3px;
+  font-size: clamp(0.44rem, 1.55vw, 0.56rem);
 }
 
 .armory-shop--city-mode .armory-shop__selected-stat {
-  gap: 3px;
-  padding: 2px 6px 3px;
+  gap: clamp(3px, 1vw, 5px);
+  padding: 3px clamp(5px, 1.4vw, 8px) 4px;
   box-shadow: none;
-  font-size: 0.64rem;
+  font-size: clamp(0.72rem, 2.3vw, 0.84rem);
 }
 
 .armory-shop--city-mode .armory-shop__selected-stat-icon {
-  width: 14px;
-  height: 14px;
+  width: clamp(15px, 4.4vw, 18px);
+  height: clamp(15px, 4.4vw, 18px);
   filter: none;
 }
 
 .armory-shop--city-mode .armory-shop__selected-price {
-  font-size: 0.58rem;
+  gap: clamp(2px, 0.9vw, 4px);
+  justify-self: end;
+  min-width: 0;
+  font-size: clamp(0.66rem, 2.05vw, 0.78rem);
+}
+
+.armory-shop--city-mode .armory-shop__selected-price .armory-shop__price-icon {
+  width: clamp(13px, 3.8vw, 16px);
+  height: clamp(13px, 3.8vw, 16px);
 }
 
 .armory-shop--city-mode .armory-shop__selected-name,
@@ -5372,14 +5396,14 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: auto auto minmax(0, auto);
+  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
   grid-template-areas:
     "name name name"
     "rarity stat price";
   gap: 4px 5px;
   align-content: center;
   align-items: center;
-  justify-content: start;
+  justify-content: stretch;
   min-width: 0;
   line-height: 1;
   text-transform: uppercase;
@@ -5387,6 +5411,9 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop__selected-name {
   grid-area: name;
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
   overflow: hidden;
   color: #ffe8ad;
   font-size: clamp(0.6rem, 2.35vw, 0.76rem);
@@ -5397,6 +5424,23 @@ body.debug-active .city-menu__portrait-button:active {
     1px 1px 0 #160703,
     0 0 5px rgba(255, 211, 132, 0.16);
   white-space: nowrap;
+}
+
+.armory-shop__selected-name-text {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.armory-shop__selected-unit {
+  flex: 0 0 auto;
+  color: #fff0bd;
+  font-size: 0.74em;
+  line-height: 1;
+  text-transform: none;
+  text-shadow:
+    1px 1px 0 #160703,
+    0 0 5px rgba(255, 211, 132, 0.2);
 }
 
 .armory-shop__selected-rarity {
@@ -5474,6 +5518,8 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 3px;
   align-items: center;
   justify-content: end;
+  justify-self: end;
+  min-width: 0;
   color: #ffd384;
   font-size: clamp(0.54rem, 2.1vw, 0.66rem);
   font-weight: 900;
@@ -5520,13 +5566,16 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode .armory-shop__selected-buy {
   min-height: 42px;
-  padding: 4px 5px;
+  padding: 5px clamp(5px, 1.6vw, 8px);
   border-radius: 6px;
   background: #603019;
   box-shadow:
     inset 0 1px 0 rgba(255, 246, 210, 0.18),
     0 1px 0 rgba(8, 2, 1, 0.72);
-  font-size: 0.62rem;
+  font-size: clamp(0.68rem, 2.05vw, 0.78rem);
+  line-height: 0.92;
+  overflow-wrap: normal;
+  white-space: normal;
 }
 
 .armory-shop__selected-buy:active:not(:disabled) {
@@ -5691,6 +5740,10 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode .armory-shop__option--for-sale {
   padding-bottom: 32px;
+}
+
+.armory-shop--city-mode .armory-shop__option--consumable {
+  padding-top: 26px;
 }
 
 .armory-shop__option--for-sale {
@@ -5913,6 +5966,64 @@ body.debug-active .city-menu__portrait-button:active {
   color: #35180d;
   font-size: 1rem;
   font-weight: 900;
+}
+
+.armory-shop__product-consumable-badges {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  left: 6px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  pointer-events: none;
+  text-transform: none;
+}
+
+.armory-shop__product-consumable-unit,
+.armory-shop__product-consumable-quantity {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  padding: 0;
+  color: #160703;
+  background: transparent;
+  box-shadow: none;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.84rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1;
+  text-shadow:
+    0.35px 0 0 #160703,
+    -0.35px 0 0 #160703,
+    0 0.35px 0 #160703,
+    0 -0.35px 0 #160703,
+    0 1px 0 rgba(255, 246, 210, 0.3);
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.armory-shop__product-consumable-unit {
+  gap: 1px;
+}
+
+.armory-shop__product-consumable-prefix {
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.armory-shop__product-consumable-amount,
+.armory-shop__product-consumable-quantity {
+  font-size: 0.84rem;
+}
+
+.armory-shop__product-consumable-quantity {
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .armory-shop__product-stats {

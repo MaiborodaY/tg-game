@@ -1,7 +1,10 @@
 import {
   HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX,
   HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE,
+  areHeroItemsConsumable,
   getHeroBowShotCapacity,
+  getHeroConsumableMaxQuantity,
+  getHeroItemQuantity,
   type HeroItemId,
   type HeroState,
 } from "./hero";
@@ -68,6 +71,16 @@ interface WeaponShopOptions {
   onClose?: () => void;
   onLayoutChange?: (menuTopY?: number) => void;
   transitionDelayMs?: number;
+}
+
+interface ConsumableCardInfo {
+  quantity: number;
+  maxQuantity: number;
+}
+
+interface SelectedMetaOptions {
+  compareStat?: boolean;
+  unitLabel?: string;
 }
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
@@ -446,6 +459,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const displayName = getShopProductDisplayName(product.name);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
+    const consumableInfo = getConsumableCardInfo(hero, product.itemIds);
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
     button.classList.toggle("armory-shop__option--selected", isSelected);
@@ -455,6 +469,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
     button.classList.toggle("armory-shop__option--locked", actionState === "locked");
     button.classList.toggle("armory-shop__option--sealed", actionState === "locked");
+    button.classList.toggle("armory-shop__option--consumable", Boolean(consumableInfo));
     button.type = "button";
     button.disabled = actionState === "locked";
     button.title = requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
@@ -463,6 +478,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(actionState, product.price)}`,
     );
     button.append(createProductIcon(iconUrl));
+    if (consumableInfo) {
+      button.append(createConsumableCardBadges(consumableInfo));
+    }
     if (actionState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
     }
@@ -489,11 +507,15 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const damage = getShopProductStat(product.itemIds, "damage");
     const currentDamage = getEquippedShopProductStat(hero, product.itemIds, "damage");
     const displayName = getShopProductDisplayName(product.name);
+    const isConsumable = areHeroItemsConsumable(product.itemIds);
 
     strip.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
     strip.append(
       createProductIcon(iconUrl, "armory-shop__selected-icon"),
-      createSelectedMeta(displayName, rarity, "damage", DAMAGE_HIT_ICON_ASSET_URL, damage, currentDamage, product.price),
+      createSelectedMeta(displayName, rarity, "damage", DAMAGE_HIT_ICON_ASSET_URL, damage, currentDamage, product.price, {
+        compareStat: !isConsumable,
+        unitLabel: isConsumable ? "x1" : undefined,
+      }),
       createPreviewBuyButton(product, hero),
     );
 
@@ -507,7 +529,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.className = "armory-shop__selected-buy";
     button.type = "button";
     button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "locked" || actionState === "max";
-    button.textContent = getShopProductActionLabel(actionState, product.price);
+    button.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       previewProduct = undefined;
       options.onBuy(product);
@@ -742,6 +764,50 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   return icon;
 }
 
+function getConsumableCardInfo(hero: HeroState, itemIds: readonly HeroItemId[]): ConsumableCardInfo | undefined {
+  if (!areHeroItemsConsumable(itemIds)) {
+    return undefined;
+  }
+
+  const itemId = itemIds[0];
+
+  if (!itemId) {
+    return undefined;
+  }
+
+  const maxQuantity = getHeroConsumableMaxQuantity(itemId);
+
+  if (maxQuantity <= 0) {
+    return undefined;
+  }
+
+  return {
+    quantity: Math.min(getHeroItemQuantity(hero, itemId), maxQuantity),
+    maxQuantity,
+  };
+}
+
+function createConsumableCardBadges(info: ConsumableCardInfo): HTMLElement {
+  const badges = document.createElement("span");
+  const unit = document.createElement("span");
+  const unitPrefix = document.createElement("span");
+  const unitAmount = document.createElement("span");
+  const quantity = document.createElement("span");
+
+  badges.className = "armory-shop__product-consumable-badges";
+  unit.className = "armory-shop__product-consumable-unit";
+  unitPrefix.className = "armory-shop__product-consumable-prefix";
+  unitPrefix.textContent = "x";
+  unitAmount.className = "armory-shop__product-consumable-amount";
+  unitAmount.textContent = "1";
+  quantity.className = "armory-shop__product-consumable-quantity";
+  quantity.textContent = `${info.quantity}/${info.maxQuantity}`;
+  unit.append(unitPrefix, unitAmount);
+  badges.append(unit, quantity);
+
+  return badges;
+}
+
 function createProductStats(statLabel: string, statIconUrl: string, stat: number, price: number): HTMLElement {
   const stats = document.createElement("span");
   const statNode = document.createElement("span");
@@ -795,36 +861,48 @@ function createSelectedMeta(
   stat: number,
   currentStat: number,
   price: number,
+  options: SelectedMetaOptions = {},
 ): HTMLElement {
   const meta = document.createElement("div");
   const nameNode = document.createElement("span");
+  const nameText = document.createElement("span");
   const rarityNode = document.createElement("span");
   const statNode = document.createElement("span");
   const statIcon = document.createElement("img");
   const currentStatNode = document.createElement("span");
   const nextStatNode = document.createElement("span");
   const priceNode = document.createElement("span");
+  const comparesStat = options.compareStat ?? true;
 
   meta.className = "armory-shop__selected-meta";
   nameNode.className = "armory-shop__selected-name";
-  nameNode.textContent = productName;
+  nameText.className = "armory-shop__selected-name-text";
+  nameText.textContent = productName;
+  nameNode.append(nameText);
+  if (options.unitLabel) {
+    const unitNode = document.createElement("span");
+
+    unitNode.className = "armory-shop__selected-unit";
+    unitNode.textContent = options.unitLabel;
+    nameNode.append(unitNode);
+  }
   rarityNode.className = "armory-shop__selected-rarity";
   rarityNode.textContent = getShopRarityLabel(rarity);
   statNode.className = "armory-shop__selected-stat";
-  statNode.setAttribute("aria-label", currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
+  statNode.setAttribute("aria-label", !comparesStat || currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
   statIcon.className = "armory-shop__selected-stat-icon";
   statIcon.src = statIconUrl;
   statIcon.alt = "";
   statIcon.decoding = "async";
   statIcon.draggable = false;
   currentStatNode.className = "armory-shop__selected-stat-value";
-  currentStatNode.textContent = String(currentStat);
+  currentStatNode.textContent = String(comparesStat ? currentStat : stat);
   nextStatNode.className = "armory-shop__selected-stat-value";
   nextStatNode.classList.toggle("armory-shop__selected-stat-value--positive", stat > currentStat);
   nextStatNode.classList.toggle("armory-shop__selected-stat-value--negative", stat < currentStat);
   nextStatNode.textContent = String(stat);
   statNode.append(statIcon, currentStatNode);
-  if (currentStat !== stat) {
+  if (comparesStat && currentStat !== stat) {
     const arrowNode = document.createElement("span");
 
     arrowNode.className = "armory-shop__selected-stat-arrow";
