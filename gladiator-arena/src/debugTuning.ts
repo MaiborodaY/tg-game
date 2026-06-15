@@ -483,6 +483,15 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_shinguard_wood_boss_01": { x: 0.233, y: -16.256, angle: 4, scaleX: 1.4, scaleY: 1.27, flipX: false, flipY: false },
   "auto_equipment_back_boot_wood_boss_01": { x: 5, y: -4, angle: 0, scaleX: 1.31, scaleY: 1.38, flipX: false, flipY: false },
   "auto_equipment_back_shinguard_sand_01": { x: -1, y: -1, angle: -2, scaleX: 1.1, scaleY: 1.1, flipX: false, flipY: false },
+  "auto_equipment_back_boot_sand_01": { x: 4, y: -2, angle: 0, scaleX: 1.29, scaleY: 1.16, flipX: false, flipY: false },
+  "auto_equipment_helmet_rust_champion_01": { x: -1, y: 29, angle: 0, scaleX: 0.97, scaleY: 1.16, flipX: false, flipY: false },
+  "auto_equipment_back_boot_rust_champion_01": { x: 15.254, y: -5.479, angle: 0, scaleX: 1.92, scaleY: 1.49, flipX: false, flipY: false },
+  "auto_equipment_back_glove_rust_champion_01": { x: 0, y: 11, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  "auto_equipment_back_greave_rust_champion_01": { x: -3.313, y: 8.876, angle: -10, scaleX: 1.1, scaleY: 1.01, flipX: false, flipY: false },
+  "auto_equipment_back_shinguard_rust_champion_01": { x: 3, y: 0, angle: 3, scaleX: 1.1, scaleY: 1, flipX: false, flipY: false },
+  "auto_equipment_back_shoulderguard_rust_champion_01": { x: 10, y: 10, angle: 48, scaleX: 1.45, scaleY: 1.4, flipX: true, flipY: false },
+  "auto_equipment_back_wrist_rust_champion_01": { x: 0.507, y: -1.269, angle: -7, scaleX: 1.57, scaleY: 1.61, flipX: true, flipY: false },
+  "auto_equipment_breastplate_rust_champion_01": { x: 0.28, y: 57, angle: 0, scaleX: 1.38, scaleY: 1.61, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

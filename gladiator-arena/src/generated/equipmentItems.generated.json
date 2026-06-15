@@ -5,7 +5,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorCategory": "cloth",
-    "armorHp": 2,
+    "armorHp": 3,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-cloth-01"
@@ -32,7 +32,7 @@
     "armoryProduct": {
       "id": "cloth_breastplate_01",
       "name": "Cloth Breastplate 01",
-      "price": 10,
+      "price": 9,
       "itemIds": [
         "cloth_breastplate_01"
       ],
@@ -112,7 +112,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_cloth_01",
       "name": "Cloth Back Boot 01",
-      "price": 5,
+      "price": 2,
       "itemIds": [
         "generated_equipment_back_boot_cloth_01"
       ],
@@ -159,11 +159,50 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_rust_champion_01",
+    "name": "Rust Champion Boots",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 2,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 15.254354177700478,
+      "y": -5.4792899429153294,
+      "angle": 0,
+      "scaleX": 1.92,
+      "scaleY": 1.49,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_rust_champion_01",
+      "name": "Rust Champion Boots",
+      "price": 7,
+      "itemIds": [
+        "generated_equipment_back_boot_rust_champion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_sand_01",
     "name": "Sand Boots",
     "kind": "armor",
     "rarity": "common",
-    "armorHp": 3,
+    "armorHp": 2,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-sand-01"
@@ -190,7 +229,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_sand_01",
       "name": "Sand Boots",
-      "price": 10,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_boot_sand_01"
       ],
@@ -202,7 +241,7 @@
     "name": "Wood Boot",
     "kind": "armor",
     "rarity": "unique",
-    "armorHp": 5,
+    "armorHp": 4,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-wood-boss-01"
@@ -300,7 +339,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_cloth_01",
       "name": "Cloth Back Glove 01",
-      "price": 5,
+      "price": 2,
       "itemIds": [
         "generated_equipment_back_glove_cloth_01"
       ],
@@ -352,7 +391,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 1,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-leather-03"
@@ -379,9 +418,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_leather_03",
       "name": "Leather Back Glove 03",
-      "price": 25,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_glove_leather_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_rust_champion_01",
+    "name": "Rust Back Glove Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 2,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 11,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_rust_champion_01",
+      "name": "Rust Back Glove Champion 01",
+      "price": 5,
+      "itemIds": [
+        "generated_equipment_back_glove_rust_champion_01"
       ],
       "categoryId": "arms"
     }
@@ -418,7 +496,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_sand_01",
       "name": "Sand Glove",
-      "price": 10,
+      "price": 2,
       "itemIds": [
         "generated_equipment_back_glove_sand_01"
       ],
@@ -528,7 +606,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_cloth_01",
       "name": "Cloth Back Greave 01",
-      "price": 5,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_greave_cloth_01"
       ],
@@ -580,7 +658,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 3,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-leather-01"
@@ -607,9 +685,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_leather_01",
       "name": "Leather Back Greave 01",
-      "price": 25,
+      "price": 9,
       "itemIds": [
         "generated_equipment_back_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_rust_champion_01",
+    "name": "Rust Back Greave Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 4,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": -3.3132619515390758,
+      "y": 8.875739657491977,
+      "angle": -10,
+      "scaleX": 1.1,
+      "scaleY": 1.01,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_rust_champion_01",
+      "name": "Rust Back Greave Champion 01",
+      "price": 12,
+      "itemIds": [
+        "generated_equipment_back_greave_rust_champion_01"
       ],
       "categoryId": "legs"
     }
@@ -646,7 +763,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_sand_01",
       "name": "Sand Greave",
-      "price": 10,
+      "price": 6,
       "itemIds": [
         "generated_equipment_back_greave_sand_01"
       ],
@@ -756,7 +873,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_cloth_01",
       "name": "Cloth Back Shinguard 01",
-      "price": 5,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_shinguard_cloth_01"
       ],
@@ -803,6 +920,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_shinguard_rust_champion_01",
+    "name": "Rust Back Shinguard Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 4,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 3,
+      "y": 0,
+      "angle": 3,
+      "scaleX": 1.1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_rust_champion_01",
+      "name": "Rust Back Shinguard Champion 01",
+      "price": 12,
+      "itemIds": [
+        "generated_equipment_back_shinguard_rust_champion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_sand_01",
     "name": "Sand Shinguard",
     "kind": "armor",
@@ -834,7 +990,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_sand_01",
       "name": "Sand Shinguard",
-      "price": 10,
+      "price": 5,
       "itemIds": [
         "generated_equipment_back_shinguard_sand_01"
       ],
@@ -866,18 +1022,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-wood-boss-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": false,
-      "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_shinguard_wood_boss_01",
-      "name": "Wood Shinguard",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_back_shinguard_wood_boss_01"
-      ],
-      "categoryId": "legs"
+      "bossUnique": true
     }
   },
   {
@@ -953,7 +1100,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_cloth_01",
       "name": "Cloth Back Shoulderguard 01",
-      "price": 5,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_shoulderguard_cloth_01"
       ],
@@ -1000,6 +1147,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_shoulderguard_rust_champion_01",
+    "name": "Rust Back Shoulderguard Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 4,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 17.255479746451044,
+      "y": 3.969942342197953,
+      "angle": 54,
+      "scaleX": 1.45,
+      "scaleY": 1.4,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_rust_champion_01",
+      "name": "Rust Back Shoulderguard Champion 01",
+      "price": 12,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_rust_champion_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_back_shoulderguard_sand_01",
     "name": "Sand Shoulderguard",
     "kind": "armor",
@@ -1031,7 +1217,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_sand_01",
       "name": "Sand Shoulderguard",
-      "price": 10,
+      "price": 6,
       "itemIds": [
         "generated_equipment_back_shoulderguard_sand_01"
       ],
@@ -1141,7 +1327,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_cloth_01",
       "name": "Cloth Back Wrist 01",
-      "price": 5,
+      "price": 2,
       "itemIds": [
         "generated_equipment_back_wrist_cloth_01"
       ],
@@ -1188,6 +1374,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_wrist_rust_champion_01",
+    "name": "Rust Back Wrist Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 2,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 0.6679343247925971,
+      "y": 1.8511877292656322,
+      "angle": -10,
+      "scaleX": 1.57,
+      "scaleY": 1.61,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_rust_champion_01",
+      "name": "Rust Back Wrist Champion 01",
+      "price": 7,
+      "itemIds": [
+        "generated_equipment_back_wrist_rust_champion_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_sand_01",
     "name": "Sand Wrist",
     "kind": "armor",
@@ -1219,7 +1444,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_sand_01",
       "name": "Sand Wrist",
-      "price": 10,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_wrist_sand_01"
       ],
@@ -1336,11 +1561,50 @@
     }
   },
   {
+    "id": "generated_equipment_breastplate_rust_champion_01",
+    "name": "Rust Breastplate Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 11,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 0.2796705434538751,
+      "y": 57,
+      "angle": 0,
+      "scaleX": 1.38,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_rust_champion_01",
+      "name": "Rust Breastplate Champion 01",
+      "price": 33,
+      "itemIds": [
+        "generated_equipment_breastplate_rust_champion_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
     "id": "generated_equipment_breastplate_sand_01",
     "name": "Sand Breastplate",
     "kind": "armor",
     "rarity": "common",
-    "armorHp": 4,
+    "armorHp": 5,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-sand-01"
@@ -1367,7 +1631,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_sand_01",
       "name": "Sand Breastplate",
-      "price": 20,
+      "price": 15,
       "itemIds": [
         "generated_equipment_breastplate_sand_01"
       ],
@@ -1477,7 +1741,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_boot_cloth_01",
       "name": "Cloth Front Boot 01",
-      "price": 5,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_boot_cloth_01"
       ],
@@ -1524,6 +1788,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_rust_champion_01",
+    "name": "Rust Champion Boots Front",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": -9,
+      "y": -5.4792899429153294,
+      "angle": 0,
+      "scaleX": 1.92,
+      "scaleY": 1.49,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_rust_champion_01",
+      "name": "Rust Champion Boots Front",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_rust_champion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_sand_01",
     "name": "Sand Boots Front",
     "kind": "armor",
@@ -1555,7 +1858,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_boot_sand_01",
       "name": "Sand Boots Front",
-      "price": 10,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_boot_sand_01"
       ],
@@ -1665,7 +1968,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_glove_cloth_01",
       "name": "Cloth Front Glove 01",
-      "price": 5,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_glove_cloth_01"
       ],
@@ -1744,9 +2047,48 @@
     "armoryProduct": {
       "id": "generated_equipment_front_glove_leather_03",
       "name": "Leather Front Glove 03",
-      "price": 25,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_glove_leather_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_rust_champion_01",
+    "name": "Rust Front Glove Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 11,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_rust_champion_01",
+      "name": "Rust Front Glove Champion 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_rust_champion_01"
       ],
       "categoryId": "arms"
     }
@@ -1783,7 +2125,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_glove_sand_01",
       "name": "Sand Glove Front",
-      "price": 10,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_glove_sand_01"
       ],
@@ -1893,7 +2235,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_greave_cloth_01",
       "name": "Cloth Front Greave 01",
-      "price": 5,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_greave_cloth_01"
       ],
@@ -1972,9 +2314,48 @@
     "armoryProduct": {
       "id": "generated_equipment_front_greave_leather_01",
       "name": "Leather Front Greave 01",
-      "price": 25,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_rust_champion_01",
+    "name": "Rust Front Greave Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": -3.3132619515390758,
+      "y": 8.875739657491977,
+      "angle": -10,
+      "scaleX": 1.1,
+      "scaleY": 1.01,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_rust_champion_01",
+      "name": "Rust Front Greave Champion 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_rust_champion_01"
       ],
       "categoryId": "legs"
     }
@@ -2011,7 +2392,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_greave_sand_01",
       "name": "Sand Greave Front",
-      "price": 10,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_greave_sand_01"
       ],
@@ -2121,7 +2502,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_shinguard_cloth_01",
       "name": "Cloth Front Shinguard 01",
-      "price": 5,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_shinguard_cloth_01"
       ],
@@ -2168,6 +2549,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_rust_champion_01",
+    "name": "Rust Front Shinguard Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 2.6263528881855223,
+      "y": 1.4792899429153294,
+      "angle": 3,
+      "scaleX": 1.1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_rust_champion_01",
+      "name": "Rust Front Shinguard Champion 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_rust_champion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_sand_01",
     "name": "Sand Shinguard Front",
     "kind": "armor",
@@ -2199,7 +2619,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_shinguard_sand_01",
       "name": "Sand Shinguard Front",
-      "price": 10,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_shinguard_sand_01"
       ],
@@ -2231,18 +2651,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-wood-boss-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": false,
-      "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_shinguard_wood_boss_01",
-      "name": "Wood Shinguard Front",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_shinguard_wood_boss_01"
-      ],
-      "categoryId": "legs"
+      "bossUnique": true
     }
   },
   {
@@ -2318,7 +2729,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_shoulderguard_cloth_01",
       "name": "Cloth Front Shoulderguard 01",
-      "price": 5,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_shoulderguard_cloth_01"
       ],
@@ -2365,6 +2776,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_rust_champion_01",
+    "name": "Rust Front Shoulderguard Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 17.255479746451044,
+      "y": 3.969942342197953,
+      "angle": 54,
+      "scaleX": 1.45,
+      "scaleY": 1.4,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_rust_champion_01",
+      "name": "Rust Front Shoulderguard Champion 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_rust_champion_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_sand_01",
     "name": "Sand Shoulderguard Front",
     "kind": "armor",
@@ -2396,7 +2846,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_shoulderguard_sand_01",
       "name": "Sand Shoulderguard Front",
-      "price": 10,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_shoulderguard_sand_01"
       ],
@@ -2506,7 +2956,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_wrist_cloth_01",
       "name": "Cloth Front Wrist 01",
-      "price": 5,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_wrist_cloth_01"
       ],
@@ -2553,6 +3003,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_rust_champion_01",
+    "name": "Rust Front Wrist Champion 01",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-rust-champion-01"
+    },
+    "equipmentTuning": {
+      "x": 0.6679343247925971,
+      "y": 1.8511877292656322,
+      "angle": -10,
+      "scaleX": 1.57,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-rust-champion-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-rust-champion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-rust-champion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_rust_champion_01",
+      "name": "Rust Front Wrist Champion 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_rust_champion_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_sand_01",
     "name": "Sand Wrist Front",
     "kind": "armor",
@@ -2584,7 +3073,7 @@
     "armoryProduct": {
       "id": "generated_equipment_front_wrist_sand_01",
       "name": "Sand Wrist Front",
-      "price": 10,
+      "price": 0,
       "itemIds": [
         "generated_equipment_front_wrist_sand_01"
       ],
@@ -2667,7 +3156,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorCategory": "cloth",
-    "armorHp": 1,
+    "armorHp": 2,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-cloth-01"
@@ -2694,7 +3183,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_cloth_01",
       "name": "Cloth Helmet 01",
-      "price": 3,
+      "price": 6,
       "itemIds": [
         "generated_equipment_helmet_cloth_01"
       ],
@@ -2727,18 +3216,9 @@
       "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-cloth-02.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_helmet_cloth_02",
-      "name": "Cloth Helmet 02",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_helmet_cloth_02"
-      ],
-      "categoryId": "head"
     }
   },
   {
@@ -2785,7 +3265,7 @@
     "name": "Rust Champion Helmet",
     "kind": "armor",
     "rarity": "uncommon",
-    "armorHp": 15,
+    "armorHp": 7,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-rust-champion-01"
@@ -2812,7 +3292,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_rust_champion_01",
       "name": "Rust Champion Helmet",
-      "price": 30,
+      "price": 22,
       "itemIds": [
         "generated_equipment_helmet_rust_champion_01"
       ],
@@ -2824,7 +3304,7 @@
     "name": "Sand Helmet 01",
     "kind": "armor",
     "rarity": "common",
-    "armorHp": 3,
+    "armorHp": 4,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-sand-01"
@@ -2851,7 +3331,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_sand_01",
       "name": "Sand Helmet 01",
-      "price": 15,
+      "price": 10,
       "itemIds": [
         "generated_equipment_helmet_sand_01"
       ],
@@ -3075,7 +3555,7 @@
     "armoryProduct": {
       "id": "leather_back_boot_01",
       "name": "Leather Back Boot 01",
-      "price": 0,
+      "price": 5,
       "itemIds": [
         "leather_back_boot_01"
       ],
@@ -3088,7 +3568,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 3,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-leather-01"
@@ -3115,7 +3595,7 @@
     "armoryProduct": {
       "id": "leather_back_shinguard_01",
       "name": "Leather Back Shinguard 01",
-      "price": 0,
+      "price": 9,
       "itemIds": [
         "leather_back_shinguard_01"
       ],
@@ -3128,7 +3608,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 3,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-leather-01"
@@ -3155,7 +3635,7 @@
     "armoryProduct": {
       "id": "leather_back_shoulderguard_01",
       "name": "Leather Back Shoulderguard 01",
-      "price": 0,
+      "price": 9,
       "itemIds": [
         "leather_back_shoulderguard_01"
       ],
@@ -3195,7 +3675,7 @@
     "armoryProduct": {
       "id": "leather_back_wrist_01",
       "name": "Leather Back Wrist 01",
-      "price": 0,
+      "price": 4,
       "itemIds": [
         "leather_back_wrist_01"
       ],
@@ -3208,7 +3688,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 1,
+    "armorHp": 8,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-leather-01"
@@ -3235,7 +3715,7 @@
     "armoryProduct": {
       "id": "leather_breastplate_01",
       "name": "Leather Breastplate 01",
-      "price": 0,
+      "price": 24,
       "itemIds": [
         "leather_breastplate_01"
       ],
@@ -3408,7 +3888,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 1,
+    "armorHp": 5,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-leather-01"
@@ -3435,7 +3915,7 @@
     "armoryProduct": {
       "id": "leather_helmet_01",
       "name": "Leather Helmet 01",
-      "price": 0,
+      "price": 16,
       "itemIds": [
         "leather_helmet_01"
       ],
