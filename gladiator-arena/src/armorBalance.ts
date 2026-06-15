@@ -21,14 +21,14 @@ export interface ArmorPriceBalanceOptions {
 }
 
 export const ARMOR_SLOT_WEIGHTS: Readonly<Record<ArmorBalanceSlot, number>> = {
-  breastplate: 30,
-  helmet: 20,
+  breastplate: 25,
+  helmet: 15,
   shoulders: 11,
   greaves: 11,
   shinguards: 11,
-  gloves: 5,
-  boots: 6,
-  wrists: 6,
+  gloves: 9,
+  boots: 9,
+  wrists: 9,
 };
 
 export const ARMOR_PRICE_SLOT_WEIGHTS: Readonly<Record<ArmorBalanceSlot, number>> = ARMOR_SLOT_WEIGHTS;

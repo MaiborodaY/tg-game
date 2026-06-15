@@ -25,6 +25,8 @@ test("regular game does not mount debug controls", () => {
 test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugHtml.includes('class="debug-app"'), true);
   assert.equal(debugHtml.includes('id="debugPanelHost"'), true);
+  assert.equal(debugHtml.includes('id="debugSetImportPreview"'), true);
+  assert.equal(debugHtml.includes('class="debug-set-import-preview__image"'), true);
   assert.equal(debugHtml.includes('/src/debugMain.ts'), true);
   assert.equal(debugHtml.includes('id="gameScreen" class="game-screen battle-screen"'), true);
   assert.equal(debugHtml.includes('id="resultLoot"'), true);
@@ -299,6 +301,10 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_SET_IMPORT_ASSETS"), true);
   assert.equal(debugPanelSource.includes("DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS"), true);
   assert.equal(debugPanelSource.includes("renderEquipmentSetImportAssets"), true);
+  assert.equal(debugPanelSource.includes("showEquipmentSetImportAssetPreview"), true);
+  assert.equal(debugPanelSource.includes('document.querySelector<HTMLElement>("#debugSetImportPreview")'), true);
+  assert.equal(debugPanelSource.includes('preview.setAttribute("aria-pressed", "false")'), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-preview--selected"), true);
   assert.equal(debugPanelSource.includes("getSelectedEquipmentSetImportEntries"), true);
   assert.equal(debugPanelSource.includes("renameEquipmentSetAssets"), true);
   assert.equal(debugPanelSource.includes("getRemovableGeneratedEquipmentItems"), true);
@@ -314,6 +320,24 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_PRICE_MAX = 2000"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__generated-select"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__set-assets"), true);
+  assert.equal(stylesSource.includes(".debug-set-import-preview"), true);
+  assert.equal(stylesSource.includes(".debug-set-import-preview__image"), true);
+});
+
+test("set importer exposes only back-side paired armor targets", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const setImporterConfigSource = debugPanelSource.slice(
+    debugPanelSource.indexOf("const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS"),
+    debugPanelSource.indexOf("const DEBUG_SHOP_ITEM_PAIR_CONFIGS"),
+  );
+
+  assert.match(setImporterConfigSource, /targetPrefix: "back-shoulderguard"/);
+  assert.match(setImporterConfigSource, /targetPrefix: "back-wrist"/);
+  assert.match(setImporterConfigSource, /targetPrefix: "back-glove"/);
+  assert.match(setImporterConfigSource, /targetPrefix: "back-greave"/);
+  assert.match(setImporterConfigSource, /targetPrefix: "back-shinguard"/);
+  assert.match(setImporterConfigSource, /targetPrefix: "back-boot"/);
+  assert.doesNotMatch(setImporterConfigSource, /targetPrefix: "front-/);
 });
 
 test("auto equipment preview starts from fallback and isolates the selected asset", () => {

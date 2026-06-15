@@ -35,14 +35,14 @@ const armorBalance = loadTypeScriptModule("../src/armorBalance.ts");
 
 test("armor balance slot weights are the single source of truth", () => {
   assert.deepEqual(toPlainObject(armorBalance.ARMOR_SLOT_WEIGHTS), {
-    breastplate: 30,
-    helmet: 20,
+    breastplate: 25,
+    helmet: 15,
     shoulders: 11,
     greaves: 11,
     shinguards: 11,
-    gloves: 5,
-    boots: 6,
-    wrists: 6,
+    gloves: 9,
+    boots: 9,
+    wrists: 9,
   });
   assert.equal(Object.values(armorBalance.ARMOR_SLOT_WEIGHTS).reduce((total, weight) => total + weight, 0), 100);
 });
@@ -73,14 +73,14 @@ test("starter armor prices use the same slot weights", () => {
   const priceSet = armorBalance.deriveArmorSetPricesFromBreastplateArmor(3);
 
   assert.deepEqual(toPlainObject(priceSet), {
-    breastplate: 9,
-    helmet: 6,
+    breastplate: 8,
+    helmet: 4,
     shoulders: 3,
     greaves: 3,
     shinguards: 3,
-    gloves: 2,
-    boots: 2,
-    wrists: 2,
+    gloves: 3,
+    boots: 3,
+    wrists: 3,
   });
   assert.equal(armorBalance.getArmorPriceSetTotal(priceSet), 30);
 });
@@ -89,14 +89,14 @@ test("better common armor prices keep the exact set total", () => {
   const priceSet = armorBalance.deriveArmorSetPricesFromBreastplateArmor(5);
 
   assert.deepEqual(toPlainObject(priceSet), {
-    breastplate: 15,
-    helmet: 10,
+    breastplate: 13,
+    helmet: 8,
     shoulders: 6,
     greaves: 6,
     shinguards: 5,
-    gloves: 2,
-    boots: 3,
-    wrists: 3,
+    gloves: 4,
+    boots: 4,
+    wrists: 4,
   });
   assert.equal(armorBalance.getArmorPriceSetTotal(priceSet), 50);
 });
@@ -117,12 +117,12 @@ test("starter armor can be derived from breastplate armor", () => {
   assert.equal(armorBalance.getArmorSetTotal(armorSet), 11);
 });
 
-test("better early armor can use a higher slot floor", () => {
-  const armorSet = armorBalance.deriveArmorSetFromBreastplateArmor(5, { minimumArmorPerSlot: 2, rounding: "ceil" });
+test("better common armor can be derived from breastplate armor", () => {
+  const armorSet = armorBalance.deriveArmorSetFromBreastplateArmor(5);
 
   assert.deepEqual(toPlainObject(armorSet), {
     breastplate: 5,
-    helmet: 4,
+    helmet: 3,
     shoulders: 2,
     greaves: 2,
     shinguards: 2,
@@ -130,7 +130,7 @@ test("better early armor can use a higher slot floor", () => {
     boots: 2,
     wrists: 2,
   });
-  assert.equal(armorBalance.getArmorSetTotal(armorSet), 21);
+  assert.equal(armorBalance.getArmorSetTotal(armorSet), 20);
 });
 
 test("uncommon armor sets derive from the progression table", () => {
@@ -140,25 +140,25 @@ test("uncommon armor sets derive from the progression table", () => {
   assert.deepEqual(toPlainObject(lowArmorSet), {
     breastplate: 8,
     helmet: 5,
-    shoulders: 3,
-    greaves: 3,
-    shinguards: 3,
-    gloves: 1,
-    boots: 2,
-    wrists: 2,
-  });
-  assert.equal(armorBalance.getArmorSetTotal(lowArmorSet), 27);
-  assert.deepEqual(toPlainObject(highArmorSet), {
-    breastplate: 11,
-    helmet: 7,
     shoulders: 4,
     greaves: 4,
     shinguards: 4,
-    gloves: 2,
-    boots: 2,
-    wrists: 2,
+    gloves: 3,
+    boots: 3,
+    wrists: 3,
   });
-  assert.equal(armorBalance.getArmorSetTotal(highArmorSet), 36);
+  assert.equal(armorBalance.getArmorSetTotal(lowArmorSet), 34);
+  assert.deepEqual(toPlainObject(highArmorSet), {
+    breastplate: 11,
+    helmet: 7,
+    shoulders: 5,
+    greaves: 5,
+    shinguards: 5,
+    gloves: 4,
+    boots: 4,
+    wrists: 4,
+  });
+  assert.equal(armorBalance.getArmorSetTotal(highArmorSet), 45);
 });
 
 test("armor balance maps paired armor to primary and mirror equipment slots", () => {

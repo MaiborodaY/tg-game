@@ -32,7 +32,7 @@
     "armoryProduct": {
       "id": "cloth_breastplate_01",
       "name": "Cloth Breastplate 01",
-      "price": 9,
+      "price": 8,
       "itemIds": [
         "cloth_breastplate_01"
       ],
@@ -43,9 +43,9 @@
     "id": "generated_equipment_back_boot_chainmail_01",
     "name": "Chainmail Back Boot 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 8,
+    "armorHp": 4,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-chainmail-01"
@@ -72,7 +72,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_chainmail_01",
       "name": "Chainmail Back Boot 01",
-      "price": 0,
+      "price": 10,
       "itemIds": [
         "generated_equipment_back_boot_chainmail_01"
       ],
@@ -112,7 +112,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_cloth_01",
       "name": "Cloth Back Boot 01",
-      "price": 2,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_boot_cloth_01"
       ],
@@ -124,7 +124,7 @@
     "name": "Druid Back Boot 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 25,
+    "armorHp": 22,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-druid-01"
@@ -151,9 +151,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_druid_01",
       "name": "Druid Back Boot 01",
-      "price": 0,
+      "price": 54,
       "itemIds": [
         "generated_equipment_back_boot_druid_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_boot_executioner_01",
+    "name": "Executioner Back Boot 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 8,
+      "y": -1,
+      "angle": 0,
+      "scaleX": 1.59,
+      "scaleY": 1.38,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-executioner-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_executioner_01",
+      "name": "Executioner Back Boot 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_executioner_01"
       ],
       "categoryId": "legs"
     }
@@ -162,8 +201,8 @@
     "id": "generated_equipment_back_boot_rust_champion_01",
     "name": "Rust Champion Boots",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 2,
+    "rarity": "rare",
+    "armorHp": 5,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-rust-champion-01"
@@ -190,7 +229,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_rust_champion_01",
       "name": "Rust Champion Boots",
-      "price": 7,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_boot_rust_champion_01"
       ],
@@ -229,9 +268,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_sand_01",
       "name": "Sand Boots",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_boot_sand_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_boot_stormguard_01",
+    "name": "Stormguard Back Boot 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 9.001339746984769,
+      "y": -2.366863943933481,
+      "angle": 0,
+      "scaleX": 1.64,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-stormguard-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_stormguard_01",
+      "name": "Stormguard Back Boot 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_stormguard_01"
       ],
       "categoryId": "legs"
     }
@@ -270,9 +348,9 @@
     "id": "generated_equipment_back_glove_chainmail_03",
     "name": "Chainmail Back Glove 03",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 8,
+    "armorHp": 4,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-chainmail-03"
@@ -299,7 +377,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_chainmail_03",
       "name": "Chainmail Back Glove 03",
-      "price": 0,
+      "price": 10,
       "itemIds": [
         "generated_equipment_back_glove_chainmail_03"
       ],
@@ -339,7 +417,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_cloth_01",
       "name": "Cloth Back Glove 01",
-      "price": 2,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_glove_cloth_01"
       ],
@@ -351,7 +429,7 @@
     "name": "Druid Back Glove 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 22,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-druid-01"
@@ -378,9 +456,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_druid_01",
       "name": "Druid Back Glove 01",
-      "price": 0,
+      "price": 54,
       "itemIds": [
         "generated_equipment_back_glove_druid_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_executioner_01",
+    "name": "Executioner Back Glove 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 11,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-executioner-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_executioner_01",
+      "name": "Executioner Back Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_executioner_01"
       ],
       "categoryId": "arms"
     }
@@ -391,7 +508,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 1,
+    "armorHp": 3,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-leather-03"
@@ -418,7 +535,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_leather_03",
       "name": "Leather Back Glove 03",
-      "price": 4,
+      "price": 7,
       "itemIds": [
         "generated_equipment_back_glove_leather_03"
       ],
@@ -429,8 +546,8 @@
     "id": "generated_equipment_back_glove_rust_champion_01",
     "name": "Rust Back Glove Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 2,
+    "rarity": "rare",
+    "armorHp": 5,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-rust-champion-01"
@@ -457,7 +574,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_rust_champion_01",
       "name": "Rust Back Glove Champion 01",
-      "price": 5,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_glove_rust_champion_01"
       ],
@@ -496,9 +613,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_sand_01",
       "name": "Sand Glove",
-      "price": 2,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_glove_sand_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_stormguard_01",
+    "name": "Stormguard Back Glove 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": -1.5035790989716773,
+      "y": 14.157797414644733,
+      "angle": 3,
+      "scaleX": 1.23,
+      "scaleY": 1.2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-stormguard-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_stormguard_01",
+      "name": "Stormguard Back Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_stormguard_01"
       ],
       "categoryId": "arms"
     }
@@ -537,9 +693,9 @@
     "id": "generated_equipment_back_greave_chainmail_01",
     "name": "Chainmail Back Greave 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 8,
+    "armorHp": 5,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-chainmail-01"
@@ -566,7 +722,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_chainmail_01",
       "name": "Chainmail Back Greave 01",
-      "price": 0,
+      "price": 12,
       "itemIds": [
         "generated_equipment_back_greave_chainmail_01"
       ],
@@ -618,7 +774,7 @@
     "name": "Druid Back Greave 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 26,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-druid-01"
@@ -645,9 +801,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_druid_01",
       "name": "Druid Back Greave 01",
-      "price": 0,
+      "price": 66,
       "itemIds": [
         "generated_equipment_back_greave_druid_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_executioner_01",
+    "name": "Executioner Back Greave 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": -3.1413569332511315,
+      "y": 14.053254457695687,
+      "angle": -14,
+      "scaleX": 1.31,
+      "scaleY": 1.07,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-executioner-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_executioner_01",
+      "name": "Executioner Back Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_executioner_01"
       ],
       "categoryId": "legs"
     }
@@ -658,7 +853,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 3,
+    "armorHp": 4,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-leather-01"
@@ -696,8 +891,8 @@
     "id": "generated_equipment_back_greave_rust_champion_01",
     "name": "Rust Back Greave Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 4,
+    "rarity": "rare",
+    "armorHp": 7,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-rust-champion-01"
@@ -724,7 +919,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_rust_champion_01",
       "name": "Rust Back Greave Champion 01",
-      "price": 12,
+      "price": 17,
       "itemIds": [
         "generated_equipment_back_greave_rust_champion_01"
       ],
@@ -771,6 +966,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_stormguard_01",
+    "name": "Stormguard Back Greave 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": -3,
+      "y": 8,
+      "angle": -8,
+      "scaleX": 1.1,
+      "scaleY": 1.14,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-stormguard-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_stormguard_01",
+      "name": "Stormguard Back Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_wood_boss_01",
     "name": "Wooden greave",
     "kind": "armor",
@@ -804,9 +1038,9 @@
     "id": "generated_equipment_back_shinguard_chainmail_01",
     "name": "Chainmail Back Shinguard 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 8,
+    "armorHp": 5,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-chainmail-01"
@@ -833,7 +1067,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_chainmail_01",
       "name": "Chainmail Back Shinguard 01",
-      "price": 0,
+      "price": 12,
       "itemIds": [
         "generated_equipment_back_shinguard_chainmail_01"
       ],
@@ -885,7 +1119,7 @@
     "name": "Druid Back Shinguard 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 26,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-druid-01"
@@ -912,9 +1146,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_druid_01",
       "name": "Druid Back Shinguard 01",
-      "price": 0,
+      "price": 66,
       "itemIds": [
         "generated_equipment_back_shinguard_druid_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_executioner_01",
+    "name": "Executioner Back Shinguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 0.039120634243431596,
+      "y": 4.760956678290768,
+      "angle": 0,
+      "scaleX": 1.3,
+      "scaleY": 1.16,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-executioner-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_executioner_01",
+      "name": "Executioner Back Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_executioner_01"
       ],
       "categoryId": "legs"
     }
@@ -923,8 +1196,8 @@
     "id": "generated_equipment_back_shinguard_rust_champion_01",
     "name": "Rust Back Shinguard Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 4,
+    "rarity": "rare",
+    "armorHp": 7,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-rust-champion-01"
@@ -951,7 +1224,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_rust_champion_01",
       "name": "Rust Back Shinguard Champion 01",
-      "price": 12,
+      "price": 16,
       "itemIds": [
         "generated_equipment_back_shinguard_rust_champion_01"
       ],
@@ -998,6 +1271,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_shinguard_stormguard_01",
+    "name": "Stormguard Back Shinguard 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 1.228665919774656,
+      "y": 4.370764566910168,
+      "angle": 2,
+      "scaleX": 1.4,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-stormguard-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_stormguard_01",
+      "name": "Stormguard Back Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_wood_boss_01",
     "name": "Wood Shinguard",
     "kind": "armor",
@@ -1031,9 +1343,9 @@
     "id": "generated_equipment_back_shoulderguard_chainmail_01",
     "name": "Chainmail Back Shoulderguard 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 8,
+    "armorHp": 5,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-chainmail-01"
@@ -1060,7 +1372,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_chainmail_01",
       "name": "Chainmail Back Shoulderguard 01",
-      "price": 0,
+      "price": 12,
       "itemIds": [
         "generated_equipment_back_shoulderguard_chainmail_01"
       ],
@@ -1112,7 +1424,7 @@
     "name": "Druid Back Shoulderguard 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 26,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-druid-01"
@@ -1139,9 +1451,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_druid_01",
       "name": "Druid Back Shoulderguard 01",
-      "price": 0,
+      "price": 66,
       "itemIds": [
         "generated_equipment_back_shoulderguard_druid_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_executioner_01",
+    "name": "Executioner Back Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 5.6269510627542445,
+      "y": 7.64631161654404,
+      "angle": -6,
+      "scaleX": 1.8,
+      "scaleY": 1.6,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-executioner-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_executioner_01",
+      "name": "Executioner Back Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_executioner_01"
       ],
       "categoryId": "shoulders"
     }
@@ -1150,8 +1501,8 @@
     "id": "generated_equipment_back_shoulderguard_rust_champion_01",
     "name": "Rust Back Shoulderguard Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 4,
+    "rarity": "rare",
+    "armorHp": 7,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-rust-champion-01"
@@ -1178,7 +1529,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_rust_champion_01",
       "name": "Rust Back Shoulderguard Champion 01",
-      "price": 12,
+      "price": 17,
       "itemIds": [
         "generated_equipment_back_shoulderguard_rust_champion_01"
       ],
@@ -1225,6 +1576,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_shoulderguard_stormguard_01",
+    "name": "Stormguard Back Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 3.699836312105603,
+      "y": 16.28789911867159,
+      "angle": 3,
+      "scaleX": 1.74,
+      "scaleY": 1.51,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-stormguard-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_stormguard_01",
+      "name": "Stormguard Back Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_stormguard_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_back_shoulderguard_wood_boss_01",
     "name": "Wood Shoulders",
     "kind": "armor",
@@ -1258,9 +1648,9 @@
     "id": "generated_equipment_back_wrist_chainmail_01",
     "name": "Chainmail Back Wrist 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 8,
+    "armorHp": 4,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-chainmail-01"
@@ -1287,7 +1677,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_chainmail_01",
       "name": "Chainmail Back Wrist 01",
-      "price": 0,
+      "price": 10,
       "itemIds": [
         "generated_equipment_back_wrist_chainmail_01"
       ],
@@ -1327,7 +1717,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_cloth_01",
       "name": "Cloth Back Wrist 01",
-      "price": 2,
+      "price": 3,
       "itemIds": [
         "generated_equipment_back_wrist_cloth_01"
       ],
@@ -1339,7 +1729,7 @@
     "name": "Druid Back Wrist 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 22,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-druid-01"
@@ -1366,9 +1756,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_druid_01",
       "name": "Druid Back Wrist 01",
-      "price": 0,
+      "price": 54,
       "itemIds": [
         "generated_equipment_back_wrist_druid_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_executioner_01",
+    "name": "Executioner Back Wrist 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 1.4976172781301926,
+      "y": 17.49066289404044,
+      "angle": -10,
+      "scaleX": 1.26,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-executioner-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_executioner_01",
+      "name": "Executioner Back Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_executioner_01"
       ],
       "categoryId": "arms"
     }
@@ -1377,8 +1806,8 @@
     "id": "generated_equipment_back_wrist_rust_champion_01",
     "name": "Rust Back Wrist Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 2,
+    "rarity": "rare",
+    "armorHp": 5,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-rust-champion-01"
@@ -1405,7 +1834,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_rust_champion_01",
       "name": "Rust Back Wrist Champion 01",
-      "price": 7,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_wrist_rust_champion_01"
       ],
@@ -1444,9 +1873,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_sand_01",
       "name": "Sand Wrist",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_wrist_sand_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_stormguard_01",
+    "name": "Stormguard Back Wrist 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 2.8349605849693376,
+      "y": 19.054714199079,
+      "angle": -7,
+      "scaleX": 1.26,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-stormguard-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_stormguard_01",
+      "name": "Stormguard Back Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_stormguard_01"
       ],
       "categoryId": "arms"
     }
@@ -1485,9 +1953,9 @@
     "id": "generated_equipment_breastplate_chainmail_01",
     "name": "Chainmail Hauberk 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 4,
+    "armorHp": 11,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-chainmail-01"
@@ -1514,7 +1982,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_chainmail_01",
       "name": "Chainmail Hauberk 01",
-      "price": 0,
+      "price": 28,
       "itemIds": [
         "generated_equipment_breastplate_chainmail_01"
       ],
@@ -1526,7 +1994,7 @@
     "name": "Druid Breastplate 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 60,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-druid-01"
@@ -1553,9 +2021,48 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_druid_01",
       "name": "Druid Breastplate 01",
-      "price": 0,
+      "price": 150,
       "itemIds": [
         "generated_equipment_breastplate_druid_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_executioner_01",
+    "name": "Executioner Breastplate 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 46,
+      "angle": 0,
+      "scaleX": 1.42,
+      "scaleY": 1.59,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-executioner-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_executioner_01",
+      "name": "Executioner Breastplate 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_executioner_01"
       ],
       "categoryId": "chest"
     }
@@ -1564,8 +2071,8 @@
     "id": "generated_equipment_breastplate_rust_champion_01",
     "name": "Rust Breastplate Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 11,
+    "rarity": "rare",
+    "armorHp": 15,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-rust-champion-01"
@@ -1592,7 +2099,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_rust_champion_01",
       "name": "Rust Breastplate Champion 01",
-      "price": 33,
+      "price": 38,
       "itemIds": [
         "generated_equipment_breastplate_rust_champion_01"
       ],
@@ -1631,9 +2138,48 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_sand_01",
       "name": "Sand Breastplate",
-      "price": 15,
+      "price": 13,
       "itemIds": [
         "generated_equipment_breastplate_sand_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_stormguard_01",
+    "name": "Stormguard Breastplate 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 51,
+      "angle": 0,
+      "scaleX": 1.34,
+      "scaleY": 1.57,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-stormguard-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_stormguard_01",
+      "name": "Stormguard Breastplate 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_stormguard_01"
       ],
       "categoryId": "chest"
     }
@@ -1672,7 +2218,7 @@
     "id": "generated_equipment_front_boot_chainmail_01",
     "name": "Chainmail Front Boot 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
     "armorHp": 0,
     "equipmentSlot": "frontBoot",
@@ -1788,10 +2334,49 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_executioner_01",
+    "name": "Executioner Front Boot 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": -8,
+      "y": -1,
+      "angle": 0,
+      "scaleX": 1.59,
+      "scaleY": 1.38,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-executioner-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": false,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_executioner_01",
+      "name": "Executioner Front Boot 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_executioner_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_rust_champion_01",
     "name": "Rust Champion Boots Front",
     "kind": "armor",
-    "rarity": "uncommon",
+    "rarity": "rare",
     "armorHp": 0,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
@@ -1866,6 +2451,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_stormguard_01",
+    "name": "Stormguard Front Boot 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": -9.001339746984769,
+      "y": -2.366863943933481,
+      "angle": 0,
+      "scaleX": 1.64,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-stormguard-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_stormguard_01",
+      "name": "Stormguard Front Boot 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_wood_boss_01",
     "name": "Wood Boot Front",
     "kind": "armor",
@@ -1899,7 +2523,7 @@
     "id": "generated_equipment_front_glove_chainmail_03",
     "name": "Chainmail Front Glove 03",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
     "armorHp": 0,
     "equipmentSlot": "frontGlove",
@@ -2015,6 +2639,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_executioner_01",
+    "name": "Executioner Front Glove 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": -0.2668104726867,
+      "y": 12.489708526415086,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-executioner-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_executioner_01",
+      "name": "Executioner Front Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_executioner_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_leather_03",
     "name": "Leather Front Glove 03",
     "kind": "armor",
@@ -2058,7 +2721,7 @@
     "id": "generated_equipment_front_glove_rust_champion_01",
     "name": "Rust Front Glove Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
+    "rarity": "rare",
     "armorHp": 0,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
@@ -2133,6 +2796,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_stormguard_01",
+    "name": "Stormguard Front Glove 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 1.5035790989716773,
+      "y": 14.157797414644733,
+      "angle": -3,
+      "scaleX": 1.23,
+      "scaleY": 1.2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-stormguard-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_stormguard_01",
+      "name": "Stormguard Front Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_stormguard_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_wood_boss_01",
     "name": "Wood Front Glove Boss 01",
     "kind": "armor",
@@ -2166,7 +2868,7 @@
     "id": "generated_equipment_front_greave_chainmail_01",
     "name": "Chainmail Front Greave 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
     "armorHp": 0,
     "equipmentSlot": "frontGreave",
@@ -2282,6 +2984,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_executioner_01",
+    "name": "Executioner Front Greave 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": -3.1413569332511315,
+      "y": 14.053254457695687,
+      "angle": -14,
+      "scaleX": 1.31,
+      "scaleY": 1.07,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-executioner-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_executioner_01",
+      "name": "Executioner Front Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_executioner_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_leather_01",
     "name": "Leather Front Greave 01",
     "kind": "armor",
@@ -2325,7 +3066,7 @@
     "id": "generated_equipment_front_greave_rust_champion_01",
     "name": "Rust Front Greave Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
+    "rarity": "rare",
     "armorHp": 0,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
@@ -2400,6 +3141,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_stormguard_01",
+    "name": "Stormguard Front Greave 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": -3,
+      "y": 8,
+      "angle": -8,
+      "scaleX": 1.1,
+      "scaleY": 1.14,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-stormguard-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_stormguard_01",
+      "name": "Stormguard Front Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_wood_boss_01",
     "name": "Wooden greave Front",
     "kind": "armor",
@@ -2433,7 +3213,7 @@
     "id": "generated_equipment_front_shinguard_chainmail_01",
     "name": "Chainmail Front Shinguard 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
     "armorHp": 0,
     "equipmentSlot": "frontShinguard",
@@ -2549,10 +3329,49 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_executioner_01",
+    "name": "Executioner Front Shinguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 2.933687602528181,
+      "y": 3.768369052077844,
+      "angle": 3,
+      "scaleX": 1.3,
+      "scaleY": 1.16,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-executioner-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_executioner_01",
+      "name": "Executioner Front Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_executioner_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_rust_champion_01",
     "name": "Rust Front Shinguard Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
+    "rarity": "rare",
     "armorHp": 0,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
@@ -2627,6 +3446,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_stormguard_01",
+    "name": "Stormguard Front Shinguard 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 5.292639974662961,
+      "y": 4.4669000344126175,
+      "angle": 2,
+      "scaleX": 1.4,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-stormguard-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_stormguard_01",
+      "name": "Stormguard Front Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_wood_boss_01",
     "name": "Wood Shinguard Front",
     "kind": "armor",
@@ -2660,7 +3518,7 @@
     "id": "generated_equipment_front_shoulderguard_chainmail_01",
     "name": "Chainmail Front Shoulderguard 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
     "armorHp": 0,
     "equipmentSlot": "frontShoulderguard",
@@ -2776,10 +3634,49 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_executioner_01",
+    "name": "Executioner Front Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 5.6269510627542445,
+      "y": 7.64631161654404,
+      "angle": -6,
+      "scaleX": 1.8,
+      "scaleY": 1.6,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-executioner-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_executioner_01",
+      "name": "Executioner Front Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_executioner_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_rust_champion_01",
     "name": "Rust Front Shoulderguard Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
+    "rarity": "rare",
     "armorHp": 0,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
@@ -2854,6 +3751,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_stormguard_01",
+    "name": "Stormguard Front Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 3.699836312105603,
+      "y": 16.28789911867159,
+      "angle": 3,
+      "scaleX": 1.74,
+      "scaleY": 1.51,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-stormguard-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_stormguard_01",
+      "name": "Stormguard Front Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_stormguard_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_wood_boss_01",
     "name": "Wood Shoulders Front",
     "kind": "armor",
@@ -2887,7 +3823,7 @@
     "id": "generated_equipment_front_wrist_chainmail_01",
     "name": "Chainmail Front Wrist 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
     "armorHp": 0,
     "equipmentSlot": "frontWrist",
@@ -3003,10 +3939,49 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_executioner_01",
+    "name": "Executioner Front Wrist 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 1.4976172781301926,
+      "y": 17.49066289404044,
+      "angle": -13,
+      "scaleX": 1.26,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-executioner-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_executioner_01",
+      "name": "Executioner Front Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_executioner_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_rust_champion_01",
     "name": "Rust Front Wrist Champion 01",
     "kind": "armor",
-    "rarity": "uncommon",
+    "rarity": "rare",
     "armorHp": 0,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
@@ -3081,6 +4056,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_stormguard_01",
+    "name": "Stormguard Front Wrist 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 2.8349605849693376,
+      "y": 19.054714199079,
+      "angle": -7,
+      "scaleX": 1.26,
+      "scaleY": 1.1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-stormguard-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_stormguard_01",
+      "name": "Stormguard Front Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_stormguard_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_wood_boss_01",
     "name": "Wood Wrist Front",
     "kind": "armor",
@@ -3114,9 +4128,9 @@
     "id": "generated_equipment_helmet_chainmail_01",
     "name": "Chainmail Coif 01",
     "kind": "armor",
-    "rarity": "rare",
+    "rarity": "uncommon",
     "armorCategory": "chain",
-    "armorHp": 4,
+    "armorHp": 7,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-chainmail-01"
@@ -3143,7 +4157,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_chainmail_01",
       "name": "Chainmail Coif 01",
-      "price": 0,
+      "price": 16,
       "itemIds": [
         "generated_equipment_helmet_chainmail_01"
       ],
@@ -3183,7 +4197,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_cloth_01",
       "name": "Cloth Helmet 01",
-      "price": 6,
+      "price": 4,
       "itemIds": [
         "generated_equipment_helmet_cloth_01"
       ],
@@ -3226,7 +4240,7 @@
     "name": "Druid Helmet 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 50,
+    "armorHp": 36,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-druid-01"
@@ -3253,9 +4267,48 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_druid_01",
       "name": "Druid Helmet 01",
-      "price": 0,
+      "price": 90,
       "itemIds": [
         "generated_equipment_helmet_druid_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_executioner_01",
+    "name": "Executioner Helmet 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-executioner-01"
+    },
+    "equipmentTuning": {
+      "x": 0.07271654071507783,
+      "y": 39.69608218220466,
+      "angle": 0,
+      "scaleX": 1.2,
+      "scaleY": 1.25,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-executioner-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-executioner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-executioner-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_executioner_01",
+      "name": "Executioner Helmet 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_executioner_01"
       ],
       "categoryId": "head"
     }
@@ -3264,8 +4317,8 @@
     "id": "generated_equipment_helmet_rust_champion_01",
     "name": "Rust Champion Helmet",
     "kind": "armor",
-    "rarity": "uncommon",
-    "armorHp": 7,
+    "rarity": "rare",
+    "armorHp": 9,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-rust-champion-01"
@@ -3292,7 +4345,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_rust_champion_01",
       "name": "Rust Champion Helmet",
-      "price": 22,
+      "price": 23,
       "itemIds": [
         "generated_equipment_helmet_rust_champion_01"
       ],
@@ -3304,7 +4357,7 @@
     "name": "Sand Helmet 01",
     "kind": "armor",
     "rarity": "common",
-    "armorHp": 4,
+    "armorHp": 3,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-sand-01"
@@ -3331,9 +4384,48 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_sand_01",
       "name": "Sand Helmet 01",
-      "price": 10,
+      "price": 8,
       "itemIds": [
         "generated_equipment_helmet_sand_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_stormguard_01",
+    "name": "Stormguard Helmet 01",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-stormguard-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 38,
+      "angle": 0,
+      "scaleX": 0.94,
+      "scaleY": 1.21,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-stormguard-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-stormguard-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-stormguard-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_stormguard_01",
+      "name": "Stormguard Helmet 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_stormguard_01"
       ],
       "categoryId": "head"
     }
@@ -3528,7 +4620,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 3,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-leather-01"
@@ -3555,7 +4647,7 @@
     "armoryProduct": {
       "id": "leather_back_boot_01",
       "name": "Leather Back Boot 01",
-      "price": 5,
+      "price": 7,
       "itemIds": [
         "leather_back_boot_01"
       ],
@@ -3568,7 +4660,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 3,
+    "armorHp": 4,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-leather-01"
@@ -3608,7 +4700,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 3,
+    "armorHp": 4,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-leather-01"
@@ -3648,7 +4740,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorCategory": "leather",
-    "armorHp": 2,
+    "armorHp": 3,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-leather-01"
@@ -3675,7 +4767,7 @@
     "armoryProduct": {
       "id": "leather_back_wrist_01",
       "name": "Leather Back Wrist 01",
-      "price": 4,
+      "price": 7,
       "itemIds": [
         "leather_back_wrist_01"
       ],
@@ -3715,7 +4807,7 @@
     "armoryProduct": {
       "id": "leather_breastplate_01",
       "name": "Leather Breastplate 01",
-      "price": 24,
+      "price": 20,
       "itemIds": [
         "leather_breastplate_01"
       ],
@@ -3915,7 +5007,7 @@
     "armoryProduct": {
       "id": "leather_helmet_01",
       "name": "Leather Helmet 01",
-      "price": 16,
+      "price": 12,
       "itemIds": [
         "leather_helmet_01"
       ],

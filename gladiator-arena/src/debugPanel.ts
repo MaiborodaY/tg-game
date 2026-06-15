@@ -283,17 +283,11 @@ const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS: readonly DebugEquipmentSetImportS
   { id: "helmet", label: "Helmet", targetPrefix: "helmet", kind: "armor" },
   { id: "breastplate", label: "Breastplate", targetPrefix: "breastplate", kind: "armor" },
   { id: "backShoulderguard", label: "Back shoulderguard", targetPrefix: "back-shoulderguard", kind: "armor" },
-  { id: "frontShoulderguard", label: "Front shoulderguard", targetPrefix: "front-shoulderguard", kind: "armor" },
   { id: "backWrist", label: "Back wrist", targetPrefix: "back-wrist", kind: "armor" },
-  { id: "frontWrist", label: "Front wrist", targetPrefix: "front-wrist", kind: "armor" },
   { id: "backGlove", label: "Back glove", targetPrefix: "back-glove", kind: "armor" },
-  { id: "frontGlove", label: "Front glove", targetPrefix: "front-glove", kind: "armor" },
   { id: "backGreave", label: "Back greave", targetPrefix: "back-greave", kind: "armor" },
-  { id: "frontGreave", label: "Front greave", targetPrefix: "front-greave", kind: "armor" },
   { id: "backShinguard", label: "Back shinguard", targetPrefix: "back-shinguard", kind: "armor" },
-  { id: "frontShinguard", label: "Front shinguard", targetPrefix: "front-shinguard", kind: "armor" },
   { id: "backBoot", label: "Back boot", targetPrefix: "back-boot", kind: "armor" },
-  { id: "frontBoot", label: "Front boot", targetPrefix: "front-boot", kind: "armor" },
   { id: "weaponSword", label: "Weapon sword", targetPrefix: "weapon-sword", kind: "weapon" },
   { id: "weaponAxe", label: "Weapon axe", targetPrefix: "weapon-axe", kind: "weapon" },
   { id: "weaponBow", label: "Weapon bow", targetPrefix: "weapon-bow", kind: "weapon" },
@@ -4074,15 +4068,21 @@ function renderEquipmentSetImportAssets(host: HTMLElement): void {
 
 function createEquipmentSetImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement {
   const row = document.createElement("div");
-  const preview = document.createElement("span");
+  const preview = document.createElement("button");
   const source = document.createElement("span");
   const select = document.createElement("select");
 
   row.className = "debug-auto-equipment__set-asset";
   row.dataset.setImportSourcePath = asset.sourcePath;
 
+  preview.type = "button";
   preview.className = "debug-auto-equipment__set-preview";
+  preview.setAttribute("aria-label", "Preview import asset");
+  preview.setAttribute("aria-pressed", "false");
   preview.style.backgroundImage = `url("${asset.url}")`;
+  preview.addEventListener("click", () => {
+    showEquipmentSetImportAssetPreview(asset, preview);
+  });
 
   source.className = "debug-auto-equipment__set-source";
   source.textContent = asset.sourcePath;
@@ -4096,6 +4096,25 @@ function createEquipmentSetImportAssetRow(asset: EquipmentSetImportAsset): HTMLE
 
   row.append(preview, source, select);
   return row;
+}
+
+function showEquipmentSetImportAssetPreview(asset: EquipmentSetImportAsset, trigger: HTMLButtonElement): void {
+  const previewHost = document.querySelector<HTMLElement>("#debugSetImportPreview");
+  const previewImage = previewHost?.querySelector<HTMLImageElement>(".debug-set-import-preview__image");
+
+  if (!previewHost || !previewImage) {
+    return;
+  }
+
+  document.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__set-preview--selected").forEach((button) => {
+    button.classList.remove("debug-auto-equipment__set-preview--selected");
+    button.setAttribute("aria-pressed", "false");
+  });
+
+  trigger.classList.add("debug-auto-equipment__set-preview--selected");
+  trigger.setAttribute("aria-pressed", "true");
+  previewImage.src = asset.url;
+  previewHost.hidden = false;
 }
 
 function getSelectedEquipmentSetImportEntries(host: HTMLElement): { sourcePath: string; targetPrefix: string }[] {

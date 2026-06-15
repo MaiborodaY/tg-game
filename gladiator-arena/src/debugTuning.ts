@@ -492,6 +492,18 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_shoulderguard_rust_champion_01": { x: 10, y: 10, angle: 48, scaleX: 1.45, scaleY: 1.4, flipX: true, flipY: false },
   "auto_equipment_back_wrist_rust_champion_01": { x: 0.507, y: -1.269, angle: -7, scaleX: 1.57, scaleY: 1.61, flipX: true, flipY: false },
   "auto_equipment_breastplate_rust_champion_01": { x: 0.28, y: 57, angle: 0, scaleX: 1.38, scaleY: 1.61, flipX: false, flipY: false },
+  "auto_equipment_back_boot_executioner_01": { x: 8, y: -1, angle: 0, scaleX: 1.59, scaleY: 1.38, flipX: false, flipY: false },
+  "auto_equipment_back_glove_executioner_01": { x: 0, y: 11, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  "auto_equipment_back_greave_executioner_01": { x: -3.141, y: 14.053, angle: -14, scaleX: 1.31, scaleY: 1.07, flipX: false, flipY: false },
+  "auto_equipment_back_shinguard_executioner_01": { x: 2.546, y: -1.364, angle: 6, scaleX: 1.05, scaleY: 1.16, flipX: false, flipY: false },
+  "auto_equipment_back_shoulderguard_executioner_01": { x: 5.627, y: 7.646, angle: -6, scaleX: 1.8, scaleY: 1.6, flipX: false, flipY: false },
+  "auto_equipment_back_wrist_executioner_01": { x: 1.498, y: 17.491, angle: -13, scaleX: 1.26, scaleY: 1.1, flipX: true, flipY: false },
+  "auto_equipment_breastplate_executioner_01": { x: 1.426, y: 57.191, angle: 0, scaleX: 1.42, scaleY: 1.75, flipX: false, flipY: false },
+  "auto_equipment_helmet_executioner_01": { x: 0.073, y: 39.696, angle: 0, scaleX: 1.2, scaleY: 1.25, flipX: false, flipY: false },
+  "auto_equipment_back_boot_stormguard_01": { x: 9.001, y: -2.367, angle: 0, scaleX: 1.64, scaleY: 1.61, flipX: false, flipY: false },
+  "auto_equipment_back_glove_stormguard_01": { x: -1.504, y: 14.158, angle: 3, scaleX: 1.23, scaleY: 1.2, flipX: false, flipY: false },
+  "auto_equipment_back_greave_stormguard_01": { x: 2.821, y: 8.136, angle: -2, scaleX: 1.29, scaleY: 1.14, flipX: false, flipY: false },
+  "auto_equipment_back_shinguard_stormguard_01": { x: 1.111, y: -2.93, angle: 1, scaleX: 1.4, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
