@@ -5851,6 +5851,32 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.armory-shop__requirement-ribbon {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  min-width: 66px;
+  padding: 3px 9px 4px;
+  color: #b8ffd0;
+  font-size: 0.66rem;
+  letter-spacing: 0;
+}
+
+.armory-shop__requirement-ribbon .armory-shop__requirement-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.armory-shop__requirement-ribbon .armory-shop__requirement-icon--agility {
+  filter:
+    brightness(1.75)
+    saturate(1.28)
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.92))
+    drop-shadow(0 0 4px rgba(184, 255, 208, 0.32));
+}
+
 .armory-shop__product-name,
 .armory-shop__product-meta {
   overflow: hidden;
@@ -5978,8 +6004,36 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop__product-requirement {
   grid-column: 2;
   color: #b8ffd0;
+  gap: 3px;
   justify-content: center;
   text-align: right;
+}
+
+.armory-shop__requirement-icon {
+  display: block;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.9));
+}
+
+.armory-shop__requirement-icon--strength {
+  background-image: url("./assets/ui/profile/attribute-strength.webp");
+}
+
+.armory-shop__requirement-icon--agility {
+  background-image: url("./assets/ui/profile/attribute-agility.webp");
+}
+
+.armory-shop__requirement-icon--vitality {
+  background-image: url("./assets/ui/profile/attribute-vitality.webp");
+}
+
+.armory-shop__requirement-amount {
+  min-width: 0;
 }
 
 .armory-shop__product-price .armory-shop__price-icon {

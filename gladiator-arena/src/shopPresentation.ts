@@ -19,6 +19,11 @@ export type ShopItemRarity = HeroItemRarity;
 export type ShopProductActionState = "buy" | "equip" | "equipped" | "no-gold" | "sealed" | "locked" | "max";
 export type ShopProductStatKind = "armor" | "damage";
 
+export interface ShopProductRequirementBadge {
+  attribute: HeroAttributeKey;
+  required: number;
+}
+
 const shopRarityLabels: Record<ShopItemRarity, string> = {
   common: "Common",
   uncommon: "Uncommon",
@@ -133,6 +138,12 @@ export function getShopProductRequirementLabel(hero: HeroState, itemIds: readonl
     .filter((requirement) => requirement.current < requirement.required)
     .map((requirement) => `${shopRequirementShortLabels[requirement.attribute]} ${requirement.required}`)
     .join(" / ");
+}
+
+export function getShopProductRequirementBadge(hero: HeroState, itemIds: readonly HeroItemId[]): ShopProductRequirementBadge | undefined {
+  const requirement = getHeroItemRequirementChecks(hero, itemIds).find((check) => check.current < check.required);
+
+  return requirement ? { attribute: requirement.attribute, required: requirement.required } : undefined;
 }
 
 export function getShopProductRequirementDescription(hero: HeroState, itemIds: readonly HeroItemId[]): string {

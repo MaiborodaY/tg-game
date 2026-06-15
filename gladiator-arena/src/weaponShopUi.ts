@@ -23,11 +23,12 @@ import {
   getShopProductActionLabel,
   getShopProductActionState,
   getShopProductDisplayName,
+  getShopProductRequirementBadge,
   getShopProductRequirementDescription,
-  getShopProductRequirementLabel,
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
+  type ShopProductRequirementBadge,
   type ShopItemRarity,
 } from "./shopPresentation";
 
@@ -345,7 +346,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       selected.append(createSelectedProductStrip(previewProduct, hero));
     }
 
-    renderBowCapacityUpgrade(hero, selectedCategory.id);
+    renderBowCapacityUpgrade(hero, selectedCategory);
     scheduleLayoutSync();
 
     if (selectedCategory.products.length === 0) {
@@ -358,12 +359,12 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     });
   }
 
-  function renderBowCapacityUpgrade(hero: HeroState, selectedCategoryId: string): void {
+  function renderBowCapacityUpgrade(hero: HeroState, selectedCategory: WeaponCategory): void {
     if (!usesCityHeroPreview) {
       return;
     }
 
-    const isVisible = selectedCategoryId === BOW_CATEGORY_ID;
+    const isVisible = selectedCategory.id === BOW_CATEGORY_ID && isBowCategoryAvailable(hero, selectedCategory);
 
     bowUpgrade.hidden = !isVisible;
 
@@ -372,6 +373,10 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
 
     bowUpgrade.append(createBowCapacityUpgrade(hero));
+  }
+
+  function isBowCategoryAvailable(hero: HeroState, category: WeaponCategory): boolean {
+    return category.products.some((product) => getShopProductActionState(hero, product.itemIds, product.price) !== "locked");
   }
 
   function ensurePreviewMounted(): void {
@@ -429,7 +434,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const damage = getShopProductStat(product.itemIds, "damage");
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
     const displayName = getShopProductDisplayName(product.name);
-    const requirementLabel = getShopProductRequirementLabel(hero, product.itemIds);
+    const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
@@ -439,17 +444,26 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.classList.toggle("armory-shop__option--max", actionState === "max");
     button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
     button.classList.toggle("armory-shop__option--locked", actionState === "locked");
+    button.classList.toggle("armory-shop__option--sealed", actionState === "locked");
     button.type = "button";
+    button.disabled = actionState === "locked";
     button.title = requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
       `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(actionState, product.price)}`,
     );
     button.append(createProductIcon(iconUrl));
-    if (actionState === "buy" || actionState === "no-gold" || actionState === "locked") {
-      button.append(createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price, requirementLabel));
+    if (actionState === "locked" && requirementBadge) {
+      button.append(createRequirementRibbon(requirementBadge));
+    }
+    if (actionState === "buy" || actionState === "no-gold") {
+      button.append(createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price));
     }
     button.addEventListener("click", () => {
+      if (button.disabled) {
+        return;
+      }
+
       previewProduct = product;
       options.onPreview?.(product);
       render();
@@ -479,12 +493,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function createPreviewBuyButton(product: WeaponProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
-    const requirementLabel = getShopProductRequirementLabel(hero, product.itemIds);
 
     button.className = "armory-shop__selected-buy";
     button.type = "button";
     button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "locked" || actionState === "max";
-    button.textContent = actionState === "locked" && requirementLabel ? requirementLabel : getShopProductActionLabel(actionState, product.price);
+    button.textContent = getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       previewProduct = undefined;
       options.onBuy(product);
@@ -719,7 +732,7 @@ function createProductIcon(iconUrl: string | undefined, className = "armory-shop
   return icon;
 }
 
-function createProductStats(statLabel: string, statIconUrl: string, stat: number, price: number, requirementLabel = ""): HTMLElement {
+function createProductStats(statLabel: string, statIconUrl: string, stat: number, price: number): HTMLElement {
   const stats = document.createElement("span");
   const statNode = document.createElement("span");
   const statIcon = document.createElement("img");
@@ -736,16 +749,32 @@ function createProductStats(statLabel: string, statIconUrl: string, stat: number
   statIcon.draggable = false;
   statValue.className = "armory-shop__product-stat-value";
   statValue.textContent = String(stat);
-  priceNode.className = requirementLabel ? "armory-shop__product-requirement" : "armory-shop__product-price";
-  if (requirementLabel) {
-    priceNode.textContent = requirementLabel;
-  } else {
-    appendPriceContent(priceNode, price);
-  }
+  priceNode.className = "armory-shop__product-price";
+  appendPriceContent(priceNode, price);
   statNode.append(statIcon, statValue);
   stats.append(statNode, priceNode);
 
   return stats;
+}
+
+function createRequirementRibbon(requirement: ShopProductRequirementBadge): HTMLElement {
+  const ribbon = document.createElement("span");
+
+  ribbon.className = "armory-shop__sealed-ribbon armory-shop__requirement-ribbon";
+  appendRequirementContent(ribbon, requirement);
+
+  return ribbon;
+}
+
+function appendRequirementContent(requirementNode: HTMLElement, requirement: ShopProductRequirementBadge): void {
+  const icon = document.createElement("span");
+  const amount = document.createElement("span");
+
+  requirementNode.setAttribute("aria-label", `${requirement.attribute} ${requirement.required}`);
+  icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirement.attribute}`;
+  amount.className = "armory-shop__requirement-amount";
+  amount.textContent = String(requirement.required);
+  requirementNode.append(icon, amount);
 }
 
 function createSelectedMeta(

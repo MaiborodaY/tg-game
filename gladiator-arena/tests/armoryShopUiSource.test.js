@@ -170,16 +170,34 @@ test("city shops keep product cards wide around their side rails", () => {
 });
 
 test("weapon shop product cards use the damage icon instead of a DM label", () => {
-  assert.equal(weaponShopSource.includes('createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price, requirementLabel)'), true);
+  assert.equal(weaponShopSource.includes('createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price)'), true);
   assert.equal(weaponShopSource.includes('createProductStats("DM"'), false);
   assert.match(weaponShopSource, /statIcon\.className = "armory-shop__product-stat-icon";[\s\S]*statIcon\.src = statIconUrl;[\s\S]*statValue\.textContent = String\(stat\);/);
+});
+
+test("weapon shop locked products are dimmed and show centered stat requirement ribbons", () => {
+  assert.equal(shopPresentationSource.includes("export function getShopProductRequirementBadge"), true);
+  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--locked", actionState === "locked");'), true);
+  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--sealed", actionState === "locked");'), true);
+  assert.equal(weaponShopSource.includes('button.disabled = actionState === "locked";'), true);
+  assert.match(weaponShopSource, /if \(actionState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
+  assert.match(weaponShopSource, /if \(actionState === "buy" \|\| actionState === "no-gold"\) \{[\s\S]*createProductStats\("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product\.price\)/);
+  assert.equal(weaponShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirement.attribute}`;'), true);
+  assert.equal(weaponShopSource.includes("amount.textContent = String(requirement.required);"), true);
+  assert.equal(weaponShopSource.includes('actionState === "buy" || actionState === "no-gold" || actionState === "locked"'), false);
+  assert.equal(weaponShopSource.includes("priceNode.textContent = requirementLabel;"), false);
+  assert.equal(weaponShopSource.includes('ribbon.className = "armory-shop__sealed-ribbon armory-shop__requirement-ribbon";'), true);
+  assert.equal(stylesSource.includes(".armory-shop__requirement-ribbon"), true);
+  assert.equal(stylesSource.includes(".armory-shop__requirement-icon--agility"), true);
+  assert.equal(stylesSource.includes('background-image: url("./assets/ui/profile/attribute-agility.webp");'), true);
 });
 
 test("weapon shop shows bow capacity upgrade only for the bows category", () => {
   assert.equal(weaponShopSource.includes('const BOW_CATEGORY_ID = "bows";'), true);
   assert.equal(weaponShopSource.includes("ARROW_ICON_ASSET_URL"), true);
   assert.equal(weaponShopSource.includes("onBowCapacityUpgrade?: () => void"), true);
-  assert.match(weaponShopSource, /selectedCategoryId === BOW_CATEGORY_ID[\s\S]*bowUpgrade\.hidden = !isVisible;/);
+  assert.match(weaponShopSource, /selectedCategory\.id === BOW_CATEGORY_ID && isBowCategoryAvailable\(hero, selectedCategory\)[\s\S]*bowUpgrade\.hidden = !isVisible;/);
+  assert.match(weaponShopSource, /function isBowCategoryAvailable\(hero: HeroState, category: WeaponCategory\): boolean \{[\s\S]*getShopProductActionState\(hero, product\.itemIds, product\.price\) !== "locked"/);
   assert.match(weaponShopSource, /getHeroBowShotCapacity\(hero\)[\s\S]*HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX[\s\S]*HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE/);
   assert.equal(weaponShopSource.includes('name.textContent = "Arrows";'), true);
   assert.match(weaponShopSource, /button\.addEventListener\("click", \(\) => \{[\s\S]*options\.onBowCapacityUpgrade\?\.\(\);[\s\S]*render\(\);[\s\S]*\}\);/);
