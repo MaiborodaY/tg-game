@@ -55,3 +55,14 @@ test("auto equipment registry recognizes wrist and glove armor assets", () => {
   assert.match(registrySource, /slot: "frontGlove"/);
   assert.match(registrySource, /assetKey: "frontGloveAssetKey"/);
 });
+
+test("equipment set importer reads only staged import assets", () => {
+  assert.match(registrySource, /equipmentImportArmorWebpAssetUrls/);
+  assert.match(registrySource, /equipmentImportArmorPngAssetUrls/);
+  assert.match(registrySource, /equipmentImportWeaponWebpAssetUrls/);
+  assert.match(registrySource, /equipmentImportWeaponPngAssetUrls/);
+  assert.match(registrySource, /assets\/equipment-import\/armor/);
+  assert.match(registrySource, /assets\/equipment-import\/weapons/);
+  assert.match(registrySource, /createEquipmentImportAssetEntries/);
+  assert.match(registrySource, /getAssetPathWithoutExtension/);
+});

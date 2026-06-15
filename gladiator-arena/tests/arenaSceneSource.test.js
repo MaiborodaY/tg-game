@@ -58,6 +58,10 @@ test("paper doll draws equipment through ordered anchored layers", () => {
   assert.equal(arenaSceneSource.includes('slotKey === "breastplate"'), true);
   assert.equal(arenaSceneSource.includes("return layers.torso;"), true);
   assert.equal(arenaSceneSource.includes("PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS"), true);
+  assert.equal(arenaSceneSource.includes("PAPER_DOLL_EQUIPMENT_LAYER_ORDER"), true);
+  assert.match(arenaSceneSource, /backBoot:\s*10,[\s\S]*frontBoot:\s*10,[\s\S]*backShinguard:\s*20,[\s\S]*frontShinguard:\s*20/);
+  assert.equal(arenaSceneSource.includes("sortPaperDollEquipmentLayer(equipmentLayer, anchorContainer, slotKey);"), true);
+  assert.equal(arenaSceneSource.includes('equipmentLayer.sort("paperDollEquipmentLayerOrder"'), true);
   assert.equal(arenaSceneSource.includes("createPaperDollAnchoredEquipmentContainer"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollEquipmentAnchors(rig);"), true);
   assert.equal(arenaSceneSource.includes("equipmentLayer.add(anchorContainer);"), true);

@@ -63,9 +63,20 @@ test("city hero widget keeps the top HUD compact", () => {
 });
 
 test("city hero portrait hints when skill points are unspent", () => {
-  assert.equal(cityHeroUiSource.includes('city-menu__portrait-button--has-points", hero.skillPoints > 0'), true);
+  assert.equal(cityHeroUiSource.includes("hero.skillPoints > 0 || highlightedEquipmentItems.length > 0"), true);
   assert.equal(stylesSource.includes(".city-menu__portrait-button--has-points"), true);
   assert.equal(stylesSource.includes("@keyframes city-portrait-points-pulse"), true);
+});
+
+test("boss equipment drops hint the city profile equipment slot", () => {
+  assert.equal(mainSource.includes("pendingBossEquipmentHintItemIds"), true);
+  assert.equal(mainSource.includes("rememberBossEquipmentHint(nextState, loot)"), true);
+  assert.equal(mainSource.includes("onCategoryOpen: handleProfileEquipmentCategoryOpen"), true);
+  assert.equal(cityHeroUiSource.includes("highlightedEquipmentItemIds"), true);
+  assert.equal(cityHeroUiSource.includes("city-profile__equipment-card--hint"), true);
+  assert.equal(cityHeroUiSource.includes("getCityEquipmentCategoryIdForHeroItemId"), true);
+  assert.equal(stylesSource.includes(".city-profile__equipment-card--hint"), true);
+  assert.equal(stylesSource.includes("animation: city-profile-points-ready-pulse 1.25s ease-in-out infinite;"), true);
 });
 
 test("city hero profile pulses unspent points and available attribute buttons", () => {
@@ -92,6 +103,7 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(cityHeroUiSource.includes("mountCityHeroEquipmentMenu"), true);
   assert.equal(cityHeroUiSource.includes("getOwnedCityEquipmentProducts"), true);
   assert.equal(cityHeroUiSource.includes("getInventoryCityEquipmentProducts"), true);
+  assert.equal(cityHeroUiSource.includes("pairGeneratedArmoryProducts("), true);
   assert.equal(cityHeroUiSource.includes("hero.inventory.flatMap"), true);
   assert.equal(mainSource.includes("mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);
   assert.equal(mainSource.includes("const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);

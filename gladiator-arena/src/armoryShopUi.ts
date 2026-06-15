@@ -294,7 +294,7 @@ function getArmoryProductSlotOrder(product: ArmoryProduct): number {
   );
 }
 
-function pairGeneratedArmoryProducts(products: ArmoryProduct[]): ArmoryProduct[] {
+export function pairGeneratedArmoryProducts(products: ArmoryProduct[]): ArmoryProduct[] {
   const pairedProducts: ArmoryProduct[] = [];
   const usedProductIds = new Set<string>();
 

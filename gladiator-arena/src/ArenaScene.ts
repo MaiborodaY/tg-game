@@ -434,6 +434,7 @@ const paperDollLinkedEquipmentSlots = new WeakMap<FighterPart, FighterPart[]>();
 const paperDollWeaponOverlayCrops = new WeakMap<FighterPart, PaperDollWeaponOverlayCrop>();
 const paperDollEquipmentSlotImageStates = new WeakMap<FighterPart, PaperDollEquipmentSlotImageState>();
 const paperDollEquipmentTransformStates = new WeakMap<FighterPart, PaperDollEquipmentTransformState>();
+const paperDollEquipmentLayerOrders = new WeakMap<Phaser.GameObjects.GameObject, number>();
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
   skin: 0xefaa7b,
@@ -815,6 +816,12 @@ const PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS: Record<PaperDollEquipmentSlotKey, Paper
   frontShinguard: "frontShin",
   backBoot: "backFoot",
   frontBoot: "frontFoot",
+};
+const PAPER_DOLL_EQUIPMENT_LAYER_ORDER: Partial<Record<PaperDollEquipmentSlotKey, number>> = {
+  backBoot: 10,
+  frontBoot: 10,
+  backShinguard: 20,
+  frontShinguard: 20,
 };
 const paperDollEquipmentSlotConfigs = new WeakMap<FighterPart, PaperDollPartAssetConfig>();
 
@@ -4516,6 +4523,7 @@ function createPaperDollAnchoredEquipmentContainer(
   syncPaperDollEquipmentAnchor(anchor, part(partContainer));
   anchorContainer.add(equipmentContainer);
   equipmentLayer.add(anchorContainer);
+  sortPaperDollEquipmentLayer(equipmentLayer, anchorContainer, slotKey);
   if (options.registerAnchor !== false) {
     equipmentAnchors[slotKey] = anchor;
   }
@@ -4523,6 +4531,17 @@ function createPaperDollAnchoredEquipmentContainer(
   linkPaperDollEquipmentSlot(options.linkToSlot, part(equipmentContainer));
 
   return equipmentContainer;
+}
+
+function sortPaperDollEquipmentLayer(
+  equipmentLayer: Phaser.GameObjects.Container,
+  anchorContainer: Phaser.GameObjects.Container,
+  slotKey: PaperDollEquipmentSlotKey,
+): void {
+  paperDollEquipmentLayerOrders.set(anchorContainer, PAPER_DOLL_EQUIPMENT_LAYER_ORDER[slotKey] ?? 0);
+  equipmentLayer.sort("paperDollEquipmentLayerOrder", (left: Phaser.GameObjects.GameObject, right: Phaser.GameObjects.GameObject) => {
+    return (paperDollEquipmentLayerOrders.get(left) ?? 0) - (paperDollEquipmentLayerOrders.get(right) ?? 0);
+  });
 }
 
 function createPaperDollEquipmentImage(target: Phaser.Scene, assetKey: string, config: PaperDollPartAssetConfig): Phaser.GameObjects.Image {

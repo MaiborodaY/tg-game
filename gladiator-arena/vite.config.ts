@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import sharp from "sharp";
 import { defineConfig, type Plugin } from "vite";
@@ -216,6 +216,20 @@ interface PromotedEquipmentMirrorConfig {
   target: PromotedEquipmentMirrorSideConfig;
 }
 
+interface EquipmentSetImportTargetConfig {
+  targetPrefix: string;
+  kind: GeneratedEquipmentJsonRecord["kind"];
+  folder: string;
+}
+
+interface EquipmentSetImportEntry {
+  sourcePath: string;
+  targetPrefix: string;
+  targetSourcePath: string;
+  lowSourcePath?: string;
+  targetLowSourcePath?: string;
+}
+
 const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[] = [
   {
     back: { slot: "backShoulderguard", assetKeyName: "backShoulderguardAssetKey", token: "back-shoulderguard", label: "Back Shoulderguard", sideLabel: "Back" },
@@ -242,6 +256,29 @@ const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[]
     front: { slot: "frontBoot", assetKeyName: "frontBootAssetKey", token: "front-boot", label: "Front Boot", sideLabel: "Front" },
   },
 ] as const;
+
+const equipmentSetImportTargetConfigs: readonly EquipmentSetImportTargetConfig[] = [
+  { targetPrefix: "helmet", kind: "armor", folder: "assets/fighters/armor/helmet" },
+  { targetPrefix: "breastplate", kind: "armor", folder: "assets/fighters/armor/breastplate" },
+  { targetPrefix: "back-shoulderguard", kind: "armor", folder: "assets/fighters/armor/arms" },
+  { targetPrefix: "front-shoulderguard", kind: "armor", folder: "assets/fighters/armor/arms" },
+  { targetPrefix: "back-wrist", kind: "armor", folder: "assets/fighters/armor/arms" },
+  { targetPrefix: "front-wrist", kind: "armor", folder: "assets/fighters/armor/arms" },
+  { targetPrefix: "back-glove", kind: "armor", folder: "assets/fighters/armor/arms" },
+  { targetPrefix: "front-glove", kind: "armor", folder: "assets/fighters/armor/arms" },
+  { targetPrefix: "back-greave", kind: "armor", folder: "assets/fighters/armor/legs" },
+  { targetPrefix: "front-greave", kind: "armor", folder: "assets/fighters/armor/legs" },
+  { targetPrefix: "back-shinguard", kind: "armor", folder: "assets/fighters/armor/legs" },
+  { targetPrefix: "front-shinguard", kind: "armor", folder: "assets/fighters/armor/legs" },
+  { targetPrefix: "back-boot", kind: "armor", folder: "assets/fighters/armor/legs" },
+  { targetPrefix: "front-boot", kind: "armor", folder: "assets/fighters/armor/legs" },
+  { targetPrefix: "weapon-sword", kind: "weapon", folder: "assets/fighters/weapons" },
+  { targetPrefix: "weapon-axe", kind: "weapon", folder: "assets/fighters/weapons" },
+  { targetPrefix: "weapon-bow", kind: "weapon", folder: "assets/fighters/weapons" },
+  { targetPrefix: "weapon-mace", kind: "weapon", folder: "assets/fighters/weapons" },
+  { targetPrefix: "weapon-spear", kind: "weapon", folder: "assets/fighters/weapons" },
+  { targetPrefix: "weapon-shuriken", kind: "weapon", folder: "assets/fighters/weapons" },
+];
 
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
@@ -370,6 +407,17 @@ interface UpdateGeneratedShopItemPayload {
 interface UpdateGeneratedBossItemPayload {
   itemIds?: unknown;
   stat?: unknown;
+}
+
+interface RenameEquipmentSetAssetsPayload {
+  setName?: unknown;
+  variant?: unknown;
+  entries?: unknown;
+}
+
+interface RenameEquipmentSetAssetEntryPayload {
+  sourcePath?: unknown;
+  targetPrefix?: unknown;
 }
 
 interface GeneratedEquipmentJsonRecord {
@@ -606,6 +654,24 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatRemovedGeneratedEquipmentMessage(removedItems), updated: removedItems.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not remove equipment item." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/rename-equipment-set-assets", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to rename equipment set assets." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const entries = await pickEquipmentSetImportEntries(payload);
+
+          await renameEquipmentSetImportAssets(entries);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatEquipmentSetImportRenameMessage(entries), updated: entries.length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not rename equipment set assets." });
         }
       });
 
@@ -1803,6 +1869,158 @@ function formatRemovedGeneratedEquipmentMessage(removedRecords: GeneratedEquipme
   return `Removed ${removedRecords.length} linked generated equipment items.`;
 }
 
+async function pickEquipmentSetImportEntries(payload: unknown): Promise<EquipmentSetImportEntry[]> {
+  const input = readPlainObject(payload, "equipment set asset rename") as RenameEquipmentSetAssetsPayload;
+  const setSlug = readKebabIdentifier(input.setName, "setName");
+  const variantSlug =
+    typeof input.variant === "string" && input.variant.trim() ? readKebabIdentifier(input.variant, "variant") : "01";
+
+  if (!Array.isArray(input.entries) || input.entries.length === 0) {
+    throw new Error("Select at least one equipment set asset.");
+  }
+
+  const sourcePaths = new Set<string>();
+  const targetPaths = new Set<string>();
+  const targetAssetKeys = new Set<string>();
+  const entries: EquipmentSetImportEntry[] = [];
+
+  for (const rawEntry of input.entries) {
+    const raw = readPlainObject(rawEntry, "equipment set asset entry") as RenameEquipmentSetAssetEntryPayload;
+    const sourcePath = readEquipmentSetImportSourcePath(raw.sourcePath);
+    const sourceKind = getEquipmentSetImportSourceKind(sourcePath);
+    const targetConfig = readEquipmentSetImportTargetConfig(raw.targetPrefix, sourceKind);
+    const targetSourcePath = getEquipmentSetImportTargetSourcePath(sourcePath, targetConfig, setSlug, variantSlug);
+    const targetAssetKey = targetSourcePath.replace(/\.(?:png|webp)$/i, "");
+    const lowSourcePath = getEquipmentSetImportLowSourcePath(sourcePath);
+    const targetLowSourcePath = (await projectSourceFileExists(lowSourcePath))
+      ? getEquipmentSetImportLowSourcePath(targetSourcePath)
+      : undefined;
+
+    if (sourcePaths.has(sourcePath)) {
+      throw new Error(`Duplicate equipment set source asset: ${sourcePath}.`);
+    }
+
+    if (targetPaths.has(targetSourcePath)) {
+      throw new Error(`Duplicate equipment set target asset: ${targetSourcePath}.`);
+    }
+
+    if (targetAssetKeys.has(targetAssetKey)) {
+      throw new Error(`Duplicate equipment set target asset key: ${targetAssetKey}.`);
+    }
+
+    sourcePaths.add(sourcePath);
+    targetPaths.add(targetSourcePath);
+    targetAssetKeys.add(targetAssetKey);
+
+    await assertEquipmentSetImportPathsAvailable(sourcePath, targetSourcePath, lowSourcePath, targetLowSourcePath);
+
+    entries.push({
+      sourcePath,
+      targetPrefix: targetConfig.targetPrefix,
+      targetSourcePath,
+      ...(targetLowSourcePath ? { lowSourcePath, targetLowSourcePath } : {}),
+    });
+  }
+
+  return entries;
+}
+
+async function assertEquipmentSetImportPathsAvailable(
+  sourcePath: string,
+  targetSourcePath: string,
+  lowSourcePath: string,
+  targetLowSourcePath: string | undefined,
+): Promise<void> {
+  if (!(await projectSourceFileExists(sourcePath))) {
+    throw new Error(`Source asset does not exist: ${sourcePath}.`);
+  }
+
+  const siblingTargetSourcePath = getEquipmentSetImportAlternateSourcePath(targetSourcePath);
+
+  if (sourcePath !== targetSourcePath && (await projectSourceFileExists(targetSourcePath))) {
+    throw new Error(`Target asset already exists: ${targetSourcePath}.`);
+  }
+
+  if (sourcePath !== siblingTargetSourcePath && (await projectSourceFileExists(siblingTargetSourcePath))) {
+    throw new Error(`Target asset already exists: ${siblingTargetSourcePath}.`);
+  }
+
+  if (targetLowSourcePath && lowSourcePath !== targetLowSourcePath && (await projectSourceFileExists(targetLowSourcePath))) {
+    throw new Error(`Target low asset already exists: ${targetLowSourcePath}.`);
+  }
+}
+
+async function renameEquipmentSetImportAssets(entries: readonly EquipmentSetImportEntry[]): Promise<void> {
+  for (const entry of entries) {
+    await renameProjectSourceFile(entry.sourcePath, entry.targetSourcePath);
+
+    if (entry.lowSourcePath && entry.targetLowSourcePath) {
+      await renameProjectSourceFile(entry.lowSourcePath, entry.targetLowSourcePath);
+    }
+  }
+}
+
+async function renameProjectSourceFile(sourcePath: string, targetPath: string): Promise<void> {
+  if (sourcePath === targetPath) {
+    return;
+  }
+
+  const targetUrl = getProjectSourceUrl(targetPath);
+
+  await mkdir(new URL(".", targetUrl), { recursive: true });
+  await rename(getProjectSourceUrl(sourcePath), targetUrl);
+}
+
+function readEquipmentSetImportSourcePath(value: unknown): string {
+  const sourcePath = readNonEmptyString(value, "equipment set source asset").replace(/\\/g, "/").replace(/^\.\//, "");
+  const isEquipmentImportSourcePath = sourcePath.startsWith("assets/equipment-import/armor/") || sourcePath.startsWith("assets/equipment-import/weapons/");
+  const hasSupportedExtension = sourcePath.endsWith(".png") || sourcePath.endsWith(".webp");
+
+  if (sourcePath.includes("..") || !isEquipmentImportSourcePath || !hasSupportedExtension) {
+    throw new Error("Invalid equipment set source asset.");
+  }
+
+  return sourcePath;
+}
+
+function readEquipmentSetImportTargetConfig(value: unknown, sourceKind: GeneratedEquipmentJsonRecord["kind"]): EquipmentSetImportTargetConfig {
+  const targetPrefix = readNonEmptyString(value, "equipment set target prefix");
+  const config = equipmentSetImportTargetConfigs.find((candidate) => candidate.targetPrefix === targetPrefix);
+
+  if (!config || config.kind !== sourceKind) {
+    throw new Error("Invalid equipment set target prefix.");
+  }
+
+  return config;
+}
+
+function getEquipmentSetImportTargetSourcePath(
+  sourcePath: string,
+  targetConfig: EquipmentSetImportTargetConfig,
+  setSlug: string,
+  variantSlug: string,
+): string {
+  const extension = sourcePath.endsWith(".png") ? ".png" : ".webp";
+
+  return `${targetConfig.folder}/${targetConfig.targetPrefix}-${setSlug}-${variantSlug}${extension}`;
+}
+
+function getEquipmentSetImportLowSourcePath(sourcePath: string): string {
+  return sourcePath.replace(/^assets\//, "assets-low/").replace(/\.(?:png|webp)$/i, ".webp");
+}
+
+function getEquipmentSetImportAlternateSourcePath(sourcePath: string): string {
+  return sourcePath.endsWith(".png") ? sourcePath.replace(/\.png$/i, ".webp") : sourcePath.replace(/\.webp$/i, ".png");
+}
+
+function getEquipmentSetImportSourceKind(sourcePath: string): GeneratedEquipmentJsonRecord["kind"] {
+  return sourcePath.startsWith("assets/equipment-import/weapons/") ? "weapon" : "armor";
+}
+
+function formatEquipmentSetImportRenameMessage(entries: readonly EquipmentSetImportEntry[]): string {
+  return entries.length === 1 ? "Renamed 1 equipment set asset." : `Renamed ${entries.length} equipment set assets.`;
+}
+
 function getGeneratedEquipmentAssetRemovalPaths(
   record: GeneratedEquipmentJsonRecord,
   ignoredPaths: ReadonlySet<string> = new Set(),
@@ -2958,6 +3176,19 @@ function getWeaponClassFromText(value: string): NonNullable<GeneratedEquipmentJs
   }
 
   return "sword";
+}
+
+function readKebabIdentifier(value: unknown, label: string): string {
+  const identifier = readNonEmptyString(value, label)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!identifier) {
+    throw new Error(`Invalid ${label}.`);
+  }
+
+  return identifier;
 }
 
 function toIdentifier(value: string): string {

@@ -370,8 +370,13 @@ test("arena opponent model defines random opponents and boss hooks", () => {
     Array.from(boss?.lootTable ?? [], (entry) => Array.from(entry.itemIds)),
     [
       ["generated_equipment_weapon_mace_wood_boss_01"],
+      ["generated_equipment_back_boot_wood_boss_01", "generated_equipment_front_boot_wood_boss_01"],
       ["generated_equipment_breastplate_wood_boss_01"],
+      ["generated_equipment_back_glove_wood_boss_01", "generated_equipment_front_glove_wood_boss_01"],
       ["generated_equipment_helmet_wood_boss_01"],
+      ["generated_equipment_back_shinguard_wood_boss_01", "generated_equipment_front_shinguard_wood_boss_01"],
+      ["generated_equipment_back_shoulderguard_wood_boss_01", "generated_equipment_front_shoulderguard_wood_boss_01"],
+      ["generated_equipment_back_wrist_wood_boss_01", "generated_equipment_front_wrist_wood_boss_01"],
       ["generated_equipment_back_greave_wood_boss_01", "generated_equipment_front_greave_wood_boss_01"],
     ],
   );
@@ -467,71 +472,54 @@ test("arena encounter loot rolls into hero inventory", () => {
   assert.equal(nextHero.updatedAt, "2026-01-01T00:01:00.000Z");
 });
 
-test("combat reward application grants the first missing boss loot once", () => {
+test("combat reward application grants one random missing boss loot once", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
-  const bossState = hero.createCombatStateFromHero(baseHero, hero.createArenaBossEncounter("dust_arena_champion"));
+  const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
+  const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);
 
   bossState.result = "win";
 
-  const bossMaceId = "generated_equipment_weapon_mace_wood_boss_01";
-  const bossBreastplateId = "generated_equipment_breastplate_wood_boss_01";
-  const bossHelmetId = "generated_equipment_helmet_wood_boss_01";
-  const bossBackGreaveId = "generated_equipment_back_greave_wood_boss_01";
-  const bossFrontGreaveId = "generated_equipment_front_greave_wood_boss_01";
-  const failOnRandom = () => {
-    throw new Error("Boss loot should not roll random chance.");
-  };
+  const lastLootEntry = bossEncounter.lootTable.at(-1);
+  const lastLootItemIds = Array.from(lastLootEntry?.itemIds ?? []);
 
-  const rewardApplication = hero.applyCombatReward(baseHero, bossState, "2026-01-01T00:01:00.000Z", failOnRandom);
+  assert.ok(lastLootEntry);
+
+  const rewardApplication = hero.applyCombatReward(baseHero, bossState, "2026-01-01T00:01:00.000Z", () => 0.999);
   assert.equal(rewardApplication.reward.gold, 50);
   assert.equal(rewardApplication.reward.xp, 100);
   assert.equal(rewardApplication.loot.length, 1);
-  assert.equal(rewardApplication.loot[0].itemId, bossMaceId);
-  assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === bossMaceId)?.quantity, 1);
+  assert.equal(rewardApplication.loot[0].sourceId, lastLootEntry.id);
+  assert.deepEqual(Array.from(rewardApplication.loot[0].itemIds ?? [rewardApplication.loot[0].itemId]), lastLootItemIds);
+  lastLootItemIds.forEach((itemId) => {
+    assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === itemId)?.quantity, 1);
+  });
   assert.equal(rewardApplication.heroAfterReward.defeatedArenaBossIds.includes("dust_arena_champion"), true);
   assert.equal(hero.hasHeroDefeatedArenaBoss(rewardApplication.heroAfterReward, "dust_arena_champion"), true);
 
-  const heroWithMace = {
+  const heroWithLastLoot = {
     ...baseHero,
-    inventory: [{ itemId: bossMaceId, quantity: 1 }],
+    inventory: lastLootItemIds.map((itemId) => ({ itemId, quantity: 1 })),
   };
-  const secondRewardApplication = hero.applyCombatReward(heroWithMace, bossState, "2026-01-01T00:02:00.000Z", failOnRandom);
+  const secondRewardApplication = hero.applyCombatReward(heroWithLastLoot, bossState, "2026-01-01T00:02:00.000Z", () => 0.999);
+  const secondLootItemIds = Array.from(secondRewardApplication.loot[0]?.itemIds ?? [secondRewardApplication.loot[0]?.itemId].filter(Boolean));
 
   assert.equal(secondRewardApplication.loot.length, 1);
-  assert.equal(secondRewardApplication.loot[0].itemId, bossBreastplateId);
-  assert.equal(secondRewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === bossBreastplateId)?.quantity, 1);
-
-  const heroBeforeGreaveDrop = {
-    ...baseHero,
-    inventory: [
-      { itemId: bossMaceId, quantity: 1 },
-      { itemId: bossBreastplateId, quantity: 1 },
-      { itemId: bossHelmetId, quantity: 1 },
-    ],
-  };
-  const greaveRewardApplication = hero.applyCombatReward(heroBeforeGreaveDrop, bossState, "2026-01-01T00:03:00.000Z", failOnRandom);
-
-  assert.equal(greaveRewardApplication.loot.length, 1);
-  assert.equal(greaveRewardApplication.loot[0].itemId, bossBackGreaveId);
-  assert.deepEqual(Array.from(greaveRewardApplication.loot[0].itemIds ?? []), [bossBackGreaveId, bossFrontGreaveId]);
-  assert.equal(greaveRewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === bossBackGreaveId)?.quantity, 1);
-  assert.equal(greaveRewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === bossFrontGreaveId)?.quantity, 1);
+  assert.equal(secondLootItemIds.some((itemId) => lastLootItemIds.includes(itemId)), false);
 
   const stockedHero = {
     ...baseHero,
-    inventory: [
-      { itemId: bossMaceId, quantity: 1 },
-      { itemId: bossBreastplateId, quantity: 1 },
-      { itemId: bossHelmetId, quantity: 1 },
-      { itemId: bossBackGreaveId, quantity: 1 },
-      { itemId: bossFrontGreaveId, quantity: 1 },
-    ],
+    inventory: bossEncounter.lootTable.flatMap((entry) => entry.itemIds.map((itemId) => ({ itemId, quantity: 1 }))),
   };
-  const emptyLootRewardApplication = hero.applyCombatReward(stockedHero, bossState, "2026-01-01T00:04:00.000Z", failOnRandom);
+  let randomCalls = 0;
+  const emptyLootRewardApplication = hero.applyCombatReward(stockedHero, bossState, "2026-01-01T00:04:00.000Z", () => {
+    randomCalls += 1;
+    return 0.5;
+  });
 
   assert.equal(emptyLootRewardApplication.reward.gold, 50);
   assert.equal(emptyLootRewardApplication.reward.xp, 100);
   assert.equal(emptyLootRewardApplication.loot.length, 0);
+  assert.equal(randomCalls, 0);
 });
 
 test("boss victories are recorded once in hero progression", () => {

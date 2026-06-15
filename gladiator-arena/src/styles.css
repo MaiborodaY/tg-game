@@ -3407,6 +3407,25 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.city-profile__equipment-card--hint {
+  opacity: 1;
+  border-color: #5af0c7;
+  animation: city-profile-points-ready-pulse 1.25s ease-in-out infinite;
+}
+
+.city-profile__equipment-card--hint::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: 3;
+  border: 2px solid rgba(90, 240, 199, 0.72);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 10px rgba(90, 240, 199, 0.28),
+    0 0 10px rgba(90, 240, 199, 0.24);
+  pointer-events: none;
+}
+
 .city-profile__equipment-icon {
   position: relative;
   z-index: 2;
@@ -6852,6 +6871,9 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__select,
 .debug-auto-equipment__generated-select,
 .debug-auto-equipment__rarity,
+.debug-auto-equipment__set-name,
+.debug-auto-equipment__set-variant,
+.debug-auto-equipment__set-slot,
 .debug-shop-items__select,
 .debug-shop-items__rarity,
 .debug-boss-items__select,
@@ -6875,6 +6897,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-rig-editor__face,
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
+.debug-auto-equipment__set-importer,
 .debug-effects__group {
   margin: 0;
   padding: 8px;
@@ -6884,7 +6907,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 
 .debug-rig-editor__face,
 .debug-auto-equipment__transform,
-.debug-auto-equipment__generated {
+.debug-auto-equipment__generated,
+.debug-auto-equipment__set-importer {
   display: grid;
   gap: 8px;
 }
@@ -6902,6 +6926,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-rig-editor__face legend,
 .debug-auto-equipment__transform legend,
 .debug-auto-equipment__generated legend,
+.debug-auto-equipment__set-importer legend,
 .debug-rig-editor__face-part legend,
 .debug-effects__group summary {
   padding: 0 4px;
@@ -6915,10 +6940,51 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-rig-editor__face-controls,
 .debug-item-equipment__controls,
 .debug-auto-equipment__transform-controls,
+.debug-auto-equipment__set-assets,
 .debug-effects__slash-controls,
 .debug-rig-editor__face-part {
   display: grid;
   gap: 7px;
+}
+
+.debug-auto-equipment__set-assets {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.debug-auto-equipment__set-asset {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) minmax(112px, 0.65fr);
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+}
+
+.debug-auto-equipment__set-preview {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 211, 132, 0.45);
+  border-radius: 8px;
+  background-color: rgba(22, 7, 3, 0.72);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.debug-auto-equipment__set-source,
+.debug-auto-equipment__set-empty {
+  min-width: 0;
+  overflow: hidden;
+  color: #fff0bd;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-auto-equipment__set-empty {
+  margin: 0;
+  opacity: 0.82;
 }
 
 .debug-auto-equipment__status,
@@ -6940,6 +7006,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select,
+.debug-item-equipment__item-select,
+.debug-auto-equipment__generated-select,
 .debug-shop-items__select,
 .debug-boss-items__select {
   transition:
@@ -6949,6 +7017,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="common"],
+.debug-item-equipment__item-select[data-rarity="common"],
+.debug-auto-equipment__generated-select[data-rarity="common"],
 .debug-shop-items__select[data-rarity="common"],
 .debug-boss-items__select[data-rarity="common"] {
   border-color: rgba(230, 214, 174, 0.88);
@@ -6956,6 +7026,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="uncommon"],
+.debug-item-equipment__item-select[data-rarity="uncommon"],
+.debug-auto-equipment__generated-select[data-rarity="uncommon"],
 .debug-shop-items__select[data-rarity="uncommon"],
 .debug-boss-items__select[data-rarity="uncommon"] {
   border-color: rgba(88, 214, 112, 0.9);
@@ -6963,6 +7035,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="rare"],
+.debug-item-equipment__item-select[data-rarity="rare"],
+.debug-auto-equipment__generated-select[data-rarity="rare"],
 .debug-shop-items__select[data-rarity="rare"],
 .debug-boss-items__select[data-rarity="rare"] {
   border-color: rgba(96, 184, 255, 0.96);
@@ -6970,6 +7044,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="epic"],
+.debug-item-equipment__item-select[data-rarity="epic"],
+.debug-auto-equipment__generated-select[data-rarity="epic"],
 .debug-shop-items__select[data-rarity="epic"],
 .debug-boss-items__select[data-rarity="epic"] {
   border-color: rgba(205, 103, 255, 0.96);
@@ -6977,6 +7053,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="legendary"],
+.debug-item-equipment__item-select[data-rarity="legendary"],
+.debug-auto-equipment__generated-select[data-rarity="legendary"],
 .debug-shop-items__select[data-rarity="legendary"],
 .debug-boss-items__select[data-rarity="legendary"] {
   border-color: rgba(255, 186, 64, 0.98);
@@ -6984,6 +7062,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="mythical"],
+.debug-item-equipment__item-select[data-rarity="mythical"],
+.debug-auto-equipment__generated-select[data-rarity="mythical"],
 .debug-shop-items__select[data-rarity="mythical"],
 .debug-boss-items__select[data-rarity="mythical"] {
   border-color: rgba(255, 84, 91, 0.98);
@@ -6991,6 +7071,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rarity-select[data-rarity="unique"],
+.debug-item-equipment__item-select[data-rarity="unique"],
+.debug-auto-equipment__generated-select[data-rarity="unique"],
 .debug-shop-items__select[data-rarity="unique"],
 .debug-boss-items__select[data-rarity="unique"] {
   border-color: rgba(88, 232, 222, 0.98);
@@ -7642,6 +7724,13 @@ body.debug-active .battle-screen {
 
 .debug-panel__control-reset:active {
   transform: translateY(1px);
+}
+
+.debug-panel__control-reset:disabled,
+.debug-item-equipment__copy:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
 }
 
 .action-arc {

@@ -13,12 +13,14 @@ import {
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import {
+  getCityEquipmentCategoryIdForHeroItemId,
   getCityHeroWidgetRefs,
   mountCityHeroAttributeControls,
   mountCityHeroEquipmentMenu,
   mountCityHeroProfile,
   renderCityHeroInfo,
   syncCityHeroWidgetPosition,
+  type CityEquipmentCategoryId,
   type CityHeroEquipmentMenuApi,
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
@@ -82,6 +84,7 @@ const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number } | { kind: "boss"; bossId: ArenaBossId };
 let hero: HeroState = createDefaultHero();
+let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID };
 let state: CombatState = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
 let arenaScene: ArenaScene | undefined;
@@ -129,6 +132,7 @@ const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
 const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMenu(cityHeroWidgetRefs, {
   getHero: () => hero,
   onEquip: handleProfileEquipmentEquip,
+  onCategoryOpen: handleProfileEquipmentCategoryOpen,
 });
 cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) => {
   if ((event as CustomEvent<{ open?: boolean }>).detail?.open) {
@@ -203,13 +207,19 @@ function syncPlayerCityBodyScale(): void {
   setPlayerBodyScaleBonus(deriveHeroStats(hero).bodyScaleBonus);
 }
 
+function renderCityHero(): void {
+  renderCityHeroInfo(cityHeroWidgetRefs, hero, {
+    highlightedEquipmentItemIds: pendingBossEquipmentHintItemIds,
+  });
+}
+
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
   const syncArena = options.syncArena ?? true;
   const committedState = applyBattleRewardIfNeeded(nextState);
 
   state = committedState;
   renderCurrentDom();
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   const actionAnimation = syncArena ? (arenaScene?.sync(state) ?? Promise.resolve()) : Promise.resolve();
   syncActionArc();
   syncTurnProbe();
@@ -456,7 +466,7 @@ async function finishInitialCityEntry(): Promise<void> {
   showCityReturnTransition();
   await mountCityPreviews();
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   cityHeroEquipmentMenu.render();
   await waitForCityReady();
   hideCityReturnTransition();
@@ -646,6 +656,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   const { reward, loot, heroBeforeReward, heroAfterReward } = rewardApplication;
 
   hero = heroAfterReward;
+  rememberBossEquipmentHint(nextState, loot);
   syncPlayerCityBodyScale();
   battleResultPresentation = {
     id: `battle-result-${++battleResultPresentationId}`,
@@ -660,6 +671,73 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   cityHeroEquipmentMenu.render();
 
   return nextState;
+}
+
+function rememberBossEquipmentHint(combat: CombatState, loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): void {
+  if (combat.result !== "win" || combat.encounter?.kind !== "boss") {
+    return;
+  }
+
+  const hintItemIds = getBossEquipmentHintItemIds(loot);
+
+  if (hintItemIds.length <= 0) {
+    return;
+  }
+
+  pendingBossEquipmentHintItemIds = hintItemIds;
+}
+
+function getBossEquipmentHintItemIds(loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): HeroItemId[] {
+  const seenItemIds = new Set<HeroItemId>();
+  const hintItemIds: HeroItemId[] = [];
+
+  loot.forEach((drop) => {
+    const itemIds = drop.itemIds ?? [drop.itemId];
+
+    itemIds.forEach((itemId) => {
+      const item = HERO_ITEM_CATALOG[itemId];
+
+      if (!item || isHeroConsumableItem(item) || seenItemIds.has(itemId)) {
+        return;
+      }
+
+      seenItemIds.add(itemId);
+      hintItemIds.push(itemId);
+    });
+  });
+
+  return hintItemIds;
+}
+
+function handleProfileEquipmentCategoryOpen(categoryId: CityEquipmentCategoryId): void {
+  if (clearPendingBossEquipmentHintsForCategory(categoryId)) {
+    renderCityHero();
+  }
+}
+
+function clearPendingBossEquipmentHintsForCategory(categoryId: CityEquipmentCategoryId): boolean {
+  return updatePendingBossEquipmentHints((itemId) => getCityEquipmentCategoryIdForHeroItemId(itemId) !== categoryId);
+}
+
+function clearPendingBossEquipmentHintsForItems(itemIds: readonly HeroItemId[]): boolean {
+  const clearedItemIds = new Set(itemIds);
+
+  return updatePendingBossEquipmentHints((itemId) => !clearedItemIds.has(itemId));
+}
+
+function updatePendingBossEquipmentHints(keepItemId: (itemId: HeroItemId) => boolean): boolean {
+  if (pendingBossEquipmentHintItemIds.length <= 0) {
+    return false;
+  }
+
+  const nextItemIds = pendingBossEquipmentHintItemIds.filter(keepItemId);
+
+  if (nextItemIds.length === pendingBossEquipmentHintItemIds.length) {
+    return false;
+  }
+
+  pendingBossEquipmentHintItemIds = nextItemIds;
+  return true;
 }
 
 function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
@@ -688,7 +766,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   if (shouldRefreshHeroPortrait(product)) {
     heroPortraitPreview?.setEquipment(hero.equipment);
   }
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
@@ -702,7 +780,7 @@ function handleBowCapacityUpgrade(): void {
   }
 
   hero = nextHero;
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
 }
@@ -720,7 +798,7 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
 
   hero = nextHero;
   syncPlayerCityBodyScale();
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
@@ -737,11 +815,12 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   }
 
   cancelArmoryPreviewPrewarm();
+  clearPendingBossEquipmentHintsForItems(itemIds);
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
   heroPortraitPreview?.setEquipment(hero.equipment);
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
@@ -751,7 +830,7 @@ function handleTemporaryChurchSkillGrant(): void {
   const now = new Date().toISOString();
 
   hero = grantHeroGold(grantHeroSkillPoints(hero, 10, now), 1000, now);
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
@@ -899,7 +978,7 @@ async function returnToCity(): Promise<void> {
   document.body.classList.remove("arena-active");
   await mountCityPreviews();
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderCityHero();
   await waitForCityReady();
 
   if (cityReturnTransitionToken !== transitionToken) {
@@ -948,7 +1027,7 @@ armoryButton?.addEventListener("click", () => {
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 syncPlayerCityBodyScale();
-renderCityHeroInfo(cityHeroWidgetRefs, hero);
+renderCityHero();
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
 void finishInitialCityEntry();
 prewarmShopItemIconsWhenIdle();

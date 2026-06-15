@@ -36,12 +36,24 @@ export interface UpdateGeneratedBossItemPayload {
   stat: number;
 }
 
+export interface RenameEquipmentSetAssetEntry {
+  sourcePath: string;
+  targetPrefix: string;
+}
+
+export interface RenameEquipmentSetAssetsPayload {
+  setName: string;
+  variant: string;
+  entries: RenameEquipmentSetAssetEntry[];
+}
+
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
 const updateGeneratedShopItemEndpoint = "/__dust-arena/update-generated-shop-item";
 const updateGeneratedBossItemEndpoint = "/__dust-arena/update-generated-boss-item";
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
+const renameEquipmentSetAssetsEndpoint = "/__dust-arena/rename-equipment-set-assets";
 const saveArenaBossEndpoint = "/__dust-arena/save-arena-boss";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
@@ -132,6 +144,21 @@ export async function saveGeneratedBossItem(payload: UpdateGeneratedBossItemPayl
   }
 
   return responsePayload.message ?? "Updated generated boss item.";
+}
+
+export async function renameEquipmentSetAssets(payload: RenameEquipmentSetAssetsPayload): Promise<string> {
+  const response = await fetch(renameEquipmentSetAssetsEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not rename equipment set assets. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Renamed equipment set assets.";
 }
 
 export async function saveArenaBoss(payload: ArenaBossDefinition): Promise<string> {

@@ -34,6 +34,13 @@ export interface AutoEquipmentItemRecord {
   asset: EquipmentAssetDefinition;
 }
 
+export interface EquipmentSetImportAsset {
+  key: string;
+  url: string;
+  sourcePath: string;
+  kind: HeroItemDefinition["kind"];
+}
+
 interface EquipmentAssetSlotConfig {
   prefix: string;
   slot: HeroEquipmentSlotKey;
@@ -73,6 +80,30 @@ const weaponPngAssetUrls = import.meta.glob("./assets/fighters/weapons/**/*.png"
 }) as Record<string, string>;
 
 const lowWeaponAssetUrls = import.meta.glob("./assets-low/fighters/weapons/**/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const equipmentImportArmorWebpAssetUrls = import.meta.glob("./assets/equipment-import/armor/**/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const equipmentImportArmorPngAssetUrls = import.meta.glob("./assets/equipment-import/armor/**/*.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const equipmentImportWeaponWebpAssetUrls = import.meta.glob("./assets/equipment-import/weapons/**/*.webp", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+
+const equipmentImportWeaponPngAssetUrls = import.meta.glob("./assets/equipment-import/weapons/**/*.png", {
   eager: true,
   query: "?url",
   import: "default",
@@ -123,6 +154,8 @@ export const AUTO_EQUIPMENT_ITEM_ASSET_KEYS = Object.fromEntries(AUTO_EQUIPMENT_
 
 export const AUTO_EQUIPMENT_ASSETS = AUTO_EQUIPMENT_ITEM_RECORDS.map((record) => record.asset);
 
+export const AUTO_EQUIPMENT_SET_IMPORT_ASSETS = createEquipmentSetImportAssetEntries();
+
 function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEquipmentItemRecord[] {
   const assetKey = getAssetKey(assetPath);
 
@@ -130,7 +163,7 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
     return [];
   }
 
-  const slotConfig = equipmentAssetSlotConfigs.find((config) => assetKey.startsWith(config.prefix));
+  const slotConfig = getEquipmentAssetSlotConfig(assetKey);
 
   if (!slotConfig) {
     return [];
@@ -160,6 +193,26 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
   ];
 }
 
+function createEquipmentSetImportAssetEntries(): EquipmentSetImportAsset[] {
+  return createEquipmentImportAssetEntries()
+    .flatMap(([assetPath, url]) => {
+      const assetKey = getAssetKey(assetPath);
+
+      const sourcePath = toSourcePath(assetPath);
+      const kind: HeroItemDefinition["kind"] = sourcePath.startsWith("assets/equipment-import/weapons/") ? "weapon" : "armor";
+
+      return [
+        {
+          key: assetKey ?? sourcePath,
+          url,
+          sourcePath,
+          kind,
+        },
+      ];
+    })
+    .sort((left, right) => left.sourcePath.localeCompare(right.sourcePath));
+}
+
 function createAutoItemDefinition(itemId: string, slotConfig: EquipmentAssetSlotConfig, suffix: string, material: string): HeroItemDefinition {
   if (slotConfig.kind === "weapon") {
     const weaponClass = getWeaponClassFromText(suffix);
@@ -182,6 +235,10 @@ function createAutoItemDefinition(itemId: string, slotConfig: EquipmentAssetSlot
     equipmentSlot: slotConfig.slot,
     armorHp: 0,
   };
+}
+
+function getEquipmentAssetSlotConfig(assetKey: string): EquipmentAssetSlotConfig | undefined {
+  return equipmentAssetSlotConfigs.find((config) => assetKey.startsWith(config.prefix));
 }
 
 function getAutoEquipmentItemAssetKey(item: HeroItemDefinition, fallback: keyof EquipmentItemAssetKeys): keyof EquipmentItemAssetKeys {
@@ -210,8 +267,30 @@ function createAutoEquipmentAssetEntries(): [string, string][] {
   return [...entriesByAssetKey.values()];
 }
 
+function createEquipmentImportAssetEntries(): [string, string][] {
+  const entriesByAssetPath = new Map<string, [string, string]>();
+
+  Object.entries({ ...equipmentImportArmorWebpAssetUrls, ...equipmentImportWeaponWebpAssetUrls }).forEach(([assetPath, url]) => {
+    entriesByAssetPath.set(getAssetPathWithoutExtension(assetPath), [assetPath, url]);
+  });
+
+  Object.entries({ ...equipmentImportArmorPngAssetUrls, ...equipmentImportWeaponPngAssetUrls }).forEach(([assetPath, url]) => {
+    const assetPathKey = getAssetPathWithoutExtension(assetPath);
+
+    if (!entriesByAssetPath.has(assetPathKey)) {
+      entriesByAssetPath.set(assetPathKey, [assetPath, url]);
+    }
+  });
+
+  return [...entriesByAssetPath.values()];
+}
+
 function getAssetKey(assetPath: string): string | undefined {
   return assetPath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "");
+}
+
+function getAssetPathWithoutExtension(assetPath: string): string {
+  return assetPath.replace(/\.(?:png|webp)$/i, "");
 }
 
 function toSourcePath(assetPath: string): string {

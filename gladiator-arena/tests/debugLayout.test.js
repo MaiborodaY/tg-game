@@ -233,7 +233,17 @@ test("debug panel exposes item equipment tuning separately", () => {
   assert.equal(debugPanelSource.includes("debug-item-equipment__select"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__item-select"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__controls"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__copy"), true);
+  assert.equal(debugPanelSource.includes("data-equipment-copy-key"), true);
+  assert.equal(debugPanelSource.includes("copyPairedEquipmentTuningToActiveItem"), true);
+  assert.equal(debugPanelSource.includes("getActiveEquipmentPairItem"), true);
+  assert.equal(debugPanelSource.includes("updateHeroEquipmentItemWithPair"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedEquipmentPairItem"), true);
+  assert.equal(debugPanelSource.includes("compareDebugItemEquipmentOptions"), true);
+  assert.equal(debugPanelSource.includes("getHeroItemDefinitionRarity"), true);
+  assert.equal(debugPanelSource.includes("setDebugRarityDataset(itemSelect"), true);
   assert.equal(debugPanelSource.includes("getCurrentEquipmentItemTuning"), true);
+  assert.equal(stylesSource.includes(".debug-item-equipment__item-select"), true);
 });
 
 test("debug hero equipment picker can list catalog-only items", () => {
@@ -285,11 +295,25 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("bossUnique: bossUnique.checked"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__generated-select"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__remove"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-importer"), true);
+  assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_SET_IMPORT_ASSETS"), true);
+  assert.equal(debugPanelSource.includes("DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS"), true);
+  assert.equal(debugPanelSource.includes("renderEquipmentSetImportAssets"), true);
+  assert.equal(debugPanelSource.includes("getSelectedEquipmentSetImportEntries"), true);
+  assert.equal(debugPanelSource.includes("renameEquipmentSetAssets"), true);
+  assert.equal(debugPanelSource.includes("getRemovableGeneratedEquipmentItems"), true);
+  assert.equal(debugPanelSource.includes("createDebugRemovableGeneratedEquipmentPairItem"), true);
+  assert.equal(debugPanelSource.includes("compareDebugRemovableGeneratedEquipmentItems"), true);
+  assert.equal(debugPanelSource.includes("createRemovableGeneratedEquipmentOption"), true);
+  assert.equal(debugPanelSource.includes("setDebugRarityDataset(generatedSelect"), true);
+  assert.equal(debugPanelSource.includes("removePromotedEquipmentItem(item.itemIds[0]!"), true);
   assert.equal(debugPanelSource.includes("window.confirm"), true);
   assert.equal(debugPanelSource.includes("equipmentTuning: getCurrentEquipmentItemTuning"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ARMOR_MAX = 200"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_DAMAGE_MAX = 100"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_PRICE_MAX = 2000"), true);
+  assert.equal(stylesSource.includes(".debug-auto-equipment__generated-select"), true);
+  assert.equal(stylesSource.includes(".debug-auto-equipment__set-assets"), true);
 });
 
 test("auto equipment preview starts from fallback and isolates the selected asset", () => {

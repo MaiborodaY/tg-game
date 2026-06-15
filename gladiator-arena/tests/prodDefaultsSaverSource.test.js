@@ -154,6 +154,31 @@ test("vite dev middleware removes generated equipment records and asset files", 
   assert.match(source, /updated: removedItems\.length/);
 });
 
+test("vite dev middleware renames raw equipment set assets", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const prodDefaultsSaverSource = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+  const registrySource = readFileSync(join(root, "src", "equipmentAssetRegistry.ts"), "utf8");
+
+  assert.match(prodDefaultsSaverSource, /rename-equipment-set-assets/);
+  assert.match(prodDefaultsSaverSource, /RenameEquipmentSetAssetsPayload/);
+  assert.match(prodDefaultsSaverSource, /renameEquipmentSetAssets/);
+  assert.match(registrySource, /AUTO_EQUIPMENT_SET_IMPORT_ASSETS/);
+  assert.match(registrySource, /assets\/equipment-import\/armor/);
+  assert.match(registrySource, /assets\/equipment-import\/weapons/);
+  assert.match(registrySource, /createEquipmentSetImportAssetEntries/);
+  assert.match(source, /rename-equipment-set-assets/);
+  assert.match(source, /equipmentSetImportTargetConfigs/);
+  assert.match(source, /pickEquipmentSetImportEntries/);
+  assert.match(source, /renameEquipmentSetImportAssets/);
+  assert.match(source, /readEquipmentSetImportSourcePath/);
+  assert.match(source, /isEquipmentImportSourcePath/);
+  assert.match(source, /assets\/equipment-import\/armor/);
+  assert.match(source, /assets\/equipment-import\/weapons/);
+  assert.match(source, /assertEquipmentSetImportPathsAvailable/);
+  assert.match(source, /renameProjectSourceFile/);
+  assert.match(source, /Target asset already exists/);
+});
+
 test("vite dev middleware updates generated shop item rarity stats and price", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 

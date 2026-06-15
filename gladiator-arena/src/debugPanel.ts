@@ -61,10 +61,16 @@ import {
   type HeroItemId,
   type HeroItemRarity,
 } from "./hero";
-import { AUTO_EQUIPMENT_ITEM_CATALOG, AUTO_EQUIPMENT_ITEM_RECORDS } from "./equipmentAssetRegistry";
+import {
+  AUTO_EQUIPMENT_ITEM_CATALOG,
+  AUTO_EQUIPMENT_ITEM_RECORDS,
+  AUTO_EQUIPMENT_SET_IMPORT_ASSETS,
+  type EquipmentSetImportAsset,
+} from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
 import {
   removePromotedEquipmentItem,
+  renameEquipmentSetAssets,
   saveArenaBoss,
   saveGeneratedBossItem,
   saveGeneratedShopItem,
@@ -113,6 +119,7 @@ type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFee
 type FaceNumericControlKey = keyof FacePartTuning;
 type EquipmentNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type EquipmentToggleControlKey = "flipX" | "flipY";
+type EquipmentControlKey = EquipmentNumericControlKey | EquipmentToggleControlKey;
 type SlashArcNumericControlKey = Exclude<keyof SlashArcTuning, "color">;
 type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
@@ -209,6 +216,20 @@ interface DebugGeneratedBossItem {
   stat: number;
 }
 
+interface DebugRemovableGeneratedEquipmentItem {
+  id: string;
+  name: string;
+  itemIds: HeroItemId[];
+  rarity: HeroItemRarity;
+}
+
+interface DebugEquipmentSetImportSlotConfig {
+  id: string;
+  label: string;
+  targetPrefix: string;
+  kind: HeroItemDefinition["kind"];
+}
+
 interface DebugBossEquipmentControlConfig {
   id: string;
   label: string;
@@ -258,6 +279,28 @@ const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
   mythical: "Mythical",
   unique: "Unique",
 };
+const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS: readonly DebugEquipmentSetImportSlotConfig[] = [
+  { id: "helmet", label: "Helmet", targetPrefix: "helmet", kind: "armor" },
+  { id: "breastplate", label: "Breastplate", targetPrefix: "breastplate", kind: "armor" },
+  { id: "backShoulderguard", label: "Back shoulderguard", targetPrefix: "back-shoulderguard", kind: "armor" },
+  { id: "frontShoulderguard", label: "Front shoulderguard", targetPrefix: "front-shoulderguard", kind: "armor" },
+  { id: "backWrist", label: "Back wrist", targetPrefix: "back-wrist", kind: "armor" },
+  { id: "frontWrist", label: "Front wrist", targetPrefix: "front-wrist", kind: "armor" },
+  { id: "backGlove", label: "Back glove", targetPrefix: "back-glove", kind: "armor" },
+  { id: "frontGlove", label: "Front glove", targetPrefix: "front-glove", kind: "armor" },
+  { id: "backGreave", label: "Back greave", targetPrefix: "back-greave", kind: "armor" },
+  { id: "frontGreave", label: "Front greave", targetPrefix: "front-greave", kind: "armor" },
+  { id: "backShinguard", label: "Back shinguard", targetPrefix: "back-shinguard", kind: "armor" },
+  { id: "frontShinguard", label: "Front shinguard", targetPrefix: "front-shinguard", kind: "armor" },
+  { id: "backBoot", label: "Back boot", targetPrefix: "back-boot", kind: "armor" },
+  { id: "frontBoot", label: "Front boot", targetPrefix: "front-boot", kind: "armor" },
+  { id: "weaponSword", label: "Weapon sword", targetPrefix: "weapon-sword", kind: "weapon" },
+  { id: "weaponAxe", label: "Weapon axe", targetPrefix: "weapon-axe", kind: "weapon" },
+  { id: "weaponBow", label: "Weapon bow", targetPrefix: "weapon-bow", kind: "weapon" },
+  { id: "weaponMace", label: "Weapon mace", targetPrefix: "weapon-mace", kind: "weapon" },
+  { id: "weaponSpear", label: "Weapon spear", targetPrefix: "weapon-spear", kind: "weapon" },
+  { id: "weaponShuriken", label: "Weapon shuriken", targetPrefix: "weapon-shuriken", kind: "weapon" },
+];
 const DEBUG_SHOP_ITEM_PAIR_CONFIGS: readonly DebugShopItemPairConfig[] = [
   { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", label: "Shoulderguard" },
   { backSlot: "backWrist", frontSlot: "frontWrist", token: "wrist", label: "Wrist" },
@@ -789,6 +832,21 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           </label>
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-auto-equipment__remove" type="button">Remove generated</button>
+          </div>
+        </fieldset>
+        <fieldset class="debug-auto-equipment__set-importer">
+          <legend>Set importer</legend>
+          <label class="debug-rig-editor__part">
+            <span>Set</span>
+            <input class="debug-auto-equipment__set-name" type="text" placeholder="Wood Boss" />
+          </label>
+          <label class="debug-rig-editor__part">
+            <span>Variant</span>
+            <input class="debug-auto-equipment__set-variant" type="text" value="01" />
+          </label>
+          <div class="debug-auto-equipment__set-assets"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-auto-equipment__set-rename" type="button">Rename selected set assets</button>
           </div>
         </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
@@ -1544,7 +1602,7 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
 
     if (definition && isEquipmentSlotKey(definition.equipmentSlot)) {
       activeEquipmentSlot = definition.equipmentSlot;
-      updateHeroEquipmentSlot(definition.equipmentSlot, definition.id);
+      updateHeroEquipmentItemWithPair(definition.id, definition.equipmentSlot);
     }
 
     const panel = editor.closest(".debug-panel") as HTMLElement | null;
@@ -1576,6 +1634,10 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const promote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__promote");
   const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
   const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
+  const setNameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-name");
+  const setVariantInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-variant");
+  const setAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__set-assets");
+  const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
 
   if (
@@ -1597,6 +1659,10 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !promote ||
     !generatedSelect ||
     !removeGenerated ||
+    !setNameInput ||
+    !setVariantInput ||
+    !setAssets ||
+    !setRename ||
     !status
   ) {
     return;
@@ -1612,16 +1678,15 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     select.append(option);
   });
 
-  getRemovableGeneratedEquipmentRecords().forEach((record) => {
-    const option = document.createElement("option");
+  const generatedItems = getRemovableGeneratedEquipmentItems();
 
-    option.value = record.item.id;
-    option.textContent = record.item.name;
-    generatedSelect.append(option);
+  generatedItems.forEach((item) => {
+    generatedSelect.append(createRemovableGeneratedEquipmentOption(item));
   });
 
   equipmentNumericControls.forEach((control) => transformControls.append(createEquipmentRangeControl(control)));
   equipmentToggleControls.forEach((control) => transformControls.append(createEquipmentToggleControl(control)));
+  renderEquipmentSetImportAssets(setAssets);
   syncAutoEquipmentStatInputs(editor);
 
   syncAutoEquipmentEditor(editor);
@@ -1637,6 +1702,10 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   select.addEventListener("change", () => {
     syncAutoEquipmentStatInputs(editor);
     previewSelectedAutoEquipment(editor);
+    syncAutoEquipmentEditor(editor);
+  });
+
+  generatedSelect.addEventListener("change", () => {
     syncAutoEquipmentEditor(editor);
   });
 
@@ -1724,26 +1793,55 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   });
 
   removeGenerated.addEventListener("click", async () => {
-    const record = getSelectedGeneratedEquipmentRecord(generatedSelect.value);
+    const item = getSelectedRemovableGeneratedEquipmentItem(generatedItems, generatedSelect.value);
 
-    if (!record) {
+    if (!item) {
       status.textContent = "No generated item selected.";
       return;
     }
 
-    if (!window.confirm(`Remove ${record.item.name}? This deletes the generated item and its asset files.`)) {
+    if (!window.confirm(`Remove ${item.name}? This deletes the generated item and its asset files.`)) {
       return;
     }
 
     removeGenerated.disabled = true;
-    status.textContent = "Removing generated item...";
+    status.textContent = item.itemIds.length > 1 ? "Removing generated item pair..." : "Removing generated item...";
 
     try {
-      status.textContent = await removePromotedEquipmentItem(record.item.id);
+      status.textContent = await removePromotedEquipmentItem(item.itemIds[0]!);
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Could not remove generated equipment.";
     } finally {
       removeGenerated.disabled = false;
+    }
+  });
+
+  setRename.addEventListener("click", async () => {
+    const entries = getSelectedEquipmentSetImportEntries(setAssets);
+
+    if (!setNameInput.value.trim()) {
+      status.textContent = "Set name is required.";
+      return;
+    }
+
+    if (entries.length === 0) {
+      status.textContent = "Select at least one raw set asset.";
+      return;
+    }
+
+    setRename.disabled = true;
+    status.textContent = "Renaming set assets...";
+
+    try {
+      status.textContent = await renameEquipmentSetAssets({
+        setName: setNameInput.value.trim(),
+        variant: setVariantInput.value.trim() || "01",
+        entries,
+      });
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not rename set assets.";
+    } finally {
+      setRename.disabled = false;
     }
   });
 }
@@ -2444,10 +2542,16 @@ function createEquipmentRangeControl(control: EquipmentNumericControlConfig): HT
       step="${control.step}"
       data-equipment-number-key="${control.key}"
     />
+    <button
+      class="debug-panel__control-reset debug-item-equipment__copy"
+      type="button"
+      data-equipment-copy-key="${control.key}"
+    >Copy</button>
   `;
 
   const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
   const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+  const copy = row.querySelector<HTMLButtonElement>(".debug-item-equipment__copy");
 
   range?.addEventListener("input", () => {
     updateActiveEquipmentTuning({ [control.key]: clampEquipmentNumericValue(control.key, Number(range.value)) } as Partial<EquipmentTuning>);
@@ -2455,6 +2559,11 @@ function createEquipmentRangeControl(control: EquipmentNumericControlConfig): HT
 
   number?.addEventListener("input", () => {
     updateActiveEquipmentTuning({ [control.key]: clampEquipmentNumericValue(control.key, Number(number.value)) } as Partial<EquipmentTuning>);
+  });
+
+  copy?.addEventListener("click", (event) => {
+    event.preventDefault();
+    copyPairedEquipmentTuningToActiveItem(control.key);
   });
 
   return row;
@@ -2466,12 +2575,23 @@ function createEquipmentToggleControl(control: EquipmentToggleControlConfig): HT
   row.innerHTML = `
     <span>${control.label}</span>
     <input type="checkbox" data-equipment-toggle-key="${control.key}" />
+    <button
+      class="debug-panel__control-reset debug-item-equipment__copy"
+      type="button"
+      data-equipment-copy-key="${control.key}"
+    >Copy</button>
   `;
 
   const input = row.querySelector<HTMLInputElement>("input");
+  const copy = row.querySelector<HTMLButtonElement>(".debug-item-equipment__copy");
 
   input?.addEventListener("change", () => {
     updateActiveEquipmentTuning({ [control.key]: input.checked } as Partial<EquipmentTuning>);
+  });
+
+  copy?.addEventListener("click", (event) => {
+    event.preventDefault();
+    copyPairedEquipmentTuningToActiveItem(control.key);
   });
 
   return row;
@@ -2534,6 +2654,54 @@ function updateActiveEquipmentTuning(patch: Partial<EquipmentTuning>): void {
   }
 
   updateEquipmentSlot(activeEquipmentSlot, patch);
+}
+
+function copyPairedEquipmentTuningToActiveItem(key: EquipmentControlKey): void {
+  const pairItem = getActiveEquipmentPairItem();
+
+  if (!activeEquipmentItemId || !pairItem) {
+    return;
+  }
+
+  const source = getCurrentEquipmentItemTuning(pairItem.itemId, pairItem.slotKey);
+
+  updateEquipmentItemTuning(activeEquipmentItemId, activeEquipmentSlot, {
+    [key]: source[key],
+  } as Partial<EquipmentTuning>);
+}
+
+function getActiveEquipmentPairItem(): { itemId: HeroItemId; slotKey: EquipmentSlotKey; name: string } | undefined {
+  if (!activeEquipmentItemId) {
+    return undefined;
+  }
+
+  return getGeneratedEquipmentPairItem(activeEquipmentItemId);
+}
+
+function getGeneratedEquipmentPairItem(itemId: HeroItemId): { itemId: HeroItemId; slotKey: EquipmentSlotKey; name: string } | undefined {
+  const record = getSelectedGeneratedEquipmentRecord(itemId);
+
+  if (!record || record.item.kind !== "armor" || !isEquipmentSlotKey(record.item.equipmentSlot)) {
+    return undefined;
+  }
+
+  const pairConfig = getDebugShopItemPairConfig(record.item.equipmentSlot);
+
+  if (!pairConfig) {
+    return undefined;
+  }
+
+  const counterpart = findDebugShopItemPair(record, GENERATED_EQUIPMENT_ITEM_RECORDS, pairConfig, new Set());
+
+  if (!counterpart || !isEquipmentSlotKey(counterpart.item.equipmentSlot)) {
+    return undefined;
+  }
+
+  return {
+    itemId: counterpart.item.id,
+    slotKey: counterpart.item.equipmentSlot,
+    name: counterpart.item.name,
+  };
 }
 
 function selectCharacterCanvasEquipment(selection: DebugCharacterEquipmentSelection): void {
@@ -2689,6 +2857,20 @@ function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItem
   updateHeroEquipment({
     ...debugHeroEquipment,
     [slotKey]: itemId,
+  });
+}
+
+function updateHeroEquipmentItemWithPair(itemId: HeroItemId, slotKey: HeroEquipmentSlotKey): void {
+  if (!debugHeroEquipment) {
+    return;
+  }
+
+  const pairItem = getGeneratedEquipmentPairItem(itemId);
+
+  updateHeroEquipment({
+    ...debugHeroEquipment,
+    [slotKey]: itemId,
+    ...(pairItem ? { [pairItem.slotKey]: pairItem.itemId } : {}),
   });
 }
 
@@ -3045,6 +3227,20 @@ function getDebugItemIdsForSlot(slotKey: EquipmentSlotKey): HeroItemId[] {
   return [...new Set(ALL_HERO_ITEM_IDS)].filter((itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey);
 }
 
+function compareDebugItemEquipmentOptions(leftItemId: HeroItemId, rightItemId: HeroItemId): number {
+  const leftDefinition = getDebugHeroItemDefinition(leftItemId);
+  const rightDefinition = getDebugHeroItemDefinition(rightItemId);
+  const leftRarity = leftDefinition ? getHeroItemDefinitionRarity(leftDefinition) : "common";
+  const rightRarity = rightDefinition ? getHeroItemDefinitionRarity(rightDefinition) : "common";
+  const rarityOrder = DEBUG_SHOP_ITEM_RARITY_RANKS[leftRarity] - DEBUG_SHOP_ITEM_RARITY_RANKS[rightRarity];
+
+  if (rarityOrder !== 0) {
+    return rarityOrder;
+  }
+
+  return (leftDefinition?.name ?? leftItemId).localeCompare(rightDefinition?.name ?? rightItemId);
+}
+
 function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItemDefinition | undefined {
   if (!itemId) {
     return undefined;
@@ -3055,6 +3251,10 @@ function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItem
     AUTO_EQUIPMENT_ITEM_CATALOG[itemId] ??
     GENERATED_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId)?.item
   );
+}
+
+function getHeroItemDefinitionRarity(definition: HeroItemDefinition): HeroItemRarity {
+  return definition.rarity ?? "common";
 }
 
 function getInventoryItemQuantity(itemId: HeroItemId): number {
@@ -3255,10 +3455,13 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const buttons = editor.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__preview, .debug-auto-equipment__promote");
   const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
   const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
+  const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
   const record = getSelectedAutoEquipmentRecord(select?.value);
   const isAvailable = Boolean(record);
-  const hasGeneratedItems = getRemovableGeneratedEquipmentRecords().length > 0;
+  const removableGeneratedItems = getRemovableGeneratedEquipmentItems();
+  const selectedGeneratedItem = getSelectedRemovableGeneratedEquipmentItem(removableGeneratedItems, generatedSelect?.value);
+  const hasGeneratedItems = removableGeneratedItems.length > 0;
 
   if (record && isEquipmentSlotKey(record.item.equipmentSlot)) {
     activeEquipmentSlot = record.item.equipmentSlot;
@@ -3327,10 +3530,15 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
 
   if (generatedSelect) {
     generatedSelect.disabled = !hasGeneratedItems;
+    setDebugRarityDataset(generatedSelect, selectedGeneratedItem?.rarity);
   }
 
   if (removeGenerated) {
     removeGenerated.disabled = !hasGeneratedItems;
+  }
+
+  if (setRename) {
+    setRename.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
   }
 
   if (status) {
@@ -3847,6 +4055,62 @@ function normalizeDebugIdentifier(value: string): string {
   return normalized || "arena_boss";
 }
 
+function renderEquipmentSetImportAssets(host: HTMLElement): void {
+  host.replaceChildren();
+
+  if (AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0) {
+    const empty = document.createElement("p");
+
+    empty.className = "debug-auto-equipment__set-empty";
+    empty.textContent = "No raw equipment assets in assets/equipment-import.";
+    host.append(empty);
+    return;
+  }
+
+  AUTO_EQUIPMENT_SET_IMPORT_ASSETS.forEach((asset) => {
+    host.append(createEquipmentSetImportAssetRow(asset));
+  });
+}
+
+function createEquipmentSetImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement {
+  const row = document.createElement("div");
+  const preview = document.createElement("span");
+  const source = document.createElement("span");
+  const select = document.createElement("select");
+
+  row.className = "debug-auto-equipment__set-asset";
+  row.dataset.setImportSourcePath = asset.sourcePath;
+
+  preview.className = "debug-auto-equipment__set-preview";
+  preview.style.backgroundImage = `url("${asset.url}")`;
+
+  source.className = "debug-auto-equipment__set-source";
+  source.textContent = asset.sourcePath;
+  source.title = asset.sourcePath;
+
+  select.className = "debug-auto-equipment__set-slot";
+  select.append(createHeroEquipmentOption("", "skip"));
+  DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS.filter((config) => config.kind === asset.kind).forEach((config) => {
+    select.append(createHeroEquipmentOption(config.targetPrefix, config.label));
+  });
+
+  row.append(preview, source, select);
+  return row;
+}
+
+function getSelectedEquipmentSetImportEntries(host: HTMLElement): { sourcePath: string; targetPrefix: string }[] {
+  return Array.from(host.querySelectorAll<HTMLElement>("[data-set-import-source-path]")).flatMap((row) => {
+    const sourcePath = row.dataset.setImportSourcePath;
+    const targetPrefix = row.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-slot")?.value;
+
+    if (!sourcePath || !targetPrefix) {
+      return [];
+    }
+
+    return [{ sourcePath, targetPrefix }];
+  });
+}
+
 function syncAutoEquipmentStatInputs(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__select");
   const armorRange = editor.querySelector<HTMLInputElement>("input[data-auto-equipment-armor]");
@@ -4251,6 +4515,81 @@ function getRemovableGeneratedEquipmentRecords(): (typeof GENERATED_EQUIPMENT_IT
   return [...GENERATED_EQUIPMENT_ITEM_RECORDS];
 }
 
+function getRemovableGeneratedEquipmentItems(): DebugRemovableGeneratedEquipmentItem[] {
+  const records = getRemovableGeneratedEquipmentRecords();
+  const usedItemIds = new Set<HeroItemId>();
+  const items: DebugRemovableGeneratedEquipmentItem[] = [];
+
+  records.forEach((record) => {
+    if (usedItemIds.has(record.item.id)) {
+      return;
+    }
+
+    const pairConfig = record.item.kind === "armor" ? getDebugShopItemPairConfig(record.item.equipmentSlot) : undefined;
+    const counterpart = pairConfig ? findDebugShopItemPair(record, records, pairConfig, usedItemIds) : undefined;
+
+    if (pairConfig && counterpart) {
+      items.push(createDebugRemovableGeneratedEquipmentPairItem(record, counterpart, pairConfig));
+      usedItemIds.add(record.item.id);
+      usedItemIds.add(counterpart.item.id);
+      return;
+    }
+
+    items.push(createDebugRemovableGeneratedEquipmentItem(record));
+    usedItemIds.add(record.item.id);
+  });
+
+  return items.sort(compareDebugRemovableGeneratedEquipmentItems);
+}
+
+function getSelectedRemovableGeneratedEquipmentItem(
+  items: readonly DebugRemovableGeneratedEquipmentItem[],
+  itemId: string | undefined,
+): DebugRemovableGeneratedEquipmentItem | undefined {
+  return items.find((item) => item.id === itemId);
+}
+
+function createRemovableGeneratedEquipmentOption(item: DebugRemovableGeneratedEquipmentItem): HTMLOptionElement {
+  const option = createHeroEquipmentOption(item.id, item.name, item.rarity);
+
+  option.className = `debug-rarity-option debug-rarity-option--${item.rarity}`;
+  option.dataset.rarity = item.rarity;
+
+  return option;
+}
+
+function createDebugRemovableGeneratedEquipmentItem(record: DebugGeneratedShopItemRecord): DebugRemovableGeneratedEquipmentItem {
+  return {
+    id: record.item.id,
+    name: record.item.name,
+    itemIds: [record.item.id],
+    rarity: record.item.rarity ?? "common",
+  };
+}
+
+function createDebugRemovableGeneratedEquipmentPairItem(
+  record: DebugGeneratedShopItemRecord,
+  counterpart: DebugGeneratedShopItemRecord,
+  pairConfig: DebugShopItemPairConfig,
+): DebugRemovableGeneratedEquipmentItem {
+  const backRecord = record.item.equipmentSlot === pairConfig.backSlot ? record : counterpart;
+  const frontRecord = record.item.equipmentSlot === pairConfig.frontSlot ? record : counterpart;
+
+  return {
+    id: `${backRecord.item.id}+${frontRecord.item.id}`,
+    name: getDebugShopItemPairName(backRecord, pairConfig),
+    itemIds: [backRecord.item.id, frontRecord.item.id],
+    rarity: getHighestDebugShopItemRarity([backRecord, frontRecord]),
+  };
+}
+
+function compareDebugRemovableGeneratedEquipmentItems(
+  left: DebugRemovableGeneratedEquipmentItem,
+  right: DebugRemovableGeneratedEquipmentItem,
+): number {
+  return DEBUG_SHOP_ITEM_RARITY_RANKS[left.rarity] - DEBUG_SHOP_ITEM_RARITY_RANKS[right.rarity] || left.name.localeCompare(right.name);
+}
+
 function getCurrentEquipmentSlotTuning(slotKey: EquipmentSlotKey): EquipmentTuning {
   return { ...(debugTuning.equipment[slotKey] ?? DEFAULT_EQUIPMENT[slotKey]) };
 }
@@ -4311,11 +4650,16 @@ function getInputMax(input: HTMLInputElement): number {
   return Number.isFinite(max) ? max : Number.MAX_SAFE_INTEGER;
 }
 
-function createHeroEquipmentOption(value: string, label: string): HTMLOptionElement {
+function createHeroEquipmentOption(value: string, label: string, rarity?: HeroItemRarity): HTMLOptionElement {
   const option = document.createElement("option");
 
   option.value = value;
   option.textContent = label;
+
+  if (rarity) {
+    option.className = `debug-rarity-option debug-rarity-option--${rarity}`;
+    option.dataset.rarity = rarity;
+  }
 
   return option;
 }
@@ -4494,6 +4838,7 @@ function syncEquipmentEditor(panel: HTMLElement): void {
   const selectedEquipment = activeEquipmentItemId
     ? getCurrentEquipmentItemTuning(activeEquipmentItemId, activeEquipmentSlot)
     : getCurrentEquipmentSlotTuning(activeEquipmentSlot);
+  const pairItem = getActiveEquipmentPairItem();
 
   if (equipmentSelect) {
     equipmentSelect.value = activeEquipmentSlot;
@@ -4502,17 +4847,18 @@ function syncEquipmentEditor(panel: HTMLElement): void {
   if (itemSelect) {
     itemSelect.replaceChildren(createHeroEquipmentOption("", "slot fallback"));
 
-    getDebugItemIdsForSlot(activeEquipmentSlot).forEach((itemId) => {
+    getDebugItemIdsForSlot(activeEquipmentSlot).sort(compareDebugItemEquipmentOptions).forEach((itemId) => {
       const definition = getDebugHeroItemDefinition(itemId);
 
       if (!definition) {
         return;
       }
 
-      itemSelect.append(createHeroEquipmentOption(itemId, definition.name));
+      itemSelect.append(createHeroEquipmentOption(itemId, definition.name, getHeroItemDefinitionRarity(definition)));
     });
 
     itemSelect.value = activeEquipmentItemId;
+    setDebugRarityDataset(itemSelect, activeItemDefinition ? getHeroItemDefinitionRarity(activeItemDefinition) : undefined);
   }
 
   panel.querySelectorAll<HTMLInputElement>("input[data-equipment-key]").forEach((input) => {
@@ -4532,6 +4878,11 @@ function syncEquipmentEditor(panel: HTMLElement): void {
     const key = input.dataset.equipmentToggleKey as EquipmentToggleControlKey;
 
     input.checked = Boolean(selectedEquipment[key]);
+  });
+
+  panel.querySelectorAll<HTMLButtonElement>("button[data-equipment-copy-key]").forEach((button) => {
+    button.disabled = !pairItem;
+    button.title = pairItem ? `Copy from ${pairItem.name}` : "Select paired generated armor";
   });
 }
 

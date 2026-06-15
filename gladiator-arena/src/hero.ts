@@ -871,16 +871,16 @@ function getCombatEncounterLootTable(combat: CombatState): readonly ArenaLootTab
 
 function rollCombatRewardLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
   if (combat.encounter?.kind === "boss") {
-    return rollBossCombatLoot(hero, combat);
+    return rollBossCombatLoot(hero, combat, random);
   }
 
   return rollCombatEncounterLoot(combat, random);
 }
 
-function rollBossCombatLoot(hero: HeroState, combat: CombatState): ArenaLootDrop[] {
-  const entry = getCombatEncounterLootTable(combat).find((candidate) => canHeroReceiveBossLootEntry(hero, candidate));
+function rollBossCombatLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
+  const entries = getCombatEncounterLootTable(combat).filter((candidate) => canHeroReceiveBossLootEntry(hero, candidate));
 
-  return entry ? [createGuaranteedBossLootDrop(entry)] : [];
+  return entries.length > 0 ? [createGuaranteedBossLootDrop(pickRandom(entries, random))] : [];
 }
 
 function canHeroReceiveBossLootEntry(hero: HeroState, entry: ArenaLootTableEntry): boolean {
