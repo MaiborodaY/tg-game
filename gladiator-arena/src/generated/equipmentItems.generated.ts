@@ -875,6 +875,19 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":50,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
   },
   {
+    item: {"id":"generated_equipment_weapon_mace_wood_boss_01","name":"Big Wooden mace","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"mace"},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-wood-boss-01"},
+    equipmentTuning: {"x":-14,"y":7,"angle":116,"scaleX":1.87,"scaleY":2.03,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-wood-boss-01",
+      url: new URL("../assets/fighters/weapons/weapon-mace-wood-boss-01.webp", import.meta.url).href,
+      lowUrl: new URL("../assets-low/fighters/weapons/weapon-mace-wood-boss-01.webp", import.meta.url).href,
+      sourcePath: "assets/fighters/weapons/weapon-mace-wood-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-wood-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"shuriken"},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-01"},
     equipmentTuning: {"x":-11,"y":29,"angle":91,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},

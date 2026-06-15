@@ -311,6 +311,36 @@ test("damage records armor break events", () => {
   assert.equal(nextState.lastPlayerArmorBroken, true);
 });
 
+test("maces deal bonus damage through armor with hp overflow", () => {
+  const state = combat.freshState();
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.weaponClass = "mace";
+  state.player.damageBonus = 4;
+  state.enemy.armor = 2;
+  state.enemy.maxArmor = 2;
+
+  const nextState = combat.resolvePlayerTurn(state, "light", () => 0.99);
+
+  assert.equal(nextState.enemy.armor, 0);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(nextState.lastPlayerDamage, 6);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, 2);
+  assert.equal(nextState.lastPlayerArmorBroken, true);
+});
+
+test("maces do not gain armor damage bonus against unarmored targets", () => {
+  const state = combat.freshState();
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.weaponClass = "mace";
+  state.player.damageBonus = 4;
+
+  const nextState = combat.resolvePlayerTurn(state, "light", () => 0.99);
+
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(nextState.lastPlayerDamage, 4);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, 0);
+});
+
 test("blocked attacks deal no damage", () => {
   const state = combat.freshState();
   setConsistentDistance(state, combat.MELEE_RANGE);

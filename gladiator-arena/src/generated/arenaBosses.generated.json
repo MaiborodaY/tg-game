@@ -9,6 +9,7 @@
       "vitality": 5
     },
     "equipment": {
+      "weaponMain": "generated_equipment_weapon_mace_wood_boss_01",
       "helmet": "generated_equipment_helmet_wood_boss_01"
     },
     "rewards": {
@@ -22,6 +23,14 @@
       }
     },
     "lootTable": [
+      {
+        "id": "dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_weapon_mace_wood_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
       {
         "id": "dust_arena_champion_generated_equipment_helmet_wood_boss_01_drop",
         "itemIds": [

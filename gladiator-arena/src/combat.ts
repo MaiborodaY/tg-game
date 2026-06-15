@@ -114,6 +114,7 @@ const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
   medium: 0.1,
   heavy: 0.15,
 };
+const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.5;
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -748,6 +749,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
       clearIncomingBonus(state, defenderOwner);
     } else {
       damage = applyIncomingBonus(state, actor, damage);
+      damage = applyWeaponArmorDamageBonus(actionId, attacker, defender, damage);
       appliedDamage = applyDamageToFighter(defender, damage);
     }
   } else {
@@ -826,6 +828,18 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   const baseDamage = actionDamage + getActionDamageBonus(attacker);
 
   return isRangedFighter(attacker) ? baseDamage : Math.ceil(baseDamage * getActionMeleeDamageMultiplier(attacker));
+}
+
+function applyWeaponArmorDamageBonus(actionId: ActionId, attacker: FighterState, defender: FighterState, damage: number): number {
+  if (damage <= 0 || actionId === "shuriken" || isRangedFighter(attacker)) {
+    return damage;
+  }
+
+  if (getFighterWeaponClass(attacker) !== "mace" || Math.max(0, defender.armor ?? 0) <= 0) {
+    return damage;
+  }
+
+  return Math.ceil(damage * MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER);
 }
 
 function applyDamageToFighter(defender: FighterState, damage: number): DamageApplication {

@@ -2369,6 +2369,37 @@
     }
   },
   {
+    "id": "generated_equipment_weapon_mace_wood_boss_01",
+    "name": "Big Wooden mace",
+    "kind": "weapon",
+    "rarity": "unique",
+    "damageBonus": 20,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-wood-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -14,
+      "y": 7,
+      "angle": 116,
+      "scaleX": 1.87,
+      "scaleY": 2.03,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-wood-boss-01",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-wood-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-wood-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_weapon_shuriken_01",
     "name": "Rusty Shuriken",
     "kind": "weapon",
