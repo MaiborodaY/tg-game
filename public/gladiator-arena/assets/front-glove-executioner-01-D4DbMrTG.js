@@ -1,1 +1,0 @@
-var e=``+new URL(`front-glove-executioner-01-dhSO8N9D.webp`,import.meta.url).href;export{e as default};

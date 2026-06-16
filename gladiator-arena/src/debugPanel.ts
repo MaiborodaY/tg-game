@@ -60,6 +60,7 @@ import {
   type HeroItemDefinition,
   type HeroItemId,
   type HeroItemRarity,
+  type HeroWeaponClass,
 } from "./hero";
 import {
   AUTO_EQUIPMENT_ITEM_CATALOG,
@@ -79,6 +80,7 @@ import {
   saveProdDefaults,
   savePromotedEquipmentItem,
   savePromotedEquipmentSet,
+  savePromotedWeaponImports,
 } from "./prodDefaultsSaver";
 
 interface DebugPanelOptions {
@@ -232,6 +234,20 @@ interface DebugEquipmentSetImportSlotConfig {
   kind: HeroItemDefinition["kind"];
 }
 
+interface DebugWeaponImportEntry {
+  sourcePath: string;
+  name: string;
+  rarity: HeroItemRarity;
+  weaponClass: HeroWeaponClass;
+  damageBonus: number;
+  price: number;
+  availability: {
+    shop: boolean;
+    enemyPool: boolean;
+    bossUnique: boolean;
+  };
+}
+
 interface DebugBossEquipmentControlConfig {
   id: string;
   label: string;
@@ -280,6 +296,15 @@ const AUTO_EQUIPMENT_RARITY_LABELS: Record<HeroItemRarity, string> = {
   legendary: "Legendary",
   mythical: "Mythical",
   unique: "Unique",
+};
+const DEBUG_WEAPON_IMPORT_CLASSES: readonly HeroWeaponClass[] = ["sword", "axe", "bow", "mace", "spear", "shuriken"];
+const DEBUG_WEAPON_IMPORT_CLASS_LABELS: Record<HeroWeaponClass, string> = {
+  sword: "Sword",
+  axe: "Axe",
+  bow: "Bow",
+  mace: "Mace",
+  spear: "Spear",
+  shuriken: "Shuriken",
 };
 const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS: readonly DebugEquipmentSetImportSlotConfig[] = [
   { id: "helmet", label: "Helmet", targetPrefix: "helmet", kind: "armor" },
@@ -860,6 +885,13 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-auto-equipment__set-rename" type="button">Rename selected set assets</button>
             <button class="debug-panel__reset debug-auto-equipment__set-promote" type="button">Promote full set</button>
+          </div>
+        </fieldset>
+        <fieldset class="debug-auto-equipment__weapon-importer">
+          <legend>Weapon importer</legend>
+          <div class="debug-auto-equipment__weapon-assets"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-auto-equipment__weapon-promote" type="button">Promote selected weapons</button>
           </div>
         </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
@@ -1656,6 +1688,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const setAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__set-assets");
   const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
   const setPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-promote");
+  const weaponAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__weapon-assets");
+  const weaponPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__weapon-promote");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
 
   if (
@@ -1686,6 +1720,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !setAssets ||
     !setRename ||
     !setPromote ||
+    !weaponAssets ||
+    !weaponPromote ||
     !status
   ) {
     return;
@@ -1710,6 +1746,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   equipmentNumericControls.forEach((control) => transformControls.append(createEquipmentRangeControl(control)));
   equipmentToggleControls.forEach((control) => transformControls.append(createEquipmentToggleControl(control)));
   renderEquipmentSetImportAssets(setAssets);
+  renderWeaponImportAssets(weaponAssets);
   syncAutoEquipmentStatInputs(editor);
 
   syncAutoEquipmentEditor(editor);
@@ -1914,6 +1951,26 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     } finally {
       setRename.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
       setPromote.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+    }
+  });
+
+  weaponPromote.addEventListener("click", async () => {
+    const entries = getSelectedWeaponImportEntries(weaponAssets);
+
+    if (entries.length === 0) {
+      status.textContent = "Select at least one raw weapon asset.";
+      return;
+    }
+
+    weaponPromote.disabled = true;
+    status.textContent = entries.length === 1 ? "Promoting weapon..." : `Promoting ${entries.length} weapons...`;
+
+    try {
+      status.textContent = await savePromotedWeaponImports({ entries });
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not promote weapon imports.";
+    } finally {
+      weaponPromote.disabled = getWeaponImportAssets().length === 0;
     }
   });
 }
@@ -3530,6 +3587,7 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const setRaritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-rarity");
   const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
   const setPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-promote");
+  const weaponPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__weapon-promote");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
   const record = getSelectedAutoEquipmentRecord(select?.value);
   const isAvailable = Boolean(record);
@@ -3624,6 +3682,10 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
 
   if (setPromote) {
     setPromote.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+  }
+
+  if (weaponPromote) {
+    weaponPromote.disabled = getWeaponImportAssets().length === 0;
   }
 
   if (status) {
@@ -4170,6 +4232,274 @@ function normalizeDebugIdentifier(value: string): string {
     .replace(/^_+|_+$/g, "");
 
   return normalized || "arena_boss";
+}
+
+function getWeaponImportAssets(): EquipmentSetImportAsset[] {
+  return AUTO_EQUIPMENT_SET_IMPORT_ASSETS.filter((asset) => asset.kind === "weapon");
+}
+
+function renderWeaponImportAssets(host: HTMLElement): void {
+  host.replaceChildren();
+
+  const assets = getWeaponImportAssets();
+
+  if (assets.length === 0) {
+    const empty = document.createElement("p");
+
+    empty.className = "debug-auto-equipment__set-empty";
+    empty.textContent = "No raw weapon assets in assets/equipment-import/weapons.";
+    host.append(empty);
+    return;
+  }
+
+  assets.forEach((asset) => {
+    host.append(createWeaponImportAssetRow(asset));
+  });
+}
+
+function createWeaponImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement {
+  const row = document.createElement("div");
+  const preview = document.createElement("button");
+  const fields = document.createElement("div");
+  const selected = document.createElement("input");
+  const nameInput = document.createElement("input");
+  const classSelect = document.createElement("select");
+  const raritySelect = document.createElement("select");
+  const damageInput = document.createElement("input");
+  const priceInput = document.createElement("input");
+  const shopInput = document.createElement("input");
+  const enemyPoolInput = document.createElement("input");
+  const bossUniqueInput = document.createElement("input");
+
+  row.className = "debug-auto-equipment__weapon-asset";
+  row.dataset.weaponImportSourcePath = asset.sourcePath;
+
+  preview.type = "button";
+  preview.className = "debug-auto-equipment__set-preview";
+  preview.setAttribute("aria-label", "Preview weapon import asset");
+  preview.setAttribute("aria-pressed", "false");
+  void getEquipmentSetImportAssetUrl(asset).then((url) => {
+    if (url) {
+      preview.style.backgroundImage = `url("${url}")`;
+    }
+  });
+  preview.addEventListener("click", () => {
+    showEquipmentSetImportAssetPreview(asset, preview);
+  });
+
+  selected.type = "checkbox";
+  selected.className = "debug-auto-equipment__weapon-selected";
+  selected.checked = true;
+
+  nameInput.type = "text";
+  nameInput.className = "debug-auto-equipment__weapon-name";
+  nameInput.value = formatWeaponImportDefaultName(asset);
+
+  classSelect.className = "debug-auto-equipment__weapon-class";
+  DEBUG_WEAPON_IMPORT_CLASSES.forEach((weaponClass) => {
+    classSelect.append(createHeroEquipmentOption(weaponClass, DEBUG_WEAPON_IMPORT_CLASS_LABELS[weaponClass]));
+  });
+  classSelect.value = getDefaultWeaponImportClass(asset);
+
+  raritySelect.className = "debug-auto-equipment__weapon-rarity debug-rarity-select";
+  raritySelect.innerHTML = formatAutoEquipmentRarityOptions();
+  raritySelect.value = "common";
+  setDebugRarityDataset(raritySelect, "common");
+
+  damageInput.type = "number";
+  damageInput.className = "debug-auto-equipment__weapon-damage";
+  damageInput.min = `${AUTO_EQUIPMENT_STAT_MIN}`;
+  damageInput.max = `${AUTO_EQUIPMENT_DAMAGE_MAX}`;
+  damageInput.step = "1";
+  damageInput.value = "1";
+
+  priceInput.type = "number";
+  priceInput.className = "debug-auto-equipment__weapon-price";
+  priceInput.min = "0";
+  priceInput.max = `${AUTO_EQUIPMENT_PRICE_MAX}`;
+  priceInput.step = "1";
+  priceInput.value = "0";
+
+  shopInput.type = "checkbox";
+  shopInput.className = "debug-auto-equipment__weapon-shop";
+  shopInput.checked = true;
+
+  enemyPoolInput.type = "checkbox";
+  enemyPoolInput.className = "debug-auto-equipment__weapon-enemy-pool";
+
+  bossUniqueInput.type = "checkbox";
+  bossUniqueInput.className = "debug-auto-equipment__weapon-boss-unique";
+
+  fields.className = "debug-auto-equipment__weapon-fields";
+  fields.append(
+    createWeaponImportCheckboxField("Use", selected, "debug-auto-equipment__weapon-field--check"),
+    createWeaponImportField("Name", nameInput, "debug-auto-equipment__weapon-field--name"),
+    createWeaponImportField("Type", classSelect),
+    createWeaponImportField("Rarity", raritySelect),
+    createWeaponImportField("Damage", damageInput),
+    createWeaponImportField("Price", priceInput),
+    createWeaponImportCheckboxField("Shop", shopInput),
+    createWeaponImportCheckboxField("Enemy", enemyPoolInput),
+    createWeaponImportCheckboxField("Boss", bossUniqueInput),
+  );
+
+  const syncRow = (): void => {
+    syncWeaponImportRowAvailability(row);
+  };
+
+  selected.addEventListener("change", syncRow);
+  raritySelect.addEventListener("change", syncRow);
+  shopInput.addEventListener("change", syncRow);
+  bossUniqueInput.addEventListener("change", syncRow);
+  syncRow();
+
+  row.append(preview, fields);
+  return row;
+}
+
+function createWeaponImportField(labelText: string, control: HTMLElement, className = ""): HTMLLabelElement {
+  const label = document.createElement("label");
+  const text = document.createElement("span");
+
+  label.className = `debug-auto-equipment__weapon-field${className ? ` ${className}` : ""}`;
+  text.textContent = labelText;
+  label.append(text, control);
+
+  return label;
+}
+
+function createWeaponImportCheckboxField(labelText: string, control: HTMLInputElement, className = ""): HTMLLabelElement {
+  const label = createWeaponImportField(labelText, control, className);
+
+  label.classList.add("debug-auto-equipment__weapon-field--toggle");
+  return label;
+}
+
+function syncWeaponImportRowAvailability(row: HTMLElement): void {
+  const selected = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-selected");
+  const raritySelect = row.querySelector<HTMLSelectElement>(".debug-auto-equipment__weapon-rarity");
+  const priceInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-price");
+  const shopInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-shop");
+  const enemyPoolInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-enemy-pool");
+  const bossUniqueInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-boss-unique");
+  const isSelected = selected?.checked === true;
+  const isBossUnique = bossUniqueInput?.checked === true;
+  const isShopItem = shopInput?.checked === true && !isBossUnique;
+
+  if (isBossUnique && raritySelect) {
+    raritySelect.value = "unique";
+    setDebugRarityDataset(raritySelect, "unique");
+  } else if (raritySelect) {
+    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
+  }
+
+  if (raritySelect) {
+    raritySelect.disabled = !isSelected || isBossUnique;
+  }
+
+  if (shopInput) {
+    shopInput.disabled = !isSelected || isBossUnique;
+  }
+
+  if (enemyPoolInput) {
+    enemyPoolInput.disabled = !isSelected || isBossUnique;
+  }
+
+  if (bossUniqueInput) {
+    bossUniqueInput.disabled = !isSelected;
+  }
+
+  if (priceInput) {
+    priceInput.disabled = !isSelected || !isShopItem;
+
+    if (!isShopItem) {
+      priceInput.value = "0";
+    }
+  }
+}
+
+function getSelectedWeaponImportEntries(host: HTMLElement): DebugWeaponImportEntry[] {
+  return Array.from(host.querySelectorAll<HTMLElement>("[data-weapon-import-source-path]")).flatMap((row) => {
+    const selected = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-selected");
+    const sourcePath = row.dataset.weaponImportSourcePath;
+
+    if (!selected?.checked || !sourcePath) {
+      return [];
+    }
+
+    const name = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-name")?.value.trim() ?? "";
+    const weaponClass = getDebugWeaponImportClass(row.querySelector<HTMLSelectElement>(".debug-auto-equipment__weapon-class")?.value);
+    const rarity = getDebugItemRarity(row.querySelector<HTMLSelectElement>(".debug-auto-equipment__weapon-rarity")?.value ?? "", "common");
+    const damageBonus = getWeaponImportInteger(row, ".debug-auto-equipment__weapon-damage", AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_DAMAGE_MAX);
+    const bossUnique = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-boss-unique")?.checked === true;
+    const shop = row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-shop")?.checked === true && !bossUnique;
+    const price = shop ? getWeaponImportInteger(row, ".debug-auto-equipment__weapon-price", 0, AUTO_EQUIPMENT_PRICE_MAX) : 0;
+
+    return [
+      {
+        sourcePath,
+        name: name || formatWeaponImportDefaultName({ key: sourcePath, sourcePath }),
+        rarity: bossUnique ? "unique" : rarity,
+        weaponClass,
+        damageBonus,
+        price,
+        availability: {
+          shop,
+          enemyPool: row.querySelector<HTMLInputElement>(".debug-auto-equipment__weapon-enemy-pool")?.checked === true && !bossUnique,
+          bossUnique,
+        },
+      },
+    ];
+  });
+}
+
+function getWeaponImportInteger(row: HTMLElement, selector: string, min: number, max: number): number {
+  const value = Number(row.querySelector<HTMLInputElement>(selector)?.value ?? min);
+  const integer = Number.isFinite(value) ? Math.floor(value) : min;
+
+  return clampNumber(integer, min, max);
+}
+
+function getDebugWeaponImportClass(value: string | undefined): HeroWeaponClass {
+  return DEBUG_WEAPON_IMPORT_CLASSES.includes(value as HeroWeaponClass) ? (value as HeroWeaponClass) : "sword";
+}
+
+function getDefaultWeaponImportClass(asset: EquipmentSetImportAsset): HeroWeaponClass {
+  const text = `${asset.key} ${asset.sourcePath}`.toLowerCase();
+
+  if (text.includes("bow")) {
+    return "bow";
+  }
+
+  if (text.includes("shuriken")) {
+    return "shuriken";
+  }
+
+  if (text.includes("axe")) {
+    return "axe";
+  }
+
+  if (text.includes("mace")) {
+    return "mace";
+  }
+
+  if (text.includes("spear")) {
+    return "spear";
+  }
+
+  return "sword";
+}
+
+function formatWeaponImportDefaultName(asset: Pick<EquipmentSetImportAsset, "key" | "sourcePath">): string {
+  const sourceKey = asset.key || asset.sourcePath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "") || "weapon";
+  const normalized = sourceKey
+    .replace(/^weapon-(?:sword|axe|bow|mace|spear|shuriken)-?/i, "")
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean)
+    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+    .join(" ");
+
+  return normalized || "Weapon";
 }
 
 function renderEquipmentSetImportAssets(host: HTMLElement): void {

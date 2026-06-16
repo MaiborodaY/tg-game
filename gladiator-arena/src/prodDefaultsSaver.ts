@@ -56,10 +56,29 @@ export interface PromoteEquipmentSetPayload extends RenameEquipmentSetAssetsPayl
   };
 }
 
+export interface PromoteWeaponImportEntryPayload {
+  sourcePath: string;
+  name: string;
+  rarity: HeroItemRarity;
+  weaponClass: NonNullable<HeroItemDefinition["weaponClass"]>;
+  damageBonus: number;
+  price: number;
+  availability: {
+    shop: boolean;
+    enemyPool: boolean;
+    bossUnique: boolean;
+  };
+}
+
+export interface PromoteWeaponImportsPayload {
+  entries: PromoteWeaponImportEntryPayload[];
+}
+
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
 const promoteEquipmentSetEndpoint = "/__dust-arena/promote-equipment-set";
+const promoteWeaponImportsEndpoint = "/__dust-arena/promote-weapon-imports";
 const updateGeneratedShopItemEndpoint = "/__dust-arena/update-generated-shop-item";
 const updateGeneratedBossItemEndpoint = "/__dust-arena/update-generated-boss-item";
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
@@ -124,6 +143,21 @@ export async function savePromotedEquipmentSet(payload: PromoteEquipmentSetPaylo
   }
 
   return responsePayload.message ?? "Promoted equipment set.";
+}
+
+export async function savePromotedWeaponImports(payload: PromoteWeaponImportsPayload): Promise<string> {
+  const response = await fetch(promoteWeaponImportsEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not promote weapon imports. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Promoted weapon imports.";
 }
 
 export async function removePromotedEquipmentItem(itemId: string): Promise<string> {

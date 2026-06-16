@@ -240,6 +240,19 @@ interface PromotedEquipmentSet {
   availability: GeneratedEquipmentAvailability;
 }
 
+interface PromotedWeaponImportEntry {
+  sourcePath: string;
+  targetSourcePath: string;
+  targetLowSourcePath: string;
+  assetKey: string;
+  name: string;
+  rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
+  weaponClass: NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]>;
+  damageBonus: number;
+  price: number;
+  availability: GeneratedEquipmentAvailability;
+}
+
 const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[] = [
   {
     back: { slot: "backShoulderguard", assetKeyName: "backShoulderguardAssetKey", token: "back-shoulderguard", label: "Back Shoulderguard", sideLabel: "Back" },
@@ -566,6 +579,20 @@ interface PromoteEquipmentSetPayload extends RenameEquipmentSetAssetsPayload {
   availability?: unknown;
 }
 
+interface PromoteWeaponImportsPayload {
+  entries?: unknown;
+}
+
+interface PromoteWeaponImportEntryPayload {
+  sourcePath?: unknown;
+  name?: unknown;
+  rarity?: unknown;
+  weaponClass?: unknown;
+  damageBonus?: unknown;
+  price?: unknown;
+  availability?: unknown;
+}
+
 interface RenameEquipmentSetAssetEntryPayload {
   sourcePath?: unknown;
   targetPrefix?: unknown;
@@ -811,6 +838,31 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatPromotedEquipmentSetMessage(promotion, promotedRecords), updated: promotedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote equipment set." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/promote-weapon-imports", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to promote weapon imports." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const entries = await pickPromotedWeaponImportEntries(payload);
+          const records = await readGeneratedEquipmentRecords();
+
+          await writePromotedWeaponImportAssets(entries);
+          const promotedRecords = entries.map(createPromotedWeaponImportRecord);
+          await ensureGeneratedEquipmentShopIcons(promotedRecords);
+          const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
+
+          await writeGeneratedEquipmentRecords(nextRecords);
+          await removePromotedWeaponImportSourceFiles(entries);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatPromotedWeaponImportsMessage(promotedRecords), updated: promotedRecords.length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote weapon imports." });
         }
       });
 
@@ -1376,6 +1428,146 @@ async function pickPromotedEquipmentSet(payload: unknown): Promise<PromotedEquip
     rarity,
     availability,
   };
+}
+
+async function pickPromotedWeaponImportEntries(payload: unknown): Promise<PromotedWeaponImportEntry[]> {
+  const input = readPlainObject(payload, "weapon import promotion") as PromoteWeaponImportsPayload;
+
+  if (!Array.isArray(input.entries) || input.entries.length === 0) {
+    throw new Error("Select at least one weapon import asset.");
+  }
+
+  const sourcePaths = new Set<string>();
+  const targetPaths = new Set<string>();
+  const assetKeys = new Set<string>();
+  const entries: PromotedWeaponImportEntry[] = [];
+
+  for (const rawEntry of input.entries) {
+    const raw = readPlainObject(rawEntry, "weapon import entry") as PromoteWeaponImportEntryPayload;
+    const sourcePath = readWeaponImportSourcePath(raw.sourcePath);
+    const name = readNonEmptyString(raw.name, "weapon import name").slice(0, 80);
+    const weaponClass = readWeaponClass(raw.weaponClass, getWeaponClassFromText(`${sourcePath} ${name}`));
+    const assetKey = getWeaponImportAssetKey(name, weaponClass);
+    const targetSourcePath = `assets/fighters/weapons/${assetKey}.webp`;
+    const targetLowSourcePath = targetSourcePath.replace(/^assets\//, "assets-low/");
+    const availability = readPromotedEquipmentAvailability(raw.availability, true);
+    const rarity = availability.bossUnique ? "unique" : readItemRarity(raw.rarity, getDefaultGeneratedItemRarity("weapon", undefined, weaponClass));
+    const damageBonus = Math.max(0, Math.min(promotedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(raw.damageBonus, "weapon import damageBonus"))));
+    const price = availability.shop ? Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(raw.price, "weapon import price")))) : 0;
+
+    if (sourcePaths.has(sourcePath)) {
+      throw new Error(`Duplicate weapon import source asset: ${sourcePath}.`);
+    }
+
+    if (targetPaths.has(targetSourcePath)) {
+      throw new Error(`Duplicate weapon import target asset: ${targetSourcePath}.`);
+    }
+
+    if (assetKeys.has(assetKey)) {
+      throw new Error(`Duplicate weapon import asset key: ${assetKey}.`);
+    }
+
+    await assertWeaponImportPathsAvailable(sourcePath, targetSourcePath, targetLowSourcePath);
+
+    sourcePaths.add(sourcePath);
+    targetPaths.add(targetSourcePath);
+    assetKeys.add(assetKey);
+    entries.push({
+      sourcePath,
+      targetSourcePath,
+      targetLowSourcePath,
+      assetKey,
+      name,
+      rarity,
+      weaponClass,
+      damageBonus,
+      price,
+      availability,
+    });
+  }
+
+  return entries;
+}
+
+function createPromotedWeaponImportRecord(entry: PromotedWeaponImportEntry): GeneratedEquipmentJsonRecord {
+  const id = `generated_equipment_${toIdentifier(entry.assetKey)}`;
+  const equipmentSlot: EquipmentSlotKey = entry.weaponClass === "bow" ? "weaponBow" : "weaponMain";
+  const assetKeyName = entry.weaponClass === "bow" ? "weaponBowAssetKey" : "weaponMainAssetKey";
+
+  validateGeneratedEquipmentSlot("weapon", equipmentSlot);
+
+  return {
+    id,
+    name: entry.name,
+    kind: "weapon",
+    rarity: entry.rarity,
+    damageBonus: entry.damageBonus,
+    weaponClass: entry.weaponClass,
+    equipmentSlot,
+    assetKeys: { [assetKeyName]: entry.assetKey },
+    equipmentTuning: createDefaultPromotedEquipmentTuning(),
+    asset: {
+      key: entry.assetKey,
+      sourcePath: entry.targetSourcePath,
+      lowSourcePath: entry.targetLowSourcePath,
+    },
+    availability: entry.availability,
+    ...(entry.availability.shop
+      ? {
+          weaponProduct: {
+            id,
+            name: entry.name,
+            price: entry.price,
+            itemIds: [id],
+            categoryId: getWeaponCategoryId(entry.assetKey, entry.name, entry.weaponClass),
+          },
+        }
+      : {}),
+  };
+}
+
+async function assertWeaponImportPathsAvailable(sourcePath: string, targetSourcePath: string, targetLowSourcePath: string): Promise<void> {
+  if (!(await projectSourceFileExists(sourcePath))) {
+    throw new Error(`Source asset does not exist: ${sourcePath}.`);
+  }
+
+  if (await projectSourceFileExists(targetSourcePath)) {
+    throw new Error(`Target asset already exists: ${targetSourcePath}.`);
+  }
+
+  if (await projectSourceFileExists(targetLowSourcePath)) {
+    throw new Error(`Target low asset already exists: ${targetLowSourcePath}.`);
+  }
+}
+
+async function writePromotedWeaponImportAssets(entries: readonly PromotedWeaponImportEntry[]): Promise<void> {
+  for (const entry of entries) {
+    await writePromotedWeaponImportAsset(entry.sourcePath, entry.targetSourcePath, entry.targetLowSourcePath);
+  }
+}
+
+async function writePromotedWeaponImportAsset(sourcePath: string, targetSourcePath: string, targetLowSourcePath: string): Promise<void> {
+  const source = await readFile(getProjectSourceUrl(sourcePath));
+  const runtime = await createEquipmentWebp(source, getPromotedEquipmentRuntimeMaxSide(targetSourcePath), promotedEquipmentRuntimeWebpQuality);
+  const low = await createEquipmentWebp(runtime, promotedEquipmentLowMaxSide, promotedEquipmentLowWebpQuality);
+  const targetUrl = getProjectSourceUrl(targetSourcePath);
+  const targetLowUrl = getProjectSourceUrl(targetLowSourcePath);
+
+  await Promise.all([mkdir(new URL(".", targetUrl), { recursive: true }), mkdir(new URL(".", targetLowUrl), { recursive: true })]);
+  await Promise.all([writeFile(targetUrl, runtime), writeFile(targetLowUrl, low)]);
+}
+
+async function removePromotedWeaponImportSourceFiles(entries: readonly PromotedWeaponImportEntry[]): Promise<void> {
+  const sourcePaths = new Set(
+    entries.flatMap((entry) => [
+      entry.sourcePath,
+      getEquipmentSetImportAlternateSourcePath(entry.sourcePath),
+      getEquipmentSetImportLowSourcePath(entry.sourcePath),
+      getEquipmentSetImportAlternateSourcePath(getEquipmentSetImportLowSourcePath(entry.sourcePath)),
+    ]),
+  );
+
+  await Promise.all([...sourcePaths].map((sourcePath) => rm(getProjectSourceUrl(sourcePath), { force: true })));
 }
 
 async function createPromotedEquipmentSetRecords(promotion: PromotedEquipmentSet): Promise<GeneratedEquipmentJsonRecord[]> {
@@ -2133,6 +2325,18 @@ function formatPromotedEquipmentSetMessage(promotion: PromotedEquipmentSet, prom
   return `Promoted ${promotion.name} set with ${promotedRecords.length} generated equipment items.`;
 }
 
+function formatPromotedWeaponImportsMessage(promotedRecords: readonly GeneratedEquipmentJsonRecord[]): string {
+  if (promotedRecords.length === 0) {
+    return "Promoted weapon imports.";
+  }
+
+  if (promotedRecords.length === 1) {
+    return `Promoted ${promotedRecords[0]!.name}.`;
+  }
+
+  return `Promoted ${promotedRecords.length} weapon imports.`;
+}
+
 async function pickEquipmentSetImportEntries(payload: unknown): Promise<EquipmentSetImportEntry[]> {
   const input = readPlainObject(payload, "equipment set asset rename") as RenameEquipmentSetAssetsPayload;
   const setSlug = readKebabIdentifier(input.setName, "setName");
@@ -2247,6 +2451,17 @@ function readEquipmentSetImportSourcePath(value: unknown): string {
   return sourcePath;
 }
 
+function readWeaponImportSourcePath(value: unknown): string {
+  const sourcePath = readNonEmptyString(value, "weapon import source asset").replace(/\\/g, "/").replace(/^\.\//, "");
+  const hasSupportedExtension = sourcePath.endsWith(".png") || sourcePath.endsWith(".webp");
+
+  if (sourcePath.includes("..") || !sourcePath.startsWith("assets/equipment-import/weapons/") || !hasSupportedExtension) {
+    throw new Error("Invalid weapon import source asset.");
+  }
+
+  return sourcePath;
+}
+
 function readEquipmentSetImportTargetConfig(value: unknown, sourceKind: GeneratedEquipmentJsonRecord["kind"]): EquipmentSetImportTargetConfig {
   const targetPrefix = readNonEmptyString(value, "equipment set target prefix");
   const config = equipmentSetImportTargetConfigs.find((candidate) => candidate.targetPrefix === targetPrefix);
@@ -2277,6 +2492,13 @@ function getEquipmentSetImportTargetSourcePath(
   const extension = sourcePath.endsWith(".png") ? ".png" : ".webp";
 
   return `${targetConfig.folder}/${targetConfig.targetPrefix}-${setSlug}-${variantSlug}${extension}`;
+}
+
+function getWeaponImportAssetKey(name: string, weaponClass: NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]>): string {
+  const nameSlug = readKebabIdentifier(name, "weapon import name");
+  const classPrefix = `weapon-${weaponClass}`;
+
+  return nameSlug.startsWith(classPrefix) ? nameSlug : `${classPrefix}-${nameSlug}`;
 }
 
 function getEquipmentSetImportLowSourcePath(sourcePath: string): string {

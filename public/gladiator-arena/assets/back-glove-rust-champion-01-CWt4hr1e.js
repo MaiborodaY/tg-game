@@ -1,1 +1,0 @@
-var e=``+new URL(`front-glove-rust-champion-01-MkNTv1jq.webp`,import.meta.url).href;export{e as default};

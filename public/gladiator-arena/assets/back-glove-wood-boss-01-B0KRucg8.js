@@ -1,1 +1,0 @@
-var e=``+new URL(`front-glove-wood-boss-01-DVPJHwfU.webp`,import.meta.url).href;export{e as default};

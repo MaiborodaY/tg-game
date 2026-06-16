@@ -274,6 +274,7 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("Auto equipment"), true);
   assert.equal(debugPanelSource.includes("savePromotedEquipmentItem"), true);
   assert.equal(debugPanelSource.includes("removePromotedEquipmentItem"), true);
+  assert.equal(debugPanelSource.includes("savePromotedWeaponImports"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_ITEM_RECORDS"), true);
   assert.equal(debugPanelSource.includes("GENERATED_EQUIPMENT_ITEM_RECORDS"), true);
   assert.equal(debugPanelSource.includes("return [...GENERATED_EQUIPMENT_ITEM_RECORDS];"), true);
@@ -314,6 +315,17 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("debug-auto-equipment__set-boss-unique"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__set-promote"), true);
   assert.equal(debugPanelSource.includes("syncEquipmentSetImportAvailabilityControls"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-importer"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-assets"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-promote"), true);
+  assert.equal(debugPanelSource.includes("DEBUG_WEAPON_IMPORT_CLASSES"), true);
+  assert.equal(debugPanelSource.includes("renderWeaponImportAssets"), true);
+  assert.equal(debugPanelSource.includes("getSelectedWeaponImportEntries"), true);
+  assert.equal(debugPanelSource.includes("data-weapon-import-source-path"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-rarity"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-class"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-damage"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-price"), true);
   assert.equal(debugPanelSource.includes("getRemovableGeneratedEquipmentItems"), true);
   assert.equal(debugPanelSource.includes("createDebugRemovableGeneratedEquipmentPairItem"), true);
   assert.equal(debugPanelSource.includes("compareDebugRemovableGeneratedEquipmentItems"), true);
@@ -328,6 +340,8 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(stylesSource.includes(".debug-auto-equipment__generated-select"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__set-rarity"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__set-assets"), true);
+  assert.equal(stylesSource.includes(".debug-auto-equipment__weapon-assets"), true);
+  assert.equal(stylesSource.includes(".debug-auto-equipment__weapon-fields"), true);
   assert.equal(stylesSource.includes(".debug-set-import-preview"), true);
   assert.equal(stylesSource.includes(".debug-set-import-preview__image"), true);
 });

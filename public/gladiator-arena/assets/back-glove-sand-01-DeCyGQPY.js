@@ -1,1 +1,0 @@
-var e=``+new URL(`front-glove-sand-01-Cik98e9X.webp`,import.meta.url).href;export{e as default};

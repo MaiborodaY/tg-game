@@ -383,6 +383,28 @@ test("vite dev middleware can promote weapon equipment into the weapon shop", ()
   assert.match(weaponShopSource, /getGeneratedWeaponProducts/);
 });
 
+test("debug weapon importer promotes staged weapons with per-asset values", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const saverSource = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+  const debugPanelSource = readFileSync(join(root, "src", "debugPanel.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/promote-weapon-imports/);
+  assert.match(source, /pickPromotedWeaponImportEntries/);
+  assert.match(source, /readWeaponImportSourcePath/);
+  assert.match(source, /assets\/equipment-import\/weapons\//);
+  assert.match(source, /getWeaponImportAssetKey/);
+  assert.match(source, /writePromotedWeaponImportAsset/);
+  assert.match(source, /removePromotedWeaponImportSourceFiles/);
+  assert.match(source, /weaponClass === "bow" \? "weaponBow" : "weaponMain"/);
+  assert.match(source, /weaponClass === "bow" \? "weaponBowAssetKey" : "weaponMainAssetKey"/);
+  assert.match(source, /damageBonus: entry\.damageBonus/);
+  assert.match(source, /price: entry\.price/);
+  assert.match(saverSource, /savePromotedWeaponImports/);
+  assert.match(saverSource, /promoteWeaponImportsEndpoint = "\/__dust-arena\/promote-weapon-imports"/);
+  assert.match(debugPanelSource, /debug-auto-equipment__weapon-importer/);
+  assert.match(debugPanelSource, /savePromotedWeaponImports\(\{ entries \}\)/);
+});
+
 test("vite dev middleware can persist item-specific equipment defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");

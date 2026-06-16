@@ -6938,6 +6938,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
 .debug-auto-equipment__set-importer,
+.debug-auto-equipment__weapon-importer,
 .debug-effects__group {
   margin: 0;
   padding: 8px;
@@ -6948,7 +6949,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-rig-editor__face,
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
-.debug-auto-equipment__set-importer {
+.debug-auto-equipment__set-importer,
+.debug-auto-equipment__weapon-importer {
   display: grid;
   gap: 8px;
 }
@@ -6967,6 +6969,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__transform legend,
 .debug-auto-equipment__generated legend,
 .debug-auto-equipment__set-importer legend,
+.debug-auto-equipment__weapon-importer legend,
 .debug-rig-editor__face-part legend,
 .debug-effects__group summary {
   padding: 0 4px;
@@ -6981,13 +6984,15 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-item-equipment__controls,
 .debug-auto-equipment__transform-controls,
 .debug-auto-equipment__set-assets,
+.debug-auto-equipment__weapon-assets,
 .debug-effects__slash-controls,
 .debug-rig-editor__face-part {
   display: grid;
   gap: 7px;
 }
 
-.debug-auto-equipment__set-assets {
+.debug-auto-equipment__set-assets,
+.debug-auto-equipment__weapon-assets {
   max-height: 220px;
   overflow-y: auto;
 }
@@ -6997,6 +7002,46 @@ body.debug-mode-hud .battle-screen .status-strip {
   grid-template-columns: 38px minmax(0, 1fr) minmax(112px, 0.65fr);
   gap: 7px;
   align-items: center;
+  min-width: 0;
+}
+
+.debug-auto-equipment__weapon-asset {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  min-width: 0;
+}
+
+.debug-auto-equipment__weapon-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.debug-auto-equipment__weapon-field {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: #fff0bd;
+  font-size: 0.52rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.debug-auto-equipment__weapon-field--name {
+  grid-column: span 2;
+}
+
+.debug-auto-equipment__weapon-field--check,
+.debug-auto-equipment__weapon-field--toggle {
+  align-content: end;
+  justify-items: center;
+}
+
+.debug-auto-equipment__weapon-field input,
+.debug-auto-equipment__weapon-field select {
   min-width: 0;
 }
 
