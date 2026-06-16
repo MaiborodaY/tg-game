@@ -129,6 +129,66 @@ test("swords improve light medium and heavy hit chances", () => {
   assert.equal(combat.getActionBlockChance(combat.actions.heavy, axeFighter), 0.75);
 });
 
+test("spears extend active melee reach", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "spear";
+  state.distance = combat.SPEAR_CLINCH_RANGE_BONUS;
+
+  assert.equal(combat.getFighterClinchRange(state.player), combat.SPEAR_CLINCH_RANGE_BONUS);
+  assert.equal(combat.isFighterInClinchRange(state, "player"), true);
+  assert.equal(combat.canUseAction(state, "light"), true);
+  assert.equal(combat.canUseAction(state, "lunge"), false);
+  assert.equal(combat.canUseAction(state, "forward"), false);
+
+  state.player.weaponClass = "bow";
+
+  assert.equal(combat.getFighterClinchRange(state.player), combat.MELEE_RANGE);
+});
+
+test("spears improve lunge movement hit chance and damage", () => {
+  const spearFighter = {
+    ...combat.freshState().player,
+    weaponClass: "spear",
+  };
+
+  assert.equal(combat.getActionMove("lunge", spearFighter), -(combat.DEFAULT_LUNGE_MOVE_DISTANCE + combat.SPEAR_LUNGE_MOVE_BONUS));
+  assert.equal(combat.getActionStaminaCost("lunge", spearFighter), 3);
+  assert.equal(combat.getActionBlockChance(combat.actions.lunge, spearFighter), combat.actions.lunge.blockChance - combat.SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION);
+  assert.equal(combat.getActionBlockChance(combat.actions.light, spearFighter), combat.actions.light.blockChance);
+
+  const state = combat.freshState();
+  state.player.weaponClass = "spear";
+  state.player.damageBonus = 3;
+  state.player.spearLungeDamagePercentBonus = 0.25;
+  setConsistentDistance(state, combat.SPEAR_CLINCH_RANGE_BONUS + combat.DEFAULT_LUNGE_MOVE_DISTANCE + combat.SPEAR_LUNGE_MOVE_BONUS);
+
+  const nextState = combat.resolvePlayerTurn(state, "lunge", () => 0.99);
+  const expectedDamage = Math.ceil(
+    state.player.damageBonus * combat.SPEAR_LUNGE_DAMAGE_MULTIPLIER * (1 + state.player.spearLungeDamagePercentBonus),
+  );
+
+  assert.equal(nextState.distance, combat.SPEAR_CLINCH_RANGE_BONUS);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - expectedDamage);
+  assert.equal(nextState.lastPlayerDamage, expectedDamage);
+});
+
+test("spear lunge stops at spear contact range instead of pushing into full clinch", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "spear";
+  state.player.damageBonus = 2;
+  setConsistentDistance(state, combat.SPEAR_CLINCH_RANGE_BONUS + 0.1);
+
+  const nextState = combat.resolvePlayerTurn(state, "lunge", () => 0.99);
+  const expectedDamage = state.player.damageBonus * combat.SPEAR_LUNGE_DAMAGE_MULTIPLIER;
+
+  assert.equal(nextState.distance, combat.SPEAR_CLINCH_RANGE_BONUS);
+  assert.equal(nextState.playerPosition < nextState.enemyPosition, true);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - expectedDamage);
+  assert.equal(nextState.lastPlayerDamage, expectedDamage);
+});
+
 test("stamina does not block attacks", () => {
   const state = combat.freshState();
 

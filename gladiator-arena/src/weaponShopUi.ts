@@ -31,6 +31,7 @@ import {
   getShopProductRequirementBadge,
   getShopProductRequirementDescription,
   getShopProductRarity,
+  getShopProductStat,
   getShopRarityLabel,
   type ShopProductRequirementBadge,
   type ShopItemRarity,
@@ -83,6 +84,16 @@ interface SelectedMetaOptions {
   compareStat?: boolean;
   unitLabel?: string;
 }
+
+const WEAPON_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythical: 5,
+  unique: 6,
+};
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
   {
@@ -149,12 +160,40 @@ const SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6;
 const SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140;
 
 function getGeneratedWeaponProducts(categoryId: string): WeaponProduct[] {
-  return GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === categoryId).map((product) => ({
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    itemIds: [...product.itemIds],
-  }));
+  return GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === categoryId)
+    .map((product) => ({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      itemIds: [...product.itemIds],
+    }))
+    .sort(compareWeaponProducts);
+}
+
+function compareWeaponProducts(left: WeaponProduct, right: WeaponProduct): number {
+  const rarityDifference = getWeaponProductRarityOrder(left) - getWeaponProductRarityOrder(right);
+
+  if (rarityDifference !== 0) {
+    return rarityDifference;
+  }
+
+  const damageDifference = getShopProductStat(left.itemIds, "damage") - getShopProductStat(right.itemIds, "damage");
+
+  if (damageDifference !== 0) {
+    return damageDifference;
+  }
+
+  const priceDifference = left.price - right.price;
+
+  if (priceDifference !== 0) {
+    return priceDifference;
+  }
+
+  return left.name.localeCompare(right.name);
+}
+
+function getWeaponProductRarityOrder(product: WeaponProduct): number {
+  return WEAPON_RARITY_SORT_ORDER[getShopProductRarity(product.itemIds, product.rarity)];
 }
 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {

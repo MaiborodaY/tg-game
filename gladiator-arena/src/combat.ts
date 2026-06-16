@@ -42,6 +42,7 @@ export interface FighterState {
   damageBonus: number;
   weaponDamageBonus?: number;
   meleeDamagePercentBonus?: number;
+  spearLungeDamagePercentBonus?: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
@@ -115,6 +116,10 @@ const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
   heavy: 0.15,
 };
 const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.5;
+export const SPEAR_CLINCH_RANGE_BONUS = 0.4;
+export const SPEAR_LUNGE_MOVE_BONUS = 0.3;
+export const SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION = 0.30;
+export const SPEAR_LUNGE_DAMAGE_MULTIPLIER = 1.5;
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -240,7 +245,7 @@ export function getActionMove(actionId: ActionId, actor?: FighterState): number 
   }
 
   if (actionId === "lunge") {
-    return applyMovementDistanceBonus(-combatMovementTuning.lungeMoveDistance, movementDistanceBonus);
+    return applyMovementDistanceBonus(-(combatMovementTuning.lungeMoveDistance + getSpearLungeMoveBonus(actor)), movementDistanceBonus);
   }
 
   return actions[actionId].move ?? 0;
@@ -281,6 +286,7 @@ export function freshState(): CombatState {
       damageBonus: 0,
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
+      spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
       clinchRangeBonus: 0,
@@ -299,6 +305,7 @@ export function freshState(): CombatState {
       damageBonus: 0,
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
+      spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
       clinchRangeBonus: 0,
@@ -346,12 +353,34 @@ export function getActionBlockChance(action: ActionConfig, attacker?: FighterSta
   void defender;
 
   const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
+  const spearLungeBlockChanceReduction =
+    attacker && getFighterWeaponClass(attacker) === "spear" && action.id === "lunge" ? SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION : 0;
 
-  return clamp((action.blockChance ?? 0) - swordBlockChanceReduction, 0, 0.95);
+  return clamp((action.blockChance ?? 0) - swordBlockChanceReduction - spearLungeBlockChanceReduction, 0, 0.95);
 }
 
 export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
   return fighter.weaponClass ?? "sword";
+}
+
+function isSpearFighter(fighter: FighterState | undefined): boolean {
+  return Boolean(fighter && getFighterWeaponClass(fighter) === "spear");
+}
+
+function getSpearClinchRangeBonus(fighter: FighterState | undefined): number {
+  return isSpearFighter(fighter) ? SPEAR_CLINCH_RANGE_BONUS : 0;
+}
+
+function getSpearLungeMoveBonus(fighter: FighterState | undefined): number {
+  return isSpearFighter(fighter) ? SPEAR_LUNGE_MOVE_BONUS : 0;
+}
+
+function getSpearLungeDamageMultiplier(actionId: ActionId, attacker: FighterState): number {
+  return actionId === "lunge" && isSpearFighter(attacker) ? SPEAR_LUNGE_DAMAGE_MULTIPLIER : 1;
+}
+
+function getSpearLungeAgilityDamageMultiplier(actionId: ActionId, attacker: FighterState): number {
+  return actionId === "lunge" && isSpearFighter(attacker) ? 1 + Math.max(0, attacker.spearLungeDamagePercentBonus ?? 0) : 1;
 }
 
 export function getFighterMainWeaponClass(fighter: FighterState): HeroWeaponClass {
@@ -449,7 +478,7 @@ function doesActionEndTurn(actionId: ActionId): boolean {
 }
 
 export function getFighterClinchRange(fighter?: FighterState): number {
-  return Math.min(MAX_DISTANCE, MELEE_RANGE + Math.max(0, fighter?.clinchRangeBonus ?? 0));
+  return Math.min(MAX_DISTANCE, MELEE_RANGE + Math.max(0, fighter?.clinchRangeBonus ?? 0) + getSpearClinchRangeBonus(fighter));
 }
 
 export function isFighterInClinchRange(state: CombatState, actor: TurnOwner): boolean {
@@ -695,7 +724,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   const action = actions[actionId];
   const attacker = actor === "player" ? state.player : state.enemy;
   const defender = actor === "player" ? state.enemy : state.player;
-  const actionMove = getActionMove(actionId, attacker);
+  let actionMove = getActionMove(actionId, attacker);
   const actorLabel = actor === "player" ? "You" : "Grumbus";
   const defenderLabel = actor === "player" ? "Grumbus" : "you";
   const defenderOwner = actor === "player" ? "enemy" : "player";
@@ -711,6 +740,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   }
 
   if (actionMove) {
+    actionMove = clampActionMoveToContactRange(state, actionId, attacker, actionMove);
     moveActor(state, actor, actionMove);
     forceClinchWeapons(state);
   }
@@ -817,8 +847,9 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   }
 
   const actionDamage = actions[actionId].damage ?? 0;
+  const isSpearLunge = actionId === "lunge" && isSpearFighter(attacker);
 
-  if (actionDamage <= 0) {
+  if (actionDamage <= 0 && !isSpearLunge) {
     return 0;
   }
 
@@ -829,8 +860,14 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   }
 
   const baseDamage = actionDamage + getActionDamageBonus(attacker);
+  const spearLungeDamageMultiplier = getSpearLungeDamageMultiplier(actionId, attacker);
+  const spearLungeAgilityDamageMultiplier = getSpearLungeAgilityDamageMultiplier(actionId, attacker);
 
-  return isRangedFighter(attacker) ? baseDamage : Math.ceil(baseDamage * getActionMeleeDamageMultiplier(attacker));
+  if (isSpearLunge) {
+    return Math.ceil(getActionDamageBonus(attacker) * spearLungeDamageMultiplier * spearLungeAgilityDamageMultiplier);
+  }
+
+  return isRangedFighter(attacker) ? baseDamage : Math.ceil(baseDamage * getActionMeleeDamageMultiplier(attacker) * spearLungeDamageMultiplier);
 }
 
 function applyWeaponArmorDamageBonus(actionId: ActionId, attacker: FighterState, defender: FighterState, damage: number): number {
@@ -980,6 +1017,21 @@ function applyIncomingBonus(state: CombatState, attacker: TurnOwner, damage: num
   clearIncomingBonus(state, defender);
 
   return damage + incomingBonus;
+}
+
+function clampActionMoveToContactRange(state: CombatState, actionId: ActionId, attacker: FighterState, distanceDelta: number): number {
+  if (actionId !== "lunge" || !isSpearFighter(attacker) || distanceDelta >= 0) {
+    return distanceDelta;
+  }
+
+  const contactDistance = getFighterClinchRange(attacker);
+  const targetDistance = roundCombatDistance(state.distance + distanceDelta);
+
+  if (targetDistance >= contactDistance) {
+    return distanceDelta;
+  }
+
+  return Math.min(0, roundCombatDistance(contactDistance - state.distance));
 }
 
 function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number): void {

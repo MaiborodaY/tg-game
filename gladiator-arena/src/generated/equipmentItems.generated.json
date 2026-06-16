@@ -9141,7 +9141,7 @@
       "y": 16,
       "angle": 121,
       "scaleX": 1.97,
-      "scaleY": 3,
+      "scaleY": 2.83,
       "flipX": false,
       "flipY": false
     },
@@ -9181,7 +9181,7 @@
       "y": 16,
       "angle": 121,
       "scaleX": 2.37,
-      "scaleY": 3,
+      "scaleY": 2.68,
       "flipX": false,
       "flipY": false
     },
@@ -9221,7 +9221,7 @@
       "y": 16,
       "angle": 126,
       "scaleX": 2.47,
-      "scaleY": 3,
+      "scaleY": 2.66,
       "flipX": false,
       "flipY": false
     },
@@ -9251,8 +9251,8 @@
       "x": 0,
       "y": 16,
       "angle": 121,
-      "scaleX": 2.14,
-      "scaleY": 3,
+      "scaleX": 2.08,
+      "scaleY": 2.68,
       "flipX": false,
       "flipY": false
     },
@@ -9291,8 +9291,8 @@
       "x": 0,
       "y": 16,
       "angle": 130,
-      "scaleX": 2.75,
-      "scaleY": 3,
+      "scaleX": 2.68,
+      "scaleY": 2.64,
       "flipX": false,
       "flipY": false
     },
@@ -9321,7 +9321,7 @@
     "name": "LG spear 1",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 1,
+    "damageBonus": 10,
     "weaponClass": "spear",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -9329,8 +9329,8 @@
     },
     "equipmentTuning": {
       "x": -35,
-      "y": 9,
-      "angle": 99,
+      "y": -6,
+      "angle": 118,
       "scaleX": 3,
       "scaleY": 3,
       "flipX": false,
@@ -9349,7 +9349,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_lg_spear_1",
       "name": "LG spear 1",
-      "price": 0,
+      "price": 500,
       "itemIds": [
         "generated_equipment_weapon_spear_lg_spear_1"
       ],
@@ -9370,9 +9370,9 @@
     "equipmentTuning": {
       "x": 0,
       "y": 9,
-      "angle": 111,
-      "scaleX": 2.12,
-      "scaleY": 2,
+      "angle": 123,
+      "scaleX": 2.01,
+      "scaleY": 2.58,
       "flipX": false,
       "flipY": false
     },
@@ -9409,10 +9409,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 76,
-      "angle": 76,
-      "scaleX": 1.9,
-      "scaleY": 2,
+      "y": 88,
+      "angle": 85,
+      "scaleX": 2.29,
+      "scaleY": 2.2,
       "flipX": false,
       "flipY": false
     },

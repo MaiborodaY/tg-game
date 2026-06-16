@@ -2861,7 +2861,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear","name":"Epic spear","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear"},
-    equipmentTuning: {"x":0,"y":16,"angle":121,"scaleX":1.97,"scaleY":3,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":16,"angle":121,"scaleX":1.97,"scaleY":2.83,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-epic-spear",
       sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear.webp",
@@ -2873,7 +2873,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_1","name":"epic spear 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear-1"},
-    equipmentTuning: {"x":0,"y":16,"angle":121,"scaleX":2.37,"scaleY":3,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":16,"angle":121,"scaleX":2.37,"scaleY":2.68,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-epic-spear-1",
       sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear-1.webp",
@@ -2885,7 +2885,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_3","name":"Epic spear 3","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear-3"},
-    equipmentTuning: {"x":0,"y":16,"angle":126,"scaleX":2.47,"scaleY":3,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":16,"angle":126,"scaleX":2.47,"scaleY":2.66,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-epic-spear-3",
       sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear-3.webp",
@@ -2896,7 +2896,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_4","name":"epic spear 4","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear-4"},
-    equipmentTuning: {"x":0,"y":16,"angle":121,"scaleX":2.14,"scaleY":3,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":16,"angle":121,"scaleX":2.08,"scaleY":2.68,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-epic-spear-4",
       sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear-4.webp",
@@ -2908,7 +2908,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_5","name":"epic spear 5","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear-5"},
-    equipmentTuning: {"x":0,"y":16,"angle":130,"scaleX":2.75,"scaleY":3,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":16,"angle":130,"scaleX":2.68,"scaleY":2.64,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-epic-spear-5",
       sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear-5.webp",
@@ -2918,21 +2918,21 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_5","name":"epic spear 5","price":0,"itemIds":["generated_equipment_weapon_spear_epic_spear_5"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"LG spear 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"LG spear 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-lg-spear-1"},
-    equipmentTuning: {"x":-35,"y":9,"angle":99,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-35,"y":-6,"angle":118,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-lg-spear-1",
       sourcePath: "assets/fighters/weapons/weapon-spear-lg-spear-1.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-lg-spear-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"LG spear 1","price":0,"itemIds":["generated_equipment_weapon_spear_lg_spear_1"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"LG spear 1","price":500,"itemIds":["generated_equipment_weapon_spear_lg_spear_1"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_rare_spear","name":"rare spear","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-rare-spear"},
-    equipmentTuning: {"x":0,"y":9,"angle":111,"scaleX":2.12,"scaleY":2,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":9,"angle":123,"scaleX":2.01,"scaleY":2.58,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-rare-spear",
       sourcePath: "assets/fighters/weapons/weapon-spear-rare-spear.webp",
@@ -2944,7 +2944,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_spear_rare_spear_1","name":"rare spear 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-rare-spear-1"},
-    equipmentTuning: {"x":0,"y":76,"angle":76,"scaleX":1.9,"scaleY":2,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":88,"angle":85,"scaleX":2.29,"scaleY":2.2,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-spear-rare-spear-1",
       sourcePath: "assets/fighters/weapons/weapon-spear-rare-spear-1.webp",

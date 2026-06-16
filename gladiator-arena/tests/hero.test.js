@@ -220,6 +220,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultStats.damageBonus, 0);
   assert.equal(defaultStats.weaponDamageBonus, 0);
   assert.equal(defaultStats.meleeDamagePercentBonus, 0);
+  assert.equal(defaultStats.spearLungeDamagePercentBonus, 0);
   assert.equal(defaultStats.movementDistanceBonus, 0);
   assert.equal(defaultStats.bodyScaleBonus, 0);
   assert.equal(defaultStats.clinchRangeBonus, 0);
@@ -240,6 +241,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(tunedStats.damageBonus, 0);
   assert.equal(tunedStats.weaponDamageBonus, 0);
   assert.equal(tunedStats.meleeDamagePercentBonus, 0.15);
+  assert.equal(tunedStats.spearLungeDamagePercentBonus, 4 * hero.HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS);
   assert.equal(tunedStats.movementDistanceBonus, 4 * hero.HERO_AGILITY_MOVEMENT_DISTANCE_BONUS);
   assert.equal(tunedStats.bodyScaleBonus, 3 * hero.HERO_STRENGTH_BODY_SCALE_BONUS);
   assert.equal(
@@ -253,6 +255,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(combatState.player.damageBonus, tunedStats.damageBonus);
   assert.equal(combatState.player.weaponDamageBonus, tunedStats.weaponDamageBonus);
   assert.equal(combatState.player.meleeDamagePercentBonus, tunedStats.meleeDamagePercentBonus);
+  assert.equal(combatState.player.spearLungeDamagePercentBonus, tunedStats.spearLungeDamagePercentBonus);
   assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
   assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
   assert.equal(combatState.player.clinchRangeBonus, tunedStats.clinchRangeBonus);
@@ -442,6 +445,7 @@ test("arena encounter enemy base stats derive combat stats", () => {
   assert.equal(combatState.enemy.maxStamina, 14);
   assert.equal(combatState.enemy.damageBonus, 0);
   assert.equal(combatState.enemy.meleeDamagePercentBonus, 2 * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS);
+  assert.equal(combatState.enemy.spearLungeDamagePercentBonus, 0.15);
   assert.equal(combatState.enemy.movementDistanceBonus, 0.045);
   assert.equal(combatState.enemy.restHpRestoreBonus, 4);
   assert.equal(combatState.enemy.restStaminaRestoreBonus, 4);

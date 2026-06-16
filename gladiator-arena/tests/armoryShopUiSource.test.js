@@ -34,6 +34,20 @@ test("armory shop sorts products by rarity, armor, price, slot, then name", () =
   );
 });
 
+test("weapon shop sorts products by rarity, damage, price, then name", () => {
+  const rarityOrderIndex = weaponShopSource.indexOf("const WEAPON_RARITY_SORT_ORDER");
+  const categoriesIndex = weaponShopSource.indexOf("const WEAPON_CATEGORIES");
+
+  assert.equal(weaponShopSource.includes(".sort(compareWeaponProducts);"), true);
+  assert.equal(rarityOrderIndex >= 0, true);
+  assert.equal(categoriesIndex >= 0, true);
+  assert.equal(rarityOrderIndex < categoriesIndex, true);
+  assert.match(
+    weaponShopSource,
+    /const rarityDifference[\s\S]*if \(rarityDifference !== 0\)[\s\S]*const damageDifference[\s\S]*if \(damageDifference !== 0\)[\s\S]*const priceDifference[\s\S]*if \(priceDifference !== 0\)[\s\S]*return left\.name\.localeCompare\(right\.name\);/,
+  );
+});
+
 test("armory paired product cards prefer front equipment icons", () => {
   assert.equal(shopItemIconsSource.includes("HERO_ITEM_CATALOG"), true);
   assert.equal(shopItemIconsSource.includes("getRepresentativeShopItemIconId(itemIds)"), true);

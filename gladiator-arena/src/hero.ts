@@ -84,6 +84,7 @@ export interface HeroStats {
   damageBonus: number;
   weaponDamageBonus: number;
   meleeDamagePercentBonus: number;
+  spearLungeDamagePercentBonus: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
@@ -248,6 +249,7 @@ export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.02;
 export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.01;
 export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
 export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.015;
+export const HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS = 0.05;
 export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
@@ -423,6 +425,7 @@ function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment):
     damageBonus: mainWeaponDamageBonus,
     weaponDamageBonus: bowWeaponDamageBonus,
     meleeDamagePercentBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS),
+    spearLungeDamagePercentBonus: roundStatBonus(agilityBonus * HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS),
     movementDistanceBonus: roundStatBonus(agilityBonus * HERO_AGILITY_MOVEMENT_DISTANCE_BONUS),
     bodyScaleBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_BODY_SCALE_BONUS),
     clinchRangeBonus: roundStatBonus(Math.min(HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS, strengthBonus * HERO_STRENGTH_CLINCH_RANGE_BONUS)),
@@ -678,6 +681,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       damageBonus: stats.damageBonus,
       weaponDamageBonus: stats.weaponDamageBonus,
       meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
+      spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
       mainWeaponClass: playerMainWeaponClass,
       bowWeaponClass: playerBowWeaponClass,
       movementDistanceBonus: stats.movementDistanceBonus,
@@ -705,6 +709,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       damageBonus: enemyStats.damageBonus,
       weaponDamageBonus: enemyStats.weaponDamageBonus,
       meleeDamagePercentBonus: enemyStats.meleeDamagePercentBonus,
+      spearLungeDamagePercentBonus: enemyStats.spearLungeDamagePercentBonus,
       mainWeaponClass: enemyMainWeaponClass,
       bowWeaponClass: enemyBowWeaponClass,
       movementDistanceBonus: enemyStats.movementDistanceBonus,
