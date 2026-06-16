@@ -250,6 +250,10 @@ test("arena applies active combat weapon visibility after paper doll tuning", ()
     arenaSceneSource.indexOf("function renderScene("),
     arenaSceneSource.indexOf("function syncFighterCombatEquipment("),
   );
+  const combatEquipmentSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function syncFighterCombatEquipment("),
+    arenaSceneSource.indexOf("function resetDeathEffectsForLiveFighters("),
+  );
 
   assert.ok(renderSceneSource.indexOf("positionFightersForState(target, target.visuals, current, playerSettings);") >= 0);
   assert.ok(renderSceneSource.indexOf("syncFighterCombatEquipment(target.visuals.player, current.player);") >= 0);
@@ -257,6 +261,9 @@ test("arena applies active combat weapon visibility after paper doll tuning", ()
     renderSceneSource.indexOf("positionFightersForState(target, target.visuals, current, playerSettings);") <
       renderSceneSource.indexOf("syncFighterCombatEquipment(target.visuals.player, current.player);"),
   );
+  assert.equal(combatEquipmentSource.includes('syncPaperDollEquipmentState(rig, ["weaponMain", "weaponBow"], equipment);'), false);
+  assert.equal(combatEquipmentSource.includes("syncPaperDollEquipmentState(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment);"), true);
+  assert.match(combatEquipmentSource, /syncPaperDollEquipmentState\(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment\);[\s\S]*setPaperDollEquipmentSlotVisible\(rig\.equipment\.weaponMain/);
 });
 
 test("arena reuses player settings snapshots during frame work", () => {

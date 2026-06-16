@@ -5087,7 +5087,7 @@ function syncFighterCombatEquipment(fighter: FighterVisual, state: FighterState)
   }
 
   rig.equipmentState = equipment;
-  syncPaperDollEquipmentState(rig, ["weaponMain", "weaponBow"], equipment);
+  syncPaperDollEquipmentState(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment);
   setPaperDollEquipmentSlotVisible(rig.equipment.weaponMain, !isBowFighter(state) && Boolean(equipment.weaponMain));
   setPaperDollEquipmentSlotVisible(rig.equipment.weaponBow, isBowFighter(state) && Boolean(equipment.weaponBow));
   if (rig.shadow) {
