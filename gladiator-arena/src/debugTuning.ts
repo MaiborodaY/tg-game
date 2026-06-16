@@ -349,8 +349,6 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
-  switchWeapon: { x: 0, y: 0 },
-  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -513,6 +511,7 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_greave_stormguard_01": { x: 2.821, y: 8.136, angle: -2, scaleX: 1.29, scaleY: 1.14, flipX: false, flipY: false },
   "auto_equipment_back_shinguard_stormguard_01": { x: 1.111, y: -2.93, angle: 1, scaleX: 1.4, scaleY: 1, flipX: false, flipY: false },
   "auto_equipment_back_glove_mercenary_01": { x: 0, y: 11, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+  "generated_equipment_weapon_sword_norm_axe": { x: -9, y: 28, angle: 90, scaleX: 0.95, scaleY: 0.95, flipX: true, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

@@ -7952,10 +7952,10 @@
     },
     "equipmentTuning": {
       "x": 0,
-      "y": 0,
-      "angle": 0,
+      "y": 19,
+      "angle": 85,
       "scaleX": 1,
-      "scaleY": 1,
+      "scaleY": 0.85,
       "flipX": false,
       "flipY": false
     },
@@ -7975,6 +7975,86 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_mace",
+    "name": "mace",
+    "kind": "weapon",
+    "rarity": "uncommon",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-mace"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 18,
+      "angle": 90,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-mace",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-mace.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-mace.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_mace",
+      "name": "mace",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_mace"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_mace1",
+    "name": "mace1",
+    "kind": "weapon",
+    "rarity": "uncommon",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-mace1"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 90,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-mace1",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-mace1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-mace1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_mace1",
+      "name": "mace1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_mace1"
       ],
       "categoryId": "maces"
     }
@@ -8122,15 +8202,15 @@
     }
   },
   {
-    "id": "generated_equipment_weapon_sword_norm_axe",
+    "id": "generated_equipment_weapon_axe_norm_axe",
     "name": "norm axe",
     "kind": "weapon",
     "rarity": "common",
     "damageBonus": 1,
-    "weaponClass": "sword",
+    "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
-      "weaponMainAssetKey": "weapon-sword-norm-axe"
+      "weaponMainAssetKey": "weapon-axe-norm-axe"
     },
     "equipmentTuning": {
       "x": -9,
@@ -8142,9 +8222,9 @@
       "flipY": false
     },
     "asset": {
-      "key": "weapon-sword-norm-axe",
-      "sourcePath": "assets/fighters/weapons/weapon-sword-norm-axe.webp",
-      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-norm-axe.webp"
+      "key": "weapon-axe-norm-axe",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-norm-axe.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-norm-axe.webp"
     },
     "availability": {
       "shop": true,
@@ -8152,13 +8232,13 @@
       "bossUnique": false
     },
     "weaponProduct": {
-      "id": "generated_equipment_weapon_sword_norm_axe",
+      "id": "generated_equipment_weapon_axe_norm_axe",
       "name": "norm axe",
       "price": 0,
       "itemIds": [
-        "generated_equipment_weapon_sword_norm_axe"
+        "generated_equipment_weapon_axe_norm_axe"
       ],
-      "categoryId": "swords"
+      "categoryId": "axes"
     }
   },
   {

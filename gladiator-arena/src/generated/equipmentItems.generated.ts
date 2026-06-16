@@ -2495,7 +2495,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2","name":"ChatGPT Image 16 2026 18 08 05 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-chatgpt-image-16-2026-18-08-05-2"},
-    equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":19,"angle":85,"scaleX":1,"scaleY":0.85,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-mace-chatgpt-image-16-2026-18-08-05-2",
       sourcePath: "assets/fighters/weapons/weapon-mace-chatgpt-image-16-2026-18-08-05-2.webp",
@@ -2503,6 +2503,30 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2","name":"ChatGPT Image 16 2026 18 08 05 2","price":0,"itemIds":["generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_mace","name":"mace","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-mace"},
+    equipmentTuning: {"x":0,"y":18,"angle":90,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-mace",
+      sourcePath: "assets/fighters/weapons/weapon-mace-mace.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-mace.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_mace","name":"mace","price":0,"itemIds":["generated_equipment_weapon_mace_mace"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_mace1","name":"mace1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-mace1"},
+    equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-mace1",
+      sourcePath: "assets/fighters/weapons/weapon-mace-mace1.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-mace1.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_mace1","name":"mace1","price":0,"itemIds":["generated_equipment_weapon_mace_mace1"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_stone_mace","name":"stone mace","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
@@ -2551,16 +2575,16 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_norm_axe","name":"norm axe","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword"},
-    assetKeys: {"weaponMainAssetKey":"weapon-sword-norm-axe"},
+    item: {"id":"generated_equipment_weapon_axe_norm_axe","name":"norm axe","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"axe"},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-norm-axe"},
     equipmentTuning: {"x":-9,"y":28,"angle":90,"scaleX":0.95,"scaleY":0.95,"flipX":true,"flipY":false},
     asset: {
-      key: "weapon-sword-norm-axe",
-      sourcePath: "assets/fighters/weapons/weapon-sword-norm-axe.webp",
-      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-norm-axe.webp",
+      key: "weapon-axe-norm-axe",
+      sourcePath: "assets/fighters/weapons/weapon-axe-norm-axe.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-norm-axe.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_norm_axe","name":"norm axe","price":0,"itemIds":["generated_equipment_weapon_sword_norm_axe"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_norm_axe","name":"norm axe","price":0,"itemIds":["generated_equipment_weapon_axe_norm_axe"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"rusty sword","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":0,"weaponClass":"sword"},

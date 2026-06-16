@@ -1505,7 +1505,7 @@ function createPromotedWeaponImportRecord(entry: PromotedWeaponImportEntry): Gen
     weaponClass: entry.weaponClass,
     equipmentSlot,
     assetKeys: { [assetKeyName]: entry.assetKey },
-    equipmentTuning: createDefaultPromotedEquipmentTuning(),
+    equipmentTuning: createDefaultPromotedWeaponTuning(),
     asset: {
       key: entry.assetKey,
       sourcePath: entry.targetSourcePath,
@@ -1608,7 +1608,7 @@ async function createPromotedEquipmentSetRecord(
     ...(weaponClass ? { weaponClass } : {}),
     equipmentSlot: config.slot,
     assetKeys,
-    equipmentTuning: createDefaultPromotedEquipmentTuning(),
+    equipmentTuning: config.kind === "weapon" ? createDefaultPromotedWeaponTuning() : createDefaultPromotedEquipmentTuning(),
     asset: {
       key: assetKey,
       sourcePath: promotedAssetPaths.sourcePath,
@@ -2575,6 +2575,14 @@ function createDefaultPromotedEquipmentTuning(): RigPartTuning {
     scaleY: 1,
     flipX: false,
     flipY: false,
+  };
+}
+
+function createDefaultPromotedWeaponTuning(): RigPartTuning {
+  return {
+    ...createDefaultPromotedEquipmentTuning(),
+    y: 16,
+    angle: 90,
   };
 }
 

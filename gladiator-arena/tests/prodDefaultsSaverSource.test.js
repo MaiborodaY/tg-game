@@ -275,7 +275,7 @@ test("save as prod defaults persists classic action button slots", () => {
   assert.match(debugTuningSource, /DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS/);
   assert.match(debugTuningSource, /switchWeapon: \{ x: -145, y: -200, rotation: -14 \}/);
   assert.match(debugTuningSource, /shuriken: \{ x: 100, y: -148, rotation: 12 \}/);
-  assert.match(debugTuningSource, /switchWeapon: \{ x: -145, y: -200, rotation: -16 \}/);
+  assert.match(debugTuningSource, /switchWeapon: \{ x: -145, y: -200, rotation: 0 \}/);
   assert.match(debugTuningSource, /shuriken: \{ x: 95, y: -118, rotation: 10 \}/);
   assert.match(debugTuningSource, /classicActionButtonSlots: cloneClassicActionButtonSlots/);
   assert.match(source, /const classicActionButtonSlotKeys = \["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"\] as const/);
@@ -397,6 +397,8 @@ test("debug weapon importer promotes staged weapons with per-asset values", () =
   assert.match(source, /removePromotedWeaponImportSourceFiles/);
   assert.match(source, /weaponClass === "bow" \? "weaponBow" : "weaponMain"/);
   assert.match(source, /weaponClass === "bow" \? "weaponBowAssetKey" : "weaponMainAssetKey"/);
+  assert.match(source, /function createDefaultPromotedWeaponTuning\(\)/);
+  assert.match(source, /\.\.\.createDefaultPromotedEquipmentTuning\(\),\s*y: 16,\s*angle: 90,/);
   assert.match(source, /damageBonus: entry\.damageBonus/);
   assert.match(source, /price: entry\.price/);
   assert.match(saverSource, /savePromotedWeaponImports/);
