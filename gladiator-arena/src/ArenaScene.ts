@@ -5177,12 +5177,26 @@ function syncFighterCombatEquipment(fighter: FighterVisual, state: FighterState)
 
   rig.equipmentState = equipment;
   syncPaperDollEquipmentState(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment);
-  setPaperDollEquipmentSlotVisible(rig.equipment.weaponMain, !isBowFighter(state) && Boolean(equipment.weaponMain));
-  setPaperDollEquipmentSlotVisible(rig.equipment.weaponBow, isBowFighter(state) && Boolean(equipment.weaponBow));
+  syncFighterCombatWeaponVisibility(rig, state);
   if (rig.shadow) {
-    setPaperDollEquipmentSlotVisible(rig.shadow.equipment.weaponMain, !isBowFighter(state) && Boolean(equipment.weaponMain));
-    setPaperDollEquipmentSlotVisible(rig.shadow.equipment.weaponBow, isBowFighter(state) && Boolean(equipment.weaponBow));
+    syncFighterCombatWeaponVisibility(rig.shadow, state);
   }
+}
+
+function syncFighterCombatWeaponVisibility(rig: Pick<PaperDollRig, "equipment"> | Pick<PaperDollShadowRig, "equipment">, state: FighterState): void {
+  const equipment = state.equipment;
+
+  if (!equipment) {
+    return;
+  }
+
+  const bowActive = isBowFighter(state);
+  const hasMainWeapon = Boolean(equipment.weaponMain);
+  const hasBowWeapon = Boolean(equipment.weaponBow);
+  const hasBowVisual = Boolean(rig.equipment.weaponBow && getPaperDollEquipmentSlotImage(rig.equipment.weaponBow));
+
+  setPaperDollEquipmentSlotVisible(rig.equipment.weaponMain, hasMainWeapon && (!bowActive || !hasBowVisual));
+  setPaperDollEquipmentSlotVisible(rig.equipment.weaponBow, bowActive && (hasBowWeapon || hasBowVisual));
 }
 
 function resetDeathEffectsForLiveFighters(target: ArenaScene, visuals: ArenaVisuals, current: CombatState): void {

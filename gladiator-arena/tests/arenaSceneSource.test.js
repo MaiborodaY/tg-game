@@ -289,7 +289,11 @@ test("arena applies active combat weapon visibility after paper doll tuning", ()
   );
   assert.equal(combatEquipmentSource.includes('syncPaperDollEquipmentState(rig, ["weaponMain", "weaponBow"], equipment);'), false);
   assert.equal(combatEquipmentSource.includes("syncPaperDollEquipmentState(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment);"), true);
-  assert.match(combatEquipmentSource, /syncPaperDollEquipmentState\(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment\);[\s\S]*setPaperDollEquipmentSlotVisible\(rig\.equipment\.weaponMain/);
+  assert.match(combatEquipmentSource, /syncPaperDollEquipmentState\(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment\);[\s\S]*syncFighterCombatWeaponVisibility\(rig, state\);/);
+  assert.equal(combatEquipmentSource.includes("syncFighterCombatWeaponVisibility(rig.shadow, state);"), true);
+  assert.equal(combatEquipmentSource.includes("const hasBowVisual = Boolean(rig.equipment.weaponBow && getPaperDollEquipmentSlotImage(rig.equipment.weaponBow));"), true);
+  assert.equal(combatEquipmentSource.includes("setPaperDollEquipmentSlotVisible(rig.equipment.weaponMain, hasMainWeapon && (!bowActive || !hasBowVisual));"), true);
+  assert.equal(combatEquipmentSource.includes("setPaperDollEquipmentSlotVisible(rig.equipment.weaponBow, bowActive && (hasBowWeapon || hasBowVisual));"), true);
 });
 
 test("arena reuses player settings snapshots during frame work", () => {

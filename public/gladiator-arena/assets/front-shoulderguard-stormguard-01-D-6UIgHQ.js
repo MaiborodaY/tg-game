@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-stormguard-01-CfbV_psw.webp`,import.meta.url).href;export{e as default};

@@ -1,1 +1,0 @@
-var e=``+new URL(`back-greave-wood-boss-01-BF7Hd_gk.webp`,import.meta.url).href;export{e as default};

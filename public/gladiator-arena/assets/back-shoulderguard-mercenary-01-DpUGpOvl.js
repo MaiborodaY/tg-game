@@ -1,1 +1,0 @@
-var e=``+new URL(`back-shoulderguard-mercenary-01-B3_UpjSQ.webp`,import.meta.url).href;export{e as default};

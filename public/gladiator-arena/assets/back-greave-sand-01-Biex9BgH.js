@@ -1,1 +1,0 @@
-var e=``+new URL(`back-greave-sand-01-zerqtn5V.webp`,import.meta.url).href;export{e as default};

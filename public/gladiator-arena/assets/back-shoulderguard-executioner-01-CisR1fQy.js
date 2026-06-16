@@ -1,1 +1,0 @@
-var e=``+new URL(`back-shoulderguard-executioner-01-Cs9H6Q95.webp`,import.meta.url).href;export{e as default};
