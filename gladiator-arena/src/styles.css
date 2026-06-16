@@ -6418,6 +6418,41 @@ body.arena-active .shell {
   opacity: 1;
 }
 
+.arena-entry-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 31;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  pointer-events: none;
+  color: #ffe7a5;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow:
+    0 2px 0 #210803,
+    0 0 12px rgba(255, 190, 88, 0.35);
+}
+
+.arena-entry-loader[hidden] {
+  display: none;
+}
+
+.arena-entry-loader .city-return-transition__coin {
+  width: 58px;
+  height: 58px;
+}
+
+.battle-screen--arena-entry .action-arc,
+.battle-screen--arena-entry .classic-action-bar {
+  pointer-events: none;
+}
+
 .battle-screen .status-strip {
   position: relative;
   z-index: 5;

@@ -353,6 +353,12 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(stylesSource.includes(".armory-shop__selected-stat-value--positive"), true);
 });
 
+test("shop purchases refresh the hero portrait for every non-consumable equipment change", () => {
+  assert.match(mainSource, /if \(!areHeroItemsConsumable\(product\.itemIds\)\) \{\s*heroPortraitPreview\?\.setEquipment\(hero\.equipment\);\s*\}/);
+  assert.equal(mainSource.includes("HERO_PORTRAIT_REFRESH_SLOTS"), false);
+  assert.equal(mainSource.includes("function shouldRefreshHeroPortrait"), false);
+});
+
 test("city shops lazily prewarm visible equipment products", () => {
   assert.equal(armoryShopSource.includes("onPrewarmProducts?: (products: readonly ArmoryProduct[]) => void"), true);
   assert.equal(weaponShopSource.includes("onPrewarmProducts?: (products: readonly WeaponProduct[]) => void"), true);

@@ -111,10 +111,13 @@ const CITY_RETURN_TRANSITION_IN_MS = 260;
 const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
-const HERO_PORTRAIT_REFRESH_SLOTS = new Set(["helmet", "breastplate", "backShoulderguard", "frontShoulderguard"]);
+const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
+let isArenaEntryLoading = false;
+let arenaEntryToken = 0;
+let arenaEntryLoaderTimer: number | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
 let battleResultPresentationId = 0;
 let battleResultReturnReady = true;
@@ -162,6 +165,84 @@ function createCityReturnTransition(): HTMLElement {
   document.body.append(element);
 
   return element;
+}
+
+function ensureArenaEntryLoader(): HTMLElement {
+  const existing = dom.gameScreen.querySelector<HTMLElement>(".arena-entry-loader");
+
+  if (existing) {
+    return existing;
+  }
+
+  const element = document.createElement("div");
+
+  element.className = "arena-entry-loader";
+  element.hidden = true;
+  element.setAttribute("role", "status");
+  element.setAttribute("aria-live", "polite");
+  element.innerHTML = `
+    <span class="city-return-transition__coin" aria-hidden="true"></span>
+    <strong>Entering Arena...</strong>
+  `;
+  dom.gameScreen.append(element);
+
+  return element;
+}
+
+function setArenaEntryLoaderVisible(visible: boolean): void {
+  const loader = visible ? ensureArenaEntryLoader() : dom.gameScreen.querySelector<HTMLElement>(".arena-entry-loader");
+
+  if (loader) {
+    loader.hidden = !visible;
+  }
+  dom.gameScreen.classList.toggle("battle-screen--arena-entry-loading", visible);
+}
+
+function clearArenaEntryLoaderTimer(): void {
+  if (arenaEntryLoaderTimer) {
+    window.clearTimeout(arenaEntryLoaderTimer);
+    arenaEntryLoaderTimer = undefined;
+  }
+}
+
+function beginArenaEntryGate(): number {
+  const token = arenaEntryToken + 1;
+
+  arenaEntryToken = token;
+  isArenaEntryLoading = true;
+  clearArenaEntryLoaderTimer();
+  setArenaEntryLoaderVisible(false);
+  dom.gameScreen.classList.add("battle-screen--arena-entry");
+  arenaEntryLoaderTimer = window.setTimeout(() => {
+    arenaEntryLoaderTimer = undefined;
+    if (arenaEntryToken === token && isArenaEntryLoading) {
+      setArenaEntryLoaderVisible(true);
+    }
+  }, ARENA_ENTRY_LOADER_DELAY_MS);
+  syncActionArc();
+
+  return token;
+}
+
+function finishArenaEntryGate(token: number): void {
+  if (arenaEntryToken !== token) {
+    return;
+  }
+
+  isArenaEntryLoading = false;
+  clearArenaEntryLoaderTimer();
+  setArenaEntryLoaderVisible(false);
+  dom.gameScreen.classList.remove("battle-screen--arena-entry");
+  syncActionArc();
+}
+
+function cancelArenaEntryGate(): void {
+  arenaEntryToken += 1;
+  isArenaEntryLoading = false;
+  clearArenaEntryLoaderTimer();
+  setArenaEntryLoaderVisible(false);
+  dom.gameScreen.classList.remove("battle-screen--arena-entry");
+  syncActionArc();
 }
 
 function playCityCurtainTransition(onCovered?: () => void): void {
@@ -233,7 +314,7 @@ function syncTurnProbe(): void {
 }
 
 function syncActionArc(): void {
-  const visibleState = isTurnAnimationLocked ? { ...state, activeTurn: "enemy" as const } : state;
+  const visibleState = isTurnAnimationLocked || isArenaEntryLoading ? { ...state, activeTurn: "enemy" as const } : state;
 
   actionArc?.sync(visibleState);
   classicActionBar?.sync(visibleState);
@@ -249,7 +330,7 @@ function setTurnAnimationLocked(locked: boolean): void {
 }
 
 function handleAction(actionId: ActionId): void {
-  if (!hasStarted || isInCity || isTurnAnimationLocked) {
+  if (!hasStarted || isInCity || isTurnAnimationLocked || isArenaEntryLoading) {
     return;
   }
 
@@ -562,21 +643,23 @@ function mountArena(): void {
   unmountArena?.();
   unmountArena = undefined;
   arenaScene = undefined;
-  dom.gameScreen.classList.add("battle-screen--arena-entry");
+  const entryToken = beginArenaEntryGate();
 
   window.requestAnimationFrame(() => {
+    if (arenaEntryToken !== entryToken) {
+      return;
+    }
+
     unmountArena = launchArena((scene) => {
+      if (arenaEntryToken !== entryToken) {
+        return;
+      }
+
       arenaScene = scene;
       const arenaEntryAnimation = arenaScene.sync(state);
 
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          dom.gameScreen.classList.remove("battle-screen--arena-entry");
-        });
-      });
-
       void arenaEntryAnimation.finally(() => {
-        dom.gameScreen.classList.remove("battle-screen--arena-entry");
+        finishArenaEntryGate(entryToken);
       });
       refreshArenaLayout();
     }, handleAction, hero.equipment);
@@ -587,7 +670,7 @@ function unmountArenaScene(): void {
   unmountArena?.();
   unmountArena = undefined;
   arenaScene = undefined;
-  dom.gameScreen.classList.remove("battle-screen--arena-entry");
+  cancelArenaEntryGate();
 }
 
 function startGame(): void {
@@ -764,7 +847,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
-  if (shouldRefreshHeroPortrait(product)) {
+  if (!areHeroItemsConsumable(product.itemIds)) {
     heroPortraitPreview?.setEquipment(hero.equipment);
   }
   renderCityHero();
@@ -835,14 +918,6 @@ function handleTemporaryChurchSkillGrant(): void {
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
-}
-
-function shouldRefreshHeroPortrait(product: ArmoryProduct | WeaponProduct): boolean {
-  return product.itemIds.some((itemId) => {
-    const item = HERO_ITEM_CATALOG[itemId];
-
-    return Boolean(item && !isHeroConsumableItem(item) && HERO_PORTRAIT_REFRESH_SLOTS.has(item.equipmentSlot));
-  });
 }
 
 function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipment: HeroEquipment = hero.equipment): HeroEquipment {

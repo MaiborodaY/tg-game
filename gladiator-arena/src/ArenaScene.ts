@@ -2594,22 +2594,30 @@ export function mountHeroPortraitPreview(
       return;
     }
 
-    lastSnapshotKey = snapshotKey;
     const token = snapshotToken + 1;
-    snapshotToken = token;
-    game.loop.wake();
-    scene.captureFrame((src) => {
-      if (destroyed || token !== snapshotToken) {
+    const captureSnapshot = () => {
+      if (destroyed || token !== snapshotToken || !scene) {
         return;
       }
 
-      snapshotTargets.forEach((target) => {
-        target.image.src = src;
-        target.image.hidden = false;
-        target.parent.classList.add("city-menu__portrait--static");
+      scene.captureFrame((src) => {
+        if (destroyed || token !== snapshotToken) {
+          return;
+        }
+
+        lastSnapshotKey = snapshotKey;
+        snapshotTargets.forEach((target) => {
+          target.image.src = src;
+          target.image.hidden = false;
+          target.parent.classList.add("city-menu__portrait--static");
+        });
+        game.loop.sleep();
       });
-      game.loop.sleep();
-    });
+    };
+
+    snapshotToken = token;
+    game.loop.wake();
+    window.requestAnimationFrame(() => window.requestAnimationFrame(captureSnapshot));
   };
 
   const readyCallbackForGame = (readyScene: HeroPortraitScene) => {
@@ -4537,10 +4545,10 @@ function addPaperDollPartVisual(
   const assetConfig = PAPER_DOLL_PART_ASSET_CONFIGS[key];
 
   if (key === "backHand") {
-    if (options.weaponMainAssetKey && target.textures.exists(options.weaponMainAssetKey)) {
+    if (options.weaponMainAssetKey) {
       addPaperDollWeaponVisual(target, partContainer, equipmentLayers, equipmentAnchors, "weaponMain", options.weaponMainAssetKey, equipment);
     }
-    if (options.weaponBowAssetKey && target.textures.exists(options.weaponBowAssetKey)) {
+    if (options.weaponBowAssetKey) {
       addPaperDollWeaponVisual(target, partContainer, equipmentLayers, equipmentAnchors, "weaponBow", options.weaponBowAssetKey, equipment);
     }
   }
@@ -4568,9 +4576,11 @@ function addPaperDollWeaponVisual(
   const weaponContainer = createPaperDollAnchoredEquipmentContainer(target, partContainer, equipmentLayers, equipmentAnchors, slotKey);
   const weaponSlot = part(weaponContainer);
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
-  const image = createPaperDollEquipmentImage(target, assetKey, config);
 
-  weaponContainer.add(image);
+  if (target.textures.exists(assetKey)) {
+    const image = createPaperDollEquipmentImage(target, assetKey, config);
+    weaponContainer.add(image);
+  }
   addPaperDollWeaponTopOverlay(target, partContainer, equipmentLayers, equipmentAnchors, slotKey, weaponSlot, assetKey, "mainTop");
   addPaperDollWeaponTopOverlay(target, partContainer, equipmentLayers, equipmentAnchors, slotKey, weaponSlot, assetKey, "bowBottom");
   registerPaperDollEquipmentSlot(weaponContainer, equipment, slotKey, config);
@@ -4594,12 +4604,14 @@ function addPaperDollWeaponTopOverlay(
   });
   const topSlot = part(topContainer);
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
-  const topImage = createPaperDollEquipmentImage(target, assetKey, config);
   const effectiveCrop = isPaperDollBowWeaponAssetKey(assetKey) && crop === "mainTop" ? "bowTop" : crop;
 
   paperDollWeaponOverlayCrops.set(topSlot, effectiveCrop);
-  applyPaperDollWeaponTopOverlayCrop(topImage, effectiveCrop);
-  topContainer.add(topImage);
+  if (target.textures.exists(assetKey)) {
+    const topImage = createPaperDollEquipmentImage(target, assetKey, config);
+    applyPaperDollWeaponTopOverlayCrop(topImage, effectiveCrop);
+    topContainer.add(topImage);
+  }
   paperDollEquipmentSlotConfigs.set(topSlot, config);
   topSlot.setVisible(isPaperDollWeaponOverlayVisible(topSlot));
 }
@@ -4617,7 +4629,7 @@ function addPaperDollHelmetVisual(
 
   if (assetKey && target.textures.exists(assetKey)) {
     helmetContainer.add(createPaperDollEquipmentImage(target, assetKey, config));
-  } else {
+  } else if (!assetKey) {
     const graphics = target.add.graphics();
 
     drawArmorHelmetPlaceholder(graphics);
@@ -4640,7 +4652,7 @@ function addPaperDollBreastplateVisual(
 
   if (assetKey && target.textures.exists(assetKey)) {
     breastplateContainer.add(createPaperDollEquipmentImage(target, assetKey, config));
-  } else {
+  } else if (!assetKey) {
     const graphics = target.add.graphics();
 
     drawArmorBreastplatePlaceholder(graphics);

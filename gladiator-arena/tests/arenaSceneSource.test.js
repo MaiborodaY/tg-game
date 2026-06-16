@@ -85,6 +85,31 @@ test("paper doll weapon top overlay keeps long weapon heads above gloves", () =>
   assert.equal(arenaSceneSource.includes("paperDollLinkedEquipmentAnchors.get(anchor)"), true);
 });
 
+test("paper doll registers weapon slots before lazy weapon textures load", () => {
+  const partVisualSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function addPaperDollPartVisual"),
+    arenaSceneSource.indexOf("function addPaperDollWeaponVisual"),
+  );
+  const weaponVisualSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function addPaperDollWeaponVisual"),
+    arenaSceneSource.indexOf("function addPaperDollWeaponTopOverlay"),
+  );
+  const weaponOverlaySource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function addPaperDollWeaponTopOverlay"),
+    arenaSceneSource.indexOf("function addPaperDollHelmetVisual"),
+  );
+
+  assert.equal(partVisualSource.includes("options.weaponMainAssetKey && target.textures.exists"), false);
+  assert.equal(partVisualSource.includes("options.weaponBowAssetKey && target.textures.exists"), false);
+  assert.match(partVisualSource, /if \(options\.weaponMainAssetKey\) \{[\s\S]*addPaperDollWeaponVisual/);
+  assert.match(partVisualSource, /if \(options\.weaponBowAssetKey\) \{[\s\S]*addPaperDollWeaponVisual/);
+  assert.match(weaponVisualSource, /if \(target\.textures\.exists\(assetKey\)\) \{[\s\S]*weaponContainer\.add\(image\);[\s\S]*\}/);
+  assert.match(weaponVisualSource, /addPaperDollWeaponTopOverlay/);
+  assert.match(weaponVisualSource, /registerPaperDollEquipmentSlot\(weaponContainer, equipment, slotKey, config\);/);
+  assert.match(weaponOverlaySource, /if \(target\.textures\.exists\(assetKey\)\) \{[\s\S]*topContainer\.add\(topImage\);[\s\S]*\}/);
+  assert.match(weaponOverlaySource, /paperDollEquipmentSlotConfigs\.set\(topSlot, config\);/);
+});
+
 test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("function syncPaperDollShadowSilhouette("), true);
   assert.equal(arenaSceneSource.includes("function addPaperDollShadowPartVisual("), false);
@@ -124,6 +149,22 @@ test("paper doll loader lazily resolves generated and auto equipment assets", ()
   assert.equal(arenaSceneSource.includes("getHeroItemEquipmentAssetKeys"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ITEM_ASSET_KEYS"), true);
   assert.equal(arenaSceneSource.includes("[...FIGHTER_PAPER_DOLL_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS].forEach((asset) =>"), false);
+});
+
+test("paper doll skips fallback armor placeholders while lazy equipment textures load", () => {
+  const helmetSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function addPaperDollHelmetVisual"),
+    arenaSceneSource.indexOf("function addPaperDollBreastplateVisual"),
+  );
+  const breastplateSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function addPaperDollBreastplateVisual"),
+    arenaSceneSource.indexOf("function addPaperDollArmArmorVisual"),
+  );
+
+  assert.equal(helmetSource.includes("} else if (!assetKey) {"), true);
+  assert.equal(breastplateSource.includes("} else if (!assetKey) {"), true);
+  assert.equal(helmetSource.includes("drawArmorHelmetPlaceholder(graphics);"), true);
+  assert.equal(breastplateSource.includes("drawArmorBreastplatePlaceholder(graphics);"), true);
 });
 
 test("generated equipment items can carry item-specific transform tuning", () => {
@@ -441,6 +482,8 @@ test("hero portrait skips unchanged snapshot equipment", () => {
   assert.equal(arenaSceneSource.includes("let lastSnapshotKey: string | undefined;"), true);
   assert.match(arenaSceneSource, /if \(snapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
   assert.match(arenaSceneSource, /if \(nextSnapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
+  assert.match(arenaSceneSource, /scene\.captureFrame\(\(src\) => \{[\s\S]*lastSnapshotKey = snapshotKey;[\s\S]*target\.image\.src = src;/);
+  assert.equal(arenaSceneSource.includes("window.requestAnimationFrame(() => window.requestAnimationFrame(captureSnapshot));"), true);
   assert.match(arenaSceneSource, /void scene\.setEquipment\(nextEquipment\)\.then\(\(\) => refreshSnapshot\(nextEquipment\)\);/);
 });
 

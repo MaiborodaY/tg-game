@@ -28,12 +28,28 @@ test("city arena transition darkens the whole city UI", () => {
 
 test("battle screen starts dark while the arena entry camera pulls back", () => {
   assert.match(mainSource, /dom\.gameScreen\.classList\.add\("battle-screen--arena-entry"\)/);
+  assert.match(mainSource, /const entryToken = beginArenaEntryGate\(\)/);
+  assert.match(mainSource, /const arenaEntryAnimation = arenaScene\.sync\(state\)/);
   assert.match(mainSource, /arenaEntryAnimation\.finally/);
-  assert.match(mainSource, /dom\.gameScreen\.classList\.remove\("battle-screen--arena-entry"\)/);
+  assert.match(mainSource, /finishArenaEntryGate\(entryToken\)/);
   assert.match(stylesSource, /\.battle-screen::after/);
   assert.match(stylesSource, /\.battle-screen--arena-entry::after/);
   assert.match(stylesSource, /opacity: 1/);
   assert.match(stylesSource, /transition: opacity 760ms cubic-bezier/);
+});
+
+test("arena entry shows a delayed coin loader while equipment assets finish loading", () => {
+  assert.match(mainSource, /const ARENA_ENTRY_LOADER_DELAY_MS = 240/);
+  assert.match(mainSource, /function ensureArenaEntryLoader/);
+  assert.match(mainSource, /arena-entry-loader/);
+  assert.match(mainSource, /city-return-transition__coin/);
+  assert.match(mainSource, /window\.setTimeout\(\(\) => \{[\s\S]*setArenaEntryLoaderVisible\(true\);[\s\S]*\}, ARENA_ENTRY_LOADER_DELAY_MS\)/);
+  assert.match(mainSource, /isTurnAnimationLocked \|\| isArenaEntryLoading/);
+  assert.match(mainSource, /isTurnAnimationLocked \|\| isArenaEntryLoading\) \{/);
+  assert.match(stylesSource, /\.arena-entry-loader/);
+  assert.match(stylesSource, /\.arena-entry-loader \.city-return-transition__coin/);
+  assert.match(stylesSource, /\.battle-screen--arena-entry \.action-arc/);
+  assert.match(stylesSource, /\.battle-screen--arena-entry \.classic-action-bar/);
 });
 
 test("battle result waits briefly for city prewarm before enabling return", () => {
