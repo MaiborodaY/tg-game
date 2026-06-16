@@ -1,9 +1,10 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
 const repoRoot = process.cwd();
-const assetsRoot = readAssetsRoot();
+const sourceRoot = readSourceRoot();
+const outputRoot = readOutputRoot();
 const quality = readQualityArg();
 const targetFile = readTargetFileArg();
 const webpQuality = Math.round(quality <= 1 ? quality * 100 : quality);
@@ -20,11 +21,12 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/weapons\// },
 ];
 
-const pngFiles = targetFile ? [targetFile] : await listFiles(assetsRoot, ".png");
+const pngFiles = targetFile ? [targetFile] : await listFiles(sourceRoot, ".png");
 let originalTotal = 0;
 let webpTotal = 0;
 
-console.log(`Assets root: ${path.relative(repoRoot, assetsRoot)}`);
+console.log(`PNG source root: ${path.relative(repoRoot, sourceRoot)}`);
+console.log(`Runtime output root: ${path.relative(repoRoot, outputRoot)}`);
 
 for (const pngPath of pngFiles) {
   if (path.extname(pngPath).toLowerCase() !== ".png") {
@@ -33,8 +35,8 @@ for (const pngPath of pngFiles) {
   }
 
   const png = await readFile(pngPath);
-  const webpPath = pngPath.replace(/\.png$/i, ".webp");
-  const relativePngPath = path.relative(assetsRoot, pngPath).replaceAll(path.sep, "/");
+  const relativePngPath = getRelativeSourcePath(pngPath);
+  const webpPath = path.join(outputRoot, relativePngPath).replace(/\.png$/i, ".webp");
   const maxSide = getResizeMaxSide(relativePngPath);
   const pipeline = sharp(png);
 
@@ -56,11 +58,12 @@ for (const pngPath of pngFiles) {
     })
     .toBuffer();
 
+  await mkdir(path.dirname(webpPath), { recursive: true });
   await writeFile(webpPath, webp);
   originalTotal += png.byteLength;
   webpTotal += webp.byteLength;
 
-  console.log(`${path.relative(repoRoot, pngPath)} ${formatBytes(png.byteLength)} -> ${formatBytes(webp.byteLength)}`);
+  console.log(`${path.relative(repoRoot, pngPath)} -> ${path.relative(repoRoot, webpPath)} ${formatBytes(png.byteLength)} -> ${formatBytes(webp.byteLength)}`);
 }
 
 console.log(`Total ${formatBytes(originalTotal)} -> ${formatBytes(webpTotal)}`);
@@ -92,14 +95,34 @@ function getResizeMaxSide(relativePath) {
   return rule?.maxSide;
 }
 
-function readAssetsRoot() {
-  const value = process.argv.find((argument) => argument.startsWith("--assets-root="));
+function readSourceRoot() {
+  const sourceRootArg = readNamedArg("--source-root");
+  const legacyAssetsRootArg = readNamedArg("--assets-root");
 
-  if (!value) {
-    return path.join(repoRoot, "gladiator-arena", "src", "assets");
+  if (sourceRootArg) {
+    return path.resolve(repoRoot, sourceRootArg);
   }
 
-  return path.resolve(repoRoot, value.slice("--assets-root=".length));
+  if (legacyAssetsRootArg) {
+    return path.resolve(repoRoot, legacyAssetsRootArg);
+  }
+
+  return path.join(repoRoot, "gladiator-arena", "art-source", "png", "assets");
+}
+
+function readOutputRoot() {
+  const outputRootArg = readNamedArg("--output-root");
+  const legacyAssetsRootArg = readNamedArg("--assets-root");
+
+  if (outputRootArg) {
+    return path.resolve(repoRoot, outputRootArg);
+  }
+
+  if (legacyAssetsRootArg) {
+    return path.resolve(repoRoot, legacyAssetsRootArg);
+  }
+
+  return path.join(repoRoot, "gladiator-arena", "src", "assets");
 }
 
 function readQualityArg() {
@@ -111,11 +134,26 @@ function readQualityArg() {
 }
 
 function readTargetFileArg() {
-  const value = process.argv.find((argument) => argument.startsWith("--file="));
+  const value = readNamedArg("--file");
   if (!value) {
     return null;
   }
 
-  const resolvedPath = path.resolve(repoRoot, value.slice("--file=".length));
+  const resolvedPath = path.resolve(repoRoot, value);
   return path.normalize(resolvedPath);
+}
+
+function readNamedArg(name) {
+  const value = process.argv.find((argument) => argument.startsWith(`${name}=`));
+  return value?.slice(name.length + 1) ?? null;
+}
+
+function getRelativeSourcePath(sourcePath) {
+  const relativePath = path.relative(sourceRoot, sourcePath);
+
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error(`PNG file must be inside source root: ${path.relative(repoRoot, sourcePath)}`);
+  }
+
+  return relativePath.replaceAll(path.sep, "/");
 }

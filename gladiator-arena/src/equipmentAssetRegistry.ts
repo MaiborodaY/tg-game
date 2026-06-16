@@ -55,12 +55,6 @@ const armorWebpAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.webp",
   import: "default",
 }) as Record<string, string>;
 
-const armorPngAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.png", {
-  eager: true,
-  query: "?url",
-  import: "default",
-}) as Record<string, string>;
-
 const lowArmorAssetUrls = import.meta.glob("./assets-low/fighters/armor/**/*.webp", {
   eager: true,
   query: "?url",
@@ -68,12 +62,6 @@ const lowArmorAssetUrls = import.meta.glob("./assets-low/fighters/armor/**/*.web
 }) as Record<string, string>;
 
 const weaponWebpAssetUrls = import.meta.glob("./assets/fighters/weapons/**/*.webp", {
-  eager: true,
-  query: "?url",
-  import: "default",
-}) as Record<string, string>;
-
-const weaponPngAssetUrls = import.meta.glob("./assets/fighters/weapons/**/*.png", {
   eager: true,
   query: "?url",
   import: "default",
@@ -252,14 +240,6 @@ function createAutoEquipmentAssetEntries(): [string, string][] {
     const assetKey = getAssetKey(assetPath);
 
     if (assetKey) {
-      entriesByAssetKey.set(assetKey, [assetPath, url]);
-    }
-  });
-
-  Object.entries({ ...armorPngAssetUrls, ...weaponPngAssetUrls }).forEach(([assetPath, url]) => {
-    const assetKey = getAssetKey(assetPath);
-
-    if (assetKey && !entriesByAssetKey.has(assetKey)) {
       entriesByAssetKey.set(assetKey, [assetPath, url]);
     }
   });

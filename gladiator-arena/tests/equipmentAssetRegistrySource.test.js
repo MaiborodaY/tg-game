@@ -7,16 +7,18 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const registrySource = readFileSync(resolve(currentDir, "../src/equipmentAssetRegistry.ts"), "utf8");
 
-test("auto equipment registry can expose png-only armor assets", () => {
+test("auto equipment registry only exposes promoted webp armor assets", () => {
   assert.match(registrySource, /armorWebpAssetUrls/);
-  assert.match(registrySource, /armorPngAssetUrls/);
+  assert.doesNotMatch(registrySource, /armorPngAssetUrls/);
+  assert.doesNotMatch(registrySource, /"\.\/assets\/fighters\/armor\/\*\*\/\*\.png"/);
   assert.match(registrySource, /createAutoEquipmentAssetEntries/);
   assert.match(registrySource, /entriesByAssetKey\.set\(assetKey, \[assetPath, url\]\)/);
 });
 
 test("auto equipment registry can expose weapon assets", () => {
   assert.match(registrySource, /weaponWebpAssetUrls/);
-  assert.match(registrySource, /weaponPngAssetUrls/);
+  assert.doesNotMatch(registrySource, /weaponPngAssetUrls/);
+  assert.doesNotMatch(registrySource, /"\.\/assets\/fighters\/weapons\/\*\*\/\*\.png"/);
   assert.match(registrySource, /lowWeaponAssetUrls/);
   assert.match(registrySource, /prefix: "weapon-"/);
   assert.match(registrySource, /slot: "weaponMain"/);
@@ -36,7 +38,7 @@ test("auto equipment registry can expose weapon assets", () => {
   assert.match(registrySource, /const registeredEquipmentAssetKeys = generatedEquipmentAssetKeys/);
 });
 
-test("auto equipment registry prefers low webp paths for png previews", () => {
+test("auto equipment registry prefers low webp paths for runtime previews", () => {
   assert.match(registrySource, /replace\("\.\/assets\/", "\.\/assets-low\/"\)\.replace/);
   assert.match(registrySource, /\.replace\(\/\\\.\(\?:png\|webp\)\$\/i, "\.webp"\)/);
 });

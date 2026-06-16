@@ -1,12 +1,12 @@
 # Fighter body assets
 
-Keep the editable PNG source here:
+Keep the editable PNG source outside the runtime asset tree:
 
-`body-light-01.png`
+`gladiator-arena/art-source/png/assets/fighters/bodies/body-light-01.png`
 
-The runtime asset is generated next to it and imported from `src/assets`:
+The runtime asset is generated into `src/assets`:
 
-`body-light-01.webp`
+`gladiator-arena/src/assets/fighters/bodies/body-light-01.webp`
 
 Asset requirements:
 
