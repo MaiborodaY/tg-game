@@ -8,7 +8,7 @@ const SHOP_ICON_ASSET_URLS = import.meta.glob("./assets/shop-icons/*.webp", {
 }) as Record<string, string>;
 
 const SHOP_ITEM_ICON_URLS = Object.fromEntries(
-  GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, getShopIconAssetUrl(record.asset.key, record.asset.lowUrl ?? record.asset.url)]),
+  GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, getShopIconAssetUrl(record.asset.key)]),
 ) as Partial<Record<HeroItemId, string>>;
 
 let shopItemIconPrewarmPromise: Promise<void> | undefined;
@@ -42,8 +42,8 @@ export function prewarmShopItemIconsForBrowserCache(): Promise<void> {
   return shopItemIconPrewarmPromise;
 }
 
-function getShopIconAssetUrl(assetKey: string, fallbackUrl: string): string {
-  return SHOP_ICON_ASSET_URLS[`./assets/shop-icons/${assetKey}.webp`] ?? fallbackUrl;
+function getShopIconAssetUrl(assetKey: string): string | undefined {
+  return SHOP_ICON_ASSET_URLS[`./assets/shop-icons/${assetKey}.webp`];
 }
 
 function prewarmShopIconUrl(url: string): Promise<void> {

@@ -105,7 +105,7 @@ import {
   type HeroItemId,
   type HeroWeaponClass,
 } from "./hero";
-import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
+import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, resolveEquipmentAssetUrl, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
 import {
   beginDebugUndoGroup,
@@ -603,8 +603,10 @@ interface PaperDollAssetLoadEntry {
 
 interface PaperDollAssetDefinition {
   key: string;
-  url: string;
+  url?: string;
   lowUrl?: string;
+  sourcePath?: string;
+  lowSourcePath?: string;
 }
 
 const PAPER_DOLL_HEAD_ASSET_CONFIG: PaperDollPartAssetConfig = {
@@ -882,7 +884,9 @@ export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
 }
 
 export function prewarmCityAssetsForBrowserCache(): Promise<void> {
-  cityAssetPrewarmPromise ??= Promise.all([...new Set(getCityAssetPrewarmUrls())].map(prewarmImageUrl)).then(() => undefined);
+  cityAssetPrewarmPromise ??= getCityAssetPrewarmUrls()
+    .then((urls) => Promise.all([...new Set(urls)].map(prewarmImageUrl)))
+    .then(() => undefined);
 
   return cityAssetPrewarmPromise;
 }
@@ -898,7 +902,7 @@ function preloadPaperDollAssets(target: Phaser.Scene, equipmentStates: readonly 
   activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
   const loadedAssetKeys = new Set<string>();
 
-  getPaperDollAssetLoadEntriesForEquipmentStates(activePaperDollAssetsUseLowRes, equipmentStates).forEach((asset) => {
+  getSyncPaperDollAssetLoadEntriesForEquipmentStates(activePaperDollAssetsUseLowRes, equipmentStates).forEach((asset) => {
     const textureKey = asset.key;
 
     if (loadedAssetKeys.has(textureKey)) {
@@ -916,14 +920,15 @@ function ensurePaperDollAssetResolution(
   fighters: Array<FighterVisual | undefined>,
   onSynced?: () => void,
 ): void {
-  const loadEntries = getPaperDollAssetLoadEntriesForEquipmentStates(lowRes, fighters.map(getFighterPaperDollEquipmentState));
   const syncTextures = (): void => {
     activePaperDollAssetsUseLowRes = lowRes;
     fighters.forEach(syncFighterPaperDollTextureResolution);
     onSynced?.();
   };
 
-  void ensurePaperDollAssetEntriesLoaded(target, loadEntries).then(syncTextures);
+  void getPaperDollAssetLoadEntriesForEquipmentStates(lowRes, fighters.map(getFighterPaperDollEquipmentState))
+    .then((loadEntries) => ensurePaperDollAssetEntriesLoaded(target, loadEntries))
+    .then(syncTextures);
 }
 
 function createPaperDollAssetsByKey(): ReadonlyMap<string, PaperDollAssetDefinition> {
@@ -941,17 +946,20 @@ function createPaperDollAssetsByKey(): ReadonlyMap<string, PaperDollAssetDefinit
 function getPaperDollAssetLoadEntriesForEquipmentStates(
   lowRes: boolean,
   equipmentStates: readonly (HeroEquipment | undefined)[] = [],
-): PaperDollAssetLoadEntry[] {
+): Promise<PaperDollAssetLoadEntry[]> {
   return getPaperDollAssetLoadEntriesForKeys(lowRes, getPaperDollAssetKeysForEquipmentStates(equipmentStates));
 }
 
-function getPaperDollAssetLoadEntriesForKeys(lowRes: boolean, assetKeys: Iterable<string>): PaperDollAssetLoadEntry[] {
+function getSyncPaperDollAssetLoadEntriesForEquipmentStates(
+  lowRes: boolean,
+  equipmentStates: readonly (HeroEquipment | undefined)[] = [],
+): PaperDollAssetLoadEntry[] {
   const entries = new Map<string, string>();
 
-  for (const assetKey of assetKeys) {
+  for (const assetKey of getPaperDollAssetKeysForEquipmentStates(equipmentStates)) {
     const asset = PAPER_DOLL_ASSETS_BY_KEY.get(assetKey);
 
-    if (!asset) {
+    if (!asset?.url) {
       continue;
     }
 
@@ -962,6 +970,41 @@ function getPaperDollAssetLoadEntriesForKeys(lowRes: boolean, assetKeys: Iterabl
   }
 
   return [...entries.entries()].map(([key, url]) => ({ key, url }));
+}
+
+async function getPaperDollAssetLoadEntriesForKeys(lowRes: boolean, assetKeys: Iterable<string>): Promise<PaperDollAssetLoadEntry[]> {
+  const entries = new Map<string, string>();
+
+  for (const assetKey of assetKeys) {
+    const asset = PAPER_DOLL_ASSETS_BY_KEY.get(assetKey);
+
+    if (!asset) {
+      continue;
+    }
+
+    const key = getFighterTextureKey(asset.key, lowRes);
+    const url = await resolvePaperDollAssetUrl(asset, lowRes);
+
+    if (url) {
+      entries.set(key, url);
+    }
+  }
+
+  return [...entries.entries()].map(([key, url]) => ({ key, url }));
+}
+
+async function resolvePaperDollAssetUrl(asset: PaperDollAssetDefinition, lowRes: boolean): Promise<string | undefined> {
+  if (lowRes) {
+    if (asset.lowUrl) {
+      return asset.lowUrl;
+    }
+
+    if (asset.lowSourcePath) {
+      return (await resolveEquipmentAssetUrl(asset.lowSourcePath)) ?? asset.url ?? (asset.sourcePath ? resolveEquipmentAssetUrl(asset.sourcePath) : undefined);
+    }
+  }
+
+  return asset.url ?? (asset.sourcePath ? resolveEquipmentAssetUrl(asset.sourcePath) : undefined);
 }
 
 function getPaperDollAssetKeysForEquipmentStates(equipmentStates: readonly (HeroEquipment | undefined)[]): string[] {
@@ -1004,7 +1047,7 @@ function ensurePaperDollEquipmentAssetsLoaded(
     });
   });
 
-  return ensurePaperDollAssetEntriesLoaded(target, getPaperDollAssetLoadEntriesForKeys(lowRes, assetKeys));
+  return getPaperDollAssetLoadEntriesForKeys(lowRes, assetKeys).then((entries) => ensurePaperDollAssetEntriesLoaded(target, entries));
 }
 
 function ensurePaperDollItemAssetsLoaded(target: Phaser.Scene, itemIds: readonly HeroItemId[]): Promise<void> {
@@ -1025,7 +1068,7 @@ function ensurePaperDollItemAssetsLoaded(target: Phaser.Scene, itemIds: readonly
     });
   });
 
-  return ensurePaperDollAssetEntriesLoaded(target, getPaperDollAssetLoadEntriesForKeys(lowRes, assetKeys));
+  return getPaperDollAssetLoadEntriesForKeys(lowRes, assetKeys).then((entries) => ensurePaperDollAssetEntriesLoaded(target, entries));
 }
 
 function ensurePaperDollAssetEntriesLoaded(target: Phaser.Scene, entries: readonly PaperDollAssetLoadEntry[]): Promise<void> {
@@ -1095,13 +1138,15 @@ function getArenaAssetPrewarmUrls(): string[] {
   ];
 }
 
-function getCityAssetPrewarmUrls(): string[] {
+async function getCityAssetPrewarmUrls(): Promise<string[]> {
+  const paperDollUrls = await getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment]);
+
   return [
     CITY_BACKGROUND_ASSET_URL,
     CITY_DAY_BACKGROUND_ASSET_URL,
     CITY_SHOP_BACKGROUND_ASSET_URL,
     ...CITY_CLOUD_ASSETS.map((asset) => asset.url),
-    ...getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment]).map((asset) => asset.url),
+    ...paperDollUrls.map((asset) => asset.url),
   ];
 }
 
@@ -1643,6 +1688,7 @@ class CityHeroScene extends Phaser.Scene {
     applyCityHeroLighting(this.fighter, this.cityLightingAmount);
     this.syncCameraLayers();
     this.sync();
+    this.syncPlayerEquipment();
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(({ changedSlots }) => {
       this.previewEquipment = undefined;
@@ -2688,6 +2734,7 @@ class DebugCharacterScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
     });
     this.sync();
+    this.syncPlayerEquipment();
   }
 
   update(time: number): void {

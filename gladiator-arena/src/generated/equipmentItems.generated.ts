@@ -41,8 +41,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":47,"angle":0,"scaleX":1.26,"scaleY":1.53,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-cloth-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-cloth-01.webp",
     },
@@ -55,8 +53,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.250334936746185,"y":-1.4792899429153294,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-bone-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-bone-01.webp",
     },
@@ -69,8 +65,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":7.501116455820636,"y":-10.355029600407306,"angle":0,"scaleX":1.13,"scaleY":1.63,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-cathedral-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-cathedral-01.webp",
     },
@@ -83,8 +77,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-2,"y":3,"angle":0,"scaleX":0.83,"scaleY":0.8,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-chainmail-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-chainmail-01.webp",
     },
@@ -97,8 +89,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2,"y":-4,"angle":0,"scaleX":0.93,"scaleY":1.05,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-cloth-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-cloth-01.webp",
     },
@@ -111,8 +101,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":12,"y":-6,"angle":0,"scaleX":1.92,"scaleY":1.72,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-druid-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-druid-01.webp",
     },
@@ -125,8 +113,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":8,"y":-1,"angle":0,"scaleX":1.59,"scaleY":1.38,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-executioner-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-executioner-01.webp",
     },
@@ -139,8 +125,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":17.252567848387486,"y":-5.917159771661318,"angle":0,"scaleX":2.01,"scaleY":1.76,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-lazure-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-lazure-01.webp",
     },
@@ -153,8 +137,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":12.751897974895073,"y":-5.177514800203653,"angle":0,"scaleX":1.86,"scaleY":1.53,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-lion-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-lion-01.webp",
     },
@@ -167,8 +149,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":9,"y":-8.396449714576647,"angle":0,"scaleX":1.49,"scaleY":1.74,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-mercenary-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-mercenary-01.webp",
     },
@@ -181,8 +161,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":15.254354177700478,"y":-5.4792899429153294,"angle":0,"scaleX":1.92,"scaleY":1.49,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-rust-champion-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-rust-champion-01.webp",
     },
@@ -195,8 +173,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":4.000000000000028,"y":-2,"angle":0,"scaleX":1.29,"scaleY":1.16,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-sand-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-sand-01.webp",
     },
@@ -209,8 +185,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":9.001339746984769,"y":-2.366863943933481,"angle":0,"scaleX":1.64,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-stormguard-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-stormguard-01.webp",
     },
@@ -223,8 +197,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":7.501116455820636,"y":-4.437869828745988,"angle":0,"scaleX":1.11,"scaleY":1.15,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-viper-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-viper-01.webp",
     },
@@ -237,8 +209,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":6,"y":-4,"angle":0,"scaleX":1.31,"scaleY":1.38,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-wood-boss-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-wood-boss-01.webp",
     },
@@ -250,8 +220,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.19,"scaleY":1.13,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-bone-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-bone-01.webp",
     },
@@ -264,8 +232,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":4.530646615085175,"y":9.554237682251994,"angle":-9,"scaleX":1.72,"scaleY":1.65,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-cathedral-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-cathedral-01.webp",
     },
@@ -278,8 +244,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.45,"scaleY":1.5,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-chainmail-03",
-      url: new URL("../assets/fighters/armor/arms/back-glove-chainmail-03.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-chainmail-03.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-chainmail-03.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-chainmail-03.webp",
     },
@@ -292,8 +256,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":0.6,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-cloth-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-cloth-01.webp",
     },
@@ -306,8 +268,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":12,"angle":0,"scaleX":1.16,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-druid-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-druid-01.webp",
     },
@@ -320,8 +280,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-executioner-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-executioner-01.webp",
     },
@@ -334,8 +292,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":19,"angle":0,"scaleX":1.28,"scaleY":1.26,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-lazure-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-lazure-01.webp",
     },
@@ -348,8 +304,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":14,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-leather-03",
-      url: new URL("../assets/fighters/armor/arms/back-glove-leather-03.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-leather-03.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-leather-03.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-leather-03.webp",
     },
@@ -362,8 +316,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.7652223386829604,"y":18.866568167416347,"angle":0,"scaleX":1.26,"scaleY":1.15,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-lion-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-lion-01.webp",
     },
@@ -376,8 +328,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1.28,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-mercenary-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-mercenary-01.webp",
     },
@@ -390,8 +340,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-rust-champion-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-rust-champion-01.webp",
     },
@@ -404,8 +352,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":15,"angle":0,"scaleX":1.13,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-sand-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-sand-01.webp",
     },
@@ -418,8 +364,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.5035790989716773,"y":14.157797414644733,"angle":3,"scaleX":1.23,"scaleY":1.2,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-stormguard-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-stormguard-01.webp",
     },
@@ -432,8 +376,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.42,"scaleY":1.32,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-viper-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-viper-01.webp",
     },
@@ -446,8 +388,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-wood-boss-01",
-      url: new URL("../assets/fighters/armor/arms/back-glove-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-glove-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-glove-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-wood-boss-01.webp",
     },
@@ -459,8 +399,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.2500324538393102,"y":11.834319543322636,"angle":-3,"scaleX":1.55,"scaleY":1.17,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-bone-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-bone-01.webp",
     },
@@ -473,8 +411,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.830586551045684,"y":18.491124286441618,"angle":-9,"scaleX":1.91,"scaleY":1.24,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-cathedral-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-cathedral-01.webp",
     },
@@ -487,8 +423,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":-7,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-chainmail-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-chainmail-01.webp",
     },
@@ -501,8 +435,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-5,"y":15.781065088757398,"angle":-15,"scaleX":1.85,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-cloth-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-cloth-01.webp",
     },
@@ -515,8 +447,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-6,"y":11,"angle":-8,"scaleX":1.65,"scaleY":1.18,"flipX":true,"flipY":false},
     asset: {
       key: "back-greave-druid-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-druid-01.webp",
     },
@@ -529,8 +459,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3.1413569332511315,"y":14.053254457695687,"angle":-14,"scaleX":1.31,"scaleY":1.07,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-executioner-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-executioner-01.webp",
     },
@@ -543,8 +471,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-2.3027891641856115,"y":0.5088757135584387,"angle":-9,"scaleX":1.8,"scaleY":1.55,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-lazure-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-lazure-01.webp",
     },
@@ -557,8 +483,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":-1,"scaleX":1.65,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-leather-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-leather-01.webp",
     },
@@ -571,8 +495,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.0262401129799628,"y":15.532544400610846,"angle":-3,"scaleX":1.23,"scaleY":1.11,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-lion-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-lion-01.webp",
     },
@@ -585,8 +507,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-4.602927811523045,"y":0,"angle":-8,"scaleX":1.6,"scaleY":1.32,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-mercenary-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-mercenary-01.webp",
     },
@@ -599,8 +519,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3.3132619515390758,"y":8.875739657491977,"angle":-10,"scaleX":1.1,"scaleY":1.01,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-rust-champion-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-rust-champion-01.webp",
     },
@@ -613,8 +531,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-6,"y":0,"angle":-4,"scaleX":1.29,"scaleY":1.29,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-sand-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-sand-01.webp",
     },
@@ -627,8 +543,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3,"y":8,"angle":-8,"scaleX":1.1,"scaleY":1.14,"flipX":true,"flipY":false},
     asset: {
       key: "back-greave-stormguard-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-stormguard-01.webp",
     },
@@ -641,8 +555,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-8.218928871828211,"y":1.6094673690139985,"angle":-24,"scaleX":1.19,"scaleY":1.78,"flipX":true,"flipY":false},
     asset: {
       key: "back-greave-viper-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-viper-01.webp",
     },
@@ -655,8 +567,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3,"y":4,"angle":-2,"scaleX":1.53,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
       key: "back-greave-wood-boss-01",
-      url: new URL("../assets/fighters/armor/legs/back-greave-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-greave-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-greave-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-wood-boss-01.webp",
     },
@@ -668,8 +578,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.5792830444024446,"y":5.422677448302522,"angle":3,"scaleX":1.34,"scaleY":1.11,"flipX":true,"flipY":false},
     asset: {
       key: "back-shinguard-bone-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-bone-01.webp",
     },
@@ -682,8 +590,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":5.72037936499342,"y":6.264107228415298,"angle":6,"scaleX":2.12,"scaleY":1.09,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-cathedral-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-cathedral-01.webp",
     },
@@ -696,8 +602,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":9,"angle":-2,"scaleX":1.13,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-chainmail-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-chainmail-01.webp",
     },
@@ -710,8 +614,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1.35,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-cloth-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-cloth-01.webp",
     },
@@ -724,8 +626,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":0,"angle":4,"scaleX":1.59,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-druid-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-druid-01.webp",
     },
@@ -738,8 +638,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.039120634243431596,"y":4.760956678290768,"angle":0,"scaleX":1.3,"scaleY":1.16,"flipX":true,"flipY":false},
     asset: {
       key: "back-shinguard-executioner-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-executioner-01.webp",
     },
@@ -752,8 +650,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3.430461129919479,"y":19.323924452565734,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-lazure-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-lazure-01.webp",
     },
@@ -766,8 +662,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.6700645168757262,"y":5.982873790002486,"angle":3,"scaleX":1.15,"scaleY":0.88,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-lion-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-lion-01.webp",
     },
@@ -780,8 +674,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":6.011012133938948,"y":4.8638334247572175,"angle":4,"scaleX":1.8,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-mercenary-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-mercenary-01.webp",
     },
@@ -794,8 +686,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3,"y":0,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-rust-champion-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-rust-champion-01.webp",
     },
@@ -808,8 +698,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":2,"angle":-1,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-sand-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-sand-01.webp",
     },
@@ -822,8 +710,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.228665919774656,"y":4.370764566910168,"angle":2,"scaleX":1.4,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-stormguard-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-stormguard-01.webp",
     },
@@ -836,8 +722,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.35152747952975005,"y":12.93354018564196,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-viper-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-viper-01.webp",
     },
@@ -850,8 +734,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.23267603159015948,"y":0,"angle":4,"scaleX":1.4,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-wood-boss-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-wood-boss-01.webp",
     },
@@ -863,8 +745,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.78,"scaleY":1.76,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-bone-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-bone-01.webp",
     },
@@ -877,8 +757,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":0,"angle":-2,"scaleX":2.45,"scaleY":1.76,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-cathedral-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-cathedral-01.webp",
     },
@@ -891,8 +769,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":1.5,"scaleY":1.4,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-chainmail-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-chainmail-01.webp",
     },
@@ -905,8 +781,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":1.98,"scaleY":1.23,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-cloth-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-cloth-01.webp",
     },
@@ -919,8 +793,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":25,"y":7,"angle":47,"scaleX":2.75,"scaleY":1.8,"flipX":true,"flipY":false},
     asset: {
       key: "back-shoulderguard-druid-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-druid-01.webp",
     },
@@ -933,8 +805,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":5.6269510627542445,"y":7.64631161654404,"angle":-6,"scaleX":1.8,"scaleY":1.6,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-executioner-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-executioner-01.webp",
     },
@@ -947,8 +817,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":9.368456043039103,"y":10.13377774758061,"angle":0,"scaleX":3,"scaleY":1.82,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-lazure-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-lazure-01.webp",
     },
@@ -961,8 +829,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.8820971122916461,"y":11.275254608645128,"angle":-3,"scaleX":1.95,"scaleY":1.57,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-lion-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-lion-01.webp",
     },
@@ -975,8 +841,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":13.79700200024294,"y":5.829458480987967,"angle":3,"scaleX":2.75,"scaleY":1.7,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-mercenary-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-mercenary-01.webp",
     },
@@ -989,8 +853,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":17.255479746451044,"y":3.969942342197953,"angle":54,"scaleX":1.45,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
       key: "back-shoulderguard-rust-champion-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp",
     },
@@ -1003,8 +865,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3,"y":18,"angle":1,"scaleX":1.6,"scaleY":1.48,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-sand-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-sand-01.webp",
     },
@@ -1017,8 +877,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3.699836312105603,"y":16.28789911867159,"angle":3,"scaleX":1.74,"scaleY":1.51,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-stormguard-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-stormguard-01.webp",
     },
@@ -1031,8 +889,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.4667791883662744,"y":-1.5317604126407787,"angle":33,"scaleX":2.29,"scaleY":2.14,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-viper-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-viper-01.webp",
     },
@@ -1045,8 +901,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":6,"y":12,"angle":41,"scaleX":1.6,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
       key: "back-shoulderguard-wood-boss-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-wood-boss-01.webp",
     },
@@ -1058,8 +912,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.2027098271555587,"y":23.44497611666111,"angle":-3,"scaleX":1.53,"scaleY":1.19,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-bone-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-bone-01.webp",
     },
@@ -1072,8 +924,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-2.607389191594848,"y":6,"angle":-12,"scaleX":2.29,"scaleY":1.53,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-cathedral-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-cathedral-01.webp",
     },
@@ -1086,8 +936,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":2,"scaleX":1.5,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-chainmail-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-chainmail-01.webp",
     },
@@ -1100,8 +948,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.2507815116668395,"y":21.40828402366864,"angle":4,"scaleX":1.77,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-cloth-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-cloth-01.webp",
     },
@@ -1114,8 +960,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":21,"angle":-11,"scaleX":1.27,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-druid-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-druid-01.webp",
     },
@@ -1128,8 +972,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.4976172781301926,"y":17.49066289404044,"angle":-10,"scaleX":1.26,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-executioner-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-executioner-01.webp",
     },
@@ -1142,8 +984,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3.817218097239561,"y":23.17436814208645,"angle":-12,"scaleX":2.52,"scaleY":1.26,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-lazure-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-lazure-01.webp",
     },
@@ -1156,8 +996,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.638790781411572,"y":13.489526977287142,"angle":-3,"scaleX":1.7,"scaleY":1.24,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-lion-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-lion-01.webp",
     },
@@ -1170,8 +1008,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":5.632390166481429,"y":20.310234558580305,"angle":8,"scaleX":1.91,"scaleY":1.09,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-mercenary-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-mercenary-01.webp",
     },
@@ -1184,8 +1020,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.57,"scaleY":1.61,"flipX":true,"flipY":false},
     asset: {
       key: "back-wrist-rust-champion-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-rust-champion-01.webp",
     },
@@ -1198,8 +1032,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":1,"scaleX":1.43,"scaleY":1.32,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-sand-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-sand-01.webp",
     },
@@ -1212,8 +1044,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.8349605849693376,"y":19.054714199079,"angle":-7,"scaleX":1.26,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-stormguard-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-stormguard-01.webp",
     },
@@ -1226,8 +1056,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.350205522856612,"y":28.83327043449225,"angle":-15,"scaleX":1.57,"scaleY":1.15,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-viper-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-viper-01.webp",
     },
@@ -1240,8 +1068,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1,"y":11,"angle":-3,"scaleX":1.53,"scaleY":1.31,"flipX":true,"flipY":false},
     asset: {
       key: "back-wrist-wood-boss-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-wood-boss-01.webp",
     },
@@ -1253,8 +1079,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":47,"angle":0,"scaleX":1.15,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-bone-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-bone-01.webp",
     },
@@ -1267,8 +1091,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":60,"angle":0,"scaleX":1.32,"scaleY":1.7,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-cathedral-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-cathedral-01.webp",
     },
@@ -1281,8 +1103,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":82,"angle":0,"scaleX":1.68,"scaleY":1.76,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-chainmail-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp",
     },
@@ -1295,8 +1115,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":76,"angle":0,"scaleX":1.12,"scaleY":1.78,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-druid-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-druid-01.webp",
     },
@@ -1309,8 +1127,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":46,"angle":0,"scaleX":1.42,"scaleY":1.59,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-executioner-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-executioner-01.webp",
     },
@@ -1323,8 +1139,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":76,"angle":0,"scaleX":1.55,"scaleY":1.91,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-lazure-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-lazure-01.webp",
     },
@@ -1337,8 +1151,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":66,"angle":0,"scaleX":1.32,"scaleY":1.68,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-lion-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-lion-01.webp",
     },
@@ -1351,8 +1163,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":47,"angle":0,"scaleX":1.4,"scaleY":1.59,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-mercenary-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-mercenary-01.webp",
     },
@@ -1365,8 +1175,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.2796705434538751,"y":57,"angle":0,"scaleX":1.38,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-rust-champion-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-rust-champion-01.webp",
     },
@@ -1379,8 +1187,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":66,"angle":0,"scaleX":1.45,"scaleY":1.84,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-sand-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-sand-01.webp",
     },
@@ -1393,8 +1199,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":51,"angle":0,"scaleX":1.34,"scaleY":1.57,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-stormguard-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-stormguard-01.webp",
     },
@@ -1407,8 +1211,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":79,"angle":0,"scaleX":1.28,"scaleY":1.99,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-viper-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-viper-01.webp",
     },
@@ -1421,8 +1223,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":61,"angle":0,"scaleX":1.46,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-wood-boss-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-wood-boss-01.webp",
     },
@@ -1434,8 +1234,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":32,"y":-1.4792899429153294,"angle":0,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-bone-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-bone-01.webp",
     },
@@ -1448,8 +1246,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":33.75502405119286,"y":-10.355029600407306,"angle":0,"scaleX":1.13,"scaleY":1.63,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-cathedral-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-cathedral-01.webp",
     },
@@ -1462,8 +1258,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":25,"y":2,"angle":0,"scaleX":0.83,"scaleY":0.8,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-chainmail-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-chainmail-01.webp",
     },
@@ -1476,8 +1270,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":4,"y":-4,"angle":0,"scaleX":0.93,"scaleY":1.05,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-cloth-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-cloth-01.webp",
     },
@@ -1490,8 +1282,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-12,"y":-6,"angle":0,"scaleX":1.92,"scaleY":1.72,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-druid-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-druid-01.webp",
     },
@@ -1504,8 +1294,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-8,"y":-1,"angle":0,"scaleX":1.59,"scaleY":1.38,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-executioner-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-executioner-01.webp",
     },
@@ -1518,8 +1306,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":47,"y":-5.917159771661318,"angle":0,"scaleX":2.01,"scaleY":1.76,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-lazure-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-lazure-01.webp",
     },
@@ -1532,8 +1318,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":41,"y":-5.177514800203653,"angle":0,"scaleX":1.86,"scaleY":1.53,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-lion-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-lion-01.webp",
     },
@@ -1546,8 +1330,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3,"y":-8.396449714576647,"angle":0,"scaleX":1.49,"scaleY":1.74,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-mercenary-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-mercenary-01.webp",
     },
@@ -1560,8 +1342,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-9,"y":-5.4792899429153294,"angle":0,"scaleX":1.92,"scaleY":1.49,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-rust-champion-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-rust-champion-01.webp",
     },
@@ -1574,8 +1354,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-4.000000000000028,"y":-2,"angle":0,"scaleX":1.29,"scaleY":1.16,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-sand-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-sand-01.webp",
     },
@@ -1588,8 +1366,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-9.001339746984769,"y":-2.366863943933481,"angle":0,"scaleX":1.64,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-stormguard-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-stormguard-01.webp",
     },
@@ -1602,8 +1378,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":37.50558227910318,"y":-4.437869828745988,"angle":0,"scaleX":1.11,"scaleY":1.15,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-viper-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-viper-01.webp",
     },
@@ -1616,8 +1390,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-5,"y":-4,"angle":0,"scaleX":1.31,"scaleY":1.38,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-wood-boss-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-wood-boss-01.webp",
     },
@@ -1629,8 +1401,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.19,"scaleY":1.13,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-bone-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-bone-01.webp",
     },
@@ -1643,8 +1413,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":4.530646615085175,"y":9.554237682251994,"angle":-9,"scaleX":1.72,"scaleY":1.65,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-cathedral-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-cathedral-01.webp",
     },
@@ -1657,8 +1425,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":7,"scaleX":1.45,"scaleY":1.5,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-chainmail-03",
-      url: new URL("../assets/fighters/armor/arms/front-glove-chainmail-03.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-chainmail-03.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-chainmail-03.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-chainmail-03.webp",
     },
@@ -1671,8 +1437,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":0.6,"scaleY":0.6,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-cloth-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-cloth-01.webp",
     },
@@ -1685,8 +1449,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":14,"angle":0,"scaleX":1.16,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-druid-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-druid-01.webp",
     },
@@ -1699,8 +1461,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.2668104726867,"y":12.489708526415086,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-executioner-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-executioner-01.webp",
     },
@@ -1713,8 +1473,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.28,"scaleY":1.26,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-lazure-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-lazure-01.webp",
     },
@@ -1727,8 +1485,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":14,"angle":0,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-leather-03",
-      url: new URL("../assets/fighters/armor/arms/front-glove-leather-03.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-leather-03.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-leather-03.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-leather-03.webp",
     },
@@ -1741,8 +1497,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.7652223386829604,"y":18.866568167416347,"angle":0,"scaleX":1.26,"scaleY":1.15,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-lion-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-lion-01.webp",
     },
@@ -1755,8 +1509,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1.28,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-mercenary-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-mercenary-01.webp",
     },
@@ -1769,8 +1521,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-rust-champion-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-rust-champion-01.webp",
     },
@@ -1783,8 +1533,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":15,"angle":0,"scaleX":1.13,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-sand-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-sand-01.webp",
     },
@@ -1797,8 +1545,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.5035790989716773,"y":14.157797414644733,"angle":-3,"scaleX":1.23,"scaleY":1.2,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-stormguard-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-stormguard-01.webp",
     },
@@ -1811,8 +1557,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.8156923747785072,"y":14.993124484242287,"angle":0,"scaleX":1.42,"scaleY":1.32,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-viper-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-viper-01.webp",
     },
@@ -1825,8 +1569,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-wood-boss-01",
-      url: new URL("../assets/fighters/armor/arms/front-glove-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-glove-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-glove-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-glove-wood-boss-01.webp",
     },
@@ -1838,8 +1580,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.2500324538393102,"y":11.834319543322636,"angle":-3,"scaleX":1.55,"scaleY":1.17,"flipX":true,"flipY":false},
     asset: {
       key: "front-greave-bone-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-bone-01.webp",
     },
@@ -1852,8 +1592,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-5.84581441649982,"y":18.49112428644156,"angle":-9,"scaleX":1.91,"scaleY":1.24,"flipX":true,"flipY":false},
     asset: {
       key: "front-greave-cathedral-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-cathedral-01.webp",
     },
@@ -1866,8 +1604,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-chainmail-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-chainmail-01.webp",
     },
@@ -1880,8 +1616,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-6,"y":13,"angle":-15,"scaleX":1.87,"scaleY":1.18,"flipX":true,"flipY":false},
     asset: {
       key: "front-greave-cloth-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-cloth-01.webp",
     },
@@ -1894,8 +1628,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3,"y":11,"angle":-5,"scaleX":1.6,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-druid-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-druid-01.webp",
     },
@@ -1908,8 +1640,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3.1413569332511315,"y":14.053254457695687,"angle":-14,"scaleX":1.31,"scaleY":1.07,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-executioner-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-executioner-01.webp",
     },
@@ -1922,8 +1652,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-2.3027891641856115,"y":0.5088757135584387,"angle":-9,"scaleX":1.8,"scaleY":1.55,"flipX":true,"flipY":false},
     asset: {
       key: "front-greave-lazure-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-lazure-01.webp",
     },
@@ -1936,8 +1664,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2,"y":10,"angle":1,"scaleX":1.65,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
       key: "front-greave-leather-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-leather-01.webp",
     },
@@ -1950,8 +1676,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.0262401129799628,"y":15.532544400610846,"angle":-3,"scaleX":1.23,"scaleY":1.11,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-lion-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-lion-01.webp",
     },
@@ -1964,8 +1688,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-4.602927811523045,"y":0,"angle":-8,"scaleX":1.6,"scaleY":1.32,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-mercenary-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-mercenary-01.webp",
     },
@@ -1978,8 +1700,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3.3132619515390758,"y":8.875739657491977,"angle":-10,"scaleX":1.1,"scaleY":1.01,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-rust-champion-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-rust-champion-01.webp",
     },
@@ -1992,8 +1712,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-6,"y":0,"angle":-4,"scaleX":1.29,"scaleY":1.29,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-sand-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-sand-01.webp",
     },
@@ -2006,8 +1724,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-3,"y":8,"angle":-8,"scaleX":1.1,"scaleY":1.14,"flipX":true,"flipY":false},
     asset: {
       key: "front-greave-stormguard-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-stormguard-01.webp",
     },
@@ -2020,8 +1736,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-8.218928871828211,"y":1.6094673690139985,"angle":-24,"scaleX":1.19,"scaleY":1.78,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-viper-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-viper-01.webp",
     },
@@ -2034,8 +1748,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":4,"angle":2,"scaleX":1.53,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
       key: "front-greave-wood-boss-01",
-      url: new URL("../assets/fighters/armor/legs/front-greave-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-greave-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-greave-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-greave-wood-boss-01.webp",
     },
@@ -2047,8 +1759,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.5792830444024446,"y":5.422677448302522,"angle":3,"scaleX":1.34,"scaleY":1.11,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-bone-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-bone-01.webp",
     },
@@ -2061,8 +1771,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.5862863587411198,"y":5.524462256957577,"angle":6,"scaleX":2.12,"scaleY":1.09,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-cathedral-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-cathedral-01.webp",
     },
@@ -2075,8 +1783,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":9,"angle":0,"scaleX":1.13,"scaleY":0.96,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-chainmail-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-chainmail-01.webp",
     },
@@ -2089,8 +1795,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1.35,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-cloth-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-cloth-01.webp",
     },
@@ -2103,8 +1807,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":0,"angle":5,"scaleX":1.6,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-druid-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-druid-01.webp",
     },
@@ -2117,8 +1819,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.933687602528181,"y":3.768369052077844,"angle":3,"scaleX":1.3,"scaleY":1.16,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-executioner-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-executioner-01.webp",
     },
@@ -2131,8 +1831,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3.430461129919479,"y":19.323924452565734,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-lazure-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-lazure-01.webp",
     },
@@ -2145,8 +1843,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.6700645168757262,"y":5.982873790002486,"angle":3,"scaleX":1.15,"scaleY":0.88,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-lion-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-lion-01.webp",
     },
@@ -2159,8 +1855,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":6.011012133938948,"y":4.8638334247572175,"angle":4,"scaleX":1.8,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-mercenary-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-mercenary-01.webp",
     },
@@ -2173,8 +1867,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.6263528881855223,"y":1.4792899429153294,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-rust-champion-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-rust-champion-01.webp",
     },
@@ -2187,8 +1879,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1,"y":2,"angle":2,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-sand-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-sand-01.webp",
     },
@@ -2201,8 +1891,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":5.292639974662961,"y":4.4669000344126175,"angle":2,"scaleX":1.4,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-stormguard-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-stormguard-01.webp",
     },
@@ -2215,8 +1903,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.35152747952975005,"y":12.93354018564196,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-viper-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-viper-01.webp",
     },
@@ -2229,8 +1915,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.23267603159015948,"y":0,"angle":4,"scaleX":1.4,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-wood-boss-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-wood-boss-01.webp",
     },
@@ -2242,8 +1926,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.78,"scaleY":1.76,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-bone-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-bone-01.webp",
     },
@@ -2256,8 +1938,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":0,"angle":-2,"scaleX":2.45,"scaleY":1.76,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-cathedral-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-cathedral-01.webp",
     },
@@ -2270,8 +1950,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":1.5,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-chainmail-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-chainmail-01.webp",
     },
@@ -2284,8 +1962,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":1.98,"scaleY":1.23,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-cloth-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-cloth-01.webp",
     },
@@ -2298,8 +1974,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":25,"y":7,"angle":47,"scaleX":2.75,"scaleY":1.8,"flipX":false,"flipY":false},
     asset: {
       key: "front-shoulderguard-druid-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-druid-01.webp",
     },
@@ -2312,8 +1986,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":5.6269510627542445,"y":7.64631161654404,"angle":-6,"scaleX":1.8,"scaleY":1.6,"flipX":false,"flipY":false},
     asset: {
       key: "front-shoulderguard-executioner-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-executioner-01.webp",
     },
@@ -2326,8 +1998,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":9.368456043039103,"y":10.13377774758061,"angle":0,"scaleX":3,"scaleY":1.82,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-lazure-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-lazure-01.webp",
     },
@@ -2340,8 +2010,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.8820971122916461,"y":11.275254608645128,"angle":-3,"scaleX":1.95,"scaleY":1.57,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-lion-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-lion-01.webp",
     },
@@ -2354,8 +2022,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":13.79700200024294,"y":5.829458480987967,"angle":3,"scaleX":2.75,"scaleY":1.7,"flipX":false,"flipY":false},
     asset: {
       key: "front-shoulderguard-mercenary-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-mercenary-01.webp",
     },
@@ -2368,8 +2034,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":17.255479746451044,"y":3.969942342197953,"angle":54,"scaleX":1.45,"scaleY":1.4,"flipX":false,"flipY":false},
     asset: {
       key: "front-shoulderguard-rust-champion-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-rust-champion-01.webp",
     },
@@ -2382,8 +2046,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1,"y":18,"angle":-1,"scaleX":1.6,"scaleY":1.48,"flipX":false,"flipY":false},
     asset: {
       key: "front-shoulderguard-sand-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-sand-01.webp",
     },
@@ -2396,8 +2058,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3.699836312105603,"y":16.28789911867159,"angle":3,"scaleX":1.74,"scaleY":1.51,"flipX":false,"flipY":false},
     asset: {
       key: "front-shoulderguard-stormguard-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-stormguard-01.webp",
     },
@@ -2410,8 +2070,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.4667791883662744,"y":-1.5317604126407787,"angle":33,"scaleX":2.29,"scaleY":2.14,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-viper-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-viper-01.webp",
     },
@@ -2424,8 +2082,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":6,"y":12,"angle":-136,"scaleX":1.6,"scaleY":1.3,"flipX":true,"flipY":true},
     asset: {
       key: "front-shoulderguard-wood-boss-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-wood-boss-01.webp",
     },
@@ -2437,8 +2093,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.2027098271555587,"y":23.44497611666111,"angle":-3,"scaleX":1.53,"scaleY":1.19,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-bone-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-bone-01.webp",
     },
@@ -2451,8 +2105,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-2.607389191594848,"y":6,"angle":-18,"scaleX":2.29,"scaleY":1.53,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-cathedral-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-cathedral-01.webp",
     },
@@ -2465,8 +2117,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":19,"angle":0,"scaleX":1.5,"scaleY":1.1,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-chainmail-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-chainmail-01.webp",
     },
@@ -2479,8 +2129,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.2507815116668395,"y":21.40828402366864,"angle":4,"scaleX":1.77,"scaleY":1.18,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-cloth-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-cloth-01.webp",
     },
@@ -2493,8 +2141,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":21,"angle":-12,"scaleX":1.27,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-druid-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-druid-01.webp",
     },
@@ -2507,8 +2153,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1.4976172781301926,"y":17.49066289404044,"angle":-13,"scaleX":1.26,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-executioner-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-executioner-01.webp",
     },
@@ -2521,8 +2165,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3.0548335020573916,"y":23.2201038128876,"angle":-12,"scaleX":2.52,"scaleY":1.26,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-lazure-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-lazure-01.webp",
     },
@@ -2535,8 +2177,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.638790781411572,"y":13.489526977287142,"angle":-3,"scaleX":1.7,"scaleY":1.24,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-lion-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-lion-01.webp",
     },
@@ -2549,8 +2189,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":5.632390166481429,"y":20.310234558580305,"angle":8,"scaleX":1.91,"scaleY":1.09,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-mercenary-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-mercenary-01.webp",
     },
@@ -2563,8 +2201,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.57,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-rust-champion-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-rust-champion-01.webp",
     },
@@ -2577,8 +2213,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":16,"angle":-2,"scaleX":1.43,"scaleY":1.32,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-sand-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-sand-01.webp",
     },
@@ -2591,8 +2225,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.8349605849693376,"y":19.054714199079,"angle":-7,"scaleX":1.26,"scaleY":1.1,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-stormguard-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-stormguard-01.webp",
     },
@@ -2605,8 +2237,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":2.350205522856612,"y":28.83327043449225,"angle":-15,"scaleX":1.57,"scaleY":1.15,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-viper-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-viper-01.webp",
     },
@@ -2619,8 +2249,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":11,"angle":-6,"scaleX":1.53,"scaleY":1.31,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-wood-boss-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-wood-boss-01.webp",
     },
@@ -2632,8 +2260,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":32,"angle":0,"scaleX":1.11,"scaleY":1.17,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-bone-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-bone-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-bone-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-bone-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-bone-01.webp",
     },
@@ -2646,8 +2272,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":44,"angle":0,"scaleX":1.07,"scaleY":1.34,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-cathedral-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-cathedral-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-cathedral-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-cathedral-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-cathedral-01.webp",
     },
@@ -2660,8 +2284,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-0.7501116445238396,"y":53.2189349112426,"angle":0,"scaleX":1.19,"scaleY":1.32,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-chainmail-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-chainmail-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-chainmail-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-chainmail-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp",
     },
@@ -2674,8 +2296,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":21,"angle":0,"scaleX":1.12,"scaleY":1.12,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-cloth-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-cloth-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-cloth-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-cloth-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-cloth-01.webp",
     },
@@ -2688,8 +2308,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":25,"angle":0,"scaleX":1.07,"scaleY":1.13,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-cloth-02",
-      url: new URL("../assets/fighters/armor/helmet/helmet-cloth-02.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-cloth-02.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-cloth-02.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-cloth-02.webp",
     },
@@ -2701,8 +2319,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":92,"angle":0,"scaleX":1.51,"scaleY":2.22,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-druid-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-druid-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-druid-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-druid-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-druid-01.webp",
     },
@@ -2715,8 +2331,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0.07271654071507783,"y":39.69608218220466,"angle":0,"scaleX":1.2,"scaleY":1.25,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-executioner-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-executioner-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-executioner-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-executioner-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-executioner-01.webp",
     },
@@ -2729,8 +2343,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":51,"angle":0,"scaleX":1.1,"scaleY":1.49,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-lazure-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-lazure-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-lazure-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-lazure-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-lazure-01.webp",
     },
@@ -2743,8 +2355,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":38,"angle":0,"scaleX":1.28,"scaleY":1.34,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-lion-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-lion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-lion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-lion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-lion-01.webp",
     },
@@ -2757,8 +2367,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":41,"angle":0,"scaleX":1.38,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-mercenary-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-mercenary-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-mercenary-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-mercenary-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-mercenary-01.webp",
     },
@@ -2771,8 +2379,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":29,"angle":0,"scaleX":0.97,"scaleY":1.16,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-rust-champion-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-rust-champion-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-rust-champion-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-rust-champion-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-rust-champion-01.webp",
     },
@@ -2785,8 +2391,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1,"y":36,"angle":0,"scaleX":1.05,"scaleY":1.22,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-sand-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-sand-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-sand-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-sand-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-sand-01.webp",
     },
@@ -2799,8 +2403,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":38,"angle":0,"scaleX":0.94,"scaleY":1.21,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-stormguard-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-stormguard-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-stormguard-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-stormguard-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-stormguard-01.webp",
     },
@@ -2813,8 +2415,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":28,"angle":0,"scaleX":1.19,"scaleY":1.21,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-viper-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-viper-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-viper-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-viper-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-viper-01.webp",
     },
@@ -2827,8 +2427,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":25,"angle":0,"scaleX":1.16,"scaleY":1.12,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-wood-boss-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-wood-boss-01.webp",
     },
@@ -2840,8 +2438,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-9,"y":13,"angle":110,"scaleX":1.25,"scaleY":1.51,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-axe-01",
-      url: new URL("../assets/fighters/weapons/weapon-axe-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/weapons/weapon-axe-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/weapons/weapon-axe-01.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-01.webp",
     },
@@ -2854,8 +2450,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-bow-01",
-      url: new URL("../assets/fighters/weapons/weapon-bow-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/weapons/weapon-bow-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/weapons/weapon-bow-01.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-01.webp",
     },
@@ -2868,8 +2462,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-16,"y":9,"angle":99,"scaleX":1.68,"scaleY":1.84,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-mace-wood-boss-01",
-      url: new URL("../assets/fighters/weapons/weapon-mace-wood-boss-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/weapons/weapon-mace-wood-boss-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/weapons/weapon-mace-wood-boss-01.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-wood-boss-01.webp",
     },
@@ -2881,8 +2473,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-11,"y":29,"angle":91,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-shuriken-01",
-      url: new URL("../assets/fighters/weapons/weapon-shuriken-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/weapons/weapon-shuriken-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/weapons/weapon-shuriken-01.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-01.webp",
     },
@@ -2895,8 +2485,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":1,"y":-1,"angle":0,"scaleX":0.93,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-leather-01",
-      url: new URL("../assets/fighters/armor/legs/back-boot-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-boot-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-boot-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-leather-01.webp",
     },
@@ -2909,8 +2497,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1.500223289047633,"y":-7,"angle":0,"scaleX":1.7,"scaleY":1.1,"flipX":true,"flipY":false},
     asset: {
       key: "back-shinguard-leather-01",
-      url: new URL("../assets/fighters/armor/legs/back-shinguard-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/back-shinguard-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/back-shinguard-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-leather-01.webp",
     },
@@ -2923,8 +2509,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":-2,"scaleX":1.8,"scaleY":1.45,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-leather-01",
-      url: new URL("../assets/fighters/armor/arms/back-shoulderguard-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-shoulderguard-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-leather-01.webp",
     },
@@ -2937,8 +2521,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":13,"angle":-1,"scaleX":1.55,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
       key: "back-wrist-leather-01",
-      url: new URL("../assets/fighters/armor/arms/back-wrist-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/back-wrist-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/back-wrist-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-leather-01.webp",
     },
@@ -2951,8 +2533,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":44,"angle":0,"scaleX":1.28,"scaleY":1.45,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-leather-01",
-      url: new URL("../assets/fighters/armor/breastplate/breastplate-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/breastplate/breastplate-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/breastplate/breastplate-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-leather-01.webp",
     },
@@ -2965,8 +2545,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":28,"y":-1,"angle":0,"scaleX":0.93,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-leather-01",
-      url: new URL("../assets/fighters/armor/legs/front-boot-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-boot-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-boot-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-boot-leather-01.webp",
     },
@@ -2979,8 +2557,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":-7,"angle":0,"scaleX":1.7,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-leather-01",
-      url: new URL("../assets/fighters/armor/legs/front-shinguard-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/legs/front-shinguard-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/legs/front-shinguard-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-leather-01.webp",
     },
@@ -2993,8 +2569,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.8,"scaleY":1.45,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-leather-01",
-      url: new URL("../assets/fighters/armor/arms/front-shoulderguard-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-shoulderguard-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-leather-01.webp",
     },
@@ -3007,8 +2581,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":0,"y":8,"angle":0,"scaleX":1.55,"scaleY":1.43,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-leather-01",
-      url: new URL("../assets/fighters/armor/arms/front-wrist-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/arms/front-wrist-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/arms/front-wrist-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-leather-01.webp",
     },
@@ -3021,8 +2593,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":-1,"y":16,"angle":0,"scaleX":1.16,"scaleY":1.13,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-leather-01",
-      url: new URL("../assets/fighters/armor/helmet/helmet-leather-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/armor/helmet/helmet-leather-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/armor/helmet/helmet-leather-01.webp",
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-leather-01.webp",
     },
@@ -3035,8 +2605,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     equipmentTuning: {"x":3,"y":35,"angle":55,"scaleX":0.5,"scaleY":0.5,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-sword-01",
-      url: new URL("../assets/fighters/weapons/weapon-sword-01.webp", import.meta.url).href,
-      lowUrl: new URL("../assets-low/fighters/weapons/weapon-sword-01.webp", import.meta.url).href,
       sourcePath: "assets/fighters/weapons/weapon-sword-01.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-01.webp",
     },

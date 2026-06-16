@@ -114,8 +114,11 @@ test("paper doll high shadow can use a cached blur filter", () => {
 test("paper doll loader lazily resolves generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ASSETS"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ASSETS"), true);
+  assert.equal(arenaSceneSource.includes("resolveEquipmentAssetUrl"), true);
   assert.equal(arenaSceneSource.includes("const PAPER_DOLL_ASSETS_BY_KEY = createPaperDollAssetsByKey();"), true);
-  assert.equal(arenaSceneSource.includes("function getPaperDollAssetLoadEntriesForKeys"), true);
+  assert.equal(arenaSceneSource.includes("async function getPaperDollAssetLoadEntriesForKeys"), true);
+  assert.equal(arenaSceneSource.includes("function getSyncPaperDollAssetLoadEntriesForEquipmentStates"), true);
+  assert.equal(arenaSceneSource.includes("async function resolvePaperDollAssetUrl"), true);
   assert.equal(arenaSceneSource.includes("function ensurePaperDollEquipmentAssetsLoaded"), true);
   assert.equal(arenaSceneSource.includes("function ensurePaperDollItemAssetsLoaded"), true);
   assert.equal(arenaSceneSource.includes("getHeroItemEquipmentAssetKeys"), true);
@@ -415,12 +418,14 @@ test("arena entry can prewarm arena image assets through the browser cache", () 
 test("city return can prewarm city and hero preview assets through the browser cache", () => {
   assert.equal(arenaSceneSource.includes("export function prewarmCityAssetsForBrowserCache(): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("cityAssetPrewarmPromise ??="), true);
-  assert.equal(arenaSceneSource.includes("function getCityAssetPrewarmUrls(): string[]"), true);
+  assert.equal(arenaSceneSource.includes("async function getCityAssetPrewarmUrls(): Promise<string[]>"), true);
   assert.equal(arenaSceneSource.includes("CITY_BACKGROUND_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("CITY_DAY_BACKGROUND_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("CITY_SHOP_BACKGROUND_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("CITY_CLOUD_ASSETS.map((asset) => asset.url)"), true);
-  assert.equal(arenaSceneSource.includes("getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment])"), true);
+  assert.equal(arenaSceneSource.includes("cityAssetPrewarmPromise ??= getCityAssetPrewarmUrls()"), true);
+  assert.equal(arenaSceneSource.includes("async function getCityAssetPrewarmUrls(): Promise<string[]>"), true);
+  assert.equal(arenaSceneSource.includes("const paperDollUrls = await getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment])"), true);
 });
 
 test("city hero preview exposes a ready promise for return transitions", () => {

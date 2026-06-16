@@ -2546,8 +2546,6 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     `    equipmentTuning: ${JSON.stringify(record.equipmentTuning)},`,
     "    asset: {",
     `      key: ${JSON.stringify(record.asset.key)},`,
-    `      url: new URL(${JSON.stringify(`../${record.asset.sourcePath}`)}, import.meta.url).href,`,
-    ...(record.asset.lowSourcePath ? [`      lowUrl: new URL(${JSON.stringify(`../${record.asset.lowSourcePath}`)}, import.meta.url).href,`] : []),
     `      sourcePath: ${JSON.stringify(record.asset.sourcePath)},`,
     ...(record.asset.lowSourcePath ? [`      lowSourcePath: ${JSON.stringify(record.asset.lowSourcePath)},`] : []),
     "    },",

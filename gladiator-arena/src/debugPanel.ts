@@ -65,6 +65,7 @@ import {
   AUTO_EQUIPMENT_ITEM_CATALOG,
   AUTO_EQUIPMENT_ITEM_RECORDS,
   AUTO_EQUIPMENT_SET_IMPORT_ASSETS,
+  getEquipmentSetImportAssetUrl,
   type EquipmentSetImportAsset,
 } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
@@ -4201,7 +4202,11 @@ function createEquipmentSetImportAssetRow(asset: EquipmentSetImportAsset): HTMLE
   preview.className = "debug-auto-equipment__set-preview";
   preview.setAttribute("aria-label", "Preview import asset");
   preview.setAttribute("aria-pressed", "false");
-  preview.style.backgroundImage = `url("${asset.url}")`;
+  void getEquipmentSetImportAssetUrl(asset).then((url) => {
+    if (url) {
+      preview.style.backgroundImage = `url("${url}")`;
+    }
+  });
   preview.addEventListener("click", () => {
     showEquipmentSetImportAssetPreview(asset, preview);
   });
@@ -4233,10 +4238,16 @@ function showEquipmentSetImportAssetPreview(asset: EquipmentSetImportAsset, trig
     button.setAttribute("aria-pressed", "false");
   });
 
-  trigger.classList.add("debug-auto-equipment__set-preview--selected");
-  trigger.setAttribute("aria-pressed", "true");
-  previewImage.src = asset.url;
-  previewHost.hidden = false;
+  void getEquipmentSetImportAssetUrl(asset).then((url) => {
+    if (!url) {
+      return;
+    }
+
+    trigger.classList.add("debug-auto-equipment__set-preview--selected");
+    trigger.setAttribute("aria-pressed", "true");
+    previewImage.src = url;
+    previewHost.hidden = false;
+  });
 }
 
 function getSelectedEquipmentSetImportEntries(host: HTMLElement): { sourcePath: string; targetPrefix: string }[] {

@@ -8,18 +8,19 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const registrySource = readFileSync(resolve(currentDir, "../src/equipmentAssetRegistry.ts"), "utf8");
 
 test("auto equipment registry only exposes promoted webp armor assets", () => {
-  assert.match(registrySource, /armorWebpAssetUrls/);
+  assert.match(registrySource, /armorWebpAssetUrlLoaders/);
   assert.doesNotMatch(registrySource, /armorPngAssetUrls/);
   assert.doesNotMatch(registrySource, /"\.\/assets\/fighters\/armor\/\*\*\/\*\.png"/);
   assert.match(registrySource, /createAutoEquipmentAssetEntries/);
-  assert.match(registrySource, /entriesByAssetKey\.set\(assetKey, \[assetPath, url\]\)/);
+  assert.match(registrySource, /entriesByAssetKey\.set\(assetKey, assetPath\)/);
+  assert.doesNotMatch(registrySource, /eager: true/);
 });
 
 test("auto equipment registry can expose weapon assets", () => {
-  assert.match(registrySource, /weaponWebpAssetUrls/);
+  assert.match(registrySource, /weaponWebpAssetUrlLoaders/);
   assert.doesNotMatch(registrySource, /weaponPngAssetUrls/);
   assert.doesNotMatch(registrySource, /"\.\/assets\/fighters\/weapons\/\*\*\/\*\.png"/);
-  assert.match(registrySource, /lowWeaponAssetUrls/);
+  assert.match(registrySource, /lowWeaponAssetUrlLoaders/);
   assert.match(registrySource, /prefix: "weapon-"/);
   assert.match(registrySource, /slot: "weaponMain"/);
   assert.match(registrySource, /assetKey: "weaponMainAssetKey"/);
@@ -59,12 +60,22 @@ test("auto equipment registry recognizes wrist and glove armor assets", () => {
 });
 
 test("equipment set importer reads only staged import assets", () => {
-  assert.match(registrySource, /equipmentImportArmorWebpAssetUrls/);
-  assert.match(registrySource, /equipmentImportArmorPngAssetUrls/);
-  assert.match(registrySource, /equipmentImportWeaponWebpAssetUrls/);
-  assert.match(registrySource, /equipmentImportWeaponPngAssetUrls/);
+  assert.match(registrySource, /equipmentImportArmorWebpAssetUrlLoaders/);
+  assert.match(registrySource, /equipmentImportArmorPngAssetUrlLoaders/);
+  assert.match(registrySource, /equipmentImportWeaponWebpAssetUrlLoaders/);
+  assert.match(registrySource, /equipmentImportWeaponPngAssetUrlLoaders/);
   assert.match(registrySource, /assets\/equipment-import\/armor/);
   assert.match(registrySource, /assets\/equipment-import\/weapons/);
   assert.match(registrySource, /createEquipmentImportAssetEntries/);
   assert.match(registrySource, /getAssetPathWithoutExtension/);
+  assert.match(registrySource, /getEquipmentSetImportAssetUrl/);
+});
+
+test("equipment asset urls resolve lazily from source paths", () => {
+  assert.match(registrySource, /export function resolveEquipmentAssetUrl\(sourcePath: string\): Promise<string \| undefined>/);
+  assert.match(registrySource, /const equipmentAssetUrlPromises = new Map<string, Promise<string>>/);
+  assert.match(registrySource, /const loader = equipmentAssetUrlLoaders\[assetPath\]/);
+  assert.match(registrySource, /urlPromise = loader\(\)/);
+  assert.doesNotMatch(registrySource, /url: string;/);
+  assert.doesNotMatch(registrySource, /lowUrl\?: string;/);
 });

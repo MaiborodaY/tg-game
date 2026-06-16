@@ -22,8 +22,6 @@ export interface EquipmentItemAssetKeys {
 
 export interface EquipmentAssetDefinition {
   key: string;
-  url: string;
-  lowUrl?: string;
   sourcePath: string;
   lowSourcePath?: string;
 }
@@ -36,7 +34,6 @@ export interface AutoEquipmentItemRecord {
 
 export interface EquipmentSetImportAsset {
   key: string;
-  url: string;
   sourcePath: string;
   kind: HeroItemDefinition["kind"];
 }
@@ -49,55 +46,59 @@ interface EquipmentAssetSlotConfig {
   kind: HeroItemDefinition["kind"];
 }
 
-const armorWebpAssetUrls = import.meta.glob("./assets/fighters/armor/**/*.webp", {
-  eager: true,
+type EquipmentAssetUrlLoader = () => Promise<string>;
+
+const armorWebpAssetUrlLoaders = import.meta.glob("./assets/fighters/armor/**/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const lowArmorAssetUrls = import.meta.glob("./assets-low/fighters/armor/**/*.webp", {
-  eager: true,
+const lowArmorAssetUrlLoaders = import.meta.glob("./assets-low/fighters/armor/**/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const weaponWebpAssetUrls = import.meta.glob("./assets/fighters/weapons/**/*.webp", {
-  eager: true,
+const weaponWebpAssetUrlLoaders = import.meta.glob("./assets/fighters/weapons/**/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const lowWeaponAssetUrls = import.meta.glob("./assets-low/fighters/weapons/**/*.webp", {
-  eager: true,
+const lowWeaponAssetUrlLoaders = import.meta.glob("./assets-low/fighters/weapons/**/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const equipmentImportArmorWebpAssetUrls = import.meta.glob("./assets/equipment-import/armor/**/*.webp", {
-  eager: true,
+const equipmentImportArmorWebpAssetUrlLoaders = import.meta.glob("./assets/equipment-import/armor/**/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const equipmentImportArmorPngAssetUrls = import.meta.glob("./assets/equipment-import/armor/**/*.png", {
-  eager: true,
+const equipmentImportArmorPngAssetUrlLoaders = import.meta.glob("./assets/equipment-import/armor/**/*.png", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const equipmentImportWeaponWebpAssetUrls = import.meta.glob("./assets/equipment-import/weapons/**/*.webp", {
-  eager: true,
+const equipmentImportWeaponWebpAssetUrlLoaders = import.meta.glob("./assets/equipment-import/weapons/**/*.webp", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const equipmentImportWeaponPngAssetUrls = import.meta.glob("./assets/equipment-import/weapons/**/*.png", {
-  eager: true,
+const equipmentImportWeaponPngAssetUrlLoaders = import.meta.glob("./assets/equipment-import/weapons/**/*.png", {
   query: "?url",
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, EquipmentAssetUrlLoader>;
 
-const lowEquipmentAssetUrls = { ...lowArmorAssetUrls, ...lowWeaponAssetUrls };
+const lowEquipmentAssetUrlLoaders = { ...lowArmorAssetUrlLoaders, ...lowWeaponAssetUrlLoaders };
+const equipmentAssetUrlLoaders = {
+  ...armorWebpAssetUrlLoaders,
+  ...weaponWebpAssetUrlLoaders,
+  ...lowEquipmentAssetUrlLoaders,
+  ...equipmentImportArmorWebpAssetUrlLoaders,
+  ...equipmentImportArmorPngAssetUrlLoaders,
+  ...equipmentImportWeaponWebpAssetUrlLoaders,
+  ...equipmentImportWeaponPngAssetUrlLoaders,
+};
+const equipmentAssetUrlPromises = new Map<string, Promise<string>>();
 
 const equipmentAssetSlotConfigs: EquipmentAssetSlotConfig[] = [
   { prefix: "weapon-", slot: "weaponMain", assetKey: "weaponMainAssetKey", label: "Weapon", kind: "weapon" },
@@ -126,7 +127,7 @@ const generatedEquipmentAssetKeys = new Set(
 const registeredEquipmentAssetKeys = generatedEquipmentAssetKeys;
 
 export const AUTO_EQUIPMENT_ITEM_RECORDS = createAutoEquipmentAssetEntries()
-  .flatMap(([assetPath, url]) => createAutoEquipmentItemRecord(assetPath, url))
+  .flatMap((assetPath) => createAutoEquipmentItemRecord(assetPath))
   .sort((left, right) => left.item.name.localeCompare(right.item.name)) as AutoEquipmentItemRecord[];
 
 export const AUTO_EQUIPMENT_ITEM_IDS = AUTO_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);
@@ -144,7 +145,29 @@ export const AUTO_EQUIPMENT_ASSETS = AUTO_EQUIPMENT_ITEM_RECORDS.map((record) =>
 
 export const AUTO_EQUIPMENT_SET_IMPORT_ASSETS = createEquipmentSetImportAssetEntries();
 
-function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEquipmentItemRecord[] {
+export function resolveEquipmentAssetUrl(sourcePath: string): Promise<string | undefined> {
+  const assetPath = toAssetGlobPath(sourcePath);
+  const loader = equipmentAssetUrlLoaders[assetPath];
+
+  if (!loader) {
+    return Promise.resolve(undefined);
+  }
+
+  let urlPromise = equipmentAssetUrlPromises.get(assetPath);
+
+  if (!urlPromise) {
+    urlPromise = loader();
+    equipmentAssetUrlPromises.set(assetPath, urlPromise);
+  }
+
+  return urlPromise;
+}
+
+export function getEquipmentSetImportAssetUrl(asset: EquipmentSetImportAsset): Promise<string | undefined> {
+  return resolveEquipmentAssetUrl(asset.sourcePath);
+}
+
+function createAutoEquipmentItemRecord(assetPath: string): AutoEquipmentItemRecord[] {
   const assetKey = getAssetKey(assetPath);
 
   if (!assetKey || registeredEquipmentAssetKeys.has(assetKey)) {
@@ -161,13 +184,11 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
   const material = suffix.split("-")[0] ?? "armor";
   const itemId = `auto_equipment_${toIdentifier(assetKey)}`;
   const lowAssetPath = assetPath.replace("./assets/", "./assets-low/").replace(/\.(?:png|webp)$/i, ".webp");
-  const lowUrl = lowEquipmentAssetUrls[lowAssetPath];
+  const hasLowAsset = Boolean(lowEquipmentAssetUrlLoaders[lowAssetPath]);
   const asset: EquipmentAssetDefinition = {
     key: assetKey,
-    url,
-    ...(lowUrl ? { lowUrl } : {}),
     sourcePath: toSourcePath(assetPath),
-    ...(lowUrl ? { lowSourcePath: toSourcePath(lowAssetPath) } : {}),
+    ...(hasLowAsset ? { lowSourcePath: toSourcePath(lowAssetPath) } : {}),
   };
   const item = createAutoItemDefinition(itemId, slotConfig, suffix, material);
   const itemAssetKey = getAutoEquipmentItemAssetKey(item, slotConfig.assetKey);
@@ -183,7 +204,7 @@ function createAutoEquipmentItemRecord(assetPath: string, url: string): AutoEqui
 
 function createEquipmentSetImportAssetEntries(): EquipmentSetImportAsset[] {
   return createEquipmentImportAssetEntries()
-    .flatMap(([assetPath, url]) => {
+    .flatMap((assetPath) => {
       const assetKey = getAssetKey(assetPath);
 
       const sourcePath = toSourcePath(assetPath);
@@ -192,7 +213,6 @@ function createEquipmentSetImportAssetEntries(): EquipmentSetImportAsset[] {
       return [
         {
           key: assetKey ?? sourcePath,
-          url,
           sourcePath,
           kind,
         },
@@ -233,32 +253,32 @@ function getAutoEquipmentItemAssetKey(item: HeroItemDefinition, fallback: keyof 
   return item.kind === "weapon" && item.weaponClass === "bow" ? "weaponBowAssetKey" : fallback;
 }
 
-function createAutoEquipmentAssetEntries(): [string, string][] {
-  const entriesByAssetKey = new Map<string, [string, string]>();
+function createAutoEquipmentAssetEntries(): string[] {
+  const entriesByAssetKey = new Map<string, string>();
 
-  Object.entries({ ...armorWebpAssetUrls, ...weaponWebpAssetUrls }).forEach(([assetPath, url]) => {
+  Object.keys({ ...armorWebpAssetUrlLoaders, ...weaponWebpAssetUrlLoaders }).forEach((assetPath) => {
     const assetKey = getAssetKey(assetPath);
 
     if (assetKey) {
-      entriesByAssetKey.set(assetKey, [assetPath, url]);
+      entriesByAssetKey.set(assetKey, assetPath);
     }
   });
 
   return [...entriesByAssetKey.values()];
 }
 
-function createEquipmentImportAssetEntries(): [string, string][] {
-  const entriesByAssetPath = new Map<string, [string, string]>();
+function createEquipmentImportAssetEntries(): string[] {
+  const entriesByAssetPath = new Map<string, string>();
 
-  Object.entries({ ...equipmentImportArmorWebpAssetUrls, ...equipmentImportWeaponWebpAssetUrls }).forEach(([assetPath, url]) => {
-    entriesByAssetPath.set(getAssetPathWithoutExtension(assetPath), [assetPath, url]);
+  Object.keys({ ...equipmentImportArmorWebpAssetUrlLoaders, ...equipmentImportWeaponWebpAssetUrlLoaders }).forEach((assetPath) => {
+    entriesByAssetPath.set(getAssetPathWithoutExtension(assetPath), assetPath);
   });
 
-  Object.entries({ ...equipmentImportArmorPngAssetUrls, ...equipmentImportWeaponPngAssetUrls }).forEach(([assetPath, url]) => {
+  Object.keys({ ...equipmentImportArmorPngAssetUrlLoaders, ...equipmentImportWeaponPngAssetUrlLoaders }).forEach((assetPath) => {
     const assetPathKey = getAssetPathWithoutExtension(assetPath);
 
     if (!entriesByAssetPath.has(assetPathKey)) {
-      entriesByAssetPath.set(assetPathKey, [assetPath, url]);
+      entriesByAssetPath.set(assetPathKey, assetPath);
     }
   });
 
@@ -275,6 +295,10 @@ function getAssetPathWithoutExtension(assetPath: string): string {
 
 function toSourcePath(assetPath: string): string {
   return assetPath.replace(/^\.\//, "");
+}
+
+function toAssetGlobPath(sourcePath: string): string {
+  return sourcePath.startsWith("./") ? sourcePath : `./${sourcePath}`;
 }
 
 function toIdentifier(value: string): string {
