@@ -512,6 +512,8 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_shinguard_stormguard_01": { x: 1.111, y: -2.93, angle: 1, scaleX: 1.4, scaleY: 1, flipX: false, flipY: false },
   "auto_equipment_back_glove_mercenary_01": { x: 0, y: 11, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   "generated_equipment_weapon_sword_norm_axe": { x: -9, y: 28, angle: 90, scaleX: 0.95, scaleY: 0.95, flipX: true, flipY: false },
+  "generated_equipment_weapon_sword_uncommon_axe_1": { x: 0, y: 44, angle: 71, scaleX: 0.9, scaleY: 0.8, flipX: false, flipY: false },
+  "generated_equipment_weapon_sword_uncommon_mace_5": { x: 0, y: 41, angle: 88, scaleX: 1.05, scaleY: 1.05, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
