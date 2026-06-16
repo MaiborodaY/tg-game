@@ -201,7 +201,7 @@ test("low effects can hot swap paper doll textures after preload", () => {
 test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("sync(nextState: CombatState): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
-  assert.equal(arenaSceneSource.includes("actionAnimations.push(animateAction"), true);
+  assert.match(arenaSceneSource, /actionAnimations\.push\(\s*animateAction/);
   assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => undefined);"), true);
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
   assert.equal(arenaSceneSource.includes("): Promise<void>"), true);
@@ -554,11 +554,38 @@ test("armor damage uses absorb and break icon popups", () => {
   assert.equal(arenaSceneSource.includes("setPhaserTextIfChanged(popup.label, `${amount}`);"), true);
 });
 
+test("rest actions show pooled health and stamina recovery popups", () => {
+  assert.equal(assetsSource.includes("REST_HEALTH_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/profile/stat-health.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/profile/stat-health.webp")), true);
+  assert.equal(assetsSource.includes("REST_STAMINA_ICON_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/profile/stat-stamina.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/profile/stat-stamina.webp")), true);
+  assert.equal(arenaSceneSource.includes("target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("target.load.image(REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("REST_HEALTH_ICON_ASSET_URL,"), true);
+  assert.equal(arenaSceneSource.includes("REST_STAMINA_ICON_ASSET_URL,"), true);
+  assert.equal(arenaSceneSource.includes("restRecoveryPopups: ArenaRestRecoveryPopupVisual[]"), true);
+  assert.equal(arenaSceneSource.includes("restRecoveryPopups: []"), true);
+  assert.equal(arenaSceneSource.includes('lastPlayerAction === "rest"'), true);
+  assert.equal(arenaSceneSource.includes('lastEnemyAction === "rest"'), true);
+  assert.equal(arenaSceneSource.includes("showRestRecoveryPopupFromFighter(this, visuals.player, previousState?.player, nextState.player);"), true);
+  assert.equal(arenaSceneSource.includes("showRestRecoveryPopupFromFighter(this, visuals.enemy, previousState?.enemy, nextState.enemy);"), true);
+  assert.equal(arenaSceneSource.includes("const healthGain = Math.max(0, current.hp - previous.hp);"), true);
+  assert.equal(arenaSceneSource.includes("const staminaGain = Math.max(0, current.stamina - previous.stamina);"), true);
+  assert.equal(arenaSceneSource.includes("acquireRestRecoveryPopup(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseRestRecoveryPopup(target, popup)"), true);
+  assert.equal(arenaSceneSource.includes("setRestRecoveryPopupRow("), true);
+  assert.equal(arenaSceneSource.includes("row.setVisible(amount > 0);"), true);
+  assert.equal(arenaSceneSource.includes("setPhaserTextIfChanged(label, `+${amount}`);"), true);
+});
+
 test("arena pools transient popup and effect objects", () => {
   assert.equal(arenaSceneSource.includes("const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();"), true);
   assert.equal(arenaSceneSource.includes("function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools"), true);
   assert.equal(arenaSceneSource.includes("floatingLabels: Phaser.GameObjects.Text[]"), true);
   assert.equal(arenaSceneSource.includes("damageTextPopups: ArenaTextPopupVisual[]"), true);
+  assert.equal(arenaSceneSource.includes("restRecoveryPopups: ArenaRestRecoveryPopupVisual[]"), true);
   assert.equal(arenaSceneSource.includes("acquireFloatingTextLabel(target)"), true);
   assert.equal(arenaSceneSource.includes("releaseFloatingTextLabel(target, label)"), true);
   assert.equal(arenaSceneSource.includes("acquireSlashArc(target)"), true);

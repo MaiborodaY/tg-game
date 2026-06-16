@@ -81,6 +81,10 @@ import {
   GAME_WIDTH,
   getFighterTextureKey,
   PLAYER_AVATAR_FEET_Y_OFFSET,
+  REST_HEALTH_ICON_ASSET_KEY,
+  REST_HEALTH_ICON_ASSET_URL,
+  REST_STAMINA_ICON_ASSET_KEY,
+  REST_STAMINA_ICON_ASSET_URL,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
 import type { CameraTarget, CameraViewport } from "./arenaCamera";
@@ -341,6 +345,16 @@ interface ArenaTextPopupVisual {
   label: Phaser.GameObjects.Text;
 }
 
+interface ArenaRestRecoveryPopupVisual {
+  container: Phaser.GameObjects.Container;
+  healthRow: Phaser.GameObjects.Container;
+  healthIcon: Phaser.GameObjects.Image;
+  healthLabel: Phaser.GameObjects.Text;
+  staminaRow: Phaser.GameObjects.Container;
+  staminaIcon: Phaser.GameObjects.Image;
+  staminaLabel: Phaser.GameObjects.Text;
+}
+
 interface ArenaEffectPools {
   floatingLabels: Phaser.GameObjects.Text[];
   slashArcs: Phaser.GameObjects.Graphics[];
@@ -350,6 +364,7 @@ interface ArenaEffectPools {
   damageIconPopups: ArenaIconTextPopupVisual[];
   damageBurstPopups: ArenaDamageBurstPopupVisual[];
   damageTextPopups: ArenaTextPopupVisual[];
+  restRecoveryPopups: ArenaRestRecoveryPopupVisual[];
   dustDots: Phaser.GameObjects.Arc[];
 }
 
@@ -424,6 +439,7 @@ const BLOCK_POPUP_SCREEN_SIZE = 88;
 const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
 const DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE = 108;
 const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
+const REST_RECOVERY_POPUP_ICON_SCREEN_SIZE = 34;
 const POPUP_PREVIEW_DAMAGE_AMOUNT = 10;
 const POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT = 7;
 const POPUP_PREVIEW_SPACING_X = 54;
@@ -875,6 +891,8 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL);
   target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);
+  target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);
+  target.load.image(REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL);
 }
 
 export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
@@ -1135,6 +1153,8 @@ function getArenaAssetPrewarmUrls(): string[] {
     DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
     DAMAGE_ARMOR_BREAK_ICON_ASSET_URL,
     ARROW_ICON_ASSET_URL,
+    REST_HEALTH_ICON_ASSET_URL,
+    REST_STAMINA_ICON_ASSET_URL,
   ];
 }
 
@@ -1461,11 +1481,37 @@ export class ArenaScene extends Phaser.Scene {
     const lastEnemyAction = nextState.lastEnemyAction;
 
     if (lastPlayerAction) {
-      actionAnimations.push(animateAction(this, visuals.player, visuals.enemy, lastPlayerAction, "right", nextState.player.weaponClass, playerSettings));
+      actionAnimations.push(
+        animateAction(
+          this,
+          visuals.player,
+          visuals.enemy,
+          lastPlayerAction,
+          "right",
+          nextState.player.weaponClass,
+          playerSettings,
+        ),
+      );
+      if (lastPlayerAction === "rest") {
+        showRestRecoveryPopupFromFighter(this, visuals.player, previousState?.player, nextState.player);
+      }
     }
 
     if (lastEnemyAction) {
-      actionAnimations.push(animateAction(this, visuals.enemy, visuals.player, lastEnemyAction, "left", nextState.enemy.weaponClass, playerSettings));
+      actionAnimations.push(
+        animateAction(
+          this,
+          visuals.enemy,
+          visuals.player,
+          lastEnemyAction,
+          "left",
+          nextState.enemy.weaponClass,
+          playerSettings,
+        ),
+      );
+      if (lastEnemyAction === "rest") {
+        showRestRecoveryPopupFromFighter(this, visuals.enemy, previousState?.enemy, nextState.enemy);
+      }
     }
 
     if (nextState.lastPlayerDamage > 0) {
@@ -5951,6 +5997,7 @@ function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
       damageIconPopups: [],
       damageBurstPopups: [],
       damageTextPopups: [],
+      restRecoveryPopups: [],
       dustDots: [],
     };
     arenaEffectPoolsByScene.set(target, pools);
@@ -6137,6 +6184,68 @@ function createDamageTextPopup(target: Phaser.Scene): ArenaTextPopupVisual {
 function releaseDamageTextPopup(target: Phaser.Scene, popup: ArenaTextPopupVisual): void {
   popup.container.setActive(false).setVisible(false).setAlpha(1);
   getArenaEffectPools(target).damageTextPopups.push(popup);
+}
+
+function acquireRestRecoveryPopup(target: Phaser.Scene): ArenaRestRecoveryPopupVisual {
+  const pool = getArenaEffectPools(target).restRecoveryPopups;
+  const popup = pool.pop() ?? createRestRecoveryPopup(target);
+
+  target.tweens.killTweensOf(popup.container);
+  popup.container.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+  popup.healthRow.setVisible(true);
+  popup.staminaRow.setVisible(true);
+
+  return popup;
+}
+
+function createRestRecoveryPopup(target: Phaser.Scene): ArenaRestRecoveryPopupVisual {
+  const container = target.add.container(0, 0).setDepth(40).setActive(false).setVisible(false);
+  const healthRow = createRestRecoveryPopupRow(target, REST_HEALTH_ICON_ASSET_KEY, "#ffe2b3", "#5a160f");
+  const staminaRow = createRestRecoveryPopupRow(target, REST_STAMINA_ICON_ASSET_KEY, "#b7fbff", "#10333b");
+
+  container.add([healthRow.row, staminaRow.row]);
+  addToArenaEffectsLayer(target, container);
+
+  return {
+    container,
+    healthRow: healthRow.row,
+    healthIcon: healthRow.icon,
+    healthLabel: healthRow.label,
+    staminaRow: staminaRow.row,
+    staminaIcon: staminaRow.icon,
+    staminaLabel: staminaRow.label,
+  };
+}
+
+function createRestRecoveryPopupRow(
+  target: Phaser.Scene,
+  iconKey: string,
+  color: string,
+  stroke: string,
+): { row: Phaser.GameObjects.Container; icon: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text } {
+  const row = target.add.container(0, 0);
+  const icon = target.add.image(-16, 0, iconKey).setOrigin(0.5);
+  const label = target.add
+    .text(5, 0, "", {
+      color,
+      fontFamily: "Georgia",
+      fontSize: "30px",
+      fontStyle: "900",
+      stroke,
+      strokeThickness: 5,
+    })
+    .setOrigin(0, 0.5);
+
+  row.add([icon, label]);
+
+  return { row, icon, label };
+}
+
+function releaseRestRecoveryPopup(target: Phaser.Scene, popup: ArenaRestRecoveryPopupVisual): void {
+  popup.container.setActive(false).setVisible(false).setAlpha(1);
+  popup.healthRow.setVisible(false);
+  popup.staminaRow.setVisible(false);
+  getArenaEffectPools(target).restRecoveryPopups.push(popup);
 }
 
 function createIconTextPopup(
@@ -6388,6 +6497,28 @@ function showArmorBreakPopupFromFighter(target: Phaser.Scene, fighter: FighterVi
   showArmorBreakPopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y, amount);
 }
 
+function showRestRecoveryPopupFromFighter(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  previous: FighterState | undefined,
+  current: FighterState,
+): void {
+  if (!previous) {
+    return;
+  }
+
+  const healthGain = Math.max(0, current.hp - previous.hp);
+  const staminaGain = Math.max(0, current.stamina - previous.stamina);
+
+  if (healthGain <= 0 && staminaGain <= 0) {
+    return;
+  }
+
+  const point = getFighterHeadPopupPoint(target, fighter, getRestRecoveryPopupHeadOffsetY());
+
+  showRestRecoveryPopup(target, point.x, point.y, healthGain, staminaGain);
+}
+
 function getPopupXWithScreenOffset(target: Phaser.Scene, x: number, screenOffsetX: number): number {
   return x + screenOffsetX / getArenaEffectsLayerScale(target);
 }
@@ -6410,6 +6541,10 @@ function getArmorAbsorbPopupHeadOffsetY(): number {
 
 function getArmorBreakPopupHeadOffsetY(): number {
   return debugTuning.popupOffsetY + debugTuning.armorBreakPopupOffsetY;
+}
+
+function getRestRecoveryPopupHeadOffsetY(): number {
+  return getDamagePopupHeadOffsetY() - 18;
 }
 
 function getDamagePopupScale(): number {
@@ -6561,6 +6696,87 @@ function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount:
     ease: "Quad.easeOut",
     onComplete: () => releaseArmorBreakPopup(target, popup),
   });
+}
+
+function showRestRecoveryPopup(target: Phaser.Scene, x: number, y: number, healthGain: number, staminaGain: number): void {
+  const hasHealth = healthGain > 0 && target.textures.exists(REST_HEALTH_ICON_ASSET_KEY);
+  const hasStamina = staminaGain > 0 && target.textures.exists(REST_STAMINA_ICON_ASSET_KEY);
+
+  if (!hasHealth && !hasStamina) {
+    return;
+  }
+
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const popupScale = debugTuning.popupScale;
+  const endScale = fixedScreenScale * popupScale;
+  const startScale = endScale * 0.76;
+  const liftY = 40 / layerScale;
+  const popup = acquireRestRecoveryPopup(target);
+  const hasBothRows = hasHealth && hasStamina;
+
+  popup.container.setPosition(x, y).setDepth(40);
+  popup.container.setScale(startScale);
+  popup.container.setAngle(0);
+
+  setRestRecoveryPopupRow(
+    target,
+    popup.healthRow,
+    popup.healthIcon,
+    popup.healthLabel,
+    REST_HEALTH_ICON_ASSET_KEY,
+    hasHealth ? healthGain : 0,
+    hasBothRows ? -17 : 0,
+  );
+  setRestRecoveryPopupRow(
+    target,
+    popup.staminaRow,
+    popup.staminaIcon,
+    popup.staminaLabel,
+    REST_STAMINA_ICON_ASSET_KEY,
+    hasStamina ? staminaGain : 0,
+    hasBothRows ? 17 : 0,
+  );
+
+  target.tweens.add({
+    targets: popup.container,
+    scale: endScale,
+    duration: 130,
+    ease: "Back.easeOut",
+  });
+
+  target.tweens.add({
+    targets: popup.container,
+    y: y - liftY,
+    alpha: 0,
+    duration: 700,
+    delay: 220,
+    ease: "Quad.easeOut",
+    onComplete: () => releaseRestRecoveryPopup(target, popup),
+  });
+}
+
+function setRestRecoveryPopupRow(
+  target: Phaser.Scene,
+  row: Phaser.GameObjects.Container,
+  icon: Phaser.GameObjects.Image,
+  label: Phaser.GameObjects.Text,
+  iconKey: string,
+  amount: number,
+  y: number,
+): void {
+  row.setVisible(amount > 0);
+
+  if (amount <= 0) {
+    return;
+  }
+
+  const source = target.textures.get(iconKey).getSourceImage() as { width?: number } | undefined;
+  const sourceWidth = Math.max(1, source?.width ?? 256);
+
+  row.setY(y);
+  icon.setScale(REST_RECOVERY_POPUP_ICON_SCREEN_SIZE / sourceWidth);
+  setPhaserTextIfChanged(label, `+${amount}`);
 }
 
 function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number, playerSettings = getPlayerSettings()): void {
