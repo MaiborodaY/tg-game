@@ -156,6 +156,9 @@ export interface EnemyVisualPreset {
 export interface EnemyLoadout {
   equipment: HeroEquipment;
   baseStats?: HeroBaseStats;
+  shurikenCount?: number;
+  shurikenDamage?: number;
+  shurikenItemId?: HeroItemId;
   visualPreset: EnemyVisualPreset;
 }
 
@@ -250,6 +253,8 @@ export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
+export const ENEMY_SHURIKEN_ROLL_CHANCE = 0.25;
+export const ENEMY_SHURIKEN_QUANTITY = 1;
 export const HERO_BOW_SHOT_CAPACITY_BASE = BOW_SHOTS_PER_BATTLE;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX = 10;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE = 500;
@@ -314,6 +319,7 @@ export function createArenaBossEncounter(bossId: string): ArenaEncounter {
 
 function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipmentPool, random = Math.random): EnemyLoadout {
   const equipment = createDefaultHeroEquipment();
+  const shurikenItemId = rollEnemyShurikenItemId(equipmentPool.itemRarities, random);
 
   HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
     const itemIds = getEnemyItemIdsBySlot(slotKey, equipmentPool.itemRarities);
@@ -327,6 +333,13 @@ function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipment
 
   return {
     equipment,
+    ...(shurikenItemId
+      ? {
+          shurikenCount: ENEMY_SHURIKEN_QUANTITY,
+          shurikenDamage: getShurikenItemDamage(shurikenItemId),
+          shurikenItemId,
+        }
+      : {}),
     visualPreset: pickRandom(ENEMY_VISUAL_PRESETS, random),
   };
 }
@@ -550,8 +563,11 @@ export function getHeroShurikenCount(hero: HeroState): number {
 }
 
 export function getHeroShurikenDamage(): number {
-  const shurikenItemId = getHeroShurikenItemId();
-  const shurikenItem = shurikenItemId ? HERO_ITEM_CATALOG[shurikenItemId] : undefined;
+  return getShurikenItemDamage(getHeroShurikenItemId());
+}
+
+function getShurikenItemDamage(itemId: HeroItemId | undefined): number {
+  const shurikenItem = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
 
   return Math.max(0, Math.floor(shurikenItem?.damageBonus ?? 0));
 }
@@ -699,8 +715,9 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       weaponClass: enemyWeaponClass,
       bowShotsRemaining: enemyBowWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
       bowMaxShots: enemyBowWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
-      shurikenCount: 0,
-      shurikenDamage: 0,
+      shurikenCount: Math.max(0, Math.floor(enemyLoadout.shurikenCount ?? 0)),
+      shurikenDamage: Math.max(0, Math.floor(enemyLoadout.shurikenDamage ?? 0)),
+      shurikenItemId: enemyLoadout.shurikenItemId,
       equipment: { ...enemyEquipment },
       visualPreset: { ...enemyLoadout.visualPreset },
     },
@@ -1136,7 +1153,27 @@ function getEnemyItemIdsBySlot(slotKey: HeroEquipmentSlotKey, itemRarities: read
   return GENERATED_EQUIPMENT_ITEM_RECORDS.filter(
     (record) =>
       canRollGeneratedEquipmentForEnemy(record) &&
+      !isHeroConsumableItem(record.item) &&
       record.item.equipmentSlot === slotKey &&
+      itemRarities.includes(getHeroItemRarity(record.item)),
+  ).map((record) => record.item.id);
+}
+
+function rollEnemyShurikenItemId(itemRarities: readonly HeroItemRarity[], random: () => number): HeroItemId | undefined {
+  const itemIds = getEnemyShurikenItemIds(itemRarities);
+
+  if (itemIds.length === 0 || random() >= ENEMY_SHURIKEN_ROLL_CHANCE) {
+    return undefined;
+  }
+
+  return pickRandom(itemIds, random);
+}
+
+function getEnemyShurikenItemIds(itemRarities: readonly HeroItemRarity[]): HeroItemId[] {
+  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter(
+    (record) =>
+      canRollGeneratedEquipmentForEnemy(record) &&
+      isHeroConsumableItem(record.item) &&
       itemRarities.includes(getHeroItemRarity(record.item)),
   ).map((record) => record.item.id);
 }

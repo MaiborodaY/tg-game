@@ -337,11 +337,16 @@ test("arena tier one enemy loadouts only roll common equipment", () => {
   const equippedItemIds = Object.values(loadout.equipment).filter(Boolean);
 
   assert.equal(loadout.equipment.weaponMain, "weapon_sword_01");
+  assert.notEqual(loadout.equipment.weaponMain, "generated_equipment_weapon_shuriken_01");
+  assert.equal(loadout.shurikenItemId, "generated_equipment_weapon_shuriken_01");
+  assert.equal(loadout.shurikenCount, 1);
+  assert.equal(loadout.shurikenDamage, 2);
   assert.equal(loadout.equipment.breastplate, "cloth_breastplate_01");
   assert.equal(loadout.equipment.helmet, null);
   assert.equal(loadout.equipment.backWrist, null);
   assert.equal(loadout.equipment.frontWrist, null);
 
+  assert.equal(equippedItemIds.includes("generated_equipment_weapon_shuriken_01"), false);
   for (const itemId of equippedItemIds) {
     assert.equal(hero.HERO_ITEM_CATALOG[itemId]?.rarity, "common");
   }
@@ -398,6 +403,9 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(randomState.encounter?.kind, "random");
   assert.equal(randomState.enemy.name, "Grumbus");
   assert.equal(randomState.enemy.equipment?.weaponMain, "weapon_sword_01");
+  assert.equal(randomState.enemy.shurikenItemId, "generated_equipment_weapon_shuriken_01");
+  assert.equal(randomState.enemy.shurikenCount, 1);
+  assert.equal(randomState.enemy.shurikenDamage, 2);
 
   const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
   const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);

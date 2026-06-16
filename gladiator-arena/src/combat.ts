@@ -639,7 +639,10 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
     }
 
     if (id === "shuriken") {
-      weighted.push(id, playerLowHp ? id : "light");
+      weighted.push(id);
+      if (playerLowHp) {
+        weighted.push(id);
+      }
       continue;
     }
 
