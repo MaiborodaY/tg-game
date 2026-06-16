@@ -432,6 +432,9 @@ type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
 const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
 type ActionButtonOffsetKey = (typeof actionButtonOffsetKeys)[number];
 
+const classicActionButtonSlotKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"] as const;
+type ClassicActionButtonSlotKey = (typeof classicActionButtonSlotKeys)[number];
+
 const classicActionWheelModes = ["distance", "clinch", "bowDistance"] as const;
 type ClassicActionWheelMode = (typeof classicActionWheelModes)[number];
 
@@ -489,7 +492,7 @@ type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
 type ActionButtonOffsetUpdates = Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
-type ClassicActionButtonSlotUpdates = Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
+type ClassicActionButtonSlotUpdates = Record<ClassicActionWheelMode, Record<ClassicActionButtonSlotKey, ClassicActionButtonSlotTuning>>;
 
 interface SlashArcTuning {
   radius: number;
@@ -2886,7 +2889,7 @@ function formatActionButtonOffsetDefaults(updates: ActionButtonOffsetUpdates): s
 
 function formatClassicActionButtonSlotDefaults(updates: ClassicActionButtonSlotUpdates): string {
   const rows = classicActionWheelModes.map((mode) => {
-    const slots = actionButtonOffsetKeys
+    const slots = classicActionButtonSlotKeys
       .map((key) => {
         const slot = updates[mode][key];
 
@@ -3092,7 +3095,7 @@ function readActionButtonOffsetTuning(offsets: object, key: ActionButtonOffsetKe
   };
 }
 
-function readClassicActionButtonSlotModeTuning(slots: object, mode: ClassicActionWheelMode): Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning> {
+function readClassicActionButtonSlotModeTuning(slots: object, mode: ClassicActionWheelMode): Record<ClassicActionButtonSlotKey, ClassicActionButtonSlotTuning> {
   const modeSlots = (slots as Partial<Record<ClassicActionWheelMode, unknown>>)[mode];
 
   if (!modeSlots || typeof modeSlots !== "object" || Array.isArray(modeSlots)) {
@@ -3100,12 +3103,12 @@ function readClassicActionButtonSlotModeTuning(slots: object, mode: ClassicActio
   }
 
   return Object.fromEntries(
-    actionButtonOffsetKeys.map((key) => [key, readClassicActionButtonSlotTuning(modeSlots, mode, key)]),
-  ) as Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>;
+    classicActionButtonSlotKeys.map((key) => [key, readClassicActionButtonSlotTuning(modeSlots, mode, key)]),
+  ) as Record<ClassicActionButtonSlotKey, ClassicActionButtonSlotTuning>;
 }
 
-function readClassicActionButtonSlotTuning(slots: object, mode: ClassicActionWheelMode, key: ActionButtonOffsetKey): ClassicActionButtonSlotTuning {
-  const slot = (slots as Partial<Record<ActionButtonOffsetKey, unknown>>)[key];
+function readClassicActionButtonSlotTuning(slots: object, mode: ClassicActionWheelMode, key: ClassicActionButtonSlotKey): ClassicActionButtonSlotTuning {
+  const slot = (slots as Partial<Record<ClassicActionButtonSlotKey, unknown>>)[key];
 
   if (!slot || typeof slot !== "object" || Array.isArray(slot)) {
     throw new Error(`Invalid classic action button slot value: ${mode}.${key}.`);

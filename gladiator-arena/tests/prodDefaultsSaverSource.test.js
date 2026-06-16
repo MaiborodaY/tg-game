@@ -273,10 +273,17 @@ test("save as prod defaults persists classic action button slots", () => {
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
 
   assert.match(debugTuningSource, /DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS/);
+  assert.match(debugTuningSource, /switchWeapon: \{ x: -145, y: -200, rotation: -14 \}/);
+  assert.match(debugTuningSource, /shuriken: \{ x: 100, y: -148, rotation: 12 \}/);
+  assert.match(debugTuningSource, /switchWeapon: \{ x: -145, y: -200, rotation: -16 \}/);
+  assert.match(debugTuningSource, /shuriken: \{ x: 95, y: -118, rotation: 10 \}/);
   assert.match(debugTuningSource, /classicActionButtonSlots: cloneClassicActionButtonSlots/);
+  assert.match(source, /const classicActionButtonSlotKeys = \["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"\] as const/);
   assert.match(source, /pickClassicActionButtonSlotDefaultUpdates/);
   assert.match(source, /applyClassicActionButtonSlotDefaultUpdates/);
   assert.match(source, /formatClassicActionButtonSlotDefaults/);
+  assert.match(source, /const slots = classicActionButtonSlotKeys/);
+  assert.match(source, /classicActionButtonSlotKeys\.map\(\(key\) => \[key, readClassicActionButtonSlotTuning\(modeSlots, mode, key\)\]\)/);
   assert.match(source, /classic action wheels/);
 });
 
