@@ -371,6 +371,16 @@ interface ArenaEffectPools {
   dustDots: Phaser.GameObjects.Arc[];
 }
 
+interface ActionAnimationHandle {
+  done: Promise<void>;
+  impact?: Promise<void>;
+}
+
+interface ProjectileAnimationHandle {
+  done: Promise<void>;
+  impact: Promise<void>;
+}
+
 interface ArenaMidLayerShadeState {
   amount: number;
 }
@@ -444,8 +454,9 @@ const DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE = 108;
 const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
 const REST_RECOVERY_POPUP_ICON_SCREEN_SIZE = 34;
 const ARROW_PROJECTILE_SCREEN_SIZE = 36;
-const SHURIKEN_PROJECTILE_SCREEN_SIZE = 42;
+const SHURIKEN_PROJECTILE_SCREEN_SIZE = 20;
 const PROJECTILE_FLIGHT_DURATION_MS = 280;
+const PROJECTILE_IMPACT_LEAD_MS = 45;
 const ARROW_PROJECTILE_ANGLE_OFFSET = 45;
 const PROJECTILE_START_LOCAL_X = 90;
 const PROJECTILE_START_LOCAL_Y = -205;
@@ -1492,8 +1503,8 @@ export class ArenaScene extends Phaser.Scene {
 
     const lastPlayerAction = nextState.lastPlayerAction;
     const lastEnemyAction = nextState.lastEnemyAction;
-    let playerActionAnimation: Promise<void> | undefined;
-    let enemyActionAnimation: Promise<void> | undefined;
+    let playerActionAnimation: ActionAnimationHandle | undefined;
+    let enemyActionAnimation: ActionAnimationHandle | undefined;
 
     if (lastPlayerAction) {
       playerActionAnimation = animateAction(
@@ -1505,7 +1516,7 @@ export class ArenaScene extends Phaser.Scene {
         nextState.player.weaponClass,
         playerSettings,
       );
-      actionAnimations.push(playerActionAnimation);
+      actionAnimations.push(playerActionAnimation.done);
       if (lastPlayerAction === "rest") {
         showRestRecoveryPopupFromFighter(this, visuals.player, previousState?.player, nextState.player);
       }
@@ -1521,14 +1532,18 @@ export class ArenaScene extends Phaser.Scene {
         nextState.enemy.weaponClass,
         playerSettings,
       );
-      actionAnimations.push(enemyActionAnimation);
+      actionAnimations.push(enemyActionAnimation.done);
       if (lastEnemyAction === "rest") {
         showRestRecoveryPopupFromFighter(this, visuals.enemy, previousState?.enemy, nextState.enemy);
       }
     }
 
-    const playerResultDelay = shouldDelayCombatResultForProjectile(lastPlayerAction, nextState.player.weaponClass) ? playerActionAnimation : undefined;
-    const enemyResultDelay = shouldDelayCombatResultForProjectile(lastEnemyAction, nextState.enemy.weaponClass) ? enemyActionAnimation : undefined;
+    const playerResultDelay = shouldDelayCombatResultForProjectile(lastPlayerAction, nextState.player.weaponClass)
+      ? playerActionAnimation?.impact ?? playerActionAnimation?.done
+      : undefined;
+    const enemyResultDelay = shouldDelayCombatResultForProjectile(lastEnemyAction, nextState.enemy.weaponClass)
+      ? enemyActionAnimation?.impact ?? enemyActionAnimation?.done
+      : undefined;
 
     if (nextState.lastPlayerDamage > 0) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
@@ -5946,41 +5961,45 @@ function animateAction(
   direction: "left" | "right",
   weaponClass?: HeroWeaponClass,
   playerSettings = getPlayerSettings(),
-): Promise<void> {
+): ActionAnimationHandle {
   const sign = direction === "right" ? 1 : -1;
   const animationAmount = getArenaAnimationAmount(playerSettings);
 
   if (actionId === "forward" || actionId === "back") {
     const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"), playerSettings);
 
-    return actionAnimation;
+    return { done: actionAnimation };
   }
 
   if (actionId === "lunge") {
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"), playerSettings);
+    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"), playerSettings) };
   }
 
   if (actionId === "taunt") {
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"), playerSettings);
+    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"), playerSettings) };
   }
 
   if (actionId === "rest") {
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), playerSettings);
+    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), playerSettings) };
   }
 
   if (actionId === "switchWeapon") {
     showFloatingText(target, actor.body.x, actor.body.y - 120, "MELEE", "#ffe7a4");
-    return Promise.resolve();
+    return { done: Promise.resolve() };
   }
 
   if (actionId === "shuriken") {
-    return Promise.all([
-      playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"), playerSettings),
-      playProjectile(target, actor, defender, actionId, direction),
-    ]).then(() => undefined);
+    const bodyAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"), playerSettings);
+    const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
+
+    return {
+      done: Promise.all([bodyAnimation, projectileAnimation.done]).then(() => undefined),
+      impact: projectileAnimation.impact,
+    };
   }
 
   const actionAnimations: Promise<void>[] = [];
+  let impact: Promise<void> | undefined;
 
   if (isAttackBodyAnimationKey(actionId)) {
     const isRangedWeapon = isRangedWeaponClass(weaponClass);
@@ -5988,7 +6007,10 @@ function animateAction(
 
     actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey), playerSettings));
     if (isRangedWeapon) {
-      actionAnimations.push(playProjectile(target, actor, defender, actionId, direction));
+      const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
+
+      actionAnimations.push(projectileAnimation.done);
+      impact = projectileAnimation.impact;
     }
     if (!isRangedWeapon && areArenaVfxEnabled(playerSettings)) {
       showSlashArc(target, actor, actionId, direction, playerSettings);
@@ -6010,7 +6032,10 @@ function animateAction(
     );
   }
 
-  return Promise.all(actionAnimations).then(() => undefined);
+  return {
+    done: Promise.all(actionAnimations).then(() => undefined),
+    impact,
+  };
 }
 
 function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAnimationKey {
@@ -6039,11 +6064,13 @@ function playProjectile(
   defender: FighterVisual,
   actionId: ActionId,
   direction: "left" | "right",
-): Promise<void> {
+): ProjectileAnimationHandle {
   const textureKey = getProjectileTextureKey(actionId);
 
   if (!target.textures.exists(textureKey)) {
-    return Promise.resolve();
+    const done = Promise.resolve();
+
+    return { done, impact: done };
   }
 
   const sign = direction === "right" ? 1 : -1;
@@ -6068,7 +6095,22 @@ function playProjectile(
   projectile.setScale(projectileScale);
   projectile.setAngle(startAngle);
 
-  return new Promise((resolve) => {
+  let impactResolved = false;
+  let resolveImpact: () => void = () => undefined;
+  const impact = new Promise<void>((resolve) => {
+    resolveImpact = resolve;
+  });
+  const resolveImpactOnce = (): void => {
+    if (impactResolved) {
+      return;
+    }
+
+    impactResolved = true;
+    resolveImpact();
+  };
+  const impactDelayMs = Math.max(0, PROJECTILE_FLIGHT_DURATION_MS - PROJECTILE_IMPACT_LEAD_MS);
+  const done = new Promise<void>((resolve) => {
+    target.time.delayedCall(impactDelayMs, resolveImpactOnce);
     target.tweens.add({
       targets: projectile,
       x: end.x,
@@ -6077,11 +6119,14 @@ function playProjectile(
       duration: PROJECTILE_FLIGHT_DURATION_MS,
       ease: "Sine.easeInOut",
       onComplete: () => {
+        resolveImpactOnce();
         releaseProjectile(target, projectile);
         resolve();
       },
     });
   });
+
+  return { done, impact };
 }
 
 function getProjectileTextureKey(actionId: ActionId): string {

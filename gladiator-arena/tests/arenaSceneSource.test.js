@@ -203,9 +203,11 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
   assert.equal(arenaSceneSource.includes("playerActionAnimation = animateAction("), true);
   assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateAction("), true);
+  assert.equal(arenaSceneSource.includes("playerActionAnimation.done"), true);
+  assert.equal(arenaSceneSource.includes("playerActionAnimation?.impact ?? playerActionAnimation?.done"), true);
   assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => undefined);"), true);
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
-  assert.equal(arenaSceneSource.includes("): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("interface ActionAnimationHandle"), true);
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
   assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
 });
@@ -238,6 +240,11 @@ test("arena uses pooled projectiles for arrows and shurikens", () => {
   assert.equal(arenaSceneSource.includes("projectiles: Phaser.GameObjects.Image[];"), true);
   assert.equal(arenaSceneSource.includes("projectiles: []"), true);
   assert.equal(arenaSceneSource.includes("function playProjectile("), true);
+  assert.equal(arenaSceneSource.includes("interface ProjectileAnimationHandle"), true);
+  assert.equal(arenaSceneSource.includes("PROJECTILE_IMPACT_LEAD_MS"), true);
+  assert.equal(arenaSceneSource.includes("impactDelayMs"), true);
+  assert.equal(arenaSceneSource.includes("resolveImpactOnce"), true);
+  assert.equal(arenaSceneSource.includes("impact: projectileAnimation.impact"), true);
   assert.equal(arenaSceneSource.includes("function acquireProjectile("), true);
   assert.equal(arenaSceneSource.includes("function releaseProjectile("), true);
   assert.equal(arenaSceneSource.includes('actionId === "shuriken"'), true);
