@@ -6875,6 +6875,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__select,
 .debug-auto-equipment__generated-select,
 .debug-auto-equipment__rarity,
+.debug-auto-equipment__set-rarity,
 .debug-auto-equipment__set-name,
 .debug-auto-equipment__set-variant,
 .debug-auto-equipment__set-slot,

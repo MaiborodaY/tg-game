@@ -29,6 +29,15 @@ test("client saver can promote auto equipment through the local dev endpoint", (
   assert.match(source, /savePromotedEquipmentItem/);
 });
 
+test("client saver can promote full equipment sets through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/promote-equipment-set/);
+  assert.match(source, /PromoteEquipmentSetPayload/);
+  assert.match(source, /savePromotedEquipmentSet/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("client saver can remove generated equipment through the local dev endpoint", () => {
   const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
 
@@ -177,6 +186,24 @@ test("vite dev middleware renames raw equipment set assets", () => {
   assert.match(source, /assertEquipmentSetImportPathsAvailable/);
   assert.match(source, /renameProjectSourceFile/);
   assert.match(source, /Target asset already exists/);
+});
+
+test("vite dev middleware promotes raw equipment sets into generated items", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /promote-equipment-set/);
+  assert.match(source, /pickPromotedEquipmentSet/);
+  assert.match(source, /createPromotedEquipmentSetRecords/);
+  assert.match(source, /createPromotedEquipmentSetRecord/);
+  assert.match(source, /renameEquipmentSetImportAssets\(promotion\.entries\)/);
+  assert.match(source, /createPromotedEquipmentRecords\(record, true\)/);
+  assert.match(source, /formatPromotedEquipmentSetMessage/);
+  assert.match(source, /getEquipmentSetImportTargetConfig/);
+  assert.match(source, /getArmorCategoryFromAssetKey/);
+  assert.match(source, /createDefaultPromotedEquipmentTuning/);
+  assert.match(source, /price: 0/);
+  assert.match(source, /armorHp: 1/);
+  assert.match(source, /damageBonus: 1/);
 });
 
 test("vite dev middleware updates generated shop item rarity stats and price", () => {

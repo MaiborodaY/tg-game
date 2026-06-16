@@ -220,6 +220,9 @@ interface EquipmentSetImportTargetConfig {
   targetPrefix: string;
   kind: GeneratedEquipmentJsonRecord["kind"];
   folder: string;
+  slot: EquipmentSlotKey;
+  assetKeyName: string;
+  label: string;
 }
 
 interface EquipmentSetImportEntry {
@@ -228,6 +231,13 @@ interface EquipmentSetImportEntry {
   targetSourcePath: string;
   lowSourcePath?: string;
   targetLowSourcePath?: string;
+}
+
+interface PromotedEquipmentSet {
+  name: string;
+  entries: EquipmentSetImportEntry[];
+  rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
+  availability: GeneratedEquipmentAvailability;
 }
 
 const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[] = [
@@ -258,26 +268,159 @@ const promotedEquipmentMirrorPairs: readonly PromotedEquipmentMirrorPairConfig[]
 ] as const;
 
 const equipmentSetImportTargetConfigs: readonly EquipmentSetImportTargetConfig[] = [
-  { targetPrefix: "helmet", kind: "armor", folder: "assets/fighters/armor/helmet" },
-  { targetPrefix: "breastplate", kind: "armor", folder: "assets/fighters/armor/breastplate" },
-  { targetPrefix: "back-shoulderguard", kind: "armor", folder: "assets/fighters/armor/arms" },
-  { targetPrefix: "front-shoulderguard", kind: "armor", folder: "assets/fighters/armor/arms" },
-  { targetPrefix: "back-wrist", kind: "armor", folder: "assets/fighters/armor/arms" },
-  { targetPrefix: "front-wrist", kind: "armor", folder: "assets/fighters/armor/arms" },
-  { targetPrefix: "back-glove", kind: "armor", folder: "assets/fighters/armor/arms" },
-  { targetPrefix: "front-glove", kind: "armor", folder: "assets/fighters/armor/arms" },
-  { targetPrefix: "back-greave", kind: "armor", folder: "assets/fighters/armor/legs" },
-  { targetPrefix: "front-greave", kind: "armor", folder: "assets/fighters/armor/legs" },
-  { targetPrefix: "back-shinguard", kind: "armor", folder: "assets/fighters/armor/legs" },
-  { targetPrefix: "front-shinguard", kind: "armor", folder: "assets/fighters/armor/legs" },
-  { targetPrefix: "back-boot", kind: "armor", folder: "assets/fighters/armor/legs" },
-  { targetPrefix: "front-boot", kind: "armor", folder: "assets/fighters/armor/legs" },
-  { targetPrefix: "weapon-sword", kind: "weapon", folder: "assets/fighters/weapons" },
-  { targetPrefix: "weapon-axe", kind: "weapon", folder: "assets/fighters/weapons" },
-  { targetPrefix: "weapon-bow", kind: "weapon", folder: "assets/fighters/weapons" },
-  { targetPrefix: "weapon-mace", kind: "weapon", folder: "assets/fighters/weapons" },
-  { targetPrefix: "weapon-spear", kind: "weapon", folder: "assets/fighters/weapons" },
-  { targetPrefix: "weapon-shuriken", kind: "weapon", folder: "assets/fighters/weapons" },
+  { targetPrefix: "helmet", kind: "armor", folder: "assets/fighters/armor/helmet", slot: "helmet", assetKeyName: "helmetAssetKey", label: "Helmet" },
+  {
+    targetPrefix: "breastplate",
+    kind: "armor",
+    folder: "assets/fighters/armor/breastplate",
+    slot: "breastplate",
+    assetKeyName: "breastplateAssetKey",
+    label: "Breastplate",
+  },
+  {
+    targetPrefix: "back-shoulderguard",
+    kind: "armor",
+    folder: "assets/fighters/armor/arms",
+    slot: "backShoulderguard",
+    assetKeyName: "backShoulderguardAssetKey",
+    label: "Back Shoulderguard",
+  },
+  {
+    targetPrefix: "front-shoulderguard",
+    kind: "armor",
+    folder: "assets/fighters/armor/arms",
+    slot: "frontShoulderguard",
+    assetKeyName: "frontShoulderguardAssetKey",
+    label: "Front Shoulderguard",
+  },
+  {
+    targetPrefix: "back-wrist",
+    kind: "armor",
+    folder: "assets/fighters/armor/arms",
+    slot: "backWrist",
+    assetKeyName: "backWristAssetKey",
+    label: "Back Wrist",
+  },
+  {
+    targetPrefix: "front-wrist",
+    kind: "armor",
+    folder: "assets/fighters/armor/arms",
+    slot: "frontWrist",
+    assetKeyName: "frontWristAssetKey",
+    label: "Front Wrist",
+  },
+  {
+    targetPrefix: "back-glove",
+    kind: "armor",
+    folder: "assets/fighters/armor/arms",
+    slot: "backGlove",
+    assetKeyName: "backGloveAssetKey",
+    label: "Back Glove",
+  },
+  {
+    targetPrefix: "front-glove",
+    kind: "armor",
+    folder: "assets/fighters/armor/arms",
+    slot: "frontGlove",
+    assetKeyName: "frontGloveAssetKey",
+    label: "Front Glove",
+  },
+  {
+    targetPrefix: "back-greave",
+    kind: "armor",
+    folder: "assets/fighters/armor/legs",
+    slot: "backGreave",
+    assetKeyName: "backGreaveAssetKey",
+    label: "Back Greave",
+  },
+  {
+    targetPrefix: "front-greave",
+    kind: "armor",
+    folder: "assets/fighters/armor/legs",
+    slot: "frontGreave",
+    assetKeyName: "frontGreaveAssetKey",
+    label: "Front Greave",
+  },
+  {
+    targetPrefix: "back-shinguard",
+    kind: "armor",
+    folder: "assets/fighters/armor/legs",
+    slot: "backShinguard",
+    assetKeyName: "backShinguardAssetKey",
+    label: "Back Shinguard",
+  },
+  {
+    targetPrefix: "front-shinguard",
+    kind: "armor",
+    folder: "assets/fighters/armor/legs",
+    slot: "frontShinguard",
+    assetKeyName: "frontShinguardAssetKey",
+    label: "Front Shinguard",
+  },
+  {
+    targetPrefix: "back-boot",
+    kind: "armor",
+    folder: "assets/fighters/armor/legs",
+    slot: "backBoot",
+    assetKeyName: "backBootAssetKey",
+    label: "Back Boot",
+  },
+  {
+    targetPrefix: "front-boot",
+    kind: "armor",
+    folder: "assets/fighters/armor/legs",
+    slot: "frontBoot",
+    assetKeyName: "frontBootAssetKey",
+    label: "Front Boot",
+  },
+  {
+    targetPrefix: "weapon-sword",
+    kind: "weapon",
+    folder: "assets/fighters/weapons",
+    slot: "weaponMain",
+    assetKeyName: "weaponMainAssetKey",
+    label: "Sword",
+  },
+  {
+    targetPrefix: "weapon-axe",
+    kind: "weapon",
+    folder: "assets/fighters/weapons",
+    slot: "weaponMain",
+    assetKeyName: "weaponMainAssetKey",
+    label: "Axe",
+  },
+  {
+    targetPrefix: "weapon-bow",
+    kind: "weapon",
+    folder: "assets/fighters/weapons",
+    slot: "weaponBow",
+    assetKeyName: "weaponBowAssetKey",
+    label: "Bow",
+  },
+  {
+    targetPrefix: "weapon-mace",
+    kind: "weapon",
+    folder: "assets/fighters/weapons",
+    slot: "weaponMain",
+    assetKeyName: "weaponMainAssetKey",
+    label: "Mace",
+  },
+  {
+    targetPrefix: "weapon-spear",
+    kind: "weapon",
+    folder: "assets/fighters/weapons",
+    slot: "weaponMain",
+    assetKeyName: "weaponMainAssetKey",
+    label: "Spear",
+  },
+  {
+    targetPrefix: "weapon-shuriken",
+    kind: "weapon",
+    folder: "assets/fighters/weapons",
+    slot: "weaponMain",
+    assetKeyName: "weaponMainAssetKey",
+    label: "Shuriken",
+  },
 ];
 
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
@@ -413,6 +556,11 @@ interface RenameEquipmentSetAssetsPayload {
   setName?: unknown;
   variant?: unknown;
   entries?: unknown;
+}
+
+interface PromoteEquipmentSetPayload extends RenameEquipmentSetAssetsPayload {
+  rarity?: unknown;
+  availability?: unknown;
 }
 
 interface RenameEquipmentSetAssetEntryPayload {
@@ -636,6 +784,30 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatPromotedEquipmentMessage(promotedRecords), updated: promotedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote equipment item." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/promote-equipment-set", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to promote equipment sets." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const promotion = await pickPromotedEquipmentSet(payload);
+          const records = await readGeneratedEquipmentRecords();
+
+          await renameEquipmentSetImportAssets(promotion.entries);
+          const promotedRecords = await createPromotedEquipmentSetRecords(promotion);
+          await ensureGeneratedEquipmentShopIcons(promotedRecords);
+          const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
+
+          await writeGeneratedEquipmentRecords(nextRecords);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatPromotedEquipmentSetMessage(promotion, promotedRecords), updated: promotedRecords.length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote equipment set." });
         }
       });
 
@@ -1185,6 +1357,91 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Promo
           }
         : {}),
     },
+  };
+}
+
+async function pickPromotedEquipmentSet(payload: unknown): Promise<PromotedEquipmentSet> {
+  const input = readPlainObject(payload, "equipment set promotion") as PromoteEquipmentSetPayload;
+  const name = readNonEmptyString(input.setName, "setName").slice(0, 80);
+  const entries = await pickEquipmentSetImportEntries(input);
+  const availability = readPromotedEquipmentAvailability(input.availability, false);
+  const rarity = availability.bossUnique ? "unique" : readItemRarity(input.rarity, "common");
+
+  return {
+    name,
+    entries,
+    rarity,
+    availability,
+  };
+}
+
+async function createPromotedEquipmentSetRecords(promotion: PromotedEquipmentSet): Promise<GeneratedEquipmentJsonRecord[]> {
+  const records: GeneratedEquipmentJsonRecord[] = [];
+
+  for (const entry of promotion.entries) {
+    const record = await createPromotedEquipmentSetRecord(entry, promotion);
+
+    records.push(...(await createPromotedEquipmentRecords(record, true)));
+  }
+
+  return records;
+}
+
+async function createPromotedEquipmentSetRecord(
+  entry: EquipmentSetImportEntry,
+  promotion: PromotedEquipmentSet,
+): Promise<GeneratedEquipmentJsonRecord> {
+  const config = getEquipmentSetImportTargetConfig(entry.targetPrefix);
+  const assetKey = getAssetKeyFromSourcePath(entry.targetSourcePath);
+  const id = `generated_equipment_${toIdentifier(assetKey)}`;
+  const name = formatPromotedEquipmentSetItemName(config, assetKey);
+  const promotedAssetPaths = await preparePromotedEquipmentAsset(entry.targetSourcePath, entry.targetLowSourcePath);
+  const assetKeys = { [config.assetKeyName]: assetKey };
+  const categoryId = getArmoryCategoryId(config.slot);
+  const armorCategory = config.kind === "armor" ? getArmorCategoryFromAssetKey(assetKey) : undefined;
+  const weaponClass = config.kind === "weapon" ? getWeaponClassFromText(`${assetKey} ${config.label}`) : undefined;
+
+  validateGeneratedEquipmentSlot(config.kind, config.slot);
+
+  return {
+    id,
+    name,
+    kind: config.kind,
+    rarity: promotion.rarity,
+    ...(armorCategory ? { armorCategory } : {}),
+    ...(config.kind === "armor" ? { armorHp: 1 } : { damageBonus: 1 }),
+    ...(weaponClass ? { weaponClass } : {}),
+    equipmentSlot: config.slot,
+    assetKeys,
+    equipmentTuning: createDefaultPromotedEquipmentTuning(),
+    asset: {
+      key: assetKey,
+      sourcePath: promotedAssetPaths.sourcePath,
+      ...(promotedAssetPaths.lowSourcePath ? { lowSourcePath: promotedAssetPaths.lowSourcePath } : {}),
+    },
+    availability: promotion.availability,
+    ...(promotion.availability.shop && config.kind === "armor" && categoryId
+      ? {
+          armoryProduct: {
+            id,
+            name,
+            price: 0,
+            itemIds: [id],
+            categoryId,
+          },
+        }
+      : {}),
+    ...(promotion.availability.shop && config.kind === "weapon"
+      ? {
+          weaponProduct: {
+            id,
+            name,
+            price: 0,
+            itemIds: [id],
+            categoryId: getWeaponCategoryId(assetKey, name, weaponClass),
+          },
+        }
+      : {}),
   };
 }
 
@@ -1869,6 +2126,10 @@ function formatRemovedGeneratedEquipmentMessage(removedRecords: GeneratedEquipme
   return `Removed ${removedRecords.length} linked generated equipment items.`;
 }
 
+function formatPromotedEquipmentSetMessage(promotion: PromotedEquipmentSet, promotedRecords: readonly GeneratedEquipmentJsonRecord[]): string {
+  return `Promoted ${promotion.name} set with ${promotedRecords.length} generated equipment items.`;
+}
+
 async function pickEquipmentSetImportEntries(payload: unknown): Promise<EquipmentSetImportEntry[]> {
   const input = readPlainObject(payload, "equipment set asset rename") as RenameEquipmentSetAssetsPayload;
   const setSlug = readKebabIdentifier(input.setName, "setName");
@@ -1994,6 +2255,16 @@ function readEquipmentSetImportTargetConfig(value: unknown, sourceKind: Generate
   return config;
 }
 
+function getEquipmentSetImportTargetConfig(targetPrefix: string): EquipmentSetImportTargetConfig {
+  const config = equipmentSetImportTargetConfigs.find((candidate) => candidate.targetPrefix === targetPrefix);
+
+  if (!config) {
+    throw new Error("Invalid equipment set target prefix.");
+  }
+
+  return config;
+}
+
 function getEquipmentSetImportTargetSourcePath(
   sourcePath: string,
   targetConfig: EquipmentSetImportTargetConfig,
@@ -2015,6 +2286,71 @@ function getEquipmentSetImportAlternateSourcePath(sourcePath: string): string {
 
 function getEquipmentSetImportSourceKind(sourcePath: string): GeneratedEquipmentJsonRecord["kind"] {
   return sourcePath.startsWith("assets/equipment-import/weapons/") ? "weapon" : "armor";
+}
+
+function getAssetKeyFromSourcePath(sourcePath: string): string {
+  const assetKey = sourcePath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "");
+
+  if (!assetKey) {
+    throw new Error(`Could not read asset key from ${sourcePath}.`);
+  }
+
+  return assetKey;
+}
+
+function formatPromotedEquipmentSetItemName(config: EquipmentSetImportTargetConfig, assetKey: string): string {
+  const suffix = assetKey.startsWith(`${config.targetPrefix}-`) ? assetKey.slice(config.targetPrefix.length + 1) : assetKey;
+  const setName = suffix
+    .split("-")
+    .filter(Boolean)
+    .map(formatGeneratedEquipmentNamePart)
+    .join(" ");
+
+  return `${setName || "Generated"} ${config.label}`.trim();
+}
+
+function formatGeneratedEquipmentNamePart(part: string): string {
+  const displayPart = part === "light" ? "leather" : part;
+
+  return displayPart ? `${displayPart[0]?.toUpperCase() ?? ""}${displayPart.slice(1)}` : "";
+}
+
+function getArmorCategoryFromAssetKey(assetKey: string): GeneratedEquipmentJsonRecord["armorCategory"] | undefined {
+  const tokens = assetKey.toLowerCase().split(/[^a-z0-9]+/);
+
+  if (tokens.includes("light")) {
+    return "leather";
+  }
+
+  if (tokens.includes("leather")) {
+    return "leather";
+  }
+
+  if (tokens.includes("cloth")) {
+    return "cloth";
+  }
+
+  if (tokens.includes("chain")) {
+    return "chain";
+  }
+
+  if (tokens.includes("plate")) {
+    return "plate";
+  }
+
+  return undefined;
+}
+
+function createDefaultPromotedEquipmentTuning(): RigPartTuning {
+  return {
+    x: 0,
+    y: 0,
+    angle: 0,
+    scaleX: 1,
+    scaleY: 1,
+    flipX: false,
+    flipY: false,
+  };
 }
 
 function formatEquipmentSetImportRenameMessage(entries: readonly EquipmentSetImportEntry[]): string {

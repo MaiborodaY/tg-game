@@ -47,9 +47,19 @@ export interface RenameEquipmentSetAssetsPayload {
   entries: RenameEquipmentSetAssetEntry[];
 }
 
+export interface PromoteEquipmentSetPayload extends RenameEquipmentSetAssetsPayload {
+  rarity: HeroItemRarity;
+  availability: {
+    shop: boolean;
+    enemyPool: boolean;
+    bossUnique: boolean;
+  };
+}
+
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
+const promoteEquipmentSetEndpoint = "/__dust-arena/promote-equipment-set";
 const updateGeneratedShopItemEndpoint = "/__dust-arena/update-generated-shop-item";
 const updateGeneratedBossItemEndpoint = "/__dust-arena/update-generated-boss-item";
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
@@ -99,6 +109,21 @@ export async function savePromotedEquipmentItem(payload: PromoteEquipmentItemPay
   }
 
   return responsePayload.message ?? "Promoted equipment item.";
+}
+
+export async function savePromotedEquipmentSet(payload: PromoteEquipmentSetPayload): Promise<string> {
+  const response = await fetch(promoteEquipmentSetEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not promote equipment set. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Promoted equipment set.";
 }
 
 export async function removePromotedEquipmentItem(itemId: string): Promise<string> {

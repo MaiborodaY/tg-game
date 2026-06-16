@@ -77,6 +77,7 @@ import {
   saveProdAnimation,
   saveProdDefaults,
   savePromotedEquipmentItem,
+  savePromotedEquipmentSet,
 } from "./prodDefaultsSaver";
 
 interface DebugPanelOptions {
@@ -838,9 +839,26 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
             <span>Variant</span>
             <input class="debug-auto-equipment__set-variant" type="text" value="01" />
           </label>
+          <label class="debug-rig-editor__part">
+            <span>Rarity</span>
+            <select class="debug-auto-equipment__set-rarity debug-rarity-select">${formatAutoEquipmentRarityOptions()}</select>
+          </label>
+          <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+            <span>Shop</span>
+            <input class="debug-auto-equipment__set-shop" type="checkbox" checked />
+          </label>
+          <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+            <span>Enemy pool</span>
+            <input class="debug-auto-equipment__set-enemy-pool" type="checkbox" />
+          </label>
+          <label class="debug-panel__row debug-panel__row--toggle debug-rig-editor__row">
+            <span>Boss unique</span>
+            <input class="debug-auto-equipment__set-boss-unique" type="checkbox" />
+          </label>
           <div class="debug-auto-equipment__set-assets"></div>
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-auto-equipment__set-rename" type="button">Rename selected set assets</button>
+            <button class="debug-panel__reset debug-auto-equipment__set-promote" type="button">Promote full set</button>
           </div>
         </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
@@ -1630,8 +1648,13 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
   const setNameInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-name");
   const setVariantInput = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-variant");
+  const setRaritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-rarity");
+  const setShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-shop");
+  const setEnemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-enemy-pool");
+  const setBossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-boss-unique");
   const setAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__set-assets");
   const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
+  const setPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-promote");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
 
   if (
@@ -1655,8 +1678,13 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !removeGenerated ||
     !setNameInput ||
     !setVariantInput ||
+    !setRaritySelect ||
+    !setShop ||
+    !setEnemyPool ||
+    !setBossUnique ||
     !setAssets ||
     !setRename ||
+    !setPromote ||
     !status
   ) {
     return;
@@ -1713,6 +1741,18 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
 
   addToShop.addEventListener("change", () => {
     syncAutoEquipmentAvailabilityControls(editor);
+  });
+
+  setRaritySelect.addEventListener("change", () => {
+    setDebugRarityDataset(setRaritySelect, getDebugItemRarity(setRaritySelect.value, "common"));
+  });
+
+  setBossUnique.addEventListener("change", () => {
+    syncEquipmentSetImportAvailabilityControls(editor);
+  });
+
+  setShop.addEventListener("change", () => {
+    syncEquipmentSetImportAvailabilityControls(editor);
   });
 
   syncLinkedNumberInputs(armorRange, armorNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
@@ -1836,6 +1876,43 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
       status.textContent = error instanceof Error ? error.message : "Could not rename set assets.";
     } finally {
       setRename.disabled = false;
+    }
+  });
+
+  setPromote.addEventListener("click", async () => {
+    const entries = getSelectedEquipmentSetImportEntries(setAssets);
+
+    if (!setNameInput.value.trim()) {
+      status.textContent = "Set name is required.";
+      return;
+    }
+
+    if (entries.length === 0) {
+      status.textContent = "Select at least one raw set asset.";
+      return;
+    }
+
+    setRename.disabled = true;
+    setPromote.disabled = true;
+    status.textContent = "Promoting full set...";
+
+    try {
+      status.textContent = await savePromotedEquipmentSet({
+        setName: setNameInput.value.trim(),
+        variant: setVariantInput.value.trim() || "01",
+        rarity: setBossUnique.checked ? "unique" : getDebugItemRarity(setRaritySelect.value, "common"),
+        availability: {
+          shop: setShop.checked && !setBossUnique.checked,
+          enemyPool: setEnemyPool.checked && !setBossUnique.checked,
+          bossUnique: setBossUnique.checked,
+        },
+        entries,
+      });
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not promote equipment set.";
+    } finally {
+      setRename.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+      setPromote.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
     }
   });
 }
@@ -3449,7 +3526,9 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const buttons = editor.querySelectorAll<HTMLButtonElement>(".debug-auto-equipment__preview, .debug-auto-equipment__promote");
   const generatedSelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__generated-select");
   const removeGenerated = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__remove");
+  const setRaritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-rarity");
   const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
+  const setPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-promote");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
   const record = getSelectedAutoEquipmentRecord(select?.value);
   const isAvailable = Boolean(record);
@@ -3531,8 +3610,19 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
     removeGenerated.disabled = !hasGeneratedItems;
   }
 
+  if (setRaritySelect) {
+    setRaritySelect.value = getDebugItemRarity(setRaritySelect.value, "common");
+    setDebugRarityDataset(setRaritySelect, setRaritySelect.value as HeroItemRarity);
+  }
+
+  syncEquipmentSetImportAvailabilityControls(editor);
+
   if (setRename) {
     setRename.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+  }
+
+  if (setPromote) {
+    setPromote.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
   }
 
   if (status) {
@@ -3541,6 +3631,38 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
       : AUTO_EQUIPMENT_ITEM_RECORDS.length === 0
         ? "No unpromoted equipment assets found."
         : "Using fallback preview.";
+  }
+}
+
+function syncEquipmentSetImportAvailabilityControls(editor: HTMLElement): void {
+  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-auto-equipment__set-rarity");
+  const setShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-shop");
+  const setEnemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-enemy-pool");
+  const setBossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-boss-unique");
+  const hasRawAssets = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length > 0;
+  const isBossUnique = setBossUnique?.checked === true;
+
+  if (isBossUnique && raritySelect) {
+    raritySelect.value = "unique";
+    setDebugRarityDataset(raritySelect, "unique");
+  } else if (raritySelect) {
+    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
+  }
+
+  if (raritySelect) {
+    raritySelect.disabled = !hasRawAssets || isBossUnique;
+  }
+
+  if (setShop) {
+    setShop.disabled = !hasRawAssets || isBossUnique;
+  }
+
+  if (setEnemyPool) {
+    setEnemyPool.disabled = !hasRawAssets || isBossUnique;
+  }
+
+  if (setBossUnique) {
+    setBossUnique.disabled = !hasRawAssets;
   }
 }
 

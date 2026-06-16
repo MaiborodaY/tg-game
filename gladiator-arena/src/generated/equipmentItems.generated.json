@@ -40,6 +40,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_bone_01",
+    "name": "Bone 01 Back Boot",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 2.250334936746185,
+      "y": -1.4792899429153294,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-bone-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_bone_01",
+      "name": "Bone 01 Back Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_chainmail_01",
     "name": "Chainmail Back Boot 01",
     "kind": "armor",
@@ -198,6 +237,123 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_lazure_01",
+    "name": "Lazure 01 Back Boot",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 17.252567848387486,
+      "y": -5.917159771661318,
+      "angle": 0,
+      "scaleX": 2.01,
+      "scaleY": 1.76,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-lazure-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_lazure_01",
+      "name": "Lazure 01 Back Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_lazure_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_boot_lion_01",
+    "name": "Lion 01 Back Boot",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 12.751897974895073,
+      "y": -5.177514800203653,
+      "angle": 0,
+      "scaleX": 1.86,
+      "scaleY": 1.53,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-lion-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_lion_01",
+      "name": "Lion 01 Back Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_lion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_boot_mercenary_01",
+    "name": "Mercenary Back Boot 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 9,
+      "y": -8.396449714576647,
+      "angle": 0,
+      "scaleX": 1.49,
+      "scaleY": 1.74,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-mercenary-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_mercenary_01",
+      "name": "Mercenary Back Boot 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_boot_mercenary_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_rust_champion_01",
     "name": "Rust Champion Boots",
     "kind": "armor",
@@ -342,6 +498,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_bone_01",
+    "name": "Bone 01 Back Glove",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.19,
+      "scaleY": 1.13,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-bone-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_bone_01",
+      "name": "Bone 01 Back Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_bone_01"
+      ],
+      "categoryId": "arms"
     }
   },
   {
@@ -503,6 +698,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_glove_lazure_01",
+    "name": "Lazure 01 Back Glove",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 19,
+      "angle": 0,
+      "scaleX": 1.28,
+      "scaleY": 1.26,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-lazure-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_lazure_01",
+      "name": "Lazure 01 Back Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_lazure_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_back_glove_leather_03",
     "name": "Leather Back Glove 03",
     "kind": "armor",
@@ -538,6 +772,84 @@
       "price": 7,
       "itemIds": [
         "generated_equipment_back_glove_leather_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_lion_01",
+    "name": "Lion 01 Back Glove",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-lion-01"
+    },
+    "equipmentTuning": {
+      "x": -1.7652223386829604,
+      "y": 18.866568167416347,
+      "angle": 0,
+      "scaleX": 1.26,
+      "scaleY": 1.15,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-lion-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_lion_01",
+      "name": "Lion 01 Back Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_lion_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_mercenary_01",
+    "name": "Mercenary Back Glove 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 11,
+      "angle": 0,
+      "scaleX": 1.28,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-mercenary-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_mercenary_01",
+      "name": "Mercenary Back Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_glove_mercenary_01"
       ],
       "categoryId": "arms"
     }
@@ -687,6 +999,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_bone_01",
+    "name": "Bone 01 Back Greave",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-bone-01"
+    },
+    "equipmentTuning": {
+      "x": -1.2500324538393102,
+      "y": 11.834319543322636,
+      "angle": -3,
+      "scaleX": 1.55,
+      "scaleY": 1.17,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-bone-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_bone_01",
+      "name": "Bone 01 Back Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_bone_01"
+      ],
+      "categoryId": "legs"
     }
   },
   {
@@ -848,6 +1199,45 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_lazure_01",
+    "name": "Lazure 01 Back Greave",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": -2.3027891641856115,
+      "y": 0.5088757135584387,
+      "angle": -9,
+      "scaleX": 1.8,
+      "scaleY": 1.55,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-lazure-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_lazure_01",
+      "name": "Lazure 01 Back Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_lazure_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_leather_01",
     "name": "Leather Back Greave 01",
     "kind": "armor",
@@ -883,6 +1273,84 @@
       "price": 9,
       "itemIds": [
         "generated_equipment_back_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_lion_01",
+    "name": "Lion 01 Back Greave",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 2.0262401129799628,
+      "y": 15.532544400610846,
+      "angle": -3,
+      "scaleX": 1.23,
+      "scaleY": 1.11,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-lion-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_lion_01",
+      "name": "Lion 01 Back Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_lion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_mercenary_01",
+    "name": "Mercenary Back Greave 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": -4.602927811523045,
+      "y": 0,
+      "angle": -8,
+      "scaleX": 1.6,
+      "scaleY": 1.32,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-mercenary-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_mercenary_01",
+      "name": "Mercenary Back Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_greave_mercenary_01"
       ],
       "categoryId": "legs"
     }
@@ -1032,6 +1500,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_bone_01",
+    "name": "Bone 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 1.5792830444024446,
+      "y": 5.422677448302522,
+      "angle": 3,
+      "scaleX": 1.34,
+      "scaleY": 1.11,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-bone-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_bone_01",
+      "name": "Bone 01 Back Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_bone_01"
+      ],
+      "categoryId": "legs"
     }
   },
   {
@@ -1193,6 +1700,123 @@
     }
   },
   {
+    "id": "generated_equipment_back_shinguard_lazure_01",
+    "name": "Lazure 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 3.430461129919479,
+      "y": 19.323924452565734,
+      "angle": 6,
+      "scaleX": 1.57,
+      "scaleY": 0.88,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-lazure-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_lazure_01",
+      "name": "Lazure 01 Back Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_lazure_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_lion_01",
+    "name": "Lion 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-lion-01"
+    },
+    "equipmentTuning": {
+      "x": -0.6700645168757262,
+      "y": 5.982873790002486,
+      "angle": 3,
+      "scaleX": 1.15,
+      "scaleY": 0.88,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-lion-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_lion_01",
+      "name": "Lion 01 Back Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_lion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_mercenary_01",
+    "name": "Mercenary Back Shinguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 6.011012133938948,
+      "y": 4.8638334247572175,
+      "angle": 4,
+      "scaleX": 1.8,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-mercenary-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_mercenary_01",
+      "name": "Mercenary Back Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shinguard_mercenary_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_rust_champion_01",
     "name": "Rust Back Shinguard Champion 01",
     "kind": "armor",
@@ -1337,6 +1961,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_bone_01",
+    "name": "Bone 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.78,
+      "scaleY": 1.76,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-bone-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_bone_01",
+      "name": "Bone 01 Back Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_bone_01"
+      ],
+      "categoryId": "shoulders"
     }
   },
   {
@@ -1498,6 +2161,123 @@
     }
   },
   {
+    "id": "generated_equipment_back_shoulderguard_lazure_01",
+    "name": "Lazure 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 9.368456043039103,
+      "y": 10.13377774758061,
+      "angle": 0,
+      "scaleX": 3,
+      "scaleY": 1.82,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-lazure-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_lazure_01",
+      "name": "Lazure 01 Back Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_lazure_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_lion_01",
+    "name": "Lion 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 0.8820971122916461,
+      "y": 11.275254608645128,
+      "angle": -3,
+      "scaleX": 1.95,
+      "scaleY": 1.57,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-lion-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_lion_01",
+      "name": "Lion 01 Back Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_lion_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_mercenary_01",
+    "name": "Mercenary Back Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 13.79700200024294,
+      "y": 5.829458480987967,
+      "angle": 3,
+      "scaleX": 2.75,
+      "scaleY": 1.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-mercenary-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_mercenary_01",
+      "name": "Mercenary Back Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_mercenary_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_back_shoulderguard_rust_champion_01",
     "name": "Rust Back Shoulderguard Champion 01",
     "kind": "armor",
@@ -1642,6 +2422,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_bone_01",
+    "name": "Bone 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 1.2027098271555587,
+      "y": 23.44497611666111,
+      "angle": -3,
+      "scaleX": 1.53,
+      "scaleY": 1.19,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-bone-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_bone_01",
+      "name": "Bone 01 Back Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_bone_01"
+      ],
+      "categoryId": "arms"
     }
   },
   {
@@ -1803,6 +2622,123 @@
     }
   },
   {
+    "id": "generated_equipment_back_wrist_lazure_01",
+    "name": "Lazure 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 3.817218097239561,
+      "y": 23.17436814208645,
+      "angle": -12,
+      "scaleX": 2.52,
+      "scaleY": 1.26,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-lazure-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_lazure_01",
+      "name": "Lazure 01 Back Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_lazure_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_lion_01",
+    "name": "Lion 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 2.638790781411572,
+      "y": 13.489526977287142,
+      "angle": -3,
+      "scaleX": 1.7,
+      "scaleY": 1.24,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-lion-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_lion_01",
+      "name": "Lion 01 Back Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_lion_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_mercenary_01",
+    "name": "Mercenary Back Wrist 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 5.632390166481429,
+      "y": 20.310234558580305,
+      "angle": 8,
+      "scaleX": 1.91,
+      "scaleY": 1.09,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-mercenary-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_mercenary_01",
+      "name": "Mercenary Back Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_back_wrist_mercenary_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_rust_champion_01",
     "name": "Rust Back Wrist Champion 01",
     "kind": "armor",
@@ -1950,6 +2886,45 @@
     }
   },
   {
+    "id": "generated_equipment_breastplate_bone_01",
+    "name": "Bone 01 Breastplate",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 47,
+      "angle": 0,
+      "scaleX": 1.15,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-bone-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_bone_01",
+      "name": "Bone 01 Breastplate",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_bone_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
     "id": "generated_equipment_breastplate_chainmail_01",
     "name": "Chainmail Hauberk 01",
     "kind": "armor",
@@ -2063,6 +3038,123 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_breastplate_executioner_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_lazure_01",
+    "name": "Lazure 01 Breastplate",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 76,
+      "angle": 0,
+      "scaleX": 1.55,
+      "scaleY": 1.91,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-lazure-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_lazure_01",
+      "name": "Lazure 01 Breastplate",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_lazure_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_lion_01",
+    "name": "Lion 01 Breastplate",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 66,
+      "angle": 0,
+      "scaleX": 1.32,
+      "scaleY": 1.68,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-lion-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_lion_01",
+      "name": "Lion 01 Breastplate",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_lion_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_mercenary_01",
+    "name": "Mercenary Breastplate 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 47,
+      "angle": 0,
+      "scaleX": 1.4,
+      "scaleY": 1.59,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-mercenary-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_mercenary_01",
+      "name": "Mercenary Breastplate 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_breastplate_mercenary_01"
       ],
       "categoryId": "chest"
     }
@@ -2212,6 +3304,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_bone_01",
+    "name": "Bone 01 Front Boot",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 32,
+      "y": -1.4792899429153294,
+      "angle": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-bone-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_bone_01",
+      "name": "Bone 01 Front Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_bone_01"
+      ],
+      "categoryId": "legs"
     }
   },
   {
@@ -2373,6 +3504,123 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_lazure_01",
+    "name": "Lazure 01 Front Boot",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 47,
+      "y": -5.917159771661318,
+      "angle": 0,
+      "scaleX": 2.01,
+      "scaleY": 1.76,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-lazure-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_lazure_01",
+      "name": "Lazure 01 Front Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_lazure_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_lion_01",
+    "name": "Lion 01 Front Boot",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 41,
+      "y": -5.177514800203653,
+      "angle": 0,
+      "scaleX": 1.86,
+      "scaleY": 1.53,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-lion-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_lion_01",
+      "name": "Lion 01 Front Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_lion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_mercenary_01",
+    "name": "Mercenary Front Boot 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": -3,
+      "y": -8.396449714576647,
+      "angle": 0,
+      "scaleX": 1.49,
+      "scaleY": 1.74,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-mercenary-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_mercenary_01",
+      "name": "Mercenary Front Boot 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_mercenary_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_rust_champion_01",
     "name": "Rust Champion Boots Front",
     "kind": "armor",
@@ -2517,6 +3765,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_bone_01",
+    "name": "Bone 01 Front Glove",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.19,
+      "scaleY": 1.13,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-bone-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_bone_01",
+      "name": "Bone 01 Front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_bone_01"
+      ],
+      "categoryId": "arms"
     }
   },
   {
@@ -2678,6 +3965,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_lazure_01",
+    "name": "Lazure 01 Front Glove",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.28,
+      "scaleY": 1.26,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-lazure-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_lazure_01",
+      "name": "Lazure 01 Front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_lazure_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_leather_03",
     "name": "Leather Front Glove 03",
     "kind": "armor",
@@ -2713,6 +4039,84 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_glove_leather_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_lion_01",
+    "name": "Lion 01 Front Glove",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-lion-01"
+    },
+    "equipmentTuning": {
+      "x": -1.7652223386829604,
+      "y": 18.866568167416347,
+      "angle": 0,
+      "scaleX": 1.26,
+      "scaleY": 1.15,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-lion-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_lion_01",
+      "name": "Lion 01 Front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_lion_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_mercenary_01",
+    "name": "Mercenary Front Glove 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 11,
+      "angle": 0,
+      "scaleX": 1.28,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-mercenary-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_mercenary_01",
+      "name": "Mercenary Front Glove 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_mercenary_01"
       ],
       "categoryId": "arms"
     }
@@ -2862,6 +4266,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_bone_01",
+    "name": "Bone 01 Front Greave",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-bone-01"
+    },
+    "equipmentTuning": {
+      "x": -1.2500324538393102,
+      "y": 11.834319543322636,
+      "angle": -3,
+      "scaleX": 1.55,
+      "scaleY": 1.17,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-bone-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_bone_01",
+      "name": "Bone 01 Front Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_bone_01"
+      ],
+      "categoryId": "legs"
     }
   },
   {
@@ -3023,6 +4466,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_lazure_01",
+    "name": "Lazure 01 Front Greave",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": -2.3027891641856115,
+      "y": 0.5088757135584387,
+      "angle": -9,
+      "scaleX": 1.8,
+      "scaleY": 1.55,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-lazure-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_lazure_01",
+      "name": "Lazure 01 Front Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_lazure_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_leather_01",
     "name": "Leather Front Greave 01",
     "kind": "armor",
@@ -3058,6 +4540,84 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_greave_leather_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_lion_01",
+    "name": "Lion 01 Front Greave",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 2.0262401129799628,
+      "y": 15.532544400610846,
+      "angle": -3,
+      "scaleX": 1.23,
+      "scaleY": 1.11,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-lion-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_lion_01",
+      "name": "Lion 01 Front Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_lion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_mercenary_01",
+    "name": "Mercenary Front Greave 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": -4.602927811523045,
+      "y": 0,
+      "angle": -8,
+      "scaleX": 1.6,
+      "scaleY": 1.32,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-mercenary-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_mercenary_01",
+      "name": "Mercenary Front Greave 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_mercenary_01"
       ],
       "categoryId": "legs"
     }
@@ -3207,6 +4767,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_bone_01",
+    "name": "Bone 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 1.5792830444024446,
+      "y": 5.422677448302522,
+      "angle": 3,
+      "scaleX": 1.34,
+      "scaleY": 1.11,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-bone-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_bone_01",
+      "name": "Bone 01 Front Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_bone_01"
+      ],
+      "categoryId": "legs"
     }
   },
   {
@@ -3368,6 +4967,123 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_lazure_01",
+    "name": "Lazure 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 3.430461129919479,
+      "y": 19.323924452565734,
+      "angle": 6,
+      "scaleX": 1.57,
+      "scaleY": 0.88,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-lazure-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_lazure_01",
+      "name": "Lazure 01 Front Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_lazure_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_lion_01",
+    "name": "Lion 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-lion-01"
+    },
+    "equipmentTuning": {
+      "x": -0.6700645168757262,
+      "y": 5.982873790002486,
+      "angle": 3,
+      "scaleX": 1.15,
+      "scaleY": 0.88,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-lion-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_lion_01",
+      "name": "Lion 01 Front Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_lion_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_mercenary_01",
+    "name": "Mercenary Front Shinguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 6.011012133938948,
+      "y": 4.8638334247572175,
+      "angle": 4,
+      "scaleX": 1.8,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-mercenary-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_mercenary_01",
+      "name": "Mercenary Front Shinguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_mercenary_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_rust_champion_01",
     "name": "Rust Front Shinguard Champion 01",
     "kind": "armor",
@@ -3512,6 +5228,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_bone_01",
+    "name": "Bone 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.78,
+      "scaleY": 1.76,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-bone-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_bone_01",
+      "name": "Bone 01 Front Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_bone_01"
+      ],
+      "categoryId": "shoulders"
     }
   },
   {
@@ -3673,6 +5428,123 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_lazure_01",
+    "name": "Lazure 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 9.368456043039103,
+      "y": 10.13377774758061,
+      "angle": 0,
+      "scaleX": 3,
+      "scaleY": 1.82,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-lazure-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_lazure_01",
+      "name": "Lazure 01 Front Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_lazure_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_lion_01",
+    "name": "Lion 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 0.8820971122916461,
+      "y": 11.275254608645128,
+      "angle": -3,
+      "scaleX": 1.95,
+      "scaleY": 1.57,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-lion-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_lion_01",
+      "name": "Lion 01 Front Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_lion_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_mercenary_01",
+    "name": "Mercenary Front Shoulderguard 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 13.79700200024294,
+      "y": 5.829458480987967,
+      "angle": 3,
+      "scaleX": 2.75,
+      "scaleY": 1.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-mercenary-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_mercenary_01",
+      "name": "Mercenary Front Shoulderguard 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_mercenary_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_rust_champion_01",
     "name": "Rust Front Shoulderguard Champion 01",
     "kind": "armor",
@@ -3817,6 +5689,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_bone_01",
+    "name": "Bone 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 1.2027098271555587,
+      "y": 23.44497611666111,
+      "angle": -3,
+      "scaleX": 1.53,
+      "scaleY": 1.19,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-bone-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_bone_01",
+      "name": "Bone 01 Front Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_bone_01"
+      ],
+      "categoryId": "arms"
     }
   },
   {
@@ -3978,6 +5889,123 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_lazure_01",
+    "name": "Lazure 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 3.0548335020573916,
+      "y": 23.2201038128876,
+      "angle": -12,
+      "scaleX": 2.52,
+      "scaleY": 1.26,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-lazure-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_lazure_01",
+      "name": "Lazure 01 Front Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_lazure_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_lion_01",
+    "name": "Lion 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 2.638790781411572,
+      "y": 13.489526977287142,
+      "angle": -3,
+      "scaleX": 1.7,
+      "scaleY": 1.24,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-lion-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_lion_01",
+      "name": "Lion 01 Front Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_lion_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_mercenary_01",
+    "name": "Mercenary Front Wrist 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": 5.632390166481429,
+      "y": 20.310234558580305,
+      "angle": 8,
+      "scaleX": 1.91,
+      "scaleY": 1.09,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-mercenary-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_mercenary_01",
+      "name": "Mercenary Front Wrist 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_mercenary_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_rust_champion_01",
     "name": "Rust Front Wrist Champion 01",
     "kind": "armor",
@@ -4122,6 +6150,45 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_bone_01",
+    "name": "Bone 01 Helmet",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-bone-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 32,
+      "angle": 0,
+      "scaleX": 1.11,
+      "scaleY": 1.17,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-bone-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-bone-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-bone-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_bone_01",
+      "name": "Bone 01 Helmet",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_bone_01"
+      ],
+      "categoryId": "head"
     }
   },
   {
@@ -4309,6 +6376,123 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_helmet_executioner_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_lazure_01",
+    "name": "Lazure 01 Helmet",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-lazure-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 51,
+      "angle": 0,
+      "scaleX": 1.1,
+      "scaleY": 1.49,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-lazure-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-lazure-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-lazure-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_lazure_01",
+      "name": "Lazure 01 Helmet",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_lazure_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_lion_01",
+    "name": "Lion 01 Helmet",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-lion-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 38,
+      "angle": 0,
+      "scaleX": 1.28,
+      "scaleY": 1.34,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-lion-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-lion-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-lion-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_lion_01",
+      "name": "Lion 01 Helmet",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_lion_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_mercenary_01",
+    "name": "Mercenary Helmet 01",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 0,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-mercenary-01"
+    },
+    "equipmentTuning": {
+      "x": -1,
+      "y": 41,
+      "angle": 0,
+      "scaleX": 1.38,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-mercenary-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-mercenary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-mercenary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_mercenary_01",
+      "name": "Mercenary Helmet 01",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_helmet_mercenary_01"
       ],
       "categoryId": "head"
     }

@@ -419,8 +419,8 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
   weaponBow: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
-  helmet: { x: -1, y: 6, angle: 0, scaleX: 0.77, scaleY: 0.94, flipX: false, flipY: false },
-  breastplate: { x: 0, y: 30, angle: 0, scaleX: 1.04, scaleY: 1.31, flipX: false, flipY: false },
+  helmet: { x: -1, y: 6, angle: 0, scaleX: 0.84, scaleY: 0.94, flipX: false, flipY: false },
+  breastplate: { x: 0, y: 13, angle: 0, scaleX: 1.04, scaleY: 1.28, flipX: false, flipY: false },
   backShoulderguard: { x: 6, y: 1, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   frontShoulderguard: { x: 8, y: -3, angle: 13, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   backWrist: { x: -1, y: -3, angle: -4, scaleX: 1.26, scaleY: 1.1, flipX: true, flipY: false },
@@ -504,6 +504,7 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "auto_equipment_back_glove_stormguard_01": { x: -1.504, y: 14.158, angle: 3, scaleX: 1.23, scaleY: 1.2, flipX: false, flipY: false },
   "auto_equipment_back_greave_stormguard_01": { x: 2.821, y: 8.136, angle: -2, scaleX: 1.29, scaleY: 1.14, flipX: false, flipY: false },
   "auto_equipment_back_shinguard_stormguard_01": { x: 1.111, y: -2.93, angle: 1, scaleX: 1.4, scaleY: 1, flipX: false, flipY: false },
+  "auto_equipment_back_glove_mercenary_01": { x: 0, y: 11, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {

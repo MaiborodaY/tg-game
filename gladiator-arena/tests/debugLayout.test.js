@@ -307,6 +307,13 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("debug-auto-equipment__set-preview--selected"), true);
   assert.equal(debugPanelSource.includes("getSelectedEquipmentSetImportEntries"), true);
   assert.equal(debugPanelSource.includes("renameEquipmentSetAssets"), true);
+  assert.equal(debugPanelSource.includes("savePromotedEquipmentSet"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-rarity"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-shop"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-enemy-pool"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-boss-unique"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__set-promote"), true);
+  assert.equal(debugPanelSource.includes("syncEquipmentSetImportAvailabilityControls"), true);
   assert.equal(debugPanelSource.includes("getRemovableGeneratedEquipmentItems"), true);
   assert.equal(debugPanelSource.includes("createDebugRemovableGeneratedEquipmentPairItem"), true);
   assert.equal(debugPanelSource.includes("compareDebugRemovableGeneratedEquipmentItems"), true);
@@ -319,6 +326,7 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_DAMAGE_MAX = 100"), true);
   assert.equal(debugPanelSource.includes("AUTO_EQUIPMENT_PRICE_MAX = 2000"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__generated-select"), true);
+  assert.equal(stylesSource.includes(".debug-auto-equipment__set-rarity"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__set-assets"), true);
   assert.equal(stylesSource.includes(".debug-set-import-preview"), true);
   assert.equal(stylesSource.includes(".debug-set-import-preview__image"), true);
