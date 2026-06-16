@@ -49,15 +49,32 @@ test("armor balance slot weights are the single source of truth", () => {
 
 test("armor balance stores the shop breastplate progression table", () => {
   assert.deepEqual(toPlainObject(armorBalance.ARMOR_SHOP_BREASTPLATE_ARMOR), {
-    common: { low: 3, high: 5 },
-    uncommon: { low: 8, high: 11 },
-    rare: { low: 15, high: 20 },
-    epic: { low: 25, high: 30 },
-    legendary: { low: 38, high: 48 },
-    mythical: { low: 60, high: 75 },
+    common: { low: 3, mid: 4, high: 5 },
+    uncommon: { low: 8, mid: 10, high: 11 },
+    rare: { low: 12, mid: 14, high: 16 },
+    epic: { low: 20, mid: 23, high: 26 },
+    legendary: { low: 32, mid: 36, high: 40 },
+    mythical: { low: 48, mid: 48, high: 48 },
   });
   assert.equal(armorBalance.getArmorShopSetBreastplateArmor("uncommon", "low"), 8);
-  assert.equal(armorBalance.getArmorShopSetBreastplateArmor("mythical", "high"), 75);
+  assert.equal(armorBalance.getArmorShopSetBreastplateArmor("mythical", "high"), 48);
+});
+
+test("armor balance stores the named late-game shop set curve", () => {
+  assert.deepEqual(toPlainObject(armorBalance.ARMOR_SHOP_SET_BREASTPLATE_ARMOR), {
+    rust_champion: { rarity: "rare", grade: "low", breastplateArmor: 12 },
+    mercenary: { rarity: "rare", grade: "mid", breastplateArmor: 14 },
+    executioner: { rarity: "rare", grade: "high", breastplateArmor: 16 },
+    lazure: { rarity: "epic", grade: "low", breastplateArmor: 20 },
+    lion: { rarity: "epic", grade: "mid", breastplateArmor: 23 },
+    stormguard: { rarity: "epic", grade: "high", breastplateArmor: 26 },
+    viper: { rarity: "legendary", grade: "low", breastplateArmor: 32 },
+    bone: { rarity: "legendary", grade: "mid", breastplateArmor: 36 },
+    cathedral: { rarity: "legendary", grade: "high", breastplateArmor: 40 },
+    druid: { rarity: "mythical", grade: "high", breastplateArmor: 48 },
+  });
+  assert.equal(armorBalance.getNamedArmorShopSetBreastplateArmor("lion"), 23);
+  assert.equal(armorBalance.getNamedArmorShopSetTotalPrice("druid"), 480);
 });
 
 test("armor balance derives shop set prices from breastplate armor", () => {
@@ -66,7 +83,7 @@ test("armor balance derives shop set prices from breastplate armor", () => {
   assert.equal(armorBalance.getArmorShopSetTotalPrice("common", "low"), 30);
   assert.equal(armorBalance.getArmorShopSetTotalPrice("common", "high"), 50);
   assert.equal(armorBalance.getArmorShopSetTotalPrice("uncommon", "low"), 80);
-  assert.equal(armorBalance.getArmorShopSetTotalPrice("mythical", "high"), 750);
+  assert.equal(armorBalance.getArmorShopSetTotalPrice("mythical", "high"), 480);
 });
 
 test("starter armor prices use the same slot weights", () => {

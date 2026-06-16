@@ -44,7 +44,7 @@
     "name": "Bone 01 Back Boot",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 13,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-bone-01"
@@ -71,9 +71,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_bone_01",
       "name": "Bone 01 Back Boot",
-      "price": 0,
+      "price": 32,
       "itemIds": [
         "generated_equipment_back_boot_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_boot_cathedral_01",
+    "name": "Cathedral 01 Back Boot",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 14,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 7.501116455820636,
+      "y": -10.355029600407306,
+      "angle": 0,
+      "scaleX": 1.13,
+      "scaleY": 1.63,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-cathedral-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_cathedral_01",
+      "name": "Cathedral 01 Back Boot",
+      "price": 36,
+      "itemIds": [
+        "generated_equipment_back_boot_cathedral_01"
       ],
       "categoryId": "legs"
     }
@@ -163,7 +202,7 @@
     "name": "Druid Back Boot 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 22,
+    "armorHp": 17,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-druid-01"
@@ -190,7 +229,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_druid_01",
       "name": "Druid Back Boot 01",
-      "price": 54,
+      "price": 43,
       "itemIds": [
         "generated_equipment_back_boot_druid_01"
       ],
@@ -202,7 +241,7 @@
     "name": "Executioner Back Boot 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 6,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-executioner-01"
@@ -229,7 +268,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_executioner_01",
       "name": "Executioner Back Boot 01",
-      "price": 0,
+      "price": 14,
       "itemIds": [
         "generated_equipment_back_boot_executioner_01"
       ],
@@ -241,7 +280,7 @@
     "name": "Lazure 01 Back Boot",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 7,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-lazure-01"
@@ -268,7 +307,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_lazure_01",
       "name": "Lazure 01 Back Boot",
-      "price": 0,
+      "price": 18,
       "itemIds": [
         "generated_equipment_back_boot_lazure_01"
       ],
@@ -280,7 +319,7 @@
     "name": "Lion 01 Back Boot",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 8,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-lion-01"
@@ -307,7 +346,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_lion_01",
       "name": "Lion 01 Back Boot",
-      "price": 0,
+      "price": 21,
       "itemIds": [
         "generated_equipment_back_boot_lion_01"
       ],
@@ -319,7 +358,7 @@
     "name": "Mercenary Back Boot 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 5,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-mercenary-01"
@@ -346,7 +385,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_mercenary_01",
       "name": "Mercenary Back Boot 01",
-      "price": 0,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_boot_mercenary_01"
       ],
@@ -358,7 +397,7 @@
     "name": "Rust Champion Boots",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 5,
+    "armorHp": 4,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-rust-champion-01"
@@ -385,7 +424,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_rust_champion_01",
       "name": "Rust Champion Boots",
-      "price": 13,
+      "price": 11,
       "itemIds": [
         "generated_equipment_back_boot_rust_champion_01"
       ],
@@ -436,7 +475,7 @@
     "name": "Stormguard Back Boot 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 9,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-stormguard-01"
@@ -463,9 +502,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_stormguard_01",
       "name": "Stormguard Back Boot 01",
-      "price": 0,
+      "price": 23,
       "itemIds": [
         "generated_equipment_back_boot_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_boot_viper_01",
+    "name": "Viper 01 Back Boot",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 12,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 7.501116455820636,
+      "y": -4.437869828745988,
+      "angle": 0,
+      "scaleX": 1.11,
+      "scaleY": 1.15,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-viper-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_boot_viper_01",
+      "name": "Viper 01 Back Boot",
+      "price": 29,
+      "itemIds": [
+        "generated_equipment_back_boot_viper_01"
       ],
       "categoryId": "legs"
     }
@@ -505,7 +583,7 @@
     "name": "Bone 01 Back Glove",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 13,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-bone-01"
@@ -532,9 +610,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_bone_01",
       "name": "Bone 01 Back Glove",
-      "price": 0,
+      "price": 32,
       "itemIds": [
         "generated_equipment_back_glove_bone_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_cathedral_01",
+    "name": "Cathedral 01 Back Glove",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 14,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 4.530646615085175,
+      "y": 9.554237682251994,
+      "angle": -9,
+      "scaleX": 1.72,
+      "scaleY": 1.65,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-cathedral-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_cathedral_01",
+      "name": "Cathedral 01 Back Glove",
+      "price": 36,
+      "itemIds": [
+        "generated_equipment_back_glove_cathedral_01"
       ],
       "categoryId": "arms"
     }
@@ -624,7 +741,7 @@
     "name": "Druid Back Glove 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 22,
+    "armorHp": 17,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-druid-01"
@@ -651,7 +768,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_druid_01",
       "name": "Druid Back Glove 01",
-      "price": 54,
+      "price": 43,
       "itemIds": [
         "generated_equipment_back_glove_druid_01"
       ],
@@ -663,7 +780,7 @@
     "name": "Executioner Back Glove 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 6,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-executioner-01"
@@ -690,7 +807,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_executioner_01",
       "name": "Executioner Back Glove 01",
-      "price": 0,
+      "price": 14,
       "itemIds": [
         "generated_equipment_back_glove_executioner_01"
       ],
@@ -702,7 +819,7 @@
     "name": "Lazure 01 Back Glove",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 7,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-lazure-01"
@@ -729,7 +846,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_lazure_01",
       "name": "Lazure 01 Back Glove",
-      "price": 0,
+      "price": 18,
       "itemIds": [
         "generated_equipment_back_glove_lazure_01"
       ],
@@ -781,7 +898,7 @@
     "name": "Lion 01 Back Glove",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 8,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-lion-01"
@@ -808,7 +925,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_lion_01",
       "name": "Lion 01 Back Glove",
-      "price": 0,
+      "price": 21,
       "itemIds": [
         "generated_equipment_back_glove_lion_01"
       ],
@@ -820,7 +937,7 @@
     "name": "Mercenary Back Glove 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 5,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-mercenary-01"
@@ -847,7 +964,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_mercenary_01",
       "name": "Mercenary Back Glove 01",
-      "price": 0,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_glove_mercenary_01"
       ],
@@ -859,7 +976,7 @@
     "name": "Rust Back Glove Champion 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 5,
+    "armorHp": 4,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-rust-champion-01"
@@ -886,7 +1003,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_rust_champion_01",
       "name": "Rust Back Glove Champion 01",
-      "price": 13,
+      "price": 11,
       "itemIds": [
         "generated_equipment_back_glove_rust_champion_01"
       ],
@@ -937,7 +1054,7 @@
     "name": "Stormguard Back Glove 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 9,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-stormguard-01"
@@ -964,9 +1081,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_stormguard_01",
       "name": "Stormguard Back Glove 01",
-      "price": 0,
+      "price": 23,
       "itemIds": [
         "generated_equipment_back_glove_stormguard_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_viper_01",
+    "name": "Viper 01 Back Glove",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 12,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 0,
+      "scaleX": 1.42,
+      "scaleY": 1.32,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-viper-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_glove_viper_01",
+      "name": "Viper 01 Back Glove",
+      "price": 29,
+      "itemIds": [
+        "generated_equipment_back_glove_viper_01"
       ],
       "categoryId": "arms"
     }
@@ -1006,7 +1162,7 @@
     "name": "Bone 01 Back Greave",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 16,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-bone-01"
@@ -1033,9 +1189,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_bone_01",
       "name": "Bone 01 Back Greave",
-      "price": 0,
+      "price": 40,
       "itemIds": [
         "generated_equipment_back_greave_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_cathedral_01",
+    "name": "Cathedral 01 Back Greave",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 18,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 2.830586551045684,
+      "y": 18.491124286441618,
+      "angle": -9,
+      "scaleX": 1.91,
+      "scaleY": 1.24,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-cathedral-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_cathedral_01",
+      "name": "Cathedral 01 Back Greave",
+      "price": 44,
+      "itemIds": [
+        "generated_equipment_back_greave_cathedral_01"
       ],
       "categoryId": "legs"
     }
@@ -1125,7 +1320,7 @@
     "name": "Druid Back Greave 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 26,
+    "armorHp": 21,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-druid-01"
@@ -1152,7 +1347,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_druid_01",
       "name": "Druid Back Greave 01",
-      "price": 66,
+      "price": 53,
       "itemIds": [
         "generated_equipment_back_greave_druid_01"
       ],
@@ -1164,7 +1359,7 @@
     "name": "Executioner Back Greave 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 7,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-executioner-01"
@@ -1191,7 +1386,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_executioner_01",
       "name": "Executioner Back Greave 01",
-      "price": 0,
+      "price": 18,
       "itemIds": [
         "generated_equipment_back_greave_executioner_01"
       ],
@@ -1203,7 +1398,7 @@
     "name": "Lazure 01 Back Greave",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 9,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-lazure-01"
@@ -1230,7 +1425,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_lazure_01",
       "name": "Lazure 01 Back Greave",
-      "price": 0,
+      "price": 22,
       "itemIds": [
         "generated_equipment_back_greave_lazure_01"
       ],
@@ -1282,7 +1477,7 @@
     "name": "Lion 01 Back Greave",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 10,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-lion-01"
@@ -1309,7 +1504,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_lion_01",
       "name": "Lion 01 Back Greave",
-      "price": 0,
+      "price": 25,
       "itemIds": [
         "generated_equipment_back_greave_lion_01"
       ],
@@ -1321,7 +1516,7 @@
     "name": "Mercenary Back Greave 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 6,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-mercenary-01"
@@ -1348,7 +1543,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_mercenary_01",
       "name": "Mercenary Back Greave 01",
-      "price": 0,
+      "price": 15,
       "itemIds": [
         "generated_equipment_back_greave_mercenary_01"
       ],
@@ -1360,7 +1555,7 @@
     "name": "Rust Back Greave Champion 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 7,
+    "armorHp": 5,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-rust-champion-01"
@@ -1387,7 +1582,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_rust_champion_01",
       "name": "Rust Back Greave Champion 01",
-      "price": 17,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_greave_rust_champion_01"
       ],
@@ -1438,7 +1633,7 @@
     "name": "Stormguard Back Greave 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 11,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-stormguard-01"
@@ -1465,9 +1660,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_stormguard_01",
       "name": "Stormguard Back Greave 01",
-      "price": 0,
+      "price": 29,
       "itemIds": [
         "generated_equipment_back_greave_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_greave_viper_01",
+    "name": "Viper 01 Back Greave",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 14,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-viper-01"
+    },
+    "equipmentTuning": {
+      "x": -8.218928871828211,
+      "y": 1.6094673690139985,
+      "angle": -24,
+      "scaleX": 1.19,
+      "scaleY": 1.78,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-viper-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_greave_viper_01",
+      "name": "Viper 01 Back Greave",
+      "price": 35,
+      "itemIds": [
+        "generated_equipment_back_greave_viper_01"
       ],
       "categoryId": "legs"
     }
@@ -1507,7 +1741,7 @@
     "name": "Bone 01 Back Shinguard",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 16,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-bone-01"
@@ -1534,9 +1768,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_bone_01",
       "name": "Bone 01 Back Shinguard",
-      "price": 0,
+      "price": 40,
       "itemIds": [
         "generated_equipment_back_shinguard_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_cathedral_01",
+    "name": "Cathedral 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 18,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 5.72037936499342,
+      "y": 6.264107228415298,
+      "angle": 6,
+      "scaleX": 2.12,
+      "scaleY": 1.09,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-cathedral-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_cathedral_01",
+      "name": "Cathedral 01 Back Shinguard",
+      "price": 44,
+      "itemIds": [
+        "generated_equipment_back_shinguard_cathedral_01"
       ],
       "categoryId": "legs"
     }
@@ -1626,7 +1899,7 @@
     "name": "Druid Back Shinguard 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 26,
+    "armorHp": 21,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-druid-01"
@@ -1653,7 +1926,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_druid_01",
       "name": "Druid Back Shinguard 01",
-      "price": 66,
+      "price": 53,
       "itemIds": [
         "generated_equipment_back_shinguard_druid_01"
       ],
@@ -1665,7 +1938,7 @@
     "name": "Executioner Back Shinguard 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 7,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-executioner-01"
@@ -1692,7 +1965,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_executioner_01",
       "name": "Executioner Back Shinguard 01",
-      "price": 0,
+      "price": 18,
       "itemIds": [
         "generated_equipment_back_shinguard_executioner_01"
       ],
@@ -1704,7 +1977,7 @@
     "name": "Lazure 01 Back Shinguard",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 9,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-lazure-01"
@@ -1731,7 +2004,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_lazure_01",
       "name": "Lazure 01 Back Shinguard",
-      "price": 0,
+      "price": 22,
       "itemIds": [
         "generated_equipment_back_shinguard_lazure_01"
       ],
@@ -1743,7 +2016,7 @@
     "name": "Lion 01 Back Shinguard",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 10,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-lion-01"
@@ -1770,7 +2043,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_lion_01",
       "name": "Lion 01 Back Shinguard",
-      "price": 0,
+      "price": 25,
       "itemIds": [
         "generated_equipment_back_shinguard_lion_01"
       ],
@@ -1782,7 +2055,7 @@
     "name": "Mercenary Back Shinguard 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 6,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-mercenary-01"
@@ -1809,7 +2082,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_mercenary_01",
       "name": "Mercenary Back Shinguard 01",
-      "price": 0,
+      "price": 15,
       "itemIds": [
         "generated_equipment_back_shinguard_mercenary_01"
       ],
@@ -1821,7 +2094,7 @@
     "name": "Rust Back Shinguard Champion 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 7,
+    "armorHp": 5,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-rust-champion-01"
@@ -1848,7 +2121,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_rust_champion_01",
       "name": "Rust Back Shinguard Champion 01",
-      "price": 16,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_shinguard_rust_champion_01"
       ],
@@ -1899,7 +2172,7 @@
     "name": "Stormguard Back Shinguard 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 11,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-stormguard-01"
@@ -1926,9 +2199,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_stormguard_01",
       "name": "Stormguard Back Shinguard 01",
-      "price": 0,
+      "price": 29,
       "itemIds": [
         "generated_equipment_back_shinguard_stormguard_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_viper_01",
+    "name": "Viper 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 14,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-viper-01"
+    },
+    "equipmentTuning": {
+      "x": -0.35152747952975005,
+      "y": 12.93354018564196,
+      "angle": 6,
+      "scaleX": 1.57,
+      "scaleY": 0.88,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-viper-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shinguard_viper_01",
+      "name": "Viper 01 Back Shinguard",
+      "price": 35,
+      "itemIds": [
+        "generated_equipment_back_shinguard_viper_01"
       ],
       "categoryId": "legs"
     }
@@ -1968,7 +2280,7 @@
     "name": "Bone 01 Back Shoulderguard",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 16,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-bone-01"
@@ -1995,9 +2307,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_bone_01",
       "name": "Bone 01 Back Shoulderguard",
-      "price": 0,
+      "price": 40,
       "itemIds": [
         "generated_equipment_back_shoulderguard_bone_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_cathedral_01",
+    "name": "Cathedral 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 18,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": -2,
+      "scaleX": 2.45,
+      "scaleY": 1.76,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-cathedral-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_cathedral_01",
+      "name": "Cathedral 01 Back Shoulderguard",
+      "price": 44,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_cathedral_01"
       ],
       "categoryId": "shoulders"
     }
@@ -2087,7 +2438,7 @@
     "name": "Druid Back Shoulderguard 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 26,
+    "armorHp": 21,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-druid-01"
@@ -2114,7 +2465,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_druid_01",
       "name": "Druid Back Shoulderguard 01",
-      "price": 66,
+      "price": 53,
       "itemIds": [
         "generated_equipment_back_shoulderguard_druid_01"
       ],
@@ -2126,7 +2477,7 @@
     "name": "Executioner Back Shoulderguard 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 7,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-executioner-01"
@@ -2153,7 +2504,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_executioner_01",
       "name": "Executioner Back Shoulderguard 01",
-      "price": 0,
+      "price": 18,
       "itemIds": [
         "generated_equipment_back_shoulderguard_executioner_01"
       ],
@@ -2165,7 +2516,7 @@
     "name": "Lazure 01 Back Shoulderguard",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 9,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-lazure-01"
@@ -2192,7 +2543,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_lazure_01",
       "name": "Lazure 01 Back Shoulderguard",
-      "price": 0,
+      "price": 22,
       "itemIds": [
         "generated_equipment_back_shoulderguard_lazure_01"
       ],
@@ -2204,7 +2555,7 @@
     "name": "Lion 01 Back Shoulderguard",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 10,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-lion-01"
@@ -2231,7 +2582,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_lion_01",
       "name": "Lion 01 Back Shoulderguard",
-      "price": 0,
+      "price": 25,
       "itemIds": [
         "generated_equipment_back_shoulderguard_lion_01"
       ],
@@ -2243,7 +2594,7 @@
     "name": "Mercenary Back Shoulderguard 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 6,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-mercenary-01"
@@ -2270,7 +2621,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_mercenary_01",
       "name": "Mercenary Back Shoulderguard 01",
-      "price": 0,
+      "price": 15,
       "itemIds": [
         "generated_equipment_back_shoulderguard_mercenary_01"
       ],
@@ -2282,7 +2633,7 @@
     "name": "Rust Back Shoulderguard Champion 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 7,
+    "armorHp": 5,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-rust-champion-01"
@@ -2309,7 +2660,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_rust_champion_01",
       "name": "Rust Back Shoulderguard Champion 01",
-      "price": 17,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_shoulderguard_rust_champion_01"
       ],
@@ -2360,7 +2711,7 @@
     "name": "Stormguard Back Shoulderguard 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 11,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-stormguard-01"
@@ -2387,9 +2738,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_stormguard_01",
       "name": "Stormguard Back Shoulderguard 01",
-      "price": 0,
+      "price": 29,
       "itemIds": [
         "generated_equipment_back_shoulderguard_stormguard_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_viper_01",
+    "name": "Viper 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 14,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 2.4667791883662744,
+      "y": -1.5317604126407787,
+      "angle": 33,
+      "scaleX": 2.29,
+      "scaleY": 2.14,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-viper-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_shoulderguard_viper_01",
+      "name": "Viper 01 Back Shoulderguard",
+      "price": 35,
+      "itemIds": [
+        "generated_equipment_back_shoulderguard_viper_01"
       ],
       "categoryId": "shoulders"
     }
@@ -2429,7 +2819,7 @@
     "name": "Bone 01 Back Wrist",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 13,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-bone-01"
@@ -2456,9 +2846,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_bone_01",
       "name": "Bone 01 Back Wrist",
-      "price": 0,
+      "price": 32,
       "itemIds": [
         "generated_equipment_back_wrist_bone_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_cathedral_01",
+    "name": "Cathedral 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 14,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": -2.607389191594848,
+      "y": 6,
+      "angle": -12,
+      "scaleX": 2.29,
+      "scaleY": 1.53,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-cathedral-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_cathedral_01",
+      "name": "Cathedral 01 Back Wrist",
+      "price": 36,
+      "itemIds": [
+        "generated_equipment_back_wrist_cathedral_01"
       ],
       "categoryId": "arms"
     }
@@ -2548,7 +2977,7 @@
     "name": "Druid Back Wrist 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 22,
+    "armorHp": 17,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-druid-01"
@@ -2575,7 +3004,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_druid_01",
       "name": "Druid Back Wrist 01",
-      "price": 54,
+      "price": 43,
       "itemIds": [
         "generated_equipment_back_wrist_druid_01"
       ],
@@ -2587,7 +3016,7 @@
     "name": "Executioner Back Wrist 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 6,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-executioner-01"
@@ -2614,7 +3043,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_executioner_01",
       "name": "Executioner Back Wrist 01",
-      "price": 0,
+      "price": 14,
       "itemIds": [
         "generated_equipment_back_wrist_executioner_01"
       ],
@@ -2626,7 +3055,7 @@
     "name": "Lazure 01 Back Wrist",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 7,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-lazure-01"
@@ -2653,7 +3082,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_lazure_01",
       "name": "Lazure 01 Back Wrist",
-      "price": 0,
+      "price": 18,
       "itemIds": [
         "generated_equipment_back_wrist_lazure_01"
       ],
@@ -2665,7 +3094,7 @@
     "name": "Lion 01 Back Wrist",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 8,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-lion-01"
@@ -2692,7 +3121,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_lion_01",
       "name": "Lion 01 Back Wrist",
-      "price": 0,
+      "price": 21,
       "itemIds": [
         "generated_equipment_back_wrist_lion_01"
       ],
@@ -2704,7 +3133,7 @@
     "name": "Mercenary Back Wrist 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 5,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-mercenary-01"
@@ -2731,7 +3160,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_mercenary_01",
       "name": "Mercenary Back Wrist 01",
-      "price": 0,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_wrist_mercenary_01"
       ],
@@ -2743,7 +3172,7 @@
     "name": "Rust Back Wrist Champion 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 5,
+    "armorHp": 4,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-rust-champion-01"
@@ -2770,7 +3199,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_rust_champion_01",
       "name": "Rust Back Wrist Champion 01",
-      "price": 13,
+      "price": 11,
       "itemIds": [
         "generated_equipment_back_wrist_rust_champion_01"
       ],
@@ -2821,7 +3250,7 @@
     "name": "Stormguard Back Wrist 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 9,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-stormguard-01"
@@ -2848,9 +3277,48 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_stormguard_01",
       "name": "Stormguard Back Wrist 01",
-      "price": 0,
+      "price": 23,
       "itemIds": [
         "generated_equipment_back_wrist_stormguard_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_wrist_viper_01",
+    "name": "Viper 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 12,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 2.350205522856612,
+      "y": 28.83327043449225,
+      "angle": -15,
+      "scaleX": 1.57,
+      "scaleY": 1.15,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-viper-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_back_wrist_viper_01",
+      "name": "Viper 01 Back Wrist",
+      "price": 29,
+      "itemIds": [
+        "generated_equipment_back_wrist_viper_01"
       ],
       "categoryId": "arms"
     }
@@ -2890,7 +3358,7 @@
     "name": "Bone 01 Breastplate",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 36,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-bone-01"
@@ -2917,9 +3385,48 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_bone_01",
       "name": "Bone 01 Breastplate",
-      "price": 0,
+      "price": 90,
       "itemIds": [
         "generated_equipment_breastplate_bone_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_cathedral_01",
+    "name": "Cathedral 01 Breastplate",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 40,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 60,
+      "angle": 0,
+      "scaleX": 1.32,
+      "scaleY": 1.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-cathedral-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_cathedral_01",
+      "name": "Cathedral 01 Breastplate",
+      "price": 100,
+      "itemIds": [
+        "generated_equipment_breastplate_cathedral_01"
       ],
       "categoryId": "chest"
     }
@@ -2969,7 +3476,7 @@
     "name": "Druid Breastplate 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 60,
+    "armorHp": 48,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-druid-01"
@@ -2996,7 +3503,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_druid_01",
       "name": "Druid Breastplate 01",
-      "price": 150,
+      "price": 120,
       "itemIds": [
         "generated_equipment_breastplate_druid_01"
       ],
@@ -3008,7 +3515,7 @@
     "name": "Executioner Breastplate 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 16,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-executioner-01"
@@ -3035,7 +3542,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_executioner_01",
       "name": "Executioner Breastplate 01",
-      "price": 0,
+      "price": 40,
       "itemIds": [
         "generated_equipment_breastplate_executioner_01"
       ],
@@ -3047,7 +3554,7 @@
     "name": "Lazure 01 Breastplate",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 20,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-lazure-01"
@@ -3074,7 +3581,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_lazure_01",
       "name": "Lazure 01 Breastplate",
-      "price": 0,
+      "price": 50,
       "itemIds": [
         "generated_equipment_breastplate_lazure_01"
       ],
@@ -3086,7 +3593,7 @@
     "name": "Lion 01 Breastplate",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 23,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-lion-01"
@@ -3113,7 +3620,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_lion_01",
       "name": "Lion 01 Breastplate",
-      "price": 0,
+      "price": 58,
       "itemIds": [
         "generated_equipment_breastplate_lion_01"
       ],
@@ -3125,7 +3632,7 @@
     "name": "Mercenary Breastplate 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 14,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-mercenary-01"
@@ -3152,7 +3659,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_mercenary_01",
       "name": "Mercenary Breastplate 01",
-      "price": 0,
+      "price": 35,
       "itemIds": [
         "generated_equipment_breastplate_mercenary_01"
       ],
@@ -3164,7 +3671,7 @@
     "name": "Rust Breastplate Champion 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 15,
+    "armorHp": 12,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-rust-champion-01"
@@ -3191,7 +3698,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_rust_champion_01",
       "name": "Rust Breastplate Champion 01",
-      "price": 38,
+      "price": 30,
       "itemIds": [
         "generated_equipment_breastplate_rust_champion_01"
       ],
@@ -3242,7 +3749,7 @@
     "name": "Stormguard Breastplate 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 26,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-stormguard-01"
@@ -3269,9 +3776,48 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_stormguard_01",
       "name": "Stormguard Breastplate 01",
-      "price": 0,
+      "price": 65,
       "itemIds": [
         "generated_equipment_breastplate_stormguard_01"
+      ],
+      "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_viper_01",
+    "name": "Viper 01 Breastplate",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 32,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 79,
+      "angle": 0,
+      "scaleX": 1.28,
+      "scaleY": 1.99,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-viper-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_breastplate_viper_01",
+      "name": "Viper 01 Breastplate",
+      "price": 80,
+      "itemIds": [
+        "generated_equipment_breastplate_viper_01"
       ],
       "categoryId": "chest"
     }
@@ -3341,6 +3887,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_boot_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_cathedral_01",
+    "name": "Cathedral 01 Front Boot",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 33.75502405119286,
+      "y": -10.355029600407306,
+      "angle": 0,
+      "scaleX": 1.13,
+      "scaleY": 1.63,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-cathedral-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_cathedral_01",
+      "name": "Cathedral 01 Front Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_cathedral_01"
       ],
       "categoryId": "legs"
     }
@@ -3738,6 +4323,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_viper_01",
+    "name": "Viper 01 Front Boot",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 37.50558227910318,
+      "y": -4.437869828745988,
+      "angle": 0,
+      "scaleX": 1.11,
+      "scaleY": 1.15,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-viper-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_boot_viper_01",
+      "name": "Viper 01 Front Boot",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_boot_viper_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_wood_boss_01",
     "name": "Wood Boot Front",
     "kind": "armor",
@@ -3802,6 +4426,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_glove_bone_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_cathedral_01",
+    "name": "Cathedral 01 Front Glove",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 4.530646615085175,
+      "y": 9.554237682251994,
+      "angle": -9,
+      "scaleX": 1.72,
+      "scaleY": 1.65,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-cathedral-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_cathedral_01",
+      "name": "Cathedral 01 Front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_cathedral_01"
       ],
       "categoryId": "arms"
     }
@@ -4239,6 +4902,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_viper_01",
+    "name": "Viper 01 Front Glove",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 1.8156923747785072,
+      "y": 14.993124484242287,
+      "angle": 0,
+      "scaleX": 1.42,
+      "scaleY": 1.32,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-viper-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_glove_viper_01",
+      "name": "Viper 01 Front Glove",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_glove_viper_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_wood_boss_01",
     "name": "Wood Front Glove Boss 01",
     "kind": "armor",
@@ -4303,6 +5005,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_greave_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_greave_cathedral_01",
+    "name": "Cathedral 01 Front Greave",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": -5.84581441649982,
+      "y": 18.49112428644156,
+      "angle": -9,
+      "scaleX": 1.91,
+      "scaleY": 1.24,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-cathedral-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_cathedral_01",
+      "name": "Cathedral 01 Front Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_cathedral_01"
       ],
       "categoryId": "legs"
     }
@@ -4740,6 +5481,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_viper_01",
+    "name": "Viper 01 Front Greave",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-viper-01"
+    },
+    "equipmentTuning": {
+      "x": -8.218928871828211,
+      "y": 1.6094673690139985,
+      "angle": -24,
+      "scaleX": 1.19,
+      "scaleY": 1.78,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-viper-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_greave_viper_01",
+      "name": "Viper 01 Front Greave",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_greave_viper_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_wood_boss_01",
     "name": "Wooden greave Front",
     "kind": "armor",
@@ -4804,6 +5584,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_shinguard_bone_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_cathedral_01",
+    "name": "Cathedral 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": -0.5862863587411198,
+      "y": 5.524462256957577,
+      "angle": 6,
+      "scaleX": 2.12,
+      "scaleY": 1.09,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-cathedral-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_cathedral_01",
+      "name": "Cathedral 01 Front Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_cathedral_01"
       ],
       "categoryId": "legs"
     }
@@ -5201,6 +6020,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_viper_01",
+    "name": "Viper 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-viper-01"
+    },
+    "equipmentTuning": {
+      "x": -0.35152747952975005,
+      "y": 12.93354018564196,
+      "angle": 6,
+      "scaleX": 1.57,
+      "scaleY": 0.88,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-viper-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shinguard_viper_01",
+      "name": "Viper 01 Front Shinguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shinguard_viper_01"
+      ],
+      "categoryId": "legs"
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_wood_boss_01",
     "name": "Wood Shinguard Front",
     "kind": "armor",
@@ -5265,6 +6123,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_shoulderguard_bone_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shoulderguard_cathedral_01",
+    "name": "Cathedral 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 0,
+      "angle": -2,
+      "scaleX": 2.45,
+      "scaleY": 1.76,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-cathedral-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_cathedral_01",
+      "name": "Cathedral 01 Front Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_cathedral_01"
       ],
       "categoryId": "shoulders"
     }
@@ -5662,6 +6559,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_viper_01",
+    "name": "Viper 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 2.4667791883662744,
+      "y": -1.5317604126407787,
+      "angle": 33,
+      "scaleX": 2.29,
+      "scaleY": 2.14,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-viper-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_shoulderguard_viper_01",
+      "name": "Viper 01 Front Shoulderguard",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_shoulderguard_viper_01"
+      ],
+      "categoryId": "shoulders"
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_wood_boss_01",
     "name": "Wood Shoulders Front",
     "kind": "armor",
@@ -5726,6 +6662,45 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_front_wrist_bone_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_cathedral_01",
+    "name": "Cathedral 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": -2.607389191594848,
+      "y": 6,
+      "angle": -18,
+      "scaleX": 2.29,
+      "scaleY": 1.53,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-cathedral-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_cathedral_01",
+      "name": "Cathedral 01 Front Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_cathedral_01"
       ],
       "categoryId": "arms"
     }
@@ -6123,6 +7098,45 @@
     }
   },
   {
+    "id": "generated_equipment_front_wrist_viper_01",
+    "name": "Viper 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 2.350205522856612,
+      "y": 28.83327043449225,
+      "angle": -15,
+      "scaleX": 1.57,
+      "scaleY": 1.15,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-viper-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_front_wrist_viper_01",
+      "name": "Viper 01 Front Wrist",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_front_wrist_viper_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_front_wrist_wood_boss_01",
     "name": "Wood Wrist Front",
     "kind": "armor",
@@ -6157,7 +7171,7 @@
     "name": "Bone 01 Helmet",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 22,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-bone-01"
@@ -6184,9 +7198,48 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_bone_01",
       "name": "Bone 01 Helmet",
-      "price": 0,
+      "price": 54,
       "itemIds": [
         "generated_equipment_helmet_bone_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_cathedral_01",
+    "name": "Cathedral 01 Helmet",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 24,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-cathedral-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 44,
+      "angle": 0,
+      "scaleX": 1.07,
+      "scaleY": 1.34,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-cathedral-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-cathedral-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-cathedral-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_cathedral_01",
+      "name": "Cathedral 01 Helmet",
+      "price": 60,
+      "itemIds": [
+        "generated_equipment_helmet_cathedral_01"
       ],
       "categoryId": "head"
     }
@@ -6307,7 +7360,7 @@
     "name": "Druid Helmet 01",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 36,
+    "armorHp": 29,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-druid-01"
@@ -6334,7 +7387,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_druid_01",
       "name": "Druid Helmet 01",
-      "price": 90,
+      "price": 72,
       "itemIds": [
         "generated_equipment_helmet_druid_01"
       ],
@@ -6346,7 +7399,7 @@
     "name": "Executioner Helmet 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 10,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-executioner-01"
@@ -6373,7 +7426,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_executioner_01",
       "name": "Executioner Helmet 01",
-      "price": 0,
+      "price": 24,
       "itemIds": [
         "generated_equipment_helmet_executioner_01"
       ],
@@ -6385,7 +7438,7 @@
     "name": "Lazure 01 Helmet",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 12,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-lazure-01"
@@ -6412,7 +7465,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_lazure_01",
       "name": "Lazure 01 Helmet",
-      "price": 0,
+      "price": 30,
       "itemIds": [
         "generated_equipment_helmet_lazure_01"
       ],
@@ -6424,7 +7477,7 @@
     "name": "Lion 01 Helmet",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 14,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-lion-01"
@@ -6451,7 +7504,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_lion_01",
       "name": "Lion 01 Helmet",
-      "price": 0,
+      "price": 34,
       "itemIds": [
         "generated_equipment_helmet_lion_01"
       ],
@@ -6463,7 +7516,7 @@
     "name": "Mercenary Helmet 01",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 0,
+    "armorHp": 8,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-mercenary-01"
@@ -6490,7 +7543,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_mercenary_01",
       "name": "Mercenary Helmet 01",
-      "price": 0,
+      "price": 21,
       "itemIds": [
         "generated_equipment_helmet_mercenary_01"
       ],
@@ -6502,7 +7555,7 @@
     "name": "Rust Champion Helmet",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 9,
+    "armorHp": 7,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-rust-champion-01"
@@ -6529,7 +7582,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_rust_champion_01",
       "name": "Rust Champion Helmet",
-      "price": 23,
+      "price": 18,
       "itemIds": [
         "generated_equipment_helmet_rust_champion_01"
       ],
@@ -6580,7 +7633,7 @@
     "name": "Stormguard Helmet 01",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 0,
+    "armorHp": 16,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-stormguard-01"
@@ -6607,9 +7660,48 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_stormguard_01",
       "name": "Stormguard Helmet 01",
-      "price": 0,
+      "price": 39,
       "itemIds": [
         "generated_equipment_helmet_stormguard_01"
+      ],
+      "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_viper_01",
+    "name": "Viper 01 Helmet",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 19,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-viper-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 28,
+      "angle": 0,
+      "scaleX": 1.19,
+      "scaleY": 1.21,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-viper-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-viper-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-viper-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_helmet_viper_01",
+      "name": "Viper 01 Helmet",
+      "price": 48,
+      "itemIds": [
+        "generated_equipment_helmet_viper_01"
       ],
       "categoryId": "head"
     }

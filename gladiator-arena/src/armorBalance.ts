@@ -4,7 +4,18 @@ export const ARMOR_BALANCE_SLOTS = ["breastplate", "helmet", "shoulders", "greav
 
 export type ArmorBalanceSlot = (typeof ARMOR_BALANCE_SLOTS)[number];
 export type ArmorShopSetRarity = Exclude<HeroItemRarity, "unique">;
-export type ArmorShopSetGrade = "low" | "high";
+export type ArmorShopSetGrade = "low" | "mid" | "high";
+export type ArmorShopSetId =
+  | "rust_champion"
+  | "mercenary"
+  | "executioner"
+  | "lazure"
+  | "lion"
+  | "stormguard"
+  | "viper"
+  | "bone"
+  | "cathedral"
+  | "druid";
 export type ArmorBalanceValues = Record<ArmorBalanceSlot, number>;
 export type ArmorBalanceSet = Record<ArmorBalanceSlot, number>;
 export type ArmorBalancePriceSet = Record<ArmorBalanceSlot, number>;
@@ -37,28 +48,49 @@ export const ARMOR_SHOP_PRICE_PER_BREASTPLATE_ARMOR = 10;
 export const ARMOR_SHOP_BREASTPLATE_ARMOR: Readonly<Record<ArmorShopSetRarity, Readonly<Record<ArmorShopSetGrade, number>>>> = {
   common: {
     low: 3,
+    mid: 4,
     high: 5,
   },
   uncommon: {
     low: 8,
+    mid: 10,
     high: 11,
   },
   rare: {
-    low: 15,
-    high: 20,
+    low: 12,
+    mid: 14,
+    high: 16,
   },
   epic: {
-    low: 25,
-    high: 30,
+    low: 20,
+    mid: 23,
+    high: 26,
   },
   legendary: {
-    low: 38,
-    high: 48,
+    low: 32,
+    mid: 36,
+    high: 40,
   },
   mythical: {
-    low: 60,
-    high: 75,
+    low: 48,
+    mid: 48,
+    high: 48,
   },
+};
+
+export const ARMOR_SHOP_SET_BREASTPLATE_ARMOR: Readonly<
+  Record<ArmorShopSetId, Readonly<{ rarity: ArmorShopSetRarity; grade: ArmorShopSetGrade; breastplateArmor: number }>>
+> = {
+  rust_champion: { rarity: "rare", grade: "low", breastplateArmor: 12 },
+  mercenary: { rarity: "rare", grade: "mid", breastplateArmor: 14 },
+  executioner: { rarity: "rare", grade: "high", breastplateArmor: 16 },
+  lazure: { rarity: "epic", grade: "low", breastplateArmor: 20 },
+  lion: { rarity: "epic", grade: "mid", breastplateArmor: 23 },
+  stormguard: { rarity: "epic", grade: "high", breastplateArmor: 26 },
+  viper: { rarity: "legendary", grade: "low", breastplateArmor: 32 },
+  bone: { rarity: "legendary", grade: "mid", breastplateArmor: 36 },
+  cathedral: { rarity: "legendary", grade: "high", breastplateArmor: 40 },
+  druid: { rarity: "mythical", grade: "high", breastplateArmor: 48 },
 };
 
 export const ARMOR_BALANCE_PRIMARY_EQUIPMENT_SLOTS: Readonly<Record<ArmorBalanceSlot, HeroEquipmentSlotKey>> = {
@@ -89,6 +121,14 @@ export function getArmorShopSetBreastplateArmor(rarity: ArmorShopSetRarity, grad
 
 export function getArmorShopSetTotalPrice(rarity: ArmorShopSetRarity, grade: ArmorShopSetGrade): number {
   return getArmorSetTotalPriceFromBreastplateArmor(getArmorShopSetBreastplateArmor(rarity, grade));
+}
+
+export function getNamedArmorShopSetBreastplateArmor(setId: ArmorShopSetId): number {
+  return ARMOR_SHOP_SET_BREASTPLATE_ARMOR[setId].breastplateArmor;
+}
+
+export function getNamedArmorShopSetTotalPrice(setId: ArmorShopSetId): number {
+  return getArmorSetTotalPriceFromBreastplateArmor(getNamedArmorShopSetBreastplateArmor(setId));
 }
 
 export function getArmorSetTotalPriceFromBreastplateArmor(breastplateArmor: number): number {
