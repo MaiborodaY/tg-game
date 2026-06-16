@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-mercenary-01-DLsczgjh.webp`,import.meta.url).href;export{e as default};

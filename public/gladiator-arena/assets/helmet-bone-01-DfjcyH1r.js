@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-bone-01-CK6lLl32.webp`,import.meta.url).href;export{e as default};

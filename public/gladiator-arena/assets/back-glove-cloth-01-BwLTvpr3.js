@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-cloth-01-CQNI-PUG.webp`,import.meta.url).href;export{e as default};

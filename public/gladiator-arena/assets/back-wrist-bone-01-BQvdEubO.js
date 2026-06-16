@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-bone-01-Dc0W_5HM.webp`,import.meta.url).href;export{e as default};

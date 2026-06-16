@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-chainmail-01-BJUEOx7a.webp`,import.meta.url).href;export{e as default};

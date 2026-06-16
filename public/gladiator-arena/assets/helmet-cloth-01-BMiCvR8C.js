@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-cloth-01-X5a1kaXu.webp`,import.meta.url).href;export{e as default};

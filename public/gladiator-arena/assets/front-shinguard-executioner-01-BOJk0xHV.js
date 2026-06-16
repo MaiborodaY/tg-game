@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-executioner-01-D-VrKkvg.webp`,import.meta.url).href;export{e as default};

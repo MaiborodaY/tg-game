@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-executioner-01-Bkn_85AF.webp`,import.meta.url).href;export{e as default};

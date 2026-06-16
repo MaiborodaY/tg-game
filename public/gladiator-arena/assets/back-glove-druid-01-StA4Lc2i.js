@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-druid-01-DPrY8HRU.webp`,import.meta.url).href;export{e as default};

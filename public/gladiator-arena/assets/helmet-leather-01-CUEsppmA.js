@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-leather-01-B-KmQHTL.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-druid-01-D4AlZDwk.webp`,import.meta.url).href;export{e as default};

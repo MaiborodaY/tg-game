@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-cathedral-01-CVpibuwQ.webp`,import.meta.url).href;export{e as default};

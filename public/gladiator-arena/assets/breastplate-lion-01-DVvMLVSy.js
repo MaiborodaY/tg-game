@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-lion-01-Bk_O-o-7.webp`,import.meta.url).href;export{e as default};

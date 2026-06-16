@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-druid-01-Dhpjwd7Z.webp`,import.meta.url).href;export{e as default};

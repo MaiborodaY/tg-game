@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-sand-01-DLl-N7gi.webp`,import.meta.url).href;export{e as default};

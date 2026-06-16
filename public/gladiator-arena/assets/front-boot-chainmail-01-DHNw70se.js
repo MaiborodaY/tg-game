@@ -1,0 +1,1 @@
+var e=``+new URL(`front-boot-chainmail-01-CTl0Zlfs.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-cathedral-01-RSZpHmC6.webp`,import.meta.url).href;export{e as default};

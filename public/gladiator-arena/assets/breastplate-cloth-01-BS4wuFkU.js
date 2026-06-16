@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-cloth-01-B5hwd_WY.webp`,import.meta.url).href;export{e as default};

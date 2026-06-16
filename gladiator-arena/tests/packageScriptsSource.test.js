@@ -12,6 +12,8 @@ test("gladiator dev scripts load the local Vite config", () => {
   assert.match(packageJson.scripts["gladiator:dev"], /--config gladiator-arena\/vite\.config\.ts/);
   assert.match(packageJson.scripts["gladiator:debug"], /--config gladiator-arena\/vite\.config\.ts/);
   assert.match(packageJson.scripts["gladiator:build"], /--config gladiator-arena\/vite\.config\.ts/);
+  assert.match(packageJson.scripts["gladiator:build"], /gladiator:verify-build/);
+  assert.equal(packageJson.scripts["gladiator:verify-build"], "node gladiator-arena/scripts/verify-build.mjs");
 });
 
 test("typecheck scripts keep browser apps and functions in separate projects", () => {

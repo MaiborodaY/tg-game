@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-mercenary-01-D0gZVKxj.webp`,import.meta.url).href;export{e as default};

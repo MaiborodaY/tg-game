@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shinguard-chainmail-01-Dd6Z2-A2.webp`,import.meta.url).href;export{e as default};

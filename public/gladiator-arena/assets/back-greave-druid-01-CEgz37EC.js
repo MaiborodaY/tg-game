@@ -1,0 +1,1 @@
+var e=``+new URL(`back-greave-druid-01-DMZ6-YFc.webp`,import.meta.url).href;export{e as default};

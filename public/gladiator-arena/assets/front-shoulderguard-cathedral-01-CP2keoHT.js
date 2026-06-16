@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-cathedral-01-COSTQio3.webp`,import.meta.url).href;export{e as default};

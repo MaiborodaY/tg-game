@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-cloth-01-BnikhoVV.webp`,import.meta.url).href;export{e as default};

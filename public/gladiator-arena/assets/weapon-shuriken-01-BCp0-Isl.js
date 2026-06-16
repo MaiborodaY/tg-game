@@ -1,0 +1,1 @@
+var e=``+new URL(`weapon-shuriken-01-Bi6IA24g.webp`,import.meta.url).href;export{e as default};

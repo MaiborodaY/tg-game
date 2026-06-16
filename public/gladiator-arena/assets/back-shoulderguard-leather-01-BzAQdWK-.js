@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-leather-01-CsGaoamF.webp`,import.meta.url).href;export{e as default};

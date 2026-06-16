@@ -1,0 +1,1 @@
+var e=``+new URL(`front-greave-bone-01-Bwk1VDIx.webp`,import.meta.url).href;export{e as default};

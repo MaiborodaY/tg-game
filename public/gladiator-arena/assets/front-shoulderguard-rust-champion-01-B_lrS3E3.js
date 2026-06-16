@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-rust-champion-01-CkLdt4JD.webp`,import.meta.url).href;export{e as default};

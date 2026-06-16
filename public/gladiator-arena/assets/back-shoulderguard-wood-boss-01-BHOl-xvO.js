@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-wood-boss-01-BLN1MHLM.webp`,import.meta.url).href;export{e as default};

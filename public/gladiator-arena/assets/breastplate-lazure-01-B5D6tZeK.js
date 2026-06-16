@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-lazure-01-B_BiTgVD.webp`,import.meta.url).href;export{e as default};

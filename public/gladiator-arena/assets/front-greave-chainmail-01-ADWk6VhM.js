@@ -1,0 +1,1 @@
+var e=``+new URL(`front-greave-chainmail-01-AXCXV2AU.webp`,import.meta.url).href;export{e as default};

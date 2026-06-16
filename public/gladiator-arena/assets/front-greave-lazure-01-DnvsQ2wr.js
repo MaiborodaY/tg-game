@@ -1,0 +1,1 @@
+var e=``+new URL(`front-greave-lazure-01-Csm_qq48.webp`,import.meta.url).href;export{e as default};

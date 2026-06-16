@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-viper-01--TpiQWbs.webp`,import.meta.url).href;export{e as default};

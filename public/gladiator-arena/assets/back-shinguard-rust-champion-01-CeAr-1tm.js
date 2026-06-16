@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-rust-champion-01-CDoR5jGS.webp`,import.meta.url).href;export{e as default};

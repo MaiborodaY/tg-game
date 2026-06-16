@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-druid-01-CaucAdWV.webp`,import.meta.url).href;export{e as default};

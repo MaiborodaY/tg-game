@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-cloth-01-AaP0qC8o.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-leather-01-D8tzJ2uB.webp`,import.meta.url).href;export{e as default};

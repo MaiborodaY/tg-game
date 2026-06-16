@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shinguard-lazure-01-Cmr-EDwI.webp`,import.meta.url).href;export{e as default};

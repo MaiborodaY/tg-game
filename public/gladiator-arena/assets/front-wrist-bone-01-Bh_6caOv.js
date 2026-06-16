@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-bone-01-CAZ3lsjK.webp`,import.meta.url).href;export{e as default};

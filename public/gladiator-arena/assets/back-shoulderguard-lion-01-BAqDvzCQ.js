@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-lion-01-BNNh-dl3.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-lion-01-CITAPpOH.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-sand-01-DBrAGByF.webp`,import.meta.url).href;export{e as default};

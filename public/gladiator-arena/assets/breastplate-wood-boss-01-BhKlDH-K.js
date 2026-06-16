@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-wood-boss-01-C7r0lmNR.webp`,import.meta.url).href;export{e as default};

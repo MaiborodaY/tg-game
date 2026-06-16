@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shinguard-cathedral-01-ChRgEzZY.webp`,import.meta.url).href;export{e as default};

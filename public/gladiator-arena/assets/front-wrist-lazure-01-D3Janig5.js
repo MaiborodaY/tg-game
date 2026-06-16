@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-lazure-01-BRhsXyOp.webp`,import.meta.url).href;export{e as default};

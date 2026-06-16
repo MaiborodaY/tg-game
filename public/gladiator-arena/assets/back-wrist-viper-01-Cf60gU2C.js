@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-viper-01-CMPx5yuM.webp`,import.meta.url).href;export{e as default};

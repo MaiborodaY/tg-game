@@ -1,0 +1,1 @@
+var e=``+new URL(`back-greave-cathedral-01-zNcQdT6K.webp`,import.meta.url).href;export{e as default};

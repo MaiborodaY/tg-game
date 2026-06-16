@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-chainmail-03-D4jb4xZ_.webp`,import.meta.url).href;export{e as default};

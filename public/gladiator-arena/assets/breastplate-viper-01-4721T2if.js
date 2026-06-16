@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-viper-01-CxLA_Izr.webp`,import.meta.url).href;export{e as default};

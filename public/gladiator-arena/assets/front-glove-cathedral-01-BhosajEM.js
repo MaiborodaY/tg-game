@@ -1,0 +1,1 @@
+var e=``+new URL(`front-glove-cathedral-01-CfukYyyU.webp`,import.meta.url).href;export{e as default};

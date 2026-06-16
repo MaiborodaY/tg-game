@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-viper-01-BF2pGvbO.webp`,import.meta.url).href;export{e as default};

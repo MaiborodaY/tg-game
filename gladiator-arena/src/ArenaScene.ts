@@ -85,6 +85,8 @@ import {
   REST_HEALTH_ICON_ASSET_URL,
   REST_STAMINA_ICON_ASSET_KEY,
   REST_STAMINA_ICON_ASSET_URL,
+  SHURIKEN_PROJECTILE_ASSET_KEY,
+  SHURIKEN_PROJECTILE_ASSET_URL,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
 import type { CameraTarget, CameraViewport } from "./arenaCamera";
@@ -365,6 +367,7 @@ interface ArenaEffectPools {
   damageBurstPopups: ArenaDamageBurstPopupVisual[];
   damageTextPopups: ArenaTextPopupVisual[];
   restRecoveryPopups: ArenaRestRecoveryPopupVisual[];
+  projectiles: Phaser.GameObjects.Image[];
   dustDots: Phaser.GameObjects.Arc[];
 }
 
@@ -440,6 +443,14 @@ const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
 const DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE = 108;
 const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
 const REST_RECOVERY_POPUP_ICON_SCREEN_SIZE = 34;
+const ARROW_PROJECTILE_SCREEN_SIZE = 36;
+const SHURIKEN_PROJECTILE_SCREEN_SIZE = 42;
+const PROJECTILE_FLIGHT_DURATION_MS = 280;
+const ARROW_PROJECTILE_ANGLE_OFFSET = 45;
+const PROJECTILE_START_LOCAL_X = 90;
+const PROJECTILE_START_LOCAL_Y = -205;
+const PROJECTILE_TARGET_LOCAL_X = 44;
+const PROJECTILE_TARGET_LOCAL_Y = -250;
 const POPUP_PREVIEW_DAMAGE_AMOUNT = 10;
 const POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT = 7;
 const POPUP_PREVIEW_SPACING_X = 54;
@@ -891,6 +902,7 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL);
   target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);
+  target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);
   target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);
   target.load.image(REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL);
 }
@@ -1153,6 +1165,7 @@ function getArenaAssetPrewarmUrls(): string[] {
     DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
     DAMAGE_ARMOR_BREAK_ICON_ASSET_URL,
     ARROW_ICON_ASSET_URL,
+    SHURIKEN_PROJECTILE_ASSET_URL,
     REST_HEALTH_ICON_ASSET_URL,
     REST_STAMINA_ICON_ASSET_URL,
   ];
@@ -1479,69 +1492,84 @@ export class ArenaScene extends Phaser.Scene {
 
     const lastPlayerAction = nextState.lastPlayerAction;
     const lastEnemyAction = nextState.lastEnemyAction;
+    let playerActionAnimation: Promise<void> | undefined;
+    let enemyActionAnimation: Promise<void> | undefined;
 
     if (lastPlayerAction) {
-      actionAnimations.push(
-        animateAction(
-          this,
-          visuals.player,
-          visuals.enemy,
-          lastPlayerAction,
-          "right",
-          nextState.player.weaponClass,
-          playerSettings,
-        ),
+      playerActionAnimation = animateAction(
+        this,
+        visuals.player,
+        visuals.enemy,
+        lastPlayerAction,
+        "right",
+        nextState.player.weaponClass,
+        playerSettings,
       );
+      actionAnimations.push(playerActionAnimation);
       if (lastPlayerAction === "rest") {
         showRestRecoveryPopupFromFighter(this, visuals.player, previousState?.player, nextState.player);
       }
     }
 
     if (lastEnemyAction) {
-      actionAnimations.push(
-        animateAction(
-          this,
-          visuals.enemy,
-          visuals.player,
-          lastEnemyAction,
-          "left",
-          nextState.enemy.weaponClass,
-          playerSettings,
-        ),
+      enemyActionAnimation = animateAction(
+        this,
+        visuals.enemy,
+        visuals.player,
+        lastEnemyAction,
+        "left",
+        nextState.enemy.weaponClass,
+        playerSettings,
       );
+      actionAnimations.push(enemyActionAnimation);
       if (lastEnemyAction === "rest") {
         showRestRecoveryPopupFromFighter(this, visuals.enemy, previousState?.enemy, nextState.enemy);
       }
     }
 
+    const playerResultDelay = shouldDelayCombatResultForProjectile(lastPlayerAction, nextState.player.weaponClass) ? playerActionAnimation : undefined;
+    const enemyResultDelay = shouldDelayCombatResultForProjectile(lastEnemyAction, nextState.enemy.weaponClass) ? enemyActionAnimation : undefined;
+
     if (nextState.lastPlayerDamage > 0) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit"), playerSettings));
-      showDamageResultPopupFromFighter(
-        this,
-        visuals.enemy,
-        nextState.lastPlayerDamage,
-        nextState.lastPlayerArmorAbsorbed,
-        nextState.lastPlayerArmorBroken,
-        playerSettings,
-      );
+      queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
+        showDamageResultPopupFromFighter(
+          this,
+          visuals.enemy,
+          nextState.lastPlayerDamage,
+          nextState.lastPlayerArmorAbsorbed,
+          nextState.lastPlayerArmorBroken,
+          playerSettings,
+        );
+
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit"), playerSettings);
+      });
     } else if (nextState.lastPlayerBlocked) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block"), playerSettings));
-      showBlockPopupFromFighter(this, visuals.enemy);
+      queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
+        showBlockPopupFromFighter(this, visuals.enemy);
+
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block"), playerSettings);
+      });
     }
 
     if (nextState.lastEnemyDamage > 0) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit"), playerSettings));
-      showDamageResultPopupFromFighter(
-        this,
-        visuals.player,
-        nextState.lastEnemyDamage,
-        nextState.lastEnemyArmorAbsorbed,
-        nextState.lastEnemyArmorBroken,
-        playerSettings,
-      );
+      queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
+        showDamageResultPopupFromFighter(
+          this,
+          visuals.player,
+          nextState.lastEnemyDamage,
+          nextState.lastEnemyArmorAbsorbed,
+          nextState.lastEnemyArmorBroken,
+          playerSettings,
+        );
+
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit"), playerSettings);
+      });
     } else if (nextState.lastEnemyBlocked) {
-      actionAnimations.push(playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block"), playerSettings));
-      showBlockPopupFromFighter(this, visuals.player);
+      queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
+        showBlockPopupFromFighter(this, visuals.player);
+
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block"), playerSettings);
+      });
     }
 
     scheduleDeathEffects(this, nextState);
@@ -5913,7 +5941,7 @@ function playBodyAnimationOnce(
 function animateAction(
   target: Phaser.Scene,
   actor: FighterVisual,
-  _opponent: FighterVisual,
+  defender: FighterVisual,
   actionId: ActionId,
   direction: "left" | "right",
   weaponClass?: HeroWeaponClass,
@@ -5946,8 +5974,10 @@ function animateAction(
   }
 
   if (actionId === "shuriken") {
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "SHURIKEN", "#ffe7a4");
-    return playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"), playerSettings);
+    return Promise.all([
+      playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"), playerSettings),
+      playProjectile(target, actor, defender, actionId, direction),
+    ]).then(() => undefined);
   }
 
   const actionAnimations: Promise<void>[] = [];
@@ -5957,6 +5987,9 @@ function animateAction(
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
 
     actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey), playerSettings));
+    if (isRangedWeapon) {
+      actionAnimations.push(playProjectile(target, actor, defender, actionId, direction));
+    }
     if (!isRangedWeapon && areArenaVfxEnabled(playerSettings)) {
       showSlashArc(target, actor, actionId, direction, playerSettings);
     }
@@ -5984,6 +6017,95 @@ function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAni
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
 }
 
+function queueCombatResultAnimation(
+  actionAnimations: Promise<void>[],
+  delay: Promise<void> | undefined,
+  animateResult: () => Promise<void>,
+): void {
+  actionAnimations.push(delay ? delay.then(animateResult) : animateResult());
+}
+
+function shouldDelayCombatResultForProjectile(actionId: ActionId | undefined, weaponClass?: HeroWeaponClass): boolean {
+  return Boolean(actionId && isProjectileAction(actionId, weaponClass));
+}
+
+function isProjectileAction(actionId: ActionId, weaponClass?: HeroWeaponClass): boolean {
+  return actionId === "shuriken" || (isAttackBodyAnimationKey(actionId) && isRangedWeaponClass(weaponClass));
+}
+
+function playProjectile(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  defender: FighterVisual,
+  actionId: ActionId,
+  direction: "left" | "right",
+): Promise<void> {
+  const textureKey = getProjectileTextureKey(actionId);
+
+  if (!target.textures.exists(textureKey)) {
+    return Promise.resolve();
+  }
+
+  const sign = direction === "right" ? 1 : -1;
+  const start = getFighterProjectilePoint(target, actor, PROJECTILE_START_LOCAL_X * sign, PROJECTILE_START_LOCAL_Y);
+  const end = getFighterProjectilePoint(target, defender, -PROJECTILE_TARGET_LOCAL_X * sign, PROJECTILE_TARGET_LOCAL_Y);
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const flightAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const isShuriken = actionId === "shuriken";
+  const source = target.textures.get(textureKey).getSourceImage() as { width?: number } | undefined;
+  const sourceWidth = Math.max(1, source?.width ?? 256);
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const screenSize = isShuriken ? SHURIKEN_PROJECTILE_SCREEN_SIZE : ARROW_PROJECTILE_SCREEN_SIZE;
+  const projectileScale = (screenSize / sourceWidth) * fixedScreenScale;
+  const startAngle = isShuriken ? 0 : flightAngle + ARROW_PROJECTILE_ANGLE_OFFSET;
+  const endAngle = isShuriken ? 720 * sign : startAngle;
+  const projectile = acquireProjectile(target, textureKey);
+
+  projectile.setPosition(start.x, start.y);
+  projectile.setDepth(38);
+  projectile.setScale(projectileScale);
+  projectile.setAngle(startAngle);
+
+  return new Promise((resolve) => {
+    target.tweens.add({
+      targets: projectile,
+      x: end.x,
+      y: end.y,
+      angle: endAngle,
+      duration: PROJECTILE_FLIGHT_DURATION_MS,
+      ease: "Sine.easeInOut",
+      onComplete: () => {
+        releaseProjectile(target, projectile);
+        resolve();
+      },
+    });
+  });
+}
+
+function getProjectileTextureKey(actionId: ActionId): string {
+  return actionId === "shuriken" ? SHURIKEN_PROJECTILE_ASSET_KEY : ARROW_ICON_ASSET_KEY;
+}
+
+function getFighterProjectilePoint(target: Phaser.Scene, fighter: FighterVisual, localOffsetX: number, localOffsetY: number): { x: number; y: number } {
+  const bodyMatrix = fighter.body.getWorldTransformMatrix();
+  const worldX = bodyMatrix.getX(0, 0);
+  const worldY = bodyMatrix.getY(0, 0);
+  const effectsLayer = getArenaEffectsLayer(target);
+  const scale = PAPER_DOLL_BASE_SCALE * Math.max(0.1, fighter.debugScale);
+  const offsetX = localOffsetX * scale;
+  const offsetY = localOffsetY * scale;
+
+  if (!effectsLayer) {
+    return { x: worldX + offsetX, y: worldY + offsetY };
+  }
+
+  const localPoint = effectsLayer.getWorldTransformMatrix().applyInverse(worldX, worldY);
+
+  return { x: localPoint.x + offsetX, y: localPoint.y + offsetY };
+}
+
 function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
   let pools = arenaEffectPoolsByScene.get(target);
 
@@ -5998,12 +6120,37 @@ function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
       damageBurstPopups: [],
       damageTextPopups: [],
       restRecoveryPopups: [],
+      projectiles: [],
       dustDots: [],
     };
     arenaEffectPoolsByScene.set(target, pools);
   }
 
   return pools;
+}
+
+function acquireProjectile(target: Phaser.Scene, textureKey: string): Phaser.GameObjects.Image {
+  const pool = getArenaEffectPools(target).projectiles;
+  const projectile = pool.pop() ?? createPooledProjectile(target, textureKey);
+
+  target.tweens.killTweensOf(projectile);
+  projectile.setTexture(textureKey);
+  projectile.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return projectile;
+}
+
+function createPooledProjectile(target: Phaser.Scene, textureKey: string): Phaser.GameObjects.Image {
+  const projectile = target.add.image(0, 0, textureKey).setOrigin(0.5).setActive(false).setVisible(false);
+
+  addToArenaEffectsLayer(target, projectile);
+
+  return projectile;
+}
+
+function releaseProjectile(target: Phaser.Scene, projectile: Phaser.GameObjects.Image): void {
+  projectile.setActive(false).setVisible(false).setAlpha(1).setBlendMode(Phaser.BlendModes.NORMAL);
+  getArenaEffectPools(target).projectiles.push(projectile);
 }
 
 function acquireFloatingTextLabel(target: Phaser.Scene): Phaser.GameObjects.Text {

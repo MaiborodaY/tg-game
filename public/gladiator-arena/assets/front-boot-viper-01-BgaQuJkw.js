@@ -1,0 +1,1 @@
+var e=``+new URL(`front-boot-viper-01-BmRoE6Ej.webp`,import.meta.url).href;export{e as default};

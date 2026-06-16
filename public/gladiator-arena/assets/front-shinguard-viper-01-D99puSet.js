@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shinguard-viper-01-BOUVcKyD.webp`,import.meta.url).href;export{e as default};

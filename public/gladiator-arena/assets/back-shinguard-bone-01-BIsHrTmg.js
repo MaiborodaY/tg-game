@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-bone-01-D7PDXn7X.webp`,import.meta.url).href;export{e as default};

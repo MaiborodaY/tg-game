@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-executioner-01-BZGcq_7U.webp`,import.meta.url).href;export{e as default};

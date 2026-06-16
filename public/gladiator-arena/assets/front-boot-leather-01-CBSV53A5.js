@@ -1,0 +1,1 @@
+var e=``+new URL(`front-boot-leather-01-D8D1jJBj.webp`,import.meta.url).href;export{e as default};

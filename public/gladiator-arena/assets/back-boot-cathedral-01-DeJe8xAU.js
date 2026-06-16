@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-cathedral-01-BRop0YHW.webp`,import.meta.url).href;export{e as default};

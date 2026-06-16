@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-mercenary-01-Dc4zC6vn.webp`,import.meta.url).href;export{e as default};

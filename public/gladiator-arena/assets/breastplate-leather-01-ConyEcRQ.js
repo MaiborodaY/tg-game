@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-leather-01-BJjTKcL-.webp`,import.meta.url).href;export{e as default};

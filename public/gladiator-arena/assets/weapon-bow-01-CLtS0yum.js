@@ -1,0 +1,1 @@
+var e=``+new URL(`weapon-bow-01-CW8x0ZJz.webp`,import.meta.url).href;export{e as default};

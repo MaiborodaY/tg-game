@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-druid-01-BrD5_6Q0.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-bone-01-DlAD_37e.webp`,import.meta.url).href;export{e as default};

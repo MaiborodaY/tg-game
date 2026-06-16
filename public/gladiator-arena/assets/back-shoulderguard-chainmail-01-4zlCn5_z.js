@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-chainmail-01-CoC1Sgiy.webp`,import.meta.url).href;export{e as default};

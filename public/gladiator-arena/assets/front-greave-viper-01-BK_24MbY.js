@@ -1,0 +1,1 @@
+var e=``+new URL(`front-greave-viper-01-CCSBg37z.webp`,import.meta.url).href;export{e as default};

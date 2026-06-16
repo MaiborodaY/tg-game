@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-bone-01-DIys_ve8.webp`,import.meta.url).href;export{e as default};

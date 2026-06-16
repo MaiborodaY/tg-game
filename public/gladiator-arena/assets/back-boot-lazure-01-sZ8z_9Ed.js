@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-lazure-01-Cch4KW2m.webp`,import.meta.url).href;export{e as default};

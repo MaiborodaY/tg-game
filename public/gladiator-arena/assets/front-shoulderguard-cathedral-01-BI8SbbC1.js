@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-cathedral-01-FzUZk4Ha.webp`,import.meta.url).href;export{e as default};

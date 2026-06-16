@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-wood-boss-01-BAhQMqVh.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`front-boot-lion-01-CExQxk8c.webp`,import.meta.url).href;export{e as default};

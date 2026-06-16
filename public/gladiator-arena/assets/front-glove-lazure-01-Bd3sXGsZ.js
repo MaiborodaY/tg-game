@@ -1,0 +1,1 @@
+var e=``+new URL(`front-glove-lazure-01-C_1pVaPT.webp`,import.meta.url).href;export{e as default};

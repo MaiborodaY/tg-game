@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-stormguard-01-BCird_LT.webp`,import.meta.url).href;export{e as default};

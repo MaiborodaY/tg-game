@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-wood-boss-01-CbUuobL5.webp`,import.meta.url).href;export{e as default};

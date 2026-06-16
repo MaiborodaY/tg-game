@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-lion-01-BQ17aUK4.webp`,import.meta.url).href;export{e as default};

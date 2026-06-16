@@ -201,28 +201,47 @@ test("low effects can hot swap paper doll textures after preload", () => {
 test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("sync(nextState: CombatState): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
-  assert.match(arenaSceneSource, /actionAnimations\.push\(\s*animateAction/);
+  assert.equal(arenaSceneSource.includes("playerActionAnimation = animateAction("), true);
+  assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateAction("), true);
   assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => undefined);"), true);
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
   assert.equal(arenaSceneSource.includes("): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
+  assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
 });
 
 test("movement steps do not spawn floating step text", () => {
   assert.equal(arenaSceneSource.includes('actionId === "forward" || actionId === "back"'), true);
   assert.equal(arenaSceneSource.includes('actionId === "forward" ? "STEP" : "BACK"'), false);
   assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "MELEE"'), true);
-  assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "SHURIKEN"'), true);
+  assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "SHURIKEN"'), false);
 });
 
 test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes('type HeroWeaponClass'), true);
   assert.equal(arenaSceneSource.includes('isRangedWeaponClass(weaponClass)'), true);
   assert.equal(arenaSceneSource.includes('isRangedWeapon ? "bowShot" : actionId'), true);
+  assert.equal(arenaSceneSource.includes("playProjectile(target, actor, defender, actionId, direction)"), true);
+  assert.equal(arenaSceneSource.includes("shouldDelayCombatResultForProjectile(lastPlayerAction, nextState.player.weaponClass)"), true);
   assert.equal(arenaSceneSource.includes("!isRangedWeapon && areArenaVfxEnabled(playerSettings)"), true);
   assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit")'), true);
   assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
+});
+
+test("arena uses pooled projectiles for arrows and shurikens", () => {
+  assert.equal(assetsSource.includes("SHURIKEN_PROJECTILE_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/projectiles/shuriken.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/projectiles/shuriken.webp")), true);
+  assert.equal(arenaSceneSource.includes("target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("SHURIKEN_PROJECTILE_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("projectiles: Phaser.GameObjects.Image[];"), true);
+  assert.equal(arenaSceneSource.includes("projectiles: []"), true);
+  assert.equal(arenaSceneSource.includes("function playProjectile("), true);
+  assert.equal(arenaSceneSource.includes("function acquireProjectile("), true);
+  assert.equal(arenaSceneSource.includes("function releaseProjectile("), true);
+  assert.equal(arenaSceneSource.includes('actionId === "shuriken"'), true);
+  assert.equal(arenaSceneSource.includes("ARROW_PROJECTILE_ANGLE_OFFSET"), true);
 });
 
 test("arena shows bow arrow counts above bow fighters", () => {

@@ -1,0 +1,1 @@
+var e=``+new URL(`front-boot-bone-01-D-aOys_f.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-wood-boss-01-BNDrPlPo.webp`,import.meta.url).href;export{e as default};

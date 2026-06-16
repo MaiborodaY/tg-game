@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-lazure-01-CRrf8SYP.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-sand-01-BOtQi7Cx.webp`,import.meta.url).href;export{e as default};

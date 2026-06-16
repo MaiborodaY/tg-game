@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shinguard-cloth-01-BrxfYjio.webp`,import.meta.url).href;export{e as default};

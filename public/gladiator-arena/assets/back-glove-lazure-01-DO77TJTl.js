@@ -1,0 +1,1 @@
+var e=``+new URL(`back-glove-lazure-01-DZ7R5CNK.webp`,import.meta.url).href;export{e as default};

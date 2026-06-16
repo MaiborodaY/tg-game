@@ -2,67 +2,285 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Dust Arena - Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script type="module" crossorigin src="./assets/index-D0OLqV5j.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-xme0Tz_e.css">
+    <script type="module" crossorigin src="./assets/index-B5ZhRRBr.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-f38A2d_k.css">
   </head>
   <body>
     <main class="shell">
       <section id="mainMenu" class="main-menu" aria-label="Dust Arena main menu">
         <h1 class="menu-title">Dust Arena</h1>
         <div class="city-menu">
-          <img class="city-menu__bg" src="./assets/menu/city-menu.png" alt="" aria-hidden="true" />
+          <div id="cityHero" class="city-menu__hero" aria-hidden="true"></div>
+          <div class="city-menu__curtain" aria-hidden="true"></div>
+          <div id="heroWidget" class="city-menu__hero-widget">
+            <button id="heroPortraitButton" class="city-menu__portrait-button" type="button" aria-label="Character">
+              <div id="heroPortrait" class="city-menu__portrait" aria-hidden="true"></div>
+            </button>
+            <div class="city-menu__hero-info" aria-live="polite">
+              <div class="city-menu__hero-info-top">
+                <strong id="heroInfoName" class="city-menu__hero-name"></strong>
+                <span id="heroInfoGold" class="city-menu__hero-gold"></span>
+              </div>
+              <div id="heroInfoLevel" class="city-menu__hero-level"></div>
+              <div class="city-menu__hero-xp">
+                <div class="city-menu__hero-xp-track" aria-hidden="true">
+                  <div id="heroInfoXpFill" class="city-menu__hero-xp-fill"></div>
+                </div>
+                <span id="heroInfoXpText" class="city-menu__hero-xp-text"></span>
+              </div>
+            </div>
+          </div>
+          <button id="cityTimeToggle" class="city-menu__time-toggle" type="button" aria-label="Switch to day" aria-pressed="false">
+            <span class="city-menu__time-toggle-track" aria-hidden="true">
+              <span class="city-menu__time-toggle-thumb"></span>
+            </span>
+          </button>
+          <section id="cityArenaMenu" class="city-arena-menu" role="dialog" aria-label="Arena menu" hidden>
+            <div class="city-arena-menu__panel">
+              <div class="city-arena-menu__title">ARENA</div>
+              <button id="cityArenaCloseButton" class="city-arena-menu__close" type="button" aria-label="Close arena menu">×</button>
+              <div class="city-arena-menu__tier">
+                <span>Tier</span>
+                <strong id="cityArenaTierName"></strong>
+              </div>
+              <button id="cityArenaRandomButton" class="city-arena-menu__fight" type="button">
+                <span class="city-arena-menu__eyebrow">Common opponents</span>
+                <strong>Random Fight</strong>
+                <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
+              </button>
+              <div class="city-arena-menu__section-title">BOSS</div>
+              <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
+            </div>
+          </section>
+          <section id="heroProfile" class="city-profile" role="dialog" aria-label="Character profile" hidden>
+            <div class="city-profile__panel">
+              <div class="city-profile__title">PROFILE</div>
+              <div class="city-profile__hero">
+                <div id="heroProfilePortrait" class="city-profile__portrait" aria-hidden="true"></div>
+                <div class="city-profile__summary">
+                  <div class="city-profile__summary-name-row">
+                    <strong id="heroProfileName" class="city-profile__name"></strong>
+                    <span class="city-profile__edit-mark" aria-hidden="true"></span>
+                  </div>
+                  <div class="city-profile__progress-row">
+                    <div id="heroProfileLevel" class="city-profile__level"></div>
+                    <div class="city-profile__xp">
+                      <div class="city-profile__xp-track" aria-hidden="true">
+                        <div id="heroProfileXpFill" class="city-profile__xp-fill"></div>
+                      </div>
+                      <span id="heroProfileXpText" class="city-profile__xp-text"></span>
+                    </div>
+                  </div>
+                  <div class="city-profile__currency-row">
+                    <span id="heroProfileGold" class="city-profile__gold"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="city-profile__section-heading city-profile__section-heading--attributes">
+                <span>ATTRIBUTES</span>
+                <strong id="heroProfileSkillPoints" class="city-profile__points"></strong>
+              </div>
+              <div class="city-profile__attributes" aria-label="Attributes">
+                <div class="city-profile__attribute">
+                  <span class="city-profile__attribute-icon city-profile__attribute-icon--strength" aria-hidden="true">S</span>
+                  <div class="city-profile__attribute-copy">
+                    <strong>STRENGTH</strong>
+                    <span>Increases damage and reach.</span>
+                  </div>
+                  <span class="city-profile__attribute-value" data-hero-attribute-value="strength">0</span>
+                  <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="strength" aria-label="Increase strength">+</button>
+                </div>
+                <div class="city-profile__attribute">
+                  <span class="city-profile__attribute-icon city-profile__attribute-icon--agility" aria-hidden="true">A</span>
+                  <div class="city-profile__attribute-copy">
+                    <strong>AGILITY</strong>
+                    <span>Increases movement speed.</span>
+                  </div>
+                  <span class="city-profile__attribute-value" data-hero-attribute-value="agility">0</span>
+                  <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="agility" aria-label="Increase agility">+</button>
+                </div>
+                <div class="city-profile__attribute">
+                  <span class="city-profile__attribute-icon city-profile__attribute-icon--vitality" aria-hidden="true">V</span>
+                  <div class="city-profile__attribute-copy">
+                    <strong>VITALITY</strong>
+                    <span>Increases health and stamina.</span>
+                  </div>
+                  <span class="city-profile__attribute-value" data-hero-attribute-value="vitality">0</span>
+                  <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="vitality" aria-label="Increase vitality">+</button>
+                </div>
+              </div>
+              <div class="city-profile__section-heading">
+                <span>STATS</span>
+              </div>
+              <div class="city-profile__derived" aria-label="Combat stats">
+                <div class="city-profile__derived-card city-profile__derived-card--damage"><span class="city-profile__derived-icon" aria-hidden="true"></span><span>DAMAGE</span><strong data-hero-profile-stat="damage">0</strong></div>
+                <div class="city-profile__derived-card city-profile__derived-card--hp"><span class="city-profile__derived-icon" aria-hidden="true"></span><span>HEALTH (HP)</span><strong data-hero-profile-stat="hp">0</strong></div>
+                <div class="city-profile__derived-card city-profile__derived-card--movement"><span class="city-profile__derived-icon" aria-hidden="true"></span><span>MOVEMENT SPEED</span><strong data-hero-profile-stat="movement">0</strong></div>
+                <div class="city-profile__derived-card city-profile__derived-card--stamina"><span class="city-profile__derived-icon" aria-hidden="true"></span><span>STAMINA</span><strong data-hero-profile-stat="stamina">0</strong></div>
+                <div class="city-profile__derived-card city-profile__derived-card--recovery"><span class="city-profile__derived-icon" aria-hidden="true"></span><span>REST RECOVERY</span><strong data-hero-profile-stat="recovery">0</strong></div>
+              </div>
+              <div class="city-profile__section-heading">
+                <span>EQUIPMENT</span>
+              </div>
+              <div class="city-profile__equipment" aria-label="Equipment">
+                <div class="city-profile__equipment-list" data-hero-profile-equipment></div>
+              </div>
+              <button id="heroProfileCloseButton" class="city-profile__footer-close" type="button" data-hero-profile-close>CLOSE</button>
+            </div>
+          </section>
           <nav class="city-menu__nav" aria-label="City locations">
             <button id="startButton" class="city-menu__button" type="button">
-              <span class="city-menu__icon" aria-hidden="true">⚔️</span>
-              <span>Арена</span>
+              <span class="city-menu__icon city-menu__icon--arena" aria-hidden="true"></span>
+              <span>Arena</span>
+            </button>
+            <button id="weaponShopButton" class="city-menu__button" type="button">
+              <span class="city-menu__icon city-menu__icon--smith" aria-hidden="true"></span>
+              <span>Smith</span>
+            </button>
+            <button id="armoryButton" class="city-menu__button" type="button">
+              <span class="city-menu__icon city-menu__icon--armorer" aria-hidden="true"></span>
+              <span>Armorer</span>
             </button>
             <button class="city-menu__button" type="button" disabled>
-              <span class="city-menu__icon" aria-hidden="true">🔨</span>
-              <span>Кузнец</span>
+              <span class="city-menu__icon city-menu__icon--magic-shop" aria-hidden="true"></span>
+              <span>Magic Shop</span>
             </button>
-            <button class="city-menu__button" type="button" disabled>
-              <span class="city-menu__icon" aria-hidden="true">🛡️</span>
-              <span>Бронник</span>
-            </button>
-            <button class="city-menu__button" type="button" disabled>
-              <span class="city-menu__icon" aria-hidden="true">✨</span>
-              <span>Магическая лавка</span>
-            </button>
-            <button class="city-menu__button" type="button" disabled>
-              <span class="city-menu__icon" aria-hidden="true">⛪</span>
-              <span>Церковь</span>
+            <button id="churchButton" class="city-menu__button city-menu__button--locked" type="button" aria-disabled="true">
+              <span class="city-menu__icon city-menu__icon--church" aria-hidden="true"></span>
+              <span>Church</span>
             </button>
           </nav>
         </div>
       </section>
 
       <section id="gameScreen" class="game-screen battle-screen" hidden>
-        <img class="stage-bg" src="./assets/arena/arena-bg-01.png" alt="" aria-hidden="true" />
-
-        <section class="top-hud" aria-label="Arena summary">
-          <div class="score-card">
-            <span>Score</span>
-            <strong id="score">0</strong>
-            <small id="statusText">Round 1 / 12</small>
-          </div>
-        </section>
-
-
-        <section class="status-strip" aria-label="Turn and range">
-          <div id="turnBadge" class="turn-badge">Your turn</div>
+        <section class="status-strip" aria-label="Arena range">
           <div class="distance-ribbon">
             <span>Distance</span>
             <strong id="distanceText">Far</strong>
           </div>
         </section>
 
+        <div class="settings-menu" data-settings-menu>
+          <button
+            id="arenaSettingsButton"
+            class="settings-menu__button"
+            type="button"
+            aria-label="Settings"
+            aria-expanded="false"
+            aria-controls="arenaSettingsPanel"
+            data-settings-button
+          >
+            <span aria-hidden="true">&#9881;</span>
+          </button>
+          <section id="arenaSettingsPanel" class="settings-menu__panel" aria-label="Settings" hidden data-settings-panel>
+            <h2>Settings</h2>
+            <fieldset class="settings-menu__group">
+              <legend>Animation</legend>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaAnimation" value="normal" data-setting-animation />
+                <span>Normal</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaAnimation" value="half" data-setting-animation />
+                <span>Half</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaAnimation" value="off" data-setting-animation />
+                <span>Off</span>
+              </label>
+            </fieldset>
+            <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-vfx />
+              <span>VFX</span>
+            </label>
+            <fieldset class="settings-menu__group">
+              <legend>Shadows</legend>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaShadows" value="high" data-setting-shadow-mode />
+                <span>High</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaShadows" value="low" data-setting-shadow-mode />
+                <span>Low</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaShadows" value="off" data-setting-shadow-mode />
+                <span>Off</span>
+              </label>
+            </fieldset>
+            <fieldset class="settings-menu__group">
+              <legend>HUD</legend>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaHudMode" value="immersive" data-setting-hud-mode />
+                <span>Immersive</span>
+              </label>
+              <label class="settings-menu__option">
+                <input type="radio" name="arenaHudMode" value="classic" data-setting-hud-mode />
+                <span>Classic</span>
+              </label>
+            </fieldset>
+            <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-low-effects />
+              <span>Low effects</span>
+            </label>
+            <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-fps />
+              <span>Show FPS</span>
+            </label>
+          </section>
+        </div>
+        <output class="fps-counter" aria-label="FPS" hidden data-fps-counter>FPS --</output>
+
         <section class="stage-panel">
           <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
           <div class="battle-ui" aria-label="Battle overlay">
             <button id="restartButton" class="restart stage-restart" type="button">Restart</button>
+            <section class="classic-combat-hud" aria-label="Classic fighter stats">
+              <article class="classic-fighter-card classic-fighter-card--player">
+                <strong id="classicPlayerName">Borshemir</strong>
+                <div class="classic-stat classic-stat--hp">
+                  <span>HP</span>
+                  <div class="classic-stat__track"><div id="classicPlayerHpFill" class="classic-stat__fill hp-fill"></div></div>
+                  <em id="classicPlayerHpText">10/10</em>
+                </div>
+                <div class="classic-stat classic-stat--armor">
+                  <span>AR</span>
+                  <div class="classic-stat__track"><div id="classicPlayerArmorFill" class="classic-stat__fill armor-fill"></div></div>
+                  <em id="classicPlayerArmorText">0/0</em>
+                </div>
+                <div class="classic-stat classic-stat--stamina">
+                  <span>ST</span>
+                  <div class="classic-stat__track"><div id="classicPlayerStaFill" class="classic-stat__fill stamina-fill"></div></div>
+                  <em id="classicPlayerStaText">10/10</em>
+                </div>
+              </article>
+              <div class="classic-distance-badge" aria-label="Arena range">
+                <span>Distance</span>
+                <strong id="classicDistanceText">Far</strong>
+              </div>
+              <article class="classic-fighter-card classic-fighter-card--enemy">
+                <strong id="classicEnemyName">Grumbus</strong>
+                <div class="classic-stat classic-stat--hp">
+                  <span>HP</span>
+                  <div class="classic-stat__track"><div id="classicEnemyHpFill" class="classic-stat__fill hp-fill"></div></div>
+                  <em id="classicEnemyHpText">10/10</em>
+                </div>
+                <div class="classic-stat classic-stat--armor">
+                  <span>AR</span>
+                  <div class="classic-stat__track"><div id="classicEnemyArmorFill" class="classic-stat__fill armor-fill"></div></div>
+                  <em id="classicEnemyArmorText">0/0</em>
+                </div>
+                <div class="classic-stat classic-stat--stamina">
+                  <span>ST</span>
+                  <div class="classic-stat__track"><div id="classicEnemyStaFill" class="classic-stat__fill stamina-fill"></div></div>
+                  <em id="classicEnemyStaText">10/10</em>
+                </div>
+              </article>
+            </section>
             <section class="fighters-strip arena-fighters-strip flask-hud" aria-label="Fighter stats">
               <div class="fighter-flasks player-flasks">
                 <div class="flask-row" aria-label="Borshemir resources">
@@ -70,6 +288,11 @@
                     <div id="playerStaFill" class="flask-fill stamina-fill"></div>
                     <span id="playerStaText" class="flask-value">10/10</span>
                     <small>Energy</small>
+                  </div>
+                  <div class="resource-flask flask--armor" aria-label="Borshemir armor">
+                    <div id="playerArmorFill" class="flask-fill armor-fill"></div>
+                    <span id="playerArmorText" class="flask-value">0/0</span>
+                    <small>Armor</small>
                   </div>
                   <div class="resource-flask flask--hp" aria-label="Borshemir health">
                     <div id="playerHpFill" class="flask-fill hp-fill"></div>
@@ -87,6 +310,11 @@
                     <span id="enemyHpText" class="flask-value">30/30</span>
                     <small>Health</small>
                   </div>
+                  <div class="resource-flask flask--armor" aria-label="Grumbus armor">
+                    <div id="enemyArmorFill" class="flask-fill armor-fill"></div>
+                    <span id="enemyArmorText" class="flask-value">0/0</span>
+                    <small>Armor</small>
+                  </div>
                   <div class="resource-flask flask--stamina" aria-label="Grumbus stamina">
                     <div id="enemyStaFill" class="flask-fill stamina-fill"></div>
                     <span id="enemyStaText" class="flask-value">10/10</span>
@@ -96,9 +324,34 @@
                 <strong class="fighter-name">Grumbus</strong>
               </div>
             </section>
+            <section class="classic-action-bar" aria-label="Combat actions" data-classic-action-bar></section>
           </div>
-          <div id="resultBanner" class="result-banner" hidden></div>
-          <button id="cityButton" class="restart city-return" type="button" hidden>Back to City</button>
+          <div id="resultBanner" class="result-banner battle-result" hidden>
+            <div class="battle-result__frame">
+              <div id="resultEyebrow" class="battle-result__eyebrow">Victory</div>
+              <h2 id="resultTitle" class="battle-result__title">Borshemir wins!</h2>
+              <div class="battle-result__rewards" aria-label="Battle rewards">
+                <div class="battle-result__reward">
+                  <span class="battle-result__icon battle-result__icon--gold" aria-hidden="true"></span>
+                  <strong id="resultGoldReward">+0</strong>
+                  <span>Gold</span>
+                </div>
+                <div class="battle-result__reward">
+                  <span class="battle-result__icon battle-result__icon--xp" aria-hidden="true"></span>
+                  <strong id="resultXpReward">+0</strong>
+                  <span>XP</span>
+                </div>
+              </div>
+              <div id="resultLoot" class="battle-result__loot" aria-label="Loot drops" hidden></div>
+              <div id="resultXpProgress" class="battle-result__xp">
+                <div id="resultXpProgressText" class="battle-result__xp-text">LVL 1 0 / 10 XP</div>
+                <div class="battle-result__xp-track" aria-hidden="true">
+                  <div id="resultXpProgressFill" class="battle-result__xp-fill"></div>
+                </div>
+              </div>
+              <button id="cityButton" class="restart city-return battle-result__button" type="button" hidden>Return to City</button>
+            </div>
+          </div>
         </section>
 
         <section class="combat-toast" aria-label="Fight log">
@@ -107,6 +360,6 @@
 
       </section>
     </main>
-
+
   </body>
 </html>

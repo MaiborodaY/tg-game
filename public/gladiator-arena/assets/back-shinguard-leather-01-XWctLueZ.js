@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-leather-01-Bb_6h-Qt.webp`,import.meta.url).href;export{e as default};

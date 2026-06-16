@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-chainmail-01-C2ncjk0k.webp`,import.meta.url).href;export{e as default};

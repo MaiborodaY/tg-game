@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-executioner-01-Dp0PLs60.webp`,import.meta.url).href;export{e as default};

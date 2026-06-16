@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-wood-boss-01-Cnl6yAGV.webp`,import.meta.url).href;export{e as default};

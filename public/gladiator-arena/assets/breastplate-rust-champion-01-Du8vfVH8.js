@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-rust-champion-01-ikWx4xJG.webp`,import.meta.url).href;export{e as default};

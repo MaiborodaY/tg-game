@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-cloth-01-SVHhU_Bo.webp`,import.meta.url).href;export{e as default};

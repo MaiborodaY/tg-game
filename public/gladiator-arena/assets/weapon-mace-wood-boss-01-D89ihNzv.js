@@ -1,0 +1,1 @@
+var e=``+new URL(`weapon-mace-wood-boss-01-X5Ve_z20.webp`,import.meta.url).href;export{e as default};

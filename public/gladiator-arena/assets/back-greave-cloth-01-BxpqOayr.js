@@ -1,0 +1,1 @@
+var e=``+new URL(`back-greave-cloth-01-2ft5RtCr.webp`,import.meta.url).href;export{e as default};

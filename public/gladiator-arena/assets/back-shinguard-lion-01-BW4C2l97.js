@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shinguard-lion-01-DcBC0ynl.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-executioner-01-DrQ_prLw.webp`,import.meta.url).href;export{e as default};

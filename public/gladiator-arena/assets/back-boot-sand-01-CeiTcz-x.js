@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-sand-01-D7cJ5YSV.webp`,import.meta.url).href;export{e as default};

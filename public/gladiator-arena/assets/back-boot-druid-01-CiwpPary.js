@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-druid-01-oGWb-9sS.webp`,import.meta.url).href;export{e as default};

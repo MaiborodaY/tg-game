@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-stormguard-01-B3ABXr40.webp`,import.meta.url).href;export{e as default};

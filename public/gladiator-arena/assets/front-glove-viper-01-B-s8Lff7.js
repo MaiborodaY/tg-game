@@ -1,0 +1,1 @@
+var e=``+new URL(`front-glove-viper-01-DG1yCC6i.webp`,import.meta.url).href;export{e as default};

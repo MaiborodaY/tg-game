@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-cathedral-01-Gnd4Yl6b.webp`,import.meta.url).href;export{e as default};

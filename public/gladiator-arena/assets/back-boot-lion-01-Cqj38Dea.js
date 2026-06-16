@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-lion-01-RvR8s1Ku.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-lion-01-DAkK3y_B.webp`,import.meta.url).href;export{e as default};

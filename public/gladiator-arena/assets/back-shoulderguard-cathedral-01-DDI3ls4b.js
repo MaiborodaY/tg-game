@@ -1,0 +1,1 @@
+var e=``+new URL(`back-shoulderguard-cathedral-01-BnK0_vQx.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`breastplate-stormguard-01-CzPs8qCG.webp`,import.meta.url).href;export{e as default};

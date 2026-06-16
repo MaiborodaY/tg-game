@@ -1,0 +1,1 @@
+var e=``+new URL(`front-boot-lazure-01-JPX39J4b.webp`,import.meta.url).href;export{e as default};

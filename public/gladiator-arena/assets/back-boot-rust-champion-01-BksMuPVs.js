@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-rust-champion-01-BCWE4jAH.webp`,import.meta.url).href;export{e as default};

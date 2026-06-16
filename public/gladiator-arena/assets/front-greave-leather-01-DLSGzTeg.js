@@ -1,0 +1,1 @@
+var e=``+new URL(`front-greave-leather-01-x49w6j5K.webp`,import.meta.url).href;export{e as default};

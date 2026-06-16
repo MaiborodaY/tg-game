@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-bone-01-BcpBK2nu.webp`,import.meta.url).href;export{e as default};

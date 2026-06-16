@@ -1,0 +1,1 @@
+var e=``+new URL(`front-shoulderguard-cloth-01-x2vGXnBt.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`front-glove-bone-01-BPcdAyq-.webp`,import.meta.url).href;export{e as default};

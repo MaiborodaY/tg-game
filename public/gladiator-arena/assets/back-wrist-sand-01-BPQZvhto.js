@@ -1,0 +1,1 @@
+var e=``+new URL(`back-wrist-sand-01-CZ2H2n_U.webp`,import.meta.url).href;export{e as default};

@@ -1,0 +1,1 @@
+var e=``+new URL(`back-boot-cloth-01-CsU6BeKu.webp`,import.meta.url).href;export{e as default};

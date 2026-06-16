@@ -1,0 +1,1 @@
+var e=``+new URL(`front-wrist-rust-champion-01-CyWR3sEv.webp`,import.meta.url).href;export{e as default};

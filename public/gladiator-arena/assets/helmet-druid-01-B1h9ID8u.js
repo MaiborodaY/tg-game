@@ -1,0 +1,1 @@
+var e=``+new URL(`helmet-druid-01-CINR-y7P.webp`,import.meta.url).href;export{e as default};
