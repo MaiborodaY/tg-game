@@ -111,11 +111,16 @@ test("paper doll high shadow can use a cached blur filter", () => {
   assert.equal(arenaSceneSource.includes("applyPaperDollShadowBlur(fighter.shadow);"), true);
 });
 
-test("paper doll loader includes generated and auto equipment assets", () => {
+test("paper doll loader lazily resolves generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ASSETS"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ASSETS"), true);
+  assert.equal(arenaSceneSource.includes("const PAPER_DOLL_ASSETS_BY_KEY = createPaperDollAssetsByKey();"), true);
+  assert.equal(arenaSceneSource.includes("function getPaperDollAssetLoadEntriesForKeys"), true);
+  assert.equal(arenaSceneSource.includes("function ensurePaperDollEquipmentAssetsLoaded"), true);
+  assert.equal(arenaSceneSource.includes("function ensurePaperDollItemAssetsLoaded"), true);
   assert.equal(arenaSceneSource.includes("getHeroItemEquipmentAssetKeys"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ITEM_ASSET_KEYS"), true);
+  assert.equal(arenaSceneSource.includes("[...FIGHTER_PAPER_DOLL_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS].forEach((asset) =>"), false);
 });
 
 test("generated equipment items can carry item-specific transform tuning", () => {
@@ -415,7 +420,7 @@ test("city return can prewarm city and hero preview assets through the browser c
   assert.equal(arenaSceneSource.includes("CITY_DAY_BACKGROUND_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("CITY_SHOP_BACKGROUND_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("CITY_CLOUD_ASSETS.map((asset) => asset.url)"), true);
-  assert.equal(arenaSceneSource.includes("getPaperDollAssetLoadEntries(getPlayerSettings().lowEffects)"), true);
+  assert.equal(arenaSceneSource.includes("getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment])"), true);
 });
 
 test("city hero preview exposes a ready promise for return transitions", () => {
@@ -431,7 +436,7 @@ test("hero portrait skips unchanged snapshot equipment", () => {
   assert.equal(arenaSceneSource.includes("let lastSnapshotKey: string | undefined;"), true);
   assert.match(arenaSceneSource, /if \(snapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
   assert.match(arenaSceneSource, /if \(nextSnapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
-  assert.match(arenaSceneSource, /scene\?\.setEquipment\(nextEquipment\);\s*refreshSnapshot\(nextEquipment\);/);
+  assert.match(arenaSceneSource, /void scene\.setEquipment\(nextEquipment\)\.then\(\(\) => refreshSnapshot\(nextEquipment\)\);/);
 });
 
 test("blocked hits use the shield icon popup instead of block text", () => {

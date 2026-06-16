@@ -353,16 +353,23 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(stylesSource.includes(".armory-shop__selected-stat-value--positive"), true);
 });
 
-test("armory shop lazily prewarms visible paired products", () => {
+test("city shops lazily prewarm visible equipment products", () => {
   assert.equal(armoryShopSource.includes("onPrewarmProducts?: (products: readonly ArmoryProduct[]) => void"), true);
+  assert.equal(weaponShopSource.includes("onPrewarmProducts?: (products: readonly WeaponProduct[]) => void"), true);
   assert.equal(armoryShopSource.includes("SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6"), true);
+  assert.equal(weaponShopSource.includes("SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6"), true);
   assert.equal(armoryShopSource.includes("SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140"), true);
+  assert.equal(weaponShopSource.includes("SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140"), true);
   assert.equal(armoryShopSource.includes("function getVisibleProductPrewarmCandidates(): ArmoryProduct[]"), true);
+  assert.equal(weaponShopSource.includes("function getVisibleProductPrewarmCandidates(): WeaponProduct[]"), true);
   assert.equal(armoryShopSource.includes("content.getBoundingClientRect()"), true);
+  assert.equal(weaponShopSource.includes("content.getBoundingClientRect()"), true);
   assert.equal(armoryShopSource.includes("!button || button.disabled"), true);
-  assert.equal(mainSource.includes("function handleArmoryProductPrewarm(products: readonly ArmoryProduct[]): void"), true);
-  assert.equal(mainSource.includes("product.itemIds.length > 1"), true);
+  assert.equal(weaponShopSource.includes("!button || button.disabled"), true);
+  assert.equal(mainSource.includes("function handleShopProductPrewarm(products: readonly (ArmoryProduct | WeaponProduct)[]): void"), true);
+  assert.equal(mainSource.includes("!areHeroItemsConsumable(product.itemIds)"), true);
+  assert.equal(mainSource.includes("product.itemIds.length > 1"), false);
   assert.equal(mainSource.includes("!isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
   assert.equal(mainSource.includes("cityScene?.prewarmEquipmentItem(itemId);"), true);
-  assert.equal(mainSource.includes("onPrewarmProducts: handleArmoryProductPrewarm"), true);
+  assert.equal(mainSource.includes("onPrewarmProducts: handleShopProductPrewarm"), true);
 });

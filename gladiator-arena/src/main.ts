@@ -122,11 +122,11 @@ let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
 let isCityReturnTransitionRunning = false;
 let cityReturnTransitionToken = 0;
-let armoryPreviewPrewarmToken = 0;
-let armoryPreviewPrewarmFrame: number | undefined;
-let armoryPreviewPrewarmItemIds: HeroItemId[] = [];
-let activeArmoryPreviewPrewarmSignature = "";
-let completedArmoryPreviewPrewarmSignature = "";
+let shopPreviewPrewarmToken = 0;
+let shopPreviewPrewarmFrame: number | undefined;
+let shopPreviewPrewarmItemIds: HeroItemId[] = [];
+let activeShopPreviewPrewarmSignature = "";
+let completedShopPreviewPrewarmSignature = "";
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
@@ -751,7 +751,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     return;
   }
 
-  cancelArmoryPreviewPrewarm();
+  cancelShopPreviewPrewarm();
   const nextHero = buyAndEquipHeroItems(hero, {
     itemIds: product.itemIds,
     price: product.price,
@@ -815,7 +815,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
     return;
   }
 
-  cancelArmoryPreviewPrewarm();
+  cancelShopPreviewPrewarm();
   clearPendingBossEquipmentHintsForItems(itemIds);
   hero = nextHero;
   syncPlayerCityBodyScale();
@@ -860,7 +860,7 @@ function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipmen
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
-  cancelArmoryPreviewPrewarm();
+  cancelShopPreviewPrewarm();
   if (areHeroItemsConsumable(product.itemIds)) {
     clearShopPreview();
     return;
@@ -870,75 +870,79 @@ function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
 }
 
 function clearShopPreview(): void {
-  cancelArmoryPreviewPrewarm();
+  cancelShopPreviewPrewarm();
   cityScene?.clearEquipmentPreview();
 }
 
-function handleArmoryProductPrewarm(products: readonly ArmoryProduct[]): void {
+function handleShopProductPrewarm(products: readonly (ArmoryProduct | WeaponProduct)[]): void {
   const itemIds = products
-    .filter((product) => product.itemIds.length > 1 && !isShopProductSealed(hero, product.itemIds, product.rarity))
+    .filter((product) => !areHeroItemsConsumable(product.itemIds) && !isShopProductSealed(hero, product.itemIds, product.rarity))
     .flatMap((product) => product.itemIds);
 
-  scheduleArmoryPreviewPrewarm(itemIds);
+  scheduleShopPreviewPrewarm(itemIds);
 }
 
-function scheduleArmoryPreviewPrewarm(itemIds: readonly HeroItemId[]): void {
+function scheduleShopPreviewPrewarm(itemIds: readonly HeroItemId[]): void {
   const uniqueItemIds = [...new Set(itemIds)]
-    .filter((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
+    .filter((itemId) => {
+      const item = HERO_ITEM_CATALOG[itemId];
+
+      return Boolean(item && !isHeroConsumableItem(item));
+    });
   const signature = uniqueItemIds.join("|");
 
   if (!signature) {
-    cancelArmoryPreviewPrewarm();
+    cancelShopPreviewPrewarm();
     return;
   }
 
-  if (signature === activeArmoryPreviewPrewarmSignature || signature === completedArmoryPreviewPrewarmSignature) {
+  if (signature === activeShopPreviewPrewarmSignature || signature === completedShopPreviewPrewarmSignature) {
     return;
   }
 
-  cancelArmoryPreviewPrewarm();
-  activeArmoryPreviewPrewarmSignature = signature;
-  armoryPreviewPrewarmItemIds = uniqueItemIds;
-  requestArmoryPreviewPrewarmStep();
+  cancelShopPreviewPrewarm();
+  activeShopPreviewPrewarmSignature = signature;
+  shopPreviewPrewarmItemIds = uniqueItemIds;
+  requestShopPreviewPrewarmStep();
 }
 
-function requestArmoryPreviewPrewarmStep(): void {
-  if (armoryPreviewPrewarmFrame !== undefined) {
+function requestShopPreviewPrewarmStep(): void {
+  if (shopPreviewPrewarmFrame !== undefined) {
     return;
   }
 
-  const token = armoryPreviewPrewarmToken;
+  const token = shopPreviewPrewarmToken;
 
-  armoryPreviewPrewarmFrame = window.requestAnimationFrame(() => {
-    armoryPreviewPrewarmFrame = undefined;
+  shopPreviewPrewarmFrame = window.requestAnimationFrame(() => {
+    shopPreviewPrewarmFrame = undefined;
 
-    if (token !== armoryPreviewPrewarmToken) {
+    if (token !== shopPreviewPrewarmToken) {
       return;
     }
 
-    const itemId = armoryPreviewPrewarmItemIds.shift();
+    const itemId = shopPreviewPrewarmItemIds.shift();
 
     if (itemId) {
       cityScene?.prewarmEquipmentItem(itemId);
     }
 
-    if (armoryPreviewPrewarmItemIds.length > 0) {
-      requestArmoryPreviewPrewarmStep();
+    if (shopPreviewPrewarmItemIds.length > 0) {
+      requestShopPreviewPrewarmStep();
       return;
     }
 
-    completedArmoryPreviewPrewarmSignature = activeArmoryPreviewPrewarmSignature;
-    activeArmoryPreviewPrewarmSignature = "";
+    completedShopPreviewPrewarmSignature = activeShopPreviewPrewarmSignature;
+    activeShopPreviewPrewarmSignature = "";
   });
 }
 
-function cancelArmoryPreviewPrewarm(): void {
-  armoryPreviewPrewarmToken += 1;
-  activeArmoryPreviewPrewarmSignature = "";
-  armoryPreviewPrewarmItemIds = [];
-  if (armoryPreviewPrewarmFrame !== undefined) {
-    window.cancelAnimationFrame(armoryPreviewPrewarmFrame);
-    armoryPreviewPrewarmFrame = undefined;
+function cancelShopPreviewPrewarm(): void {
+  shopPreviewPrewarmToken += 1;
+  activeShopPreviewPrewarmSignature = "";
+  shopPreviewPrewarmItemIds = [];
+  if (shopPreviewPrewarmFrame !== undefined) {
+    window.cancelAnimationFrame(shopPreviewPrewarmFrame);
+    shopPreviewPrewarmFrame = undefined;
   }
 }
 
@@ -1039,6 +1043,7 @@ if (cityMenu) {
     onBowCapacityUpgrade: handleBowCapacityUpgrade,
     onPreview: handleShopPreview,
     onPreviewClear: clearShopPreview,
+    onPrewarmProducts: handleShopProductPrewarm,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("weaponShop"));
@@ -1053,7 +1058,7 @@ if (cityMenu) {
     onBuy: handleShopBuy,
     onPreview: handleShopPreview,
     onPreviewClear: clearShopPreview,
-    onPrewarmProducts: handleArmoryProductPrewarm,
+    onPrewarmProducts: handleShopProductPrewarm,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("armory"));
