@@ -166,6 +166,21 @@ test("city equipment inventory cards share the textured rarity standard", () => 
   assert.match(selectedOrbRule, /var\(--shop-rarity-light, #75401d\) 0%, var\(--shop-rarity, #3a1508\) 52%/);
 });
 
+test("city equipment inventory keeps long item lists scrollable", () => {
+  const panelRule = stylesSource.match(/\.city-equipment-menu__panel\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const trayRule = stylesSource.match(/\.city-equipment-menu__tray\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const productsRule = stylesSource.match(/\.city-equipment-menu__products\s*\{[\s\S]*?\}/)?.[0] ?? "";
+
+  assert.match(panelRule, /min-height: 0;/);
+  assert.match(panelRule, /overflow: hidden;/);
+  assert.match(trayRule, /overflow: hidden;/);
+  assert.match(productsRule, /grid-auto-rows: 76px;/);
+  assert.match(productsRule, /overflow-y: auto;/);
+  assert.match(productsRule, /overscroll-behavior: contain;/);
+  assert.equal(stylesSource.includes("@media (max-width: 460px), (max-height: 760px)"), true);
+  assert.equal(stylesSource.includes("width: min(178px, 48vw, 28vh);"), true);
+});
+
 test("city equipment inventory uses display names instead of raw item names", () => {
   assert.equal(cityHeroUiSource.includes("getShopProductDisplayName"), true);
   assert.equal(cityHeroUiSource.includes("getShopProductDisplayStat(hero, product.itemIds, statKind)"), true);

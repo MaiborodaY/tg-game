@@ -233,7 +233,12 @@ test("debug panel exposes item equipment tuning separately", () => {
   assert.equal(debugPanelSource.includes("Item equipment"), true);
   assert.equal(debugPanelSource.includes("mountItemEquipmentEditor"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__select"), true);
-  assert.equal(debugPanelSource.includes("debug-item-equipment__item-select"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__type-filter"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__rarity-filter"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__picker"), true);
+  assert.equal(debugPanelSource.includes("createDebugItemEquipmentOption"), true);
+  assert.equal(debugPanelSource.includes("getDebugItemEquipmentWarnings"), true);
+  assert.equal(debugPanelSource.includes("getDebugItemEquipmentAvailabilityBadges"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__controls"), true);
   assert.equal(debugPanelSource.includes("debug-item-equipment__copy"), true);
   assert.equal(debugPanelSource.includes("data-equipment-copy-key"), true);
@@ -243,9 +248,9 @@ test("debug panel exposes item equipment tuning separately", () => {
   assert.equal(debugPanelSource.includes("getGeneratedEquipmentPairItem"), true);
   assert.equal(debugPanelSource.includes("compareDebugItemEquipmentOptions"), true);
   assert.equal(debugPanelSource.includes("getHeroItemDefinitionRarity"), true);
-  assert.equal(debugPanelSource.includes("setDebugRarityDataset(itemSelect"), true);
   assert.equal(debugPanelSource.includes("getCurrentEquipmentItemTuning"), true);
-  assert.equal(stylesSource.includes(".debug-item-equipment__item-select"), true);
+  assert.equal(stylesSource.includes(".debug-item-equipment__picker"), true);
+  assert.equal(stylesSource.includes(".debug-item-equipment__badge--warning"), true);
 });
 
 test("debug hero equipment picker can list catalog-only items", () => {

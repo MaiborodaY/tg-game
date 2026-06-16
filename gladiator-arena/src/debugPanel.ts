@@ -67,6 +67,7 @@ import {
   AUTO_EQUIPMENT_ITEM_RECORDS,
   AUTO_EQUIPMENT_SET_IMPORT_ASSETS,
   getEquipmentSetImportAssetUrl,
+  resolveEquipmentAssetUrl,
   type EquipmentSetImportAsset,
 } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
@@ -124,6 +125,8 @@ type FaceNumericControlKey = keyof FacePartTuning;
 type EquipmentNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type EquipmentToggleControlKey = "flipX" | "flipY";
 type EquipmentControlKey = EquipmentNumericControlKey | EquipmentToggleControlKey;
+type DebugItemEquipmentTypeFilter = "all" | HeroWeaponClass | NonNullable<HeroItemDefinition["armorCategory"]>;
+type DebugItemEquipmentRarityFilter = "all" | HeroItemRarity;
 type SlashArcNumericControlKey = Exclude<keyof SlashArcTuning, "color">;
 type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
@@ -305,6 +308,12 @@ const DEBUG_WEAPON_IMPORT_CLASS_LABELS: Record<HeroWeaponClass, string> = {
   mace: "Mace",
   spear: "Spear",
   shuriken: "Shuriken",
+};
+const DEBUG_ITEM_EQUIPMENT_ARMOR_CATEGORY_LABELS: Record<NonNullable<HeroItemDefinition["armorCategory"]>, string> = {
+  cloth: "Cloth",
+  leather: "Leather",
+  chain: "Chain",
+  plate: "Plate",
 };
 const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS: readonly DebugEquipmentSetImportSlotConfig[] = [
   { id: "helmet", label: "Helmet", targetPrefix: "helmet", kind: "armor" },
@@ -671,6 +680,8 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
 let activeNudgeStep = 5;
 let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let activeEquipmentItemId: HeroItemId | "" = "";
+let activeEquipmentTypeFilter: DebugItemEquipmentTypeFilter = "all";
+let activeEquipmentRarityFilter: DebugItemEquipmentRarityFilter = "all";
 let debugArenaBosses: ArenaBossDefinition[] = ARENA_BOSSES.map(cloneArenaBossDefinition);
 let isDebugUndoShortcutMounted = false;
 let isCharacterCanvasEquipmentBridgeMounted = false;
@@ -789,10 +800,18 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <span>Slot</span>
           <select class="debug-item-equipment__select"></select>
         </label>
-        <label class="debug-rig-editor__part">
-          <span>Item</span>
-          <select class="debug-item-equipment__item-select"></select>
-        </label>
+        <div class="debug-item-equipment__filters">
+          <label class="debug-rig-editor__part">
+            <span>Type</span>
+            <select class="debug-item-equipment__type-filter"></select>
+          </label>
+          <label class="debug-rig-editor__part">
+            <span>Rarity</span>
+            <select class="debug-item-equipment__rarity-filter"></select>
+          </label>
+        </div>
+        <div class="debug-item-equipment__picker" role="listbox" aria-label="Item equipment"></div>
+        <p class="debug-item-equipment__empty" aria-live="polite"></p>
         <div class="debug-item-equipment__controls"></div>
         <div class="debug-rig-editor__actions">
           <button class="debug-panel__reset debug-item-equipment__reset" type="button">Reset selected</button>
@@ -1612,11 +1631,13 @@ function createHeroEquipmentRow(slotKey: HeroEquipmentSlotKey): HTMLElement {
 
 function mountItemEquipmentEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__select");
-  const itemSelect = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__item-select");
+  const typeFilter = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__type-filter");
+  const rarityFilter = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__rarity-filter");
+  const picker = editor.querySelector<HTMLElement>(".debug-item-equipment__picker");
   const controls = editor.querySelector<HTMLElement>(".debug-item-equipment__controls");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__reset");
 
-  if (!select || !itemSelect || !controls || !reset) {
+  if (!select || !typeFilter || !rarityFilter || !picker || !controls || !reset) {
     return;
   }
 
@@ -1634,14 +1655,36 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
     if (isEquipmentSlotKey(select.value)) {
       activeEquipmentSlot = select.value;
       activeEquipmentItemId = "";
+      activeEquipmentTypeFilter = "all";
+      activeEquipmentRarityFilter = "all";
       const panel = editor.closest(".debug-panel") as HTMLElement | null;
 
       syncEquipmentEditor(panel ?? editor);
     }
   });
 
-  itemSelect.addEventListener("change", () => {
-    const definition = getDebugHeroItemDefinition(itemSelect.value);
+  typeFilter.addEventListener("change", () => {
+    activeEquipmentTypeFilter = getDebugItemEquipmentTypeFilter(typeFilter.value);
+    const panel = editor.closest(".debug-panel") as HTMLElement | null;
+
+    syncEquipmentEditor(panel ?? editor);
+  });
+
+  rarityFilter.addEventListener("change", () => {
+    activeEquipmentRarityFilter = getDebugItemEquipmentRarityFilter(rarityFilter.value);
+    const panel = editor.closest(".debug-panel") as HTMLElement | null;
+
+    syncEquipmentEditor(panel ?? editor);
+  });
+
+  picker.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>("[data-item-equipment-item]");
+
+    if (!button) {
+      return;
+    }
+
+    const definition = getDebugHeroItemDefinition(button.dataset.itemEquipmentItem);
 
     activeEquipmentItemId = definition?.id ?? "";
 
@@ -3370,6 +3413,260 @@ function compareDebugItemEquipmentOptions(leftItemId: HeroItemId, rightItemId: H
   return (leftDefinition?.name ?? leftItemId).localeCompare(rightDefinition?.name ?? rightItemId);
 }
 
+function syncDebugItemEquipmentTypeFilter(select: HTMLSelectElement, slotKey: EquipmentSlotKey): void {
+  const options = getDebugItemEquipmentTypeFilterOptions(slotKey);
+
+  if (!options.some((option) => option.value === activeEquipmentTypeFilter)) {
+    activeEquipmentTypeFilter = "all";
+  }
+
+  select.replaceChildren(...options.map((option) => createDebugItemEquipmentFilterOption(option.value, option.label)));
+  select.value = activeEquipmentTypeFilter;
+}
+
+function syncDebugItemEquipmentRarityFilter(select: HTMLSelectElement, slotKey: EquipmentSlotKey): void {
+  const rarities = getDebugItemEquipmentRarityFilterOptions(slotKey);
+
+  if (activeEquipmentRarityFilter !== "all" && !rarities.includes(activeEquipmentRarityFilter)) {
+    activeEquipmentRarityFilter = "all";
+  }
+
+  select.replaceChildren(
+    createDebugItemEquipmentFilterOption("all", "All rarity"),
+    ...rarities.map((rarity) => createDebugItemEquipmentFilterOption(rarity, AUTO_EQUIPMENT_RARITY_LABELS[rarity])),
+  );
+  select.value = activeEquipmentRarityFilter;
+}
+
+function createDebugItemEquipmentFilterOption(value: string, label: string): HTMLOptionElement {
+  const option = document.createElement("option");
+
+  option.value = value;
+  option.textContent = label;
+
+  return option;
+}
+
+function getDebugItemEquipmentTypeFilterOptions(slotKey: EquipmentSlotKey): { value: DebugItemEquipmentTypeFilter; label: string }[] {
+  const values = new Set<DebugItemEquipmentTypeFilter>();
+
+  getDebugItemIdsForSlot(slotKey).forEach((itemId) => {
+    const type = getDebugItemEquipmentType(getDebugHeroItemDefinition(itemId));
+
+    if (type) {
+      values.add(type);
+    }
+  });
+
+  return [
+    { value: "all", label: "All types" },
+    ...[...values]
+      .sort(compareDebugItemEquipmentTypeFilters)
+      .map((value) => ({ value, label: formatDebugItemEquipmentType(value) })),
+  ];
+}
+
+function getDebugItemEquipmentRarityFilterOptions(slotKey: EquipmentSlotKey): HeroItemRarity[] {
+  const rarities = new Set<HeroItemRarity>();
+
+  getDebugItemIdsForSlot(slotKey).forEach((itemId) => {
+    const definition = getDebugHeroItemDefinition(itemId);
+
+    if (definition) {
+      rarities.add(getHeroItemDefinitionRarity(definition));
+    }
+  });
+
+  return [...rarities].sort((left, right) => DEBUG_SHOP_ITEM_RARITY_RANKS[left] - DEBUG_SHOP_ITEM_RARITY_RANKS[right]);
+}
+
+function getFilteredDebugItemEquipmentIds(slotKey: EquipmentSlotKey): HeroItemId[] {
+  return getDebugItemIdsForSlot(slotKey)
+    .filter((itemId) => {
+      const definition = getDebugHeroItemDefinition(itemId);
+
+      if (!definition) {
+        return false;
+      }
+
+      const itemType = getDebugItemEquipmentType(definition);
+      const rarity = getHeroItemDefinitionRarity(definition);
+
+      return (
+        (activeEquipmentTypeFilter === "all" || itemType === activeEquipmentTypeFilter) &&
+        (activeEquipmentRarityFilter === "all" || rarity === activeEquipmentRarityFilter)
+      );
+    })
+    .sort(compareDebugItemEquipmentOptions);
+}
+
+function createDebugItemEquipmentOption(itemId: HeroItemId | "", definition: HeroItemDefinition | undefined, isSelected: boolean): HTMLButtonElement {
+  const option = document.createElement("button");
+
+  option.type = "button";
+  option.className = "debug-item-equipment__option";
+  option.dataset.itemEquipmentItem = itemId;
+  option.setAttribute("role", "option");
+  option.setAttribute("aria-selected", isSelected ? "true" : "false");
+
+  if (!definition) {
+    option.classList.add("debug-item-equipment__option--fallback");
+    option.append(createDebugItemEquipmentIcon(undefined), createDebugItemEquipmentText("slot fallback", [createDebugItemEquipmentBadge("fallback", "fallback")]));
+    return option;
+  }
+
+  const rarity = getHeroItemDefinitionRarity(definition);
+  const itemType = getDebugItemEquipmentType(definition);
+  const stat = getDebugItemEquipmentStat(definition);
+  const badges = [
+    createDebugItemEquipmentBadge(rarity, "rarity"),
+    ...(itemType ? [createDebugItemEquipmentBadge(formatDebugItemEquipmentType(itemType), "type")] : []),
+    ...(stat ? [createDebugItemEquipmentBadge(stat, "stat")] : []),
+    ...getDebugItemEquipmentAvailabilityBadges(definition.id),
+    ...getDebugItemEquipmentWarningBadges(definition),
+  ];
+
+  option.classList.add(`debug-item-equipment__option--rarity-${rarity}`);
+
+  if (getDebugItemEquipmentWarnings(definition).length > 0) {
+    option.classList.add("debug-item-equipment__option--warning");
+  }
+
+  option.append(createDebugItemEquipmentIcon(definition.id), createDebugItemEquipmentText(definition.name, badges));
+
+  return option;
+}
+
+function createDebugItemEquipmentIcon(itemId: HeroItemId | undefined): HTMLElement {
+  const icon = document.createElement("span");
+
+  icon.className = "debug-item-equipment__icon";
+
+  if (!itemId) {
+    icon.textContent = "-";
+    return icon;
+  }
+
+  const image = document.createElement("img");
+
+  image.alt = "";
+  image.dataset.itemEquipmentItem = itemId;
+  icon.append(image);
+  void loadDebugItemEquipmentIcon(itemId, image);
+
+  return icon;
+}
+
+async function loadDebugItemEquipmentIcon(itemId: HeroItemId, image: HTMLImageElement): Promise<void> {
+  const record = getSelectedGeneratedEquipmentRecord(itemId) ?? getSelectedAutoEquipmentRecord(itemId);
+  const url = record ? await resolveEquipmentAssetUrl(record.asset.sourcePath) : undefined;
+
+  if (!url || !image.isConnected || image.dataset.itemEquipmentItem !== itemId) {
+    return;
+  }
+
+  image.src = url;
+}
+
+function createDebugItemEquipmentText(name: string, badges: HTMLElement[]): HTMLElement {
+  const body = document.createElement("span");
+  const title = document.createElement("span");
+  const badgeRow = document.createElement("span");
+
+  body.className = "debug-item-equipment__option-body";
+  title.className = "debug-item-equipment__option-name";
+  title.textContent = name;
+  badgeRow.className = "debug-item-equipment__badges";
+  badgeRow.append(...badges);
+  body.append(title, badgeRow);
+
+  return body;
+}
+
+function createDebugItemEquipmentBadge(text: string, kind: string): HTMLElement {
+  const badge = document.createElement("span");
+
+  badge.className = `debug-item-equipment__badge debug-item-equipment__badge--${kind}`;
+  badge.textContent = text;
+
+  return badge;
+}
+
+function getDebugItemEquipmentAvailabilityBadges(itemId: HeroItemId): HTMLElement[] {
+  const record = getSelectedGeneratedEquipmentRecord(itemId);
+
+  if (!record) {
+    return getSelectedAutoEquipmentRecord(itemId) ? [] : [createDebugItemEquipmentBadge("asset?", "warning")];
+  }
+
+  return [
+    ...(record.availability?.shop ? [createDebugItemEquipmentBadge("shop", "availability")] : []),
+    ...(record.availability?.enemyPool ? [createDebugItemEquipmentBadge("enemy", "availability")] : []),
+    ...(record.availability?.bossUnique ? [createDebugItemEquipmentBadge("boss", "availability")] : []),
+  ];
+}
+
+function getDebugItemEquipmentWarningBadges(definition: HeroItemDefinition): HTMLElement[] {
+  return getDebugItemEquipmentWarnings(definition).map((warning) => createDebugItemEquipmentBadge(warning, "warning"));
+}
+
+function getDebugItemEquipmentWarnings(definition: HeroItemDefinition): string[] {
+  const expectedType = getExpectedDebugItemEquipmentType(definition);
+  const actualType = getDebugItemEquipmentType(definition);
+
+  return expectedType && actualType && expectedType !== actualType ? [`check ${expectedType}`] : [];
+}
+
+function getExpectedDebugItemEquipmentType(definition: HeroItemDefinition): DebugItemEquipmentTypeFilter | undefined {
+  const text = `${definition.id} ${definition.name}`.toLowerCase();
+  const typeHints: readonly DebugItemEquipmentTypeFilter[] = [
+    "shuriken",
+    "mace",
+    "axe",
+    "bow",
+    "spear",
+    "sword",
+    "leather",
+    "cloth",
+    "chain",
+    "plate",
+  ];
+
+  return typeHints.find((type) => text.includes(type));
+}
+
+function getDebugItemEquipmentType(definition: HeroItemDefinition | undefined): DebugItemEquipmentTypeFilter | undefined {
+  if (!definition) {
+    return undefined;
+  }
+
+  return definition.kind === "weapon" ? definition.weaponClass : definition.armorCategory;
+}
+
+function getDebugItemEquipmentStat(definition: HeroItemDefinition): string {
+  if (definition.kind === "weapon") {
+    return `DMG ${definition.damageBonus ?? 0}`;
+  }
+
+  return `AR ${definition.armorHp ?? 0}`;
+}
+
+function formatDebugItemEquipmentType(type: DebugItemEquipmentTypeFilter): string {
+  if (type === "all") {
+    return "All types";
+  }
+
+  return DEBUG_WEAPON_IMPORT_CLASSES.includes(type as HeroWeaponClass)
+    ? DEBUG_WEAPON_IMPORT_CLASS_LABELS[type as HeroWeaponClass]
+    : DEBUG_ITEM_EQUIPMENT_ARMOR_CATEGORY_LABELS[type as NonNullable<HeroItemDefinition["armorCategory"]>];
+}
+
+function compareDebugItemEquipmentTypeFilters(left: DebugItemEquipmentTypeFilter, right: DebugItemEquipmentTypeFilter): number {
+  const order: readonly DebugItemEquipmentTypeFilter[] = ["sword", "axe", "mace", "spear", "bow", "shuriken", "cloth", "leather", "chain", "plate"];
+
+  return order.indexOf(left) - order.indexOf(right);
+}
+
 function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItemDefinition | undefined {
   if (!itemId) {
     return undefined;
@@ -4627,6 +4924,18 @@ function getDebugItemRarity(value: string, fallback: HeroItemRarity): HeroItemRa
   return AUTO_EQUIPMENT_RARITIES.includes(value as HeroItemRarity) ? (value as HeroItemRarity) : fallback;
 }
 
+function getDebugItemEquipmentRarityFilter(value: string): DebugItemEquipmentRarityFilter {
+  return value === "all" || AUTO_EQUIPMENT_RARITIES.includes(value as HeroItemRarity) ? (value as DebugItemEquipmentRarityFilter) : "all";
+}
+
+function getDebugItemEquipmentTypeFilter(value: string): DebugItemEquipmentTypeFilter {
+  const armorCategories = Object.keys(DEBUG_ITEM_EQUIPMENT_ARMOR_CATEGORY_LABELS);
+
+  return value === "all" || DEBUG_WEAPON_IMPORT_CLASSES.includes(value as HeroWeaponClass) || armorCategories.includes(value)
+    ? (value as DebugItemEquipmentTypeFilter)
+    : "all";
+}
+
 function getDefaultAutoEquipmentRarity(record: (typeof AUTO_EQUIPMENT_ITEM_RECORDS)[number] | undefined): HeroItemRarity {
   if (record?.item.rarity) {
     return record.item.rarity;
@@ -5310,7 +5619,10 @@ function syncFaceEditor(panel: HTMLElement): void {
 
 function syncEquipmentEditor(panel: HTMLElement): void {
   const equipmentSelect = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__select");
-  const itemSelect = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__item-select");
+  const typeFilter = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__type-filter");
+  const rarityFilter = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__rarity-filter");
+  const picker = panel.querySelector<HTMLElement>(".debug-item-equipment__picker");
+  const empty = panel.querySelector<HTMLElement>(".debug-item-equipment__empty");
   const activeItemDefinition = getDebugHeroItemDefinition(activeEquipmentItemId);
 
   if (activeItemDefinition?.equipmentSlot !== activeEquipmentSlot) {
@@ -5326,21 +5638,27 @@ function syncEquipmentEditor(panel: HTMLElement): void {
     equipmentSelect.value = activeEquipmentSlot;
   }
 
-  if (itemSelect) {
-    itemSelect.replaceChildren(createHeroEquipmentOption("", "slot fallback"));
+  if (typeFilter) {
+    syncDebugItemEquipmentTypeFilter(typeFilter, activeEquipmentSlot);
+  }
 
-    getDebugItemIdsForSlot(activeEquipmentSlot).sort(compareDebugItemEquipmentOptions).forEach((itemId) => {
-      const definition = getDebugHeroItemDefinition(itemId);
+  if (rarityFilter) {
+    syncDebugItemEquipmentRarityFilter(rarityFilter, activeEquipmentSlot);
+  }
 
-      if (!definition) {
-        return;
-      }
+  if (picker) {
+    const itemIds = getFilteredDebugItemEquipmentIds(activeEquipmentSlot);
+    const fallbackOption = createDebugItemEquipmentOption("", undefined, activeEquipmentItemId === "");
+    const itemOptions = itemIds.map((itemId) => createDebugItemEquipmentOption(itemId, getDebugHeroItemDefinition(itemId), itemId === activeEquipmentItemId));
 
-      itemSelect.append(createHeroEquipmentOption(itemId, definition.name, getHeroItemDefinitionRarity(definition)));
-    });
+    picker.replaceChildren(fallbackOption, ...itemOptions);
+    picker.dataset.selectedItem = activeEquipmentItemId;
+  }
 
-    itemSelect.value = activeEquipmentItemId;
-    setDebugRarityDataset(itemSelect, activeItemDefinition ? getHeroItemDefinitionRarity(activeItemDefinition) : undefined);
+  if (empty) {
+    const itemCount = getFilteredDebugItemEquipmentIds(activeEquipmentSlot).length;
+
+    empty.textContent = itemCount === 0 ? "No items match current filters." : `${itemCount} items`;
   }
 
   panel.querySelectorAll<HTMLInputElement>("input[data-equipment-key]").forEach((input) => {

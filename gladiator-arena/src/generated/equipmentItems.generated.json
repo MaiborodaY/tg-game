@@ -7777,6 +7777,197 @@
     }
   },
   {
+    "id": "generated_equipment_weapon_axe_epic_axe_1",
+    "name": "Epic axe 1",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-epic-axe-1"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": -19,
+      "angle": 123,
+      "scaleX": 1.3,
+      "scaleY": 1.4,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-epic-axe-1",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-epic-axe-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-epic-axe-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_axe_epic_axe_1",
+      "name": "Epic axe 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_axe_epic_axe_1"
+      ],
+      "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_epic_axe_3",
+    "name": "epic axe 3",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-epic-axe-3"
+    },
+    "equipmentTuning": {
+      "x": -22,
+      "y": 16,
+      "angle": 104,
+      "scaleX": 1.72,
+      "scaleY": 1.8,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-epic-axe-3",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-epic-axe-3.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-epic-axe-3.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_axe_epic_axe_3",
+      "name": "epic axe 3",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_axe_epic_axe_3"
+      ],
+      "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_epic_axe_4",
+    "name": "epic axe 4",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-epic-axe-4"
+    },
+    "equipmentTuning": {
+      "x": -19,
+      "y": 60,
+      "angle": 90,
+      "scaleX": 1.55,
+      "scaleY": 1.55,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-epic-axe-4",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-epic-axe-4.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-epic-axe-4.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_axe_epic_axe_4",
+      "name": "epic axe 4",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_axe_epic_axe_4"
+      ],
+      "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_epic_axe_5",
+    "name": "epic axe 5",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-epic-axe-5"
+    },
+    "equipmentTuning": {
+      "x": -25,
+      "y": 60,
+      "angle": 90,
+      "scaleX": 1.7,
+      "scaleY": 1.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-epic-axe-5",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-epic-axe-5.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-epic-axe-5.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_axe_epic_axe_5",
+      "name": "epic axe 5",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_axe_epic_axe_5"
+      ],
+      "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_epic_zxe",
+    "name": "Epic zxe",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-epic-zxe"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 69,
+      "angle": 81,
+      "scaleX": 1.5,
+      "scaleY": 1.4,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-epic-zxe",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-epic-zxe.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-epic-zxe.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
     "id": "generated_equipment_weapon_axe_norm_axe",
     "name": "norm axe",
     "kind": "weapon",
@@ -7868,11 +8059,11 @@
       "weaponMainAssetKey": "weapon-axe-rare-axe-2"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 16,
-      "angle": 90,
-      "scaleX": 1,
-      "scaleY": 1,
+      "x": -6,
+      "y": 32,
+      "angle": 92,
+      "scaleX": 1.15,
+      "scaleY": 1.15,
       "flipX": false,
       "flipY": false
     },
@@ -8251,6 +8442,237 @@
     }
   },
   {
+    "id": "generated_equipment_weapon_mace_epic_mace",
+    "name": "epic mace",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-epic-mace"
+    },
+    "equipmentTuning": {
+      "x": -19,
+      "y": 54,
+      "angle": 73,
+      "scaleX": 1.3,
+      "scaleY": 1.3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-epic-mace",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-epic-mace.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-epic-mace.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_epic_mace_1",
+    "name": "Epic mace 1",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-epic-mace-1"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 51,
+      "angle": 73,
+      "scaleX": 1.21,
+      "scaleY": 1.15,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-epic-mace-1",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-epic-mace-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-epic-mace-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_epic_mace_1",
+      "name": "Epic mace 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_epic_mace_1"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_epic_mace_2",
+    "name": "epic mace 2",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-epic-mace-2"
+    },
+    "equipmentTuning": {
+      "x": -22,
+      "y": 6,
+      "angle": 109,
+      "scaleX": 1.55,
+      "scaleY": 1.5,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-epic-mace-2",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-epic-mace-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-epic-mace-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_epic_mace_2",
+      "name": "epic mace 2",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_epic_mace_2"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_epic_mace_3",
+    "name": "epic mace 3",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-epic-mace-3"
+    },
+    "equipmentTuning": {
+      "x": -16,
+      "y": 54,
+      "angle": 78,
+      "scaleX": 1.6,
+      "scaleY": 1.5,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-epic-mace-3",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-epic-mace-3.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-epic-mace-3.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_epic_mace_3",
+      "name": "epic mace 3",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_epic_mace_3"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_epic_mace_4",
+    "name": "epic mace 4",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-epic-mace-4"
+    },
+    "equipmentTuning": {
+      "x": -19,
+      "y": 47,
+      "angle": 78,
+      "scaleX": 1.4,
+      "scaleY": 1.4,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-epic-mace-4",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-epic-mace-4.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-epic-mace-4.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_epic_mace_4",
+      "name": "epic mace 4",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_epic_mace_4"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_lg_mace_1",
+    "name": "LG mace 1",
+    "kind": "weapon",
+    "rarity": "legendary",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-lg-mace-1"
+    },
+    "equipmentTuning": {
+      "x": -38,
+      "y": -6,
+      "angle": 111,
+      "scaleX": 1.7,
+      "scaleY": 1.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-lg-mace-1",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-lg-mace-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-lg-mace-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_lg_mace_1",
+      "name": "LG mace 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_lg_mace_1"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
     "id": "generated_equipment_weapon_mace_mace",
     "name": "mace",
     "kind": "weapon",
@@ -8344,9 +8766,9 @@
     "equipmentTuning": {
       "x": 0,
       "y": 47,
-      "angle": 66,
-      "scaleX": 1.1,
-      "scaleY": 1.1,
+      "angle": 71,
+      "scaleX": 1.15,
+      "scaleY": 1.21,
       "flipX": false,
       "flipY": false
     },
@@ -8382,11 +8804,11 @@
       "weaponMainAssetKey": "weapon-mace-rare-mace-2"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 16,
-      "angle": 90,
-      "scaleX": 1,
-      "scaleY": 1,
+      "x": -6,
+      "y": 13,
+      "angle": 102,
+      "scaleX": 1.15,
+      "scaleY": 1.15,
       "flipX": false,
       "flipY": false
     },
@@ -8406,6 +8828,46 @@
       "price": 0,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_2"
+      ],
+      "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_rare_mace_3",
+    "name": "rare mace 3",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 1,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-rare-mace-3"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 13,
+      "angle": 95,
+      "scaleX": 0.84,
+      "scaleY": 1.03,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-rare-mace-3",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-rare-mace-3.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-rare-mace-3.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_mace_rare_mace_3",
+      "name": "rare mace 3",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_mace_rare_mace_3"
       ],
       "categoryId": "maces"
     }
@@ -8664,6 +9126,681 @@
     }
   },
   {
+    "id": "generated_equipment_weapon_spear_epic_spear",
+    "name": "Epic spear",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-epic-spear"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 121,
+      "scaleX": 1.97,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-epic-spear",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-epic-spear.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-epic-spear.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_epic_spear",
+      "name": "Epic spear",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_epic_spear"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_epic_spear_1",
+    "name": "epic spear 1",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-epic-spear-1"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 121,
+      "scaleX": 2.37,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-epic-spear-1",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-epic-spear-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-epic-spear-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_epic_spear_1",
+      "name": "epic spear 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_epic_spear_1"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_epic_spear_3",
+    "name": "Epic spear 3",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-epic-spear-3"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 126,
+      "scaleX": 2.47,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-epic-spear-3",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-epic-spear-3.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-epic-spear-3.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_epic_spear_4",
+    "name": "epic spear 4",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-epic-spear-4"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 121,
+      "scaleX": 2.14,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-epic-spear-4",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-epic-spear-4.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-epic-spear-4.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_epic_spear_4",
+      "name": "epic spear 4",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_epic_spear_4"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_epic_spear_5",
+    "name": "epic spear 5",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-epic-spear-5"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 16,
+      "angle": 130,
+      "scaleX": 2.75,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-epic-spear-5",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-epic-spear-5.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-epic-spear-5.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_epic_spear_5",
+      "name": "epic spear 5",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_epic_spear_5"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_lg_spear_1",
+    "name": "LG spear 1",
+    "kind": "weapon",
+    "rarity": "legendary",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-lg-spear-1"
+    },
+    "equipmentTuning": {
+      "x": -35,
+      "y": 9,
+      "angle": 99,
+      "scaleX": 3,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-lg-spear-1",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-lg-spear-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-lg-spear-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_lg_spear_1",
+      "name": "LG spear 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_lg_spear_1"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_rare_spear",
+    "name": "rare spear",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-rare-spear"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 9,
+      "angle": 111,
+      "scaleX": 2.12,
+      "scaleY": 2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-rare-spear",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-rare-spear.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-rare-spear.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_rare_spear",
+      "name": "rare spear",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_rare_spear"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_rare_spear_1",
+    "name": "rare spear 1",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 1,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-rare-spear-1"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 76,
+      "angle": 76,
+      "scaleX": 1.9,
+      "scaleY": 2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-rare-spear-1",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-rare-spear-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-rare-spear-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_spear_rare_spear_1",
+      "name": "rare spear 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_spear_rare_spear_1"
+      ],
+      "categoryId": "spears"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_1",
+    "name": "Epic sword 1",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-1"
+    },
+    "equipmentTuning": {
+      "x": 9,
+      "y": 63,
+      "angle": 62,
+      "scaleX": 1.09,
+      "scaleY": 1.21,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-1",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_epic_sword_1",
+      "name": "Epic sword 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_epic_sword_1"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_10",
+    "name": "epic sword 10",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-10"
+    },
+    "equipmentTuning": {
+      "x": 3,
+      "y": 51,
+      "angle": 64,
+      "scaleX": 0.9,
+      "scaleY": 0.9,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-10",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-10.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-10.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_11",
+    "name": "epic sword 11",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-11"
+    },
+    "equipmentTuning": {
+      "x": -6,
+      "y": 13,
+      "angle": 104,
+      "scaleX": 1.8,
+      "scaleY": 2.16,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-11",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-11.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-11.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_2",
+    "name": "Epic sword 2",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-2"
+    },
+    "equipmentTuning": {
+      "x": -22,
+      "y": 6,
+      "angle": 107,
+      "scaleX": 2.52,
+      "scaleY": 2.28,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-2",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-2.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_3",
+    "name": "epic sword 3",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-3"
+    },
+    "equipmentTuning": {
+      "x": -16,
+      "y": 3,
+      "angle": 111,
+      "scaleX": 1.55,
+      "scaleY": 1.55,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-3",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-3.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-3.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_epic_sword_3",
+      "name": "epic sword 3",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_epic_sword_3"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_4",
+    "name": "epic sword 4",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-4"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 13,
+      "angle": 102,
+      "scaleX": 3,
+      "scaleY": 2.07,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-4",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-4.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-4.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_epic_sword_4",
+      "name": "epic sword 4",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_epic_sword_4"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_6",
+    "name": "Epic sword 6",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-6"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 13,
+      "angle": 99,
+      "scaleX": 1.89,
+      "scaleY": 1.86,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-6",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-6.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-6.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_7",
+    "name": "epic sword 7",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-7"
+    },
+    "equipmentTuning": {
+      "x": -19,
+      "y": 9,
+      "angle": 102,
+      "scaleX": 2.47,
+      "scaleY": 2.31,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-7",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-7.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-7.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_epic_sword_7",
+      "name": "epic sword 7",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_epic_sword_7"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_8",
+    "name": "epic sword 8",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-8"
+    },
+    "equipmentTuning": {
+      "x": 6,
+      "y": 54,
+      "angle": 59,
+      "scaleX": 1.1,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-8",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-8.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-8.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_epic_sword_8",
+      "name": "epic sword 8",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_epic_sword_8"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_epic_sword_9",
+    "name": "epic sword 9",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-epic-sword-9"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 13,
+      "angle": 109,
+      "scaleX": 3,
+      "scaleY": 2.16,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-epic-sword-9",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-epic-sword-9.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-epic-sword-9.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_epic_sword_9",
+      "name": "epic sword 9",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_epic_sword_9"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
     "id": "generated_equipment_weapon_sword_kortik",
     "name": "kortik",
     "kind": "weapon",
@@ -8692,6 +9829,86 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_lg_sword_1",
+    "name": "LG sword 1",
+    "kind": "weapon",
+    "rarity": "legendary",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-lg-sword-1"
+    },
+    "equipmentTuning": {
+      "x": -22,
+      "y": 16,
+      "angle": 99,
+      "scaleX": 2,
+      "scaleY": 2.2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-lg-sword-1",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-lg-sword-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-lg-sword-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_lg_sword_1",
+      "name": "LG sword 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_lg_sword_1"
+      ],
+      "categoryId": "swords"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_lg_sword_2",
+    "name": "LG sword 2",
+    "kind": "weapon",
+    "rarity": "legendary",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-lg-sword-2"
+    },
+    "equipmentTuning": {
+      "x": -16,
+      "y": 13,
+      "angle": 102,
+      "scaleX": 2.45,
+      "scaleY": 2.4,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-lg-sword-2",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-lg-sword-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-lg-sword-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_sword_lg_sword_2",
+      "name": "LG sword 2",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_sword_lg_sword_2"
+      ],
+      "categoryId": "swords"
     }
   },
   {
@@ -8749,7 +9966,7 @@
       "x": 0,
       "y": 44,
       "angle": 64,
-      "scaleX": 1.28,
+      "scaleX": 1.23,
       "scaleY": 1.15,
       "flipX": false,
       "flipY": false
@@ -8786,11 +10003,11 @@
       "weaponMainAssetKey": "weapon-sword-rare-sword-3"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 16,
-      "angle": 90,
-      "scaleX": 1,
-      "scaleY": 1,
+      "x": -16,
+      "y": 13,
+      "angle": 102,
+      "scaleX": 1.76,
+      "scaleY": 1.7,
       "flipX": false,
       "flipY": false
     },
@@ -8826,11 +10043,11 @@
       "weaponMainAssetKey": "weapon-sword-rare-sword-4"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 16,
-      "angle": 90,
-      "scaleX": 1,
-      "scaleY": 1,
+      "x": 19,
+      "y": 63,
+      "angle": 54,
+      "scaleX": 1.4,
+      "scaleY": 1.4,
       "flipX": false,
       "flipY": false
     },
@@ -8838,6 +10055,99 @@
       "key": "weapon-sword-rare-sword-4",
       "sourcePath": "assets/fighters/weapons/weapon-sword-rare-sword-4.webp",
       "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-rare-sword-4.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_rare_sword_5",
+    "name": "rare sword 5",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-rare-sword-5"
+    },
+    "equipmentTuning": {
+      "x": 9,
+      "y": -22,
+      "angle": 126,
+      "scaleX": 1.55,
+      "scaleY": 1.45,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-rare-sword-5",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-rare-sword-5.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-rare-sword-5.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_rare_sword_6",
+    "name": "rare sword 6",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-rare-sword-6"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 6,
+      "angle": 109,
+      "scaleX": 1.4,
+      "scaleY": 1.38,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-rare-sword-6",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-rare-sword-6.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-rare-sword-6.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_rare_sword_7",
+    "name": "rare sword 7",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 1,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-rare-sword-7"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": 3,
+      "angle": 104,
+      "scaleX": 1.32,
+      "scaleY": 1.99,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-rare-sword-7",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-rare-sword-7.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-rare-sword-7.webp"
     },
     "availability": {
       "shop": false,
@@ -8897,9 +10207,9 @@
       "weaponMainAssetKey": "weapon-sword-sword-sharp"
     },
     "equipmentTuning": {
-      "x": 13,
+      "x": 0,
       "y": 44,
-      "angle": 50,
+      "angle": 69,
       "scaleX": 1,
       "scaleY": 1,
       "flipX": false,
