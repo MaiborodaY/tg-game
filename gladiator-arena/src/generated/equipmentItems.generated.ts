@@ -2445,6 +2445,30 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_axe_01","name":"Axe 01","price":0,"itemIds":["generated_equipment_weapon_axe_01"],"categoryId":"axes"},
   },
   {
+    item: {"id":"generated_equipment_weapon_axe_rusty_axe","name":"rusty axe","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"axe"},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-rusty-axe"},
+    equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-axe-rusty-axe",
+      sourcePath: "assets/fighters/weapons/weapon-axe-rusty-axe.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-rusty-axe.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_rusty_axe","name":"rusty axe","price":0,"itemIds":["generated_equipment_weapon_axe_rusty_axe"],"categoryId":"axes"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_axe_simple_axe","name":"Simple axe","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"axe"},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-simple-axe"},
+    equipmentTuning: {"x":0,"y":31,"angle":85,"scaleX":0.75,"scaleY":0.75,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-axe-simple-axe",
+      sourcePath: "assets/fighters/weapons/weapon-axe-simple-axe.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-simple-axe.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_simple_axe","name":"Simple axe","price":0,"itemIds":["generated_equipment_weapon_axe_simple_axe"],"categoryId":"axes"},
+  },
+  {
     item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"requirements":{"agility":10},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-01"},
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
@@ -2455,6 +2479,42 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":50,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_bad_club","name":"bad club","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-bad-club"},
+    equipmentTuning: {"x":0,"y":16,"angle":99,"scaleX":0.9,"scaleY":0.8,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-bad-club",
+      sourcePath: "assets/fighters/weapons/weapon-mace-bad-club.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-bad-club.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_bad_club","name":"bad club","price":0,"itemIds":["generated_equipment_weapon_mace_bad_club"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2","name":"ChatGPT Image 16 2026 18 08 05 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-chatgpt-image-16-2026-18-08-05-2"},
+    equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-chatgpt-image-16-2026-18-08-05-2",
+      sourcePath: "assets/fighters/weapons/weapon-mace-chatgpt-image-16-2026-18-08-05-2.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-chatgpt-image-16-2026-18-08-05-2.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2","name":"ChatGPT Image 16 2026 18 08 05 2","price":0,"itemIds":["generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_stone_mace","name":"stone mace","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace"},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-stone-mace"},
+    equipmentTuning: {"x":0,"y":35,"angle":65,"scaleX":0.8,"scaleY":0.8,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-stone-mace",
+      sourcePath: "assets/fighters/weapons/weapon-mace-stone-mace.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-stone-mace.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_stone_mace","name":"stone mace","price":0,"itemIds":["generated_equipment_weapon_mace_stone_mace"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_wood_boss_01","name":"Big Wooden mace","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"mace"},
@@ -2478,6 +2538,53 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","price":5,"itemIds":["generated_equipment_weapon_shuriken_01"],"categoryId":"shurikens"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_kortik","name":"kortik","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-kortik"},
+    equipmentTuning: {"x":-19,"y":19,"angle":90,"scaleX":0.6,"scaleY":1.02,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-kortik",
+      sourcePath: "assets/fighters/weapons/weapon-sword-kortik.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-kortik.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_norm_axe","name":"norm axe","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-norm-axe"},
+    equipmentTuning: {"x":-9,"y":28,"angle":90,"scaleX":0.95,"scaleY":0.95,"flipX":true,"flipY":false},
+    asset: {
+      key: "weapon-sword-norm-axe",
+      sourcePath: "assets/fighters/weapons/weapon-sword-norm-axe.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-norm-axe.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_norm_axe","name":"norm axe","price":0,"itemIds":["generated_equipment_weapon_sword_norm_axe"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"rusty sword","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":0,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-rusty-sword"},
+    equipmentTuning: {"x":0,"y":18,"angle":84,"scaleX":0.65,"scaleY":0.65,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-rusty-sword",
+      sourcePath: "assets/fighters/weapons/weapon-sword-rusty-sword.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-rusty-sword.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"rusty sword","price":0,"itemIds":["generated_equipment_weapon_sword_rusty_sword"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_sword_sharp","name":"Sword Sharp","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-sword-sharp"},
+    equipmentTuning: {"x":13,"y":44,"angle":50,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-sword-sharp",
+      sourcePath: "assets/fighters/weapons/weapon-sword-sword-sharp.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-sword-sharp.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_sword_sharp","name":"Sword Sharp","price":0,"itemIds":["generated_equipment_weapon_sword_sword_sharp"],"categoryId":"swords"},
   },
   {
     item: {"id":"leather_back_boot_01","name":"Leather Back Boot 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSlot":"backBoot","armorHp":3},
@@ -2602,7 +2709,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"weapon_sword_01","name":"Sword 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-01"},
-    equipmentTuning: {"x":3,"y":35,"angle":55,"scaleX":0.5,"scaleY":0.5,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":3,"y":35,"angle":55,"scaleX":0.6,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-sword-01",
       sourcePath: "assets/fighters/weapons/weapon-sword-01.webp",
