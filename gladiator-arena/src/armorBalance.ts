@@ -54,43 +54,43 @@ export const ARMOR_SHOP_BREASTPLATE_ARMOR: Readonly<Record<ArmorShopSetRarity, R
   uncommon: {
     low: 8,
     mid: 10,
-    high: 11,
+    high: 13,
   },
   rare: {
-    low: 12,
-    mid: 14,
-    high: 16,
+    low: 20,
+    mid: 26,
+    high: 34,
   },
   epic: {
-    low: 20,
-    mid: 23,
-    high: 26,
+    low: 51,
+    mid: 61,
+    high: 73,
   },
   legendary: {
-    low: 32,
-    mid: 36,
-    high: 40,
+    low: 84,
+    mid: 92,
+    high: 101,
   },
   mythical: {
-    low: 48,
-    mid: 48,
-    high: 48,
+    low: 111,
+    mid: 111,
+    high: 111,
   },
 };
 
 export const ARMOR_SHOP_SET_BREASTPLATE_ARMOR: Readonly<
   Record<ArmorShopSetId, Readonly<{ rarity: ArmorShopSetRarity; grade: ArmorShopSetGrade; breastplateArmor: number }>>
 > = {
-  rust_champion: { rarity: "rare", grade: "low", breastplateArmor: 12 },
-  mercenary: { rarity: "rare", grade: "mid", breastplateArmor: 14 },
-  executioner: { rarity: "rare", grade: "high", breastplateArmor: 16 },
-  lazure: { rarity: "epic", grade: "low", breastplateArmor: 20 },
-  lion: { rarity: "epic", grade: "mid", breastplateArmor: 23 },
-  stormguard: { rarity: "epic", grade: "high", breastplateArmor: 26 },
-  viper: { rarity: "legendary", grade: "low", breastplateArmor: 32 },
-  bone: { rarity: "legendary", grade: "mid", breastplateArmor: 36 },
-  cathedral: { rarity: "legendary", grade: "high", breastplateArmor: 40 },
-  druid: { rarity: "mythical", grade: "high", breastplateArmor: 48 },
+  rust_champion: { rarity: "rare", grade: "low", breastplateArmor: 20 },
+  mercenary: { rarity: "rare", grade: "mid", breastplateArmor: 26 },
+  executioner: { rarity: "rare", grade: "high", breastplateArmor: 34 },
+  lazure: { rarity: "epic", grade: "low", breastplateArmor: 51 },
+  lion: { rarity: "epic", grade: "mid", breastplateArmor: 61 },
+  stormguard: { rarity: "epic", grade: "high", breastplateArmor: 73 },
+  viper: { rarity: "legendary", grade: "low", breastplateArmor: 84 },
+  bone: { rarity: "legendary", grade: "mid", breastplateArmor: 92 },
+  cathedral: { rarity: "legendary", grade: "high", breastplateArmor: 101 },
+  druid: { rarity: "mythical", grade: "high", breastplateArmor: 111 },
 };
 
 export const ARMOR_BALANCE_PRIMARY_EQUIPMENT_SLOTS: Readonly<Record<ArmorBalanceSlot, HeroEquipmentSlotKey>> = {

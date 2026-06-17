@@ -27,11 +27,13 @@ test("armory shop groups generated back and front equipment into one product", (
   assert.equal(armoryShopSource.includes("itemIds: [backItemId, frontItemId]"), true);
 });
 
-test("armory shop sorts products by rarity, armor, price, slot, then name", () => {
+test("armory shop sorts products by rarity, equipment set, slot, armor, price, then name", () => {
   assert.match(
     armoryShopSource,
-    /const rarityDifference[\s\S]*if \(rarityDifference !== 0\)[\s\S]*const armorDifference[\s\S]*if \(armorDifference !== 0\)[\s\S]*const priceDifference[\s\S]*if \(priceDifference !== 0\)[\s\S]*const slotDifference[\s\S]*if \(slotDifference !== 0\)[\s\S]*return left\.name\.localeCompare\(right\.name\);/,
+    /const rarityDifference[\s\S]*if \(rarityDifference !== 0\)[\s\S]*const setDifference[\s\S]*if \(setDifference !== 0\)[\s\S]*const slotDifference[\s\S]*if \(slotDifference !== 0\)[\s\S]*const armorDifference[\s\S]*if \(armorDifference !== 0\)[\s\S]*const priceDifference[\s\S]*if \(priceDifference !== 0\)[\s\S]*return left\.name\.localeCompare\(right\.name\);/,
   );
+  assert.equal(armoryShopSource.includes("getArmoryProductSetOrder"), true);
+  assert.equal(armoryShopSource.includes("equipmentSet?.rank"), true);
 });
 
 test("weapon shop sorts products by rarity, damage, price, then name", () => {

@@ -258,6 +258,18 @@ function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): numbe
     return rarityDifference;
   }
 
+  const setDifference = getArmoryProductSetOrder(left) - getArmoryProductSetOrder(right);
+
+  if (setDifference !== 0) {
+    return setDifference;
+  }
+
+  const slotDifference = getArmoryProductSlotOrder(left) - getArmoryProductSlotOrder(right);
+
+  if (slotDifference !== 0) {
+    return slotDifference;
+  }
+
   const armorDifference = getShopProductStat(left.itemIds, "armor") - getShopProductStat(right.itemIds, "armor");
 
   if (armorDifference !== 0) {
@@ -270,17 +282,18 @@ function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): numbe
     return priceDifference;
   }
 
-  const slotDifference = getArmoryProductSlotOrder(left) - getArmoryProductSlotOrder(right);
-
-  if (slotDifference !== 0) {
-    return slotDifference;
-  }
-
   return left.name.localeCompare(right.name);
 }
 
 function getArmoryProductRarityOrder(product: ArmoryProduct): number {
   return ARMORY_RARITY_SORT_ORDER[getShopProductRarity(product.itemIds, product.rarity)];
+}
+
+function getArmoryProductSetOrder(product: ArmoryProduct): number {
+  return Math.min(
+    Number.MAX_SAFE_INTEGER,
+    ...product.itemIds.map((itemId) => HERO_ITEM_CATALOG[itemId]?.equipmentSet?.rank ?? Number.MAX_SAFE_INTEGER),
+  );
 }
 
 function getArmoryProductSlotOrder(product: ArmoryProduct): number {

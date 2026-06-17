@@ -50,6 +50,15 @@ const generatedItems = {
     equipmentSlot: "weaponMain",
     damageBonus: 10,
   },
+  weapon_axe_02: {
+    id: "weapon_axe_02",
+    name: "Axe 02",
+    kind: "weapon",
+    rarity: "epic",
+    weaponClass: "axe",
+    equipmentSlot: "weaponMain",
+    damageBonus: 18,
+  },
   weapon_bow_01: {
     id: "weapon_bow_01",
     name: "Bow 01",
@@ -115,7 +124,8 @@ test("shop display damage scales melee weapons by strength while leaving ranged 
 
   assert.equal(shopPresentation.getShopProductStat(["weapon_sword_01"], "damage"), 1);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_sword_01"], "damage"), 2);
-  assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 15);
+  assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 20);
+  assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, meleeDamagePercentBonus: 0.2 }, ["weapon_axe_02"], "damage"), 25);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 5);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_shuriken_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["cloth_breastplate_01"], "armor"), 3);

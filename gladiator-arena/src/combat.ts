@@ -110,6 +110,8 @@ export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
 export const MOVE_DISTANCE_PER_STAMINA = 0.2;
 export const BOW_SHOTS_PER_BATTLE = 5;
 const MIN_MELEE_WEAPON_DAMAGE = 1;
+export const AXE_BLOCK_CHANCE_PENALTY = 0.15;
+export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 2;
 const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
   light: 0.05,
   medium: 0.1,
@@ -353,10 +355,11 @@ export function getActionBlockChance(action: ActionConfig, attacker?: FighterSta
   void defender;
 
   const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
+  const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" && isAttackAction(action.id) ? AXE_BLOCK_CHANCE_PENALTY : 0;
   const spearLungeBlockChanceReduction =
     attacker && getFighterWeaponClass(attacker) === "spear" && action.id === "lunge" ? SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION : 0;
 
-  return clamp((action.blockChance ?? 0) - swordBlockChanceReduction - spearLungeBlockChanceReduction, 0, 0.95);
+  return clamp((action.blockChance ?? 0) + axeBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction, 0, 0.95);
 }
 
 export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
@@ -834,7 +837,10 @@ function getActionDamageBonus(attacker?: FighterState): number {
 }
 
 function getActionMeleeDamageMultiplier(attacker: FighterState): number {
-  return 1 + Math.max(0, attacker.meleeDamagePercentBonus ?? 0);
+  const meleeDamagePercentBonus = Math.max(0, attacker.meleeDamagePercentBonus ?? 0);
+  const weaponMultiplier = getFighterWeaponClass(attacker) === "axe" ? AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER : 1;
+
+  return 1 + meleeDamagePercentBonus * weaponMultiplier;
 }
 
 function getMeleeWeaponDamage(attacker: FighterState): number {

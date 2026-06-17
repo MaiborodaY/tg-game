@@ -276,14 +276,16 @@ function getShopItemDisplayStat(hero: HeroState, item: HeroItemDefinition | unde
     return stat;
   }
 
-  return Math.ceil(stat * getHeroMeleeDamageDisplayMultiplier(hero));
+  return Math.round(stat * getHeroMeleeDamageDisplayMultiplier(hero, item));
 }
 
-function getHeroMeleeDamageDisplayMultiplier(hero: HeroState): number {
-  return 1 + Math.max(0, deriveHeroStats(hero).meleeDamagePercentBonus);
+function getHeroMeleeDamageDisplayMultiplier(hero: HeroState, item: HeroItemDefinition): number {
+  const weaponMultiplier = getHeroItemWeaponClass(item) === "axe" ? 2 : 1;
+
+  return 1 + Math.max(0, deriveHeroStats(hero).meleeDamagePercentBonus) * weaponMultiplier;
 }
 
-function isMeleeWeaponShopItem(item: HeroItemDefinition | undefined): boolean {
+function isMeleeWeaponShopItem(item: HeroItemDefinition | undefined): item is HeroItemDefinition {
   if (!item || item.kind !== "weapon") {
     return false;
   }

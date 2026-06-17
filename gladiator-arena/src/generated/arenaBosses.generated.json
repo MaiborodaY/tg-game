@@ -4,8 +4,8 @@
     "tierId": 1,
     "name": "Dust Arena Champion",
     "baseStats": {
-      "strength": 10,
-      "agility": 10,
+      "strength": 5,
+      "agility": 5,
       "vitality": 5
     },
     "equipment": {

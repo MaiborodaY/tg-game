@@ -115,8 +115,16 @@ export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
 export type HeroItemId = string;
 export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
+export type HeroEquipmentSetGrade = "starter" | "low" | "mid" | "high" | "boss";
 
 export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
+
+export interface HeroEquipmentSetInfo {
+  id: string;
+  name: string;
+  rank: number;
+  grade?: HeroEquipmentSetGrade;
+}
 
 export interface HeroItemDefinition {
   id: HeroItemId;
@@ -128,6 +136,7 @@ export interface HeroItemDefinition {
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  equipmentSet?: HeroEquipmentSetInfo;
   requirements?: Partial<HeroBaseStats>;
   statBonuses?: Partial<HeroBaseStats>;
 }

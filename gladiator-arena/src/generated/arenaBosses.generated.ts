@@ -5,7 +5,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     id: "dust_arena_champion",
     tierId: 1,
     name: "Dust Arena Champion",
-    baseStats: {"strength":10,"agility":10,"vitality":5},
+    baseStats: {"strength":5,"agility":5,"vitality":5},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01","helmet":"generated_equipment_helmet_wood_boss_01","breastplate":"generated_equipment_breastplate_wood_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_wood_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_wood_boss_01","backWrist":"generated_equipment_back_wrist_wood_boss_01","frontWrist":"generated_equipment_front_wrist_wood_boss_01","backGlove":"generated_equipment_back_glove_wood_boss_01","frontGlove":"generated_equipment_front_glove_wood_boss_01","backGreave":"generated_equipment_back_greave_wood_boss_01","frontGreave":"generated_equipment_front_greave_wood_boss_01","backShinguard":"generated_equipment_back_shinguard_wood_boss_01","frontShinguard":"generated_equipment_front_shinguard_wood_boss_01","backBoot":"generated_equipment_back_boot_wood_boss_01","frontBoot":"generated_equipment_front_boot_wood_boss_01"},
     rewards: {"win":{"gold":50,"xp":100},"loss":{"gold":0,"xp":0}},
     lootTable: [

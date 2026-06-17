@@ -50,31 +50,31 @@ test("armor balance slot weights are the single source of truth", () => {
 test("armor balance stores the shop breastplate progression table", () => {
   assert.deepEqual(toPlainObject(armorBalance.ARMOR_SHOP_BREASTPLATE_ARMOR), {
     common: { low: 3, mid: 4, high: 5 },
-    uncommon: { low: 8, mid: 10, high: 11 },
-    rare: { low: 12, mid: 14, high: 16 },
-    epic: { low: 20, mid: 23, high: 26 },
-    legendary: { low: 32, mid: 36, high: 40 },
-    mythical: { low: 48, mid: 48, high: 48 },
+    uncommon: { low: 8, mid: 10, high: 13 },
+    rare: { low: 20, mid: 26, high: 34 },
+    epic: { low: 51, mid: 61, high: 73 },
+    legendary: { low: 84, mid: 92, high: 101 },
+    mythical: { low: 111, mid: 111, high: 111 },
   });
   assert.equal(armorBalance.getArmorShopSetBreastplateArmor("uncommon", "low"), 8);
-  assert.equal(armorBalance.getArmorShopSetBreastplateArmor("mythical", "high"), 48);
+  assert.equal(armorBalance.getArmorShopSetBreastplateArmor("mythical", "high"), 111);
 });
 
 test("armor balance stores the named late-game shop set curve", () => {
   assert.deepEqual(toPlainObject(armorBalance.ARMOR_SHOP_SET_BREASTPLATE_ARMOR), {
-    rust_champion: { rarity: "rare", grade: "low", breastplateArmor: 12 },
-    mercenary: { rarity: "rare", grade: "mid", breastplateArmor: 14 },
-    executioner: { rarity: "rare", grade: "high", breastplateArmor: 16 },
-    lazure: { rarity: "epic", grade: "low", breastplateArmor: 20 },
-    lion: { rarity: "epic", grade: "mid", breastplateArmor: 23 },
-    stormguard: { rarity: "epic", grade: "high", breastplateArmor: 26 },
-    viper: { rarity: "legendary", grade: "low", breastplateArmor: 32 },
-    bone: { rarity: "legendary", grade: "mid", breastplateArmor: 36 },
-    cathedral: { rarity: "legendary", grade: "high", breastplateArmor: 40 },
-    druid: { rarity: "mythical", grade: "high", breastplateArmor: 48 },
+    rust_champion: { rarity: "rare", grade: "low", breastplateArmor: 20 },
+    mercenary: { rarity: "rare", grade: "mid", breastplateArmor: 26 },
+    executioner: { rarity: "rare", grade: "high", breastplateArmor: 34 },
+    lazure: { rarity: "epic", grade: "low", breastplateArmor: 51 },
+    lion: { rarity: "epic", grade: "mid", breastplateArmor: 61 },
+    stormguard: { rarity: "epic", grade: "high", breastplateArmor: 73 },
+    viper: { rarity: "legendary", grade: "low", breastplateArmor: 84 },
+    bone: { rarity: "legendary", grade: "mid", breastplateArmor: 92 },
+    cathedral: { rarity: "legendary", grade: "high", breastplateArmor: 101 },
+    druid: { rarity: "mythical", grade: "high", breastplateArmor: 111 },
   });
-  assert.equal(armorBalance.getNamedArmorShopSetBreastplateArmor("lion"), 23);
-  assert.equal(armorBalance.getNamedArmorShopSetTotalPrice("druid"), 480);
+  assert.equal(armorBalance.getNamedArmorShopSetBreastplateArmor("lion"), 61);
+  assert.equal(armorBalance.getNamedArmorShopSetTotalPrice("druid"), 1110);
 });
 
 test("armor balance derives shop set prices from breastplate armor", () => {
@@ -83,7 +83,7 @@ test("armor balance derives shop set prices from breastplate armor", () => {
   assert.equal(armorBalance.getArmorShopSetTotalPrice("common", "low"), 30);
   assert.equal(armorBalance.getArmorShopSetTotalPrice("common", "high"), 50);
   assert.equal(armorBalance.getArmorShopSetTotalPrice("uncommon", "low"), 80);
-  assert.equal(armorBalance.getArmorShopSetTotalPrice("mythical", "high"), 480);
+  assert.equal(armorBalance.getArmorShopSetTotalPrice("mythical", "high"), 1110);
 });
 
 test("starter armor prices use the same slot weights", () => {
@@ -166,16 +166,16 @@ test("uncommon armor sets derive from the progression table", () => {
   });
   assert.equal(armorBalance.getArmorSetTotal(lowArmorSet), 34);
   assert.deepEqual(toPlainObject(highArmorSet), {
-    breastplate: 11,
-    helmet: 7,
-    shoulders: 5,
-    greaves: 5,
-    shinguards: 5,
-    gloves: 4,
-    boots: 4,
-    wrists: 4,
+    breastplate: 13,
+    helmet: 8,
+    shoulders: 6,
+    greaves: 6,
+    shinguards: 6,
+    gloves: 5,
+    boots: 5,
+    wrists: 5,
   });
-  assert.equal(armorBalance.getArmorSetTotal(highArmorSet), 45);
+  assert.equal(armorBalance.getArmorSetTotal(highArmorSet), 54);
 });
 
 test("armor balance maps paired armor to primary and mirror equipment slots", () => {
