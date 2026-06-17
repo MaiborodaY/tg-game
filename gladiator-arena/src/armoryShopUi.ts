@@ -141,12 +141,13 @@ const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {
   frontWrist: 3,
   backGlove: 4,
   frontGlove: 4,
-  backGreave: 5,
-  frontGreave: 5,
-  backShinguard: 6,
-  frontShinguard: 6,
-  backBoot: 7,
-  frontBoot: 7,
+  shield: 5,
+  backGreave: 6,
+  frontGreave: 6,
+  backShinguard: 7,
+  frontShinguard: 7,
+  backBoot: 8,
+  frontBoot: 8,
 };
 
 const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
@@ -156,6 +157,7 @@ const ARMORY_PART_FILTERS: readonly ArmoryPartFilter[] = [
   { id: "head", name: "Head", shortLabel: "HEAD" },
   { id: "body", name: "Body", shortLabel: "BODY" },
   { id: "arms", name: "Arms", shortLabel: "ARMS" },
+  { id: "shield", name: "Shield", shortLabel: "SHIELD" },
   { id: "legs", name: "Legs", shortLabel: "LEGS" },
 ];
 const ARMORY_PART_FILTER_BY_SLOT: Partial<Record<HeroEquipmentSlotKey, string>> = {
@@ -167,6 +169,7 @@ const ARMORY_PART_FILTER_BY_SLOT: Partial<Record<HeroEquipmentSlotKey, string>> 
   frontWrist: "arms",
   backGlove: "arms",
   frontGlove: "arms",
+  shield: "shield",
   backGreave: "legs",
   frontGreave: "legs",
   backShinguard: "legs",
@@ -224,6 +227,12 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
         name: "Hands",
         shortLabel: "HAND",
         products: getGeneratedArmoryProductsForSlots(["backGlove", "frontGlove"]),
+      },
+      {
+        id: "shields",
+        name: "Shields",
+        shortLabel: "SHLD",
+        products: getGeneratedArmoryProductsForSlots(["shield"]),
       },
     ],
   },

@@ -189,17 +189,19 @@ test("equipment catalog is sourced from generated items", () => {
   assert.equal(hero.createDefaultHeroInventory().length, 0);
 });
 
-test("hero starts with empty equipment including gloves and wrists", () => {
+test("hero starts with empty equipment including gloves wrists and shield", () => {
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("weaponBow"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backWrist"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontWrist"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("backGlove"), true);
   assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("frontGlove"), true);
+  assert.equal(hero.HERO_EQUIPMENT_SLOT_KEYS.includes("shield"), true);
 
   assert.equal(hero.createDefaultHeroEquipment().backWrist, null);
   assert.equal(hero.createDefaultHeroEquipment().frontWrist, null);
   assert.equal(hero.createDefaultHeroEquipment().backGlove, null);
   assert.equal(hero.createDefaultHeroEquipment().frontGlove, null);
+  assert.equal(hero.createDefaultHeroEquipment().shield, null);
   assert.equal(hero.createDefaultHeroEquipment().weaponBow, null);
   assert.deepEqual([...hero.createDefaultHero().defeatedArenaBossIds], []);
   assert.deepEqual([...hero.createDefaultHero().unlockedShopRarities], []);

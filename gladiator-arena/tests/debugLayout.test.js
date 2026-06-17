@@ -329,12 +329,18 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-promote"), true);
   assert.equal(debugPanelSource.includes("DEBUG_WEAPON_IMPORT_CLASSES"), true);
   assert.equal(debugPanelSource.includes("renderWeaponImportAssets"), true);
+  assert.equal(debugPanelSource.includes("renderShieldImportAssets"), true);
   assert.equal(debugPanelSource.includes("getSelectedWeaponImportEntries"), true);
+  assert.equal(debugPanelSource.includes("getSelectedShieldImportEntries"), true);
   assert.equal(debugPanelSource.includes("data-weapon-import-source-path"), true);
+  assert.equal(debugPanelSource.includes("data-shield-import-source-path"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-rarity"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-class"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-damage"), true);
   assert.equal(debugPanelSource.includes("debug-auto-equipment__weapon-price"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__shield-rarity"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__shield-armor"), true);
+  assert.equal(debugPanelSource.includes("debug-auto-equipment__shield-price"), true);
   assert.equal(debugPanelSource.includes("getRemovableGeneratedEquipmentItems"), true);
   assert.equal(debugPanelSource.includes("createDebugRemovableGeneratedEquipmentPairItem"), true);
   assert.equal(debugPanelSource.includes("compareDebugRemovableGeneratedEquipmentItems"), true);
@@ -350,12 +356,13 @@ test("debug panel exposes auto equipment promotion controls", () => {
   assert.equal(stylesSource.includes(".debug-auto-equipment__set-rarity"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__set-assets"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__weapon-assets"), true);
+  assert.equal(stylesSource.includes(".debug-auto-equipment__shield-assets"), true);
   assert.equal(stylesSource.includes(".debug-auto-equipment__weapon-fields"), true);
   assert.equal(stylesSource.includes(".debug-set-import-preview"), true);
   assert.equal(stylesSource.includes(".debug-set-import-preview__image"), true);
 });
 
-test("set importer exposes only back-side paired armor targets", () => {
+test("set importer exposes only back-side paired armor targets while shields use a separate importer", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
   const setImporterConfigSource = debugPanelSource.slice(
     debugPanelSource.indexOf("const DEBUG_EQUIPMENT_SET_IMPORT_SLOT_CONFIGS"),
@@ -368,7 +375,11 @@ test("set importer exposes only back-side paired armor targets", () => {
   assert.match(setImporterConfigSource, /targetPrefix: "back-greave"/);
   assert.match(setImporterConfigSource, /targetPrefix: "back-shinguard"/);
   assert.match(setImporterConfigSource, /targetPrefix: "back-boot"/);
+  assert.doesNotMatch(setImporterConfigSource, /targetPrefix: "shield"/);
   assert.doesNotMatch(setImporterConfigSource, /targetPrefix: "front-/);
+  assert.match(debugPanelSource, /debug-auto-equipment__shield-importer/);
+  assert.match(debugPanelSource, /getShieldImportAssets/);
+  assert.match(debugPanelSource, /getEquipmentSetImportAssets/);
 });
 
 test("auto equipment preview starts from fallback and isolates the selected asset", () => {

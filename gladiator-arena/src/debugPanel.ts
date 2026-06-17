@@ -81,6 +81,7 @@ import {
   saveProdDefaults,
   savePromotedEquipmentItem,
   savePromotedEquipmentSet,
+  savePromotedShieldImports,
   savePromotedWeaponImports,
 } from "./prodDefaultsSaver";
 
@@ -251,6 +252,19 @@ interface DebugWeaponImportEntry {
   };
 }
 
+interface DebugShieldImportEntry {
+  sourcePath: string;
+  name: string;
+  rarity: HeroItemRarity;
+  armorHp: number;
+  price: number;
+  availability: {
+    shop: boolean;
+    enemyPool: boolean;
+    bossUnique: boolean;
+  };
+}
+
 interface DebugBossEquipmentControlConfig {
   id: string;
   label: string;
@@ -363,6 +377,7 @@ const DEBUG_BOSS_EQUIPMENT_SLOT_LABELS: Record<HeroEquipmentSlotKey, string> = {
   frontWrist: "Front wrist",
   backGlove: "Back glove",
   frontGlove: "Front glove",
+  shield: "Shield",
   backGreave: "Back greave",
   frontGreave: "Front greave",
   backShinguard: "Back shin",
@@ -911,6 +926,13 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <div class="debug-auto-equipment__weapon-assets"></div>
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-auto-equipment__weapon-promote" type="button">Promote selected weapons</button>
+          </div>
+        </fieldset>
+        <fieldset class="debug-auto-equipment__shield-importer">
+          <legend>Shield importer</legend>
+          <div class="debug-auto-equipment__shield-assets"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-auto-equipment__shield-promote" type="button">Promote selected shields</button>
           </div>
         </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
@@ -1733,6 +1755,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   const setPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-promote");
   const weaponAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__weapon-assets");
   const weaponPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__weapon-promote");
+  const shieldAssets = editor.querySelector<HTMLElement>(".debug-auto-equipment__shield-assets");
+  const shieldPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__shield-promote");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
 
   if (
@@ -1765,6 +1789,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     !setPromote ||
     !weaponAssets ||
     !weaponPromote ||
+    !shieldAssets ||
+    !shieldPromote ||
     !status
   ) {
     return;
@@ -1790,6 +1816,7 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
   equipmentToggleControls.forEach((control) => transformControls.append(createEquipmentToggleControl(control)));
   renderEquipmentSetImportAssets(setAssets);
   renderWeaponImportAssets(weaponAssets);
+  renderShieldImportAssets(shieldAssets);
   syncAutoEquipmentStatInputs(editor);
 
   syncAutoEquipmentEditor(editor);
@@ -1992,8 +2019,8 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Could not promote equipment set.";
     } finally {
-      setRename.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
-      setPromote.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+      setRename.disabled = getEquipmentSetImportAssets().length === 0;
+      setPromote.disabled = getEquipmentSetImportAssets().length === 0;
     }
   });
 
@@ -2014,6 +2041,26 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
       status.textContent = error instanceof Error ? error.message : "Could not promote weapon imports.";
     } finally {
       weaponPromote.disabled = getWeaponImportAssets().length === 0;
+    }
+  });
+
+  shieldPromote.addEventListener("click", async () => {
+    const entries = getSelectedShieldImportEntries(shieldAssets);
+
+    if (entries.length === 0) {
+      status.textContent = "Select at least one raw shield asset.";
+      return;
+    }
+
+    shieldPromote.disabled = true;
+    status.textContent = entries.length === 1 ? "Promoting shield..." : `Promoting ${entries.length} shields...`;
+
+    try {
+      status.textContent = await savePromotedShieldImports({ entries });
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not promote shield imports.";
+    } finally {
+      shieldPromote.disabled = getShieldImportAssets().length === 0;
     }
   });
 }
@@ -3885,6 +3932,7 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   const setRename = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-rename");
   const setPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__set-promote");
   const weaponPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__weapon-promote");
+  const shieldPromote = editor.querySelector<HTMLButtonElement>(".debug-auto-equipment__shield-promote");
   const status = editor.querySelector<HTMLElement>(".debug-auto-equipment__status");
   const record = getSelectedAutoEquipmentRecord(select?.value);
   const isAvailable = Boolean(record);
@@ -3974,15 +4022,19 @@ function syncAutoEquipmentEditor(editor: HTMLElement): void {
   syncEquipmentSetImportAvailabilityControls(editor);
 
   if (setRename) {
-    setRename.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+    setRename.disabled = getEquipmentSetImportAssets().length === 0;
   }
 
   if (setPromote) {
-    setPromote.disabled = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0;
+    setPromote.disabled = getEquipmentSetImportAssets().length === 0;
   }
 
   if (weaponPromote) {
     weaponPromote.disabled = getWeaponImportAssets().length === 0;
+  }
+
+  if (shieldPromote) {
+    shieldPromote.disabled = getShieldImportAssets().length === 0;
   }
 
   if (status) {
@@ -3999,7 +4051,7 @@ function syncEquipmentSetImportAvailabilityControls(editor: HTMLElement): void {
   const setShop = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-shop");
   const setEnemyPool = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-enemy-pool");
   const setBossUnique = editor.querySelector<HTMLInputElement>(".debug-auto-equipment__set-boss-unique");
-  const hasRawAssets = AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length > 0;
+  const hasRawAssets = getEquipmentSetImportAssets().length > 0;
   const isBossUnique = setBossUnique?.checked === true;
 
   if (isBossUnique && raritySelect) {
@@ -4535,6 +4587,16 @@ function getWeaponImportAssets(): EquipmentSetImportAsset[] {
   return AUTO_EQUIPMENT_SET_IMPORT_ASSETS.filter((asset) => asset.kind === "weapon");
 }
 
+function getShieldImportAssets(): EquipmentSetImportAsset[] {
+  return AUTO_EQUIPMENT_SET_IMPORT_ASSETS.filter((asset) => asset.kind === "armor" && asset.key.startsWith("shield-"));
+}
+
+function getEquipmentSetImportAssets(): EquipmentSetImportAsset[] {
+  const shieldImportSourcePaths = new Set(getShieldImportAssets().map((asset) => asset.sourcePath));
+
+  return AUTO_EQUIPMENT_SET_IMPORT_ASSETS.filter((asset) => !shieldImportSourcePaths.has(asset.sourcePath));
+}
+
 function renderWeaponImportAssets(host: HTMLElement): void {
   host.replaceChildren();
 
@@ -4750,6 +4812,193 @@ function getSelectedWeaponImportEntries(host: HTMLElement): DebugWeaponImportEnt
   });
 }
 
+function renderShieldImportAssets(host: HTMLElement): void {
+  host.replaceChildren();
+
+  const assets = getShieldImportAssets();
+
+  if (assets.length === 0) {
+    const empty = document.createElement("p");
+
+    empty.className = "debug-auto-equipment__set-empty";
+    empty.textContent = "No raw shield assets in assets/equipment-import/armor.";
+    host.append(empty);
+    return;
+  }
+
+  assets.forEach((asset) => {
+    host.append(createShieldImportAssetRow(asset));
+  });
+}
+
+function createShieldImportAssetRow(asset: EquipmentSetImportAsset): HTMLElement {
+  const row = document.createElement("div");
+  const preview = document.createElement("button");
+  const fields = document.createElement("div");
+  const selected = document.createElement("input");
+  const nameInput = document.createElement("input");
+  const raritySelect = document.createElement("select");
+  const armorInput = document.createElement("input");
+  const priceInput = document.createElement("input");
+  const shopInput = document.createElement("input");
+  const enemyPoolInput = document.createElement("input");
+  const bossUniqueInput = document.createElement("input");
+
+  row.className = "debug-auto-equipment__weapon-asset debug-auto-equipment__shield-asset";
+  row.dataset.shieldImportSourcePath = asset.sourcePath;
+
+  preview.type = "button";
+  preview.className = "debug-auto-equipment__set-preview";
+  preview.setAttribute("aria-label", "Preview shield import asset");
+  preview.setAttribute("aria-pressed", "false");
+  void getEquipmentSetImportAssetUrl(asset).then((url) => {
+    if (url) {
+      preview.style.backgroundImage = `url("${url}")`;
+    }
+  });
+  preview.addEventListener("click", () => {
+    showEquipmentSetImportAssetPreview(asset, preview);
+  });
+
+  selected.type = "checkbox";
+  selected.className = "debug-auto-equipment__shield-selected";
+  selected.checked = true;
+
+  nameInput.type = "text";
+  nameInput.className = "debug-auto-equipment__shield-name";
+  nameInput.value = formatShieldImportDefaultName(asset);
+
+  raritySelect.className = "debug-auto-equipment__shield-rarity debug-rarity-select";
+  raritySelect.innerHTML = formatAutoEquipmentRarityOptions();
+  raritySelect.value = "common";
+  setDebugRarityDataset(raritySelect, "common");
+
+  armorInput.type = "number";
+  armorInput.className = "debug-auto-equipment__shield-armor";
+  armorInput.min = `${AUTO_EQUIPMENT_STAT_MIN}`;
+  armorInput.max = `${AUTO_EQUIPMENT_ARMOR_MAX}`;
+  armorInput.step = "1";
+  armorInput.value = "1";
+
+  priceInput.type = "number";
+  priceInput.className = "debug-auto-equipment__shield-price";
+  priceInput.min = "0";
+  priceInput.max = `${AUTO_EQUIPMENT_PRICE_MAX}`;
+  priceInput.step = "1";
+  priceInput.value = "0";
+
+  shopInput.type = "checkbox";
+  shopInput.className = "debug-auto-equipment__shield-shop";
+  shopInput.checked = true;
+
+  enemyPoolInput.type = "checkbox";
+  enemyPoolInput.className = "debug-auto-equipment__shield-enemy-pool";
+
+  bossUniqueInput.type = "checkbox";
+  bossUniqueInput.className = "debug-auto-equipment__shield-boss-unique";
+
+  fields.className = "debug-auto-equipment__weapon-fields debug-auto-equipment__shield-fields";
+  fields.append(
+    createWeaponImportCheckboxField("Use", selected, "debug-auto-equipment__weapon-field--check"),
+    createWeaponImportField("Name", nameInput, "debug-auto-equipment__weapon-field--name"),
+    createWeaponImportField("Rarity", raritySelect),
+    createWeaponImportField("Armor", armorInput),
+    createWeaponImportField("Price", priceInput),
+    createWeaponImportCheckboxField("Shop", shopInput),
+    createWeaponImportCheckboxField("Enemy", enemyPoolInput),
+    createWeaponImportCheckboxField("Boss", bossUniqueInput),
+  );
+
+  const syncRow = (): void => {
+    syncShieldImportRowAvailability(row);
+  };
+
+  selected.addEventListener("change", syncRow);
+  raritySelect.addEventListener("change", syncRow);
+  shopInput.addEventListener("change", syncRow);
+  bossUniqueInput.addEventListener("change", syncRow);
+  syncRow();
+
+  row.append(preview, fields);
+  return row;
+}
+
+function syncShieldImportRowAvailability(row: HTMLElement): void {
+  const selected = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-selected");
+  const raritySelect = row.querySelector<HTMLSelectElement>(".debug-auto-equipment__shield-rarity");
+  const priceInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-price");
+  const shopInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-shop");
+  const enemyPoolInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-enemy-pool");
+  const bossUniqueInput = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-boss-unique");
+  const isSelected = selected?.checked === true;
+  const isBossUnique = bossUniqueInput?.checked === true;
+  const isShopItem = shopInput?.checked === true && !isBossUnique;
+
+  if (isBossUnique && raritySelect) {
+    raritySelect.value = "unique";
+    setDebugRarityDataset(raritySelect, "unique");
+  } else if (raritySelect) {
+    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
+  }
+
+  if (raritySelect) {
+    raritySelect.disabled = !isSelected || isBossUnique;
+  }
+
+  if (shopInput) {
+    shopInput.disabled = !isSelected || isBossUnique;
+  }
+
+  if (enemyPoolInput) {
+    enemyPoolInput.disabled = !isSelected || isBossUnique;
+  }
+
+  if (bossUniqueInput) {
+    bossUniqueInput.disabled = !isSelected;
+  }
+
+  if (priceInput) {
+    priceInput.disabled = !isSelected || !isShopItem;
+
+    if (!isShopItem) {
+      priceInput.value = "0";
+    }
+  }
+}
+
+function getSelectedShieldImportEntries(host: HTMLElement): DebugShieldImportEntry[] {
+  return Array.from(host.querySelectorAll<HTMLElement>("[data-shield-import-source-path]")).flatMap((row) => {
+    const selected = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-selected");
+    const sourcePath = row.dataset.shieldImportSourcePath;
+
+    if (!selected?.checked || !sourcePath) {
+      return [];
+    }
+
+    const name = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-name")?.value.trim() ?? "";
+    const rarity = getDebugItemRarity(row.querySelector<HTMLSelectElement>(".debug-auto-equipment__shield-rarity")?.value ?? "", "common");
+    const armorHp = getWeaponImportInteger(row, ".debug-auto-equipment__shield-armor", AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
+    const bossUnique = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-boss-unique")?.checked === true;
+    const shop = row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-shop")?.checked === true && !bossUnique;
+    const price = shop ? getWeaponImportInteger(row, ".debug-auto-equipment__shield-price", 0, AUTO_EQUIPMENT_PRICE_MAX) : 0;
+
+    return [
+      {
+        sourcePath,
+        name: name || formatShieldImportDefaultName({ key: sourcePath, sourcePath }),
+        rarity: bossUnique ? "unique" : rarity,
+        armorHp,
+        price,
+        availability: {
+          shop,
+          enemyPool: row.querySelector<HTMLInputElement>(".debug-auto-equipment__shield-enemy-pool")?.checked === true && !bossUnique,
+          bossUnique,
+        },
+      },
+    ];
+  });
+}
+
 function getWeaponImportInteger(row: HTMLElement, selector: string, min: number, max: number): number {
   const value = Number(row.querySelector<HTMLInputElement>(selector)?.value ?? min);
   const integer = Number.isFinite(value) ? Math.floor(value) : min;
@@ -4799,19 +5048,35 @@ function formatWeaponImportDefaultName(asset: Pick<EquipmentSetImportAsset, "key
   return normalized || "Weapon";
 }
 
+function formatShieldImportDefaultName(asset: Pick<EquipmentSetImportAsset, "key" | "sourcePath">): string {
+  const sourceKey = asset.key.includes("/")
+    ? (asset.sourcePath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "") ?? "shield")
+    : asset.key || asset.sourcePath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "") || "shield";
+  const normalized = sourceKey
+    .replace(/^shield-?/i, "")
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean)
+    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+    .join(" ");
+
+  return normalized ? `${normalized} Shield` : "Shield";
+}
+
 function renderEquipmentSetImportAssets(host: HTMLElement): void {
   host.replaceChildren();
 
-  if (AUTO_EQUIPMENT_SET_IMPORT_ASSETS.length === 0) {
+  const assets = getEquipmentSetImportAssets();
+
+  if (assets.length === 0) {
     const empty = document.createElement("p");
 
     empty.className = "debug-auto-equipment__set-empty";
-    empty.textContent = "No raw equipment assets in assets/equipment-import.";
+    empty.textContent = "No raw set assets in assets/equipment-import.";
     host.append(empty);
     return;
   }
 
-  AUTO_EQUIPMENT_SET_IMPORT_ASSETS.forEach((asset) => {
+  assets.forEach((asset) => {
     host.append(createEquipmentSetImportAssetRow(asset));
   });
 }

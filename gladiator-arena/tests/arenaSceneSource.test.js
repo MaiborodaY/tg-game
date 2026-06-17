@@ -26,7 +26,7 @@ test("equipment texture swaps reapply slot image sizing", () => {
   assert.match(arenaSceneSource, /if \(image && previousState && image\.texture\.key === textureKey && arePaperDollEquipmentSlotImageStatesEqual\(previousState, nextState\)\) \{[\s\S]*return image;[\s\S]*\}/);
 });
 
-test("paper doll parents wrist equipment to forearms and glove equipment to hands", () => {
+test("paper doll parents wrist equipment to forearms glove equipment to hands and shield to front forearm", () => {
   const armArmorSource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("function addPaperDollArmArmorVisual"),
     arenaSceneSource.indexOf("function addPaperDollLegArmorVisual"),
@@ -36,10 +36,13 @@ test("paper doll parents wrist equipment to forearms and glove equipment to hand
   assert.equal(arenaSceneSource.includes('frontWrist: "frontWristAssetKey"'), true);
   assert.equal(arenaSceneSource.includes('backGlove: "backGloveAssetKey"'), true);
   assert.equal(arenaSceneSource.includes('frontGlove: "frontGloveAssetKey"'), true);
+  assert.equal(arenaSceneSource.includes('shield: "shieldAssetKey"'), true);
   assert.match(armArmorSource, /key === "backForearm"[\s\S]*options\.backWristAssetKey, "backWrist"/);
   assert.match(armArmorSource, /key === "frontForearm"[\s\S]*options\.frontWristAssetKey, "frontWrist"/);
+  assert.match(armArmorSource, /key === "frontForearm"[\s\S]*options\.shieldAssetKey, "shield"/);
   assert.match(armArmorSource, /key === "backHand"[\s\S]*options\.backGloveAssetKey, "backGlove"/);
   assert.match(armArmorSource, /key === "frontHand"[\s\S]*options\.frontGloveAssetKey, "frontGlove"/);
+  assert.match(arenaSceneSource, /shield:\s*"frontForearm"/);
   assert.equal(arenaSceneSource.includes("image = createPaperDollEquipmentImage(slotContainer.scene, textureKey, config);"), true);
 });
 

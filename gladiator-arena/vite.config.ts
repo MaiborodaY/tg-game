@@ -189,6 +189,7 @@ const equipmentSlotKeys = [
   "frontWrist",
   "backGlove",
   "frontGlove",
+  "shield",
   "backGreave",
   "frontGreave",
   "backShinguard",
@@ -249,6 +250,18 @@ interface PromotedWeaponImportEntry {
   rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
   weaponClass: NonNullable<GeneratedEquipmentJsonRecord["weaponClass"]>;
   damageBonus: number;
+  price: number;
+  availability: GeneratedEquipmentAvailability;
+}
+
+interface PromotedShieldImportEntry {
+  sourcePath: string;
+  targetSourcePath: string;
+  targetLowSourcePath: string;
+  assetKey: string;
+  name: string;
+  rarity: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
+  armorHp: number;
   price: number;
   availability: GeneratedEquipmentAvailability;
 }
@@ -583,12 +596,25 @@ interface PromoteWeaponImportsPayload {
   entries?: unknown;
 }
 
+interface PromoteShieldImportsPayload {
+  entries?: unknown;
+}
+
 interface PromoteWeaponImportEntryPayload {
   sourcePath?: unknown;
   name?: unknown;
   rarity?: unknown;
   weaponClass?: unknown;
   damageBonus?: unknown;
+  price?: unknown;
+  availability?: unknown;
+}
+
+interface PromoteShieldImportEntryPayload {
+  sourcePath?: unknown;
+  name?: unknown;
+  rarity?: unknown;
+  armorHp?: unknown;
   price?: unknown;
   availability?: unknown;
 }
@@ -871,6 +897,31 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatPromotedWeaponImportsMessage(promotedRecords), updated: promotedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote weapon imports." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/promote-shield-imports", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to promote shield imports." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const entries = await pickPromotedShieldImportEntries(payload);
+          const records = await readGeneratedEquipmentRecords();
+
+          await writePromotedShieldImportAssets(entries);
+          const promotedRecords = entries.map(createPromotedShieldImportRecord);
+          await ensureGeneratedEquipmentShopIcons(promotedRecords);
+          const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
+
+          await writeGeneratedEquipmentRecords(nextRecords);
+          await removePromotedShieldImportSourceFiles(entries);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatPromotedShieldImportsMessage(promotedRecords), updated: promotedRecords.length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not promote shield imports." });
         }
       });
 
@@ -1534,7 +1585,105 @@ function createPromotedWeaponImportRecord(entry: PromotedWeaponImportEntry): Gen
   };
 }
 
+async function pickPromotedShieldImportEntries(payload: unknown): Promise<PromotedShieldImportEntry[]> {
+  const input = readPlainObject(payload, "shield import promotion") as PromoteShieldImportsPayload;
+
+  if (!Array.isArray(input.entries) || input.entries.length === 0) {
+    throw new Error("Select at least one shield import asset.");
+  }
+
+  const sourcePaths = new Set<string>();
+  const targetPaths = new Set<string>();
+  const assetKeys = new Set<string>();
+  const entries: PromotedShieldImportEntry[] = [];
+
+  for (const rawEntry of input.entries) {
+    const raw = readPlainObject(rawEntry, "shield import entry") as PromoteShieldImportEntryPayload;
+    const sourcePath = readShieldImportSourcePath(raw.sourcePath);
+    const assetKey = getAssetKeyFromSourcePath(sourcePath);
+    const name = readNonEmptyString(raw.name, "shield import name").slice(0, 80);
+    const targetSourcePath = `assets/fighters/armor/arms/${assetKey}.webp`;
+    const targetLowSourcePath = targetSourcePath.replace(/^assets\//, "assets-low/");
+    const availability = readPromotedEquipmentAvailability(raw.availability, true);
+    const rarity = availability.bossUnique ? "unique" : readItemRarity(raw.rarity, getDefaultGeneratedItemRarity("armor", getArmorCategoryFromAssetKey(assetKey), undefined));
+    const armorHp = Math.max(0, Math.min(promotedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(raw.armorHp, "shield import armorHp"))));
+    const price = availability.shop ? Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(raw.price, "shield import price")))) : 0;
+
+    if (sourcePaths.has(sourcePath)) {
+      throw new Error(`Duplicate shield import source asset: ${sourcePath}.`);
+    }
+
+    if (targetPaths.has(targetSourcePath)) {
+      throw new Error(`Duplicate shield import target asset: ${targetSourcePath}.`);
+    }
+
+    if (assetKeys.has(assetKey)) {
+      throw new Error(`Duplicate shield import asset key: ${assetKey}.`);
+    }
+
+    await assertEquipmentImportPathsAvailable(sourcePath, targetSourcePath, targetLowSourcePath);
+
+    sourcePaths.add(sourcePath);
+    targetPaths.add(targetSourcePath);
+    assetKeys.add(assetKey);
+    entries.push({
+      sourcePath,
+      targetSourcePath,
+      targetLowSourcePath,
+      assetKey,
+      name,
+      rarity,
+      armorHp,
+      price,
+      availability,
+    });
+  }
+
+  return entries;
+}
+
+function createPromotedShieldImportRecord(entry: PromotedShieldImportEntry): GeneratedEquipmentJsonRecord {
+  const id = `generated_equipment_${toIdentifier(entry.assetKey)}`;
+  const categoryId = getArmoryCategoryId("shield");
+  const armorCategory = getArmorCategoryFromAssetKey(entry.assetKey);
+
+  validateGeneratedEquipmentSlot("armor", "shield");
+
+  return {
+    id,
+    name: entry.name,
+    kind: "armor",
+    rarity: entry.rarity,
+    ...(armorCategory ? { armorCategory } : {}),
+    armorHp: entry.armorHp,
+    equipmentSlot: "shield",
+    assetKeys: { shieldAssetKey: entry.assetKey },
+    equipmentTuning: createDefaultPromotedEquipmentTuning(),
+    asset: {
+      key: entry.assetKey,
+      sourcePath: entry.targetSourcePath,
+      lowSourcePath: entry.targetLowSourcePath,
+    },
+    availability: entry.availability,
+    ...(entry.availability.shop && categoryId
+      ? {
+          armoryProduct: {
+            id,
+            name: entry.name,
+            price: entry.price,
+            itemIds: [id],
+            categoryId,
+          },
+        }
+      : {}),
+  };
+}
+
 async function assertWeaponImportPathsAvailable(sourcePath: string, targetSourcePath: string, targetLowSourcePath: string): Promise<void> {
+  await assertEquipmentImportPathsAvailable(sourcePath, targetSourcePath, targetLowSourcePath);
+}
+
+async function assertEquipmentImportPathsAvailable(sourcePath: string, targetSourcePath: string, targetLowSourcePath: string): Promise<void> {
   if (!(await projectSourceFileExists(sourcePath))) {
     throw new Error(`Source asset does not exist: ${sourcePath}.`);
   }
@@ -1555,6 +1704,16 @@ async function writePromotedWeaponImportAssets(entries: readonly PromotedWeaponI
 }
 
 async function writePromotedWeaponImportAsset(sourcePath: string, targetSourcePath: string, targetLowSourcePath: string): Promise<void> {
+  await writePromotedImportAsset(sourcePath, targetSourcePath, targetLowSourcePath);
+}
+
+async function writePromotedShieldImportAssets(entries: readonly PromotedShieldImportEntry[]): Promise<void> {
+  for (const entry of entries) {
+    await writePromotedImportAsset(entry.sourcePath, entry.targetSourcePath, entry.targetLowSourcePath);
+  }
+}
+
+async function writePromotedImportAsset(sourcePath: string, targetSourcePath: string, targetLowSourcePath: string): Promise<void> {
   const source = await readFile(getProjectSourceUrl(sourcePath));
   const runtime = await createEquipmentWebp(source, getPromotedEquipmentRuntimeMaxSide(targetSourcePath), promotedEquipmentRuntimeWebpQuality);
   const low = await createEquipmentWebp(runtime, promotedEquipmentLowMaxSide, promotedEquipmentLowWebpQuality);
@@ -1566,6 +1725,14 @@ async function writePromotedWeaponImportAsset(sourcePath: string, targetSourcePa
 }
 
 async function removePromotedWeaponImportSourceFiles(entries: readonly PromotedWeaponImportEntry[]): Promise<void> {
+  await removePromotedImportSourceFiles(entries);
+}
+
+async function removePromotedShieldImportSourceFiles(entries: readonly PromotedShieldImportEntry[]): Promise<void> {
+  await removePromotedImportSourceFiles(entries);
+}
+
+async function removePromotedImportSourceFiles(entries: readonly { sourcePath: string }[]): Promise<void> {
   const sourcePaths = new Set(
     entries.flatMap((entry) => [
       entry.sourcePath,
@@ -2345,6 +2512,18 @@ function formatPromotedWeaponImportsMessage(promotedRecords: readonly GeneratedE
   return `Promoted ${promotedRecords.length} weapon imports.`;
 }
 
+function formatPromotedShieldImportsMessage(promotedRecords: readonly GeneratedEquipmentJsonRecord[]): string {
+  if (promotedRecords.length === 0) {
+    return "Promoted shield imports.";
+  }
+
+  if (promotedRecords.length === 1) {
+    return `Promoted ${promotedRecords[0]!.name}.`;
+  }
+
+  return `Promoted ${promotedRecords.length} shield imports.`;
+}
+
 async function pickEquipmentSetImportEntries(payload: unknown): Promise<EquipmentSetImportEntry[]> {
   const input = readPlainObject(payload, "equipment set asset rename") as RenameEquipmentSetAssetsPayload;
   const setSlug = readKebabIdentifier(input.setName, "setName");
@@ -2465,6 +2644,18 @@ function readWeaponImportSourcePath(value: unknown): string {
 
   if (sourcePath.includes("..") || !sourcePath.startsWith("assets/equipment-import/weapons/") || !hasSupportedExtension) {
     throw new Error("Invalid weapon import source asset.");
+  }
+
+  return sourcePath;
+}
+
+function readShieldImportSourcePath(value: unknown): string {
+  const sourcePath = readNonEmptyString(value, "shield import source asset").replace(/\\/g, "/").replace(/^\.\//, "");
+  const hasSupportedExtension = sourcePath.endsWith(".png") || sourcePath.endsWith(".webp");
+  const assetKey = sourcePath.split("/").at(-1)?.replace(/\.(?:png|webp)$/i, "") ?? "";
+
+  if (sourcePath.includes("..") || !sourcePath.startsWith("assets/equipment-import/armor/") || !hasSupportedExtension || !assetKey.startsWith("shield-")) {
+    throw new Error("Invalid shield import source asset.");
   }
 
   return sourcePath;
@@ -3715,7 +3906,7 @@ function getArmoryCategoryId(slotKey: EquipmentSlotKey): string | undefined {
     return "shoulders";
   }
 
-  if (slotKey === "backWrist" || slotKey === "frontWrist" || slotKey === "backGlove" || slotKey === "frontGlove") {
+  if (slotKey === "backWrist" || slotKey === "frontWrist" || slotKey === "backGlove" || slotKey === "frontGlove" || slotKey === "shield") {
     return "arms";
   }
 

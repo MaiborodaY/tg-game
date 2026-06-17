@@ -265,6 +265,7 @@ interface PaperDollEquipment {
   frontWrist?: FighterPart;
   backGlove?: FighterPart;
   frontGlove?: FighterPart;
+  shield?: FighterPart;
   backGreave?: FighterPart;
   frontGreave?: FighterPart;
   backShinguard?: FighterPart;
@@ -307,6 +308,7 @@ interface PaperDollFighterOptions {
   frontWristAssetKey?: string;
   backGloveAssetKey?: string;
   frontGloveAssetKey?: string;
+  shieldAssetKey?: string;
   backGreaveAssetKey?: string;
   frontGreaveAssetKey?: string;
   backShinguardAssetKey?: string;
@@ -636,6 +638,7 @@ const HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS: HeroEquipmentSlotKey[] = [
   "frontWrist",
   "backGlove",
   "frontGlove",
+  "shield",
 ];
 const PAPER_DOLL_SELECTION_FILL = 0xffc857;
 const PAPER_DOLL_SELECTION_STROKE = 0xfff1a8;
@@ -749,6 +752,7 @@ const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, Pape
   frontWrist: "frontWristAssetKey",
   backGlove: "backGloveAssetKey",
   frontGlove: "frontGloveAssetKey",
+  shield: "shieldAssetKey",
   backGreave: "backGreaveAssetKey",
   frontGreave: "frontGreaveAssetKey",
   backShinguard: "backShinguardAssetKey",
@@ -828,6 +832,13 @@ const PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS: Record<PaperDollEquipmentSlotKey, Paper
     originX: GLOVE_ORIGIN_X,
     originY: GLOVE_ORIGIN_Y,
   },
+  shield: {
+    displayHeight: 72,
+    localX: 0,
+    localY: 0,
+    originX: 0.5,
+    originY: 0.5,
+  },
   backGreave: {
     displayHeight: GREAVE_DISPLAY_HEIGHT,
     localX: GREAVE_LOCAL_X,
@@ -882,6 +893,7 @@ const PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS: Record<PaperDollEquipmentSlotKey, Paper
   frontWrist: "frontForearm",
   backGlove: "backHand",
   frontGlove: "frontHand",
+  shield: "frontForearm",
   backGreave: "backThigh",
   frontGreave: "frontThigh",
   backShinguard: "backShin",
@@ -4867,6 +4879,7 @@ function addPaperDollArmArmorVisual(
 
   if (key === "frontForearm") {
     addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayers, equipmentAnchors, options.frontWristAssetKey, "frontWrist", equipment);
+    addPaperDollEquipmentImageVisual(target, partContainer, equipmentLayers, equipmentAnchors, options.shieldAssetKey, "shield", equipment);
     return;
   }
 

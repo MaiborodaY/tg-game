@@ -44,7 +44,7 @@ test("auto equipment registry prefers low webp paths for runtime previews", () =
   assert.match(registrySource, /\.replace\(\/\\\.\(\?:png\|webp\)\$\/i, "\.webp"\)/);
 });
 
-test("auto equipment registry recognizes wrist and glove armor assets", () => {
+test("auto equipment registry recognizes wrist glove and shield armor assets", () => {
   assert.match(registrySource, /prefix: "back-wrist-"/);
   assert.match(registrySource, /slot: "backWrist"/);
   assert.match(registrySource, /assetKey: "backWristAssetKey"/);
@@ -57,6 +57,9 @@ test("auto equipment registry recognizes wrist and glove armor assets", () => {
   assert.match(registrySource, /prefix: "front-glove-"/);
   assert.match(registrySource, /slot: "frontGlove"/);
   assert.match(registrySource, /assetKey: "frontGloveAssetKey"/);
+  assert.match(registrySource, /prefix: "shield-"/);
+  assert.match(registrySource, /slot: "shield"/);
+  assert.match(registrySource, /assetKey: "shieldAssetKey"/);
 });
 
 test("equipment set importer reads only staged import assets", () => {

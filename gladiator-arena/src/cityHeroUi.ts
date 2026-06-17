@@ -107,7 +107,7 @@ const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
     label: "Arms",
     side: "armor",
     iconUrl: SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
-    slots: ["backShoulderguard", "frontShoulderguard", "backWrist", "frontWrist", "backGlove", "frontGlove"],
+    slots: ["backShoulderguard", "frontShoulderguard", "backWrist", "frontWrist", "backGlove", "frontGlove", "shield"],
   },
   {
     id: "legs",
@@ -134,7 +134,7 @@ const HERO_PROFILE_EQUIPMENT_GROUPS: readonly {
     icon: "A",
     modifier: "arms",
     categoryId: "arms",
-    slots: ["backShoulderguard", "frontShoulderguard", "backWrist", "frontWrist", "backGlove", "frontGlove"],
+    slots: ["backShoulderguard", "frontShoulderguard", "backWrist", "frontWrist", "backGlove", "frontGlove", "shield"],
   },
   {
     label: "Legs",

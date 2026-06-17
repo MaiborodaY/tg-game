@@ -34,6 +34,11 @@ test("armory shop sorts products by rarity, equipment set, slot, armor, price, t
   );
   assert.equal(armoryShopSource.includes("getArmoryProductSetOrder"), true);
   assert.equal(armoryShopSource.includes("equipmentSet?.rank"), true);
+  assert.equal(armoryShopSource.includes("shield: 5"), true);
+  assert.equal(armoryShopSource.includes('products: getGeneratedArmoryProductsForSlots(["shield"])'), true);
+  assert.equal(armoryShopSource.includes('{ id: "shield", name: "Shield", shortLabel: "SHIELD" }'), true);
+  assert.equal(armoryShopSource.includes('shield: "shield"'), true);
+  assert.equal(armoryShopSource.includes('shield: "arms"'), false);
 });
 
 test("armory shop renders the catalog as a flat sorted grid", () => {

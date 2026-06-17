@@ -7378,6 +7378,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__generated,
 .debug-auto-equipment__set-importer,
 .debug-auto-equipment__weapon-importer,
+.debug-auto-equipment__shield-importer,
 .debug-effects__group {
   margin: 0;
   padding: 8px;
@@ -7389,7 +7390,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
 .debug-auto-equipment__set-importer,
-.debug-auto-equipment__weapon-importer {
+.debug-auto-equipment__weapon-importer,
+.debug-auto-equipment__shield-importer {
   display: grid;
   gap: 8px;
 }
@@ -7409,6 +7411,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__generated legend,
 .debug-auto-equipment__set-importer legend,
 .debug-auto-equipment__weapon-importer legend,
+.debug-auto-equipment__shield-importer legend,
 .debug-rig-editor__face-part legend,
 .debug-effects__group summary {
   padding: 0 4px;
@@ -7424,6 +7427,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__transform-controls,
 .debug-auto-equipment__set-assets,
 .debug-auto-equipment__weapon-assets,
+.debug-auto-equipment__shield-assets,
 .debug-effects__slash-controls,
 .debug-rig-editor__face-part {
   display: grid;
@@ -7619,7 +7623,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-auto-equipment__set-assets,
-.debug-auto-equipment__weapon-assets {
+.debug-auto-equipment__weapon-assets,
+.debug-auto-equipment__shield-assets {
   max-height: 220px;
   overflow-y: auto;
 }

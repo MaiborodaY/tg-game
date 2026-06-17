@@ -407,6 +407,33 @@ test("debug weapon importer promotes staged weapons with per-asset values", () =
   assert.match(debugPanelSource, /savePromotedWeaponImports\(\{ entries \}\)/);
 });
 
+test("debug shield importer promotes staged shields without equipment sets", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const saverSource = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+  const debugPanelSource = readFileSync(join(root, "src", "debugPanel.ts"), "utf8");
+  const shieldRecordSource = source.slice(
+    source.indexOf("function createPromotedShieldImportRecord"),
+    source.indexOf("async function assertWeaponImportPathsAvailable"),
+  );
+
+  assert.match(source, /\/__dust-arena\/promote-shield-imports/);
+  assert.match(source, /pickPromotedShieldImportEntries/);
+  assert.match(source, /readShieldImportSourcePath/);
+  assert.match(source, /assets\/equipment-import\/armor\//);
+  assert.match(source, /assetKey\.startsWith\("shield-"\)/);
+  assert.match(source, /assets\/fighters\/armor\/arms\/\$\{assetKey\}\.webp/);
+  assert.match(source, /writePromotedShieldImportAssets/);
+  assert.match(source, /removePromotedShieldImportSourceFiles/);
+  assert.match(shieldRecordSource, /equipmentSlot: "shield"/);
+  assert.match(shieldRecordSource, /assetKeys: \{ shieldAssetKey: entry\.assetKey \}/);
+  assert.doesNotMatch(shieldRecordSource, /equipmentSet/);
+  assert.match(saverSource, /savePromotedShieldImports/);
+  assert.match(saverSource, /promoteShieldImportsEndpoint = "\/__dust-arena\/promote-shield-imports"/);
+  assert.match(debugPanelSource, /debug-auto-equipment__shield-importer/);
+  assert.match(debugPanelSource, /getShieldImportAssets/);
+  assert.match(debugPanelSource, /savePromotedShieldImports\(\{ entries \}\)/);
+});
+
 test("vite dev middleware can persist item-specific equipment defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
@@ -436,7 +463,7 @@ test("generated armor pair stats stay absolute instead of doubling front and bac
   });
 });
 
-test("vite dev middleware whitelists wrist and glove equipment slots for prod saves and promotion", () => {
+test("vite dev middleware whitelists wrist glove and shield equipment slots for prod saves and promotion", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
 
@@ -444,12 +471,15 @@ test("vite dev middleware whitelists wrist and glove equipment slots for prod sa
   assert.match(source, /"frontWrist"/);
   assert.match(source, /"backGlove"/);
   assert.match(source, /"frontGlove"/);
+  assert.match(source, /"shield"/);
   assert.match(source, /slotKey === "backWrist"/);
   assert.match(source, /slotKey === "frontWrist"/);
   assert.match(source, /slotKey === "backGlove"/);
   assert.match(source, /slotKey === "frontGlove"/);
+  assert.match(source, /slotKey === "shield"/);
   assert.match(debugTuningSource, /backWrist:/);
   assert.match(debugTuningSource, /frontWrist:/);
   assert.match(debugTuningSource, /backGlove:/);
   assert.match(debugTuningSource, /frontGlove:/);
+  assert.match(debugTuningSource, /shield:/);
 });

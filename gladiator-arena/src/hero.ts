@@ -108,6 +108,7 @@ export const HERO_EQUIPMENT_SLOT_KEYS = [
   "frontWrist",
   "backGlove",
   "frontGlove",
+  "shield",
   "backGreave",
   "frontGreave",
   "backShinguard",

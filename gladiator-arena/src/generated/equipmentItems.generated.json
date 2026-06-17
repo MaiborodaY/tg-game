@@ -8943,6 +8943,474 @@
     }
   },
   {
+    "id": "generated_equipment_shield_common_03",
+    "name": "Common 03 Shield",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-common-03"
+    },
+    "equipmentTuning": {
+      "x": 16,
+      "y": 63,
+      "angle": 0,
+      "scaleX": 1.35,
+      "scaleY": 1.35,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-common-03",
+      "sourcePath": "assets/fighters/armor/arms/shield-common-03.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-common-03.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_common_03",
+      "name": "Common 03 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_common_03"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_common_04",
+    "name": "Common 04 Shield",
+    "kind": "armor",
+    "rarity": "common",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-common-04"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 69,
+      "angle": -2,
+      "scaleX": 1.72,
+      "scaleY": 1.34,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-common-04",
+      "sourcePath": "assets/fighters/armor/arms/shield-common-04.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-common-04.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_common_04",
+      "name": "Common 04 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_common_04"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_epic_01",
+    "name": "Epic 01 Shield",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-epic-01"
+    },
+    "equipmentTuning": {
+      "x": 13,
+      "y": 63,
+      "angle": -5,
+      "scaleX": 2.35,
+      "scaleY": 2.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-epic-01",
+      "sourcePath": "assets/fighters/armor/arms/shield-epic-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-epic-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_epic_01",
+      "name": "Epic 01 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_epic_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_epic_02",
+    "name": "Epic 02 Shield",
+    "kind": "armor",
+    "rarity": "epic",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-epic-02"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 63,
+      "angle": 0,
+      "scaleX": 2.07,
+      "scaleY": 2.43,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-epic-02",
+      "sourcePath": "assets/fighters/armor/arms/shield-epic-02.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-epic-02.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_epic_02",
+      "name": "Epic 02 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_epic_02"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_legendary_01",
+    "name": "Legendary 01 Shield",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-legendary-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 69,
+      "angle": 0,
+      "scaleX": 2.39,
+      "scaleY": 2.37,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-legendary-01",
+      "sourcePath": "assets/fighters/armor/arms/shield-legendary-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-legendary-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_legendary_01",
+      "name": "Legendary 01 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_legendary_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_legendary_02",
+    "name": "Legendary 02 Shield",
+    "kind": "armor",
+    "rarity": "legendary",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-legendary-02"
+    },
+    "equipmentTuning": {
+      "x": 9,
+      "y": 66,
+      "angle": 0,
+      "scaleX": 3,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-legendary-02",
+      "sourcePath": "assets/fighters/armor/arms/shield-legendary-02.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-legendary-02.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_legendary_02",
+      "name": "Legendary 02 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_legendary_02"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_mythical_01",
+    "name": "Mythical 01 Shield",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-mythical-01"
+    },
+    "equipmentTuning": {
+      "x": 3,
+      "y": 44,
+      "angle": -5,
+      "scaleX": 3,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-mythical-01",
+      "sourcePath": "assets/fighters/armor/arms/shield-mythical-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-mythical-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_mythical_01",
+      "name": "Mythical 01 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_mythical_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_mythical_02",
+    "name": "Mythical 02 Shield",
+    "kind": "armor",
+    "rarity": "mythical",
+    "armorHp": 1,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-mythical-02"
+    },
+    "equipmentTuning": {
+      "x": 13,
+      "y": 35,
+      "angle": -2,
+      "scaleX": 3,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-mythical-02",
+      "sourcePath": "assets/fighters/armor/arms/shield-mythical-02.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-mythical-02.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_mythical_02",
+      "name": "Mythical 02 Shield",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_shield_mythical_02"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_rare_01",
+    "name": "Rare 01 Shield",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 60,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-rare-01"
+    },
+    "equipmentTuning": {
+      "x": 13,
+      "y": 69,
+      "angle": -5,
+      "scaleX": 1.9,
+      "scaleY": 1.9,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-rare-01",
+      "sourcePath": "assets/fighters/armor/arms/shield-rare-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-rare-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_rare_01",
+      "name": "Rare 01 Shield",
+      "price": 1,
+      "itemIds": [
+        "generated_equipment_shield_rare_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_rare_02",
+    "name": "Rare 02 Shield",
+    "kind": "armor",
+    "rarity": "rare",
+    "armorHp": 80,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-rare-02"
+    },
+    "equipmentTuning": {
+      "x": 13,
+      "y": 76,
+      "angle": 0,
+      "scaleX": 1.65,
+      "scaleY": 1.65,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-rare-02",
+      "sourcePath": "assets/fighters/armor/arms/shield-rare-02.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-rare-02.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_rare_02",
+      "name": "Rare 02 Shield",
+      "price": 1,
+      "itemIds": [
+        "generated_equipment_shield_rare_02"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_uncommon_01",
+    "name": "Uncommon 01 Shield",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 35,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-uncommon-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 63,
+      "angle": 0,
+      "scaleX": 1.26,
+      "scaleY": 1.49,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-uncommon-01",
+      "sourcePath": "assets/fighters/armor/arms/shield-uncommon-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-uncommon-01.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_uncommon_01",
+      "name": "Uncommon 01 Shield",
+      "price": 80,
+      "itemIds": [
+        "generated_equipment_shield_uncommon_01"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_uncommon_02",
+    "name": "Uncommon 02 Shield",
+    "kind": "armor",
+    "rarity": "uncommon",
+    "armorHp": 50,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-uncommon-02"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 66,
+      "angle": -5,
+      "scaleX": 1.89,
+      "scaleY": 1.8,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-uncommon-02",
+      "sourcePath": "assets/fighters/armor/arms/shield-uncommon-02.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-uncommon-02.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "armoryProduct": {
+      "id": "generated_equipment_shield_uncommon_02",
+      "name": "Uncommon 02 Shield",
+      "price": 120,
+      "itemIds": [
+        "generated_equipment_shield_uncommon_02"
+      ],
+      "categoryId": "arms"
+    }
+  },
+  {
     "id": "generated_equipment_weapon_axe_01",
     "name": "Epic Axe 05",
     "kind": "weapon",

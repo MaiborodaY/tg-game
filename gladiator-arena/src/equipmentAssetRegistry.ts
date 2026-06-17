@@ -12,6 +12,7 @@ export interface EquipmentItemAssetKeys {
   frontWristAssetKey?: string;
   backGloveAssetKey?: string;
   frontGloveAssetKey?: string;
+  shieldAssetKey?: string;
   backGreaveAssetKey?: string;
   frontGreaveAssetKey?: string;
   backShinguardAssetKey?: string;
@@ -108,6 +109,7 @@ const equipmentAssetSlotConfigs: EquipmentAssetSlotConfig[] = [
   { prefix: "front-wrist-", slot: "frontWrist", assetKey: "frontWristAssetKey", label: "Front Wrist", kind: "armor" },
   { prefix: "back-glove-", slot: "backGlove", assetKey: "backGloveAssetKey", label: "Back Glove", kind: "armor" },
   { prefix: "front-glove-", slot: "frontGlove", assetKey: "frontGloveAssetKey", label: "Front Glove", kind: "armor" },
+  { prefix: "shield-", slot: "shield", assetKey: "shieldAssetKey", label: "Shield", kind: "armor" },
   { prefix: "back-shinguard-", slot: "backShinguard", assetKey: "backShinguardAssetKey", label: "Back Shinguard", kind: "armor" },
   { prefix: "front-shinguard-", slot: "frontShinguard", assetKey: "frontShinguardAssetKey", label: "Front Shinguard", kind: "armor" },
   { prefix: "back-greave-", slot: "backGreave", assetKey: "backGreaveAssetKey", label: "Back Greave", kind: "armor" },
