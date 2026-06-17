@@ -237,6 +237,67 @@ test("rest restores stamina and heals one hp without incoming penalty", () => {
   assert.equal(nextState.playerIncomingBonus, 0);
 });
 
+test("rest makes the resting fighter easier to hit for the next enemy action", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const rested = combat.resolvePlayerTurn(state, "rest");
+  const baseEnemyHeavyBlockChance = combat.getActionBlockChance(combat.actions.heavy, rested.enemy, rested.player);
+
+  assert.equal(rested.playerRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
+  assert.equal(
+    combat.getActionBlockChanceForState(rested, "heavy", "enemy"),
+    baseEnemyHeavyBlockChance - combat.REST_BLOCK_CHANCE_PENALTY,
+  );
+  assert.equal(combat.isActionHitChanceRestBoosted(rested, "heavy", "enemy"), true);
+  assert.equal(combat.isActionHitChanceRestBoosted(rested, "rest", "enemy"), false);
+});
+
+test("rest hit chance penalty is consumed by the next incoming attack", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.stamina = 0;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const rested = combat.resolveEnemyTurn(state, () => 0);
+  const nextState = combat.resolvePlayerTurn(rested, "heavy", () => 0.4);
+
+  assert.equal(rested.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
+  assert.equal(combat.isActionHitChanceRestBoosted(rested, "heavy", "player"), true);
+  assert.equal(nextState.lastPlayerBlocked, false);
+  assert.equal(nextState.enemyRestBlockChancePenalty, 0);
+  assert.equal(combat.isActionHitChanceRestBoosted(nextState, "heavy", "player"), false);
+  assert.equal(nextState.lastPlayerDamage > 0, true);
+});
+
+test("enemy auto rests at zero stamina instead of acting", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.stamina = 0;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(nextState.enemy.stamina, combat.getActionStaminaRestore("rest", state.enemy));
+  assert.equal(nextState.player.hp, state.player.hp);
+  assert.equal(nextState.lastEnemyDamage, 0);
+});
+
+test("enemy does not taunt while in clinch", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0.78);
+
+  assert.notEqual(nextState.lastEnemyAction, "taunt");
+  assert.equal(nextState.enemyIncomingBonus, 0);
+});
+
 test("rest restore bonuses increase stamina and hp recovery", () => {
   const state = combat.freshState();
 

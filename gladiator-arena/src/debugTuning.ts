@@ -944,7 +944,7 @@ export const DEFAULT_TAUNT_ANIMATION: BodyAnimationTuning = {
 };
 export const DEFAULT_REST_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 860,
+  duration: 1280,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },

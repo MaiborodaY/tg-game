@@ -85,6 +85,8 @@ import {
   REST_HEALTH_ICON_ASSET_URL,
   REST_STAMINA_ICON_ASSET_KEY,
   REST_STAMINA_ICON_ASSET_URL,
+  REST_ZZZ_ICON_ASSET_KEY,
+  REST_ZZZ_ICON_ASSET_URL,
   SHURIKEN_PROJECTILE_ASSET_KEY,
   SHURIKEN_PROJECTILE_ASSET_URL,
 } from "./assets";
@@ -186,7 +188,11 @@ interface FighterVisual {
   paperDollRig?: PaperDollRig;
   castsShadow: boolean;
   debugScale: number;
+  bodyIdleAnimationKey?: BodyAnimationKey;
+  bodyIdleAnimationStartedAt?: number;
   bodyAnimationLockedUntil?: number;
+  restZzzNextSpawnAt?: number;
+  restZzzSpawnIndex?: number;
   isShattered?: boolean;
   isShatterScheduled?: boolean;
 }
@@ -367,6 +373,7 @@ interface ArenaEffectPools {
   damageBurstPopups: ArenaDamageBurstPopupVisual[];
   damageTextPopups: ArenaTextPopupVisual[];
   restRecoveryPopups: ArenaRestRecoveryPopupVisual[];
+  restZzzIcons: Phaser.GameObjects.Image[];
   projectiles: Phaser.GameObjects.Image[];
   dustDots: Phaser.GameObjects.Arc[];
 }
@@ -374,6 +381,11 @@ interface ArenaEffectPools {
 interface ActionAnimationHandle {
   done: Promise<void>;
   impact?: Promise<void>;
+}
+
+interface BodyAnimationOnceOptions {
+  loopAfterComplete?: BodyAnimationKey;
+  speedMultiplier?: number;
 }
 
 interface ProjectileAnimationHandle {
@@ -459,6 +471,14 @@ const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
 const DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE = 108;
 const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
 const REST_RECOVERY_POPUP_ICON_SCREEN_SIZE = 34;
+const REST_BODY_ANIMATION_SPEED_MULTIPLIER = 2;
+const REST_ZZZ_ICON_SCREEN_SIZE = 40;
+const REST_ZZZ_SPAWN_INTERVAL_MS = 1000;
+const REST_ZZZ_LIFETIME_MS = 2000;
+const REST_ZZZ_HEAD_OFFSET_Y = -62;
+const REST_ZZZ_LIFT_Y = 40;
+const REST_ZZZ_SIDE_OFFSETS = [-11, 8, -4, 13];
+const REST_ZZZ_DRIFT_X = [11, -9, 7, -12];
 const ARROW_PROJECTILE_SCREEN_SIZE = 36;
 const SHURIKEN_PROJECTILE_SCREEN_SIZE = 20;
 const PROJECTILE_FLIGHT_DURATION_MS = 280;
@@ -918,6 +938,7 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY, DAMAGE_ARMOR_BREAK_ICON_ASSET_URL);
+  target.load.image(REST_ZZZ_ICON_ASSET_KEY, REST_ZZZ_ICON_ASSET_URL);
   target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);
   target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);
   target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);
@@ -1181,6 +1202,7 @@ function getArenaAssetPrewarmUrls(): string[] {
     DAMAGE_HIT_ICON_ASSET_URL,
     DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
     DAMAGE_ARMOR_BREAK_ICON_ASSET_URL,
+    REST_ZZZ_ICON_ASSET_URL,
     ARROW_ICON_ASSET_URL,
     SHURIKEN_PROJECTILE_ASSET_URL,
     REST_HEALTH_ICON_ASSET_URL,
@@ -1466,19 +1488,28 @@ export class ArenaScene extends Phaser.Scene {
 
     applyFighterArrowCountersSceneScale(this);
 
-    const idle = getActiveBodyAnimation("idle");
     const animationAmount = getArenaAnimationAmount(playerSettings);
 
-    if (!this.visuals || !idle.enabled || animationAmount <= 0) {
+    if (!this.visuals || animationAmount <= 0) {
       return;
     }
 
-    applyLoopingBodyAnimation(this.visuals.player, time, idle, animationAmount);
-    applyLoopingBodyAnimation(this.visuals.enemy, time, idle, animationAmount);
+    applyLoopingBodyAnimation(this.visuals.player, time, getFighterBodyIdleAnimation(this.visuals.player), animationAmount);
+    applyLoopingBodyAnimation(this.visuals.enemy, time, getFighterBodyIdleAnimation(this.visuals.enemy), animationAmount);
+    if (areArenaVfxEnabled(playerSettings)) {
+      updateRestZzzEffects(this, this.visuals.player, time);
+      updateRestZzzEffects(this, this.visuals.enemy, time);
+    }
   }
 
   async prepareEntry(nextState: CombatState): Promise<void> {
     await this.prepareStateVisuals(nextState);
+    if (!this.visuals) {
+      return;
+    }
+
+    resetFighterBodyIdleAnimation(this.visuals.player, this.time.now);
+    resetFighterBodyIdleAnimation(this.visuals.enemy, this.time.now);
   }
 
   async sync(nextState: CombatState): Promise<void> {
@@ -1578,7 +1609,9 @@ export class ArenaScene extends Phaser.Scene {
 
     scheduleDeathEffects(this, nextState);
 
-    return Promise.all(actionAnimations).then(() => undefined);
+    return Promise.all(actionAnimations).then(() => {
+      resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);
+    });
   }
 
   async playEntryTransition(current = this.currentState): Promise<void> {
@@ -3438,6 +3471,8 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     paperDollRig,
     castsShadow,
     debugScale: 1,
+    bodyIdleAnimationKey: "idle",
+    bodyIdleAnimationStartedAt: target.time.now,
   };
 }
 
@@ -4121,8 +4156,40 @@ function arePaperDollEquipmentSlotImageStatesEqual(
     && previousState.originY === nextState.originY;
 }
 
+function getFighterBodyIdleAnimation(fighter: FighterVisual): BodyAnimationTuning {
+  return getActiveBodyAnimation(fighter.bodyIdleAnimationKey ?? "idle");
+}
+
+function resetFighterBodyIdleAnimation(fighter: FighterVisual, startedAt = 0): void {
+  setFighterBodyIdleAnimation(fighter, "idle", startedAt);
+}
+
+function resetActiveTurnBodyIdleAnimation(
+  visuals: ArenaVisuals,
+  previousState: CombatState | undefined,
+  currentState: CombatState,
+  startedAt = 0,
+): void {
+  if (currentState.result !== "playing" || previousState?.activeTurn === currentState.activeTurn) {
+    return;
+  }
+
+  resetFighterBodyIdleAnimation(currentState.activeTurn === "player" ? visuals.player : visuals.enemy, startedAt);
+}
+
+function setFighterBodyIdleAnimation(fighter: FighterVisual, animationKey: BodyAnimationKey, startedAt = 0): void {
+  fighter.bodyIdleAnimationKey = animationKey;
+  fighter.bodyIdleAnimationStartedAt = startedAt;
+  fighter.restZzzNextSpawnAt = animationKey === "rest" ? startedAt : undefined;
+  fighter.restZzzSpawnIndex = 0;
+}
+
 function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
   if (fighter.isShattered) {
+    return;
+  }
+
+  if (!animation.enabled) {
     return;
   }
 
@@ -4130,7 +4197,7 @@ function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animati
     return;
   }
 
-  applyBodyAnimation(fighter, time, animation, amount);
+  applyBodyAnimation(fighter, time - (fighter.bodyIdleAnimationStartedAt ?? 0), animation, amount);
 }
 
 function applyBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
@@ -5324,6 +5391,7 @@ function resetFighterShatter(target: Phaser.Scene, fighter: FighterVisual): void
   fighter.isShattered = false;
   fighter.isShatterScheduled = false;
   fighter.bodyAnimationLockedUntil = 0;
+  resetFighterBodyIdleAnimation(fighter, target.time.now);
 
   const rig = fighter.paperDollRig;
 
@@ -5946,16 +6014,22 @@ function playBodyAnimationOnce(
   fighter: FighterVisual,
   animation: BodyAnimationTuning,
   playerSettings = getPlayerSettings(),
+  options: BodyAnimationOnceOptions = {},
 ): Promise<void> {
   const rig = fighter.paperDollRig;
   const animationAmount = getArenaAnimationAmount(playerSettings);
+
+  resetFighterBodyIdleAnimation(fighter, target.time.now);
 
   if (!rig || !animation.enabled || animationAmount <= 0) {
     return Promise.resolve();
   }
 
-  const duration = Math.max(1, animation.duration);
-  const lockedUntil = target.time.now + duration;
+  const speedMultiplier = options.speedMultiplier && options.speedMultiplier > 0 ? options.speedMultiplier : 1;
+  const duration = Math.max(1, animation.duration / speedMultiplier);
+  const tweenDuration = Math.max(1, duration / 2);
+  const fallbackDelay = duration + 60;
+  const lockedUntil = target.time.now + fallbackDelay;
 
   fighter.bodyAnimationLockedUntil = lockedUntil;
   target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
@@ -5971,15 +6045,18 @@ function playBodyAnimationOnce(
       isResolved = true;
       if (fighter.bodyAnimationLockedUntil === lockedUntil) {
         fighter.bodyAnimationLockedUntil = 0;
+        if (options.loopAfterComplete) {
+          setFighterBodyIdleAnimation(fighter, options.loopAfterComplete, target.time.now);
+        }
       }
       resolve();
     };
 
-    target.time.delayedCall(duration + 60, finish);
+    target.time.delayedCall(fallbackDelay, finish);
     target.tweens.addCounter({
       from: 0,
       to: animationAmount,
-      duration: Math.max(1, duration / 2),
+      duration: tweenDuration,
       yoyo: true,
       ease: "Sine.easeInOut",
       onUpdate: (tween) => {
@@ -6017,10 +6094,16 @@ function animateAction(
   }
 
   if (actionId === "rest") {
-    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), playerSettings) };
+    return {
+      done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), playerSettings, {
+        loopAfterComplete: "rest",
+        speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER,
+      }),
+    };
   }
 
   if (actionId === "switchWeapon") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
     showFloatingText(target, actor.body.x, actor.body.y - 120, "MELEE", "#ffe7a4");
     return { done: Promise.resolve() };
   }
@@ -6202,6 +6285,7 @@ function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
       damageBurstPopups: [],
       damageTextPopups: [],
       restRecoveryPopups: [],
+      restZzzIcons: [],
       projectiles: [],
       dustDots: [],
     };
@@ -6475,6 +6559,30 @@ function releaseRestRecoveryPopup(target: Phaser.Scene, popup: ArenaRestRecovery
   popup.healthRow.setVisible(false);
   popup.staminaRow.setVisible(false);
   getArenaEffectPools(target).restRecoveryPopups.push(popup);
+}
+
+function acquireRestZzzIcon(target: Phaser.Scene): Phaser.GameObjects.Image {
+  const pool = getArenaEffectPools(target).restZzzIcons;
+  const icon = pool.pop() ?? createRestZzzIcon(target);
+
+  target.tweens.killTweensOf(icon);
+  icon.setTexture(REST_ZZZ_ICON_ASSET_KEY);
+  icon.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return icon;
+}
+
+function createRestZzzIcon(target: Phaser.Scene): Phaser.GameObjects.Image {
+  const icon = target.add.image(0, 0, REST_ZZZ_ICON_ASSET_KEY).setOrigin(0.5).setActive(false).setVisible(false);
+
+  addToArenaEffectsLayer(target, icon);
+
+  return icon;
+}
+
+function releaseRestZzzIcon(target: Phaser.Scene, icon: Phaser.GameObjects.Image): void {
+  icon.setActive(false).setVisible(false).setAlpha(1).setAngle(0).setScale(1);
+  getArenaEffectPools(target).restZzzIcons.push(icon);
 }
 
 function createIconTextPopup(
@@ -6774,6 +6882,51 @@ function getArmorBreakPopupHeadOffsetY(): number {
 
 function getRestRecoveryPopupHeadOffsetY(): number {
   return getDamagePopupHeadOffsetY() - 18;
+}
+
+function updateRestZzzEffects(target: Phaser.Scene, fighter: FighterVisual, time: number): void {
+  if (fighter.isShattered || fighter.bodyIdleAnimationKey !== "rest" || (fighter.bodyAnimationLockedUntil ?? 0) > time) {
+    return;
+  }
+
+  if (!target.textures.exists(REST_ZZZ_ICON_ASSET_KEY)) {
+    return;
+  }
+
+  if (fighter.restZzzNextSpawnAt === undefined || time >= fighter.restZzzNextSpawnAt) {
+    showRestZzzIconFromFighter(target, fighter, fighter.restZzzSpawnIndex ?? 0);
+    fighter.restZzzSpawnIndex = (fighter.restZzzSpawnIndex ?? 0) + 1;
+    fighter.restZzzNextSpawnAt = time + REST_ZZZ_SPAWN_INTERVAL_MS;
+  }
+}
+
+function showRestZzzIconFromFighter(target: Phaser.Scene, fighter: FighterVisual, spawnIndex: number): void {
+  const source = target.textures.get(REST_ZZZ_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
+  const sourceWidth = Math.max(1, source?.width ?? 128);
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const iconScale = (REST_ZZZ_ICON_SCREEN_SIZE / sourceWidth) * fixedScreenScale;
+  const offsetX = (REST_ZZZ_SIDE_OFFSETS[spawnIndex % REST_ZZZ_SIDE_OFFSETS.length] ?? 0) / layerScale;
+  const driftX = (REST_ZZZ_DRIFT_X[spawnIndex % REST_ZZZ_DRIFT_X.length] ?? 0) / layerScale;
+  const liftY = REST_ZZZ_LIFT_Y / layerScale;
+  const point = getFighterHeadPopupPoint(target, fighter, REST_ZZZ_HEAD_OFFSET_Y);
+  const icon = acquireRestZzzIcon(target);
+
+  icon.setPosition(point.x + offsetX, point.y);
+  icon.setDepth(39);
+  icon.setScale(iconScale * 0.72);
+  icon.setAlpha(0.92);
+
+  target.tweens.add({
+    targets: icon,
+    x: point.x + offsetX + driftX,
+    y: point.y - liftY,
+    alpha: 0,
+    scale: iconScale,
+    duration: REST_ZZZ_LIFETIME_MS,
+    ease: "Sine.easeOut",
+    onComplete: () => releaseRestZzzIcon(target, icon),
+  });
 }
 
 function getDamagePopupScale(): number {

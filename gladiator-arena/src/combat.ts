@@ -85,6 +85,8 @@ export interface CombatState {
   enemyPosition: number;
   playerIncomingBonus: number;
   enemyIncomingBonus: number;
+  playerRestBlockChancePenalty: number;
+  enemyRestBlockChancePenalty: number;
   lastPlayerAction?: ActionId;
   lastEnemyAction?: ActionId;
   lastPlayerDamage: number;
@@ -127,6 +129,7 @@ export const SPEAR_CLINCH_RANGE_BONUS = 0.4;
 export const SPEAR_LUNGE_MOVE_BONUS = 0.3;
 export const SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION = 0.30;
 export const SPEAR_LUNGE_DAMAGE_MULTIPLIER = 1.5;
+export const REST_BLOCK_CHANCE_PENALTY = 0.2;
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -329,6 +332,8 @@ export function freshState(): CombatState {
     enemyPosition: START_DISTANCE,
     playerIncomingBonus: 0,
     enemyIncomingBonus: 0,
+    playerRestBlockChancePenalty: 0,
+    enemyRestBlockChancePenalty: 0,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
     lastPlayerArmorAbsorbed: 0,
@@ -359,12 +364,32 @@ export function getFighterMaxStamina(fighter: FighterState): number {
 export function getActionBlockChance(action: ActionConfig, attacker?: FighterState, defender?: FighterState): number {
   void defender;
 
+  return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), 0);
+}
+
+export function getActionBlockChanceForState(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): number {
+  const action = actions[actionId];
+  const attacker = actor === "player" ? state.player : state.enemy;
+  const defenderOwner = actor === "player" ? "enemy" : "player";
+
+  return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestBlockChancePenalty(state, defenderOwner));
+}
+
+export function isActionHitChanceRestBoosted(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
+  return isAttackAction(actionId) && getRestBlockChancePenalty(state, actor === "player" ? "enemy" : "player") > 0;
+}
+
+function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
   const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
   const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" && isAttackAction(action.id) ? AXE_BLOCK_CHANCE_PENALTY : 0;
   const spearLungeBlockChanceReduction =
     attacker && getFighterWeaponClass(attacker) === "spear" && action.id === "lunge" ? SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION : 0;
 
-  return clamp((action.blockChance ?? 0) + axeBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction, 0, 0.95);
+  return axeBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction;
+}
+
+function getAdjustedActionBlockChance(action: ActionConfig, blockChanceModifier: number, defenderBlockChancePenalty: number): number {
+  return clamp((action.blockChance ?? 0) + blockChanceModifier - defenderBlockChancePenalty, 0, 0.95);
 }
 
 export function getFighterWeaponClass(fighter: FighterState): HeroWeaponClass {
@@ -665,6 +690,10 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
   const enemyCanSwitchWeapon = canFighterSwitchWeapon(current.enemy);
 
+  if (current.enemy.stamina <= 0 && available.includes("rest")) {
+    return "rest";
+  }
+
   for (const id of available) {
     if (id === "switchWeapon") {
       if (!isFighterInClinchRange(current, "enemy") && enemyCanSwitchWeapon && !enemyHasRangedWeapon) {
@@ -720,8 +749,6 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
       weighted.push(id, enemyLowStamina ? id : "light");
     } else if (id === "back") {
       weighted.push(enemyLowHp ? id : "light");
-    } else if (id === "taunt") {
-      weighted.push(id);
     }
   }
 
@@ -765,6 +792,10 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     addIncomingBonus(state, actor, action.vulnerability);
   }
 
+  if (actionId === "rest") {
+    addRestBlockChancePenalty(state, actor, REST_BLOCK_CHANCE_PENALTY);
+  }
+
   let damage = getActionDamage(actionId, attacker);
   const inRange = actionRangeMax === undefined || state.distance <= actionRangeMax;
   let blocked = false;
@@ -783,18 +814,18 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   }
 
   if (damage > 0) {
-    blocked = isActionBlocked(action, attacker, defender, random);
+    blocked = isActionBlocked(state, action, attacker, defender, defenderOwner, random);
 
     if (blocked) {
       damage = 0;
-      clearIncomingBonus(state, defenderOwner);
+      clearIncomingAttackModifiers(state, defenderOwner);
     } else {
       damage = applyIncomingBonus(state, actor, damage);
       damage = applyWeaponArmorDamageBonus(actionId, attacker, defender, damage);
       appliedDamage = applyDamageToFighter(defender, damage);
     }
   } else {
-    clearIncomingBonus(state, defenderOwner);
+    clearIncomingAttackModifiers(state, defenderOwner);
   }
 
   if (actor === "player") {
@@ -823,8 +854,17 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   }
 }
 
-function isActionBlocked(action: ActionConfig, attacker: FighterState, defender: FighterState, random: () => number): boolean {
-  const blockChance = getActionBlockChance(action, attacker, defender);
+function isActionBlocked(
+  state: CombatState,
+  action: ActionConfig,
+  attacker: FighterState,
+  defender: FighterState,
+  defenderOwner: TurnOwner,
+  random: () => number,
+): boolean {
+  void defender;
+
+  const blockChance = getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestBlockChancePenalty(state, defenderOwner));
 
   return blockChance > 0 && random() < blockChance;
 }
@@ -1033,7 +1073,7 @@ function applyIncomingBonus(state: CombatState, attacker: TurnOwner, damage: num
   const defender = attacker === "player" ? "enemy" : "player";
   const incomingBonus = defender === "player" ? state.playerIncomingBonus : state.enemyIncomingBonus;
 
-  clearIncomingBonus(state, defender);
+  clearIncomingAttackModifiers(state, defender);
 
   return damage + incomingBonus;
 }
@@ -1076,6 +1116,31 @@ function addIncomingBonus(state: CombatState, actor: TurnOwner, value: number): 
   } else {
     state.enemyIncomingBonus += value;
   }
+}
+
+function addRestBlockChancePenalty(state: CombatState, actor: TurnOwner, value: number): void {
+  if (actor === "player") {
+    state.playerRestBlockChancePenalty = Math.max(state.playerRestBlockChancePenalty, value);
+  } else {
+    state.enemyRestBlockChancePenalty = Math.max(state.enemyRestBlockChancePenalty, value);
+  }
+}
+
+function getRestBlockChancePenalty(state: CombatState, actor: TurnOwner): number {
+  return actor === "player" ? state.playerRestBlockChancePenalty : state.enemyRestBlockChancePenalty;
+}
+
+function clearRestBlockChancePenalty(state: CombatState, actor: TurnOwner): void {
+  if (actor === "player") {
+    state.playerRestBlockChancePenalty = 0;
+  } else {
+    state.enemyRestBlockChancePenalty = 0;
+  }
+}
+
+function clearIncomingAttackModifiers(state: CombatState, actor: TurnOwner): void {
+  clearIncomingBonus(state, actor);
+  clearRestBlockChancePenalty(state, actor);
 }
 
 function clearIncomingBonus(state: CombatState, actor: TurnOwner): void {

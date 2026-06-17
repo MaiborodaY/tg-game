@@ -9321,6 +9321,19 @@ body.debug-active .action-arc__center {
   filter: saturate(0.78) brightness(0.9);
 }
 
+.action-arc__chance--rest-boosted {
+  border-color: rgba(105, 239, 255, 0.92);
+  color: #b8fdff;
+  background:
+    linear-gradient(180deg, rgba(31, 93, 92, 0.96), rgba(8, 30, 32, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(186, 255, 252, 0.28),
+    0 2px 0 rgba(15, 5, 2, 0.9),
+    0 0 8px rgba(89, 235, 255, 0.46),
+    0 0 0 1px rgba(24, 93, 95, 0.62);
+  text-shadow: 0 1px 0 rgba(4, 18, 20, 0.95);
+}
+
 .classic-action-bar .action-arc__button {
   position: absolute;
   left: 50%;
@@ -9365,6 +9378,10 @@ body.debug-active .action-arc__center {
 
 .classic-action-bar .classic-action-bar__chance--dimmed {
   opacity: 0.62;
+}
+
+.classic-action-bar .classic-action-bar__chance--rest-boosted {
+  filter: drop-shadow(0 0 5px rgba(89, 235, 255, 0.65));
 }
 
 .classic-action-bar .action-arc__button.classic-action-bar__button--visible {

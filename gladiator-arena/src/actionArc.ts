@@ -22,7 +22,16 @@ import {
 } from "./arenaLayout";
 import { SHOP_CATEGORY_BOW_ICON_ASSET_URL, SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL, SHOP_CATEGORY_SWORD_ICON_ASSET_URL } from "./assets";
 import { getBattleSafeArea } from "./battleSafeArea";
-import { actionOrder, actions, canUseAction, getActionBlockChance, isBowFighter, type ActionId, type CombatState } from "./combat";
+import {
+  actionOrder,
+  actions,
+  canUseAction,
+  getActionBlockChanceForState,
+  isActionHitChanceRestBoosted,
+  isBowFighter,
+  type ActionId,
+  type CombatState,
+} from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
 import { getShopProductIconUrl } from "./shopItemIcons";
@@ -177,12 +186,14 @@ export function syncActionChanceBadge(button: HTMLButtonElement, actionId: Actio
   if (!label) {
     badge.hidden = true;
     badge.textContent = "";
+    badge.classList.remove("action-arc__chance--rest-boosted");
     button.classList.remove("action-arc__button--has-chance");
     return undefined;
   }
 
   badge.hidden = false;
   badge.textContent = label;
+  badge.classList.toggle("action-arc__chance--rest-boosted", isActionHitChanceRestBoosted(state, actionId, "player"));
   button.classList.add("action-arc__button--has-chance");
   return label;
 }
@@ -209,7 +220,7 @@ export function getActionHitChanceLabel(actionId: ActionId, state: CombatState):
     return undefined;
   }
 
-  const blockChance = getActionBlockChance(action, state.player, state.enemy);
+  const blockChance = getActionBlockChanceForState(state, actionId, "player");
   const hitChance = Math.round((1 - blockChance) * 100);
 
   return `${hitChance}%`;
