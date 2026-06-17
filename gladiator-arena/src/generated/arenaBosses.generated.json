@@ -27,8 +27,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 50,
-        "xp": 100
+        "gold": 20,
+        "xp": 12
       },
       "loss": {
         "gold": 0,

@@ -512,8 +512,8 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(bossState.enemy.armor, 20);
 
   bossState.result = "win";
-  assert.equal(hero.getBattleReward(bossState).gold, 50);
-  assert.equal(hero.getBattleReward(bossState).xp, 100);
+  assert.equal(hero.getBattleReward(bossState).gold, 20);
+  assert.equal(hero.getBattleReward(bossState).xp, 12);
 });
 
 test("arena encounter enemy base stats derive combat stats", () => {
@@ -589,8 +589,8 @@ test("combat reward application grants one random missing boss loot once", () =>
   assert.ok(lastLootEntry);
 
   const rewardApplication = hero.applyCombatReward(baseHero, bossState, "2026-01-01T00:01:00.000Z", () => 0.999);
-  assert.equal(rewardApplication.reward.gold, 50);
-  assert.equal(rewardApplication.reward.xp, 100);
+  assert.equal(rewardApplication.reward.gold, 20);
+  assert.equal(rewardApplication.reward.xp, 12);
   assert.equal(rewardApplication.loot.length, 1);
   assert.equal(rewardApplication.loot[0].sourceId, lastLootEntry.id);
   assert.deepEqual(Array.from(rewardApplication.loot[0].itemIds ?? [rewardApplication.loot[0].itemId]), lastLootItemIds);
@@ -620,8 +620,8 @@ test("combat reward application grants one random missing boss loot once", () =>
     return 0.5;
   });
 
-  assert.equal(emptyLootRewardApplication.reward.gold, 50);
-  assert.equal(emptyLootRewardApplication.reward.xp, 100);
+  assert.equal(emptyLootRewardApplication.reward.gold, 20);
+  assert.equal(emptyLootRewardApplication.reward.xp, 12);
   assert.equal(emptyLootRewardApplication.loot.length, 0);
   assert.equal(randomCalls, 0);
 });
