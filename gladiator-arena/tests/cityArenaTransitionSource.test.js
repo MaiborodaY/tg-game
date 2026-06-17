@@ -26,6 +26,21 @@ test("city arena transition darkens the whole city UI", () => {
   assert.match(stylesSource, /760ms cubic-bezier/);
 });
 
+test("city shop curtain holds while the shop layout settles", () => {
+  assert.match(mainSource, /const CITY_CURTAIN_CLOSE_MS = 240/);
+  assert.match(mainSource, /const CITY_CURTAIN_HOLD_MS = 380/);
+  assert.match(mainSource, /const CITY_CURTAIN_REVEAL_MS = 340/);
+  assert.match(mainSource, /const CITY_CURTAIN_SWITCH_MS = CITY_CURTAIN_CLOSE_MS/);
+  assert.match(mainSource, /cityMenu\.classList\.add\("city-menu--curtain-cover"\)/);
+  assert.match(mainSource, /cityMenu\.classList\.add\("city-menu--curtain-hold"\)/);
+  assert.match(mainSource, /cityMenu\.classList\.add\("city-menu--curtain-reveal"\)/);
+  assert.match(stylesSource, /\.city-menu--curtain-hold \.city-menu__curtain::before,/);
+  assert.match(stylesSource, /@keyframes city-curtain-left-cover/);
+  assert.match(stylesSource, /@keyframes city-curtain-left-reveal/);
+  assert.doesNotMatch(mainSource, /city-menu--curtain-play/);
+  assert.doesNotMatch(stylesSource, /armory-shop-rise/);
+});
+
 test("battle screen starts dark while the arena entry camera pulls back", () => {
   assert.match(mainSource, /dom\.gameScreen\.classList\.add\("battle-screen--arena-entry"\)/);
   assert.match(mainSource, /const entryToken = beginArenaEntryGate\(\)/);

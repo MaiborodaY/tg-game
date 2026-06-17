@@ -109,8 +109,11 @@ let weaponShop: WeaponShopApi | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
-const CITY_CURTAIN_TRANSITION_MS = 620;
-const CITY_CURTAIN_SWITCH_MS = 210;
+const CITY_CURTAIN_CLOSE_MS = 100;
+const CITY_CURTAIN_HOLD_MS = 250;
+const CITY_CURTAIN_REVEAL_MS = 300;
+const CITY_CURTAIN_TRANSITION_MS = CITY_CURTAIN_CLOSE_MS + CITY_CURTAIN_HOLD_MS + CITY_CURTAIN_REVEAL_MS;
+const CITY_CURTAIN_SWITCH_MS = CITY_CURTAIN_CLOSE_MS;
 const CITY_RETURN_MIN_READY_MS = 1800;
 const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
 const CITY_RETURN_TRANSITION_IN_MS = 260;
@@ -119,6 +122,7 @@ const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 let cityCurtainCleanupTimer: number | undefined;
+let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
 let isArenaEntryLoading = false;
@@ -261,21 +265,32 @@ function playCityCurtainTransition(onCovered?: () => void): void {
     window.clearTimeout(cityCurtainCleanupTimer);
     cityCurtainCleanupTimer = undefined;
   }
+  if (cityCurtainRevealTimer) {
+    window.clearTimeout(cityCurtainRevealTimer);
+    cityCurtainRevealTimer = undefined;
+  }
   if (cityCurtainSwitchTimer) {
     window.clearTimeout(cityCurtainSwitchTimer);
     cityCurtainSwitchTimer = undefined;
   }
 
-  cityMenu.classList.remove("city-menu--curtain-play");
+  cityMenu.classList.remove("city-menu--curtain-cover", "city-menu--curtain-hold", "city-menu--curtain-reveal");
   void cityMenu.offsetWidth;
-  cityMenu.classList.add("city-menu--curtain-play");
+  cityMenu.classList.add("city-menu--curtain-cover");
   cityCurtainSwitchTimer = window.setTimeout(() => {
     cityCurtainSwitchTimer = undefined;
+    cityMenu.classList.remove("city-menu--curtain-cover");
+    cityMenu.classList.add("city-menu--curtain-hold");
     onCovered?.();
-  }, CITY_CURTAIN_SWITCH_MS);
+    cityCurtainRevealTimer = window.setTimeout(() => {
+      cityCurtainRevealTimer = undefined;
+      cityMenu.classList.remove("city-menu--curtain-hold");
+      cityMenu.classList.add("city-menu--curtain-reveal");
+    }, CITY_CURTAIN_HOLD_MS);
+  }, CITY_CURTAIN_CLOSE_MS);
   cityCurtainCleanupTimer = window.setTimeout(() => {
     cityCurtainCleanupTimer = undefined;
-    cityMenu.classList.remove("city-menu--curtain-play");
+    cityMenu.classList.remove("city-menu--curtain-cover", "city-menu--curtain-hold", "city-menu--curtain-reveal");
   }, CITY_CURTAIN_TRANSITION_MS);
 }
 

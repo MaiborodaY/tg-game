@@ -1890,12 +1890,26 @@ h1 {
   transform: translateX(105%);
 }
 
-.city-menu--curtain-play .city-menu__curtain::before {
-  animation: city-curtain-left 560ms cubic-bezier(0.22, 0.88, 0.26, 1) both;
+.city-menu--curtain-cover .city-menu__curtain::before {
+  animation: city-curtain-left-cover 240ms cubic-bezier(0.22, 0.88, 0.26, 1) both;
 }
 
-.city-menu--curtain-play .city-menu__curtain::after {
-  animation: city-curtain-right 560ms cubic-bezier(0.22, 0.88, 0.26, 1) both;
+.city-menu--curtain-cover .city-menu__curtain::after {
+  animation: city-curtain-right-cover 240ms cubic-bezier(0.22, 0.88, 0.26, 1) both;
+}
+
+.city-menu--curtain-hold .city-menu__curtain::before,
+.city-menu--curtain-hold .city-menu__curtain::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.city-menu--curtain-reveal .city-menu__curtain::before {
+  animation: city-curtain-left-reveal 340ms cubic-bezier(0.64, 0, 0.36, 1) both;
+}
+
+.city-menu--curtain-reveal .city-menu__curtain::after {
+  animation: city-curtain-right-reveal 340ms cubic-bezier(0.64, 0, 0.36, 1) both;
 }
 
 .city-menu__hero {
@@ -4661,7 +4675,6 @@ body.debug-active .city-menu__portrait-button:active {
   box-shadow: none;
   overflow: visible;
   pointer-events: auto;
-  animation: armory-shop-rise 320ms cubic-bezier(0.2, 0.88, 0.26, 1.08) both;
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__tray {
@@ -6737,23 +6750,6 @@ body.debug-active .city-menu__portrait-button:active {
   }
 }
 
-@keyframes armory-shop-rise {
-  0% {
-    opacity: 0;
-    transform: translateY(34px) scale(0.985);
-  }
-
-  72% {
-    opacity: 1;
-    transform: translateY(-6px) scale(1.004);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes armory-shop-slide-in {
   from {
     opacity: 0;
@@ -6778,37 +6774,49 @@ body.debug-active .city-menu__portrait-button:active {
   }
 }
 
-@keyframes city-curtain-left {
-  0% {
+@keyframes city-curtain-left-cover {
+  from {
     opacity: 0;
     transform: translateX(-105%);
   }
 
-  30%,
-  54% {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes city-curtain-right-cover {
+  from {
+    opacity: 0;
+    transform: translateX(105%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes city-curtain-left-reveal {
+  from {
     opacity: 1;
     transform: translateX(0);
   }
 
-  100% {
+  to {
     opacity: 0;
     transform: translateX(-105%);
   }
 }
 
-@keyframes city-curtain-right {
-  0% {
-    opacity: 0;
-    transform: translateX(105%);
-  }
-
-  30%,
-  54% {
+@keyframes city-curtain-right-reveal {
+  from {
     opacity: 1;
     transform: translateX(0);
   }
 
-  100% {
+  to {
     opacity: 0;
     transform: translateX(105%);
   }
