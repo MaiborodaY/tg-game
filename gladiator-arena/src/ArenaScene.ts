@@ -944,6 +944,14 @@ const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
   target: 30,
   limit: 30,
 };
+const PHASER_SIXTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
+  target: 60,
+  limit: 60,
+};
+
+function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig {
+  return getPlayerSettings().renderFps === 60 ? PHASER_SIXTY_FPS_CONFIG : PHASER_THIRTY_FPS_CONFIG;
+}
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -1507,7 +1515,7 @@ export class ArenaScene extends Phaser.Scene {
 
     applyFighterArrowCountersSceneScale(this);
 
-    const animationAmount = getArenaAnimationAmount(playerSettings);
+    const animationAmount = getArenaAnimationAmount();
 
     if (!this.visuals || animationAmount <= 0) {
       return;
@@ -1595,13 +1603,13 @@ export class ArenaScene extends Phaser.Scene {
           playerSettings,
         );
 
-        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit"), playerSettings);
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit"));
       });
     } else if (nextState.lastPlayerBlocked) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.enemy);
 
-        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block"), playerSettings);
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block"));
       });
     }
 
@@ -1616,13 +1624,13 @@ export class ArenaScene extends Phaser.Scene {
           playerSettings,
         );
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit"), playerSettings);
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit"));
       });
     } else if (nextState.lastEnemyBlocked) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.player);
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block"), playerSettings);
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block"));
       });
     }
 
@@ -1740,7 +1748,7 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
     height: GAME_HEIGHT,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
-    fps: PHASER_THIRTY_FPS_CONFIG,
+    fps: getPlayerPhaserFpsConfig(),
     render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: Phaser.Scale.RESIZE,
@@ -2563,7 +2571,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     height: Math.max(1, parent.clientHeight || GAME_HEIGHT),
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
-    fps: PHASER_THIRTY_FPS_CONFIG,
+    fps: getPlayerPhaserFpsConfig(),
     render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: Phaser.Scale.RESIZE,
@@ -2805,6 +2813,7 @@ export function mountHeroPortraitPreview(
     height: HERO_PORTRAIT_VIEWER_SIZE,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
+    fps: getPlayerPhaserFpsConfig(),
     render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: Phaser.Scale.FIT,
@@ -3225,6 +3234,7 @@ export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?:
     height: isShopMode ? Math.max(1, parent.clientHeight || DEBUG_CHARACTER_VIEWER_HEIGHT) : DEBUG_CHARACTER_VIEWER_HEIGHT,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
+    fps: getPlayerPhaserFpsConfig(),
     render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: isShopMode ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,
@@ -6043,11 +6053,10 @@ function playBodyAnimationOnce(
   target: Phaser.Scene,
   fighter: FighterVisual,
   animation: BodyAnimationTuning,
-  playerSettings = getPlayerSettings(),
   options: BodyAnimationOnceOptions = {},
 ): Promise<void> {
   const rig = fighter.paperDollRig;
-  const animationAmount = getArenaAnimationAmount(playerSettings);
+  const animationAmount = getArenaAnimationAmount();
 
   resetFighterBodyIdleAnimation(fighter, target.time.now);
 
@@ -6107,25 +6116,25 @@ function animateAction(
   playerSettings = getPlayerSettings(),
 ): ActionAnimationHandle {
   const sign = direction === "right" ? 1 : -1;
-  const animationAmount = getArenaAnimationAmount(playerSettings);
+  const animationAmount = getArenaAnimationAmount();
 
   if (actionId === "forward" || actionId === "back") {
-    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"), playerSettings);
+    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
 
     return { done: actionAnimation };
   }
 
   if (actionId === "lunge") {
-    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge"), playerSettings) };
+    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge")) };
   }
 
   if (actionId === "taunt") {
-    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt"), playerSettings) };
+    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt")) };
   }
 
   if (actionId === "rest") {
     return {
-      done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), playerSettings, {
+      done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), {
         loopAfterComplete: "rest",
         speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER,
       }),
@@ -6139,7 +6148,7 @@ function animateAction(
   }
 
   if (actionId === "shuriken") {
-    const bodyAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"), playerSettings);
+    const bodyAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"));
     const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
     return {
@@ -6155,7 +6164,7 @@ function animateAction(
     const isRangedWeapon = isRangedWeaponClass(weaponClass);
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
 
-    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey), playerSettings));
+    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey)));
     if (isRangedWeapon) {
       const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
@@ -7306,14 +7315,8 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
   }
 }
 
-function getArenaAnimationAmount(playerSettings = getPlayerSettings()): number {
-  const { animationMode } = playerSettings;
-
-  if (animationMode === "off") {
-    return 0;
-  }
-
-  return animationMode === "half" ? 0.5 : 1;
+function getArenaAnimationAmount(): number {
+  return 1;
 }
 
 function areArenaVfxEnabled(playerSettings = getPlayerSettings()): boolean {

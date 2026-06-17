@@ -302,10 +302,11 @@ test("arena applies active combat weapon visibility after paper doll tuning", ()
 
 test("arena reuses player settings snapshots during frame work", () => {
   assert.equal(arenaSceneSource.includes("const playerSettings = getPlayerSettings();"), true);
-  assert.equal(arenaSceneSource.includes("getArenaAnimationAmount(playerSettings)"), true);
+  assert.equal(arenaSceneSource.includes("getArenaAnimationAmount()"), true);
   assert.equal(arenaSceneSource.includes("renderScene(this, nextState, playerSettings);"), true);
   assert.equal(arenaSceneSource.includes("playerSettings.shadowMode"), true);
-  assert.equal(arenaSceneSource.includes("function getArenaAnimationAmount(playerSettings = getPlayerSettings())"), true);
+  assert.equal(arenaSceneSource.includes("function getArenaAnimationAmount(): number"), true);
+  assert.equal(arenaSceneSource.includes("return 1;"), true);
 });
 
 test("phaser games request a low power webgl context", () => {
@@ -314,7 +315,7 @@ test("phaser games request a low power webgl context", () => {
   assert.equal((arenaSceneSource.match(/render: PHASER_LOW_POWER_RENDER_CONFIG/g) ?? []).length, 4);
 });
 
-test("arena and city preview run at thirty fps", () => {
+test("phaser games use the selected render fps setting", () => {
   const launchArenaSource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("export function launchArena("),
     arenaSceneSource.indexOf("type CityCameraMode"),
@@ -325,10 +326,14 @@ test("arena and city preview run at thirty fps", () => {
   );
 
   assert.equal(arenaSceneSource.includes("const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig"), true);
-  assert.match(arenaSceneSource, /target:\s*30,[\s\S]*limit:\s*30,/);
-  assert.equal((arenaSceneSource.match(/fps: PHASER_THIRTY_FPS_CONFIG/g) ?? []).length, 2);
-  assert.equal(launchArenaSource.includes("fps: PHASER_THIRTY_FPS_CONFIG"), true);
-  assert.equal(cityPreviewSource.includes("fps: PHASER_THIRTY_FPS_CONFIG"), true);
+  assert.equal(arenaSceneSource.includes("const PHASER_SIXTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig"), true);
+  assert.match(arenaSceneSource, /PHASER_THIRTY_FPS_CONFIG[\s\S]*target:\s*30,[\s\S]*limit:\s*30,/);
+  assert.match(arenaSceneSource, /PHASER_SIXTY_FPS_CONFIG[\s\S]*target:\s*60,[\s\S]*limit:\s*60,/);
+  assert.equal(arenaSceneSource.includes("function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig"), true);
+  assert.equal(arenaSceneSource.includes("getPlayerSettings().renderFps === 60 ? PHASER_SIXTY_FPS_CONFIG : PHASER_THIRTY_FPS_CONFIG"), true);
+  assert.equal((arenaSceneSource.match(/fps: getPlayerPhaserFpsConfig\(\)/g) ?? []).length, 4);
+  assert.equal(launchArenaSource.includes("fps: getPlayerPhaserFpsConfig()"), true);
+  assert.equal(cityPreviewSource.includes("fps: getPlayerPhaserFpsConfig()"), true);
 });
 
 test("arena starts close between fighters and eases back to the normal camera", () => {

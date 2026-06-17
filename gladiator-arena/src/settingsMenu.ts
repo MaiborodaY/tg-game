@@ -1,11 +1,11 @@
-export type PlayerAnimationMode = "normal" | "half" | "off";
+export type PlayerRenderFps = 30 | 60;
 export type PlayerShadowMode = "high" | "low" | "off";
 export type PlayerHudMode = "immersive" | "classic";
 export const DEFAULT_PLAYER_HUD_MODE: PlayerHudMode = "classic";
 
 export interface PlayerSettings {
   lowEffects: boolean;
-  animationMode: PlayerAnimationMode;
+  renderFps: PlayerRenderFps;
   vfxEnabled: boolean;
   shadowMode: PlayerShadowMode;
   hudMode: PlayerHudMode;
@@ -18,7 +18,7 @@ const fpsUpdateIntervalMs = 500;
 const hudModeDefaultVersion = 2;
 const defaultSettings: PlayerSettings = {
   lowEffects: false,
-  animationMode: "normal",
+  renderFps: 30,
   vfxEnabled: true,
   shadowMode: "high",
   hudMode: DEFAULT_PLAYER_HUD_MODE,
@@ -38,7 +38,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   const vfx = root.querySelector<HTMLInputElement>("[data-setting-vfx]");
   const fps = root.querySelector<HTMLInputElement>("[data-setting-fps]");
   const fpsCounter = root.querySelector<HTMLElement>("[data-fps-counter]");
-  const animationInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-animation]"));
+  const renderFpsInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-render-fps]"));
   const shadowModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-shadow-mode]"));
   const hudModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-hud-mode]"));
 
@@ -50,7 +50,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
     !vfx ||
     !fps ||
     !fpsCounter ||
-    animationInputs.length === 0 ||
+    renderFpsInputs.length === 0 ||
     shadowModeInputs.length === 0 ||
     hudModeInputs.length === 0
   ) {
@@ -61,7 +61,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   lowEffects.checked = settings.lowEffects;
   vfx.checked = settings.vfxEnabled;
   fps.checked = settings.showFps;
-  syncAnimationInputs(animationInputs, settings.animationMode);
+  syncRenderFpsInputs(renderFpsInputs, settings.renderFps);
   syncShadowModeInputs(shadowModeInputs, settings.shadowMode);
   syncHudModeInputs(hudModeInputs, settings.hudMode);
   applySettings(settings);
@@ -90,13 +90,27 @@ export function mountSettingsMenu(root: ParentNode = document): void {
     syncFpsCounter(fpsCounter, fps.checked);
   });
 
-  animationInputs.forEach((input) => {
+  renderFpsInputs.forEach((input) => {
     input.addEventListener("change", () => {
-      if (!input.checked || !isPlayerAnimationMode(input.value)) {
+      const nextRenderFps = parsePlayerRenderFps(input.value);
+
+      if (!input.checked || !nextRenderFps) {
         return;
       }
 
-      updateSettings({ animationMode: input.value });
+      const currentSettings = getPlayerSettings();
+
+      if (currentSettings.renderFps === nextRenderFps) {
+        return;
+      }
+
+      if (!confirmRenderFpsReload(nextRenderFps)) {
+        syncRenderFpsInputs(renderFpsInputs, currentSettings.renderFps);
+        return;
+      }
+
+      updateSettings({ renderFps: nextRenderFps });
+      window.location.reload();
     });
   });
 
@@ -197,7 +211,7 @@ function saveSettings(settings: PlayerSettings): void {
 function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
   return {
     lowEffects: typeof input.lowEffects === "boolean" ? input.lowEffects : defaultSettings.lowEffects,
-    animationMode: isPlayerAnimationMode(input.animationMode) ? input.animationMode : defaultSettings.animationMode,
+    renderFps: normalizeRenderFps(input.renderFps),
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
     shadowMode: normalizeShadowMode(input),
     hudMode: isPlayerHudMode(input.hudMode) ? input.hudMode : defaultSettings.hudMode,
@@ -205,9 +219,9 @@ function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
   };
 }
 
-function syncAnimationInputs(inputs: HTMLInputElement[], mode: PlayerAnimationMode): void {
+function syncRenderFpsInputs(inputs: HTMLInputElement[], renderFps: PlayerRenderFps): void {
   inputs.forEach((input) => {
-    input.checked = input.value === mode;
+    input.checked = input.value === `${renderFps}`;
   });
 }
 
@@ -223,8 +237,28 @@ function syncHudModeInputs(inputs: HTMLInputElement[], mode: PlayerHudMode): voi
   });
 }
 
-function isPlayerAnimationMode(value: unknown): value is PlayerAnimationMode {
-  return value === "normal" || value === "half" || value === "off";
+function isPlayerRenderFps(value: unknown): value is PlayerRenderFps {
+  return value === 30 || value === 60;
+}
+
+function parsePlayerRenderFps(value: unknown): PlayerRenderFps | undefined {
+  if (value === "30") {
+    return 30;
+  }
+
+  if (value === "60") {
+    return 60;
+  }
+
+  return undefined;
+}
+
+function normalizeRenderFps(value: unknown): PlayerRenderFps {
+  return isPlayerRenderFps(value) ? value : parsePlayerRenderFps(value) ?? defaultSettings.renderFps;
+}
+
+function confirmRenderFpsReload(renderFps: PlayerRenderFps): boolean {
+  return window.confirm(`Changing FPS to ${renderFps} requires restarting the game. Apply and reload now?`);
 }
 
 function isPlayerShadowMode(value: unknown): value is PlayerShadowMode {

@@ -118,6 +118,19 @@ test("settings can persist the arena HUD mode", () => {
   assert.equal(settingsMenuSource.includes("isPlayerHudMode"), true);
 });
 
+test("settings replace animation mode with a reload-gated render fps choice", () => {
+  assert.equal(indexHtml.includes("<legend>FPS</legend>"), true);
+  assert.equal(indexHtml.includes('data-setting-render-fps'), true);
+  assert.equal(indexHtml.includes('value="30"'), true);
+  assert.equal(indexHtml.includes('value="60"'), true);
+  assert.equal(indexHtml.includes('data-setting-animation'), false);
+  assert.equal(settingsMenuSource.includes("export type PlayerRenderFps = 30 | 60"), true);
+  assert.equal(settingsMenuSource.includes("renderFps: 30"), true);
+  assert.equal(settingsMenuSource.includes("confirmRenderFpsReload"), true);
+  assert.equal(settingsMenuSource.includes("window.location.reload();"), true);
+  assert.equal(settingsMenuSource.includes("animationMode"), false);
+});
+
 test("arena turn flow waits for action animations instead of hardcoded enemy delay", () => {
   assert.equal(mainSource.includes("const actionAnimation = commitState(nextState);"), true);
   assert.equal(mainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
