@@ -308,6 +308,29 @@ test("arena reuses player settings snapshots during frame work", () => {
   assert.equal(arenaSceneSource.includes("function getArenaAnimationAmount(playerSettings = getPlayerSettings())"), true);
 });
 
+test("phaser games request a low power webgl context", () => {
+  assert.equal(arenaSceneSource.includes("const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig"), true);
+  assert.equal(arenaSceneSource.includes('powerPreference: "low-power"'), true);
+  assert.equal((arenaSceneSource.match(/render: PHASER_LOW_POWER_RENDER_CONFIG/g) ?? []).length, 4);
+});
+
+test("arena and city preview run at thirty fps", () => {
+  const launchArenaSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("export function launchArena("),
+    arenaSceneSource.indexOf("type CityCameraMode"),
+  );
+  const cityPreviewSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("export function mountCityHeroPreview("),
+    arenaSceneSource.indexOf("export function mountHeroPortraitPreview("),
+  );
+
+  assert.equal(arenaSceneSource.includes("const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig"), true);
+  assert.match(arenaSceneSource, /target:\s*30,[\s\S]*limit:\s*30,/);
+  assert.equal((arenaSceneSource.match(/fps: PHASER_THIRTY_FPS_CONFIG/g) ?? []).length, 2);
+  assert.equal(launchArenaSource.includes("fps: PHASER_THIRTY_FPS_CONFIG"), true);
+  assert.equal(cityPreviewSource.includes("fps: PHASER_THIRTY_FPS_CONFIG"), true);
+});
+
 test("arena starts close between fighters and eases back to the normal camera", () => {
   assert.equal(arenaSceneSource.includes('type ArenaEntryTransitionState = "pending" | "running" | "done"'), true);
   assert.equal(arenaSceneSource.includes("ARENA_ENTRY_START_ZOOM_MULTIPLIER"), true);

@@ -937,6 +937,13 @@ const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();
 const paperDollAssetLoadPromisesByScene = new WeakMap<Phaser.Scene, Map<string, Promise<void>>>();
 
 const PAPER_DOLL_ASSETS_BY_KEY = createPaperDollAssetsByKey();
+const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
+  powerPreference: "low-power",
+};
+const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
+  target: 30,
+  limit: 30,
+};
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
@@ -1733,6 +1740,8 @@ export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (ac
     height: GAME_HEIGHT,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
+    fps: PHASER_THIRTY_FPS_CONFIG,
+    render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: Phaser.Scale.RESIZE,
     },
@@ -2554,6 +2563,8 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     height: Math.max(1, parent.clientHeight || GAME_HEIGHT),
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
+    fps: PHASER_THIRTY_FPS_CONFIG,
+    render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: Phaser.Scale.RESIZE,
     },
@@ -2794,6 +2805,7 @@ export function mountHeroPortraitPreview(
     height: HERO_PORTRAIT_VIEWER_SIZE,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
+    render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -3213,6 +3225,7 @@ export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?:
     height: isShopMode ? Math.max(1, parent.clientHeight || DEBUG_CHARACTER_VIEWER_HEIGHT) : DEBUG_CHARACTER_VIEWER_HEIGHT,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
+    render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
       mode: isShopMode ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,
       autoCenter: isShopMode ? Phaser.Scale.NO_CENTER : Phaser.Scale.CENTER_BOTH,
