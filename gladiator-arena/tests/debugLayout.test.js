@@ -131,16 +131,28 @@ test("settings replace animation mode with a reload-gated render fps choice", ()
   assert.equal(settingsMenuSource.includes("animationMode"), false);
 });
 
-test("arena turn flow waits for action animations instead of hardcoded enemy delay", () => {
+test("arena turn flow waits for action animations and adds readable turn pacing", () => {
   assert.equal(mainSource.includes("const actionAnimation = commitState(nextState);"), true);
   assert.equal(mainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
   assert.equal(mainSource.includes("await previousActionAnimation;"), true);
+  assert.match(mainSource, /PLAYER_TO_ENEMY_TURN_PACING_MS = \d+/);
+  assert.match(mainSource, /ENEMY_TO_PLAYER_TURN_PACING_MS = \d+/);
+  assert.equal(mainSource.includes("await delay(PLAYER_TO_ENEMY_TURN_PACING_MS);"), true);
+  assert.equal(mainSource.includes("await delay(ENEMY_TO_PLAYER_TURN_PACING_MS);"), true);
   assert.equal(mainSource.includes("setTurnAnimationLocked(true);"), true);
+  assert.equal(mainSource.includes("rest:auto"), false);
+  assert.equal(mainSource.includes("maybeAutoRestPlayerTurn"), false);
   assert.equal(mainSource.includes("}, 700);"), false);
   assert.equal(debugMainSource.includes("const actionAnimation = commitState(nextState);"), true);
   assert.equal(debugMainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
   assert.equal(debugMainSource.includes("await previousActionAnimation;"), true);
+  assert.match(debugMainSource, /PLAYER_TO_ENEMY_TURN_PACING_MS = \d+/);
+  assert.match(debugMainSource, /ENEMY_TO_PLAYER_TURN_PACING_MS = \d+/);
+  assert.equal(debugMainSource.includes("await delay(PLAYER_TO_ENEMY_TURN_PACING_MS);"), true);
+  assert.equal(debugMainSource.includes("await delay(ENEMY_TO_PLAYER_TURN_PACING_MS);"), true);
   assert.equal(debugMainSource.includes("setTurnAnimationLocked(true);"), true);
+  assert.equal(debugMainSource.includes("rest:auto"), false);
+  assert.equal(debugMainSource.includes("maybeAutoRestPlayerTurn"), false);
   assert.equal(debugMainSource.includes("}, 700);"), false);
 });
 

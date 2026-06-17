@@ -33,11 +33,13 @@ test("action arc renders image icons with action-specific colors", () => {
   assert.equal(stylesSource.includes('.action-arc__button[data-action="back"] .action-arc__icon'), true);
   assert.equal(stylesSource.includes('linear-gradient(180deg, #4ebfff'), true);
 });
-test("action arc buttons render icon-only content", () => {
+test("action arc buttons keep icon-first content with compact badges", () => {
   assert.equal(actionArcSource.includes("button.append(icon);"), true);
   assert.equal(actionArcSource.includes("button.append(icon, title, detail)"), false);
-  assert.equal(actionArcSource.includes('button.setAttribute("aria-label"'), true);
-  assert.equal(stylesSource.includes(".action-arc__button > span:not(.action-arc__icon)"), true);
+  assert.match(actionArcSource, /button\.setAttribute\(\s*"aria-label"/);
+  assert.match(stylesSource, /\.action-arc__button > strong,\s*\.action-arc__button > span:not\(\.action-arc__icon\)/);
+  assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__chance:not([hidden])"), true);
+  assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__cost:not([hidden])"), true);
 });
 test("lunge icon uses a supplied image and button gradients avoid the old glare spot", () => {
   assert.equal(actionArcSource.includes("renderActionIcon"), true);
@@ -110,7 +112,21 @@ test("attack buttons show hit chance badges from block chance", () => {
   assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__chance:not([hidden])"), true);
   assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__chance"), true);
   assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__chance--rest-boosted"), true);
-  assert.equal(stylesSource.includes("rgba(105, 239, 255"), true);
+  assert.equal(stylesSource.includes("rgba(104, 172, 96"), true);
+  assert.equal(stylesSource.includes("rgba(42, 82, 39"), true);
+});
+
+test("action buttons show stamina cost capsules", () => {
+  assert.equal(actionArcSource.includes("getActionStaminaCost"), true);
+  assert.equal(actionArcSource.includes("syncActionCostBadge"), true);
+  assert.equal(actionArcSource.includes("getActionCostBadge"), true);
+  assert.equal(actionArcSource.includes("state.player.stamina - cost <= 0"), true);
+  assert.equal(actionArcSource.includes('badge.classList.toggle("action-arc__cost--exhausts", exhausts);'), true);
+  assert.equal(classicActionBarSource.includes("syncActionCostBadge"), true);
+  assert.equal(stylesSource.includes(".action-arc__cost"), true);
+  assert.equal(stylesSource.includes(".action-arc__cost-icon"), true);
+  assert.equal(stylesSource.includes('background: url("./assets/ui/profile/stat-stamina.webp")'), true);
+  assert.equal(stylesSource.includes(".action-arc__cost--exhausts"), true);
 });
 
 test("classic action bar reuses leather token rendering", () => {
@@ -123,6 +139,20 @@ test("classic action bar reuses leather token rendering", () => {
   assert.equal(classicActionBarSource.includes("canUseAction"), true);
   assert.equal(stylesSource.includes(".classic-action-bar .action-arc__button"), true);
   assert.equal(stylesSource.includes("body.arena-hud-classic .classic-action-bar"), true);
+});
+
+test("exhausted player highlights rest while other actions use disabled state", () => {
+  assert.equal(actionArcSource.includes("isPlayerExhausted"), true);
+  assert.equal(classicActionBarSource.includes("isPlayerExhausted"), true);
+  assert.equal(actionArcSource.includes('button.classList.toggle("action-arc__button--exhausted-rest", actionId === "rest" && isPlayerExhausted(state));'), true);
+  assert.equal(
+    classicActionBarSource.includes(
+      'button.classList.toggle("action-arc__button--exhausted-rest", isVisible && actionId === "rest" && isPlayerExhausted(state));',
+    ),
+    true,
+  );
+  assert.equal(stylesSource.includes(".action-arc__button.action-arc__button--exhausted-rest:not(:disabled)"), true);
+  assert.equal(stylesSource.includes("rgba(105, 239, 255, 0.98)"), true);
 });
 
 test("classic action bar swaps semicircle wheel layouts by distance", () => {

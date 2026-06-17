@@ -155,7 +155,11 @@ test("vite dev middleware writes promoted equipment to generated files", () => {
   assert.match(source, /pickPromotedEquipmentItem/);
   assert.match(source, /equipmentTuning/);
   assert.match(source, /levelRequirement\?: number/);
+  assert.match(source, /generatedEquipmentMaxArmorHp/);
+  assert.match(source, /generatedEquipmentMaxPrice/);
+  assert.match(source, /validateGeneratedEquipmentLevelRequirement/);
   assert.match(source, /record\.levelRequirement !== undefined/);
+  assert.match(source, /levelRequirement !== undefined/);
 });
 
 test("vite dev middleware removes generated equipment records and asset files", () => {
@@ -205,8 +209,10 @@ test("vite dev middleware promotes raw equipment sets into generated items", () 
   assert.match(source, /promote-equipment-set/);
   assert.match(source, /pickPromotedEquipmentSet/);
   assert.match(source, /createPromotedEquipmentSetRecords/);
+  assert.match(source, /createPromotedEquipmentSetInfo/);
   assert.match(source, /createPromotedEquipmentSetRecord/);
   assert.match(source, /renameEquipmentSetImportAssets\(promotion\.entries\)/);
+  assert.match(source, /equipmentSet: promotedItem\.equipmentSet/);
   assert.match(source, /createPromotedEquipmentRecords\(record, true\)/);
   assert.match(source, /formatPromotedEquipmentSetMessage/);
   assert.match(source, /getEquipmentSetImportTargetConfig/);

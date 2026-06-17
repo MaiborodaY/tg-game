@@ -39,6 +39,7 @@ const ARMOR_EQUIPMENT_SET_EXPECTATIONS = new Map([
   ["cathedral", { name: "Cathedral", rank: 12, grade: "high", shopCount: 14, level: 90 }],
   ["druid", { name: "Druid", rank: 13, grade: "high", shopCount: 14, level: 100 }],
   ["wood_boss", { name: "Wood Boss", rank: 14, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["boar_boss", { name: "Boar Boss", rank: 15, grade: "boss", shopCount: 0, bossCount: 14 }],
 ]);
 
 const SHIELD_BALANCE_EXPECTATIONS = new Map([

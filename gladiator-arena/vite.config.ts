@@ -22,6 +22,9 @@ const promotedEquipmentShopIconWebpQuality = 88;
 const promotedEquipmentMaxArmorHp = 200;
 const promotedEquipmentMaxDamageBonus = 100;
 const promotedEquipmentMaxPrice = 2000;
+const generatedEquipmentMaxArmorHp = 10000;
+const generatedEquipmentMaxDamageBonus = 10000;
+const generatedEquipmentMaxPrice = 100000;
 const transparentBackground = { r: 0, g: 0, b: 0, alpha: 0 } as const;
 const promotedEquipmentResizeRules = [
   { maxSide: 768, pattern: /^assets\/fighters\/armor\/helmet\// },
@@ -888,7 +891,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const records = await readGeneratedEquipmentRecords();
 
           await renameEquipmentSetImportAssets(promotion.entries);
-          const promotedRecords = await createPromotedEquipmentSetRecords(promotion);
+          const promotedRecords = await createPromotedEquipmentSetRecords(promotion, records);
           await ensureGeneratedEquipmentShopIcons(promotedRecords);
           const nextRecords = upsertGeneratedEquipmentRecords(records, promotedRecords);
 
@@ -1790,11 +1793,15 @@ async function removePromotedImportSourceFiles(entries: readonly { sourcePath: s
   await Promise.all([...sourcePaths].map((sourcePath) => rm(getProjectSourceUrl(sourcePath), { force: true })));
 }
 
-async function createPromotedEquipmentSetRecords(promotion: PromotedEquipmentSet): Promise<GeneratedEquipmentJsonRecord[]> {
+async function createPromotedEquipmentSetRecords(
+  promotion: PromotedEquipmentSet,
+  existingRecords: readonly GeneratedEquipmentJsonRecord[],
+): Promise<GeneratedEquipmentJsonRecord[]> {
   const records: GeneratedEquipmentJsonRecord[] = [];
+  const equipmentSet = createPromotedEquipmentSetInfo(promotion, existingRecords);
 
   for (const entry of promotion.entries) {
-    const record = await createPromotedEquipmentSetRecord(entry, promotion);
+    const record = await createPromotedEquipmentSetRecord(entry, promotion, equipmentSet);
 
     records.push(...(await createPromotedEquipmentRecords(record, true)));
   }
@@ -1802,9 +1809,37 @@ async function createPromotedEquipmentSetRecords(promotion: PromotedEquipmentSet
   return records;
 }
 
+function createPromotedEquipmentSetInfo(
+  promotion: PromotedEquipmentSet,
+  existingRecords: readonly GeneratedEquipmentJsonRecord[],
+): GeneratedEquipmentSetInfo | undefined {
+  const hasArmorEntry = promotion.entries.some((entry) => getEquipmentSetImportTargetConfig(entry.targetPrefix).kind === "armor");
+
+  if (!hasArmorEntry) {
+    return undefined;
+  }
+
+  const id = toIdentifier(promotion.name);
+  const existingSet = existingRecords.find((record) => record.equipmentSet?.id === id)?.equipmentSet;
+
+  if (existingSet) {
+    return existingSet;
+  }
+
+  const nextRank = existingRecords.reduce((maxRank, record) => Math.max(maxRank, record.equipmentSet?.rank ?? -1), -1) + 1;
+
+  return {
+    id,
+    name: promotion.name,
+    rank: nextRank,
+    ...(promotion.availability.bossUnique ? { grade: "boss" } : {}),
+  };
+}
+
 async function createPromotedEquipmentSetRecord(
   entry: EquipmentSetImportEntry,
   promotion: PromotedEquipmentSet,
+  equipmentSet: GeneratedEquipmentSetInfo | undefined,
 ): Promise<GeneratedEquipmentJsonRecord> {
   const config = getEquipmentSetImportTargetConfig(entry.targetPrefix);
   const assetKey = getAssetKeyFromSourcePath(entry.targetSourcePath);
@@ -1824,6 +1859,7 @@ async function createPromotedEquipmentSetRecord(
     kind: config.kind,
     rarity: promotion.rarity,
     ...(armorCategory ? { armorCategory } : {}),
+    ...(config.kind === "armor" && equipmentSet ? { equipmentSet } : {}),
     ...(config.kind === "armor" ? { armorHp: 1 } : { damageBonus: 1 }),
     ...(weaponClass ? { weaponClass } : {}),
     equipmentSlot: config.slot,
@@ -1912,6 +1948,7 @@ async function createMirroredPromotedEquipmentRecord(
     kind: "armor",
     ...(promotedItem.rarity ? { rarity: promotedItem.rarity } : {}),
     ...(promotedItem.armorCategory ? { armorCategory: promotedItem.armorCategory } : {}),
+    ...(promotedItem.equipmentSet ? { equipmentSet: promotedItem.equipmentSet } : {}),
     ...(promotedItem.armorHp !== undefined ? { armorHp: 0 } : {}),
     equipmentSlot: mirrorConfig.target.slot,
     assetKeys: { [mirrorConfig.target.assetKeyName]: mirrorAssetKey },
@@ -3307,13 +3344,13 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const kind = readGeneratedEquipmentKind(record.kind);
   const armorHp =
     kind === "armor"
-      ? Math.max(0, Math.min(promotedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))))
+      ? Math.max(0, Math.min(generatedEquipmentMaxArmorHp, Math.floor(readFinitePayloadNumber(record.armorHp, "generated equipment armorHp"))))
       : undefined;
   const damageBonus =
     kind === "weapon"
       ? Math.max(
           0,
-          Math.min(promotedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(record.damageBonus, "generated equipment damageBonus"))),
+          Math.min(generatedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(record.damageBonus, "generated equipment damageBonus"))),
         )
       : undefined;
   const assetKeys = readStringRecord(record.assetKeys, "generated equipment assetKeys");
@@ -3328,6 +3365,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const weaponClass = kind === "weapon" ? readWeaponClass(record.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
   const rarity = readItemRarity(record.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
   const requirements = validateGeneratedEquipmentRequirements(record.requirements);
+  const levelRequirement = validateGeneratedEquipmentLevelRequirement(record.levelRequirement);
   const equipmentSet = kind === "armor" ? validateGeneratedEquipmentSetInfo(record.equipmentSet) : undefined;
   const availability = readGeneratedEquipmentAvailability(record.availability, {
     shop: Boolean(record.armoryProduct || record.weaponProduct),
@@ -3351,6 +3389,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(damageBonus !== undefined ? { damageBonus } : {}),
     ...(requirements ? { requirements } : {}),
     ...(weaponClass ? { weaponClass } : {}),
+    ...(levelRequirement !== undefined ? { levelRequirement } : {}),
     equipmentSlot,
     assetKeys,
     equipmentTuning,
@@ -3363,6 +3402,14 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(armoryProduct ? { armoryProduct } : {}),
     ...(weaponProduct ? { weaponProduct } : {}),
   };
+}
+
+function validateGeneratedEquipmentLevelRequirement(input: unknown): number | undefined {
+  if (input === undefined || input === null || input === "") {
+    return undefined;
+  }
+
+  return readClampedInteger(input, "generated equipment levelRequirement", 1, 100);
 }
 
 function validateGeneratedEquipmentSetInfo(input: unknown): GeneratedEquipmentSetInfo | undefined {
@@ -3415,7 +3462,7 @@ function readOptionalRequirementValue(value: unknown, label: string): number | u
 
 function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["armoryProduct"] {
   const product = readPlainObject(input, "generated armory product");
-  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(product.price, "generated armory product price"))));
+  const price = Math.max(0, Math.min(generatedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(product.price, "generated armory product price"))));
   const categoryId = readNonEmptyString(product.categoryId, "generated armory product categoryId");
 
   return {
@@ -3429,7 +3476,7 @@ function validateGeneratedArmoryProduct(input: unknown, itemId: string, itemName
 
 function validateGeneratedWeaponProduct(input: unknown, itemId: string, itemName: string): GeneratedEquipmentJsonRecord["weaponProduct"] {
   const product = readPlainObject(input, "generated weapon product");
-  const price = Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(product.price, "generated weapon product price"))));
+  const price = Math.max(0, Math.min(generatedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(product.price, "generated weapon product price"))));
   const categoryId = readNonEmptyString(product.categoryId, "generated weapon product categoryId");
 
   return {

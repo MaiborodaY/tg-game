@@ -211,6 +211,10 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => {"), true);
   assert.equal(arenaSceneSource.includes("resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);"), true);
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
+  assert.match(
+    arenaSceneSource,
+    /if \(fighter\.bodyAnimationLockedUntil === lockedUntil\) \{\s*applyBodyAnimationBlend\(fighter, animation, 0\);\s*fighter\.bodyAnimationLockedUntil = 0;/,
+  );
   assert.equal(arenaSceneSource.includes("interface ActionAnimationHandle"), true);
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
   assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
@@ -643,7 +647,7 @@ test("rest actions show pooled health and stamina recovery popups", () => {
   assert.equal(arenaSceneSource.includes('lastEnemyAction === "rest"'), true);
   assert.equal(arenaSceneSource.includes("showRestRecoveryPopupFromFighter(this, visuals.player, previousState?.player, nextState.player);"), true);
   assert.equal(arenaSceneSource.includes("showRestRecoveryPopupFromFighter(this, visuals.enemy, previousState?.enemy, nextState.enemy);"), true);
-  assert.equal(arenaSceneSource.includes("REST_BODY_ANIMATION_SPEED_MULTIPLIER = 2"), true);
+  assert.equal(/REST_BODY_ANIMATION_SPEED_MULTIPLIER = \d+/.test(arenaSceneSource), true);
   assert.equal(/REST_ZZZ_ICON_SCREEN_SIZE = \d+/.test(arenaSceneSource), true);
   assert.equal(/REST_ZZZ_SPAWN_INTERVAL_MS = \d+/.test(arenaSceneSource), true);
   assert.equal(/REST_ZZZ_LIFETIME_MS = \d+/.test(arenaSceneSource), true);
@@ -654,6 +658,8 @@ test("rest actions show pooled health and stamina recovery popups", () => {
   assert.equal(arenaSceneSource.includes("restZzzNextSpawnAt?: number"), true);
   assert.equal(arenaSceneSource.includes("restZzzSpawnIndex?: number"), true);
   assert.equal(arenaSceneSource.includes("loopAfterComplete?: BodyAnimationKey"), true);
+  assert.equal(arenaSceneSource.includes("loopRestAfterComplete?: boolean"), true);
+  assert.equal(arenaSceneSource.includes("loopRestAfterComplete: false"), true);
   assert.equal(arenaSceneSource.includes('loopAfterComplete: "rest"'), true);
   assert.equal(arenaSceneSource.includes("speedMultiplier?: number"), true);
   assert.equal(arenaSceneSource.includes("speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER"), true);
@@ -669,7 +675,7 @@ test("rest actions show pooled health and stamina recovery popups", () => {
   assert.equal(arenaSceneSource.includes("resetFighterBodyIdleAnimation(fighter, target.time.now);"), true);
   assert.equal(arenaSceneSource.includes("resetFighterBodyIdleAnimation(actor, target.time.now);"), true);
   assert.equal(arenaSceneSource.includes("resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);"), true);
-  assert.equal(arenaSceneSource.includes("updateRestZzzEffects(this, this.visuals.player, time);"), true);
+  assert.equal(arenaSceneSource.includes("updateRestZzzEffects(this, this.visuals.player, time);"), false);
   assert.equal(arenaSceneSource.includes("updateRestZzzEffects(this, this.visuals.enemy, time);"), true);
   assert.equal(arenaSceneSource.includes('fighter.bodyIdleAnimationKey !== "rest"'), true);
   assert.equal(arenaSceneSource.includes("showRestZzzIconFromFighter(target, fighter, fighter.restZzzSpawnIndex ?? 0);"), true);

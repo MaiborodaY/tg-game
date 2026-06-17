@@ -385,6 +385,10 @@ interface ActionAnimationHandle {
   impact?: Promise<void>;
 }
 
+interface ActionAnimationOptions {
+  loopRestAfterComplete?: boolean;
+}
+
 interface BodyAnimationOnceOptions {
   loopAfterComplete?: BodyAnimationKey;
   speedMultiplier?: number;
@@ -473,7 +477,7 @@ const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
 const DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE = 108;
 const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
 const REST_RECOVERY_POPUP_ICON_SCREEN_SIZE = 34;
-const REST_BODY_ANIMATION_SPEED_MULTIPLIER = 2;
+const REST_BODY_ANIMATION_SPEED_MULTIPLIER = 1;
 const REST_ZZZ_ICON_SCREEN_SIZE = 40;
 const REST_ZZZ_SPAWN_INTERVAL_MS = 1000;
 const REST_ZZZ_LIFETIME_MS = 2000;
@@ -1524,7 +1528,6 @@ export class ArenaScene extends Phaser.Scene {
     applyLoopingBodyAnimation(this.visuals.player, time, getFighterBodyIdleAnimation(this.visuals.player), animationAmount);
     applyLoopingBodyAnimation(this.visuals.enemy, time, getFighterBodyIdleAnimation(this.visuals.enemy), animationAmount);
     if (areArenaVfxEnabled(playerSettings)) {
-      updateRestZzzEffects(this, this.visuals.player, time);
       updateRestZzzEffects(this, this.visuals.enemy, time);
     }
   }
@@ -1562,6 +1565,7 @@ export class ArenaScene extends Phaser.Scene {
         "right",
         nextState.player.weaponClass,
         playerSettings,
+        { loopRestAfterComplete: false },
       );
       actionAnimations.push(playerActionAnimation.done);
       if (lastPlayerAction === "rest") {
@@ -6083,6 +6087,7 @@ function playBodyAnimationOnce(
 
       isResolved = true;
       if (fighter.bodyAnimationLockedUntil === lockedUntil) {
+        applyBodyAnimationBlend(fighter, animation, 0);
         fighter.bodyAnimationLockedUntil = 0;
         if (options.loopAfterComplete) {
           setFighterBodyIdleAnimation(fighter, options.loopAfterComplete, target.time.now);
@@ -6114,6 +6119,7 @@ function animateAction(
   direction: "left" | "right",
   weaponClass?: HeroWeaponClass,
   playerSettings = getPlayerSettings(),
+  options: ActionAnimationOptions = {},
 ): ActionAnimationHandle {
   const sign = direction === "right" ? 1 : -1;
   const animationAmount = getArenaAnimationAmount();
@@ -6135,7 +6141,7 @@ function animateAction(
   if (actionId === "rest") {
     return {
       done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), {
-        loopAfterComplete: "rest",
+        ...((options.loopRestAfterComplete ?? true) ? { loopAfterComplete: "rest" } : {}),
         speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER,
       }),
     };

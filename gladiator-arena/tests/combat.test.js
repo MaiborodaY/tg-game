@@ -206,7 +206,7 @@ test("spear lunge stops at spear contact range instead of pushing into full clin
   assert.equal(nextState.lastPlayerDamage, expectedDamage);
 });
 
-test("stamina does not block attacks", () => {
+test("low stamina can be spent down to exhaustion", () => {
   const state = combat.freshState();
 
   setConsistentDistance(state, combat.MELEE_RANGE);
@@ -219,6 +219,20 @@ test("stamina does not block attacks", () => {
   assert.equal(nextState.player.stamina, 0);
   assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
   assert.equal(nextState.lastPlayerDamage, 2);
+});
+
+test("exhausted player can only rest", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.stamina = 0;
+
+  assert.equal(combat.isPlayerExhausted(state), true);
+  assert.equal(combat.canUseAction(state, "rest"), true);
+  assert.equal(combat.canUseAction(state, "light"), false);
+  assert.equal(combat.canUseAction(state, "heavy"), false);
+  assert.equal(combat.canUseAction(state, "back"), false);
+  assert.equal(combat.canUseAction(state, "switchWeapon"), false);
 });
 
 test("rest restores stamina and heals one hp without incoming penalty", () => {

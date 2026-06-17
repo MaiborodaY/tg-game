@@ -27,8 +27,10 @@ import {
   actions,
   canUseAction,
   getActionBlockChanceForState,
+  getActionStaminaCost,
   isActionHitChanceRestBoosted,
   isBowFighter,
+  isPlayerExhausted,
   type ActionId,
   type CombatState,
 } from "./combat";
@@ -198,6 +200,33 @@ export function syncActionChanceBadge(button: HTMLButtonElement, actionId: Actio
   return label;
 }
 
+export function syncActionCostBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState): string | undefined {
+  return syncActionCostBadgeElement(getActionCostBadge(button), actionId, state);
+}
+
+export function syncActionCostBadgeElement(
+  badge: HTMLSpanElement,
+  actionId: ActionId,
+  state: CombatState,
+  isVisible = true,
+): string | undefined {
+  const cost = getActionStaminaCost(actionId, state.player);
+
+  if (cost <= 0 || !isVisible) {
+    badge.hidden = true;
+    badge.classList.remove("action-arc__cost--exhausts");
+    setActionCostValue(badge, "");
+    return undefined;
+  }
+
+  const exhausts = state.result === "playing" && state.activeTurn === "player" && state.player.stamina - cost <= 0;
+
+  badge.hidden = false;
+  badge.classList.toggle("action-arc__cost--exhausts", exhausts);
+  setActionCostValue(badge, String(cost));
+  return String(cost);
+}
+
 function getActionChanceBadge(button: HTMLButtonElement): HTMLSpanElement {
   const existing = button.querySelector<HTMLSpanElement>(".action-arc__chance");
 
@@ -211,6 +240,41 @@ function getActionChanceBadge(button: HTMLButtonElement): HTMLSpanElement {
   badge.setAttribute("aria-hidden", "true");
   button.append(badge);
   return badge;
+}
+
+function getActionCostBadge(button: HTMLButtonElement): HTMLSpanElement {
+  const existing = button.querySelector<HTMLSpanElement>(".action-arc__cost");
+
+  if (existing) {
+    return existing;
+  }
+
+  const badge = createActionCostBadgeElement();
+
+  button.append(badge);
+  return badge;
+}
+
+export function createActionCostBadgeElement(): HTMLSpanElement {
+  const badge = document.createElement("span");
+  const icon = document.createElement("span");
+  const value = document.createElement("span");
+
+  badge.className = "action-arc__cost";
+  badge.hidden = true;
+  badge.setAttribute("aria-hidden", "true");
+  icon.className = "action-arc__cost-icon";
+  value.className = "action-arc__cost-value";
+  badge.append(icon, value);
+  return badge;
+}
+
+function setActionCostValue(badge: HTMLSpanElement, value: string): void {
+  const valueElement = badge.querySelector<HTMLSpanElement>(".action-arc__cost-value");
+
+  if (valueElement) {
+    valueElement.textContent = value;
+  }
 }
 
 export function getActionHitChanceLabel(actionId: ActionId, state: CombatState): string | undefined {
@@ -332,6 +396,7 @@ export function mountActionArc(
 
       if (!buttonLayout) {
         button.hidden = true;
+        button.classList.remove("action-arc__button--exhausted-rest");
         continue;
       }
 
@@ -341,13 +406,18 @@ export function mountActionArc(
 
       button.hidden = false;
       button.disabled = !editMode && !canUseAction(state, actionId, "player");
+      button.classList.toggle("action-arc__button--exhausted-rest", actionId === "rest" && isPlayerExhausted(state));
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
       syncActionTokenButton(button, icon, actionId, tuning, buttonLayout.scale, getActionTokenIconUrl(actionId, state));
       const hitChanceLabel = syncActionChanceBadge(button, actionId, state);
+      const costLabel = syncActionCostBadge(button, actionId, state);
       button.dataset.angle = `${Math.round(buttonLayout.angle)}`;
-      button.setAttribute("aria-label", `${buttonLayout.label} ${buttonLayout.detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
-      button.title = `${buttonLayout.label} ${buttonLayout.detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""} angle ${Math.round(buttonLayout.angle)} deg`;
+      button.setAttribute(
+        "aria-label",
+        `${buttonLayout.label} ${buttonLayout.detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`,
+      );
+      button.title = `${buttonLayout.label} ${buttonLayout.detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""} angle ${Math.round(buttonLayout.angle)} deg`;
       renderActionIcon(button, icon, actionId, getActionTokenIconUrl(actionId, state));
     }
 

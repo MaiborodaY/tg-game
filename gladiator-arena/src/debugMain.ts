@@ -19,7 +19,6 @@ import {
   resolveEnemyTurn,
   resolvePlayerTurn,
   setCombatMovementTuning,
-  shouldAutoRestPlayer,
   type ActionId,
   type CombatState,
 } from "./combat";
@@ -84,6 +83,8 @@ let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
 let weaponShop: WeaponShopApi | undefined;
 let armoryShop: ArmoryShopApi | undefined;
+const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
+const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 
 mountCityTimeToggle(cityTimeToggle, cityMenu);
 
@@ -217,21 +218,6 @@ function handleAction(actionId: ActionId): void {
   void scheduleEnemyTurn(nextState, actionAnimation);
 }
 
-async function maybeAutoRestPlayerTurn(): Promise<void> {
-  if (!shouldAutoRestPlayer(state)) {
-    return;
-  }
-
-  lastActionClick = "rest:auto";
-  logTurnProbe("auto-rest", state, enemyTimerStatus, "rest");
-
-  const nextState = resolvePlayerTurn(state, "rest");
-
-  const actionAnimation = commitState(nextState);
-
-  await scheduleEnemyTurn(nextState, actionAnimation);
-}
-
 async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimation: Promise<void> = Promise.resolve()): Promise<void> {
   if (enemyState.result !== "playing" || enemyState.activeTurn !== "enemy") {
     return;
@@ -245,6 +231,12 @@ async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimatio
   logTurnProbe("enemy-scheduled", enemyState, enemyTimerStatus);
 
   await previousActionAnimation;
+
+  if (turnSequenceToken !== token || state !== enemyState) {
+    return;
+  }
+
+  await delay(PLAYER_TO_ENEMY_TURN_PACING_MS);
 
   if (turnSequenceToken !== token || state !== enemyState) {
     return;
@@ -265,8 +257,9 @@ async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimatio
     return;
   }
 
-  if (shouldAutoRestPlayer(state)) {
-    await maybeAutoRestPlayerTurn();
+  await delay(ENEMY_TO_PLAYER_TURN_PACING_MS);
+
+  if (turnSequenceToken !== token || state !== nextState) {
     return;
   }
 
@@ -289,6 +282,12 @@ function restart(): void {
   enemyTimerStatus = "idle";
   lastActionClick = "none";
   void commitState(createCombatStateFromHero(hero));
+}
+
+function delay(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, durationMs);
+  });
 }
 
 function handleActionArcClick(event: Event): void {

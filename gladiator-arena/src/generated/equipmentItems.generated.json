@@ -12,6 +12,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
+    "levelRequirement": 1,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-cloth-01"
@@ -50,6 +51,12 @@
     "name": "Boar Boss 01 Back Boot",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 25,
     "equipmentSlot": "backBoot",
     "assetKeys": {
@@ -87,6 +94,7 @@
       "grade": "mid"
     },
     "armorHp": 33,
+    "levelRequirement": 80,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-bone-01"
@@ -132,6 +140,7 @@
       "grade": "high"
     },
     "armorHp": 36,
+    "levelRequirement": 90,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-cathedral-01"
@@ -178,6 +187,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
+    "levelRequirement": 25,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-chainmail-01"
@@ -224,6 +234,7 @@
       "grade": "starter"
     },
     "armorHp": 1,
+    "levelRequirement": 1,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-cloth-01"
@@ -269,6 +280,7 @@
       "grade": "high"
     },
     "armorHp": 40,
+    "levelRequirement": 100,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-druid-01"
@@ -314,6 +326,7 @@
       "grade": "high"
     },
     "armorHp": 12,
+    "levelRequirement": 40,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-executioner-01"
@@ -359,6 +372,7 @@
       "grade": "low"
     },
     "armorHp": 18,
+    "levelRequirement": 45,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-lazure-01"
@@ -404,6 +418,7 @@
       "grade": "mid"
     },
     "armorHp": 22,
+    "levelRequirement": 50,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-lion-01"
@@ -449,6 +464,7 @@
       "grade": "mid"
     },
     "armorHp": 9,
+    "levelRequirement": 35,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-mercenary-01"
@@ -494,6 +510,7 @@
       "grade": "low"
     },
     "armorHp": 7,
+    "levelRequirement": 30,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-rust-champion-01"
@@ -539,6 +556,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 7,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-sand-01"
@@ -584,6 +602,7 @@
       "grade": "high"
     },
     "armorHp": 26,
+    "levelRequirement": 60,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-stormguard-01"
@@ -629,6 +648,7 @@
       "grade": "low"
     },
     "armorHp": 30,
+    "levelRequirement": 70,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-viper-01"
@@ -703,6 +723,12 @@
     "name": "Boar Boss 01 Back Glove",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 25,
     "equipmentSlot": "backGlove",
     "assetKeys": {
@@ -740,6 +766,7 @@
       "grade": "mid"
     },
     "armorHp": 33,
+    "levelRequirement": 80,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-bone-01"
@@ -785,6 +812,7 @@
       "grade": "high"
     },
     "armorHp": 36,
+    "levelRequirement": 90,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-cathedral-01"
@@ -831,6 +859,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
+    "levelRequirement": 25,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-chainmail-03"
@@ -877,6 +906,7 @@
       "grade": "starter"
     },
     "armorHp": 1,
+    "levelRequirement": 1,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-cloth-01"
@@ -922,6 +952,7 @@
       "grade": "high"
     },
     "armorHp": 40,
+    "levelRequirement": 100,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-druid-01"
@@ -967,6 +998,7 @@
       "grade": "high"
     },
     "armorHp": 12,
+    "levelRequirement": 40,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-executioner-01"
@@ -1012,6 +1044,7 @@
       "grade": "low"
     },
     "armorHp": 18,
+    "levelRequirement": 45,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-lazure-01"
@@ -1058,6 +1091,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
+    "levelRequirement": 15,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-leather-03"
@@ -1103,6 +1137,7 @@
       "grade": "mid"
     },
     "armorHp": 22,
+    "levelRequirement": 50,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-lion-01"
@@ -1148,6 +1183,7 @@
       "grade": "mid"
     },
     "armorHp": 9,
+    "levelRequirement": 35,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-mercenary-01"
@@ -1193,6 +1229,7 @@
       "grade": "low"
     },
     "armorHp": 7,
+    "levelRequirement": 30,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-rust-champion-01"
@@ -1238,6 +1275,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 7,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-sand-01"
@@ -1283,6 +1321,7 @@
       "grade": "high"
     },
     "armorHp": 26,
+    "levelRequirement": 60,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-stormguard-01"
@@ -1328,6 +1367,7 @@
       "grade": "low"
     },
     "armorHp": 30,
+    "levelRequirement": 70,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-viper-01"
@@ -1402,6 +1442,12 @@
     "name": "Boar Boss 01 Back Greave",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 20,
     "equipmentSlot": "backGreave",
     "assetKeys": {
@@ -1439,6 +1485,7 @@
       "grade": "mid"
     },
     "armorHp": 40,
+    "levelRequirement": 80,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-bone-01"
@@ -1484,6 +1531,7 @@
       "grade": "high"
     },
     "armorHp": 44,
+    "levelRequirement": 90,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-cathedral-01"
@@ -1530,6 +1578,7 @@
       "grade": "starter"
     },
     "armorHp": 6,
+    "levelRequirement": 25,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-chainmail-01"
@@ -1576,6 +1625,7 @@
       "grade": "starter"
     },
     "armorHp": 1,
+    "levelRequirement": 1,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-cloth-01"
@@ -1621,6 +1671,7 @@
       "grade": "high"
     },
     "armorHp": 49,
+    "levelRequirement": 100,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-druid-01"
@@ -1666,6 +1717,7 @@
       "grade": "high"
     },
     "armorHp": 15,
+    "levelRequirement": 40,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-executioner-01"
@@ -1711,6 +1763,7 @@
       "grade": "low"
     },
     "armorHp": 22,
+    "levelRequirement": 45,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-lazure-01"
@@ -1757,6 +1810,7 @@
       "grade": "starter"
     },
     "armorHp": 4,
+    "levelRequirement": 15,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-leather-01"
@@ -1802,6 +1856,7 @@
       "grade": "mid"
     },
     "armorHp": 27,
+    "levelRequirement": 50,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-lion-01"
@@ -1847,6 +1902,7 @@
       "grade": "mid"
     },
     "armorHp": 11,
+    "levelRequirement": 35,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-mercenary-01"
@@ -1892,6 +1948,7 @@
       "grade": "low"
     },
     "armorHp": 9,
+    "levelRequirement": 30,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-rust-champion-01"
@@ -1937,6 +1994,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 7,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-sand-01"
@@ -1982,6 +2040,7 @@
       "grade": "high"
     },
     "armorHp": 32,
+    "levelRequirement": 60,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-stormguard-01"
@@ -2027,6 +2086,7 @@
       "grade": "low"
     },
     "armorHp": 37,
+    "levelRequirement": 70,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-viper-01"
@@ -2101,6 +2161,12 @@
     "name": "Boar Boss 01 Back Shinguard",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 20,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
@@ -2138,6 +2204,7 @@
       "grade": "mid"
     },
     "armorHp": 40,
+    "levelRequirement": 80,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-bone-01"
@@ -2183,6 +2250,7 @@
       "grade": "high"
     },
     "armorHp": 44,
+    "levelRequirement": 90,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-cathedral-01"
@@ -2229,6 +2297,7 @@
       "grade": "starter"
     },
     "armorHp": 6,
+    "levelRequirement": 25,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-chainmail-01"
@@ -2275,6 +2344,7 @@
       "grade": "starter"
     },
     "armorHp": 1,
+    "levelRequirement": 1,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-cloth-01"
@@ -2320,6 +2390,7 @@
       "grade": "high"
     },
     "armorHp": 49,
+    "levelRequirement": 100,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-druid-01"
@@ -2365,6 +2436,7 @@
       "grade": "high"
     },
     "armorHp": 15,
+    "levelRequirement": 40,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-executioner-01"
@@ -2410,6 +2482,7 @@
       "grade": "low"
     },
     "armorHp": 22,
+    "levelRequirement": 45,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-lazure-01"
@@ -2455,6 +2528,7 @@
       "grade": "mid"
     },
     "armorHp": 27,
+    "levelRequirement": 50,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-lion-01"
@@ -2500,6 +2574,7 @@
       "grade": "mid"
     },
     "armorHp": 11,
+    "levelRequirement": 35,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-mercenary-01"
@@ -2545,6 +2620,7 @@
       "grade": "low"
     },
     "armorHp": 9,
+    "levelRequirement": 30,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-rust-champion-01"
@@ -2590,6 +2666,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 7,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-sand-01"
@@ -2635,6 +2712,7 @@
       "grade": "high"
     },
     "armorHp": 32,
+    "levelRequirement": 60,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-stormguard-01"
@@ -2680,6 +2758,7 @@
       "grade": "low"
     },
     "armorHp": 37,
+    "levelRequirement": 70,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-viper-01"
@@ -2754,6 +2833,12 @@
     "name": "Boar Boss 01 Back Shoulderguard",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 30,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
@@ -2791,6 +2876,7 @@
       "grade": "mid"
     },
     "armorHp": 40,
+    "levelRequirement": 80,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-bone-01"
@@ -2836,6 +2922,7 @@
       "grade": "high"
     },
     "armorHp": 44,
+    "levelRequirement": 90,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-cathedral-01"
@@ -2882,6 +2969,7 @@
       "grade": "starter"
     },
     "armorHp": 6,
+    "levelRequirement": 25,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-chainmail-01"
@@ -2928,6 +3016,7 @@
       "grade": "starter"
     },
     "armorHp": 1,
+    "levelRequirement": 1,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-cloth-01"
@@ -2973,6 +3062,7 @@
       "grade": "high"
     },
     "armorHp": 49,
+    "levelRequirement": 100,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-druid-01"
@@ -3018,6 +3108,7 @@
       "grade": "high"
     },
     "armorHp": 15,
+    "levelRequirement": 40,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-executioner-01"
@@ -3063,6 +3154,7 @@
       "grade": "low"
     },
     "armorHp": 22,
+    "levelRequirement": 45,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-lazure-01"
@@ -3108,6 +3200,7 @@
       "grade": "mid"
     },
     "armorHp": 27,
+    "levelRequirement": 50,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-lion-01"
@@ -3153,6 +3246,7 @@
       "grade": "mid"
     },
     "armorHp": 11,
+    "levelRequirement": 35,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-mercenary-01"
@@ -3198,6 +3292,7 @@
       "grade": "low"
     },
     "armorHp": 9,
+    "levelRequirement": 30,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-rust-champion-01"
@@ -3243,6 +3338,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 7,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-sand-01"
@@ -3288,6 +3384,7 @@
       "grade": "high"
     },
     "armorHp": 32,
+    "levelRequirement": 60,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-stormguard-01"
@@ -3333,6 +3430,7 @@
       "grade": "low"
     },
     "armorHp": 37,
+    "levelRequirement": 70,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-viper-01"
@@ -3407,6 +3505,12 @@
     "name": "Boar Boss 01 Back Wrist",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 20,
     "equipmentSlot": "backWrist",
     "assetKeys": {
@@ -3444,6 +3548,7 @@
       "grade": "mid"
     },
     "armorHp": 33,
+    "levelRequirement": 80,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-bone-01"
@@ -3489,6 +3594,7 @@
       "grade": "high"
     },
     "armorHp": 36,
+    "levelRequirement": 90,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-cathedral-01"
@@ -3535,6 +3641,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
+    "levelRequirement": 25,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-chainmail-01"
@@ -3581,6 +3688,7 @@
       "grade": "starter"
     },
     "armorHp": 1,
+    "levelRequirement": 1,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-cloth-01"
@@ -3626,6 +3734,7 @@
       "grade": "high"
     },
     "armorHp": 40,
+    "levelRequirement": 100,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-druid-01"
@@ -3671,6 +3780,7 @@
       "grade": "high"
     },
     "armorHp": 12,
+    "levelRequirement": 40,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-executioner-01"
@@ -3716,6 +3826,7 @@
       "grade": "low"
     },
     "armorHp": 18,
+    "levelRequirement": 45,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-lazure-01"
@@ -3761,6 +3872,7 @@
       "grade": "mid"
     },
     "armorHp": 22,
+    "levelRequirement": 50,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-lion-01"
@@ -3806,6 +3918,7 @@
       "grade": "mid"
     },
     "armorHp": 9,
+    "levelRequirement": 35,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-mercenary-01"
@@ -3851,6 +3964,7 @@
       "grade": "low"
     },
     "armorHp": 7,
+    "levelRequirement": 30,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-rust-champion-01"
@@ -3896,6 +4010,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 7,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-sand-01"
@@ -3941,6 +4056,7 @@
       "grade": "high"
     },
     "armorHp": 26,
+    "levelRequirement": 60,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-stormguard-01"
@@ -3986,6 +4102,7 @@
       "grade": "low"
     },
     "armorHp": 30,
+    "levelRequirement": 70,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-viper-01"
@@ -4060,6 +4177,12 @@
     "name": "Boar Boss 01 Breastplate",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 50,
     "equipmentSlot": "breastplate",
     "assetKeys": {
@@ -4097,6 +4220,7 @@
       "grade": "mid"
     },
     "armorHp": 92,
+    "levelRequirement": 80,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-bone-01"
@@ -4142,6 +4266,7 @@
       "grade": "high"
     },
     "armorHp": 101,
+    "levelRequirement": 90,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-cathedral-01"
@@ -4188,6 +4313,7 @@
       "grade": "starter"
     },
     "armorHp": 13,
+    "levelRequirement": 25,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-chainmail-01"
@@ -4233,6 +4359,7 @@
       "grade": "high"
     },
     "armorHp": 111,
+    "levelRequirement": 100,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-druid-01"
@@ -4278,6 +4405,7 @@
       "grade": "high"
     },
     "armorHp": 34,
+    "levelRequirement": 40,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-executioner-01"
@@ -4323,6 +4451,7 @@
       "grade": "low"
     },
     "armorHp": 51,
+    "levelRequirement": 45,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-lazure-01"
@@ -4368,6 +4497,7 @@
       "grade": "mid"
     },
     "armorHp": 61,
+    "levelRequirement": 50,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-lion-01"
@@ -4413,6 +4543,7 @@
       "grade": "mid"
     },
     "armorHp": 26,
+    "levelRequirement": 35,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-mercenary-01"
@@ -4458,6 +4589,7 @@
       "grade": "low"
     },
     "armorHp": 20,
+    "levelRequirement": 30,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-rust-champion-01"
@@ -4503,6 +4635,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
+    "levelRequirement": 7,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-sand-01"
@@ -4548,6 +4681,7 @@
       "grade": "high"
     },
     "armorHp": 73,
+    "levelRequirement": 60,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-stormguard-01"
@@ -4593,6 +4727,7 @@
       "grade": "low"
     },
     "armorHp": 84,
+    "levelRequirement": 70,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-viper-01"
@@ -4667,6 +4802,12 @@
     "name": "Boar Boss 01 Front Boot",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 0,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
@@ -4704,6 +4845,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 80,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-bone-01"
@@ -4749,6 +4891,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 90,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-cathedral-01"
@@ -4795,6 +4938,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 25,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-chainmail-01"
@@ -4841,6 +4985,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 1,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-cloth-01"
@@ -4886,6 +5031,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 100,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-druid-01"
@@ -4931,6 +5077,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 40,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-executioner-01"
@@ -4976,6 +5123,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 45,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-lazure-01"
@@ -5021,6 +5169,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 50,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-lion-01"
@@ -5066,6 +5215,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 35,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-mercenary-01"
@@ -5111,6 +5261,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 30,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-rust-champion-01"
@@ -5156,6 +5307,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 7,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-sand-01"
@@ -5201,6 +5353,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 60,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-stormguard-01"
@@ -5246,6 +5399,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 70,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-viper-01"
@@ -5320,6 +5474,12 @@
     "name": "Boar Boss 01 Front Glove",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 0,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
@@ -5357,6 +5517,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 80,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-bone-01"
@@ -5402,6 +5563,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 90,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-cathedral-01"
@@ -5448,6 +5610,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 25,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-chainmail-03"
@@ -5494,6 +5657,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 1,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-cloth-01"
@@ -5539,6 +5703,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 100,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-druid-01"
@@ -5584,6 +5749,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 40,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-executioner-01"
@@ -5629,6 +5795,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 45,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-lazure-01"
@@ -5675,6 +5842,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 15,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-leather-03"
@@ -5720,6 +5888,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 50,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-lion-01"
@@ -5765,6 +5934,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 35,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-mercenary-01"
@@ -5810,6 +5980,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 30,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-rust-champion-01"
@@ -5855,6 +6026,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 7,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-sand-01"
@@ -5900,6 +6072,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 60,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-stormguard-01"
@@ -5945,6 +6118,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 70,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-viper-01"
@@ -6019,6 +6193,12 @@
     "name": "Boar Boss 01 Front Greave",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 0,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
@@ -6056,6 +6236,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 80,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-bone-01"
@@ -6101,6 +6282,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 90,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-cathedral-01"
@@ -6147,6 +6329,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 25,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-chainmail-01"
@@ -6193,6 +6376,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 1,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-cloth-01"
@@ -6238,6 +6422,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 100,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-druid-01"
@@ -6283,6 +6468,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 40,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-executioner-01"
@@ -6328,6 +6514,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 45,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-lazure-01"
@@ -6374,6 +6561,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 15,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-leather-01"
@@ -6419,6 +6607,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 50,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-lion-01"
@@ -6464,6 +6653,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 35,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-mercenary-01"
@@ -6509,6 +6699,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 30,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-rust-champion-01"
@@ -6554,6 +6745,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 7,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-sand-01"
@@ -6599,6 +6791,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 60,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-stormguard-01"
@@ -6644,6 +6837,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 70,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-viper-01"
@@ -6718,6 +6912,12 @@
     "name": "Boar Boss 01 Front Shinguard",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 0,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
@@ -6755,6 +6955,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 80,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-bone-01"
@@ -6800,6 +7001,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 90,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-cathedral-01"
@@ -6846,6 +7048,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 25,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-chainmail-01"
@@ -6892,6 +7095,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 1,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-cloth-01"
@@ -6937,6 +7141,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 100,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-druid-01"
@@ -6982,6 +7187,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 40,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-executioner-01"
@@ -7027,6 +7233,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 45,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-lazure-01"
@@ -7072,6 +7279,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 50,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-lion-01"
@@ -7117,6 +7325,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 35,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-mercenary-01"
@@ -7162,6 +7371,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 30,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-rust-champion-01"
@@ -7207,6 +7417,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 7,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-sand-01"
@@ -7252,6 +7463,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 60,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-stormguard-01"
@@ -7297,6 +7509,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 70,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-viper-01"
@@ -7371,6 +7584,12 @@
     "name": "Boar Boss 01 Front Shoulderguard",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 0,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
@@ -7408,6 +7627,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 80,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-bone-01"
@@ -7453,6 +7673,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 90,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-cathedral-01"
@@ -7499,6 +7720,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 25,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-chainmail-01"
@@ -7545,6 +7767,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 1,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-cloth-01"
@@ -7590,6 +7813,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 100,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-druid-01"
@@ -7635,6 +7859,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 40,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-executioner-01"
@@ -7680,6 +7905,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 45,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-lazure-01"
@@ -7725,6 +7951,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 50,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-lion-01"
@@ -7770,6 +7997,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 35,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-mercenary-01"
@@ -7815,6 +8043,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 30,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-rust-champion-01"
@@ -7860,6 +8089,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 7,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-sand-01"
@@ -7905,6 +8135,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 60,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-stormguard-01"
@@ -7950,6 +8181,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 70,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-viper-01"
@@ -8024,6 +8256,12 @@
     "name": "Boar Boss 01 Front Wrist",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 0,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
@@ -8061,6 +8299,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 80,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-bone-01"
@@ -8106,6 +8345,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 90,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-cathedral-01"
@@ -8152,6 +8392,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 25,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-chainmail-01"
@@ -8198,6 +8439,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 1,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-cloth-01"
@@ -8243,6 +8485,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 100,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-druid-01"
@@ -8288,6 +8531,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 40,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-executioner-01"
@@ -8333,6 +8577,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 45,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-lazure-01"
@@ -8378,6 +8623,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 50,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-lion-01"
@@ -8423,6 +8669,7 @@
       "grade": "mid"
     },
     "armorHp": 0,
+    "levelRequirement": 35,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-mercenary-01"
@@ -8468,6 +8715,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 30,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-rust-champion-01"
@@ -8513,6 +8761,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 7,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-sand-01"
@@ -8558,6 +8807,7 @@
       "grade": "high"
     },
     "armorHp": 0,
+    "levelRequirement": 60,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-stormguard-01"
@@ -8603,6 +8853,7 @@
       "grade": "low"
     },
     "armorHp": 0,
+    "levelRequirement": 70,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-viper-01"
@@ -8677,6 +8928,12 @@
     "name": "Boar Boss 01 Helmet",
     "kind": "armor",
     "rarity": "unique",
+    "equipmentSet": {
+      "id": "boar_boss",
+      "name": "Boar Boss",
+      "rank": 15,
+      "grade": "boss"
+    },
     "armorHp": 35,
     "equipmentSlot": "helmet",
     "assetKeys": {
@@ -8714,6 +8971,7 @@
       "grade": "mid"
     },
     "armorHp": 55,
+    "levelRequirement": 80,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-bone-01"
@@ -8759,6 +9017,7 @@
       "grade": "high"
     },
     "armorHp": 61,
+    "levelRequirement": 90,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-cathedral-01"
@@ -8805,6 +9064,7 @@
       "grade": "starter"
     },
     "armorHp": 8,
+    "levelRequirement": 25,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-chainmail-01"
@@ -8851,6 +9111,7 @@
       "grade": "starter"
     },
     "armorHp": 2,
+    "levelRequirement": 1,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-cloth-01"
@@ -8933,6 +9194,7 @@
       "grade": "high"
     },
     "armorHp": 67,
+    "levelRequirement": 100,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-druid-01"
@@ -8978,6 +9240,7 @@
       "grade": "high"
     },
     "armorHp": 20,
+    "levelRequirement": 40,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-executioner-01"
@@ -9023,6 +9286,7 @@
       "grade": "low"
     },
     "armorHp": 31,
+    "levelRequirement": 45,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-lazure-01"
@@ -9068,6 +9332,7 @@
       "grade": "mid"
     },
     "armorHp": 37,
+    "levelRequirement": 50,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-lion-01"
@@ -9113,6 +9378,7 @@
       "grade": "mid"
     },
     "armorHp": 16,
+    "levelRequirement": 35,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-mercenary-01"
@@ -9158,6 +9424,7 @@
       "grade": "low"
     },
     "armorHp": 12,
+    "levelRequirement": 30,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-rust-champion-01"
@@ -9203,6 +9470,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
+    "levelRequirement": 7,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-sand-01"
@@ -9248,6 +9516,7 @@
       "grade": "high"
     },
     "armorHp": 44,
+    "levelRequirement": 60,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-stormguard-01"
@@ -9293,6 +9562,7 @@
       "grade": "low"
     },
     "armorHp": 50,
+    "levelRequirement": 70,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-viper-01"
@@ -9368,6 +9638,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorHp": 18,
+    "levelRequirement": 5,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-common-03"
@@ -9407,6 +9678,7 @@
     "kind": "armor",
     "rarity": "common",
     "armorHp": 25,
+    "levelRequirement": 10,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-common-04"
@@ -9446,6 +9718,7 @@
     "kind": "armor",
     "rarity": "epic",
     "armorHp": 125,
+    "levelRequirement": 50,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-epic-01"
@@ -9485,6 +9758,7 @@
     "kind": "armor",
     "rarity": "epic",
     "armorHp": 165,
+    "levelRequirement": 60,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-epic-02"
@@ -9523,7 +9797,8 @@
     "name": "Legendary 01 Shield",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 200,
+    "armorHp": 220,
+    "levelRequirement": 70,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-legendary-01"
@@ -9562,7 +9837,8 @@
     "name": "Legendary 02 Shield",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 200,
+    "armorHp": 290,
+    "levelRequirement": 80,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-legendary-02"
@@ -9589,7 +9865,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_legendary_02",
       "name": "Legendary 02 Shield",
-      "price": 2000,
+      "price": 2500,
       "itemIds": [
         "generated_equipment_shield_legendary_02"
       ],
@@ -9601,7 +9877,8 @@
     "name": "Mythical 01 Shield",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 200,
+    "armorHp": 380,
+    "levelRequirement": 90,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-mythical-01"
@@ -9628,7 +9905,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_mythical_01",
       "name": "Mythical 01 Shield",
-      "price": 2000,
+      "price": 3600,
       "itemIds": [
         "generated_equipment_shield_mythical_01"
       ],
@@ -9640,7 +9917,8 @@
     "name": "Mythical 02 Shield",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 200,
+    "armorHp": 500,
+    "levelRequirement": 100,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-mythical-02"
@@ -9667,7 +9945,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_mythical_02",
       "name": "Mythical 02 Shield",
-      "price": 2000,
+      "price": 5000,
       "itemIds": [
         "generated_equipment_shield_mythical_02"
       ],
@@ -9680,6 +9958,7 @@
     "kind": "armor",
     "rarity": "rare",
     "armorHp": 70,
+    "levelRequirement": 30,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-rare-01"
@@ -9719,6 +9998,7 @@
     "kind": "armor",
     "rarity": "rare",
     "armorHp": 95,
+    "levelRequirement": 40,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-rare-02"
@@ -9758,6 +10038,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorHp": 35,
+    "levelRequirement": 15,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-uncommon-01"
@@ -9797,6 +10078,7 @@
     "kind": "armor",
     "rarity": "uncommon",
     "armorHp": 50,
+    "levelRequirement": 25,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-uncommon-02"
@@ -9837,6 +10119,7 @@
     "rarity": "epic",
     "damageBonus": 45,
     "weaponClass": "axe",
+    "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-01"
@@ -9877,6 +10160,7 @@
     "rarity": "rare",
     "damageBonus": 21,
     "weaponClass": "axe",
+    "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-epic-axe-1"
@@ -9917,6 +10201,7 @@
     "rarity": "epic",
     "damageBonus": 25,
     "weaponClass": "axe",
+    "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-epic-axe-3"
@@ -9957,6 +10242,7 @@
     "rarity": "epic",
     "damageBonus": 29,
     "weaponClass": "axe",
+    "levelRequirement": 50,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-epic-axe-4"
@@ -9997,6 +10283,7 @@
     "rarity": "epic",
     "damageBonus": 33,
     "weaponClass": "axe",
+    "levelRequirement": 55,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-epic-axe-5"
@@ -10068,6 +10355,7 @@
     "rarity": "common",
     "damageBonus": 2,
     "weaponClass": "axe",
+    "levelRequirement": 1,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-norm-axe"
@@ -10108,6 +10396,7 @@
     "rarity": "rare",
     "damageBonus": 15,
     "weaponClass": "axe",
+    "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-rare-axe-1"
@@ -10148,6 +10437,7 @@
     "rarity": "rare",
     "damageBonus": 18,
     "weaponClass": "axe",
+    "levelRequirement": 35,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-rare-axe-2"
@@ -10188,6 +10478,7 @@
     "rarity": "common",
     "damageBonus": 3,
     "weaponClass": "axe",
+    "levelRequirement": 5,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-rusty-axe"
@@ -10228,6 +10519,7 @@
     "rarity": "common",
     "damageBonus": 4,
     "weaponClass": "axe",
+    "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-simple-axe"
@@ -10268,6 +10560,7 @@
     "rarity": "uncommon",
     "damageBonus": 6,
     "weaponClass": "axe",
+    "levelRequirement": 15,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-uncommon-axe-1"
@@ -10308,6 +10601,7 @@
     "rarity": "uncommon",
     "damageBonus": 8,
     "weaponClass": "axe",
+    "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-uncommon-axe-2"
@@ -10348,6 +10642,7 @@
     "rarity": "uncommon",
     "damageBonus": 10,
     "weaponClass": "axe",
+    "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-axe-uncommon-axe-3"
@@ -10462,6 +10757,7 @@
     "rarity": "common",
     "damageBonus": 1,
     "weaponClass": "mace",
+    "levelRequirement": 1,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-bad-club"
@@ -10533,6 +10829,7 @@
     "rarity": "common",
     "damageBonus": 2,
     "weaponClass": "mace",
+    "levelRequirement": 5,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-chatgpt-image-16-2026-18-08-05-2"
@@ -10604,6 +10901,7 @@
     "rarity": "epic",
     "damageBonus": 20,
     "weaponClass": "mace",
+    "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-epic-mace-1"
@@ -10644,6 +10942,7 @@
     "rarity": "epic",
     "damageBonus": 22,
     "weaponClass": "mace",
+    "levelRequirement": 50,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-epic-mace-2"
@@ -10684,6 +10983,7 @@
     "rarity": "epic",
     "damageBonus": 24,
     "weaponClass": "mace",
+    "levelRequirement": 55,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-epic-mace-3"
@@ -10724,6 +11024,7 @@
     "rarity": "epic",
     "damageBonus": 27,
     "weaponClass": "mace",
+    "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-epic-mace-4"
@@ -10764,6 +11065,7 @@
     "rarity": "legendary",
     "damageBonus": 34,
     "weaponClass": "mace",
+    "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-lg-mace-1"
@@ -10804,6 +11106,7 @@
     "rarity": "uncommon",
     "damageBonus": 4,
     "weaponClass": "mace",
+    "levelRequirement": 15,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-mace"
@@ -10844,6 +11147,7 @@
     "rarity": "uncommon",
     "damageBonus": 5,
     "weaponClass": "mace",
+    "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-mace1"
@@ -10884,6 +11188,7 @@
     "rarity": "rare",
     "damageBonus": 11,
     "weaponClass": "mace",
+    "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-rare-mace-1"
@@ -10924,6 +11229,7 @@
     "rarity": "rare",
     "damageBonus": 13,
     "weaponClass": "mace",
+    "levelRequirement": 35,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-rare-mace-2"
@@ -10964,6 +11270,7 @@
     "rarity": "rare",
     "damageBonus": 15,
     "weaponClass": "mace",
+    "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-rare-mace-3"
@@ -11004,6 +11311,7 @@
     "rarity": "common",
     "damageBonus": 3,
     "weaponClass": "mace",
+    "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-stone-mace"
@@ -11075,6 +11383,7 @@
     "rarity": "uncommon",
     "damageBonus": 7,
     "weaponClass": "mace",
+    "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-mace-uncommon-mace-4"
@@ -11248,6 +11557,7 @@
     "rarity": "epic",
     "damageBonus": 10,
     "weaponClass": "spear",
+    "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-epic-spear"
@@ -11288,6 +11598,7 @@
     "rarity": "epic",
     "damageBonus": 11,
     "weaponClass": "spear",
+    "levelRequirement": 50,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-epic-spear-1"
@@ -11359,6 +11670,7 @@
     "rarity": "epic",
     "damageBonus": 13,
     "weaponClass": "spear",
+    "levelRequirement": 55,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-epic-spear-4"
@@ -11399,6 +11711,7 @@
     "rarity": "epic",
     "damageBonus": 15,
     "weaponClass": "spear",
+    "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-epic-spear-5"
@@ -11439,6 +11752,7 @@
     "rarity": "legendary",
     "damageBonus": 19,
     "weaponClass": "spear",
+    "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-lg-spear-1"
@@ -11479,6 +11793,7 @@
     "rarity": "rare",
     "damageBonus": 7,
     "weaponClass": "spear",
+    "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-rare-spear"
@@ -11519,6 +11834,7 @@
     "rarity": "rare",
     "damageBonus": 8,
     "weaponClass": "spear",
+    "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-rare-spear-1"
@@ -11559,6 +11875,7 @@
     "rarity": "epic",
     "damageBonus": 24,
     "weaponClass": "sword",
+    "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-epic-sword-1"
@@ -11692,6 +12009,7 @@
     "rarity": "epic",
     "damageBonus": 26,
     "weaponClass": "sword",
+    "levelRequirement": 48,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-epic-sword-3"
@@ -11732,6 +12050,7 @@
     "rarity": "epic",
     "damageBonus": 27,
     "weaponClass": "sword",
+    "levelRequirement": 51,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-epic-sword-4"
@@ -11803,6 +12122,7 @@
     "rarity": "epic",
     "damageBonus": 29,
     "weaponClass": "sword",
+    "levelRequirement": 54,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-epic-sword-7"
@@ -11843,6 +12163,7 @@
     "rarity": "epic",
     "damageBonus": 30,
     "weaponClass": "sword",
+    "levelRequirement": 57,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-epic-sword-8"
@@ -11883,6 +12204,7 @@
     "rarity": "epic",
     "damageBonus": 32,
     "weaponClass": "sword",
+    "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-epic-sword-9"
@@ -11954,6 +12276,7 @@
     "rarity": "legendary",
     "damageBonus": 44,
     "weaponClass": "sword",
+    "levelRequirement": 70,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-lg-sword-1"
@@ -11994,6 +12317,7 @@
     "rarity": "legendary",
     "damageBonus": 49,
     "weaponClass": "sword",
+    "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-lg-sword-2"
@@ -12034,6 +12358,7 @@
     "rarity": "rare",
     "damageBonus": 14,
     "weaponClass": "sword",
+    "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-rare-sword-1"
@@ -12074,6 +12399,7 @@
     "rarity": "rare",
     "damageBonus": 15,
     "weaponClass": "sword",
+    "levelRequirement": 35,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-rare-sword-2"
@@ -12114,6 +12440,7 @@
     "rarity": "rare",
     "damageBonus": 16,
     "weaponClass": "sword",
+    "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-rare-sword-3"
@@ -12278,6 +12605,7 @@
     "rarity": "common",
     "damageBonus": 1,
     "weaponClass": "sword",
+    "levelRequirement": 1,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-rusty-sword"
@@ -12318,6 +12646,7 @@
     "rarity": "common",
     "damageBonus": 4,
     "weaponClass": "sword",
+    "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-sword-sharp"
@@ -12358,6 +12687,7 @@
     "rarity": "uncommon",
     "damageBonus": 5,
     "weaponClass": "sword",
+    "levelRequirement": 15,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-sword1"
@@ -12398,6 +12728,7 @@
     "rarity": "uncommon",
     "damageBonus": 7,
     "weaponClass": "sword",
+    "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-uncommon-sword-2"
@@ -12438,6 +12769,7 @@
     "rarity": "uncommon",
     "damageBonus": 9,
     "weaponClass": "sword",
+    "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-uncommon-sword-3"
@@ -12484,6 +12816,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
+    "levelRequirement": 15,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-leather-01"
@@ -12530,6 +12863,7 @@
       "grade": "starter"
     },
     "armorHp": 4,
+    "levelRequirement": 15,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-leather-01"
@@ -12576,6 +12910,7 @@
       "grade": "starter"
     },
     "armorHp": 4,
+    "levelRequirement": 15,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-leather-01"
@@ -12622,6 +12957,7 @@
       "grade": "starter"
     },
     "armorHp": 3,
+    "levelRequirement": 15,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-leather-01"
@@ -12668,6 +13004,7 @@
       "grade": "starter"
     },
     "armorHp": 8,
+    "levelRequirement": 15,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-leather-01"
@@ -12714,6 +13051,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 15,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-leather-01"
@@ -12760,6 +13098,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 15,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-leather-01"
@@ -12806,6 +13145,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 15,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-leather-01"
@@ -12852,6 +13192,7 @@
       "grade": "starter"
     },
     "armorHp": 0,
+    "levelRequirement": 15,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-leather-01"
@@ -12898,6 +13239,7 @@
       "grade": "starter"
     },
     "armorHp": 5,
+    "levelRequirement": 15,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-leather-01"
@@ -12938,6 +13280,7 @@
     "rarity": "common",
     "damageBonus": 2,
     "weaponClass": "sword",
+    "levelRequirement": 5,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-sword-01"

@@ -25,7 +25,7 @@ import {
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { resolveEnemyTurn, resolvePlayerTurn, shouldAutoRestPlayer, type ActionId, type CombatState } from "./combat";
+import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
@@ -129,6 +129,8 @@ const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
+const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
+const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -372,21 +374,6 @@ function handleAction(actionId: ActionId): void {
   void scheduleEnemyTurn(nextState, actionAnimation);
 }
 
-async function maybeAutoRestPlayerTurn(): Promise<void> {
-  if (!shouldAutoRestPlayer(state)) {
-    return;
-  }
-
-  lastActionClick = "rest:auto";
-  logTurnProbe("auto-rest", state, enemyTimerStatus, "rest");
-
-  const nextState = resolvePlayerTurn(state, "rest");
-
-  const actionAnimation = commitState(nextState);
-
-  await scheduleEnemyTurn(nextState, actionAnimation);
-}
-
 async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimation: Promise<void> = Promise.resolve()): Promise<void> {
   if (enemyState.result !== "playing" || enemyState.activeTurn !== "enemy") {
     return;
@@ -400,6 +387,12 @@ async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimatio
   logTurnProbe("enemy-scheduled", enemyState, enemyTimerStatus);
 
   await previousActionAnimation;
+
+  if (turnSequenceToken !== token || state !== enemyState) {
+    return;
+  }
+
+  await delay(PLAYER_TO_ENEMY_TURN_PACING_MS);
 
   if (turnSequenceToken !== token || state !== enemyState) {
     return;
@@ -420,8 +413,9 @@ async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimatio
     return;
   }
 
-  if (shouldAutoRestPlayer(state)) {
-    await maybeAutoRestPlayerTurn();
+  await delay(ENEMY_TO_PLAYER_TURN_PACING_MS);
+
+  if (turnSequenceToken !== token || state !== nextState) {
     return;
   }
 

@@ -521,7 +521,11 @@ export function isFighterInClinchRange(state: CombatState, actor: TurnOwner): bo
 }
 
 export function shouldAutoRestPlayer(state: CombatState): boolean {
-  return state.result === "playing" && state.activeTurn === "player" && state.player.stamina <= 0 && canUseAction(state, "rest", "player");
+  return isPlayerExhausted(state) && canUseAction(state, "rest", "player");
+}
+
+export function isPlayerExhausted(state: CombatState): boolean {
+  return state.result === "playing" && state.activeTurn === "player" && state.player.stamina <= 0;
 }
 
 export function canUseAction(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
@@ -538,6 +542,10 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   const actionRangeMax = getActionRangeMax(action, fighter);
   const fighterClinchRange = getFighterClinchRange(fighter);
   const fighterInClinch = isFighterInClinchRange(state, actor);
+
+  if (actor === "player" && fighter.stamina <= 0 && actionId !== "rest") {
+    return false;
+  }
 
   if (actionId === "forward") {
     return state.distance > fighterClinchRange;

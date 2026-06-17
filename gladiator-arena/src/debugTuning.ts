@@ -372,8 +372,8 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     heavy: { x: 0, y: 18, rotation: 0 },
     switchWeapon: { x: -145, y: -200, rotation: -14 },
     shuriken: { x: 100, y: -148, rotation: 12 },
-    taunt: { x: 30, y: -130, rotation: 0 },
-    rest: { x: -30, y: -130, rotation: 12 },
+    taunt: { x: 30, y: -120, rotation: 0 },
+    rest: { x: -30, y: -120, rotation: 12 },
   }),
   clinch: createClassicActionButtonSlots({
     forward: { x: 0, y: 26, rotation: 0 },
@@ -384,8 +384,8 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     heavy: { x: 60, y: -185, rotation: 0 },
     switchWeapon: { x: -120, y: -92, rotation: -18 },
     shuriken: { x: 100, y: -148, rotation: 12 },
-    taunt: { x: 30, y: -130, rotation: 0 },
-    rest: { x: -30, y: -130, rotation: 12 },
+    taunt: { x: 30, y: -120, rotation: 0 },
+    rest: { x: -30, y: -120, rotation: 12 },
   }),
   bowDistance: createClassicActionButtonSlots({
     forward: { x: -40, y: -52, rotation: -6 },
@@ -946,7 +946,7 @@ export const DEFAULT_TAUNT_ANIMATION: BodyAnimationTuning = {
 };
 export const DEFAULT_REST_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 1280,
+  duration: 1000,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },

@@ -9230,6 +9230,21 @@ body.debug-active .action-arc__center {
   --token-accent: rgba(4, 30, 27, 0.48);
 }
 
+.action-arc__button.action-arc__button--exhausted-rest:not(:disabled) {
+  --token-ring: rgba(105, 239, 255, 0.98);
+  --token-ring-echo: rgba(89, 235, 255, 0.38);
+  --token-face-top: #52c8bd;
+  --token-face-mid: #197f7b;
+  --token-face-bottom: #07383c;
+  --token-accent: rgba(18, 109, 111, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(198, 255, 252, 0.28),
+    inset 0 -7px 0 rgba(8, 2, 1, 0.48),
+    0 5px 0 #0e0503,
+    0 0 0 2px rgba(105, 239, 255, 0.34),
+    0 0 12px rgba(89, 235, 255, 0.34);
+}
+
 .action-arc__button[data-action="taunt"] {
   --action-utility-icon-size: 42px;
   --action-utility-icon-y: 0px;
@@ -9410,22 +9425,92 @@ body.debug-active .action-arc__center {
   display: none;
 }
 
+.action-arc__cost {
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  z-index: 6;
+  display: none;
+  min-width: 35px;
+  height: 21px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 7px 0 6px;
+  border: 1px solid rgba(214, 149, 60, 0.86);
+  border-radius: 999px;
+  color: #ffe0a0;
+  background:
+    linear-gradient(180deg, rgba(93, 45, 18, 0.98), rgba(32, 12, 5, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 145, 0.22),
+    0 2px 0 rgba(14, 5, 2, 0.88),
+    0 0 0 1px rgba(40, 19, 8, 0.44);
+  font: 900 13px/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0;
+  pointer-events: none;
+  text-shadow: 0 1px 0 rgba(13, 4, 2, 0.94);
+  transform: translateX(-50%);
+}
+
+.action-arc__button > span.action-arc__cost:not([hidden]) {
+  display: inline-flex;
+  visibility: visible;
+}
+
+.action-arc__button > span.action-arc__cost[hidden] {
+  display: none;
+}
+
+.action-arc__cost-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  background: url("./assets/ui/profile/stat-stamina.webp") center / contain no-repeat;
+  filter: drop-shadow(0 1px 0 rgba(12, 4, 2, 0.8));
+}
+
+.action-arc__cost-value {
+  display: block;
+  min-width: 7px;
+  transform: translateY(-0.5px);
+}
+
+.action-arc__cost--exhausts {
+  border-color: rgba(105, 239, 255, 0.92);
+  color: #b8fdff;
+  background:
+    linear-gradient(180deg, rgba(31, 93, 92, 0.96), rgba(8, 30, 32, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(186, 255, 252, 0.26),
+    0 2px 0 rgba(14, 5, 2, 0.88),
+    0 0 7px rgba(89, 235, 255, 0.38),
+    0 0 0 1px rgba(24, 93, 95, 0.6);
+  text-shadow: 0 1px 0 rgba(4, 18, 20, 0.95);
+}
+
+.action-arc__button:disabled .action-arc__cost {
+  opacity: 0.68;
+  filter: saturate(0.78) brightness(0.9);
+}
+
 .action-arc__button:disabled .action-arc__chance {
   opacity: 0.72;
   filter: saturate(0.78) brightness(0.9);
 }
 
 .action-arc__chance--rest-boosted {
-  border-color: rgba(105, 239, 255, 0.92);
-  color: #b8fdff;
+  border-color: rgba(104, 172, 96, 0.88);
+  color: #d9f0bf;
   background:
-    linear-gradient(180deg, rgba(31, 93, 92, 0.96), rgba(8, 30, 32, 0.98));
+    linear-gradient(180deg, rgba(42, 82, 39, 0.96), rgba(16, 39, 20, 0.98));
   box-shadow:
-    inset 0 1px 0 rgba(186, 255, 252, 0.28),
+    inset 0 1px 0 rgba(209, 241, 176, 0.22),
     0 2px 0 rgba(15, 5, 2, 0.9),
-    0 0 8px rgba(89, 235, 255, 0.46),
-    0 0 0 1px rgba(24, 93, 95, 0.62);
-  text-shadow: 0 1px 0 rgba(4, 18, 20, 0.95);
+    0 0 6px rgba(75, 136, 66, 0.32),
+    0 0 0 1px rgba(42, 92, 41, 0.58);
+  text-shadow: 0 1px 0 rgba(8, 22, 10, 0.95);
 }
 
 .classic-action-bar .action-arc__button {
@@ -9475,7 +9560,37 @@ body.debug-active .action-arc__center {
 }
 
 .classic-action-bar .classic-action-bar__chance--rest-boosted {
-  filter: drop-shadow(0 0 5px rgba(89, 235, 255, 0.65));
+  filter: drop-shadow(0 0 5px rgba(75, 136, 66, 0.58));
+}
+
+.classic-action-bar .classic-action-bar__cost {
+  left: 50%;
+  top: 50%;
+  bottom: auto;
+  z-index: 5;
+  margin-top: 0;
+  transform:
+    translate(calc(-50% + var(--classic-cost-x, 0px)), calc(-50% + var(--classic-cost-y, 0px)))
+    rotate(var(--classic-cost-counter-rotation, 0deg));
+  transition:
+    filter 120ms ease,
+    opacity 150ms ease,
+    visibility 150ms ease,
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.classic-action-bar .classic-action-bar__cost:not([hidden]) {
+  display: inline-flex;
+  visibility: visible;
+}
+
+.classic-action-bar .classic-action-bar__cost[hidden] {
+  display: none;
+}
+
+.classic-action-bar .classic-action-bar__cost--dimmed {
+  opacity: 0.62;
+  filter: saturate(0.78) brightness(0.9);
 }
 
 .classic-action-bar .action-arc__button.classic-action-bar__button--visible {

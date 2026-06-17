@@ -1,5 +1,13 @@
 import { DEFAULT_ACTION_BUTTON_SCALE } from "./arenaLayout";
-import { getActionHitChanceLabel, getActionTokenIconUrl, pressActionTokenButton, syncActionTokenButton, type ActionTokenTuning } from "./actionArc";
+import {
+  createActionCostBadgeElement,
+  getActionHitChanceLabel,
+  getActionTokenIconUrl,
+  pressActionTokenButton,
+  syncActionCostBadgeElement,
+  syncActionTokenButton,
+  type ActionTokenTuning,
+} from "./actionArc";
 import {
   actionOrder,
   actions,
@@ -11,6 +19,7 @@ import {
   getFighterClinchRange,
   getActionTitle,
   isFighterInClinchRange,
+  isPlayerExhausted,
   isRangedFighter,
   type ActionId,
   type CombatState,
@@ -30,6 +39,7 @@ const CLASSIC_WHEEL_TURN_MS = 520;
 const CLASSIC_WHEEL_BASE_DIAMETER = 420;
 const CLASSIC_WHEEL_SCREEN_PADDING_X = 12;
 const CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y = -40;
+const CLASSIC_COST_BADGE_SCREEN_OFFSET_Y = 32;
 const CLASSIC_WHEEL_RANGE_MODES: ClassicWheelRangeMode[] = ["far", "near", "melee", "clinch", "bow"];
 
 interface ClassicActionSlot {
@@ -43,6 +53,7 @@ interface ClassicButtonLayer {
   element: HTMLDivElement;
   buttons: Map<ActionId, HTMLButtonElement>;
   chanceBadges: Map<ActionId, HTMLSpanElement>;
+  costBadges: Map<ActionId, HTMLSpanElement>;
   mode?: ClassicWheelMode;
   angle: number;
 }
@@ -182,12 +193,13 @@ export function mountClassicActionBar(
     for (const [actionId, button] of layer.buttons) {
       const icon = button.querySelector<HTMLElement>(".action-arc__icon");
       const chanceBadge = layer.chanceBadges.get(actionId);
+      const costBadge = layer.costBadges.get(actionId);
       const slot = visibleSlots.get(actionId);
       const isVisible = shouldShowButtons && Boolean(slot);
       const isDimmed = isVisible && !isInteractiveLayer;
       const projectedSlot = slot ? projectSlotForWheelAngle(slot, layer.angle) : undefined;
 
-      if (!icon || !chanceBadge) {
+      if (!icon || !chanceBadge || !costBadge) {
         continue;
       }
 
@@ -196,18 +208,20 @@ export function mountClassicActionBar(
       button.style.setProperty("--classic-slot-rotation", `${formatCssNumber(projectedSlot?.rotation ?? 0)}deg`);
       syncActionTokenButton(button, icon, actionId, tuning, buttonScale, getActionTokenIconUrl(actionId, state));
       const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, projectedSlot, isVisible, wheelRotationAngle);
+      const costLabel = syncClassicActionCostBadge(costBadge, actionId, state, projectedSlot, isVisible, isDimmed, wheelRotationAngle, buttonScale);
       button.disabled = !isInteractiveLayer || !isVisible || !canUseAction(state, actionId, "player");
       button.tabIndex = isVisible && isInteractiveLayer ? 0 : -1;
       button.setAttribute("aria-hidden", isVisible ? "false" : "true");
       button.classList.toggle("classic-action-bar__button--visible", isVisible);
       button.classList.toggle("classic-action-bar__button--hidden", !isVisible);
       button.classList.toggle("classic-action-bar__button--dimmed", isDimmed);
+      button.classList.toggle("action-arc__button--exhausted-rest", isVisible && actionId === "rest" && isPlayerExhausted(state));
       chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
 
       const title = getActionTitle(actionId, state.player);
 
-      button.setAttribute("aria-label", `${title} ${actions[actionId].detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
-      button.title = `${title} ${actions[actionId].detail}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
+      button.setAttribute("aria-label", `${title} ${actions[actionId].detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
+      button.title = `${title} ${actions[actionId].detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
     }
   }
 
@@ -383,6 +397,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
   const element = document.createElement("div");
   const buttons = new Map<ActionId, HTMLButtonElement>();
   const chanceBadges = new Map<ActionId, HTMLSpanElement>();
+  const costBadges = new Map<ActionId, HTMLSpanElement>();
 
   element.className = "classic-action-bar__layer";
 
@@ -390,6 +405,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
     const button = document.createElement("button");
     const icon = document.createElement("span");
     const chanceBadge = document.createElement("span");
+    const costBadge = createActionCostBadgeElement();
 
     button.type = "button";
     button.className = "action-arc__button classic-action-bar__button classic-action-bar__button--hidden";
@@ -399,6 +415,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
     chanceBadge.className = "action-arc__chance classic-action-bar__chance";
     chanceBadge.hidden = true;
     chanceBadge.setAttribute("aria-hidden", "true");
+    costBadge.classList.add("classic-action-bar__cost");
     button.append(icon);
     button.addEventListener("click", () => {
       button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
@@ -410,14 +427,17 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
     });
     buttons.set(actionId, button);
     chanceBadges.set(actionId, chanceBadge);
+    costBadges.set(actionId, costBadge);
     element.append(button);
     element.append(chanceBadge);
+    element.append(costBadge);
   }
 
   return {
     element,
     buttons,
     chanceBadges,
+    costBadges,
     angle: 0,
   };
 }
@@ -450,6 +470,32 @@ function syncClassicActionChanceBadge(
   badge.style.setProperty("--classic-chance-x", `${formatCssNumber(slot.x + screenOffset.x)}px`);
   badge.style.setProperty("--classic-chance-y", `${formatCssNumber(slot.y + screenOffset.y)}px`);
   badge.style.setProperty("--classic-chance-counter-rotation", `${formatCssNumber(-wheelRotationAngle)}deg`);
+  return label;
+}
+
+function syncClassicActionCostBadge(
+  badge: HTMLSpanElement,
+  actionId: ActionId,
+  state: CombatState,
+  slot: ClassicActionSlot | undefined,
+  isVisible: boolean,
+  isDimmed: boolean,
+  wheelRotationAngle: number,
+  buttonScale: number,
+): string | undefined {
+  const label = syncActionCostBadgeElement(badge, actionId, state, Boolean(slot) && isVisible);
+
+  if (!label || !slot || !isVisible) {
+    badge.classList.remove("classic-action-bar__cost--dimmed");
+    return undefined;
+  }
+
+  const screenOffset = projectPointForWheelAngle(0, CLASSIC_COST_BADGE_SCREEN_OFFSET_Y * buttonScale, wheelRotationAngle);
+
+  badge.style.setProperty("--classic-cost-x", `${formatCssNumber(slot.x + screenOffset.x)}px`);
+  badge.style.setProperty("--classic-cost-y", `${formatCssNumber(slot.y + screenOffset.y)}px`);
+  badge.style.setProperty("--classic-cost-counter-rotation", `${formatCssNumber(-wheelRotationAngle)}deg`);
+  badge.classList.toggle("classic-action-bar__cost--dimmed", isDimmed);
   return label;
 }
 

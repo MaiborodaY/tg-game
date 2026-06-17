@@ -54,7 +54,7 @@ test("bow attack resolves damage and uses shot naming in the log", () => {
   assert.match(nextState.log[0].text, /Power Shot/);
 });
 
-test("bow attacks stop after five shots until the fighter switches to melee", () => {
+test("bow attacks stop after five shots and exhausted fighter must rest before switching to melee", () => {
   let state = combat.freshState();
 
   state.player.weaponClass = "bow";
@@ -67,7 +67,14 @@ test("bow attacks stop after five shots until the fighter switches to melee", ()
   }
 
   assert.equal(state.player.bowShotsRemaining, 0);
+  assert.equal(state.player.stamina, 0);
   assert.equal(combat.canUseAction(state, "light"), false);
+  assert.equal(combat.canUseAction(state, "switchWeapon"), false);
+  assert.equal(combat.canUseAction(state, "rest"), true);
+
+  state = combat.resolvePlayerTurn(state, "rest");
+  state.activeTurn = "player";
+
   assert.equal(combat.canUseAction(state, "switchWeapon"), true);
 
   const switched = combat.resolvePlayerTurn(state, "switchWeapon");
