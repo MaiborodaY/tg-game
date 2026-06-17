@@ -83,7 +83,7 @@ let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
 let weaponShop: WeaponShopApi | undefined;
 let armoryShop: ArmoryShopApi | undefined;
-const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
+const PLAYER_TO_ENEMY_TURN_PACING_MS = 500;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 
 mountCityTimeToggle(cityTimeToggle, cityMenu);
