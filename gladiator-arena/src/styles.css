@@ -2325,6 +2325,12 @@ body.debug-active .city-menu__portrait-button:active {
     linear-gradient(180deg, rgba(99, 63, 34, 0.86), rgba(38, 17, 9, 0.94));
 }
 
+.city-arena-menu__fight--hard {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 229, 161, 0.2), transparent 34%),
+    linear-gradient(180deg, rgba(151, 55, 31, 0.92), rgba(48, 11, 7, 0.96));
+}
+
 .city-arena-menu__fight strong,
 .city-arena-menu__boss strong {
   overflow: hidden;

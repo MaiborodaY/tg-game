@@ -3,7 +3,7 @@ import type { BattleReward, HeroBaseStats, HeroEquipmentSlotKey, HeroItemId, Her
 
 export type ArenaOpponentId = string;
 export type ArenaBossId = string;
-export type ArenaDifficultyId = "easy" | "medium";
+export type ArenaDifficultyId = "easy" | "medium" | "hard";
 
 export interface ArenaGeneratedEquipmentPool {
   itemRarities: readonly HeroItemRarity[];
@@ -21,7 +21,8 @@ export interface ArenaRandomOpponentDefinition {
   difficultyId: ArenaDifficultyId;
   name: string;
   baseStats?: HeroBaseStats;
-  equipmentPool: ArenaGeneratedEquipmentPool;
+  randomBaseStatPoints?: number;
+  equipmentPools: readonly ArenaGeneratedEquipmentPool[];
   rewards: ArenaOpponentRewards;
 }
 
@@ -45,8 +46,7 @@ export interface ArenaBossDefinition {
 export interface ArenaTierDefinition {
   id: number;
   name: string;
-  enemyItemRarities: readonly HeroItemRarity[];
-  enemyEquipmentRollChance: number;
+  enemyEquipmentPools: readonly ArenaGeneratedEquipmentPool[];
   randomOpponentIds: readonly ArenaOpponentId[];
   bossIds: readonly ArenaBossId[];
 }
@@ -63,10 +63,7 @@ export const ARENA_RANDOM_OPPONENTS: readonly ArenaRandomOpponentDefinition[] = 
     difficultyId: "easy",
     name: "Training Dummy",
     baseStats: { strength: 0, agility: 0, vitality: 0 },
-    equipmentPool: {
-      itemRarities: [],
-      rollChance: 0,
-    },
+    equipmentPools: [],
     rewards: {
       win: { gold: 3, xp: 3 },
       loss: { gold: 1, xp: 1 },
@@ -77,12 +74,24 @@ export const ARENA_RANDOM_OPPONENTS: readonly ArenaRandomOpponentDefinition[] = 
     tierId: 1,
     difficultyId: "medium",
     name: "Grumbus",
-    equipmentPool: {
-      itemRarities: ["common"],
-      rollChance: 0.52,
-    },
+    equipmentPools: [{ itemRarities: ["common"], rollChance: 0.52 }],
     rewards: {
       win: BATTLE_WIN_REWARD,
+      loss: BATTLE_LOSS_REWARD,
+    },
+  },
+  {
+    id: "dust_arena_veteran",
+    tierId: 1,
+    difficultyId: "hard",
+    name: "Dust Arena Veteran",
+    randomBaseStatPoints: 3,
+    equipmentPools: [
+      { itemRarities: ["common"], rollChance: 0.7 },
+      { itemRarities: ["uncommon"], rollChance: 0.15 },
+    ],
+    rewards: {
+      win: { gold: 8, xp: 8 },
       loss: BATTLE_LOSS_REWARD,
     },
   },
@@ -101,8 +110,7 @@ const ARENA_TIER_IDS = [...new Set([DEFAULT_ARENA_TIER_ID, ...ARENA_RANDOM_OPPON
 export const ARENA_TIERS: readonly ArenaTierDefinition[] = ARENA_TIER_IDS.map((tierId) => ({
   id: tierId,
   name: formatArenaTierName(tierId),
-  enemyItemRarities: getArenaEnemyItemRaritiesForTier(tierId),
-  enemyEquipmentRollChance: getArenaEnemyEquipmentRollChanceForTier(tierId),
+  enemyEquipmentPools: getArenaEnemyEquipmentPoolsForTier(tierId),
   randomOpponentIds: ARENA_RANDOM_OPPONENTS.filter((opponent) => opponent.tierId === tierId).map((opponent) => opponent.id),
   bossIds: ARENA_BOSSES.filter((boss) => boss.tierId === tierId).map((boss) => boss.id),
 }));
@@ -135,12 +143,8 @@ function formatArenaTierName(tierId: number): string {
   return tierId === 1 ? "Dust Arena I" : `Dust Arena ${tierId}`;
 }
 
-function getArenaEnemyItemRaritiesForTier(tierId: number): readonly HeroItemRarity[] {
-  return getDefaultArenaRandomOpponentForTier(tierId)?.equipmentPool.itemRarities ?? ["common"];
-}
-
-function getArenaEnemyEquipmentRollChanceForTier(tierId: number): number {
-  return getDefaultArenaRandomOpponentForTier(tierId)?.equipmentPool.rollChance ?? 0.52;
+function getArenaEnemyEquipmentPoolsForTier(tierId: number): readonly ArenaGeneratedEquipmentPool[] {
+  return getDefaultArenaRandomOpponentForTier(tierId)?.equipmentPools ?? [{ itemRarities: ["common"], rollChance: 0.52 }];
 }
 
 function getDefaultArenaRandomOpponentForTier(tierId: number): ArenaRandomOpponentDefinition | undefined {

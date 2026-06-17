@@ -392,6 +392,12 @@ interface ArenaVisuals {
   enemyHud: HudVisual;
 }
 
+interface ArenaPreparedVisualState {
+  previousState?: CombatState;
+  playerSettings: PlayerSettings;
+  visuals: ArenaVisuals;
+}
+
 interface ArenaLayers {
   back: Phaser.GameObjects.Container;
   mid: Phaser.GameObjects.Container;
@@ -1471,36 +1477,19 @@ export class ArenaScene extends Phaser.Scene {
     applyLoopingBodyAnimation(this.visuals.enemy, time, idle, animationAmount);
   }
 
+  async prepareEntry(nextState: CombatState): Promise<void> {
+    await this.prepareStateVisuals(nextState);
+  }
+
   async sync(nextState: CombatState): Promise<void> {
-    const previousState = this.currentState;
-    const syncToken = this.syncToken + 1;
+    const prepared = await this.prepareStateVisuals(nextState);
 
-    this.syncToken = syncToken;
-    this.currentState = nextState;
-
-    if (!this.visuals) {
+    if (!prepared) {
       return;
     }
 
-    await ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.enemy.equipment]);
-    if (syncToken !== this.syncToken) {
-      return;
-    }
-
-    const playerSettings = getPlayerSettings();
-    const visuals = this.visuals;
+    const { previousState, playerSettings, visuals } = prepared;
     const actionAnimations: Promise<void>[] = [];
-
-    syncEnemyVisualForState(this, visuals, previousState, nextState);
-    resetDeathEffectsForLiveFighters(this, visuals, nextState);
-    renderScene(this, nextState, playerSettings);
-
-    const entryTransition = this.startArenaEntryTransition(nextState);
-
-    if (entryTransition) {
-      actionAnimations.push(entryTransition);
-    }
-
     const lastPlayerAction = nextState.lastPlayerAction;
     const lastEnemyAction = nextState.lastEnemyAction;
     let playerActionAnimation: ActionAnimationHandle | undefined;
@@ -1590,6 +1579,40 @@ export class ArenaScene extends Phaser.Scene {
     scheduleDeathEffects(this, nextState);
 
     return Promise.all(actionAnimations).then(() => undefined);
+  }
+
+  async playEntryTransition(current = this.currentState): Promise<void> {
+    if (!current) {
+      return;
+    }
+
+    await this.startArenaEntryTransition(current);
+  }
+
+  private async prepareStateVisuals(nextState: CombatState): Promise<ArenaPreparedVisualState | undefined> {
+    const previousState = this.currentState;
+    const syncToken = this.syncToken + 1;
+
+    this.syncToken = syncToken;
+    this.currentState = nextState;
+
+    if (!this.visuals) {
+      return;
+    }
+
+    await ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.enemy.equipment]);
+    if (syncToken !== this.syncToken) {
+      return;
+    }
+
+    const playerSettings = getPlayerSettings();
+    const visuals = this.visuals;
+
+    syncEnemyVisualForState(this, visuals, previousState, nextState);
+    resetDeathEffectsForLiveFighters(this, visuals, nextState);
+    renderScene(this, nextState, playerSettings);
+
+    return { previousState, playerSettings, visuals };
   }
 
   private startArenaEntryTransition(current: CombatState): Promise<void> | undefined {

@@ -82,6 +82,8 @@ const cityArenaEasyReward = document.querySelector<HTMLElement>("#cityArenaEasyR
 const cityArenaEasyButton = document.querySelector<HTMLButtonElement>("#cityArenaEasyButton");
 const cityArenaRandomReward = document.querySelector<HTMLElement>("#cityArenaRandomReward");
 const cityArenaRandomButton = document.querySelector<HTMLButtonElement>("#cityArenaRandomButton");
+const cityArenaHardReward = document.querySelector<HTMLElement>("#cityArenaHardReward");
+const cityArenaHardButton = document.querySelector<HTMLButtonElement>("#cityArenaHardButton");
 const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
@@ -416,6 +418,28 @@ function refreshArenaLayout(): void {
   });
 }
 
+function isActiveArenaEntry(scene: ArenaScene, token: number): boolean {
+  return arenaEntryToken === token && arenaScene === scene;
+}
+
+async function runArenaEntry(scene: ArenaScene, entryToken: number): Promise<void> {
+  try {
+    await scene.prepareEntry(state);
+
+    if (!isActiveArenaEntry(scene, entryToken)) {
+      return;
+    }
+
+    finishArenaEntryGate(entryToken);
+    await scene.playEntryTransition(state);
+  } finally {
+    if (isActiveArenaEntry(scene, entryToken)) {
+      finishArenaEntryGate(entryToken);
+      refreshArenaLayout();
+    }
+  }
+}
+
 function handleActionArcClick(event: Event): void {
   const { actionId, disabled } = (event as CustomEvent<{ actionId?: ActionId; disabled?: boolean }>).detail ?? {};
 
@@ -473,7 +497,7 @@ function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaE
 }
 
 function renderCityArenaMenu(): void {
-  if (!cityArenaTierName || !cityArenaEasyReward || !cityArenaRandomReward || !cityArenaBossList) {
+  if (!cityArenaTierName || !cityArenaEasyReward || !cityArenaRandomReward || !cityArenaHardReward || !cityArenaBossList) {
     return;
   }
 
@@ -481,11 +505,13 @@ function renderCityArenaMenu(): void {
   const randomOpponents = getArenaRandomOpponentsForTier(tier.id);
   const easyOpponent = randomOpponents.find((opponent) => opponent.difficultyId === "easy");
   const randomOpponent = randomOpponents.find((opponent) => opponent.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID);
+  const hardOpponent = randomOpponents.find((opponent) => opponent.difficultyId === "hard");
   const bosses = getArenaBossesForTier(tier.id);
 
   cityArenaTierName.textContent = tier.name;
   cityArenaEasyReward.textContent = `Win ${formatCityArenaReward(easyOpponent?.rewards.win ?? { gold: 3, xp: 3 })}`;
   cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 5, xp: 5 })}`;
+  cityArenaHardReward.textContent = `Win ${formatCityArenaReward(hardOpponent?.rewards.win ?? { gold: 8, xp: 8 })}`;
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
 }
 
@@ -663,12 +689,7 @@ function mountArena(): void {
       }
 
       arenaScene = scene;
-      const arenaEntryAnimation = arenaScene.sync(state);
-
-      void arenaEntryAnimation.finally(() => {
-        finishArenaEntryGate(entryToken);
-      });
-      refreshArenaLayout();
+      void runArenaEntry(scene, entryToken);
     }, handleAction, hero.equipment);
   });
 }
@@ -1099,6 +1120,9 @@ cityArenaEasyButton?.addEventListener("click", () => {
 });
 cityArenaRandomButton?.addEventListener("click", () => {
   startSelectedArena({ kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID });
+});
+cityArenaHardButton?.addEventListener("click", () => {
+  startSelectedArena({ kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: "hard" });
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);

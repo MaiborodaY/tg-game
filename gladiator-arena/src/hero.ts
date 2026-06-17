@@ -289,12 +289,8 @@ export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [DEFAULT_ENEMY_VISUAL_P
 
 export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_ARENA_TIER_ID): EnemyLoadout {
   const tier = resolveArenaTierDefinition(tierId);
-  const equipmentPool: ArenaGeneratedEquipmentPool = {
-    itemRarities: tier.enemyItemRarities,
-    rollChance: tier.enemyEquipmentRollChance,
-  };
 
-  return createRandomEnemyLoadoutFromPool(equipmentPool, random);
+  return createRandomEnemyLoadoutFromPools(tier.enemyEquipmentPools, random);
 }
 
 export function createArenaRandomEnemyEncounter(
@@ -340,18 +336,20 @@ export function createArenaBossEncounter(bossId: string): ArenaEncounter {
   };
 }
 
-function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipmentPool, random = Math.random): EnemyLoadout {
+function createRandomEnemyLoadoutFromPools(equipmentPools: readonly ArenaGeneratedEquipmentPool[], random = Math.random): EnemyLoadout {
   const equipment = createDefaultHeroEquipment();
-  const shurikenItemId = rollEnemyShurikenItemId(equipmentPool.itemRarities, random);
+  const shurikenItemId = rollEnemyShurikenItemId(getEquipmentPoolItemRarities(equipmentPools), random);
 
-  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    const itemIds = getEnemyItemIdsBySlot(slotKey, equipmentPool.itemRarities);
+  equipmentPools.forEach((equipmentPool) => {
+    HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+      const itemIds = getEnemyItemIdsBySlot(slotKey, equipmentPool.itemRarities);
 
-    if (itemIds.length === 0 || random() >= equipmentPool.rollChance) {
-      return;
-    }
+      if (itemIds.length === 0 || random() >= equipmentPool.rollChance) {
+        return;
+      }
 
-    equipment[slotKey] = pickRandom(itemIds, random);
+      equipment[slotKey] = pickRandom(itemIds, random);
+    });
   });
 
   return {
@@ -368,10 +366,34 @@ function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipment
 }
 
 function createRandomEnemyLoadoutForOpponent(opponent: ArenaRandomOpponentDefinition, random = Math.random): EnemyLoadout {
+  const baseStats = createRandomOpponentBaseStats(opponent, random);
+
   return {
-    ...createRandomEnemyLoadoutFromPool(opponent.equipmentPool, random),
-    ...(opponent.baseStats ? { baseStats: { ...opponent.baseStats } } : {}),
+    ...createRandomEnemyLoadoutFromPools(opponent.equipmentPools, random),
+    ...(baseStats ? { baseStats } : {}),
   };
+}
+
+function createRandomOpponentBaseStats(opponent: ArenaRandomOpponentDefinition, random: () => number): HeroBaseStats | undefined {
+  if (opponent.baseStats) {
+    return { ...opponent.baseStats };
+  }
+
+  const pointCount = Math.max(0, Math.floor(opponent.randomBaseStatPoints ?? 0));
+
+  if (pointCount <= 0) {
+    return undefined;
+  }
+
+  const baseStats: HeroBaseStats = { strength: 0, agility: 0, vitality: 0 };
+
+  for (let pointIndex = 0; pointIndex < pointCount; pointIndex += 1) {
+    const attribute = pickRandom(HERO_ATTRIBUTE_KEYS, random);
+
+    baseStats[attribute] += 1;
+  }
+
+  return baseStats;
 }
 
 function createBossEnemyLoadout(boss: ArenaBossDefinition): EnemyLoadout {
@@ -391,10 +413,7 @@ function createFallbackRandomOpponent(tier: ArenaTierDefinition): ArenaRandomOpp
     tierId: tier.id,
     difficultyId: DEFAULT_ARENA_DIFFICULTY_ID,
     name: "Grumbus",
-    equipmentPool: {
-      itemRarities: tier.enemyItemRarities,
-      rollChance: tier.enemyEquipmentRollChance,
-    },
+    equipmentPools: tier.enemyEquipmentPools,
     rewards: {
       win: BATTLE_WIN_REWARD,
       loss: BATTLE_LOSS_REWARD,
@@ -1191,6 +1210,10 @@ function getEnemyItemIdsBySlot(slotKey: HeroEquipmentSlotKey, itemRarities: read
       record.item.equipmentSlot === slotKey &&
       itemRarities.includes(getHeroItemRarity(record.item)),
   ).map((record) => record.item.id);
+}
+
+function getEquipmentPoolItemRarities(equipmentPools: readonly ArenaGeneratedEquipmentPool[]): HeroItemRarity[] {
+  return [...new Set(equipmentPools.flatMap((equipmentPool) => equipmentPool.itemRarities))];
 }
 
 function rollEnemyShurikenItemId(itemRarities: readonly HeroItemRarity[], random: () => number): HeroItemId | undefined {

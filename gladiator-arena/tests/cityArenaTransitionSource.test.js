@@ -29,9 +29,10 @@ test("city arena transition darkens the whole city UI", () => {
 test("battle screen starts dark while the arena entry camera pulls back", () => {
   assert.match(mainSource, /dom\.gameScreen\.classList\.add\("battle-screen--arena-entry"\)/);
   assert.match(mainSource, /const entryToken = beginArenaEntryGate\(\)/);
-  assert.match(mainSource, /const arenaEntryAnimation = arenaScene\.sync\(state\)/);
-  assert.match(mainSource, /arenaEntryAnimation\.finally/);
+  assert.match(mainSource, /void runArenaEntry\(scene, entryToken\)/);
+  assert.match(mainSource, /await scene\.prepareEntry\(state\)/);
   assert.match(mainSource, /finishArenaEntryGate\(entryToken\)/);
+  assert.match(mainSource, /await scene\.playEntryTransition\(state\)/);
   assert.match(stylesSource, /\.battle-screen::after/);
   assert.match(stylesSource, /\.battle-screen--arena-entry::after/);
   assert.match(stylesSource, /opacity: 1/);

@@ -211,6 +211,7 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(html.includes('id="cityArenaMenu"'), true);
   assert.equal(html.includes('id="cityArenaEasyButton"'), true);
   assert.equal(html.includes('id="cityArenaRandomButton"'), true);
+  assert.equal(html.includes('id="cityArenaHardButton"'), true);
   assert.equal(html.includes('id="cityArenaBossList"'), true);
   assert.equal(mainSource.includes("type ArenaMenuSelection"), true);
   assert.equal(mainSource.includes("createArenaEncounterForSelection"), true);
@@ -219,6 +220,7 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("getArenaBossesForTier"), true);
   assert.equal(mainSource.includes("city-menu--arena-select-open"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__fight--hard"), true);
   assert.equal(stylesSource.includes(".city-menu--arena-select-open .city-menu__nav"), true);
 });
 

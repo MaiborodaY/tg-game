@@ -307,6 +307,9 @@ test("arena reuses player settings snapshots during frame work", () => {
 test("arena starts close between fighters and eases back to the normal camera", () => {
   assert.equal(arenaSceneSource.includes('type ArenaEntryTransitionState = "pending" | "running" | "done"'), true);
   assert.equal(arenaSceneSource.includes("ARENA_ENTRY_START_ZOOM_MULTIPLIER"), true);
+  assert.equal(arenaSceneSource.includes("async prepareEntry(nextState: CombatState): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("async playEntryTransition(current = this.currentState): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("private async prepareStateVisuals(nextState: CombatState): Promise<ArenaPreparedVisualState | undefined>"), true);
   assert.equal(arenaSceneSource.includes("private startArenaEntryTransition(current: CombatState): Promise<void> | undefined"), true);
   assert.equal(arenaSceneSource.includes("getArenaEntryStartCameraTarget(finalTarget)"), true);
   assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS"), true);

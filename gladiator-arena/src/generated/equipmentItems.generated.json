@@ -37,12 +37,6 @@
         "cloth_breastplate_01"
       ],
       "categoryId": "body"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -82,12 +76,6 @@
         "generated_equipment_back_boot_bone_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -127,12 +115,6 @@
         "generated_equipment_back_boot_cathedral_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -173,12 +155,6 @@
         "generated_equipment_back_boot_chainmail_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -219,12 +195,6 @@
         "generated_equipment_back_boot_cloth_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -264,12 +234,6 @@
         "generated_equipment_back_boot_druid_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -309,12 +273,6 @@
         "generated_equipment_back_boot_executioner_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -354,12 +312,6 @@
         "generated_equipment_back_boot_lazure_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -399,12 +351,6 @@
         "generated_equipment_back_boot_lion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -444,12 +390,6 @@
         "generated_equipment_back_boot_mercenary_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -489,12 +429,6 @@
         "generated_equipment_back_boot_rust_champion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -534,12 +468,6 @@
         "generated_equipment_back_boot_sand_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -579,12 +507,6 @@
         "generated_equipment_back_boot_stormguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -624,12 +546,6 @@
         "generated_equipment_back_boot_viper_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -660,12 +576,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -705,12 +615,6 @@
         "generated_equipment_back_glove_bone_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -750,12 +654,6 @@
         "generated_equipment_back_glove_cathedral_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -796,12 +694,6 @@
         "generated_equipment_back_glove_chainmail_03"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -842,12 +734,6 @@
         "generated_equipment_back_glove_cloth_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -887,12 +773,6 @@
         "generated_equipment_back_glove_druid_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -932,12 +812,6 @@
         "generated_equipment_back_glove_executioner_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -977,12 +851,6 @@
         "generated_equipment_back_glove_lazure_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -1023,12 +891,6 @@
         "generated_equipment_back_glove_leather_03"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -1068,12 +930,6 @@
         "generated_equipment_back_glove_lion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -1113,12 +969,6 @@
         "generated_equipment_back_glove_mercenary_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -1158,12 +1008,6 @@
         "generated_equipment_back_glove_rust_champion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -1203,12 +1047,6 @@
         "generated_equipment_back_glove_sand_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -1248,12 +1086,6 @@
         "generated_equipment_back_glove_stormguard_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -1293,12 +1125,6 @@
         "generated_equipment_back_glove_viper_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -1329,12 +1155,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -1374,12 +1194,6 @@
         "generated_equipment_back_greave_bone_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -1419,12 +1233,6 @@
         "generated_equipment_back_greave_cathedral_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -1465,12 +1273,6 @@
         "generated_equipment_back_greave_chainmail_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -1511,12 +1313,6 @@
         "generated_equipment_back_greave_cloth_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -1556,12 +1352,6 @@
         "generated_equipment_back_greave_druid_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -1601,12 +1391,6 @@
         "generated_equipment_back_greave_executioner_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -1646,12 +1430,6 @@
         "generated_equipment_back_greave_lazure_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -1692,12 +1470,6 @@
         "generated_equipment_back_greave_leather_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -1737,12 +1509,6 @@
         "generated_equipment_back_greave_lion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -1782,12 +1548,6 @@
         "generated_equipment_back_greave_mercenary_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -1827,12 +1587,6 @@
         "generated_equipment_back_greave_rust_champion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -1872,12 +1626,6 @@
         "generated_equipment_back_greave_sand_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -1917,12 +1665,6 @@
         "generated_equipment_back_greave_stormguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -1962,12 +1704,6 @@
         "generated_equipment_back_greave_viper_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -1998,12 +1734,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -2043,12 +1773,6 @@
         "generated_equipment_back_shinguard_bone_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -2088,12 +1812,6 @@
         "generated_equipment_back_shinguard_cathedral_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -2134,12 +1852,6 @@
         "generated_equipment_back_shinguard_chainmail_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -2180,12 +1892,6 @@
         "generated_equipment_back_shinguard_cloth_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -2225,12 +1931,6 @@
         "generated_equipment_back_shinguard_druid_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -2270,12 +1970,6 @@
         "generated_equipment_back_shinguard_executioner_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -2315,12 +2009,6 @@
         "generated_equipment_back_shinguard_lazure_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -2360,12 +2048,6 @@
         "generated_equipment_back_shinguard_lion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -2405,12 +2087,6 @@
         "generated_equipment_back_shinguard_mercenary_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -2450,12 +2126,6 @@
         "generated_equipment_back_shinguard_rust_champion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -2495,12 +2165,6 @@
         "generated_equipment_back_shinguard_sand_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -2540,12 +2204,6 @@
         "generated_equipment_back_shinguard_stormguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -2585,12 +2243,6 @@
         "generated_equipment_back_shinguard_viper_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -2621,12 +2273,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -2666,12 +2312,6 @@
         "generated_equipment_back_shoulderguard_bone_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -2711,12 +2351,6 @@
         "generated_equipment_back_shoulderguard_cathedral_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -2757,12 +2391,6 @@
         "generated_equipment_back_shoulderguard_chainmail_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -2803,12 +2431,6 @@
         "generated_equipment_back_shoulderguard_cloth_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -2848,12 +2470,6 @@
         "generated_equipment_back_shoulderguard_druid_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -2893,12 +2509,6 @@
         "generated_equipment_back_shoulderguard_executioner_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -2938,12 +2548,6 @@
         "generated_equipment_back_shoulderguard_lazure_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -2983,12 +2587,6 @@
         "generated_equipment_back_shoulderguard_lion_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -3028,12 +2626,6 @@
         "generated_equipment_back_shoulderguard_mercenary_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -3073,12 +2665,6 @@
         "generated_equipment_back_shoulderguard_rust_champion_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -3118,12 +2704,6 @@
         "generated_equipment_back_shoulderguard_sand_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -3163,12 +2743,6 @@
         "generated_equipment_back_shoulderguard_stormguard_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -3208,12 +2782,6 @@
         "generated_equipment_back_shoulderguard_viper_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -3244,12 +2812,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -3289,12 +2851,6 @@
         "generated_equipment_back_wrist_bone_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -3334,12 +2890,6 @@
         "generated_equipment_back_wrist_cathedral_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -3380,12 +2930,6 @@
         "generated_equipment_back_wrist_chainmail_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -3426,12 +2970,6 @@
         "generated_equipment_back_wrist_cloth_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -3471,12 +3009,6 @@
         "generated_equipment_back_wrist_druid_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -3516,12 +3048,6 @@
         "generated_equipment_back_wrist_executioner_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -3561,12 +3087,6 @@
         "generated_equipment_back_wrist_lazure_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -3606,12 +3126,6 @@
         "generated_equipment_back_wrist_lion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -3651,12 +3165,6 @@
         "generated_equipment_back_wrist_mercenary_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -3696,12 +3204,6 @@
         "generated_equipment_back_wrist_rust_champion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -3741,12 +3243,6 @@
         "generated_equipment_back_wrist_sand_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -3786,12 +3282,6 @@
         "generated_equipment_back_wrist_stormguard_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -3831,12 +3321,6 @@
         "generated_equipment_back_wrist_viper_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -3867,12 +3351,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -3912,12 +3390,6 @@
         "generated_equipment_breastplate_bone_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -3957,12 +3429,6 @@
         "generated_equipment_breastplate_cathedral_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -4003,12 +3469,6 @@
         "generated_equipment_breastplate_chainmail_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -4048,12 +3508,6 @@
         "generated_equipment_breastplate_druid_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -4093,12 +3547,6 @@
         "generated_equipment_breastplate_executioner_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -4138,12 +3586,6 @@
         "generated_equipment_breastplate_lazure_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -4183,12 +3625,6 @@
         "generated_equipment_breastplate_lion_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -4228,12 +3664,6 @@
         "generated_equipment_breastplate_mercenary_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -4273,12 +3703,6 @@
         "generated_equipment_breastplate_rust_champion_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -4318,12 +3742,6 @@
         "generated_equipment_breastplate_sand_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -4363,12 +3781,6 @@
         "generated_equipment_breastplate_stormguard_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -4408,12 +3820,6 @@
         "generated_equipment_breastplate_viper_01"
       ],
       "categoryId": "chest"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -4444,12 +3850,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -4489,12 +3889,6 @@
         "generated_equipment_front_boot_bone_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -4534,12 +3928,6 @@
         "generated_equipment_front_boot_cathedral_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -4580,12 +3968,6 @@
         "generated_equipment_front_boot_chainmail_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -4626,12 +4008,6 @@
         "generated_equipment_front_boot_cloth_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -4671,12 +4047,6 @@
         "generated_equipment_front_boot_druid_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -4716,12 +4086,6 @@
         "generated_equipment_front_boot_executioner_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -4761,12 +4125,6 @@
         "generated_equipment_front_boot_lazure_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -4806,12 +4164,6 @@
         "generated_equipment_front_boot_lion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -4851,12 +4203,6 @@
         "generated_equipment_front_boot_mercenary_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -4896,12 +4242,6 @@
         "generated_equipment_front_boot_rust_champion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -4941,12 +4281,6 @@
         "generated_equipment_front_boot_sand_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -4986,12 +4320,6 @@
         "generated_equipment_front_boot_stormguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -5031,12 +4359,6 @@
         "generated_equipment_front_boot_viper_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -5067,12 +4389,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -5112,12 +4428,6 @@
         "generated_equipment_front_glove_bone_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -5157,12 +4467,6 @@
         "generated_equipment_front_glove_cathedral_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -5203,12 +4507,6 @@
         "generated_equipment_front_glove_chainmail_03"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -5249,12 +4547,6 @@
         "generated_equipment_front_glove_cloth_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -5294,12 +4586,6 @@
         "generated_equipment_front_glove_druid_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -5339,12 +4625,6 @@
         "generated_equipment_front_glove_executioner_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -5384,12 +4664,6 @@
         "generated_equipment_front_glove_lazure_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -5430,12 +4704,6 @@
         "generated_equipment_front_glove_leather_03"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -5475,12 +4743,6 @@
         "generated_equipment_front_glove_lion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -5520,12 +4782,6 @@
         "generated_equipment_front_glove_mercenary_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -5565,12 +4821,6 @@
         "generated_equipment_front_glove_rust_champion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -5610,12 +4860,6 @@
         "generated_equipment_front_glove_sand_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -5655,12 +4899,6 @@
         "generated_equipment_front_glove_stormguard_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -5700,12 +4938,6 @@
         "generated_equipment_front_glove_viper_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -5736,12 +4968,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -5781,12 +5007,6 @@
         "generated_equipment_front_greave_bone_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -5826,12 +5046,6 @@
         "generated_equipment_front_greave_cathedral_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -5872,12 +5086,6 @@
         "generated_equipment_front_greave_chainmail_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -5918,12 +5126,6 @@
         "generated_equipment_front_greave_cloth_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -5963,12 +5165,6 @@
         "generated_equipment_front_greave_druid_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -6008,12 +5204,6 @@
         "generated_equipment_front_greave_executioner_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -6053,12 +5243,6 @@
         "generated_equipment_front_greave_lazure_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -6099,12 +5283,6 @@
         "generated_equipment_front_greave_leather_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -6144,12 +5322,6 @@
         "generated_equipment_front_greave_lion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -6189,12 +5361,6 @@
         "generated_equipment_front_greave_mercenary_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -6234,12 +5400,6 @@
         "generated_equipment_front_greave_rust_champion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -6279,12 +5439,6 @@
         "generated_equipment_front_greave_sand_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -6324,12 +5478,6 @@
         "generated_equipment_front_greave_stormguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -6369,12 +5517,6 @@
         "generated_equipment_front_greave_viper_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -6405,12 +5547,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -6450,12 +5586,6 @@
         "generated_equipment_front_shinguard_bone_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -6495,12 +5625,6 @@
         "generated_equipment_front_shinguard_cathedral_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -6541,12 +5665,6 @@
         "generated_equipment_front_shinguard_chainmail_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -6587,12 +5705,6 @@
         "generated_equipment_front_shinguard_cloth_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -6632,12 +5744,6 @@
         "generated_equipment_front_shinguard_druid_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -6677,12 +5783,6 @@
         "generated_equipment_front_shinguard_executioner_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -6722,12 +5822,6 @@
         "generated_equipment_front_shinguard_lazure_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -6767,12 +5861,6 @@
         "generated_equipment_front_shinguard_lion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -6812,12 +5900,6 @@
         "generated_equipment_front_shinguard_mercenary_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -6857,12 +5939,6 @@
         "generated_equipment_front_shinguard_rust_champion_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -6902,12 +5978,6 @@
         "generated_equipment_front_shinguard_sand_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -6947,12 +6017,6 @@
         "generated_equipment_front_shinguard_stormguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -6992,12 +6056,6 @@
         "generated_equipment_front_shinguard_viper_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -7028,12 +6086,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -7073,12 +6125,6 @@
         "generated_equipment_front_shoulderguard_bone_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -7118,12 +6164,6 @@
         "generated_equipment_front_shoulderguard_cathedral_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -7164,12 +6204,6 @@
         "generated_equipment_front_shoulderguard_chainmail_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -7210,12 +6244,6 @@
         "generated_equipment_front_shoulderguard_cloth_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -7255,12 +6283,6 @@
         "generated_equipment_front_shoulderguard_druid_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -7300,12 +6322,6 @@
         "generated_equipment_front_shoulderguard_executioner_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -7345,12 +6361,6 @@
         "generated_equipment_front_shoulderguard_lazure_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -7390,12 +6400,6 @@
         "generated_equipment_front_shoulderguard_lion_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -7435,12 +6439,6 @@
         "generated_equipment_front_shoulderguard_mercenary_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -7480,12 +6478,6 @@
         "generated_equipment_front_shoulderguard_rust_champion_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -7525,12 +6517,6 @@
         "generated_equipment_front_shoulderguard_sand_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -7570,12 +6556,6 @@
         "generated_equipment_front_shoulderguard_stormguard_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -7615,12 +6595,6 @@
         "generated_equipment_front_shoulderguard_viper_01"
       ],
       "categoryId": "shoulders"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -7651,12 +6625,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -7696,12 +6664,6 @@
         "generated_equipment_front_wrist_bone_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -7741,12 +6703,6 @@
         "generated_equipment_front_wrist_cathedral_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -7787,12 +6743,6 @@
         "generated_equipment_front_wrist_chainmail_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -7833,12 +6783,6 @@
         "generated_equipment_front_wrist_cloth_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -7878,12 +6822,6 @@
         "generated_equipment_front_wrist_druid_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -7923,12 +6861,6 @@
         "generated_equipment_front_wrist_executioner_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -7968,12 +6900,6 @@
         "generated_equipment_front_wrist_lazure_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -8013,12 +6939,6 @@
         "generated_equipment_front_wrist_lion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -8058,12 +6978,6 @@
         "generated_equipment_front_wrist_mercenary_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -8103,12 +7017,6 @@
         "generated_equipment_front_wrist_rust_champion_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -8148,12 +7056,6 @@
         "generated_equipment_front_wrist_sand_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -8193,12 +7095,6 @@
         "generated_equipment_front_wrist_stormguard_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -8238,12 +7134,6 @@
         "generated_equipment_front_wrist_viper_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -8274,12 +7164,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -8319,12 +7203,6 @@
         "generated_equipment_helmet_bone_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "bone",
-      "name": "Bone",
-      "rank": 11,
-      "grade": "mid"
     }
   },
   {
@@ -8364,12 +7242,6 @@
         "generated_equipment_helmet_cathedral_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "cathedral",
-      "name": "Cathedral",
-      "rank": 12,
-      "grade": "high"
     }
   },
   {
@@ -8410,12 +7282,6 @@
         "generated_equipment_helmet_chainmail_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "chainmail",
-      "name": "Chainmail",
-      "rank": 3,
-      "grade": "starter"
     }
   },
   {
@@ -8456,12 +7322,6 @@
         "generated_equipment_helmet_cloth_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -8493,12 +7353,6 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "equipmentSet": {
-      "id": "cloth",
-      "name": "Cloth",
-      "rank": 0,
-      "grade": "starter"
     }
   },
   {
@@ -8538,12 +7392,6 @@
         "generated_equipment_helmet_druid_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "druid",
-      "name": "Druid",
-      "rank": 13,
-      "grade": "high"
     }
   },
   {
@@ -8583,12 +7431,6 @@
         "generated_equipment_helmet_executioner_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "executioner",
-      "name": "Executioner",
-      "rank": 6,
-      "grade": "high"
     }
   },
   {
@@ -8628,12 +7470,6 @@
         "generated_equipment_helmet_lazure_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "lazure",
-      "name": "Lazure",
-      "rank": 7,
-      "grade": "low"
     }
   },
   {
@@ -8673,12 +7509,6 @@
         "generated_equipment_helmet_lion_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "lion",
-      "name": "Lion",
-      "rank": 8,
-      "grade": "mid"
     }
   },
   {
@@ -8718,12 +7548,6 @@
         "generated_equipment_helmet_mercenary_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "mercenary",
-      "name": "Mercenary",
-      "rank": 5,
-      "grade": "mid"
     }
   },
   {
@@ -8763,12 +7587,6 @@
         "generated_equipment_helmet_rust_champion_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "rust_champion",
-      "name": "Rust Champion",
-      "rank": 4,
-      "grade": "low"
     }
   },
   {
@@ -8808,12 +7626,6 @@
         "generated_equipment_helmet_sand_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "sand",
-      "name": "Sand",
-      "rank": 1,
-      "grade": "starter"
     }
   },
   {
@@ -8853,12 +7665,6 @@
         "generated_equipment_helmet_stormguard_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "stormguard",
-      "name": "Stormguard",
-      "rank": 9,
-      "grade": "high"
     }
   },
   {
@@ -8898,12 +7704,6 @@
         "generated_equipment_helmet_viper_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "viper",
-      "name": "Viper",
-      "rank": 10,
-      "grade": "low"
     }
   },
   {
@@ -8911,7 +7711,7 @@
     "name": "Wood Helmet Boss 01",
     "kind": "armor",
     "rarity": "unique",
-    "armorHp": 10,
+    "armorHp": 7,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-wood-boss-01"
@@ -8934,12 +7734,6 @@
       "shop": false,
       "enemyPool": false,
       "bossUnique": true
-    },
-    "equipmentSet": {
-      "id": "wood_boss",
-      "name": "Wood Boss",
-      "rank": 14,
-      "grade": "boss"
     }
   },
   {
@@ -11590,12 +10384,6 @@
         "leather_back_boot_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11636,12 +10424,6 @@
         "leather_back_shinguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11682,12 +10464,6 @@
         "leather_back_shoulderguard_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11728,12 +10504,6 @@
         "leather_back_wrist_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11774,12 +10544,6 @@
         "leather_breastplate_01"
       ],
       "categoryId": "body"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11820,12 +10584,6 @@
         "leather_front_boot_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11866,12 +10624,6 @@
         "leather_front_shinguard_01"
       ],
       "categoryId": "legs"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11912,12 +10664,6 @@
         "leather_front_shoulderguard_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -11958,12 +10704,6 @@
         "leather_front_wrist_01"
       ],
       "categoryId": "arms"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
@@ -12004,12 +10744,6 @@
         "leather_helmet_01"
       ],
       "categoryId": "head"
-    },
-    "equipmentSet": {
-      "id": "leather",
-      "name": "Leather",
-      "rank": 2,
-      "grade": "starter"
     }
   },
   {
