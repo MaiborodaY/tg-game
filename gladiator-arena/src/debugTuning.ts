@@ -433,7 +433,7 @@ export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   backWrist: { x: -1, y: -3, angle: -4, scaleX: 1.26, scaleY: 1.1, flipX: true, flipY: false },
   frontWrist: { x: 0, y: -3, angle: 14, scaleX: 1.5, scaleY: 1.11, flipX: true, flipY: false },
   backGlove: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
-  frontGlove: { x: -2, y: 0, angle: 0, scaleX: 1.19, scaleY: 1, flipX: false, flipY: false },
+  frontGlove: { x: -2, y: 0, angle: 0, scaleX: 1.07, scaleY: 1, flipX: false, flipY: false },
   shield: { x: 12, y: 14, angle: -8, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   backGreave: { x: -3, y: 0, angle: -8, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
   frontGreave: { x: -6, y: 3, angle: -11, scaleX: 1.6, scaleY: 1, flipX: false, flipY: false },
@@ -516,6 +516,8 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
   "generated_equipment_weapon_sword_norm_axe": { x: -9, y: 28, angle: 90, scaleX: 0.95, scaleY: 0.95, flipX: true, flipY: false },
   "generated_equipment_weapon_sword_uncommon_axe_1": { x: 0, y: 44, angle: 71, scaleX: 0.9, scaleY: 0.8, flipX: false, flipY: false },
   "generated_equipment_weapon_sword_uncommon_mace_5": { x: 0, y: 41, angle: 88, scaleX: 1.05, scaleY: 1.05, flipX: false, flipY: false },
+  "generated_equipment_shield_common_01": { x: 0, y: 57, angle: -4, scaleX: 2.15, scaleY: 1.6, flipX: false, flipY: false },
+  "generated_equipment_shield_common_02": { x: 0, y: 63, angle: 0, scaleX: 1.4, scaleY: 1.4, flipX: true, flipY: false },
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
@@ -703,7 +705,7 @@ export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
 
 export const DEFAULT_LIGHT_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 500,
+  duration: 600,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },

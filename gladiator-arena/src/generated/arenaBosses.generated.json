@@ -119,13 +119,29 @@
   {
     "id": "arena_boss_2",
     "tierId": 2,
-    "name": "Arena Boss 2",
+    "name": "Boar Boss",
     "baseStats": {
       "strength": 20,
       "agility": 10,
       "vitality": 10
     },
-    "equipment": {},
+    "equipment": {
+      "weaponMain": "generated_equipment_weapon_mace_boar_mace",
+      "helmet": "generated_equipment_helmet_boar_boss_01",
+      "breastplate": "generated_equipment_breastplate_boar_boss_01",
+      "backShoulderguard": "generated_equipment_back_shoulderguard_boar_boss_01",
+      "frontShoulderguard": "generated_equipment_front_shoulderguard_boar_boss_01",
+      "backWrist": "generated_equipment_back_wrist_boar_boss_01",
+      "frontWrist": "generated_equipment_front_wrist_boar_boss_01",
+      "backGlove": "generated_equipment_back_glove_boar_boss_01",
+      "frontGlove": "generated_equipment_front_glove_boar_boss_01",
+      "backGreave": "generated_equipment_back_greave_boar_boss_01",
+      "frontGreave": "generated_equipment_front_greave_boar_boss_01",
+      "backShinguard": "generated_equipment_back_shinguard_boar_boss_01",
+      "frontShinguard": "generated_equipment_front_shinguard_boar_boss_01",
+      "backBoot": "generated_equipment_back_boot_boar_boss_01",
+      "frontBoot": "generated_equipment_front_boot_boar_boss_01"
+    },
     "rewards": {
       "win": {
         "gold": 200,
@@ -136,6 +152,85 @@
         "xp": 0
       }
     },
-    "lootTable": []
+    "lootTable": [
+      {
+        "id": "arena_boss_2_generated_equipment_back_boot_boar_boss_01_generated_equipment_front_boot_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_boot_boar_boss_01",
+          "generated_equipment_front_boot_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_breastplate_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_breastplate_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_back_glove_boar_boss_01_generated_equipment_front_glove_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_glove_boar_boss_01",
+          "generated_equipment_front_glove_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_back_greave_boar_boss_01_generated_equipment_front_greave_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_greave_boar_boss_01",
+          "generated_equipment_front_greave_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_helmet_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_helmet_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_back_shinguard_boar_boss_01_generated_equipment_front_shinguard_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_shinguard_boar_boss_01",
+          "generated_equipment_front_shinguard_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_back_shoulderguard_boar_boss_01_generated_equipment_front_shoulderguard_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_shoulderguard_boar_boss_01",
+          "generated_equipment_front_shoulderguard_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_back_wrist_boar_boss_01_generated_equipment_front_wrist_boar_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_wrist_boar_boss_01",
+          "generated_equipment_front_wrist_boar_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_2_generated_equipment_weapon_mace_boar_mace_drop",
+        "itemIds": [
+          "generated_equipment_weapon_mace_boar_mace"
+        ],
+        "chance": 1,
+        "quantity": 1
+      }
+    ]
   }
 ]
