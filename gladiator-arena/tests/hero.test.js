@@ -52,6 +52,16 @@ const generatedItems = {
     equipmentSlot: "weaponMain",
     damageBonus: 1,
   },
+  generated_equipment_weapon_sword_top: {
+    id: "generated_equipment_weapon_sword_top",
+    name: "Common Sword Top",
+    kind: "weapon",
+    rarity: "common",
+    weaponClass: "sword",
+    equipmentSlot: "weaponMain",
+    damageBonus: 4,
+    levelRequirement: 10,
+  },
   generated_equipment_weapon_bow_01: {
     id: "generated_equipment_weapon_bow_01",
     name: "Bow 01",
@@ -213,7 +223,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultHero.baseStats.strength, 0);
   assert.equal(defaultHero.baseStats.agility, 0);
   assert.equal(defaultHero.baseStats.vitality, 0);
-  assert.equal(defaultHero.skillPoints, 0);
+  assert.equal(defaultHero.skillPoints, hero.HERO_STARTING_SKILL_POINTS);
 
   const defaultStats = hero.deriveHeroStats(defaultHero);
 
@@ -660,14 +670,14 @@ test("battle xp follows the level table and caps at level fifty", () => {
   assert.equal(levelTwoHero.level, 2);
   assert.equal(levelTwoHero.xp, 0);
   assert.equal(levelTwoHero.xpToNextLevel, 10);
-  assert.equal(levelTwoHero.skillPoints, 1);
+  assert.equal(levelTwoHero.skillPoints, 2);
 
   const maxHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 1000 });
 
   assert.equal(maxHero.level, 50);
   assert.equal(maxHero.xp, 0);
   assert.equal(maxHero.xpToNextLevel, 30);
-  assert.equal(maxHero.skillPoints, 49);
+  assert.equal(maxHero.skillPoints, 50);
 });
 
 test("hero can spend level-up skill points on base attributes", () => {
@@ -721,7 +731,7 @@ test("hero can receive temporary skill points", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
   const boostedHero = hero.grantHeroSkillPoints(baseHero, 10, "2026-01-01T00:01:00.000Z");
 
-  assert.equal(boostedHero.skillPoints, 10);
+  assert.equal(boostedHero.skillPoints, hero.HERO_STARTING_SKILL_POINTS + 10);
   assert.equal(boostedHero.updatedAt, "2026-01-01T00:01:00.000Z");
   assert.equal(hero.grantHeroSkillPoints(boostedHero, 0), boostedHero);
 });
@@ -791,6 +801,7 @@ test("weapon requirements block bow purchases until agility is high enough", () 
 
   assert.equal(hero.canHeroEquipItems(baseHero, ["generated_equipment_weapon_bow_01"]), false);
   assert.equal(requirementChecks.length, 1);
+  assert.equal(requirementChecks[0].kind, "attribute");
   assert.equal(requirementChecks[0].attribute, "agility");
   assert.equal(requirementChecks[0].required, 10);
   assert.equal(requirementChecks[0].current, 0);
@@ -817,6 +828,35 @@ test("weapon requirements block bow purchases until agility is high enough", () 
   assert.equal(nextHero.equipment.weaponMain, null);
   assert.equal(nextHero.equipment.weaponBow, "generated_equipment_weapon_bow_01");
   assert.equal(hero.deriveHeroStats(nextHero).weaponDamageBonus, 5);
+});
+
+test("weapon level requirements block purchases until hero reaches the required level", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    level: 9,
+    gold: 150,
+  };
+  const itemIds = ["generated_equipment_weapon_sword_top"];
+  const requirementChecks = hero.getHeroItemRequirementChecks(baseHero, itemIds);
+
+  assert.equal(hero.getHeroItemLevelRequirement(itemIds), 10);
+  assert.equal(hero.canHeroEquipItems(baseHero, itemIds), false);
+  assert.equal(requirementChecks.length, 1);
+  assert.equal(requirementChecks[0].kind, "level");
+  assert.equal(requirementChecks[0].required, 10);
+  assert.equal(requirementChecks[0].current, 9);
+  assert.equal(hero.buyAndEquipHeroItems(baseHero, { itemIds, price: 100 }, "2026-01-01T00:01:00.000Z"), baseHero);
+
+  const readyHero = {
+    ...baseHero,
+    level: 10,
+  };
+  const nextHero = hero.buyAndEquipHeroItems(readyHero, { itemIds, price: 100 }, "2026-01-01T00:02:00.000Z");
+
+  assert.equal(hero.canHeroEquipItems(readyHero, itemIds), true);
+  assert.equal(nextHero.gold, 50);
+  assert.equal(nextHero.equipment.weaponMain, "generated_equipment_weapon_sword_top");
+  assert.equal(hero.deriveHeroStats(nextHero).damageBonus, 4);
 });
 
 test("shurikens buy as capped consumables without equipping", () => {

@@ -635,7 +635,8 @@ test("rest actions show pooled health and stamina recovery popups", () => {
   assert.equal(arenaSceneSource.includes("function resetActiveTurnBodyIdleAnimation("), true);
   assert.equal(arenaSceneSource.includes('setFighterBodyIdleAnimation(fighter, "idle", startedAt);'), true);
   assert.equal(arenaSceneSource.includes("previousState?.activeTurn === currentState.activeTurn"), true);
-  assert.equal(arenaSceneSource.includes('currentState.activeTurn === "player" ? visuals.player : visuals.enemy'), true);
+  assert.equal(arenaSceneSource.includes('const fighter = currentState.activeTurn === "player" ? visuals.player : visuals.enemy;'), true);
+  assert.equal(arenaSceneSource.includes('if (fighter.bodyIdleAnimationKey === "rest")'), true);
   assert.equal(arenaSceneSource.includes("setFighterBodyIdleAnimation(fighter, options.loopAfterComplete, target.time.now);"), true);
   assert.equal(arenaSceneSource.includes("resetFighterBodyIdleAnimation(fighter, target.time.now);"), true);
   assert.equal(arenaSceneSource.includes("resetFighterBodyIdleAnimation(actor, target.time.now);"), true);

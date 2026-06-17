@@ -14,6 +14,7 @@ import {
   type HeroAttributeKey,
   type HeroItemDefinition,
   type HeroItemId,
+  type HeroItemRequirementCheck,
   type HeroItemRarity,
   type HeroState,
 } from "./hero";
@@ -22,10 +23,16 @@ export type ShopItemRarity = HeroItemRarity;
 export type ShopProductActionState = "buy" | "equip" | "equipped" | "no-gold" | "sealed" | "locked" | "max";
 export type ShopProductStatKind = "armor" | "damage";
 
-export interface ShopProductRequirementBadge {
-  attribute: HeroAttributeKey;
-  required: number;
-}
+export type ShopProductRequirementBadge =
+  | {
+      kind: "attribute";
+      attribute: HeroAttributeKey;
+      required: number;
+    }
+  | {
+      kind: "level";
+      required: number;
+    };
 
 const shopRarityLabels: Record<ShopItemRarity, string> = {
   common: "Common",
@@ -153,21 +160,35 @@ export function getShopProductActionLabel(actionState: ShopProductActionState, p
 export function getShopProductRequirementLabel(hero: HeroState, itemIds: readonly HeroItemId[]): string {
   return getHeroItemRequirementChecks(hero, itemIds)
     .filter((requirement) => requirement.current < requirement.required)
-    .map((requirement) => `${shopRequirementShortLabels[requirement.attribute]} ${requirement.required}`)
+    .map((requirement) => `${getShopRequirementShortLabel(requirement)} ${requirement.required}`)
     .join(" / ");
 }
 
 export function getShopProductRequirementBadge(hero: HeroState, itemIds: readonly HeroItemId[]): ShopProductRequirementBadge | undefined {
   const requirement = getHeroItemRequirementChecks(hero, itemIds).find((check) => check.current < check.required);
 
-  return requirement ? { attribute: requirement.attribute, required: requirement.required } : undefined;
+  if (!requirement) {
+    return undefined;
+  }
+
+  return requirement.kind === "level"
+    ? { kind: "level", required: requirement.required }
+    : { kind: "attribute", attribute: requirement.attribute, required: requirement.required };
 }
 
 export function getShopProductRequirementDescription(hero: HeroState, itemIds: readonly HeroItemId[]): string {
   return getHeroItemRequirementChecks(hero, itemIds)
     .filter((requirement) => requirement.current < requirement.required)
-    .map((requirement) => `Requires ${shopRequirementLabels[requirement.attribute]} ${requirement.required}`)
+    .map((requirement) => `Requires ${getShopRequirementLabel(requirement)} ${requirement.required}`)
     .join(", ");
+}
+
+function getShopRequirementShortLabel(requirement: HeroItemRequirementCheck): string {
+  return requirement.kind === "level" ? "LVL" : shopRequirementShortLabels[requirement.attribute];
+}
+
+function getShopRequirementLabel(requirement: HeroItemRequirementCheck): string {
+  return requirement.kind === "level" ? "Level" : shopRequirementLabels[requirement.attribute];
 }
 
 export function getShopProductDisplayName(productName: string): string {

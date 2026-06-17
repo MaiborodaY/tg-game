@@ -4186,7 +4186,11 @@ function resetActiveTurnBodyIdleAnimation(
     return;
   }
 
-  resetFighterBodyIdleAnimation(currentState.activeTurn === "player" ? visuals.player : visuals.enemy, startedAt);
+  const fighter = currentState.activeTurn === "player" ? visuals.player : visuals.enemy;
+
+  if (fighter.bodyIdleAnimationKey === "rest") {
+    resetFighterBodyIdleAnimation(fighter, startedAt);
+  }
 }
 
 function setFighterBodyIdleAnimation(fighter: FighterVisual, animationKey: BodyAnimationKey, startedAt = 0): void {

@@ -966,9 +966,12 @@ function createRequirementRibbon(requirement: ShopProductRequirementBadge): HTML
 function appendRequirementContent(requirementNode: HTMLElement, requirement: ShopProductRequirementBadge): void {
   const icon = document.createElement("span");
   const amount = document.createElement("span");
+  const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;
+  const requirementLabel = requirement.kind === "level" ? "Level" : requirement.attribute;
 
-  requirementNode.setAttribute("aria-label", `${requirement.attribute} ${requirement.required}`);
-  icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirement.attribute}`;
+  requirementNode.setAttribute("aria-label", `${requirementLabel} ${requirement.required}`);
+  icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;
+  icon.textContent = requirement.kind === "level" ? "LVL" : "";
   amount.className = "armory-shop__requirement-amount";
   amount.textContent = String(requirement.required);
   requirementNode.append(icon, amount);

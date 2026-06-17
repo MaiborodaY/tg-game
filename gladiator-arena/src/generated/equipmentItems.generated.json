@@ -9448,7 +9448,8 @@
         "generated_equipment_weapon_axe_01"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_1",
@@ -9488,7 +9489,8 @@
         "generated_equipment_weapon_axe_epic_axe_1"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_3",
@@ -9528,7 +9530,8 @@
         "generated_equipment_weapon_axe_epic_axe_3"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 31
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_4",
@@ -9568,7 +9571,8 @@
         "generated_equipment_weapon_axe_epic_axe_4"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 34
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_5",
@@ -9608,7 +9612,8 @@
         "generated_equipment_weapon_axe_epic_axe_5"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 37
   },
   {
     "id": "generated_equipment_weapon_axe_epic_zxe",
@@ -9679,7 +9684,8 @@
         "generated_equipment_weapon_axe_norm_axe"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_weapon_axe_rare_axe_1",
@@ -9719,7 +9725,8 @@
         "generated_equipment_weapon_axe_rare_axe_1"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 21
   },
   {
     "id": "generated_equipment_weapon_axe_rare_axe_2",
@@ -9759,7 +9766,8 @@
         "generated_equipment_weapon_axe_rare_axe_2"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_weapon_axe_rusty_axe",
@@ -9799,7 +9807,8 @@
         "generated_equipment_weapon_axe_rusty_axe"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 5
   },
   {
     "id": "generated_equipment_weapon_axe_simple_axe",
@@ -9839,7 +9848,8 @@
         "generated_equipment_weapon_axe_simple_axe"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 10
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_1",
@@ -9879,7 +9889,8 @@
         "generated_equipment_weapon_axe_uncommon_axe_1"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 11
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_2",
@@ -9919,7 +9930,8 @@
         "generated_equipment_weapon_axe_uncommon_axe_2"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_3",
@@ -9959,7 +9971,8 @@
         "generated_equipment_weapon_axe_uncommon_axe_3"
       ],
       "categoryId": "axes"
-    }
+    },
+    "levelRequirement": 20
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_4",
@@ -10073,7 +10086,8 @@
         "generated_equipment_weapon_mace_bad_club"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2",
@@ -10113,7 +10127,8 @@
         "generated_equipment_weapon_mace_chatgpt_image_16_2026_18_08_05_2"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 5
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace",
@@ -10184,7 +10199,8 @@
         "generated_equipment_weapon_mace_epic_mace_1"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 31
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace_2",
@@ -10224,7 +10240,8 @@
         "generated_equipment_weapon_mace_epic_mace_2"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 34
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace_3",
@@ -10264,7 +10281,8 @@
         "generated_equipment_weapon_mace_epic_mace_3"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 37
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace_4",
@@ -10304,7 +10322,8 @@
         "generated_equipment_weapon_mace_epic_mace_4"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_mace_lg_mace_1",
@@ -10344,7 +10363,8 @@
         "generated_equipment_weapon_mace_lg_mace_1"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_weapon_mace_mace",
@@ -10384,7 +10404,8 @@
         "generated_equipment_weapon_mace_mace"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 11
   },
   {
     "id": "generated_equipment_weapon_mace_mace1",
@@ -10424,7 +10445,8 @@
         "generated_equipment_weapon_mace_mace1"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_1",
@@ -10464,7 +10486,8 @@
         "generated_equipment_weapon_mace_rare_mace_1"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 21
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_2",
@@ -10504,7 +10527,8 @@
         "generated_equipment_weapon_mace_rare_mace_2"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_3",
@@ -10544,7 +10568,8 @@
         "generated_equipment_weapon_mace_rare_mace_3"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_mace_stone_mace",
@@ -10584,7 +10609,8 @@
         "generated_equipment_weapon_mace_stone_mace"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 10
   },
   {
     "id": "generated_equipment_weapon_mace_uncommon_mace_3",
@@ -10655,7 +10681,8 @@
         "generated_equipment_weapon_mace_uncommon_mace_4"
       ],
       "categoryId": "maces"
-    }
+    },
+    "levelRequirement": 20
   },
   {
     "id": "generated_equipment_weapon_mace_uncommon_mace_5",
@@ -10828,7 +10855,8 @@
         "generated_equipment_weapon_spear_epic_spear"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 31
   },
   {
     "id": "generated_equipment_weapon_spear_epic_spear_1",
@@ -10868,7 +10896,8 @@
         "generated_equipment_weapon_spear_epic_spear_1"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 34
   },
   {
     "id": "generated_equipment_weapon_spear_epic_spear_3",
@@ -10939,7 +10968,8 @@
         "generated_equipment_weapon_spear_epic_spear_4"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 37
   },
   {
     "id": "generated_equipment_weapon_spear_epic_spear_5",
@@ -10979,7 +11009,8 @@
         "generated_equipment_weapon_spear_epic_spear_5"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_spear_lg_spear_1",
@@ -11019,7 +11050,8 @@
         "generated_equipment_weapon_spear_lg_spear_1"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_weapon_spear_rare_spear",
@@ -11059,7 +11091,8 @@
         "generated_equipment_weapon_spear_rare_spear"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 21
   },
   {
     "id": "generated_equipment_weapon_spear_rare_spear_1",
@@ -11099,7 +11132,8 @@
         "generated_equipment_weapon_spear_rare_spear_1"
       ],
       "categoryId": "spears"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_1",
@@ -11139,7 +11173,8 @@
         "generated_equipment_weapon_sword_epic_sword_1"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 31
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_10",
@@ -11272,7 +11307,8 @@
         "generated_equipment_weapon_sword_epic_sword_3"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 32
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_4",
@@ -11312,7 +11348,8 @@
         "generated_equipment_weapon_sword_epic_sword_4"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 34
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_6",
@@ -11383,7 +11420,8 @@
         "generated_equipment_weapon_sword_epic_sword_7"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 36
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_8",
@@ -11423,7 +11461,8 @@
         "generated_equipment_weapon_sword_epic_sword_8"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 38
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_9",
@@ -11463,7 +11502,8 @@
         "generated_equipment_weapon_sword_epic_sword_9"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_sword_kortik",
@@ -11534,7 +11574,8 @@
         "generated_equipment_weapon_sword_lg_sword_1"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 41
   },
   {
     "id": "generated_equipment_weapon_sword_lg_sword_2",
@@ -11574,7 +11615,8 @@
         "generated_equipment_weapon_sword_lg_sword_2"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_1",
@@ -11614,7 +11656,8 @@
         "generated_equipment_weapon_sword_rare_sword_1"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 21
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_2",
@@ -11654,7 +11697,8 @@
         "generated_equipment_weapon_sword_rare_sword_2"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_3",
@@ -11694,7 +11738,8 @@
         "generated_equipment_weapon_sword_rare_sword_3"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_4",
@@ -11858,7 +11903,8 @@
         "generated_equipment_weapon_sword_rusty_sword"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_weapon_sword_sword_sharp",
@@ -11898,7 +11944,8 @@
         "generated_equipment_weapon_sword_sword_sharp"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 10
   },
   {
     "id": "generated_equipment_weapon_sword_sword1",
@@ -11938,7 +11985,8 @@
         "generated_equipment_weapon_sword_sword1"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 11
   },
   {
     "id": "generated_equipment_weapon_sword_uncommon_sword_2",
@@ -11978,7 +12026,8 @@
         "generated_equipment_weapon_sword_uncommon_sword_2"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_weapon_sword_uncommon_sword_3",
@@ -12018,7 +12067,8 @@
         "generated_equipment_weapon_sword_uncommon_sword_3"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 20
   },
   {
     "id": "leather_back_boot_01",
@@ -12518,6 +12568,7 @@
         "weapon_sword_01"
       ],
       "categoryId": "swords"
-    }
+    },
+    "levelRequirement": 5
   }
 ]

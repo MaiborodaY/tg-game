@@ -6561,6 +6561,16 @@ body.debug-active .city-menu__portrait-button:active {
   background-image: url("./assets/ui/profile/attribute-vitality.webp");
 }
 
+.armory-shop__requirement-icon--level {
+  display: grid;
+  place-items: center;
+  color: #ffe5a2;
+  font-size: 0.42rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.96);
+}
+
 .armory-shop__requirement-amount {
   min-width: 0;
 }

@@ -76,11 +76,18 @@ export interface HeroBaseStats {
 export const HERO_ATTRIBUTE_KEYS = ["strength", "agility", "vitality"] as const;
 export type HeroAttributeKey = (typeof HERO_ATTRIBUTE_KEYS)[number];
 
-export interface HeroItemRequirementCheck {
-  attribute: HeroAttributeKey;
-  required: number;
-  current: number;
-}
+export type HeroItemRequirementCheck =
+  | {
+      kind: "attribute";
+      attribute: HeroAttributeKey;
+      required: number;
+      current: number;
+    }
+  | {
+      kind: "level";
+      required: number;
+      current: number;
+    };
 
 export interface HeroStats {
   maxHp: number;
@@ -143,6 +150,7 @@ export interface HeroItemDefinition {
   armorHp?: number;
   damageBonus?: number;
   equipmentSet?: HeroEquipmentSetInfo;
+  levelRequirement?: number;
   requirements?: Partial<HeroBaseStats>;
   statBonuses?: Partial<HeroBaseStats>;
 }
@@ -270,6 +278,7 @@ export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
+export const HERO_STARTING_SKILL_POINTS = 1;
 export const ENEMY_SHURIKEN_ROLL_CHANCE = 0.25;
 export const ENEMY_SHURIKEN_QUANTITY = 1;
 export const HERO_BOW_SHOT_CAPACITY_BASE = BOW_SHOTS_PER_BATTLE;
@@ -437,7 +446,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     level: 1,
     xp: 0,
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
-    skillPoints: 0,
+    skillPoints: HERO_STARTING_SKILL_POINTS,
     gold: 0,
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
     baseStats: {
@@ -563,15 +572,30 @@ export function getHeroItemRequirements(itemIds: readonly HeroItemId[]): HeroBas
   return requirements;
 }
 
+export function getHeroItemLevelRequirement(itemIds: readonly HeroItemId[]): number {
+  return Math.max(
+    0,
+    ...itemIds.map((itemId) => {
+      const item = HERO_ITEM_CATALOG[itemId];
+
+      return Math.max(0, Math.floor(item?.levelRequirement ?? 0));
+    }),
+  );
+}
+
 export function getHeroItemRequirementChecks(hero: HeroState, itemIds: readonly HeroItemId[]): HeroItemRequirementCheck[] {
   const requirements = getHeroItemRequirements(itemIds);
   const current = getHeroAttributeTotals(hero);
-
-  return HERO_ATTRIBUTE_KEYS.flatMap((attribute) => {
+  const levelRequirement = getHeroItemLevelRequirement(itemIds);
+  const levelChecks: HeroItemRequirementCheck[] =
+    levelRequirement > 0 ? [{ kind: "level", required: levelRequirement, current: Math.max(1, Math.floor(hero.level)) }] : [];
+  const attributeChecks: HeroItemRequirementCheck[] = HERO_ATTRIBUTE_KEYS.flatMap((attribute) => {
     const required = requirements[attribute];
 
-    return required > 0 ? [{ attribute, required, current: current[attribute] }] : [];
+    return required > 0 ? [{ kind: "attribute", attribute, required, current: current[attribute] }] : [];
   });
+
+  return [...levelChecks, ...attributeChecks];
 }
 
 export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {

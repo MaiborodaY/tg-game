@@ -301,13 +301,16 @@ test("weapon shop locked products are dimmed and show centered stat requirement 
   assert.equal(weaponShopSource.includes('button.disabled = actionState === "locked";'), true);
   assert.match(weaponShopSource, /if \(actionState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
   assert.match(weaponShopSource, /if \(actionState === "buy" \|\| actionState === "no-gold"\) \{[\s\S]*createProductStats\("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product\.price\)/);
-  assert.equal(weaponShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirement.attribute}`;'), true);
+  assert.equal(weaponShopSource.includes('const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;'), true);
+  assert.equal(weaponShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;'), true);
+  assert.equal(weaponShopSource.includes('icon.textContent = requirement.kind === "level" ? "LVL" : "";'), true);
   assert.equal(weaponShopSource.includes("amount.textContent = String(requirement.required);"), true);
   assert.equal(weaponShopSource.includes('actionState === "buy" || actionState === "no-gold" || actionState === "locked"'), false);
   assert.equal(weaponShopSource.includes("priceNode.textContent = requirementLabel;"), false);
   assert.equal(weaponShopSource.includes('ribbon.className = "armory-shop__sealed-ribbon armory-shop__requirement-ribbon";'), true);
   assert.equal(stylesSource.includes(".armory-shop__requirement-ribbon"), true);
   assert.equal(stylesSource.includes(".armory-shop__requirement-icon--agility"), true);
+  assert.equal(stylesSource.includes(".armory-shop__requirement-icon--level"), true);
   assert.equal(stylesSource.includes('background-image: url("./assets/ui/profile/attribute-agility.webp");'), true);
 });
 

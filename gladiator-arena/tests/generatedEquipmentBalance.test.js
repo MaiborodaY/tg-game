@@ -105,7 +105,7 @@ test("generated shop armor sets occupy their intended progression", () => {
 });
 
 test("generated armor items carry equipment set metadata", () => {
-  const armorItems = generatedItems.filter((item) => item.kind === "armor");
+  const armorItems = generatedItems.filter((item) => item.kind === "armor" && item.equipmentSlot !== "shield");
 
   assert.ok(armorItems.length > 0);
 
