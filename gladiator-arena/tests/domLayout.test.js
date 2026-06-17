@@ -204,7 +204,8 @@ test("city equipment inventory exposes generated weapon categories", () => {
 test("church button can be wired while keeping the locked visual state", () => {
   assert.equal(html.includes('id="churchButton"'), true);
   assert.equal(html.includes('city-menu__button city-menu__button--locked" type="button" aria-disabled="true"'), true);
-  assert.equal(mainSource.includes("unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 1, now), 1000, now), now)"), true);
+  assert.equal(mainSource.includes("grantHeroLevels(hero, 20, now)"), true);
+  assert.equal(mainSource.includes("unlockAllArenaBossTiers("), true);
 });
 
 test("city arena menu exposes random fights and boss entries", () => {
@@ -212,13 +213,17 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(html.includes('id="cityArenaEasyButton"'), true);
   assert.equal(html.includes('id="cityArenaRandomButton"'), true);
   assert.equal(html.includes('id="cityArenaHardButton"'), true);
+  assert.equal(html.includes('id="cityArenaTierSelect"'), true);
   assert.equal(html.includes('id="cityArenaBossList"'), true);
   assert.equal(mainSource.includes("type ArenaMenuSelection"), true);
   assert.equal(mainSource.includes("createArenaEncounterForSelection"), true);
   assert.equal(mainSource.includes("createArenaBossEncounter(selection.bossId)"), true);
   assert.equal(mainSource.includes("createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId)"), true);
+  assert.equal(mainSource.includes("getArenaTierDefinitions"), true);
+  assert.equal(mainSource.includes("getAvailableCityArenaTiers"), true);
   assert.equal(mainSource.includes("getArenaBossesForTier"), true);
   assert.equal(mainSource.includes("city-menu--arena-select-open"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__tier-select"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__fight--hard"), true);
   assert.equal(stylesSource.includes(".city-menu--arena-select-open .city-menu__nav"), true);

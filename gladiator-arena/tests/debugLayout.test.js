@@ -481,3 +481,18 @@ test("debug panel exposes arena boss editor", () => {
   assert.equal(debugPanelSource.includes("createBossEditorLootTable"), true);
   assert.equal(debugPanelSource.includes('record.availability?.bossUnique || record.item.rarity === "unique"'), true);
 });
+
+test("debug panel exposes arena tier editor", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+
+  assert.equal(debugPanelSource.includes("debug-tier-editor-panel"), true);
+  assert.equal(debugPanelSource.includes("Arena tiers"), true);
+  assert.equal(debugPanelSource.includes("saveArenaTier"), true);
+  assert.equal(debugPanelSource.includes("mountArenaTierEditor"), true);
+  assert.equal(debugPanelSource.includes("ARENA_TIER_CONFIGS"), true);
+  assert.equal(debugPanelSource.includes("ARENA_DIFFICULTY_IDS"), true);
+  assert.equal(debugPanelSource.includes("Per-slot rarity roll chance"), true);
+  assert.equal(debugPanelSource.includes("data-tier-rarity"), true);
+  assert.equal(debugPanelSource.includes("createDefaultArenaTierDraft"), true);
+  assert.equal(stylesSource.includes(".debug-tier-editor"), true);
+});

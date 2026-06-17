@@ -33,10 +33,15 @@ function loadTypeScriptModule(modulePath, context = {}) {
 
 const combat = loadTypeScriptModule("../src/combat.ts");
 const generatedArenaBosses = loadTypeScriptModule("../src/generated/arenaBosses.generated.ts");
+const generatedArenaTiers = loadTypeScriptModule("../src/generated/arenaTiers.generated.ts");
 const arenaOpponents = loadTypeScriptModule("../src/arenaOpponents.ts", {
   require: (id) => {
     if (id === "./generated/arenaBosses.generated") {
       return generatedArenaBosses;
+    }
+
+    if (id === "./generated/arenaTiers.generated") {
+      return generatedArenaTiers;
     }
 
     throw new Error(`Unsupported arena opponent test import: ${id}`);
@@ -376,8 +381,13 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   const mediumOpponents = hero.getArenaRandomOpponentsForTierAndDifficulty(1, hero.DEFAULT_ARENA_DIFFICULTY_ID);
   const hardOpponents = hero.getArenaRandomOpponentsForTierAndDifficulty(1, "hard");
   const boss = hero.getArenaBossDefinition(tier.bossIds[0]);
+  const tierTwo = hero.getArenaTierDefinition(2);
+  const tierTwoEasyOpponents = hero.getArenaRandomOpponentsForTierAndDifficulty(2, "easy");
 
   assert.equal(hero.DEFAULT_ARENA_DIFFICULTY_ID, "medium");
+  assert.equal(hero.ARENA_TIER_CONFIGS[0].name, "Dust Arena I");
+  assert.equal(hero.getArenaTierDefinitions().some((arenaTier) => arenaTier.id === 1), true);
+  assert.equal(tier.unlockBossId, undefined);
   assert.equal(tier.randomOpponentIds.length, 3);
   assert.deepEqual([...tier.randomOpponentIds], ["dust_arena_dummy", "dust_arena_brawler", "dust_arena_veteran"]);
   assert.equal(randomOpponents.length, 3);
@@ -414,6 +424,11 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].rewards.win.xp, 10);
   assert.equal(hardOpponents[0].rewards.loss.gold, 1);
   assert.equal(hardOpponents[0].rewards.loss.xp, 1);
+  assert.equal(tierTwo.name, "Dust Arena II");
+  assert.equal(tierTwo.unlockBossId, "dust_arena_champion");
+  assert.equal(tierTwo.randomOpponentIds.length, 3);
+  assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 25);
+  assert.equal(tierTwoEasyOpponents[0].rewards.win.xp, 15);
 
   assert.equal(tier.bossIds.length, 1);
   assert.equal(boss?.id, "dust_arena_champion");
@@ -634,6 +649,15 @@ test("boss victories are recorded once in hero progression", () => {
   assert.deepEqual([...firstRecord.defeatedArenaBossIds], ["dust_arena_champion"]);
   assert.equal(firstRecord.updatedAt, "2026-01-01T00:01:00.000Z");
   assert.equal(secondRecord, firstRecord);
+});
+
+test("hero can unlock all arena boss tiers", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const unlockedHero = hero.unlockAllArenaBossTiers(baseHero, "2026-01-01T00:01:00.000Z");
+
+  assert.deepEqual([...unlockedHero.defeatedArenaBossIds], ["dust_arena_champion"]);
+  assert.equal(unlockedHero.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(hero.unlockAllArenaBossTiers(unlockedHero, "2026-01-01T00:02:00.000Z"), unlockedHero);
 });
 
 test("hero can unlock all shop rarity tiers", () => {

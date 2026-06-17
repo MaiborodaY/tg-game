@@ -19,5 +19,15 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
       {"id":"dust_arena_champion_generated_equipment_back_wrist_wood_boss_01_generated_equipment_front_wrist_wood_boss_01_drop","itemIds":["generated_equipment_back_wrist_wood_boss_01","generated_equipment_front_wrist_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_back_greave_wood_boss_01_generated_equipment_front_greave_wood_boss_01_drop","itemIds":["generated_equipment_back_greave_wood_boss_01","generated_equipment_front_greave_wood_boss_01"],"chance":1,"quantity":1},
     ],
+  },
+  {
+    id: "arena_boss_2",
+    tierId: 2,
+    name: "Arena Boss 2",
+    baseStats: {"strength":20,"agility":10,"vitality":10},
+    equipment: {},
+    rewards: {"win":{"gold":200,"xp":100},"loss":{"gold":0,"xp":0}},
+    lootTable: [
+    ],
   }
 ];

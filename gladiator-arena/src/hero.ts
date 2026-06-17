@@ -7,6 +7,7 @@ import {
   getArenaRandomOpponentDefinition as resolveArenaRandomOpponentDefinition,
   getArenaRandomOpponentsForTier as resolveArenaRandomOpponentsForTier,
   getArenaTierDefinition as resolveArenaTierDefinition,
+  getArenaTierDefinitions as resolveArenaTierDefinitions,
 } from "./arenaOpponents";
 import type {
   ArenaDifficultyId,
@@ -21,8 +22,10 @@ import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatState
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
 
 export {
+  ARENA_DIFFICULTY_IDS,
   ARENA_BOSSES,
   ARENA_RANDOM_OPPONENTS,
+  ARENA_TIER_CONFIGS,
   ARENA_TIERS,
   BATTLE_LOSS_REWARD,
   BATTLE_WIN_REWARD,
@@ -33,12 +36,16 @@ export {
   getArenaRandomOpponentDefinition,
   getArenaRandomOpponentsForTier,
   getArenaRandomOpponentsForTierAndDifficulty,
+  getArenaTierConfig,
   getArenaTierDefinition,
+  getArenaTierDefinitions,
 } from "./arenaOpponents";
 export type {
   ArenaDifficultyId,
   ArenaBossDefinition,
   ArenaBossId,
+  ArenaTierConfig,
+  ArenaTierOpponentDefinition,
   ArenaGeneratedEquipmentPool,
   ArenaLootTableEntry,
   ArenaOpponentId,
@@ -919,6 +926,27 @@ export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new
   return {
     ...hero,
     defeatedArenaBossIds: [...(hero.defeatedArenaBossIds ?? []), bossId],
+    updatedAt: now,
+  };
+}
+
+export function unlockAllArenaBossTiers(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const defeatedArenaBossIds = hero.defeatedArenaBossIds ?? [];
+  const missingUnlockBossIds = [
+    ...new Set(
+      resolveArenaTierDefinitions()
+        .map((tier) => tier.unlockBossId)
+        .filter((bossId): bossId is string => Boolean(bossId)),
+    ),
+  ].filter((bossId) => !defeatedArenaBossIds.includes(bossId));
+
+  if (missingUnlockBossIds.length <= 0) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    defeatedArenaBossIds: [...defeatedArenaBossIds, ...missingUnlockBossIds],
     updatedAt: now,
   };
 }

@@ -50,10 +50,16 @@ import {
   createDefaultHeroInventory,
   createDefaultHeroEquipment,
   ARENA_BOSSES,
+  ARENA_DIFFICULTY_IDS,
+  ARENA_TIER_CONFIGS,
   ALL_HERO_ITEM_IDS,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
+  type ArenaDifficultyId,
+  type ArenaGeneratedEquipmentPool,
   type ArenaBossDefinition,
+  type ArenaTierConfig,
+  type ArenaTierOpponentDefinition,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroInventoryEntry,
@@ -75,6 +81,7 @@ import {
   removePromotedEquipmentItem,
   renameEquipmentSetAssets,
   saveArenaBoss,
+  saveArenaTier,
   saveGeneratedBossItem,
   saveGeneratedShopItem,
   saveProdAnimation,
@@ -271,6 +278,13 @@ interface DebugBossEquipmentControlConfig {
   slotKeys: HeroEquipmentSlotKey[];
 }
 
+interface DebugArenaTierDifficultyDefaults {
+  gold: number;
+  xp: number;
+  randomBaseStatPoints: number;
+  equipmentPools: ArenaGeneratedEquipmentPool[];
+}
+
 type ClassicSlotNumericKey = keyof ClassicActionButtonSlotTuning;
 
 const classicWheelModeLabels: Record<ClassicActionWheelMode, string> = {
@@ -366,6 +380,12 @@ const DEBUG_BOSS_STAT_MAX = 200;
 const DEBUG_BOSS_TIER_MAX = 50;
 const DEBUG_BOSS_REWARD_MAX = 100000;
 const DEBUG_BOSS_LOOT_CHANCE_STEP = 0.01;
+const DEBUG_ARENA_TIER_RARITIES: readonly HeroItemRarity[] = AUTO_EQUIPMENT_RARITIES.filter((rarity) => rarity !== "unique");
+const DEBUG_ARENA_TIER_DIFFICULTY_LABELS: Record<ArenaDifficultyId, string> = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+};
 const DEBUG_BOSS_EQUIPMENT_SLOT_LABELS: Record<HeroEquipmentSlotKey, string> = {
   weaponMain: "Weapon",
   weaponBow: "Bow",
@@ -698,6 +718,7 @@ let activeEquipmentItemId: HeroItemId | "" = "";
 let activeEquipmentTypeFilter: DebugItemEquipmentTypeFilter = "all";
 let activeEquipmentRarityFilter: DebugItemEquipmentRarityFilter = "all";
 let debugArenaBosses: ArenaBossDefinition[] = ARENA_BOSSES.map(cloneArenaBossDefinition);
+let debugArenaTiers: ArenaTierConfig[] = ARENA_TIER_CONFIGS.map(cloneArenaTierConfig);
 let isDebugUndoShortcutMounted = false;
 let isCharacterCanvasEquipmentBridgeMounted = false;
 let debugHeroEquipment: HeroEquipment | undefined;
@@ -985,6 +1006,38 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         <p class="debug-boss-items__status" aria-live="polite"></p>
       </div>
     </details>
+    <details class="debug-tier-editor-panel">
+      <summary>Arena tiers</summary>
+      <div class="debug-tier-editor">
+        <div class="debug-boss-editor__boss-row">
+          <label class="debug-rig-editor__part debug-boss-editor__boss-select">
+            <span>Tier</span>
+            <select class="debug-tier-editor__select"></select>
+          </label>
+          <button class="debug-panel__reset debug-tier-editor__new" type="button">New</button>
+        </div>
+        <label class="debug-rig-editor__part">
+          <span>ID</span>
+          <input class="debug-tier-editor__id" type="number" min="1" max="${DEBUG_BOSS_TIER_MAX}" step="1" />
+        </label>
+        <label class="debug-rig-editor__part">
+          <span>Name</span>
+          <input class="debug-tier-editor__name" type="text" />
+        </label>
+        <label class="debug-rig-editor__part">
+          <span>Unlock after boss</span>
+          <select class="debug-tier-editor__unlock"></select>
+        </label>
+        <p class="debug-tier-editor__bosses"></p>
+        <div class="debug-tier-editor__difficulties">
+          ${ARENA_DIFFICULTY_IDS.map(formatArenaTierDifficultyEditor).join("")}
+        </div>
+        <div class="debug-boss-editor__actions">
+          <button class="debug-panel__reset debug-tier-editor__save" type="button">Save tier</button>
+        </div>
+        <p class="debug-tier-editor__status" aria-live="polite"></p>
+      </div>
+    </details>
     <details class="debug-boss-editor-panel">
       <summary>Boss editor</summary>
       <div class="debug-boss-editor">
@@ -1089,6 +1142,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const autoEquipmentBody = panel.querySelector<HTMLElement>(".debug-auto-equipment");
   const shopItemsBody = panel.querySelector<HTMLElement>(".debug-shop-items");
   const bossItemsBody = panel.querySelector<HTMLElement>(".debug-boss-items");
+  const tierEditorBody = panel.querySelector<HTMLElement>(".debug-tier-editor");
   const bossEditorBody = panel.querySelector<HTMLElement>(".debug-boss-editor");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
   const saveAnimationButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod-animation");
@@ -1107,6 +1161,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     !autoEquipmentBody ||
     !shopItemsBody ||
     !bossItemsBody ||
+    !tierEditorBody ||
     !bossEditorBody ||
     !saveButton ||
     !saveAnimationButton ||
@@ -1152,6 +1207,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountAutoEquipmentEditor(autoEquipmentBody);
   mountGeneratedShopItemsEditor(shopItemsBody);
   mountGeneratedBossItemsEditor(bossItemsBody);
+  mountArenaTierEditor(tierEditorBody);
   mountBossEditor(bossEditorBody);
   mountNudgeToolbar(nudgeToolbar);
   mountCharacterCanvasEquipmentBridge(panel);
@@ -2167,6 +2223,55 @@ function mountGeneratedBossItemsEditor(editor: HTMLElement): void {
       });
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Could not save generated boss item.";
+    } finally {
+      save.disabled = false;
+    }
+  });
+}
+
+function mountArenaTierEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-tier-editor__select");
+  const createNew = editor.querySelector<HTMLButtonElement>(".debug-tier-editor__new");
+  const save = editor.querySelector<HTMLButtonElement>(".debug-tier-editor__save");
+  const unlockSelect = editor.querySelector<HTMLSelectElement>(".debug-tier-editor__unlock");
+  const status = editor.querySelector<HTMLElement>(".debug-tier-editor__status");
+
+  if (!select || !createNew || !save || !unlockSelect || !status) {
+    return;
+  }
+
+  syncArenaTierSelectOptions(select, debugArenaTiers[0]?.id);
+  applyArenaTierToEditor(editor, getSelectedArenaTier(Number(select.value)) ?? createDefaultArenaTierDraft());
+
+  select.addEventListener("change", () => {
+    applyArenaTierToEditor(editor, getSelectedArenaTier(Number(select.value)) ?? createDefaultArenaTierDraft());
+  });
+
+  createNew.addEventListener("click", () => {
+    const draft = createDefaultArenaTierDraft();
+
+    applyArenaTierToEditor(editor, draft);
+    select.value = "";
+    status.textContent = "New arena tier draft.";
+  });
+
+  editor.querySelector<HTMLInputElement>(".debug-tier-editor__id")?.addEventListener("input", () => {
+    syncArenaTierBossSummary(editor);
+  });
+
+  save.addEventListener("click", async () => {
+    const tier = readArenaTierEditorDraft(editor);
+
+    save.disabled = true;
+    status.textContent = "Saving arena tier...";
+
+    try {
+      status.textContent = await saveArenaTier(tier);
+      debugArenaTiers = upsertDebugArenaTier(debugArenaTiers, tier);
+      syncArenaTierSelectOptions(select, tier.id);
+      applyArenaTierToEditor(editor, tier);
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not save arena tier.";
     } finally {
       save.disabled = false;
     }
@@ -4233,6 +4338,348 @@ function syncBossEditor(panel: HTMLElement): void {
   }
 
   syncBossLootSummary(editor);
+}
+
+function formatArenaTierDifficultyEditor(difficultyId: ArenaDifficultyId): string {
+  return `
+    <fieldset class="debug-tier-editor__difficulty" data-tier-difficulty="${difficultyId}">
+      <legend>${DEBUG_ARENA_TIER_DIFFICULTY_LABELS[difficultyId]}</legend>
+      <label class="debug-rig-editor__part">
+        <span>Opponent ID</span>
+        <input class="debug-tier-editor__opponent-id" type="text" />
+      </label>
+      <label class="debug-rig-editor__part">
+        <span>Opponent name</span>
+        <input class="debug-tier-editor__opponent-name" type="text" />
+      </label>
+      <label class="debug-panel__toggle">
+        <input class="debug-tier-editor__fixed-stats" type="checkbox" />
+        <span>Fixed stats</span>
+      </label>
+      <div class="debug-tier-editor__stats">
+        ${formatArenaTierNumberInput("STR", "stat", "strength", 0, DEBUG_BOSS_STAT_MAX, 1)}
+        ${formatArenaTierNumberInput("AGI", "stat", "agility", 0, DEBUG_BOSS_STAT_MAX, 1)}
+        ${formatArenaTierNumberInput("VIT", "stat", "vitality", 0, DEBUG_BOSS_STAT_MAX, 1)}
+        ${formatArenaTierNumberInput("Random points", "random-points", "", 0, DEBUG_BOSS_STAT_MAX, 1)}
+      </div>
+      <div class="debug-tier-editor__rewards">
+        ${formatArenaTierNumberInput("Win gold", "reward", "win-gold", 0, DEBUG_BOSS_REWARD_MAX, 1)}
+        ${formatArenaTierNumberInput("Win XP", "reward", "win-xp", 0, DEBUG_BOSS_REWARD_MAX, 1)}
+        ${formatArenaTierNumberInput("Loss gold", "reward", "loss-gold", 0, DEBUG_BOSS_REWARD_MAX, 1)}
+        ${formatArenaTierNumberInput("Loss XP", "reward", "loss-xp", 0, DEBUG_BOSS_REWARD_MAX, 1)}
+      </div>
+      <div class="debug-tier-editor__pools">
+        <span class="debug-tier-editor__pool-title">Per-slot rarity roll chance</span>
+        ${DEBUG_ARENA_TIER_RARITIES.map((rarity) => formatArenaTierNumberInput(AUTO_EQUIPMENT_RARITY_LABELS[rarity], "rarity", rarity, 0, 1, 0.01)).join("")}
+      </div>
+    </fieldset>
+  `;
+}
+
+function formatArenaTierNumberInput(label: string, kind: "stat" | "random-points" | "reward" | "rarity", key: string, min: number, max: number, step: number): string {
+  const dataAttribute =
+    kind === "stat"
+      ? `data-tier-stat="${key}"`
+      : kind === "reward"
+        ? `data-tier-reward="${key}"`
+        : kind === "rarity"
+          ? `data-tier-rarity="${key}"`
+          : "data-tier-random-points";
+
+  return `
+    <label class="debug-panel__row debug-rig-editor__row">
+      <span>${label}</span>
+      <input class="debug-panel__number" type="number" min="${min}" max="${max}" step="${step}" value="${min}" ${dataAttribute} />
+    </label>
+  `;
+}
+
+function syncArenaTierSelectOptions(select: HTMLSelectElement, selectedTierId: number | undefined): void {
+  select.replaceChildren(createHeroEquipmentOption("", "new tier"));
+
+  debugArenaTiers.forEach((tier) => {
+    select.append(createHeroEquipmentOption(`${tier.id}`, `${tier.id} | ${tier.name}`));
+  });
+
+  select.value = selectedTierId && debugArenaTiers.some((tier) => tier.id === selectedTierId) ? `${selectedTierId}` : "";
+}
+
+function syncArenaTierUnlockOptions(select: HTMLSelectElement, selectedBossId: string | undefined): void {
+  select.replaceChildren(createHeroEquipmentOption("", "always unlocked"));
+
+  debugArenaBosses.forEach((boss) => {
+    select.append(createHeroEquipmentOption(boss.id, `${boss.tierId} | ${boss.name}`));
+  });
+
+  select.value = selectedBossId && debugArenaBosses.some((boss) => boss.id === selectedBossId) ? selectedBossId : "";
+}
+
+function applyArenaTierToEditor(editor: HTMLElement, tier: ArenaTierConfig): void {
+  const idInput = editor.querySelector<HTMLInputElement>(".debug-tier-editor__id");
+  const nameInput = editor.querySelector<HTMLInputElement>(".debug-tier-editor__name");
+  const unlockSelect = editor.querySelector<HTMLSelectElement>(".debug-tier-editor__unlock");
+
+  if (idInput) {
+    idInput.value = `${tier.id}`;
+  }
+
+  if (nameInput) {
+    nameInput.value = tier.name;
+  }
+
+  if (unlockSelect) {
+    syncArenaTierUnlockOptions(unlockSelect, tier.unlockBossId);
+  }
+
+  ARENA_DIFFICULTY_IDS.forEach((difficultyId) => {
+    applyArenaTierOpponentToEditor(
+      editor,
+      difficultyId,
+      tier.opponents.find((opponent) => opponent.difficultyId === difficultyId) ?? createDefaultArenaTierOpponentDraft(tier.id, difficultyId),
+    );
+  });
+
+  syncArenaTierBossSummary(editor);
+}
+
+function applyArenaTierOpponentToEditor(editor: HTMLElement, difficultyId: ArenaDifficultyId, opponent: ArenaTierOpponentDefinition): void {
+  const fieldset = getArenaTierDifficultyFieldset(editor, difficultyId);
+
+  if (!fieldset) {
+    return;
+  }
+
+  const idInput = fieldset.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-id");
+  const nameInput = fieldset.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-name");
+  const fixedStatsInput = fieldset.querySelector<HTMLInputElement>(".debug-tier-editor__fixed-stats");
+  const baseStats = opponent.baseStats ?? { strength: 0, agility: 0, vitality: 0 };
+
+  if (idInput) {
+    idInput.value = opponent.id;
+  }
+
+  if (nameInput) {
+    nameInput.value = opponent.name;
+  }
+
+  if (fixedStatsInput) {
+    fixedStatsInput.checked = Boolean(opponent.baseStats);
+  }
+
+  setArenaTierNumberInput(fieldset, `[data-tier-stat="strength"]`, baseStats.strength);
+  setArenaTierNumberInput(fieldset, `[data-tier-stat="agility"]`, baseStats.agility);
+  setArenaTierNumberInput(fieldset, `[data-tier-stat="vitality"]`, baseStats.vitality);
+  setArenaTierNumberInput(fieldset, "[data-tier-random-points]", opponent.randomBaseStatPoints ?? 0);
+  setArenaTierNumberInput(fieldset, `[data-tier-reward="win-gold"]`, opponent.rewards.win.gold);
+  setArenaTierNumberInput(fieldset, `[data-tier-reward="win-xp"]`, opponent.rewards.win.xp);
+  setArenaTierNumberInput(fieldset, `[data-tier-reward="loss-gold"]`, opponent.rewards.loss.gold);
+  setArenaTierNumberInput(fieldset, `[data-tier-reward="loss-xp"]`, opponent.rewards.loss.xp);
+
+  DEBUG_ARENA_TIER_RARITIES.forEach((rarity) => {
+    const pool = opponent.equipmentPools.find((candidate) => candidate.itemRarities.includes(rarity));
+
+    setArenaTierNumberInput(fieldset, `[data-tier-rarity="${rarity}"]`, pool?.rollChance ?? 0);
+  });
+}
+
+function readArenaTierEditorDraft(editor: HTMLElement): ArenaTierConfig {
+  const idInput = editor.querySelector<HTMLInputElement>(".debug-tier-editor__id");
+  const nameInput = editor.querySelector<HTMLInputElement>(".debug-tier-editor__name");
+  const unlockSelect = editor.querySelector<HTMLSelectElement>(".debug-tier-editor__unlock");
+  const id = Math.round(clampFiniteNumber(readEditorNumber(idInput, 1), 1, DEBUG_BOSS_TIER_MAX));
+  const name = nameInput?.value.trim() || `Dust Arena ${id}`;
+  const unlockBossId = unlockSelect?.value.trim() || undefined;
+
+  return {
+    id,
+    name,
+    ...(unlockBossId ? { unlockBossId } : {}),
+    opponents: ARENA_DIFFICULTY_IDS.map((difficultyId) => readArenaTierOpponentDraft(editor, id, difficultyId)),
+  };
+}
+
+function readArenaTierOpponentDraft(editor: HTMLElement, tierId: number, difficultyId: ArenaDifficultyId): ArenaTierOpponentDefinition {
+  const fieldset = getArenaTierDifficultyFieldset(editor, difficultyId);
+  const fixedStatsInput = fieldset?.querySelector<HTMLInputElement>(".debug-tier-editor__fixed-stats");
+  const idInput = fieldset?.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-id");
+  const nameInput = fieldset?.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-name");
+  const fixedStats = fixedStatsInput?.checked === true;
+  const baseStats = {
+    strength: readArenaTierInteger(fieldset, `[data-tier-stat="strength"]`, 0, DEBUG_BOSS_STAT_MAX),
+    agility: readArenaTierInteger(fieldset, `[data-tier-stat="agility"]`, 0, DEBUG_BOSS_STAT_MAX),
+    vitality: readArenaTierInteger(fieldset, `[data-tier-stat="vitality"]`, 0, DEBUG_BOSS_STAT_MAX),
+  };
+  const randomBaseStatPoints = readArenaTierInteger(fieldset, "[data-tier-random-points]", 0, DEBUG_BOSS_STAT_MAX);
+
+  return {
+    id: normalizeDebugIdentifier(idInput?.value || `tier_${tierId}_${difficultyId}`),
+    difficultyId,
+    name: nameInput?.value.trim() || `${DEBUG_ARENA_TIER_DIFFICULTY_LABELS[difficultyId]} Opponent`,
+    ...(fixedStats ? { baseStats } : randomBaseStatPoints > 0 ? { randomBaseStatPoints } : {}),
+    equipmentPools: readArenaTierEquipmentPools(fieldset),
+    rewards: {
+      win: {
+        gold: readArenaTierInteger(fieldset, `[data-tier-reward="win-gold"]`, 0, DEBUG_BOSS_REWARD_MAX),
+        xp: readArenaTierInteger(fieldset, `[data-tier-reward="win-xp"]`, 0, DEBUG_BOSS_REWARD_MAX),
+      },
+      loss: {
+        gold: readArenaTierInteger(fieldset, `[data-tier-reward="loss-gold"]`, 0, DEBUG_BOSS_REWARD_MAX),
+        xp: readArenaTierInteger(fieldset, `[data-tier-reward="loss-xp"]`, 0, DEBUG_BOSS_REWARD_MAX),
+      },
+    },
+  };
+}
+
+function readArenaTierEquipmentPools(fieldset: HTMLElement | undefined): ArenaGeneratedEquipmentPool[] {
+  if (!fieldset) {
+    return [];
+  }
+
+  return DEBUG_ARENA_TIER_RARITIES.flatMap((rarity) => {
+    const rollChance = readArenaTierNumber(fieldset, `[data-tier-rarity="${rarity}"]`, 0, 1);
+
+    return rollChance > 0 ? [{ itemRarities: [rarity], rollChance }] : [];
+  });
+}
+
+function syncArenaTierBossSummary(editor: HTMLElement): void {
+  const summary = editor.querySelector<HTMLElement>(".debug-tier-editor__bosses");
+  const tierId = Math.round(clampFiniteNumber(readEditorNumber(editor.querySelector<HTMLInputElement>(".debug-tier-editor__id"), 1), 1, DEBUG_BOSS_TIER_MAX));
+  const bosses = debugArenaBosses.filter((boss) => boss.tierId === tierId);
+
+  if (summary) {
+    summary.textContent = bosses.length > 0 ? `Bosses: ${bosses.map((boss) => boss.name).join(", ")}` : "Bosses: none for this tier.";
+  }
+}
+
+function getArenaTierDifficultyFieldset(editor: HTMLElement, difficultyId: ArenaDifficultyId): HTMLElement | undefined {
+  return editor.querySelector<HTMLElement>(`[data-tier-difficulty="${difficultyId}"]`) ?? undefined;
+}
+
+function setArenaTierNumberInput(root: HTMLElement, selector: string, value: number): void {
+  const input = root.querySelector<HTMLInputElement>(selector);
+
+  if (input) {
+    input.value = `${value}`;
+  }
+}
+
+function readArenaTierInteger(root: HTMLElement | undefined, selector: string, min: number, max: number): number {
+  return Math.round(readArenaTierNumber(root, selector, min, max));
+}
+
+function readArenaTierNumber(root: HTMLElement | undefined, selector: string, min: number, max: number): number {
+  return clampFiniteNumber(readEditorNumber(root?.querySelector<HTMLInputElement>(selector), min), min, max);
+}
+
+function readEditorNumber(input: HTMLInputElement | null | undefined, fallback: number): number {
+  const value = Number(input?.value);
+
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function clampFiniteNumber(value: number, min: number, max: number): number {
+  return clampNumber(Number.isFinite(value) ? value : min, min, max);
+}
+
+function getSelectedArenaTier(tierId: number | undefined): ArenaTierConfig | undefined {
+  return debugArenaTiers.find((tier) => tier.id === tierId);
+}
+
+function createDefaultArenaTierDraft(): ArenaTierConfig {
+  const nextId = Math.min(DEBUG_BOSS_TIER_MAX, Math.max(1, ...debugArenaTiers.map((tier) => tier.id)) + 1);
+  const unlockBossId = debugArenaBosses.find((boss) => boss.tierId === nextId - 1)?.id;
+
+  return {
+    id: nextId,
+    name: `Dust Arena ${nextId}`,
+    ...(unlockBossId ? { unlockBossId } : {}),
+    opponents: ARENA_DIFFICULTY_IDS.map((difficultyId) => createDefaultArenaTierOpponentDraft(nextId, difficultyId)),
+  };
+}
+
+function createDefaultArenaTierOpponentDraft(tierId: number, difficultyId: ArenaDifficultyId): ArenaTierOpponentDefinition {
+  const defaults = getDefaultArenaTierDifficultyDefaults(tierId, difficultyId);
+
+  return {
+    id: `dust_arena_${tierId}_${difficultyId}`,
+    difficultyId,
+    name: `Dust Arena ${tierId} ${DEBUG_ARENA_TIER_DIFFICULTY_LABELS[difficultyId]}`,
+    randomBaseStatPoints: defaults.randomBaseStatPoints,
+    equipmentPools: defaults.equipmentPools,
+    rewards: {
+      win: {
+        gold: defaults.gold,
+        xp: defaults.xp,
+      },
+      loss: { gold: 1, xp: 1 },
+    },
+  };
+}
+
+function getDefaultArenaTierDifficultyDefaults(tierId: number, difficultyId: ArenaDifficultyId): DebugArenaTierDifficultyDefaults {
+  if (tierId === 2) {
+    if (difficultyId === "easy") {
+      return {
+        gold: 25,
+        xp: 15,
+        randomBaseStatPoints: 3,
+        equipmentPools: [{ itemRarities: ["common"], rollChance: 0.75 }, { itemRarities: ["uncommon"], rollChance: 0.1 }],
+      };
+    }
+
+    if (difficultyId === "medium") {
+      return {
+        gold: 35,
+        xp: 22,
+        randomBaseStatPoints: 6,
+        equipmentPools: [{ itemRarities: ["common"], rollChance: 0.85 }, { itemRarities: ["uncommon"], rollChance: 0.35 }],
+      };
+    }
+
+    return {
+      gold: 50,
+      xp: 32,
+      randomBaseStatPoints: 9,
+      equipmentPools: [{ itemRarities: ["common"], rollChance: 0.95 }, { itemRarities: ["uncommon"], rollChance: 0.65 }],
+    };
+  }
+
+  const tierScale = Math.max(1, tierId);
+  const difficultyScale = difficultyId === "easy" ? 1 : difficultyId === "medium" ? 2 : 3;
+  const equipmentPools: ArenaGeneratedEquipmentPool[] = [
+    { itemRarities: ["common" as HeroItemRarity], rollChance: Math.min(1, 0.55 + tierScale * 0.08 + difficultyScale * 0.05) },
+    { itemRarities: ["uncommon" as HeroItemRarity], rollChance: Math.min(1, Math.max(0, (tierScale - 1) * 0.2 + (difficultyScale - 1) * 0.1)) },
+  ].filter((pool) => pool.rollChance > 0);
+
+  return {
+    gold: 10 * tierScale + 5 * difficultyScale,
+    xp: 6 * tierScale + 4 * difficultyScale,
+    randomBaseStatPoints: Math.max(0, (tierScale - 1) * 3 + (difficultyScale - 1) * 3),
+    equipmentPools,
+  };
+}
+
+function cloneArenaTierConfig(tier: ArenaTierConfig): ArenaTierConfig {
+  return {
+    ...tier,
+    opponents: tier.opponents.map((opponent) => ({
+      ...opponent,
+      ...(opponent.baseStats ? { baseStats: { ...opponent.baseStats } } : {}),
+      equipmentPools: opponent.equipmentPools.map((pool) => ({
+        itemRarities: [...pool.itemRarities],
+        rollChance: pool.rollChance,
+      })),
+      rewards: {
+        win: { ...opponent.rewards.win },
+        loss: { ...opponent.rewards.loss },
+      },
+    })),
+  };
+}
+
+function upsertDebugArenaTier(tiers: ArenaTierConfig[], tier: ArenaTierConfig): ArenaTierConfig[] {
+  return [...tiers.filter((candidate) => candidate.id !== tier.id), cloneArenaTierConfig(tier)].sort((left, right) => left.id - right.id);
 }
 
 function formatBossEditorNumberRow(label: string, field: string, min: number, max: number): string {

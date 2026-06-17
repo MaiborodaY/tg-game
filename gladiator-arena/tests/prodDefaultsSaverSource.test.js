@@ -73,6 +73,15 @@ test("client saver can save generated arena bosses through the local dev endpoin
   assert.match(source, /JSON\.stringify\(payload\)/);
 });
 
+test("client saver can save generated arena tiers through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/save-arena-tier/);
+  assert.match(source, /saveArenaTier/);
+  assert.match(source, /ArenaTierConfig/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("vite dev middleware only writes whitelisted arena layout defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 
@@ -253,6 +262,22 @@ test("vite dev middleware writes generated arena bosses", () => {
   assert.match(source, /upsertGeneratedArenaBossRecords/);
   assert.match(generatedBossSource, /GENERATED_ARENA_BOSSES/);
   assert.match(generatedBossJson, /dust_arena_champion/);
+});
+
+test("vite dev middleware writes generated arena tiers", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const generatedTierSource = readFileSync(join(root, "src", "generated", "arenaTiers.generated.ts"), "utf8");
+  const generatedTierJson = readFileSync(join(root, "src", "generated", "arenaTiers.generated.json"), "utf8");
+
+  assert.match(source, /save-arena-tier/);
+  assert.match(source, /generatedArenaTiersJsonUrl/);
+  assert.match(source, /generatedArenaTiersTsUrl/);
+  assert.match(source, /validateArenaTierRecord/);
+  assert.match(source, /writeGeneratedArenaTierRecords/);
+  assert.match(source, /formatGeneratedArenaTiersSource/);
+  assert.match(source, /upsertGeneratedArenaTierRecords/);
+  assert.match(generatedTierSource, /GENERATED_ARENA_TIERS/);
+  assert.match(generatedTierJson, /dust_arena_brawler/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {

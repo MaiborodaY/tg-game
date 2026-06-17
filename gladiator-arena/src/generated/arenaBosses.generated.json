@@ -115,5 +115,27 @@
         "quantity": 1
       }
     ]
+  },
+  {
+    "id": "arena_boss_2",
+    "tierId": 2,
+    "name": "Arena Boss 2",
+    "baseStats": {
+      "strength": 20,
+      "agility": 10,
+      "vitality": 10
+    },
+    "equipment": {},
+    "rewards": {
+      "win": {
+        "gold": 200,
+        "xp": 100
+      },
+      "loss": {
+        "gold": 0,
+        "xp": 0
+      }
+    },
+    "lootTable": []
   }
 ]

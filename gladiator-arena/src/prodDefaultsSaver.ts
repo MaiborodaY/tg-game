@@ -1,6 +1,6 @@
 import type { ArenaDebugTuning, EquipmentTuning } from "./debugTuning";
 import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
-import type { ArenaBossDefinition, HeroItemDefinition, HeroItemRarity } from "./hero";
+import type { ArenaBossDefinition, ArenaTierConfig, HeroItemDefinition, HeroItemRarity } from "./hero";
 
 interface SaveProdDefaultsResponse {
   message?: string;
@@ -102,6 +102,7 @@ const updateGeneratedBossItemEndpoint = "/__dust-arena/update-generated-boss-ite
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
 const renameEquipmentSetAssetsEndpoint = "/__dust-arena/rename-equipment-set-assets";
 const saveArenaBossEndpoint = "/__dust-arena/save-arena-boss";
+const saveArenaTierEndpoint = "/__dust-arena/save-arena-tier";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
   const response = await fetch(saveProdDefaultsEndpoint, {
@@ -266,6 +267,21 @@ export async function saveArenaBoss(payload: ArenaBossDefinition): Promise<strin
   }
 
   return responsePayload.message ?? "Saved arena boss.";
+}
+
+export async function saveArenaTier(payload: ArenaTierConfig): Promise<string> {
+  const response = await fetch(saveArenaTierEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not save arena tier. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Saved arena tier.";
 }
 
 async function readResponse(response: Response): Promise<SaveProdDefaultsResponse> {

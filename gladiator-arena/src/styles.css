@@ -2326,12 +2326,25 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__tier strong {
+  grid-column: 1 / -1;
   overflow: hidden;
   color: #fff0bd;
   font-size: 0.9rem;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.city-arena-menu__tier-select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid rgba(255, 211, 132, 0.3);
+  border-radius: 6px;
+  color: #fff0bd;
+  background: rgba(21, 6, 3, 0.78);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
 }
 
 .city-arena-menu__fight-list {
@@ -7971,6 +7984,33 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-boss-editor {
   display: grid;
   gap: 8px;
+}
+
+.debug-tier-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.debug-tier-editor__difficulties,
+.debug-tier-editor__difficulty,
+.debug-tier-editor__stats,
+.debug-tier-editor__rewards,
+.debug-tier-editor__pools {
+  display: grid;
+  gap: 6px;
+}
+
+.debug-tier-editor__difficulty {
+  min-width: 0;
+}
+
+.debug-tier-editor__pool-title,
+.debug-tier-editor__bosses,
+.debug-tier-editor__status {
+  margin: 0;
+  color: #ffd384;
+  font-size: 0.62rem;
+  font-weight: 900;
 }
 
 .debug-boss-editor__boss-row {

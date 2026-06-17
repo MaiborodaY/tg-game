@@ -11,6 +11,8 @@ const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.genera
 const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
 const generatedArenaBossesJsonUrl = new URL("./src/generated/arenaBosses.generated.json", import.meta.url);
 const generatedArenaBossesTsUrl = new URL("./src/generated/arenaBosses.generated.ts", import.meta.url);
+const generatedArenaTiersJsonUrl = new URL("./src/generated/arenaTiers.generated.json", import.meta.url);
+const generatedArenaTiersTsUrl = new URL("./src/generated/arenaTiers.generated.ts", import.meta.url);
 const promotedEquipmentRuntimeWebpQuality = 86;
 const promotedEquipmentLowWebpQuality = 76;
 const promotedEquipmentLowMaxSide = 448;
@@ -702,6 +704,28 @@ interface ArenaBossJsonRecord {
   }[];
 }
 
+interface ArenaTierJsonRecord {
+  id: number;
+  name: string;
+  unlockBossId?: string;
+  opponents: ArenaTierOpponentJsonRecord[];
+}
+
+interface ArenaTierOpponentJsonRecord {
+  id: string;
+  difficultyId: "easy" | "medium" | "hard";
+  name: string;
+  baseStats?: ArenaBossJsonRecord["baseStats"];
+  randomBaseStatPoints?: number;
+  equipmentPools: ArenaTierEquipmentPoolJsonRecord[];
+  rewards: ArenaBossJsonRecord["rewards"];
+}
+
+interface ArenaTierEquipmentPoolJsonRecord {
+  itemRarities: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>[];
+  rollChance: number;
+}
+
 interface PromotedEquipmentItem {
   record: GeneratedEquipmentJsonRecord;
   mirrorPairFlipX: boolean;
@@ -1015,6 +1039,26 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: `Saved arena boss ${boss.name}.`, updated: 1 });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save arena boss." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/save-arena-tier", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save arena tiers." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const tier = validateArenaTierRecord(payload);
+          const records = await readGeneratedArenaTierRecords();
+          const nextRecords = upsertGeneratedArenaTierRecords(records, tier);
+
+          await writeGeneratedArenaTierRecords(nextRecords);
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: `Saved arena tier ${tier.name}.`, updated: 1 });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save arena tier." });
         }
       });
     },
@@ -2341,6 +2385,74 @@ async function readGeneratedArenaBossRecords(): Promise<ArenaBossJsonRecord[]> {
   }
 }
 
+async function readGeneratedArenaTierRecords(): Promise<ArenaTierJsonRecord[]> {
+  try {
+    const source = await readFile(generatedArenaTiersJsonUrl, "utf8");
+    const records = JSON.parse(source) as unknown;
+
+    if (!Array.isArray(records)) {
+      throw new Error("Generated arena tiers JSON must contain an array.");
+    }
+
+    return records.map((record) => validateArenaTierRecord(record));
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+function upsertGeneratedArenaTierRecords(records: ArenaTierJsonRecord[], tier: ArenaTierJsonRecord): ArenaTierJsonRecord[] {
+  return [...records.filter((record) => record.id !== tier.id), tier].sort((left, right) => left.id - right.id);
+}
+
+async function writeGeneratedArenaTierRecords(records: ArenaTierJsonRecord[]): Promise<void> {
+  const sortedRecords = [...records].sort((left, right) => left.id - right.id);
+
+  await writeFile(generatedArenaTiersJsonUrl, `${JSON.stringify(sortedRecords, null, 2)}\n`, "utf8");
+  await writeFile(generatedArenaTiersTsUrl, formatGeneratedArenaTiersSource(sortedRecords), "utf8");
+}
+
+function formatGeneratedArenaTiersSource(records: ArenaTierJsonRecord[]): string {
+  const rows = records.map(formatGeneratedArenaTierRecord).join(",\n");
+
+  return `import type { ArenaTierConfig } from "../arenaOpponents";
+
+export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [${rows ? `\n${rows}\n` : ""}];
+`;
+}
+
+function formatGeneratedArenaTierRecord(record: ArenaTierJsonRecord): string {
+  const opponentRows = record.opponents.map(formatGeneratedArenaTierOpponentRecord);
+
+  return [
+    "  {",
+    `    id: ${record.id},`,
+    `    name: ${JSON.stringify(record.name)},`,
+    ...(record.unlockBossId ? [`    unlockBossId: ${JSON.stringify(record.unlockBossId)},`] : []),
+    "    opponents: [",
+    ...opponentRows,
+    "    ],",
+    "  }",
+  ].join("\n");
+}
+
+function formatGeneratedArenaTierOpponentRecord(record: ArenaTierOpponentJsonRecord): string {
+  return [
+    "      {",
+    `        id: ${JSON.stringify(record.id)},`,
+    `        difficultyId: ${JSON.stringify(record.difficultyId)},`,
+    `        name: ${JSON.stringify(record.name)},`,
+    ...(record.baseStats ? [`        baseStats: ${JSON.stringify(record.baseStats)},`] : []),
+    ...(record.randomBaseStatPoints !== undefined ? [`        randomBaseStatPoints: ${record.randomBaseStatPoints},`] : []),
+    `        equipmentPools: ${JSON.stringify(record.equipmentPools)},`,
+    `        rewards: ${JSON.stringify(record.rewards)},`,
+    "      },",
+  ].join("\n");
+}
+
 function upsertGeneratedArenaBossRecords(records: ArenaBossJsonRecord[], boss: ArenaBossJsonRecord): ArenaBossJsonRecord[] {
   return [...records.filter((record) => record.id !== boss.id), boss].sort((left, right) => left.tierId - right.tierId || left.id.localeCompare(right.id));
 }
@@ -3010,6 +3122,88 @@ function validateArenaBossRecord(input: unknown): ArenaBossJsonRecord {
     rewards,
     lootTable,
   };
+}
+
+function validateArenaTierRecord(input: unknown): ArenaTierJsonRecord {
+  const record = readPlainObject(input, "arena tier record");
+  const id = readClampedInteger(record.id, "arena tier id", 1, 50);
+  const name = readNonEmptyString(record.name, "arena tier name").slice(0, 80);
+  const unlockBossId = record.unlockBossId === undefined || record.unlockBossId === null || record.unlockBossId === "" ? undefined : readArenaBossId(record.unlockBossId);
+
+  if (!Array.isArray(record.opponents) || record.opponents.length === 0) {
+    throw new Error("Arena tier must define at least one opponent.");
+  }
+
+  return {
+    id,
+    name,
+    ...(unlockBossId ? { unlockBossId } : {}),
+    opponents: record.opponents.map((opponent) => validateArenaTierOpponentRecord(opponent, id)).sort(compareArenaTierOpponentRecords),
+  };
+}
+
+function validateArenaTierOpponentRecord(input: unknown, tierId: number): ArenaTierOpponentJsonRecord {
+  const record = readPlainObject(input, "arena tier opponent");
+  const difficultyId = readArenaDifficultyId(record.difficultyId);
+  const baseStats = record.baseStats === undefined || record.baseStats === null || record.baseStats === "" ? undefined : validateArenaBossBaseStats(record.baseStats);
+  const randomBaseStatPoints =
+    record.randomBaseStatPoints === undefined || record.randomBaseStatPoints === null || record.randomBaseStatPoints === ""
+      ? undefined
+      : readClampedInteger(record.randomBaseStatPoints, "arena tier random stat points", 0, 200);
+
+  return {
+    id: readArenaOpponentId(record.id, tierId, difficultyId),
+    difficultyId,
+    name: readNonEmptyString(record.name, "arena tier opponent name").slice(0, 80),
+    ...(baseStats ? { baseStats } : {}),
+    ...(randomBaseStatPoints !== undefined && randomBaseStatPoints > 0 ? { randomBaseStatPoints } : {}),
+    equipmentPools: validateArenaTierEquipmentPools(record.equipmentPools),
+    rewards: validateArenaBossRewards(record.rewards),
+  };
+}
+
+function validateArenaTierEquipmentPools(input: unknown): ArenaTierEquipmentPoolJsonRecord[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return input.map(validateArenaTierEquipmentPool).filter((pool) => pool.itemRarities.length > 0 && pool.rollChance > 0);
+}
+
+function validateArenaTierEquipmentPool(input: unknown): ArenaTierEquipmentPoolJsonRecord {
+  const pool = readPlainObject(input, "arena tier equipment pool");
+  const itemRarities = readNonEmptyStringArray(pool.itemRarities, "arena tier equipment pool rarities").map((rarity) => readItemRarity(rarity));
+
+  return {
+    itemRarities,
+    rollChance: Math.max(0, Math.min(1, readFinitePayloadNumber(pool.rollChance, "arena tier equipment roll chance"))),
+  };
+}
+
+function readArenaDifficultyId(value: unknown): ArenaTierOpponentJsonRecord["difficultyId"] {
+  if (value === "easy" || value === "medium" || value === "hard") {
+    return value;
+  }
+
+  throw new Error("Invalid arena difficulty id.");
+}
+
+function readArenaOpponentId(value: unknown, tierId: number, difficultyId: ArenaTierOpponentJsonRecord["difficultyId"]): string {
+  const id = readNonEmptyString(value, "arena tier opponent id").toLowerCase();
+
+  if (!/^[a-z0-9_]+$/.test(id)) {
+    throw new Error("Arena opponent id must use lowercase letters, numbers, and underscores.");
+  }
+
+  return id || `tier_${tierId}_${difficultyId}`;
+}
+
+function compareArenaTierOpponentRecords(left: ArenaTierOpponentJsonRecord, right: ArenaTierOpponentJsonRecord): number {
+  return getArenaDifficultySortIndex(left.difficultyId) - getArenaDifficultySortIndex(right.difficultyId) || left.id.localeCompare(right.id);
+}
+
+function getArenaDifficultySortIndex(difficultyId: ArenaTierOpponentJsonRecord["difficultyId"]): number {
+  return difficultyId === "easy" ? 0 : difficultyId === "medium" ? 1 : 2;
 }
 
 function validateArenaBossBaseStats(input: unknown): ArenaBossJsonRecord["baseStats"] {
