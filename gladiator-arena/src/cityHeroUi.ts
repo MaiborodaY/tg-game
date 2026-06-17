@@ -639,6 +639,13 @@ function renderCityHeroProfileEquipment(refs: CityHeroWidgetRefs, hero: HeroStat
     return;
   }
 
+  const renderKey = getCityHeroProfileEquipmentRenderKey(hero, highlightedEquipmentItems);
+
+  if (equipmentHost.dataset.heroProfileEquipmentRenderKey === renderKey) {
+    return;
+  }
+
+  equipmentHost.dataset.heroProfileEquipmentRenderKey = renderKey;
   equipmentHost.replaceChildren();
 
   HERO_PROFILE_EQUIPMENT_GROUPS.forEach((group) => {
@@ -685,6 +692,18 @@ function renderCityHeroProfileEquipment(refs: CityHeroWidgetRefs, hero: HeroStat
     card.append(icon);
     equipmentHost.append(card);
   });
+}
+
+function getCityHeroProfileEquipmentRenderKey(hero: HeroState, highlightedEquipmentItems: readonly CityHeroEquipmentHintItem[]): string {
+  const equipmentKey = HERO_PROFILE_EQUIPMENT_GROUPS.flatMap((group) =>
+    group.slots.map((slotKey) => `${slotKey}:${hero.equipment[slotKey] ?? ""}`),
+  ).join("|");
+  const hintKey = [...highlightedEquipmentItems]
+    .map((hint) => `${hint.slotKey}:${hint.itemId}:${hint.categoryId}`)
+    .sort()
+    .join("|");
+
+  return `${equipmentKey}::${hintKey}`;
 }
 
 function getHighlightedCityEquipmentItems(itemIds: readonly HeroItemId[] | undefined): CityHeroEquipmentHintItem[] {

@@ -480,6 +480,8 @@ function mountCityPreviews(): Promise<void> {
     heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment, {
       mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : [],
     });
+  } else {
+    heroPortraitPreview?.setEquipment(hero.equipment);
   }
 
   return cityScene?.ready ?? Promise.resolve();
@@ -730,11 +732,9 @@ async function waitForCityReady(): Promise<void> {
   await waitForCityFirstPaint();
 }
 
-function unmountCityPreviews(): void {
+function unmountCityScenePreview(): void {
   cityScene?.destroy();
-  heroPortraitPreview?.destroy();
   cityScene = undefined;
-  heroPortraitPreview = undefined;
 }
 
 function mountArena(): void {
@@ -769,7 +769,7 @@ function unmountArenaScene(): void {
 function startGame(): void {
   cityHeroProfile?.close();
   closeCityArenaMenu();
-  unmountCityPreviews();
+  unmountCityScenePreview();
   weaponShop?.close();
   armoryShop?.close();
 

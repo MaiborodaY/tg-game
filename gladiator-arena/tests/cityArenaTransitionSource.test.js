@@ -95,6 +95,13 @@ test("return to city uses a coin fade until the city preview is ready", () => {
   assert.match(stylesSource, /@keyframes city-return-coin-flip/);
 });
 
+test("arena entry keeps the cached hero portrait snapshot alive", () => {
+  assert.match(mainSource, /function unmountCityScenePreview/);
+  assert.match(mainSource, /heroPortraitPreview\?\.setEquipment\(hero\.equipment\)/);
+  assert.doesNotMatch(mainSource, /heroPortraitPreview\?\.destroy\(\)/);
+  assert.doesNotMatch(mainSource, /heroPortraitPreview = undefined/);
+});
+
 test("first city entry uses the same coin fade until the city preview is ready", () => {
   assert.match(mainSource, /city-return-transition city-return-transition--active/);
   assert.match(mainSource, /async function finishInitialCityEntry/);

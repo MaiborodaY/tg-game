@@ -79,6 +79,12 @@ test("boss equipment drops hint the city profile equipment slot", () => {
   assert.equal(stylesSource.includes("animation: city-profile-points-ready-pulse 1.25s ease-in-out infinite;"), true);
 });
 
+test("city hero profile skips unchanged equipment card renders", () => {
+  assert.equal(cityHeroUiSource.includes("getCityHeroProfileEquipmentRenderKey"), true);
+  assert.match(cityHeroUiSource, /if \(equipmentHost\.dataset\.heroProfileEquipmentRenderKey === renderKey\) \{\s*return;\s*\}/);
+  assert.equal(cityHeroUiSource.includes("equipmentHost.dataset.heroProfileEquipmentRenderKey = renderKey"), true);
+});
+
 test("city hero profile pulses unspent points and available attribute buttons", () => {
   assert.equal(stylesSource.includes("@keyframes city-profile-points-ready-pulse"), true);
   assert.equal(stylesSource.includes("@keyframes city-profile-attribute-plus-pulse"), true);
