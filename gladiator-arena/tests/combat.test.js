@@ -75,8 +75,27 @@ test("clinch attacks scale melee weapon damage by attack tier", () => {
   assert.equal(combat.actions.light.meleeDamageMultiplier, 1);
   assert.equal(combat.actions.medium.meleeDamageMultiplier, 1.5);
   assert.equal(combat.actions.heavy.meleeDamageMultiplier, 2);
+  assert.equal(combat.MELEE_ACTION_FLAT_DAMAGE_BONUS.light, 0);
+  assert.equal(combat.MELEE_ACTION_FLAT_DAMAGE_BONUS.medium, 1);
+  assert.equal(combat.MELEE_ACTION_FLAT_DAMAGE_BONUS.heavy, 2);
   assert.ok(combat.actions.light.cost < combat.actions.medium.cost);
   assert.ok(combat.actions.medium.cost < combat.actions.heavy.cost);
+});
+
+test("starter melee attack tiers stay distinct", () => {
+  function resolveStarterAttack(actionId) {
+    const state = combat.freshState();
+
+    setConsistentDistance(state, combat.MELEE_RANGE);
+    state.player.damageBonus = 0;
+    state.player.meleeDamagePercentBonus = 0;
+
+    return combat.resolvePlayerTurn(state, actionId, () => 0.99).lastPlayerDamage;
+  }
+
+  assert.equal(resolveStarterAttack("light"), 1);
+  assert.equal(resolveStarterAttack("medium"), 3);
+  assert.equal(resolveStarterAttack("heavy"), 4);
 });
 
 test("melee attack damage scales weapon damage by tier and strength with ceiling", () => {
@@ -88,8 +107,8 @@ test("melee attack damage scales weapon damage by tier and strength with ceiling
 
   const nextState = combat.resolvePlayerTurn(state, "medium", () => 0.99);
 
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 8);
-  assert.equal(nextState.lastPlayerDamage, 8);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 9);
+  assert.equal(nextState.lastPlayerDamage, 9);
 });
 
 test("attack stamina costs stay tied to action type", () => {
@@ -142,8 +161,8 @@ test("axes use heavier weapon damage tiers and double strength melee damage scal
   }
 
   assert.equal(resolveAxeAttack("light").lastPlayerDamage, 9);
-  assert.equal(resolveAxeAttack("medium").lastPlayerDamage, 12);
-  assert.equal(resolveAxeAttack("heavy").lastPlayerDamage, 18);
+  assert.equal(resolveAxeAttack("medium").lastPlayerDamage, 13);
+  assert.equal(resolveAxeAttack("heavy").lastPlayerDamage, 20);
 });
 
 test("spears extend active melee reach", () => {
@@ -217,8 +236,8 @@ test("low stamina can be spent down to exhaustion", () => {
   const nextState = combat.resolvePlayerTurn(state, "heavy", () => 0.99);
 
   assert.equal(nextState.player.stamina, 0);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
-  assert.equal(nextState.lastPlayerDamage, 2);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(nextState.lastPlayerDamage, 4);
 });
 
 test("exhausted player can only rest", () => {
@@ -457,8 +476,8 @@ test("damage records armor break events", () => {
   const nextState = combat.resolvePlayerTurn(state, "heavy", () => 0.99);
 
   assert.equal(nextState.enemy.armor, 0);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
-  assert.equal(nextState.lastPlayerDamage, 4);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(nextState.lastPlayerDamage, 6);
   assert.equal(nextState.lastPlayerArmorAbsorbed, 2);
   assert.equal(nextState.lastPlayerArmorBroken, true);
 });

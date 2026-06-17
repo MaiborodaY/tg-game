@@ -119,6 +119,11 @@ const AXE_MELEE_DAMAGE_MULTIPLIER: Partial<Record<ActionId, number>> = {
   medium: 2,
   heavy: 3,
 };
+export const MELEE_ACTION_FLAT_DAMAGE_BONUS: Partial<Record<ActionId, number>> = {
+  light: 0,
+  medium: 1,
+  heavy: 2,
+};
 const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
   light: 0.15,
   medium: 0.2,
@@ -908,6 +913,10 @@ function getActionMeleeWeaponDamageMultiplier(actionId: ActionId, attacker: Figh
   return actions[actionId].meleeDamageMultiplier;
 }
 
+function getActionMeleeFlatDamageBonus(actionId: ActionId): number {
+  return MELEE_ACTION_FLAT_DAMAGE_BONUS[actionId] ?? 0;
+}
+
 function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   if (actionId === "shuriken") {
     return Math.max(0, Math.floor(attacker.shurikenDamage ?? 0));
@@ -923,7 +932,7 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   const meleeDamageMultiplier = getActionMeleeWeaponDamageMultiplier(actionId, attacker);
 
   if (!isRangedFighter(attacker) && meleeDamageMultiplier !== undefined) {
-    return Math.ceil(getMeleeWeaponDamage(attacker) * meleeDamageMultiplier * getActionMeleeDamageMultiplier(attacker));
+    return Math.ceil(getMeleeWeaponDamage(attacker) * meleeDamageMultiplier * getActionMeleeDamageMultiplier(attacker)) + getActionMeleeFlatDamageBonus(actionId);
   }
 
   const baseDamage = actionDamage + getActionDamageBonus(attacker);
