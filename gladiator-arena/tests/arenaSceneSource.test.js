@@ -207,7 +207,8 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("playerActionAnimation = animateAction("), true);
   assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateAction("), true);
   assert.equal(arenaSceneSource.includes("playerActionAnimation.done"), true);
-  assert.equal(arenaSceneSource.includes("playerActionAnimation?.impact ?? playerActionAnimation?.done"), true);
+  assert.equal(arenaSceneSource.includes("const playerResultDelay = playerActionAnimation?.impact;"), true);
+  assert.equal(arenaSceneSource.includes("const enemyResultDelay = enemyActionAnimation?.impact;"), true);
   assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => {"), true);
   assert.equal(arenaSceneSource.includes("resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);"), true);
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
@@ -218,6 +219,16 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("interface ActionAnimationHandle"), true);
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
   assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
+});
+
+test("melee attacks expose an impact timing before action completion", () => {
+  assert.equal(arenaSceneSource.includes("interface MeleeActionTiming"), true);
+  assert.equal(arenaSceneSource.includes("const MELEE_ACTION_TIMINGS"), true);
+  assert.equal(arenaSceneSource.includes("function getMeleeActionTimeline("), true);
+  assert.equal(arenaSceneSource.includes("impact = createSceneDelay(target, timeline.impactDelayMs);"), true);
+  assert.equal(arenaSceneSource.includes("actionAnimations.push(impact);"), true);
+  assert.equal(arenaSceneSource.includes("playWeaponSwing(target, actor, sign, animationAmount, timeline)"), true);
+  assert.equal(arenaSceneSource.includes("void impact.then(() => showSlashArc(target, actor, actionId, direction, playerSettings));"), true);
 });
 
 test("movement steps do not spawn floating step text", () => {
@@ -232,8 +243,8 @@ test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes('isRangedWeaponClass(weaponClass)'), true);
   assert.equal(arenaSceneSource.includes('isRangedWeapon ? "bowShot" : actionId'), true);
   assert.equal(arenaSceneSource.includes("playProjectile(target, actor, defender, actionId, direction)"), true);
-  assert.equal(arenaSceneSource.includes("shouldDelayCombatResultForProjectile(lastPlayerAction, nextState.player.weaponClass)"), true);
-  assert.equal(arenaSceneSource.includes("!isRangedWeapon && areArenaVfxEnabled(playerSettings)"), true);
+  assert.equal(arenaSceneSource.includes("const playerResultDelay = playerActionAnimation?.impact;"), true);
+  assert.equal(arenaSceneSource.includes("void impact.then(() => showSlashArc(target, actor, actionId, direction, playerSettings));"), true);
   assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit")'), true);
   assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);

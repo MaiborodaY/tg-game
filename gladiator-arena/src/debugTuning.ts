@@ -827,7 +827,7 @@ export const DEFAULT_MEDIUM_ANIMATION: BodyAnimationTuning = {
 };
 export const DEFAULT_HEAVY_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 500,
+  duration: 700,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },

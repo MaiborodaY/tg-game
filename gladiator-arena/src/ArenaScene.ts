@@ -385,6 +385,12 @@ interface ActionAnimationHandle {
   impact?: Promise<void>;
 }
 
+interface MeleeActionTiming {
+  impactProgress: number;
+  weaponSwingProgress: number;
+  weaponAngle: number;
+}
+
 interface ActionAnimationOptions {
   loopRestAfterComplete?: boolean;
 }
@@ -494,6 +500,11 @@ const PROJECTILE_START_LOCAL_X = 90;
 const PROJECTILE_START_LOCAL_Y = -205;
 const PROJECTILE_TARGET_LOCAL_X = 44;
 const PROJECTILE_TARGET_LOCAL_Y = -250;
+const MELEE_ACTION_TIMINGS: Record<AttackBodyAnimationKey, MeleeActionTiming> = {
+  light: { impactProgress: 0.45, weaponSwingProgress: 0.45, weaponAngle: 28 },
+  medium: { impactProgress: 0.48, weaponSwingProgress: 0.48, weaponAngle: 32 },
+  heavy: { impactProgress: 0.52, weaponSwingProgress: 0.52, weaponAngle: 38 },
+};
 const POPUP_PREVIEW_DAMAGE_AMOUNT = 10;
 const POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT = 7;
 const POPUP_PREVIEW_SPACING_X = 54;
@@ -1589,12 +1600,8 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
 
-    const playerResultDelay = shouldDelayCombatResultForProjectile(lastPlayerAction, nextState.player.weaponClass)
-      ? playerActionAnimation?.impact ?? playerActionAnimation?.done
-      : undefined;
-    const enemyResultDelay = shouldDelayCombatResultForProjectile(lastEnemyAction, nextState.enemy.weaponClass)
-      ? enemyActionAnimation?.impact ?? enemyActionAnimation?.done
-      : undefined;
+    const playerResultDelay = playerActionAnimation?.impact;
+    const enemyResultDelay = enemyActionAnimation?.impact;
 
     if (nextState.lastPlayerDamage > 0) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
@@ -6169,38 +6176,78 @@ function animateAction(
   if (isAttackBodyAnimationKey(actionId)) {
     const isRangedWeapon = isRangedWeaponClass(weaponClass);
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
+    const bodyAnimation = getActiveBodyAnimation(bodyAnimationKey);
 
-    actionAnimations.push(playBodyAnimationOnce(target, actor, getActiveBodyAnimation(bodyAnimationKey)));
+    actionAnimations.push(playBodyAnimationOnce(target, actor, bodyAnimation));
     if (isRangedWeapon) {
       const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
       actionAnimations.push(projectileAnimation.done);
       impact = projectileAnimation.impact;
-    }
-    if (!isRangedWeapon && areArenaVfxEnabled(playerSettings)) {
-      showSlashArc(target, actor, actionId, direction, playerSettings);
-    }
-  }
+    } else {
+      const timeline = getMeleeActionTimeline(actionId, bodyAnimation);
 
-  if (animationAmount > 0 && !isRangedWeaponClass(weaponClass)) {
-    actionAnimations.push(
-      new Promise((resolve) => {
-        target.tweens.add({
-          targets: actor.sword,
-          angle: actor.sword.angle - 32 * sign * animationAmount,
-          duration: 110,
-          yoyo: true,
-          ease: "Back.easeOut",
-          onComplete: () => resolve(),
-        });
-      }),
-    );
+      impact = createSceneDelay(target, timeline.impactDelayMs);
+      actionAnimations.push(impact);
+      actionAnimations.push(playWeaponSwing(target, actor, sign, animationAmount, timeline));
+      if (areArenaVfxEnabled(playerSettings)) {
+        void impact.then(() => showSlashArc(target, actor, actionId, direction, playerSettings));
+      }
+    }
   }
 
   return {
     done: Promise.all(actionAnimations).then(() => undefined),
     impact,
   };
+}
+
+function getMeleeActionTimeline(actionId: AttackBodyAnimationKey, animation: BodyAnimationTuning): {
+  impactDelayMs: number;
+  weaponSwingDurationMs: number;
+  weaponAngle: number;
+} {
+  const timing = MELEE_ACTION_TIMINGS[actionId];
+  const duration = Math.max(1, animation.duration);
+
+  return {
+    impactDelayMs: Math.max(1, Math.round(duration * timing.impactProgress)),
+    weaponSwingDurationMs: Math.max(1, Math.round(duration * timing.weaponSwingProgress)),
+    weaponAngle: timing.weaponAngle,
+  };
+}
+
+function playWeaponSwing(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  sign: number,
+  animationAmount: number,
+  timing: ReturnType<typeof getMeleeActionTimeline>,
+): Promise<void> {
+  if (animationAmount <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    target.tweens.add({
+      targets: actor.sword,
+      angle: actor.sword.angle - timing.weaponAngle * sign * animationAmount,
+      duration: timing.weaponSwingDurationMs,
+      yoyo: true,
+      ease: "Sine.easeInOut",
+      onComplete: () => resolve(),
+    });
+  });
+}
+
+function createSceneDelay(target: Phaser.Scene, durationMs: number): Promise<void> {
+  if (durationMs <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    target.time.delayedCall(durationMs, () => resolve());
+  });
 }
 
 function isAttackBodyAnimationKey(actionId: ActionId): actionId is AttackBodyAnimationKey {
@@ -6213,14 +6260,6 @@ function queueCombatResultAnimation(
   animateResult: () => Promise<void>,
 ): void {
   actionAnimations.push(delay ? delay.then(animateResult) : animateResult());
-}
-
-function shouldDelayCombatResultForProjectile(actionId: ActionId | undefined, weaponClass?: HeroWeaponClass): boolean {
-  return Boolean(actionId && isProjectileAction(actionId, weaponClass));
-}
-
-function isProjectileAction(actionId: ActionId, weaponClass?: HeroWeaponClass): boolean {
-  return actionId === "shuriken" || (isAttackBodyAnimationKey(actionId) && isRangedWeaponClass(weaponClass));
 }
 
 function playProjectile(
