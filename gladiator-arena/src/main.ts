@@ -428,7 +428,7 @@ function refreshArenaLayout(): void {
 
     window.requestAnimationFrame(() => {
       arenaScene?.scale.refresh();
-      arenaScene?.sync(state);
+      void arenaScene?.renderState(state);
       syncActionArc();
       syncTurnProbe();
     });

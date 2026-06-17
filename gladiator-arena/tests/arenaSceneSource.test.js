@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
+const debugMainSource = readFileSync(resolve(currentDir, "../src/debugMain.ts"), "utf8");
 const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -203,6 +204,7 @@ test("low effects can hot swap paper doll textures after preload", () => {
 
 test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("sync(nextState: CombatState): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("const prepared = await this.prepareStateVisuals(nextState, { animateActions: true });"), true);
   assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
   assert.equal(arenaSceneSource.includes("playerActionAnimation = animateAction("), true);
   assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateAction("), true);
@@ -221,14 +223,36 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
 });
 
+test("arena render-only refresh does not replay action animations", () => {
+  assert.equal(arenaSceneSource.includes("private renderOnlyToken = 0;"), true);
+  assert.equal(arenaSceneSource.includes("async renderState(nextState: CombatState): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("await this.prepareStateVisuals(nextState, { animateActions: false });"), true);
+  assert.equal(arenaSceneSource.includes("options: { animateActions: boolean }"), true);
+  assert.equal(arenaSceneSource.includes("const syncToken = options.animateActions ? this.syncToken + 1 : this.syncToken;"), true);
+  assert.equal(arenaSceneSource.includes("if (options.animateActions) {"), true);
+  assert.equal(arenaSceneSource.includes("this.syncToken = syncToken;"), true);
+  assert.equal(arenaSceneSource.includes("options.animateActions ? syncToken !== this.syncToken : renderOnlyToken !== this.renderOnlyToken"), true);
+  assert.equal(mainSource.includes("void arenaScene?.renderState(state);"), true);
+  assert.equal(debugMainSource.includes("void arenaScene?.renderState(state);"), true);
+});
+
 test("melee attacks expose an impact timing before action completion", () => {
   assert.equal(arenaSceneSource.includes("interface MeleeActionTiming"), true);
   assert.equal(arenaSceneSource.includes("const MELEE_ACTION_TIMINGS"), true);
   assert.equal(arenaSceneSource.includes("function getMeleeActionTimeline("), true);
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationImpactDelayMs("), true);
   assert.equal(arenaSceneSource.includes("impact = createSceneDelay(target, timeline.impactDelayMs);"), true);
   assert.equal(arenaSceneSource.includes("actionAnimations.push(impact);"), true);
   assert.equal(arenaSceneSource.includes("playWeaponSwing(target, actor, sign, animationAmount, timeline)"), true);
   assert.equal(arenaSceneSource.includes("void impact.then(() => showSlashArc(target, actor, actionId, direction, playerSettings));"), true);
+});
+
+test("lunge exposes an impact timing before action completion", () => {
+  assert.equal(arenaSceneSource.includes("const LUNGE_ACTION_IMPACT_PROGRESS"), true);
+  assert.match(
+    arenaSceneSource,
+    /if \(actionId === "lunge"\) \{[\s\S]*done: playBodyAnimationOnce\(target, actor, animation\),[\s\S]*impact: createSceneDelay\(target, getBodyAnimationImpactDelayMs\(animation, LUNGE_ACTION_IMPACT_PROGRESS\)\),[\s\S]*\}/,
+  );
 });
 
 test("movement steps do not spawn floating step text", () => {
@@ -356,7 +380,8 @@ test("arena starts close between fighters and eases back to the normal camera", 
   assert.equal(arenaSceneSource.includes("ARENA_ENTRY_START_ZOOM_MULTIPLIER"), true);
   assert.equal(arenaSceneSource.includes("async prepareEntry(nextState: CombatState): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("async playEntryTransition(current = this.currentState): Promise<void>"), true);
-  assert.equal(arenaSceneSource.includes("private async prepareStateVisuals(nextState: CombatState): Promise<ArenaPreparedVisualState | undefined>"), true);
+  assert.equal(arenaSceneSource.includes("private async prepareStateVisuals("), true);
+  assert.equal(arenaSceneSource.includes("options: { animateActions: boolean }"), true);
   assert.equal(arenaSceneSource.includes("private startArenaEntryTransition(current: CombatState): Promise<void> | undefined"), true);
   assert.equal(arenaSceneSource.includes("getArenaEntryStartCameraTarget(finalTarget)"), true);
   assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS"), true);

@@ -269,7 +269,7 @@ async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimatio
 function refreshArenaLayout(): void {
   window.requestAnimationFrame(() => {
     arenaScene?.scale.refresh();
-    arenaScene?.sync(state);
+    void arenaScene?.renderState(state);
     syncActionArc();
     syncTurnProbe();
   });
@@ -707,7 +707,7 @@ function startDebugApp(): void {
   subscribeDebugTuning(() => {
     setCombatMovementTuning(debugTuning);
     syncHud();
-    arenaScene?.sync(state);
+    void arenaScene?.renderState(state);
     syncActionArc();
     syncHeroPortraitButton();
     syncTurnProbe();

@@ -505,6 +505,7 @@ const MELEE_ACTION_TIMINGS: Record<AttackBodyAnimationKey, MeleeActionTiming> = 
   medium: { impactProgress: 0.48, weaponSwingProgress: 0.48, weaponAngle: 32 },
   heavy: { impactProgress: 0.52, weaponSwingProgress: 0.52, weaponAngle: 38 },
 };
+const LUNGE_ACTION_IMPACT_PROGRESS = 0.58;
 const POPUP_PREVIEW_DAMAGE_AMOUNT = 10;
 const POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT = 7;
 const POPUP_PREVIEW_SPACING_X = 54;
@@ -1483,6 +1484,7 @@ export class ArenaScene extends Phaser.Scene {
   cameraFrameInitialized?: boolean;
   arenaEntryTransitionState: ArenaEntryTransitionState = "pending";
   private syncToken = 0;
+  private renderOnlyToken = 0;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
@@ -1544,7 +1546,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   async prepareEntry(nextState: CombatState): Promise<void> {
-    await this.prepareStateVisuals(nextState);
+    await this.prepareStateVisuals(nextState, { animateActions: false });
     if (!this.visuals) {
       return;
     }
@@ -1553,8 +1555,12 @@ export class ArenaScene extends Phaser.Scene {
     resetFighterBodyIdleAnimation(this.visuals.enemy, this.time.now);
   }
 
+  async renderState(nextState: CombatState): Promise<void> {
+    await this.prepareStateVisuals(nextState, { animateActions: false });
+  }
+
   async sync(nextState: CombatState): Promise<void> {
-    const prepared = await this.prepareStateVisuals(nextState);
+    const prepared = await this.prepareStateVisuals(nextState, { animateActions: true });
 
     if (!prepared) {
       return;
@@ -1660,11 +1666,18 @@ export class ArenaScene extends Phaser.Scene {
     await this.startArenaEntryTransition(current);
   }
 
-  private async prepareStateVisuals(nextState: CombatState): Promise<ArenaPreparedVisualState | undefined> {
+  private async prepareStateVisuals(
+    nextState: CombatState,
+    options: { animateActions: boolean },
+  ): Promise<ArenaPreparedVisualState | undefined> {
     const previousState = this.currentState;
-    const syncToken = this.syncToken + 1;
+    const syncToken = options.animateActions ? this.syncToken + 1 : this.syncToken;
+    const renderOnlyToken = this.renderOnlyToken + 1;
 
-    this.syncToken = syncToken;
+    if (options.animateActions) {
+      this.syncToken = syncToken;
+    }
+    this.renderOnlyToken = renderOnlyToken;
     this.currentState = nextState;
 
     if (!this.visuals) {
@@ -1672,7 +1685,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     await ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.enemy.equipment]);
-    if (syncToken !== this.syncToken) {
+    if (options.animateActions ? syncToken !== this.syncToken : renderOnlyToken !== this.renderOnlyToken) {
       return;
     }
 
@@ -6138,7 +6151,12 @@ function animateAction(
   }
 
   if (actionId === "lunge") {
-    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("lunge")) };
+    const animation = getActiveBodyAnimation("lunge");
+
+    return {
+      done: playBodyAnimationOnce(target, actor, animation),
+      impact: createSceneDelay(target, getBodyAnimationImpactDelayMs(animation, LUNGE_ACTION_IMPACT_PROGRESS)),
+    };
   }
 
   if (actionId === "taunt") {
@@ -6211,10 +6229,16 @@ function getMeleeActionTimeline(actionId: AttackBodyAnimationKey, animation: Bod
   const duration = Math.max(1, animation.duration);
 
   return {
-    impactDelayMs: Math.max(1, Math.round(duration * timing.impactProgress)),
+    impactDelayMs: getBodyAnimationImpactDelayMs(animation, timing.impactProgress),
     weaponSwingDurationMs: Math.max(1, Math.round(duration * timing.weaponSwingProgress)),
     weaponAngle: timing.weaponAngle,
   };
+}
+
+function getBodyAnimationImpactDelayMs(animation: BodyAnimationTuning, impactProgress: number): number {
+  const duration = Math.max(1, animation.duration);
+
+  return Math.max(1, Math.round(duration * impactProgress));
 }
 
 function playWeaponSwing(
