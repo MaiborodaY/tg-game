@@ -36,17 +36,53 @@ test("armory shop sorts products by rarity, equipment set, slot, armor, price, t
   assert.equal(armoryShopSource.includes("equipmentSet?.rank"), true);
 });
 
-test("armory shop renders equipment sets as stable product rows", () => {
-  assert.equal(armoryShopSource.includes("interface ArmoryProductSetRow"), true);
-  assert.equal(armoryShopSource.includes("getArmoryProductSetRows"), true);
-  assert.equal(armoryShopSource.includes("shouldRenderArmoryProductSetRows"), true);
-  assert.equal(armoryShopSource.includes('content.classList.toggle("armory-shop__content--set-rows"'), true);
-  assert.equal(armoryShopSource.includes('element.className = "armory-shop__set-row";'), true);
-  assert.equal(armoryShopSource.includes('element.dataset.setRow = row.key;'), true);
-  assert.equal(armoryShopSource.includes("--armory-shop-set-row-columns"), true);
+test("armory shop renders the catalog as a flat sorted grid", () => {
+  assert.equal(armoryShopSource.includes("interface ArmoryProductSetRow"), false);
+  assert.equal(armoryShopSource.includes("getArmoryProductSetRows"), false);
+  assert.equal(armoryShopSource.includes("shouldRenderArmoryProductSetRows"), false);
+  assert.equal(armoryShopSource.includes('content.classList.toggle("armory-shop__content--set-rows"'), false);
+  assert.equal(armoryShopSource.includes('element.className = "armory-shop__set-row";'), false);
+  assert.equal(armoryShopSource.includes("--armory-shop-set-row-columns"), false);
   assert.equal(armoryShopSource.includes("createTrackedProductButton(product, hero)"), true);
-  assert.equal(stylesSource.includes(".armory-shop__content--set-rows"), true);
-  assert.equal(stylesSource.includes(".armory-shop__set-row"), true);
+  assert.equal(stylesSource.includes(".armory-shop__content--set-rows"), false);
+  assert.equal(stylesSource.includes(".armory-shop__set-row"), false);
+});
+
+test("armory shop header exposes set and parts filters in one catalog toolbar", () => {
+  const cityArmoryHeaderRule = stylesSource.match(/\.armory-shop--city-mode:not\(\.weapon-shop\) \.armory-shop__header\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const cityArmoryTitleRule = stylesSource.match(/\.armory-shop--city-mode:not\(\.weapon-shop\) \.armory-shop__title\s*\{[\s\S]*?\}/)?.[0] ?? "";
+
+  assert.equal(armoryShopSource.includes("getArmoryEquipmentSetOptions"), true);
+  assert.equal(armoryShopSource.includes("getSortedArmoryCatalogProducts"), true);
+  assert.equal(armoryShopSource.includes("filterArmoryProductsByEquipmentSet(sortedProducts, selectedEquipmentSetId)"), true);
+  assert.equal(armoryShopSource.includes("filterArmoryProductsByParts(setFilteredProducts, selectedPartFilterIds)"), true);
+  assert.equal(armoryShopSource.includes("selectedEquipmentSetId = setFilter.value || undefined;"), true);
+  assert.equal(armoryShopSource.includes("selectedPartFilterIds = getDefaultArmoryPartFilterIds();"), true);
+  assert.equal(armoryShopSource.includes("if (partIds.size === 0)"), true);
+  assert.equal(armoryShopSource.includes("return new Set();"), true);
+  assert.equal(armoryShopSource.includes("selectedPartFilterIds.delete(part.id);"), true);
+  assert.equal(armoryShopSource.includes("selectedPartFilterIds.size > 1"), false);
+  assert.equal(armoryShopSource.includes("selectedPartFilterIds.size === 0 || selectedPartFilterIds.size === ARMORY_PART_FILTERS.length"), true);
+  assert.equal(armoryShopSource.includes("getAvailableArmoryEquipmentSetOptions(hero, allEquipmentSetOptions)"), true);
+  assert.equal(armoryShopSource.includes("isArmoryEquipmentSetOptionAvailable(hero, option)"), true);
+  assert.equal(armoryShopSource.includes("!isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
+  assert.equal(armoryShopSource.includes("renderEquipmentSetFilterOptions(availableEquipmentSetOptions)"), true);
+  assert.equal(armoryShopSource.includes("updateEquipmentSetFilterRarity(selectedEquipmentSetOption?.rarity)"), true);
+  assert.equal(armoryShopSource.includes('option.textContent = setOption?.info.name ?? "All sets";'), true);
+  assert.equal(armoryShopSource.includes("armory-shop__set-filter--rarity-${rarity}"), true);
+  assert.equal(armoryShopSource.includes("armory-shop__set-filter-option--rarity-${setOption.rarity}"), true);
+  assert.equal(armoryShopSource.includes("header.append(title, setFilter, partsFilter, filterPlaceholder, selected, headerMeta);"), true);
+  assert.equal(armoryShopSource.includes("filterPlaceholder.disabled = true;"), true);
+  assert.equal(armoryShopSource.includes('input.type = "checkbox";'), true);
+  assert.equal(stylesSource.includes(".armory-shop__set-filter"), true);
+  assert.equal(stylesSource.includes(".armory-shop__set-filter--rarity-rare"), true);
+  assert.equal(stylesSource.includes(".armory-shop__set-filter-option--rarity-rare"), true);
+  assert.equal(stylesSource.includes(".armory-shop__parts-filter"), true);
+  assert.match(stylesSource, /\.armory-shop--city-mode:not\(\.weapon-shop\) \.armory-shop__parts-panel\s*\{[\s\S]*top: auto;[\s\S]*bottom: calc\(100% \+ 5px\);[\s\S]*\}/);
+  assert.equal(stylesSource.includes(".armory-shop__toolbar-button"), true);
+  assert.equal(stylesSource.includes(".armory-shop--city-mode:not(.weapon-shop) .armory-shop__menu"), true);
+  assert.match(cityArmoryHeaderRule, /grid-template-columns: minmax\(0, 1fr\) minmax\(82px, 0\.78fr\) 31px minmax\(58px, auto\);/);
+  assert.match(cityArmoryTitleRule, /display: none;/);
 });
 
 test("weapon shop sorts products by rarity, damage, price, then name", () => {
@@ -142,7 +178,8 @@ test("city shop mode has a screen frame and compact title plaque", () => {
 });
 
 test("city category buttons use icons without visible text labels", () => {
-  assert.equal(armoryShopSource.includes("button.setAttribute(\"aria-label\", category.name);"), true);
+  assert.equal(armoryShopSource.includes("createCategoryButton"), false);
+  assert.equal(armoryShopSource.includes("armory-shop__category-button"), false);
   assert.equal(weaponShopSource.includes("button.setAttribute(\"aria-label\", category.name);"), true);
   assert.equal(weaponShopSource.includes('id: "maces"'), true);
   assert.equal(weaponShopSource.includes('name: "Maces"'), true);
@@ -191,10 +228,11 @@ test("city shop meta panel stacks gold and level as readable counters", () => {
   assert.equal(stylesSource.includes(".armory-shop--city-mode .armory-shop__level-value"), true);
 });
 
-test("city shops keep product cards wide around their side rails", () => {
-  assert.equal(stylesSource.includes("--shop-city-product-columns: 3;"), true);
+test("city armory uses eight product columns while weapon shop keeps three", () => {
+  assert.equal(stylesSource.includes("--shop-city-product-columns: 8;"), true);
   assert.equal(stylesSource.includes("--shop-city-product-row-height: clamp(104px, 15.8dvh, 124px);"), true);
   assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-product-columns: 3;[\s\S]*\}/);
+  assert.equal(stylesSource.includes(".armory-shop--city-mode:not(.weapon-shop) .armory-shop__option--product"), true);
   assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__menu\s*\{[\s\S]*var\(--shop-city-rail-width\) minmax\(0, 1fr\) var\(--shop-city-rail-width\);[\s\S]*\}/);
   assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__category-rail--ranged\s*\{[\s\S]*order: 1;[\s\S]*\}/);
   assert.match(stylesSource, /\.weapon-shop\.armory-shop--city-mode \.armory-shop__category-rail--melee\s*\{[\s\S]*order: 3;[\s\S]*\}/);
@@ -316,23 +354,43 @@ test("sealed armory cards show a centered ribbon and dark item silhouette", () =
 
 test("city shop confirm strip is embedded in the shop header while back floats outside it", () => {
   const cityHeaderRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__header\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const armorySelectionHeaderRule = stylesSource.match(
+    /\.armory-shop--city-mode:not\(\.weapon-shop\)\.armory-shop--has-selection \.armory-shop__header\s*\{[\s\S]*?\}/,
+  )?.[0] ?? "";
+  const armorySelectionHeaderMetaRule = stylesSource.match(
+    /\.armory-shop--city-mode:not\(\.weapon-shop\)\.armory-shop--has-selection \.armory-shop__header-meta\s*\{[\s\S]*?\}/,
+  )?.[0] ?? "";
+  const armorySelectionHiddenControlsRule = stylesSource.match(
+    /\.armory-shop--city-mode:not\(\.weapon-shop\)\.armory-shop--has-selection \.armory-shop__set-filter,[\s\S]*?\.armory-shop--city-mode:not\(\.weapon-shop\)\.armory-shop--has-selection \.armory-shop__toolbar-button\s*\{[\s\S]*?\}/,
+  )?.[0] ?? "";
+  const armorySelectionSelectedCardRule = stylesSource.match(
+    /\.armory-shop--city-mode:not\(\.weapon-shop\)\.armory-shop--has-selection \.armory-shop__selected-card\s*\{[\s\S]*?\}/,
+  )?.[0] ?? "";
   const citySelectedRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__selected\s*\{[\s\S]*?\}/)?.[0] ?? "";
   const cityBackRule = stylesSource.match(/\.armory-shop--city-mode \.armory-shop__back\s*\{[\s\S]*?\}/)?.[0] ?? "";
 
+  assert.equal(armoryShopSource.includes("header.append(title, setFilter, partsFilter, filterPlaceholder, selected, headerMeta);"), true);
+  assert.equal(weaponShopSource.includes("header.append(title, selected, headerMeta);"), true);
+
   [armoryShopSource, weaponShopSource].forEach((source) => {
-    assert.equal(source.includes("header.append(title, selected, headerMeta);"), true);
     assert.equal(source.includes("header.append(back, title, selected, headerMeta);"), false);
     assert.equal(source.includes("panel.append(selected);"), false);
     assert.equal(source.includes("panel.append(back);"), true);
     assert.equal(source.includes("menu.append(tray, selected, categoryRail);"), false);
   });
-  assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail);"), true);
+  assert.equal(armoryShopSource.includes("menu.append(tray);"), true);
+  assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail);"), false);
   assert.equal(armoryShopSource.includes("menu.append(tray, categoryRail, back);"), false);
   assert.equal(weaponShopSource.includes("menu.append(rangedCategoryRail, tray, meleeCategoryRail);"), true);
   assert.equal(weaponShopSource.includes("menu.append(rangedCategoryRail, tray, meleeCategoryRail, back);"), false);
 
   assert.equal(stylesSource.includes("--shop-city-header-height: 72px;"), true);
   assert.match(cityHeaderRule, /overflow: visible;/);
+  assert.match(armorySelectionHeaderRule, /grid-template-columns: minmax\(0, 1fr\) clamp\(66px, 17vw, 78px\);/);
+  assert.match(armorySelectionHeaderMetaRule, /grid-column: 2;/);
+  assert.match(armorySelectionHeaderMetaRule, /grid-row: 1;/);
+  assert.match(armorySelectionHiddenControlsRule, /display: none;/);
+  assert.match(armorySelectionSelectedCardRule, /grid-template-columns: 44px minmax\(0, 1fr\) minmax\(62px, auto\);/);
   assert.match(citySelectedRule, /grid-column: 1;/);
   assert.match(citySelectedRule, /align-self: stretch;/);
   assert.doesNotMatch(citySelectedRule, /position: absolute;/);
@@ -391,7 +449,7 @@ test("shop purchases refresh the hero portrait for every non-consumable equipmen
 test("city shops lazily prewarm visible equipment products", () => {
   assert.equal(armoryShopSource.includes("onPrewarmProducts?: (products: readonly ArmoryProduct[]) => void"), true);
   assert.equal(weaponShopSource.includes("onPrewarmProducts?: (products: readonly WeaponProduct[]) => void"), true);
-  assert.equal(armoryShopSource.includes("SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6"), true);
+  assert.equal(armoryShopSource.includes("SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 8"), true);
   assert.equal(weaponShopSource.includes("SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6"), true);
   assert.equal(armoryShopSource.includes("SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140"), true);
   assert.equal(weaponShopSource.includes("SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140"), true);

@@ -8,10 +8,6 @@ import {
 import {
   DAMAGE_BLOCK_ICON_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
-  SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
-  SHOP_CATEGORY_BODY_ICON_ASSET_URL,
-  SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
-  SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
 import { GENERATED_ARMORY_PRODUCTS } from "./generated/equipmentItems.generated";
@@ -47,7 +43,6 @@ interface ArmoryCategory {
   id: string;
   name: string;
   shortLabel: string;
-  iconUrl?: string;
   subcategories: ArmorySubcategory[];
 }
 
@@ -98,11 +93,19 @@ interface PairedArmorySlotConfig {
   pluralLabel: string;
 }
 
-interface ArmoryProductSetRow {
-  key: string;
-  label?: string;
-  products: ArmoryProduct[];
+interface ArmoryPartFilter {
+  id: string;
+  name: string;
+  shortLabel: string;
 }
+
+interface ArmoryEquipmentSetOption {
+  info: HeroEquipmentSetInfo;
+  products: ArmoryProduct[];
+  rarity: ShopItemRarity;
+}
+
+const ALL_ARMORY_EQUIPMENT_SETS_FILTER_VALUE = "";
 
 const PAIRED_ARMORY_SLOT_CONFIGS: PairedArmorySlotConfig[] = [
   { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard", singularLabel: "Shoulderguard", pluralLabel: "Shoulders" },
@@ -123,35 +126,60 @@ const ARMORY_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
   unique: 6,
 };
 
+const ARMORY_SET_FILTER_RARITY_CLASS_NAMES = (Object.keys(ARMORY_RARITY_SORT_ORDER) as ShopItemRarity[]).map(
+  (rarity) => `armory-shop__set-filter--rarity-${rarity}`,
+);
+
 const ARMORY_SLOT_SORT_ORDER: Record<HeroEquipmentSlotKey, number> = {
   weaponMain: 0,
   weaponBow: 0,
   helmet: 0,
-  breastplate: 0,
-  backShoulderguard: 0,
-  frontShoulderguard: 0,
-  backWrist: 1,
-  frontWrist: 1,
-  backGlove: 2,
-  frontGlove: 2,
-  backGreave: 0,
-  frontGreave: 0,
-  backShinguard: 1,
-  frontShinguard: 1,
-  backBoot: 2,
-  frontBoot: 2,
+  breastplate: 1,
+  backShoulderguard: 2,
+  frontShoulderguard: 2,
+  backWrist: 3,
+  frontWrist: 3,
+  backGlove: 4,
+  frontGlove: 4,
+  backGreave: 5,
+  frontGreave: 5,
+  backShinguard: 6,
+  frontShinguard: 6,
+  backBoot: 7,
+  frontBoot: 7,
 };
 
 const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
-const SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 6;
+const SHOP_VISIBLE_PREWARM_PRODUCT_LIMIT = 8;
 const SHOP_PREWARM_AFTER_SCROLL_DELAY_MS = 140;
+const ARMORY_PART_FILTERS: readonly ArmoryPartFilter[] = [
+  { id: "head", name: "Head", shortLabel: "HEAD" },
+  { id: "body", name: "Body", shortLabel: "BODY" },
+  { id: "arms", name: "Arms", shortLabel: "ARMS" },
+  { id: "legs", name: "Legs", shortLabel: "LEGS" },
+];
+const ARMORY_PART_FILTER_BY_SLOT: Partial<Record<HeroEquipmentSlotKey, string>> = {
+  helmet: "head",
+  breastplate: "body",
+  backShoulderguard: "arms",
+  frontShoulderguard: "arms",
+  backWrist: "arms",
+  frontWrist: "arms",
+  backGlove: "arms",
+  frontGlove: "arms",
+  backGreave: "legs",
+  frontGreave: "legs",
+  backShinguard: "legs",
+  frontShinguard: "legs",
+  backBoot: "legs",
+  frontBoot: "legs",
+};
 
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
     id: "head",
     name: "Head",
     shortLabel: "HEAD",
-    iconUrl: SHOP_CATEGORY_HEAD_ICON_ASSET_URL,
     subcategories: [
       {
         id: "head",
@@ -165,7 +193,6 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "body",
     name: "Body",
     shortLabel: "BODY",
-    iconUrl: SHOP_CATEGORY_BODY_ICON_ASSET_URL,
     subcategories: [
       {
         id: "chest",
@@ -179,7 +206,6 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "arms",
     name: "Arms",
     shortLabel: "ARMS",
-    iconUrl: SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
     subcategories: [
       {
         id: "shoulders",
@@ -205,7 +231,6 @@ const ARMORY_CATEGORIES: ArmoryCategory[] = [
     id: "legs",
     name: "Legs",
     shortLabel: "LEGS",
-    iconUrl: SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
     subcategories: [
       {
         id: "thighs",
@@ -254,37 +279,83 @@ function getArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduct[] {
   return category.subcategories.flatMap((subcategory) => subcategory.products);
 }
 
-function getSortedArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduct[] {
-  return [...getArmoryCategoryProducts(category)].sort(compareArmoryProducts);
+function getArmoryCatalogProducts(): ArmoryProduct[] {
+  return ARMORY_CATEGORIES.flatMap(getArmoryCategoryProducts);
 }
 
-function getArmoryProductSetRows(products: readonly ArmoryProduct[]): ArmoryProductSetRow[] {
-  const rows: ArmoryProductSetRow[] = [];
-  const rowsByKey = new Map<string, ArmoryProductSetRow>();
+function getSortedArmoryCatalogProducts(): ArmoryProduct[] {
+  return getArmoryCatalogProducts().sort(compareArmoryProducts);
+}
 
-  products.forEach((product) => {
+function getArmoryEquipmentSetOptions(): ArmoryEquipmentSetOption[] {
+  const optionsById = new Map<string, { info: HeroEquipmentSetInfo; products: ArmoryProduct[] }>();
+
+  getArmoryCatalogProducts().forEach((product) => {
     const setInfo = getArmoryProductSetInfo(product);
-    const key = setInfo ? `set:${setInfo.rank}:${setInfo.id}` : `product:${product.id}`;
-    let row = rowsByKey.get(key);
 
-    if (!row) {
-      row = {
-        key,
-        label: setInfo?.name,
-        products: [],
-      };
-      rowsByKey.set(key, row);
-      rows.push(row);
+    if (!setInfo) {
+      return;
     }
 
-    row.products.push(product);
+    const existingOption = optionsById.get(setInfo.id);
+
+    if (existingOption) {
+      existingOption.products.push(product);
+      return;
+    }
+
+    optionsById.set(setInfo.id, { info: setInfo, products: [product] });
   });
 
-  return rows;
+  return [...optionsById.values()]
+    .flatMap((option) => {
+      const firstProduct = option.products[0];
+
+      return firstProduct
+        ? [
+            {
+              ...option,
+              rarity: getShopProductRarity(firstProduct.itemIds, firstProduct.rarity),
+            },
+          ]
+        : [];
+    })
+    .sort((left, right) => left.info.rank - right.info.rank || left.info.name.localeCompare(right.info.name));
 }
 
-function shouldRenderArmoryProductSetRows(rows: readonly ArmoryProductSetRow[]): boolean {
-  return rows.some((row) => row.products.length > 1);
+function filterArmoryProductsByEquipmentSet(products: readonly ArmoryProduct[], equipmentSetId: string | undefined): ArmoryProduct[] {
+  if (!equipmentSetId) {
+    return [...products];
+  }
+
+  return products.filter((product) => getArmoryProductSetInfo(product)?.id === equipmentSetId);
+}
+
+function getAvailableArmoryEquipmentSetOptions(
+  hero: HeroState,
+  equipmentSetOptions: readonly ArmoryEquipmentSetOption[],
+): ArmoryEquipmentSetOption[] {
+  return equipmentSetOptions.filter((option) => isArmoryEquipmentSetOptionAvailable(hero, option));
+}
+
+function isArmoryEquipmentSetOptionAvailable(hero: HeroState, option: ArmoryEquipmentSetOption): boolean {
+  return option.products.some((product) => !isShopProductSealed(hero, product.itemIds, product.rarity));
+}
+
+function filterArmoryProductsByParts(products: readonly ArmoryProduct[], partIds: ReadonlySet<string>): ArmoryProduct[] {
+  if (partIds.size === 0) {
+    return [...products];
+  }
+
+  return products.filter((product) => {
+    const partId = getArmoryProductPartFilterId(product);
+
+    return partId ? partIds.has(partId) : true;
+  });
+}
+
+function getDefaultArmoryPartFilterIds(): Set<string> {
+  return new Set();
 }
 
 function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): number {
@@ -337,6 +408,15 @@ function getArmoryProductSetInfo(product: ArmoryProduct): HeroEquipmentSetInfo |
     const equipmentSet = HERO_ITEM_CATALOG[itemId]?.equipmentSet;
 
     return equipmentSet ? [equipmentSet] : [];
+  })[0];
+}
+
+function getArmoryProductPartFilterId(product: ArmoryProduct): string | undefined {
+  return product.itemIds.flatMap((itemId) => {
+    const slotKey = HERO_ITEM_CATALOG[itemId]?.equipmentSlot;
+    const partId = slotKey ? ARMORY_PART_FILTER_BY_SLOT[slotKey] : undefined;
+
+    return partId ? [partId] : [];
   })[0];
 }
 
@@ -479,7 +559,8 @@ function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotCo
 }
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
-  let selectedCategoryId: string | undefined;
+  let selectedEquipmentSetId: string | undefined;
+  let selectedPartFilterIds = getDefaultArmoryPartFilterIds();
   let previewProduct: ArmoryProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -512,18 +593,76 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   const menu = document.createElement("div");
   menu.className = "armory-shop__menu";
 
-  const categoryRail = document.createElement("div");
-  categoryRail.className = "armory-shop__category-rail";
-  categoryRail.style.setProperty("--shop-category-count", String(ARMORY_CATEGORIES.length));
-
   const tray = document.createElement("div");
   tray.className = "armory-shop__tray";
+  const allEquipmentSetOptions = getArmoryEquipmentSetOptions();
 
   const header = document.createElement("div");
   header.className = "armory-shop__header";
 
   const title = document.createElement("h2");
   title.className = "armory-shop__title";
+
+  const setFilter = document.createElement("select");
+  setFilter.className = "armory-shop__set-filter";
+  setFilter.setAttribute("aria-label", "Armor set");
+  setFilter.append(createEquipmentSetFilterOption());
+  setFilter.addEventListener("change", () => {
+    selectedEquipmentSetId = setFilter.value || undefined;
+    clearProductPreview();
+    render();
+  });
+
+  const partsFilter = document.createElement("details");
+  const partsFilterSummary = document.createElement("summary");
+  const partsFilterSummaryText = document.createElement("span");
+  const partsFilterPanel = document.createElement("div");
+  const partFilterInputs = new Map<string, HTMLInputElement>();
+
+  partsFilter.className = "armory-shop__parts-filter";
+  partsFilterSummary.className = "armory-shop__parts-summary";
+  partsFilterSummaryText.className = "armory-shop__parts-summary-text";
+  partsFilterSummary.append(partsFilterSummaryText);
+  partsFilterPanel.className = "armory-shop__parts-panel";
+  ARMORY_PART_FILTERS.forEach((part) => {
+    const label = document.createElement("label");
+    const input = document.createElement("input");
+    const text = document.createElement("span");
+
+    label.className = "armory-shop__parts-option";
+    input.className = "armory-shop__parts-checkbox";
+    input.type = "checkbox";
+    input.value = part.id;
+    input.checked = selectedPartFilterIds.has(part.id);
+    text.className = "armory-shop__parts-option-text";
+    text.textContent = part.name;
+    input.addEventListener("change", () => {
+      if (input.checked) {
+        selectedPartFilterIds.add(part.id);
+      } else {
+        selectedPartFilterIds.delete(part.id);
+      }
+
+      clearProductPreview();
+      updatePartsFilterControls();
+      render();
+    });
+    partFilterInputs.set(part.id, input);
+    label.append(input, text);
+    partsFilterPanel.append(label);
+  });
+  partsFilter.append(partsFilterSummary, partsFilterPanel);
+
+  const filterPlaceholder = document.createElement("button");
+  const filterPlaceholderIcon = document.createElement("span");
+  filterPlaceholder.className = "armory-shop__toolbar-button armory-shop__toolbar-button--placeholder";
+  filterPlaceholder.type = "button";
+  filterPlaceholder.disabled = true;
+  filterPlaceholder.setAttribute("aria-label", "Additional filters coming soon");
+  filterPlaceholderIcon.className = "armory-shop__toolbar-dots";
+  filterPlaceholderIcon.setAttribute("aria-hidden", "true");
+  filterPlaceholderIcon.textContent = "...";
+  filterPlaceholder.append(filterPlaceholderIcon);
 
   const gold = document.createElement("span");
   gold.className = "armory-shop__gold";
@@ -589,13 +728,13 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   });
 
   if (usesCityHeroPreview) {
-    header.append(title, selected, headerMeta);
+    header.append(title, setFilter, partsFilter, filterPlaceholder, selected, headerMeta);
     tray.append(header, subcategories, content, scrollIndicator);
-    menu.append(tray, categoryRail);
+    menu.append(tray);
   } else {
-    header.append(back, title, headerMeta);
+    header.append(back, title, setFilter, partsFilter, filterPlaceholder, headerMeta);
     tray.append(header, subcategories, selected, content, scrollIndicator);
-    menu.append(categoryRail, tray);
+    menu.append(tray);
   }
   if (options.mountPreview) {
     panel.append(previewShell);
@@ -617,7 +756,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function open(): void {
     clearTransitionTimer();
-    selectedCategoryId = ARMORY_CATEGORIES[0]?.id;
+    selectedEquipmentSetId = undefined;
+    selectedPartFilterIds = getDefaultArmoryPartFilterIds();
     clearProductPreview();
     window.addEventListener("pointerdown", dismissPreviewFromPointerDown, true);
     options.onOpen?.();
@@ -657,18 +797,29 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
   function render(): void {
     const hero = options.getHero();
-    const selectedCategory = ARMORY_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? ARMORY_CATEGORIES[0]!;
-    const selectedProducts = getSortedArmoryCategoryProducts(selectedCategory);
-    const productSetRows = getArmoryProductSetRows(selectedProducts);
-    const usesProductSetRows = shouldRenderArmoryProductSetRows(productSetRows);
+    const availableEquipmentSetOptions = getAvailableArmoryEquipmentSetOptions(hero, allEquipmentSetOptions);
+    let selectedEquipmentSetOption = selectedEquipmentSetId
+      ? availableEquipmentSetOptions.find((option) => option.info.id === selectedEquipmentSetId)
+      : undefined;
 
-    selectedCategoryId = selectedCategory.id;
-    title.textContent = selectedCategory.name;
+    if (selectedEquipmentSetId && !selectedEquipmentSetOption) {
+      selectedEquipmentSetId = undefined;
+      selectedEquipmentSetOption = undefined;
+      clearProductPreview();
+    }
+
+    const sortedProducts = getSortedArmoryCatalogProducts();
+    const setFilteredProducts = filterArmoryProductsByEquipmentSet(sortedProducts, selectedEquipmentSetId);
+    const selectedProducts = filterArmoryProductsByParts(setFilteredProducts, selectedPartFilterIds);
+
+    title.textContent = "Gear";
+    renderEquipmentSetFilterOptions(availableEquipmentSetOptions);
+    updateEquipmentSetFilterRarity(selectedEquipmentSetOption?.rarity);
+    updatePartsFilterControls();
     goldAmount.textContent = String(hero.gold);
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
     levelValue.textContent = String(hero.level);
     level.setAttribute("aria-label", `Level ${hero.level}`);
-    categoryRail.replaceChildren();
     subcategories.replaceChildren();
     content.replaceChildren();
     productButtons = new Map();
@@ -680,13 +831,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     shop.classList.toggle("armory-shop--has-subcategories", false);
     content.classList.toggle("armory-shop__content--categories", false);
     content.classList.toggle("armory-shop__content--products", true);
-    content.classList.toggle("armory-shop__content--set-rows", usesProductSetRows);
     content.classList.toggle("armory-shop__content--confirm", false);
     syncSelectionState();
-
-    ARMORY_CATEGORIES.forEach((category) => {
-      categoryRail.append(createCategoryButton(category, category.id === selectedCategory.id));
-    });
 
     renderSelectedProduct(hero);
 
@@ -697,11 +843,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       return;
     }
 
-    if (usesProductSetRows) {
-      productSetRows.forEach((row) => content.append(createProductSetRow(row, hero)));
-    } else {
-      selectedProducts.forEach((product) => content.append(createTrackedProductButton(product, hero)));
-    }
+    selectedProducts.forEach((product) => content.append(createTrackedProductButton(product, hero)));
     scheduleVisibleProductPrewarm();
   }
 
@@ -783,39 +925,55 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     unmountPreview = options.mountPreview(preview);
   }
 
-  function createCategoryButton(category: ArmoryCategory, isActive: boolean): HTMLButtonElement {
-    const button = document.createElement("button");
-    const iconUrl = category.iconUrl ?? getShopProductIconUrl(getArmoryCategoryProducts(category).flatMap((product) => product.itemIds));
+  function updatePartsFilterControls(): void {
+    ARMORY_PART_FILTERS.forEach((part) => {
+      const input = partFilterInputs.get(part.id);
 
-    button.className = "armory-shop__category-button";
-    button.classList.toggle("armory-shop__category-button--active", isActive);
-    button.type = "button";
-    button.title = category.name;
-    button.setAttribute("aria-label", category.name);
-    button.setAttribute("aria-pressed", String(isActive));
-    if (iconUrl) {
-      const icon = document.createElement("img");
-
-      icon.className = "armory-shop__category-icon";
-      icon.src = iconUrl;
-      icon.alt = "";
-      icon.decoding = "async";
-      icon.draggable = false;
-      button.append(icon);
-    } else {
-      const fallback = document.createElement("span");
-
-      fallback.className = "armory-shop__category-fallback";
-      fallback.textContent = category.shortLabel;
-      button.append(fallback);
-    }
-    button.addEventListener("click", () => {
-      selectedCategoryId = category.id;
-      clearProductPreview();
-      render();
+      if (input) {
+        input.checked = selectedPartFilterIds.has(part.id);
+      }
     });
+    partsFilterSummaryText.textContent = getPartsFilterSummaryText();
+  }
 
-    return button;
+  function getPartsFilterSummaryText(): string {
+    if (selectedPartFilterIds.size === 0 || selectedPartFilterIds.size === ARMORY_PART_FILTERS.length) {
+      return "All parts";
+    }
+
+    if (selectedPartFilterIds.size === 1) {
+      const selectedPart = ARMORY_PART_FILTERS.find((part) => selectedPartFilterIds.has(part.id));
+
+      return selectedPart?.name ?? "Parts";
+    }
+
+    return `${selectedPartFilterIds.size} parts`;
+  }
+
+  function renderEquipmentSetFilterOptions(equipmentSetOptions: readonly ArmoryEquipmentSetOption[]): void {
+    setFilter.replaceChildren(createEquipmentSetFilterOption(), ...equipmentSetOptions.map(createEquipmentSetFilterOption));
+    setFilter.value = selectedEquipmentSetId ?? ALL_ARMORY_EQUIPMENT_SETS_FILTER_VALUE;
+  }
+
+  function updateEquipmentSetFilterRarity(rarity?: ShopItemRarity): void {
+    setFilter.classList.remove(...ARMORY_SET_FILTER_RARITY_CLASS_NAMES);
+
+    if (rarity) {
+      setFilter.classList.add(`armory-shop__set-filter--rarity-${rarity}`);
+    }
+  }
+
+  function createEquipmentSetFilterOption(setOption?: ArmoryEquipmentSetOption): HTMLOptionElement {
+    const option = document.createElement("option");
+
+    option.value = setOption?.info.id ?? ALL_ARMORY_EQUIPMENT_SETS_FILTER_VALUE;
+    option.textContent = setOption?.info.name ?? "All sets";
+
+    if (setOption) {
+      option.className = `armory-shop__set-filter-option--rarity-${setOption.rarity}`;
+    }
+
+    return option;
   }
 
   function createProductButton(product: ArmoryProduct, hero: HeroState, isSelected: boolean): HTMLButtonElement {
@@ -854,21 +1012,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     productButtons.set(product.id, button);
 
     return button;
-  }
-
-  function createProductSetRow(row: ArmoryProductSetRow, hero: HeroState): HTMLElement {
-    const element = document.createElement("div");
-
-    element.className = "armory-shop__set-row";
-    element.dataset.setRow = row.key;
-    element.style.setProperty("--armory-shop-set-row-columns", String(Math.max(3, row.products.length)));
-    element.setAttribute("role", "group");
-    if (row.label) {
-      element.setAttribute("aria-label", `${row.label} set`);
-    }
-    row.products.forEach((product) => element.append(createTrackedProductButton(product, hero)));
-
-    return element;
   }
 
   function createSelectedProductStrip(onBuy: () => void): ArmorySelectedStripElements {
@@ -975,7 +1118,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     }
 
     const targetElement = target instanceof Element ? target : target.parentElement;
-    const shopAction = targetElement?.closest(".armory-shop__option--product, .armory-shop__category-button, .armory-shop__back");
+    const shopAction = targetElement?.closest(
+      ".armory-shop__option--product, .armory-shop__set-filter, .armory-shop__parts-filter, .armory-shop__toolbar-button, .armory-shop__back",
+    );
 
     if (shopAction && shop.contains(shopAction)) {
       return;

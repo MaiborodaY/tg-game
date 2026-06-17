@@ -4409,7 +4409,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop--city-mode {
-  --shop-city-product-columns: 3;
+  --shop-city-product-columns: 8;
   --shop-city-product-gap: 5px;
   --shop-city-product-row-height: clamp(104px, 15.8dvh, 124px);
   --shop-city-rail-width: 77px;
@@ -4557,6 +4557,10 @@ body.debug-active .city-menu__portrait-button:active {
   box-shadow: none;
 }
 
+.armory-shop:not(.weapon-shop) .armory-shop__menu {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .armory-shop--city-mode .armory-shop__menu {
   position: absolute;
   right: 0;
@@ -4579,6 +4583,10 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 2px 0 rgba(255, 211, 132, 0.18),
     0 -3px 0 rgba(22, 7, 3, 0.36);
   pointer-events: none;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__menu {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .armory-shop__tray {
@@ -4799,6 +4807,10 @@ body.debug-active .city-menu__portrait-button:active {
   border-bottom: 1px solid rgba(255, 211, 132, 0.3);
 }
 
+.armory-shop:not(.weapon-shop) .armory-shop__header {
+  grid-template-columns: 34px minmax(52px, 0.4fr) minmax(0, 1fr) minmax(82px, 0.78fr) 30px minmax(58px, auto);
+}
+
 .armory-shop--city-mode .armory-shop__header {
   position: relative;
   grid-row: 1;
@@ -4822,6 +4834,17 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 0 18px rgba(8, 2, 1, 0.3),
     0 1px 0 rgba(255, 211, 132, 0.12);
   isolation: isolate;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__header {
+  grid-template-columns: minmax(0, 1fr) minmax(82px, 0.78fr) 31px minmax(58px, auto);
+  gap: 5px;
+  align-items: center;
+}
+
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__header {
+  grid-template-columns: minmax(0, 1fr) clamp(66px, 17vw, 78px);
+  gap: 7px;
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__header {
@@ -4920,8 +4943,182 @@ body.debug-active .city-menu__portrait-button:active {
   letter-spacing: 0.11em;
 }
 
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__title {
+  display: none;
+}
+
 .armory-shop--city-mode.armory-shop--has-selection .armory-shop__title {
   opacity: 0;
+}
+
+.armory-shop__set-filter,
+.armory-shop__parts-summary,
+.armory-shop__toolbar-button {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid rgba(255, 211, 132, 0.26);
+  border-radius: 7px;
+  color: #f0c57a;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.1), rgba(8, 2, 1, 0.28)),
+    rgba(24, 8, 3, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.12),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.58),
+    0 1px 0 rgba(255, 211, 132, 0.08);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.9);
+}
+
+.armory-shop__set-filter {
+  width: 100%;
+  padding: 0 8px;
+  border-color: var(--shop-rarity, rgba(255, 211, 132, 0.26));
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, var(--shop-rarity-light, rgba(255, 226, 142, 0.1)) 0%, var(--shop-rarity, rgba(24, 8, 3, 0.38)) 54%, var(--shop-rarity-dark, rgba(8, 2, 1, 0.28)) 100%),
+    rgba(24, 8, 3, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.12),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.58),
+    0 1px 0 rgba(255, 211, 132, 0.08),
+    0 0 8px var(--shop-rarity-soft, rgba(255, 211, 132, 0));
+}
+
+.armory-shop__set-filter option {
+  color: #f0c57a;
+  background-color: #220b05;
+}
+
+.armory-shop__set-filter option[class*="armory-shop__set-filter-option--rarity-"] {
+  color: var(--shop-rarity-light, #f0c57a);
+  background-color: var(--shop-rarity-dark, #220b05);
+}
+
+.armory-shop__parts-filter {
+  position: relative;
+  z-index: 4;
+  min-width: 0;
+}
+
+.armory-shop__parts-filter[open] {
+  z-index: 18;
+}
+
+.armory-shop__parts-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  place-items: center;
+  width: 100%;
+  padding: 0 7px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.armory-shop__parts-summary::-webkit-details-marker {
+  display: none;
+}
+
+.armory-shop__parts-summary::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 4px solid #d9ad67;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.armory-shop__parts-summary-text {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.armory-shop__parts-panel {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 4px;
+  min-width: 122px;
+  padding: 7px;
+  border: 1px solid rgba(255, 211, 132, 0.28);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.1), rgba(8, 2, 1, 0.42)),
+    var(--ui-panel-wood-texture) center / 220px 220px repeat,
+    #35180d;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.14),
+    0 3px 8px rgba(8, 2, 1, 0.62);
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__parts-panel {
+  top: auto;
+  bottom: calc(100% + 5px);
+}
+
+.armory-shop__parts-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  color: #f0c57a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.9);
+}
+
+.armory-shop__parts-checkbox {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: #d59a3c;
+}
+
+.armory-shop__parts-option-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.armory-shop__toolbar-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  padding: 0;
+}
+
+.armory-shop__toolbar-button:disabled {
+  opacity: 0.72;
+}
+
+.armory-shop__toolbar-dots {
+  display: block;
+  transform: translateY(-1px);
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__set-filter,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__parts-summary,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__toolbar-button {
+  height: 34px;
+}
+
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__set-filter,
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__parts-filter,
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__toolbar-button {
+  display: none;
 }
 
 .armory-shop__gold,
@@ -4990,6 +5187,30 @@ body.debug-active .city-menu__portrait-button:active {
   background: linear-gradient(90deg, transparent, rgba(255, 211, 132, 0.44), transparent);
   box-shadow: 0 1px 0 rgba(8, 2, 1, 0.78);
   pointer-events: none;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__header-meta {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  z-index: 2;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  padding: 5px 6px;
+  border-radius: 7px;
+}
+
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__header-meta {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+  padding: 7px 7px 6px;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__header-meta::before {
+  content: none;
 }
 
 .armory-shop--city-mode .armory-shop__gold,
@@ -5064,6 +5285,23 @@ body.debug-active .city-menu__portrait-button:active {
   font-variant-numeric: tabular-nums;
 }
 
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__gold,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__level {
+  grid-template-columns: minmax(16px, auto) minmax(0, 1fr);
+  justify-content: stretch;
+  justify-items: start;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__gold-icon,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__level-label {
+  justify-self: center;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__gold-amount,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__level-value {
+  justify-self: start;
+}
+
 .armory-shop__selected {
   min-height: 0;
 }
@@ -5079,6 +5317,11 @@ body.debug-active .city-menu__portrait-button:active {
   min-height: 0;
   pointer-events: auto;
   animation: none;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__selected {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .armory-shop--city-mode .armory-shop__selected[hidden] {
@@ -5360,8 +5603,16 @@ body.debug-active .city-menu__portrait-button:active {
     0 1px 0 rgba(8, 2, 1, 0.7);
 }
 
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__selected-card {
+  grid-template-columns: 44px minmax(0, 1fr) minmax(62px, auto);
+  gap: 7px;
+  padding: 7px 8px;
+}
+
 .armory-shop__selected-card--rarity-common,
-.armory-shop__option--rarity-common {
+.armory-shop__option--rarity-common,
+.armory-shop__set-filter--rarity-common,
+.armory-shop__set-filter-option--rarity-common {
   --shop-rarity: #927446;
   --shop-rarity-light: #d8c08a;
   --shop-rarity-soft: rgba(146, 116, 70, 0.26);
@@ -5369,7 +5620,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-card--rarity-uncommon,
-.armory-shop__option--rarity-uncommon {
+.armory-shop__option--rarity-uncommon,
+.armory-shop__set-filter--rarity-uncommon,
+.armory-shop__set-filter-option--rarity-uncommon {
   --shop-rarity: #39743b;
   --shop-rarity-light: #82b35b;
   --shop-rarity-soft: rgba(57, 116, 59, 0.28);
@@ -5377,7 +5630,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-card--rarity-rare,
-.armory-shop__option--rarity-rare {
+.armory-shop__option--rarity-rare,
+.armory-shop__set-filter--rarity-rare,
+.armory-shop__set-filter-option--rarity-rare {
   --shop-rarity: #2a78b8;
   --shop-rarity-light: #77b9e9;
   --shop-rarity-soft: rgba(42, 120, 184, 0.32);
@@ -5385,7 +5640,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-card--rarity-epic,
-.armory-shop__option--rarity-epic {
+.armory-shop__option--rarity-epic,
+.armory-shop__set-filter--rarity-epic,
+.armory-shop__set-filter-option--rarity-epic {
   --shop-rarity: #7f39ad;
   --shop-rarity-light: #bd78df;
   --shop-rarity-soft: rgba(127, 57, 173, 0.32);
@@ -5393,7 +5650,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-card--rarity-legendary,
-.armory-shop__option--rarity-legendary {
+.armory-shop__option--rarity-legendary,
+.armory-shop__set-filter--rarity-legendary,
+.armory-shop__set-filter-option--rarity-legendary {
   --shop-rarity: #b4651c;
   --shop-rarity-light: #e9aa46;
   --shop-rarity-soft: rgba(180, 101, 28, 0.34);
@@ -5401,7 +5660,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-card--rarity-mythical,
-.armory-shop__option--rarity-mythical {
+.armory-shop__option--rarity-mythical,
+.armory-shop__set-filter--rarity-mythical,
+.armory-shop__set-filter-option--rarity-mythical {
   --shop-rarity: #9d1824;
   --shop-rarity-light: #e1575d;
   --shop-rarity-soft: rgba(157, 24, 36, 0.38);
@@ -5409,7 +5670,9 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .armory-shop__selected-card--rarity-unique,
-.armory-shop__option--rarity-unique {
+.armory-shop__option--rarity-unique,
+.armory-shop__set-filter--rarity-unique,
+.armory-shop__set-filter-option--rarity-unique {
   --shop-rarity: #0b8e89;
   --shop-rarity-light: #55e0d6;
   --shop-rarity-soft: rgba(36, 211, 200, 0.36);
@@ -5446,6 +5709,11 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode .armory-shop__selected-name {
   font-size: 0.9rem;
+}
+
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__selected-name {
+  font-size: clamp(0.74rem, 2.15vw, 0.86rem);
+  line-height: 1;
 }
 
 .armory-shop--city-mode .armory-shop__selected-unit {
@@ -5727,17 +5995,6 @@ body.debug-active .city-menu__portrait-button:active {
   grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
 }
 
-.armory-shop__content--set-rows {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.armory-shop__set-row {
-  display: grid;
-  grid-template-columns: repeat(var(--armory-shop-set-row-columns, 3), minmax(0, 1fr));
-  gap: 7px;
-  min-width: 0;
-}
-
 .armory-shop--city-mode .armory-shop__content--products {
   position: relative;
   grid-auto-flow: row;
@@ -5754,16 +6011,6 @@ body.debug-active .city-menu__portrait-button:active {
   padding-right: 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.armory-shop--city-mode .armory-shop__content--set-rows {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.armory-shop--city-mode .armory-shop__set-row {
-  grid-template-columns: repeat(var(--armory-shop-set-row-columns, var(--shop-city-product-columns)), minmax(0, 1fr));
-  gap: var(--shop-city-product-gap);
-  height: var(--shop-city-product-row-height);
 }
 
 .armory-shop--city-mode .armory-shop__content--products::-webkit-scrollbar {
@@ -5869,8 +6116,18 @@ body.debug-active .city-menu__portrait-button:active {
     0 2px 0 rgba(8, 2, 1, 0.76);
 }
 
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__option--product {
+  padding: 5px 2px 5px;
+  border-width: 1px;
+  border-radius: 6px;
+}
+
 .armory-shop--city-mode .armory-shop__option--for-sale {
   padding-bottom: 32px;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__option--for-sale {
+  padding-bottom: 27px;
 }
 
 .armory-shop--city-mode .armory-shop__option--consumable {
@@ -6091,6 +6348,11 @@ body.debug-active .city-menu__portrait-button:active {
   filter: none;
 }
 
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-icon {
+  width: min(34px, 100%);
+  height: 62px;
+}
+
 .armory-shop__product-icon--missing {
   display: grid;
   place-items: center;
@@ -6170,6 +6432,13 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 0 0 6px 6px;
 }
 
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-stats {
+  gap: 2px;
+  min-height: 25px;
+  padding: 9px 2px 4px;
+  border-radius: 0 0 5px 5px;
+}
+
 .armory-shop__product-stats::before {
   content: "";
   position: absolute;
@@ -6182,6 +6451,11 @@ body.debug-active .city-menu__portrait-button:active {
     linear-gradient(180deg, transparent, rgba(255, 240, 189, 0.42), transparent);
   box-shadow: 1px 0 0 rgba(8, 2, 1, 0.5);
   transform: translateX(-50%);
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-stats::before {
+  top: 6px;
+  bottom: 4px;
 }
 
 .armory-shop__product-stat,
@@ -6285,6 +6559,13 @@ body.debug-active .city-menu__portrait-button:active {
   filter: none;
 }
 
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-price .armory-shop__price-icon {
+  top: -17px;
+  width: 15px;
+  height: 15px;
+  padding: 1px;
+}
+
 .armory-shop__product-stat-icon {
   position: absolute;
   top: -22px;
@@ -6311,6 +6592,12 @@ body.debug-active .city-menu__portrait-button:active {
   height: 20px;
   box-shadow: none;
   filter: none;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-stat-icon {
+  top: -17px;
+  width: 15px;
+  height: 15px;
 }
 
 .armory-shop__product-stat-value,
@@ -6388,6 +6675,13 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop--city-mode .armory-shop__product-requirement {
   min-height: 0;
   font-size: 0.78rem;
+}
+
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-stat,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-price,
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__product-requirement {
+  gap: 1px;
+  font-size: 0.62rem;
 }
 
 @keyframes armory-shop-confirm-rise {
