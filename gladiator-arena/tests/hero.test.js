@@ -358,14 +358,32 @@ test("arena tier one enemy loadouts only roll common equipment", () => {
 test("arena opponent model defines random opponents and boss hooks", () => {
   const tier = hero.getArenaTierDefinition(1);
   const randomOpponents = hero.getArenaRandomOpponentsForTier(1);
+  const easyOpponents = hero.getArenaRandomOpponentsForTierAndDifficulty(1, "easy");
+  const mediumOpponents = hero.getArenaRandomOpponentsForTierAndDifficulty(1, hero.DEFAULT_ARENA_DIFFICULTY_ID);
   const boss = hero.getArenaBossDefinition(tier.bossIds[0]);
 
-  assert.equal(tier.randomOpponentIds.length, 1);
-  assert.equal(tier.randomOpponentIds[0], "dust_arena_brawler");
-  assert.equal(randomOpponents.length, 1);
-  assert.equal(randomOpponents[0].id, "dust_arena_brawler");
-  assert.deepEqual(randomOpponents[0].equipmentPool.itemRarities, tier.enemyItemRarities);
-  assert.equal(randomOpponents[0].equipmentPool.rollChance, tier.enemyEquipmentRollChance);
+  assert.equal(hero.DEFAULT_ARENA_DIFFICULTY_ID, "medium");
+  assert.equal(tier.randomOpponentIds.length, 2);
+  assert.deepEqual([...tier.randomOpponentIds], ["dust_arena_dummy", "dust_arena_brawler"]);
+  assert.equal(randomOpponents.length, 2);
+  assert.equal(easyOpponents.length, 1);
+  assert.equal(easyOpponents[0].id, "dust_arena_dummy");
+  assert.equal(easyOpponents[0].baseStats?.strength, 0);
+  assert.equal(easyOpponents[0].baseStats?.agility, 0);
+  assert.equal(easyOpponents[0].baseStats?.vitality, 0);
+  assert.equal(easyOpponents[0].equipmentPool.itemRarities.length, 0);
+  assert.equal(easyOpponents[0].equipmentPool.rollChance, 0);
+  assert.equal(easyOpponents[0].rewards.win.gold, 3);
+  assert.equal(easyOpponents[0].rewards.win.xp, 3);
+  assert.equal(easyOpponents[0].rewards.loss.gold, 1);
+  assert.equal(easyOpponents[0].rewards.loss.xp, 1);
+  assert.equal(mediumOpponents.length, 1);
+  assert.equal(mediumOpponents[0].id, "dust_arena_brawler");
+  assert.equal(mediumOpponents[0].equipmentPool.itemRarities.length, 1);
+  assert.equal(mediumOpponents[0].equipmentPool.itemRarities[0], "common");
+  assert.equal(tier.enemyItemRarities.length, 1);
+  assert.equal(tier.enemyItemRarities[0], "common");
+  assert.equal(mediumOpponents[0].equipmentPool.rollChance, tier.enemyEquipmentRollChance);
 
   assert.equal(tier.bossIds.length, 1);
   assert.equal(boss?.id, "dust_arena_champion");
@@ -399,6 +417,8 @@ test("arena encounters can create combat states from random opponents and bosses
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
   const randomEncounter = hero.createArenaRandomEnemyEncounter(1, () => 0);
   const randomState = hero.createCombatStateFromHero(baseHero, randomEncounter);
+  const easyEncounter = hero.createArenaRandomEnemyEncounter(1, "easy", () => 0);
+  const easyState = hero.createCombatStateFromHero(baseHero, easyEncounter);
 
   assert.equal(randomEncounter.kind, "random");
   assert.equal(randomEncounter.name, "Grumbus");
@@ -409,6 +429,22 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(randomState.enemy.shurikenItemId, "generated_equipment_weapon_shuriken_01");
   assert.equal(randomState.enemy.shurikenCount, 1);
   assert.equal(randomState.enemy.shurikenDamage, 2);
+
+  assert.equal(easyEncounter.kind, "random");
+  assert.equal(easyEncounter.name, "Training Dummy");
+  assert.equal(easyState.encounter?.id, "random:dust_arena_dummy");
+  assert.equal(easyState.enemy.name, "Training Dummy");
+  assert.equal(easyState.enemy.maxArmor, 0);
+  assert.equal(easyState.enemy.maxHp, 10);
+  assert.equal(easyState.enemy.shurikenCount, 0);
+  assert.equal(easyState.enemy.shurikenItemId, undefined);
+  assert.deepEqual(Object.values(easyState.enemy.equipment ?? {}), Object.values(hero.createDefaultHeroEquipment()));
+  easyState.result = "win";
+  assert.equal(hero.getBattleReward(easyState).gold, 3);
+  assert.equal(hero.getBattleReward(easyState).xp, 3);
+  easyState.result = "lose";
+  assert.equal(hero.getBattleReward(easyState).gold, 1);
+  assert.equal(hero.getBattleReward(easyState).xp, 1);
 
   const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
   const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);

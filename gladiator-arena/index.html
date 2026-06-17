@@ -44,11 +44,19 @@
                 <span>Tier</span>
                 <strong id="cityArenaTierName"></strong>
               </div>
-              <button id="cityArenaRandomButton" class="city-arena-menu__fight" type="button">
-                <span class="city-arena-menu__eyebrow">Common opponents</span>
-                <strong>Random Fight</strong>
-                <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
-              </button>
+              <div class="city-arena-menu__section-title">COMMON</div>
+              <div class="city-arena-menu__fight-list" aria-label="Arena contracts">
+                <button id="cityArenaEasyButton" class="city-arena-menu__fight city-arena-menu__fight--easy" type="button">
+                  <span class="city-arena-menu__eyebrow">Easy contract</span>
+                  <strong>Training Dummy</strong>
+                  <span id="cityArenaEasyReward" class="city-arena-menu__reward"></span>
+                </button>
+                <button id="cityArenaRandomButton" class="city-arena-menu__fight" type="button">
+                  <span class="city-arena-menu__eyebrow">Medium contract</span>
+                  <strong>Random Fight</strong>
+                  <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
+                </button>
+              </div>
               <div class="city-arena-menu__section-title">BOSS</div>
               <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
             </div>

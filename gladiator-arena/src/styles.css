@@ -2289,6 +2289,13 @@ body.debug-active .city-menu__portrait-button:active {
   white-space: nowrap;
 }
 
+.city-arena-menu__fight-list {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+}
+
 .city-arena-menu__fight,
 .city-arena-menu__boss {
   position: relative;
@@ -2310,6 +2317,12 @@ body.debug-active .city-menu__portrait-button:active {
     0 3px 0 rgba(8, 2, 1, 0.7);
   text-align: left;
   cursor: pointer;
+}
+
+.city-arena-menu__fight--easy {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 229, 161, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(99, 63, 34, 0.86), rgba(38, 17, 9, 0.94));
 }
 
 .city-arena-menu__fight strong,

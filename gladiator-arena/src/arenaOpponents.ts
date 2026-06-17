@@ -3,6 +3,7 @@ import type { BattleReward, HeroBaseStats, HeroEquipmentSlotKey, HeroItemId, Her
 
 export type ArenaOpponentId = string;
 export type ArenaBossId = string;
+export type ArenaDifficultyId = "easy" | "medium";
 
 export interface ArenaGeneratedEquipmentPool {
   itemRarities: readonly HeroItemRarity[];
@@ -17,7 +18,9 @@ export interface ArenaOpponentRewards {
 export interface ArenaRandomOpponentDefinition {
   id: ArenaOpponentId;
   tierId: number;
+  difficultyId: ArenaDifficultyId;
   name: string;
+  baseStats?: HeroBaseStats;
   equipmentPool: ArenaGeneratedEquipmentPool;
   rewards: ArenaOpponentRewards;
 }
@@ -51,11 +54,28 @@ export interface ArenaTierDefinition {
 export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 5 };
 export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
 export const DEFAULT_ARENA_TIER_ID = 1;
+export const DEFAULT_ARENA_DIFFICULTY_ID: ArenaDifficultyId = "medium";
 
 export const ARENA_RANDOM_OPPONENTS: readonly ArenaRandomOpponentDefinition[] = [
   {
+    id: "dust_arena_dummy",
+    tierId: 1,
+    difficultyId: "easy",
+    name: "Training Dummy",
+    baseStats: { strength: 0, agility: 0, vitality: 0 },
+    equipmentPool: {
+      itemRarities: [],
+      rollChance: 0,
+    },
+    rewards: {
+      win: { gold: 3, xp: 3 },
+      loss: { gold: 1, xp: 1 },
+    },
+  },
+  {
     id: "dust_arena_brawler",
     tierId: 1,
+    difficultyId: "medium",
     name: "Grumbus",
     equipmentPool: {
       itemRarities: ["common"],
@@ -103,6 +123,10 @@ export function getArenaRandomOpponentsForTier(tierId: number): ArenaRandomOppon
   return ARENA_RANDOM_OPPONENTS.filter((opponent) => opponent.tierId === tierId);
 }
 
+export function getArenaRandomOpponentsForTierAndDifficulty(tierId: number, difficultyId: ArenaDifficultyId): ArenaRandomOpponentDefinition[] {
+  return ARENA_RANDOM_OPPONENTS.filter((opponent) => opponent.tierId === tierId && opponent.difficultyId === difficultyId);
+}
+
 export function getArenaBossesForTier(tierId: number): ArenaBossDefinition[] {
   return ARENA_BOSSES.filter((boss) => boss.tierId === tierId);
 }
@@ -112,9 +136,16 @@ function formatArenaTierName(tierId: number): string {
 }
 
 function getArenaEnemyItemRaritiesForTier(tierId: number): readonly HeroItemRarity[] {
-  return ARENA_RANDOM_OPPONENTS.find((opponent) => opponent.tierId === tierId)?.equipmentPool.itemRarities ?? ["common"];
+  return getDefaultArenaRandomOpponentForTier(tierId)?.equipmentPool.itemRarities ?? ["common"];
 }
 
 function getArenaEnemyEquipmentRollChanceForTier(tierId: number): number {
-  return ARENA_RANDOM_OPPONENTS.find((opponent) => opponent.tierId === tierId)?.equipmentPool.rollChance ?? 0.52;
+  return getDefaultArenaRandomOpponentForTier(tierId)?.equipmentPool.rollChance ?? 0.52;
+}
+
+function getDefaultArenaRandomOpponentForTier(tierId: number): ArenaRandomOpponentDefinition | undefined {
+  return (
+    ARENA_RANDOM_OPPONENTS.find((opponent) => opponent.tierId === tierId && opponent.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID) ??
+    ARENA_RANDOM_OPPONENTS.find((opponent) => opponent.tierId === tierId)
+  );
 }

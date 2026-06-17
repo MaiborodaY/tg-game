@@ -209,12 +209,13 @@ test("church button can be wired while keeping the locked visual state", () => {
 
 test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(html.includes('id="cityArenaMenu"'), true);
+  assert.equal(html.includes('id="cityArenaEasyButton"'), true);
   assert.equal(html.includes('id="cityArenaRandomButton"'), true);
   assert.equal(html.includes('id="cityArenaBossList"'), true);
   assert.equal(mainSource.includes("type ArenaMenuSelection"), true);
   assert.equal(mainSource.includes("createArenaEncounterForSelection"), true);
   assert.equal(mainSource.includes("createArenaBossEncounter(selection.bossId)"), true);
-  assert.equal(mainSource.includes("createArenaRandomEnemyEncounter(selection.tierId)"), true);
+  assert.equal(mainSource.includes("createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId)"), true);
   assert.equal(mainSource.includes("getArenaBossesForTier"), true);
   assert.equal(mainSource.includes("city-menu--arena-select-open"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss"), true);

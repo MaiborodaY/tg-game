@@ -1,6 +1,7 @@
 import {
   BATTLE_LOSS_REWARD,
   BATTLE_WIN_REWARD,
+  DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
   getArenaBossDefinition as resolveArenaBossDefinition,
   getArenaRandomOpponentDefinition as resolveArenaRandomOpponentDefinition,
@@ -8,6 +9,7 @@ import {
   getArenaTierDefinition as resolveArenaTierDefinition,
 } from "./arenaOpponents";
 import type {
+  ArenaDifficultyId,
   ArenaBossDefinition,
   ArenaGeneratedEquipmentPool,
   ArenaLootTableEntry,
@@ -24,14 +26,17 @@ export {
   ARENA_TIERS,
   BATTLE_LOSS_REWARD,
   BATTLE_WIN_REWARD,
+  DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
   getArenaBossDefinition,
   getArenaBossesForTier,
   getArenaRandomOpponentDefinition,
   getArenaRandomOpponentsForTier,
+  getArenaRandomOpponentsForTierAndDifficulty,
   getArenaTierDefinition,
 } from "./arenaOpponents";
 export type {
+  ArenaDifficultyId,
   ArenaBossDefinition,
   ArenaBossId,
   ArenaGeneratedEquipmentPool,
@@ -292,10 +297,17 @@ export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_
   return createRandomEnemyLoadoutFromPool(equipmentPool, random);
 }
 
-export function createArenaRandomEnemyEncounter(tierId = DEFAULT_ARENA_TIER_ID, random = Math.random): ArenaEncounter {
+export function createArenaRandomEnemyEncounter(
+  tierId = DEFAULT_ARENA_TIER_ID,
+  difficultyOrRandom: ArenaDifficultyId | (() => number) = DEFAULT_ARENA_DIFFICULTY_ID,
+  random = Math.random,
+): ArenaEncounter {
   const tier = resolveArenaTierDefinition(tierId);
-  const opponents = resolveArenaRandomOpponentsForTier(tier.id);
-  const opponent = opponents.length > 0 ? pickRandom(opponents, random) : createFallbackRandomOpponent(tier);
+  const difficultyId = typeof difficultyOrRandom === "function" ? DEFAULT_ARENA_DIFFICULTY_ID : difficultyOrRandom;
+  const encounterRandom = typeof difficultyOrRandom === "function" ? difficultyOrRandom : random;
+  const difficultyOpponents = resolveArenaRandomOpponentsForTier(tier.id).filter((opponent) => opponent.difficultyId === difficultyId);
+  const opponents = difficultyOpponents.length > 0 ? difficultyOpponents : resolveArenaRandomOpponentsForTier(tier.id);
+  const opponent = opponents.length > 0 ? pickRandom(opponents, encounterRandom) : createFallbackRandomOpponent(tier);
 
   return {
     id: `random:${opponent.id}`,
@@ -303,7 +315,7 @@ export function createArenaRandomEnemyEncounter(tierId = DEFAULT_ARENA_TIER_ID, 
     tierId: opponent.tierId,
     opponentId: opponent.id,
     name: opponent.name,
-    enemyLoadout: createRandomEnemyLoadoutFromPool(opponent.equipmentPool, random),
+    enemyLoadout: createRandomEnemyLoadoutForOpponent(opponent, encounterRandom),
     rewards: opponent.rewards,
     lootTable: [],
   };
@@ -355,6 +367,13 @@ function createRandomEnemyLoadoutFromPool(equipmentPool: ArenaGeneratedEquipment
   };
 }
 
+function createRandomEnemyLoadoutForOpponent(opponent: ArenaRandomOpponentDefinition, random = Math.random): EnemyLoadout {
+  return {
+    ...createRandomEnemyLoadoutFromPool(opponent.equipmentPool, random),
+    ...(opponent.baseStats ? { baseStats: { ...opponent.baseStats } } : {}),
+  };
+}
+
 function createBossEnemyLoadout(boss: ArenaBossDefinition): EnemyLoadout {
   return {
     baseStats: { ...boss.baseStats },
@@ -370,6 +389,7 @@ function createFallbackRandomOpponent(tier: ArenaTierDefinition): ArenaRandomOpp
   return {
     id: `tier_${tier.id}_fallback`,
     tierId: tier.id,
+    difficultyId: DEFAULT_ARENA_DIFFICULTY_ID,
     name: "Grumbus",
     equipmentPool: {
       itemRarities: tier.enemyItemRarities,

@@ -30,6 +30,7 @@ import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
   HERO_ITEM_CATALOG,
+  DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
   allocateHeroSkillPoints,
   applyCombatReward,
@@ -52,6 +53,7 @@ import {
   upgradeHeroBowShotCapacity,
   type ArenaBossDefinition,
   type ArenaBossId,
+  type ArenaDifficultyId,
   type ArenaEncounter,
   type HeroEquipment,
   type HeroItemId,
@@ -76,6 +78,8 @@ const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggl
 const cityArenaMenu = document.querySelector<HTMLElement>("#cityArenaMenu");
 const cityArenaCloseButton = document.querySelector<HTMLButtonElement>("#cityArenaCloseButton");
 const cityArenaTierName = document.querySelector<HTMLElement>("#cityArenaTierName");
+const cityArenaEasyReward = document.querySelector<HTMLElement>("#cityArenaEasyReward");
+const cityArenaEasyButton = document.querySelector<HTMLButtonElement>("#cityArenaEasyButton");
 const cityArenaRandomReward = document.querySelector<HTMLElement>("#cityArenaRandomReward");
 const cityArenaRandomButton = document.querySelector<HTMLButtonElement>("#cityArenaRandomButton");
 const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
@@ -83,10 +87,10 @@ const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopB
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
-type ArenaMenuSelection = { kind: "random"; tierId: number } | { kind: "boss"; bossId: ArenaBossId };
+type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId };
 let hero: HeroState = createDefaultHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
-let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID };
+let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
 let state: CombatState = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
@@ -465,19 +469,22 @@ function prewarmShopItemIconsWhenIdle(): void {
 }
 
 function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaEncounter {
-  return selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId);
+  return selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId);
 }
 
 function renderCityArenaMenu(): void {
-  if (!cityArenaTierName || !cityArenaRandomReward || !cityArenaBossList) {
+  if (!cityArenaTierName || !cityArenaEasyReward || !cityArenaRandomReward || !cityArenaBossList) {
     return;
   }
 
   const tier = getArenaTierDefinition(DEFAULT_ARENA_TIER_ID);
-  const randomOpponent = getArenaRandomOpponentsForTier(tier.id)[0];
+  const randomOpponents = getArenaRandomOpponentsForTier(tier.id);
+  const easyOpponent = randomOpponents.find((opponent) => opponent.difficultyId === "easy");
+  const randomOpponent = randomOpponents.find((opponent) => opponent.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID);
   const bosses = getArenaBossesForTier(tier.id);
 
   cityArenaTierName.textContent = tier.name;
+  cityArenaEasyReward.textContent = `Win ${formatCityArenaReward(easyOpponent?.rewards.win ?? { gold: 3, xp: 3 })}`;
   cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 5, xp: 5 })}`;
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
 }
@@ -1087,8 +1094,11 @@ dom.startButton.addEventListener("click", () => {
   openCityArenaMenu();
 });
 cityArenaCloseButton?.addEventListener("click", closeCityArenaMenu);
+cityArenaEasyButton?.addEventListener("click", () => {
+  startSelectedArena({ kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: "easy" });
+});
 cityArenaRandomButton?.addEventListener("click", () => {
-  startSelectedArena({ kind: "random", tierId: DEFAULT_ARENA_TIER_ID });
+  startSelectedArena({ kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID });
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
