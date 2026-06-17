@@ -43,7 +43,7 @@ import {
   createDefaultHero,
   deriveHeroStats,
   grantHeroGold,
-  grantHeroSkillPoints,
+  grantHeroLevels,
   getArenaBossesForTier,
   getArenaRandomOpponentsForTier,
   getArenaTierDefinition,
@@ -524,9 +524,9 @@ function renderCityArenaMenu(): void {
   const bosses = getArenaBossesForTier(tier.id);
 
   cityArenaTierName.textContent = tier.name;
-  cityArenaEasyReward.textContent = `Win ${formatCityArenaReward(easyOpponent?.rewards.win ?? { gold: 3, xp: 3 })}`;
-  cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 5, xp: 5 })}`;
-  cityArenaHardReward.textContent = `Win ${formatCityArenaReward(hardOpponent?.rewards.win ?? { gold: 8, xp: 8 })}`;
+  cityArenaEasyReward.textContent = `Win ${formatCityArenaReward(easyOpponent?.rewards.win ?? { gold: 4, xp: 4 })}`;
+  cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 8, xp: 6 })}`;
+  cityArenaHardReward.textContent = `Win ${formatCityArenaReward(hardOpponent?.rewards.win ?? { gold: 15, xp: 10 })}`;
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
 }
 
@@ -956,7 +956,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
 function handleTemporaryChurchSkillGrant(): void {
   const now = new Date().toISOString();
 
-  hero = unlockAllHeroShopRarities(grantHeroGold(grantHeroSkillPoints(hero, 50, now), 1000, now), now);
+  hero = unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 1, now), 1000, now), now);
   renderCityHero();
   armoryShop?.render();
   weaponShop?.render();

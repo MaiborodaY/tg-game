@@ -24,83 +24,186 @@ const WEAPON_RARITY_PRICE_TAX = new Map([
 ]);
 
 const ARMOR_EQUIPMENT_SET_EXPECTATIONS = new Map([
-  ["cloth", { name: "Cloth", rank: 0, grade: "starter", shopCount: 14 }],
-  ["sand", { name: "Sand", rank: 1, grade: "starter", shopCount: 14 }],
-  ["leather", { name: "Leather", rank: 2, grade: "starter", shopCount: 14 }],
-  ["chainmail", { name: "Chainmail", rank: 3, grade: "starter", shopCount: 14 }],
-  ["rust_champion", { name: "Rust Champion", rank: 4, grade: "low", shopCount: 14 }],
-  ["mercenary", { name: "Mercenary", rank: 5, grade: "mid", shopCount: 14 }],
-  ["executioner", { name: "Executioner", rank: 6, grade: "high", shopCount: 14 }],
-  ["lazure", { name: "Lazure", rank: 7, grade: "low", shopCount: 14 }],
-  ["lion", { name: "Lion", rank: 8, grade: "mid", shopCount: 14 }],
-  ["stormguard", { name: "Stormguard", rank: 9, grade: "high", shopCount: 14 }],
-  ["viper", { name: "Viper", rank: 10, grade: "low", shopCount: 14 }],
-  ["bone", { name: "Bone", rank: 11, grade: "mid", shopCount: 14 }],
-  ["cathedral", { name: "Cathedral", rank: 12, grade: "high", shopCount: 14 }],
-  ["druid", { name: "Druid", rank: 13, grade: "high", shopCount: 14 }],
+  ["cloth", { name: "Cloth", rank: 0, grade: "starter", shopCount: 14, level: 1 }],
+  ["sand", { name: "Sand", rank: 1, grade: "starter", shopCount: 14, level: 7 }],
+  ["leather", { name: "Leather", rank: 2, grade: "starter", shopCount: 14, level: 15 }],
+  ["chainmail", { name: "Chainmail", rank: 3, grade: "starter", shopCount: 14, level: 25 }],
+  ["rust_champion", { name: "Rust Champion", rank: 4, grade: "low", shopCount: 14, level: 30 }],
+  ["mercenary", { name: "Mercenary", rank: 5, grade: "mid", shopCount: 14, level: 35 }],
+  ["executioner", { name: "Executioner", rank: 6, grade: "high", shopCount: 14, level: 40 }],
+  ["lazure", { name: "Lazure", rank: 7, grade: "low", shopCount: 14, level: 45 }],
+  ["lion", { name: "Lion", rank: 8, grade: "mid", shopCount: 14, level: 50 }],
+  ["stormguard", { name: "Stormguard", rank: 9, grade: "high", shopCount: 14, level: 60 }],
+  ["viper", { name: "Viper", rank: 10, grade: "low", shopCount: 14, level: 70 }],
+  ["bone", { name: "Bone", rank: 11, grade: "mid", shopCount: 14, level: 80 }],
+  ["cathedral", { name: "Cathedral", rank: 12, grade: "high", shopCount: 14, level: 90 }],
+  ["druid", { name: "Druid", rank: 13, grade: "high", shopCount: 14, level: 100 }],
   ["wood_boss", { name: "Wood Boss", rank: 14, grade: "boss", shopCount: 0, bossCount: 14 }],
 ]);
 
+const SHIELD_BALANCE_EXPECTATIONS = new Map([
+  ["generated_equipment_shield_common_03", { rarity: "common", armor: 18, price: 80, level: 5 }],
+  ["generated_equipment_shield_common_04", { rarity: "common", armor: 25, price: 120, level: 10 }],
+  ["generated_equipment_shield_uncommon_01", { rarity: "uncommon", armor: 35, price: 180, level: 15 }],
+  ["generated_equipment_shield_uncommon_02", { rarity: "uncommon", armor: 50, price: 260, level: 25 }],
+  ["generated_equipment_shield_rare_01", { rarity: "rare", armor: 70, price: 420, level: 30 }],
+  ["generated_equipment_shield_rare_02", { rarity: "rare", armor: 95, price: 600, level: 40 }],
+  ["generated_equipment_shield_epic_01", { rarity: "epic", armor: 125, price: 900, level: 50 }],
+  ["generated_equipment_shield_epic_02", { rarity: "epic", armor: 165, price: 1250, level: 60 }],
+  ["generated_equipment_shield_legendary_01", { rarity: "legendary", armor: 220, price: 1800, level: 70 }],
+  ["generated_equipment_shield_legendary_02", { rarity: "legendary", armor: 290, price: 2500, level: 80 }],
+  ["generated_equipment_shield_mythical_01", { rarity: "mythical", armor: 380, price: 3600, level: 90 }],
+  ["generated_equipment_shield_mythical_02", { rarity: "mythical", armor: 500, price: 5000, level: 100 }],
+]);
+
+const WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS = new Map([
+  ["Common Sword 01", 1],
+  ["Common Sword 02", 5],
+  ["Common Sword 04", 10],
+  ["Common Axe 01", 1],
+  ["Common Axe 02", 5],
+  ["Common Axe 03", 10],
+  ["Common Mace 01", 1],
+  ["Common Mace 02", 5],
+  ["Common Mace 03", 10],
+  ["Uncommon Sword 01", 15],
+  ["Uncommon Sword 02", 20],
+  ["Uncommon Sword 03", 25],
+  ["Uncommon Axe 01", 15],
+  ["Uncommon Axe 02", 20],
+  ["Uncommon Axe 03", 25],
+  ["Uncommon Mace 01", 15],
+  ["Uncommon Mace 02", 20],
+  ["Uncommon Mace 04", 25],
+  ["Rare Sword 01", 30],
+  ["Rare Sword 02", 35],
+  ["Rare Sword 03", 40],
+  ["Rare Axe 01", 30],
+  ["Rare Axe 02", 35],
+  ["Rare Axe 03", 40],
+  ["Rare Mace 01", 30],
+  ["Rare Mace 02", 35],
+  ["Rare Mace 03", 40],
+  ["Rare Spear 01", 30],
+  ["Rare Spear 02", 40],
+  ["Epic Sword 01", 45],
+  ["Epic Sword 03", 48],
+  ["Epic Sword 04", 51],
+  ["Epic Sword 06", 54],
+  ["Epic Sword 07", 57],
+  ["Epic Sword 08", 60],
+  ["Epic Axe 01", 45],
+  ["Epic Axe 02", 50],
+  ["Epic Axe 03", 55],
+  ["Epic Axe 05", 60],
+  ["Epic Mace 02", 45],
+  ["Epic Mace 03", 50],
+  ["Epic Mace 04", 55],
+  ["Epic Mace 05", 60],
+  ["Epic Spear 01", 45],
+  ["Epic Spear 02", 50],
+  ["Epic Spear 04", 55],
+  ["Epic Spear 05", 60],
+  ["Legendary Sword 01", 70],
+  ["Legendary Sword 02", 80],
+  ["Legendary Mace 01", 80],
+  ["Legendary Spear 01", 80],
+]);
+
 test("generated shop armor sets occupy their intended progression", () => {
+  assertGeneratedArmorSet("cloth", {
+    rarity: "common",
+    armor: 11,
+    price: 30,
+    level: 1,
+  });
+  assertGeneratedArmorSet("sand", {
+    rarity: "common",
+    armor: 20,
+    price: 50,
+    level: 7,
+  });
   assertGeneratedArmorSet("leather", {
     rarity: "uncommon",
     armor: 34,
     price: 80,
+    level: 15,
   });
   assertGeneratedArmorSet("chainmail", {
     rarity: "uncommon",
     armor: 54,
     price: 130,
+    level: 25,
   });
   assertGeneratedArmorSet("rust_champion", {
     rarity: "rare",
     armor: 80,
     price: 200,
+    level: 30,
   });
   assertGeneratedArmorSet("mercenary", {
     rarity: "rare",
     armor: 102,
     price: 260,
+    level: 35,
   });
   assertGeneratedArmorSet("executioner", {
     rarity: "rare",
     armor: 135,
     price: 340,
+    level: 40,
   });
   assertGeneratedArmorSet("lazure", {
     rarity: "epic",
     armor: 202,
     price: 510,
+    level: 45,
   });
   assertGeneratedArmorSet("lion", {
     rarity: "epic",
     armor: 245,
     price: 610,
+    level: 50,
   });
   assertGeneratedArmorSet("stormguard", {
     rarity: "epic",
     armor: 291,
     price: 730,
+    level: 60,
   });
   assertGeneratedArmorSet("viper", {
     rarity: "legendary",
     armor: 335,
     price: 840,
+    level: 70,
   });
   assertGeneratedArmorSet("bone", {
     rarity: "legendary",
     armor: 366,
     price: 920,
+    level: 80,
   });
   assertGeneratedArmorSet("cathedral", {
     rarity: "legendary",
     armor: 402,
     price: 1010,
+    level: 90,
   });
   assertGeneratedArmorSet("druid", {
     rarity: "mythical",
     armor: 445,
     price: 1110,
+    level: 100,
+  });
+});
+
+test("generated shields follow the heavy defensive purchase curve", () => {
+  const shields = generatedItems.filter((item) => item.kind === "armor" && item.equipmentSlot === "shield");
+
+  assert.equal(shields.length, SHIELD_BALANCE_EXPECTATIONS.size);
+
+  SHIELD_BALANCE_EXPECTATIONS.forEach((expected, id) => {
+    assertGeneratedShield(id, expected);
   });
 });
 
@@ -130,6 +233,14 @@ test("generated armor items carry equipment set metadata", () => {
     });
     assert.equal(shopItems.length, expected.shopCount, `${setId} shop count`);
     assert.equal(bossItems.length, expected.bossCount ?? 0, `${setId} boss count`);
+    shopItems.forEach((item) => {
+      assert.equal(item.levelRequirement, expected.level, `${item.id} level requirement`);
+    });
+    setItems
+      .filter((item) => !item.availability?.shop)
+      .forEach((item) => {
+        assert.equal(item.levelRequirement, undefined, `${item.id} non-shop level requirement`);
+      });
   });
 });
 
@@ -224,17 +335,45 @@ test("generated melee weapon prices follow class and rarity multipliers", () => 
   });
 });
 
+test("generated shop weapons follow the level one hundred progression gates", () => {
+  const shopWeapons = generatedItems.filter((item) => item.kind === "weapon" && item.weaponProduct && WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS.has(item.name));
+
+  assert.equal(shopWeapons.length, WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS.size);
+
+  WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS.forEach((expectedLevel, name) => {
+    const item = shopWeapons.find((candidate) => candidate.name === name);
+
+    assert.ok(item, `missing ${name}`);
+    assert.equal(item.levelRequirement, expectedLevel, `${name} level requirement`);
+  });
+});
+
 function assertGeneratedArmorSet(token, expected) {
-  const setItems = generatedItems.filter((item) => item.kind === "armor" && item.availability?.shop && item.id.includes(token));
+  const setItems = generatedItems.filter((item) => item.kind === "armor" && item.availability?.shop && item.equipmentSet?.id === token);
   const rarities = new Set(setItems.map((item) => item.rarity));
+  const levels = new Set(setItems.map((item) => item.levelRequirement));
   const frontPairItems = setItems.filter((item) => item.equipmentSlot.startsWith("front"));
 
   assert.equal(setItems.length, 14);
   assert.deepEqual([...rarities], [expected.rarity]);
+  assert.deepEqual([...levels], [expected.level]);
   assert.equal(sumBy(setItems, (item) => item.armorHp ?? 0), expected.armor);
   assert.equal(sumBy(setItems, (item) => item.armoryProduct?.price ?? 0), expected.price);
   assert.equal(sumBy(frontPairItems, (item) => item.armorHp ?? 0), 0);
   assert.equal(sumBy(frontPairItems, (item) => item.armoryProduct?.price ?? 0), 0);
+}
+
+function assertGeneratedShield(id, expected) {
+  const item = generatedItems.find((candidate) => candidate.kind === "armor" && candidate.equipmentSlot === "shield" && candidate.id === id);
+
+  assert.ok(item, `missing ${id}`);
+  assert.equal(item.rarity, expected.rarity);
+  assert.equal(item.armorHp, expected.armor);
+  assert.equal(item.levelRequirement, expected.level);
+  assert.equal(item.armoryProduct?.price, expected.price);
+  assert.equal(item.availability?.shop ?? false, true);
+  assert.equal(item.availability?.enemyPool ?? false, true);
+  assert.equal(item.equipmentSet, undefined);
 }
 
 function assertGeneratedAxe(name, expected) {

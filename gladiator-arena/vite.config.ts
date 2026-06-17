@@ -634,6 +634,7 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  levelRequirement?: number;
   requirements?: Partial<Record<"strength" | "agility" | "vitality", number>>;
   weaponClass?: "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken";
   assetKeys: Record<string, string>;
@@ -2970,6 +2971,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
     ...(record.requirements ? { requirements: record.requirements } : {}),
     ...(record.weaponClass ? { weaponClass: record.weaponClass } : {}),
+    ...(record.levelRequirement !== undefined ? { levelRequirement: record.levelRequirement } : {}),
   };
 
   return [

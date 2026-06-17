@@ -145,6 +145,8 @@ test("vite dev middleware writes promoted equipment to generated files", () => {
   assert.match(source, /equipmentItems\.generated\.ts/);
   assert.match(source, /pickPromotedEquipmentItem/);
   assert.match(source, /equipmentTuning/);
+  assert.match(source, /levelRequirement\?: number/);
+  assert.match(source, /record\.levelRequirement !== undefined/);
 });
 
 test("vite dev middleware removes generated equipment records and asset files", () => {

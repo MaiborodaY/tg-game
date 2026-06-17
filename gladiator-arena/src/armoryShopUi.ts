@@ -18,11 +18,14 @@ import {
   getShopProductActionState,
   getShopProductDisplayName,
   getShopProductRarity,
+  getShopProductRequirementBadge,
+  getShopProductRequirementDescription,
   getShopProductStat,
   getShopRarityLabel,
   isShopProductSealed,
   type ShopProductActionState,
   type ShopItemRarity,
+  type ShopProductRequirementBadge,
 } from "./shopPresentation";
 
 export interface ArmoryProduct {
@@ -992,25 +995,40 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const armor = getShopProductStat(product.itemIds, "armor");
     const actionState = getArmoryProductActionState(hero, product);
     const displayName = getShopProductDisplayName(product.name);
+    const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
+    const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
     button.classList.toggle("armory-shop__option--selected", isSelected);
     button.classList.toggle("armory-shop__option--owned", actionState === "equip");
     button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
     button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
-    button.classList.toggle("armory-shop__option--sealed", actionState === "sealed");
+    button.classList.toggle("armory-shop__option--locked", actionState === "locked");
+    button.classList.toggle("armory-shop__option--sealed", actionState === "sealed" || actionState === "locked");
     button.type = "button";
-    button.disabled = actionState === "sealed";
-    button.title = actionState === "sealed" ? `${displayName} - SEALED` : displayName;
-    button.setAttribute("aria-label", `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${getShopProductActionLabel(actionState, product.price)}`);
+    button.disabled = actionState === "sealed" || actionState === "locked";
+    button.title = actionState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
+    button.setAttribute(
+      "aria-label",
+      `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${requirementDescription || getShopProductActionLabel(actionState, product.price)}`,
+    );
     button.append(createProductIcon(iconUrl));
     if (actionState === "sealed") {
       button.append(createSealedRibbon());
     }
+    if (actionState === "locked" && requirementBadge) {
+      button.append(createRequirementRibbon(requirementBadge));
+    }
     if (actionState === "buy" || actionState === "no-gold") {
       button.append(createProductStats("AR", armor, product.price));
     }
-    button.addEventListener("click", () => previewArmoryProduct(product));
+    button.addEventListener("click", () => {
+      if (button.disabled) {
+        return;
+      }
+
+      previewArmoryProduct(product);
+    });
 
     return button;
   }
@@ -1062,7 +1080,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     }
 
     updateSelectedMeta(elements.meta, displayName, rarity, "armor", armor, currentArmor, product.price);
-    elements.buyButton.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "sealed";
+    elements.buyButton.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "sealed" || actionState === "locked";
     elements.buyButton.textContent = getShopProductActionLabel(actionState, product.price);
   }
 
@@ -1371,6 +1389,29 @@ function createSealedRibbon(): HTMLElement {
   ribbon.textContent = "SEALED";
 
   return ribbon;
+}
+
+function createRequirementRibbon(requirement: ShopProductRequirementBadge): HTMLElement {
+  const ribbon = document.createElement("span");
+
+  ribbon.className = "armory-shop__sealed-ribbon armory-shop__requirement-ribbon";
+  appendRequirementContent(ribbon, requirement);
+
+  return ribbon;
+}
+
+function appendRequirementContent(requirementNode: HTMLElement, requirement: ShopProductRequirementBadge): void {
+  const icon = document.createElement("span");
+  const amount = document.createElement("span");
+  const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;
+  const requirementLabel = requirement.kind === "level" ? "Level" : requirement.attribute;
+
+  requirementNode.setAttribute("aria-label", `${requirementLabel} ${requirement.required}`);
+  icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;
+  icon.textContent = requirement.kind === "level" ? "LVL" : "";
+  amount.className = "armory-shop__requirement-amount";
+  amount.textContent = String(requirement.required);
+  requirementNode.append(icon, amount);
 }
 
 function createProductStats(statLabel: string, stat: number, price: number): HTMLElement {

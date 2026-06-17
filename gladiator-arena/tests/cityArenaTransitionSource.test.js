@@ -27,9 +27,9 @@ test("city arena transition darkens the whole city UI", () => {
 });
 
 test("city shop curtain holds while the shop layout settles", () => {
-  assert.match(mainSource, /const CITY_CURTAIN_CLOSE_MS = 240/);
-  assert.match(mainSource, /const CITY_CURTAIN_HOLD_MS = 380/);
-  assert.match(mainSource, /const CITY_CURTAIN_REVEAL_MS = 340/);
+  assert.match(mainSource, /const CITY_CURTAIN_CLOSE_MS = 100/);
+  assert.match(mainSource, /const CITY_CURTAIN_HOLD_MS = 250/);
+  assert.match(mainSource, /const CITY_CURTAIN_REVEAL_MS = 300/);
   assert.match(mainSource, /const CITY_CURTAIN_SWITCH_MS = CITY_CURTAIN_CLOSE_MS/);
   assert.match(mainSource, /cityMenu\.classList\.add\("city-menu--curtain-cover"\)/);
   assert.match(mainSource, /cityMenu\.classList\.add\("city-menu--curtain-hold"\)/);

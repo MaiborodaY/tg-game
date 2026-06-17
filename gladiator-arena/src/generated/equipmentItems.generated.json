@@ -43,7 +43,8 @@
         "cloth_breastplate_01"
       ],
       "categoryId": "body"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_boot_bone_01",
@@ -88,7 +89,8 @@
         "generated_equipment_back_boot_bone_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_back_boot_cathedral_01",
@@ -133,7 +135,8 @@
         "generated_equipment_back_boot_cathedral_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_back_boot_chainmail_01",
@@ -179,7 +182,8 @@
         "generated_equipment_back_boot_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_back_boot_cloth_01",
@@ -225,7 +229,8 @@
         "generated_equipment_back_boot_cloth_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_boot_druid_01",
@@ -270,7 +275,8 @@
         "generated_equipment_back_boot_druid_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_back_boot_executioner_01",
@@ -315,7 +321,8 @@
         "generated_equipment_back_boot_executioner_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_back_boot_lazure_01",
@@ -360,7 +367,8 @@
         "generated_equipment_back_boot_lazure_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_back_boot_lion_01",
@@ -405,7 +413,8 @@
         "generated_equipment_back_boot_lion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_back_boot_mercenary_01",
@@ -450,7 +459,8 @@
         "generated_equipment_back_boot_mercenary_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_back_boot_rust_champion_01",
@@ -495,7 +505,8 @@
         "generated_equipment_back_boot_rust_champion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_back_boot_sand_01",
@@ -540,7 +551,8 @@
         "generated_equipment_back_boot_sand_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_back_boot_stormguard_01",
@@ -585,7 +597,8 @@
         "generated_equipment_back_boot_stormguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_back_boot_viper_01",
@@ -630,7 +643,8 @@
         "generated_equipment_back_boot_viper_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_back_boot_wood_boss_01",
@@ -711,7 +725,8 @@
         "generated_equipment_back_glove_bone_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_back_glove_cathedral_01",
@@ -756,7 +771,8 @@
         "generated_equipment_back_glove_cathedral_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_back_glove_chainmail_03",
@@ -802,7 +818,8 @@
         "generated_equipment_back_glove_chainmail_03"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_back_glove_cloth_01",
@@ -848,7 +865,8 @@
         "generated_equipment_back_glove_cloth_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_glove_druid_01",
@@ -893,7 +911,8 @@
         "generated_equipment_back_glove_druid_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_back_glove_executioner_01",
@@ -938,7 +957,8 @@
         "generated_equipment_back_glove_executioner_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_back_glove_lazure_01",
@@ -983,7 +1003,8 @@
         "generated_equipment_back_glove_lazure_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_back_glove_leather_03",
@@ -1029,7 +1050,8 @@
         "generated_equipment_back_glove_leather_03"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_back_glove_lion_01",
@@ -1074,7 +1096,8 @@
         "generated_equipment_back_glove_lion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_back_glove_mercenary_01",
@@ -1119,7 +1142,8 @@
         "generated_equipment_back_glove_mercenary_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_back_glove_rust_champion_01",
@@ -1164,7 +1188,8 @@
         "generated_equipment_back_glove_rust_champion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_back_glove_sand_01",
@@ -1209,7 +1234,8 @@
         "generated_equipment_back_glove_sand_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_back_glove_stormguard_01",
@@ -1254,7 +1280,8 @@
         "generated_equipment_back_glove_stormguard_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_back_glove_viper_01",
@@ -1299,7 +1326,8 @@
         "generated_equipment_back_glove_viper_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_back_glove_wood_boss_01",
@@ -1380,7 +1408,8 @@
         "generated_equipment_back_greave_bone_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_back_greave_cathedral_01",
@@ -1425,7 +1454,8 @@
         "generated_equipment_back_greave_cathedral_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_back_greave_chainmail_01",
@@ -1471,7 +1501,8 @@
         "generated_equipment_back_greave_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_back_greave_cloth_01",
@@ -1517,7 +1548,8 @@
         "generated_equipment_back_greave_cloth_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_greave_druid_01",
@@ -1562,7 +1594,8 @@
         "generated_equipment_back_greave_druid_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_back_greave_executioner_01",
@@ -1607,7 +1640,8 @@
         "generated_equipment_back_greave_executioner_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_back_greave_lazure_01",
@@ -1652,7 +1686,8 @@
         "generated_equipment_back_greave_lazure_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_back_greave_leather_01",
@@ -1698,7 +1733,8 @@
         "generated_equipment_back_greave_leather_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_back_greave_lion_01",
@@ -1743,7 +1779,8 @@
         "generated_equipment_back_greave_lion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_back_greave_mercenary_01",
@@ -1788,7 +1825,8 @@
         "generated_equipment_back_greave_mercenary_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_back_greave_rust_champion_01",
@@ -1833,7 +1871,8 @@
         "generated_equipment_back_greave_rust_champion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_back_greave_sand_01",
@@ -1878,7 +1917,8 @@
         "generated_equipment_back_greave_sand_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_back_greave_stormguard_01",
@@ -1923,7 +1963,8 @@
         "generated_equipment_back_greave_stormguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_back_greave_viper_01",
@@ -1968,7 +2009,8 @@
         "generated_equipment_back_greave_viper_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_back_greave_wood_boss_01",
@@ -2049,7 +2091,8 @@
         "generated_equipment_back_shinguard_bone_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_back_shinguard_cathedral_01",
@@ -2094,7 +2137,8 @@
         "generated_equipment_back_shinguard_cathedral_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_back_shinguard_chainmail_01",
@@ -2140,7 +2184,8 @@
         "generated_equipment_back_shinguard_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_back_shinguard_cloth_01",
@@ -2186,7 +2231,8 @@
         "generated_equipment_back_shinguard_cloth_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_shinguard_druid_01",
@@ -2231,7 +2277,8 @@
         "generated_equipment_back_shinguard_druid_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_back_shinguard_executioner_01",
@@ -2276,7 +2323,8 @@
         "generated_equipment_back_shinguard_executioner_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_back_shinguard_lazure_01",
@@ -2321,7 +2369,8 @@
         "generated_equipment_back_shinguard_lazure_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_back_shinguard_lion_01",
@@ -2366,7 +2415,8 @@
         "generated_equipment_back_shinguard_lion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_back_shinguard_mercenary_01",
@@ -2411,7 +2461,8 @@
         "generated_equipment_back_shinguard_mercenary_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_back_shinguard_rust_champion_01",
@@ -2456,7 +2507,8 @@
         "generated_equipment_back_shinguard_rust_champion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_back_shinguard_sand_01",
@@ -2501,7 +2553,8 @@
         "generated_equipment_back_shinguard_sand_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_back_shinguard_stormguard_01",
@@ -2546,7 +2599,8 @@
         "generated_equipment_back_shinguard_stormguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_back_shinguard_viper_01",
@@ -2591,7 +2645,8 @@
         "generated_equipment_back_shinguard_viper_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_back_shinguard_wood_boss_01",
@@ -2672,7 +2727,8 @@
         "generated_equipment_back_shoulderguard_bone_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_back_shoulderguard_cathedral_01",
@@ -2717,7 +2773,8 @@
         "generated_equipment_back_shoulderguard_cathedral_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_back_shoulderguard_chainmail_01",
@@ -2763,7 +2820,8 @@
         "generated_equipment_back_shoulderguard_chainmail_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_back_shoulderguard_cloth_01",
@@ -2809,7 +2867,8 @@
         "generated_equipment_back_shoulderguard_cloth_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_shoulderguard_druid_01",
@@ -2854,7 +2913,8 @@
         "generated_equipment_back_shoulderguard_druid_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_back_shoulderguard_executioner_01",
@@ -2899,7 +2959,8 @@
         "generated_equipment_back_shoulderguard_executioner_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_back_shoulderguard_lazure_01",
@@ -2944,7 +3005,8 @@
         "generated_equipment_back_shoulderguard_lazure_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_back_shoulderguard_lion_01",
@@ -2989,7 +3051,8 @@
         "generated_equipment_back_shoulderguard_lion_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_back_shoulderguard_mercenary_01",
@@ -3034,7 +3097,8 @@
         "generated_equipment_back_shoulderguard_mercenary_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_back_shoulderguard_rust_champion_01",
@@ -3079,7 +3143,8 @@
         "generated_equipment_back_shoulderguard_rust_champion_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_back_shoulderguard_sand_01",
@@ -3124,7 +3189,8 @@
         "generated_equipment_back_shoulderguard_sand_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_back_shoulderguard_stormguard_01",
@@ -3169,7 +3235,8 @@
         "generated_equipment_back_shoulderguard_stormguard_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_back_shoulderguard_viper_01",
@@ -3214,7 +3281,8 @@
         "generated_equipment_back_shoulderguard_viper_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_back_shoulderguard_wood_boss_01",
@@ -3295,7 +3363,8 @@
         "generated_equipment_back_wrist_bone_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_back_wrist_cathedral_01",
@@ -3340,7 +3409,8 @@
         "generated_equipment_back_wrist_cathedral_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_back_wrist_chainmail_01",
@@ -3386,7 +3456,8 @@
         "generated_equipment_back_wrist_chainmail_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_back_wrist_cloth_01",
@@ -3432,7 +3503,8 @@
         "generated_equipment_back_wrist_cloth_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_back_wrist_druid_01",
@@ -3477,7 +3549,8 @@
         "generated_equipment_back_wrist_druid_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_back_wrist_executioner_01",
@@ -3522,7 +3595,8 @@
         "generated_equipment_back_wrist_executioner_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_back_wrist_lazure_01",
@@ -3567,7 +3641,8 @@
         "generated_equipment_back_wrist_lazure_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_back_wrist_lion_01",
@@ -3612,7 +3687,8 @@
         "generated_equipment_back_wrist_lion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_back_wrist_mercenary_01",
@@ -3657,7 +3733,8 @@
         "generated_equipment_back_wrist_mercenary_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_back_wrist_rust_champion_01",
@@ -3702,7 +3779,8 @@
         "generated_equipment_back_wrist_rust_champion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_back_wrist_sand_01",
@@ -3747,7 +3825,8 @@
         "generated_equipment_back_wrist_sand_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_back_wrist_stormguard_01",
@@ -3792,7 +3871,8 @@
         "generated_equipment_back_wrist_stormguard_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_back_wrist_viper_01",
@@ -3837,7 +3917,8 @@
         "generated_equipment_back_wrist_viper_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_back_wrist_wood_boss_01",
@@ -3918,7 +3999,8 @@
         "generated_equipment_breastplate_bone_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_breastplate_cathedral_01",
@@ -3963,7 +4045,8 @@
         "generated_equipment_breastplate_cathedral_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_breastplate_chainmail_01",
@@ -4009,7 +4092,8 @@
         "generated_equipment_breastplate_chainmail_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_breastplate_druid_01",
@@ -4054,7 +4138,8 @@
         "generated_equipment_breastplate_druid_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_breastplate_executioner_01",
@@ -4099,7 +4184,8 @@
         "generated_equipment_breastplate_executioner_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_breastplate_lazure_01",
@@ -4144,7 +4230,8 @@
         "generated_equipment_breastplate_lazure_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_breastplate_lion_01",
@@ -4189,7 +4276,8 @@
         "generated_equipment_breastplate_lion_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_breastplate_mercenary_01",
@@ -4234,7 +4322,8 @@
         "generated_equipment_breastplate_mercenary_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_breastplate_rust_champion_01",
@@ -4279,7 +4368,8 @@
         "generated_equipment_breastplate_rust_champion_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_breastplate_sand_01",
@@ -4324,7 +4414,8 @@
         "generated_equipment_breastplate_sand_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_breastplate_stormguard_01",
@@ -4369,7 +4460,8 @@
         "generated_equipment_breastplate_stormguard_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_breastplate_viper_01",
@@ -4414,7 +4506,8 @@
         "generated_equipment_breastplate_viper_01"
       ],
       "categoryId": "chest"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_breastplate_wood_boss_01",
@@ -4495,7 +4588,8 @@
         "generated_equipment_front_boot_bone_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_front_boot_cathedral_01",
@@ -4540,7 +4634,8 @@
         "generated_equipment_front_boot_cathedral_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_front_boot_chainmail_01",
@@ -4586,7 +4681,8 @@
         "generated_equipment_front_boot_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_front_boot_cloth_01",
@@ -4632,7 +4728,8 @@
         "generated_equipment_front_boot_cloth_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_front_boot_druid_01",
@@ -4677,7 +4774,8 @@
         "generated_equipment_front_boot_druid_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_front_boot_executioner_01",
@@ -4722,7 +4820,8 @@
         "generated_equipment_front_boot_executioner_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_front_boot_lazure_01",
@@ -4767,7 +4866,8 @@
         "generated_equipment_front_boot_lazure_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_front_boot_lion_01",
@@ -4812,7 +4912,8 @@
         "generated_equipment_front_boot_lion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_front_boot_mercenary_01",
@@ -4857,7 +4958,8 @@
         "generated_equipment_front_boot_mercenary_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_front_boot_rust_champion_01",
@@ -4902,7 +5004,8 @@
         "generated_equipment_front_boot_rust_champion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_front_boot_sand_01",
@@ -4947,7 +5050,8 @@
         "generated_equipment_front_boot_sand_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_front_boot_stormguard_01",
@@ -4992,7 +5096,8 @@
         "generated_equipment_front_boot_stormguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_front_boot_viper_01",
@@ -5037,7 +5142,8 @@
         "generated_equipment_front_boot_viper_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_front_boot_wood_boss_01",
@@ -5118,7 +5224,8 @@
         "generated_equipment_front_glove_bone_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_front_glove_cathedral_01",
@@ -5163,7 +5270,8 @@
         "generated_equipment_front_glove_cathedral_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_front_glove_chainmail_03",
@@ -5209,7 +5317,8 @@
         "generated_equipment_front_glove_chainmail_03"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_front_glove_cloth_01",
@@ -5255,7 +5364,8 @@
         "generated_equipment_front_glove_cloth_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_front_glove_druid_01",
@@ -5300,7 +5410,8 @@
         "generated_equipment_front_glove_druid_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_front_glove_executioner_01",
@@ -5345,7 +5456,8 @@
         "generated_equipment_front_glove_executioner_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_front_glove_lazure_01",
@@ -5390,7 +5502,8 @@
         "generated_equipment_front_glove_lazure_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_front_glove_leather_03",
@@ -5436,7 +5549,8 @@
         "generated_equipment_front_glove_leather_03"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_front_glove_lion_01",
@@ -5481,7 +5595,8 @@
         "generated_equipment_front_glove_lion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_front_glove_mercenary_01",
@@ -5526,7 +5641,8 @@
         "generated_equipment_front_glove_mercenary_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_front_glove_rust_champion_01",
@@ -5571,7 +5687,8 @@
         "generated_equipment_front_glove_rust_champion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_front_glove_sand_01",
@@ -5616,7 +5733,8 @@
         "generated_equipment_front_glove_sand_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_front_glove_stormguard_01",
@@ -5661,7 +5779,8 @@
         "generated_equipment_front_glove_stormguard_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_front_glove_viper_01",
@@ -5706,7 +5825,8 @@
         "generated_equipment_front_glove_viper_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_front_glove_wood_boss_01",
@@ -5787,7 +5907,8 @@
         "generated_equipment_front_greave_bone_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_front_greave_cathedral_01",
@@ -5832,7 +5953,8 @@
         "generated_equipment_front_greave_cathedral_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_front_greave_chainmail_01",
@@ -5878,7 +6000,8 @@
         "generated_equipment_front_greave_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_front_greave_cloth_01",
@@ -5924,7 +6047,8 @@
         "generated_equipment_front_greave_cloth_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_front_greave_druid_01",
@@ -5969,7 +6093,8 @@
         "generated_equipment_front_greave_druid_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_front_greave_executioner_01",
@@ -6014,7 +6139,8 @@
         "generated_equipment_front_greave_executioner_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_front_greave_lazure_01",
@@ -6059,7 +6185,8 @@
         "generated_equipment_front_greave_lazure_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_front_greave_leather_01",
@@ -6105,7 +6232,8 @@
         "generated_equipment_front_greave_leather_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_front_greave_lion_01",
@@ -6150,7 +6278,8 @@
         "generated_equipment_front_greave_lion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_front_greave_mercenary_01",
@@ -6195,7 +6324,8 @@
         "generated_equipment_front_greave_mercenary_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_front_greave_rust_champion_01",
@@ -6240,7 +6370,8 @@
         "generated_equipment_front_greave_rust_champion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_front_greave_sand_01",
@@ -6285,7 +6416,8 @@
         "generated_equipment_front_greave_sand_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_front_greave_stormguard_01",
@@ -6330,7 +6462,8 @@
         "generated_equipment_front_greave_stormguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_front_greave_viper_01",
@@ -6375,7 +6508,8 @@
         "generated_equipment_front_greave_viper_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_front_greave_wood_boss_01",
@@ -6456,7 +6590,8 @@
         "generated_equipment_front_shinguard_bone_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_front_shinguard_cathedral_01",
@@ -6501,7 +6636,8 @@
         "generated_equipment_front_shinguard_cathedral_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_front_shinguard_chainmail_01",
@@ -6547,7 +6683,8 @@
         "generated_equipment_front_shinguard_chainmail_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_front_shinguard_cloth_01",
@@ -6593,7 +6730,8 @@
         "generated_equipment_front_shinguard_cloth_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_front_shinguard_druid_01",
@@ -6638,7 +6776,8 @@
         "generated_equipment_front_shinguard_druid_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_front_shinguard_executioner_01",
@@ -6683,7 +6822,8 @@
         "generated_equipment_front_shinguard_executioner_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_front_shinguard_lazure_01",
@@ -6728,7 +6868,8 @@
         "generated_equipment_front_shinguard_lazure_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_front_shinguard_lion_01",
@@ -6773,7 +6914,8 @@
         "generated_equipment_front_shinguard_lion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_front_shinguard_mercenary_01",
@@ -6818,7 +6960,8 @@
         "generated_equipment_front_shinguard_mercenary_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_front_shinguard_rust_champion_01",
@@ -6863,7 +7006,8 @@
         "generated_equipment_front_shinguard_rust_champion_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_front_shinguard_sand_01",
@@ -6908,7 +7052,8 @@
         "generated_equipment_front_shinguard_sand_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_front_shinguard_stormguard_01",
@@ -6953,7 +7098,8 @@
         "generated_equipment_front_shinguard_stormguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_front_shinguard_viper_01",
@@ -6998,7 +7144,8 @@
         "generated_equipment_front_shinguard_viper_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_front_shinguard_wood_boss_01",
@@ -7079,7 +7226,8 @@
         "generated_equipment_front_shoulderguard_bone_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_front_shoulderguard_cathedral_01",
@@ -7124,7 +7272,8 @@
         "generated_equipment_front_shoulderguard_cathedral_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_front_shoulderguard_chainmail_01",
@@ -7170,7 +7319,8 @@
         "generated_equipment_front_shoulderguard_chainmail_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_front_shoulderguard_cloth_01",
@@ -7216,7 +7366,8 @@
         "generated_equipment_front_shoulderguard_cloth_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_front_shoulderguard_druid_01",
@@ -7261,7 +7412,8 @@
         "generated_equipment_front_shoulderguard_druid_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_front_shoulderguard_executioner_01",
@@ -7306,7 +7458,8 @@
         "generated_equipment_front_shoulderguard_executioner_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_front_shoulderguard_lazure_01",
@@ -7351,7 +7504,8 @@
         "generated_equipment_front_shoulderguard_lazure_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_front_shoulderguard_lion_01",
@@ -7396,7 +7550,8 @@
         "generated_equipment_front_shoulderguard_lion_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_front_shoulderguard_mercenary_01",
@@ -7441,7 +7596,8 @@
         "generated_equipment_front_shoulderguard_mercenary_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_front_shoulderguard_rust_champion_01",
@@ -7486,7 +7642,8 @@
         "generated_equipment_front_shoulderguard_rust_champion_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_front_shoulderguard_sand_01",
@@ -7531,7 +7688,8 @@
         "generated_equipment_front_shoulderguard_sand_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_front_shoulderguard_stormguard_01",
@@ -7576,7 +7734,8 @@
         "generated_equipment_front_shoulderguard_stormguard_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_front_shoulderguard_viper_01",
@@ -7621,7 +7780,8 @@
         "generated_equipment_front_shoulderguard_viper_01"
       ],
       "categoryId": "shoulders"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_front_shoulderguard_wood_boss_01",
@@ -7702,7 +7862,8 @@
         "generated_equipment_front_wrist_bone_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_front_wrist_cathedral_01",
@@ -7747,7 +7908,8 @@
         "generated_equipment_front_wrist_cathedral_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_front_wrist_chainmail_01",
@@ -7793,7 +7955,8 @@
         "generated_equipment_front_wrist_chainmail_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_front_wrist_cloth_01",
@@ -7839,7 +8002,8 @@
         "generated_equipment_front_wrist_cloth_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_front_wrist_druid_01",
@@ -7884,7 +8048,8 @@
         "generated_equipment_front_wrist_druid_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_front_wrist_executioner_01",
@@ -7929,7 +8094,8 @@
         "generated_equipment_front_wrist_executioner_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_front_wrist_lazure_01",
@@ -7974,7 +8140,8 @@
         "generated_equipment_front_wrist_lazure_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_front_wrist_lion_01",
@@ -8019,7 +8186,8 @@
         "generated_equipment_front_wrist_lion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_front_wrist_mercenary_01",
@@ -8064,7 +8232,8 @@
         "generated_equipment_front_wrist_mercenary_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_front_wrist_rust_champion_01",
@@ -8109,7 +8278,8 @@
         "generated_equipment_front_wrist_rust_champion_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_front_wrist_sand_01",
@@ -8154,7 +8324,8 @@
         "generated_equipment_front_wrist_sand_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_front_wrist_stormguard_01",
@@ -8199,7 +8370,8 @@
         "generated_equipment_front_wrist_stormguard_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_front_wrist_viper_01",
@@ -8244,7 +8416,8 @@
         "generated_equipment_front_wrist_viper_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_front_wrist_wood_boss_01",
@@ -8325,7 +8498,8 @@
         "generated_equipment_helmet_bone_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_helmet_cathedral_01",
@@ -8370,7 +8544,8 @@
         "generated_equipment_helmet_cathedral_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 90
   },
   {
     "id": "generated_equipment_helmet_chainmail_01",
@@ -8416,7 +8591,8 @@
         "generated_equipment_helmet_chainmail_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_helmet_cloth_01",
@@ -8462,7 +8638,8 @@
         "generated_equipment_helmet_cloth_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 1
   },
   {
     "id": "generated_equipment_helmet_cloth_02",
@@ -8544,7 +8721,8 @@
         "generated_equipment_helmet_druid_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 100
   },
   {
     "id": "generated_equipment_helmet_executioner_01",
@@ -8589,7 +8767,8 @@
         "generated_equipment_helmet_executioner_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_helmet_lazure_01",
@@ -8634,7 +8813,8 @@
         "generated_equipment_helmet_lazure_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_helmet_lion_01",
@@ -8679,7 +8859,8 @@
         "generated_equipment_helmet_lion_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_helmet_mercenary_01",
@@ -8724,7 +8905,8 @@
         "generated_equipment_helmet_mercenary_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_helmet_rust_champion_01",
@@ -8769,7 +8951,8 @@
         "generated_equipment_helmet_rust_champion_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_helmet_sand_01",
@@ -8814,7 +8997,8 @@
         "generated_equipment_helmet_sand_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 7
   },
   {
     "id": "generated_equipment_helmet_stormguard_01",
@@ -8859,7 +9043,8 @@
         "generated_equipment_helmet_stormguard_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_helmet_viper_01",
@@ -8904,7 +9089,8 @@
         "generated_equipment_helmet_viper_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_helmet_wood_boss_01",
@@ -8947,8 +9133,9 @@
     "name": "Common 03 Shield",
     "kind": "armor",
     "rarity": "common",
-    "armorHp": 1,
+    "armorHp": 18,
     "equipmentSlot": "shield",
+    "levelRequirement": 5,
     "assetKeys": {
       "shieldAssetKey": "shield-common-03"
     },
@@ -8974,7 +9161,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_common_03",
       "name": "Common 03 Shield",
-      "price": 0,
+      "price": 80,
       "itemIds": [
         "generated_equipment_shield_common_03"
       ],
@@ -8986,8 +9173,9 @@
     "name": "Common 04 Shield",
     "kind": "armor",
     "rarity": "common",
-    "armorHp": 1,
+    "armorHp": 25,
     "equipmentSlot": "shield",
+    "levelRequirement": 10,
     "assetKeys": {
       "shieldAssetKey": "shield-common-04"
     },
@@ -9013,7 +9201,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_common_04",
       "name": "Common 04 Shield",
-      "price": 0,
+      "price": 120,
       "itemIds": [
         "generated_equipment_shield_common_04"
       ],
@@ -9025,8 +9213,9 @@
     "name": "Epic 01 Shield",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 125,
     "equipmentSlot": "shield",
+    "levelRequirement": 50,
     "assetKeys": {
       "shieldAssetKey": "shield-epic-01"
     },
@@ -9052,7 +9241,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_epic_01",
       "name": "Epic 01 Shield",
-      "price": 0,
+      "price": 900,
       "itemIds": [
         "generated_equipment_shield_epic_01"
       ],
@@ -9064,8 +9253,9 @@
     "name": "Epic 02 Shield",
     "kind": "armor",
     "rarity": "epic",
-    "armorHp": 1,
+    "armorHp": 165,
     "equipmentSlot": "shield",
+    "levelRequirement": 60,
     "assetKeys": {
       "shieldAssetKey": "shield-epic-02"
     },
@@ -9091,7 +9281,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_epic_02",
       "name": "Epic 02 Shield",
-      "price": 0,
+      "price": 1250,
       "itemIds": [
         "generated_equipment_shield_epic_02"
       ],
@@ -9103,8 +9293,9 @@
     "name": "Legendary 01 Shield",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 220,
     "equipmentSlot": "shield",
+    "levelRequirement": 70,
     "assetKeys": {
       "shieldAssetKey": "shield-legendary-01"
     },
@@ -9130,7 +9321,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_legendary_01",
       "name": "Legendary 01 Shield",
-      "price": 0,
+      "price": 1800,
       "itemIds": [
         "generated_equipment_shield_legendary_01"
       ],
@@ -9142,8 +9333,9 @@
     "name": "Legendary 02 Shield",
     "kind": "armor",
     "rarity": "legendary",
-    "armorHp": 1,
+    "armorHp": 290,
     "equipmentSlot": "shield",
+    "levelRequirement": 80,
     "assetKeys": {
       "shieldAssetKey": "shield-legendary-02"
     },
@@ -9169,7 +9361,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_legendary_02",
       "name": "Legendary 02 Shield",
-      "price": 0,
+      "price": 2500,
       "itemIds": [
         "generated_equipment_shield_legendary_02"
       ],
@@ -9181,8 +9373,9 @@
     "name": "Mythical 01 Shield",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 1,
+    "armorHp": 380,
     "equipmentSlot": "shield",
+    "levelRequirement": 90,
     "assetKeys": {
       "shieldAssetKey": "shield-mythical-01"
     },
@@ -9208,7 +9401,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_mythical_01",
       "name": "Mythical 01 Shield",
-      "price": 0,
+      "price": 3600,
       "itemIds": [
         "generated_equipment_shield_mythical_01"
       ],
@@ -9220,8 +9413,9 @@
     "name": "Mythical 02 Shield",
     "kind": "armor",
     "rarity": "mythical",
-    "armorHp": 1,
+    "armorHp": 500,
     "equipmentSlot": "shield",
+    "levelRequirement": 100,
     "assetKeys": {
       "shieldAssetKey": "shield-mythical-02"
     },
@@ -9247,7 +9441,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_mythical_02",
       "name": "Mythical 02 Shield",
-      "price": 0,
+      "price": 5000,
       "itemIds": [
         "generated_equipment_shield_mythical_02"
       ],
@@ -9259,8 +9453,9 @@
     "name": "Rare 01 Shield",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 60,
+    "armorHp": 70,
     "equipmentSlot": "shield",
+    "levelRequirement": 30,
     "assetKeys": {
       "shieldAssetKey": "shield-rare-01"
     },
@@ -9286,7 +9481,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_rare_01",
       "name": "Rare 01 Shield",
-      "price": 1,
+      "price": 420,
       "itemIds": [
         "generated_equipment_shield_rare_01"
       ],
@@ -9298,8 +9493,9 @@
     "name": "Rare 02 Shield",
     "kind": "armor",
     "rarity": "rare",
-    "armorHp": 80,
+    "armorHp": 95,
     "equipmentSlot": "shield",
+    "levelRequirement": 40,
     "assetKeys": {
       "shieldAssetKey": "shield-rare-02"
     },
@@ -9325,7 +9521,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_rare_02",
       "name": "Rare 02 Shield",
-      "price": 1,
+      "price": 600,
       "itemIds": [
         "generated_equipment_shield_rare_02"
       ],
@@ -9339,6 +9535,7 @@
     "rarity": "uncommon",
     "armorHp": 35,
     "equipmentSlot": "shield",
+    "levelRequirement": 15,
     "assetKeys": {
       "shieldAssetKey": "shield-uncommon-01"
     },
@@ -9364,7 +9561,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_uncommon_01",
       "name": "Uncommon 01 Shield",
-      "price": 80,
+      "price": 180,
       "itemIds": [
         "generated_equipment_shield_uncommon_01"
       ],
@@ -9378,6 +9575,7 @@
     "rarity": "uncommon",
     "armorHp": 50,
     "equipmentSlot": "shield",
+    "levelRequirement": 25,
     "assetKeys": {
       "shieldAssetKey": "shield-uncommon-02"
     },
@@ -9403,7 +9601,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_uncommon_02",
       "name": "Uncommon 02 Shield",
-      "price": 120,
+      "price": 260,
       "itemIds": [
         "generated_equipment_shield_uncommon_02"
       ],
@@ -9449,7 +9647,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 40
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_1",
@@ -9490,7 +9688,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 30
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_3",
@@ -9531,7 +9729,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 31
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_4",
@@ -9572,7 +9770,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 34
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_weapon_axe_epic_axe_5",
@@ -9613,7 +9811,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 37
+    "levelRequirement": 55
   },
   {
     "id": "generated_equipment_weapon_axe_epic_zxe",
@@ -9726,7 +9924,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 21
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_axe_rare_axe_2",
@@ -9767,7 +9965,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 25
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_weapon_axe_rusty_axe",
@@ -9890,7 +10088,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 11
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_2",
@@ -9931,7 +10129,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 15
+    "levelRequirement": 20
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_3",
@@ -9972,7 +10170,7 @@
       ],
       "categoryId": "axes"
     },
-    "levelRequirement": 20
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_weapon_axe_uncommon_axe_4",
@@ -10200,7 +10398,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 31
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace_2",
@@ -10241,7 +10439,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 34
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace_3",
@@ -10282,7 +10480,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 37
+    "levelRequirement": 55
   },
   {
     "id": "generated_equipment_weapon_mace_epic_mace_4",
@@ -10323,7 +10521,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 40
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_weapon_mace_lg_mace_1",
@@ -10364,7 +10562,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 50
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_weapon_mace_mace",
@@ -10405,7 +10603,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 11
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_weapon_mace_mace1",
@@ -10446,7 +10644,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 15
+    "levelRequirement": 20
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_1",
@@ -10487,7 +10685,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 21
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_2",
@@ -10528,7 +10726,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 25
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_3",
@@ -10569,7 +10767,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 30
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_mace_stone_mace",
@@ -10682,7 +10880,7 @@
       ],
       "categoryId": "maces"
     },
-    "levelRequirement": 20
+    "levelRequirement": 25
   },
   {
     "id": "generated_equipment_weapon_mace_uncommon_mace_5",
@@ -10856,7 +11054,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 31
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_weapon_spear_epic_spear_1",
@@ -10897,7 +11095,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 34
+    "levelRequirement": 50
   },
   {
     "id": "generated_equipment_weapon_spear_epic_spear_3",
@@ -10969,7 +11167,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 37
+    "levelRequirement": 55
   },
   {
     "id": "generated_equipment_weapon_spear_epic_spear_5",
@@ -11010,7 +11208,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 40
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_weapon_spear_lg_spear_1",
@@ -11051,7 +11249,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 50
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_weapon_spear_rare_spear",
@@ -11092,7 +11290,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 21
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_spear_rare_spear_1",
@@ -11133,7 +11331,7 @@
       ],
       "categoryId": "spears"
     },
-    "levelRequirement": 30
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_1",
@@ -11174,7 +11372,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 31
+    "levelRequirement": 45
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_10",
@@ -11308,7 +11506,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 32
+    "levelRequirement": 48
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_4",
@@ -11349,7 +11547,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 34
+    "levelRequirement": 51
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_6",
@@ -11421,7 +11619,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 36
+    "levelRequirement": 54
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_8",
@@ -11462,7 +11660,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 38
+    "levelRequirement": 57
   },
   {
     "id": "generated_equipment_weapon_sword_epic_sword_9",
@@ -11503,7 +11701,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 40
+    "levelRequirement": 60
   },
   {
     "id": "generated_equipment_weapon_sword_kortik",
@@ -11575,7 +11773,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 41
+    "levelRequirement": 70
   },
   {
     "id": "generated_equipment_weapon_sword_lg_sword_2",
@@ -11616,7 +11814,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 50
+    "levelRequirement": 80
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_1",
@@ -11657,7 +11855,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 21
+    "levelRequirement": 30
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_2",
@@ -11698,7 +11896,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 25
+    "levelRequirement": 35
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_3",
@@ -11739,7 +11937,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 30
+    "levelRequirement": 40
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_4",
@@ -11986,7 +12184,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 11
+    "levelRequirement": 15
   },
   {
     "id": "generated_equipment_weapon_sword_uncommon_sword_2",
@@ -12027,7 +12225,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 15
+    "levelRequirement": 20
   },
   {
     "id": "generated_equipment_weapon_sword_uncommon_sword_3",
@@ -12068,7 +12266,7 @@
       ],
       "categoryId": "swords"
     },
-    "levelRequirement": 20
+    "levelRequirement": 25
   },
   {
     "id": "leather_back_boot_01",
@@ -12114,7 +12312,8 @@
         "leather_back_boot_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_back_shinguard_01",
@@ -12160,7 +12359,8 @@
         "leather_back_shinguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_back_shoulderguard_01",
@@ -12206,7 +12406,8 @@
         "leather_back_shoulderguard_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_back_wrist_01",
@@ -12252,7 +12453,8 @@
         "leather_back_wrist_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_breastplate_01",
@@ -12298,7 +12500,8 @@
         "leather_breastplate_01"
       ],
       "categoryId": "body"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_front_boot_01",
@@ -12344,7 +12547,8 @@
         "leather_front_boot_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_front_shinguard_01",
@@ -12390,7 +12594,8 @@
         "leather_front_shinguard_01"
       ],
       "categoryId": "legs"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_front_shoulderguard_01",
@@ -12436,7 +12641,8 @@
         "leather_front_shoulderguard_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_front_wrist_01",
@@ -12482,7 +12688,8 @@
         "leather_front_wrist_01"
       ],
       "categoryId": "arms"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "leather_helmet_01",
@@ -12528,7 +12735,8 @@
         "leather_helmet_01"
       ],
       "categoryId": "head"
-    }
+    },
+    "levelRequirement": 15
   },
   {
     "id": "weapon_sword_01",

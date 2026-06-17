@@ -213,8 +213,8 @@ export interface CombatRewardApplication {
 
 export const DEFAULT_HERO_ID = "local-hero";
 export const DEFAULT_HERO_NAME = "Borshemir";
-export const HERO_MAX_LEVEL = 50;
-export const HERO_TOTAL_XP_TO_MAX_LEVEL = 1000;
+export const HERO_MAX_LEVEL = 100;
+export const HERO_TOTAL_XP_TO_MAX_LEVEL = 5000;
 export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   10,
   10,
@@ -240,16 +240,6 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   20,
   20,
   20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  25,
-  25,
   25,
   25,
   25,
@@ -265,6 +255,66 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   30,
   30,
   30,
+  30,
+  30,
+  30,
+  30,
+  30,
+  40,
+  40,
+  40,
+  40,
+  40,
+  40,
+  40,
+  40,
+  40,
+  40,
+  55,
+  55,
+  55,
+  55,
+  55,
+  55,
+  55,
+  55,
+  55,
+  55,
+  70,
+  70,
+  70,
+  70,
+  70,
+  70,
+  70,
+  70,
+  70,
+  70,
+  85,
+  85,
+  85,
+  85,
+  85,
+  85,
+  85,
+  85,
+  85,
+  85,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  100,
+  110,
+  110,
+  110,
+  115,
+  115,
 ];
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
 export const HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS = 0.05;
@@ -1103,6 +1153,26 @@ export function grantHeroSkillPoints(hero: HeroState, amount: number, now = new 
   return {
     ...hero,
     skillPoints: hero.skillPoints + skillPoints,
+    updatedAt: now,
+  };
+}
+
+export function grantHeroLevels(hero: HeroState, amount: number, now = new Date().toISOString()): HeroState {
+  const levels = Number.isFinite(amount) ? Math.floor(amount) : 0;
+  const currentLevel = Math.max(1, Math.min(HERO_MAX_LEVEL, Math.floor(hero.level)));
+  const nextLevel = Math.min(HERO_MAX_LEVEL, currentLevel + Math.max(0, levels));
+  const earnedSkillPoints = Math.max(0, nextLevel - currentLevel);
+
+  if (earnedSkillPoints <= 0) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    level: nextLevel,
+    xp: 0,
+    xpToNextLevel: getHeroXpToNextLevel(nextLevel),
+    skillPoints: hero.skillPoints + earnedSkillPoints,
     updatedAt: now,
   };
 }

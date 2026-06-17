@@ -51,8 +51,8 @@ export interface ArenaTierDefinition {
   bossIds: readonly ArenaBossId[];
 }
 
-export const BATTLE_WIN_REWARD: BattleReward = { gold: 5, xp: 5 };
-export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 2 };
+export const BATTLE_WIN_REWARD: BattleReward = { gold: 8, xp: 6 };
+export const BATTLE_LOSS_REWARD: BattleReward = { gold: 1, xp: 1 };
 export const DEFAULT_ARENA_TIER_ID = 1;
 export const DEFAULT_ARENA_DIFFICULTY_ID: ArenaDifficultyId = "medium";
 
@@ -65,7 +65,7 @@ export const ARENA_RANDOM_OPPONENTS: readonly ArenaRandomOpponentDefinition[] = 
     baseStats: { strength: 0, agility: 0, vitality: 0 },
     equipmentPools: [],
     rewards: {
-      win: { gold: 3, xp: 3 },
+      win: { gold: 4, xp: 4 },
       loss: { gold: 1, xp: 1 },
     },
   },
@@ -91,7 +91,7 @@ export const ARENA_RANDOM_OPPONENTS: readonly ArenaRandomOpponentDefinition[] = 
       { itemRarities: ["uncommon"], rollChance: 0.15 },
     ],
     rewards: {
-      win: { gold: 8, xp: 8 },
+      win: { gold: 15, xp: 10 },
       loss: BATTLE_LOSS_REWARD,
     },
   },

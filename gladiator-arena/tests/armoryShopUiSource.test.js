@@ -139,13 +139,31 @@ test("armory shop seals boss-locked rarity tiers before purchase", () => {
   assert.equal(armoryShopSource.includes("getArmoryProductActionState(hero, product)"), true);
   assert.equal(armoryShopSource.includes('armory-shop__option--sealed'), true);
   assert.equal(armoryShopSource.includes('ribbon.textContent = "SEALED";'), true);
-  assert.equal(armoryShopSource.includes('button.disabled = actionState === "sealed";'), true);
+  assert.equal(armoryShopSource.includes('button.disabled = actionState === "sealed" || actionState === "locked";'), true);
   assert.equal(armoryShopSource.includes('actionState === "buy" || actionState === "no-gold"'), true);
   assert.equal(armoryShopSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
 
   assert.equal(mainSource.includes("isSealedArmoryPurchase"), true);
   assert.equal(mainSource.includes("!areHeroItemsOwned(hero, product.itemIds)"), true);
   assert.equal(mainSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
+});
+
+test("armory shop locked products are dimmed and show level requirement ribbons", () => {
+  assert.equal(shopPresentationSource.includes("export function getShopProductRequirementBadge"), true);
+  assert.equal(armoryShopSource.includes("getShopProductRequirementBadge"), true);
+  assert.equal(armoryShopSource.includes("getShopProductRequirementDescription"), true);
+  assert.equal(armoryShopSource.includes('button.classList.toggle("armory-shop__option--locked", actionState === "locked");'), true);
+  assert.equal(
+    armoryShopSource.includes('button.classList.toggle("armory-shop__option--sealed", actionState === "sealed" || actionState === "locked");'),
+    true,
+  );
+  assert.equal(armoryShopSource.includes('button.disabled = actionState === "sealed" || actionState === "locked";'), true);
+  assert.match(armoryShopSource, /if \(actionState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
+  assert.equal(armoryShopSource.includes('const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;'), true);
+  assert.equal(armoryShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;'), true);
+  assert.equal(armoryShopSource.includes('icon.textContent = requirement.kind === "level" ? "LVL" : "";'), true);
+  assert.equal(armoryShopSource.includes("amount.textContent = String(requirement.required);"), true);
+  assert.equal(armoryShopSource.includes('actionState === "equipped" || actionState === "no-gold" || actionState === "sealed" || actionState === "locked"'), true);
 });
 
 test("city shops report their bottom menu position for hero centering", () => {
@@ -431,7 +449,7 @@ test("armory confirm strip omits the extra armor icon and updates preview withou
   assert.equal(armoryShopSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL"), false);
   assert.equal(armoryShopSource.includes("function renderPreviewSelection"), true);
   assert.equal(armoryShopSource.includes("function previewArmoryProduct"), true);
-  assert.match(armoryShopSource, /button\.addEventListener\("click", \(\) => previewArmoryProduct\(product\)\);/);
+  assert.match(armoryShopSource, /button\.addEventListener\("click", \(\) => \{[\s\S]*if \(button\.disabled\) \{[\s\S]*return;[\s\S]*previewArmoryProduct\(product\);[\s\S]*\}\);/);
   assert.match(armoryShopSource, /function previewArmoryProduct\(product: ArmoryProduct\)[\s\S]*if \(previewProduct\?\.id === product\.id\)[\s\S]*clearVisibleProductPrewarm\(\);[\s\S]*options\.onPreview\?\.\(product\);[\s\S]*renderPreviewSelection\(previousProductId\);/);
   assert.equal(armoryShopSource.includes("shopPreviewProfiler"), false);
   assert.equal(armoryShopSource.includes("profileArmoryPreviewClick"), false);

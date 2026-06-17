@@ -387,8 +387,8 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(easyOpponents[0].baseStats?.agility, 0);
   assert.equal(easyOpponents[0].baseStats?.vitality, 0);
   assert.equal(easyOpponents[0].equipmentPools.length, 0);
-  assert.equal(easyOpponents[0].rewards.win.gold, 3);
-  assert.equal(easyOpponents[0].rewards.win.xp, 3);
+  assert.equal(easyOpponents[0].rewards.win.gold, 4);
+  assert.equal(easyOpponents[0].rewards.win.xp, 4);
   assert.equal(easyOpponents[0].rewards.loss.gold, 1);
   assert.equal(easyOpponents[0].rewards.loss.xp, 1);
   assert.equal(mediumOpponents.length, 1);
@@ -397,6 +397,10 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(mediumOpponents[0].equipmentPools[0].itemRarities.length, 1);
   assert.equal(mediumOpponents[0].equipmentPools[0].itemRarities[0], "common");
   assert.equal(mediumOpponents[0].equipmentPools[0].rollChance, tier.enemyEquipmentPools[0].rollChance);
+  assert.equal(mediumOpponents[0].rewards.win.gold, 8);
+  assert.equal(mediumOpponents[0].rewards.win.xp, 6);
+  assert.equal(mediumOpponents[0].rewards.loss.gold, 1);
+  assert.equal(mediumOpponents[0].rewards.loss.xp, 1);
   assert.equal(hardOpponents.length, 1);
   assert.equal(hardOpponents[0].id, "dust_arena_veteran");
   assert.equal(hardOpponents[0].baseStats, undefined);
@@ -406,8 +410,10 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].equipmentPools[0].rollChance, 0.7);
   assert.equal(hardOpponents[0].equipmentPools[1].itemRarities[0], "uncommon");
   assert.equal(hardOpponents[0].equipmentPools[1].rollChance, 0.15);
-  assert.equal(hardOpponents[0].rewards.win.gold, 8);
-  assert.equal(hardOpponents[0].rewards.win.xp, 8);
+  assert.equal(hardOpponents[0].rewards.win.gold, 15);
+  assert.equal(hardOpponents[0].rewards.win.xp, 10);
+  assert.equal(hardOpponents[0].rewards.loss.gold, 1);
+  assert.equal(hardOpponents[0].rewards.loss.xp, 1);
 
   assert.equal(tier.bossIds.length, 1);
   assert.equal(boss?.id, "dust_arena_champion");
@@ -469,8 +475,8 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(easyState.enemy.shurikenItemId, undefined);
   assert.deepEqual(Object.values(easyState.enemy.equipment ?? {}), Object.values(hero.createDefaultHeroEquipment()));
   easyState.result = "win";
-  assert.equal(hero.getBattleReward(easyState).gold, 3);
-  assert.equal(hero.getBattleReward(easyState).xp, 3);
+  assert.equal(hero.getBattleReward(easyState).gold, 4);
+  assert.equal(hero.getBattleReward(easyState).xp, 4);
   easyState.result = "lose";
   assert.equal(hero.getBattleReward(easyState).gold, 1);
   assert.equal(hero.getBattleReward(easyState).xp, 1);
@@ -489,11 +495,11 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(hardSplitStatsState.enemy.movementDistanceBonus, 0.015);
   assert.deepEqual(Object.values(hardSplitStatsState.enemy.equipment ?? {}), Object.values(hero.createDefaultHeroEquipment()));
   hardState.result = "win";
-  assert.equal(hero.getBattleReward(hardState).gold, 8);
-  assert.equal(hero.getBattleReward(hardState).xp, 8);
+  assert.equal(hero.getBattleReward(hardState).gold, 15);
+  assert.equal(hero.getBattleReward(hardState).xp, 10);
   hardState.result = "lose";
   assert.equal(hero.getBattleReward(hardState).gold, 1);
-  assert.equal(hero.getBattleReward(hardState).xp, 2);
+  assert.equal(hero.getBattleReward(hardState).xp, 1);
 
   const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
   const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);
@@ -641,24 +647,28 @@ test("hero can unlock all shop rarity tiers", () => {
   assert.equal(hero.unlockAllHeroShopRarities(unlockedHero, "2026-01-01T00:02:00.000Z"), unlockedHero);
 });
 
-test("hero level progression uses one thousand total xp across fifty levels", () => {
-  assert.equal(hero.HERO_MAX_LEVEL, 50);
-  assert.equal(hero.HERO_TOTAL_XP_TO_MAX_LEVEL, 1000);
-  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length, 49);
+test("hero level progression uses five thousand total xp across one hundred levels", () => {
+  assert.equal(hero.HERO_MAX_LEVEL, 100);
+  assert.equal(hero.HERO_TOTAL_XP_TO_MAX_LEVEL, 5000);
+  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length, 99);
   assert.equal(
     hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.reduce((total, xp) => total + xp, 0),
-    1000,
+    5000,
   );
 
   assert.equal(hero.getHeroXpToNextLevel(1), 10);
   assert.equal(hero.getHeroXpToNextLevel(5), 15);
   assert.equal(hero.getHeroXpToNextLevel(15), 20);
   assert.equal(hero.getHeroXpToNextLevel(33), 25);
-  assert.equal(hero.getHeroXpToNextLevel(45), 30);
-  assert.equal(hero.getHeroXpToNextLevel(50), 30);
+  assert.equal(hero.getHeroXpToNextLevel(45), 40);
+  assert.equal(hero.getHeroXpToNextLevel(60), 55);
+  assert.equal(hero.getHeroXpToNextLevel(80), 85);
+  assert.equal(hero.getHeroXpToNextLevel(95), 110);
+  assert.equal(hero.getHeroXpToNextLevel(100), 115);
+  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.slice(0, 9).reduce((total, xp) => total + xp, 0), 115);
 });
 
-test("battle xp follows the level table and caps at level fifty", () => {
+test("battle xp follows the level table and caps at level one hundred", () => {
   const staleHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
     xp: 9,
@@ -672,12 +682,12 @@ test("battle xp follows the level table and caps at level fifty", () => {
   assert.equal(levelTwoHero.xpToNextLevel, 10);
   assert.equal(levelTwoHero.skillPoints, 2);
 
-  const maxHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 1000 });
+  const maxHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 5000 });
 
-  assert.equal(maxHero.level, 50);
+  assert.equal(maxHero.level, 100);
   assert.equal(maxHero.xp, 0);
-  assert.equal(maxHero.xpToNextLevel, 30);
-  assert.equal(maxHero.skillPoints, 50);
+  assert.equal(maxHero.xpToNextLevel, 115);
+  assert.equal(maxHero.skillPoints, 100);
 });
 
 test("hero can spend level-up skill points on base attributes", () => {
@@ -734,6 +744,27 @@ test("hero can receive temporary skill points", () => {
   assert.equal(boostedHero.skillPoints, hero.HERO_STARTING_SKILL_POINTS + 10);
   assert.equal(boostedHero.updatedAt, "2026-01-01T00:01:00.000Z");
   assert.equal(hero.grantHeroSkillPoints(boostedHero, 0), boostedHero);
+});
+
+test("hero can receive temporary levels", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    xp: 7,
+  };
+  const boostedHero = hero.grantHeroLevels(baseHero, 2, "2026-01-01T00:01:00.000Z");
+
+  assert.equal(boostedHero.level, 3);
+  assert.equal(boostedHero.xp, 0);
+  assert.equal(boostedHero.xpToNextLevel, hero.getHeroXpToNextLevel(3));
+  assert.equal(boostedHero.skillPoints, hero.HERO_STARTING_SKILL_POINTS + 2);
+  assert.equal(boostedHero.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(hero.grantHeroLevels(boostedHero, 0), boostedHero);
+
+  const maxHero = hero.grantHeroLevels(boostedHero, 100, "2026-01-01T00:02:00.000Z");
+
+  assert.equal(maxHero.level, hero.HERO_MAX_LEVEL);
+  assert.equal(maxHero.xp, 0);
+  assert.equal(maxHero.skillPoints, hero.HERO_STARTING_SKILL_POINTS + hero.HERO_MAX_LEVEL - 1);
 });
 
 test("hero can receive temporary gold", () => {
