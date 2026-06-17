@@ -135,12 +135,17 @@ function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId
   const attackIconUrl = ACTION_ATTACK_ICON_URLS[actionId];
   const utilityIconUrl = ACTION_UTILITY_ICON_URLS[actionId];
   const imageIconUrl = dynamicIconUrl ?? attackIconUrl ?? utilityIconUrl;
+  const iconClassName = attackIconUrl ? "action-arc__attack-icon" : "action-arc__image-icon";
+  const iconSignature = imageIconUrl ? `image:${iconClassName}:${imageIconUrl}` : `text:${ACTION_ICONS[actionId] ?? ""}`;
 
-  icon.replaceChildren();
-  delete button.dataset.icon;
-  delete button.dataset.iconAlt;
   button.classList.toggle("action-arc__button--attack-token", Boolean(attackIconUrl));
   button.classList.toggle("action-arc__button--image-token", Boolean(imageIconUrl));
+
+  if (button.dataset.icon === iconSignature) {
+    return;
+  }
+
+  button.dataset.icon = iconSignature;
 
   if (imageIconUrl) {
     const imageIcon = document.createElement("img");
@@ -149,10 +154,12 @@ function renderActionIcon(button: HTMLButtonElement, icon: HTMLElement, actionId
     imageIcon.src = imageIconUrl;
     imageIcon.alt = "";
     imageIcon.draggable = false;
+    icon.replaceChildren();
     icon.append(imageIcon);
     return;
   }
 
+  icon.replaceChildren();
   icon.textContent = ACTION_ICONS[actionId];
 }
 
@@ -418,7 +425,6 @@ export function mountActionArc(
         `${buttonLayout.label} ${buttonLayout.detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`,
       );
       button.title = `${buttonLayout.label} ${buttonLayout.detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""} angle ${Math.round(buttonLayout.angle)} deg`;
-      renderActionIcon(button, icon, actionId, getActionTokenIconUrl(actionId, state));
     }
 
     updateEditClasses();

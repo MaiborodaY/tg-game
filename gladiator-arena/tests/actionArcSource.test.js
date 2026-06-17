@@ -33,6 +33,16 @@ test("action arc renders image icons with action-specific colors", () => {
   assert.equal(stylesSource.includes('.action-arc__button[data-action="back"] .action-arc__icon'), true);
   assert.equal(stylesSource.includes('linear-gradient(180deg, #4ebfff'), true);
 });
+
+test("action icons skip unchanged DOM rerenders", () => {
+  const renderActionIconReferences = actionArcSource.match(/renderActionIcon\(/g) ?? [];
+
+  assert.equal(actionArcSource.includes("const iconSignature"), true);
+  assert.equal(actionArcSource.includes("button.dataset.icon === iconSignature"), true);
+  assert.equal(actionArcSource.includes("button.dataset.icon = iconSignature"), true);
+  assert.equal(renderActionIconReferences.length, 2);
+});
+
 test("action arc buttons keep icon-first content with compact badges", () => {
   assert.equal(actionArcSource.includes("button.append(icon);"), true);
   assert.equal(actionArcSource.includes("button.append(icon, title, detail)"), false);
