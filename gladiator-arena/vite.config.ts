@@ -604,6 +604,7 @@ interface GeneratedEquipmentJsonRecord {
   kind: "armor" | "weapon";
   rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
+  equipmentSet?: GeneratedEquipmentSetInfo;
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
@@ -637,6 +638,13 @@ interface GeneratedEquipmentAvailability {
   shop: boolean;
   enemyPool: boolean;
   bossUnique: boolean;
+}
+
+interface GeneratedEquipmentSetInfo {
+  id: string;
+  name: string;
+  rank: number;
+  grade?: "starter" | "low" | "mid" | "high" | "boss";
 }
 
 interface ArenaBossJsonRecord {
@@ -2765,6 +2773,7 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     kind: record.kind,
     ...(record.rarity ? { rarity: record.rarity } : {}),
     ...(record.armorCategory ? { armorCategory: record.armorCategory } : {}),
+    ...(record.equipmentSet ? { equipmentSet: record.equipmentSet } : {}),
     equipmentSlot: record.equipmentSlot,
     ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
     ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
@@ -2932,6 +2941,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const weaponClass = kind === "weapon" ? readWeaponClass(record.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
   const rarity = readItemRarity(record.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
   const requirements = validateGeneratedEquipmentRequirements(record.requirements);
+  const equipmentSet = kind === "armor" ? validateGeneratedEquipmentSetInfo(record.equipmentSet) : undefined;
   const availability = readGeneratedEquipmentAvailability(record.availability, {
     shop: Boolean(record.armoryProduct || record.weaponProduct),
     enemyPool: true,
@@ -2949,6 +2959,7 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     kind,
     rarity,
     ...(armorCategory ? { armorCategory } : {}),
+    ...(equipmentSet ? { equipmentSet } : {}),
     ...(armorHp !== undefined ? { armorHp } : {}),
     ...(damageBonus !== undefined ? { damageBonus } : {}),
     ...(requirements ? { requirements } : {}),
@@ -2965,6 +2976,30 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(armoryProduct ? { armoryProduct } : {}),
     ...(weaponProduct ? { weaponProduct } : {}),
   };
+}
+
+function validateGeneratedEquipmentSetInfo(input: unknown): GeneratedEquipmentSetInfo | undefined {
+  if (input === undefined || input === null || input === "") {
+    return undefined;
+  }
+
+  const source = readPlainObject(input, "generated equipment set");
+  const grade = source.grade === undefined ? undefined : readGeneratedEquipmentSetGrade(source.grade);
+
+  return {
+    id: readNonEmptyString(source.id, "generated equipment set.id"),
+    name: readNonEmptyString(source.name, "generated equipment set.name"),
+    rank: Math.max(0, Math.floor(readFinitePayloadNumber(source.rank, "generated equipment set.rank"))),
+    ...(grade ? { grade } : {}),
+  };
+}
+
+function readGeneratedEquipmentSetGrade(value: unknown): NonNullable<GeneratedEquipmentSetInfo["grade"]> {
+  if (value === "starter" || value === "low" || value === "mid" || value === "high" || value === "boss") {
+    return value;
+  }
+
+  throw new Error("Invalid generated equipment set grade.");
 }
 
 function validateGeneratedEquipmentRequirements(input: unknown): GeneratedEquipmentJsonRecord["requirements"] {

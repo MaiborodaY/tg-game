@@ -112,10 +112,15 @@ export const BOW_SHOTS_PER_BATTLE = 5;
 const MIN_MELEE_WEAPON_DAMAGE = 1;
 export const AXE_BLOCK_CHANCE_PENALTY = 0.15;
 export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 2;
+const AXE_MELEE_DAMAGE_MULTIPLIER: Partial<Record<ActionId, number>> = {
+  light: 1.5,
+  medium: 2,
+  heavy: 3,
+};
 const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
-  light: 0.05,
-  medium: 0.1,
-  heavy: 0.15,
+  light: 0.15,
+  medium: 0.2,
+  heavy: 0.25,
 };
 const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.5;
 export const SPEAR_CLINCH_RANGE_BONUS = 0.4;
@@ -847,6 +852,14 @@ function getMeleeWeaponDamage(attacker: FighterState): number {
   return Math.max(MIN_MELEE_WEAPON_DAMAGE, Math.max(0, attacker.damageBonus ?? 0));
 }
 
+function getActionMeleeWeaponDamageMultiplier(actionId: ActionId, attacker: FighterState): number | undefined {
+  if (getFighterWeaponClass(attacker) === "axe") {
+    return AXE_MELEE_DAMAGE_MULTIPLIER[actionId] ?? actions[actionId].meleeDamageMultiplier;
+  }
+
+  return actions[actionId].meleeDamageMultiplier;
+}
+
 function getActionDamage(actionId: ActionId, attacker: FighterState): number {
   if (actionId === "shuriken") {
     return Math.max(0, Math.floor(attacker.shurikenDamage ?? 0));
@@ -859,7 +872,7 @@ function getActionDamage(actionId: ActionId, attacker: FighterState): number {
     return 0;
   }
 
-  const meleeDamageMultiplier = actions[actionId].meleeDamageMultiplier;
+  const meleeDamageMultiplier = getActionMeleeWeaponDamageMultiplier(actionId, attacker);
 
   if (!isRangedFighter(attacker) && meleeDamageMultiplier !== undefined) {
     return Math.ceil(getMeleeWeaponDamage(attacker) * meleeDamageMultiplier * getActionMeleeDamageMultiplier(attacker));

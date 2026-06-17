@@ -155,7 +155,7 @@ test("bow fighters are forced to melee in clinch", () => {
 
   assert.equal(nextState.player.weaponClass, "axe");
   assert.equal(nextState.player.bowShotsRemaining, 5);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 3);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 5);
 });
 
 test("moving into clinch holsters active bows", () => {

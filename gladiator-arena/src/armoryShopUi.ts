@@ -1,5 +1,6 @@
 import {
   HERO_ITEM_CATALOG,
+  type HeroEquipmentSetInfo,
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
@@ -95,6 +96,12 @@ interface PairedArmorySlotConfig {
   token: string;
   singularLabel: string;
   pluralLabel: string;
+}
+
+interface ArmoryProductSetRow {
+  key: string;
+  label?: string;
+  products: ArmoryProduct[];
 }
 
 const PAIRED_ARMORY_SLOT_CONFIGS: PairedArmorySlotConfig[] = [
@@ -251,6 +258,35 @@ function getSortedArmoryCategoryProducts(category: ArmoryCategory): ArmoryProduc
   return [...getArmoryCategoryProducts(category)].sort(compareArmoryProducts);
 }
 
+function getArmoryProductSetRows(products: readonly ArmoryProduct[]): ArmoryProductSetRow[] {
+  const rows: ArmoryProductSetRow[] = [];
+  const rowsByKey = new Map<string, ArmoryProductSetRow>();
+
+  products.forEach((product) => {
+    const setInfo = getArmoryProductSetInfo(product);
+    const key = setInfo ? `set:${setInfo.rank}:${setInfo.id}` : `product:${product.id}`;
+    let row = rowsByKey.get(key);
+
+    if (!row) {
+      row = {
+        key,
+        label: setInfo?.name,
+        products: [],
+      };
+      rowsByKey.set(key, row);
+      rows.push(row);
+    }
+
+    row.products.push(product);
+  });
+
+  return rows;
+}
+
+function shouldRenderArmoryProductSetRows(rows: readonly ArmoryProductSetRow[]): boolean {
+  return rows.some((row) => row.products.length > 1);
+}
+
 function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): number {
   const rarityDifference = getArmoryProductRarityOrder(left) - getArmoryProductRarityOrder(right);
 
@@ -294,6 +330,14 @@ function getArmoryProductSetOrder(product: ArmoryProduct): number {
     Number.MAX_SAFE_INTEGER,
     ...product.itemIds.map((itemId) => HERO_ITEM_CATALOG[itemId]?.equipmentSet?.rank ?? Number.MAX_SAFE_INTEGER),
   );
+}
+
+function getArmoryProductSetInfo(product: ArmoryProduct): HeroEquipmentSetInfo | undefined {
+  return product.itemIds.flatMap((itemId) => {
+    const equipmentSet = HERO_ITEM_CATALOG[itemId]?.equipmentSet;
+
+    return equipmentSet ? [equipmentSet] : [];
+  })[0];
 }
 
 function getArmoryProductSlotOrder(product: ArmoryProduct): number {
@@ -615,6 +659,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const hero = options.getHero();
     const selectedCategory = ARMORY_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? ARMORY_CATEGORIES[0]!;
     const selectedProducts = getSortedArmoryCategoryProducts(selectedCategory);
+    const productSetRows = getArmoryProductSetRows(selectedProducts);
+    const usesProductSetRows = shouldRenderArmoryProductSetRows(productSetRows);
 
     selectedCategoryId = selectedCategory.id;
     title.textContent = selectedCategory.name;
@@ -634,6 +680,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     shop.classList.toggle("armory-shop--has-subcategories", false);
     content.classList.toggle("armory-shop__content--categories", false);
     content.classList.toggle("armory-shop__content--products", true);
+    content.classList.toggle("armory-shop__content--set-rows", usesProductSetRows);
     content.classList.toggle("armory-shop__content--confirm", false);
     syncSelectionState();
 
@@ -650,12 +697,11 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
       return;
     }
 
-    selectedProducts.forEach((product) => {
-      const button = createProductButton(product, hero, previewProduct?.id === product.id);
-
-      productButtons.set(product.id, button);
-      content.append(button);
-    });
+    if (usesProductSetRows) {
+      productSetRows.forEach((row) => content.append(createProductSetRow(row, hero)));
+    } else {
+      selectedProducts.forEach((product) => content.append(createTrackedProductButton(product, hero)));
+    }
     scheduleVisibleProductPrewarm();
   }
 
@@ -800,6 +846,29 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.addEventListener("click", () => previewArmoryProduct(product));
 
     return button;
+  }
+
+  function createTrackedProductButton(product: ArmoryProduct, hero: HeroState): HTMLButtonElement {
+    const button = createProductButton(product, hero, previewProduct?.id === product.id);
+
+    productButtons.set(product.id, button);
+
+    return button;
+  }
+
+  function createProductSetRow(row: ArmoryProductSetRow, hero: HeroState): HTMLElement {
+    const element = document.createElement("div");
+
+    element.className = "armory-shop__set-row";
+    element.dataset.setRow = row.key;
+    element.style.setProperty("--armory-shop-set-row-columns", String(Math.max(3, row.products.length)));
+    element.setAttribute("role", "group");
+    if (row.label) {
+      element.setAttribute("aria-label", `${row.label} set`);
+    }
+    row.products.forEach((product) => element.append(createTrackedProductButton(product, hero)));
+
+    return element;
   }
 
   function createSelectedProductStrip(onBuy: () => void): ArmorySelectedStripElements {

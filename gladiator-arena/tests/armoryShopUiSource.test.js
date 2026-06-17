@@ -36,6 +36,19 @@ test("armory shop sorts products by rarity, equipment set, slot, armor, price, t
   assert.equal(armoryShopSource.includes("equipmentSet?.rank"), true);
 });
 
+test("armory shop renders equipment sets as stable product rows", () => {
+  assert.equal(armoryShopSource.includes("interface ArmoryProductSetRow"), true);
+  assert.equal(armoryShopSource.includes("getArmoryProductSetRows"), true);
+  assert.equal(armoryShopSource.includes("shouldRenderArmoryProductSetRows"), true);
+  assert.equal(armoryShopSource.includes('content.classList.toggle("armory-shop__content--set-rows"'), true);
+  assert.equal(armoryShopSource.includes('element.className = "armory-shop__set-row";'), true);
+  assert.equal(armoryShopSource.includes('element.dataset.setRow = row.key;'), true);
+  assert.equal(armoryShopSource.includes("--armory-shop-set-row-columns"), true);
+  assert.equal(armoryShopSource.includes("createTrackedProductButton(product, hero)"), true);
+  assert.equal(stylesSource.includes(".armory-shop__content--set-rows"), true);
+  assert.equal(stylesSource.includes(".armory-shop__set-row"), true);
+});
+
 test("weapon shop sorts products by rarity, damage, price, then name", () => {
   const rarityOrderIndex = weaponShopSource.indexOf("const WEAPON_RARITY_SORT_ORDER");
   const categoriesIndex = weaponShopSource.indexOf("const WEAPON_CATEGORIES");

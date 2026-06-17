@@ -121,26 +121,29 @@ test("swords improve hit chances while axes trade accuracy for strength scaling"
     weaponClass: "axe",
   };
 
-  assert.equal(combat.getActionBlockChance(combat.actions.light, swordFighter), 0.2);
-  assert.equal(combat.getActionBlockChance(combat.actions.medium, swordFighter), 0.4);
-  assert.equal(combat.getActionBlockChance(combat.actions.heavy, swordFighter), 0.6);
+  assert.equal(combat.getActionBlockChance(combat.actions.light, swordFighter), 0.1);
+  assert.equal(combat.getActionBlockChance(combat.actions.medium, swordFighter), 0.3);
+  assert.equal(combat.getActionBlockChance(combat.actions.heavy, swordFighter), 0.5);
   assert.equal(combat.getActionBlockChance(combat.actions.light, axeFighter), 0.4);
   assert.equal(combat.getActionBlockChance(combat.actions.medium, axeFighter), 0.65);
   assert.equal(combat.getActionBlockChance(combat.actions.heavy, axeFighter), 0.9);
 });
 
-test("axes double the strength melee damage scaling", () => {
-  const state = combat.freshState();
+test("axes use heavier weapon damage tiers and double strength melee damage scaling", () => {
+  function resolveAxeAttack(actionId) {
+    const state = combat.freshState();
 
-  setConsistentDistance(state, combat.MELEE_RANGE);
-  state.player.weaponClass = "axe";
-  state.player.damageBonus = 4;
-  state.player.meleeDamagePercentBonus = 0.25;
+    setConsistentDistance(state, combat.MELEE_RANGE);
+    state.player.weaponClass = "axe";
+    state.player.damageBonus = 4;
+    state.player.meleeDamagePercentBonus = 0.25;
 
-  const nextState = combat.resolvePlayerTurn(state, "medium", () => 0.99);
+    return combat.resolvePlayerTurn(state, actionId, () => 0.99);
+  }
 
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - 9);
-  assert.equal(nextState.lastPlayerDamage, 9);
+  assert.equal(resolveAxeAttack("light").lastPlayerDamage, 9);
+  assert.equal(resolveAxeAttack("medium").lastPlayerDamage, 12);
+  assert.equal(resolveAxeAttack("heavy").lastPlayerDamage, 18);
 });
 
 test("spears extend active melee reach", () => {
