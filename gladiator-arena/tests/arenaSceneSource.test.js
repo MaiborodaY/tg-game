@@ -366,8 +366,10 @@ test("phaser games use the selected render fps setting", () => {
 
   assert.equal(arenaSceneSource.includes("const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig"), true);
   assert.equal(arenaSceneSource.includes("const PHASER_SIXTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig"), true);
-  assert.match(arenaSceneSource, /PHASER_THIRTY_FPS_CONFIG[\s\S]*target:\s*30,[\s\S]*limit:\s*30,/);
-  assert.match(arenaSceneSource, /PHASER_SIXTY_FPS_CONFIG[\s\S]*target:\s*60,[\s\S]*limit:\s*60,/);
+  assert.match(arenaSceneSource, /PHASER_THIRTY_FPS_CONFIG[\s\S]*target:\s*30,/);
+  assert.match(arenaSceneSource, /PHASER_SIXTY_FPS_CONFIG[\s\S]*target:\s*60,/);
+  assert.equal(arenaSceneSource.includes("limit: 30"), false);
+  assert.equal(arenaSceneSource.includes("limit: 60"), false);
   assert.equal(arenaSceneSource.includes("function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig"), true);
   assert.equal(arenaSceneSource.includes("getPlayerSettings().renderFps === 60 ? PHASER_SIXTY_FPS_CONFIG : PHASER_THIRTY_FPS_CONFIG"), true);
   assert.equal((arenaSceneSource.match(/fps: getPlayerPhaserFpsConfig\(\)/g) ?? []).length, 4);

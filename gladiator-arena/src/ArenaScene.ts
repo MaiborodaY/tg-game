@@ -958,11 +958,9 @@ const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
 };
 const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
   target: 30,
-  limit: 30,
 };
 const PHASER_SIXTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
   target: 60,
-  limit: 60,
 };
 
 function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig {
