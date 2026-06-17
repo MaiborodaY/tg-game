@@ -101,6 +101,10 @@ test("regular arena exposes switchable classic HUD markup", () => {
   assert.equal(indexHtml.includes('data-classic-action-bar'), true);
   assert.equal(indexHtml.includes('id="classicPlayerHpFill"'), true);
   assert.equal(indexHtml.includes('id="classicEnemyStaText"'), true);
+  assert.equal(indexHtml.includes('class="classic-stat__icon classic-stat__icon--hp"'), true);
+  assert.equal(indexHtml.includes('class="classic-stat__value"'), true);
+  assert.equal(debugHtml.includes('class="classic-stat__icon classic-stat__icon--armor"'), true);
+  assert.equal(debugHtml.includes('class="classic-stat__value"'), true);
   assert.equal(mainSource.includes("mountClassicActionBar"), true);
 });
 

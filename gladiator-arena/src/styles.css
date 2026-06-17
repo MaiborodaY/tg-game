@@ -419,10 +419,10 @@ h1 {
 
 .classic-stat {
   display: grid;
-  grid-template-columns: 16px minmax(24px, 1fr) max-content;
-  gap: 3px;
+  grid-template-columns: 20px minmax(64px, 1fr);
+  gap: 5px;
   align-items: center;
-  min-height: 19px;
+  min-height: 21px;
   margin-top: 5px;
   color: #ffe8ad;
   font-size: 0.54rem;
@@ -432,25 +432,45 @@ h1 {
 }
 
 .classic-fighter-card--enemy .classic-stat {
-  grid-template-columns: max-content minmax(24px, 1fr) 16px;
+  grid-template-columns: minmax(64px, 1fr) 20px;
 }
 
-.classic-fighter-card--enemy .classic-stat span {
-  order: 3;
-}
-
-.classic-fighter-card--enemy .classic-stat__track {
+.classic-fighter-card--enemy .classic-stat__icon {
   order: 2;
 }
 
-.classic-fighter-card--enemy .classic-stat em {
+.classic-fighter-card--enemy .classic-stat__track {
   order: 1;
-  text-align: left;
+}
+
+.classic-stat__icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter:
+    drop-shadow(0 1px 0 #160703)
+    drop-shadow(0 0 3px rgba(255, 226, 153, 0.18));
+}
+
+.classic-stat__icon--hp {
+  background-image: url("./assets/ui/profile/stat-health.webp");
+}
+
+.classic-stat__icon--armor {
+  background-image: url("./assets/ui/damage-icons/damage-armor-absorb.webp");
+}
+
+.classic-stat__icon--stamina {
+  background-image: url("./assets/ui/profile/stat-stamina.webp");
 }
 
 .classic-stat__track {
+  position: relative;
   overflow: hidden;
-  height: 18px;
+  height: 20px;
   border: 1px solid #160703;
   border-radius: 999px;
   background: rgba(16, 7, 4, 0.84);
@@ -541,15 +561,26 @@ h1 {
   opacity: var(--stat-fluid-opacity, 0.7);
 }
 
-.classic-stat em {
-  min-width: 35px;
+.classic-stat__value {
+  position: absolute;
+  inset: 0 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
   overflow: hidden;
   color: #fff5c8;
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   font-style: normal;
-  text-align: right;
+  text-align: center;
   text-overflow: clip;
   white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    1px 1px 0 #160703,
+    -1px 1px 0 #160703,
+    1px -1px 0 #160703,
+    -1px -1px 0 #160703,
+    0 0 4px rgba(0, 0, 0, 0.58);
 }
 
 .classic-distance-badge {

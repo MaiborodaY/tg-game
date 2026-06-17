@@ -229,6 +229,19 @@ test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(html.includes('class="resource-flask flask--hp"'), true);
   assert.equal(html.includes('class="resource-flask flask--armor"'), true);
   assert.equal(html.includes('class="resource-flask flask--stamina"'), true);
+  assert.equal(html.includes('class="classic-stat__icon classic-stat__icon--hp"'), true);
+  assert.equal(html.includes('class="classic-stat__icon classic-stat__icon--armor"'), true);
+  assert.equal(html.includes('class="classic-stat__icon classic-stat__icon--stamina"'), true);
+  assert.equal(html.includes('id="classicPlayerHpText" class="classic-stat__value"'), true);
+  assert.equal(stylesSource.includes(".classic-stat__icon--hp"), true);
+  assert.equal(stylesSource.includes('background-image: url("./assets/ui/profile/stat-health.webp")'), true);
+  assert.equal(stylesSource.includes('background-image: url("./assets/ui/damage-icons/damage-armor-absorb.webp")'), true);
+  assert.equal(stylesSource.includes('background-image: url("./assets/ui/profile/stat-stamina.webp")'), true);
+  assert.equal(stylesSource.includes(".classic-stat__value"), true);
+  assert.equal(stylesSource.includes("place-items: center;"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: 20px minmax(64px, 1fr);"), true);
+  assert.equal(stylesSource.includes("min-height: 21px;"), true);
+  assert.equal(stylesSource.includes("font-size: 0.72rem;"), true);
 
   for (const id of [
     "playerHpText",
