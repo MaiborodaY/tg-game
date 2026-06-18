@@ -318,6 +318,7 @@ test("save as prod defaults persists body art layers per body preset", () => {
   assert.match(debugTuningSource, /bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>/);
   assert.match(debugTuningSource, /appearanceLayers: Record<AppearanceLayerKey, AppearanceLayerTuning>/);
   assert.match(source, /const bodyPresetKeys = \["classic", "dummy-v2"\] as const/);
+  assert.match(source, /const faceAssetLayerKeys = \["pupilLeft", "pupilRight", "browLeft", "browRight"\] as const/);
   assert.match(source, /const appearanceLayerKeys = \["hair", "beard"\] as const/);
   assert.match(saveDefaultsRoute, /const bodyPartLayerUpdates = pickBodyPartLayerDefaultUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /const bodyPresetAnimationUpdates = pickBodyPresetAnimationDefaultUpdates\(payload\)/);

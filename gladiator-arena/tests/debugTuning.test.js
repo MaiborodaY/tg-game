@@ -306,9 +306,11 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.appearanceLayers.hair.scaleY, 0.1);
   assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.y, -44);
+  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.browLeft.y, -63);
   assert.equal(normalized.bodyPresetTuning.classic.appearanceLayers.hair.x, 0);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.x, 80);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.y, -120);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.browLeft.scaleX, 0.32);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].appearanceLayers.hair.x, 160);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].appearanceLayers.hair.y, -160);
 });
@@ -329,12 +331,15 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.selectedAppearanceLayer, "hair");
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilRight.y, -44);
+  assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.browLeft.angle, -7);
+  assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.browRight.angle, 7);
   assert.equal(debugTuningModule.defaultDebugTuning.appearanceLayers.hair.x, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.appearanceLayers.beard.scaleX, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.rigParts.head.y, -10);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].rigParts.head.y, -10);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.bodyPartLayers.head.x, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyPartLayers.head.scaleX, 0.9);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].faceAssetLayers.browLeft.scaleX, 0.3);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].appearanceLayers.beard.scaleX, 0.9);
   assert.equal(debugTuningModule.defaultDebugTuning.facePreviewScale, 4.2);
   assert.equal(debugTuningModule.defaultDebugTuning.facePreviewFocusX, 215);

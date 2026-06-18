@@ -85,7 +85,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_boot_chainmail_01","name":"Chainmail Back Boot 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":5,"levelRequirement":25},
     assetKeys: {"backBootAssetKey":"back-boot-chainmail-01"},
-    equipmentTuning: {"x":-2,"y":3,"angle":0,"scaleX":0.83,"scaleY":0.8,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0.9965917167500606,"y":1.5206935118512774,"angle":0,"scaleX":0.86,"scaleY":0.79,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-chainmail-01",
       sourcePath: "assets/fighters/armor/legs/back-boot-chainmail-01.webp",
@@ -181,7 +181,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_boot_sand_01","name":"Sand Boots","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":2,"levelRequirement":7},
     assetKeys: {"backBootAssetKey":"back-boot-sand-01"},
-    equipmentTuning: {"x":4.000000000000028,"y":-2,"angle":0,"scaleX":1.29,"scaleY":1.16,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":5.498295858375073,"y":-2,"angle":0,"scaleX":1.29,"scaleY":1.16,"flipX":false,"flipY":false},
     asset: {
       key: "back-boot-sand-01",
       sourcePath: "assets/fighters/armor/legs/back-boot-sand-01.webp",
@@ -275,7 +275,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_glove_cloth_01","name":"Cloth Back Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":1,"levelRequirement":1},
     assetKeys: {"backGloveAssetKey":"back-glove-cloth-01"},
-    equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":0.6,"scaleY":0.6,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":10,"angle":0,"scaleX":0.63,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-cloth-01",
       sourcePath: "assets/fighters/armor/arms/back-glove-cloth-01.webp",
@@ -311,7 +311,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_glove_lazure_01","name":"Lazure 01 Back Glove","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backGlove","armorHp":18,"levelRequirement":45},
     assetKeys: {"backGloveAssetKey":"back-glove-lazure-01"},
-    equipmentTuning: {"x":0,"y":19,"angle":0,"scaleX":1.28,"scaleY":1.26,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-2,"y":19,"angle":0,"scaleX":1.28,"scaleY":1.26,"flipX":true,"flipY":false},
     asset: {
       key: "back-glove-lazure-01",
       sourcePath: "assets/fighters/armor/arms/back-glove-lazure-01.webp",
@@ -371,7 +371,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_glove_sand_01","name":"Sand Glove","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":2,"levelRequirement":7},
     assetKeys: {"backGloveAssetKey":"back-glove-sand-01"},
-    equipmentTuning: {"x":0,"y":15,"angle":0,"scaleX":1.13,"scaleY":1.1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-1,"y":13,"angle":-6,"scaleX":1.13,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-glove-sand-01",
       sourcePath: "assets/fighters/armor/arms/back-glove-sand-01.webp",
@@ -655,7 +655,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_shinguard_cloth_01","name":"Cloth Back Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":1,"levelRequirement":1},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-cloth-01"},
-    equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1.35,"scaleY":1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":2,"y":0,"angle":0,"scaleX":1.4,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-cloth-01",
       sourcePath: "assets/fighters/armor/legs/back-shinguard-cloth-01.webp",
@@ -667,7 +667,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_shinguard_druid_01","name":"Druid Back Shinguard 01","kind":"armor","rarity":"mythical","equipmentSet":{"id":"druid","name":"Druid","rank":13,"grade":"high"},"equipmentSlot":"backShinguard","armorHp":49,"levelRequirement":100},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-druid-01"},
-    equipmentTuning: {"x":0,"y":0,"angle":4,"scaleX":1.59,"scaleY":1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0.7122067275418829,"y":0.01204960180245962,"angle":4,"scaleX":1.59,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-druid-01",
       sourcePath: "assets/fighters/armor/legs/back-shinguard-druid-01.webp",
@@ -703,7 +703,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_shinguard_lion_01","name":"Lion 01 Back Shinguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backShinguard","armorHp":27,"levelRequirement":50},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-lion-01"},
-    equipmentTuning: {"x":-0.6700645168757262,"y":5.982873790002486,"angle":3,"scaleX":1.15,"scaleY":0.88,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0.34992090040714174,"y":6.7225270340768475,"angle":0,"scaleX":1.15,"scaleY":0.88,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-lion-01",
       sourcePath: "assets/fighters/armor/legs/back-shinguard-lion-01.webp",
@@ -739,7 +739,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_shinguard_sand_01","name":"Sand Shinguard","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":2,"levelRequirement":7},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-sand-01"},
-    equipmentTuning: {"x":-1,"y":2,"angle":-1,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-1,"y":2,"angle":-5,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-sand-01",
       sourcePath: "assets/fighters/armor/legs/back-shinguard-sand-01.webp",
@@ -763,7 +763,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_shinguard_viper_01","name":"Viper 01 Back Shinguard","kind":"armor","rarity":"legendary","equipmentSet":{"id":"viper","name":"Viper","rank":10,"grade":"low"},"equipmentSlot":"backShinguard","armorHp":37,"levelRequirement":70},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-viper-01"},
-    equipmentTuning: {"x":-0.35152747952975005,"y":12.93354018564196,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":2.0279576448560306,"y":13.673193429716434,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":false,"flipY":false},
     asset: {
       key: "back-shinguard-viper-01",
       sourcePath: "assets/fighters/armor/legs/back-shinguard-viper-01.webp",
@@ -833,7 +833,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_shoulderguard_cloth_01","name":"Cloth Back Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":1,"levelRequirement":1},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-cloth-01"},
-    equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":1.98,"scaleY":1.23,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":2.36,"scaleY":1.23,"flipX":false,"flipY":false},
     asset: {
       key: "back-shoulderguard-cloth-01",
       sourcePath: "assets/fighters/armor/arms/back-shoulderguard-cloth-01.webp",
@@ -975,7 +975,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_wrist_bone_01","name":"Bone 01 Back Wrist","kind":"armor","rarity":"legendary","equipmentSet":{"id":"bone","name":"Bone","rank":11,"grade":"mid"},"equipmentSlot":"backWrist","armorHp":33,"levelRequirement":80},
     assetKeys: {"backWristAssetKey":"back-wrist-bone-01"},
-    equipmentTuning: {"x":1.2027098271555587,"y":23.44497611666111,"angle":-3,"scaleX":1.53,"scaleY":1.19,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":1.2027098271555587,"y":23.44497611666111,"angle":0,"scaleX":1.64,"scaleY":1.19,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-bone-01",
       sourcePath: "assets/fighters/armor/arms/back-wrist-bone-01.webp",
@@ -1035,7 +1035,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_wrist_executioner_01","name":"Executioner Back Wrist 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"executioner","name":"Executioner","rank":6,"grade":"high"},"equipmentSlot":"backWrist","armorHp":12,"levelRequirement":40},
     assetKeys: {"backWristAssetKey":"back-wrist-executioner-01"},
-    equipmentTuning: {"x":1.4976172781301926,"y":17.49066289404044,"angle":-10,"scaleX":1.26,"scaleY":1.1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":1.4976172781301926,"y":17.49066289404044,"angle":-10,"scaleX":1.59,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "back-wrist-executioner-01",
       sourcePath: "assets/fighters/armor/arms/back-wrist-executioner-01.webp",
@@ -1083,7 +1083,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_back_wrist_rust_champion_01","name":"Rust Back Wrist Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backWrist","armorHp":7,"levelRequirement":30},
     assetKeys: {"backWristAssetKey":"back-wrist-rust-champion-01"},
-    equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.57,"scaleY":1.61,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.87,"scaleY":1.61,"flipX":true,"flipY":false},
     asset: {
       key: "back-wrist-rust-champion-01",
       sourcePath: "assets/fighters/armor/arms/back-wrist-rust-champion-01.webp",
@@ -1343,7 +1343,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_boot_chainmail_01","name":"Chainmail Front Boot 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":25},
     assetKeys: {"frontBootAssetKey":"front-boot-chainmail-01"},
-    equipmentTuning: {"x":25,"y":2,"angle":0,"scaleX":0.83,"scaleY":0.8,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":29.494887575125034,"y":0.5206935118512774,"angle":0,"scaleX":0.83,"scaleY":0.8,"flipX":true,"flipY":false},
     asset: {
       key: "front-boot-chainmail-01",
       sourcePath: "assets/fighters/armor/legs/front-boot-chainmail-01.webp",
@@ -1439,7 +1439,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_boot_sand_01","name":"Sand Boots Front","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":7},
     assetKeys: {"frontBootAssetKey":"front-boot-sand-01"},
-    equipmentTuning: {"x":-4.000000000000028,"y":-2,"angle":0,"scaleX":1.29,"scaleY":1.16,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-2.501704141624998,"y":-2.7396532440743613,"angle":0,"scaleX":1.29,"scaleY":1.16,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-sand-01",
       sourcePath: "assets/fighters/armor/legs/front-boot-sand-01.webp",
@@ -1475,7 +1475,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_boot_wood_boss_01","name":"Wood Boot Front","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
     assetKeys: {"frontBootAssetKey":"front-boot-wood-boss-01"},
-    equipmentTuning: {"x":-5,"y":-4,"angle":0,"scaleX":1.31,"scaleY":1.38,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-2.752556212437497,"y":-4,"angle":0,"scaleX":1.31,"scaleY":1.38,"flipX":false,"flipY":false},
     asset: {
       key: "front-boot-wood-boss-01",
       sourcePath: "assets/fighters/armor/legs/front-boot-wood-boss-01.webp",
@@ -1533,7 +1533,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_glove_cloth_01","name":"Cloth Front Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":1},
     assetKeys: {"frontGloveAssetKey":"front-glove-cloth-01"},
-    equipmentTuning: {"x":0,"y":13,"angle":0,"scaleX":0.6,"scaleY":0.6,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":0,"y":10,"angle":0,"scaleX":0.63,"scaleY":0.6,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-cloth-01",
       sourcePath: "assets/fighters/armor/arms/front-glove-cloth-01.webp",
@@ -1569,7 +1569,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_glove_lazure_01","name":"Lazure 01 Front Glove","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":45},
     assetKeys: {"frontGloveAssetKey":"front-glove-lazure-01"},
-    equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.28,"scaleY":1.26,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":16,"angle":0,"scaleX":1.28,"scaleY":1.26,"flipX":true,"flipY":false},
     asset: {
       key: "front-glove-lazure-01",
       sourcePath: "assets/fighters/armor/arms/front-glove-lazure-01.webp",
@@ -1629,7 +1629,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_glove_sand_01","name":"Sand Glove Front","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":7},
     assetKeys: {"frontGloveAssetKey":"front-glove-sand-01"},
-    equipmentTuning: {"x":0,"y":15,"angle":0,"scaleX":1.13,"scaleY":1.1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-1,"y":13,"angle":-6,"scaleX":1.13,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-sand-01",
       sourcePath: "assets/fighters/armor/arms/front-glove-sand-01.webp",
@@ -1641,7 +1641,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_glove_stormguard_01","name":"Stormguard Front Glove 01","kind":"armor","rarity":"epic","equipmentSet":{"id":"stormguard","name":"Stormguard","rank":9,"grade":"high"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":60},
     assetKeys: {"frontGloveAssetKey":"front-glove-stormguard-01"},
-    equipmentTuning: {"x":1.5035790989716773,"y":14.157797414644733,"angle":-3,"scaleX":1.23,"scaleY":1.2,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-1,"y":14.157797414644733,"angle":-3,"scaleX":1.23,"scaleY":1.2,"flipX":false,"flipY":false},
     asset: {
       key: "front-glove-stormguard-01",
       sourcePath: "assets/fighters/armor/arms/front-glove-stormguard-01.webp",
@@ -1913,7 +1913,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_shinguard_cloth_01","name":"Cloth Front Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":1},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-cloth-01"},
-    equipmentTuning: {"x":0,"y":0,"angle":0,"scaleX":1.35,"scaleY":1,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":2,"y":0,"angle":0,"scaleX":1.4,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-cloth-01",
       sourcePath: "assets/fighters/armor/legs/front-shinguard-cloth-01.webp",
@@ -1925,7 +1925,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_shinguard_druid_01","name":"Druid Front Shinguard 01","kind":"armor","rarity":"mythical","equipmentSet":{"id":"druid","name":"Druid","rank":13,"grade":"high"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":100},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-druid-01"},
-    equipmentTuning: {"x":0,"y":0,"angle":5,"scaleX":1.6,"scaleY":1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":1.6504975213306068,"y":0.739653244074475,"angle":5,"scaleX":1.6,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-druid-01",
       sourcePath: "assets/fighters/armor/legs/front-shinguard-druid-01.webp",
@@ -1961,7 +1961,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_shinguard_lion_01","name":"Lion 01 Front Shinguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":50},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-lion-01"},
-    equipmentTuning: {"x":-0.6700645168757262,"y":5.982873790002486,"angle":3,"scaleX":1.15,"scaleY":0.88,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":0.34992090040714174,"y":6.7225270340768475,"angle":0,"scaleX":1.15,"scaleY":0.88,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-lion-01",
       sourcePath: "assets/fighters/armor/legs/front-shinguard-lion-01.webp",
@@ -1997,7 +1997,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_shinguard_sand_01","name":"Sand Shinguard Front","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":7},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-sand-01"},
-    equipmentTuning: {"x":1,"y":2,"angle":2,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":2,"y":2,"angle":-1,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-sand-01",
       sourcePath: "assets/fighters/armor/legs/front-shinguard-sand-01.webp",
@@ -2021,7 +2021,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_shinguard_viper_01","name":"Viper 01 Front Shinguard","kind":"armor","rarity":"legendary","equipmentSet":{"id":"viper","name":"Viper","rank":10,"grade":"low"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":70},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-viper-01"},
-    equipmentTuning: {"x":-0.35152747952975005,"y":12.93354018564196,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":2.0279576448560306,"y":13.673193429716434,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":true,"flipY":false},
     asset: {
       key: "front-shinguard-viper-01",
       sourcePath: "assets/fighters/armor/legs/front-shinguard-viper-01.webp",
@@ -2091,7 +2091,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_shoulderguard_cloth_01","name":"Cloth Front Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontShoulderguard","armorHp":0,"levelRequirement":1},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-cloth-01"},
-    equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":1.98,"scaleY":1.23,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":2.36,"scaleY":1.23,"flipX":true,"flipY":false},
     asset: {
       key: "front-shoulderguard-cloth-01",
       sourcePath: "assets/fighters/armor/arms/front-shoulderguard-cloth-01.webp",
@@ -2233,7 +2233,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_wrist_bone_01","name":"Bone 01 Front Wrist","kind":"armor","rarity":"legendary","equipmentSet":{"id":"bone","name":"Bone","rank":11,"grade":"mid"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":80},
     assetKeys: {"frontWristAssetKey":"front-wrist-bone-01"},
-    equipmentTuning: {"x":1.2027098271555587,"y":23.44497611666111,"angle":-3,"scaleX":1.53,"scaleY":1.19,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":1.2027098271555587,"y":23.44497611666111,"angle":0,"scaleX":1.64,"scaleY":1.19,"flipX":true,"flipY":false},
     asset: {
       key: "front-wrist-bone-01",
       sourcePath: "assets/fighters/armor/arms/front-wrist-bone-01.webp",
@@ -2293,7 +2293,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_wrist_executioner_01","name":"Executioner Front Wrist 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"executioner","name":"Executioner","rank":6,"grade":"high"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":40},
     assetKeys: {"frontWristAssetKey":"front-wrist-executioner-01"},
-    equipmentTuning: {"x":1.4976172781301926,"y":17.49066289404044,"angle":-13,"scaleX":1.26,"scaleY":1.1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":1.4976172781301926,"y":17.49066289404044,"angle":-13,"scaleX":1.59,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-executioner-01",
       sourcePath: "assets/fighters/armor/arms/front-wrist-executioner-01.webp",
@@ -2341,7 +2341,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_front_wrist_rust_champion_01","name":"Rust Front Wrist Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":30},
     assetKeys: {"frontWristAssetKey":"front-wrist-rust-champion-01"},
-    equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.57,"scaleY":1.61,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.87,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
       key: "front-wrist-rust-champion-01",
       sourcePath: "assets/fighters/armor/arms/front-wrist-rust-champion-01.webp",
@@ -3567,7 +3567,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"leather_back_shinguard_01","name":"Leather Back Shinguard 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":4,"levelRequirement":15},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-leather-01"},
-    equipmentTuning: {"x":-1.500223289047633,"y":-7,"angle":0,"scaleX":1.7,"scaleY":1.1,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":0,"y":-7,"angle":0,"scaleX":1.75,"scaleY":1.1,"flipX":true,"flipY":false},
     asset: {
       key: "back-shinguard-leather-01",
       sourcePath: "assets/fighters/armor/legs/back-shinguard-leather-01.webp",
@@ -3627,7 +3627,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"leather_front_shinguard_01","name":"Leather Front Shinguard 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":15},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-leather-01"},
-    equipmentTuning: {"x":-1,"y":-7,"angle":0,"scaleX":1.7,"scaleY":1.1,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":-7,"angle":0,"scaleX":1.75,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
       key: "front-shinguard-leather-01",
       sourcePath: "assets/fighters/armor/legs/front-shinguard-leather-01.webp",

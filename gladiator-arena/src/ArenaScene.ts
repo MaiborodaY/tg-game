@@ -67,6 +67,8 @@ import {
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
+  FIGHTER_FACE_DUMMY_BROW_LEFT_ASSET_KEY,
+  FIGHTER_FACE_DUMMY_BROW_RIGHT_ASSET_KEY,
   FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
   FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
   FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY,
@@ -606,6 +608,7 @@ const HEAD_FACE_EYE_COVER_HEIGHT = 17;
 const HEAD_FACE_EYE_WHITE = 0xfffbf2;
 const HEAD_FACE_EYE_BLACK = 0x050201;
 const FACE_ASSET_PUPIL_DISPLAY_HEIGHT = 13;
+const FACE_ASSET_BROW_DISPLAY_HEIGHT = 18;
 const APPEARANCE_HAIR_DISPLAY_HEIGHT = 92;
 const APPEARANCE_BEARD_DISPLAY_HEIGHT = 54;
 const TORSO_ASSET_DISPLAY_HEIGHT = 175;
@@ -780,6 +783,8 @@ const PAPER_DOLL_TORSO_ASSET_CONFIG: PaperDollPartAssetConfig = {
 const PAPER_DOLL_FACE_ASSET_CONFIGS: Record<FaceAssetLayerKey, PaperDollPartAssetConfig> = {
   pupilLeft: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
   pupilRight: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+  browLeft: { displayHeight: FACE_ASSET_BROW_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+  browRight: { displayHeight: FACE_ASSET_BROW_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
 };
 
 const PAPER_DOLL_APPEARANCE_ASSET_CONFIGS: Record<PaperDollAppearanceLayerKey, PaperDollPartAssetConfig> = {
@@ -862,6 +867,8 @@ const PAPER_DOLL_BODY_PRESETS: Record<PaperDollBodyPreset, PaperDollBodyPresetDe
     faceAssetKeys: {
       pupilLeft: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
       pupilRight: FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
+      browLeft: FIGHTER_FACE_DUMMY_BROW_LEFT_ASSET_KEY,
+      browRight: FIGHTER_FACE_DUMMY_BROW_RIGHT_ASSET_KEY,
     },
   },
 };

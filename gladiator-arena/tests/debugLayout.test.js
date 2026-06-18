@@ -301,7 +301,11 @@ test("debug face editor can tune asset face layers", () => {
 
   assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY"), false);
   assert.equal(assetsSource.includes("body-parts/face/eye-left.png"), false);
-  assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight"] as const'), true);
+  assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_BROW_LEFT_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("brow-left-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_BROW_RIGHT_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("brow-right-dummy-01.png"), true);
+  assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight", "browLeft", "browRight"] as const'), true);
   assert.equal(debugTuningSource.includes('APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const'), true);
   assert.equal(debugTuningSource.includes("faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;"), true);
   assert.equal(debugTuningSource.includes("appearanceLayers: Record<AppearanceLayerKey, AppearanceLayerTuning>;"), true);
@@ -311,6 +315,8 @@ test("debug face editor can tune asset face layers", () => {
   assert.equal(debugPanelSource.includes("debug-face-appearance-editor__select"), true);
   assert.equal(debugPanelSource.includes("data-appearance-layer-key"), true);
   assert.equal(arenaSceneSource.includes("faceAssetKeys: {"), true);
+  assert.equal(arenaSceneSource.includes("browLeft: FIGHTER_FACE_DUMMY_BROW_LEFT_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("browRight: FIGHTER_FACE_DUMMY_BROW_RIGHT_ASSET_KEY"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollFaceAssetLayers"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollAppearanceLayers"), true);
   assert.equal(arenaSceneSource.includes("applyAppearanceLayerTransform"), true);

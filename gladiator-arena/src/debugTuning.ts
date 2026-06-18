@@ -127,7 +127,7 @@ export const PAPER_DOLL_BODY_PRESET_OPTIONS: { value: PaperDollBodyPreset; label
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
 export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 
-export const FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight"] as const;
+export const FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight", "browLeft", "browRight"] as const;
 export type FaceAssetLayerKey = (typeof FACE_ASSET_LAYER_KEYS)[number];
 
 export const APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const;
@@ -419,8 +419,6 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
-  switchWeapon: { x: 0, y: 0 },
-  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -497,6 +495,8 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 export const DEFAULT_FACE_ASSET_LAYERS: Record<FaceAssetLayerKey, FaceAssetLayerTuning> = {
   pupilLeft: { x: -20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
   pupilRight: { x: 20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+  browLeft: { x: -18, y: -63, angle: -7, scaleX: 0.32, scaleY: 0.32 },
+  browRight: { x: 18, y: -63, angle: 7, scaleX: 0.32, scaleY: 0.32 },
 };
 
 export const DEFAULT_APPEARANCE_LAYERS: Record<AppearanceLayerKey, AppearanceLayerTuning> = {
@@ -1310,6 +1310,8 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
     faceAssetLayers: {
       pupilLeft: { x: -20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
       pupilRight: { x: 20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+      browLeft: { x: -18, y: -63, angle: -7, scaleX: 0.32, scaleY: 0.32 },
+      browRight: { x: 18, y: -63, angle: 7, scaleX: 0.32, scaleY: 0.32 },
     },
     appearanceLayers: {
       hair: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1 },
@@ -1990,23 +1992,25 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       frontForearm: { x: 0.763, y: -2.21, angle: 2, scaleX: 1.08, scaleY: 1.07, flipX: false, flipY: false },
       frontHand: { x: -2.889, y: 7.332, angle: -9, scaleX: 0.44, scaleY: 0.43, flipX: true, flipY: false },
       backThigh: { x: -6, y: -6, angle: -5, scaleX: 0.97, scaleY: 1.13, flipX: false, flipY: false },
-      backShin: { x: -0.392, y: -1.202, angle: -3, scaleX: 1.19, scaleY: 1.08, flipX: false, flipY: false },
+      backShin: { x: -0.392, y: -1.202, angle: -1, scaleX: 1.06, scaleY: 1.08, flipX: false, flipY: false },
       backFoot: { x: -1.25, y: 1.562, angle: 0, scaleX: 0.78, scaleY: 0.73, flipX: true, flipY: false },
       frontThigh: { x: -6, y: -6, angle: -5, scaleX: 0.97, scaleY: 1.13, flipX: false, flipY: false },
-      frontShin: { x: -0.392, y: -1.202, angle: -1, scaleX: 1.19, scaleY: 1.08, flipX: false, flipY: false },
-      frontFoot: { x: -2, y: 2.302, angle: 0, scaleX: 0.78, scaleY: 0.73, flipX: true, flipY: false },
+      frontShin: { x: -0.392, y: -1.202, angle: -1, scaleX: 1.06, scaleY: 1.08, flipX: false, flipY: false },
+      frontFoot: { x: -0.502, y: 2.302, angle: 0, scaleX: 0.78, scaleY: 0.73, flipX: true, flipY: false },
     },
     faceParts: {
       eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
       eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
     },
     faceAssetLayers: {
-      pupilLeft: { x: -13, y: -43.5, angle: 0, scaleX: 1.3, scaleY: 1.25 },
-      pupilRight: { x: 13, y: -44, angle: 0, scaleX: 1.3, scaleY: 1.25 },
+      pupilLeft: { x: -14, y: -43.5, angle: 0, scaleX: 1, scaleY: 1 },
+      pupilRight: { x: 14, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+      browLeft: { x: -14, y: -55.5, angle: -7, scaleX: 0.3, scaleY: 0.4 },
+      browRight: { x: 15, y: -55.5, angle: 7, scaleX: 0.3, scaleY: 0.4 },
     },
     appearanceLayers: {
-      hair: { x: 0, y: -7, angle: 0, scaleX: 0.95, scaleY: 0.97 },
-      beard: { x: 0, y: 9.5, angle: 0, scaleX: 0.9, scaleY: 1 },
+      hair: { x: 0, y: -7, angle: 0, scaleX: 1, scaleY: 0.97 },
+      beard: { x: 0, y: 10.5, angle: 0, scaleX: 0.9, scaleY: 1 },
     },
     bodyAnimations: {
       idle: {

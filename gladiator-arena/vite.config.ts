@@ -186,7 +186,7 @@ type BodyPresetKey = (typeof bodyPresetKeys)[number];
 const facePartKeys = ["eyeLeft", "eyeRight"] as const;
 type FacePartKey = (typeof facePartKeys)[number];
 
-const faceAssetLayerKeys = ["pupilLeft", "pupilRight"] as const;
+const faceAssetLayerKeys = ["pupilLeft", "pupilRight", "browLeft", "browRight"] as const;
 type FaceAssetLayerKey = (typeof faceAssetLayerKeys)[number];
 
 const appearanceLayerKeys = ["hair", "beard"] as const;
