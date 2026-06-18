@@ -301,6 +301,21 @@ test("save as prod defaults also persists the selected rig editor animation", ()
   assert.match(source, /DEFAULT_BLOCK_ANIMATION/);
 });
 
+test("save as prod defaults persists body art layers per body preset", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
+  const saveDefaultsRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-defaults"'), source.indexOf('"/__dust-arena/save-prod-animation"'));
+
+  assert.match(debugTuningSource, /bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>/);
+  assert.match(source, /const bodyPresetKeys = \["classic", "dummy-v2"\] as const/);
+  assert.match(saveDefaultsRoute, /const bodyPartLayerUpdates = pickBodyPartLayerDefaultUpdates\(payload\)/);
+  assert.match(saveDefaultsRoute, /applyBodyPartLayerDefaultUpdates/);
+  assert.match(saveDefaultsRoute, /body art presets/);
+  assert.match(source, /DEFAULT_BODY_PRESET_TUNING/);
+  assert.match(source, /formatBodyPresetTuningDefaults/);
+  assert.match(source, /formatBodyPartLayerObject/);
+});
+
 test("save as prod defaults persists classic action button slots", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");

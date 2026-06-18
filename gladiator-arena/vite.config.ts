@@ -180,6 +180,9 @@ const rigPartKeys = [
 
 type RigPartKey = (typeof rigPartKeys)[number];
 
+const bodyPresetKeys = ["classic", "dummy-v2"] as const;
+type BodyPresetKey = (typeof bodyPresetKeys)[number];
+
 const facePartKeys = ["eyeLeft", "eyeRight"] as const;
 type FacePartKey = (typeof facePartKeys)[number];
 
@@ -518,6 +521,7 @@ interface FacePartTuning {
 }
 
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
+type BodyPartLayerUpdates = Record<BodyPresetKey, RigPartUpdates>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
@@ -755,6 +759,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const debugTuningDefaultUpdates = pickDebugTuningDefaultUpdates(payload);
           const playerSettingDefaultUpdates = pickPlayerSettingDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
+          const bodyPartLayerUpdates = pickBodyPartLayerDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const bodyAnimationUpdates = pickBodyAnimationUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
@@ -778,31 +783,16 @@ function saveProdDefaultsPlugin(): Plugin {
           const nextLayoutSource = applyProdDefaultUpdates(layoutSource, layoutUpdates);
           const nextCombatSource = applyCombatDefaultUpdates(combatSource, combatUpdates);
           const nextSettingsMenuSource = applyPlayerSettingDefaultUpdates(settingsMenuSource, playerSettingDefaultUpdates);
-          const nextDebugTuningSource = applyDebugTuningDefaultUpdates(
-            applySlashArcDefaultUpdates(
-              applyEquipmentItemDefaultUpdates(
-                applyEquipmentDefaultUpdates(
-                  applyFacePartDefaultUpdates(
-                    applyBodyAnimationDefaultUpdates(
-                    applyRigPartDefaultUpdates(
-                      applyClassicActionButtonSlotDefaultUpdates(
-                        applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates),
-                        classicActionButtonSlotUpdates,
-                      ),
-                      rigPartUpdates,
-                    ),
-                      bodyAnimationUpdates,
-                    ),
-                    facePartUpdates,
-                  ),
-                  equipmentUpdates,
-                ),
-                equipmentItemUpdates,
-              ),
-              slashArcUpdates,
-            ),
-            debugTuningDefaultUpdates,
-          );
+          let nextDebugTuningSource = applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates);
+          nextDebugTuningSource = applyClassicActionButtonSlotDefaultUpdates(nextDebugTuningSource, classicActionButtonSlotUpdates);
+          nextDebugTuningSource = applyRigPartDefaultUpdates(nextDebugTuningSource, rigPartUpdates);
+          nextDebugTuningSource = applyBodyPartLayerDefaultUpdates(nextDebugTuningSource, bodyPartLayerUpdates);
+          nextDebugTuningSource = applyBodyAnimationDefaultUpdates(nextDebugTuningSource, bodyAnimationUpdates);
+          nextDebugTuningSource = applyFacePartDefaultUpdates(nextDebugTuningSource, facePartUpdates);
+          nextDebugTuningSource = applyEquipmentDefaultUpdates(nextDebugTuningSource, equipmentUpdates);
+          nextDebugTuningSource = applyEquipmentItemDefaultUpdates(nextDebugTuningSource, equipmentItemUpdates);
+          nextDebugTuningSource = applySlashArcDefaultUpdates(nextDebugTuningSource, slashArcUpdates);
+          nextDebugTuningSource = applyDebugTuningDefaultUpdates(nextDebugTuningSource, debugTuningDefaultUpdates);
 
           await Promise.all([
             writeFile(arenaLayoutUrl, nextLayoutSource, "utf8"),
@@ -815,7 +805,7 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(bodyPartLayerUpdates).length} body art presets, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
@@ -824,6 +814,7 @@ function saveProdDefaultsPlugin(): Plugin {
               Object.keys(actionButtonOffsetUpdates).length +
               Object.keys(classicActionButtonSlotUpdates).length +
               Object.keys(rigPartUpdates).length +
+              Object.keys(bodyPartLayerUpdates).length +
               Object.keys(facePartUpdates).length +
               1 +
               Object.keys(equipmentUpdates).length +
@@ -1184,6 +1175,46 @@ export function pickRigPartDefaultUpdates(payload: unknown): RigPartUpdates {
   }
 
   return Object.fromEntries(rigPartKeys.map((key) => [key, readRigPartTuning(rigParts, key)])) as RigPartUpdates;
+}
+
+export function applyBodyPartLayerDefaultUpdates(source: string, updates: BodyPartLayerUpdates): string {
+  const pattern = /export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = \{[\s\S]*?\n\};/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_BODY_PRESET_TUNING in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatBodyPresetTuningDefaults(updates));
+}
+
+export function pickBodyPartLayerDefaultUpdates(payload: unknown): BodyPartLayerUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const bodyPresetTuning = (payload as { bodyPresetTuning?: unknown }).bodyPresetTuning;
+
+  if (!bodyPresetTuning || typeof bodyPresetTuning !== "object" || Array.isArray(bodyPresetTuning)) {
+    throw new Error("Expected bodyPresetTuning in debug tuning payload.");
+  }
+
+  return Object.fromEntries(
+    bodyPresetKeys.map((presetKey) => {
+      const presetTuning = (bodyPresetTuning as Partial<Record<BodyPresetKey, { bodyPartLayers?: unknown }>>)[presetKey];
+
+      if (!presetTuning || typeof presetTuning !== "object" || Array.isArray(presetTuning)) {
+        throw new Error(`Expected ${presetKey} body preset tuning in debug tuning payload.`);
+      }
+
+      const bodyPartLayers = presetTuning.bodyPartLayers;
+
+      if (!bodyPartLayers || typeof bodyPartLayers !== "object" || Array.isArray(bodyPartLayers)) {
+        throw new Error(`Expected ${presetKey} bodyPartLayers in debug tuning payload.`);
+      }
+
+      return [presetKey, Object.fromEntries(rigPartKeys.map((key) => [key, readRigPartTuning(bodyPartLayers, key)]))];
+    }),
+  ) as BodyPartLayerUpdates;
 }
 
 export function applyFacePartDefaultUpdates(source: string, updates: FacePartUpdates): string {
@@ -3522,6 +3553,38 @@ function formatRigPartDefaults(updates: RigPartUpdates): string {
   });
 
   return `export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatBodyPresetTuningDefaults(updates: BodyPartLayerUpdates): string {
+  const rows = bodyPresetKeys.map((presetKey) => {
+    const key = formatObjectKey(presetKey);
+
+    return [
+      `  ${key}: {`,
+      "    rigParts: cloneRigParts(DEFAULT_RIG_PARTS),",
+      `    bodyPartLayers: ${formatBodyPartLayerObject(updates[presetKey], "    ")},`,
+      "    faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),",
+      "    faceAssetLayers: cloneFaceAssetLayers(DEFAULT_FACE_ASSET_LAYERS),",
+      "    bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),",
+      "  },",
+    ].join("\n");
+  });
+
+  return `export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = {\n${rows.join("\n")}\n};`;
+}
+
+function formatBodyPartLayerObject(updates: RigPartUpdates, indent: string): string {
+  const rows = rigPartKeys.map((key) => {
+    const part = updates[key];
+
+    return `${indent}  ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, angle: ${formatNumber(part.angle)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)}, flipX: ${part.flipX}, flipY: ${part.flipY} },`;
+  });
+
+  return `{\n${rows.join("\n")}\n${indent}}`;
+}
+
+function formatObjectKey(key: string): string {
+  return /^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key);
 }
 
 function formatFacePartDefaults(updates: FacePartUpdates): string {

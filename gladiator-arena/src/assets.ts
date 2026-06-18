@@ -62,34 +62,70 @@ export const PLAYER_AVATAR_FEET_Y_OFFSET = 132;
 
 export const FIGHTER_TORSO_LIGHT_ASSET_KEY = "torso-light-01";
 export const FIGHTER_TORSO_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/torso/torso-light-01.webp", import.meta.url).href;
+export const FIGHTER_TORSO_DUMMY_ASSET_KEY = "torso-dummy-01";
+export const FIGHTER_TORSO_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/torso/torso-dummy-01.png", import.meta.url).href;
 export const FIGHTER_HEAD_LIGHT_ASSET_KEY = "head-light-01";
 export const FIGHTER_HEAD_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/head/head-light-01.webp", import.meta.url).href;
+export const FIGHTER_HEAD_DUMMY_ASSET_KEY = "head-dummy-01";
+export const FIGHTER_HEAD_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/head/head-dummy-01.png", import.meta.url).href;
+export const FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY = "face-dummy-eye-white-left";
+export const FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_URL = new URL("./assets/fighters/body-parts/face/eye-left.png", import.meta.url).href;
+export const FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY = "face-dummy-eye-white-right";
+export const FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/face/eye-right.png", import.meta.url).href;
+export const FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY = "face-dummy-pupil-left";
+export const FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_URL = new URL("./assets/fighters/body-parts/face/pupil-left.png", import.meta.url).href;
+export const FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY = "face-dummy-pupil-right";
+export const FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/face/pupil-right.png", import.meta.url).href;
 
 export const FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY = "back-upper-arm-light-01";
 export const FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/arms/back-upper-arm-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY = "back-upper-arm-dummy-01";
+export const FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/arms/back-upper-arm-dummy-01.png", import.meta.url).href;
 export const FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY = "back-forearm-light-01";
 export const FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/arms/back-forearm-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_FOREARM_DUMMY_ASSET_KEY = "back-forearm-dummy-01";
+export const FIGHTER_BACK_FOREARM_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/arms/back-forearm-dummy-01.png", import.meta.url).href;
 export const FIGHTER_BACK_HAND_LIGHT_ASSET_KEY = "back-hand-light-01";
 export const FIGHTER_BACK_HAND_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/arms/back-hand-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_HAND_DUMMY_ASSET_KEY = "back-hand-dummy-01";
+export const FIGHTER_BACK_HAND_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/arms/back-hand-dummy-01.png", import.meta.url).href;
 export const FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY = "front-upper-arm-light-01";
 export const FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/arms/front-upper-arm-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_KEY = "front-upper-arm-dummy-01";
+export const FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/arms/front-upper-arm-dummy-01.png", import.meta.url).href;
 export const FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY = "front-forearm-light-01";
 export const FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/arms/front-forearm-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_FOREARM_DUMMY_ASSET_KEY = "front-forearm-dummy-01";
+export const FIGHTER_FRONT_FOREARM_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/arms/front-forearm-dummy-01.png", import.meta.url).href;
 export const FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY = "front-hand-light-01";
 export const FIGHTER_FRONT_HAND_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/arms/front-hand-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY = "front-hand-dummy-01";
+export const FIGHTER_FRONT_HAND_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/arms/front-hand-dummy-01.png", import.meta.url).href;
 
 export const FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY = "back-thigh-light-01";
 export const FIGHTER_BACK_THIGH_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/legs/back-thigh-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY = "back-thigh-dummy-01";
+export const FIGHTER_BACK_THIGH_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/legs/back-thigh-dummy-01.png", import.meta.url).href;
 export const FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY = "back-shin-light-01";
 export const FIGHTER_BACK_SHIN_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/legs/back-shin-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_SHIN_DUMMY_ASSET_KEY = "back-shin-dummy-01";
+export const FIGHTER_BACK_SHIN_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/legs/back-shin-dummy-01.png", import.meta.url).href;
 export const FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY = "back-foot-light-01";
 export const FIGHTER_BACK_FOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/legs/back-foot-light-01.webp", import.meta.url).href;
+export const FIGHTER_BACK_FOOT_DUMMY_ASSET_KEY = "back-foot-dummy-01";
+export const FIGHTER_BACK_FOOT_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/legs/back-foot-dummy-01.png", import.meta.url).href;
 export const FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY = "front-thigh-light-01";
 export const FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/legs/front-thigh-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_THIGH_DUMMY_ASSET_KEY = "front-thigh-dummy-01";
+export const FIGHTER_FRONT_THIGH_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/legs/front-thigh-dummy-01.png", import.meta.url).href;
 export const FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY = "front-shin-light-01";
 export const FIGHTER_FRONT_SHIN_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/legs/front-shin-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_SHIN_DUMMY_ASSET_KEY = "front-shin-dummy-01";
+export const FIGHTER_FRONT_SHIN_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/legs/front-shin-dummy-01.png", import.meta.url).href;
 export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY = "front-foot-light-01";
 export const FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/legs/front-foot-light-01.webp", import.meta.url).href;
+export const FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY = "front-foot-dummy-01";
+export const FIGHTER_FRONT_FOOT_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/legs/front-foot-dummy-01.png", import.meta.url).href;
 
 export const FIGHTER_WEAPON_SWORD_01_ASSET_KEY = "weapon-sword-01";
 export const FIGHTER_WEAPON_SWORD_01_ASSET_URL = new URL("./assets/fighters/weapons/weapon-sword-01.webp", import.meta.url).href;
@@ -132,9 +168,19 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/arms/back-upper-arm-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY,
+    url: FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_URL,
+  },
+  {
     key: FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
     url: FIGHTER_BACK_FOREARM_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/arms/back-forearm-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_FOREARM_DUMMY_ASSET_KEY,
+    url: FIGHTER_BACK_FOREARM_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_BACK_FOREARM_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
@@ -142,9 +188,19 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/arms/back-hand-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_BACK_HAND_DUMMY_ASSET_KEY,
+    url: FIGHTER_BACK_HAND_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_BACK_HAND_DUMMY_ASSET_URL,
+  },
+  {
     key: FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
     url: FIGHTER_BACK_THIGH_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/legs/back-thigh-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY,
+    url: FIGHTER_BACK_THIGH_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_BACK_THIGH_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
@@ -152,9 +208,19 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/legs/back-shin-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_BACK_SHIN_DUMMY_ASSET_KEY,
+    url: FIGHTER_BACK_SHIN_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_BACK_SHIN_DUMMY_ASSET_URL,
+  },
+  {
     key: FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
     url: FIGHTER_BACK_FOOT_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/legs/back-foot-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_BACK_FOOT_DUMMY_ASSET_KEY,
+    url: FIGHTER_BACK_FOOT_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_BACK_FOOT_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
@@ -162,9 +228,19 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/arms/front-upper-arm-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_KEY,
+    url: FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_URL,
+  },
+  {
     key: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
     url: FIGHTER_FRONT_FOREARM_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/arms/front-forearm-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_FOREARM_DUMMY_ASSET_KEY,
+    url: FIGHTER_FRONT_FOREARM_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_FRONT_FOREARM_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
@@ -172,9 +248,19 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/arms/front-hand-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY,
+    url: FIGHTER_FRONT_HAND_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_FRONT_HAND_DUMMY_ASSET_URL,
+  },
+  {
     key: FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
     url: FIGHTER_FRONT_THIGH_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/legs/front-thigh-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_THIGH_DUMMY_ASSET_KEY,
+    url: FIGHTER_FRONT_THIGH_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_FRONT_THIGH_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
@@ -182,9 +268,19 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/legs/front-shin-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_FRONT_SHIN_DUMMY_ASSET_KEY,
+    url: FIGHTER_FRONT_SHIN_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_FRONT_SHIN_DUMMY_ASSET_URL,
+  },
+  {
     key: FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
     url: FIGHTER_FRONT_FOOT_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/legs/front-foot-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY,
+    url: FIGHTER_FRONT_FOOT_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_FRONT_FOOT_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_HEAD_LIGHT_ASSET_KEY,
@@ -192,9 +288,39 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     lowUrl: new URL("./assets-low/fighters/body-parts/head/head-light-01.webp", import.meta.url).href,
   },
   {
+    key: FIGHTER_HEAD_DUMMY_ASSET_KEY,
+    url: FIGHTER_HEAD_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_HEAD_DUMMY_ASSET_URL,
+  },
+  {
+    key: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY,
+    url: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_URL,
+    lowUrl: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_URL,
+  },
+  {
+    key: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY,
+    url: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_URL,
+    lowUrl: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_URL,
+  },
+  {
+    key: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
+    url: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_URL,
+    lowUrl: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_URL,
+  },
+  {
+    key: FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
+    url: FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_URL,
+    lowUrl: FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_URL,
+  },
+  {
     key: FIGHTER_TORSO_LIGHT_ASSET_KEY,
     url: FIGHTER_TORSO_LIGHT_ASSET_URL,
     lowUrl: new URL("./assets-low/fighters/body-parts/torso/torso-light-01.webp", import.meta.url).href,
+  },
+  {
+    key: FIGHTER_TORSO_DUMMY_ASSET_KEY,
+    url: FIGHTER_TORSO_DUMMY_ASSET_URL,
+    lowUrl: FIGHTER_TORSO_DUMMY_ASSET_URL,
   },
   {
     key: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,

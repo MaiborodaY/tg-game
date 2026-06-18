@@ -116,6 +116,7 @@ const debugTuningModule = loadDebugTuningModule();
 
 test("debug tuning normalizes unsafe values", () => {
   const normalized = debugTuningModule.normalizeDebugTuning({
+    debugTuningVersion: debugTuningModule.DEBUG_TUNING_STORAGE_VERSION,
     showGrid: "yes",
     gridStep: 999,
     gridOpacity: -1,
@@ -194,6 +195,15 @@ test("debug tuning normalizes unsafe values", () => {
     actionHeavyArcAngle: 999,
     actionTauntArcAngle: -999,
     actionRestArcAngle: 999,
+    characterPreviewArmorGhosted: "yes",
+    facePreviewScale: 99,
+    facePreviewFocusX: 999,
+    facePreviewFocusY: -999,
+    paperDollBodyPreset: "monster",
+    selectedFaceAssetLayer: "nose",
+    faceAssetLayers: {
+      eyeWhiteLeft: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
+    },
   });
 
   assert.equal(normalized.showGrid, true);
@@ -273,9 +283,25 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.actionHeavyArcAngle, 180);
   assert.equal(normalized.actionTauntArcAngle, -180);
   assert.equal(normalized.actionRestArcAngle, 180);
+  assert.equal(normalized.characterPreviewArmorGhosted, false);
+  assert.equal(normalized.facePreviewScale, 7);
+  assert.equal(normalized.facePreviewFocusX, 430);
+  assert.equal(normalized.facePreviewFocusY, 80);
+  assert.equal(normalized.paperDollBodyPreset, "dummy-v2");
+  assert.equal(normalized.selectedFaceAssetLayer, "eyeWhiteLeft");
+  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.x, 80);
+  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.y, -120);
+  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.angle, 180);
+  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.scaleX, 3);
+  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.scaleY, 0.1);
+  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.eyeWhiteLeft.x, -20);
+  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.eyeWhiteLeft.y, -44);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.eyeWhiteLeft.x, 80);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.eyeWhiteLeft.y, -120);
 });
 
 test("debug tuning defaults use a stage origin coordinate system", () => {
+  assert.equal(debugTuningModule.defaultDebugTuning.debugTuningVersion, debugTuningModule.DEBUG_TUNING_STORAGE_VERSION);
   assert.equal(debugTuningModule.defaultDebugTuning.showGrid, true);
   assert.equal(debugTuningModule.defaultDebugTuning.gridStep, 40);
   assert.equal(debugTuningModule.defaultDebugTuning.originX, 215);
@@ -284,6 +310,27 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.playerStageY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageX, 130);
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageY, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.characterPreviewArmorGhosted, false);
+  assert.equal(debugTuningModule.defaultDebugTuning.paperDollBodyPreset, "dummy-v2");
+  assert.equal(debugTuningModule.defaultDebugTuning.selectedFaceAssetLayer, "eyeWhiteLeft");
+  assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.eyeWhiteLeft.x, -20);
+  assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilRight.y, -44);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.rigParts.head.y, -10);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].rigParts.head.y, -10);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.bodyPartLayers.head.x, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyPartLayers.head.scaleX, 0.9);
+  assert.equal(debugTuningModule.defaultDebugTuning.facePreviewScale, 4.2);
+  assert.equal(debugTuningModule.defaultDebugTuning.facePreviewFocusX, 215);
+  assert.equal(debugTuningModule.defaultDebugTuning.facePreviewFocusY, 300);
+  assert.notEqual(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic, debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"]);
+  assert.notEqual(
+    debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.rigParts,
+    debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].rigParts,
+  );
+  assert.notEqual(
+    debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.bodyPartLayers,
+    debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyPartLayers,
+  );
   assert.equal(debugTuningModule.defaultDebugTuning.shadowBlur, 1.2);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetScreenY, 560);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraCloseFeetShiftY, 70);
@@ -354,6 +401,66 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.actionHeavyArcAngle, -108);
   assert.equal(debugTuningModule.defaultDebugTuning.actionTauntArcAngle, 28);
   assert.equal(debugTuningModule.defaultDebugTuning.actionRestArcAngle, 106);
+});
+
+test("debug tuning keeps body preset rig settings isolated", () => {
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    debugTuningVersion: debugTuningModule.DEBUG_TUNING_STORAGE_VERSION,
+    characterPreviewArmorGhosted: true,
+    paperDollBodyPreset: "dummy-v2",
+    faceAssetLayers: {
+      pupilLeft: { x: 12 },
+    },
+    bodyPartLayers: {
+      torso: { x: -13, scaleX: 1.3 },
+    },
+    bodyPresetTuning: {
+      classic: {
+        rigParts: {
+          head: { x: 7 },
+        },
+        bodyPartLayers: {
+          torso: { x: 11, scaleX: 1.4 },
+        },
+      },
+    },
+  });
+
+  assert.equal(normalized.bodyPresetTuning.classic.rigParts.head.x, 7);
+  assert.equal(normalized.bodyPresetTuning.classic.bodyPartLayers.torso.x, 11);
+  assert.equal(normalized.bodyPresetTuning.classic.bodyPartLayers.torso.scaleX, 1.4);
+  assert.equal(normalized.characterPreviewArmorGhosted, true);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].rigParts.head.x, -1);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].bodyPartLayers.torso.x, -13);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].bodyPartLayers.torso.scaleX, 1.3);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.x, 12);
+  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.x, -20);
+  assert.notEqual(normalized.bodyPresetTuning.classic.rigParts, normalized.bodyPresetTuning["dummy-v2"].rigParts);
+  assert.notEqual(normalized.bodyPresetTuning.classic.bodyPartLayers, normalized.bodyPresetTuning["dummy-v2"].bodyPartLayers);
+  assert.notEqual(normalized.bodyPresetTuning.classic.bodyAnimations, normalized.bodyPresetTuning["dummy-v2"].bodyAnimations);
+});
+
+test("debug tuning resets legacy classic body preset to production defaults", () => {
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    paperDollBodyPreset: "dummy-v2",
+    bodyPresetTuning: {
+      classic: {
+        rigParts: {
+          head: { x: 99, y: 99, scaleX: 2.5 },
+          torso: { y: 99, scaleY: 2.5 },
+        },
+      },
+      "dummy-v2": {
+        rigParts: {
+          head: { x: 12 },
+        },
+      },
+    },
+  });
+
+  assert.equal(normalized.debugTuningVersion, debugTuningModule.DEBUG_TUNING_STORAGE_VERSION);
+  assert.deepEqual(normalized.bodyPresetTuning.classic.rigParts, debugTuningModule.DEFAULT_BODY_PRESET_TUNING.classic.rigParts);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].rigParts.head.x, 12);
 });
 
 test("debug tuning lifts saved classic switch buttons out of the hidden wheel area", () => {

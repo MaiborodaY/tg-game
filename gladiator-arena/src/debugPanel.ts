@@ -7,15 +7,19 @@ import {
   CLASSIC_ACTION_WHEEL_MODES,
   DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS,
   DEFAULT_BODY_ANIMATIONS,
+  DEFAULT_BODY_PRESET_TUNING,
   DEFAULT_EQUIPMENT,
   DEFAULT_EQUIPMENT_ITEM_TUNING,
   debugTuning,
+  defaultBodyPartLayerTuning,
   defaultDebugTuning,
   EQUIPMENT_SLOT_KEYS,
+  FACE_ASSET_LAYER_KEYS,
   DEFAULT_SLASH_ARCS,
   defaultFacePartTuning,
   FACE_PART_KEYS,
   isSlashArcAttackKey,
+  PAPER_DOLL_BODY_PRESET_OPTIONS,
   resetDebugTuning,
   RIG_PART_KEYS,
   SLASH_ARC_ATTACK_KEYS,
@@ -24,8 +28,10 @@ import {
   updateDebugTuning,
   type AnimationEditMode,
   type ArenaDebugTuning,
+  type BodyPartLayerTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type BodyPresetTuning,
   type CharacterCanvasEditMode,
   type ClassicActionButtonSlotTuning,
   type ClassicActionWheelMode,
@@ -33,6 +39,8 @@ import {
   type ActionButtonOffsetKey,
   type EquipmentSlotKey,
   type EquipmentTuning,
+  type FaceAssetLayerKey,
+  type FaceAssetLayerTuning,
   type FacePartKey,
   type FacePartTuning,
   type RigPartKey,
@@ -128,8 +136,16 @@ interface DebugSelectControlConfig {
 type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig | DebugSelectControlConfig;
 type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
-type CharacterPreviewControlKey = "characterPreviewScale" | "characterPreviewFeetX" | "characterPreviewFeetY";
+type CharacterPreviewControlKey =
+  | "characterPreviewScale"
+  | "characterPreviewFeetX"
+  | "characterPreviewFeetY"
+  | "facePreviewScale"
+  | "facePreviewFocusX"
+  | "facePreviewFocusY";
+type CharacterPreviewControlMode = "body" | "face";
 type FaceNumericControlKey = keyof FacePartTuning;
+type FaceAssetLayerNumericControlKey = keyof FaceAssetLayerTuning;
 type EquipmentNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type EquipmentToggleControlKey = "flipX" | "flipY";
 type EquipmentControlKey = EquipmentNumericControlKey | EquipmentToggleControlKey;
@@ -166,10 +182,19 @@ interface CharacterPreviewControlConfig {
   min: number;
   max: number;
   step: number;
+  mode: CharacterPreviewControlMode;
 }
 
 interface FaceNumericControlConfig {
   key: FaceNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface FaceAssetLayerNumericControlConfig {
+  key: FaceAssetLayerNumericControlKey;
   label: string;
   min: number;
   max: number;
@@ -405,6 +430,10 @@ const DEBUG_BOSS_EQUIPMENT_SLOT_LABELS: Record<HeroEquipmentSlotKey, string> = {
   backBoot: "Back boot",
   frontBoot: "Front boot",
 };
+
+function formatPaperDollBodyPresetOptions(): string {
+  return PAPER_DOLL_BODY_PRESET_OPTIONS.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
+}
 
 const controlGroups: DebugControlGroup[] = [
   {
@@ -650,14 +679,25 @@ const rigToggleControls: RigToggleControlConfig[] = [
 ];
 
 const characterPreviewControls: CharacterPreviewControlConfig[] = [
-  { key: "characterPreviewScale", label: "zoom", min: 1, max: 2.6, step: 0.01 },
-  { key: "characterPreviewFeetX", label: "feet X", min: 0, max: 430, step: 1 },
-  { key: "characterPreviewFeetY", label: "feet Y", min: 560, max: 740, step: 1 },
+  { key: "characterPreviewScale", label: "zoom", min: 1, max: 2.6, step: 0.01, mode: "body" },
+  { key: "characterPreviewFeetX", label: "feet X", min: 0, max: 430, step: 1, mode: "body" },
+  { key: "characterPreviewFeetY", label: "feet Y", min: 560, max: 740, step: 1, mode: "body" },
+  { key: "facePreviewScale", label: "face zoom", min: 2, max: 7, step: 0.01, mode: "face" },
+  { key: "facePreviewFocusX", label: "face X", min: 0, max: 430, step: 1, mode: "face" },
+  { key: "facePreviewFocusY", label: "face Y", min: 80, max: 560, step: 1, mode: "face" },
 ];
 
 const faceNumericControls: FaceNumericControlConfig[] = [
   { key: "x", label: "x", min: -40, max: 40, step: 0.5 },
   { key: "y", label: "y", min: -40, max: 40, step: 0.5 },
+  { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
+  { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
+];
+
+const faceAssetLayerNumericControls: FaceAssetLayerNumericControlConfig[] = [
+  { key: "x", label: "x", min: -80, max: 80, step: 0.5 },
+  { key: "y", label: "y", min: -120, max: 40, step: 0.5 },
+  { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
   { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
 ];
@@ -764,11 +804,18 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     <details class="debug-rig-panel">
       <summary>Rig editor</summary>
       <div class="debug-rig-editor">
+        <label class="debug-rig-editor__part">
+          <span>Body preset</span>
+          <select class="debug-rig-editor__body-preset" data-debug-select-key="paperDollBodyPreset">${formatPaperDollBodyPresetOptions()}</select>
+        </label>
+        <button class="debug-panel__reset debug-rig-editor__copy-classic-to-dummy" type="button">Copy Classic Rig to Dummy V2</button>
         <fieldset class="debug-rig-editor__canvas-mode">
           <legend>Canvas edit</legend>
           <div class="debug-rig-editor__canvas-mode-options" role="group" aria-label="Character canvas edit mode">
             <button class="debug-panel__reset" type="button" data-character-canvas-edit-mode="parts">Parts</button>
+            <button class="debug-panel__reset" type="button" data-character-canvas-edit-mode="bodyArt">Body Art</button>
             <button class="debug-panel__reset" type="button" data-character-canvas-edit-mode="equipment">Equipment</button>
+            <button class="debug-panel__reset" type="button" data-character-canvas-edit-mode="face">Face</button>
           </div>
         </fieldset>
         <label class="debug-rig-editor__part">
@@ -823,6 +870,20 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
             <button class="debug-panel__reset debug-rig-editor__idle-none" type="button">No parts</button>
           </div>
         </fieldset>
+      </div>
+    </details>
+    <details class="debug-face-panel">
+      <summary>Face editor</summary>
+      <div class="debug-face-editor">
+        <label class="debug-rig-editor__part">
+          <span>Layer</span>
+          <select class="debug-face-editor__select"></select>
+        </label>
+        <div class="debug-face-editor__controls"></div>
+        <div class="debug-rig-editor__actions">
+          <button class="debug-panel__reset debug-face-editor__reset" type="button">Reset selected</button>
+          <button class="debug-panel__reset debug-face-editor__reset-all" type="button">Reset all face</button>
+        </div>
       </div>
     </details>
     <details class="debug-hero-equipment-panel">
@@ -1137,6 +1198,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const cityBody = panel.querySelector<HTMLElement>(".debug-panel__city-body");
   const effectsBody = panel.querySelector<HTMLElement>(".debug-effects");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
+  const facePanel = panel.querySelector<HTMLDetailsElement>(".debug-face-panel");
+  const faceAssetEditor = panel.querySelector<HTMLElement>(".debug-face-editor");
   const heroEquipmentBody = panel.querySelector<HTMLElement>(".debug-hero-equipment");
   const itemEquipmentBody = panel.querySelector<HTMLElement>(".debug-item-equipment");
   const autoEquipmentBody = panel.querySelector<HTMLElement>(".debug-auto-equipment");
@@ -1156,6 +1219,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     !cityBody ||
     !effectsBody ||
     !rigEditor ||
+    !facePanel ||
+    !faceAssetEditor ||
     !heroEquipmentBody ||
     !itemEquipmentBody ||
     !autoEquipmentBody ||
@@ -1191,6 +1256,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const nudgeToolbar = createNudgeToolbar();
   const previewTools = createPreviewTools(previewToolbar, nudgeToolbar);
   const previewColumn = document.querySelector<HTMLElement>(".debug-preview-column");
+  const characterShell = document.querySelector<HTMLElement>("#debugCharacterShell");
 
   if (previewColumn) {
     previewColumn.prepend(previewTools);
@@ -1199,8 +1265,11 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     rigEditor.prepend(previewTools);
   }
 
+  characterShell?.append(createCharacterPreviewArmorToggle());
+
   mountPreviewToolbar(previewToolbar);
   mountRigEditor(rigEditor);
+  mountFaceAssetEditor(faceAssetEditor);
   mountEffectsEditor(effectsBody);
   mountHeroEquipmentEditor(heroEquipmentBody);
   mountItemEquipmentEditor(itemEquipmentBody);
@@ -1212,6 +1281,12 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountNudgeToolbar(nudgeToolbar);
   mountCharacterCanvasEquipmentBridge(panel);
   mountModeTabs(panel);
+
+  facePanel.addEventListener("toggle", () => {
+    if (facePanel.open) {
+      updateDebugTuning({ characterCanvasEditMode: "face" }, { undoable: false });
+    }
+  });
 
   saveButton.addEventListener("click", async () => {
     saveButton.disabled = true;
@@ -1286,6 +1361,24 @@ function createPreviewTools(...items: HTMLElement[]): HTMLElement {
   tools.append(...items);
 
   return tools;
+}
+
+function createCharacterPreviewArmorToggle(): HTMLElement {
+  const label = document.createElement("label");
+
+  label.className = "debug-character-viewer__armor-toggle";
+  label.innerHTML = `
+    <input type="checkbox" data-debug-key="characterPreviewArmorGhosted" />
+    <span>Ghost armor</span>
+  `;
+
+  const input = label.querySelector<HTMLInputElement>("input");
+
+  input?.addEventListener("change", () => {
+    updateDebugTuning({ characterPreviewArmorGhosted: input.checked });
+  });
+
+  return label;
 }
 
 function mountDebugUndoShortcut(): void {
@@ -2357,6 +2450,8 @@ function mountBossEditor(editor: HTMLElement): void {
 }
 
 function mountRigEditor(editor: HTMLElement): void {
+  const bodyPresetSelect = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__body-preset");
+  const copyClassicToDummy = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-classic-to-dummy");
   const select = editor.querySelector<HTMLSelectElement>(".debug-rig-editor__select");
   const controls = editor.querySelector<HTMLElement>(".debug-rig-editor__controls");
   const limbGrid = editor.querySelector<HTMLElement>(".debug-rig-editor__limb-grid");
@@ -2378,6 +2473,8 @@ function mountRigEditor(editor: HTMLElement): void {
   const idleNoParts = editor.querySelector<HTMLButtonElement>(".debug-rig-editor__idle-none");
 
   if (
+    !bodyPresetSelect ||
+    !copyClassicToDummy ||
     !select ||
     !controls ||
     !limbGrid ||
@@ -2421,6 +2518,14 @@ function mountRigEditor(editor: HTMLElement): void {
   FACE_PART_KEYS.forEach((key) => faceControls.append(createFacePartEditor(key)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
+  bodyPresetSelect.addEventListener("change", () => {
+    updateDebugTuning({ paperDollBodyPreset: bodyPresetSelect.value as ArenaDebugTuning["paperDollBodyPreset"] }, { undoable: false });
+  });
+
+  copyClassicToDummy.addEventListener("click", () => {
+    copyClassicRigToDummyV2();
+  });
+
   select.addEventListener("change", () => {
     const selectedRigPart = select.value as RigPartKey;
 
@@ -2438,11 +2543,11 @@ function mountRigEditor(editor: HTMLElement): void {
   });
 
   reset.addEventListener("click", () => {
-    resetSelectedRigPart();
+    resetSelectedCharacterPart();
   });
 
   resetAllParts.addEventListener("click", () => {
-    resetAllRigParts();
+    resetAllCharacterParts();
   });
 
   resetAnimationToIdle.addEventListener("click", () => {
@@ -2456,13 +2561,23 @@ function mountRigEditor(editor: HTMLElement): void {
   copyOpposite.addEventListener("click", () => {
     const selectedPart = debugTuning.selectedRigPart;
     const oppositePart = oppositeRigPartMap[selectedPart];
-    const rigParts = getEditableRigParts();
 
-    if (!oppositePart || !rigParts) {
+    if (!oppositePart) {
       return;
     }
 
-    updateRigPartTuning(selectedPart, { ...rigParts[oppositePart] });
+    if (isBodyArtCanvasMode()) {
+      const bodyPartLayers = getEditableBodyPartLayers();
+
+      updateBodyPartLayerTuning(selectedPart, { ...bodyPartLayers[oppositePart] });
+      return;
+    }
+
+    const rigParts = getEditableRigParts();
+
+    if (rigParts) {
+      updateRigPartTuning(selectedPart, { ...rigParts[oppositePart] });
+    }
   });
 
   animationSelect.addEventListener("change", () => {
@@ -2505,6 +2620,40 @@ function mountRigEditor(editor: HTMLElement): void {
     updateSelectedBodyAnimation({ activeParts: createAnimationActiveParts(false) });
   });
 
+}
+
+function mountFaceAssetEditor(editor: HTMLElement): void {
+  const select = editor.querySelector<HTMLSelectElement>(".debug-face-editor__select");
+  const controls = editor.querySelector<HTMLElement>(".debug-face-editor__controls");
+  const reset = editor.querySelector<HTMLButtonElement>(".debug-face-editor__reset");
+  const resetAll = editor.querySelector<HTMLButtonElement>(".debug-face-editor__reset-all");
+
+  if (!select || !controls || !reset || !resetAll) {
+    return;
+  }
+
+  FACE_ASSET_LAYER_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    select.append(option);
+  });
+
+  faceAssetLayerNumericControls.forEach((control) => controls.append(createFaceAssetLayerRangeControl(control)));
+
+  select.addEventListener("change", () => {
+    if (isFaceAssetLayerKey(select.value)) {
+      updateDebugTuning({ selectedFaceAssetLayer: select.value }, { undoable: false });
+    }
+  });
+
+  reset.addEventListener("click", () => {
+    resetSelectedFaceAssetLayer();
+  });
+
+  resetAll.addEventListener("click", () => {
+    resetAllFaceAssetLayers();
+  });
 }
 
 function mountEffectsEditor(editor: HTMLElement): void {
@@ -2608,7 +2757,7 @@ function runSlashPreviewLoop(): void {
 
   const actionId = debugTuning.selectedSlashArc;
   const arc = debugTuning.slashArcs[actionId] ?? DEFAULT_SLASH_ARCS[actionId];
-  const animation = debugTuning.bodyAnimations[actionId] ?? DEFAULT_BODY_ANIMATIONS[actionId];
+  const animation = getActiveBodyPresetTuning().bodyAnimations[actionId] ?? DEFAULT_BODY_ANIMATIONS[actionId];
 
   previewSlashArc?.(actionId, true);
 
@@ -2743,6 +2892,7 @@ function createLimbRotateControl(config: RigLimbRotateConfig): HTMLElement {
 function createCharacterPreviewRangeControl(control: CharacterPreviewControlConfig): HTMLElement {
   const row = document.createElement("label");
   row.className = "debug-panel__row debug-rig-editor__row";
+  row.dataset.characterPreviewMode = control.mode;
   row.innerHTML = `
     <span>${control.label}</span>
     <input
@@ -2845,6 +2995,43 @@ function createFaceRangeControl(partKey: FacePartKey, control: FaceNumericContro
   return row;
 }
 
+function createFaceAssetLayerRangeControl(control: FaceAssetLayerNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-face-asset-layer-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-face-asset-layer-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateFaceAssetLayerTuning(debugTuning.selectedFaceAssetLayer, control.key, Number(range.value));
+  });
+
+  number?.addEventListener("input", () => {
+    updateFaceAssetLayerTuning(debugTuning.selectedFaceAssetLayer, control.key, Number(number.value));
+  });
+
+  return row;
+}
+
 function createEquipmentRangeControl(control: EquipmentNumericControlConfig): HTMLElement {
   const row = document.createElement("label");
   row.className = "debug-panel__row debug-rig-editor__row";
@@ -2937,6 +3124,18 @@ function updateRigPartTuning(partKey: RigPartKey, patch: Partial<RigPartTuning>)
   });
 }
 
+function updateBodyPartLayerTuning(partKey: RigPartKey, patch: Partial<BodyPartLayerTuning>): void {
+  const bodyPartLayers = getEditableBodyPartLayers();
+
+  updateEditableBodyPartLayers({
+    ...bodyPartLayers,
+    [partKey]: {
+      ...bodyPartLayers[partKey],
+      ...patch,
+    },
+  });
+}
+
 function updateFacePartTuning(partKey: FacePartKey, key: FaceNumericControlKey, value: number): void {
   const faceParts = getEditableFaceParts();
 
@@ -2955,6 +3154,42 @@ function updateFacePartTuning(partKey: FacePartKey, key: FaceNumericControlKey, 
 
 function resetFaceParts(): void {
   updateEditableFaceParts(Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...defaultFacePartTuning }])) as Record<FacePartKey, FacePartTuning>);
+}
+
+function updateFaceAssetLayerTuning(partKey: FaceAssetLayerKey, key: FaceAssetLayerNumericControlKey, value: number): void {
+  const faceAssetLayers = getActiveBodyPresetTuning().faceAssetLayers;
+
+  updateActiveBodyPresetTuning({
+    faceAssetLayers: {
+      ...faceAssetLayers,
+      [partKey]: {
+        ...faceAssetLayers[partKey],
+        [key]: clampFaceAssetLayerNumericValue(key, value),
+      },
+    },
+  });
+}
+
+function resetSelectedFaceAssetLayer(): void {
+  const presetDefaults = DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+
+  updateActiveBodyPresetTuning({
+    faceAssetLayers: {
+      ...getActiveBodyPresetTuning().faceAssetLayers,
+      [debugTuning.selectedFaceAssetLayer]: { ...presetDefaults.faceAssetLayers[debugTuning.selectedFaceAssetLayer] },
+    },
+  });
+}
+
+function resetAllFaceAssetLayers(): void {
+  const presetDefaults = DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+
+  updateActiveBodyPresetTuning({
+    faceAssetLayers: Object.fromEntries(FACE_ASSET_LAYER_KEYS.map((key) => [key, { ...presetDefaults.faceAssetLayers[key] }])) as Record<
+      FaceAssetLayerKey,
+      FaceAssetLayerTuning
+    >,
+  });
 }
 
 function updateEquipmentSlot(slotKey: EquipmentSlotKey, patch: Partial<EquipmentTuning>): void {
@@ -3210,14 +3445,29 @@ function updateHeroEquipment(nextEquipment: HeroEquipment): void {
 }
 
 function updateRigNumericTuning(key: RigNumericControlKey, value: number): void {
+  if (isBodyArtCanvasMode()) {
+    updateBodyPartLayerTuning(debugTuning.selectedRigPart, { [key]: clampRigNumericValue(key, value) } as Partial<BodyPartLayerTuning>);
+    return;
+  }
+
   updateRigPartTuning(debugTuning.selectedRigPart, { [key]: clampRigNumericValue(key, value) } as Partial<RigPartTuning>);
 }
 
 function updateRigToggleTuning(key: RigToggleControlKey, value: boolean): void {
+  if (isBodyArtCanvasMode()) {
+    updateBodyPartLayerTuning(debugTuning.selectedRigPart, { [key]: value } as Partial<BodyPartLayerTuning>);
+    return;
+  }
+
   updateRigPartTuning(debugTuning.selectedRigPart, { [key]: value } as Partial<RigPartTuning>);
 }
 
 function nudgeSelectedRigPart(action: RigNudgeAction): void {
+  if (isBodyArtCanvasMode()) {
+    nudgeSelectedBodyPartLayer(action);
+    return;
+  }
+
   const step = activeNudgeStep;
 
   if (action === "left") {
@@ -3285,6 +3535,71 @@ function updateSelectedRigPart(getPatch: (current: RigPartTuning, partKey: RigPa
   });
 
   updateEditableRigParts(nextRigParts);
+}
+
+function nudgeSelectedBodyPartLayer(action: RigNudgeAction): void {
+  const step = activeNudgeStep;
+
+  if (action === "left") {
+    updateSelectedBodyPartLayer((current) => ({ x: clampRigNumericValue("x", current.x - step) }));
+    return;
+  }
+
+  if (action === "right") {
+    updateSelectedBodyPartLayer((current) => ({ x: clampRigNumericValue("x", current.x + step) }));
+    return;
+  }
+
+  if (action === "up") {
+    updateSelectedBodyPartLayer((current) => ({ y: clampRigNumericValue("y", current.y - step) }));
+    return;
+  }
+
+  if (action === "down") {
+    updateSelectedBodyPartLayer((current) => ({ y: clampRigNumericValue("y", current.y + step) }));
+    return;
+  }
+
+  if (action === "rotateLeft") {
+    updateSelectedBodyPartLayer((current) => ({ angle: clampRigNumericValue("angle", current.angle - step) }));
+    return;
+  }
+
+  if (action === "rotateRight") {
+    updateSelectedBodyPartLayer((current) => ({ angle: clampRigNumericValue("angle", current.angle + step) }));
+    return;
+  }
+
+  const scaleDelta = step / 100;
+
+  if (action === "scaleDown") {
+    updateSelectedBodyPartLayer((current) => ({
+      scaleX: clampRigNumericValue("scaleX", current.scaleX - scaleDelta),
+      scaleY: clampRigNumericValue("scaleY", current.scaleY - scaleDelta),
+    }));
+    return;
+  }
+
+  updateSelectedBodyPartLayer((current) => ({
+    scaleX: clampRigNumericValue("scaleX", current.scaleX + scaleDelta),
+    scaleY: clampRigNumericValue("scaleY", current.scaleY + scaleDelta),
+  }));
+}
+
+function updateSelectedBodyPartLayer(getPatch: (current: BodyPartLayerTuning, partKey: RigPartKey) => Partial<BodyPartLayerTuning>): void {
+  const bodyPartLayers = getEditableBodyPartLayers();
+  const nextBodyPartLayers = { ...bodyPartLayers };
+
+  getSelectedRigPartsForBulkAction().forEach((partKey) => {
+    const current = bodyPartLayers[partKey];
+
+    nextBodyPartLayers[partKey] = {
+      ...current,
+      ...getPatch(current, partKey),
+    };
+  });
+
+  updateEditableBodyPartLayers(nextBodyPartLayers);
 }
 
 function rotatePaperDoll(degrees: number): void {
@@ -3377,6 +3692,40 @@ function resetAllRigParts(): void {
   updateEditableRigParts(getNeutralRigPartDefaults());
 }
 
+function resetSelectedCharacterPart(): void {
+  if (isBodyArtCanvasMode()) {
+    resetSelectedBodyPartLayer();
+    return;
+  }
+
+  resetSelectedRigPart();
+}
+
+function resetAllCharacterParts(): void {
+  if (isBodyArtCanvasMode()) {
+    resetAllBodyPartLayers();
+    return;
+  }
+
+  resetAllRigParts();
+}
+
+function resetSelectedBodyPartLayer(): void {
+  const neutralLayers = getNeutralBodyPartLayerDefaults();
+  const bodyPartLayers = getEditableBodyPartLayers();
+  const nextBodyPartLayers = { ...bodyPartLayers };
+
+  getSelectedRigPartsForBulkAction().forEach((partKey) => {
+    nextBodyPartLayers[partKey] = { ...neutralLayers[partKey] };
+  });
+
+  updateEditableBodyPartLayers(nextBodyPartLayers);
+}
+
+function resetAllBodyPartLayers(): void {
+  updateEditableBodyPartLayers(getNeutralBodyPartLayerDefaults());
+}
+
 function resetSelectedAnimationToIdle(): void {
   const neutralParts = getNeutralRigPartDefaults();
   const neutralFaceParts = getNeutralFacePartDefaults();
@@ -3402,6 +3751,14 @@ function getNeutralFacePartDefaults(): Record<FacePartKey, FacePartTuning> {
   return cloneFaceParts(neutralFaceParts);
 }
 
+function getNeutralBodyPartLayerDefaults(): Record<RigPartKey, BodyPartLayerTuning> {
+  const presetDefaults = DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+
+  return Object.fromEntries(
+    RIG_PART_KEYS.map((partKey) => [partKey, { ...(presetDefaults.bodyPartLayers[partKey] ?? defaultBodyPartLayerTuning) }]),
+  ) as Record<RigPartKey, BodyPartLayerTuning>;
+}
+
 function getEditableRigParts(): Record<RigPartKey, RigPartTuning> | undefined {
   const poseKey = getActiveAnimationRigPoseKey();
 
@@ -3410,6 +3767,10 @@ function getEditableRigParts(): Record<RigPartKey, RigPartTuning> | undefined {
   }
 
   return getSelectedBodyAnimation()[poseKey];
+}
+
+function getEditableBodyPartLayers(): Record<RigPartKey, BodyPartLayerTuning> {
+  return getActiveBodyPresetTuning().bodyPartLayers;
 }
 
 function getEditableFaceParts(): Record<FacePartKey, FacePartTuning> | undefined {
@@ -3430,6 +3791,10 @@ function updateEditableRigParts(nextRigParts: Record<RigPartKey, RigPartTuning>)
   }
 
   updateSelectedBodyAnimation({ [poseKey]: nextRigParts } as Partial<BodyAnimationTuning>);
+}
+
+function updateEditableBodyPartLayers(nextBodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>): void {
+  updateActiveBodyPresetTuning({ bodyPartLayers: nextBodyPartLayers });
 }
 
 function updateEditableFaceParts(nextFaceParts: Record<FacePartKey, FacePartTuning>): void {
@@ -3495,6 +3860,10 @@ function isCharacterCanvasEditMode(value: string | undefined): value is Characte
   return typeof value === "string" && CHARACTER_CANVAS_EDIT_MODES.includes(value as CharacterCanvasEditMode);
 }
 
+function isBodyArtCanvasMode(): boolean {
+  return debugTuning.characterCanvasEditMode === "bodyArt";
+}
+
 function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {
   return typeof value === "string" && ACTION_BUTTON_OFFSET_KEYS.includes(value as ActionButtonOffsetKey);
 }
@@ -3509,6 +3878,10 @@ function isClassicSlotNumericKey(value: unknown): value is ClassicSlotNumericKey
 
 function isFacePartKey(value: string | undefined): value is FacePartKey {
   return typeof value === "string" && FACE_PART_KEYS.includes(value as FacePartKey);
+}
+
+function isFaceAssetLayerKey(value: string | undefined): value is FaceAssetLayerKey {
+  return typeof value === "string" && FACE_ASSET_LAYER_KEYS.includes(value as FaceAssetLayerKey);
 }
 
 function isEquipmentSlotKey(value: string | undefined): value is EquipmentSlotKey {
@@ -3859,6 +4232,22 @@ function clampFaceNumericValue(key: FaceNumericControlKey, value: number): numbe
   return clampNumber(value, -40, 40);
 }
 
+function clampFaceAssetLayerNumericValue(key: FaceAssetLayerNumericControlKey, value: number): number {
+  if (key === "angle") {
+    return clampNumber(value, -180, 180);
+  }
+
+  if (key === "scaleX" || key === "scaleY") {
+    return clampNumber(value, 0.1, 3);
+  }
+
+  if (key === "y") {
+    return clampNumber(value, -120, 40);
+  }
+
+  return clampNumber(value, -80, 80);
+}
+
 function clampEquipmentNumericValue(key: EquipmentNumericControlKey, value: number): number {
   if (key === "angle") {
     return clampNumber(value, -180, 180);
@@ -3895,6 +4284,26 @@ function copyAnimationPoseAToB(): void {
   });
 }
 
+function copyClassicRigToDummyV2(): void {
+  if (!window.confirm("Copy Classic rig parts and body animations to Dummy V2? Body Art, face assets, and equipment tuning will stay unchanged.")) {
+    return;
+  }
+
+  const classicTuning = debugTuning.bodyPresetTuning.classic ?? DEFAULT_BODY_PRESET_TUNING.classic;
+  const dummyTuning = debugTuning.bodyPresetTuning["dummy-v2"] ?? DEFAULT_BODY_PRESET_TUNING["dummy-v2"];
+
+  updateDebugTuning({
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      "dummy-v2": {
+        ...dummyTuning,
+        rigParts: cloneRigParts(classicTuning.rigParts),
+        bodyAnimations: cloneBodyAnimations(classicTuning.bodyAnimations),
+      },
+    },
+  });
+}
+
 function cloneRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<RigPartKey, RigPartTuning>;
 }
@@ -3903,13 +4312,50 @@ function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<Fac
   return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<FacePartKey, FacePartTuning>;
 }
 
+function cloneBodyAnimations(source: Record<BodyAnimationKey, BodyAnimationTuning>): Record<BodyAnimationKey, BodyAnimationTuning> {
+  return Object.fromEntries(BODY_ANIMATION_KEYS.map((key) => [key, cloneBodyAnimation(source[key])])) as Record<
+    BodyAnimationKey,
+    BodyAnimationTuning
+  >;
+}
+
+function cloneBodyAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
+  return {
+    ...source,
+    base: cloneRigParts(source.base),
+    breath: cloneRigParts(source.breath),
+    faceBase: cloneFaceParts(source.faceBase),
+    faceBreath: cloneFaceParts(source.faceBreath),
+    activeParts: { ...source.activeParts },
+  };
+}
+
+function getActiveBodyPresetTuning(): BodyPresetTuning {
+  return debugTuning.bodyPresetTuning[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+}
+
+function updateActiveBodyPresetTuning(patch: Partial<BodyPresetTuning>): void {
+  const presetKey = debugTuning.paperDollBodyPreset;
+  const current = getActiveBodyPresetTuning();
+
+  updateDebugTuning({
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      [presetKey]: {
+        ...current,
+        ...patch,
+      },
+    },
+  });
+}
+
 function updateSelectedBodyAnimation(patch: Partial<BodyAnimationTuning>): void {
   const key = debugTuning.selectedBodyAnimation;
   const animation = getSelectedBodyAnimation();
 
-  updateDebugTuning({
+  updateActiveBodyPresetTuning({
     bodyAnimations: {
-      ...debugTuning.bodyAnimations,
+      ...getActiveBodyPresetTuning().bodyAnimations,
       [key]: {
         ...animation,
         ...patch,
@@ -3919,7 +4365,9 @@ function updateSelectedBodyAnimation(patch: Partial<BodyAnimationTuning>): void 
 }
 
 function getSelectedBodyAnimation(): BodyAnimationTuning {
-  return debugTuning.bodyAnimations[debugTuning.selectedBodyAnimation] ?? debugTuning.bodyAnimations.idle;
+  const animations = getActiveBodyPresetTuning().bodyAnimations;
+
+  return animations[debugTuning.selectedBodyAnimation] ?? animations.idle;
 }
 
 function createAnimationActiveParts(enabled: boolean): Record<RigPartKey, boolean> {
@@ -3951,8 +4399,10 @@ function mountDebugGrid(): void {
 function syncDebugTools(panel: HTMLElement): void {
   syncModeTabs(panel);
   syncInputs();
+  syncPreviewToolbar(panel);
   syncRigEditor(panel);
   syncFaceEditor(panel);
+  syncFaceAssetEditor(panel);
   syncEquipmentEditor(panel);
   syncEffectsEditor(panel);
   syncClassicActionButtonEditor(panel);
@@ -4014,6 +4464,14 @@ function syncHeroEquipmentEditor(panel: HTMLElement): void {
     const definition = getDebugHeroItemDefinition(itemId);
 
     item.textContent = definition ? definition.id : "empty";
+  });
+}
+
+function syncPreviewToolbar(panel: HTMLElement): void {
+  const activeMode: CharacterPreviewControlMode = debugTuning.characterCanvasEditMode === "face" ? "face" : "body";
+
+  panel.querySelectorAll<HTMLElement>("[data-character-preview-mode]").forEach((row) => {
+    row.hidden = row.dataset.characterPreviewMode !== activeMode;
   });
 }
 
@@ -6245,9 +6703,13 @@ function syncRigEditor(panel: HTMLElement): void {
   const copyOpposite = panel.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = panel.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
   const selectedPart = debugTuning.selectedRigPart;
+  const isBodyArtMode = isBodyArtCanvasMode();
   const rigParts = getEditableRigParts();
-  const isEditable = Boolean(rigParts);
-  const selectedTuning = (rigParts ?? debugTuning.rigParts)[selectedPart];
+  const bodyPartLayers = getEditableBodyPartLayers();
+  const isEditable = isBodyArtMode || Boolean(rigParts);
+  const selectedTuning = isBodyArtMode
+    ? bodyPartLayers[selectedPart]
+    : (rigParts ?? getActiveBodyPresetTuning().rigParts)[selectedPart];
 
   if (!select || !selectedTuning) {
     return;
@@ -6257,7 +6719,7 @@ function syncRigEditor(panel: HTMLElement): void {
 
   if (reset) {
     reset.disabled = !isEditable;
-    reset.textContent = "Reset selected";
+    reset.textContent = isBodyArtMode ? "Reset art" : "Reset selected";
   }
 
   if (copyOpposite) {
@@ -6300,7 +6762,7 @@ function syncFaceEditor(panel: HTMLElement): void {
   const isEditable = Boolean(faceParts);
 
   if (faceEditor) {
-    faceEditor.hidden = debugTuning.selectedRigPart !== "head";
+    faceEditor.hidden = debugTuning.characterCanvasEditMode !== "parts" || debugTuning.selectedRigPart !== "head";
   }
 
   panel.querySelectorAll<HTMLInputElement>("input[data-face-key]").forEach((input) => {
@@ -6311,7 +6773,7 @@ function syncFaceEditor(panel: HTMLElement): void {
       return;
     }
 
-    input.value = `${(faceParts ?? debugTuning.faceParts)[partKey][key]}`;
+    input.value = `${(faceParts ?? getActiveBodyPresetTuning().faceParts)[partKey][key]}`;
     input.disabled = !isEditable;
   });
 
@@ -6323,9 +6785,34 @@ function syncFaceEditor(panel: HTMLElement): void {
       return;
     }
 
-    const value = (faceParts ?? debugTuning.faceParts)[partKey][key];
+    const value = (faceParts ?? getActiveBodyPresetTuning().faceParts)[partKey][key];
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
     input.disabled = !isEditable;
+  });
+}
+
+function syncFaceAssetEditor(panel: HTMLElement): void {
+  const select = panel.querySelector<HTMLSelectElement>(".debug-face-editor__select");
+  const selectedLayer = debugTuning.selectedFaceAssetLayer;
+  const selectedTuning = getActiveBodyPresetTuning().faceAssetLayers[selectedLayer];
+
+  if (!select || !selectedTuning) {
+    return;
+  }
+
+  select.value = selectedLayer;
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-face-asset-layer-key]").forEach((input) => {
+    const key = input.dataset.faceAssetLayerKey as FaceAssetLayerNumericControlKey;
+
+    input.value = `${selectedTuning[key]}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-face-asset-layer-number-key]").forEach((input) => {
+    const key = input.dataset.faceAssetLayerNumberKey as FaceAssetLayerNumericControlKey;
+    const value = selectedTuning[key];
+
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
   });
 }
 

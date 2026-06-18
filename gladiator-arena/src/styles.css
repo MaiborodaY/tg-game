@@ -7286,6 +7286,7 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 }
 
 .debug-character-shell {
+  position: relative;
   width: min(430px, 100%);
   min-height: min(100dvh - 24px, 764px);
   border: 3px solid var(--ink);
@@ -7304,6 +7305,37 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+.debug-character-viewer__armor-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 26;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 211, 132, 0.58);
+  border-radius: 9px;
+  color: #fff0bd;
+  background: rgba(35, 10, 4, 0.78);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.24);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.debug-character-viewer__armor-toggle input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #f4ad3f;
 }
 
 body.debug-mode-character .debug-game-shell,
@@ -7978,6 +8010,12 @@ body.debug-mode-hud .battle-screen .status-strip {
 
 .debug-rig-editor__actions .debug-panel__reset {
   width: 100%;
+  margin: 0;
+}
+
+.debug-rig-editor__copy-classic-to-dummy {
+  width: 100%;
+  min-height: 30px;
   margin: 0;
 }
 

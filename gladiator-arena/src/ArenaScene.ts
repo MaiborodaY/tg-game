@@ -50,31 +50,49 @@ import {
   DAMAGE_HIT_ICON_ASSET_KEY,
   DAMAGE_HIT_ICON_ASSET_URL,
   FIGHTER_BACK_BOOT_LEATHER_ASSET_KEY,
+  FIGHTER_BACK_FOOT_DUMMY_ASSET_KEY,
   FIGHTER_BACK_FOOT_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_FOREARM_DUMMY_ASSET_KEY,
   FIGHTER_BACK_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_BACK_WRIST_LEATHER_ASSET_KEY,
   FIGHTER_BACK_GREAVE_LEATHER_ASSET_KEY,
+  FIGHTER_BACK_HAND_DUMMY_ASSET_KEY,
   FIGHTER_BACK_HAND_LIGHT_ASSET_KEY,
   FIGHTER_BACK_SHOULDERGUARD_LEATHER_ASSET_KEY,
   FIGHTER_BACK_SHINGUARD_LEATHER_ASSET_KEY,
   FIGHTER_BREASTPLATE_LEATHER_ASSET_KEY,
+  FIGHTER_BACK_SHIN_DUMMY_ASSET_KEY,
   FIGHTER_BACK_SHIN_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY,
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
+  FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
+  FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY,
+  FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY,
+  FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
+  FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
+  FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY,
   FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_FOREARM_DUMMY_ASSET_KEY,
   FIGHTER_FRONT_FOREARM_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_WRIST_LEATHER_ASSET_KEY,
   FIGHTER_FRONT_BOOT_LEATHER_ASSET_KEY,
   FIGHTER_FRONT_GREAVE_LEATHER_ASSET_KEY,
+  FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY,
   FIGHTER_FRONT_HAND_LIGHT_ASSET_KEY,
   FIGHTER_FRONT_SHOULDERGUARD_LEATHER_ASSET_KEY,
   FIGHTER_FRONT_SHINGUARD_LEATHER_ASSET_KEY,
+  FIGHTER_FRONT_SHIN_DUMMY_ASSET_KEY,
   FIGHTER_FRONT_SHIN_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_THIGH_DUMMY_ASSET_KEY,
   FIGHTER_FRONT_THIGH_LIGHT_ASSET_KEY,
+  FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_KEY,
   FIGHTER_FRONT_UPPER_ARM_LIGHT_ASSET_KEY,
   FIGHTER_HELMET_LEATHER_ASSET_KEY,
+  FIGHTER_HEAD_DUMMY_ASSET_KEY,
   FIGHTER_HEAD_LIGHT_ASSET_KEY,
   FIGHTER_PAPER_DOLL_ASSETS,
+  FIGHTER_TORSO_DUMMY_ASSET_KEY,
   FIGHTER_TORSO_LIGHT_ASSET_KEY,
   FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
   GAME_HEIGHT,
@@ -119,6 +137,7 @@ import {
   beginDebugUndoGroup,
   debugTuning,
   DEFAULT_BODY_ANIMATIONS,
+  DEFAULT_BODY_PRESET_TUNING,
   DEFAULT_EQUIPMENT,
   DEFAULT_EQUIPMENT_ITEM_TUNING,
   DEFAULT_FACE_PARTS,
@@ -126,16 +145,21 @@ import {
   DEFAULT_SLASH_ARCS,
   defaultRigPartTuning,
   endDebugUndoGroup,
+  FACE_ASSET_LAYER_KEYS,
   RIG_PART_KEYS,
   subscribeDebugTuning,
   updateDebugTuning,
   type ArenaDebugTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
+  type BodyPresetTuning,
   type DebugPopupPreviewKind,
   type EquipmentSlotKey,
   type EquipmentTuning,
+  type FaceAssetLayerKey,
+  type FaceAssetLayerTuning,
   type FacePartTuning,
+  type PaperDollBodyPreset,
   type RigPartKey,
   type RigPartTuning,
   type SlashArcAttackKey,
@@ -236,6 +260,13 @@ type DebugEquipmentPickHandler = (slotKey: PaperDollEquipmentSlotKey, pointer: P
 interface PaperDollRig {
   root: FighterPart;
   parts: Record<PaperDollPartKey, FighterPart>;
+  bodyPresetKey?: PaperDollBodyPreset;
+  headAssetKey?: string;
+  torsoAssetKey?: string;
+  bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
+  faceOverlayMode?: PaperDollFaceOverlayMode;
+  faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>;
+  faceAssetLayers: PaperDollFaceAssetLayers;
   equipment: PaperDollEquipment;
   equipmentAnchors: PaperDollEquipmentAnchors;
   equipmentState?: HeroEquipment;
@@ -249,6 +280,13 @@ interface PaperDollRig {
 interface PaperDollShadowRig {
   root: FighterPart;
   parts: Record<PaperDollPartKey, FighterPart>;
+  bodyPresetKey?: PaperDollBodyPreset;
+  headAssetKey?: string;
+  torsoAssetKey?: string;
+  bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
+  faceOverlayMode?: PaperDollFaceOverlayMode;
+  faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>;
+  faceAssetLayers: PaperDollFaceAssetLayers;
   equipment: PaperDollEquipment;
   equipmentAnchors: PaperDollEquipmentAnchors;
   faceParts: PaperDollFaceParts;
@@ -281,6 +319,8 @@ interface PaperDollFaceParts {
   eyeRight?: FighterPart;
 }
 
+type PaperDollFaceAssetLayers = Partial<Record<FaceAssetLayerKey, FighterPart>>;
+
 interface PaperDollAppearance {
   facing: 1 | -1;
   skin: number;
@@ -288,6 +328,8 @@ interface PaperDollAppearance {
   hair: number;
   muscle: number;
 }
+
+type PaperDollFaceOverlayMode = "classic" | "none";
 
 interface PaperDollFighterOptions {
   x: number;
@@ -298,8 +340,11 @@ interface PaperDollFighterOptions {
   skinDark: number;
   hair: number;
   muscle?: number;
+  bodyPresetKey?: PaperDollBodyPreset;
   headAssetKey?: string;
   torsoAssetKey?: string;
+  faceOverlayMode?: PaperDollFaceOverlayMode;
+  faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>;
   helmetAssetKey?: string;
   breastplateAssetKey?: string;
   backShoulderguardAssetKey?: string;
@@ -541,6 +586,8 @@ const HEAD_FACE_EYE_COVER_WIDTH = 18;
 const HEAD_FACE_EYE_COVER_HEIGHT = 17;
 const HEAD_FACE_EYE_WHITE = 0xfffbf2;
 const HEAD_FACE_EYE_BLACK = 0x050201;
+const FACE_ASSET_EYE_WHITE_DISPLAY_HEIGHT = 25;
+const FACE_ASSET_PUPIL_DISPLAY_HEIGHT = 13;
 const TORSO_ASSET_DISPLAY_HEIGHT = 175;
 const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
 const TORSO_ASSET_ORIGIN_X = 626 / 1254;
@@ -710,6 +757,13 @@ const PAPER_DOLL_TORSO_ASSET_CONFIG: PaperDollPartAssetConfig = {
   originY: TORSO_ASSET_ORIGIN_Y,
 };
 
+const PAPER_DOLL_FACE_ASSET_CONFIGS: Record<FaceAssetLayerKey, PaperDollPartAssetConfig> = {
+  eyeWhiteLeft: { displayHeight: FACE_ASSET_EYE_WHITE_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+  eyeWhiteRight: { displayHeight: FACE_ASSET_EYE_WHITE_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+  pupilLeft: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+  pupilRight: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+};
+
 const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollPartAssetConfig>> = {
   backUpperArm: { displayHeight: 90, localX: 0, localY: -8, originX: 158 / 319, originY: 6 / 548 },
   backForearm: { displayHeight: 66, localX: 0, localY: -3, originX: 122 / 251, originY: 6 / 497 },
@@ -740,6 +794,57 @@ const DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS: Partial<Record<PaperDollPartKey, 
   frontFoot: FIGHTER_FRONT_FOOT_LIGHT_ASSET_KEY,
 };
 
+const DUMMY_PAPER_DOLL_ARM_ASSET_KEYS: Partial<Record<PaperDollPartKey, string>> = {
+  backUpperArm: FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY,
+  backForearm: FIGHTER_BACK_FOREARM_DUMMY_ASSET_KEY,
+  backHand: FIGHTER_BACK_HAND_DUMMY_ASSET_KEY,
+  frontUpperArm: FIGHTER_FRONT_UPPER_ARM_DUMMY_ASSET_KEY,
+  frontForearm: FIGHTER_FRONT_FOREARM_DUMMY_ASSET_KEY,
+  frontHand: FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY,
+};
+
+const DUMMY_PAPER_DOLL_LEG_ASSET_KEYS: Partial<Record<PaperDollPartKey, string>> = {
+  backThigh: FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY,
+  backShin: FIGHTER_BACK_SHIN_DUMMY_ASSET_KEY,
+  backFoot: FIGHTER_BACK_FOOT_DUMMY_ASSET_KEY,
+  frontThigh: FIGHTER_FRONT_THIGH_DUMMY_ASSET_KEY,
+  frontShin: FIGHTER_FRONT_SHIN_DUMMY_ASSET_KEY,
+  frontFoot: FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY,
+};
+
+interface PaperDollBodyPresetDefinition {
+  headAssetKey: string;
+  torsoAssetKey: string;
+  bodyPartAssetKeys: Partial<Record<PaperDollPartKey, string>>;
+  faceOverlayMode: PaperDollFaceOverlayMode;
+  faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>;
+}
+
+const PAPER_DOLL_BODY_PRESETS: Record<PaperDollBodyPreset, PaperDollBodyPresetDefinition> = {
+  classic: {
+    headAssetKey: FIGHTER_HEAD_LIGHT_ASSET_KEY,
+    torsoAssetKey: FIGHTER_TORSO_LIGHT_ASSET_KEY,
+    bodyPartAssetKeys: DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
+    faceOverlayMode: "classic",
+  },
+  "dummy-v2": {
+    headAssetKey: FIGHTER_HEAD_DUMMY_ASSET_KEY,
+    torsoAssetKey: FIGHTER_TORSO_DUMMY_ASSET_KEY,
+    bodyPartAssetKeys: {
+      ...DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,
+      ...DUMMY_PAPER_DOLL_ARM_ASSET_KEYS,
+      ...DUMMY_PAPER_DOLL_LEG_ASSET_KEYS,
+    },
+    faceOverlayMode: "none",
+    faceAssetKeys: {
+      eyeWhiteLeft: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY,
+      eyeWhiteRight: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY,
+      pupilLeft: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
+      pupilRight: FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
+    },
+  },
+};
+
 const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
   weaponMainAssetKey: FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
   helmetAssetKey: FIGHTER_HELMET_LEATHER_ASSET_KEY,
@@ -758,6 +863,7 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
 
 const PAPER_DOLL_EQUIPMENT_SLOT_KEYS = HERO_EQUIPMENT_SLOT_KEYS;
 const PAPER_DOLL_DRAGGABLE_ARMOR_SLOT_KEYS = PAPER_DOLL_EQUIPMENT_SLOT_KEYS.filter((slotKey) => !isPaperDollWeaponSlot(slotKey));
+const DEBUG_CHARACTER_GHOST_ARMOR_ALPHA = 0.32;
 
 const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, PaperDollEquipmentAssetKey> = {
   weaponMain: "weaponMainAssetKey",
@@ -1290,10 +1396,8 @@ function getActivePaperDollAssetKey(assetKey: string): string {
   return getFighterTextureKey(assetKey, activePaperDollAssetsUseLowRes);
 }
 
-function getActivePaperDollBodyPartAssetKeys(): Partial<Record<PaperDollPartKey, string>> {
-  return Object.fromEntries(
-    Object.entries(DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS).map(([partKey, assetKey]) => [partKey, getActivePaperDollAssetKey(assetKey)]),
-  ) as Partial<Record<PaperDollPartKey, string>>;
+function getPaperDollBodyPreset(preset: PaperDollBodyPreset): PaperDollBodyPresetDefinition {
+  return PAPER_DOLL_BODY_PRESETS[preset] ?? PAPER_DOLL_BODY_PRESETS.classic;
 }
 
 function getActivePaperDollEquipmentAssetKeys<T extends Partial<PaperDollEquipmentAssetKeys>>(assetKeys: T): T {
@@ -1505,6 +1609,7 @@ export class ArenaScene extends Phaser.Scene {
     drawArenaBackground(this, this.arenaLayers);
     this.visuals = buildVisuals(this);
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
+      syncFighterBodyPreset(this.visuals?.player);
       if (this.currentState) {
         renderScene(this, this.currentState);
       }
@@ -1620,13 +1725,13 @@ export class ArenaScene extends Phaser.Scene {
           playerSettings,
         );
 
-        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit"));
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit", visuals.enemy.paperDollRig?.bodyPresetKey));
       });
     } else if (nextState.lastPlayerBlocked) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.enemy);
 
-        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block"));
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block", visuals.enemy.paperDollRig?.bodyPresetKey));
       });
     }
 
@@ -1641,13 +1746,13 @@ export class ArenaScene extends Phaser.Scene {
           playerSettings,
         );
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit"));
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit", visuals.player.paperDollRig?.bodyPresetKey));
       });
     } else if (nextState.lastEnemyBlocked) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.player);
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block"));
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block", visuals.player.paperDollRig?.bodyPresetKey));
       });
     }
 
@@ -1922,7 +2027,7 @@ class CityHeroScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     this.updateCityClouds(delta);
 
-    const idle = getActiveBodyAnimation("idle");
+    const idle = getActiveBodyAnimation("idle", this.fighter?.paperDollRig?.bodyPresetKey);
 
     if (!this.fighter || !idle.enabled) {
       return;
@@ -2042,6 +2147,7 @@ class CityHeroScene extends Phaser.Scene {
 
     this.syncBackground();
     this.syncCityClouds();
+    syncFighterBodyPreset(fighter);
     this.syncCameraViewports();
     this.syncFighterLayout();
     applyCityHeroLighting(fighter, this.cityLightingAmount);
@@ -2707,8 +2813,9 @@ class HeroPortraitScene extends Phaser.Scene {
       return;
     }
 
+    syncFighterBodyPreset(this.fighter);
     applyPaperDollRigTuning(this.fighter, HERO_PORTRAIT_SCALE, HERO_PORTRAIT_FEET_Y, HERO_PORTRAIT_CENTER_X);
-    applyBodyAnimationBlend(this.fighter, getActiveBodyAnimation("idle"), 0);
+    applyBodyAnimationBlend(this.fighter, getActiveBodyAnimation("idle", this.fighter.paperDollRig?.bodyPresetKey), 0);
     syncHeroPortraitCrop(this.fighter);
   }
 
@@ -2955,7 +3062,7 @@ class DebugCharacterScene extends Phaser.Scene {
     }
 
     if (this.viewerMode === "shop") {
-      const idle = getActiveBodyAnimation("idle");
+      const idle = getActiveBodyAnimation("idle", this.fighter.paperDollRig?.bodyPresetKey);
 
       if (idle.enabled) {
         applyBodyAnimation(this.fighter, time, idle);
@@ -2980,6 +3087,7 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
+    syncFighterBodyPreset(this.fighter);
     if (this.viewerMode === "shop") {
       const layout = this.getShopCharacterLayout();
 
@@ -2987,11 +3095,14 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
-    applyPaperDollRigTuning(this.fighter, debugTuning.characterPreviewScale, debugTuning.characterPreviewFeetY, debugTuning.characterPreviewFeetX);
+    const layout = this.getDebugCharacterLayout();
+
+    applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+    this.syncPreviewArmorAlpha();
     applySelectedDebugAnimationEditPose(this.fighter);
     syncPaperDollSelectionHighlight(
       this.fighter.paperDollRig,
-      debugTuning.characterCanvasEditMode === "parts" ? debugTuning.selectedRigParts : [],
+      debugTuning.characterCanvasEditMode === "parts" || debugTuning.characterCanvasEditMode === "bodyArt" ? debugTuning.selectedRigParts : [],
     );
   }
 
@@ -3017,6 +3128,36 @@ class DebugCharacterScene extends Phaser.Scene {
     this.sync();
   }
 
+  private getDebugCharacterLayout(): CityHeroLayout {
+    if (debugTuning.characterCanvasEditMode === "face") {
+      return this.getFaceCharacterLayout();
+    }
+
+    return {
+      feetX: debugTuning.characterPreviewFeetX,
+      feetY: debugTuning.characterPreviewFeetY,
+      scale: debugTuning.characterPreviewScale,
+    };
+  }
+
+  private getFaceCharacterLayout(): CityHeroLayout {
+    const rig = this.fighter?.paperDollRig;
+    const scale = debugTuning.facePreviewScale;
+    const presetTuning = getDebugBodyPresetTuning(rig?.bodyPresetKey);
+    const headTuning = presetTuning.rigParts.head ?? DEFAULT_RIG_PARTS.head ?? defaultRigPartTuning;
+    const headPivot = PAPER_DOLL_PART_PIVOTS.head;
+    const focusLocalX = headPivot.x + headTuning.x;
+    const focusLocalY = headPivot.y + headTuning.y + HEAD_FACE_EYE_Y;
+    const rootScaleX = PAPER_DOLL_BASE_SCALE * scale * (rig?.appearance.facing ?? 1);
+    const rootScaleY = PAPER_DOLL_BASE_SCALE * scale;
+
+    return {
+      feetX: debugTuning.facePreviewFocusX - focusLocalX * rootScaleX,
+      feetY: debugTuning.facePreviewFocusY - focusLocalY * rootScaleY,
+      scale,
+    };
+  }
+
   private getShopCharacterLayout(): CityHeroLayout {
     const width = Math.max(1, this.scale.width || DEBUG_CHARACTER_VIEWER_WIDTH);
     const height = Math.max(1, this.scale.height || DEBUG_CHARACTER_VIEWER_HEIGHT);
@@ -3037,8 +3178,19 @@ class DebugCharacterScene extends Phaser.Scene {
     this.sync();
   }
 
+  private syncPreviewArmorAlpha(): void {
+    if (this.viewerMode !== "debug") {
+      return;
+    }
+
+    syncPaperDollArmorAlpha(
+      this.fighter?.paperDollRig,
+      debugTuning.characterPreviewArmorGhosted ? DEBUG_CHARACTER_GHOST_ARMOR_ALPHA : 1,
+    );
+  }
+
   private beginRigPartDrag(partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
-    if (debugTuning.characterCanvasEditMode !== "parts") {
+    if (debugTuning.characterCanvasEditMode !== "parts" && debugTuning.characterCanvasEditMode !== "bodyArt") {
       return;
     }
 
@@ -3122,10 +3274,23 @@ class DebugCharacterScene extends Phaser.Scene {
 
     const pointerX = pointer.worldX;
     const pointerY = pointer.worldY;
-    const deltaX = pointerX - this.dragState.lastPointerX;
-    const deltaY = pointerY - this.dragState.lastPointerY;
+    const worldDeltaX = pointerX - this.dragState.lastPointerX;
+    const worldDeltaY = pointerY - this.dragState.lastPointerY;
 
-    if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+    if (Math.abs(worldDeltaX) < 0.1 && Math.abs(worldDeltaY) < 0.1) {
+      return;
+    }
+
+    if (debugTuning.characterCanvasEditMode === "bodyArt") {
+      updateBodyPartLayersWithInteractivePointerDelta(
+        this.fighter.paperDollRig,
+        this.dragState.partKeys,
+        { x: this.dragState.lastPointerX, y: this.dragState.lastPointerY },
+        { x: pointerX, y: pointerY },
+      );
+
+      this.dragState.lastPointerX = pointerX;
+      this.dragState.lastPointerY = pointerY;
       return;
     }
 
@@ -3134,8 +3299,8 @@ class DebugCharacterScene extends Phaser.Scene {
     const scaleY = root.scaleY === 0 ? 1 : root.scaleY;
 
     updateRigPartsWithInteractiveDelta(this.dragState.partKeys, {
-      x: deltaX / scaleX,
-      y: deltaY / scaleY,
+      x: worldDeltaX / scaleX,
+      y: worldDeltaY / scaleY,
     });
 
     this.dragState.lastPointerX = pointerX;
@@ -3196,7 +3361,22 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
+    if (debugTuning.characterCanvasEditMode === "bodyArt") {
+      this.rotateSelectedBodyArtWithWheel(deltaY);
+      return;
+    }
+
     this.rotateSelectedRigPartsWithWheel(deltaY);
+  }
+
+  private rotateSelectedBodyArtWithWheel(deltaY: number): void {
+    if (deltaY === 0 || debugTuning.selectedRigParts.length === 0) {
+      return;
+    }
+
+    updateBodyPartLayersWithInteractiveDelta(debugTuning.selectedRigParts, {
+      angle: deltaY > 0 ? 3 : -3,
+    });
   }
 
   private rotateSelectedRigPartsWithWheel(deltaY: number): void {
@@ -3329,6 +3509,8 @@ function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
 }
 
 function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment): PaperDollFighterOptions {
+  const bodyPresetKey = debugTuning.paperDollBodyPreset;
+  const bodyPreset = getPaperDollBodyPreset(bodyPresetKey);
   const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipment);
 
   return {
@@ -3339,17 +3521,21 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
     skin: 0xefaa7b,
     skinDark: 0xd9854d,
     hair: 0x8b4a1f,
-    headAssetKey: getActivePaperDollAssetKey(FIGHTER_HEAD_LIGHT_ASSET_KEY),
-    torsoAssetKey: getActivePaperDollAssetKey(FIGHTER_TORSO_LIGHT_ASSET_KEY),
+    bodyPresetKey,
+    headAssetKey: bodyPreset.headAssetKey,
+    torsoAssetKey: bodyPreset.torsoAssetKey,
+    faceOverlayMode: bodyPreset.faceOverlayMode,
+    faceAssetKeys: bodyPreset.faceAssetKeys,
     ...equipmentAssetKeys,
     usesPlayerEquipment: true,
-    bodyPartAssetKeys: getActivePaperDollBodyPartAssetKeys(),
+    bodyPartAssetKeys: bodyPreset.bodyPartAssetKeys,
   };
 }
 
 function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState): PaperDollFighterOptions {
   const preset = enemy?.visualPreset ?? DEFAULT_ENEMY_VISUAL_PRESET;
   const equipment = enemy?.equipment ? { ...enemy.equipment } : createDefaultHeroEquipment();
+  const bodyPreset = getPaperDollBodyPreset("classic");
 
   return {
     x,
@@ -3360,9 +3546,12 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
     skinDark: preset.skinDark,
     hair: preset.hair,
     muscle: preset.muscle,
-    headAssetKey: getActivePaperDollAssetKey(FIGHTER_HEAD_LIGHT_ASSET_KEY),
-    torsoAssetKey: getActivePaperDollAssetKey(FIGHTER_TORSO_LIGHT_ASSET_KEY),
-    bodyPartAssetKeys: getActivePaperDollBodyPartAssetKeys(),
+    bodyPresetKey: "classic",
+    headAssetKey: bodyPreset.headAssetKey,
+    torsoAssetKey: bodyPreset.torsoAssetKey,
+    faceOverlayMode: bodyPreset.faceOverlayMode,
+    faceAssetKeys: bodyPreset.faceAssetKeys,
+    bodyPartAssetKeys: bodyPreset.bodyPartAssetKeys,
     ...createPlayerEquipmentAssetKeys(equipment),
     equipment,
   };
@@ -3463,6 +3652,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const equipmentAnchors: PaperDollEquipmentAnchors = {};
   const equipmentLayers = createPaperDollEquipmentLayers(target);
   const faceParts: PaperDollFaceParts = {};
+  const faceAssetLayers: PaperDollFaceAssetLayers = {};
   const selectionHighlights = options.enableSelectionHighlights
     ? ({} as Record<PaperDollPartKey, Phaser.GameObjects.Graphics>)
     : undefined;
@@ -3471,7 +3661,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts, faceAssetLayers);
     if (selectionHighlights) {
       selectionHighlights[key] = addRigPartSelectionHighlight(target, partContainer, key);
     }
@@ -3485,6 +3675,13 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const paperDollRig: PaperDollRig = {
     root,
     parts,
+    bodyPresetKey: options.bodyPresetKey,
+    headAssetKey: options.headAssetKey,
+    torsoAssetKey: options.torsoAssetKey,
+    bodyPartAssetKeys: options.bodyPartAssetKeys,
+    faceOverlayMode: options.faceOverlayMode,
+    faceAssetKeys: options.faceAssetKeys,
+    faceAssetLayers,
     equipment,
     equipmentAnchors,
     equipmentState: options.equipment ? { ...options.equipment } : undefined,
@@ -3553,12 +3750,13 @@ function createPaperDollShadowRig(
   const equipmentAnchors: PaperDollEquipmentAnchors = {};
   const equipmentLayers = createPaperDollEquipmentLayers(target);
   const faceParts: PaperDollFaceParts = {};
+  const faceAssetLayers: PaperDollFaceAssetLayers = {};
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts, faceAssetLayers);
     tintPaperDollShadowObject(partContainer);
     shadowRootContainer.add(partContainer);
     addPaperDollEquipmentLayersAfterPart(shadowRootContainer, key, equipmentLayers);
@@ -3570,7 +3768,20 @@ function createPaperDollShadowRig(
   shadowRoot.scaleY = PAPER_DOLL_BASE_SCALE * debugTuning.shadowScaleY;
   applyPaperDollShadowBlur(shadowRoot);
 
-  return { root: shadowRoot, parts, equipment, equipmentAnchors, faceParts };
+  return {
+    root: shadowRoot,
+    parts,
+    bodyPresetKey: options.bodyPresetKey,
+    headAssetKey: options.headAssetKey,
+    torsoAssetKey: options.torsoAssetKey,
+    bodyPartAssetKeys: options.bodyPartAssetKeys,
+    faceOverlayMode: options.faceOverlayMode,
+    faceAssetKeys: options.faceAssetKeys,
+    faceAssetLayers,
+    equipment,
+    equipmentAnchors,
+    faceParts,
+  };
 }
 
 function createPaperDollEquipmentLayers(target: Phaser.Scene): PaperDollEquipmentLayers {
@@ -3901,8 +4112,9 @@ function applyPaperDollShadowTuning(
 
 function applyRigPartDebugTuning(rig: PaperDollRig): void {
   const activeDebugTuning = getActiveDebugTuning();
-  const rigParts = activeDebugTuning?.rigParts;
-  const faceParts = activeDebugTuning?.faceParts ?? DEFAULT_FACE_PARTS;
+  const presetTuning = activeDebugTuning ? getDebugBodyPresetTuning(rig.bodyPresetKey) : undefined;
+  const rigParts = presetTuning?.rigParts;
+  const faceParts = presetTuning?.faceParts ?? DEFAULT_FACE_PARTS;
 
   RIG_PART_KEYS.forEach((key) => {
     const part = rig.parts[key];
@@ -3997,9 +4209,11 @@ function syncFighterPaperDollTextureResolution(fighter: FighterVisual | undefine
     return;
   }
 
-  syncPaperDollBodyPartVisuals(rig.parts);
+  syncPaperDollBodyPartVisuals(rig);
+  syncPaperDollFaceAssetLayers(rig.faceAssetLayers, rig.parts.head, rig.faceAssetKeys, rig.bodyPresetKey);
   if (rig.shadow) {
-    syncPaperDollBodyPartVisuals(rig.shadow.parts);
+    syncPaperDollBodyPartVisuals(rig.shadow);
+    syncPaperDollFaceAssetLayers(rig.shadow.faceAssetLayers, rig.shadow.parts.head, rig.shadow.faceAssetKeys, rig.shadow.bodyPresetKey);
   }
   syncPaperDollEquipmentVisibility(rig);
   if (rig.shadow) {
@@ -4007,20 +4221,80 @@ function syncFighterPaperDollTextureResolution(fighter: FighterVisual | undefine
   }
 }
 
-function syncPaperDollBodyPartVisuals(parts: Record<PaperDollPartKey, FighterPart>): void {
-  syncPaperDollBodyPartImage(parts.head, getActivePaperDollAssetKey(FIGHTER_HEAD_LIGHT_ASSET_KEY), PAPER_DOLL_HEAD_ASSET_CONFIG);
-  syncPaperDollBodyPartImage(parts.torso, getActivePaperDollAssetKey(FIGHTER_TORSO_LIGHT_ASSET_KEY), PAPER_DOLL_TORSO_ASSET_CONFIG);
+function syncFighterBodyPreset(fighter: FighterVisual | undefined, presetKey: PaperDollBodyPreset = debugTuning.paperDollBodyPreset): void {
+  const rig = fighter?.paperDollRig;
 
-  Object.entries(DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS).forEach(([partKey, assetKey]) => {
+  if (!rig) {
+    return;
+  }
+
+  const preset = getPaperDollBodyPreset(presetKey);
+
+  syncPaperDollRigBodyPreset(rig, presetKey, preset);
+  if (rig.shadow) {
+    syncPaperDollRigBodyPreset(rig.shadow, presetKey, preset);
+    tintPaperDollShadowObject(rig.shadow.root);
+  }
+}
+
+function syncPaperDollRigBodyPreset(
+  rig: Pick<
+    PaperDollRig,
+    | "parts"
+    | "bodyPresetKey"
+    | "headAssetKey"
+    | "torsoAssetKey"
+    | "bodyPartAssetKeys"
+    | "faceOverlayMode"
+    | "faceParts"
+    | "faceAssetKeys"
+    | "faceAssetLayers"
+  >,
+  presetKey: PaperDollBodyPreset,
+  preset: PaperDollBodyPresetDefinition,
+): void {
+  rig.bodyPresetKey = presetKey;
+  rig.headAssetKey = preset.headAssetKey;
+  rig.torsoAssetKey = preset.torsoAssetKey;
+  rig.bodyPartAssetKeys = preset.bodyPartAssetKeys;
+  rig.faceOverlayMode = preset.faceOverlayMode;
+  rig.faceAssetKeys = preset.faceAssetKeys;
+  syncPaperDollBodyPartVisuals(rig);
+  syncPaperDollFaceOverlayVisibility(rig.faceParts, preset.faceOverlayMode !== "none");
+  syncPaperDollFaceAssetLayers(rig.faceAssetLayers, rig.parts.head, preset.faceAssetKeys, presetKey);
+}
+
+function syncPaperDollBodyPartVisuals(rig: Pick<PaperDollRig, "parts" | "bodyPresetKey" | "headAssetKey" | "torsoAssetKey" | "bodyPartAssetKeys">): void {
+  if (rig.headAssetKey) {
+    syncPaperDollBodyPartImage(rig.parts.head, getActivePaperDollAssetKey(rig.headAssetKey), PAPER_DOLL_HEAD_ASSET_CONFIG, "head", rig.bodyPresetKey);
+  }
+
+  if (rig.torsoAssetKey) {
+    syncPaperDollBodyPartImage(rig.parts.torso, getActivePaperDollAssetKey(rig.torsoAssetKey), PAPER_DOLL_TORSO_ASSET_CONFIG, "torso", rig.bodyPresetKey);
+  }
+
+  Object.entries(rig.bodyPartAssetKeys ?? DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS).forEach(([partKey, assetKey]) => {
     const config = PAPER_DOLL_PART_ASSET_CONFIGS[partKey as PaperDollPartKey];
 
     if (assetKey && config) {
-      syncPaperDollBodyPartImage(parts[partKey as PaperDollPartKey], getActivePaperDollAssetKey(assetKey), config);
+      syncPaperDollBodyPartImage(
+        rig.parts[partKey as PaperDollPartKey],
+        getActivePaperDollAssetKey(assetKey),
+        config,
+        partKey as PaperDollPartKey,
+        rig.bodyPresetKey,
+      );
     }
   });
 }
 
-function syncPaperDollBodyPartImage(part: FighterPart | undefined, textureKey: string, config: PaperDollPartAssetConfig): void {
+function syncPaperDollBodyPartImage(
+  part: FighterPart | undefined,
+  textureKey: string,
+  config: PaperDollPartAssetConfig,
+  partKey: PaperDollPartKey,
+  bodyPresetKey?: PaperDollBodyPreset,
+): void {
   if (!part) {
     return;
   }
@@ -4036,7 +4310,107 @@ function syncPaperDollBodyPartImage(part: FighterPart | undefined, textureKey: s
     image.setTexture(textureKey);
   }
 
-  applyPaperDollPartImageConfig(image, config);
+  applyPaperDollBodyPartImageConfig(image, config, partKey, bodyPresetKey);
+}
+
+function syncPaperDollFaceOverlayVisibility(faceParts: PaperDollFaceParts, visible: boolean): void {
+  Object.values(faceParts).forEach((facePart) => setFighterPartVisible(facePart, visible));
+}
+
+function addPaperDollFaceAssetLayers(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  faceAssetLayers: PaperDollFaceAssetLayers,
+  faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>,
+  bodyPresetKey?: PaperDollBodyPreset,
+): void {
+  syncPaperDollFaceAssetLayers(faceAssetLayers, part(partContainer), faceAssetKeys, bodyPresetKey, target);
+}
+
+function syncPaperDollFaceAssetLayers(
+  faceAssetLayers: PaperDollFaceAssetLayers,
+  headPart: FighterPart | undefined,
+  faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>,
+  bodyPresetKey?: PaperDollBodyPreset,
+  fallbackScene?: Phaser.Scene,
+): void {
+  const headContainer = headPart instanceof Phaser.GameObjects.Container ? headPart : undefined;
+
+  if (!headContainer) {
+    return;
+  }
+
+  const scene = fallbackScene ?? headContainer.scene;
+
+  FACE_ASSET_LAYER_KEYS.forEach((layerKey) => {
+    const assetKey = faceAssetKeys?.[layerKey];
+    const layer = ensurePaperDollFaceAssetLayer(scene, headContainer, faceAssetLayers, layerKey);
+
+    if (!assetKey) {
+      setFighterPartVisible(layer, false);
+      return;
+    }
+
+    const textureKey = getActivePaperDollAssetKey(assetKey);
+
+    if (!scene.textures.exists(textureKey)) {
+      setFighterPartVisible(layer, false);
+      return;
+    }
+
+    syncPaperDollFaceAssetLayerImage(layer, textureKey, layerKey);
+    applyFaceAssetLayerTransform(layer, getDebugBodyPresetTuning(bodyPresetKey).faceAssetLayers[layerKey]);
+    setFighterPartVisible(layer, true);
+  });
+}
+
+function ensurePaperDollFaceAssetLayer(
+  target: Phaser.Scene,
+  headContainer: Phaser.GameObjects.Container,
+  faceAssetLayers: PaperDollFaceAssetLayers,
+  layerKey: FaceAssetLayerKey,
+): FighterPart {
+  const existing = faceAssetLayers[layerKey];
+
+  if (existing) {
+    return existing;
+  }
+
+  const layerContainer = target.add.container(0, 0);
+  const textureKey = getActivePaperDollAssetKey(PAPER_DOLL_BODY_PRESETS["dummy-v2"].faceAssetKeys?.[layerKey] ?? "");
+  const image = target.add.image(0, 0, target.textures.exists(textureKey) ? textureKey : "__MISSING");
+
+  applyPaperDollPartImageConfig(image, PAPER_DOLL_FACE_ASSET_CONFIGS[layerKey]);
+  layerContainer.add(image);
+  headContainer.add(layerContainer);
+
+  const layer = part(layerContainer);
+
+  faceAssetLayers[layerKey] = layer;
+  return layer;
+}
+
+function syncPaperDollFaceAssetLayerImage(layer: FighterPart, textureKey: string, layerKey: FaceAssetLayerKey): void {
+  const layerContainer = layer as Phaser.GameObjects.Container;
+  const image = layerContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
+
+  if (!image) {
+    return;
+  }
+
+  if (image.texture.key !== textureKey) {
+    image.setTexture(textureKey);
+  }
+
+  applyPaperDollPartImageConfig(image, PAPER_DOLL_FACE_ASSET_CONFIGS[layerKey]);
+}
+
+function applyFaceAssetLayerTransform(layer: FighterPart, tuning: FaceAssetLayerTuning): void {
+  layer.x = tuning.x;
+  layer.y = tuning.y;
+  layer.angle = tuning.angle;
+  layer.scaleX = tuning.scaleX;
+  layer.scaleY = tuning.scaleY;
 }
 
 function syncPaperDollEquipmentVisibility(
@@ -4094,6 +4468,7 @@ function syncPaperDollShadowSilhouette(
   }
 
   Object.values(shadow.faceParts).forEach((facePart) => setFighterPartVisible(facePart, false));
+  Object.values(shadow.faceAssetLayers).forEach((faceLayer) => setFighterPartVisible(faceLayer, false));
   slotKeys.forEach((slotKey) => {
     const slotVisible = isPaperDollWeaponSlot(slotKey) && Boolean(visibility?.[slotKey]);
 
@@ -4105,6 +4480,19 @@ function syncPaperDollShadowSilhouette(
 function setPaperDollEquipmentSlotVisible(slot: FighterPart | undefined, visible: boolean): void {
   setFighterPartVisible(slot, visible);
   getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => setFighterPartVisible(linkedSlot, visible && isPaperDollWeaponOverlayVisible(linkedSlot)));
+}
+
+function syncPaperDollArmorAlpha(rig: PaperDollRig | undefined, alpha: number): void {
+  if (!rig) {
+    return;
+  }
+
+  PAPER_DOLL_DRAGGABLE_ARMOR_SLOT_KEYS.forEach((slotKey) => setPaperDollEquipmentSlotAlpha(rig.equipment[slotKey], alpha));
+}
+
+function setPaperDollEquipmentSlotAlpha(slot: FighterPart | undefined, alpha: number): void {
+  slot?.setAlpha(alpha);
+  getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => linkedSlot.setAlpha(alpha));
 }
 
 function setFighterPartVisible(part: FighterPart | undefined, visible: boolean): void {
@@ -4216,7 +4604,7 @@ function arePaperDollEquipmentSlotImageStatesEqual(
 }
 
 function getFighterBodyIdleAnimation(fighter: FighterVisual): BodyAnimationTuning {
-  return getActiveBodyAnimation(fighter.bodyIdleAnimationKey ?? "idle");
+  return getActiveBodyAnimation(fighter.bodyIdleAnimationKey ?? "idle", fighter.paperDollRig?.bodyPresetKey);
 }
 
 function resetFighterBodyIdleAnimation(fighter: FighterVisual, startedAt = 0): void {
@@ -4613,7 +5001,9 @@ function updateRigPartsWithInteractiveDelta(partKeys: readonly RigPartKey[], del
   }
 
   const animationKey = debugTuning.selectedBodyAnimation;
-  const animation = debugTuning.bodyAnimations[animationKey];
+  const presetKey = debugTuning.paperDollBodyPreset;
+  const presetTuning = getDebugBodyPresetTuning(presetKey);
+  const animation = presetTuning.bodyAnimations[animationKey];
 
   if (!animation) {
     return;
@@ -4626,14 +5016,101 @@ function updateRigPartsWithInteractiveDelta(partKeys: readonly RigPartKey[], del
   });
 
   updateDebugTuning({
-    bodyAnimations: {
-      ...debugTuning.bodyAnimations,
-      [animationKey]: {
-        ...animation,
-        [poseKey]: nextPose,
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      [presetKey]: {
+        ...presetTuning,
+        bodyAnimations: {
+          ...presetTuning.bodyAnimations,
+          [animationKey]: {
+            ...animation,
+            [poseKey]: nextPose,
+          },
+        },
       },
     },
   });
+}
+
+function updateBodyPartLayersWithInteractivePointerDelta(
+  rig: Pick<PaperDollRig, "parts">,
+  partKeys: readonly RigPartKey[],
+  previousWorldPoint: { x: number; y: number },
+  nextWorldPoint: { x: number; y: number },
+): void {
+  const deltas: Partial<Record<RigPartKey, Partial<Pick<RigPartTuning, "x" | "y">>>> = {};
+
+  partKeys.forEach((partKey) => {
+    const part = rig.parts[partKey];
+
+    if (!part) {
+      return;
+    }
+
+    const previousLocalPoint = getPaperDollBodyPartDragLocalPoint(part, previousWorldPoint.x, previousWorldPoint.y);
+    const nextLocalPoint = getPaperDollBodyPartDragLocalPoint(part, nextWorldPoint.x, nextWorldPoint.y);
+    const deltaX = nextLocalPoint.x - previousLocalPoint.x;
+    const deltaY = nextLocalPoint.y - previousLocalPoint.y;
+
+    if (Math.abs(deltaX) < 0.01 && Math.abs(deltaY) < 0.01) {
+      return;
+    }
+
+    deltas[partKey] = { x: deltaX, y: deltaY };
+  });
+
+  updateBodyPartLayersWithInteractiveDeltas(deltas);
+}
+
+function updateBodyPartLayersWithInteractiveDelta(
+  partKeys: readonly RigPartKey[],
+  delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>,
+): void {
+  updateBodyPartLayersWithInteractiveDeltas(
+    Object.fromEntries(partKeys.map((partKey) => [partKey, delta])) as Partial<
+      Record<RigPartKey, Partial<Pick<RigPartTuning, "x" | "y" | "angle">>>
+    >,
+  );
+}
+
+function updateBodyPartLayersWithInteractiveDeltas(
+  deltas: Partial<Record<RigPartKey, Partial<Pick<RigPartTuning, "x" | "y" | "angle">>>>,
+): void {
+  const presetKey = debugTuning.paperDollBodyPreset;
+  const presetTuning = getDebugBodyPresetTuning(presetKey);
+  const nextBodyPartLayers = { ...presetTuning.bodyPartLayers };
+  let hasDelta = false;
+
+  RIG_PART_KEYS.forEach((partKey) => {
+    const delta = deltas[partKey];
+
+    if (!delta) {
+      return;
+    }
+
+    hasDelta = true;
+    nextBodyPartLayers[partKey] = applyRigPartInteractiveDelta(nextBodyPartLayers[partKey] ?? defaultRigPartTuning, delta);
+  });
+
+  if (!hasDelta) {
+    return;
+  }
+
+  updateDebugTuning({
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      [presetKey]: {
+        ...presetTuning,
+        bodyPartLayers: nextBodyPartLayers,
+      },
+    },
+  });
+}
+
+function getPaperDollBodyPartDragLocalPoint(part: FighterPart, worldX: number, worldY: number): { x: number; y: number } {
+  const localPoint = part.getWorldTransformMatrix().applyInverse(worldX, worldY);
+
+  return { x: localPoint.x, y: localPoint.y };
 }
 
 function getActiveDebugAnimationRigPoseKey(): AnimationRigPoseKey | undefined {
@@ -4765,25 +5242,31 @@ function addPaperDollPartVisual(
   equipmentLayers: PaperDollEquipmentLayers,
   equipmentAnchors: PaperDollEquipmentAnchors,
   faceParts: PaperDollFaceParts,
+  faceAssetLayers: PaperDollFaceAssetLayers,
 ): void {
-  if (key === "head" && options.headAssetKey && target.textures.exists(options.headAssetKey)) {
-    const image = target.add.image(0, HEAD_ASSET_LOCAL_BOTTOM_Y, options.headAssetKey);
-    applyPaperDollPartImageConfig(image, PAPER_DOLL_HEAD_ASSET_CONFIG);
+  const headTextureKey = options.headAssetKey ? getActivePaperDollAssetKey(options.headAssetKey) : undefined;
+  if (key === "head" && headTextureKey && target.textures.exists(headTextureKey)) {
+    const image = target.add.image(0, HEAD_ASSET_LOCAL_BOTTOM_Y, headTextureKey);
+    applyPaperDollBodyPartImageConfig(image, PAPER_DOLL_HEAD_ASSET_CONFIG, key, options.bodyPresetKey);
     partContainer.add(image);
     addPaperDollHelmetVisual(target, partContainer, equipmentLayers, equipmentAnchors, options.helmetAssetKey, equipment);
     addPaperDollFaceOverlay(target, partContainer, faceParts, true);
+    syncPaperDollFaceOverlayVisibility(faceParts, options.faceOverlayMode !== "none");
+    addPaperDollFaceAssetLayers(target, partContainer, faceAssetLayers, options.faceAssetKeys, options.bodyPresetKey);
     return;
   }
 
-  if (key === "torso" && options.torsoAssetKey && target.textures.exists(options.torsoAssetKey)) {
-    const image = target.add.image(0, TORSO_ASSET_LOCAL_BOTTOM_Y, options.torsoAssetKey);
-    applyPaperDollPartImageConfig(image, PAPER_DOLL_TORSO_ASSET_CONFIG);
+  const torsoTextureKey = options.torsoAssetKey ? getActivePaperDollAssetKey(options.torsoAssetKey) : undefined;
+  if (key === "torso" && torsoTextureKey && target.textures.exists(torsoTextureKey)) {
+    const image = target.add.image(0, TORSO_ASSET_LOCAL_BOTTOM_Y, torsoTextureKey);
+    applyPaperDollBodyPartImageConfig(image, PAPER_DOLL_TORSO_ASSET_CONFIG, key, options.bodyPresetKey);
     partContainer.add(image);
     addPaperDollBreastplateVisual(target, partContainer, equipmentLayers, equipmentAnchors, options.breastplateAssetKey, equipment);
     return;
   }
 
   const assetKey = options.bodyPartAssetKeys?.[key];
+  const textureKey = assetKey ? getActivePaperDollAssetKey(assetKey) : undefined;
   const assetConfig = PAPER_DOLL_PART_ASSET_CONFIGS[key];
 
   if (key === "backHand") {
@@ -4795,9 +5278,9 @@ function addPaperDollPartVisual(
     }
   }
 
-  if (assetKey && assetConfig && target.textures.exists(assetKey)) {
-    const image = target.add.image(assetConfig.localX, assetConfig.localY, assetKey);
-    applyPaperDollPartImageConfig(image, assetConfig);
+  if (textureKey && assetConfig && target.textures.exists(textureKey)) {
+    const image = target.add.image(assetConfig.localX, assetConfig.localY, textureKey);
+    applyPaperDollBodyPartImageConfig(image, assetConfig, key, options.bodyPresetKey);
     partContainer.add(image);
     addPaperDollArmArmorVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors);
     addPaperDollLegArmorVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors);
@@ -5107,6 +5590,22 @@ function isPaperDollBowWeaponAssetKey(assetKey: string): boolean {
 
 function applyPaperDollEquipmentImageConfig(image: Phaser.GameObjects.Image, config: PaperDollPartAssetConfig): void {
   applyPaperDollPartImageConfig(image, config);
+}
+
+function applyPaperDollBodyPartImageConfig(
+  image: Phaser.GameObjects.Image,
+  config: PaperDollPartAssetConfig,
+  partKey: PaperDollPartKey,
+  bodyPresetKey?: PaperDollBodyPreset,
+): void {
+  const tuning = getBodyPresetTuning(bodyPresetKey).bodyPartLayers[partKey] ?? defaultRigPartTuning;
+
+  applyPaperDollPartImageConfig(image, config);
+  image.x += tuning.x;
+  image.y += tuning.y;
+  image.angle = tuning.angle;
+  image.scaleX *= tuning.scaleX * (tuning.flipX ? -1 : 1);
+  image.scaleY *= tuning.scaleY * (tuning.flipY ? -1 : 1);
 }
 
 function applyPaperDollPartImageConfig(image: Phaser.GameObjects.Image, config: PaperDollPartAssetConfig): void {
@@ -5984,13 +6483,30 @@ function getActiveDebugTuning(): typeof debugTuning | undefined {
   return isDebugTuningActive() ? debugTuning : undefined;
 }
 
+function getBodyPresetTuning(presetKey: PaperDollBodyPreset | undefined = debugTuning.paperDollBodyPreset): BodyPresetTuning {
+  const key = presetKey ?? debugTuning.paperDollBodyPreset;
+  const fallback = DEFAULT_BODY_PRESET_TUNING[key] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+
+  if (!isDebugTuningActive()) {
+    return fallback;
+  }
+
+  return debugTuning.bodyPresetTuning[key] ?? fallback;
+}
+
+function getDebugBodyPresetTuning(presetKey: PaperDollBodyPreset | undefined = debugTuning.paperDollBodyPreset): BodyPresetTuning {
+  const key = presetKey ?? debugTuning.paperDollBodyPreset;
+
+  return debugTuning.bodyPresetTuning[key] ?? DEFAULT_BODY_PRESET_TUNING[key] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+}
+
 function isDebugTuningActive(): boolean {
   return typeof document !== "undefined" && document.body.classList.contains("debug-active");
 }
 
-function getActiveBodyAnimation(key: BodyAnimationKey): BodyAnimationTuning {
+function getActiveBodyAnimation(key: BodyAnimationKey, presetKey: PaperDollBodyPreset | undefined = debugTuning.paperDollBodyPreset): BodyAnimationTuning {
   if (isDebugTuningActive()) {
-    return debugTuning.bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
+    return getDebugBodyPresetTuning(presetKey).bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
   }
 
   return DEFAULT_BODY_ANIMATIONS[key];
@@ -6005,7 +6521,7 @@ function getActiveSlashArc(key: SlashArcAttackKey): SlashArcTuning {
 }
 
 function getSelectedDebugBodyAnimation(): BodyAnimationTuning {
-  return debugTuning.bodyAnimations[debugTuning.selectedBodyAnimation] ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
+  return getDebugBodyPresetTuning(debugTuning.paperDollBodyPreset).bodyAnimations[debugTuning.selectedBodyAnimation] ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
 }
 
 function setFighterXImmediate(fighter: FighterVisual, nextX: number): void {
@@ -6168,13 +6684,13 @@ function animateAction(
   const animationAmount = getArenaAnimationAmount();
 
   if (actionId === "forward" || actionId === "back") {
-    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle"));
+    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle", actor.paperDollRig?.bodyPresetKey));
 
     return { done: actionAnimation };
   }
 
   if (actionId === "lunge") {
-    const animation = getActiveBodyAnimation("lunge");
+    const animation = getActiveBodyAnimation("lunge", actor.paperDollRig?.bodyPresetKey);
 
     return {
       done: playBodyAnimationOnce(target, actor, animation),
@@ -6183,12 +6699,12 @@ function animateAction(
   }
 
   if (actionId === "taunt") {
-    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt")) };
+    return { done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("taunt", actor.paperDollRig?.bodyPresetKey)) };
   }
 
   if (actionId === "rest") {
     return {
-      done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest"), {
+      done: playBodyAnimationOnce(target, actor, getActiveBodyAnimation("rest", actor.paperDollRig?.bodyPresetKey), {
         ...((options.loopRestAfterComplete ?? true) ? { loopAfterComplete: "rest" } : {}),
         speedMultiplier: REST_BODY_ANIMATION_SPEED_MULTIPLIER,
       }),
@@ -6202,7 +6718,7 @@ function animateAction(
   }
 
   if (actionId === "shuriken") {
-    const bodyAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot"));
+    const bodyAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot", actor.paperDollRig?.bodyPresetKey));
     const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
     return {
@@ -6217,7 +6733,7 @@ function animateAction(
   if (isAttackBodyAnimationKey(actionId)) {
     const isRangedWeapon = isRangedWeaponClass(weaponClass);
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
-    const bodyAnimation = getActiveBodyAnimation(bodyAnimationKey);
+    const bodyAnimation = getActiveBodyAnimation(bodyAnimationKey, actor.paperDollRig?.bodyPresetKey);
 
     actionAnimations.push(playBodyAnimationOnce(target, actor, bodyAnimation));
     if (isRangedWeapon) {

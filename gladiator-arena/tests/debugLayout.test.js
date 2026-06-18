@@ -219,6 +219,7 @@ test("character debug sections are collapsed by default", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
   const characterSectionClasses = [
     "debug-rig-panel",
+    "debug-face-panel",
     "debug-hero-equipment-panel",
     "debug-item-equipment-panel",
     "debug-auto-equipment-panel",
@@ -230,6 +231,99 @@ test("character debug sections are collapsed by default", () => {
     assert.match(debugPanelSource, new RegExp(`<details class="${className}">`));
     assert.doesNotMatch(debugPanelSource, new RegExp(`<details class="${className}" open>`));
   });
+});
+
+test("debug rig editor can switch paper doll body presets", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
+  const debugTuningSource = readFileSync(resolve(currentDir, "../src/debugTuning.ts"), "utf8");
+  const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
+
+  assert.equal(assetsSource.includes("FIGHTER_HEAD_DUMMY_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("head-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("FIGHTER_TORSO_DUMMY_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("torso-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("back-upper-arm-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("front-hand-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("back-thigh-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("front-foot-dummy-01.png"), true);
+  assert.equal(debugTuningSource.includes('export const PAPER_DOLL_BODY_PRESETS = ["classic", "dummy-v2"] as const;'), true);
+  assert.equal(debugTuningSource.includes('CHARACTER_CANVAS_EDIT_MODES = ["parts", "bodyArt", "equipment", "face"] as const'), true);
+  assert.equal(debugTuningSource.includes("facePreviewScale: number;"), true);
+  assert.equal(debugTuningSource.includes("paperDollBodyPreset: PaperDollBodyPreset;"), true);
+  assert.equal(debugTuningSource.includes("bodyPresetTuning: Record<PaperDollBodyPreset, BodyPresetTuning>;"), true);
+  assert.equal(debugTuningSource.includes("bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>;"), true);
+  assert.equal(debugTuningSource.includes("bodyPresetTuning: normalizeBodyPresetTunings"), true);
+  assert.equal(debugPanelSource.includes("debug-rig-editor__body-preset"), true);
+  assert.equal(debugPanelSource.includes("debug-rig-editor__copy-classic-to-dummy"), true);
+  assert.equal(debugPanelSource.includes("copyClassicRigToDummyV2"), true);
+  assert.equal(debugPanelSource.includes("rigParts: cloneRigParts(classicTuning.rigParts)"), true);
+  assert.equal(debugPanelSource.includes("bodyAnimations: cloneBodyAnimations(classicTuning.bodyAnimations)"), true);
+  assert.equal(debugPanelSource.includes('data-character-canvas-edit-mode="face"'), true);
+  assert.equal(debugPanelSource.includes('data-character-canvas-edit-mode="bodyArt"'), true);
+  assert.equal(debugPanelSource.includes("data-character-preview-mode"), true);
+  assert.equal(debugPanelSource.includes("syncPreviewToolbar"), true);
+  assert.equal(debugPanelSource.includes("getActiveBodyPresetTuning"), true);
+  assert.equal(debugPanelSource.includes('data-debug-select-key="paperDollBodyPreset"'), true);
+  assert.equal(arenaSceneSource.includes("const PAPER_DOLL_BODY_PRESETS: Record<PaperDollBodyPreset, PaperDollBodyPresetDefinition>"), true);
+  assert.equal(arenaSceneSource.includes("const DUMMY_PAPER_DOLL_ARM_ASSET_KEYS"), true);
+  assert.equal(arenaSceneSource.includes("const DUMMY_PAPER_DOLL_LEG_ASSET_KEYS"), true);
+  assert.match(
+    arenaSceneSource,
+    /classic:\s*\{[\s\S]*?headAssetKey:\s*FIGHTER_HEAD_LIGHT_ASSET_KEY,[\s\S]*?torsoAssetKey:\s*FIGHTER_TORSO_LIGHT_ASSET_KEY,[\s\S]*?bodyPartAssetKeys:\s*DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS,[\s\S]*?faceOverlayMode:\s*"classic"/,
+  );
+  assert.equal(arenaSceneSource.includes('"dummy-v2": {'), true);
+  assert.equal(arenaSceneSource.includes("headAssetKey: FIGHTER_HEAD_DUMMY_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("torsoAssetKey: FIGHTER_TORSO_DUMMY_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("backUpperArm: FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("frontHand: FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("backThigh: FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("frontFoot: FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes('faceOverlayMode: "none"'), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollFaceOverlayVisibility"), true);
+  assert.equal(arenaSceneSource.includes("applyPaperDollBodyPartImageConfig"), true);
+  assert.equal(arenaSceneSource.includes("getBodyPresetTuning(bodyPresetKey).bodyPartLayers"), true);
+  assert.equal(arenaSceneSource.includes("getFaceCharacterLayout"), true);
+  assert.equal(arenaSceneSource.includes("facePreviewFocusY"), true);
+  assert.equal(arenaSceneSource.includes("getDebugBodyPresetTuning(rig.bodyPresetKey)"), true);
+  assert.equal(arenaSceneSource.includes("syncFighterBodyPreset(this.visuals?.player);"), true);
+});
+
+test("debug face editor can tune asset face layers", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
+  const debugTuningSource = readFileSync(resolve(currentDir, "../src/debugTuning.ts"), "utf8");
+  const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
+
+  assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("body-parts/face/eye-left.png"), true);
+  assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["eyeWhiteLeft", "eyeWhiteRight", "pupilLeft", "pupilRight"] as const'), true);
+  assert.equal(debugTuningSource.includes("faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;"), true);
+  assert.equal(debugPanelSource.includes("debug-face-panel"), true);
+  assert.equal(debugPanelSource.includes("debug-face-editor__select"), true);
+  assert.equal(debugPanelSource.includes("data-face-asset-layer-key"), true);
+  assert.equal(arenaSceneSource.includes("faceAssetKeys: {"), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollFaceAssetLayers"), true);
+});
+
+test("debug character preview can ghost armor from an in-scene toggle", () => {
+  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
+  const debugTuningSource = readFileSync(resolve(currentDir, "../src/debugTuning.ts"), "utf8");
+
+  assert.equal(debugHtml.includes('id="debugCharacterShell"'), true);
+  assert.equal(debugPanelSource.includes("createCharacterPreviewArmorToggle"), true);
+  assert.equal(debugPanelSource.includes('document.querySelector<HTMLElement>("#debugCharacterShell")'), true);
+  assert.equal(debugPanelSource.includes('data-debug-key="characterPreviewArmorGhosted"'), true);
+  assert.equal(debugPanelSource.includes("updateDebugTuning({ characterPreviewArmorGhosted: input.checked })"), true);
+  assert.equal(debugTuningSource.includes("characterPreviewArmorGhosted: boolean;"), true);
+  assert.equal(debugTuningSource.includes("characterPreviewArmorGhosted: false,"), true);
+  assert.equal(stylesSource.includes(".debug-character-viewer__armor-toggle"), true);
+  assert.match(stylesSource, /\.debug-character-shell\s*\{[^}]*position: relative;/s);
+  assert.match(stylesSource, /\.debug-character-viewer__armor-toggle\s*\{[^}]*position: absolute;[^}]*top: 10px;[^}]*right: 10px;/s);
 });
 
 test("popup tuning controls request live popup previews", () => {

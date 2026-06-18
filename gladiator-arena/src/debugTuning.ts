@@ -114,11 +114,21 @@ export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, Action
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
 
-export const CHARACTER_CANVAS_EDIT_MODES = ["parts", "equipment"] as const;
+export const CHARACTER_CANVAS_EDIT_MODES = ["parts", "bodyArt", "equipment", "face"] as const;
 export type CharacterCanvasEditMode = (typeof CHARACTER_CANVAS_EDIT_MODES)[number];
+
+export const PAPER_DOLL_BODY_PRESETS = ["classic", "dummy-v2"] as const;
+export type PaperDollBodyPreset = (typeof PAPER_DOLL_BODY_PRESETS)[number];
+export const PAPER_DOLL_BODY_PRESET_OPTIONS: { value: PaperDollBodyPreset; label: string }[] = [
+  { value: "classic", label: "Classic" },
+  { value: "dummy-v2", label: "Dummy V2" },
+];
 
 export const FACE_PART_KEYS = ["eyeLeft", "eyeRight"] as const;
 export type FacePartKey = (typeof FACE_PART_KEYS)[number];
+
+export const FACE_ASSET_LAYER_KEYS = ["eyeWhiteLeft", "eyeWhiteRight", "pupilLeft", "pupilRight"] as const;
+export type FaceAssetLayerKey = (typeof FACE_ASSET_LAYER_KEYS)[number];
 
 export const EQUIPMENT_SLOT_KEYS = [
   "weaponMain",
@@ -158,6 +168,16 @@ export interface FacePartTuning {
   scaleY: number;
 }
 
+export interface FaceAssetLayerTuning {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+export type BodyPartLayerTuning = RigPartTuning;
+
 export type EquipmentTuning = RigPartTuning;
 
 export interface BodyAnimationTuning {
@@ -171,6 +191,14 @@ export interface BodyAnimationTuning {
 }
 
 export type IdleAnimationTuning = BodyAnimationTuning;
+
+export interface BodyPresetTuning {
+  rigParts: Record<RigPartKey, RigPartTuning>;
+  bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>;
+  faceParts: Record<FacePartKey, FacePartTuning>;
+  faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
+  bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
+}
 
 export interface SlashArcTuning {
   radius: number;
@@ -198,6 +226,7 @@ export interface ClassicActionButtonSlotTuning {
 }
 
 export interface ArenaDebugTuning {
+  debugTuningVersion: number;
   showGrid: boolean;
   gridStep: number;
   gridOpacity: number;
@@ -298,6 +327,10 @@ export interface ArenaDebugTuning {
   characterPreviewScale: number;
   characterPreviewFeetX: number;
   characterPreviewFeetY: number;
+  characterPreviewArmorGhosted: boolean;
+  facePreviewScale: number;
+  facePreviewFocusX: number;
+  facePreviewFocusY: number;
   cityHeroX: number;
   cityHeroY: number;
   cityHeroScale: number;
@@ -308,6 +341,10 @@ export interface ArenaDebugTuning {
   heroPortraitButtonY: number;
   heroPortraitButtonScale: number;
   characterCanvasEditMode: CharacterCanvasEditMode;
+  paperDollBodyPreset: PaperDollBodyPreset;
+  bodyPresetTuning: Record<PaperDollBodyPreset, BodyPresetTuning>;
+  selectedFaceAssetLayer: FaceAssetLayerKey;
+  faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
   selectedRigPart: RigPartKey;
   selectedRigParts: RigPartKey[];
   rigParts: Record<RigPartKey, RigPartTuning>;
@@ -331,9 +368,19 @@ export const defaultRigPartTuning: RigPartTuning = {
   flipY: false,
 };
 
+export const defaultBodyPartLayerTuning: BodyPartLayerTuning = { ...defaultRigPartTuning };
+
 export const defaultFacePartTuning: FacePartTuning = {
   x: 0,
   y: 0,
+  scaleX: 1,
+  scaleY: 1,
+};
+
+export const defaultFaceAssetLayerTuning: FaceAssetLayerTuning = {
+  x: 0,
+  y: 0,
+  angle: 0,
   scaleX: 1,
   scaleY: 1,
 };
@@ -350,8 +397,6 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
-  switchWeapon: { x: 0, y: 0 },
-  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -424,6 +469,15 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
   eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
   eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
 };
+
+export const DEFAULT_FACE_ASSET_LAYERS: Record<FaceAssetLayerKey, FaceAssetLayerTuning> = {
+  eyeWhiteLeft: { x: -20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+  eyeWhiteRight: { x: 20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+  pupilLeft: { x: -20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+  pupilRight: { x: 20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+};
+
+export const DEFAULT_BODY_PART_LAYERS: Record<RigPartKey, BodyPartLayerTuning> = createDefaultBodyPartLayers();
 
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
   weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
@@ -523,10 +577,10 @@ export const DEFAULT_EQUIPMENT_ITEM_TUNING: Record<string, EquipmentTuning> = {
 };
 
 export const DEFAULT_IDLE_ANIMATION: BodyAnimationTuning = {
-  enabled: true,
+  enabled: false,
   duration: 2000,
   base: {
-    head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+    head: { x: -0.13, y: -6, angle: 0, scaleX: 0.98, scaleY: 0.78, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
     backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
     backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
@@ -1203,6 +1257,55 @@ export const DEFAULT_BODY_ANIMATIONS: Record<BodyAnimationKey, BodyAnimationTuni
   rest: DEFAULT_REST_ANIMATION,
 };
 
+export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = {
+  classic: {
+    rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
+    bodyPartLayers: {
+      head: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      torso: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      backUpperArm: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      backForearm: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      backHand: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      frontUpperArm: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      frontForearm: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      frontHand: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      backThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      backShin: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      backFoot: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      frontThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      frontShin: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      frontFoot: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+    },
+    faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),
+    faceAssetLayers: cloneFaceAssetLayers(DEFAULT_FACE_ASSET_LAYERS),
+    bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
+  },
+  "dummy-v2": {
+    rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
+    bodyPartLayers: {
+      head: { x: 0, y: 0, angle: 0, scaleX: 0.9, scaleY: 0.97, flipX: false, flipY: false },
+      torso: { x: 0, y: 10, angle: 0, scaleX: 1, scaleY: 1.07, flipX: false, flipY: false },
+      backUpperArm: { x: 0, y: 0, angle: 0, scaleX: 0.94, scaleY: 1, flipX: false, flipY: false },
+      backForearm: { x: 0.763, y: -2.21, angle: 2, scaleX: 1.08, scaleY: 1.07, flipX: false, flipY: false },
+      backHand: { x: -2.889, y: 7.332, angle: -9, scaleX: 0.44, scaleY: 0.43, flipX: true, flipY: false },
+      frontUpperArm: { x: 0, y: 0, angle: 0, scaleX: 0.94, scaleY: 1, flipX: false, flipY: false },
+      frontForearm: { x: 0.763, y: -2.21, angle: 2, scaleX: 1.08, scaleY: 1.07, flipX: false, flipY: false },
+      frontHand: { x: -2.889, y: 7.332, angle: -9, scaleX: 0.44, scaleY: 0.43, flipX: true, flipY: false },
+      backThigh: { x: -6, y: -6, angle: -5, scaleX: 0.97, scaleY: 1.13, flipX: false, flipY: false },
+      backShin: { x: -0.392, y: -1.202, angle: -3, scaleX: 1.19, scaleY: 1.08, flipX: false, flipY: false },
+      backFoot: { x: -1.25, y: 1.562, angle: 0, scaleX: 0.78, scaleY: 0.73, flipX: true, flipY: false },
+      frontThigh: { x: -6, y: -6, angle: -5, scaleX: 0.97, scaleY: 1.13, flipX: false, flipY: false },
+      frontShin: { x: -0.392, y: -1.202, angle: -1, scaleX: 1.19, scaleY: 1.08, flipX: false, flipY: false },
+      frontFoot: { x: -2, y: 2.302, angle: 0, scaleX: 0.78, scaleY: 0.73, flipX: true, flipY: false },
+    },
+    faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),
+    faceAssetLayers: cloneFaceAssetLayers(DEFAULT_FACE_ASSET_LAYERS),
+    bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
+  },
+};
+
+export const DEBUG_TUNING_STORAGE_VERSION = 1;
+
 export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
   light: {
     radius: 17,
@@ -1246,6 +1349,7 @@ export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
 };
 
 export const defaultDebugTuning: ArenaDebugTuning = {
+  debugTuningVersion: DEBUG_TUNING_STORAGE_VERSION,
   showGrid: true,
   gridStep: 40,
   gridOpacity: 0.22,
@@ -1346,6 +1450,10 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   characterPreviewScale: 1.8,
   characterPreviewFeetX: 215,
   characterPreviewFeetY: 700,
+  characterPreviewArmorGhosted: false,
+  facePreviewScale: 4.2,
+  facePreviewFocusX: 215,
+  facePreviewFocusY: 300,
   cityHeroX: 100,
   cityHeroY: 200,
   cityHeroScale: 1.6,
@@ -1356,6 +1464,10 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   heroPortraitButtonY: 3,
   heroPortraitButtonScale: 1.2,
   characterCanvasEditMode: "parts",
+  paperDollBodyPreset: "dummy-v2",
+  bodyPresetTuning: cloneBodyPresetTunings(DEFAULT_BODY_PRESET_TUNING),
+  selectedFaceAssetLayer: "eyeWhiteLeft",
+  faceAssetLayers: cloneFaceAssetLayers(DEFAULT_FACE_ASSET_LAYERS),
   selectedRigPart: "torso",
   selectedRigParts: ["torso"],
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
@@ -1452,9 +1564,23 @@ export function subscribeDebugTuning(listener: () => void): () => void {
 
 export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDebugTuning {
   const legacyIdleAnimation = (input as { idleAnimation?: unknown }).idleAnimation;
+  const inputVersion = getDebugTuningStorageVersion(input.debugTuningVersion);
+  const shouldResetClassicBodyPreset = inputVersion < DEBUG_TUNING_STORAGE_VERSION;
   const selectedRigPart = isRigPartKey(input.selectedRigPart) ? input.selectedRigPart : defaultDebugTuning.selectedRigPart;
+  const selectedFaceAssetLayer = isFaceAssetLayerKey(input.selectedFaceAssetLayer)
+    ? input.selectedFaceAssetLayer
+    : defaultDebugTuning.selectedFaceAssetLayer;
+  const paperDollBodyPreset = isPaperDollBodyPreset(input.paperDollBodyPreset) ? input.paperDollBodyPreset : defaultDebugTuning.paperDollBodyPreset;
+  const legacyBodyPresetTuning: BodyPresetTuning = {
+    rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
+    bodyPartLayers: normalizeBodyPartLayers((input as { bodyPartLayers?: unknown }).bodyPartLayers, DEFAULT_BODY_PART_LAYERS),
+    faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
+    faceAssetLayers: normalizeFaceAssetLayers(input.faceAssetLayers, DEFAULT_FACE_ASSET_LAYERS),
+    bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
+  };
 
   return {
+    debugTuningVersion: DEBUG_TUNING_STORAGE_VERSION,
     showGrid: typeof input.showGrid === "boolean" ? input.showGrid : defaultDebugTuning.showGrid,
     gridStep: clampNumber(input.gridStep, 10, 100, defaultDebugTuning.gridStep),
     gridOpacity: clampNumber(input.gridOpacity, 0.1, 1, defaultDebugTuning.gridOpacity),
@@ -1559,6 +1685,12 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     characterPreviewScale: clampNumber(input.characterPreviewScale, 1, 2.6, defaultDebugTuning.characterPreviewScale),
     characterPreviewFeetX: clampNumber(input.characterPreviewFeetX, 0, 430, defaultDebugTuning.characterPreviewFeetX),
     characterPreviewFeetY: clampNumber(input.characterPreviewFeetY, 560, 740, defaultDebugTuning.characterPreviewFeetY),
+    characterPreviewArmorGhosted: typeof input.characterPreviewArmorGhosted === "boolean"
+      ? input.characterPreviewArmorGhosted
+      : defaultDebugTuning.characterPreviewArmorGhosted,
+    facePreviewScale: clampNumber(input.facePreviewScale, 2, 7, defaultDebugTuning.facePreviewScale),
+    facePreviewFocusX: clampNumber(input.facePreviewFocusX, 0, 430, defaultDebugTuning.facePreviewFocusX),
+    facePreviewFocusY: clampNumber(input.facePreviewFocusY, 80, 560, defaultDebugTuning.facePreviewFocusY),
     cityHeroX: clampNumber(input.cityHeroX, 0, 240, defaultDebugTuning.cityHeroX),
     cityHeroY: clampNumber(input.cityHeroY, 0, 360, defaultDebugTuning.cityHeroY),
     cityHeroScale: clampNumber(input.cityHeroScale, 0.4, 1.6, defaultDebugTuning.cityHeroScale),
@@ -1571,15 +1703,19 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     characterCanvasEditMode: isCharacterCanvasEditMode(input.characterCanvasEditMode)
       ? input.characterCanvasEditMode
       : defaultDebugTuning.characterCanvasEditMode,
+    paperDollBodyPreset,
+    bodyPresetTuning: normalizeBodyPresetTunings(input.bodyPresetTuning, paperDollBodyPreset, legacyBodyPresetTuning, shouldResetClassicBodyPreset),
+    selectedFaceAssetLayer,
+    faceAssetLayers: legacyBodyPresetTuning.faceAssetLayers,
     selectedRigPart,
     selectedRigParts: normalizeSelectedRigParts(input.selectedRigParts, selectedRigPart),
-    rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
-    faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
+    rigParts: legacyBodyPresetTuning.rigParts,
+    faceParts: legacyBodyPresetTuning.faceParts,
     equipment: normalizeEquipment(input.equipment, DEFAULT_EQUIPMENT),
     equipmentItems: normalizeEquipmentItems(input.equipmentItems, DEFAULT_EQUIPMENT_ITEM_TUNING),
     animationEditMode: isAnimationEditMode(input.animationEditMode) ? input.animationEditMode : defaultDebugTuning.animationEditMode,
     selectedBodyAnimation: isBodyAnimationKey(input.selectedBodyAnimation) ? input.selectedBodyAnimation : defaultDebugTuning.selectedBodyAnimation,
-    bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
+    bodyAnimations: legacyBodyPresetTuning.bodyAnimations,
     selectedSlashArc: isSlashArcAttackKey(input.selectedSlashArc) ? input.selectedSlashArc : defaultDebugTuning.selectedSlashArc,
     slashArcs: normalizeSlashArcs(input.slashArcs),
   };
@@ -1587,6 +1723,10 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
 
 function createDefaultRigParts(): Record<RigPartKey, RigPartTuning> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...defaultRigPartTuning }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function createDefaultBodyPartLayers(): Record<RigPartKey, BodyPartLayerTuning> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...defaultBodyPartLayerTuning }])) as Record<RigPartKey, BodyPartLayerTuning>;
 }
 
 function createClassicActionButtonSlots(
@@ -1626,6 +1766,31 @@ function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<Fac
   return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<FacePartKey, FacePartTuning>;
 }
 
+function cloneFaceAssetLayers(source: Record<FaceAssetLayerKey, FaceAssetLayerTuning>): Record<FaceAssetLayerKey, FaceAssetLayerTuning> {
+  return Object.fromEntries(FACE_ASSET_LAYER_KEYS.map((key) => [key, { ...source[key] }])) as Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
+}
+
+function cloneBodyPartLayers(source: Record<RigPartKey, BodyPartLayerTuning>): Record<RigPartKey, BodyPartLayerTuning> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<RigPartKey, BodyPartLayerTuning>;
+}
+
+function cloneBodyPresetTunings(source: Record<PaperDollBodyPreset, BodyPresetTuning>): Record<PaperDollBodyPreset, BodyPresetTuning> {
+  return Object.fromEntries(PAPER_DOLL_BODY_PRESETS.map((key) => [key, cloneBodyPresetTuning(source[key])])) as Record<
+    PaperDollBodyPreset,
+    BodyPresetTuning
+  >;
+}
+
+function cloneBodyPresetTuning(source: BodyPresetTuning): BodyPresetTuning {
+  return {
+    rigParts: cloneRigParts(source.rigParts),
+    bodyPartLayers: cloneBodyPartLayers(source.bodyPartLayers),
+    faceParts: cloneFaceParts(source.faceParts),
+    faceAssetLayers: cloneFaceAssetLayers(source.faceAssetLayers),
+    bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
+  };
+}
+
 function cloneEquipment(source: Record<EquipmentSlotKey, EquipmentTuning>): Record<EquipmentSlotKey, EquipmentTuning> {
   return Object.fromEntries(EQUIPMENT_SLOT_KEYS.map((key) => [key, { ...source[key] }])) as Record<EquipmentSlotKey, EquipmentTuning>;
 }
@@ -1660,8 +1825,10 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     selectedRigParts: [...source.selectedRigParts],
     actionButtonOffsets: cloneActionButtonOffsets(source.actionButtonOffsets),
     classicActionButtonSlots: cloneClassicActionButtonSlots(source.classicActionButtonSlots),
+    bodyPresetTuning: cloneBodyPresetTunings(source.bodyPresetTuning),
     rigParts: cloneRigParts(source.rigParts),
     faceParts: cloneFaceParts(source.faceParts),
+    faceAssetLayers: cloneFaceAssetLayers(source.faceAssetLayers),
     equipment: cloneEquipment(source.equipment),
     equipmentItems: cloneEquipmentItems(source.equipmentItems),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
@@ -1801,6 +1968,30 @@ function normalizeRigParts(input: unknown, fallbackParts = createDefaultRigParts
   ) as Record<RigPartKey, RigPartTuning>;
 }
 
+function normalizeBodyPartLayers(input: unknown, fallbackLayers = DEFAULT_BODY_PART_LAYERS): Record<RigPartKey, BodyPartLayerTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<RigPartKey, Partial<BodyPartLayerTuning>>>) : {};
+
+  return Object.fromEntries(
+    RIG_PART_KEYS.map((key) => {
+      const layer = source[key] ?? {};
+      const fallback = fallbackLayers[key] ?? defaultBodyPartLayerTuning;
+
+      return [
+        key,
+        {
+          x: clampNumber(layer.x, -480, 480, fallback.x),
+          y: clampNumber(layer.y, -480, 480, fallback.y),
+          angle: clampNumber(layer.angle, -180, 180, fallback.angle),
+          scaleX: clampNumber(layer.scaleX, 0.1, 3, fallback.scaleX),
+          scaleY: clampNumber(layer.scaleY, 0.1, 3, fallback.scaleY),
+          flipX: typeof layer.flipX === "boolean" ? layer.flipX : fallback.flipX,
+          flipY: typeof layer.flipY === "boolean" ? layer.flipY : fallback.flipY,
+        },
+      ];
+    }),
+  ) as Record<RigPartKey, BodyPartLayerTuning>;
+}
+
 function normalizeFaceParts(input: unknown, fallbackParts = DEFAULT_FACE_PARTS): Record<FacePartKey, FacePartTuning> {
   const source = typeof input === "object" && input !== null ? (input as Partial<Record<FacePartKey, Partial<FacePartTuning>>>) : {};
 
@@ -1820,6 +2011,74 @@ function normalizeFaceParts(input: unknown, fallbackParts = DEFAULT_FACE_PARTS):
       ];
     }),
   ) as Record<FacePartKey, FacePartTuning>;
+}
+
+function normalizeFaceAssetLayers(
+  input: unknown,
+  fallbackLayers = DEFAULT_FACE_ASSET_LAYERS,
+): Record<FaceAssetLayerKey, FaceAssetLayerTuning> {
+  const source =
+    typeof input === "object" && input !== null ? (input as Partial<Record<FaceAssetLayerKey, Partial<FaceAssetLayerTuning>>>) : {};
+
+  return Object.fromEntries(
+    FACE_ASSET_LAYER_KEYS.map((key) => {
+      const layer = source[key] ?? {};
+      const fallback = fallbackLayers[key] ?? defaultFaceAssetLayerTuning;
+
+      return [
+        key,
+        {
+          x: clampNumber(layer.x, -80, 80, fallback.x),
+          y: clampNumber(layer.y, -120, 40, fallback.y),
+          angle: clampNumber(layer.angle, -180, 180, fallback.angle),
+          scaleX: clampNumber(layer.scaleX, 0.1, 3, fallback.scaleX),
+          scaleY: clampNumber(layer.scaleY, 0.1, 3, fallback.scaleY),
+        },
+      ];
+    }),
+  ) as Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
+}
+
+function normalizeBodyPresetTunings(
+  input: unknown,
+  activePreset: PaperDollBodyPreset,
+  legacyTuning: BodyPresetTuning,
+  resetClassic: boolean,
+): Record<PaperDollBodyPreset, BodyPresetTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<PaperDollBodyPreset, Partial<BodyPresetTuning>>>) : {};
+
+  return Object.fromEntries(
+    PAPER_DOLL_BODY_PRESETS.map((presetKey) => {
+      const presetInput = source[presetKey];
+      if (resetClassic && presetKey === "classic") {
+        return [presetKey, cloneBodyPresetTuning(DEFAULT_BODY_PRESET_TUNING.classic)];
+      }
+
+      const fallback = presetInput
+        ? DEFAULT_BODY_PRESET_TUNING[presetKey]
+        : presetKey === activePreset
+          ? legacyTuning
+          : DEFAULT_BODY_PRESET_TUNING[presetKey];
+
+      return [presetKey, normalizeBodyPresetTuning(presetInput, fallback)];
+    }),
+  ) as Record<PaperDollBodyPreset, BodyPresetTuning>;
+}
+
+function normalizeBodyPresetTuning(input: unknown, fallback: BodyPresetTuning): BodyPresetTuning {
+  const source = typeof input === "object" && input !== null ? (input as Partial<BodyPresetTuning>) : {};
+
+  return {
+    rigParts: normalizeRigParts(source.rigParts, fallback.rigParts),
+    bodyPartLayers: normalizeBodyPartLayers(source.bodyPartLayers, fallback.bodyPartLayers),
+    faceParts: normalizeFaceParts(source.faceParts, fallback.faceParts),
+    faceAssetLayers: normalizeFaceAssetLayers(source.faceAssetLayers, fallback.faceAssetLayers),
+    bodyAnimations: normalizeBodyAnimations(source.bodyAnimations, undefined, fallback.bodyAnimations),
+  };
+}
+
+function getDebugTuningStorageVersion(value: unknown): number {
+  return Number.isInteger(value) && typeof value === "number" && value >= 0 ? value : 0;
 }
 
 function normalizeEquipment(input: unknown, fallbackEquipment = DEFAULT_EQUIPMENT): Record<EquipmentSlotKey, EquipmentTuning> {
@@ -1865,12 +2124,16 @@ function normalizeEquipmentTuning(part: Partial<EquipmentTuning>, fallback: Equi
   };
 }
 
-function normalizeBodyAnimations(input: unknown, legacyIdleAnimation?: unknown): Record<BodyAnimationKey, BodyAnimationTuning> {
+function normalizeBodyAnimations(
+  input: unknown,
+  legacyIdleAnimation?: unknown,
+  fallbackAnimations = DEFAULT_BODY_ANIMATIONS,
+): Record<BodyAnimationKey, BodyAnimationTuning> {
   const source = typeof input === "object" && input !== null ? (input as Partial<Record<BodyAnimationKey, unknown>>) : {};
 
   return Object.fromEntries(
     BODY_ANIMATION_KEYS.map((key) => {
-      const fallback = DEFAULT_BODY_ANIMATIONS[key];
+      const fallback = fallbackAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
       const candidate = source[key] ?? (key === "idle" ? legacyIdleAnimation : undefined);
 
       return [key, normalizeBodyAnimation(candidate, fallback)];
@@ -1930,6 +2193,10 @@ function isRigPartKey(value: unknown): value is RigPartKey {
   return typeof value === "string" && RIG_PART_KEYS.includes(value as RigPartKey);
 }
 
+function isFaceAssetLayerKey(value: unknown): value is FaceAssetLayerKey {
+  return typeof value === "string" && FACE_ASSET_LAYER_KEYS.includes(value as FaceAssetLayerKey);
+}
+
 function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {
   return typeof value === "string" && ACTION_BUTTON_OFFSET_KEYS.includes(value as ActionButtonOffsetKey);
 }
@@ -1952,6 +2219,10 @@ function isAnimationEditMode(value: unknown): value is AnimationEditMode {
 
 function isCharacterCanvasEditMode(value: unknown): value is CharacterCanvasEditMode {
   return typeof value === "string" && CHARACTER_CANVAS_EDIT_MODES.includes(value as CharacterCanvasEditMode);
+}
+
+function isPaperDollBodyPreset(value: unknown): value is PaperDollBodyPreset {
+  return typeof value === "string" && PAPER_DOLL_BODY_PRESETS.includes(value as PaperDollBodyPreset);
 }
 
 function isDebugHudMode(value: unknown): value is PlayerHudMode {

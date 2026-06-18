@@ -2482,7 +2482,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_helmet_executioner_01","name":"Executioner Helmet 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"executioner","name":"Executioner","rank":6,"grade":"high"},"equipmentSlot":"helmet","armorHp":20,"levelRequirement":40},
     assetKeys: {"helmetAssetKey":"helmet-executioner-01"},
-    equipmentTuning: {"x":0.07271654071507783,"y":39.69608218220466,"angle":0,"scaleX":1.2,"scaleY":1.25,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0.07271654071507783,"y":39.69608218220466,"angle":0,"scaleX":1.2,"scaleY":1.19,"flipX":false,"flipY":false},
     asset: {
       key: "helmet-executioner-01",
       sourcePath: "assets/fighters/armor/helmet/helmet-executioner-01.webp",

@@ -49,6 +49,11 @@ test("paper doll parents wrist equipment to forearms glove equipment to hands an
 });
 
 test("paper doll draws equipment through ordered anchored layers", () => {
+  const equipmentAnchorSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function syncPaperDollEquipmentAnchor"),
+    arenaSceneSource.indexOf("function getPaperDollEquipmentAnchorParts"),
+  );
+
   assert.equal(arenaSceneSource.includes("type PaperDollEquipmentAnchors"), true);
   assert.equal(arenaSceneSource.includes('type PaperDollEquipmentLayerKey = "legs" | "torso" | "head" | "weapon" | "arms" | "weaponTop";'), true);
   assert.equal(arenaSceneSource.includes("const equipmentLayers = createPaperDollEquipmentLayers(target);"), true);
@@ -69,8 +74,41 @@ test("paper doll draws equipment through ordered anchored layers", () => {
   assert.equal(arenaSceneSource.includes('equipmentLayer.sort("paperDollEquipmentLayerOrder"'), true);
   assert.equal(arenaSceneSource.includes("createPaperDollAnchoredEquipmentContainer"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollEquipmentAnchors(rig);"), true);
+  assert.equal(arenaSceneSource.includes("function applyPaperDollBodyPartImageConfig"), true);
+  assert.equal(arenaSceneSource.includes("getBodyPresetTuning(bodyPresetKey).bodyPartLayers[partKey]"), true);
+  assert.equal(arenaSceneSource.includes("image.x += tuning.x;"), true);
   assert.equal(arenaSceneSource.includes("equipmentLayer.add(anchorContainer);"), true);
   assert.equal(arenaSceneSource.includes("partContainer.add(armorContainer);"), false);
+  assert.equal(equipmentAnchorSource.includes("anchor.x = sourcePart.x;"), true);
+  assert.equal(equipmentAnchorSource.includes("anchor.y = sourcePart.y;"), true);
+  assert.equal(equipmentAnchorSource.includes("anchor.angle = sourcePart.angle;"), true);
+  assert.equal(equipmentAnchorSource.includes("anchor.scaleX = sourcePart.scaleX;"), true);
+  assert.equal(equipmentAnchorSource.includes("anchor.scaleY = sourcePart.scaleY;"), true);
+  assert.equal(equipmentAnchorSource.includes("anchor.scaleX = sourcePart.scaleX < 0 ? -1 : 1;"), false);
+  assert.equal(equipmentAnchorSource.includes("anchor.scaleY = sourcePart.scaleY < 0 ? -1 : 1;"), false);
+});
+
+test("debug body art mode drags artwork without moving rig anchors", () => {
+  const beginDragSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("private beginRigPartDrag"),
+    arenaSceneSource.indexOf("private beginEquipmentDrag"),
+  );
+  const dragSource = arenaSceneSource.slice(arenaSceneSource.indexOf("private dragRigPart"), arenaSceneSource.indexOf("private dragEquipment"));
+  const rotateSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("private rotateSelectedWithWheel"),
+    arenaSceneSource.indexOf("private rotateSelectedRigPartsWithWheel"),
+  );
+
+  assert.equal(beginDragSource.includes('debugTuning.characterCanvasEditMode !== "parts" && debugTuning.characterCanvasEditMode !== "bodyArt"'), true);
+  assert.equal(beginDragSource.includes('debugTuning.characterCanvasEditMode === "bodyArt" || !selectedRigParts.includes(partKey)'), false);
+  assert.equal(dragSource.includes('debugTuning.characterCanvasEditMode === "bodyArt"'), true);
+  assert.equal(dragSource.includes("updateBodyPartLayersWithInteractivePointerDelta("), true);
+  assert.equal(rotateSource.includes("this.rotateSelectedBodyArtWithWheel(deltaY);"), true);
+  assert.equal(arenaSceneSource.includes("function updateBodyPartLayersWithInteractivePointerDelta"), true);
+  assert.equal(arenaSceneSource.includes("function updateBodyPartLayersWithInteractiveDelta"), true);
+  assert.equal(arenaSceneSource.includes("function getPaperDollBodyPartDragLocalPoint"), true);
+  assert.equal(arenaSceneSource.includes("part.getWorldTransformMatrix().applyInverse(worldX, worldY)"), true);
+  assert.equal(arenaSceneSource.includes("bodyPartLayers: nextBodyPartLayers"), true);
 });
 
 test("paper doll weapon top overlay keeps long weapon heads above gloves", () => {
@@ -307,7 +345,7 @@ test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes("playProjectile(target, actor, defender, actionId, direction)"), true);
   assert.equal(arenaSceneSource.includes("const playerResultDelay = playerActionAnimation?.impact;"), true);
   assert.equal(arenaSceneSource.includes("void impact.then(() => showSlashArc(target, actor, actionId, direction, playerSettings));"), true);
-  assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit")'), true);
+  assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit",'), true);
   assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
 });
@@ -490,6 +528,25 @@ test("debug character viewer has a compact shop preview mode", () => {
   assert.equal(arenaSceneSource.includes("Phaser.Scale.RESIZE"), true);
 });
 
+test("debug character viewer can ghost armor without touching weapons", () => {
+  const debugCharacterSceneSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("class DebugCharacterScene"),
+    arenaSceneSource.indexOf("function drawDebugCharacterBackdrop"),
+  );
+  const armorAlphaSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function syncPaperDollArmorAlpha"),
+    arenaSceneSource.indexOf("function setFighterPartVisible"),
+  );
+
+  assert.equal(arenaSceneSource.includes("DEBUG_CHARACTER_GHOST_ARMOR_ALPHA = 0.32"), true);
+  assert.equal(debugCharacterSceneSource.includes("this.syncPreviewArmorAlpha();"), true);
+  assert.match(debugCharacterSceneSource, /private syncPreviewArmorAlpha\(\): void \{[\s\S]*this\.viewerMode !== "debug"[\s\S]*debugTuning\.characterPreviewArmorGhosted \? DEBUG_CHARACTER_GHOST_ARMOR_ALPHA : 1/);
+  assert.equal(armorAlphaSource.includes("PAPER_DOLL_DRAGGABLE_ARMOR_SLOT_KEYS.forEach"), true);
+  assert.equal(armorAlphaSource.includes("setPaperDollEquipmentSlotAlpha(rig.equipment[slotKey], alpha)"), true);
+  assert.equal(armorAlphaSource.includes("weaponMain"), false);
+  assert.equal(armorAlphaSource.includes("weaponBow"), false);
+});
+
 test("shop equipment preview updates gear without resetting the animated pose", () => {
   const rigTuningSource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("function applyRigPartDebugTuning"),
@@ -647,7 +704,7 @@ test("blocked hits use the shield icon popup instead of block text", () => {
   assert.equal(arenaSceneSource.includes("DAMAGE_BLOCK_ICON_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.enemy)"), true);
   assert.equal(arenaSceneSource.includes("showBlockPopupFromFighter(this, visuals.player)"), true);
-  assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("block")'), true);
+  assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("block",'), true);
   assert.equal(arenaSceneSource.includes("getBlockPopupHeadOffsetY"), true);
   assert.equal(arenaSceneSource.includes("BLOCK_POPUP_SCREEN_SIZE"), true);
   assert.equal(arenaSceneSource.includes("fighter.head.getWorldTransformMatrix()"), true);
