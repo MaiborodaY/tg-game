@@ -526,6 +526,8 @@ const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
 };
 const FIGHTER_MOVE_DURATION = 280;
 const DEATH_SHATTER_DELAY = 260;
+const DEATH_SHATTER_AFTER_IMPACT_DELAY = 200;
+const DEATH_SHATTER_RESULT_SETTLE_DELAY = 520;
 const HEAD_ASSET_DISPLAY_HEIGHT = 122;
 const HEAD_ASSET_LOCAL_BOTTOM_Y = 14;
 const HEAD_ASSET_ORIGIN_X = 312 / 623;
@@ -1649,7 +1651,7 @@ export class ArenaScene extends Phaser.Scene {
       });
     }
 
-    scheduleDeathEffects(this, nextState);
+    queueDeathEffects(this, actionAnimations, nextState, playerResultDelay, enemyResultDelay);
 
     return Promise.all(actionAnimations).then(() => {
       resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);
@@ -5415,27 +5417,50 @@ function getArenaEffectsLayerScale(target: Phaser.Scene): number {
   return Math.max(0.001, Math.abs(getArenaEffectsLayer(target)?.scaleX ?? 1));
 }
 
-function scheduleDeathEffects(target: ArenaScene, current: CombatState): void {
+function queueDeathEffects(
+  target: ArenaScene,
+  actionAnimations: Promise<void>[],
+  current: CombatState,
+  playerResultDelay: Promise<void> | undefined,
+  enemyResultDelay: Promise<void> | undefined,
+): void {
   if (!target.visuals || current.result === "playing") {
     return;
   }
 
   if (current.player.hp <= 0) {
-    scheduleFighterShatter(target, target.visuals.player, -1);
+    queueFighterDeathEffect(target, actionAnimations, target.visuals.player, -1, enemyResultDelay);
   }
 
   if (current.enemy.hp <= 0) {
-    scheduleFighterShatter(target, target.visuals.enemy, 1);
+    queueFighterDeathEffect(target, actionAnimations, target.visuals.enemy, 1, playerResultDelay);
   }
 }
 
-function scheduleFighterShatter(target: ArenaScene, fighter: FighterVisual, worldDirection: -1 | 1): void {
+function queueFighterDeathEffect(
+  target: ArenaScene,
+  actionAnimations: Promise<void>[],
+  fighter: FighterVisual,
+  worldDirection: -1 | 1,
+  impactDelay: Promise<void> | undefined,
+): void {
+  const delay = impactDelay
+    ? impactDelay.then(() => createSceneDelay(target, DEATH_SHATTER_AFTER_IMPACT_DELAY))
+    : createSceneDelay(target, DEATH_SHATTER_DELAY);
+
+  queueCombatResultAnimation(actionAnimations, delay, () => {
+    scheduleFighterShatter(target, fighter, worldDirection, 0);
+    return createSceneDelay(target, DEATH_SHATTER_RESULT_SETTLE_DELAY);
+  });
+}
+
+function scheduleFighterShatter(target: ArenaScene, fighter: FighterVisual, worldDirection: -1 | 1, delayMs = DEATH_SHATTER_DELAY): void {
   if (fighter.isShattered || fighter.isShatterScheduled) {
     return;
   }
 
   fighter.isShatterScheduled = true;
-  target.time.delayedCall(DEATH_SHATTER_DELAY, () => {
+  target.time.delayedCall(delayMs, () => {
     if (!fighter.isShatterScheduled || fighter.isShattered) {
       return;
     }

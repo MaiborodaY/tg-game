@@ -132,6 +132,7 @@ export interface DomRenderContext {
   hero?: HeroState;
   reward?: BattleReward;
   resultPresentation?: BattleResultPresentation;
+  deferResultPresentation?: boolean;
   resultReturn?: BattleResultReturnState;
 }
 
@@ -241,9 +242,11 @@ function renderLog(dom: DomRefs, state: CombatState): void {
 }
 
 function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContext): void {
-  dom.gameScreen.classList.toggle("battle-screen--finished", state.result !== "playing");
+  const isResultPresentationDeferred = state.result !== "playing" && context.deferResultPresentation;
 
-  if (state.result === "playing") {
+  dom.gameScreen.classList.toggle("battle-screen--finished", state.result !== "playing" && !isResultPresentationDeferred);
+
+  if (state.result === "playing" || isResultPresentationDeferred) {
     cancelResultAnimations();
     syncResultReturnButton(dom.cityButton);
     dom.resultBanner.hidden = true;

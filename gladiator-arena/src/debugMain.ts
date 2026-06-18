@@ -111,18 +111,60 @@ interface ClassicHudDragState {
 
 let classicHudDragState: ClassicHudDragState | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
+let pendingBattleResultPresentation: BattleResultPresentation | undefined;
 let battleResultPresentationId = 0;
+let battleResultPresentationRevealToken = 0;
+let rewardUiRenderDirty = false;
 
 function commitState(nextState: CombatState): Promise<void> {
+  const isBattleFinishing = state.result === "playing" && nextState.result !== "playing";
+
   state = applyBattleRewardIfNeeded(nextState);
-  renderDom(dom, state, { hero, reward: getBattleReward(state), resultPresentation: battleResultPresentation });
-  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  renderDom(dom, state, {
+    hero,
+    reward: getBattleReward(state),
+    resultPresentation: battleResultPresentation,
+    deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
+  });
+  if (!isBattleFinishing) {
+    renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  }
   const actionAnimation = arenaScene?.sync(state) ?? Promise.resolve();
+  if (isBattleFinishing) {
+    scheduleBattleResultPresentation(actionAnimation);
+  }
 
   syncActionArc();
   syncTurnProbe();
 
   return actionAnimation;
+}
+
+function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void {
+  const revealToken = ++battleResultPresentationRevealToken;
+
+  void actionAnimation
+    .catch(() => undefined)
+    .then(nextAnimationFrame)
+    .then(() => {
+      if (battleResultPresentationRevealToken !== revealToken || state.result === "playing") {
+        return;
+      }
+
+      if (!pendingBattleResultPresentation) {
+        return;
+      }
+
+      battleResultPresentation = pendingBattleResultPresentation;
+      pendingBattleResultPresentation = undefined;
+      renderDom(dom, state, {
+        hero,
+        reward: getBattleReward(state),
+        resultPresentation: battleResultPresentation,
+      });
+      renderCityHeroInfo(cityHeroWidgetRefs, hero);
+      syncTurnProbe();
+    });
 }
 
 function syncTurnProbe(): void {
@@ -279,6 +321,8 @@ function restart(): void {
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
   battleResultPresentation = undefined;
+  pendingBattleResultPresentation = undefined;
+  battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
   void commitState(createCombatStateFromHero(hero));
@@ -288,6 +332,26 @@ function delay(durationMs: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, durationMs);
   });
+}
+
+function nextAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
+function markRewardUiRenderDirty(): void {
+  rewardUiRenderDirty = true;
+}
+
+function flushRewardUiRenderIfDirty(): void {
+  if (!rewardUiRenderDirty) {
+    return;
+  }
+
+  rewardUiRenderDirty = false;
+  weaponShop?.render();
+  armoryShop?.render();
 }
 
 function handleActionArcClick(event: Event): void {
@@ -309,15 +373,14 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
 
   hero = heroAfterReward;
   syncPlayerCityBodyScale();
-  battleResultPresentation = {
+  pendingBattleResultPresentation = {
     id: `debug-battle-result-${++battleResultPresentationId}`,
     reward,
     loot,
     heroBeforeReward,
     heroAfterReward,
   };
-  weaponShop?.render();
-  armoryShop?.render();
+  markRewardUiRenderDirty();
 
   return nextState;
 }
@@ -727,10 +790,12 @@ dom.restartButton.addEventListener("click", restart);
 dom.cityButton.addEventListener("click", restart);
 weaponShopButton?.addEventListener("click", () => {
   armoryShop?.close();
+  flushRewardUiRenderIfDirty();
   weaponShop?.open();
 });
 armoryButton?.addEventListener("click", () => {
   weaponShop?.close();
+  flushRewardUiRenderIfDirty();
   armoryShop?.open();
 });
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);

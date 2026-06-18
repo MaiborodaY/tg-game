@@ -8,6 +8,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const debugMainSource = readFileSync(resolve(currentDir, "../src/debugMain.ts"), "utf8");
+const domUiSource = readFileSync(resolve(currentDir, "../src/domUi.ts"), "utf8");
 const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -221,6 +222,43 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("interface ActionAnimationHandle"), true);
   assert.equal(arenaSceneSource.includes("function animateAction("), true);
   assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
+});
+
+test("battle result presentation waits for arena visuals while rewards apply immediately", () => {
+  const mainRewardSource = mainSource.slice(
+    mainSource.indexOf("function applyBattleRewardIfNeeded"),
+    mainSource.indexOf("function rememberBossEquipmentHint"),
+  );
+  const debugRewardSource = debugMainSource.slice(
+    debugMainSource.indexOf("function applyBattleRewardIfNeeded"),
+    debugMainSource.indexOf("function handleShopBuy"),
+  );
+
+  assert.equal(domUiSource.includes("deferResultPresentation?: boolean;"), true);
+  assert.equal(domUiSource.includes('const isResultPresentationDeferred = state.result !== "playing" && context.deferResultPresentation;'), true);
+  assert.equal(mainSource.includes("let pendingBattleResultPresentation"), true);
+  assert.equal(mainSource.includes('deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),'), true);
+  assert.equal(mainSource.includes("scheduleBattleResultPresentation(actionAnimation);"), true);
+  assert.equal(mainSource.includes("battleResultPresentation = pendingBattleResultPresentation;"), true);
+  assert.equal(mainSource.includes("markRewardUiRenderDirty();"), true);
+  assert.equal(mainSource.includes("flushRewardUiRenderIfDirty();"), true);
+  assert.equal(mainRewardSource.includes("pendingBattleResultPresentation = {"), true);
+  assert.equal(mainRewardSource.includes("armoryShop?.render();"), false);
+  assert.equal(mainRewardSource.includes("weaponShop?.render();"), false);
+  assert.equal(debugRewardSource.includes("pendingBattleResultPresentation = {"), true);
+  assert.equal(debugRewardSource.includes("weaponShop?.render();"), false);
+  assert.equal(debugRewardSource.includes("armoryShop?.render();"), false);
+});
+
+test("death effects are queued from combat impact timing", () => {
+  assert.equal(arenaSceneSource.includes("const DEATH_SHATTER_AFTER_IMPACT_DELAY = 200;"), true);
+  assert.equal(arenaSceneSource.includes("const DEATH_SHATTER_RESULT_SETTLE_DELAY"), true);
+  assert.equal(arenaSceneSource.includes("queueDeathEffects(this, actionAnimations, nextState, playerResultDelay, enemyResultDelay);"), true);
+  assert.equal(arenaSceneSource.includes("function queueDeathEffects("), true);
+  assert.equal(arenaSceneSource.includes("function queueFighterDeathEffect("), true);
+  assert.equal(arenaSceneSource.includes("impactDelay.then(() => createSceneDelay(target, DEATH_SHATTER_AFTER_IMPACT_DELAY))"), true);
+  assert.equal(arenaSceneSource.includes("scheduleFighterShatter(target, fighter, worldDirection, 0);"), true);
+  assert.equal(arenaSceneSource.includes("return createSceneDelay(target, DEATH_SHATTER_RESULT_SETTLE_DELAY);"), true);
 });
 
 test("arena render-only refresh does not replay action animations", () => {

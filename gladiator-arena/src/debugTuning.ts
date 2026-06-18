@@ -707,7 +707,7 @@ export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
 
 export const DEFAULT_LIGHT_ANIMATION: BodyAnimationTuning = {
   enabled: true,
-  duration: 600,
+  duration: 500,
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
