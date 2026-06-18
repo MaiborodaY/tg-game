@@ -68,10 +68,6 @@ export const FIGHTER_HEAD_LIGHT_ASSET_KEY = "head-light-01";
 export const FIGHTER_HEAD_LIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/head/head-light-01.webp", import.meta.url).href;
 export const FIGHTER_HEAD_DUMMY_ASSET_KEY = "head-dummy-01";
 export const FIGHTER_HEAD_DUMMY_ASSET_URL = new URL("./assets/fighters/body-parts/head/head-dummy-01.png", import.meta.url).href;
-export const FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY = "face-dummy-eye-white-left";
-export const FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_URL = new URL("./assets/fighters/body-parts/face/eye-left.png", import.meta.url).href;
-export const FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY = "face-dummy-eye-white-right";
-export const FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_URL = new URL("./assets/fighters/body-parts/face/eye-right.png", import.meta.url).href;
 export const FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY = "face-dummy-pupil-left";
 export const FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_URL = new URL("./assets/fighters/body-parts/face/pupil-left.png", import.meta.url).href;
 export const FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY = "face-dummy-pupil-right";
@@ -291,16 +287,6 @@ export const FIGHTER_PAPER_DOLL_ASSETS = [
     key: FIGHTER_HEAD_DUMMY_ASSET_KEY,
     url: FIGHTER_HEAD_DUMMY_ASSET_URL,
     lowUrl: FIGHTER_HEAD_DUMMY_ASSET_URL,
-  },
-  {
-    key: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY,
-    url: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_URL,
-    lowUrl: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_URL,
-  },
-  {
-    key: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY,
-    url: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_URL,
-    lowUrl: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_URL,
   },
   {
     key: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,

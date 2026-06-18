@@ -67,8 +67,6 @@ import {
   FIGHTER_BACK_THIGH_LIGHT_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY,
   FIGHTER_BACK_UPPER_ARM_LIGHT_ASSET_KEY,
-  FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY,
-  FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY,
   FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
   FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
   FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY,
@@ -586,7 +584,6 @@ const HEAD_FACE_EYE_COVER_WIDTH = 18;
 const HEAD_FACE_EYE_COVER_HEIGHT = 17;
 const HEAD_FACE_EYE_WHITE = 0xfffbf2;
 const HEAD_FACE_EYE_BLACK = 0x050201;
-const FACE_ASSET_EYE_WHITE_DISPLAY_HEIGHT = 25;
 const FACE_ASSET_PUPIL_DISPLAY_HEIGHT = 13;
 const TORSO_ASSET_DISPLAY_HEIGHT = 175;
 const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
@@ -758,8 +755,6 @@ const PAPER_DOLL_TORSO_ASSET_CONFIG: PaperDollPartAssetConfig = {
 };
 
 const PAPER_DOLL_FACE_ASSET_CONFIGS: Record<FaceAssetLayerKey, PaperDollPartAssetConfig> = {
-  eyeWhiteLeft: { displayHeight: FACE_ASSET_EYE_WHITE_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
-  eyeWhiteRight: { displayHeight: FACE_ASSET_EYE_WHITE_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
   pupilLeft: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
   pupilRight: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
 };
@@ -837,8 +832,6 @@ const PAPER_DOLL_BODY_PRESETS: Record<PaperDollBodyPreset, PaperDollBodyPresetDe
     },
     faceOverlayMode: "none",
     faceAssetKeys: {
-      eyeWhiteLeft: FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY,
-      eyeWhiteRight: FIGHTER_FACE_DUMMY_EYE_WHITE_RIGHT_ASSET_KEY,
       pupilLeft: FIGHTER_FACE_DUMMY_PUPIL_LEFT_ASSET_KEY,
       pupilRight: FIGHTER_FACE_DUMMY_PUPIL_RIGHT_ASSET_KEY,
     },
@@ -6509,7 +6502,7 @@ function getActiveBodyAnimation(key: BodyAnimationKey, presetKey: PaperDollBodyP
     return getDebugBodyPresetTuning(presetKey).bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
   }
 
-  return DEFAULT_BODY_ANIMATIONS[key];
+  return getBodyPresetTuning(presetKey).bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
 }
 
 function getActiveSlashArc(key: SlashArcAttackKey): SlashArcTuning {

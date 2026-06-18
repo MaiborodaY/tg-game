@@ -202,7 +202,7 @@ test("debug tuning normalizes unsafe values", () => {
     paperDollBodyPreset: "monster",
     selectedFaceAssetLayer: "nose",
     faceAssetLayers: {
-      eyeWhiteLeft: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
+      pupilLeft: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
     },
   });
 
@@ -288,16 +288,16 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.facePreviewFocusX, 430);
   assert.equal(normalized.facePreviewFocusY, 80);
   assert.equal(normalized.paperDollBodyPreset, "dummy-v2");
-  assert.equal(normalized.selectedFaceAssetLayer, "eyeWhiteLeft");
-  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.x, 80);
-  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.y, -120);
-  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.angle, 180);
-  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.scaleX, 3);
-  assert.equal(normalized.faceAssetLayers.eyeWhiteLeft.scaleY, 0.1);
-  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.eyeWhiteLeft.x, -20);
-  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.eyeWhiteLeft.y, -44);
-  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.eyeWhiteLeft.x, 80);
-  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.eyeWhiteLeft.y, -120);
+  assert.equal(normalized.selectedFaceAssetLayer, "pupilLeft");
+  assert.equal(normalized.faceAssetLayers.pupilLeft.x, 80);
+  assert.equal(normalized.faceAssetLayers.pupilLeft.y, -120);
+  assert.equal(normalized.faceAssetLayers.pupilLeft.angle, 180);
+  assert.equal(normalized.faceAssetLayers.pupilLeft.scaleX, 3);
+  assert.equal(normalized.faceAssetLayers.pupilLeft.scaleY, 0.1);
+  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.x, -20);
+  assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.y, -44);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.x, 80);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.y, -120);
 });
 
 test("debug tuning defaults use a stage origin coordinate system", () => {
@@ -312,8 +312,8 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.enemyStageY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.characterPreviewArmorGhosted, false);
   assert.equal(debugTuningModule.defaultDebugTuning.paperDollBodyPreset, "dummy-v2");
-  assert.equal(debugTuningModule.defaultDebugTuning.selectedFaceAssetLayer, "eyeWhiteLeft");
-  assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.eyeWhiteLeft.x, -20);
+  assert.equal(debugTuningModule.defaultDebugTuning.selectedFaceAssetLayer, "pupilLeft");
+  assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilRight.y, -44);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.rigParts.head.y, -10);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].rigParts.head.y, -10);

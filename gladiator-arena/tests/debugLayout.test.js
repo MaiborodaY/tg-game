@@ -299,9 +299,9 @@ test("debug face editor can tune asset face layers", () => {
   const debugTuningSource = readFileSync(resolve(currentDir, "../src/debugTuning.ts"), "utf8");
   const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 
-  assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("body-parts/face/eye-left.png"), true);
-  assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["eyeWhiteLeft", "eyeWhiteRight", "pupilLeft", "pupilRight"] as const'), true);
+  assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY"), false);
+  assert.equal(assetsSource.includes("body-parts/face/eye-left.png"), false);
+  assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight"] as const'), true);
   assert.equal(debugTuningSource.includes("faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;"), true);
   assert.equal(debugPanelSource.includes("debug-face-panel"), true);
   assert.equal(debugPanelSource.includes("debug-face-editor__select"), true);

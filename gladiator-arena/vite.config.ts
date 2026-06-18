@@ -186,6 +186,9 @@ type BodyPresetKey = (typeof bodyPresetKeys)[number];
 const facePartKeys = ["eyeLeft", "eyeRight"] as const;
 type FacePartKey = (typeof facePartKeys)[number];
 
+const faceAssetLayerKeys = ["pupilLeft", "pupilRight"] as const;
+type FaceAssetLayerKey = (typeof faceAssetLayerKeys)[number];
+
 const equipmentSlotKeys = [
   "weaponMain",
   "weaponBow",
@@ -503,6 +506,14 @@ interface FacePartTuningPayload {
   scaleY: unknown;
 }
 
+interface FaceAssetLayerTuningPayload {
+  x: unknown;
+  y: unknown;
+  angle: unknown;
+  scaleX: unknown;
+  scaleY: unknown;
+}
+
 interface RigPartTuning {
   x: number;
   y: number;
@@ -520,9 +531,21 @@ interface FacePartTuning {
   scaleY: number;
 }
 
+interface FaceAssetLayerTuning {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+}
+
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
 type BodyPartLayerUpdates = Record<BodyPresetKey, RigPartUpdates>;
+type BodyPresetAnimationUpdates = Record<BodyPresetKey, Record<BodyAnimationKey, BodyAnimationUpdates>>;
+type BodyPresetFacePartUpdates = Record<BodyPresetKey, FacePartUpdates>;
+type BodyPresetFaceAssetLayerUpdates = Record<BodyPresetKey, FaceAssetLayerUpdates>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
+type FaceAssetLayerUpdates = Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
@@ -760,6 +783,9 @@ function saveProdDefaultsPlugin(): Plugin {
           const playerSettingDefaultUpdates = pickPlayerSettingDefaultUpdates(payload);
           const rigPartUpdates = pickRigPartDefaultUpdates(payload);
           const bodyPartLayerUpdates = pickBodyPartLayerDefaultUpdates(payload);
+          const bodyPresetAnimationUpdates = pickBodyPresetAnimationDefaultUpdates(payload);
+          const bodyPresetFacePartUpdates = pickBodyPresetFacePartDefaultUpdates(payload);
+          const bodyPresetFaceAssetLayerUpdates = pickBodyPresetFaceAssetLayerDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const bodyAnimationUpdates = pickBodyAnimationUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
@@ -786,7 +812,13 @@ function saveProdDefaultsPlugin(): Plugin {
           let nextDebugTuningSource = applyActionButtonOffsetDefaultUpdates(debugTuningSource, actionButtonOffsetUpdates);
           nextDebugTuningSource = applyClassicActionButtonSlotDefaultUpdates(nextDebugTuningSource, classicActionButtonSlotUpdates);
           nextDebugTuningSource = applyRigPartDefaultUpdates(nextDebugTuningSource, rigPartUpdates);
-          nextDebugTuningSource = applyBodyPartLayerDefaultUpdates(nextDebugTuningSource, bodyPartLayerUpdates);
+          nextDebugTuningSource = applyBodyPartLayerDefaultUpdates(
+            nextDebugTuningSource,
+            bodyPartLayerUpdates,
+            bodyPresetAnimationUpdates,
+            bodyPresetFacePartUpdates,
+            bodyPresetFaceAssetLayerUpdates,
+          );
           nextDebugTuningSource = applyBodyAnimationDefaultUpdates(nextDebugTuningSource, bodyAnimationUpdates);
           nextDebugTuningSource = applyFacePartDefaultUpdates(nextDebugTuningSource, facePartUpdates);
           nextDebugTuningSource = applyEquipmentDefaultUpdates(nextDebugTuningSource, equipmentUpdates);
@@ -1177,14 +1209,23 @@ export function pickRigPartDefaultUpdates(payload: unknown): RigPartUpdates {
   return Object.fromEntries(rigPartKeys.map((key) => [key, readRigPartTuning(rigParts, key)])) as RigPartUpdates;
 }
 
-export function applyBodyPartLayerDefaultUpdates(source: string, updates: BodyPartLayerUpdates): string {
+export function applyBodyPartLayerDefaultUpdates(
+  source: string,
+  updates: BodyPartLayerUpdates,
+  bodyAnimationUpdates: BodyPresetAnimationUpdates,
+  bodyPresetFacePartUpdates: BodyPresetFacePartUpdates,
+  bodyPresetFaceAssetLayerUpdates: BodyPresetFaceAssetLayerUpdates,
+): string {
   const pattern = /export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = \{[\s\S]*?\n\};/;
 
   if (!pattern.test(source)) {
     throw new Error("Could not find DEFAULT_BODY_PRESET_TUNING in debugTuning.ts.");
   }
 
-  return source.replace(pattern, formatBodyPresetTuningDefaults(updates));
+  return source.replace(
+    pattern,
+    formatBodyPresetTuningDefaults(updates, bodyAnimationUpdates, bodyPresetFacePartUpdates, bodyPresetFaceAssetLayerUpdates),
+  );
 }
 
 export function pickBodyPartLayerDefaultUpdates(payload: unknown): BodyPartLayerUpdates {
@@ -1217,6 +1258,54 @@ export function pickBodyPartLayerDefaultUpdates(payload: unknown): BodyPartLayer
   ) as BodyPartLayerUpdates;
 }
 
+export function pickBodyPresetAnimationDefaultUpdates(payload: unknown): BodyPresetAnimationUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const bodyPresetTuning = readBodyPresetTuningPayload(payload);
+
+  return Object.fromEntries(
+    bodyPresetKeys.map((presetKey) => {
+      const bodyAnimations = readBodyPresetAnimationMap(bodyPresetTuning, presetKey);
+
+      return [presetKey, Object.fromEntries(bodyAnimationKeys.map((key) => [key, readBodyAnimationUpdate(bodyAnimations, key)]))];
+    }),
+  ) as BodyPresetAnimationUpdates;
+}
+
+export function pickBodyPresetFacePartDefaultUpdates(payload: unknown): BodyPresetFacePartUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const bodyPresetTuning = readBodyPresetTuningPayload(payload);
+
+  return Object.fromEntries(
+    bodyPresetKeys.map((presetKey) => {
+      const faceParts = readBodyPresetFacePartMap(bodyPresetTuning, presetKey);
+
+      return [presetKey, Object.fromEntries(facePartKeys.map((key) => [key, readFacePartTuning(faceParts, key)]))];
+    }),
+  ) as BodyPresetFacePartUpdates;
+}
+
+export function pickBodyPresetFaceAssetLayerDefaultUpdates(payload: unknown): BodyPresetFaceAssetLayerUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const bodyPresetTuning = readBodyPresetTuningPayload(payload);
+
+  return Object.fromEntries(
+    bodyPresetKeys.map((presetKey) => {
+      const faceAssetLayers = readBodyPresetFaceAssetLayerMap(bodyPresetTuning, presetKey);
+
+      return [presetKey, Object.fromEntries(faceAssetLayerKeys.map((key) => [key, readFaceAssetLayerTuning(faceAssetLayers, key)]))];
+    }),
+  ) as BodyPresetFaceAssetLayerUpdates;
+}
+
 export function applyFacePartDefaultUpdates(source: string, updates: FacePartUpdates): string {
   const pattern = /export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = (?:\{[\s\S]*?\});/;
 
@@ -1232,11 +1321,7 @@ export function pickFacePartDefaultUpdates(payload: unknown): FacePartUpdates {
     throw new Error("Expected a JSON object with debug tuning values.");
   }
 
-  const faceParts = (payload as { faceParts?: unknown }).faceParts;
-
-  if (!faceParts || typeof faceParts !== "object" || Array.isArray(faceParts)) {
-    throw new Error("Expected faceParts in debug tuning payload.");
-  }
+  const faceParts = readActiveFacePartMap(payload);
 
   return Object.fromEntries(facePartKeys.map((key) => [key, readFacePartTuning(faceParts, key)])) as FacePartUpdates;
 }
@@ -1426,20 +1511,126 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
   }
 
   const selectedBodyAnimation = (payload as { selectedBodyAnimation?: unknown }).selectedBodyAnimation;
-  const bodyAnimations = (payload as { bodyAnimations?: unknown }).bodyAnimations;
 
   if (!isBodyAnimationKey(selectedBodyAnimation)) {
     throw new Error("Expected selectedBodyAnimation in debug tuning payload.");
   }
 
+  const bodyAnimations = readActiveBodyAnimationMap(payload);
+
+  return readBodyAnimationUpdate(bodyAnimations, selectedBodyAnimation);
+}
+
+function readActiveBodyAnimationMap(payload: object): Partial<Record<BodyAnimationKey, unknown>> {
+  const presetKey = readBodyPresetKey((payload as { paperDollBodyPreset?: unknown }).paperDollBodyPreset);
+  const bodyPresetTuning = (payload as { bodyPresetTuning?: unknown }).bodyPresetTuning;
+
+  if (bodyPresetTuning && typeof bodyPresetTuning === "object" && !Array.isArray(bodyPresetTuning)) {
+    return readBodyPresetAnimationMap(bodyPresetTuning, presetKey);
+  }
+
+  const bodyAnimations = (payload as { bodyAnimations?: unknown }).bodyAnimations;
+
   if (!bodyAnimations || typeof bodyAnimations !== "object" || Array.isArray(bodyAnimations)) {
     throw new Error("Expected bodyAnimations in debug tuning payload.");
   }
 
-  const bodyAnimation = (bodyAnimations as Partial<Record<BodyAnimationKey, unknown>>)[selectedBodyAnimation];
+  return bodyAnimations as Partial<Record<BodyAnimationKey, unknown>>;
+}
+
+function readActiveFacePartMap(payload: object): Partial<Record<FacePartKey, unknown>> {
+  const presetKey = readBodyPresetKey((payload as { paperDollBodyPreset?: unknown }).paperDollBodyPreset);
+  const bodyPresetTuning = (payload as { bodyPresetTuning?: unknown }).bodyPresetTuning;
+
+  if (bodyPresetTuning && typeof bodyPresetTuning === "object" && !Array.isArray(bodyPresetTuning)) {
+    return readBodyPresetFacePartMap(bodyPresetTuning, presetKey);
+  }
+
+  const faceParts = (payload as { faceParts?: unknown }).faceParts;
+
+  if (!faceParts || typeof faceParts !== "object" || Array.isArray(faceParts)) {
+    throw new Error("Expected faceParts in debug tuning payload.");
+  }
+
+  return faceParts as Partial<Record<FacePartKey, unknown>>;
+}
+
+function readBodyPresetTuningPayload(
+  payload: unknown,
+): Partial<Record<BodyPresetKey, { bodyAnimations?: unknown; bodyPartLayers?: unknown; faceParts?: unknown; faceAssetLayers?: unknown }>> {
+  const bodyPresetTuning = (payload as { bodyPresetTuning?: unknown }).bodyPresetTuning;
+
+  if (!bodyPresetTuning || typeof bodyPresetTuning !== "object" || Array.isArray(bodyPresetTuning)) {
+    throw new Error("Expected bodyPresetTuning in debug tuning payload.");
+  }
+
+  return bodyPresetTuning as Partial<
+    Record<BodyPresetKey, { bodyAnimations?: unknown; bodyPartLayers?: unknown; faceParts?: unknown; faceAssetLayers?: unknown }>
+  >;
+}
+
+function readBodyPresetAnimationMap(
+  bodyPresetTuning: Partial<Record<BodyPresetKey, { bodyAnimations?: unknown }>>,
+  presetKey: BodyPresetKey,
+): Partial<Record<BodyAnimationKey, unknown>> {
+  const presetTuning = bodyPresetTuning[presetKey];
+
+  if (!presetTuning || typeof presetTuning !== "object" || Array.isArray(presetTuning)) {
+    throw new Error(`Expected ${presetKey} body preset tuning in debug tuning payload.`);
+  }
+
+  const bodyAnimations = presetTuning.bodyAnimations;
+
+  if (!bodyAnimations || typeof bodyAnimations !== "object" || Array.isArray(bodyAnimations)) {
+    throw new Error(`Expected ${presetKey} bodyAnimations in debug tuning payload.`);
+  }
+
+  return bodyAnimations as Partial<Record<BodyAnimationKey, unknown>>;
+}
+
+function readBodyPresetFacePartMap(
+  bodyPresetTuning: Partial<Record<BodyPresetKey, { faceParts?: unknown }>>,
+  presetKey: BodyPresetKey,
+): Partial<Record<FacePartKey, unknown>> {
+  const presetTuning = bodyPresetTuning[presetKey];
+
+  if (!presetTuning || typeof presetTuning !== "object" || Array.isArray(presetTuning)) {
+    throw new Error(`Expected ${presetKey} body preset tuning in debug tuning payload.`);
+  }
+
+  const faceParts = presetTuning.faceParts;
+
+  if (!faceParts || typeof faceParts !== "object" || Array.isArray(faceParts)) {
+    throw new Error(`Expected ${presetKey} faceParts in debug tuning payload.`);
+  }
+
+  return faceParts as Partial<Record<FacePartKey, unknown>>;
+}
+
+function readBodyPresetFaceAssetLayerMap(
+  bodyPresetTuning: Partial<Record<BodyPresetKey, { faceAssetLayers?: unknown }>>,
+  presetKey: BodyPresetKey,
+): Partial<Record<FaceAssetLayerKey, unknown>> {
+  const presetTuning = bodyPresetTuning[presetKey];
+
+  if (!presetTuning || typeof presetTuning !== "object" || Array.isArray(presetTuning)) {
+    throw new Error(`Expected ${presetKey} body preset tuning in debug tuning payload.`);
+  }
+
+  const faceAssetLayers = presetTuning.faceAssetLayers;
+
+  if (!faceAssetLayers || typeof faceAssetLayers !== "object" || Array.isArray(faceAssetLayers)) {
+    throw new Error(`Expected ${presetKey} faceAssetLayers in debug tuning payload.`);
+  }
+
+  return faceAssetLayers as Partial<Record<FaceAssetLayerKey, unknown>>;
+}
+
+function readBodyAnimationUpdate(bodyAnimations: Partial<Record<BodyAnimationKey, unknown>>, key: BodyAnimationKey): BodyAnimationUpdates {
+  const bodyAnimation = bodyAnimations[key];
 
   if (!bodyAnimation || typeof bodyAnimation !== "object" || Array.isArray(bodyAnimation)) {
-    throw new Error(`Expected ${selectedBodyAnimation} animation in debug tuning payload.`);
+    throw new Error(`Expected ${key} animation in debug tuning payload.`);
   }
 
   const animation = bodyAnimation as { enabled?: unknown; duration?: unknown; base?: unknown; breath?: unknown; faceBase?: unknown; faceBreath?: unknown; activeParts?: unknown };
@@ -1453,7 +1644,7 @@ export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates
   }
 
   return {
-    key: selectedBodyAnimation,
+    key,
     enabled: animation.enabled,
     duration: Math.max(240, Math.min(2400, animation.duration)),
     base: readRigPartRecord(animation.base, "base"),
@@ -3555,7 +3746,12 @@ function formatRigPartDefaults(updates: RigPartUpdates): string {
   return `export const DEFAULT_RIG_PARTS: Record<RigPartKey, RigPartTuning> = {\n${rows.join("\n")}\n};`;
 }
 
-function formatBodyPresetTuningDefaults(updates: BodyPartLayerUpdates): string {
+function formatBodyPresetTuningDefaults(
+  updates: BodyPartLayerUpdates,
+  bodyAnimationUpdates: BodyPresetAnimationUpdates,
+  bodyPresetFacePartUpdates: BodyPresetFacePartUpdates,
+  bodyPresetFaceAssetLayerUpdates: BodyPresetFaceAssetLayerUpdates,
+): string {
   const rows = bodyPresetKeys.map((presetKey) => {
     const key = formatObjectKey(presetKey);
 
@@ -3563,9 +3759,9 @@ function formatBodyPresetTuningDefaults(updates: BodyPartLayerUpdates): string {
       `  ${key}: {`,
       "    rigParts: cloneRigParts(DEFAULT_RIG_PARTS),",
       `    bodyPartLayers: ${formatBodyPartLayerObject(updates[presetKey], "    ")},`,
-      "    faceParts: cloneFaceParts(DEFAULT_FACE_PARTS),",
-      "    faceAssetLayers: cloneFaceAssetLayers(DEFAULT_FACE_ASSET_LAYERS),",
-      "    bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),",
+      `    faceParts: ${formatFacePartObject(bodyPresetFacePartUpdates[presetKey], "    ")},`,
+      `    faceAssetLayers: ${formatFaceAssetLayerObject(bodyPresetFaceAssetLayerUpdates[presetKey], "    ")},`,
+      `    bodyAnimations: ${formatBodyAnimationMap(bodyAnimationUpdates[presetKey], "    ")},`,
       "  },",
     ].join("\n");
   });
@@ -3573,11 +3769,37 @@ function formatBodyPresetTuningDefaults(updates: BodyPartLayerUpdates): string {
   return `export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = {\n${rows.join("\n")}\n};`;
 }
 
+function formatBodyAnimationMap(updates: Record<BodyAnimationKey, BodyAnimationUpdates>, indent: string): string {
+  const rows = bodyAnimationKeys.map((key) => `${indent}  ${key}: ${formatBodyAnimationObject(updates[key], `${indent}  `)},`);
+
+  return `{\n${rows.join("\n")}\n${indent}}`;
+}
+
 function formatBodyPartLayerObject(updates: RigPartUpdates, indent: string): string {
   const rows = rigPartKeys.map((key) => {
     const part = updates[key];
 
     return `${indent}  ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, angle: ${formatNumber(part.angle)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)}, flipX: ${part.flipX}, flipY: ${part.flipY} },`;
+  });
+
+  return `{\n${rows.join("\n")}\n${indent}}`;
+}
+
+function formatFacePartObject(updates: FacePartUpdates, indent: string): string {
+  const rows = facePartKeys.map((key) => {
+    const part = updates[key];
+
+    return `${indent}  ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)} },`;
+  });
+
+  return `{\n${rows.join("\n")}\n${indent}}`;
+}
+
+function formatFaceAssetLayerObject(updates: FaceAssetLayerUpdates, indent: string): string {
+  const rows = faceAssetLayerKeys.map((key) => {
+    const layer = updates[key];
+
+    return `${indent}  ${key}: { x: ${formatNumber(layer.x)}, y: ${formatNumber(layer.y)}, angle: ${formatNumber(layer.angle)}, scaleX: ${formatNumber(layer.scaleX)}, scaleY: ${formatNumber(layer.scaleY)} },`;
   });
 
   return `{\n${rows.join("\n")}\n${indent}}`;
@@ -3693,26 +3915,53 @@ function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimatio
   ].join("\n");
 }
 
-function formatRigPartRows(updates: RigPartUpdates): string {
+function formatBodyAnimationObject(updates: BodyAnimationUpdates, indent: string): string {
+  const propertyIndent = `${indent}  `;
+  const nestedEntryIndent = `${indent}    `;
+
+  return [
+    "{",
+    `${propertyIndent}enabled: ${updates.enabled},`,
+    `${propertyIndent}duration: ${formatNumber(updates.duration)},`,
+    `${propertyIndent}base: {`,
+    formatRigPartRows(updates.base, nestedEntryIndent),
+    `${propertyIndent}},`,
+    `${propertyIndent}breath: {`,
+    formatRigPartRows(updates.breath, nestedEntryIndent),
+    `${propertyIndent}},`,
+    `${propertyIndent}faceBase: {`,
+    formatFacePartRows(updates.faceBase, nestedEntryIndent),
+    `${propertyIndent}},`,
+    `${propertyIndent}faceBreath: {`,
+    formatFacePartRows(updates.faceBreath, nestedEntryIndent),
+    `${propertyIndent}},`,
+    `${propertyIndent}activeParts: {`,
+    formatBodyAnimationActivePartRows(updates.activeParts, nestedEntryIndent),
+    `${propertyIndent}},`,
+    `${indent}}`,
+  ].join("\n");
+}
+
+function formatRigPartRows(updates: RigPartUpdates, indent = "    "): string {
   return rigPartKeys
     .map((key) => {
       const part = updates[key];
 
-      return `    ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, angle: ${formatNumber(part.angle)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)}, flipX: ${part.flipX}, flipY: ${part.flipY} },`;
+      return `${indent}${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, angle: ${formatNumber(part.angle)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)}, flipX: ${part.flipX}, flipY: ${part.flipY} },`;
     })
     .join("\n");
 }
 
-function formatBodyAnimationActivePartRows(updates: Record<RigPartKey, boolean>): string {
-  return rigPartKeys.map((key) => `    ${key}: ${updates[key]},`).join("\n");
+function formatBodyAnimationActivePartRows(updates: Record<RigPartKey, boolean>, indent = "    "): string {
+  return rigPartKeys.map((key) => `${indent}${key}: ${updates[key]},`).join("\n");
 }
 
-function formatFacePartRows(updates: FacePartUpdates): string {
+function formatFacePartRows(updates: FacePartUpdates, indent = "    "): string {
   return facePartKeys
     .map((key) => {
       const part = updates[key];
 
-      return `    ${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)} },`;
+      return `${indent}${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)} },`;
     })
     .join("\n");
 }
@@ -3757,6 +4006,14 @@ function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {
   return typeof value === "string" && bodyAnimationKeys.includes(value as BodyAnimationKey);
 }
 
+function readBodyPresetKey(value: unknown): BodyPresetKey {
+  if (typeof value === "string" && bodyPresetKeys.includes(value as BodyPresetKey)) {
+    return value as BodyPresetKey;
+  }
+
+  throw new Error("Expected paperDollBodyPreset in debug tuning payload.");
+}
+
 function readRigPartTuning(rigParts: object, key: RigPartKey): RigPartTuning {
   const part = (rigParts as Partial<Record<RigPartKey, unknown>>)[key];
 
@@ -3791,6 +4048,24 @@ function readFacePartTuning(faceParts: object, key: FacePartKey): FacePartTuning
     y: readFiniteFacePartNumber(tuning, key, "y"),
     scaleX: readFiniteFacePartNumber(tuning, key, "scaleX"),
     scaleY: readFiniteFacePartNumber(tuning, key, "scaleY"),
+  };
+}
+
+function readFaceAssetLayerTuning(faceAssetLayers: object, key: FaceAssetLayerKey): FaceAssetLayerTuning {
+  const layer = (faceAssetLayers as Partial<Record<FaceAssetLayerKey, unknown>>)[key];
+
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    throw new Error(`Invalid face asset layer tuning value: ${key}.`);
+  }
+
+  const tuning = layer as Partial<FaceAssetLayerTuningPayload>;
+
+  return {
+    x: readFiniteFaceAssetLayerNumber(tuning, key, "x"),
+    y: readFiniteFaceAssetLayerNumber(tuning, key, "y"),
+    angle: readFiniteFaceAssetLayerNumber(tuning, key, "angle"),
+    scaleX: readFiniteFaceAssetLayerNumber(tuning, key, "scaleX"),
+    scaleY: readFiniteFaceAssetLayerNumber(tuning, key, "scaleY"),
   };
 }
 
@@ -3953,6 +4228,20 @@ function readFiniteFacePartNumber(payload: Partial<FacePartTuningPayload>, partK
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid face part tuning value: ${partKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteFaceAssetLayerNumber(
+  payload: Partial<FaceAssetLayerTuningPayload>,
+  layerKey: FaceAssetLayerKey,
+  fieldName: keyof FaceAssetLayerTuning,
+): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid face asset layer tuning value: ${layerKey}.${fieldName}.`);
   }
 
   return value;

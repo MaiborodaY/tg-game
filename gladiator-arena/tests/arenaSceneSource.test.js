@@ -350,6 +350,16 @@ test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
 });
 
+test("prod body animations use the active body preset tuning", () => {
+  const activeAnimationSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function getActiveBodyAnimation"),
+    arenaSceneSource.indexOf("function getActiveSlashArc"),
+  );
+
+  assert.match(activeAnimationSource, /return getBodyPresetTuning\(presetKey\)\.bodyAnimations\[key\] \?\? DEFAULT_BODY_ANIMATIONS\[key\];/);
+  assert.equal(activeAnimationSource.includes("return DEFAULT_BODY_ANIMATIONS[key];"), false);
+});
+
 test("arena uses pooled projectiles for arrows and shurikens", () => {
   assert.equal(assetsSource.includes("SHURIKEN_PROJECTILE_ASSET_KEY"), true);
   assert.equal(assetsSource.includes("./assets/ui/projectiles/shuriken.webp"), true);

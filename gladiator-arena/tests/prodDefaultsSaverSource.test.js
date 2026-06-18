@@ -289,10 +289,13 @@ test("vite dev middleware writes generated arena tiers", () => {
 test("save as prod defaults also persists the selected rig editor animation", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const saveDefaultsRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-defaults"'), source.indexOf('"/__dust-arena/save-prod-animation"'));
+  const pickBodyAnimationSource = source.slice(source.indexOf("export function pickBodyAnimationUpdates"), source.indexOf("function readActiveBodyAnimationMap"));
 
   assert.match(saveDefaultsRoute, /const bodyAnimationUpdates = pickBodyAnimationUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /applyBodyAnimationDefaultUpdates/);
   assert.match(saveDefaultsRoute, /bodyAnimationUpdates\.key/);
+  assert.match(pickBodyAnimationSource, /const bodyAnimations = readActiveBodyAnimationMap\(payload\)/);
+  assert.doesNotMatch(pickBodyAnimationSource, /\(payload as \{ bodyAnimations\?: unknown \}\)\.bodyAnimations/);
   assert.match(source, /"bowShot"/);
   assert.match(source, /"hit"/);
   assert.match(source, /"block"/);
@@ -305,15 +308,31 @@ test("save as prod defaults persists body art layers per body preset", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
   const saveDefaultsRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-defaults"'), source.indexOf('"/__dust-arena/save-prod-animation"'));
+  const bodyPresetFormatter = source.slice(source.indexOf("function formatBodyPresetTuningDefaults"), source.indexOf("function formatBodyPartLayerObject"));
+  const pickFacePartSource = source.slice(source.indexOf("export function pickFacePartDefaultUpdates"), source.indexOf("export function applyEquipmentDefaultUpdates"));
 
   assert.match(debugTuningSource, /bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>/);
   assert.match(source, /const bodyPresetKeys = \["classic", "dummy-v2"\] as const/);
   assert.match(saveDefaultsRoute, /const bodyPartLayerUpdates = pickBodyPartLayerDefaultUpdates\(payload\)/);
-  assert.match(saveDefaultsRoute, /applyBodyPartLayerDefaultUpdates/);
+  assert.match(saveDefaultsRoute, /const bodyPresetAnimationUpdates = pickBodyPresetAnimationDefaultUpdates\(payload\)/);
+  assert.match(saveDefaultsRoute, /const bodyPresetFacePartUpdates = pickBodyPresetFacePartDefaultUpdates\(payload\)/);
+  assert.match(saveDefaultsRoute, /const bodyPresetFaceAssetLayerUpdates = pickBodyPresetFaceAssetLayerDefaultUpdates\(payload\)/);
+  assert.match(saveDefaultsRoute, /applyBodyPartLayerDefaultUpdates\(\s*nextDebugTuningSource,\s*bodyPartLayerUpdates,\s*bodyPresetAnimationUpdates,\s*bodyPresetFacePartUpdates,\s*bodyPresetFaceAssetLayerUpdates,\s*\)/);
   assert.match(saveDefaultsRoute, /body art presets/);
   assert.match(source, /DEFAULT_BODY_PRESET_TUNING/);
   assert.match(source, /formatBodyPresetTuningDefaults/);
   assert.match(source, /formatBodyPartLayerObject/);
+  assert.match(source, /pickBodyPresetAnimationDefaultUpdates/);
+  assert.match(source, /pickBodyPresetFacePartDefaultUpdates/);
+  assert.match(source, /pickBodyPresetFaceAssetLayerDefaultUpdates/);
+  assert.match(pickFacePartSource, /const faceParts = readActiveFacePartMap\(payload\)/);
+  assert.doesNotMatch(pickFacePartSource, /\(payload as \{ faceParts\?: unknown \}\)\.faceParts/);
+  assert.match(bodyPresetFormatter, /faceParts: \$\{formatFacePartObject\(bodyPresetFacePartUpdates\[presetKey\]/);
+  assert.match(bodyPresetFormatter, /faceAssetLayers: \$\{formatFaceAssetLayerObject\(bodyPresetFaceAssetLayerUpdates\[presetKey\]/);
+  assert.doesNotMatch(bodyPresetFormatter, /faceParts: cloneFaceParts\(DEFAULT_FACE_PARTS\)/);
+  assert.doesNotMatch(bodyPresetFormatter, /faceAssetLayers: cloneFaceAssetLayers\(DEFAULT_FACE_ASSET_LAYERS\)/);
+  assert.match(bodyPresetFormatter, /bodyAnimations: \$\{formatBodyAnimationMap\(bodyAnimationUpdates\[presetKey\]/);
+  assert.doesNotMatch(bodyPresetFormatter, /bodyAnimations: cloneBodyAnimations\(DEFAULT_BODY_ANIMATIONS\)/);
 });
 
 test("save as prod defaults persists classic action button slots", () => {
