@@ -130,6 +130,9 @@ export type FacePartKey = (typeof FACE_PART_KEYS)[number];
 export const FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight"] as const;
 export type FaceAssetLayerKey = (typeof FACE_ASSET_LAYER_KEYS)[number];
 
+export const APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const;
+export type AppearanceLayerKey = (typeof APPEARANCE_LAYER_KEYS)[number];
+
 export const EQUIPMENT_SLOT_KEYS = [
   "weaponMain",
   "weaponBow",
@@ -176,6 +179,14 @@ export interface FaceAssetLayerTuning {
   scaleY: number;
 }
 
+export interface AppearanceLayerTuning {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+}
+
 export type BodyPartLayerTuning = RigPartTuning;
 
 export type EquipmentTuning = RigPartTuning;
@@ -197,6 +208,7 @@ export interface BodyPresetTuning {
   bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>;
   faceParts: Record<FacePartKey, FacePartTuning>;
   faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
+  appearanceLayers: Record<AppearanceLayerKey, AppearanceLayerTuning>;
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
 }
 
@@ -344,7 +356,9 @@ export interface ArenaDebugTuning {
   paperDollBodyPreset: PaperDollBodyPreset;
   bodyPresetTuning: Record<PaperDollBodyPreset, BodyPresetTuning>;
   selectedFaceAssetLayer: FaceAssetLayerKey;
+  selectedAppearanceLayer: AppearanceLayerKey;
   faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
+  appearanceLayers: Record<AppearanceLayerKey, AppearanceLayerTuning>;
   selectedRigPart: RigPartKey;
   selectedRigParts: RigPartKey[];
   rigParts: Record<RigPartKey, RigPartTuning>;
@@ -385,6 +399,14 @@ export const defaultFaceAssetLayerTuning: FaceAssetLayerTuning = {
   scaleY: 1,
 };
 
+export const defaultAppearanceLayerTuning: AppearanceLayerTuning = {
+  x: 0,
+  y: 0,
+  angle: 0,
+  scaleX: 1,
+  scaleY: 1,
+};
+
 export const defaultActionButtonOffsetTuning: ActionButtonOffsetTuning = {
   x: 0,
   y: 0,
@@ -397,6 +419,8 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
+  switchWeapon: { x: 0, y: 0 },
+  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -473,6 +497,11 @@ export const DEFAULT_FACE_PARTS: Record<FacePartKey, FacePartTuning> = {
 export const DEFAULT_FACE_ASSET_LAYERS: Record<FaceAssetLayerKey, FaceAssetLayerTuning> = {
   pupilLeft: { x: -20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
   pupilRight: { x: 20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
+};
+
+export const DEFAULT_APPEARANCE_LAYERS: Record<AppearanceLayerKey, AppearanceLayerTuning> = {
+  hair: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1 },
+  beard: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1 },
 };
 
 export const DEFAULT_BODY_PART_LAYERS: Record<RigPartKey, BodyPartLayerTuning> = createDefaultBodyPartLayers();
@@ -1282,6 +1311,10 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       pupilLeft: { x: -20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
       pupilRight: { x: 20, y: -44, angle: 0, scaleX: 1, scaleY: 1 },
     },
+    appearanceLayers: {
+      hair: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1 },
+      beard: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1 },
+    },
     bodyAnimations: {
       idle: {
         enabled: true,
@@ -1971,6 +2004,10 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       pupilLeft: { x: -13, y: -43.5, angle: 0, scaleX: 1.3, scaleY: 1.25 },
       pupilRight: { x: 13, y: -44, angle: 0, scaleX: 1.3, scaleY: 1.25 },
     },
+    appearanceLayers: {
+      hair: { x: 0, y: -7, angle: 0, scaleX: 0.95, scaleY: 0.97 },
+      beard: { x: 0, y: 9.5, angle: 0, scaleX: 0.9, scaleY: 1 },
+    },
     bodyAnimations: {
       idle: {
         enabled: true,
@@ -2274,7 +2311,7 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       },
       heavy: {
         enabled: true,
-        duration: 700,
+        duration: 600,
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -2799,7 +2836,9 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   paperDollBodyPreset: "dummy-v2",
   bodyPresetTuning: cloneBodyPresetTunings(DEFAULT_BODY_PRESET_TUNING),
   selectedFaceAssetLayer: "pupilLeft",
+  selectedAppearanceLayer: "hair",
   faceAssetLayers: cloneFaceAssetLayers(DEFAULT_FACE_ASSET_LAYERS),
+  appearanceLayers: cloneAppearanceLayers(DEFAULT_APPEARANCE_LAYERS),
   selectedRigPart: "torso",
   selectedRigParts: ["torso"],
   rigParts: cloneRigParts(DEFAULT_RIG_PARTS),
@@ -2902,12 +2941,16 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
   const selectedFaceAssetLayer = isFaceAssetLayerKey(input.selectedFaceAssetLayer)
     ? input.selectedFaceAssetLayer
     : defaultDebugTuning.selectedFaceAssetLayer;
+  const selectedAppearanceLayer = isAppearanceLayerKey(input.selectedAppearanceLayer)
+    ? input.selectedAppearanceLayer
+    : defaultDebugTuning.selectedAppearanceLayer;
   const paperDollBodyPreset = isPaperDollBodyPreset(input.paperDollBodyPreset) ? input.paperDollBodyPreset : defaultDebugTuning.paperDollBodyPreset;
   const legacyBodyPresetTuning: BodyPresetTuning = {
     rigParts: normalizeRigParts(input.rigParts, DEFAULT_RIG_PARTS),
     bodyPartLayers: normalizeBodyPartLayers((input as { bodyPartLayers?: unknown }).bodyPartLayers, DEFAULT_BODY_PART_LAYERS),
     faceParts: normalizeFaceParts(input.faceParts, DEFAULT_FACE_PARTS),
     faceAssetLayers: normalizeFaceAssetLayers(input.faceAssetLayers, DEFAULT_FACE_ASSET_LAYERS),
+    appearanceLayers: normalizeAppearanceLayers((input as { appearanceLayers?: unknown }).appearanceLayers, DEFAULT_APPEARANCE_LAYERS),
     bodyAnimations: normalizeBodyAnimations(input.bodyAnimations, legacyIdleAnimation),
   };
 
@@ -3038,7 +3081,9 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     paperDollBodyPreset,
     bodyPresetTuning: normalizeBodyPresetTunings(input.bodyPresetTuning, paperDollBodyPreset, legacyBodyPresetTuning, shouldResetClassicBodyPreset),
     selectedFaceAssetLayer,
+    selectedAppearanceLayer,
     faceAssetLayers: legacyBodyPresetTuning.faceAssetLayers,
+    appearanceLayers: legacyBodyPresetTuning.appearanceLayers,
     selectedRigPart,
     selectedRigParts: normalizeSelectedRigParts(input.selectedRigParts, selectedRigPart),
     rigParts: legacyBodyPresetTuning.rigParts,
@@ -3102,6 +3147,10 @@ function cloneFaceAssetLayers(source: Record<FaceAssetLayerKey, FaceAssetLayerTu
   return Object.fromEntries(FACE_ASSET_LAYER_KEYS.map((key) => [key, { ...source[key] }])) as Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
 }
 
+function cloneAppearanceLayers(source: Record<AppearanceLayerKey, AppearanceLayerTuning>): Record<AppearanceLayerKey, AppearanceLayerTuning> {
+  return Object.fromEntries(APPEARANCE_LAYER_KEYS.map((key) => [key, { ...source[key] }])) as Record<AppearanceLayerKey, AppearanceLayerTuning>;
+}
+
 function cloneBodyPartLayers(source: Record<RigPartKey, BodyPartLayerTuning>): Record<RigPartKey, BodyPartLayerTuning> {
   return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<RigPartKey, BodyPartLayerTuning>;
 }
@@ -3119,6 +3168,7 @@ function cloneBodyPresetTuning(source: BodyPresetTuning): BodyPresetTuning {
     bodyPartLayers: cloneBodyPartLayers(source.bodyPartLayers),
     faceParts: cloneFaceParts(source.faceParts),
     faceAssetLayers: cloneFaceAssetLayers(source.faceAssetLayers),
+    appearanceLayers: cloneAppearanceLayers(source.appearanceLayers),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
   };
 }
@@ -3161,6 +3211,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     rigParts: cloneRigParts(source.rigParts),
     faceParts: cloneFaceParts(source.faceParts),
     faceAssetLayers: cloneFaceAssetLayers(source.faceAssetLayers),
+    appearanceLayers: cloneAppearanceLayers(source.appearanceLayers),
     equipment: cloneEquipment(source.equipment),
     equipmentItems: cloneEquipmentItems(source.equipmentItems),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
@@ -3371,6 +3422,32 @@ function normalizeFaceAssetLayers(
   ) as Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
 }
 
+function normalizeAppearanceLayers(
+  input: unknown,
+  fallbackLayers = DEFAULT_APPEARANCE_LAYERS,
+): Record<AppearanceLayerKey, AppearanceLayerTuning> {
+  const source =
+    typeof input === "object" && input !== null ? (input as Partial<Record<AppearanceLayerKey, Partial<AppearanceLayerTuning>>>) : {};
+
+  return Object.fromEntries(
+    APPEARANCE_LAYER_KEYS.map((key) => {
+      const layer = source[key] ?? {};
+      const fallback = fallbackLayers[key] ?? defaultAppearanceLayerTuning;
+
+      return [
+        key,
+        {
+          x: clampNumber(layer.x, -160, 160, fallback.x),
+          y: clampNumber(layer.y, -160, 160, fallback.y),
+          angle: clampNumber(layer.angle, -180, 180, fallback.angle),
+          scaleX: clampNumber(layer.scaleX, 0.1, 3, fallback.scaleX),
+          scaleY: clampNumber(layer.scaleY, 0.1, 3, fallback.scaleY),
+        },
+      ];
+    }),
+  ) as Record<AppearanceLayerKey, AppearanceLayerTuning>;
+}
+
 function normalizeBodyPresetTunings(
   input: unknown,
   activePreset: PaperDollBodyPreset,
@@ -3405,6 +3482,7 @@ function normalizeBodyPresetTuning(input: unknown, fallback: BodyPresetTuning): 
     bodyPartLayers: normalizeBodyPartLayers(source.bodyPartLayers, fallback.bodyPartLayers),
     faceParts: normalizeFaceParts(source.faceParts, fallback.faceParts),
     faceAssetLayers: normalizeFaceAssetLayers(source.faceAssetLayers, fallback.faceAssetLayers),
+    appearanceLayers: normalizeAppearanceLayers(source.appearanceLayers, fallback.appearanceLayers),
     bodyAnimations: normalizeBodyAnimations(source.bodyAnimations, undefined, fallback.bodyAnimations),
   };
 }
@@ -3527,6 +3605,10 @@ function isRigPartKey(value: unknown): value is RigPartKey {
 
 function isFaceAssetLayerKey(value: unknown): value is FaceAssetLayerKey {
   return typeof value === "string" && FACE_ASSET_LAYER_KEYS.includes(value as FaceAssetLayerKey);
+}
+
+function isAppearanceLayerKey(value: unknown): value is AppearanceLayerKey {
+  return typeof value === "string" && APPEARANCE_LAYER_KEYS.includes(value as AppearanceLayerKey);
 }
 
 function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {

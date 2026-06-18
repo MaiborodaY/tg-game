@@ -66,6 +66,7 @@ export interface HeroState {
   gold: number;
   bowShotCapacity?: number;
   baseStats: HeroBaseStats;
+  appearance: HeroAppearance;
   equipment: HeroEquipment;
   inventory: HeroInventoryEntry[];
   unlockedShopRarities: HeroItemRarity[];
@@ -79,6 +80,20 @@ export interface HeroBaseStats {
   agility: number;
   vitality: number;
 }
+
+export interface HeroAppearance {
+  hairId: string | null;
+  beardId: string | null;
+}
+
+export type HeroAppearanceSlotKey = "hair" | "beard";
+
+export const HERO_APPEARANCE_SLOT_KEYS: readonly HeroAppearanceSlotKey[] = ["hair", "beard"];
+
+export const DEFAULT_HERO_APPEARANCE: HeroAppearance = {
+  hairId: "hair-01",
+  beardId: "beard-short-01",
+};
 
 export const HERO_ATTRIBUTE_KEYS = ["strength", "agility", "vitality"] as const;
 export type HeroAttributeKey = (typeof HERO_ATTRIBUTE_KEYS)[number];
@@ -492,6 +507,10 @@ export function createDefaultHeroEquipment(): HeroEquipment {
   return Object.fromEntries(HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])) as HeroEquipment;
 }
 
+export function createDefaultHeroAppearance(): HeroAppearance {
+  return { ...DEFAULT_HERO_APPEARANCE };
+}
+
 export function createDefaultHeroInventory(): HeroInventoryEntry[] {
   return [];
 }
@@ -511,6 +530,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
       agility: 0,
       vitality: 0,
     },
+    appearance: createDefaultHeroAppearance(),
     equipment: createDefaultHeroEquipment(),
     inventory: createDefaultHeroInventory(),
     unlockedShopRarities: [],
@@ -1215,6 +1235,24 @@ export function grantHeroGold(hero: HeroState, amount: number, now = new Date().
   return {
     ...hero,
     gold: hero.gold + gold,
+    updatedAt: now,
+  };
+}
+
+export function updateHeroAppearance(hero: HeroState, appearance: Partial<HeroAppearance>, now = new Date().toISOString()): HeroState {
+  const currentAppearance = hero.appearance ?? createDefaultHeroAppearance();
+  const nextAppearance: HeroAppearance = {
+    ...currentAppearance,
+    ...appearance,
+  };
+
+  if (currentAppearance.hairId === nextAppearance.hairId && currentAppearance.beardId === nextAppearance.beardId) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    appearance: nextAppearance,
     updatedAt: now,
   };
 }

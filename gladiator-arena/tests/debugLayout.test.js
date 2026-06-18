@@ -33,8 +33,8 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugMainSource.includes("mountDebugPanel"), true);
 });
 
-test("debug app starts the hero from the empty default state", () => {
-  assert.equal(debugMainSource.includes("...createDefaultHero()"), true);
+test("debug app starts the hero without starter equipment overrides", () => {
+  assert.equal(debugMainSource.includes("let hero: HeroState = createDefaultHero()"), true);
   assert.equal(debugMainSource.includes("createDebugHeroEquipment()"), false);
   assert.equal(debugMainSource.includes("TRAINING_WEAPON_ID"), false);
   assert.equal(debugMainSource.includes("createStarterHeroEquipment()"), false);
@@ -302,12 +302,18 @@ test("debug face editor can tune asset face layers", () => {
   assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY"), false);
   assert.equal(assetsSource.includes("body-parts/face/eye-left.png"), false);
   assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight"] as const'), true);
+  assert.equal(debugTuningSource.includes('APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const'), true);
   assert.equal(debugTuningSource.includes("faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;"), true);
+  assert.equal(debugTuningSource.includes("appearanceLayers: Record<AppearanceLayerKey, AppearanceLayerTuning>;"), true);
   assert.equal(debugPanelSource.includes("debug-face-panel"), true);
   assert.equal(debugPanelSource.includes("debug-face-editor__select"), true);
   assert.equal(debugPanelSource.includes("data-face-asset-layer-key"), true);
+  assert.equal(debugPanelSource.includes("debug-face-appearance-editor__select"), true);
+  assert.equal(debugPanelSource.includes("data-appearance-layer-key"), true);
   assert.equal(arenaSceneSource.includes("faceAssetKeys: {"), true);
   assert.equal(arenaSceneSource.includes("syncPaperDollFaceAssetLayers"), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollAppearanceLayers"), true);
+  assert.equal(arenaSceneSource.includes("applyAppearanceLayerTransform"), true);
 });
 
 test("debug character preview can ghost armor from an in-scene toggle", () => {

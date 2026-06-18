@@ -121,14 +121,22 @@ import {
   type FighterState,
 } from "./combat";
 import {
+  createDefaultHeroAppearance,
   createDefaultHeroEquipment,
   DEFAULT_ENEMY_VISUAL_PRESET,
   HERO_EQUIPMENT_SLOT_KEYS,
+  type HeroAppearance,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroWeaponClass,
 } from "./hero";
+import {
+  getHeroAppearanceAsset,
+  getHeroAppearanceAssetKeys,
+  HERO_APPEARANCE_ASSETS,
+  resolveHeroAppearanceAssetUrl,
+} from "./appearanceAssetRegistry";
 import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, resolveEquipmentAssetUrl, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
 import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
 import {
@@ -136,11 +144,13 @@ import {
   debugTuning,
   DEFAULT_BODY_ANIMATIONS,
   DEFAULT_BODY_PRESET_TUNING,
+  DEFAULT_APPEARANCE_LAYERS,
   DEFAULT_EQUIPMENT,
   DEFAULT_EQUIPMENT_ITEM_TUNING,
   DEFAULT_FACE_PARTS,
   DEFAULT_RIG_PARTS,
   DEFAULT_SLASH_ARCS,
+  APPEARANCE_LAYER_KEYS,
   defaultRigPartTuning,
   endDebugUndoGroup,
   FACE_ASSET_LAYER_KEYS,
@@ -148,6 +158,8 @@ import {
   subscribeDebugTuning,
   updateDebugTuning,
   type ArenaDebugTuning,
+  type AppearanceLayerKey,
+  type AppearanceLayerTuning,
   type BodyAnimationKey,
   type BodyAnimationTuning,
   type BodyPresetTuning,
@@ -232,6 +244,7 @@ type AttackBodyAnimationKey = SlashArcAttackKey;
 type PaperDollEquipmentAnchors = Partial<Record<PaperDollEquipmentSlotKey, FighterPart>>;
 type PaperDollEquipmentLayerKey = "legs" | "torso" | "head" | "weapon" | "arms" | "weaponTop";
 type PaperDollWeaponOverlayCrop = "mainTop" | "bowTop" | "bowBottom";
+type PaperDollAppearanceLayerKey = AppearanceLayerKey;
 
 type PaperDollEquipmentLayers = Record<PaperDollEquipmentLayerKey, Phaser.GameObjects.Container>;
 
@@ -265,6 +278,9 @@ interface PaperDollRig {
   faceOverlayMode?: PaperDollFaceOverlayMode;
   faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>;
   faceAssetLayers: PaperDollFaceAssetLayers;
+  appearanceAssetKeys?: Partial<Record<PaperDollAppearanceLayerKey, string>>;
+  appearanceLayers: PaperDollAppearanceLayers;
+  appearanceState?: HeroAppearance;
   equipment: PaperDollEquipment;
   equipmentAnchors: PaperDollEquipmentAnchors;
   equipmentState?: HeroEquipment;
@@ -285,6 +301,8 @@ interface PaperDollShadowRig {
   faceOverlayMode?: PaperDollFaceOverlayMode;
   faceAssetKeys?: Partial<Record<FaceAssetLayerKey, string>>;
   faceAssetLayers: PaperDollFaceAssetLayers;
+  appearanceAssetKeys?: Partial<Record<PaperDollAppearanceLayerKey, string>>;
+  appearanceLayers: PaperDollAppearanceLayers;
   equipment: PaperDollEquipment;
   equipmentAnchors: PaperDollEquipmentAnchors;
   faceParts: PaperDollFaceParts;
@@ -318,6 +336,7 @@ interface PaperDollFaceParts {
 }
 
 type PaperDollFaceAssetLayers = Partial<Record<FaceAssetLayerKey, FighterPart>>;
+type PaperDollAppearanceLayers = Partial<Record<PaperDollAppearanceLayerKey, FighterPart>>;
 
 interface PaperDollAppearance {
   facing: 1 | -1;
@@ -361,6 +380,8 @@ interface PaperDollFighterOptions {
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
   weaponBowAssetKey?: string;
+  appearanceAssetKeys?: Partial<Record<PaperDollAppearanceLayerKey, string>>;
+  appearance?: HeroAppearance;
   equipment?: HeroEquipment;
   usesPlayerEquipment?: boolean;
   castsShadow?: boolean;
@@ -585,6 +606,8 @@ const HEAD_FACE_EYE_COVER_HEIGHT = 17;
 const HEAD_FACE_EYE_WHITE = 0xfffbf2;
 const HEAD_FACE_EYE_BLACK = 0x050201;
 const FACE_ASSET_PUPIL_DISPLAY_HEIGHT = 13;
+const APPEARANCE_HAIR_DISPLAY_HEIGHT = 92;
+const APPEARANCE_BEARD_DISPLAY_HEIGHT = 54;
 const TORSO_ASSET_DISPLAY_HEIGHT = 175;
 const TORSO_ASSET_LOCAL_BOTTOM_Y = 8;
 const TORSO_ASSET_ORIGIN_X = 626 / 1254;
@@ -757,6 +780,11 @@ const PAPER_DOLL_TORSO_ASSET_CONFIG: PaperDollPartAssetConfig = {
 const PAPER_DOLL_FACE_ASSET_CONFIGS: Record<FaceAssetLayerKey, PaperDollPartAssetConfig> = {
   pupilLeft: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
   pupilRight: { displayHeight: FACE_ASSET_PUPIL_DISPLAY_HEIGHT, localX: 0, localY: 0, originX: 0.5, originY: 0.5 },
+};
+
+const PAPER_DOLL_APPEARANCE_ASSET_CONFIGS: Record<PaperDollAppearanceLayerKey, PaperDollPartAssetConfig> = {
+  hair: { displayHeight: APPEARANCE_HAIR_DISPLAY_HEIGHT, localX: 0, localY: -70, originX: 0.5, originY: 0.5 },
+  beard: { displayHeight: APPEARANCE_BEARD_DISPLAY_HEIGHT, localX: 0, localY: -28, originX: 0.5, originY: 0.5 },
 };
 
 const PAPER_DOLL_PART_ASSET_CONFIGS: Partial<Record<PaperDollPartKey, PaperDollPartAssetConfig>> = {
@@ -1033,6 +1061,7 @@ function getHeroItemEquipmentAssetKeys(itemId: HeroItemId): PaperDollEquipmentAs
 export type CityTimeOfDay = "night" | "day";
 
 const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
+const PLAYER_APPEARANCE_CHANGE_EVENT = "gladiator-player-appearance-change";
 const PLAYER_BODY_SCALE_CHANGE_EVENT = "gladiator-player-body-scale-change";
 const CITY_TIME_OF_DAY_CHANGE_EVENT = "gladiator-city-time-of-day-change";
 
@@ -1044,6 +1073,7 @@ let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
+let activePlayerAppearance: HeroAppearance = createDefaultHeroAppearance();
 let activePlayerBodyScaleBonus = 0;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
@@ -1112,7 +1142,7 @@ function preloadPaperDollAssets(target: Phaser.Scene, equipmentStates: readonly 
   activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
   const loadedAssetKeys = new Set<string>();
 
-  getSyncPaperDollAssetLoadEntriesForEquipmentStates(activePaperDollAssetsUseLowRes, equipmentStates).forEach((asset) => {
+  getSyncPaperDollAssetLoadEntriesForEquipmentStates(activePaperDollAssetsUseLowRes, equipmentStates, [activePlayerAppearance]).forEach((asset) => {
     const textureKey = asset.key;
 
     if (loadedAssetKeys.has(textureKey)) {
@@ -1136,7 +1166,7 @@ function ensurePaperDollAssetResolution(
     onSynced?.();
   };
 
-  void getPaperDollAssetLoadEntriesForEquipmentStates(lowRes, fighters.map(getFighterPaperDollEquipmentState))
+  void getPaperDollAssetLoadEntriesForEquipmentStates(lowRes, fighters.map(getFighterPaperDollEquipmentState), fighters.map(getFighterPaperDollAppearanceState))
     .then((loadEntries) => ensurePaperDollAssetEntriesLoaded(target, loadEntries))
     .then(syncTextures);
 }
@@ -1144,7 +1174,7 @@ function ensurePaperDollAssetResolution(
 function createPaperDollAssetsByKey(): ReadonlyMap<string, PaperDollAssetDefinition> {
   const assetsByKey = new Map<string, PaperDollAssetDefinition>();
 
-  ([...FIGHTER_PAPER_DOLL_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS] as readonly PaperDollAssetDefinition[]).forEach((asset) => {
+  ([...FIGHTER_PAPER_DOLL_ASSETS, ...HERO_APPEARANCE_ASSETS, ...GENERATED_EQUIPMENT_ASSETS, ...AUTO_EQUIPMENT_ASSETS] as readonly PaperDollAssetDefinition[]).forEach((asset) => {
     if (!assetsByKey.has(asset.key)) {
       assetsByKey.set(asset.key, asset);
     }
@@ -1156,17 +1186,19 @@ function createPaperDollAssetsByKey(): ReadonlyMap<string, PaperDollAssetDefinit
 function getPaperDollAssetLoadEntriesForEquipmentStates(
   lowRes: boolean,
   equipmentStates: readonly (HeroEquipment | undefined)[] = [],
+  appearanceStates: readonly (HeroAppearance | undefined)[] = [],
 ): Promise<PaperDollAssetLoadEntry[]> {
-  return getPaperDollAssetLoadEntriesForKeys(lowRes, getPaperDollAssetKeysForEquipmentStates(equipmentStates));
+  return getPaperDollAssetLoadEntriesForKeys(lowRes, getPaperDollAssetKeysForEquipmentStates(equipmentStates, appearanceStates));
 }
 
 function getSyncPaperDollAssetLoadEntriesForEquipmentStates(
   lowRes: boolean,
   equipmentStates: readonly (HeroEquipment | undefined)[] = [],
+  appearanceStates: readonly (HeroAppearance | undefined)[] = [],
 ): PaperDollAssetLoadEntry[] {
   const entries = new Map<string, string>();
 
-  for (const assetKey of getPaperDollAssetKeysForEquipmentStates(equipmentStates)) {
+  for (const assetKey of getPaperDollAssetKeysForEquipmentStates(equipmentStates, appearanceStates)) {
     const asset = PAPER_DOLL_ASSETS_BY_KEY.get(assetKey);
 
     if (!asset?.url) {
@@ -1210,17 +1242,31 @@ async function resolvePaperDollAssetUrl(asset: PaperDollAssetDefinition, lowRes:
     }
 
     if (asset.lowSourcePath) {
-      return (await resolveEquipmentAssetUrl(asset.lowSourcePath)) ?? asset.url ?? (asset.sourcePath ? resolveEquipmentAssetUrl(asset.sourcePath) : undefined);
+      return (await resolvePaperDollSourceAssetUrl(asset.lowSourcePath)) ?? asset.url ?? (asset.sourcePath ? resolvePaperDollSourceAssetUrl(asset.sourcePath) : undefined);
     }
   }
 
-  return asset.url ?? (asset.sourcePath ? resolveEquipmentAssetUrl(asset.sourcePath) : undefined);
+  return asset.url ?? (asset.sourcePath ? resolvePaperDollSourceAssetUrl(asset.sourcePath) : undefined);
 }
 
-function getPaperDollAssetKeysForEquipmentStates(equipmentStates: readonly (HeroEquipment | undefined)[]): string[] {
+function resolvePaperDollSourceAssetUrl(sourcePath: string): Promise<string | undefined> {
+  if (sourcePath.startsWith("assets/fighters/appearance/")) {
+    return resolveHeroAppearanceAssetUrl(sourcePath);
+  }
+
+  return resolveEquipmentAssetUrl(sourcePath);
+}
+
+function getPaperDollAssetKeysForEquipmentStates(
+  equipmentStates: readonly (HeroEquipment | undefined)[],
+  appearanceStates: readonly (HeroAppearance | undefined)[] = [],
+): string[] {
   const assetKeys = new Set<string>();
 
   FIGHTER_PAPER_DOLL_ASSETS.forEach((asset) => assetKeys.add(asset.key));
+  appearanceStates.forEach((appearance) => {
+    getHeroAppearanceAssetKeys(appearance).forEach((assetKey) => assetKeys.add(assetKey));
+  });
   equipmentStates.forEach((equipment) => {
     Object.values(getPlayerEquipmentAssetKeys(equipment)).forEach((assetKey) => {
       if (typeof assetKey === "string") {
@@ -1242,6 +1288,16 @@ function getFighterPaperDollEquipmentState(fighter: FighterVisual | undefined): 
   return rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState;
 }
 
+function getFighterPaperDollAppearanceState(fighter: FighterVisual | undefined): HeroAppearance | undefined {
+  const rig = fighter?.paperDollRig;
+
+  if (!rig) {
+    return undefined;
+  }
+
+  return rig.usesPlayerEquipment ? activePlayerAppearance : rig.appearanceState;
+}
+
 function ensurePaperDollEquipmentAssetsLoaded(
   target: Phaser.Scene,
   equipmentStates: readonly (HeroEquipment | undefined)[],
@@ -1255,6 +1311,20 @@ function ensurePaperDollEquipmentAssetsLoaded(
         assetKeys.add(assetKey);
       }
     });
+  });
+
+  return getPaperDollAssetLoadEntriesForKeys(lowRes, assetKeys).then((entries) => ensurePaperDollAssetEntriesLoaded(target, entries));
+}
+
+function ensurePaperDollAppearanceAssetsLoaded(
+  target: Phaser.Scene,
+  appearanceStates: readonly (HeroAppearance | undefined)[],
+): Promise<void> {
+  const lowRes = getPlayerSettings().lowEffects;
+  const assetKeys = new Set<string>();
+
+  appearanceStates.forEach((appearance) => {
+    getHeroAppearanceAssetKeys(appearance).forEach((assetKey) => assetKeys.add(assetKey));
   });
 
   return getPaperDollAssetLoadEntriesForKeys(lowRes, assetKeys).then((entries) => ensurePaperDollAssetEntriesLoaded(target, entries));
@@ -1353,7 +1423,7 @@ function getArenaAssetPrewarmUrls(): string[] {
 }
 
 async function getCityAssetPrewarmUrls(): Promise<string[]> {
-  const paperDollUrls = await getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment]);
+  const paperDollUrls = await getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment], [activePlayerAppearance]);
 
   return [
     CITY_BACKGROUND_ASSET_URL,
@@ -1413,6 +1483,15 @@ export function setPlayerEquipment(equipment: HeroEquipment): void {
   notifyPlayerEquipmentChanged(changedSlots);
 }
 
+export function setPlayerAppearance(appearance: HeroAppearance): void {
+  if (areHeroAppearanceStatesEqual(activePlayerAppearance, appearance)) {
+    return;
+  }
+
+  activePlayerAppearance = { ...appearance };
+  notifyPlayerAppearanceChanged();
+}
+
 export function setPlayerBodyScaleBonus(bodyScaleBonus: number): void {
   const nextBodyScaleBonus = Math.max(0, Number.isFinite(bodyScaleBonus) ? bodyScaleBonus : 0);
 
@@ -1436,6 +1515,10 @@ function getChangedHeroEquipmentSlots(left: HeroEquipment, right: HeroEquipment)
   return PAPER_DOLL_EQUIPMENT_SLOT_KEYS.filter((slotKey) => (left[slotKey] ?? null) !== (right[slotKey] ?? null));
 }
 
+function areHeroAppearanceStatesEqual(left: HeroAppearance | undefined, right: HeroAppearance | undefined): boolean {
+  return (left?.hairId ?? null) === (right?.hairId ?? null) && (left?.beardId ?? null) === (right?.beardId ?? null);
+}
+
 export function getCityTimeOfDay(): CityTimeOfDay {
   return activeCityTimeOfDay;
 }
@@ -1452,6 +1535,12 @@ export function setCityTimeOfDay(timeOfDay: CityTimeOfDay): void {
 function usePlayerEquipment(equipment: HeroEquipment | undefined): void {
   if (equipment) {
     setPlayerEquipment(equipment);
+  }
+}
+
+function usePlayerAppearance(appearance: HeroAppearance | undefined): void {
+  if (appearance) {
+    setPlayerAppearance(appearance);
   }
 }
 
@@ -1475,6 +1564,27 @@ function getPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): PaperDo
 
 function createPlayerEquipmentAssetKeys(equipment = activePlayerEquipment): PaperDollEquipmentAssetKeys {
   return getActivePaperDollEquipmentAssetKeys(getPlayerEquipmentAssetKeys(equipment));
+}
+
+function createPlayerAppearanceAssetKeys(
+  appearance = activePlayerAppearance,
+  bodyPresetKey: PaperDollBodyPreset = debugTuning.paperDollBodyPreset,
+): Partial<Record<PaperDollAppearanceLayerKey, string>> {
+  if (!shouldUsePaperDollAppearanceAssets(bodyPresetKey)) {
+    return {};
+  }
+
+  const hairAsset = getHeroAppearanceAsset(appearance?.hairId);
+  const beardAsset = getHeroAppearanceAsset(appearance?.beardId);
+
+  return {
+    ...(hairAsset ? { hair: hairAsset.key } : {}),
+    ...(beardAsset ? { beard: beardAsset.key } : {}),
+  };
+}
+
+function shouldUsePaperDollAppearanceAssets(bodyPresetKey: PaperDollBodyPreset | undefined): boolean {
+  return (bodyPresetKey ?? debugTuning.paperDollBodyPreset) === "dummy-v2";
 }
 
 function getPlayerEquipmentSlotAssetKey(equipment: HeroEquipment, slotKey: PaperDollEquipmentSlotKey): string | undefined {
@@ -1522,6 +1632,14 @@ function notifyPlayerEquipmentChanged(changedSlots?: readonly PaperDollEquipment
   window.dispatchEvent(new CustomEvent<PlayerEquipmentChangeDetail>(PLAYER_EQUIPMENT_CHANGE_EVENT, { detail: { changedSlots } }));
 }
 
+function notifyPlayerAppearanceChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent<HeroAppearance>(PLAYER_APPEARANCE_CHANGE_EVENT, { detail: { ...activePlayerAppearance } }));
+}
+
 function notifyPlayerBodyScaleChanged(): void {
   if (typeof window === "undefined") {
     return;
@@ -1550,6 +1668,20 @@ function subscribePlayerEquipmentChanges(callback: (detail: PlayerEquipmentChang
   window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, listener);
 
   return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, listener);
+}
+
+function subscribePlayerAppearanceChanges(callback: (appearance: HeroAppearance) => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const listener = (event: Event): void => {
+    callback(event instanceof CustomEvent ? ((event as CustomEvent<HeroAppearance>).detail ?? activePlayerAppearance) : activePlayerAppearance);
+  };
+
+  window.addEventListener(PLAYER_APPEARANCE_CHANGE_EVENT, listener);
+
+  return () => window.removeEventListener(PLAYER_APPEARANCE_CHANGE_EVENT, listener);
 }
 
 function subscribePlayerBodyScaleChanges(callback: () => void): () => void {
@@ -1584,6 +1716,7 @@ export class ArenaScene extends Phaser.Scene {
   private renderOnlyToken = 0;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerAppearance?: () => void;
   private unsubscribePlayerSettings?: () => void;
 
   constructor() {
@@ -1610,6 +1743,9 @@ export class ArenaScene extends Phaser.Scene {
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(({ changedSlots }) =>
       syncFighterEquipmentVisibility(this.visuals?.player, changedSlots),
     );
+    this.unsubscribePlayerAppearance = subscribePlayerAppearanceChanges((appearance) => {
+      void ensurePaperDollAppearanceAssetsLoaded(this, [appearance]).then(() => syncPaperDollAppearanceState(this.visuals?.player.paperDollRig, appearance));
+    });
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.visuals?.player, this.visuals?.enemy], () => {
         if (this.currentState) {
@@ -1620,6 +1756,7 @@ export class ArenaScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerAppearance?.();
       this.unsubscribePlayerSettings?.();
     });
     readyCallback?.(this);
@@ -1858,9 +1995,15 @@ export class ArenaScene extends Phaser.Scene {
   }
 }
 
-export function launchArena(onReady: (scene: ArenaScene) => void, _onAction: (actionId: ActionId) => void, playerEquipment?: HeroEquipment): () => void {
+export function launchArena(
+  onReady: (scene: ArenaScene) => void,
+  _onAction: (actionId: ActionId) => void,
+  playerEquipment?: HeroEquipment,
+  playerAppearance?: HeroAppearance,
+): () => void {
   void _onAction;
   usePlayerEquipment(playerEquipment);
+  usePlayerAppearance(playerAppearance);
   readyCallback = onReady;
 
   const config: Phaser.Types.Core.GameConfig = {
@@ -1943,6 +2086,7 @@ class CityHeroScene extends Phaser.Scene {
   private heroCamera?: Phaser.Cameras.Scene2D.Camera;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerAppearance?: () => void;
   private unsubscribePlayerBodyScale?: () => void;
   private unsubscribePlayerSettings?: () => void;
   private unsubscribeCityTimeOfDay?: () => void;
@@ -1956,6 +2100,7 @@ class CityHeroScene extends Phaser.Scene {
   private shopMenuTopY?: number;
   private previewEquipment?: HeroEquipment;
   private equipmentSyncToken = 0;
+  private appearanceSyncToken = 0;
   private equipmentTexturePrewarmImage?: Phaser.GameObjects.Image;
 
   constructor() {
@@ -1990,6 +2135,7 @@ class CityHeroScene extends Phaser.Scene {
       this.previewEquipment = undefined;
       this.syncPlayerEquipment(changedSlots);
     });
+    this.unsubscribePlayerAppearance = subscribePlayerAppearanceChanges((appearance) => this.syncPlayerAppearance(appearance));
     this.unsubscribePlayerBodyScale = subscribePlayerBodyScaleChanges(() => this.syncFighterLayout());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
@@ -2009,6 +2155,7 @@ class CityHeroScene extends Phaser.Scene {
       this.heroCamera = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerAppearance?.();
       this.unsubscribePlayerBodyScale?.();
       this.unsubscribePlayerSettings?.();
       this.unsubscribeCityTimeOfDay?.();
@@ -2160,6 +2307,22 @@ class CityHeroScene extends Phaser.Scene {
       syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots, this.previewEquipment);
       if (this.fighter) {
         applyCityHeroLighting(this.fighter, this.cityLightingAmount, changedSlots);
+      }
+    });
+  }
+
+  private syncPlayerAppearance(appearance = activePlayerAppearance): void {
+    const syncToken = this.appearanceSyncToken + 1;
+
+    this.appearanceSyncToken = syncToken;
+    void ensurePaperDollAppearanceAssetsLoaded(this, [appearance]).then(() => {
+      if (syncToken !== this.appearanceSyncToken) {
+        return;
+      }
+
+      syncPaperDollAppearanceState(this.fighter?.paperDollRig, appearance);
+      if (this.fighter) {
+        applyCityHeroLighting(this.fighter, this.cityLightingAmount);
       }
     });
   }
@@ -2650,8 +2813,9 @@ function getCityBackgroundTint(assetKey: string): number {
   return assetKey === CITY_ARMORY_BACKGROUND_ASSET_KEY || assetKey === CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY ? CITY_SHOP_BACKGROUND_TINT : 0xffffff;
 }
 
-export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: HeroEquipment): CitySceneApi {
+export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: HeroEquipment, playerAppearance?: HeroAppearance): CitySceneApi {
   usePlayerEquipment(playerEquipment);
+  usePlayerAppearance(playerAppearance);
   let scene: CityHeroScene | undefined;
   let pendingCameraMode: CityCameraMode = "default";
   let pendingShopMenuTopY: number | undefined;
@@ -2746,7 +2910,9 @@ class HeroPortraitScene extends Phaser.Scene {
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerSettings?: () => void;
   private equipment?: HeroEquipment;
+  private appearance?: HeroAppearance;
   private equipmentSyncToken = 0;
+  private appearanceSyncToken = 0;
 
   constructor() {
     super("HeroPortraitScene");
@@ -2792,6 +2958,20 @@ class HeroPortraitScene extends Phaser.Scene {
     this.sync();
   }
 
+  async setAppearance(appearance: HeroAppearance): Promise<void> {
+    const syncToken = this.appearanceSyncToken + 1;
+
+    this.appearanceSyncToken = syncToken;
+    this.appearance = { ...appearance };
+    await ensurePaperDollAppearanceAssetsLoaded(this, [this.appearance]);
+    if (syncToken !== this.appearanceSyncToken) {
+      return;
+    }
+
+    syncPaperDollAppearanceState(this.fighter?.paperDollRig, this.appearance);
+    this.sync();
+  }
+
   captureFrame(callback: (src: string) => void): void {
     this.sync();
     this.game.renderer.snapshot((snapshot) => {
@@ -2814,11 +2994,14 @@ class HeroPortraitScene extends Phaser.Scene {
 
   private createPortraitOptions(): PaperDollFighterOptions {
     const equipment = this.equipment ?? activePlayerEquipment;
+    const appearance = this.appearance ?? activePlayerAppearance;
 
     return {
-      ...createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0, equipment),
+      ...createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0, equipment, appearance),
       castsShadow: false,
       equipment: equipment ? { ...equipment } : undefined,
+      appearance: { ...appearance },
+      appearanceAssetKeys: createPlayerAppearanceAssetKeys(appearance, debugTuning.paperDollBodyPreset),
       usesPlayerEquipment: false,
     };
   }
@@ -2840,12 +3023,16 @@ function syncHeroPortraitCrop(fighter: FighterVisual): void {
   });
 }
 
-function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined): string {
-  return HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS.map((slotKey) => `${slotKey}:${equipment?.[slotKey] ?? ""}`).join("|");
+function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appearance: HeroAppearance | undefined): string {
+  const equipmentKey = HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS.map((slotKey) => `${slotKey}:${equipment?.[slotKey] ?? ""}`).join("|");
+  const appearanceKey = `hair:${appearance?.hairId ?? ""}|beard:${appearance?.beardId ?? ""}`;
+
+  return `${equipmentKey}|${appearanceKey}`;
 }
 
 export interface HeroPortraitPreviewApi {
   setEquipment: (equipment: HeroEquipment) => void;
+  setAppearance: (appearance: HeroAppearance) => void;
   destroy: () => void;
 }
 
@@ -2869,11 +3056,14 @@ function createHeroPortraitSnapshotImage(parent: HTMLElement): HTMLImageElement 
 export function mountHeroPortraitPreview(
   parent: HTMLElement,
   playerEquipment?: HeroEquipment,
+  playerAppearance: HeroAppearance = activePlayerAppearance,
   options: HeroPortraitPreviewOptions = {},
 ): HeroPortraitPreviewApi {
   usePlayerEquipment(playerEquipment);
+  usePlayerAppearance(playerAppearance);
   let scene: HeroPortraitScene | undefined;
   let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
+  let pendingAppearance = { ...playerAppearance };
   let lastSnapshotKey: string | undefined;
   let snapshotToken = 0;
   let destroyed = false;
@@ -2883,12 +3073,12 @@ export function mountHeroPortraitPreview(
     image: createHeroPortraitSnapshotImage(targetParent),
   }));
 
-  const refreshSnapshot = (equipment = pendingEquipment) => {
+  const refreshSnapshot = (equipment = pendingEquipment, appearance = pendingAppearance) => {
     if (!scene || destroyed) {
       return;
     }
 
-    const snapshotKey = getHeroPortraitSnapshotKey(equipment);
+    const snapshotKey = getHeroPortraitSnapshotKey(equipment, appearance);
 
     if (snapshotKey === lastSnapshotKey) {
       return;
@@ -2922,11 +3112,9 @@ export function mountHeroPortraitPreview(
 
   const readyCallbackForGame = (readyScene: HeroPortraitScene) => {
     scene = readyScene;
-    if (pendingEquipment) {
-      void readyScene.setEquipment(pendingEquipment).then(() => refreshSnapshot());
-      return;
-    }
-    refreshSnapshot();
+    void Promise.all([pendingEquipment ? readyScene.setEquipment(pendingEquipment) : Promise.resolve(), readyScene.setAppearance(pendingAppearance)]).then(() =>
+      refreshSnapshot(),
+    );
   };
   heroPortraitReadyCallback = readyCallbackForGame;
 
@@ -2950,7 +3138,7 @@ export function mountHeroPortraitPreview(
   return {
     setEquipment: (equipment) => {
       const nextEquipment = { ...equipment };
-      const nextSnapshotKey = getHeroPortraitSnapshotKey(nextEquipment);
+      const nextSnapshotKey = getHeroPortraitSnapshotKey(nextEquipment, pendingAppearance);
 
       pendingEquipment = nextEquipment;
 
@@ -2959,11 +3147,28 @@ export function mountHeroPortraitPreview(
       }
 
       if (scene) {
-        void scene.setEquipment(nextEquipment).then(() => refreshSnapshot(nextEquipment));
+        void scene.setEquipment(nextEquipment).then(() => refreshSnapshot(nextEquipment, pendingAppearance));
         return;
       }
 
-      refreshSnapshot(nextEquipment);
+      refreshSnapshot(nextEquipment, pendingAppearance);
+    },
+    setAppearance: (appearance) => {
+      const nextAppearance = { ...appearance };
+      const nextSnapshotKey = getHeroPortraitSnapshotKey(pendingEquipment, nextAppearance);
+
+      pendingAppearance = nextAppearance;
+
+      if (nextSnapshotKey === lastSnapshotKey) {
+        return;
+      }
+
+      if (scene) {
+        void scene.setAppearance(nextAppearance).then(() => refreshSnapshot(pendingEquipment, nextAppearance));
+        return;
+      }
+
+      refreshSnapshot(pendingEquipment, nextAppearance);
     },
     destroy: () => {
       destroyed = true;
@@ -3501,10 +3706,11 @@ function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
   });
 }
 
-function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment): PaperDollFighterOptions {
+function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment, appearance = activePlayerAppearance): PaperDollFighterOptions {
   const bodyPresetKey = debugTuning.paperDollBodyPreset;
   const bodyPreset = getPaperDollBodyPreset(bodyPresetKey);
   const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipment);
+  const appearanceAssetKeys = createPlayerAppearanceAssetKeys(appearance, bodyPresetKey);
 
   return {
     x,
@@ -3519,6 +3725,8 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
     torsoAssetKey: bodyPreset.torsoAssetKey,
     faceOverlayMode: bodyPreset.faceOverlayMode,
     faceAssetKeys: bodyPreset.faceAssetKeys,
+    appearance: { ...appearance },
+    appearanceAssetKeys,
     ...equipmentAssetKeys,
     usesPlayerEquipment: true,
     bodyPartAssetKeys: bodyPreset.bodyPartAssetKeys,
@@ -3646,6 +3854,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const equipmentLayers = createPaperDollEquipmentLayers(target);
   const faceParts: PaperDollFaceParts = {};
   const faceAssetLayers: PaperDollFaceAssetLayers = {};
+  const appearanceLayers: PaperDollAppearanceLayers = {};
   const selectionHighlights = options.enableSelectionHighlights
     ? ({} as Record<PaperDollPartKey, Phaser.GameObjects.Graphics>)
     : undefined;
@@ -3654,7 +3863,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts, faceAssetLayers);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts, faceAssetLayers, appearanceLayers);
     if (selectionHighlights) {
       selectionHighlights[key] = addRigPartSelectionHighlight(target, partContainer, key);
     }
@@ -3675,6 +3884,9 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     faceOverlayMode: options.faceOverlayMode,
     faceAssetKeys: options.faceAssetKeys,
     faceAssetLayers,
+    appearanceAssetKeys: options.appearanceAssetKeys,
+    appearanceLayers,
+    appearanceState: options.appearance ? { ...options.appearance } : undefined,
     equipment,
     equipmentAnchors,
     equipmentState: options.equipment ? { ...options.equipment } : undefined,
@@ -3744,12 +3956,13 @@ function createPaperDollShadowRig(
   const equipmentLayers = createPaperDollEquipmentLayers(target);
   const faceParts: PaperDollFaceParts = {};
   const faceAssetLayers: PaperDollFaceAssetLayers = {};
+  const appearanceLayers: PaperDollAppearanceLayers = {};
 
   PAPER_DOLL_PART_ORDER.forEach((key) => {
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
     const partContainer = target.add.container(pivot.x, pivot.y);
 
-    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts, faceAssetLayers);
+    addPaperDollPartVisual(target, partContainer, key, options, equipment, equipmentLayers, equipmentAnchors, faceParts, faceAssetLayers, appearanceLayers);
     tintPaperDollShadowObject(partContainer);
     shadowRootContainer.add(partContainer);
     addPaperDollEquipmentLayersAfterPart(shadowRootContainer, key, equipmentLayers);
@@ -3771,6 +3984,8 @@ function createPaperDollShadowRig(
     faceOverlayMode: options.faceOverlayMode,
     faceAssetKeys: options.faceAssetKeys,
     faceAssetLayers,
+    appearanceAssetKeys: options.appearanceAssetKeys,
+    appearanceLayers,
     equipment,
     equipmentAnchors,
     faceParts,
@@ -4146,6 +4361,25 @@ function syncPaperDollEquipmentState(
   syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride);
 }
 
+function syncPaperDollAppearanceState(rig: PaperDollRig | undefined, appearanceOverride?: HeroAppearance): void {
+  if (!rig) {
+    return;
+  }
+
+  const appearance = appearanceOverride ?? (rig.usesPlayerEquipment ? activePlayerAppearance : rig.appearanceState) ?? createDefaultHeroAppearance();
+  const appearanceAssetKeys = createPlayerAppearanceAssetKeys(appearance, rig.bodyPresetKey);
+
+  rig.appearanceState = { ...appearance };
+  rig.appearanceAssetKeys = appearanceAssetKeys;
+  syncPaperDollAppearanceLayers(rig.appearanceLayers, rig.parts.head, appearanceAssetKeys, rig.bodyPresetKey);
+
+  if (rig.shadow) {
+    rig.shadow.appearanceAssetKeys = appearanceAssetKeys;
+    syncPaperDollAppearanceLayers(rig.shadow.appearanceLayers, rig.shadow.parts.head, appearanceAssetKeys, rig.shadow.bodyPresetKey);
+    tintPaperDollShadowObject(rig.shadow.root);
+  }
+}
+
 function isPaperDollWeaponSlot(slotKey: PaperDollEquipmentSlotKey): boolean {
   return slotKey === "weaponMain" || slotKey === "weaponBow";
 }
@@ -4204,9 +4438,11 @@ function syncFighterPaperDollTextureResolution(fighter: FighterVisual | undefine
 
   syncPaperDollBodyPartVisuals(rig);
   syncPaperDollFaceAssetLayers(rig.faceAssetLayers, rig.parts.head, rig.faceAssetKeys, rig.bodyPresetKey);
+  syncPaperDollAppearanceLayers(rig.appearanceLayers, rig.parts.head, rig.appearanceAssetKeys, rig.bodyPresetKey);
   if (rig.shadow) {
     syncPaperDollBodyPartVisuals(rig.shadow);
     syncPaperDollFaceAssetLayers(rig.shadow.faceAssetLayers, rig.shadow.parts.head, rig.shadow.faceAssetKeys, rig.shadow.bodyPresetKey);
+    syncPaperDollAppearanceLayers(rig.shadow.appearanceLayers, rig.shadow.parts.head, rig.shadow.appearanceAssetKeys, rig.shadow.bodyPresetKey);
   }
   syncPaperDollEquipmentVisibility(rig);
   if (rig.shadow) {
@@ -4242,6 +4478,8 @@ function syncPaperDollRigBodyPreset(
     | "faceParts"
     | "faceAssetKeys"
     | "faceAssetLayers"
+    | "appearanceAssetKeys"
+    | "appearanceLayers"
   >,
   presetKey: PaperDollBodyPreset,
   preset: PaperDollBodyPresetDefinition,
@@ -4255,6 +4493,7 @@ function syncPaperDollRigBodyPreset(
   syncPaperDollBodyPartVisuals(rig);
   syncPaperDollFaceOverlayVisibility(rig.faceParts, preset.faceOverlayMode !== "none");
   syncPaperDollFaceAssetLayers(rig.faceAssetLayers, rig.parts.head, preset.faceAssetKeys, presetKey);
+  syncPaperDollAppearanceLayers(rig.appearanceLayers, rig.parts.head, rig.appearanceAssetKeys, presetKey);
 }
 
 function syncPaperDollBodyPartVisuals(rig: Pick<PaperDollRig, "parts" | "bodyPresetKey" | "headAssetKey" | "torsoAssetKey" | "bodyPartAssetKeys">): void {
@@ -4396,6 +4635,108 @@ function syncPaperDollFaceAssetLayerImage(layer: FighterPart, textureKey: string
   }
 
   applyPaperDollPartImageConfig(image, PAPER_DOLL_FACE_ASSET_CONFIGS[layerKey]);
+}
+
+function addPaperDollAppearanceLayers(
+  target: Phaser.Scene,
+  partContainer: Phaser.GameObjects.Container,
+  appearanceLayers: PaperDollAppearanceLayers,
+  appearanceAssetKeys?: Partial<Record<PaperDollAppearanceLayerKey, string>>,
+  bodyPresetKey: PaperDollBodyPreset = debugTuning.paperDollBodyPreset,
+): void {
+  syncPaperDollAppearanceLayers(appearanceLayers, part(partContainer), appearanceAssetKeys, bodyPresetKey, target);
+}
+
+function syncPaperDollAppearanceLayers(
+  appearanceLayers: PaperDollAppearanceLayers,
+  headPart: FighterPart | undefined,
+  appearanceAssetKeys?: Partial<Record<PaperDollAppearanceLayerKey, string>>,
+  bodyPresetKey: PaperDollBodyPreset = debugTuning.paperDollBodyPreset,
+  fallbackScene?: Phaser.Scene,
+): void {
+  const headContainer = headPart instanceof Phaser.GameObjects.Container ? headPart : undefined;
+
+  if (!headContainer) {
+    return;
+  }
+
+  const scene = fallbackScene ?? headContainer.scene;
+
+  if (!shouldUsePaperDollAppearanceAssets(bodyPresetKey)) {
+    Object.values(appearanceLayers).forEach((layer) => setFighterPartVisible(layer, false));
+    return;
+  }
+
+  const appearanceLayerTuning = getDebugBodyPresetTuning(bodyPresetKey).appearanceLayers;
+
+  APPEARANCE_LAYER_KEYS.forEach((layerKey) => {
+    const assetKey = appearanceAssetKeys?.[layerKey];
+    const layer = ensurePaperDollAppearanceLayer(scene, headContainer, appearanceLayers, layerKey);
+
+    if (!assetKey) {
+      setFighterPartVisible(layer, false);
+      return;
+    }
+
+    const textureKey = getActivePaperDollAssetKey(assetKey);
+
+    if (!scene.textures.exists(textureKey)) {
+      setFighterPartVisible(layer, false);
+      return;
+    }
+
+    syncPaperDollAppearanceLayerImage(layer, textureKey, layerKey);
+    applyAppearanceLayerTransform(layer, appearanceLayerTuning[layerKey] ?? DEFAULT_APPEARANCE_LAYERS[layerKey]);
+    setFighterPartVisible(layer, true);
+  });
+}
+
+function ensurePaperDollAppearanceLayer(
+  target: Phaser.Scene,
+  headContainer: Phaser.GameObjects.Container,
+  appearanceLayers: PaperDollAppearanceLayers,
+  layerKey: PaperDollAppearanceLayerKey,
+): FighterPart {
+  const existing = appearanceLayers[layerKey];
+
+  if (existing) {
+    return existing;
+  }
+
+  const layerContainer = target.add.container(0, 0);
+  const image = target.add.image(0, 0, "__MISSING");
+
+  applyPaperDollPartImageConfig(image, PAPER_DOLL_APPEARANCE_ASSET_CONFIGS[layerKey]);
+  layerContainer.add(image);
+  headContainer.add(layerContainer);
+
+  const layer = part(layerContainer);
+
+  appearanceLayers[layerKey] = layer;
+  return layer;
+}
+
+function syncPaperDollAppearanceLayerImage(layer: FighterPart, textureKey: string, layerKey: PaperDollAppearanceLayerKey): void {
+  const layerContainer = layer as Phaser.GameObjects.Container;
+  const image = layerContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
+
+  if (!image) {
+    return;
+  }
+
+  if (image.texture.key !== textureKey) {
+    image.setTexture(textureKey);
+  }
+
+  applyPaperDollPartImageConfig(image, PAPER_DOLL_APPEARANCE_ASSET_CONFIGS[layerKey]);
+}
+
+function applyAppearanceLayerTransform(layer: FighterPart, tuning: AppearanceLayerTuning): void {
+  layer.x = tuning.x;
+  layer.y = tuning.y;
+  layer.angle = tuning.angle;
+  layer.scaleX = tuning.scaleX;
+  layer.scaleY = tuning.scaleY;
 }
 
 function applyFaceAssetLayerTransform(layer: FighterPart, tuning: FaceAssetLayerTuning): void {
@@ -5236,6 +5577,7 @@ function addPaperDollPartVisual(
   equipmentAnchors: PaperDollEquipmentAnchors,
   faceParts: PaperDollFaceParts,
   faceAssetLayers: PaperDollFaceAssetLayers,
+  appearanceLayers: PaperDollAppearanceLayers,
 ): void {
   const headTextureKey = options.headAssetKey ? getActivePaperDollAssetKey(options.headAssetKey) : undefined;
   if (key === "head" && headTextureKey && target.textures.exists(headTextureKey)) {
@@ -5246,6 +5588,7 @@ function addPaperDollPartVisual(
     addPaperDollFaceOverlay(target, partContainer, faceParts, true);
     syncPaperDollFaceOverlayVisibility(faceParts, options.faceOverlayMode !== "none");
     addPaperDollFaceAssetLayers(target, partContainer, faceAssetLayers, options.faceAssetKeys, options.bodyPresetKey);
+    addPaperDollAppearanceLayers(target, partContainer, appearanceLayers, options.appearanceAssetKeys, options.bodyPresetKey);
     return;
   }
 

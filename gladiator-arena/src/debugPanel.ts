@@ -1,6 +1,7 @@
 import {
   ACTION_BUTTON_OFFSET_KEYS,
   ANIMATION_EDIT_MODES,
+  APPEARANCE_LAYER_KEYS,
   BODY_ANIMATION_KEYS,
   CHARACTER_CANVAS_EDIT_MODES,
   CLASSIC_ACTION_WHEEL_BUTTONS,
@@ -27,6 +28,8 @@ import {
   undoDebugTuning,
   updateDebugTuning,
   type AnimationEditMode,
+  type AppearanceLayerKey,
+  type AppearanceLayerTuning,
   type ArenaDebugTuning,
   type BodyPartLayerTuning,
   type BodyAnimationKey,
@@ -146,6 +149,7 @@ type CharacterPreviewControlKey =
 type CharacterPreviewControlMode = "body" | "face";
 type FaceNumericControlKey = keyof FacePartTuning;
 type FaceAssetLayerNumericControlKey = keyof FaceAssetLayerTuning;
+type AppearanceLayerNumericControlKey = keyof AppearanceLayerTuning;
 type EquipmentNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type EquipmentToggleControlKey = "flipX" | "flipY";
 type EquipmentControlKey = EquipmentNumericControlKey | EquipmentToggleControlKey;
@@ -195,6 +199,14 @@ interface FaceNumericControlConfig {
 
 interface FaceAssetLayerNumericControlConfig {
   key: FaceAssetLayerNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface AppearanceLayerNumericControlConfig {
+  key: AppearanceLayerNumericControlKey;
   label: string;
   min: number;
   max: number;
@@ -702,6 +714,14 @@ const faceAssetLayerNumericControls: FaceAssetLayerNumericControlConfig[] = [
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
 ];
 
+const appearanceLayerNumericControls: AppearanceLayerNumericControlConfig[] = [
+  { key: "x", label: "x", min: -160, max: 160, step: 0.5 },
+  { key: "y", label: "y", min: -160, max: 160, step: 0.5 },
+  { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
+  { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
+  { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
+];
+
 const equipmentNumericControls: EquipmentNumericControlConfig[] = [
   { key: "x", label: "x", min: -240, max: 240, step: 1 },
   { key: "y", label: "y", min: -240, max: 240, step: 1 },
@@ -880,6 +900,18 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <select class="debug-face-editor__select"></select>
         </label>
         <div class="debug-face-editor__controls"></div>
+        <fieldset class="debug-face-appearance-editor">
+          <legend>Appearance</legend>
+          <label class="debug-rig-editor__part">
+            <span>Layer</span>
+            <select class="debug-face-appearance-editor__select"></select>
+          </label>
+          <div class="debug-face-appearance-editor__controls"></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-face-appearance-editor__reset" type="button">Reset selected</button>
+            <button class="debug-panel__reset debug-face-appearance-editor__reset-all" type="button">Reset all appearance</button>
+          </div>
+        </fieldset>
         <div class="debug-rig-editor__actions">
           <button class="debug-panel__reset debug-face-editor__reset" type="button">Reset selected</button>
           <button class="debug-panel__reset debug-face-editor__reset-all" type="button">Reset all face</button>
@@ -2627,8 +2659,12 @@ function mountFaceAssetEditor(editor: HTMLElement): void {
   const controls = editor.querySelector<HTMLElement>(".debug-face-editor__controls");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-face-editor__reset");
   const resetAll = editor.querySelector<HTMLButtonElement>(".debug-face-editor__reset-all");
+  const appearanceSelect = editor.querySelector<HTMLSelectElement>(".debug-face-appearance-editor__select");
+  const appearanceControls = editor.querySelector<HTMLElement>(".debug-face-appearance-editor__controls");
+  const appearanceReset = editor.querySelector<HTMLButtonElement>(".debug-face-appearance-editor__reset");
+  const appearanceResetAll = editor.querySelector<HTMLButtonElement>(".debug-face-appearance-editor__reset-all");
 
-  if (!select || !controls || !reset || !resetAll) {
+  if (!select || !controls || !reset || !resetAll || !appearanceSelect || !appearanceControls || !appearanceReset || !appearanceResetAll) {
     return;
   }
 
@@ -2640,10 +2676,23 @@ function mountFaceAssetEditor(editor: HTMLElement): void {
   });
 
   faceAssetLayerNumericControls.forEach((control) => controls.append(createFaceAssetLayerRangeControl(control)));
+  APPEARANCE_LAYER_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    appearanceSelect.append(option);
+  });
+  appearanceLayerNumericControls.forEach((control) => appearanceControls.append(createAppearanceLayerRangeControl(control)));
 
   select.addEventListener("change", () => {
     if (isFaceAssetLayerKey(select.value)) {
       updateDebugTuning({ selectedFaceAssetLayer: select.value }, { undoable: false });
+    }
+  });
+
+  appearanceSelect.addEventListener("change", () => {
+    if (isAppearanceLayerKey(appearanceSelect.value)) {
+      updateDebugTuning({ selectedAppearanceLayer: appearanceSelect.value }, { undoable: false });
     }
   });
 
@@ -2653,6 +2702,14 @@ function mountFaceAssetEditor(editor: HTMLElement): void {
 
   resetAll.addEventListener("click", () => {
     resetAllFaceAssetLayers();
+  });
+
+  appearanceReset.addEventListener("click", () => {
+    resetSelectedAppearanceLayer();
+  });
+
+  appearanceResetAll.addEventListener("click", () => {
+    resetAllAppearanceLayers();
   });
 }
 
@@ -3032,6 +3089,43 @@ function createFaceAssetLayerRangeControl(control: FaceAssetLayerNumericControlC
   return row;
 }
 
+function createAppearanceLayerRangeControl(control: AppearanceLayerNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-appearance-layer-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-appearance-layer-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateAppearanceLayerTuning(debugTuning.selectedAppearanceLayer, control.key, Number(range.value));
+  });
+
+  number?.addEventListener("input", () => {
+    updateAppearanceLayerTuning(debugTuning.selectedAppearanceLayer, control.key, Number(number.value));
+  });
+
+  return row;
+}
+
 function createEquipmentRangeControl(control: EquipmentNumericControlConfig): HTMLElement {
   const row = document.createElement("label");
   row.className = "debug-panel__row debug-rig-editor__row";
@@ -3170,6 +3264,20 @@ function updateFaceAssetLayerTuning(partKey: FaceAssetLayerKey, key: FaceAssetLa
   });
 }
 
+function updateAppearanceLayerTuning(partKey: AppearanceLayerKey, key: AppearanceLayerNumericControlKey, value: number): void {
+  const appearanceLayers = getActiveBodyPresetTuning().appearanceLayers;
+
+  updateActiveBodyPresetTuning({
+    appearanceLayers: {
+      ...appearanceLayers,
+      [partKey]: {
+        ...appearanceLayers[partKey],
+        [key]: clampAppearanceLayerNumericValue(key, value),
+      },
+    },
+  });
+}
+
 function resetSelectedFaceAssetLayer(): void {
   const presetDefaults = DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
 
@@ -3188,6 +3296,28 @@ function resetAllFaceAssetLayers(): void {
     faceAssetLayers: Object.fromEntries(FACE_ASSET_LAYER_KEYS.map((key) => [key, { ...presetDefaults.faceAssetLayers[key] }])) as Record<
       FaceAssetLayerKey,
       FaceAssetLayerTuning
+    >,
+  });
+}
+
+function resetSelectedAppearanceLayer(): void {
+  const presetDefaults = DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+
+  updateActiveBodyPresetTuning({
+    appearanceLayers: {
+      ...getActiveBodyPresetTuning().appearanceLayers,
+      [debugTuning.selectedAppearanceLayer]: { ...presetDefaults.appearanceLayers[debugTuning.selectedAppearanceLayer] },
+    },
+  });
+}
+
+function resetAllAppearanceLayers(): void {
+  const presetDefaults = DEFAULT_BODY_PRESET_TUNING[debugTuning.paperDollBodyPreset] ?? DEFAULT_BODY_PRESET_TUNING.classic;
+
+  updateActiveBodyPresetTuning({
+    appearanceLayers: Object.fromEntries(APPEARANCE_LAYER_KEYS.map((key) => [key, { ...presetDefaults.appearanceLayers[key] }])) as Record<
+      AppearanceLayerKey,
+      AppearanceLayerTuning
     >,
   });
 }
@@ -3884,6 +4014,10 @@ function isFaceAssetLayerKey(value: string | undefined): value is FaceAssetLayer
   return typeof value === "string" && FACE_ASSET_LAYER_KEYS.includes(value as FaceAssetLayerKey);
 }
 
+function isAppearanceLayerKey(value: string | undefined): value is AppearanceLayerKey {
+  return typeof value === "string" && APPEARANCE_LAYER_KEYS.includes(value as AppearanceLayerKey);
+}
+
 function isEquipmentSlotKey(value: string | undefined): value is EquipmentSlotKey {
   return typeof value === "string" && EQUIPMENT_SLOT_KEYS.includes(value as EquipmentSlotKey);
 }
@@ -4246,6 +4380,18 @@ function clampFaceAssetLayerNumericValue(key: FaceAssetLayerNumericControlKey, v
   }
 
   return clampNumber(value, -80, 80);
+}
+
+function clampAppearanceLayerNumericValue(key: AppearanceLayerNumericControlKey, value: number): number {
+  if (key === "angle") {
+    return clampNumber(value, -180, 180);
+  }
+
+  if (key === "scaleX" || key === "scaleY") {
+    return clampNumber(value, 0.1, 3);
+  }
+
+  return clampNumber(value, -160, 160);
 }
 
 function clampEquipmentNumericValue(key: EquipmentNumericControlKey, value: number): number {
@@ -6793,14 +6939,18 @@ function syncFaceEditor(panel: HTMLElement): void {
 
 function syncFaceAssetEditor(panel: HTMLElement): void {
   const select = panel.querySelector<HTMLSelectElement>(".debug-face-editor__select");
+  const appearanceSelect = panel.querySelector<HTMLSelectElement>(".debug-face-appearance-editor__select");
   const selectedLayer = debugTuning.selectedFaceAssetLayer;
+  const selectedAppearanceLayer = debugTuning.selectedAppearanceLayer;
   const selectedTuning = getActiveBodyPresetTuning().faceAssetLayers[selectedLayer];
+  const selectedAppearanceTuning = getActiveBodyPresetTuning().appearanceLayers[selectedAppearanceLayer];
 
-  if (!select || !selectedTuning) {
+  if (!select || !appearanceSelect || !selectedTuning || !selectedAppearanceTuning) {
     return;
   }
 
   select.value = selectedLayer;
+  appearanceSelect.value = selectedAppearanceLayer;
 
   panel.querySelectorAll<HTMLInputElement>("input[data-face-asset-layer-key]").forEach((input) => {
     const key = input.dataset.faceAssetLayerKey as FaceAssetLayerNumericControlKey;
@@ -6811,6 +6961,19 @@ function syncFaceAssetEditor(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLInputElement>("input[data-face-asset-layer-number-key]").forEach((input) => {
     const key = input.dataset.faceAssetLayerNumberKey as FaceAssetLayerNumericControlKey;
     const value = selectedTuning[key];
+
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-appearance-layer-key]").forEach((input) => {
+    const key = input.dataset.appearanceLayerKey as AppearanceLayerNumericControlKey;
+
+    input.value = `${selectedAppearanceTuning[key]}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-appearance-layer-number-key]").forEach((input) => {
+    const key = input.dataset.appearanceLayerNumberKey as AppearanceLayerNumericControlKey;
+    const value = selectedAppearanceTuning[key];
 
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
   });

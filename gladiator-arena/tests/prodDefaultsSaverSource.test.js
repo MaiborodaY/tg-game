@@ -309,15 +309,22 @@ test("save as prod defaults persists body art layers per body preset", () => {
   const debugTuningSource = readFileSync(join(root, "src", "debugTuning.ts"), "utf8");
   const saveDefaultsRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-defaults"'), source.indexOf('"/__dust-arena/save-prod-animation"'));
   const bodyPresetFormatter = source.slice(source.indexOf("function formatBodyPresetTuningDefaults"), source.indexOf("function formatBodyPartLayerObject"));
+  const pickAppearanceLayerSource = source.slice(
+    source.indexOf("export function pickBodyPresetAppearanceLayerDefaultUpdates"),
+    source.indexOf("export function applyFacePartDefaultUpdates"),
+  );
   const pickFacePartSource = source.slice(source.indexOf("export function pickFacePartDefaultUpdates"), source.indexOf("export function applyEquipmentDefaultUpdates"));
 
   assert.match(debugTuningSource, /bodyPartLayers: Record<RigPartKey, BodyPartLayerTuning>/);
+  assert.match(debugTuningSource, /appearanceLayers: Record<AppearanceLayerKey, AppearanceLayerTuning>/);
   assert.match(source, /const bodyPresetKeys = \["classic", "dummy-v2"\] as const/);
+  assert.match(source, /const appearanceLayerKeys = \["hair", "beard"\] as const/);
   assert.match(saveDefaultsRoute, /const bodyPartLayerUpdates = pickBodyPartLayerDefaultUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /const bodyPresetAnimationUpdates = pickBodyPresetAnimationDefaultUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /const bodyPresetFacePartUpdates = pickBodyPresetFacePartDefaultUpdates\(payload\)/);
   assert.match(saveDefaultsRoute, /const bodyPresetFaceAssetLayerUpdates = pickBodyPresetFaceAssetLayerDefaultUpdates\(payload\)/);
-  assert.match(saveDefaultsRoute, /applyBodyPartLayerDefaultUpdates\(\s*nextDebugTuningSource,\s*bodyPartLayerUpdates,\s*bodyPresetAnimationUpdates,\s*bodyPresetFacePartUpdates,\s*bodyPresetFaceAssetLayerUpdates,\s*\)/);
+  assert.match(saveDefaultsRoute, /const bodyPresetAppearanceLayerUpdates = pickBodyPresetAppearanceLayerDefaultUpdates\(payload\)/);
+  assert.match(saveDefaultsRoute, /applyBodyPartLayerDefaultUpdates\(\s*nextDebugTuningSource,\s*bodyPartLayerUpdates,\s*bodyPresetAnimationUpdates,\s*bodyPresetFacePartUpdates,\s*bodyPresetFaceAssetLayerUpdates,\s*bodyPresetAppearanceLayerUpdates,\s*\)/);
   assert.match(saveDefaultsRoute, /body art presets/);
   assert.match(source, /DEFAULT_BODY_PRESET_TUNING/);
   assert.match(source, /formatBodyPresetTuningDefaults/);
@@ -325,12 +332,17 @@ test("save as prod defaults persists body art layers per body preset", () => {
   assert.match(source, /pickBodyPresetAnimationDefaultUpdates/);
   assert.match(source, /pickBodyPresetFacePartDefaultUpdates/);
   assert.match(source, /pickBodyPresetFaceAssetLayerDefaultUpdates/);
+  assert.match(source, /pickBodyPresetAppearanceLayerDefaultUpdates/);
+  assert.match(pickAppearanceLayerSource, /const appearanceLayers = readBodyPresetAppearanceLayerMap\(bodyPresetTuning, presetKey\)/);
+  assert.match(pickAppearanceLayerSource, /appearanceLayerKeys\.map\(\(key\) => \[key, readAppearanceLayerTuning\(appearanceLayers, key\)\]\)/);
   assert.match(pickFacePartSource, /const faceParts = readActiveFacePartMap\(payload\)/);
   assert.doesNotMatch(pickFacePartSource, /\(payload as \{ faceParts\?: unknown \}\)\.faceParts/);
   assert.match(bodyPresetFormatter, /faceParts: \$\{formatFacePartObject\(bodyPresetFacePartUpdates\[presetKey\]/);
   assert.match(bodyPresetFormatter, /faceAssetLayers: \$\{formatFaceAssetLayerObject\(bodyPresetFaceAssetLayerUpdates\[presetKey\]/);
+  assert.match(bodyPresetFormatter, /appearanceLayers: \$\{formatAppearanceLayerObject\(bodyPresetAppearanceLayerUpdates\[presetKey\]/);
   assert.doesNotMatch(bodyPresetFormatter, /faceParts: cloneFaceParts\(DEFAULT_FACE_PARTS\)/);
   assert.doesNotMatch(bodyPresetFormatter, /faceAssetLayers: cloneFaceAssetLayers\(DEFAULT_FACE_ASSET_LAYERS\)/);
+  assert.doesNotMatch(bodyPresetFormatter, /appearanceLayers: cloneAppearanceLayers\(DEFAULT_APPEARANCE_LAYERS\)/);
   assert.match(bodyPresetFormatter, /bodyAnimations: \$\{formatBodyAnimationMap\(bodyAnimationUpdates\[presetKey\]/);
   assert.doesNotMatch(bodyPresetFormatter, /bodyAnimations: cloneBodyAnimations\(DEFAULT_BODY_ANIMATIONS\)/);
 });

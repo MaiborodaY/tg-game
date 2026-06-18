@@ -189,6 +189,9 @@ type FacePartKey = (typeof facePartKeys)[number];
 const faceAssetLayerKeys = ["pupilLeft", "pupilRight"] as const;
 type FaceAssetLayerKey = (typeof faceAssetLayerKeys)[number];
 
+const appearanceLayerKeys = ["hair", "beard"] as const;
+type AppearanceLayerKey = (typeof appearanceLayerKeys)[number];
+
 const equipmentSlotKeys = [
   "weaponMain",
   "weaponBow",
@@ -514,6 +517,14 @@ interface FaceAssetLayerTuningPayload {
   scaleY: unknown;
 }
 
+interface AppearanceLayerTuningPayload {
+  x: unknown;
+  y: unknown;
+  angle: unknown;
+  scaleX: unknown;
+  scaleY: unknown;
+}
+
 interface RigPartTuning {
   x: number;
   y: number;
@@ -539,13 +550,23 @@ interface FaceAssetLayerTuning {
   scaleY: number;
 }
 
+interface AppearanceLayerTuning {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+}
+
 type RigPartUpdates = Record<RigPartKey, RigPartTuning>;
 type BodyPartLayerUpdates = Record<BodyPresetKey, RigPartUpdates>;
 type BodyPresetAnimationUpdates = Record<BodyPresetKey, Record<BodyAnimationKey, BodyAnimationUpdates>>;
 type BodyPresetFacePartUpdates = Record<BodyPresetKey, FacePartUpdates>;
 type BodyPresetFaceAssetLayerUpdates = Record<BodyPresetKey, FaceAssetLayerUpdates>;
+type BodyPresetAppearanceLayerUpdates = Record<BodyPresetKey, AppearanceLayerUpdates>;
 type FacePartUpdates = Record<FacePartKey, FacePartTuning>;
 type FaceAssetLayerUpdates = Record<FaceAssetLayerKey, FaceAssetLayerTuning>;
+type AppearanceLayerUpdates = Record<AppearanceLayerKey, AppearanceLayerTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
@@ -786,6 +807,7 @@ function saveProdDefaultsPlugin(): Plugin {
           const bodyPresetAnimationUpdates = pickBodyPresetAnimationDefaultUpdates(payload);
           const bodyPresetFacePartUpdates = pickBodyPresetFacePartDefaultUpdates(payload);
           const bodyPresetFaceAssetLayerUpdates = pickBodyPresetFaceAssetLayerDefaultUpdates(payload);
+          const bodyPresetAppearanceLayerUpdates = pickBodyPresetAppearanceLayerDefaultUpdates(payload);
           const facePartUpdates = pickFacePartDefaultUpdates(payload);
           const bodyAnimationUpdates = pickBodyAnimationUpdates(payload);
           const equipmentUpdates = pickEquipmentDefaultUpdates(payload);
@@ -818,6 +840,7 @@ function saveProdDefaultsPlugin(): Plugin {
             bodyPresetAnimationUpdates,
             bodyPresetFacePartUpdates,
             bodyPresetFaceAssetLayerUpdates,
+            bodyPresetAppearanceLayerUpdates,
           );
           nextDebugTuningSource = applyBodyAnimationDefaultUpdates(nextDebugTuningSource, bodyAnimationUpdates);
           nextDebugTuningSource = applyFacePartDefaultUpdates(nextDebugTuningSource, facePartUpdates);
@@ -1215,6 +1238,7 @@ export function applyBodyPartLayerDefaultUpdates(
   bodyAnimationUpdates: BodyPresetAnimationUpdates,
   bodyPresetFacePartUpdates: BodyPresetFacePartUpdates,
   bodyPresetFaceAssetLayerUpdates: BodyPresetFaceAssetLayerUpdates,
+  bodyPresetAppearanceLayerUpdates: BodyPresetAppearanceLayerUpdates,
 ): string {
   const pattern = /export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = \{[\s\S]*?\n\};/;
 
@@ -1224,7 +1248,13 @@ export function applyBodyPartLayerDefaultUpdates(
 
   return source.replace(
     pattern,
-    formatBodyPresetTuningDefaults(updates, bodyAnimationUpdates, bodyPresetFacePartUpdates, bodyPresetFaceAssetLayerUpdates),
+    formatBodyPresetTuningDefaults(
+      updates,
+      bodyAnimationUpdates,
+      bodyPresetFacePartUpdates,
+      bodyPresetFaceAssetLayerUpdates,
+      bodyPresetAppearanceLayerUpdates,
+    ),
   );
 }
 
@@ -1304,6 +1334,22 @@ export function pickBodyPresetFaceAssetLayerDefaultUpdates(payload: unknown): Bo
       return [presetKey, Object.fromEntries(faceAssetLayerKeys.map((key) => [key, readFaceAssetLayerTuning(faceAssetLayers, key)]))];
     }),
   ) as BodyPresetFaceAssetLayerUpdates;
+}
+
+export function pickBodyPresetAppearanceLayerDefaultUpdates(payload: unknown): BodyPresetAppearanceLayerUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const bodyPresetTuning = readBodyPresetTuningPayload(payload);
+
+  return Object.fromEntries(
+    bodyPresetKeys.map((presetKey) => {
+      const appearanceLayers = readBodyPresetAppearanceLayerMap(bodyPresetTuning, presetKey);
+
+      return [presetKey, Object.fromEntries(appearanceLayerKeys.map((key) => [key, readAppearanceLayerTuning(appearanceLayers, key)]))];
+    }),
+  ) as BodyPresetAppearanceLayerUpdates;
 }
 
 export function applyFacePartDefaultUpdates(source: string, updates: FacePartUpdates): string {
@@ -1557,7 +1603,12 @@ function readActiveFacePartMap(payload: object): Partial<Record<FacePartKey, unk
 
 function readBodyPresetTuningPayload(
   payload: unknown,
-): Partial<Record<BodyPresetKey, { bodyAnimations?: unknown; bodyPartLayers?: unknown; faceParts?: unknown; faceAssetLayers?: unknown }>> {
+): Partial<
+  Record<
+    BodyPresetKey,
+    { bodyAnimations?: unknown; bodyPartLayers?: unknown; faceParts?: unknown; faceAssetLayers?: unknown; appearanceLayers?: unknown }
+  >
+> {
   const bodyPresetTuning = (payload as { bodyPresetTuning?: unknown }).bodyPresetTuning;
 
   if (!bodyPresetTuning || typeof bodyPresetTuning !== "object" || Array.isArray(bodyPresetTuning)) {
@@ -1565,7 +1616,10 @@ function readBodyPresetTuningPayload(
   }
 
   return bodyPresetTuning as Partial<
-    Record<BodyPresetKey, { bodyAnimations?: unknown; bodyPartLayers?: unknown; faceParts?: unknown; faceAssetLayers?: unknown }>
+    Record<
+      BodyPresetKey,
+      { bodyAnimations?: unknown; bodyPartLayers?: unknown; faceParts?: unknown; faceAssetLayers?: unknown; appearanceLayers?: unknown }
+    >
   >;
 }
 
@@ -1624,6 +1678,25 @@ function readBodyPresetFaceAssetLayerMap(
   }
 
   return faceAssetLayers as Partial<Record<FaceAssetLayerKey, unknown>>;
+}
+
+function readBodyPresetAppearanceLayerMap(
+  bodyPresetTuning: Partial<Record<BodyPresetKey, { appearanceLayers?: unknown }>>,
+  presetKey: BodyPresetKey,
+): Partial<Record<AppearanceLayerKey, unknown>> {
+  const presetTuning = bodyPresetTuning[presetKey];
+
+  if (!presetTuning || typeof presetTuning !== "object" || Array.isArray(presetTuning)) {
+    throw new Error(`Expected ${presetKey} body preset tuning in debug tuning payload.`);
+  }
+
+  const appearanceLayers = presetTuning.appearanceLayers;
+
+  if (!appearanceLayers || typeof appearanceLayers !== "object" || Array.isArray(appearanceLayers)) {
+    throw new Error(`Expected ${presetKey} appearanceLayers in debug tuning payload.`);
+  }
+
+  return appearanceLayers as Partial<Record<AppearanceLayerKey, unknown>>;
 }
 
 function readBodyAnimationUpdate(bodyAnimations: Partial<Record<BodyAnimationKey, unknown>>, key: BodyAnimationKey): BodyAnimationUpdates {
@@ -3751,6 +3824,7 @@ function formatBodyPresetTuningDefaults(
   bodyAnimationUpdates: BodyPresetAnimationUpdates,
   bodyPresetFacePartUpdates: BodyPresetFacePartUpdates,
   bodyPresetFaceAssetLayerUpdates: BodyPresetFaceAssetLayerUpdates,
+  bodyPresetAppearanceLayerUpdates: BodyPresetAppearanceLayerUpdates,
 ): string {
   const rows = bodyPresetKeys.map((presetKey) => {
     const key = formatObjectKey(presetKey);
@@ -3761,6 +3835,7 @@ function formatBodyPresetTuningDefaults(
       `    bodyPartLayers: ${formatBodyPartLayerObject(updates[presetKey], "    ")},`,
       `    faceParts: ${formatFacePartObject(bodyPresetFacePartUpdates[presetKey], "    ")},`,
       `    faceAssetLayers: ${formatFaceAssetLayerObject(bodyPresetFaceAssetLayerUpdates[presetKey], "    ")},`,
+      `    appearanceLayers: ${formatAppearanceLayerObject(bodyPresetAppearanceLayerUpdates[presetKey], "    ")},`,
       `    bodyAnimations: ${formatBodyAnimationMap(bodyAnimationUpdates[presetKey], "    ")},`,
       "  },",
     ].join("\n");
@@ -3797,6 +3872,16 @@ function formatFacePartObject(updates: FacePartUpdates, indent: string): string 
 
 function formatFaceAssetLayerObject(updates: FaceAssetLayerUpdates, indent: string): string {
   const rows = faceAssetLayerKeys.map((key) => {
+    const layer = updates[key];
+
+    return `${indent}  ${key}: { x: ${formatNumber(layer.x)}, y: ${formatNumber(layer.y)}, angle: ${formatNumber(layer.angle)}, scaleX: ${formatNumber(layer.scaleX)}, scaleY: ${formatNumber(layer.scaleY)} },`;
+  });
+
+  return `{\n${rows.join("\n")}\n${indent}}`;
+}
+
+function formatAppearanceLayerObject(updates: AppearanceLayerUpdates, indent: string): string {
+  const rows = appearanceLayerKeys.map((key) => {
     const layer = updates[key];
 
     return `${indent}  ${key}: { x: ${formatNumber(layer.x)}, y: ${formatNumber(layer.y)}, angle: ${formatNumber(layer.angle)}, scaleX: ${formatNumber(layer.scaleX)}, scaleY: ${formatNumber(layer.scaleY)} },`;
@@ -4069,6 +4154,24 @@ function readFaceAssetLayerTuning(faceAssetLayers: object, key: FaceAssetLayerKe
   };
 }
 
+function readAppearanceLayerTuning(appearanceLayers: object, key: AppearanceLayerKey): AppearanceLayerTuning {
+  const layer = (appearanceLayers as Partial<Record<AppearanceLayerKey, unknown>>)[key];
+
+  if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+    throw new Error(`Invalid appearance layer tuning value: ${key}.`);
+  }
+
+  const tuning = layer as Partial<AppearanceLayerTuningPayload>;
+
+  return {
+    x: readFiniteAppearanceLayerNumber(tuning, key, "x"),
+    y: readFiniteAppearanceLayerNumber(tuning, key, "y"),
+    angle: readFiniteAppearanceLayerNumber(tuning, key, "angle"),
+    scaleX: readFiniteAppearanceLayerNumber(tuning, key, "scaleX"),
+    scaleY: readFiniteAppearanceLayerNumber(tuning, key, "scaleY"),
+  };
+}
+
 function readEquipmentTuning(equipment: object, key: EquipmentSlotKey): RigPartTuning {
   const item = (equipment as Partial<Record<EquipmentSlotKey, unknown>>)[key];
 
@@ -4242,6 +4345,20 @@ function readFiniteFaceAssetLayerNumber(
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid face asset layer tuning value: ${layerKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteAppearanceLayerNumber(
+  payload: Partial<AppearanceLayerTuningPayload>,
+  layerKey: AppearanceLayerKey,
+  fieldName: keyof AppearanceLayerTuning,
+): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid appearance layer tuning value: ${layerKey}.${fieldName}.`);
   }
 
   return value;

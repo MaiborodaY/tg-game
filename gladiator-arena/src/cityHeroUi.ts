@@ -13,6 +13,7 @@ import {
   SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
 } from "./assets";
 import { getGeneratedArmoryProductsForSlots, pairGeneratedArmoryProducts, type ArmoryProduct } from "./armoryShopUi";
+import { HERO_APPEARANCE_ASSETS_BY_SLOT, type HeroAppearanceAssetDefinition } from "./appearanceAssetRegistry";
 import { actions } from "./combat";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import {
@@ -24,6 +25,8 @@ import {
   getHeroEquipmentStatBonuses,
   HERO_ITEM_CATALOG,
   isHeroConsumableItem,
+  type HeroAppearance,
+  type HeroAppearanceSlotKey,
   type HeroAttributeKey,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -80,6 +83,13 @@ interface CityEquipmentMenuElements {
   productGrid: HTMLElement | null;
 }
 
+interface CityAppearanceMenuElements {
+  root: HTMLElement;
+  closeButton: HTMLButtonElement | null;
+  tabs: HTMLElement | null;
+  grid: HTMLElement | null;
+}
+
 const CITY_EQUIPMENT_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
   common: 0,
   uncommon: 1,
@@ -119,6 +129,10 @@ const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
 ];
 
 const CITY_EQUIPMENT_CATEGORIES: readonly CityEquipmentCategory[] = [...CITY_EQUIPMENT_WEAPON_CATEGORIES, ...CITY_EQUIPMENT_ARMOR_CATEGORIES];
+const CITY_APPEARANCE_SLOT_OPTIONS: readonly { slot: HeroAppearanceSlotKey; label: string }[] = [
+  { slot: "hair", label: "Hair" },
+  { slot: "beard", label: "Beard" },
+];
 
 const HERO_PROFILE_EQUIPMENT_GROUPS: readonly {
   label: string;
@@ -340,7 +354,7 @@ export function mountCityHeroProfile(refs: CityHeroWidgetRefs): CityHeroProfileA
   };
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
-      if (profile?.querySelector(".city-equipment-menu:not([hidden])")) {
+      if (profile?.querySelector(".city-equipment-menu:not([hidden]), .city-appearance-menu:not([hidden])")) {
         return;
       }
 
@@ -378,10 +392,23 @@ export interface CityHeroEquipmentMenuApi {
   destroy: () => void;
 }
 
+export interface CityHeroAppearanceMenuApi {
+  open: (slot?: HeroAppearanceSlotKey) => void;
+  close: () => void;
+  render: () => void;
+  isOpen: () => boolean;
+  destroy: () => void;
+}
+
 interface CityHeroEquipmentMenuOptions {
   getHero: () => HeroState;
   onEquip: (itemIds: readonly HeroItemId[]) => void;
   onCategoryOpen?: (categoryId: CityEquipmentCategoryId) => void;
+}
+
+interface CityHeroAppearanceMenuOptions {
+  getHero: () => HeroState;
+  onChange: (appearance: Partial<HeroAppearance>) => void;
 }
 
 export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: CityHeroEquipmentMenuOptions): CityHeroEquipmentMenuApi {
@@ -511,6 +538,99 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
       menu.root.remove();
     },
   };
+}
+
+export function mountCityHeroAppearanceMenu(refs: CityHeroWidgetRefs, options: CityHeroAppearanceMenuOptions): CityHeroAppearanceMenuApi {
+  const { profile, profilePortrait } = refs;
+  const menu = createCityAppearanceMenuElements();
+  let isOpen = false;
+  let activeSlot: HeroAppearanceSlotKey = "hair";
+
+  profile?.append(menu.root);
+
+  const setOpen = (nextOpen: boolean, slot = activeSlot) => {
+    activeSlot = normalizeHeroAppearanceSlotKey(slot);
+    isOpen = nextOpen;
+    menu.root.hidden = !nextOpen;
+    profile?.classList.toggle("city-profile--appearance-menu-open", nextOpen);
+
+    if (nextOpen) {
+      render();
+    }
+  };
+
+  const open = (slot?: HeroAppearanceSlotKey) => setOpen(true, slot ?? activeSlot);
+  const close = () => setOpen(false);
+  const handleProfilePortraitClick = (event: MouseEvent) => {
+    event.preventDefault();
+    open();
+  };
+  const handleTabClick = (event: MouseEvent) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest<HTMLButtonElement>("[data-hero-appearance-tab]");
+
+    if (!button || !menu.tabs?.contains(button)) {
+      return;
+    }
+
+    event.preventDefault();
+    activeSlot = normalizeHeroAppearanceSlotKey(button.dataset.heroAppearanceTab);
+    render();
+  };
+  const handleOptionClick = (event: MouseEvent) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest<HTMLButtonElement>("[data-hero-appearance-option]");
+
+    if (!button || !menu.grid?.contains(button)) {
+      return;
+    }
+
+    event.preventDefault();
+    options.onChange(createHeroAppearancePatch(activeSlot, button.dataset.heroAppearanceOption || null));
+    render();
+  };
+  const handleProfileVisibility = (event: Event) => {
+    const profileEvent = event as CustomEvent<{ open?: boolean }>;
+
+    if (profileEvent.detail?.open === false) {
+      close();
+    }
+  };
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape" && isOpen) {
+      event.stopPropagation();
+      close();
+    }
+  };
+
+  profilePortrait?.addEventListener("click", handleProfilePortraitClick);
+  menu.tabs?.addEventListener("click", handleTabClick);
+  menu.grid?.addEventListener("click", handleOptionClick);
+  menu.closeButton?.addEventListener("click", close);
+  profile?.addEventListener("city-profile-visibility", handleProfileVisibility);
+  document.addEventListener("keydown", handleKeyDown);
+
+  return {
+    open,
+    close,
+    render,
+    isOpen: () => isOpen,
+    destroy: () => {
+      close();
+      profilePortrait?.removeEventListener("click", handleProfilePortraitClick);
+      menu.tabs?.removeEventListener("click", handleTabClick);
+      menu.grid?.removeEventListener("click", handleOptionClick);
+      menu.closeButton?.removeEventListener("click", close);
+      profile?.removeEventListener("city-profile-visibility", handleProfileVisibility);
+      document.removeEventListener("keydown", handleKeyDown);
+      menu.root.remove();
+    },
+  };
+
+  function render(): void {
+    renderCityAppearanceTabs(menu, activeSlot);
+    renderCityAppearanceOptions(menu, options.getHero(), activeSlot);
+  }
 }
 
 export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAllocate: (attribute: HeroAttributeKey, amount: number) => void): () => void {
@@ -769,6 +889,108 @@ function createCityEquipmentMenuElements(): CityEquipmentMenuElements {
     armorCategories: root.querySelector<HTMLElement>(".city-equipment-menu__categories--armor"),
     productGrid: root.querySelector<HTMLElement>(".city-equipment-menu__products"),
   };
+}
+
+function createCityAppearanceMenuElements(): CityAppearanceMenuElements {
+  const root = document.createElement("section");
+
+  root.className = "city-appearance-menu";
+  root.hidden = true;
+  root.setAttribute("role", "dialog");
+  root.setAttribute("aria-label", "Appearance");
+  root.innerHTML = `
+    <div class="city-appearance-menu__panel">
+      <button class="city-appearance-menu__close" type="button" aria-label="Close appearance">x</button>
+      <div class="city-appearance-menu__title">APPEARANCE</div>
+      <div class="city-appearance-menu__tabs" aria-label="Appearance categories"></div>
+      <div class="city-appearance-menu__grid" aria-label="Appearance options"></div>
+    </div>
+  `;
+
+  return {
+    root,
+    closeButton: root.querySelector<HTMLButtonElement>(".city-appearance-menu__close"),
+    tabs: root.querySelector<HTMLElement>(".city-appearance-menu__tabs"),
+    grid: root.querySelector<HTMLElement>(".city-appearance-menu__grid"),
+  };
+}
+
+function renderCityAppearanceTabs(menu: CityAppearanceMenuElements, activeSlot: HeroAppearanceSlotKey): void {
+  if (!menu.tabs) {
+    return;
+  }
+
+  menu.tabs.replaceChildren(
+    ...CITY_APPEARANCE_SLOT_OPTIONS.map((option) => {
+      const button = document.createElement("button");
+
+      button.className = "city-appearance-menu__tab";
+      button.classList.toggle("city-appearance-menu__tab--active", option.slot === activeSlot);
+      button.type = "button";
+      button.dataset.heroAppearanceTab = option.slot;
+      button.textContent = option.label;
+
+      return button;
+    }),
+  );
+}
+
+function renderCityAppearanceOptions(menu: CityAppearanceMenuElements, hero: HeroState, activeSlot: HeroAppearanceSlotKey): void {
+  if (!menu.grid) {
+    return;
+  }
+
+  const selectedId = getHeroAppearanceSlotValue(hero.appearance, activeSlot);
+  const assets = HERO_APPEARANCE_ASSETS_BY_SLOT[activeSlot];
+  const noneButton = createCityAppearanceOptionButton(activeSlot, null, "None", selectedId === null);
+  const assetButtons = assets.map((asset) => createCityAppearanceAssetOptionButton(asset, selectedId === asset.id));
+
+  menu.grid.replaceChildren(noneButton, ...assetButtons);
+}
+
+function createCityAppearanceAssetOptionButton(asset: HeroAppearanceAssetDefinition, selected: boolean): HTMLButtonElement {
+  const button = createCityAppearanceOptionButton(asset.slot, asset.id, asset.label, selected);
+  const image = document.createElement("span");
+
+  image.className = "city-appearance-menu__option-image";
+  image.style.backgroundImage = `url("${asset.url}")`;
+  button.prepend(image);
+
+  return button;
+}
+
+function createCityAppearanceOptionButton(
+  slot: HeroAppearanceSlotKey,
+  id: string | null,
+  labelText: string,
+  selected: boolean,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+
+  button.className = "city-appearance-menu__option";
+  button.classList.toggle("city-appearance-menu__option--selected", selected);
+  button.classList.toggle("city-appearance-menu__option--empty", id === null);
+  button.type = "button";
+  button.dataset.heroAppearanceSlot = slot;
+  button.dataset.heroAppearanceOption = id ?? "";
+  label.className = "city-appearance-menu__option-label";
+  label.textContent = labelText;
+  button.append(label);
+
+  return button;
+}
+
+function normalizeHeroAppearanceSlotKey(value: unknown): HeroAppearanceSlotKey {
+  return value === "beard" ? "beard" : "hair";
+}
+
+function getHeroAppearanceSlotValue(appearance: HeroAppearance | undefined, slot: HeroAppearanceSlotKey): string | null {
+  return slot === "hair" ? (appearance?.hairId ?? null) : (appearance?.beardId ?? null);
+}
+
+function createHeroAppearancePatch(slot: HeroAppearanceSlotKey, id: string | null): Partial<HeroAppearance> {
+  return slot === "hair" ? { hairId: id } : { beardId: id };
 }
 
 function renderCityEquipmentSelected(

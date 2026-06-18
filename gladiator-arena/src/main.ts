@@ -6,6 +6,7 @@ import {
   prewarmArenaAssetsForBrowserCache,
   prewarmCityAssetsForBrowserCache,
   setPlayerBodyScaleBonus,
+  setPlayerAppearance,
   setPlayerEquipment,
   type ArenaScene,
   type CitySceneApi,
@@ -17,6 +18,7 @@ import {
   getCityHeroWidgetRefs,
   mountCityHeroAttributeControls,
   mountCityHeroEquipmentMenu,
+  mountCityHeroAppearanceMenu,
   mountCityHeroProfile,
   renderCityHeroInfo,
   syncCityHeroWidgetPosition,
@@ -52,12 +54,14 @@ import {
   isHeroConsumableItem,
   unlockAllArenaBossTiers,
   unlockAllHeroShopRarities,
+  updateHeroAppearance,
   upgradeHeroBowShotCapacity,
   type ArenaBossDefinition,
   type ArenaBossId,
   type ArenaDifficultyId,
   type ArenaEncounter,
   type ArenaTierDefinition,
+  type HeroAppearance,
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
@@ -160,6 +164,10 @@ const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMe
   getHero: () => hero,
   onEquip: handleProfileEquipmentEquip,
   onCategoryOpen: handleProfileEquipmentCategoryOpen,
+});
+const cityHeroAppearanceMenu = mountCityHeroAppearanceMenu(cityHeroWidgetRefs, {
+  getHero: () => hero,
+  onChange: handleProfileAppearanceChange,
 });
 cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) => {
   if ((event as CustomEvent<{ open?: boolean }>).detail?.open) {
@@ -500,15 +508,16 @@ function handleActionArcClick(event: Event): void {
 
 function mountCityPreviews(): Promise<void> {
   if (cityHero && !cityScene) {
-    cityScene = mountCityHeroPreview(cityHero, hero.equipment);
+    cityScene = mountCityHeroPreview(cityHero, hero.equipment, hero.appearance);
   }
 
   if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
-    heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment, {
+    heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment, hero.appearance, {
       mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : [],
     });
   } else {
     heroPortraitPreview?.setEquipment(hero.equipment);
+    heroPortraitPreview?.setAppearance(hero.appearance);
   }
 
   return cityScene?.ready ?? Promise.resolve();
@@ -797,7 +806,7 @@ function mountArena(): void {
 
       arenaScene = scene;
       void runArenaEntry(scene, entryToken);
-    }, handleAction, hero.equipment);
+    }, handleAction, hero.equipment, hero.appearance);
   });
 }
 
@@ -1041,6 +1050,20 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   armoryShop?.render();
   weaponShop?.render();
   cityHeroEquipmentMenu.render();
+}
+
+function handleProfileAppearanceChange(appearance: Partial<HeroAppearance>): void {
+  const nextHero = updateHeroAppearance(hero, appearance);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  setPlayerAppearance(hero.appearance);
+  heroPortraitPreview?.setAppearance(hero.appearance);
+  renderCityHero();
+  cityHeroAppearanceMenu.render();
 }
 
 function handleTemporaryChurchSkillGrant(): void {

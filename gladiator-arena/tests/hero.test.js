@@ -222,6 +222,31 @@ test("hero starts with empty equipment including gloves wrists and shield", () =
   assert.deepEqual([...hero.createDefaultHero().unlockedShopRarities], []);
 });
 
+test("hero starts with default dummy appearance and can update cosmetic slots", () => {
+  const defaultHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+
+  const defaultAppearance = hero.createDefaultHeroAppearance();
+
+  assert.equal(defaultAppearance.hairId, "hair-01");
+  assert.equal(defaultAppearance.beardId, "beard-short-01");
+  assert.equal(defaultHero.appearance.hairId, "hair-01");
+  assert.equal(defaultHero.appearance.beardId, "beard-short-01");
+
+  const withHair = hero.updateHeroAppearance(defaultHero, { hairId: null }, "2026-01-01T00:01:00.000Z");
+
+  assert.notEqual(withHair, defaultHero);
+  assert.equal(withHair.appearance.hairId, null);
+  assert.equal(withHair.appearance.beardId, "beard-short-01");
+  assert.equal(withHair.updatedAt, "2026-01-01T00:01:00.000Z");
+  assert.equal(hero.updateHeroAppearance(withHair, { hairId: null }), withHair);
+
+  const withBeard = hero.updateHeroAppearance(withHair, { beardId: null }, "2026-01-01T00:02:00.000Z");
+
+  assert.equal(withBeard.appearance.hairId, null);
+  assert.equal(withBeard.appearance.beardId, null);
+  assert.equal(withBeard.updatedAt, "2026-01-01T00:02:00.000Z");
+});
+
 test("hero base attributes derive combat stats", () => {
   const defaultHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
 

@@ -685,7 +685,12 @@ test("city return can prewarm city and hero preview assets through the browser c
   assert.equal(arenaSceneSource.includes("CITY_CLOUD_ASSETS.map((asset) => asset.url)"), true);
   assert.equal(arenaSceneSource.includes("cityAssetPrewarmPromise ??= getCityAssetPrewarmUrls()"), true);
   assert.equal(arenaSceneSource.includes("async function getCityAssetPrewarmUrls(): Promise<string[]>"), true);
-  assert.equal(arenaSceneSource.includes("const paperDollUrls = await getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment])"), true);
+  assert.equal(
+    arenaSceneSource.includes(
+      "const paperDollUrls = await getPaperDollAssetLoadEntriesForEquipmentStates(getPlayerSettings().lowEffects, [activePlayerEquipment], [activePlayerAppearance])",
+    ),
+    true,
+  );
 });
 
 test("city hero preview exposes a ready promise for return transitions", () => {
@@ -697,13 +702,14 @@ test("city hero preview exposes a ready promise for return transitions", () => {
 
 test("hero portrait skips unchanged snapshot equipment", () => {
   assert.equal(arenaSceneSource.includes("HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS"), true);
-  assert.equal(arenaSceneSource.includes("function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined): string"), true);
+  assert.equal(arenaSceneSource.includes("function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appearance: HeroAppearance | undefined): string"), true);
+  assert.equal(arenaSceneSource.includes('const appearanceKey = `hair:${appearance?.hairId ?? ""}|beard:${appearance?.beardId ?? ""}`;'), true);
   assert.equal(arenaSceneSource.includes("let lastSnapshotKey: string | undefined;"), true);
   assert.match(arenaSceneSource, /if \(snapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
   assert.match(arenaSceneSource, /if \(nextSnapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
   assert.match(arenaSceneSource, /scene\.captureFrame\(\(src\) => \{[\s\S]*lastSnapshotKey = snapshotKey;[\s\S]*target\.image\.src = src;/);
   assert.equal(arenaSceneSource.includes("window.requestAnimationFrame(() => window.requestAnimationFrame(captureSnapshot));"), true);
-  assert.match(arenaSceneSource, /void scene\.setEquipment\(nextEquipment\)\.then\(\(\) => refreshSnapshot\(nextEquipment\)\);/);
+  assert.match(arenaSceneSource, /void scene\.setEquipment\(nextEquipment\)\.then\(\(\) => refreshSnapshot\(nextEquipment, pendingAppearance\)\);/);
 });
 
 test("blocked hits use the shield icon popup instead of block text", () => {

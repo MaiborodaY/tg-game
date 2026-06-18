@@ -201,8 +201,12 @@ test("debug tuning normalizes unsafe values", () => {
     facePreviewFocusY: -999,
     paperDollBodyPreset: "monster",
     selectedFaceAssetLayer: "nose",
+    selectedAppearanceLayer: "mustache",
     faceAssetLayers: {
       pupilLeft: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
+    },
+    appearanceLayers: {
+      hair: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
     },
   });
 
@@ -289,15 +293,24 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.facePreviewFocusY, 80);
   assert.equal(normalized.paperDollBodyPreset, "dummy-v2");
   assert.equal(normalized.selectedFaceAssetLayer, "pupilLeft");
+  assert.equal(normalized.selectedAppearanceLayer, "hair");
   assert.equal(normalized.faceAssetLayers.pupilLeft.x, 80);
   assert.equal(normalized.faceAssetLayers.pupilLeft.y, -120);
   assert.equal(normalized.faceAssetLayers.pupilLeft.angle, 180);
   assert.equal(normalized.faceAssetLayers.pupilLeft.scaleX, 3);
   assert.equal(normalized.faceAssetLayers.pupilLeft.scaleY, 0.1);
+  assert.equal(normalized.appearanceLayers.hair.x, 160);
+  assert.equal(normalized.appearanceLayers.hair.y, -160);
+  assert.equal(normalized.appearanceLayers.hair.angle, 180);
+  assert.equal(normalized.appearanceLayers.hair.scaleX, 3);
+  assert.equal(normalized.appearanceLayers.hair.scaleY, 0.1);
   assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.y, -44);
+  assert.equal(normalized.bodyPresetTuning.classic.appearanceLayers.hair.x, 0);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.x, 80);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.y, -120);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].appearanceLayers.hair.x, 160);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].appearanceLayers.hair.y, -160);
 });
 
 test("debug tuning defaults use a stage origin coordinate system", () => {
@@ -313,12 +326,16 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.characterPreviewArmorGhosted, false);
   assert.equal(debugTuningModule.defaultDebugTuning.paperDollBodyPreset, "dummy-v2");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedFaceAssetLayer, "pupilLeft");
+  assert.equal(debugTuningModule.defaultDebugTuning.selectedAppearanceLayer, "hair");
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilRight.y, -44);
+  assert.equal(debugTuningModule.defaultDebugTuning.appearanceLayers.hair.x, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.appearanceLayers.beard.scaleX, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.rigParts.head.y, -10);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].rigParts.head.y, -10);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.bodyPartLayers.head.x, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyPartLayers.head.scaleX, 0.9);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].appearanceLayers.beard.scaleX, 0.9);
   assert.equal(debugTuningModule.defaultDebugTuning.facePreviewScale, 4.2);
   assert.equal(debugTuningModule.defaultDebugTuning.facePreviewFocusX, 215);
   assert.equal(debugTuningModule.defaultDebugTuning.facePreviewFocusY, 300);
@@ -411,6 +428,9 @@ test("debug tuning keeps body preset rig settings isolated", () => {
     faceAssetLayers: {
       pupilLeft: { x: 12 },
     },
+    appearanceLayers: {
+      beard: { x: 42 },
+    },
     bodyPartLayers: {
       torso: { x: -13, scaleX: 1.3 },
     },
@@ -434,9 +454,12 @@ test("debug tuning keeps body preset rig settings isolated", () => {
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].bodyPartLayers.torso.x, -13);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].bodyPartLayers.torso.scaleX, 1.3);
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].faceAssetLayers.pupilLeft.x, 12);
+  assert.equal(normalized.bodyPresetTuning["dummy-v2"].appearanceLayers.beard.x, 42);
   assert.equal(normalized.bodyPresetTuning.classic.faceAssetLayers.pupilLeft.x, -20);
+  assert.equal(normalized.bodyPresetTuning.classic.appearanceLayers.beard.x, 0);
   assert.notEqual(normalized.bodyPresetTuning.classic.rigParts, normalized.bodyPresetTuning["dummy-v2"].rigParts);
   assert.notEqual(normalized.bodyPresetTuning.classic.bodyPartLayers, normalized.bodyPresetTuning["dummy-v2"].bodyPartLayers);
+  assert.notEqual(normalized.bodyPresetTuning.classic.appearanceLayers, normalized.bodyPresetTuning["dummy-v2"].appearanceLayers);
   assert.notEqual(normalized.bodyPresetTuning.classic.bodyAnimations, normalized.bodyPresetTuning["dummy-v2"].bodyAnimations);
 });
 

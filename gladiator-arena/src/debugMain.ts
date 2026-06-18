@@ -5,6 +5,7 @@ import {
   mountDebugCharacterViewer,
   mountHeroPortraitPreview,
   setPlayerBodyScaleBonus,
+  setPlayerAppearance,
   setPlayerEquipment,
   type ArenaScene,
 } from "./ArenaScene";
@@ -69,9 +70,7 @@ const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
-let hero: HeroState = {
-  ...createDefaultHero(),
-};
+let hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
@@ -702,14 +701,15 @@ function startDebugApp(): void {
   setCombatMovementTuning(debugTuning);
   dom.mainMenu.hidden = false;
   dom.gameScreen.hidden = false;
+  setPlayerAppearance(hero.appearance);
   if (debugCharacterViewer) {
     mountDebugCharacterViewer(debugCharacterViewer, hero.equipment);
   }
   if (cityHero) {
-    mountCityHeroPreview(cityHero, hero.equipment);
+    mountCityHeroPreview(cityHero, hero.equipment, hero.appearance);
   }
   if (cityHeroWidgetRefs.portrait) {
-    mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment);
+    mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment, hero.appearance);
   }
   syncPlayerCityBodyScale();
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
@@ -782,7 +782,7 @@ function startDebugApp(): void {
       arenaScene = scene;
       arenaScene.sync(state);
       refreshArenaLayout();
-    }, handleAction, hero.equipment);
+    }, handleAction, hero.equipment, hero.appearance);
   });
 }
 

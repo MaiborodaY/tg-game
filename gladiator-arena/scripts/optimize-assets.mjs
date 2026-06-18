@@ -19,6 +19,7 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/armor\/breastplate\// },
   { maxSide: 512, pattern: /^fighters\/armor\/legs\// },
   { maxSide: 512, pattern: /^fighters\/weapons\// },
+  { maxSide: 512, pattern: /^fighters\/appearance\// },
 ];
 
 const pngFiles = targetFile ? [targetFile] : await listFiles(sourceRoot, ".png");
