@@ -559,6 +559,71 @@ test("debug tuning exposes dedicated bow shot, damage hit, and block body animat
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.block.enabled, true);
 });
 
+test("debug tuning uses spearattack as the only spear-specific attack variant", () => {
+  const assertSpearAttackVariants = (animations) => {
+    for (const key of ["light", "medium", "heavy"]) {
+      const variants = animations[key].variants ?? [];
+      const spearVariants = variants.filter(
+        (variant) => variant.appliesToAllWeapons === false && variant.weaponClasses?.includes("spear"),
+      );
+
+      assert.deepEqual(
+        Array.from(spearVariants.map((variant) => variant.variantId)),
+        ["spearattack"],
+      );
+      assert.deepEqual(
+        Array.from(spearVariants.map((variant) => variant.variantLabel)),
+        ["spearattack"],
+      );
+    }
+  };
+
+  assertSpearAttackVariants(debugTuningModule.DEFAULT_BODY_ANIMATIONS);
+  assertSpearAttackVariants(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyAnimations);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyAnimations.light.selectedVariantId, "spearattack");
+});
+
+test("debug tuning backfills editable spearattack variants into stored medium and heavy attacks", () => {
+  const dummyPreset = debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"];
+  const light = dummyPreset.bodyAnimations.light;
+  const lightSpearAttack = light.variants.find((variant) => variant.variantId === "spearattack");
+  const heavySpearAttack = {
+    ...lightSpearAttack,
+    duration: 777,
+    variantLabel: "heavy spear custom",
+  };
+  const withoutSpearAttack = (animation) => ({
+    ...animation,
+    variants: (animation.variants ?? []).filter((variant) => variant.variantId !== "spearattack"),
+  });
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    paperDollBodyPreset: "dummy-v2",
+    bodyPresetTuning: {
+      "dummy-v2": {
+        ...dummyPreset,
+        bodyAnimations: {
+          ...dummyPreset.bodyAnimations,
+          light,
+          medium: withoutSpearAttack(dummyPreset.bodyAnimations.medium),
+          heavy: {
+            ...dummyPreset.bodyAnimations.heavy,
+            variants: [heavySpearAttack],
+          },
+        },
+      },
+    },
+  });
+  const normalizedAnimations = normalized.bodyPresetTuning["dummy-v2"].bodyAnimations;
+  const mediumSpearAttack = normalizedAnimations.medium.variants.find((variant) => variant.variantId === "spearattack");
+  const normalizedHeavySpearAttack = normalizedAnimations.heavy.variants.find((variant) => variant.variantId === "spearattack");
+
+  assert.equal(Boolean(mediumSpearAttack), true);
+  assert.equal(mediumSpearAttack.appliesToAllWeapons, false);
+  assert.deepEqual(Array.from(mediumSpearAttack.weaponClasses), ["spear"]);
+  assert.equal(normalizedHeavySpearAttack.variantLabel, "heavy spear custom");
+  assert.equal(normalizedHeavySpearAttack.duration, 777);
+});
+
 test("debug tuning starts dummy lunge movement from the selected keyframe", () => {
   const lunge = debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyAnimations.lunge;
   const startKeyframe = lunge.keyframes.find((keyframe) => keyframe.id === "key-215");
