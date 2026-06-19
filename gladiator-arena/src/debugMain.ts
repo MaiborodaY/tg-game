@@ -73,6 +73,7 @@ const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
 let hero: HeroState = createDefaultHero();
 let state: CombatState = createCombatStateFromHero(hero);
+let displayedStatsState: CombatState = state;
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
 let classicActionBar: ClassicActionBarApi | undefined;
@@ -114,22 +115,38 @@ let battleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleResultPresentation: BattleResultPresentation | undefined;
 let battleResultPresentationId = 0;
 let battleResultPresentationRevealToken = 0;
+let statsRevealToken = 0;
 let rewardUiRenderDirty = false;
 
 function commitState(nextState: CombatState): Promise<void> {
+  const previousState = state;
   const isBattleFinishing = state.result === "playing" && nextState.result !== "playing";
+  const statsToken = ++statsRevealToken;
+  const committedState = applyBattleRewardIfNeeded(nextState);
 
-  state = applyBattleRewardIfNeeded(nextState);
+  state = committedState;
+  displayedStatsState = arenaScene ? getPreImpactStatsState(previousState, committedState) : committedState;
   renderDom(dom, state, {
     hero,
     reward: getBattleReward(state),
+    statsState: displayedStatsState,
     resultPresentation: battleResultPresentation,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
   });
   if (!isBattleFinishing) {
     renderCityHeroInfo(cityHeroWidgetRefs, hero);
   }
-  const actionAnimation = arenaScene?.sync(state) ?? Promise.resolve();
+  const actionAnimation = arenaScene?.sync(state, {
+    hudState: displayedStatsState,
+    onImpact: () => revealStatsAfterImpact(statsToken, committedState),
+  }) ?? Promise.resolve();
+
+  if (displayedStatsState === committedState) {
+    revealStatsAfterImpact(statsToken, committedState);
+  }
+
+  void actionAnimation.finally(() => revealStatsAfterImpact(statsToken, committedState));
+
   if (isBattleFinishing) {
     scheduleBattleResultPresentation(actionAnimation);
   }
@@ -138,6 +155,48 @@ function commitState(nextState: CombatState): Promise<void> {
   syncTurnProbe();
 
   return actionAnimation;
+}
+
+function revealStatsAfterImpact(token: number, targetState: CombatState): void {
+  if (statsRevealToken !== token || state !== targetState) {
+    return;
+  }
+
+  if (displayedStatsState === targetState) {
+    return;
+  }
+
+  displayedStatsState = targetState;
+  renderDom(dom, state, {
+    hero,
+    reward: getBattleReward(state),
+    statsState: displayedStatsState,
+    resultPresentation: battleResultPresentation,
+    deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
+  });
+}
+
+function getPreImpactStatsState(previous: CombatState, current: CombatState): CombatState {
+  let player = current.player;
+  let enemy = current.enemy;
+
+  if (current.lastPlayerDamage > 0) {
+    enemy = {
+      ...current.enemy,
+      hp: previous.enemy.hp,
+      armor: previous.enemy.armor,
+    };
+  }
+
+  if (current.lastEnemyDamage > 0) {
+    player = {
+      ...current.player,
+      hp: previous.player.hp,
+      armor: previous.player.armor,
+    };
+  }
+
+  return player === current.player && enemy === current.enemy ? current : { ...current, player, enemy };
 }
 
 function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void {
@@ -160,6 +219,7 @@ function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void 
       renderDom(dom, state, {
         hero,
         reward: getBattleReward(state),
+        statsState: displayedStatsState,
         resultPresentation: battleResultPresentation,
       });
       renderCityHeroInfo(cityHeroWidgetRefs, hero);

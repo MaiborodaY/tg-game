@@ -545,6 +545,11 @@ interface ArenaPreparedVisualState {
   visuals: ArenaVisuals;
 }
 
+interface ArenaSyncOptions {
+  hudState?: CombatState;
+  onImpact?: () => void;
+}
+
 interface ArenaLayers {
   back: Phaser.GameObjects.Container;
   mid: Phaser.GameObjects.Container;
@@ -1120,6 +1125,9 @@ const PAPER_DOLL_EQUIPMENT_LAYER_ORDER: Partial<Record<PaperDollEquipmentSlotKey
   frontBoot: 10,
   backShinguard: 20,
   frontShinguard: 20,
+  backGlove: 30,
+  frontGlove: 30,
+  shield: 40,
 };
 const paperDollEquipmentSlotConfigs = new WeakMap<FighterPart, PaperDollPartAssetConfig>();
 
@@ -1864,8 +1872,8 @@ export class ArenaScene extends Phaser.Scene {
     await this.prepareStateVisuals(nextState, { animateActions: false });
   }
 
-  async sync(nextState: CombatState): Promise<void> {
-    const prepared = await this.prepareStateVisuals(nextState, { animateActions: true });
+  async sync(nextState: CombatState, options: ArenaSyncOptions = {}): Promise<void> {
+    const prepared = await this.prepareStateVisuals(nextState, { animateActions: true, hudState: options.hudState });
 
     if (!prepared) {
       return;
@@ -1914,6 +1922,18 @@ export class ArenaScene extends Phaser.Scene {
 
     const playerResultDelay = playerActionAnimation?.impact;
     const enemyResultDelay = enemyActionAnimation?.impact;
+    const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, enemyResultDelay);
+
+    if (options.hudState && options.hudState !== nextState) {
+      void (hudImpactDelay ?? Promise.resolve()).then(() => {
+        if (this.currentState !== nextState) {
+          return;
+        }
+
+        setArenaHudForState(this, nextState);
+        options.onImpact?.();
+      });
+    }
 
     speedUpDamagingLungeAfterImpact(playerActionAnimation, lastPlayerAction, nextState.lastPlayerDamage);
     speedUpDamagingLungeAfterImpact(enemyActionAnimation, lastEnemyAction, nextState.lastEnemyDamage);
@@ -1977,7 +1997,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private async prepareStateVisuals(
     nextState: CombatState,
-    options: { animateActions: boolean },
+    options: { animateActions: boolean; hudState?: CombatState },
   ): Promise<ArenaPreparedVisualState | undefined> {
     const previousState = this.currentState;
     const syncToken = options.animateActions ? this.syncToken + 1 : this.syncToken;
@@ -2003,7 +2023,7 @@ export class ArenaScene extends Phaser.Scene {
 
     syncEnemyVisualForState(this, visuals, previousState, nextState);
     resetDeathEffectsForLiveFighters(this, visuals, nextState);
-    renderScene(this, nextState, playerSettings);
+    renderScene(this, nextState, playerSettings, options.hudState);
 
     return { previousState, playerSettings, visuals };
   }
@@ -7495,7 +7515,7 @@ function createEllipsePoints(
   return points;
 }
 
-function renderScene(target: ArenaScene, current: CombatState, playerSettings = getPlayerSettings()): void {
+function renderScene(target: ArenaScene, current: CombatState, playerSettings = getPlayerSettings(), hudState = current): void {
   if (!target.visuals) {
     return;
   }
@@ -7505,8 +7525,7 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   syncFighterCombatEquipment(target.visuals.enemy, current.enemy);
   updateCamera(target, current);
   applyFighterArrowCountersSceneScale(target);
-  setHud(target.visuals.playerHud, current.player);
-  setHud(target.visuals.enemyHud, current.enemy);
+  setArenaHudForState(target, hudState);
   setFighterArrowCounter(target.visuals.player, current.player);
   setFighterArrowCounter(target.visuals.enemy, current.enemy);
 
@@ -7517,6 +7536,31 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   if (!target.visuals.enemy.isShattered) {
     setFighterAlpha(target.visuals.enemy, 1, playerSettings.shadowMode);
   }
+}
+
+function setArenaHudForState(target: ArenaScene, current: CombatState): void {
+  if (!target.visuals) {
+    return;
+  }
+
+  setHud(target.visuals.playerHud, current.player);
+  setHud(target.visuals.enemyHud, current.enemy);
+}
+
+function getStateHudImpactDelay(
+  current: CombatState,
+  playerResultDelay: Promise<void> | undefined,
+  enemyResultDelay: Promise<void> | undefined,
+): Promise<void> | undefined {
+  if (current.lastPlayerDamage > 0) {
+    return playerResultDelay;
+  }
+
+  if (current.lastEnemyDamage > 0) {
+    return enemyResultDelay;
+  }
+
+  return undefined;
 }
 
 function syncFighterCombatEquipment(

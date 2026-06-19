@@ -70,6 +70,7 @@ test("paper doll draws equipment through ordered anchored layers", () => {
   assert.equal(arenaSceneSource.includes("PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS"), true);
   assert.equal(arenaSceneSource.includes("PAPER_DOLL_EQUIPMENT_LAYER_ORDER"), true);
   assert.match(arenaSceneSource, /backBoot:\s*10,[\s\S]*frontBoot:\s*10,[\s\S]*backShinguard:\s*20,[\s\S]*frontShinguard:\s*20/);
+  assert.match(arenaSceneSource, /backGlove:\s*30,[\s\S]*frontGlove:\s*30,[\s\S]*shield:\s*40/);
   assert.equal(arenaSceneSource.includes("sortPaperDollEquipmentLayer(equipmentLayer, anchorContainer, slotKey);"), true);
   assert.equal(arenaSceneSource.includes('equipmentLayer.sort("paperDollEquipmentLayerOrder"'), true);
   assert.equal(arenaSceneSource.includes("createPaperDollAnchoredEquipmentContainer"), true);
@@ -256,8 +257,8 @@ test("low effects can hot swap paper doll textures after preload", () => {
 });
 
 test("arena action turns can wait for animation completion", () => {
-  assert.equal(arenaSceneSource.includes("sync(nextState: CombatState): Promise<void>"), true);
-  assert.equal(arenaSceneSource.includes("const prepared = await this.prepareStateVisuals(nextState, { animateActions: true });"), true);
+  assert.equal(arenaSceneSource.includes("sync(nextState: CombatState, options: ArenaSyncOptions = {}): Promise<void>"), true);
+  assert.equal(arenaSceneSource.includes("const prepared = await this.prepareStateVisuals(nextState, { animateActions: true, hudState: options.hudState });"), true);
   assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
   assert.equal(arenaSceneSource.includes("playerActionAnimation = animateAction("), true);
   assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateAction("), true);
@@ -317,6 +318,38 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("function queueCombatResultAnimation("), true);
 });
 
+test("arena resource bars reveal combat damage on impact", () => {
+  assert.equal(domUiSource.includes("statsState?: CombatState;"), true);
+  assert.equal(domUiSource.includes("renderStats(dom, context.statsState ?? state);"), true);
+  assert.equal(mainSource.includes("let displayedStatsState: CombatState = state;"), true);
+  assert.equal(mainSource.includes("let statsRevealToken = 0;"), true);
+  assert.equal(mainSource.includes("statsState: displayedStatsState"), true);
+  assert.equal(mainSource.includes("displayedStatsState = shouldSyncArena ? getPreImpactStatsState(previousState, committedState) : committedState;"), true);
+  assert.equal(mainSource.includes("hudState: displayedStatsState"), true);
+  assert.equal(mainSource.includes("onImpact: () => revealStatsAfterImpact(statsToken, committedState)"), true);
+  assert.equal(mainSource.includes("void actionAnimation.finally(() => revealStatsAfterImpact(statsToken, committedState));"), true);
+  assert.equal(mainSource.includes("function revealStatsAfterImpact(token: number, targetState: CombatState): void"), true);
+  assert.equal(mainSource.includes("function getPreImpactStatsState(previous: CombatState, current: CombatState): CombatState"), true);
+  assert.equal(mainSource.includes("hp: previous.enemy.hp"), true);
+  assert.equal(mainSource.includes("armor: previous.enemy.armor"), true);
+  assert.equal(mainSource.includes("hp: previous.player.hp"), true);
+  assert.equal(mainSource.includes("armor: previous.player.armor"), true);
+  assert.equal(debugMainSource.includes("statsState: displayedStatsState"), true);
+  assert.equal(debugMainSource.includes("hudState: displayedStatsState"), true);
+  assert.equal(debugMainSource.includes("onImpact: () => revealStatsAfterImpact(statsToken, committedState)"), true);
+  assert.equal(debugMainSource.includes("void actionAnimation.finally(() => revealStatsAfterImpact(statsToken, committedState));"), true);
+  assert.equal(arenaSceneSource.includes("interface ArenaSyncOptions"), true);
+  assert.equal(arenaSceneSource.includes("hudState?: CombatState;"), true);
+  assert.equal(arenaSceneSource.includes("onImpact?: () => void;"), true);
+  assert.equal(arenaSceneSource.includes("const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, enemyResultDelay);"), true);
+  assert.equal(arenaSceneSource.includes("setArenaHudForState(this, nextState);"), true);
+  assert.equal(arenaSceneSource.includes("options.onImpact?.();"), true);
+  assert.equal(arenaSceneSource.includes("function setArenaHudForState(target: ArenaScene, current: CombatState): void"), true);
+  assert.equal(arenaSceneSource.includes("function getStateHudImpactDelay("), true);
+  assert.equal(arenaSceneSource.includes("if (current.lastPlayerDamage > 0)"), true);
+  assert.equal(arenaSceneSource.includes("if (current.lastEnemyDamage > 0)"), true);
+});
+
 test("battle result presentation waits for arena visuals while rewards apply immediately", () => {
   const mainRewardSource = mainSource.slice(
     mainSource.indexOf("function applyBattleRewardIfNeeded"),
@@ -358,7 +391,7 @@ test("arena render-only refresh does not replay action animations", () => {
   assert.equal(arenaSceneSource.includes("private renderOnlyToken = 0;"), true);
   assert.equal(arenaSceneSource.includes("async renderState(nextState: CombatState): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("await this.prepareStateVisuals(nextState, { animateActions: false });"), true);
-  assert.equal(arenaSceneSource.includes("options: { animateActions: boolean }"), true);
+  assert.equal(arenaSceneSource.includes("options: { animateActions: boolean; hudState?: CombatState }"), true);
   assert.equal(arenaSceneSource.includes("const syncToken = options.animateActions ? this.syncToken + 1 : this.syncToken;"), true);
   assert.equal(arenaSceneSource.includes("if (options.animateActions) {"), true);
   assert.equal(arenaSceneSource.includes("this.syncToken = syncToken;"), true);
@@ -574,7 +607,7 @@ test("arena applies active combat weapon visibility after paper doll tuning", ()
 test("arena reuses player settings snapshots during frame work", () => {
   assert.equal(arenaSceneSource.includes("const playerSettings = getPlayerSettings();"), true);
   assert.equal(arenaSceneSource.includes("getArenaAnimationAmount()"), true);
-  assert.equal(arenaSceneSource.includes("renderScene(this, nextState, playerSettings);"), true);
+  assert.equal(arenaSceneSource.includes("renderScene(this, nextState, playerSettings, options.hudState);"), true);
   assert.equal(arenaSceneSource.includes("playerSettings.shadowMode"), true);
   assert.equal(arenaSceneSource.includes("function getArenaAnimationAmount(): number"), true);
   assert.equal(arenaSceneSource.includes("return 1;"), true);
@@ -615,7 +648,7 @@ test("arena starts close between fighters and eases back to the normal camera", 
   assert.equal(arenaSceneSource.includes("async prepareEntry(nextState: CombatState): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("async playEntryTransition(current = this.currentState): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("private async prepareStateVisuals("), true);
-  assert.equal(arenaSceneSource.includes("options: { animateActions: boolean }"), true);
+  assert.equal(arenaSceneSource.includes("options: { animateActions: boolean; hudState?: CombatState }"), true);
   assert.equal(arenaSceneSource.includes("private startArenaEntryTransition(current: CombatState): Promise<void> | undefined"), true);
   assert.equal(arenaSceneSource.includes("getArenaEntryStartCameraTarget(finalTarget)"), true);
   assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS"), true);

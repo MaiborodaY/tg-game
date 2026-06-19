@@ -106,6 +106,7 @@ let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
 let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
 let state: CombatState = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
+let displayedStatsState: CombatState = state;
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
 let classicActionBar: ClassicActionBarApi | undefined;
@@ -146,6 +147,7 @@ let battleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleResultPresentation: BattleResultPresentation | undefined;
 let battleResultPresentationId = 0;
 let battleResultPresentationRevealToken = 0;
+let statsRevealToken = 0;
 let battleResultReturnReady = true;
 let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
@@ -319,6 +321,7 @@ function renderCurrentDom(): void {
   renderDom(dom, state, {
     hero,
     reward: getBattleReward(state),
+    statsState: displayedStatsState,
     resultPresentation: battleResultPresentation,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
     resultReturn: {
@@ -340,15 +343,31 @@ function renderCityHero(): void {
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
   const syncArena = options.syncArena ?? true;
+  const previousState = state;
   const isBattleFinishing = state.result === "playing" && nextState.result !== "playing";
   const committedState = applyBattleRewardIfNeeded(nextState);
+  const statsToken = ++statsRevealToken;
+  const shouldSyncArena = syncArena && Boolean(arenaScene);
 
   state = committedState;
+  displayedStatsState = shouldSyncArena ? getPreImpactStatsState(previousState, committedState) : committedState;
   renderCurrentDom();
   if (!isBattleFinishing) {
     renderCityHero();
   }
-  const actionAnimation = syncArena ? (arenaScene?.sync(state) ?? Promise.resolve()) : Promise.resolve();
+  const actionAnimation = shouldSyncArena
+    ? (arenaScene?.sync(state, {
+      hudState: displayedStatsState,
+      onImpact: () => revealStatsAfterImpact(statsToken, committedState),
+    }) ?? Promise.resolve())
+    : Promise.resolve();
+
+  if (displayedStatsState === committedState) {
+    revealStatsAfterImpact(statsToken, committedState);
+  }
+
+  void actionAnimation.finally(() => revealStatsAfterImpact(statsToken, committedState));
+
   if (isBattleFinishing) {
     scheduleBattleResultPresentation(actionAnimation);
   }
@@ -356,6 +375,42 @@ function commitState(nextState: CombatState, options: { syncArena?: boolean } = 
   syncTurnProbe();
 
   return actionAnimation;
+}
+
+function revealStatsAfterImpact(token: number, targetState: CombatState): void {
+  if (statsRevealToken !== token || state !== targetState) {
+    return;
+  }
+
+  if (displayedStatsState === targetState) {
+    return;
+  }
+
+  displayedStatsState = targetState;
+  renderCurrentDom();
+}
+
+function getPreImpactStatsState(previous: CombatState, current: CombatState): CombatState {
+  let player = current.player;
+  let enemy = current.enemy;
+
+  if (current.lastPlayerDamage > 0) {
+    enemy = {
+      ...current.enemy,
+      hp: previous.enemy.hp,
+      armor: previous.enemy.armor,
+    };
+  }
+
+  if (current.lastEnemyDamage > 0) {
+    player = {
+      ...current.player,
+      hp: previous.player.hp,
+      armor: previous.player.armor,
+    };
+  }
+
+  return player === current.player && enemy === current.enemy ? current : { ...current, player, enemy };
 }
 
 function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void {

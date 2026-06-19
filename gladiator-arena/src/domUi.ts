@@ -131,6 +131,7 @@ export interface BattleResultReturnState {
 export interface DomRenderContext {
   hero?: HeroState;
   reward?: BattleReward;
+  statsState?: CombatState;
   resultPresentation?: BattleResultPresentation;
   deferResultPresentation?: boolean;
   resultReturn?: BattleResultReturnState;
@@ -144,7 +145,7 @@ export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderCo
   setText(dom.distanceText, distance);
   setText(dom.classicDistanceText, distance);
   syncClassicDistanceBadge(dom.classicDistanceBadge, band);
-  renderStats(dom, state);
+  renderStats(dom, context.statsState ?? state);
   renderLog(dom, state);
   renderResult(dom, state, context);
 }
