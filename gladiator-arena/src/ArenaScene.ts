@@ -1155,6 +1155,7 @@ const paperDollAssetLoadPromisesByScene = new WeakMap<Phaser.Scene, Map<string, 
 const PAPER_DOLL_ASSETS_BY_KEY = createPaperDollAssetsByKey();
 const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
   powerPreference: "low-power",
+  roundPixels: true,
 };
 const PHASER_THIRTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
   target: 30,
@@ -7822,9 +7823,9 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
     positionFighterForLayout(
       target,
       visuals.player,
-      layout.playerX,
+      snapArenaPixel(layout.playerX),
       layout.playerScale * getFighterBodyScaleMultiplier(current.player),
-      layout.playerY,
+      snapArenaPixel(layout.playerY),
       shouldSnap,
       playerSettings,
       playerMovementDelayMs,
@@ -7836,9 +7837,9 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
     positionFighterForLayout(
       target,
       visuals.enemy,
-      layout.enemyX,
+      snapArenaPixel(layout.enemyX),
       layout.enemyScale * getFighterBodyScaleMultiplier(current.enemy),
-      layout.enemyY,
+      snapArenaPixel(layout.enemyY),
       shouldSnap,
       playerSettings,
       enemyMovementDelayMs,
@@ -8179,8 +8180,8 @@ function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<t
     getArenaLayerTransform(layers.back, cameraTarget, parallax.back),
     getArenaLayerTransform(layers.mid, cameraTarget, parallax.mid),
     getArenaLayerTransform(layers.ground, cameraTarget, parallax.ground),
-    getArenaLayerTransform(layers.actors, cameraTarget, parallax.actors),
-    getArenaLayerTransform(layers.effects, cameraTarget, parallax.effects),
+    getArenaLayerTransform(layers.actors, cameraTarget, parallax.actors, true),
+    getArenaLayerTransform(layers.effects, cameraTarget, parallax.effects, true),
   ];
 }
 
@@ -8213,17 +8214,24 @@ function getArenaLayerTransform(
   layer: Phaser.GameObjects.Container,
   cameraTarget: ReturnType<typeof getCameraTarget>,
   parallax: ArenaLayerParallax,
+  snapPosition = false,
 ): ArenaLayerTransform {
   const scale = 1 + (cameraTarget.zoom - 1) * parallax.zoom;
   const centerX = GAME_WIDTH / 2 + (cameraTarget.centerX - GAME_WIDTH / 2) * parallax.followX;
   const centerY = GAME_HEIGHT / 2 + (cameraTarget.centerY - GAME_HEIGHT / 2) * parallax.followY;
+  const x = cameraTarget.viewportWidth / 2 - centerX * scale;
+  const y = cameraTarget.viewportHeight / 2 - centerY * scale + cameraTarget.closeness * parallax.lookUpY;
 
   return {
     layer,
-    x: cameraTarget.viewportWidth / 2 - centerX * scale,
-    y: cameraTarget.viewportHeight / 2 - centerY * scale + cameraTarget.closeness * parallax.lookUpY,
+    x: snapPosition ? snapArenaPixel(x) : x,
+    y: snapPosition ? snapArenaPixel(y) : y,
     scale,
   };
+}
+
+function snapArenaPixel(value: number): number {
+  return Math.round(value);
 }
 
 function killArenaTransformTweens(target: Phaser.Scene, layers: ArenaLayers): void {
