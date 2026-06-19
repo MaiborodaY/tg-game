@@ -1748,7 +1748,7 @@ export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
         },
         {
           id: "key-927",
-          time: 621,
+          time: 630,
           easing: "easeInOut",
           rigParts: {
             head: { x: 94.101, y: 73.005, angle: 16.911, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
@@ -5066,7 +5066,7 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
               },
               {
                 id: "key-927",
-                time: 621,
+                time: 630,
                 easing: "easeInOut",
                 rigParts: {
                   head: { x: 94.101, y: 73.005, angle: 16.911, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
