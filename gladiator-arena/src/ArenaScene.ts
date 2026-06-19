@@ -126,6 +126,8 @@ import {
   createDefaultHeroAppearance,
   createDefaultHeroEquipment,
   DEFAULT_ENEMY_VISUAL_PRESET,
+  getHeroEquipmentBowWeaponClass,
+  getHeroEquipmentWeaponClass,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
   type HeroAppearance,
@@ -284,6 +286,13 @@ interface DebugEquipmentDragState {
   lastPointerLocalY: number;
 }
 
+interface DebugAnimationWeaponDragState {
+  slotKey: PaperDollEquipmentSlotKey;
+  itemId: HeroItemId | "";
+  lastPointerLocalX: number;
+  lastPointerLocalY: number;
+}
+
 interface PaperDollAnimationRootBase {
   rootX: number;
   rootY: number;
@@ -309,6 +318,7 @@ interface DebugInputEvent {
 
 type DebugRigPartPickHandler = (partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent) => void;
 type DebugEquipmentPickHandler = (slotKey: PaperDollEquipmentSlotKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent) => void;
+type DebugAnimationWeaponPickHandler = (slotKey: PaperDollEquipmentSlotKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent) => void;
 
 interface PaperDollRig {
   root: FighterPart;
@@ -942,6 +952,7 @@ const DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS: PaperDollEquipmentAssetKeys = {
 
 const PAPER_DOLL_EQUIPMENT_SLOT_KEYS = HERO_EQUIPMENT_SLOT_KEYS;
 const PAPER_DOLL_DRAGGABLE_ARMOR_SLOT_KEYS = PAPER_DOLL_EQUIPMENT_SLOT_KEYS.filter((slotKey) => !isPaperDollWeaponSlot(slotKey));
+const PAPER_DOLL_DRAGGABLE_WEAPON_SLOT_KEYS: PaperDollEquipmentSlotKey[] = ["weaponMain", "weaponBow"];
 const DEBUG_CHARACTER_GHOST_ARMOR_ALPHA = 0.32;
 
 const PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT: Record<PaperDollEquipmentSlotKey, PaperDollEquipmentAssetKey> = {
@@ -3096,6 +3107,47 @@ function getAnimationPreviewEquipmentKey(equipment: HeroEquipment | undefined): 
   return HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => `${slotKey}:${equipment?.[slotKey] ?? ""}`).join("|");
 }
 
+function createAnimationPreviewCombatFighterState(equipment: HeroEquipment): FighterState {
+  const mainWeaponClass = getHeroEquipmentWeaponClass(equipment);
+  const bowWeaponClass = getHeroEquipmentBowWeaponClass(equipment);
+  const weaponClass = getAnimationPreviewCombatWeaponClass(equipment, mainWeaponClass, bowWeaponClass);
+  const hasBow = bowWeaponClass === "bow";
+
+  return {
+    name: "BORSHEMIR",
+    hp: 1,
+    maxHp: 1,
+    armor: 0,
+    maxArmor: 0,
+    stamina: 1,
+    maxStamina: 1,
+    damageBonus: 0,
+    movementDistanceBonus: 0,
+    bodyScaleBonus: 0,
+    clinchRangeBonus: 0,
+    restHpRestoreBonus: 0,
+    restStaminaRestoreBonus: 0,
+    weaponClass,
+    mainWeaponClass,
+    bowWeaponClass,
+    bowShotsRemaining: hasBow ? 1 : 0,
+    bowMaxShots: hasBow ? 1 : 0,
+    equipment,
+  };
+}
+
+function getAnimationPreviewCombatWeaponClass(
+  equipment: HeroEquipment,
+  mainWeaponClass: HeroWeaponClass,
+  bowWeaponClass: HeroWeaponClass | undefined,
+): HeroWeaponClass {
+  if (bowWeaponClass === "bow" && (debugTuning.selectedBodyAnimation === "bowShot" || !equipment.weaponMain)) {
+    return "bow";
+  }
+
+  return mainWeaponClass;
+}
+
 export interface HeroPortraitPreviewApi {
   setEquipment: (equipment: HeroEquipment) => void;
   setAppearance: (appearance: HeroAppearance) => void;
@@ -3260,6 +3312,7 @@ class DebugCharacterScene extends Phaser.Scene {
   private dragState?: DebugRigPartDragState;
   private canvasPanState?: DebugCanvasPanState;
   private rootDragState?: DebugAnimationRootDragState;
+  private animationWeaponDragState?: DebugAnimationWeaponDragState;
   private animationFloorGuide?: DebugAnimationFloorGuide;
   private equipmentDragState?: DebugEquipmentDragState;
   private selectedEquipment?: Pick<DebugEquipmentDragState, "slotKey" | "itemId">;
@@ -3291,6 +3344,9 @@ class DebugCharacterScene extends Phaser.Scene {
     });
     this.fighter.name.setVisible(false);
     if (this.viewerMode !== "shop") {
+      if (this.viewerMode === "animation") {
+        enableDebugPaperDollAnimationWeaponPicking(this.fighter.paperDollRig, (slotKey, pointer, event) => this.beginAnimationWeaponDrag(slotKey, pointer, event));
+      }
       enableDebugPaperDollEquipmentPicking(this.fighter.paperDollRig, (slotKey, pointer, event) => this.beginEquipmentDrag(slotKey, pointer, event));
       enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
       this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) =>
@@ -3299,6 +3355,7 @@ class DebugCharacterScene extends Phaser.Scene {
       this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
         this.dragAnimationCanvas(pointer);
         this.dragAnimationRoot(pointer);
+        this.dragAnimationWeapon(pointer);
         this.dragRigPart(pointer);
         this.dragEquipment(pointer);
       });
@@ -3375,6 +3432,7 @@ class DebugCharacterScene extends Phaser.Scene {
     const layout = this.getDebugCharacterLayout();
 
     applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+    this.syncAnimationPreviewCombatEquipment();
     this.syncPreviewArmorAlpha();
     if (this.viewerMode === "animation" && debugTuning.animationEditMode === "preview") {
       const animation = getSelectedDebugBodyAnimation();
@@ -3390,6 +3448,7 @@ class DebugCharacterScene extends Phaser.Scene {
       this.fighter.paperDollRig,
       debugTuning.characterCanvasEditMode === "parts" || debugTuning.characterCanvasEditMode === "bodyArt" ? debugTuning.selectedRigParts : [],
     );
+    this.syncAnimationWeaponDragPicking();
   }
 
   private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
@@ -3442,8 +3501,28 @@ class DebugCharacterScene extends Phaser.Scene {
         return;
       }
 
-      syncPaperDollEquipmentState(this.fighter?.paperDollRig, slotKeys, equipment);
+      this.syncAnimationPreviewCombatEquipment(slotKeys);
     });
+  }
+
+  private syncAnimationPreviewCombatEquipment(slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS): void {
+    if (this.viewerMode !== "animation" || !this.fighter) {
+      return;
+    }
+
+    const equipment = this.getPreviewEquipment() ?? createDefaultHeroEquipment();
+
+    syncFighterCombatEquipment(this.fighter, createAnimationPreviewCombatFighterState(equipment), slotKeys);
+    applyCurrentDebugAnimationWeaponPose(this.fighter);
+    this.syncAnimationWeaponDragPicking();
+  }
+
+  private syncAnimationWeaponDragPicking(): void {
+    if (this.viewerMode !== "animation") {
+      return;
+    }
+
+    syncDebugPaperDollAnimationWeaponPicking(this.fighter?.paperDollRig, debugTuning.animationWeaponDragEnabled);
   }
 
   private getPreviewEquipment(): HeroEquipment | undefined {
@@ -3728,9 +3807,49 @@ class DebugCharacterScene extends Phaser.Scene {
     this.endDrag();
   }
 
+  private beginAnimationWeaponDrag(slotKey: PaperDollEquipmentSlotKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
+    if (this.viewerMode === "animation" && isAnimationCanvasPanPointer(pointer)) {
+      event?.stopPropagation();
+      this.beginAnimationCanvasPan(pointer);
+      return;
+    }
+
+    if (this.viewerMode !== "animation" || !debugTuning.animationWeaponDragEnabled) {
+      return;
+    }
+
+    if (!isPrimaryPointerDown(pointer) || !this.isEquipmentSlotVisible(slotKey)) {
+      return;
+    }
+
+    const localPointer = this.getEquipmentDragPointerLocalPoint(slotKey, pointer);
+
+    if (!localPointer) {
+      return;
+    }
+
+    event?.stopPropagation();
+    this.endRigPartDrag();
+    this.endAnimationRootDrag();
+    this.endAnimationCanvasPan();
+    this.endEquipmentDrag();
+    updateDebugTuning({ selectedRigParts: [] }, { undoable: false });
+    const itemId = this.getEquipmentItemId(slotKey);
+
+    emitDebugCharacterEquipmentSelect({ slotKey, itemId });
+    beginDebugUndoGroup();
+    this.animationWeaponDragState = {
+      slotKey,
+      itemId,
+      lastPointerLocalX: localPointer.x,
+      lastPointerLocalY: localPointer.y,
+    };
+  }
+
   private beginAnimationCanvasPan(pointer: Phaser.Input.Pointer): void {
     this.endRigPartDrag();
     this.endAnimationRootDrag();
+    this.endAnimationWeaponDrag();
     this.endEquipmentDrag();
     this.canvasPanState = {
       lastPointerX: pointer.worldX,
@@ -3895,8 +4014,45 @@ class DebugCharacterScene extends Phaser.Scene {
     endDebugUndoGroup();
   }
 
+  private dragAnimationWeapon(pointer: Phaser.Input.Pointer): void {
+    if (!this.animationWeaponDragState || !this.fighter?.paperDollRig) {
+      return;
+    }
+
+    if (!pointer.isDown || !debugTuning.animationWeaponDragEnabled) {
+      this.endAnimationWeaponDrag();
+      return;
+    }
+
+    const localPointer = this.getEquipmentDragPointerLocalPoint(this.animationWeaponDragState.slotKey, pointer);
+
+    if (!localPointer) {
+      this.endAnimationWeaponDrag();
+      return;
+    }
+
+    const deltaX = localPointer.x - this.animationWeaponDragState.lastPointerLocalX;
+    const deltaY = localPointer.y - this.animationWeaponDragState.lastPointerLocalY;
+
+    if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+      return;
+    }
+
+    emitDebugCharacterEquipmentDelta(this.animationWeaponDragState, {
+      x: deltaX,
+      y: deltaY,
+    });
+    this.animationWeaponDragState.lastPointerLocalX = localPointer.x;
+    this.animationWeaponDragState.lastPointerLocalY = localPointer.y;
+  }
+
   private endAnimationRootDrag(): void {
     this.rootDragState = undefined;
+    endDebugUndoGroup();
+  }
+
+  private endAnimationWeaponDrag(): void {
+    this.animationWeaponDragState = undefined;
     endDebugUndoGroup();
   }
 
@@ -3912,6 +4068,7 @@ class DebugCharacterScene extends Phaser.Scene {
   private endDrag(): void {
     this.endRigPartDrag();
     this.endAnimationRootDrag();
+    this.endAnimationWeaponDrag();
     this.endEquipmentDrag();
     this.endAnimationCanvasPan();
   }
@@ -3980,7 +4137,11 @@ class DebugCharacterScene extends Phaser.Scene {
 
   private getEquipmentItemId(slotKey: PaperDollEquipmentSlotKey): HeroItemId | "" {
     const rig = this.fighter?.paperDollRig;
-    const equipment = rig?.usesPlayerEquipment ? activePlayerEquipment : rig?.equipmentState;
+    const equipment = this.viewerMode === "animation"
+      ? this.getPreviewEquipment()
+      : rig?.usesPlayerEquipment
+        ? activePlayerEquipment
+        : rig?.equipmentState;
 
     return equipment?.[slotKey] ?? "";
   }
@@ -4003,6 +4164,7 @@ class DebugCharacterScene extends Phaser.Scene {
 
     return getPaperDollEquipmentDragLocalPoint(slot, pointer.worldX, pointer.worldY);
   }
+
 }
 
 export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?: HeroEquipment, options: DebugCharacterViewerOptions = {}): () => void {
@@ -5398,6 +5560,7 @@ function getBodyAnimationYoyoBlend(progress: number, amount = 1): number {
 function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimationTuning, blend: number): void {
   applyBodyAnimationPoseBlend(fighter, animation, animation.base, animation.breath, animation.faceBase, animation.faceBreath, blend);
   applyBodyAnimationRootOffset(fighter, defaultBodyAnimationRootOffset);
+  applyBodyAnimationWeaponMirrors(fighter, false, false);
 }
 
 function applyBodyAnimationKeyframesAtProgress(fighter: FighterVisual, animation: BodyAnimationTuning, progress: number, amount: number): boolean {
@@ -5416,6 +5579,7 @@ function applyBodyAnimationKeyframesAtProgress(fighter: FighterVisual, animation
 
   applyBodyAnimationPoseBlend(fighter, animation, baseKeyframe.rigParts, sampledPose.rigParts, baseKeyframe.faceParts, sampledPose.faceParts, amount);
   applyBodyAnimationRootOffsetBlend(fighter, baseKeyframe.rootOffset, sampledPose.rootOffset, amount);
+  applyBodyAnimationWeaponMirrors(fighter, sampledPose.weaponMirrorX ?? false, sampledPose.weaponMirrorY ?? false);
 
   return true;
 }
@@ -5440,6 +5604,8 @@ interface SampledBodyAnimationPose {
   rigParts: Record<RigPartKey, RigPartTuning>;
   faceParts: Record<FacePartKey, FacePartTuning>;
   rootOffset: BodyAnimationRootOffset;
+  weaponMirrorX?: boolean;
+  weaponMirrorY?: boolean;
 }
 
 function sampleBodyAnimationKeyframePose(
@@ -5509,6 +5675,8 @@ function interpolateBodyAnimationKeyframes(from: BodyAnimationKeyframe, to: Body
       eyeRight: interpolateFacePartTuning(from.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight, to.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight, blend),
     },
     rootOffset: interpolateBodyAnimationRootOffset(from.rootOffset ?? defaultBodyAnimationRootOffset, to.rootOffset ?? defaultBodyAnimationRootOffset, blend),
+    weaponMirrorX: blend < 0.5 ? from.weaponMirrorX : to.weaponMirrorX,
+    weaponMirrorY: blend < 0.5 ? from.weaponMirrorY : to.weaponMirrorY,
   };
 }
 
@@ -5804,7 +5972,15 @@ function applySingleEquipmentTransform(part: FighterPart, tuning: EquipmentTunin
   const previousState = paperDollEquipmentTransformStates.get(part);
 
   if (previousState && arePaperDollEquipmentTransformStatesEqual(previousState, nextState)) {
-    return;
+    if (
+      part.x === nextState.x
+      && part.y === nextState.y
+      && part.angle === nextState.angle
+      && part.scaleX === nextState.scaleX
+      && part.scaleY === nextState.scaleY
+    ) {
+      return;
+    }
   }
 
   part.x = nextState.x;
@@ -5813,6 +5989,48 @@ function applySingleEquipmentTransform(part: FighterPart, tuning: EquipmentTunin
   part.scaleX = nextState.scaleX;
   part.scaleY = nextState.scaleY;
   paperDollEquipmentTransformStates.set(part, nextState);
+}
+
+function applyBodyAnimationWeaponMirrors(fighter: FighterVisual, mirrorX: boolean, mirrorY: boolean): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  applyPaperDollWeaponMirror(rig.equipment.weaponMain, mirrorX, mirrorY);
+  applyPaperDollWeaponMirror(rig.equipment.weaponBow, mirrorX, mirrorY);
+  if (rig.shadow) {
+    applyPaperDollWeaponMirror(rig.shadow.equipment.weaponMain, mirrorX, mirrorY);
+    applyPaperDollWeaponMirror(rig.shadow.equipment.weaponBow, mirrorX, mirrorY);
+  }
+}
+
+function applyPaperDollWeaponMirror(slot: FighterPart | undefined, mirrorX: boolean, mirrorY: boolean): void {
+  if (!slot) {
+    return;
+  }
+
+  applyPaperDollWeaponImageMirror(slot, mirrorX, mirrorY);
+  getLinkedPaperDollEquipmentSlots(slot).forEach((linkedSlot) => applyPaperDollWeaponImageMirror(linkedSlot, mirrorX, mirrorY));
+}
+
+function applyPaperDollWeaponImageMirror(slot: FighterPart, mirrorX: boolean, mirrorY: boolean): void {
+  const image = getPaperDollEquipmentSlotImage(slot);
+
+  if (!image) {
+    return;
+  }
+
+  const config = paperDollEquipmentSlotConfigs.get(slot);
+
+  if (config) {
+    image.x = config.localX;
+    image.y = config.localY;
+  }
+
+  image.scaleX = Math.abs(image.scaleX) * (mirrorX ? -1 : 1);
+  image.scaleY = Math.abs(image.scaleY) * (mirrorY ? -1 : 1);
 }
 
 function createPaperDollEquipmentTransformState(tuning: EquipmentTuning): PaperDollEquipmentTransformState {
@@ -5905,20 +6123,81 @@ function enableDebugPaperDollEquipmentPicking(rig: PaperDollRig | undefined, onP
   });
 }
 
+function enableDebugPaperDollAnimationWeaponPicking(rig: PaperDollRig | undefined, onPick: DebugAnimationWeaponPickHandler): void {
+  if (!rig) {
+    return;
+  }
+
+  PAPER_DOLL_DRAGGABLE_WEAPON_SLOT_KEYS.forEach((slotKey) => {
+    getPaperDollAnimationWeaponPickTargets(rig, slotKey).forEach((slot) => {
+      const slotContainer = slot as Phaser.GameObjects.Container;
+
+      slotContainer.on("pointerdown", (pointer: Phaser.Input.Pointer, _localX: number, _localY: number, event?: DebugInputEvent) => {
+        onPick(slotKey, pointer, event);
+      });
+    });
+  });
+}
+
+function syncDebugPaperDollAnimationWeaponPicking(rig: PaperDollRig | undefined, enabled: boolean): void {
+  if (!rig) {
+    return;
+  }
+
+  PAPER_DOLL_DRAGGABLE_WEAPON_SLOT_KEYS.forEach((slotKey) => {
+    const primarySlot = rig.equipment[slotKey];
+    const isPrimarySlotVisible = Boolean(primarySlot && isPaperDollEquipmentSlotVisible(primarySlot));
+
+    getPaperDollAnimationWeaponPickTargets(rig, slotKey).forEach((slot) => {
+      syncDebugPaperDollAnimationWeaponPickTarget(
+        slot,
+        slotKey,
+        enabled && isPrimarySlotVisible && isPaperDollEquipmentSlotVisible(slot),
+      );
+    });
+  });
+}
+
+function getPaperDollAnimationWeaponPickTargets(rig: PaperDollRig, slotKey: PaperDollEquipmentSlotKey): FighterPart[] {
+  const slot = rig.equipment[slotKey];
+
+  return slot ? [slot, ...getLinkedPaperDollEquipmentSlots(slot)] : [];
+}
+
+function syncDebugPaperDollAnimationWeaponPickTarget(slot: FighterPart, slotKey: PaperDollEquipmentSlotKey, enabled: boolean): void {
+  const slotContainer = slot as Phaser.GameObjects.Container;
+
+  if (!enabled) {
+    if (slotContainer.input) {
+      slotContainer.removeInteractive();
+    }
+    return;
+  }
+
+  slotContainer.setInteractive(createPaperDollEquipmentHitArea(slot, slotKey), Phaser.Geom.Rectangle.Contains);
+
+  if (slotContainer.input) {
+    slotContainer.input.cursor = "move";
+  }
+}
+
 function createPaperDollEquipmentHitArea(slot: FighterPart, slotKey: PaperDollEquipmentSlotKey): Phaser.Geom.Rectangle {
   const image = getPaperDollEquipmentSlotImage(slot);
   const padding = 8;
 
   if (image) {
-    const width = Math.max(18, Math.abs(image.displayWidth) + padding * 2);
-    const height = Math.max(18, Math.abs(image.displayHeight) + padding * 2);
+    const displayWidth = Math.abs(image.displayWidth);
+    const displayHeight = Math.abs(image.displayHeight);
+    const width = Math.max(18, displayWidth + padding * 2);
+    const height = Math.max(18, displayHeight + padding * 2);
+    const imageLeft = image.scaleX < 0
+      ? image.x - displayWidth * (1 - image.originX)
+      : image.x - displayWidth * image.originX;
+    const imageTop = image.scaleY < 0
+      ? image.y - displayHeight * (1 - image.originY)
+      : image.y - displayHeight * image.originY;
 
-    return new Phaser.Geom.Rectangle(
-      image.x - image.displayWidth * image.originX - padding,
-      image.y - image.displayHeight * image.originY - padding,
-      width,
-      height,
-    );
+    return new Phaser.Geom.Rectangle(imageLeft - padding, imageTop - padding, width, height);
   }
 
   const config = PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
@@ -6270,6 +6549,8 @@ function getDebugAnimationKeyframeUpdateTarget(animation: BodyAnimationTuning): 
       rigParts: cloneDebugRigParts(sourcePose.rigParts),
       faceParts: cloneDebugFaceParts(sourcePose.faceParts),
       rootOffset: cloneDebugBodyAnimationRootOffset(sourcePose.rootOffset),
+      weaponMirrorX: sourcePose.weaponMirrorX,
+      weaponMirrorY: sourcePose.weaponMirrorY,
     },
     exists: false,
   };
@@ -6468,6 +6749,11 @@ function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
 
     applyBodyAnimationPoseBlend(fighter, animation, animation.base, selectedKeyframe.rigParts, animation.faceBase, selectedKeyframe.faceParts, 1);
     applyBodyAnimationRootOffset(fighter, selectedKeyframe.rootOffset ?? defaultBodyAnimationRootOffset);
+    applyBodyAnimationWeaponMirrors(
+      fighter,
+      selectedKeyframe.weaponMirrorX ?? false,
+      selectedKeyframe.weaponMirrorY ?? false,
+    );
     return;
   }
 
@@ -6478,10 +6764,55 @@ function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
   }
 
   applyBodyAnimationBlend(fighter, animation, poseKey === "base" ? 0 : 1);
-  applyBodyAnimationRootOffset(
+  const keyframe = getDebugAnimationEditKeyframes(animation).find((candidate) => candidate.id === (poseKey === "base" ? "pose-a" : "pose-b"));
+
+  applyBodyAnimationRootOffset(fighter, keyframe?.rootOffset ?? defaultBodyAnimationRootOffset);
+  applyBodyAnimationWeaponMirrors(
     fighter,
-    getDebugAnimationEditKeyframes(animation).find((keyframe) => keyframe.id === (poseKey === "base" ? "pose-a" : "pose-b"))?.rootOffset
-      ?? defaultBodyAnimationRootOffset,
+    keyframe?.weaponMirrorX ?? false,
+    keyframe?.weaponMirrorY ?? false,
+  );
+}
+
+function applyCurrentDebugAnimationWeaponPose(fighter: FighterVisual): void {
+  const animation = getSelectedDebugBodyAnimation();
+
+  if (!animation) {
+    applyBodyAnimationWeaponMirrors(fighter, false, false);
+    return;
+  }
+
+  if (debugTuning.animationEditMode === "preview" && animation.enabled) {
+    const sampledPose = sampleDebugAnimationPreviewPose(animation);
+
+    applyBodyAnimationWeaponMirrors(
+      fighter,
+      sampledPose?.weaponMirrorX ?? false,
+      sampledPose?.weaponMirrorY ?? false,
+    );
+    return;
+  }
+
+  if (debugTuning.animationEditMode === "keyframe") {
+    const selectedKeyframe = getSelectedDebugAnimationKeyframe(animation);
+
+    applyBodyAnimationWeaponMirrors(
+      fighter,
+      selectedKeyframe?.weaponMirrorX ?? false,
+      selectedKeyframe?.weaponMirrorY ?? false,
+    );
+    return;
+  }
+
+  const poseKey = getActiveDebugAnimationRigPoseKey();
+  const keyframe = poseKey
+    ? getDebugAnimationEditKeyframes(animation).find((candidate) => candidate.id === (poseKey === "base" ? "pose-a" : "pose-b"))
+    : undefined;
+
+  applyBodyAnimationWeaponMirrors(
+    fighter,
+    keyframe?.weaponMirrorX ?? false,
+    keyframe?.weaponMirrorY ?? false,
   );
 }
 
@@ -7187,7 +7518,11 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   }
 }
 
-function syncFighterCombatEquipment(fighter: FighterVisual, state: FighterState): void {
+function syncFighterCombatEquipment(
+  fighter: FighterVisual,
+  state: FighterState,
+  slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS,
+): void {
   const rig = fighter.paperDollRig;
   const equipment = state.equipment;
 
@@ -7196,7 +7531,7 @@ function syncFighterCombatEquipment(fighter: FighterVisual, state: FighterState)
   }
 
   rig.equipmentState = equipment;
-  syncPaperDollEquipmentState(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment);
+  syncPaperDollEquipmentState(rig, slotKeys, equipment);
   syncFighterCombatWeaponVisibility(rig, state);
   if (rig.shadow) {
     syncFighterCombatWeaponVisibility(rig.shadow, state);

@@ -84,8 +84,8 @@ test("paper doll draws equipment through ordered anchored layers", () => {
   assert.equal(equipmentAnchorSource.includes("anchor.angle = sourcePart.angle;"), true);
   assert.equal(equipmentAnchorSource.includes("anchor.scaleX = sourcePart.scaleX;"), true);
   assert.equal(equipmentAnchorSource.includes("anchor.scaleY = sourcePart.scaleY;"), true);
-  assert.equal(equipmentAnchorSource.includes("anchor.scaleX = sourcePart.scaleX < 0 ? -1 : 1;"), false);
-  assert.equal(equipmentAnchorSource.includes("anchor.scaleY = sourcePart.scaleY < 0 ? -1 : 1;"), false);
+  assert.equal(equipmentAnchorSource.includes("getPaperDollEquipmentAnchorScale"), false);
+  assert.equal(equipmentAnchorSource.includes("getScaleDirection"), false);
 });
 
 test("debug body art mode drags artwork without moving rig anchors", () => {
@@ -269,6 +269,24 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
   assert.equal(arenaSceneSource.includes("function applyBodyAnimationKeyframesAtProgress"), true);
   assert.equal(arenaSceneSource.includes("function sampleBodyAnimationKeyframePose"), true);
+  assert.equal(arenaSceneSource.includes("function applyBodyAnimationWeaponMirrors"), true);
+  assert.equal(arenaSceneSource.includes("applyPaperDollWeaponMirror(rig.equipment.weaponMain"), true);
+  assert.equal(arenaSceneSource.includes("function applyPaperDollWeaponImageMirror"), true);
+  assert.equal(arenaSceneSource.includes("const image = getPaperDollEquipmentSlotImage(slot);"), true);
+  assert.equal(arenaSceneSource.includes("image.x = config.localX;"), true);
+  assert.equal(arenaSceneSource.includes("image.y = config.localY;"), true);
+  assert.equal(arenaSceneSource.includes("image.scaleX = Math.abs(image.scaleX) * (mirrorX ? -1 : 1);"), true);
+  assert.equal(arenaSceneSource.includes("part.scaleX = baseScaleX * (mirrorX ? -1 : 1);"), false);
+  assert.equal(arenaSceneSource.includes("weaponOffset"), false);
+  assert.equal(arenaSceneSource.includes("emitDebugCharacterEquipmentDelta(this.animationWeaponDragState"), true);
+  assert.equal(arenaSceneSource.includes("enableDebugPaperDollAnimationWeaponPicking"), true);
+  assert.equal(arenaSceneSource.includes("syncDebugPaperDollAnimationWeaponPicking"), true);
+  assert.equal(arenaSceneSource.includes("function getPaperDollAnimationWeaponPickTargets"), true);
+  assert.equal(arenaSceneSource.includes("[slot, ...getLinkedPaperDollEquipmentSlots(slot)]"), true);
+  assert.equal(arenaSceneSource.includes("function syncDebugPaperDollAnimationWeaponPickTarget"), true);
+  assert.equal(arenaSceneSource.includes("? this.getPreviewEquipment()"), true);
+  assert.equal(arenaSceneSource.includes("image.scaleX < 0"), true);
+  assert.equal(arenaSceneSource.includes("image.scaleY < 0"), true);
   assert.equal(arenaSceneSource.includes("function applyBodyAnimationRootOffset"), true);
   assert.equal(arenaSceneSource.includes("function updateAnimationRootOffsetWithInteractiveDelta"), true);
   assert.equal(arenaSceneSource.includes("private dragAnimationRoot(pointer: Phaser.Input.Pointer): void"), true);
@@ -544,8 +562,9 @@ test("arena applies active combat weapon visibility after paper doll tuning", ()
       renderSceneSource.indexOf("syncFighterCombatEquipment(target.visuals.player, current.player);"),
   );
   assert.equal(combatEquipmentSource.includes('syncPaperDollEquipmentState(rig, ["weaponMain", "weaponBow"], equipment);'), false);
-  assert.equal(combatEquipmentSource.includes("syncPaperDollEquipmentState(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment);"), true);
-  assert.match(combatEquipmentSource, /syncPaperDollEquipmentState\(rig, PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment\);[\s\S]*syncFighterCombatWeaponVisibility\(rig, state\);/);
+  assert.equal(combatEquipmentSource.includes("slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS"), true);
+  assert.equal(combatEquipmentSource.includes("syncPaperDollEquipmentState(rig, slotKeys, equipment);"), true);
+  assert.match(combatEquipmentSource, /syncPaperDollEquipmentState\(rig, slotKeys, equipment\);[\s\S]*syncFighterCombatWeaponVisibility\(rig, state\);/);
   assert.equal(combatEquipmentSource.includes("syncFighterCombatWeaponVisibility(rig.shadow, state);"), true);
   assert.equal(combatEquipmentSource.includes("const hasBowVisual = Boolean(rig.equipment.weaponBow && getPaperDollEquipmentSlotImage(rig.equipment.weaponBow));"), true);
   assert.equal(combatEquipmentSource.includes("setPaperDollEquipmentSlotVisible(rig.equipment.weaponMain, hasMainWeapon && (!bowActive || !hasBowVisual));"), true);

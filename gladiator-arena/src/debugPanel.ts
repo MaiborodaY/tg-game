@@ -841,6 +841,7 @@ let animationWorkbenchPlaybackReturnMode: AnimationEditMode | undefined;
 
 const ANIMATION_WORKBENCH_PLAYBACK_SPEEDS = [0.25, 0.5, 1, 1.5, 2] as const;
 const ANIMATION_WORKBENCH_MELEE_WEAPON_CLASSES: BodyAnimationWeaponClass[] = ["sword", "axe", "mace", "spear"];
+const ANIMATION_WORKBENCH_WEAPON_SLOT_KEYS = ["weaponMain", "weaponBow"] as const;
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -2739,15 +2740,18 @@ function mountAnimationWorkbench(): void {
   ];
   const rigControls = editor.querySelector<HTMLElement>("[data-animation-workbench-rig-controls]");
   const resetPart = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-part]");
-  const nudge = editor.querySelector<HTMLElement>("[data-animation-workbench-nudge]");
   const limbGrid = editor.querySelector<HTMLElement>("[data-animation-workbench-limbs]");
   const animationEnabled = editor.querySelector<HTMLInputElement>("[data-animation-workbench-enabled]");
   const animationDuration = editor.querySelector<HTMLInputElement>("[data-animation-workbench-duration]");
   const copyPoseAToB = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-copy-a-to-b]");
+  const weaponMirrorX = editor.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-x]");
+  const weaponMirrorY = editor.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-y]");
   const animationParts = editor.querySelector<HTMLElement>("[data-animation-workbench-parts]");
   const play = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
   const playbackSpeed = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-speed]");
   const randomWeapon = editor.querySelector<HTMLInputElement>("[data-animation-workbench-random-weapon]");
+  const weaponDrag = editor.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-drag]");
+  const resetWeapon = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-weapon]");
   const progress = editor.querySelector<HTMLInputElement>("[data-animation-workbench-progress]");
   const keyframes = editor.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
   const easing = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
@@ -2756,6 +2760,7 @@ function mountAnimationWorkbench(): void {
   const setStartKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-set-start]");
   const setImpactKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-set-impact]");
   const deleteKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-delete-keyframe]");
+  const fullResetAnimation = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-full-reset]");
 
   if (
     !animationSelect ||
@@ -2776,15 +2781,18 @@ function mountAnimationWorkbench(): void {
     rootTransformModeButtons.length === 0 ||
     !rigControls ||
     !resetPart ||
-    !nudge ||
     !limbGrid ||
     !animationEnabled ||
     !animationDuration ||
     !copyPoseAToB ||
+    !weaponMirrorX ||
+    !weaponMirrorY ||
     !animationParts ||
     !play ||
     !playbackSpeed ||
     !randomWeapon ||
+    !weaponDrag ||
+    !resetWeapon ||
     !progress ||
     !keyframes ||
     !easing ||
@@ -2792,7 +2800,8 @@ function mountAnimationWorkbench(): void {
     !duplicateKeyframe ||
     !setStartKeyframe ||
     !setImpactKeyframe ||
-    !deleteKeyframe
+    !deleteKeyframe ||
+    !fullResetAnimation
   ) {
     return;
   }
@@ -2828,10 +2837,6 @@ function mountAnimationWorkbench(): void {
 
   rigNumericControls.forEach((control) => rigControls.append(createRigRangeControl(control)));
   rigToggleControls.forEach((control) => rigControls.append(createRigToggleControl(control)));
-  const nudgeToolbar = createNudgeToolbar();
-  nudgeToolbar.classList.add("debug-nudge-toolbar--embedded");
-  nudge.append(nudgeToolbar);
-  mountNudgeToolbar(nudgeToolbar);
   rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
@@ -2964,6 +2969,14 @@ function mountAnimationWorkbench(): void {
     copyAnimationPoseAToB();
   });
 
+  weaponMirrorX.addEventListener("change", () => {
+    updateSelectedAnimationKeyframe({ weaponMirrorX: weaponMirrorX.checked });
+  });
+
+  weaponMirrorY.addEventListener("change", () => {
+    updateSelectedAnimationKeyframe({ weaponMirrorY: weaponMirrorY.checked });
+  });
+
   progress.addEventListener("input", () => {
     beginAnimationWorkbenchScrub();
     setAnimationWorkbenchProgress(Number(progress.value) / 1000);
@@ -3065,6 +3078,11 @@ function mountAnimationWorkbench(): void {
     deleteSelectedAnimationKeyframe();
   });
 
+  fullResetAnimation.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    resetSelectedBodyAnimationFull();
+  });
+
   play.addEventListener("click", () => {
     toggleAnimationWorkbenchPlayback();
   });
@@ -3081,6 +3099,15 @@ function mountAnimationWorkbench(): void {
       },
       { undoable: false },
     );
+  });
+
+  weaponDrag.addEventListener("change", () => {
+    updateDebugTuning({ animationWeaponDragEnabled: weaponDrag.checked }, { undoable: false });
+  });
+
+  resetWeapon.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    resetAnimationWorkbenchPreviewWeaponTuning();
   });
 
   editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-jump]").forEach((button) => {
@@ -3157,6 +3184,78 @@ function pickRandomAnimationWorkbenchPreviewWeaponItemId(): HeroItemId | null {
   const candidate = candidates[Math.floor(Math.random() * candidates.length)];
 
   return candidate?.id ?? null;
+}
+
+function resetAnimationWorkbenchPreviewWeaponTuning(): void {
+  const targets = getAnimationWorkbenchPreviewWeaponTuningTargets();
+
+  if (targets.length === 0) {
+    return;
+  }
+
+  const equipment = { ...debugTuning.equipment };
+  const equipmentItems = { ...debugTuning.equipmentItems };
+
+  targets.forEach(({ slotKey, itemId }) => {
+    if (itemId) {
+      equipmentItems[itemId] = {
+        ...(GENERATED_EQUIPMENT_ITEM_TUNING[itemId] ?? DEFAULT_EQUIPMENT_ITEM_TUNING[itemId] ?? DEFAULT_EQUIPMENT[slotKey]),
+      };
+      return;
+    }
+
+    equipment[slotKey] = { ...DEFAULT_EQUIPMENT[slotKey] };
+  });
+
+  updateDebugTuning({ equipment, equipmentItems });
+}
+
+function getAnimationWorkbenchPreviewWeaponTuningTargets(): { slotKey: EquipmentSlotKey; itemId: HeroItemId | "" }[] {
+  const equipment = getAnimationWorkbenchPreviewEquipment();
+
+  return getAnimationWorkbenchVisibleWeaponSlots(equipment).flatMap((slotKey) => {
+    const itemId = equipment[slotKey];
+    const definition = getDebugHeroItemDefinition(itemId);
+
+    if (itemId && definition?.equipmentSlot === slotKey) {
+      return [{ slotKey, itemId }];
+    }
+
+    return [];
+  });
+}
+
+function getAnimationWorkbenchVisibleWeaponSlots(equipment: HeroEquipment): typeof ANIMATION_WORKBENCH_WEAPON_SLOT_KEYS[number][] {
+  const bowActive = debugTuning.selectedBodyAnimation === "bowShot" || !equipment.weaponMain;
+
+  return ANIMATION_WORKBENCH_WEAPON_SLOT_KEYS.filter((slotKey) => {
+    if (slotKey === "weaponMain") {
+      return Boolean(equipment.weaponMain) && (!bowActive || !equipment.weaponBow);
+    }
+
+    return bowActive && Boolean(equipment.weaponBow);
+  });
+}
+
+function getAnimationWorkbenchPreviewEquipment(): HeroEquipment {
+  const baseEquipment = debugHeroEquipment ? { ...debugHeroEquipment } : createDefaultHeroEquipment();
+  const itemId = debugTuning.animationPreviewWeaponItemId;
+
+  if (!debugTuning.animationPreviewRandomWeapon || !itemId) {
+    return baseEquipment;
+  }
+
+  const item = getDebugHeroItemDefinition(itemId);
+
+  if (!item || item.kind !== "weapon" || (item.equipmentSlot !== "weaponMain" && item.equipmentSlot !== "weaponBow")) {
+    return baseEquipment;
+  }
+
+  return {
+    ...baseEquipment,
+    [item.equipmentSlot]: itemId,
+    ...(item.equipmentSlot === "weaponBow" ? { weaponMain: null } : {}),
+  };
 }
 
 function getAnimationWorkbenchPreviewWeaponClasses(animation: BodyAnimationTuning): BodyAnimationWeaponClass[] {
@@ -3290,6 +3389,8 @@ function addAnimationKeyframeAtProgress(): void {
     rigParts: cloneRigParts(sampledPose?.rigParts ?? sourceKeyframe.rigParts),
     faceParts: cloneFaceParts(sampledPose?.faceParts ?? sourceKeyframe.faceParts),
     rootOffset: cloneBodyAnimationRootOffset(sampledPose?.rootOffset ?? sourceKeyframe.rootOffset),
+    weaponMirrorX: sampledPose?.weaponMirrorX ?? sourceKeyframe.weaponMirrorX,
+    weaponMirrorY: sampledPose?.weaponMirrorY ?? sourceKeyframe.weaponMirrorY,
   };
 
   updateSelectedBodyAnimation(
@@ -3323,6 +3424,8 @@ function duplicateSelectedAnimationKeyframeAtProgress(): void {
     rigParts: cloneRigParts(selectedKeyframe.rigParts),
     faceParts: cloneFaceParts(selectedKeyframe.faceParts),
     rootOffset: cloneBodyAnimationRootOffset(selectedKeyframe.rootOffset),
+    weaponMirrorX: selectedKeyframe.weaponMirrorX,
+    weaponMirrorY: selectedKeyframe.weaponMirrorY,
   };
 
   updateSelectedBodyAnimation(
@@ -3380,7 +3483,9 @@ function setSelectedAnimationStartKeyframe(): void {
   );
 }
 
-function updateAnimationPreviewKeyframe(patch: Partial<Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset">>): void {
+function updateAnimationPreviewKeyframe(
+  patch: Partial<Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY">>,
+): void {
   const animation = getSelectedBodyAnimation();
   const duration = Math.max(1, animation.duration);
   const time = Math.round(clampNumber(debugTuning.animationPreviewProgress, 0, 1) * duration);
@@ -3401,6 +3506,8 @@ function updateAnimationPreviewKeyframe(patch: Partial<Pick<BodyAnimationKeyfram
     rigParts: cloneRigParts(sourcePose.rigParts),
     faceParts: cloneFaceParts(sourcePose.faceParts),
     rootOffset: cloneBodyAnimationRootOffset(sourcePose.rootOffset),
+    weaponMirrorX: sourcePose.weaponMirrorX,
+    weaponMirrorY: sourcePose.weaponMirrorY,
   };
   const nextKeyframe: BodyAnimationKeyframe = {
     ...targetKeyframe,
@@ -3503,6 +3610,54 @@ function deleteSelectedAnimationKeyframe(): void {
   );
 }
 
+function resetSelectedBodyAnimationFull(): void {
+  if (!window.confirm("Full reset current animation variant? This deletes custom keys and resets Pose A/B.")) {
+    return;
+  }
+
+  const animation = getSelectedBodyAnimation();
+  const duration = Math.max(1, animation.duration);
+  const neutralParts = getNeutralRigPartDefaults();
+  const neutralFaceParts = getNeutralFacePartDefaults();
+  const poseA = createNeutralAnimationAnchorKeyframe("pose-a", 0, neutralParts, neutralFaceParts);
+  const poseB = createNeutralAnimationAnchorKeyframe("pose-b", duration / 2, neutralParts, neutralFaceParts);
+
+  updateSelectedBodyAnimation(
+    {
+      base: cloneRigParts(neutralParts),
+      breath: cloneRigParts(neutralParts),
+      faceBase: cloneFaceParts(neutralFaceParts),
+      faceBreath: cloneFaceParts(neutralFaceParts),
+      activeParts: createAnimationActiveParts(true),
+      movementStartKeyframeId: undefined,
+      impactKeyframeId: undefined,
+      keyframes: [poseA, poseB],
+    },
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: 0,
+      characterCanvasEditMode: getAnimationWorkbenchCanvasEditMode(),
+      selectedAnimationKeyframeId: "pose-a",
+    },
+  );
+}
+
+function createNeutralAnimationAnchorKeyframe(
+  id: "pose-a" | "pose-b",
+  time: number,
+  rigParts: Record<RigPartKey, RigPartTuning>,
+  faceParts: Record<FacePartKey, FacePartTuning>,
+): BodyAnimationKeyframe {
+  return {
+    id,
+    time,
+    easing: "easeInOut",
+    rigParts: cloneRigParts(rigParts),
+    faceParts: cloneFaceParts(faceParts),
+    rootOffset: { ...defaultBodyAnimationRootOffset },
+  };
+}
+
 function resetSelectedAnimationPoseToDefault(): void {
   const poseId = getResettableAnimationPoseId();
 
@@ -3528,6 +3683,8 @@ function resetSelectedAnimationPoseToDefault(): void {
       rigParts: cloneRigParts(defaultKeyframe.rigParts),
       faceParts: cloneFaceParts(defaultKeyframe.faceParts),
       rootOffset: cloneBodyAnimationRootOffset(defaultKeyframe.rootOffset),
+      weaponMirrorX: defaultKeyframe.weaponMirrorX,
+      weaponMirrorY: defaultKeyframe.weaponMirrorY,
     },
     {
       animationEditMode: poseId === "pose-a" ? "poseA" : "poseB",
@@ -3554,6 +3711,8 @@ function applySelectedAnimationKeyframeToPose(targetPoseId: "pose-a" | "pose-b")
       rigParts: cloneRigParts(sourceKeyframe.rigParts),
       faceParts: cloneFaceParts(sourceKeyframe.faceParts),
       rootOffset: cloneBodyAnimationRootOffset(sourceKeyframe.rootOffset),
+      weaponMirrorX: sourceKeyframe.weaponMirrorX,
+      weaponMirrorY: sourceKeyframe.weaponMirrorY,
     },
     {
       animationEditMode: targetPoseId === "pose-a" ? "poseA" : "poseB",
@@ -3740,14 +3899,14 @@ function findAnimationKeyframeAtProgress(
   return candidates[0]?.keyframe;
 }
 
-function getAnimationPreviewPose(): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset"> | undefined {
+function getAnimationPreviewPose(): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY"> | undefined {
   return sampleAnimationKeyframePose(getSelectedBodyAnimation(), debugTuning.animationPreviewProgress);
 }
 
 function sampleAnimationKeyframePose(
   animation: BodyAnimationTuning,
   progress: number,
-): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset"> | undefined {
+): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY"> | undefined {
   const keyframes = getAnimationKeyframes(animation);
   const firstKeyframe = keyframes[0];
   const duration = Math.max(1, animation.duration);
@@ -3799,7 +3958,7 @@ function interpolateAnimationKeyframes(
   from: BodyAnimationKeyframe,
   to: BodyAnimationKeyframe,
   blend: number,
-): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset"> {
+): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY"> {
   return {
     rigParts: Object.fromEntries(
       RIG_PART_KEYS.map((key) => [
@@ -3811,6 +3970,8 @@ function interpolateAnimationKeyframes(
       FACE_PART_KEYS.map((key) => [key, interpolateFacePartTuning(from.faceParts[key] ?? defaultFacePartTuning, to.faceParts[key] ?? defaultFacePartTuning, blend)]),
     ) as Record<FacePartKey, FacePartTuning>,
     rootOffset: interpolateBodyAnimationRootOffset(from.rootOffset ?? defaultBodyAnimationRootOffset, to.rootOffset ?? defaultBodyAnimationRootOffset, blend),
+    weaponMirrorX: blend < 0.5 ? from.weaponMirrorX : to.weaponMirrorX,
+    weaponMirrorY: blend < 0.5 ? from.weaponMirrorY : to.weaponMirrorY,
   };
 }
 
@@ -5968,6 +6129,8 @@ function copyAnimationPoseAToB(): void {
     rigParts: cloneRigParts(poseA?.rigParts ?? animation.base),
     faceParts: cloneFaceParts(poseA?.faceParts ?? animation.faceBase),
     rootOffset: cloneBodyAnimationRootOffset(poseA?.rootOffset),
+    weaponMirrorX: poseA?.weaponMirrorX,
+    weaponMirrorY: poseA?.weaponMirrorY,
   });
 }
 
@@ -8921,6 +9084,10 @@ function syncAnimationEditor(panel: HTMLElement): void {
   const workbenchPlay = document.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
   const workbenchPlaybackSpeed = document.querySelector<HTMLSelectElement>("[data-animation-workbench-speed]");
   const workbenchRandomWeapon = document.querySelector<HTMLInputElement>("[data-animation-workbench-random-weapon]");
+  const workbenchWeaponDrag = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-drag]");
+  const workbenchResetWeapon = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-weapon]");
+  const workbenchWeaponMirrorX = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-x]");
+  const workbenchWeaponMirrorY = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-y]");
   const workbenchKeyframes = document.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
   const workbenchSelectedKey = document.querySelector<HTMLOutputElement>("[data-animation-workbench-selected-key]");
   const workbenchEasing = document.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
@@ -9031,6 +9198,14 @@ function syncAnimationEditor(panel: HTMLElement): void {
     workbenchRandomWeapon.checked = debugTuning.animationPreviewRandomWeapon;
   }
 
+  if (workbenchWeaponDrag) {
+    workbenchWeaponDrag.checked = debugTuning.animationWeaponDragEnabled;
+  }
+
+  if (workbenchResetWeapon) {
+    workbenchResetWeapon.disabled = getAnimationWorkbenchPreviewWeaponTuningTargets().length === 0;
+  }
+
   syncAnimationWorkbenchKeyframes(
     animation,
     workbenchKeyframes,
@@ -9041,6 +9216,8 @@ function syncAnimationEditor(panel: HTMLElement): void {
     setStartKeyframe,
     setImpactKeyframe,
     deleteKeyframe,
+    workbenchWeaponMirrorX,
+    workbenchWeaponMirrorY,
   );
 
   document.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]").forEach((button) => {
@@ -9064,6 +9241,8 @@ function syncAnimationWorkbenchKeyframes(
   setStartKeyframe: HTMLButtonElement | null,
   setImpactKeyframe: HTMLButtonElement | null,
   deleteKeyframe: HTMLButtonElement | null,
+  weaponMirrorX: HTMLInputElement | null,
+  weaponMirrorY: HTMLInputElement | null,
 ): void {
   const keyframes = getAnimationKeyframes(animation);
   const selectedKeyframe = getSelectedAnimationKeyframe(animation);
@@ -9161,6 +9340,16 @@ function syncAnimationWorkbenchKeyframes(
   if (deleteKeyframe) {
     deleteKeyframe.disabled = (!selectedKeyframe || isProtectedAnimationKeyframe(selectedKeyframe.id))
       && !findEditableAnimationKeyframeAtProgress(animation, debugTuning.animationPreviewProgress);
+  }
+
+  if (weaponMirrorX) {
+    weaponMirrorX.checked = selectedKeyframe?.weaponMirrorX ?? false;
+    weaponMirrorX.disabled = !selectedKeyframe || debugTuning.animationEditMode === "preview";
+  }
+
+  if (weaponMirrorY) {
+    weaponMirrorY.checked = selectedKeyframe?.weaponMirrorY ?? false;
+    weaponMirrorY.disabled = !selectedKeyframe || debugTuning.animationEditMode === "preview";
   }
 }
 

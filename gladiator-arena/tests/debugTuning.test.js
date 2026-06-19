@@ -206,6 +206,7 @@ test("debug tuning normalizes unsafe values", () => {
     animationPreviewPlaybackSpeed: 99,
     animationPreviewRandomWeapon: "yes",
     animationPreviewWeaponItemId: "  generated_equipment_weapon_axe_01  ",
+    animationWeaponDragEnabled: "yes",
     animationRootTransformMode: "bodyTeleport",
     animationEditorZoom: 99,
     animationEditorOffsetX: -999,
@@ -306,6 +307,7 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.animationPreviewPlaybackSpeed, 2);
   assert.equal(normalized.animationPreviewRandomWeapon, false);
   assert.equal(normalized.animationPreviewWeaponItemId, "generated_equipment_weapon_axe_01");
+  assert.equal(normalized.animationWeaponDragEnabled, false);
   assert.equal(normalized.animationRootTransformMode, "rootOffset");
   assert.equal(normalized.animationEditorZoom, 2.4);
   assert.equal(normalized.animationEditorOffsetX, -420);
@@ -349,6 +351,7 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewPlaybackSpeed, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewRandomWeapon, false);
   assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewWeaponItemId, null);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationWeaponDragEnabled, false);
   assert.equal(debugTuningModule.defaultDebugTuning.animationRootTransformMode, "rootOffset");
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorZoom, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorOffsetX, 0);
@@ -707,12 +710,16 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
   assert.deepEqual(animation.keyframes[0].faceParts.eyeLeft, animation.faceBase.eyeLeft);
   assert.equal(animation.keyframes[0].rootOffset.x, 0);
   assert.equal(animation.keyframes[0].rootOffset.y, 0);
+  assert.equal(animation.keyframes[0].weaponMirrorX, undefined);
+  assert.equal(animation.keyframes[0].weaponMirrorY, undefined);
   assert.equal(animation.keyframes[1].id, "pose-b");
   assert.equal(animation.keyframes[1].time, animation.duration / 2);
   assert.deepEqual(animation.keyframes[1].rigParts.head, animation.breath.head);
   assert.deepEqual(animation.keyframes[1].faceParts.eyeLeft, animation.faceBreath.eyeLeft);
   assert.equal(animation.keyframes[1].rootOffset.x, 0);
   assert.equal(animation.keyframes[1].rootOffset.y, 0);
+  assert.equal(animation.keyframes[1].weaponMirrorX, undefined);
+  assert.equal(animation.keyframes[1].weaponMirrorY, undefined);
 
   const normalized = debugTuningModule.normalizeDebugTuning({
     bodyAnimations: {
@@ -742,6 +749,9 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
             id: "root-hop",
             time: 100,
             rootOffset: { x: 22, y: -35 },
+            weaponMirrorX: true,
+            weaponMirrorY: true,
+            weaponOffset: { x: 12, y: -8 },
           },
         ],
       },
@@ -750,6 +760,9 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
 
   assert.equal(rootHopKeyframe.rootOffset.x, 22);
   assert.equal(rootHopKeyframe.rootOffset.y, -35);
+  assert.equal(rootHopKeyframe.weaponMirrorX, true);
+  assert.equal(rootHopKeyframe.weaponMirrorY, true);
+  assert.equal(rootHopKeyframe.weaponOffset, undefined);
   assert.equal(
     debugTuningModule.normalizeDebugTuning({
       bodyAnimations: {
@@ -783,6 +796,9 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
             ...animation.keyframes[1],
             time: 123,
             rootOffset: { x: 41, y: -27 },
+            weaponMirrorX: true,
+            weaponMirrorY: true,
+            weaponOffset: { x: -3, y: 5 },
           },
         ],
       },
@@ -836,6 +852,9 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
   assert.equal(anchorRootOffsetNormalized.keyframes[1].rigParts.torso.y, 33);
   assert.equal(anchorRootOffsetNormalized.keyframes[1].rootOffset.x, 41);
   assert.equal(anchorRootOffsetNormalized.keyframes[1].rootOffset.y, -27);
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].weaponMirrorX, true);
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].weaponMirrorY, true);
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].weaponOffset, undefined);
 
   const impactNormalized = debugTuningModule.normalizeDebugTuning({
     bodyAnimations: {

@@ -85,7 +85,6 @@
                 <button class="debug-panel__reset" type="button" data-animation-workbench-reset-part>Reset selected</button>
               </div>
             </fieldset>
-            <div data-animation-workbench-nudge></div>
             <details class="debug-animation-editor__details">
               <summary>Limb rotate</summary>
               <div class="debug-animation-editor__limb-grid" data-animation-workbench-limbs></div>
@@ -108,7 +107,7 @@
             </details>
           </aside>
           <footer class="debug-animation-editor__timeline" aria-label="Animation timeline">
-            <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--playback">
+            <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--playback-controls">
               <button class="debug-panel__reset debug-animation-editor__play" type="button" data-animation-workbench-play>Play</button>
               <label class="debug-animation-editor__field debug-animation-editor__field--inline debug-animation-editor__speed">
                 <span>Speed</span>
@@ -124,11 +123,28 @@
                 <span>Random weapon</span>
                 <input type="checkbox" data-animation-workbench-random-weapon />
               </label>
+              <label class="debug-animation-editor__toggle debug-animation-editor__toggle--inline">
+                <span>Weapon drag</span>
+                <input type="checkbox" data-animation-workbench-weapon-drag />
+              </label>
+              <button class="debug-panel__reset debug-animation-editor__weapon-reset" type="button" data-animation-workbench-reset-weapon>Reset weapon</button>
+              <div class="debug-animation-editor__axis-toggles" aria-label="Weapon mirror">
+                <label class="debug-animation-editor__toggle debug-animation-editor__toggle--axis" title="Mirror weapon X">
+                  <span>X</span>
+                  <input type="checkbox" data-animation-workbench-weapon-mirror-x />
+                </label>
+                <label class="debug-animation-editor__toggle debug-animation-editor__toggle--axis" title="Mirror weapon Y">
+                  <span>Y</span>
+                  <input type="checkbox" data-animation-workbench-weapon-mirror-y />
+                </label>
+              </div>
+              <output class="debug-animation-editor__time" data-animation-workbench-time>0 ms / 0 ms</output>
+            </div>
+            <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--rail">
               <div class="debug-animation-editor__timeline-stack">
                 <div class="debug-animation-editor__keyframe-rail" data-animation-workbench-keyframes></div>
                 <input class="debug-animation-editor__scrub" type="range" min="0" max="1000" step="1" data-animation-workbench-progress />
               </div>
-              <output class="debug-animation-editor__time" data-animation-workbench-time>0 ms / 0 ms</output>
             </div>
             <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--tools">
               <output class="debug-animation-editor__selected-key" data-animation-workbench-selected-key>Selected: Pose A</output>
@@ -136,17 +152,20 @@
                 <span>Easing</span>
                 <select class="debug-animation-editor__select" data-animation-workbench-easing></select>
               </label>
-              <div class="debug-animation-editor__timeline-actions">
-                <button class="debug-panel__reset" type="button" data-animation-workbench-add-keyframe>Add Key</button>
-                <button class="debug-panel__reset" type="button" data-animation-workbench-duplicate-keyframe>Duplicate</button>
-                <button class="debug-panel__reset" type="button" data-animation-workbench-set-start>Set Start</button>
-                <button class="debug-panel__reset" type="button" data-animation-workbench-set-impact>Set Impact</button>
-                <button class="debug-panel__reset" type="button" data-animation-workbench-delete-keyframe>Delete</button>
-              </div>
-              <div class="debug-animation-editor__timeline-actions debug-animation-editor__timeline-actions--jumps">
-                <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0">A</button>
-                <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0.5">B</button>
-                <button class="debug-panel__reset" type="button" data-animation-workbench-jump="1">Loop</button>
+              <div class="debug-animation-editor__timeline-button-row">
+                <div class="debug-animation-editor__timeline-actions">
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-add-keyframe>Add Key</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-duplicate-keyframe>Duplicate</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-set-start>Set Start</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-set-impact>Set Impact</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-delete-keyframe>Delete</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-full-reset>Full reset</button>
+                </div>
+                <div class="debug-animation-editor__timeline-actions debug-animation-editor__timeline-actions--jumps">
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0">A</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0.5">B</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-jump="1">Loop</button>
+                </div>
               </div>
             </div>
           </footer>

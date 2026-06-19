@@ -43,8 +43,16 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugHtml.includes("data-animation-workbench-progress"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-keyframes"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-selected-key"), true);
+  assert.equal(debugHtml.includes("debug-animation-editor__timeline-button-row"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-speed"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-random-weapon"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-reset-weapon"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-weapon-mirror-x"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-weapon-mirror-y"), true);
+  assert.equal(
+    debugHtml.indexOf("data-animation-workbench-random-weapon") < debugHtml.indexOf("data-animation-workbench-weapon-mirror-x"),
+    true,
+  );
   assert.equal(debugHtml.includes("data-animation-workbench-variant-select"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-variant-new"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-variant-duplicate"), true);
@@ -56,11 +64,13 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugHtml.includes("data-animation-workbench-set-start"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-set-impact"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-set-keyframe-time"), false);
+  assert.equal(debugHtml.includes("data-animation-workbench-full-reset"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-reset-pose"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-apply-to-pose"), true);
   assert.equal(debugHtml.includes('data-animation-edit-mode="keyframe"'), true);
   assert.equal(debugHtml.includes("data-animation-workbench-view-controls"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-rig-controls"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-nudge"), false);
   assert.equal(debugHtml.includes("data-animation-workbench-limbs"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-root-transform-mode"), true);
   assert.equal(debugHtml.includes('data-animation-workbench-root-transform-mode-option="rootOffset"'), true);
@@ -81,6 +91,9 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugPanelSource.includes("getAnimationStartKeyframe"), true);
   assert.equal(debugPanelSource.includes("setSelectedAnimationImpactKeyframe"), true);
   assert.equal(debugPanelSource.includes("getAnimationImpactKeyframe"), true);
+  assert.equal(debugPanelSource.includes("resetSelectedBodyAnimationFull"), true);
+  assert.equal(debugPanelSource.includes("createNeutralAnimationAnchorKeyframe"), true);
+  assert.equal(debugPanelSource.includes('window.confirm("Full reset current animation variant?'), true);
   assert.equal(debugPanelSource.includes("moveAnimationKeyframeToRailPointer"), true);
   assert.equal(debugPanelSource.includes("moveAnimationKeyframeToProgress"), true);
   assert.equal(debugPanelSource.includes("setSelectedAnimationKeyframeTime"), false);
@@ -95,8 +108,16 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugPanelSource.includes("beginAnimationWorkbenchScrub"), true);
   assert.equal(debugPanelSource.includes("refreshAnimationWorkbenchPreviewWeapon"), true);
   assert.equal(debugPanelSource.includes("pickRandomAnimationWorkbenchPreviewWeaponItemId"), true);
+  assert.equal(debugPanelSource.includes("resetAnimationWorkbenchPreviewWeaponTuning"), true);
+  assert.equal(debugPanelSource.includes("getAnimationWorkbenchPreviewEquipment"), true);
+  assert.equal(debugPanelSource.includes("getAnimationWorkbenchVisibleWeaponSlots"), true);
+  assert.equal(debugPanelSource.includes("workbenchResetWeapon.disabled = getAnimationWorkbenchPreviewWeaponTuningTargets().length === 0;"), true);
   assert.equal(debugPanelSource.includes("animationPreviewPlaybackSpeed"), true);
   assert.equal(debugPanelSource.includes("animationPreviewRandomWeapon"), true);
+  assert.equal(debugPanelSource.includes("animationWeaponDragEnabled: weaponDrag.checked"), true);
+  assert.equal(debugPanelSource.includes("weaponMirrorX: weaponMirrorX.checked"), true);
+  assert.equal(debugPanelSource.includes("weaponMirrorY: weaponMirrorY.checked"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-weapon-drag"), true);
   assert.equal(debugPanelSource.includes("updateAnimationPreviewKeyframe"), true);
   assert.equal(debugPanelSource.includes("getAnimationPreviewPose"), true);
   assert.equal(debugPanelSource.includes("getAnimationKeyframeIdAtRailPointer"), true);
@@ -116,6 +137,7 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugTuningSource.includes("animationPreviewPlaybackSpeed: number;"), true);
   assert.equal(debugTuningSource.includes("animationPreviewRandomWeapon: boolean;"), true);
   assert.equal(debugTuningSource.includes("animationPreviewWeaponItemId: string | null;"), true);
+  assert.equal(debugTuningSource.includes("animationWeaponDragEnabled: boolean;"), true);
   assert.equal(debugTuningSource.includes("BODY_ANIMATION_WEAPON_CLASSES"), true);
   assert.equal(debugTuningSource.includes("selectedBodyAnimationVariantId: string;"), true);
   assert.equal(debugTuningSource.includes("variants?: BodyAnimationTuning[];"), true);
@@ -125,6 +147,9 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugTuningSource.includes("animationRootTransformMode: AnimationRootTransformMode;"), true);
   assert.equal(debugTuningSource.includes("movementStartKeyframeId?: string;"), true);
   assert.equal(debugTuningSource.includes("impactKeyframeId?: string;"), true);
+  assert.equal(debugTuningSource.includes("weaponMirrorX?: boolean;"), true);
+  assert.equal(debugTuningSource.includes("weaponMirrorY?: boolean;"), true);
+  assert.equal(debugTuningSource.includes("weaponOffset"), false);
   assert.equal(stylesSource.includes(".debug-animation-editor__keyframe-rail"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__keyframe--custom"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__impact-marker"), true);
@@ -133,10 +158,13 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(stylesSource.includes(".debug-animation-editor__keyframe--impact"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__keyframe--draggable"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__timeline-row--tools"), true);
-  assert.equal(stylesSource.includes("grid-template-columns: repeat(5, minmax(0, 1fr));"), true);
+  assert.equal(stylesSource.includes(".debug-animation-editor__timeline-button-row"), true);
+  assert.equal(stylesSource.includes("flex-wrap: wrap;"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__timeline-actions--jumps"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__speed"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__toggle--inline"), true);
+  assert.equal(stylesSource.includes(".debug-animation-editor__axis-toggles"), true);
+  assert.equal(stylesSource.includes(".debug-animation-editor__toggle--axis"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__pose-actions"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__reset-pose"), true);
   assert.equal(stylesSource.includes(".debug-animation-editor__selected-key"), true);
@@ -163,8 +191,19 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(arenaSceneSource.includes("isAnimationCanvasPanPointer"), true);
   assert.equal(arenaSceneSource.includes("DebugCanvasPanState"), true);
   assert.equal(arenaSceneSource.includes("private syncPreviewEquipment"), true);
+  assert.equal(arenaSceneSource.includes("private syncAnimationPreviewCombatEquipment"), true);
+  assert.equal(arenaSceneSource.includes("createAnimationPreviewCombatFighterState"), true);
+  assert.equal(arenaSceneSource.includes("syncFighterCombatEquipment(this.fighter, createAnimationPreviewCombatFighterState(equipment), slotKeys);"), true);
   assert.equal(arenaSceneSource.includes("getAnimationPreviewEquipmentKey"), true);
   assert.equal(arenaSceneSource.includes("debugTuning.animationPreviewWeaponItemId"), true);
+  assert.equal(arenaSceneSource.includes("function applyBodyAnimationWeaponMirrors"), true);
+  assert.equal(arenaSceneSource.includes("applyPaperDollWeaponMirror(rig.equipment.weaponMain"), true);
+  assert.equal(arenaSceneSource.includes("emitDebugCharacterEquipmentDelta(this.animationWeaponDragState"), true);
+  assert.equal(arenaSceneSource.includes("syncDebugPaperDollAnimationWeaponPicking"), true);
+  assert.equal(arenaSceneSource.includes("function getPaperDollAnimationWeaponPickTargets"), true);
+  assert.equal(arenaSceneSource.includes("function syncDebugPaperDollAnimationWeaponPickTarget"), true);
+  assert.equal(arenaSceneSource.includes('this.viewerMode === "animation"'), true);
+  assert.equal(arenaSceneSource.includes("? this.getPreviewEquipment()"), true);
   assert.equal(debugPanelSource.includes("function isMovableAnimationKeyframe"), true);
   assert.equal(debugPanelSource.includes('return keyframeId !== "pose-a";'), true);
   assert.equal(debugPanelSource.includes('!keyframeId || !isMovableAnimationKeyframe(keyframeId)'), true);

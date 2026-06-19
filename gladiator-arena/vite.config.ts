@@ -637,6 +637,8 @@ interface BodyAnimationKeyframeUpdates {
   rigParts: RigPartUpdates;
   faceParts: FacePartUpdates;
   rootOffset: RootOffsetUpdates;
+  weaponMirrorX?: boolean;
+  weaponMirrorY?: boolean;
 }
 
 interface RootOffsetUpdates {
@@ -4393,8 +4395,10 @@ function formatBodyAnimationKeyframeRows(updates: readonly BodyAnimationKeyframe
         formatFacePartRows(keyframe.faceParts, nestedEntryIndent),
         `${propertyIndent}},`,
         `${propertyIndent}rootOffset: { x: ${formatNumber(keyframe.rootOffset.x)}, y: ${formatNumber(keyframe.rootOffset.y)} },`,
+        keyframe.weaponMirrorX ? `${propertyIndent}weaponMirrorX: true,` : "",
+        keyframe.weaponMirrorY ? `${propertyIndent}weaponMirrorY: true,` : "",
         `${indent}},`,
-      ].join("\n"),
+      ].filter(Boolean).join("\n"),
     )
     .join("\n");
 }
@@ -4417,13 +4421,36 @@ function readBodyAnimationKeyframes(
     return legacyKeyframes;
   }
 
+  const sourceKeyframes = input.map((keyframe, index) => readBodyAnimationKeyframe(keyframe, index, legacyPoses.duration));
+  const poseA = readBodyAnimationAnchorKeyframe("pose-a", legacyKeyframes[0], sourceKeyframes);
+  const poseB = readBodyAnimationAnchorKeyframe("pose-b", legacyKeyframes[1], sourceKeyframes);
   const usedIds = new Set(["pose-a", "pose-b"]);
-  const extraKeyframes = input
-    .map((keyframe, index) => readBodyAnimationKeyframe(keyframe, index, legacyPoses.duration))
+  const extraKeyframes = sourceKeyframes
     .filter((keyframe) => keyframe.id !== "pose-a" && keyframe.id !== "pose-b")
     .map((keyframe) => uniquifyBodyAnimationKeyframeId(keyframe, usedIds));
 
-  return [legacyKeyframes[0], legacyKeyframes[1], ...extraKeyframes].sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+  return [poseA, poseB, ...extraKeyframes].sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+}
+
+function readBodyAnimationAnchorKeyframe(
+  id: "pose-a" | "pose-b",
+  legacyKeyframe: BodyAnimationKeyframeUpdates,
+  sourceKeyframes: readonly BodyAnimationKeyframeUpdates[],
+): BodyAnimationKeyframeUpdates {
+  const sourceKeyframe = sourceKeyframes.find((keyframe) => keyframe.id === id);
+
+  if (!sourceKeyframe) {
+    return legacyKeyframe;
+  }
+
+  return {
+    ...legacyKeyframe,
+    time: id === "pose-a" ? 0 : sourceKeyframe.time,
+    easing: sourceKeyframe.easing,
+    rootOffset: sourceKeyframe.rootOffset,
+    weaponMirrorX: sourceKeyframe.weaponMirrorX,
+    weaponMirrorY: sourceKeyframe.weaponMirrorY,
+  };
 }
 
 function createLegacyBodyAnimationKeyframes(
@@ -4454,7 +4481,16 @@ function readBodyAnimationKeyframe(input: unknown, index: number, duration: numb
     throw new Error(`Invalid body animation keyframe: ${index}.`);
   }
 
-  const keyframe = input as { id?: unknown; time?: unknown; easing?: unknown; rigParts?: unknown; faceParts?: unknown; rootOffset?: unknown };
+  const keyframe = input as {
+    id?: unknown;
+    time?: unknown;
+    easing?: unknown;
+    rigParts?: unknown;
+    faceParts?: unknown;
+    rootOffset?: unknown;
+    weaponMirrorX?: unknown;
+    weaponMirrorY?: unknown;
+  };
   const id = typeof keyframe.id === "string" ? keyframe.id.trim().slice(0, 48) : "";
 
   if (!id) {
@@ -4476,6 +4512,8 @@ function readBodyAnimationKeyframe(input: unknown, index: number, duration: numb
     rigParts: readRigPartRecord(keyframe.rigParts, `${id} rigParts`),
     faceParts: readFacePartRecord(keyframe.faceParts, `${id} faceParts`),
     rootOffset: readRootOffset(keyframe.rootOffset),
+    weaponMirrorX: keyframe.weaponMirrorX === true ? true : undefined,
+    weaponMirrorY: keyframe.weaponMirrorY === true ? true : undefined,
   };
 }
 
