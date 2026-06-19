@@ -21,6 +21,19 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/weapons\// },
   { maxSide: 512, pattern: /^fighters\/appearance\// },
 ];
+const originalSizeRules = [
+  /^fighters\/body-parts\/(?:arms|legs|head|torso)\/.+-dummy-01\.png$/,
+  /^fighters\/body-parts\/face\/(?:pupil-(?:left|right)|brow-(?:left|right)-dummy-01)\.png$/,
+];
+const highQualityRules = [
+  { minimumQuality: 95, pattern: /^fighters\/body-parts\/(?:arms|legs|head|torso)\/.+-dummy-01\.png$/ },
+  { minimumQuality: 95, pattern: /^fighters\/body-parts\/face\/(?:pupil-(?:left|right)|brow-(?:left|right)-dummy-01)\.png$/ },
+];
+const losslessRules = [
+  /^fighters\/body-parts\/arms\/.+-dummy-01\.png$/,
+  /^fighters\/body-parts\/head\/head-dummy-01\.png$/,
+  /^fighters\/body-parts\/face\/(?:pupil-(?:left|right)|brow-(?:left|right)-dummy-01)\.png$/,
+];
 
 const pngFiles = targetFile ? [targetFile] : await listFiles(sourceRoot, ".png");
 let originalTotal = 0;
@@ -39,6 +52,7 @@ for (const pngPath of pngFiles) {
   const relativePngPath = getRelativeSourcePath(pngPath);
   const webpPath = path.join(outputRoot, relativePngPath).replace(/\.png$/i, ".webp");
   const maxSide = getResizeMaxSide(relativePngPath);
+  const webpOptions = getWebpOptions(relativePngPath);
   const pipeline = sharp(png);
 
   if (maxSide) {
@@ -50,14 +64,7 @@ for (const pngPath of pngFiles) {
     });
   }
 
-  const webp = await pipeline
-    .webp({
-      alphaQuality: 100,
-      effort: 6,
-      quality: webpQuality,
-      smartSubsample: true,
-    })
-    .toBuffer();
+  const webp = await pipeline.webp(webpOptions).toBuffer();
 
   await mkdir(path.dirname(webpPath), { recursive: true });
   await writeFile(webpPath, webp);
@@ -91,9 +98,35 @@ function formatBytes(bytes) {
 }
 
 function getResizeMaxSide(relativePath) {
+  if (originalSizeRules.some((pattern) => pattern.test(relativePath))) {
+    return undefined;
+  }
+
   const rule = resizeRules.find((resizeRule) => resizeRule.pattern.test(relativePath));
 
   return rule?.maxSide;
+}
+
+function getWebpQuality(relativePath) {
+  const rule = highQualityRules.find((qualityRule) => qualityRule.pattern.test(relativePath));
+
+  return rule ? Math.max(webpQuality, rule.minimumQuality) : webpQuality;
+}
+
+function getWebpOptions(relativePath) {
+  if (losslessRules.some((pattern) => pattern.test(relativePath))) {
+    return {
+      effort: 6,
+      lossless: true,
+    };
+  }
+
+  return {
+    alphaQuality: 100,
+    effort: 6,
+    quality: getWebpQuality(relativePath),
+    smartSubsample: true,
+  };
 }
 
 function readSourceRoot() {

@@ -417,17 +417,17 @@ test("debug rig editor can switch paper doll body presets", () => {
   const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 
   assert.equal(assetsSource.includes("FIGHTER_HEAD_DUMMY_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("head-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("head-dummy-01.webp"), true);
   assert.equal(assetsSource.includes("FIGHTER_TORSO_DUMMY_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("torso-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("torso-dummy-01.webp"), true);
   assert.equal(assetsSource.includes("FIGHTER_BACK_UPPER_ARM_DUMMY_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("back-upper-arm-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("back-upper-arm-dummy-01.webp"), true);
   assert.equal(assetsSource.includes("FIGHTER_FRONT_HAND_DUMMY_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("front-hand-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("front-hand-dummy-01.webp"), true);
   assert.equal(assetsSource.includes("FIGHTER_BACK_THIGH_DUMMY_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("back-thigh-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("back-thigh-dummy-01.webp"), true);
   assert.equal(assetsSource.includes("FIGHTER_FRONT_FOOT_DUMMY_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("front-foot-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("front-foot-dummy-01.webp"), true);
   assert.equal(debugTuningSource.includes('export const PAPER_DOLL_BODY_PRESETS = ["classic", "dummy-v2"] as const;'), true);
   assert.equal(debugTuningSource.includes('CHARACTER_CANVAS_EDIT_MODES = ["parts", "bodyArt", "equipment", "face", "root"] as const'), true);
   assert.equal(debugTuningSource.includes("export interface BodyAnimationRootOffset"), true);
@@ -484,9 +484,9 @@ test("debug face editor can tune asset face layers", () => {
   assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_EYE_WHITE_LEFT_ASSET_KEY"), false);
   assert.equal(assetsSource.includes("body-parts/face/eye-left.png"), false);
   assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_BROW_LEFT_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("brow-left-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("brow-left-dummy-01.webp"), true);
   assert.equal(assetsSource.includes("FIGHTER_FACE_DUMMY_BROW_RIGHT_ASSET_KEY"), true);
-  assert.equal(assetsSource.includes("brow-right-dummy-01.png"), true);
+  assert.equal(assetsSource.includes("brow-right-dummy-01.webp"), true);
   assert.equal(debugTuningSource.includes('FACE_ASSET_LAYER_KEYS = ["pupilLeft", "pupilRight", "browLeft", "browRight"] as const'), true);
   assert.equal(debugTuningSource.includes('APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const'), true);
   assert.equal(debugTuningSource.includes("faceAssetLayers: Record<FaceAssetLayerKey, FaceAssetLayerTuning>;"), true);
