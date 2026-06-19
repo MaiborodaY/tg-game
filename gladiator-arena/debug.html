@@ -12,6 +12,132 @@
           <div id="debugCharacterViewer" class="debug-character-viewer debug-character-viewer--large"></div>
         </section>
 
+        <section id="debugAnimationEditor" class="debug-animation-editor" aria-label="Animation editor">
+          <aside class="debug-animation-editor__library" aria-label="Animation library">
+            <p class="debug-animation-editor__eyebrow">Animation Editor</p>
+            <label class="debug-animation-editor__field">
+              <span>Animation</span>
+              <select class="debug-animation-editor__select" data-animation-workbench-select></select>
+            </label>
+            <fieldset class="debug-animation-editor__fieldset debug-animation-editor__variant-panel">
+              <legend>Variant</legend>
+              <label class="debug-animation-editor__field">
+                <span>Variant</span>
+                <select class="debug-animation-editor__select" data-animation-workbench-variant-select></select>
+              </label>
+              <div class="debug-animation-editor__actions debug-animation-editor__variant-actions">
+                <button class="debug-panel__reset" type="button" data-animation-workbench-variant-new>New</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-variant-duplicate>Duplicate</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-variant-delete>Delete</button>
+              </div>
+              <label class="debug-animation-editor__field">
+                <span>Weight</span>
+                <input class="debug-panel__number" type="number" min="0" max="20" step="0.1" data-animation-workbench-variant-weight />
+              </label>
+              <label class="debug-animation-editor__toggle">
+                <span>All weapons</span>
+                <input type="checkbox" data-animation-workbench-variant-all-weapons />
+              </label>
+              <div class="debug-animation-editor__weapon-grid" data-animation-workbench-variant-weapons></div>
+            </fieldset>
+            <div class="debug-animation-editor__mode-buttons" role="group" aria-label="Animation edit mode">
+              <button class="debug-panel__reset" type="button" data-animation-edit-mode="poseA">Pose A</button>
+              <button class="debug-panel__reset" type="button" data-animation-edit-mode="poseB">Pose B</button>
+              <button class="debug-panel__reset" type="button" data-animation-edit-mode="keyframe">Key</button>
+              <button class="debug-panel__reset" type="button" data-animation-edit-mode="preview">Preview</button>
+            </div>
+            <div class="debug-animation-editor__pose-actions">
+              <button class="debug-panel__reset debug-animation-editor__reset-pose" type="button" data-animation-workbench-reset-pose>Reset Pose</button>
+              <button class="debug-panel__reset" type="button" data-animation-workbench-apply-to-pose="pose-a">Apply to Pose A</button>
+              <button class="debug-panel__reset" type="button" data-animation-workbench-apply-to-pose="pose-b">Apply to Pose B</button>
+            </div>
+            <fieldset class="debug-animation-editor__fieldset">
+              <legend>View</legend>
+              <div class="debug-animation-editor__view-controls" data-animation-workbench-view-controls></div>
+              <div class="debug-animation-editor__actions">
+                <button class="debug-panel__reset" type="button" data-animation-workbench-reset-view>Reset view</button>
+              </div>
+            </fieldset>
+            <fieldset class="debug-animation-editor__fieldset">
+              <legend>Doll rotate</legend>
+              <div class="debug-animation-editor__actions">
+                <button class="debug-panel__reset" type="button" data-animation-workbench-rotate-doll="-5">Rot -</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-rotate-doll="5">Rot +</button>
+              </div>
+            </fieldset>
+          </aside>
+          <div class="debug-animation-editor__stage">
+            <div id="debugAnimationViewer" class="debug-animation-viewer"></div>
+          </div>
+          <aside class="debug-animation-editor__inspector" aria-label="Animation inspector">
+            <fieldset class="debug-animation-editor__fieldset">
+              <legend>Part transform</legend>
+              <div class="debug-animation-editor__root-transform-mode" data-animation-workbench-root-transform-mode hidden>
+                <button type="button" data-animation-workbench-root-transform-mode-option="rootOffset">Root</button>
+                <button type="button" data-animation-workbench-root-transform-mode-option="poseOffset">Pose</button>
+              </div>
+              <label class="debug-animation-editor__field">
+                <span>Part</span>
+                <select class="debug-animation-editor__select" data-animation-workbench-part-select></select>
+              </label>
+              <div class="debug-animation-editor__rig-controls" data-animation-workbench-rig-controls></div>
+              <div class="debug-animation-editor__actions">
+                <button class="debug-panel__reset" type="button" data-animation-workbench-reset-part>Reset selected</button>
+              </div>
+            </fieldset>
+            <div data-animation-workbench-nudge></div>
+            <details class="debug-animation-editor__details">
+              <summary>Limb rotate</summary>
+              <div class="debug-animation-editor__limb-grid" data-animation-workbench-limbs></div>
+            </details>
+            <fieldset class="debug-animation-editor__fieldset">
+              <legend>Animation settings</legend>
+              <label class="debug-animation-editor__toggle">
+                <span>Enabled</span>
+                <input type="checkbox" data-animation-workbench-enabled />
+              </label>
+              <label class="debug-animation-editor__field">
+                <span>Duration</span>
+                <input class="debug-panel__number" type="number" min="240" max="2400" step="10" data-animation-workbench-duration />
+              </label>
+              <button class="debug-panel__reset" type="button" data-animation-workbench-copy-a-to-b>Copy A -&gt; B</button>
+            </fieldset>
+            <details class="debug-animation-editor__details">
+              <summary>Active parts</summary>
+              <div class="debug-animation-editor__parts" data-animation-workbench-parts></div>
+            </details>
+          </aside>
+          <footer class="debug-animation-editor__timeline" aria-label="Animation timeline">
+            <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--playback">
+              <button class="debug-panel__reset debug-animation-editor__play" type="button" data-animation-workbench-play>Play</button>
+              <div class="debug-animation-editor__timeline-stack">
+                <div class="debug-animation-editor__keyframe-rail" data-animation-workbench-keyframes></div>
+                <input class="debug-animation-editor__scrub" type="range" min="0" max="1000" step="1" data-animation-workbench-progress />
+              </div>
+              <output class="debug-animation-editor__time" data-animation-workbench-time>0 ms / 0 ms</output>
+            </div>
+            <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--tools">
+              <output class="debug-animation-editor__selected-key" data-animation-workbench-selected-key>Selected: Pose A</output>
+              <label class="debug-animation-editor__field debug-animation-editor__field--inline">
+                <span>Easing</span>
+                <select class="debug-animation-editor__select" data-animation-workbench-easing></select>
+              </label>
+              <div class="debug-animation-editor__timeline-actions">
+                <button class="debug-panel__reset" type="button" data-animation-workbench-add-keyframe>Add Key</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-duplicate-keyframe>Duplicate</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-set-start>Set Start</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-set-impact>Set Impact</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-delete-keyframe>Delete</button>
+              </div>
+              <div class="debug-animation-editor__timeline-actions debug-animation-editor__timeline-actions--jumps">
+                <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0">A</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0.5">B</button>
+                <button class="debug-panel__reset" type="button" data-animation-workbench-jump="1">Loop</button>
+              </div>
+            </div>
+          </footer>
+        </section>
+
         <div class="debug-game-shell shell">
           <section id="mainMenu" class="main-menu" aria-label="Dust Arena city debug preview">
             <h1 class="menu-title">Dust Arena</h1>

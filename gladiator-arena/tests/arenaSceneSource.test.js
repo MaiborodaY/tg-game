@@ -100,6 +100,8 @@ test("debug body art mode drags artwork without moving rig anchors", () => {
   );
 
   assert.equal(beginDragSource.includes('debugTuning.characterCanvasEditMode !== "parts" && debugTuning.characterCanvasEditMode !== "bodyArt"'), true);
+  assert.equal(beginDragSource.includes("isRigPartGroupSelectPointer(pointer)"), true);
+  assert.equal(beginDragSource.includes("getDebugRigPartSelectionGroup(partKey)"), true);
   assert.equal(beginDragSource.includes('debugTuning.characterCanvasEditMode === "bodyArt" || !selectedRigParts.includes(partKey)'), false);
   assert.equal(dragSource.includes('debugTuning.characterCanvasEditMode === "bodyArt"'), true);
   assert.equal(dragSource.includes("updateBodyPartLayersWithInteractivePointerDelta("), true);
@@ -109,6 +111,18 @@ test("debug body art mode drags artwork without moving rig anchors", () => {
   assert.equal(arenaSceneSource.includes("function getPaperDollBodyPartDragLocalPoint"), true);
   assert.equal(arenaSceneSource.includes("part.getWorldTransformMatrix().applyInverse(worldX, worldY)"), true);
   assert.equal(arenaSceneSource.includes("bodyPartLayers: nextBodyPartLayers"), true);
+  assert.equal(arenaSceneSource.includes('["backUpperArm", "backForearm", "backHand"]'), true);
+  assert.equal(arenaSceneSource.includes('["frontUpperArm", "frontForearm", "frontHand"]'), true);
+  assert.equal(arenaSceneSource.includes('["backThigh", "backShin", "backFoot"]'), true);
+  assert.equal(arenaSceneSource.includes('["frontThigh", "frontShin", "frontFoot"]'), true);
+  assert.equal(arenaSceneSource.includes("function isRigPartGroupSelectPointer"), true);
+  assert.equal(arenaSceneSource.includes("event?.altKey"), true);
+  assert.equal(arenaSceneSource.includes("function getPivotRotatedDebugRigParts"), true);
+  assert.equal(arenaSceneSource.includes("function getMatchingDebugRigPartSelectionGroup"), true);
+  assert.equal(arenaSceneSource.includes("function rotateDebugRigPartGroupAroundAnchor"), true);
+  assert.equal(arenaSceneSource.includes("const rotatedPose = getPivotRotatedDebugRigParts(animation[poseKey], partKeys, delta);"), true);
+  assert.equal(arenaSceneSource.includes("const rotatedRigParts = getPivotRotatedDebugRigParts(target.keyframe.rigParts, partKeys, delta);"), true);
+  assert.equal(arenaSceneSource.includes("const anchorPivot = PAPER_DOLL_PART_PIVOTS[anchorKey];"), true);
 });
 
 test("paper doll weapon top overlay keeps long weapon heads above gloves", () => {
@@ -253,6 +267,29 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("return Promise.all(actionAnimations).then(() => {"), true);
   assert.equal(arenaSceneSource.includes("resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);"), true);
   assert.equal(arenaSceneSource.includes("function playBodyAnimationOnce"), true);
+  assert.equal(arenaSceneSource.includes("function applyBodyAnimationKeyframesAtProgress"), true);
+  assert.equal(arenaSceneSource.includes("function sampleBodyAnimationKeyframePose"), true);
+  assert.equal(arenaSceneSource.includes("function applyBodyAnimationRootOffset"), true);
+  assert.equal(arenaSceneSource.includes("function updateAnimationRootOffsetWithInteractiveDelta"), true);
+  assert.equal(arenaSceneSource.includes("private dragAnimationRoot(pointer: Phaser.Input.Pointer): void"), true);
+  assert.equal(arenaSceneSource.includes("paperDollAnimationRootBases"), true);
+  assert.equal(arenaSceneSource.includes("worldOffsetX: number;"), true);
+  assert.equal(arenaSceneSource.includes("base.rootX = fighter.body.x - base.worldOffsetX;"), true);
+  assert.equal(arenaSceneSource.includes("fighter.lowShadow.x = base.lowShadowX + worldOffsetX;"), true);
+  assert.equal(arenaSceneSource.includes("interface DebugAnimationFloorGuide"), true);
+  assert.equal(arenaSceneSource.includes('floorLabelText = floorY < 0 ? "game floor above"'), true);
+  assert.equal(arenaSceneSource.includes("private syncAnimationFloorGuide"), true);
+  assert.equal(arenaSceneSource.includes("function getSelectedDebugAnimationKeyframe"), true);
+  assert.equal(arenaSceneSource.includes("updateSelectedDebugAnimationKeyframeRigPartsWithInteractiveDelta"), true);
+  assert.equal(arenaSceneSource.includes("getDebugAnimationKeyframeUpdateTarget"), true);
+  assert.equal(arenaSceneSource.includes("sampleDebugAnimationPreviewPose"), true);
+  assert.equal(
+    arenaSceneSource.includes(
+      "applyBodyAnimationAtProgress(fighter, animation, tween.getValue() ?? 0, animationAmount);",
+    ),
+    true,
+  );
+  assert.equal(arenaSceneSource.includes("speedUp?: (multiplier: number) => void;"), true);
   assert.match(
     arenaSceneSource,
     /if \(fighter\.bodyAnimationLockedUntil === lockedUntil\) \{\s*applyBodyAnimationBlend\(fighter, animation, 0\);\s*fighter\.bodyAnimationLockedUntil = 0;/,
@@ -317,6 +354,11 @@ test("melee attacks expose an impact timing before action completion", () => {
   assert.equal(arenaSceneSource.includes("const MELEE_ACTION_TIMINGS"), true);
   assert.equal(arenaSceneSource.includes("function getMeleeActionTimeline("), true);
   assert.equal(arenaSceneSource.includes("function getBodyAnimationImpactDelayMs("), true);
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationImpactKeyframe("), true);
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationStartKeyframe("), false);
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationPlaybackWindow("), false);
+  assert.equal(arenaSceneSource.includes("const impactKeyframe = getBodyAnimationImpactKeyframe(animation);"), true);
+  assert.equal(arenaSceneSource.includes("return Math.max(1, Math.round(clampNumber(impactKeyframe.time, 0, duration)));"), true);
   assert.equal(arenaSceneSource.includes("impact = createSceneDelay(target, timeline.impactDelayMs);"), true);
   assert.equal(arenaSceneSource.includes("actionAnimations.push(impact);"), true);
   assert.equal(arenaSceneSource.includes("playWeaponSwing(target, actor, sign, animationAmount, timeline)"), true);
@@ -327,8 +369,93 @@ test("lunge exposes an impact timing before action completion", () => {
   assert.equal(arenaSceneSource.includes("const LUNGE_ACTION_IMPACT_PROGRESS"), true);
   assert.match(
     arenaSceneSource,
-    /if \(actionId === "lunge"\) \{[\s\S]*done: playBodyAnimationOnce\(target, actor, animation\),[\s\S]*impact: createSceneDelay\(target, getBodyAnimationImpactDelayMs\(animation, LUNGE_ACTION_IMPACT_PROGRESS\)\),[\s\S]*\}/,
+    /if \(actionId === "lunge"\) \{[\s\S]*const bodyAnimation = playBodyAnimationOnceHandle\(target, actor, animation\);[\s\S]*done: bodyAnimation\.done,[\s\S]*impact: createSceneDelay\(target, getBodyAnimationImpactDelayMs\(animation, LUNGE_ACTION_IMPACT_PROGRESS\)\),[\s\S]*speedUp: bodyAnimation\.speedUp,[\s\S]*\}/,
   );
+});
+
+test("damaging lunge speeds up its remaining body animation after impact", () => {
+  assert.equal(arenaSceneSource.includes("const DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE = 1.6;"), true);
+  assert.equal(arenaSceneSource.includes("function speedUpDamagingLungeAfterImpact("), true);
+  assert.equal(arenaSceneSource.includes("speedUpDamagingLungeAfterImpact(playerActionAnimation, lastPlayerAction, nextState.lastPlayerDamage);"), true);
+  assert.equal(arenaSceneSource.includes("speedUpDamagingLungeAfterImpact(enemyActionAnimation, lastEnemyAction, nextState.lastEnemyDamage);"), true);
+  assert.equal(arenaSceneSource.includes('if (actionId !== "lunge" || damage <= 0 || !actionAnimation?.speedUp)'), true);
+  assert.equal(arenaSceneSource.includes("void impact.then(() => actionAnimation.speedUp?.(DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE));"), true);
+  assert.equal(arenaSceneSource.includes("function playBodyAnimationOnceHandle("), true);
+  assert.equal(arenaSceneSource.includes("tween.setTimeScale(Math.max(1, multiplier));"), true);
+});
+
+test("fighter movement can start from a selected animation keyframe", () => {
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationMovementStartDelayMs("), true);
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationMovementStartKeyframe("), true);
+  assert.equal(arenaSceneSource.includes("animation.movementStartKeyframeId"), true);
+  assert.equal(
+    arenaSceneSource.includes(
+      'getBodyAnimationMovementStartDelayMs(current.lastPlayerAction, visuals.player, current.player.weaponClass, getBodyAnimationVariantSeed(current, "player"))',
+    ),
+    true,
+  );
+  assert.equal(
+    arenaSceneSource.includes(
+      'getBodyAnimationMovementStartDelayMs(current.lastEnemyAction, visuals.enemy, current.enemy.weaponClass, getBodyAnimationVariantSeed(current, "enemy"))',
+    ),
+    true,
+  );
+  assert.equal(arenaSceneSource.includes("pickActiveBodyAnimationVariant(animationKey, fighter.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)"), true);
+  assert.equal(arenaSceneSource.includes('if (actionId === "lunge")'), true);
+  assert.equal(arenaSceneSource.includes("setFighterX(target, fighter, x, movementDelayMs);"), true);
+  assert.equal(arenaSceneSource.includes("isAxeLungeMovementStartDustAction(current.lastPlayerAction, current.player.weaponClass)"), true);
+  assert.equal(arenaSceneSource.includes("isAxeLungeMovementStartDustAction(current.lastEnemyAction, current.enemy.weaponClass)"), true);
+  assert.equal(arenaSceneSource.includes('return actionId === "lunge" && weaponClass === "axe";'), true);
+  assert.equal(arenaSceneSource.includes("if (shouldShowMovementStartDust)"), true);
+  assert.equal(arenaSceneSource.includes("scheduleMovementStartDustBurst(target, startX, feetY, movementDeltaX, movementDelayMs, playerSettings);"), true);
+  assert.equal(arenaSceneSource.includes("function createMovementStartDustBurst("), true);
+  assert.equal(arenaSceneSource.includes("delay,"), true);
+  assert.equal(arenaSceneSource.includes("const duration = Math.max(1, animation.duration / speedMultiplier);"), true);
+  assert.equal(arenaSceneSource.includes("applyBodyAnimationAtProgress(fighter, animation, 0, animationAmount);"), true);
+  assert.equal(arenaSceneSource.includes("getBodyAnimationPlaybackProgress"), false);
+});
+
+test("arena action body animations can pick weighted weapon-specific variants", () => {
+  const variantPickerSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function pickActiveBodyAnimationVariant"),
+    arenaSceneSource.indexOf("function getActiveSlashArc"),
+  );
+
+  assert.equal(variantPickerSource.includes("function pickActiveBodyAnimationVariant("), true);
+  assert.equal(variantPickerSource.includes("getBodyAnimationRuntimeVariants(slot)"), true);
+  assert.equal(variantPickerSource.includes("doesBodyAnimationVariantMatchWeapon"), true);
+  assert.equal(variantPickerSource.includes("isBodyAnimationVariantSpecificToWeapon"), true);
+  assert.equal(variantPickerSource.includes("weaponSpecificCandidates.length > 0 ? weaponSpecificCandidates"), true);
+  assert.equal(variantPickerSource.includes("animation.variantWeight ?? 1"), true);
+  assert.equal(variantPickerSource.includes("hashStringToUnit(seed)"), true);
+  assert.equal(variantPickerSource.includes("BODY_ANIMATION_DEFAULT_VARIANT_ID"), true);
+  assert.equal(variantPickerSource.includes("BODY_ANIMATION_WEAPON_CLASSES"), true);
+  assert.equal(arenaSceneSource.includes("function getBodyAnimationVariantSeed("), true);
+  assert.equal(arenaSceneSource.includes("variantSeed?: string;"), true);
+  assert.equal(arenaSceneSource.includes("const variantSeed = options.variantSeed ??"), true);
+  assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("lunge", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)'), true);
+  assert.equal(arenaSceneSource.includes("pickActiveBodyAnimationVariant(bodyAnimationKey, actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)"), true);
+  assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("bowShot", actor.paperDollRig?.bodyPresetKey, "shuriken", variantSeed)'), true);
+});
+
+test("debug animation canvas edits write to the selected animation variant", () => {
+  const interactiveEditSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function updateAnimationRootOffsetWithInteractiveDelta"),
+    arenaSceneSource.indexOf("function getPivotRotatedDebugRigParts"),
+  );
+  const selectedVariantWriterSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function getSelectedDebugBodyAnimationTarget"),
+    arenaSceneSource.indexOf("function setFighterXImmediate"),
+  );
+
+  assert.equal(arenaSceneSource.includes("function getSelectedDebugBodyAnimationTarget"), true);
+  assert.equal(arenaSceneSource.includes("function updateSelectedDebugBodyAnimation"), true);
+  assert.equal(interactiveEditSource.includes("getSelectedDebugBodyAnimationTarget()"), true);
+  assert.equal(interactiveEditSource.includes("updateSelectedDebugBodyAnimation(nextAnimation"), true);
+  assert.equal(interactiveEditSource.includes("[animationKey]: nextAnimation"), false);
+  assert.equal(selectedVariantWriterSource.includes("debugTuning.selectedBodyAnimationVariantId"), true);
+  assert.equal(selectedVariantWriterSource.includes("variant.variantId === selectedAnimation.variantId"), true);
+  assert.equal(selectedVariantWriterSource.includes("variants: (selectedAnimation.slot.variants ?? []).map"), true);
 });
 
 test("movement steps do not spawn floating step text", () => {
@@ -865,6 +992,7 @@ test("arena pools transient popup and effect objects", () => {
   assert.equal(arenaSceneSource.includes("releaseSlashArc(target, slash)"), true);
   assert.equal(arenaSceneSource.includes("acquireDustDot(target)"), true);
   assert.equal(arenaSceneSource.includes("releaseDustDot(target, dot)"), true);
+  assert.equal(arenaSceneSource.includes("MOVEMENT_START_DUST_COUNT"), true);
 });
 
 test("debug popup tuning can preview each popup type", () => {

@@ -202,6 +202,11 @@ test("debug tuning normalizes unsafe values", () => {
     paperDollBodyPreset: "monster",
     selectedFaceAssetLayer: "nose",
     selectedAppearanceLayer: "mustache",
+    animationPreviewProgress: 99,
+    animationRootTransformMode: "bodyTeleport",
+    animationEditorZoom: 99,
+    animationEditorOffsetX: -999,
+    animationEditorOffsetY: 999,
     faceAssetLayers: {
       pupilLeft: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
     },
@@ -294,6 +299,11 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.paperDollBodyPreset, "dummy-v2");
   assert.equal(normalized.selectedFaceAssetLayer, "pupilLeft");
   assert.equal(normalized.selectedAppearanceLayer, "hair");
+  assert.equal(normalized.animationPreviewProgress, 1);
+  assert.equal(normalized.animationRootTransformMode, "rootOffset");
+  assert.equal(normalized.animationEditorZoom, 2.4);
+  assert.equal(normalized.animationEditorOffsetX, -420);
+  assert.equal(normalized.animationEditorOffsetY, 420);
   assert.equal(normalized.faceAssetLayers.pupilLeft.x, 80);
   assert.equal(normalized.faceAssetLayers.pupilLeft.y, -120);
   assert.equal(normalized.faceAssetLayers.pupilLeft.angle, 180);
@@ -329,6 +339,11 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.paperDollBodyPreset, "dummy-v2");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedFaceAssetLayer, "pupilLeft");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedAppearanceLayer, "hair");
+  assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewProgress, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationRootTransformMode, "rootOffset");
+  assert.equal(debugTuningModule.defaultDebugTuning.animationEditorZoom, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationEditorOffsetX, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationEditorOffsetY, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilRight.y, -44);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.browLeft.angle, -7);
@@ -530,6 +545,376 @@ test("debug tuning exposes dedicated bow shot, damage hit, and block body animat
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.bowShot.enabled, true);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.hit.enabled, true);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.block.enabled, true);
+});
+
+test("debug tuning starts dummy lunge movement from the selected keyframe", () => {
+  const lunge = debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyAnimations.lunge;
+  const startKeyframe = lunge.keyframes.find((keyframe) => keyframe.id === "key-215");
+
+  assert.equal(lunge.movementStartKeyframeId, "key-215");
+  assert.equal(startKeyframe?.time, 316);
+  assert.equal(startKeyframe?.easing, "easeInOut");
+});
+
+test("debug tuning normalizes body animation variants and weapon filters", () => {
+  const dummyPreset = debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"];
+  const lunge = dummyPreset.bodyAnimations.lunge;
+  const spearVariant = {
+    ...lunge,
+    variantId: "spear-lunge",
+    variantLabel: "Spear lunge",
+    variantWeight: 2.5,
+    appliesToAllWeapons: false,
+    weaponClasses: ["spear", "dragon", "spear"],
+    keyframes: [
+      ...lunge.keyframes,
+      {
+        ...lunge.keyframes[0],
+        id: "spear-impact",
+        time: 120,
+      },
+    ],
+  };
+  const payload = {
+    paperDollBodyPreset: "dummy-v2",
+    selectedBodyAnimation: "lunge",
+    selectedBodyAnimationVariantId: "spear-lunge",
+    selectedAnimationKeyframeId: "spear-impact",
+    bodyPresetTuning: {
+      "dummy-v2": {
+        ...dummyPreset,
+        bodyAnimations: {
+          ...dummyPreset.bodyAnimations,
+          lunge: {
+            ...lunge,
+            variants: [spearVariant],
+          },
+        },
+      },
+    },
+  };
+  const normalized = debugTuningModule.normalizeDebugTuning(payload);
+  const normalizedLunge = normalized.bodyPresetTuning["dummy-v2"].bodyAnimations.lunge;
+  const normalizedVariant = normalizedLunge.variants[0];
+
+  assert.equal(normalized.selectedBodyAnimationVariantId, "spear-lunge");
+  assert.equal(normalized.selectedAnimationKeyframeId, "spear-impact");
+  assert.equal(normalizedVariant.variantId, "spear-lunge");
+  assert.equal(normalizedVariant.variantLabel, "Spear lunge");
+  assert.equal(normalizedVariant.variantWeight, 2.5);
+  assert.equal(normalizedVariant.appliesToAllWeapons, false);
+  assert.deepEqual(Array.from(normalizedVariant.weaponClasses), ["spear"]);
+  assert.equal(normalizedVariant.keyframes.some((keyframe) => keyframe.id === "spear-impact"), true);
+
+  assert.equal(
+    debugTuningModule.normalizeDebugTuning({
+      ...payload,
+      selectedBodyAnimationVariantId: "missing-variant",
+    }).selectedBodyAnimationVariantId,
+    debugTuningModule.BODY_ANIMATION_DEFAULT_VARIANT_ID,
+  );
+});
+
+test("debug tuning repairs stored default animations without dropping variants", () => {
+  const dummyPreset = debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"];
+  const lunge = dummyPreset.bodyAnimations.lunge;
+  const brokenDefault = {
+    ...lunge,
+    base: {
+      ...lunge.base,
+      torso: {
+        ...lunge.base.torso,
+        x: 123,
+        angle: 77,
+      },
+    },
+    keyframes: [
+      {
+        ...lunge.keyframes[0],
+        rigParts: {
+          ...lunge.keyframes[0].rigParts,
+          torso: {
+            ...lunge.keyframes[0].rigParts.torso,
+            x: 123,
+            angle: 77,
+          },
+        },
+      },
+      ...lunge.keyframes.slice(1),
+    ],
+  };
+  const lungeVariant = {
+    ...lunge,
+    variantId: "lunge2",
+    variantLabel: "lunge2",
+    base: {
+      ...lunge.base,
+      torso: {
+        ...lunge.base.torso,
+        x: 55,
+      },
+    },
+  };
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    debugTuningVersion: 1,
+    paperDollBodyPreset: "dummy-v2",
+    selectedBodyAnimation: "lunge",
+    selectedBodyAnimationVariantId: "lunge2",
+    bodyPresetTuning: {
+      "dummy-v2": {
+        ...dummyPreset,
+        bodyAnimations: {
+          ...dummyPreset.bodyAnimations,
+          lunge: {
+            ...brokenDefault,
+            variants: [lungeVariant],
+          },
+        },
+      },
+    },
+  });
+  const repairedLunge = normalized.bodyPresetTuning["dummy-v2"].bodyAnimations.lunge;
+
+  assert.equal(normalized.debugTuningVersion, 2);
+  assert.equal(normalized.selectedBodyAnimationVariantId, "lunge2");
+  assert.equal(repairedLunge.base.torso.x, lunge.base.torso.x);
+  assert.equal(repairedLunge.base.torso.angle, lunge.base.torso.angle);
+  assert.equal(repairedLunge.keyframes[0].rigParts.torso.x, lunge.keyframes[0].rigParts.torso.x);
+  assert.equal(repairedLunge.variants.length, 1);
+  assert.equal(repairedLunge.variants[0].variantId, "lunge2");
+  assert.equal(repairedLunge.variants[0].base.torso.x, 55);
+});
+
+test("debug tuning builds Pose A and Pose B animation keyframes from legacy poses", () => {
+  const animation = debugTuningModule.defaultDebugTuning.bodyAnimations.idle;
+
+  assert.equal(debugTuningModule.BODY_ANIMATION_KEYFRAME_EASINGS.includes("easeInOut"), true);
+  assert.equal(debugTuningModule.ANIMATION_EDIT_MODES.includes("keyframe"), true);
+  assert.equal(debugTuningModule.defaultDebugTuning.selectedAnimationKeyframeId, "pose-a");
+  assert.equal(animation.keyframes.length, 2);
+  assert.equal(animation.keyframes[0].id, "pose-a");
+  assert.equal(animation.keyframes[0].time, 0);
+  assert.deepEqual(animation.keyframes[0].rigParts.head, animation.base.head);
+  assert.deepEqual(animation.keyframes[0].faceParts.eyeLeft, animation.faceBase.eyeLeft);
+  assert.equal(animation.keyframes[0].rootOffset.x, 0);
+  assert.equal(animation.keyframes[0].rootOffset.y, 0);
+  assert.equal(animation.keyframes[1].id, "pose-b");
+  assert.equal(animation.keyframes[1].time, animation.duration / 2);
+  assert.deepEqual(animation.keyframes[1].rigParts.head, animation.breath.head);
+  assert.deepEqual(animation.keyframes[1].faceParts.eyeLeft, animation.faceBreath.eyeLeft);
+  assert.equal(animation.keyframes[1].rootOffset.x, 0);
+  assert.equal(animation.keyframes[1].rootOffset.y, 0);
+
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    bodyAnimations: {
+      idle: {
+        ...animation,
+        base: {
+          ...animation.base,
+          head: {
+            ...animation.base.head,
+            x: 17,
+          },
+        },
+      },
+    },
+  });
+
+  assert.equal(normalized.bodyAnimations.idle.keyframes[0].rigParts.head.x, 17);
+  const rootHopKeyframe = debugTuningModule.normalizeDebugTuning({
+    bodyAnimations: {
+      idle: {
+        ...animation,
+        movementStartKeyframeId: "root-hop",
+        keyframes: [
+          ...animation.keyframes,
+          {
+            ...animation.keyframes[0],
+            id: "root-hop",
+            time: 100,
+            rootOffset: { x: 22, y: -35 },
+          },
+        ],
+      },
+    },
+  }).bodyAnimations.idle.keyframes.find((keyframe) => keyframe.id === "root-hop");
+
+  assert.equal(rootHopKeyframe.rootOffset.x, 22);
+  assert.equal(rootHopKeyframe.rootOffset.y, -35);
+  assert.equal(
+    debugTuningModule.normalizeDebugTuning({
+      bodyAnimations: {
+        idle: {
+          ...animation,
+          movementStartKeyframeId: "missing-start",
+        },
+      },
+    }).bodyAnimations.idle.movementStartKeyframeId,
+    undefined,
+  );
+
+  const anchorRootOffsetNormalized = debugTuningModule.normalizeDebugTuning({
+    bodyAnimations: {
+      idle: {
+        ...animation,
+        breath: {
+          ...animation.breath,
+          torso: {
+            ...animation.breath.torso,
+            y: 33,
+          },
+        },
+        keyframes: [
+          {
+            ...animation.keyframes[0],
+            rootOffset: { x: 8, y: -9 },
+          },
+          {
+            ...animation.keyframes[1],
+            rootOffset: { x: 41, y: -27 },
+          },
+        ],
+      },
+    },
+  }).bodyAnimations.idle;
+
+  assert.equal(
+    debugTuningModule.normalizeDebugTuning({
+      bodyAnimations: {
+        idle: {
+          ...animation,
+          movementStartKeyframeId: "root-hop",
+          keyframes: [
+            ...animation.keyframes,
+            {
+              ...animation.keyframes[0],
+              id: "root-hop",
+              time: 100,
+            },
+          ],
+        },
+      },
+    }).bodyAnimations.idle.movementStartKeyframeId,
+    "root-hop",
+  );
+  assert.equal(
+    debugTuningModule.normalizeDebugTuning({
+      bodyAnimations: {
+        idle: {
+          ...animation,
+          startKeyframeId: "root-hop",
+          keyframes: [
+            ...animation.keyframes,
+            {
+              ...animation.keyframes[0],
+              id: "root-hop",
+              time: 100,
+            },
+          ],
+        },
+      },
+    }).bodyAnimations.idle.movementStartKeyframeId,
+    "root-hop",
+  );
+  assert.equal(anchorRootOffsetNormalized.keyframes[0].id, "pose-a");
+  assert.equal(anchorRootOffsetNormalized.keyframes[0].rootOffset.x, 8);
+  assert.equal(anchorRootOffsetNormalized.keyframes[0].rootOffset.y, -9);
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].id, "pose-b");
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].rigParts.torso.y, 33);
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].rootOffset.x, 41);
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].rootOffset.y, -27);
+
+  const impactNormalized = debugTuningModule.normalizeDebugTuning({
+    bodyAnimations: {
+      idle: {
+        ...animation,
+        impactKeyframeId: "root-hop",
+        keyframes: [
+          ...animation.keyframes,
+          {
+            ...animation.keyframes[0],
+            id: "root-hop",
+            time: 100,
+          },
+        ],
+      },
+    },
+  }).bodyAnimations.idle;
+
+  assert.equal(impactNormalized.impactKeyframeId, "root-hop");
+
+  const missingImpactNormalized = debugTuningModule.normalizeDebugTuning({
+    bodyAnimations: {
+      idle: {
+        ...animation,
+        impactKeyframeId: "missing-impact",
+      },
+    },
+  }).bodyAnimations.idle;
+
+  assert.equal(missingImpactNormalized.impactKeyframeId, undefined);
+});
+
+test("debug tuning normalizes the selected animation keyframe id", () => {
+  const idle = debugTuningModule.defaultDebugTuning.bodyAnimations.idle;
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    animationEditMode: "keyframe",
+    selectedAnimationKeyframeId: "impact",
+    bodyAnimations: {
+      idle: {
+        ...idle,
+        keyframes: [
+          ...idle.keyframes,
+          {
+            ...idle.keyframes[0],
+            id: "impact",
+            time: 100,
+          },
+        ],
+      },
+    },
+  });
+
+  assert.equal(normalized.animationEditMode, "keyframe");
+  assert.equal(normalized.selectedAnimationKeyframeId, "impact");
+  assert.equal(debugTuningModule.normalizeDebugTuning({ selectedAnimationKeyframeId: "missing" }).selectedAnimationKeyframeId, "pose-a");
+
+  const dummyPreset = debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"];
+  const presetIdle = dummyPreset.bodyAnimations.idle;
+  const presetNormalized = debugTuningModule.normalizeDebugTuning({
+    animationEditMode: "keyframe",
+    paperDollBodyPreset: "dummy-v2",
+    selectedBodyAnimation: "idle",
+    selectedAnimationKeyframeId: "preset-impact",
+    bodyPresetTuning: {
+      "dummy-v2": {
+        ...dummyPreset,
+        bodyAnimations: {
+          ...dummyPreset.bodyAnimations,
+          idle: {
+            ...presetIdle,
+            keyframes: [
+              ...presetIdle.keyframes,
+              {
+                ...presetIdle.keyframes[0],
+                id: "preset-impact",
+                time: 100,
+              },
+            ],
+          },
+        },
+      },
+    },
+  });
+
+  assert.equal(presetNormalized.selectedAnimationKeyframeId, "preset-impact");
+});
+
+test("debug tuning preserves the animation root transform mode", () => {
+  assert.deepEqual(Array.from(debugTuningModule.ANIMATION_ROOT_TRANSFORM_MODES), ["rootOffset", "poseOffset"]);
+  assert.equal(debugTuningModule.normalizeDebugTuning({ animationRootTransformMode: "poseOffset" }).animationRootTransformMode, "poseOffset");
+  assert.equal(debugTuningModule.normalizeDebugTuning({ animationRootTransformMode: "rootOffset" }).animationRootTransformMode, "rootOffset");
+  assert.equal(debugTuningModule.normalizeDebugTuning({ animationRootTransformMode: "bad-mode" }).animationRootTransformMode, "rootOffset");
 });
 
 test("debug tuning exposes real classic wheel action sets", () => {

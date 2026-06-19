@@ -296,12 +296,57 @@ test("save as prod defaults also persists the selected rig editor animation", ()
   assert.match(saveDefaultsRoute, /bodyAnimationUpdates\.key/);
   assert.match(pickBodyAnimationSource, /const bodyAnimations = readActiveBodyAnimationMap\(payload\)/);
   assert.doesNotMatch(pickBodyAnimationSource, /\(payload as \{ bodyAnimations\?: unknown \}\)\.bodyAnimations/);
+  assert.match(source, /interface BodyAnimationKeyframeUpdates/);
+  assert.match(source, /variantWeight: number/);
+  assert.match(source, /appliesToAllWeapons: boolean/);
+  assert.match(source, /weaponClasses: BodyAnimationWeaponClass\[\]/);
+  assert.match(source, /variants: BodyAnimationUpdates\[\]/);
+  assert.match(source, /const variants = readBodyAnimationVariants\(animation\.variants\)/);
+  assert.match(source, /function readBodyAnimationVariants/);
+  assert.match(source, /function readBodyAnimationWeaponClasses/);
+  assert.match(source, /movementStartKeyframeId\?: string/);
+  assert.match(source, /impactKeyframeId\?: string/);
+  assert.match(source, /const keyframes = readBodyAnimationKeyframes/);
+  assert.match(source, /movementStartKeyframeId: readBodyAnimationTimelineKeyframeId\(/);
+  assert.match(source, /animation\.movementStartKeyframeId \?\? animation\.startKeyframeId/);
+  assert.match(source, /"movement start"/);
+  assert.match(source, /impactKeyframeId: readBodyAnimationImpactKeyframeId\(animation\.impactKeyframeId, keyframes\)/);
+  assert.match(source, /formatBodyAnimationKeyframeRows/);
+  assert.match(source, /formatBodyAnimationVariantMetaRows/);
+  assert.match(source, /formatBodyAnimationVariantRows/);
+  assert.match(source, /formatBodyAnimationMovementStartKeyframeIdRows/);
+  assert.match(source, /formatBodyAnimationImpactKeyframeIdRows/);
+  assert.match(source, /movementStartKeyframeId: \$\{JSON\.stringify\(movementStartKeyframeId\)\}/);
+  assert.match(source, /impactKeyframeId: \$\{JSON\.stringify\(impactKeyframeId\)\}/);
+  assert.match(source, /function readBodyAnimationImpactKeyframeId/);
+  assert.match(source, /function readBodyAnimationTimelineKeyframeId/);
+  assert.match(source, /rootOffset: RootOffsetUpdates/);
+  assert.match(source, /rootOffset: readRootOffset\(keyframe\.rootOffset\)/);
+  assert.match(source, /rootOffset: \{ x: \$\{formatNumber\(keyframe\.rootOffset\.x\)\}, y: \$\{formatNumber\(keyframe\.rootOffset\.y\)\} \}/);
   assert.match(source, /"bowShot"/);
   assert.match(source, /"hit"/);
   assert.match(source, /"block"/);
   assert.match(source, /DEFAULT_BOW_SHOT_ANIMATION/);
   assert.match(source, /DEFAULT_HIT_ANIMATION/);
   assert.match(source, /DEFAULT_BLOCK_ANIMATION/);
+});
+
+test("save animation as prod persists the active body preset animation", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const saveAnimationRoute = source.slice(source.indexOf('"/__dust-arena/save-prod-animation"'), source.indexOf('"/__dust-arena/promote-equipment-item"'));
+
+  assert.match(saveAnimationRoute, /const animationUpdates = pickActiveBodyPresetAnimationDefaultUpdates\(payload\)/);
+  assert.match(saveAnimationRoute, /applyBodyAnimationDefaultUpdates\(source, animationUpdates\.animation\)/);
+  assert.match(saveAnimationRoute, /applyBodyPresetAnimationDefaultUpdates\(nextSource, animationUpdates\)/);
+  assert.match(saveAnimationRoute, /Saved \$\{animationUpdates\.presetKey\} \$\{animationUpdates\.animation\.key\} animation defaults to prod/);
+  assert.match(source, /interface BodyPresetSelectedAnimationUpdates/);
+  assert.match(source, /export function applyBodyPresetAnimationDefaultUpdates/);
+  assert.match(source, /const bodyAnimationsProperty = findObjectPropertyObject/);
+  assert.match(source, /formatBodyAnimationObject\(updates\.animation, animationProperty\.indent\)/);
+  assert.match(source, /export function pickActiveBodyPresetAnimationDefaultUpdates/);
+  assert.match(source, /readBodyPresetKey\(\(payload as \{ paperDollBodyPreset\?: unknown \}\)\.paperDollBodyPreset\)/);
+  assert.match(source, /function findMatchingObjectBrace/);
+  assert.match(source, /function findObjectPropertyObject/);
 });
 
 test("save as prod defaults persists body art layers per body preset", () => {

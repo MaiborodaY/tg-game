@@ -7490,11 +7490,28 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 }
 
 body.debug-mode-character .debug-game-shell,
+body.debug-mode-character .debug-animation-editor,
+body.debug-mode-animation .debug-character-shell,
+body.debug-mode-animation .debug-game-shell,
+body.debug-mode-animation .debug-preview-tools,
+body.debug-mode-animation .debug-rig-panel,
+body.debug-mode-animation .debug-face-panel,
+body.debug-mode-animation .debug-arena-panel,
+body.debug-mode-animation .debug-hud-panel,
+body.debug-mode-animation .debug-city-panel,
+body.debug-mode-animation .debug-effects-panel,
+body.debug-mode-animation .debug-hero-equipment-panel,
+body.debug-mode-animation .debug-item-equipment-panel,
+body.debug-mode-animation .debug-auto-equipment-panel,
+body.debug-mode-animation .debug-shop-items-panel,
+body.debug-mode-animation .debug-boss-items-panel,
+body.debug-mode-animation .debug-set-import-preview,
 body.debug-mode-character .debug-arena-panel,
 body.debug-mode-character .debug-hud-panel,
 body.debug-mode-character .debug-city-panel,
 body.debug-mode-character .debug-effects-panel,
 body.debug-mode-arena .debug-character-shell,
+body.debug-mode-arena .debug-animation-editor,
 body.debug-mode-arena .debug-rig-panel,
 body.debug-mode-arena .debug-hud-panel,
 body.debug-mode-arena .debug-city-panel,
@@ -7507,6 +7524,7 @@ body.debug-mode-arena .debug-boss-items-panel,
 body.debug-mode-arena .debug-set-import-preview,
 body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
+body.debug-mode-city .debug-animation-editor,
 body.debug-mode-city .debug-rig-panel,
 body.debug-mode-city .debug-arena-panel,
 body.debug-mode-city .debug-hud-panel,
@@ -7519,6 +7537,7 @@ body.debug-mode-city .debug-boss-items-panel,
 body.debug-mode-city .debug-set-import-preview,
 body.debug-mode-city .battle-screen,
 body.debug-mode-hud .debug-character-shell,
+body.debug-mode-hud .debug-animation-editor,
 body.debug-mode-hud .debug-rig-panel,
 body.debug-mode-hud .debug-city-panel,
 body.debug-mode-hud .debug-arena-panel,
@@ -7531,6 +7550,7 @@ body.debug-mode-hud .debug-boss-items-panel,
 body.debug-mode-hud .debug-set-import-preview,
 body.debug-mode-hud .main-menu,
 body.debug-mode-effects .debug-character-shell,
+body.debug-mode-effects .debug-animation-editor,
 body.debug-mode-effects .debug-rig-panel,
 body.debug-mode-effects .debug-city-panel,
 body.debug-mode-effects .debug-arena-panel,
@@ -7557,6 +7577,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 
 .debug-rig-editor__select,
 .debug-rig-editor__animation-select,
+.debug-animation-editor__select,
 .debug-item-equipment__select,
 .debug-item-equipment__type-filter,
 .debug-item-equipment__rarity-filter,
@@ -8371,6 +8392,473 @@ body.debug-mode-hud .battle-screen .status-strip {
   min-width: 0;
 }
 
+body.debug-mode-animation .debug-app {
+  grid-template-columns: minmax(700px, 980px) minmax(300px, 390px);
+}
+
+body.debug-mode-animation .debug-preview-column {
+  width: min(980px, 100%);
+}
+
+.debug-animation-editor {
+  min-height: min(100dvh - 24px, 764px);
+  height: min(100dvh - 24px, 764px);
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 3px solid rgba(255, 211, 132, 0.62);
+  border-radius: 24px;
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, rgba(26, 9, 5, 0.92), rgba(58, 22, 11, 0.9)),
+    repeating-linear-gradient(90deg, rgba(255, 211, 132, 0.06) 0 1px, transparent 1px 74px);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.debug-animation-editor__library,
+.debug-animation-editor__inspector,
+.debug-animation-editor__timeline {
+  min-width: 0;
+  border: 2px solid rgba(255, 211, 132, 0.36);
+  border-radius: 14px;
+  background: rgba(35, 10, 4, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.debug-animation-editor__library,
+.debug-animation-editor__inspector {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.debug-animation-editor__eyebrow {
+  margin: 0;
+  color: #ffd384;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debug-animation-editor__field,
+.debug-animation-editor__toggle {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: #ffe6ab;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.debug-animation-editor__toggle {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.debug-animation-editor__toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #f4ad3f;
+}
+
+.debug-animation-editor__mode-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.debug-animation-editor__pose-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.debug-animation-editor__pose-actions .debug-panel__reset {
+  width: 100%;
+  margin: 0;
+  padding-inline: 6px;
+}
+
+.debug-animation-editor__reset-pose {
+  grid-column: 1 / -1;
+}
+
+.debug-animation-editor__fieldset,
+.debug-animation-editor__details {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 211, 132, 0.3);
+  border-radius: 10px;
+}
+
+.debug-animation-editor__fieldset legend,
+.debug-animation-editor__details summary {
+  padding: 0 4px;
+  color: #ffd384;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.debug-animation-editor__details summary {
+  display: list-item;
+  cursor: pointer;
+}
+
+.debug-animation-editor__details[open] {
+  gap: 8px;
+}
+
+.debug-animation-editor__root-transform-mode {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  min-width: 86px;
+  border: 1px solid rgba(255, 211, 132, 0.55);
+  border-radius: 8px;
+  background: rgba(27, 6, 2, 0.72);
+}
+
+.debug-animation-editor__root-transform-mode[hidden] {
+  display: none;
+}
+
+.debug-animation-editor__root-transform-mode button {
+  min-width: 0;
+  height: 24px;
+  border: 0;
+  border-right: 1px solid rgba(255, 211, 132, 0.32);
+  background: transparent;
+  color: #ffe6a8;
+  font-family: inherit;
+  font-size: 0.52rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.debug-animation-editor__root-transform-mode button:last-child {
+  border-right: 0;
+}
+
+.debug-animation-editor__root-transform-mode button[aria-pressed="true"] {
+  background: linear-gradient(180deg, #ffe3a2 0%, #f3a833 100%);
+  color: #351004;
+}
+
+.debug-animation-editor__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.debug-animation-editor__variant-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.debug-animation-editor__variant-actions .debug-panel__reset {
+  padding-inline: 4px;
+}
+
+.debug-animation-editor__weapon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.debug-animation-editor__weapon-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: #ffe6ab;
+  font-size: 0.56rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.debug-animation-editor__weapon-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #f4ad3f;
+}
+
+.debug-animation-editor__view-controls,
+.debug-animation-editor__rig-controls {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.debug-animation-editor__view-controls .debug-panel__row,
+.debug-animation-editor__rig-controls .debug-panel__row {
+  grid-template-columns: 52px minmax(0, 1fr) 50px;
+  gap: 5px;
+  font-size: 0.55rem;
+}
+
+.debug-animation-editor__view-controls .debug-panel__control-reset {
+  display: none;
+}
+
+.debug-animation-editor__rig-controls .debug-panel__row--toggle {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.debug-animation-editor__limb-grid {
+  display: grid;
+  gap: 5px;
+}
+
+.debug-animation-editor__limb-grid .debug-rig-editor__limb-row {
+  grid-template-columns: minmax(0, 1fr) 34px 34px;
+  gap: 5px;
+  font-size: 0.56rem;
+}
+
+.debug-animation-editor .debug-nudge-toolbar {
+  width: auto;
+}
+
+.debug-animation-editor .debug-nudge-toolbar__group {
+  border-width: 1px;
+  border-radius: 10px;
+  background: rgba(22, 7, 3, 0.45);
+}
+
+.debug-animation-editor__stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 2px solid rgba(255, 211, 132, 0.5);
+  border-radius: 18px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, #385e5b 0%, #4e7774 54%, #6f8b66 55%, #556f48 100%);
+  background-size: 40px 40px, 40px 40px, auto;
+}
+
+.debug-animation-editor__stage::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 30px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(35, 10, 4, 0.24);
+  pointer-events: none;
+}
+
+.debug-animation-viewer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.debug-animation-editor__parts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  max-height: 310px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.debug-animation-editor__parts .debug-rig-editor__idle-part {
+  min-height: 24px;
+  padding: 3px 5px;
+  font-size: 0.54rem;
+}
+
+.debug-animation-editor__timeline {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+}
+
+.debug-animation-editor__timeline-row {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.debug-animation-editor__timeline-row--playback {
+  grid-template-columns: 74px minmax(0, 1fr) 126px;
+}
+
+.debug-animation-editor__timeline-row--tools {
+  grid-template-columns: minmax(180px, 1fr) 132px minmax(210px, 260px) minmax(158px, 210px);
+}
+
+.debug-animation-editor__timeline-stack {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.debug-animation-editor__keyframe-rail {
+  position: relative;
+  height: 18px;
+  border: 1px solid rgba(255, 211, 132, 0.22);
+  border-radius: 999px;
+  background: rgba(28, 8, 3, 0.52);
+}
+
+.debug-animation-editor__keyframe {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid rgba(48, 18, 5, 0.92);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffd987, #f0a434);
+  color: #351006;
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 14px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.debug-animation-editor__impact-marker {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  width: 8px;
+  height: 22px;
+  border: 1px solid rgba(48, 18, 5, 0.92);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fff0bd, #ef4b35 34%, #8e140f);
+  box-shadow: 0 0 0 2px rgba(239, 75, 53, 0.24);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.debug-animation-editor__start-marker {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  width: 8px;
+  height: 22px;
+  border: 1px solid rgba(48, 18, 5, 0.92);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f7ffcb, #54d68d 38%, #136f49);
+  box-shadow: 0 0 0 2px rgba(84, 214, 141, 0.22);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.debug-animation-editor__keyframe--start {
+  border-color: #f7ffcb;
+  background: linear-gradient(180deg, #f7ffcb, #54d68d);
+  box-shadow: 0 0 0 2px rgba(84, 214, 141, 0.3);
+}
+
+.debug-animation-editor__keyframe--impact {
+  border-color: #fff0bd;
+  background: linear-gradient(180deg, #fff0bd, #ef4b35);
+  box-shadow: 0 0 0 2px rgba(239, 75, 53, 0.35);
+}
+
+.debug-animation-editor__keyframe--anchor {
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+}
+
+.debug-animation-editor__keyframe--custom {
+  z-index: 3;
+  cursor: grab;
+}
+
+.debug-animation-editor__keyframe--custom:active {
+  cursor: grabbing;
+}
+
+.debug-animation-editor__keyframe[aria-pressed="true"] {
+  z-index: 4;
+  border-color: #fff0bd;
+  box-shadow: 0 0 0 2px rgba(255, 240, 189, 0.35);
+}
+
+.debug-animation-editor__scrub {
+  width: 100%;
+  min-width: 0;
+  accent-color: #f4ad3f;
+}
+
+.debug-animation-editor__time,
+.debug-animation-editor__selected-key {
+  color: #ffd384;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.debug-animation-editor__time {
+  text-align: center;
+}
+
+.debug-animation-editor__selected-key {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-animation-editor__field--inline {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.debug-animation-editor__timeline-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.debug-animation-editor__timeline-actions .debug-panel__reset {
+  width: 100%;
+  min-height: 34px;
+  margin: 0;
+  padding: 0 6px;
+}
+
+.debug-animation-editor__timeline-actions--jumps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .debug-preview-tools {
   position: absolute;
   top: 12px;
@@ -8564,9 +9052,29 @@ body.debug-active .battle-screen {
     padding: 0;
   }
 
+  body.debug-mode-animation .debug-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .debug-preview-column {
     display: grid;
     gap: 10px;
+  }
+
+  body.debug-mode-animation .debug-preview-column {
+    width: 100%;
+  }
+
+  .debug-animation-editor {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(420px, 58dvh) auto auto;
+    border-radius: 0;
+  }
+
+  .debug-animation-editor__timeline {
+    grid-template-columns: 68px minmax(0, 1fr) 48px;
   }
 
   .debug-preview-tools {

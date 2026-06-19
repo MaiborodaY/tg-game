@@ -62,6 +62,7 @@ hydrateDebugTuningFromStorage();
 const dom = getDomRefs();
 const debugPanelHost = document.querySelector<HTMLElement>("#debugPanelHost");
 const debugCharacterViewer = document.querySelector<HTMLElement>("#debugCharacterViewer");
+const debugAnimationViewer = document.querySelector<HTMLElement>("#debugAnimationViewer");
 const cityHero = document.querySelector<HTMLElement>("#cityHero");
 const cityMenu = document.querySelector<HTMLElement>(".city-menu");
 const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
@@ -704,6 +705,9 @@ function startDebugApp(): void {
   setPlayerAppearance(hero.appearance);
   if (debugCharacterViewer) {
     mountDebugCharacterViewer(debugCharacterViewer, hero.equipment);
+  }
+  if (debugAnimationViewer) {
+    mountDebugCharacterViewer(debugAnimationViewer, hero.equipment, { mode: "animation" });
   }
   if (cityHero) {
     mountCityHeroPreview(cityHero, hero.equipment, hero.appearance);

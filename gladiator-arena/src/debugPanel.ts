@@ -1,8 +1,12 @@
 import {
   ACTION_BUTTON_OFFSET_KEYS,
   ANIMATION_EDIT_MODES,
+  ANIMATION_ROOT_TRANSFORM_MODES,
   APPEARANCE_LAYER_KEYS,
+  BODY_ANIMATION_DEFAULT_VARIANT_ID,
   BODY_ANIMATION_KEYS,
+  BODY_ANIMATION_KEYFRAME_EASINGS,
+  BODY_ANIMATION_WEAPON_CLASSES,
   CHARACTER_CANVAS_EDIT_MODES,
   CLASSIC_ACTION_WHEEL_BUTTONS,
   CLASSIC_ACTION_WHEEL_MODES,
@@ -12,8 +16,10 @@ import {
   DEFAULT_EQUIPMENT,
   DEFAULT_EQUIPMENT_ITEM_TUNING,
   debugTuning,
+  defaultBodyAnimationRootOffset,
   defaultBodyPartLayerTuning,
   defaultDebugTuning,
+  defaultRigPartTuning,
   EQUIPMENT_SLOT_KEYS,
   FACE_ASSET_LAYER_KEYS,
   DEFAULT_SLASH_ARCS,
@@ -28,12 +34,17 @@ import {
   undoDebugTuning,
   updateDebugTuning,
   type AnimationEditMode,
+  type AnimationRootTransformMode,
   type AppearanceLayerKey,
   type AppearanceLayerTuning,
   type ArenaDebugTuning,
   type BodyPartLayerTuning,
+  type BodyAnimationKeyframe,
+  type BodyAnimationKeyframeEasing,
   type BodyAnimationKey,
+  type BodyAnimationRootOffset,
   type BodyAnimationTuning,
+  type BodyAnimationWeaponClass,
   type BodyPresetTuning,
   type CharacterCanvasEditMode,
   type ClassicActionButtonSlotTuning,
@@ -146,6 +157,7 @@ type CharacterPreviewControlKey =
   | "facePreviewScale"
   | "facePreviewFocusX"
   | "facePreviewFocusY";
+type AnimationEditorViewControlKey = "animationEditorZoom" | "animationEditorOffsetX" | "animationEditorOffsetY";
 type CharacterPreviewControlMode = "body" | "face";
 type FaceNumericControlKey = keyof FacePartTuning;
 type FaceAssetLayerNumericControlKey = keyof FaceAssetLayerTuning;
@@ -699,6 +711,36 @@ const characterPreviewControls: CharacterPreviewControlConfig[] = [
   { key: "facePreviewFocusY", label: "face Y", min: 80, max: 560, step: 1, mode: "face" },
 ];
 
+const animationEditorViewControls: (DebugRangeControlConfig & { key: AnimationEditorViewControlKey })[] = [
+  {
+    type: "range",
+    key: "animationEditorZoom",
+    label: "zoom",
+    min: 0.5,
+    max: 2.4,
+    step: 0.01,
+    resetValue: defaultDebugTuning.animationEditorZoom,
+  },
+  {
+    type: "range",
+    key: "animationEditorOffsetX",
+    label: "pan X",
+    min: -420,
+    max: 420,
+    step: 1,
+    resetValue: defaultDebugTuning.animationEditorOffsetX,
+  },
+  {
+    type: "range",
+    key: "animationEditorOffsetY",
+    label: "pan Y",
+    min: -420,
+    max: 420,
+    step: 1,
+    resetValue: defaultDebugTuning.animationEditorOffsetY,
+  },
+];
+
 const faceNumericControls: FaceNumericControlConfig[] = [
   { key: "x", label: "x", min: -40, max: 40, step: 0.5 },
   { key: "y", label: "y", min: -40, max: 40, step: 0.5 },
@@ -772,6 +814,8 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
   frontFoot: { x: 38, y: -7 },
 };
 
+const ANIMATION_WORKBENCH_ROOT_SELECT_VALUE = "root";
+
 let activeNudgeStep = 5;
 let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let activeEquipmentItemId: HeroItemId | "" = "";
@@ -788,6 +832,9 @@ let previewSlashArc: ((actionId: SlashArcAttackKey, withBodyAnimation: boolean) 
 let previewPopup: ((kind: DebugPopupPreviewKind) => void) | undefined;
 let isSlashPreviewLoopRunning = false;
 let slashPreviewTimer: number | undefined;
+let animationWorkbenchPlaybackFrame: number | undefined;
+let animationWorkbenchPlaybackPreviousTime = 0;
+let animationWorkbenchPlaybackReturnMode: AnimationEditMode | undefined;
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -816,6 +863,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   panel.innerHTML = `
     <nav class="debug-panel__mode-tabs" aria-label="Debug mode">
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="character" aria-pressed="true">Character</button>
+      <button class="debug-panel__mode-tab" type="button" data-debug-mode="animation" aria-pressed="false">Animation</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="city" aria-pressed="false">City</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="arena" aria-pressed="false">Arena</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="hud" aria-pressed="false">HUD</button>
@@ -1301,6 +1349,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
 
   mountPreviewToolbar(previewToolbar);
   mountRigEditor(rigEditor);
+  mountAnimationWorkbench();
   mountFaceAssetEditor(faceAssetEditor);
   mountEffectsEditor(effectsBody);
   mountHeroEquipmentEditor(heroEquipmentBody);
@@ -1564,7 +1613,7 @@ function mountCharacterCanvasEquipmentBridge(panel: HTMLElement): void {
   });
 }
 
-type DebugMode = "character" | "city" | "arena" | "hud" | "effects";
+type DebugMode = "character" | "animation" | "city" | "arena" | "hud" | "effects";
 
 function mountModeTabs(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
@@ -1581,14 +1630,16 @@ function mountModeTabs(panel: HTMLElement): void {
 
 function setDebugMode(mode: DebugMode): void {
   document.body.classList.toggle("debug-mode-character", mode === "character");
+  document.body.classList.toggle("debug-mode-animation", mode === "animation");
   document.body.classList.toggle("debug-mode-city", mode === "city");
   document.body.classList.toggle("debug-mode-arena", mode === "arena");
   document.body.classList.toggle("debug-mode-hud", mode === "hud");
   document.body.classList.toggle("debug-mode-effects", mode === "effects");
+  window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
 }
 
 function getDebugModeFromValue(value: string | undefined): DebugMode {
-  if (value === "city" || value === "arena" || value === "hud" || value === "effects") {
+  if (value === "animation" || value === "city" || value === "arena" || value === "hud" || value === "effects") {
     return value;
   }
 
@@ -2615,6 +2666,7 @@ function mountRigEditor(editor: HTMLElement): void {
   animationSelect.addEventListener("change", () => {
     updateDebugTuning({
       selectedBodyAnimation: isBodyAnimationKey(animationSelect.value) ? animationSelect.value : "idle",
+      selectedBodyAnimationVariantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
     }, { undoable: false });
   });
 
@@ -2623,7 +2675,7 @@ function mountRigEditor(editor: HTMLElement): void {
       const mode = button.dataset.animationEditMode;
 
       if (isAnimationEditMode(mode)) {
-        updateDebugTuning({ animationEditMode: mode }, { undoable: false });
+        updateDebugTuning({ animationEditMode: mode, selectedAnimationKeyframeId: getAnimationModeKeyframeId(mode) }, { undoable: false });
       }
     });
   });
@@ -2652,6 +2704,1099 @@ function mountRigEditor(editor: HTMLElement): void {
     updateSelectedBodyAnimation({ activeParts: createAnimationActiveParts(false) });
   });
 
+}
+
+function mountAnimationWorkbench(): void {
+  const editor = document.querySelector<HTMLElement>("#debugAnimationEditor");
+
+  if (!editor || editor.dataset.animationWorkbenchMounted === "true") {
+    return;
+  }
+
+  const animationSelect = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-select]");
+  const variantSelect = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-variant-select]");
+  const newVariant = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-variant-new]");
+  const duplicateVariant = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-variant-duplicate]");
+  const deleteVariant = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-variant-delete]");
+  const variantWeight = editor.querySelector<HTMLInputElement>("[data-animation-workbench-variant-weight]");
+  const variantAllWeapons = editor.querySelector<HTMLInputElement>("[data-animation-workbench-variant-all-weapons]");
+  const variantWeapons = editor.querySelector<HTMLElement>("[data-animation-workbench-variant-weapons]");
+  const animationModeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]")];
+  const viewControls = editor.querySelector<HTMLElement>("[data-animation-workbench-view-controls]");
+  const resetPose = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-pose]");
+  const applyPoseButtons = [...editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-apply-to-pose]")];
+  const resetView = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-view]");
+  const partSelect = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-part-select]");
+  const rootTransformMode = editor.querySelector<HTMLElement>("[data-animation-workbench-root-transform-mode]");
+  const rootTransformModeButtons = [
+    ...editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-root-transform-mode-option]"),
+  ];
+  const rigControls = editor.querySelector<HTMLElement>("[data-animation-workbench-rig-controls]");
+  const resetPart = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-part]");
+  const nudge = editor.querySelector<HTMLElement>("[data-animation-workbench-nudge]");
+  const limbGrid = editor.querySelector<HTMLElement>("[data-animation-workbench-limbs]");
+  const animationEnabled = editor.querySelector<HTMLInputElement>("[data-animation-workbench-enabled]");
+  const animationDuration = editor.querySelector<HTMLInputElement>("[data-animation-workbench-duration]");
+  const copyPoseAToB = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-copy-a-to-b]");
+  const animationParts = editor.querySelector<HTMLElement>("[data-animation-workbench-parts]");
+  const play = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
+  const progress = editor.querySelector<HTMLInputElement>("[data-animation-workbench-progress]");
+  const keyframes = editor.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
+  const easing = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
+  const addKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-add-keyframe]");
+  const duplicateKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-duplicate-keyframe]");
+  const setStartKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-set-start]");
+  const setImpactKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-set-impact]");
+  const deleteKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-delete-keyframe]");
+
+  if (
+    !animationSelect ||
+    !variantSelect ||
+    !newVariant ||
+    !duplicateVariant ||
+    !deleteVariant ||
+    !variantWeight ||
+    !variantAllWeapons ||
+    !variantWeapons ||
+    animationModeButtons.length === 0 ||
+    !viewControls ||
+    !resetPose ||
+    applyPoseButtons.length === 0 ||
+    !resetView ||
+    !partSelect ||
+    !rootTransformMode ||
+    rootTransformModeButtons.length === 0 ||
+    !rigControls ||
+    !resetPart ||
+    !nudge ||
+    !limbGrid ||
+    !animationEnabled ||
+    !animationDuration ||
+    !copyPoseAToB ||
+    !animationParts ||
+    !play ||
+    !progress ||
+    !keyframes ||
+    !easing ||
+    !addKeyframe ||
+    !duplicateKeyframe ||
+    !setStartKeyframe ||
+    !setImpactKeyframe ||
+    !deleteKeyframe
+  ) {
+    return;
+  }
+
+  editor.dataset.animationWorkbenchMounted = "true";
+
+  animationEditorViewControls.forEach((control) => viewControls.append(createRangeControl(control)));
+  BODY_ANIMATION_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    animationSelect.append(option);
+  });
+  BODY_ANIMATION_WEAPON_CLASSES.forEach((weaponClass) => variantWeapons.append(createAnimationVariantWeaponToggle(weaponClass)));
+  BODY_ANIMATION_KEYFRAME_EASINGS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    easing.append(option);
+  });
+
+  const rootOption = document.createElement("option");
+  rootOption.value = ANIMATION_WORKBENCH_ROOT_SELECT_VALUE;
+  rootOption.textContent = "Doll / Root";
+  partSelect.append(rootOption);
+
+  RIG_PART_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    partSelect.append(option);
+  });
+
+  rigNumericControls.forEach((control) => rigControls.append(createRigRangeControl(control)));
+  rigToggleControls.forEach((control) => rigControls.append(createRigToggleControl(control)));
+  const nudgeToolbar = createNudgeToolbar();
+  nudgeToolbar.classList.add("debug-nudge-toolbar--embedded");
+  nudge.append(nudgeToolbar);
+  mountNudgeToolbar(nudgeToolbar);
+  rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
+  RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
+
+  animationSelect.addEventListener("change", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    updateDebugTuning({
+      characterCanvasEditMode: "parts",
+      selectedBodyAnimation: isBodyAnimationKey(animationSelect.value) ? animationSelect.value : "idle",
+      selectedBodyAnimationVariantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
+    }, { undoable: false });
+  });
+
+  variantSelect.addEventListener("change", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    selectBodyAnimationVariant(variantSelect.value);
+  });
+
+  newVariant.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    createBodyAnimationVariant();
+  });
+
+  duplicateVariant.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    duplicateSelectedBodyAnimationVariant();
+  });
+
+  deleteVariant.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    deleteSelectedBodyAnimationVariant();
+  });
+
+  variantWeight.addEventListener("input", () => {
+    updateSelectedBodyAnimationVariantMeta({ variantWeight: Number(variantWeight.value) });
+  });
+
+  variantAllWeapons.addEventListener("change", () => {
+    updateSelectedBodyAnimationVariantMeta({ appliesToAllWeapons: variantAllWeapons.checked });
+  });
+
+  animationModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.animationEditMode;
+
+      stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+      if (isAnimationEditMode(mode)) {
+        updateDebugTuning(
+          {
+            animationEditMode: mode,
+            characterCanvasEditMode: "parts",
+            selectedAnimationKeyframeId: getAnimationModeKeyframeId(mode),
+          },
+          { undoable: false },
+        );
+      }
+    });
+  });
+
+  resetPose.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    resetSelectedAnimationPoseToDefault();
+  });
+
+  applyPoseButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetPoseId = button.dataset.animationWorkbenchApplyToPose;
+
+      stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+      if (targetPoseId === "pose-a" || targetPoseId === "pose-b") {
+        applySelectedAnimationKeyframeToPose(targetPoseId);
+      }
+    });
+  });
+
+  resetView.addEventListener("click", () => {
+    updateDebugTuning({
+      animationEditorZoom: defaultDebugTuning.animationEditorZoom,
+      animationEditorOffsetX: defaultDebugTuning.animationEditorOffsetX,
+      animationEditorOffsetY: defaultDebugTuning.animationEditorOffsetY,
+    });
+  });
+
+  editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-rotate-doll]").forEach((button) => {
+    button.addEventListener("click", () => {
+      rotatePaperDoll(Number(button.dataset.animationWorkbenchRotateDoll) || 0);
+    });
+  });
+
+  partSelect.addEventListener("change", () => {
+    if (partSelect.value === ANIMATION_WORKBENCH_ROOT_SELECT_VALUE) {
+      updateDebugTuning({
+        characterCanvasEditMode: "root",
+        selectedRigParts: [],
+      }, { undoable: false });
+      return;
+    }
+
+    const selectedRigPart = partSelect.value as RigPartKey;
+
+    updateDebugTuning({
+      characterCanvasEditMode: "parts",
+      selectedRigPart,
+      selectedRigParts: [selectedRigPart],
+    }, { undoable: false });
+  });
+
+  rootTransformModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.animationWorkbenchRootTransformModeOption;
+
+      if (isAnimationRootTransformMode(mode)) {
+        updateDebugTuning({ animationRootTransformMode: mode }, { undoable: false });
+      }
+    });
+  });
+
+  resetPart.addEventListener("click", () => {
+    resetSelectedRigPart();
+  });
+
+  animationEnabled.addEventListener("change", () => {
+    updateSelectedBodyAnimation({ enabled: animationEnabled.checked });
+  });
+
+  animationDuration.addEventListener("input", () => {
+    updateSelectedBodyAnimation({ duration: Number(animationDuration.value) });
+  });
+
+  copyPoseAToB.addEventListener("click", () => {
+    copyAnimationPoseAToB();
+  });
+
+  progress.addEventListener("input", () => {
+    beginAnimationWorkbenchScrub();
+    setAnimationWorkbenchProgress(Number(progress.value) / 1000);
+  });
+  progress.addEventListener("pointerdown", () => {
+    beginAnimationWorkbenchScrub();
+  });
+
+  let suppressKeyframeClick = false;
+  keyframes.addEventListener("pointerdown", (event) => {
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>("button[data-animation-keyframe-id]");
+    const keyframeId = button?.dataset.animationKeyframeId;
+
+    if (!keyframeId || isProtectedAnimationKeyframe(keyframeId)) {
+      return;
+    }
+
+    const startClientX = event.clientX;
+    let isDragging = false;
+
+    event.preventDefault();
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    selectAnimationKeyframe(keyframeId);
+
+    const moveSelectedKeyframe = (clientX: number): void => {
+      moveAnimationKeyframeToRailPointer(keyframeId, keyframes, clientX);
+    };
+    const handlePointerMove = (moveEvent: PointerEvent): void => {
+      if (!isDragging && Math.abs(moveEvent.clientX - startClientX) < 2) {
+        return;
+      }
+
+      isDragging = true;
+      suppressKeyframeClick = true;
+      moveEvent.preventDefault();
+      moveSelectedKeyframe(moveEvent.clientX);
+    };
+    const stopDragging = (): void => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopDragging);
+      window.removeEventListener("pointercancel", stopDragging);
+
+      if (isDragging) {
+        window.setTimeout(() => {
+          suppressKeyframeClick = false;
+        }, 0);
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopDragging);
+    window.addEventListener("pointercancel", stopDragging);
+  });
+
+  keyframes.addEventListener("click", (event) => {
+    if (suppressKeyframeClick) {
+      event.preventDefault();
+      suppressKeyframeClick = false;
+      return;
+    }
+
+    const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>("button[data-animation-keyframe-id]");
+    const keyframeId = button?.dataset.animationKeyframeId ?? getAnimationKeyframeIdAtRailPointer(keyframes, event);
+
+    if (!keyframeId) {
+      return;
+    }
+
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    selectAnimationKeyframe(keyframeId);
+  });
+
+  easing.addEventListener("change", () => {
+    updateAnimationWorkbenchEasing(easing.value as BodyAnimationKeyframeEasing);
+  });
+
+  addKeyframe.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    addAnimationKeyframeAtProgress();
+  });
+
+  duplicateKeyframe.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    duplicateSelectedAnimationKeyframeAtProgress();
+  });
+
+  setStartKeyframe.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    setSelectedAnimationStartKeyframe();
+  });
+
+  setImpactKeyframe.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    setSelectedAnimationImpactKeyframe();
+  });
+
+  deleteKeyframe.addEventListener("click", () => {
+    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+    deleteSelectedAnimationKeyframe();
+  });
+
+  play.addEventListener("click", () => {
+    toggleAnimationWorkbenchPlayback();
+  });
+
+  editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-jump]").forEach((button) => {
+    button.addEventListener("click", () => {
+      stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+      setAnimationWorkbenchProgress(Number(button.dataset.animationWorkbenchJump));
+    });
+  });
+}
+
+function toggleAnimationWorkbenchPlayback(): void {
+  if (animationWorkbenchPlaybackFrame !== undefined) {
+    stopAnimationWorkbenchPlayback();
+    return;
+  }
+
+  startAnimationWorkbenchPlayback();
+}
+
+function startAnimationWorkbenchPlayback(): void {
+  if (animationWorkbenchPlaybackFrame !== undefined) {
+    return;
+  }
+
+  animationWorkbenchPlaybackReturnMode = getAnimationWorkbenchReturnMode();
+  animationWorkbenchPlaybackPreviousTime = window.performance.now();
+  animationWorkbenchPlaybackFrame = window.requestAnimationFrame(tickAnimationWorkbenchPlayback);
+}
+
+function tickAnimationWorkbenchPlayback(time: number): void {
+  const elapsed = Math.max(0, time - animationWorkbenchPlaybackPreviousTime);
+  const animation = getSelectedBodyAnimation();
+  const duration = Math.max(1, animation.duration);
+  const nextProgress = (debugTuning.animationPreviewProgress + elapsed / duration) % 1;
+
+  animationWorkbenchPlaybackPreviousTime = time;
+  updateDebugTuning(
+    {
+      animationEditMode: "preview",
+      animationPreviewProgress: nextProgress,
+      characterCanvasEditMode: getAnimationWorkbenchCanvasEditMode(),
+    },
+    { undoable: false, persist: false },
+  );
+
+  animationWorkbenchPlaybackFrame = window.requestAnimationFrame(tickAnimationWorkbenchPlayback);
+}
+
+function stopAnimationWorkbenchPlayback(options: { restoreEditMode?: boolean } = {}): void {
+  if (animationWorkbenchPlaybackFrame === undefined) {
+    return;
+  }
+
+  window.cancelAnimationFrame(animationWorkbenchPlaybackFrame);
+  animationWorkbenchPlaybackFrame = undefined;
+
+  if (options.restoreEditMode ?? true) {
+    restoreAnimationWorkbenchEditMode();
+  } else {
+    animationWorkbenchPlaybackReturnMode = undefined;
+  }
+}
+
+function restoreAnimationWorkbenchEditMode(returnMode: AnimationEditMode = animationWorkbenchPlaybackReturnMode ?? "keyframe"): void {
+  animationWorkbenchPlaybackReturnMode = undefined;
+  if (debugTuning.animationEditMode === returnMode) {
+    return;
+  }
+
+  updateDebugTuning(
+    {
+      animationEditMode: returnMode,
+      characterCanvasEditMode: getAnimationWorkbenchCanvasEditMode(),
+      selectedAnimationKeyframeId: getAnimationModeKeyframeId(returnMode),
+    },
+    { undoable: false },
+  );
+}
+
+function beginAnimationWorkbenchScrub(): void {
+  stopAnimationWorkbenchPlayback({ restoreEditMode: false });
+}
+
+function getAnimationWorkbenchReturnMode(): AnimationEditMode {
+  return debugTuning.animationEditMode === "preview" ? "keyframe" : debugTuning.animationEditMode;
+}
+
+function setAnimationWorkbenchProgress(progress: number): void {
+  updateDebugTuning(
+    {
+      animationEditMode: "preview",
+      animationPreviewProgress: clampNumber(progress, 0, 1),
+      characterCanvasEditMode: getAnimationWorkbenchCanvasEditMode(),
+    },
+    { undoable: false },
+  );
+}
+
+function getAnimationWorkbenchCanvasEditMode(): CharacterCanvasEditMode {
+  return debugTuning.characterCanvasEditMode === "root" ? "root" : "parts";
+}
+
+function getAnimationModeKeyframeId(mode: AnimationEditMode): string {
+  if (mode === "poseB") {
+    return "pose-b";
+  }
+
+  if (mode === "poseA") {
+    return "pose-a";
+  }
+
+  return debugTuning.selectedAnimationKeyframeId;
+}
+
+function selectAnimationKeyframe(keyframeId: string): void {
+  const animation = getSelectedBodyAnimation();
+  const keyframe = getAnimationKeyframes(animation).find((candidate) => candidate.id === keyframeId) ?? getAnimationKeyframes(animation)[0];
+  const duration = Math.max(1, animation.duration);
+
+  if (!keyframe) {
+    return;
+  }
+
+  updateDebugTuning(
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: clampNumber(keyframe.time / duration, 0, 1),
+      characterCanvasEditMode: getAnimationWorkbenchCanvasEditMode(),
+      selectedAnimationKeyframeId: keyframe.id,
+    },
+    { undoable: false },
+  );
+}
+
+function addAnimationKeyframeAtProgress(): void {
+  const animation = getSelectedBodyAnimation();
+  const duration = Math.max(1, animation.duration);
+  const time = Math.round(clampNumber(debugTuning.animationPreviewProgress, 0, 1) * duration);
+  const keyframes = getAnimationKeyframes(animation);
+  const sourceKeyframe = getSelectedAnimationKeyframe(animation) ?? keyframes[0];
+
+  if (!sourceKeyframe) {
+    return;
+  }
+
+  const id = createUniqueAnimationKeyframeId(keyframes, `key-${Math.round((time / duration) * 1000)}`);
+  const sampledPose = sampleAnimationKeyframePose(animation, debugTuning.animationPreviewProgress);
+  const nextKeyframe: BodyAnimationKeyframe = {
+    id,
+    time,
+    easing: "easeInOut",
+    rigParts: cloneRigParts(sampledPose?.rigParts ?? sourceKeyframe.rigParts),
+    faceParts: cloneFaceParts(sampledPose?.faceParts ?? sourceKeyframe.faceParts),
+    rootOffset: cloneBodyAnimationRootOffset(sampledPose?.rootOffset ?? sourceKeyframe.rootOffset),
+  };
+
+  updateSelectedBodyAnimation(
+    {
+      keyframes: [...keyframes, nextKeyframe].sort(compareAnimationKeyframes),
+    },
+    {
+      animationEditMode: "keyframe",
+      selectedAnimationKeyframeId: id,
+    },
+  );
+}
+
+function duplicateSelectedAnimationKeyframeAtProgress(): void {
+  const animation = getSelectedBodyAnimation();
+  const duration = Math.max(1, animation.duration);
+  const time = Math.round(clampNumber(debugTuning.animationPreviewProgress, 0, 1) * duration);
+  const keyframes = getAnimationKeyframes(animation);
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+
+  if (!selectedKeyframe) {
+    return;
+  }
+
+  const existingKeyframe = keyframes.find((keyframe) => !isProtectedAnimationKeyframe(keyframe.id) && Math.round(keyframe.time) === time);
+  const nextKeyframe: BodyAnimationKeyframe = {
+    ...(existingKeyframe ?? selectedKeyframe),
+    id: existingKeyframe?.id ?? createUniqueAnimationKeyframeId(keyframes, `key-${Math.round((time / duration) * 1000)}`),
+    time,
+    easing: selectedKeyframe.easing,
+    rigParts: cloneRigParts(selectedKeyframe.rigParts),
+    faceParts: cloneFaceParts(selectedKeyframe.faceParts),
+    rootOffset: cloneBodyAnimationRootOffset(selectedKeyframe.rootOffset),
+  };
+
+  updateSelectedBodyAnimation(
+    {
+      keyframes: (existingKeyframe
+        ? keyframes.map((keyframe) => (keyframe.id === nextKeyframe.id ? nextKeyframe : keyframe))
+        : [...keyframes, nextKeyframe]
+      ).sort(compareAnimationKeyframes),
+    },
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: clampNumber(time / duration, 0, 1),
+      selectedAnimationKeyframeId: nextKeyframe.id,
+    },
+  );
+}
+
+function setSelectedAnimationImpactKeyframe(): void {
+  const animation = getSelectedBodyAnimation();
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+
+  if (!selectedKeyframe) {
+    return;
+  }
+
+  updateSelectedBodyAnimation(
+    {
+      impactKeyframeId: selectedKeyframe.id,
+    },
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: clampNumber(selectedKeyframe.time / Math.max(1, animation.duration), 0, 1),
+      selectedAnimationKeyframeId: selectedKeyframe.id,
+    },
+  );
+}
+
+function setSelectedAnimationStartKeyframe(): void {
+  const animation = getSelectedBodyAnimation();
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+
+  if (!selectedKeyframe) {
+    return;
+  }
+
+  updateSelectedBodyAnimation(
+    {
+      movementStartKeyframeId: selectedKeyframe.id,
+    },
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: clampNumber(selectedKeyframe.time / Math.max(1, animation.duration), 0, 1),
+      selectedAnimationKeyframeId: selectedKeyframe.id,
+    },
+  );
+}
+
+function updateAnimationPreviewKeyframe(patch: Partial<Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset">>): void {
+  const animation = getSelectedBodyAnimation();
+  const duration = Math.max(1, animation.duration);
+  const time = Math.round(clampNumber(debugTuning.animationPreviewProgress, 0, 1) * duration);
+  const keyframes = getAnimationKeyframes(animation);
+  const sampledPose = getAnimationPreviewPose();
+  const sourceKeyframe = getSelectedAnimationKeyframe(animation) ?? keyframes[0];
+  const sourcePose = sampledPose ?? sourceKeyframe;
+
+  if (!sourcePose) {
+    return;
+  }
+
+  const existingKeyframe = keyframes.find((keyframe) => Math.round(keyframe.time) === time);
+  const targetKeyframe: BodyAnimationKeyframe = existingKeyframe ?? {
+    id: createUniqueAnimationKeyframeId(keyframes, `key-${Math.round((time / duration) * 1000)}`),
+    time,
+    easing: "easeInOut",
+    rigParts: cloneRigParts(sourcePose.rigParts),
+    faceParts: cloneFaceParts(sourcePose.faceParts),
+    rootOffset: cloneBodyAnimationRootOffset(sourcePose.rootOffset),
+  };
+  const nextKeyframe: BodyAnimationKeyframe = {
+    ...targetKeyframe,
+    ...patch,
+    id: targetKeyframe.id,
+  };
+  const nextKeyframes = (existingKeyframe
+    ? keyframes.map((keyframe) => (keyframe.id === nextKeyframe.id ? nextKeyframe : keyframe))
+    : [...keyframes, nextKeyframe]
+  ).sort(compareAnimationKeyframes);
+  const animationPatch: Partial<BodyAnimationTuning> = { keyframes: nextKeyframes };
+
+  if (nextKeyframe.id === "pose-a") {
+    if (patch.rigParts) {
+      animationPatch.base = cloneRigParts(patch.rigParts);
+    }
+    if (patch.faceParts) {
+      animationPatch.faceBase = cloneFaceParts(patch.faceParts);
+    }
+  }
+
+  if (nextKeyframe.id === "pose-b") {
+    if (patch.rigParts) {
+      animationPatch.breath = cloneRigParts(patch.rigParts);
+    }
+    if (patch.faceParts) {
+      animationPatch.faceBreath = cloneFaceParts(patch.faceParts);
+    }
+  }
+
+  updateSelectedBodyAnimation(animationPatch, {
+    animationEditMode: "keyframe",
+    selectedAnimationKeyframeId: nextKeyframe.id,
+  });
+}
+
+function moveAnimationKeyframeToRailPointer(keyframeId: string, rail: HTMLElement, clientX: number): void {
+  const bounds = rail.getBoundingClientRect();
+
+  if (bounds.width <= 0) {
+    return;
+  }
+
+  moveAnimationKeyframeToProgress(keyframeId, (clientX - bounds.left) / bounds.width);
+}
+
+function moveAnimationKeyframeToProgress(keyframeId: string, progress: number): void {
+  const animation = getSelectedBodyAnimation();
+  const keyframe = getAnimationKeyframes(animation).find((candidate) => candidate.id === keyframeId);
+
+  if (!keyframe || isProtectedAnimationKeyframe(keyframe.id)) {
+    return;
+  }
+
+  const duration = Math.max(1, animation.duration);
+  const nextTime = Math.round(clampNumber(progress, 0, 1) * duration);
+
+  updateAnimationKeyframeById(
+    keyframe.id,
+    { time: nextTime },
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: clampNumber(nextTime / duration, 0, 1),
+      selectedAnimationKeyframeId: keyframe.id,
+    },
+  );
+}
+
+function deleteSelectedAnimationKeyframe(): void {
+  const animation = getSelectedBodyAnimation();
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+  const targetKeyframe = selectedKeyframe && !isProtectedAnimationKeyframe(selectedKeyframe.id)
+    ? selectedKeyframe
+    : findEditableAnimationKeyframeAtProgress(animation, debugTuning.animationPreviewProgress);
+
+  if (!targetKeyframe) {
+    return;
+  }
+
+  const duration = Math.max(1, animation.duration);
+  const nextAnimationPatch: Partial<BodyAnimationTuning> = {
+    keyframes: getAnimationKeyframes(animation).filter((keyframe) => keyframe.id !== targetKeyframe.id),
+  };
+
+  if (animation.impactKeyframeId === targetKeyframe.id) {
+    nextAnimationPatch.impactKeyframeId = undefined;
+  }
+
+  if (animation.movementStartKeyframeId === targetKeyframe.id) {
+    nextAnimationPatch.movementStartKeyframeId = undefined;
+  }
+
+  updateSelectedBodyAnimation(
+    nextAnimationPatch,
+    {
+      animationEditMode: "preview",
+      animationPreviewProgress: clampNumber(targetKeyframe.time / duration, 0, 1),
+      selectedAnimationKeyframeId: "pose-a",
+    },
+  );
+}
+
+function resetSelectedAnimationPoseToDefault(): void {
+  const poseId = getResettableAnimationPoseId();
+
+  if (!poseId) {
+    return;
+  }
+
+  const animation = getSelectedBodyAnimation();
+  const defaultAnimation = DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation] ?? DEFAULT_BODY_ANIMATIONS.idle;
+  const defaultKeyframe = getAnimationKeyframes(defaultAnimation).find((keyframe) => keyframe.id === poseId);
+  const currentKeyframe = getAnimationKeyframes(animation).find((keyframe) => keyframe.id === poseId);
+
+  if (!defaultKeyframe) {
+    return;
+  }
+
+  const duration = Math.max(1, animation.duration);
+  const time = currentKeyframe?.time ?? (poseId === "pose-a" ? 0 : duration / 2);
+
+  updateAnimationKeyframeById(
+    poseId,
+    {
+      rigParts: cloneRigParts(defaultKeyframe.rigParts),
+      faceParts: cloneFaceParts(defaultKeyframe.faceParts),
+      rootOffset: cloneBodyAnimationRootOffset(defaultKeyframe.rootOffset),
+    },
+    {
+      animationEditMode: poseId === "pose-a" ? "poseA" : "poseB",
+      animationPreviewProgress: clampNumber(time / duration, 0, 1),
+      selectedAnimationKeyframeId: poseId,
+    },
+  );
+}
+
+function applySelectedAnimationKeyframeToPose(targetPoseId: "pose-a" | "pose-b"): void {
+  const animation = getSelectedBodyAnimation();
+  const sourceKeyframe = getSelectedAnimationKeyframe(animation);
+  const targetKeyframe = getAnimationKeyframes(animation).find((keyframe) => keyframe.id === targetPoseId);
+
+  if (!sourceKeyframe || !targetKeyframe) {
+    return;
+  }
+
+  const duration = Math.max(1, animation.duration);
+
+  updateAnimationKeyframeById(
+    targetPoseId,
+    {
+      rigParts: cloneRigParts(sourceKeyframe.rigParts),
+      faceParts: cloneFaceParts(sourceKeyframe.faceParts),
+      rootOffset: cloneBodyAnimationRootOffset(sourceKeyframe.rootOffset),
+    },
+    {
+      animationEditMode: targetPoseId === "pose-a" ? "poseA" : "poseB",
+      animationPreviewProgress: clampNumber(targetKeyframe.time / duration, 0, 1),
+      selectedAnimationKeyframeId: targetPoseId,
+    },
+  );
+}
+
+function getResettableAnimationPoseId(): "pose-a" | "pose-b" | undefined {
+  if (debugTuning.animationEditMode === "poseA") {
+    return "pose-a";
+  }
+
+  if (debugTuning.animationEditMode === "poseB") {
+    return "pose-b";
+  }
+
+  if (debugTuning.animationEditMode !== "keyframe") {
+    return undefined;
+  }
+
+  const selectedKeyframe = getSelectedAnimationKeyframe();
+
+  if (selectedKeyframe?.id === "pose-a" || selectedKeyframe?.id === "pose-b") {
+    return selectedKeyframe.id;
+  }
+
+  return undefined;
+}
+
+function updateAnimationWorkbenchEasing(easing: BodyAnimationKeyframeEasing): void {
+  const animation = getSelectedBodyAnimation();
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+  const targetKeyframe = getAnimationWorkbenchEasingKeyframe(animation, selectedKeyframe);
+
+  if (!targetKeyframe) {
+    return;
+  }
+
+  const duration = Math.max(1, animation.duration);
+
+  updateAnimationKeyframeById(
+    targetKeyframe.id,
+    { easing },
+    {
+      animationEditMode: "keyframe",
+      animationPreviewProgress: clampNumber(targetKeyframe.time / duration, 0, 1),
+      selectedAnimationKeyframeId: targetKeyframe.id,
+    },
+  );
+}
+
+function updateSelectedAnimationKeyframe(patch: Partial<BodyAnimationKeyframe>): void {
+  const animation = getSelectedBodyAnimation();
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+
+  if (!selectedKeyframe) {
+    return;
+  }
+
+  updateAnimationKeyframeById(selectedKeyframe.id, patch);
+}
+
+function updateAnimationKeyframeById(
+  keyframeId: string,
+  patch: Partial<BodyAnimationKeyframe>,
+  debugPatch: Partial<ArenaDebugTuning> = {},
+): void {
+  const animation = getSelectedBodyAnimation();
+  const selectedKeyframe = getAnimationKeyframes(animation).find((keyframe) => keyframe.id === keyframeId);
+
+  if (!selectedKeyframe) {
+    return;
+  }
+
+  const nextKeyframe = {
+    ...selectedKeyframe,
+    ...patch,
+    id: selectedKeyframe.id,
+  };
+  const nextKeyframes = getAnimationKeyframes(animation)
+    .map((keyframe) => (keyframe.id === selectedKeyframe.id ? nextKeyframe : keyframe))
+    .sort(compareAnimationKeyframes);
+  const animationPatch: Partial<BodyAnimationTuning> = { keyframes: nextKeyframes };
+
+  if (selectedKeyframe.id === "pose-a") {
+    if (patch.rigParts) {
+      animationPatch.base = cloneRigParts(patch.rigParts);
+    }
+    if (patch.faceParts) {
+      animationPatch.faceBase = cloneFaceParts(patch.faceParts);
+    }
+  }
+
+  if (selectedKeyframe.id === "pose-b") {
+    if (patch.rigParts) {
+      animationPatch.breath = cloneRigParts(patch.rigParts);
+    }
+    if (patch.faceParts) {
+      animationPatch.faceBreath = cloneFaceParts(patch.faceParts);
+    }
+  }
+
+  updateSelectedBodyAnimation(animationPatch, debugPatch);
+}
+
+function getAnimationKeyframes(animation: BodyAnimationTuning): BodyAnimationKeyframe[] {
+  if (animation.keyframes && animation.keyframes.length > 0) {
+    return animation.keyframes.map(cloneBodyAnimationKeyframe).sort(compareAnimationKeyframes);
+  }
+
+  return [
+    {
+      id: "pose-a",
+      time: 0,
+      easing: "easeInOut",
+      rigParts: cloneRigParts(animation.base),
+      faceParts: cloneFaceParts(animation.faceBase),
+      rootOffset: { ...defaultBodyAnimationRootOffset },
+    },
+    {
+      id: "pose-b",
+      time: Math.max(1, animation.duration) / 2,
+      easing: "easeInOut",
+      rigParts: cloneRigParts(animation.breath),
+      faceParts: cloneFaceParts(animation.faceBreath),
+      rootOffset: { ...defaultBodyAnimationRootOffset },
+    },
+  ];
+}
+
+function getSelectedAnimationKeyframe(animation = getSelectedBodyAnimation()): BodyAnimationKeyframe | undefined {
+  const keyframes = getAnimationKeyframes(animation);
+
+  return keyframes.find((keyframe) => keyframe.id === debugTuning.selectedAnimationKeyframeId) ?? keyframes[0];
+}
+
+function getAnimationKeyframeIdAtRailPointer(rail: HTMLElement, event: MouseEvent): string | undefined {
+  const bounds = rail.getBoundingClientRect();
+
+  if (bounds.width <= 0) {
+    return undefined;
+  }
+
+  const progress = clampNumber((event.clientX - bounds.left) / bounds.width, 0, 1);
+
+  return findAnimationKeyframeAtProgress(getSelectedBodyAnimation(), progress, { preferCustom: true })?.id;
+}
+
+function findEditableAnimationKeyframeAtProgress(animation: BodyAnimationTuning, progress: number): BodyAnimationKeyframe | undefined {
+  return findAnimationKeyframeAtProgress(animation, progress, { deletableOnly: true, preferCustom: true });
+}
+
+function getAnimationWorkbenchEasingKeyframe(
+  animation: BodyAnimationTuning,
+  selectedKeyframe: BodyAnimationKeyframe | undefined,
+): BodyAnimationKeyframe | undefined {
+  if (selectedKeyframe && !isProtectedAnimationKeyframe(selectedKeyframe.id)) {
+    return selectedKeyframe;
+  }
+
+  return findEditableAnimationKeyframeAtProgress(animation, debugTuning.animationPreviewProgress);
+}
+
+function findAnimationKeyframeAtProgress(
+  animation: BodyAnimationTuning,
+  progress: number,
+  options: { deletableOnly?: boolean; preferCustom?: boolean } = {},
+): BodyAnimationKeyframe | undefined {
+  const duration = Math.max(1, animation.duration);
+  const targetTime = Math.round(clampNumber(progress, 0, 1) * duration);
+  const maxTimeDistance = Math.max(8, duration * 0.025);
+  const candidates = getAnimationKeyframes(animation)
+    .filter((keyframe) => !options.deletableOnly || !isProtectedAnimationKeyframe(keyframe.id))
+    .map((keyframe) => ({
+      keyframe,
+      distance: Math.abs(Math.round(keyframe.time) - targetTime),
+      customRank: options.preferCustom && !isProtectedAnimationKeyframe(keyframe.id) ? 0 : 1,
+    }))
+    .filter((candidate) => candidate.distance <= maxTimeDistance)
+    .sort((a, b) => a.distance - b.distance || a.customRank - b.customRank || a.keyframe.id.localeCompare(b.keyframe.id));
+
+  return candidates[0]?.keyframe;
+}
+
+function getAnimationPreviewPose(): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset"> | undefined {
+  return sampleAnimationKeyframePose(getSelectedBodyAnimation(), debugTuning.animationPreviewProgress);
+}
+
+function sampleAnimationKeyframePose(
+  animation: BodyAnimationTuning,
+  progress: number,
+): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset"> | undefined {
+  const keyframes = getAnimationKeyframes(animation);
+  const firstKeyframe = keyframes[0];
+  const duration = Math.max(1, animation.duration);
+
+  if (!firstKeyframe) {
+    return undefined;
+  }
+
+  const timelineTime = (((progress % 1) + 1) % 1) * duration;
+
+  for (let index = 0; index < keyframes.length - 1; index += 1) {
+    const from = keyframes[index];
+    const to = keyframes[index + 1];
+
+    if (!from || !to || timelineTime < from.time || timelineTime > to.time) {
+      continue;
+    }
+
+    return interpolateAnimationKeyframes(from, to, getAnimationKeyframeSegmentBlend(from, timelineTime - from.time, to.time - from.time));
+  }
+
+  const lastKeyframe = keyframes[keyframes.length - 1];
+
+  if (!lastKeyframe) {
+    return undefined;
+  }
+
+  const wrappedTimelineTime = timelineTime < firstKeyframe.time ? timelineTime + duration : timelineTime;
+  const wrappedDuration = firstKeyframe.time + duration - lastKeyframe.time;
+
+  return interpolateAnimationKeyframes(lastKeyframe, firstKeyframe, getAnimationKeyframeSegmentBlend(lastKeyframe, wrappedTimelineTime - lastKeyframe.time, wrappedDuration));
+}
+
+function getAnimationKeyframeSegmentBlend(keyframe: BodyAnimationKeyframe, elapsed: number, duration: number): number {
+  if (keyframe.easing === "hold") {
+    return 0;
+  }
+
+  const linearBlend = clampNumber(duration <= 0 ? 0 : elapsed / duration, 0, 1);
+
+  if (keyframe.easing === "linear") {
+    return linearBlend;
+  }
+
+  return 0.5 - Math.cos(linearBlend * Math.PI) * 0.5;
+}
+
+function interpolateAnimationKeyframes(
+  from: BodyAnimationKeyframe,
+  to: BodyAnimationKeyframe,
+  blend: number,
+): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset"> {
+  return {
+    rigParts: Object.fromEntries(
+      RIG_PART_KEYS.map((key) => [
+        key,
+        interpolateRigPartTuning(from.rigParts[key] ?? defaultRigPartTuning, to.rigParts[key] ?? defaultRigPartTuning, blend),
+      ]),
+    ) as Record<RigPartKey, RigPartTuning>,
+    faceParts: Object.fromEntries(
+      FACE_PART_KEYS.map((key) => [key, interpolateFacePartTuning(from.faceParts[key] ?? defaultFacePartTuning, to.faceParts[key] ?? defaultFacePartTuning, blend)]),
+    ) as Record<FacePartKey, FacePartTuning>,
+    rootOffset: interpolateBodyAnimationRootOffset(from.rootOffset ?? defaultBodyAnimationRootOffset, to.rootOffset ?? defaultBodyAnimationRootOffset, blend),
+  };
+}
+
+function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend: number): RigPartTuning {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+    angle: lerp(from.angle, to.angle, blend),
+    scaleX: lerp(from.scaleX, to.scaleX, blend),
+    scaleY: lerp(from.scaleY, to.scaleY, blend),
+    flipX: blend < 0.5 ? from.flipX : to.flipX,
+    flipY: blend < 0.5 ? from.flipY : to.flipY,
+  };
+}
+
+function interpolateFacePartTuning(from: FacePartTuning, to: FacePartTuning, blend: number): FacePartTuning {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+    scaleX: lerp(from.scaleX, to.scaleX, blend),
+    scaleY: lerp(from.scaleY, to.scaleY, blend),
+  };
+}
+
+function interpolateBodyAnimationRootOffset(from: BodyAnimationRootOffset, to: BodyAnimationRootOffset, blend: number): BodyAnimationRootOffset {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+  };
+}
+
+function cloneBodyAnimationKeyframe(keyframe: BodyAnimationKeyframe): BodyAnimationKeyframe {
+  return {
+    ...keyframe,
+    rigParts: cloneRigParts(keyframe.rigParts),
+    faceParts: cloneFaceParts(keyframe.faceParts),
+    rootOffset: cloneBodyAnimationRootOffset(keyframe.rootOffset),
+  };
+}
+
+function compareAnimationKeyframes(a: BodyAnimationKeyframe, b: BodyAnimationKeyframe): number {
+  return a.time - b.time || a.id.localeCompare(b.id);
+}
+
+function createUniqueAnimationKeyframeId(keyframes: readonly BodyAnimationKeyframe[], prefix: string): string {
+  const usedIds = new Set(keyframes.map((keyframe) => keyframe.id));
+  let id = sanitizeAnimationKeyframeId(prefix);
+  let suffix = 2;
+
+  while (usedIds.has(id)) {
+    id = `${sanitizeAnimationKeyframeId(prefix)}-${suffix}`;
+    suffix += 1;
+  }
+
+  return id;
+}
+
+function sanitizeAnimationKeyframeId(value: string): string {
+  const id = value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+
+  return id || "key";
+}
+
+function isProtectedAnimationKeyframe(keyframeId: string): boolean {
+  return keyframeId === "pose-a" || keyframeId === "pose-b";
 }
 
 function mountFaceAssetEditor(editor: HTMLElement): void {
@@ -2996,6 +4141,32 @@ function createAnimationPartToggle(partKey: RigPartKey): HTMLElement {
 
   input?.addEventListener("change", () => {
     updateAnimationActivePart(partKey, input.checked);
+  });
+
+  return row;
+}
+
+function createAnimationVariantWeaponToggle(weaponClass: BodyAnimationWeaponClass): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-animation-editor__weapon-toggle";
+  row.innerHTML = `
+    <input type="checkbox" data-animation-variant-weapon="${weaponClass}" />
+    <span>${weaponClass}</span>
+  `;
+
+  const input = row.querySelector<HTMLInputElement>("input");
+
+  input?.addEventListener("change", () => {
+    const animation = getSelectedBodyAnimation();
+    const weaponClasses = new Set(animation.weaponClasses ?? []);
+
+    if (input.checked) {
+      weaponClasses.add(weaponClass);
+    } else {
+      weaponClasses.delete(weaponClass);
+    }
+
+    updateSelectedBodyAnimationVariantMeta({ weaponClasses: [...weaponClasses] });
   });
 
   return row;
@@ -3575,6 +4746,17 @@ function updateHeroEquipment(nextEquipment: HeroEquipment): void {
 }
 
 function updateRigNumericTuning(key: RigNumericControlKey, value: number): void {
+  if (isRootCanvasMode()) {
+    if (key === "x" || key === "y") {
+      if (isRootPoseTransformMode()) {
+        updateSelectedPoseOffset({ [key]: clampRigNumericValue(key, value) });
+      } else {
+        updateSelectedRootOffset({ [key]: clampRigNumericValue(key, value) });
+      }
+    }
+    return;
+  }
+
   if (isBodyArtCanvasMode()) {
     updateBodyPartLayerTuning(debugTuning.selectedRigPart, { [key]: clampRigNumericValue(key, value) } as Partial<BodyPartLayerTuning>);
     return;
@@ -3584,6 +4766,10 @@ function updateRigNumericTuning(key: RigNumericControlKey, value: number): void 
 }
 
 function updateRigToggleTuning(key: RigToggleControlKey, value: boolean): void {
+  if (isRootCanvasMode()) {
+    return;
+  }
+
   if (isBodyArtCanvasMode()) {
     updateBodyPartLayerTuning(debugTuning.selectedRigPart, { [key]: value } as Partial<BodyPartLayerTuning>);
     return;
@@ -3593,6 +4779,15 @@ function updateRigToggleTuning(key: RigToggleControlKey, value: boolean): void {
 }
 
 function nudgeSelectedRigPart(action: RigNudgeAction): void {
+  if (isRootCanvasMode()) {
+    if (isRootPoseTransformMode()) {
+      nudgeSelectedPoseOffset(action);
+    } else {
+      nudgeSelectedRootOffset(action);
+    }
+    return;
+  }
+
   if (isBodyArtCanvasMode()) {
     nudgeSelectedBodyPartLayer(action);
     return;
@@ -3644,6 +4839,107 @@ function nudgeSelectedRigPart(action: RigNudgeAction): void {
     scaleX: clampRigNumericValue("scaleX", current.scaleX + scaleDelta),
     scaleY: clampRigNumericValue("scaleY", current.scaleY + scaleDelta),
   }));
+}
+
+function nudgeSelectedRootOffset(action: RigNudgeAction): void {
+  const step = activeNudgeStep;
+  const rootOffset = getEditableRootOffset();
+
+  if (!rootOffset) {
+    return;
+  }
+
+  if (action === "left") {
+    updateSelectedRootOffset({ x: clampRigNumericValue("x", rootOffset.x - step) });
+    return;
+  }
+
+  if (action === "right") {
+    updateSelectedRootOffset({ x: clampRigNumericValue("x", rootOffset.x + step) });
+    return;
+  }
+
+  if (action === "up") {
+    updateSelectedRootOffset({ y: clampRigNumericValue("y", rootOffset.y - step) });
+    return;
+  }
+
+  if (action === "down") {
+    updateSelectedRootOffset({ y: clampRigNumericValue("y", rootOffset.y + step) });
+  }
+}
+
+function updateSelectedRootOffset(patch: Partial<BodyAnimationRootOffset>): void {
+  const rootOffset = getEditableRootOffset();
+
+  if (!rootOffset) {
+    return;
+  }
+
+  updateEditableRootOffset({
+    x: clampRigNumericValue("x", patch.x ?? rootOffset.x),
+    y: clampRigNumericValue("y", patch.y ?? rootOffset.y),
+  });
+}
+
+function nudgeSelectedPoseOffset(action: RigNudgeAction): void {
+  const step = activeNudgeStep;
+  const currentOffset = getEditablePoseOffset();
+
+  if (!currentOffset) {
+    return;
+  }
+
+  if (action === "left") {
+    updateSelectedPoseOffset({ x: clampRigNumericValue("x", currentOffset.x - step) });
+    return;
+  }
+
+  if (action === "right") {
+    updateSelectedPoseOffset({ x: clampRigNumericValue("x", currentOffset.x + step) });
+    return;
+  }
+
+  if (action === "up") {
+    updateSelectedPoseOffset({ y: clampRigNumericValue("y", currentOffset.y - step) });
+    return;
+  }
+
+  if (action === "down") {
+    updateSelectedPoseOffset({ y: clampRigNumericValue("y", currentOffset.y + step) });
+  }
+}
+
+function updateSelectedPoseOffset(patch: Partial<Pick<RigPartTuning, "x" | "y">>): void {
+  const currentOffset = getEditablePoseOffset();
+
+  if (!currentOffset) {
+    return;
+  }
+
+  shiftEditableAnimationPose({
+    x: (patch.x ?? currentOffset.x) - currentOffset.x,
+    y: (patch.y ?? currentOffset.y) - currentOffset.y,
+  });
+}
+
+function getEditablePoseOffset(): Pick<RigPartTuning, "x" | "y"> | undefined {
+  return getEditableRigParts()?.torso;
+}
+
+function shiftEditableAnimationPose(delta: { x: number; y: number }): void {
+  if (Math.abs(delta.x) < 0.001 && Math.abs(delta.y) < 0.001) {
+    return;
+  }
+
+  const rigParts = getEditableRigParts();
+  const faceParts = getEditableFaceParts();
+
+  if (!rigParts || !faceParts) {
+    return;
+  }
+
+  updateEditableAnimationPoseParts(shiftRigParts(rigParts, delta), cloneFaceParts(faceParts));
 }
 
 function updateSelectedRigPart(getPatch: (current: RigPartTuning, partKey: RigPartKey) => Partial<RigPartTuning>): void {
@@ -3802,6 +5098,15 @@ function rotateRigLimb(limbKey: RigLimbKey, degrees: number): void {
 }
 
 function resetSelectedRigPart(): void {
+  if (isRootCanvasMode()) {
+    if (isRootPoseTransformMode()) {
+      updateSelectedPoseOffset({ x: 0, y: 0 });
+    } else {
+      updateEditableRootOffset({ ...defaultBodyAnimationRootOffset });
+    }
+    return;
+  }
+
   const neutralParts = getNeutralRigPartDefaults();
   const rigParts = getEditableRigParts();
 
@@ -3890,6 +5195,14 @@ function getNeutralBodyPartLayerDefaults(): Record<RigPartKey, BodyPartLayerTuni
 }
 
 function getEditableRigParts(): Record<RigPartKey, RigPartTuning> | undefined {
+  if (debugTuning.animationEditMode === "keyframe") {
+    return getSelectedAnimationKeyframe()?.rigParts;
+  }
+
+  if (debugTuning.animationEditMode === "preview") {
+    return getAnimationPreviewPose()?.rigParts;
+  }
+
   const poseKey = getActiveAnimationRigPoseKey();
 
   if (!poseKey) {
@@ -3904,6 +5217,14 @@ function getEditableBodyPartLayers(): Record<RigPartKey, BodyPartLayerTuning> {
 }
 
 function getEditableFaceParts(): Record<FacePartKey, FacePartTuning> | undefined {
+  if (debugTuning.animationEditMode === "keyframe") {
+    return getSelectedAnimationKeyframe()?.faceParts;
+  }
+
+  if (debugTuning.animationEditMode === "preview") {
+    return getAnimationPreviewPose()?.faceParts;
+  }
+
   const poseKey = getActiveAnimationFacePoseKey();
 
   if (!poseKey) {
@@ -3913,7 +5234,61 @@ function getEditableFaceParts(): Record<FacePartKey, FacePartTuning> | undefined
   return getSelectedBodyAnimation()[poseKey];
 }
 
+function getEditableRootOffset(): BodyAnimationRootOffset | undefined {
+  if (debugTuning.animationEditMode === "preview") {
+    return getAnimationPreviewPose()?.rootOffset;
+  }
+
+  const keyframe = getActiveAnimationRootKeyframe();
+
+  return keyframe?.rootOffset;
+}
+
+function getActiveAnimationRootKeyframe(): BodyAnimationKeyframe | undefined {
+  const animation = getSelectedBodyAnimation();
+  const keyframes = getAnimationKeyframes(animation);
+
+  if (debugTuning.animationEditMode === "poseA") {
+    return keyframes.find((keyframe) => keyframe.id === "pose-a");
+  }
+
+  if (debugTuning.animationEditMode === "poseB") {
+    return keyframes.find((keyframe) => keyframe.id === "pose-b");
+  }
+
+  if (debugTuning.animationEditMode === "keyframe") {
+    return getSelectedAnimationKeyframe(animation);
+  }
+
+  return undefined;
+}
+
+function updateEditableRootOffset(nextRootOffset: BodyAnimationRootOffset): void {
+  if (debugTuning.animationEditMode === "preview") {
+    updateAnimationPreviewKeyframe({ rootOffset: nextRootOffset });
+    return;
+  }
+
+  const keyframe = getActiveAnimationRootKeyframe();
+
+  if (!keyframe) {
+    return;
+  }
+
+  updateAnimationKeyframeById(keyframe.id, { rootOffset: nextRootOffset });
+}
+
 function updateEditableRigParts(nextRigParts: Record<RigPartKey, RigPartTuning>): void {
+  if (debugTuning.animationEditMode === "keyframe") {
+    updateSelectedAnimationKeyframe({ rigParts: nextRigParts });
+    return;
+  }
+
+  if (debugTuning.animationEditMode === "preview") {
+    updateAnimationPreviewKeyframe({ rigParts: nextRigParts });
+    return;
+  }
+
   const poseKey = getActiveAnimationRigPoseKey();
 
   if (!poseKey) {
@@ -3928,6 +5303,16 @@ function updateEditableBodyPartLayers(nextBodyPartLayers: Record<RigPartKey, Bod
 }
 
 function updateEditableFaceParts(nextFaceParts: Record<FacePartKey, FacePartTuning>): void {
+  if (debugTuning.animationEditMode === "keyframe") {
+    updateSelectedAnimationKeyframe({ faceParts: nextFaceParts });
+    return;
+  }
+
+  if (debugTuning.animationEditMode === "preview") {
+    updateAnimationPreviewKeyframe({ faceParts: nextFaceParts });
+    return;
+  }
+
   const poseKey = getActiveAnimationFacePoseKey();
 
   if (!poseKey) {
@@ -3935,6 +5320,49 @@ function updateEditableFaceParts(nextFaceParts: Record<FacePartKey, FacePartTuni
   }
 
   updateSelectedBodyAnimation({ [poseKey]: nextFaceParts } as Partial<BodyAnimationTuning>);
+}
+
+function updateEditableAnimationPoseParts(
+  nextRigParts: Record<RigPartKey, RigPartTuning>,
+  nextFaceParts: Record<FacePartKey, FacePartTuning>,
+): void {
+  if (debugTuning.animationEditMode === "keyframe") {
+    updateSelectedAnimationKeyframe({ rigParts: nextRigParts, faceParts: nextFaceParts });
+    return;
+  }
+
+  if (debugTuning.animationEditMode === "preview") {
+    updateAnimationPreviewKeyframe({ rigParts: nextRigParts, faceParts: nextFaceParts });
+    return;
+  }
+
+  const rigPoseKey = getActiveAnimationRigPoseKey();
+  const facePoseKey = getActiveAnimationFacePoseKey();
+
+  if (!rigPoseKey || !facePoseKey) {
+    return;
+  }
+
+  updateSelectedBodyAnimation({
+    [rigPoseKey]: nextRigParts,
+    [facePoseKey]: nextFaceParts,
+  } as Partial<BodyAnimationTuning>);
+}
+
+function createRootRigTuning(rootOffset: BodyAnimationRootOffset | undefined): RigPartTuning {
+  return {
+    ...defaultRigPartTuning,
+    x: rootOffset?.x ?? defaultBodyAnimationRootOffset.x,
+    y: rootOffset?.y ?? defaultBodyAnimationRootOffset.y,
+  };
+}
+
+function createPoseOffsetRigTuning(poseOffset: Pick<RigPartTuning, "x" | "y"> | undefined): RigPartTuning {
+  return {
+    ...defaultRigPartTuning,
+    x: poseOffset?.x ?? defaultRigPartTuning.x,
+    y: poseOffset?.y ?? defaultRigPartTuning.y,
+  };
 }
 
 function getActiveAnimationRigPoseKey(): AnimationRigPoseKey | undefined {
@@ -3992,6 +5420,18 @@ function isCharacterCanvasEditMode(value: string | undefined): value is Characte
 
 function isBodyArtCanvasMode(): boolean {
   return debugTuning.characterCanvasEditMode === "bodyArt";
+}
+
+function isRootCanvasMode(): boolean {
+  return debugTuning.characterCanvasEditMode === "root";
+}
+
+function isRootPoseTransformMode(): boolean {
+  return debugTuning.animationRootTransformMode === "poseOffset";
+}
+
+function isAnimationRootTransformMode(value: string | undefined): value is AnimationRootTransformMode {
+  return typeof value === "string" && ANIMATION_ROOT_TRANSFORM_MODES.includes(value as AnimationRootTransformMode);
 }
 
 function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey {
@@ -4410,6 +5850,10 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function lerp(from: number, to: number, blend: number): number {
+  return from + (to - from) * blend;
+}
+
 function updateAnimationActivePart(partKey: RigPartKey, enabled: boolean): void {
   const animation = getSelectedBodyAnimation();
 
@@ -4423,10 +5867,12 @@ function updateAnimationActivePart(partKey: RigPartKey, enabled: boolean): void 
 
 function copyAnimationPoseAToB(): void {
   const animation = getSelectedBodyAnimation();
+  const poseA = getAnimationKeyframes(animation).find((keyframe) => keyframe.id === "pose-a");
 
-  updateSelectedBodyAnimation({
-    breath: cloneRigParts(animation.base),
-    faceBreath: cloneFaceParts(animation.faceBase),
+  updateAnimationKeyframeById("pose-b", {
+    rigParts: cloneRigParts(poseA?.rigParts ?? animation.base),
+    faceParts: cloneFaceParts(poseA?.faceParts ?? animation.faceBase),
+    rootOffset: cloneBodyAnimationRootOffset(poseA?.rootOffset),
   });
 }
 
@@ -4458,6 +5904,23 @@ function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<Fac
   return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...source[key] }])) as Record<FacePartKey, FacePartTuning>;
 }
 
+function cloneBodyAnimationRootOffset(source: BodyAnimationRootOffset | undefined): BodyAnimationRootOffset {
+  return { ...(source ?? defaultBodyAnimationRootOffset) };
+}
+
+function shiftRigParts(source: Record<RigPartKey, RigPartTuning>, delta: { x: number; y: number }): Record<RigPartKey, RigPartTuning> {
+  return Object.fromEntries(
+    RIG_PART_KEYS.map((key) => [
+      key,
+      {
+        ...source[key],
+        x: clampRigNumericValue("x", (source[key]?.x ?? defaultRigPartTuning.x) + delta.x),
+        y: clampRigNumericValue("y", (source[key]?.y ?? defaultRigPartTuning.y) + delta.y),
+      },
+    ]),
+  ) as Record<RigPartKey, RigPartTuning>;
+}
+
 function cloneBodyAnimations(source: Record<BodyAnimationKey, BodyAnimationTuning>): Record<BodyAnimationKey, BodyAnimationTuning> {
   return Object.fromEntries(BODY_ANIMATION_KEYS.map((key) => [key, cloneBodyAnimation(source[key])])) as Record<
     BodyAnimationKey,
@@ -4473,6 +5936,18 @@ function cloneBodyAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
     faceBase: cloneFaceParts(source.faceBase),
     faceBreath: cloneFaceParts(source.faceBreath),
     activeParts: { ...source.activeParts },
+    weaponClasses: [...(source.weaponClasses ?? [])],
+    variants: source.variants?.map((variant) => ({
+      ...cloneBodyAnimation(variant),
+      variants: [],
+      selectedVariantId: undefined,
+    })),
+    keyframes: source.keyframes?.map((keyframe) => ({
+      ...keyframe,
+      rigParts: cloneRigParts(keyframe.rigParts),
+      faceParts: cloneFaceParts(keyframe.faceParts),
+      rootOffset: cloneBodyAnimationRootOffset(keyframe.rootOffset),
+    })),
   };
 }
 
@@ -4495,25 +5970,227 @@ function updateActiveBodyPresetTuning(patch: Partial<BodyPresetTuning>): void {
   });
 }
 
-function updateSelectedBodyAnimation(patch: Partial<BodyAnimationTuning>): void {
+function updateSelectedBodyAnimation(patch: Partial<BodyAnimationTuning>, debugPatch: Partial<ArenaDebugTuning> = {}): void {
   const key = debugTuning.selectedBodyAnimation;
-  const animation = getSelectedBodyAnimation();
+  const selectedVariantId = debugTuning.selectedBodyAnimationVariantId;
+  const presetKey = debugTuning.paperDollBodyPreset;
+  const current = getActiveBodyPresetTuning();
+  const slot = current.bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
+  const nextAnimation =
+    selectedVariantId === BODY_ANIMATION_DEFAULT_VARIANT_ID
+      ? applyBodyAnimationPatch(slot, patch)
+      : {
+          ...slot,
+          variants: (slot.variants ?? []).map((variant) =>
+            variant.variantId === selectedVariantId
+              ? applyBodyAnimationPatch(variant, {
+                  ...patch,
+                  variantId: variant.variantId,
+                })
+              : variant,
+          ),
+        };
 
-  updateActiveBodyPresetTuning({
-    bodyAnimations: {
-      ...getActiveBodyPresetTuning().bodyAnimations,
-      [key]: {
-        ...animation,
-        ...patch,
+  updateDebugTuning({
+    ...debugPatch,
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      [presetKey]: {
+        ...current,
+        bodyAnimations: {
+          ...current.bodyAnimations,
+          [key]: nextAnimation,
+        },
       },
     },
   });
 }
 
+function applyBodyAnimationPatch(source: BodyAnimationTuning, patch: Partial<BodyAnimationTuning>): BodyAnimationTuning {
+  const nextPatch = { ...patch };
+
+  if (typeof patch.duration === "number" && Number.isFinite(patch.duration) && patch.keyframes === undefined) {
+    const nextDuration = clampNumber(patch.duration, 240, 2400);
+
+    nextPatch.duration = nextDuration;
+    nextPatch.keyframes = scaleBodyAnimationKeyframeTimes(source.keyframes, source.duration, nextDuration);
+  }
+
+  return {
+    ...source,
+    ...nextPatch,
+  };
+}
+
+function scaleBodyAnimationKeyframeTimes(
+  keyframes: readonly BodyAnimationKeyframe[] | undefined,
+  oldDuration: number,
+  newDuration: number,
+): BodyAnimationKeyframe[] | undefined {
+  if (!keyframes || keyframes.length === 0 || oldDuration <= 0 || oldDuration === newDuration) {
+    return keyframes ? [...keyframes] : undefined;
+  }
+
+  const scale = newDuration / oldDuration;
+
+  return keyframes.map((keyframe) => ({
+    ...keyframe,
+    time: keyframe.id === "pose-a" ? 0 : clampNumber(keyframe.time * scale, 0, newDuration),
+  }));
+}
+
 function getSelectedBodyAnimation(): BodyAnimationTuning {
+  return getBodyAnimationVariant(getSelectedBodyAnimationSlot(), debugTuning.selectedBodyAnimationVariantId);
+}
+
+function getSelectedBodyAnimationSlot(): BodyAnimationTuning {
   const animations = getActiveBodyPresetTuning().bodyAnimations;
 
   return animations[debugTuning.selectedBodyAnimation] ?? animations.idle;
+}
+
+function getBodyAnimationVariant(slot: BodyAnimationTuning, variantId: string): BodyAnimationTuning {
+  if (variantId === BODY_ANIMATION_DEFAULT_VARIANT_ID) {
+    return slot;
+  }
+
+  return slot.variants?.find((variant) => variant.variantId === variantId) ?? slot;
+}
+
+function getBodyAnimationVariantOptions(slot: BodyAnimationTuning): BodyAnimationTuning[] {
+  return [
+    {
+      ...slot,
+      variantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
+      variantLabel: slot.variantLabel ?? BODY_ANIMATION_DEFAULT_VARIANT_ID,
+      variantWeight: slot.variantWeight ?? 1,
+      appliesToAllWeapons: slot.appliesToAllWeapons ?? true,
+      weaponClasses: slot.weaponClasses ?? [],
+      variants: [],
+    },
+    ...(slot.variants ?? []),
+  ];
+}
+
+function selectBodyAnimationVariant(variantId: string): void {
+  const slot = getSelectedBodyAnimationSlot();
+  const normalizedVariantId = getBodyAnimationVariantOptions(slot).some((variant) => variant.variantId === variantId)
+    ? variantId
+    : BODY_ANIMATION_DEFAULT_VARIANT_ID;
+  const animation = getBodyAnimationVariant(slot, normalizedVariantId);
+
+  updateDebugTuning(
+    {
+      selectedBodyAnimationVariantId: normalizedVariantId,
+      selectedAnimationKeyframeId: normalizeAnimationKeyframeSelection(animation, debugTuning.selectedAnimationKeyframeId),
+      animationEditMode: "keyframe",
+    },
+    { undoable: false },
+  );
+}
+
+function createBodyAnimationVariant(): void {
+  const slot = getSelectedBodyAnimationSlot();
+  const source = getBodyAnimationVariant(slot, debugTuning.selectedBodyAnimationVariantId);
+  const variantId = createUniqueBodyAnimationVariantId(slot, `${debugTuning.selectedBodyAnimation}${(slot.variants?.length ?? 0) + 2}`);
+  const variant = createBodyAnimationVariantFromSource(source, variantId);
+
+  updateBodyAnimationSlot({
+    ...slot,
+    selectedVariantId: variantId,
+    variants: [...(slot.variants ?? []), variant],
+  }, {
+    selectedBodyAnimationVariantId: variantId,
+    selectedAnimationKeyframeId: normalizeAnimationKeyframeSelection(variant, debugTuning.selectedAnimationKeyframeId),
+    animationEditMode: "keyframe",
+  });
+}
+
+function duplicateSelectedBodyAnimationVariant(): void {
+  createBodyAnimationVariant();
+}
+
+function deleteSelectedBodyAnimationVariant(): void {
+  const selectedVariantId = debugTuning.selectedBodyAnimationVariantId;
+
+  if (selectedVariantId === BODY_ANIMATION_DEFAULT_VARIANT_ID) {
+    return;
+  }
+
+  const slot = getSelectedBodyAnimationSlot();
+
+  updateBodyAnimationSlot({
+    ...slot,
+    selectedVariantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
+    variants: (slot.variants ?? []).filter((variant) => variant.variantId !== selectedVariantId),
+  }, {
+    selectedBodyAnimationVariantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
+    selectedAnimationKeyframeId: normalizeAnimationKeyframeSelection(slot, debugTuning.selectedAnimationKeyframeId),
+    animationEditMode: "keyframe",
+  });
+}
+
+function updateSelectedBodyAnimationVariantMeta(patch: Pick<
+  Partial<BodyAnimationTuning>,
+  "variantWeight" | "appliesToAllWeapons" | "weaponClasses"
+>): void {
+  updateSelectedBodyAnimation(patch);
+}
+
+function updateBodyAnimationSlot(slot: BodyAnimationTuning, debugPatch: Partial<ArenaDebugTuning>): void {
+  const key = debugTuning.selectedBodyAnimation;
+  const presetKey = debugTuning.paperDollBodyPreset;
+  const current = getActiveBodyPresetTuning();
+
+  updateDebugTuning({
+    ...debugPatch,
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      [presetKey]: {
+        ...current,
+        bodyAnimations: {
+          ...current.bodyAnimations,
+          [key]: slot,
+        },
+      },
+    },
+  });
+}
+
+function createBodyAnimationVariantFromSource(source: BodyAnimationTuning, variantId: string): BodyAnimationTuning {
+  return {
+    ...cloneBodyAnimation(source),
+    variantId,
+    variantLabel: variantId,
+    variantWeight: source.variantWeight ?? 1,
+    appliesToAllWeapons: source.appliesToAllWeapons ?? true,
+    weaponClasses: [...(source.weaponClasses ?? [])],
+    selectedVariantId: undefined,
+    variants: [],
+  };
+}
+
+function createUniqueBodyAnimationVariantId(slot: BodyAnimationTuning, prefix: string): string {
+  const usedIds = new Set(getBodyAnimationVariantOptions(slot).map((variant) => variant.variantId ?? BODY_ANIMATION_DEFAULT_VARIANT_ID));
+  let candidate = sanitizeBodyAnimationVariantId(prefix);
+  let suffix = 2;
+
+  while (usedIds.has(candidate)) {
+    candidate = `${sanitizeBodyAnimationVariantId(prefix)}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+function sanitizeBodyAnimationVariantId(value: string): string {
+  return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 48) || "variant";
+}
+
+function normalizeAnimationKeyframeSelection(animation: BodyAnimationTuning, requestedId: string): string {
+  const keyframes = animation.keyframes ?? [];
+
+  return keyframes.some((keyframe) => keyframe.id === requestedId) ? requestedId : keyframes[0]?.id ?? "pose-a";
 }
 
 function createAnimationActiveParts(enabled: boolean): Record<RigPartKey, boolean> {
@@ -6776,11 +8453,13 @@ function syncModeTabs(panel: HTMLElement): void {
     ? "arena"
     : document.body.classList.contains("debug-mode-hud")
       ? "hud"
-      : document.body.classList.contains("debug-mode-city")
-        ? "city"
-        : document.body.classList.contains("debug-mode-effects")
-          ? "effects"
-          : "character";
+      : document.body.classList.contains("debug-mode-animation")
+        ? "animation"
+        : document.body.classList.contains("debug-mode-city")
+          ? "city"
+          : document.body.classList.contains("debug-mode-effects")
+            ? "effects"
+            : "character";
 
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.debugMode === mode}`);
@@ -6846,14 +8525,25 @@ function syncClassicActionButtonEditor(panel: HTMLElement): void {
 
 function syncRigEditor(panel: HTMLElement): void {
   const select = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__select");
+  const workbenchSelect = document.querySelector<HTMLSelectElement>("[data-animation-workbench-part-select]");
+  const rootTransformMode = document.querySelector<HTMLElement>("[data-animation-workbench-root-transform-mode]");
   const copyOpposite = panel.querySelector<HTMLButtonElement>(".debug-rig-editor__copy-opposite");
   const reset = panel.querySelector<HTMLButtonElement>(".debug-rig-editor__reset");
+  const workbenchReset = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-part]");
   const selectedPart = debugTuning.selectedRigPart;
+  const isRootMode = isRootCanvasMode();
   const isBodyArtMode = isBodyArtCanvasMode();
   const rigParts = getEditableRigParts();
   const bodyPartLayers = getEditableBodyPartLayers();
-  const isEditable = isBodyArtMode || Boolean(rigParts);
-  const selectedTuning = isBodyArtMode
+  const rootOffset = getEditableRootOffset();
+  const poseOffset = getEditablePoseOffset();
+  const isRootPoseMode = isRootMode && isRootPoseTransformMode();
+  const isEditable = isRootMode ? (isRootPoseMode ? Boolean(poseOffset) : Boolean(rootOffset)) : isBodyArtMode || Boolean(rigParts);
+  const selectedTuning = isRootMode
+    ? isRootPoseMode
+      ? createPoseOffsetRigTuning(poseOffset)
+      : createRootRigTuning(rootOffset)
+    : isBodyArtMode
     ? bodyPartLayers[selectedPart]
     : (rigParts ?? getActiveBodyPresetTuning().rigParts)[selectedPart];
 
@@ -6863,42 +8553,57 @@ function syncRigEditor(panel: HTMLElement): void {
 
   select.value = selectedPart;
 
+  if (workbenchSelect) {
+    workbenchSelect.value = isRootMode ? ANIMATION_WORKBENCH_ROOT_SELECT_VALUE : selectedPart;
+  }
+
   if (reset) {
     reset.disabled = !isEditable;
-    reset.textContent = isBodyArtMode ? "Reset art" : "Reset selected";
+    reset.textContent = isRootMode ? (isRootPoseMode ? "Reset pose XY" : "Reset root") : isBodyArtMode ? "Reset art" : "Reset selected";
+  }
+
+  if (workbenchReset) {
+    workbenchReset.disabled = !isEditable;
+  }
+
+  if (rootTransformMode) {
+    rootTransformMode.hidden = !isRootMode;
+    rootTransformMode.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-root-transform-mode-option]").forEach((button) => {
+      button.setAttribute("aria-pressed", `${button.dataset.animationWorkbenchRootTransformModeOption === debugTuning.animationRootTransformMode}`);
+    });
   }
 
   if (copyOpposite) {
     const oppositePart = oppositeRigPartMap[selectedPart];
 
-    copyOpposite.disabled = !oppositePart || !isEditable;
-    copyOpposite.textContent = oppositePart ? `Copy ${oppositePart}` : "No opposite";
+    copyOpposite.disabled = isRootMode || !oppositePart || !isEditable;
+    copyOpposite.textContent = isRootMode ? "No opposite" : oppositePart ? `Copy ${oppositePart}` : "No opposite";
   }
 
   panel.querySelectorAll<HTMLButtonElement>("button[data-character-canvas-edit-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.characterCanvasEditMode === debugTuning.characterCanvasEditMode}`);
   });
 
-  panel.querySelectorAll<HTMLInputElement>("input[data-rig-key]").forEach((input) => {
+  document.querySelectorAll<HTMLInputElement>("input[data-rig-key]").forEach((input) => {
     const key = input.dataset.rigKey as RigNumericControlKey;
 
     input.value = `${selectedTuning[key]}`;
-    input.disabled = !isEditable;
+    input.disabled = !isEditable || (isRootMode && key !== "x" && key !== "y");
   });
 
-  panel.querySelectorAll<HTMLInputElement>("input[data-rig-number-key]").forEach((input) => {
+  document.querySelectorAll<HTMLInputElement>("input[data-rig-number-key]").forEach((input) => {
     const key = input.dataset.rigNumberKey as RigNumericControlKey;
     const value = selectedTuning[key];
 
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
-    input.disabled = !isEditable;
+    input.disabled = !isEditable || (isRootMode && key !== "x" && key !== "y");
   });
 
-  panel.querySelectorAll<HTMLInputElement>("input[data-rig-toggle-key]").forEach((input) => {
+  document.querySelectorAll<HTMLInputElement>("input[data-rig-toggle-key]").forEach((input) => {
     const key = input.dataset.rigToggleKey as RigToggleControlKey;
 
     input.checked = selectedTuning[key];
-    input.disabled = !isEditable;
+    input.disabled = !isEditable || isRootMode;
   });
 }
 
@@ -7084,17 +8789,94 @@ function syncEffectsEditor(panel: HTMLElement): void {
 
 function syncAnimationEditor(panel: HTMLElement): void {
   const animation = getSelectedBodyAnimation();
+  const animationSlot = getSelectedBodyAnimationSlot();
   const animationSelect = panel.querySelector<HTMLSelectElement>(".debug-rig-editor__animation-select");
+  const workbenchAnimationSelect = document.querySelector<HTMLSelectElement>("[data-animation-workbench-select]");
+  const workbenchVariantSelect = document.querySelector<HTMLSelectElement>("[data-animation-workbench-variant-select]");
+  const newVariant = document.querySelector<HTMLButtonElement>("[data-animation-workbench-variant-new]");
+  const duplicateVariant = document.querySelector<HTMLButtonElement>("[data-animation-workbench-variant-duplicate]");
+  const deleteVariant = document.querySelector<HTMLButtonElement>("[data-animation-workbench-variant-delete]");
+  const variantWeight = document.querySelector<HTMLInputElement>("[data-animation-workbench-variant-weight]");
+  const variantAllWeapons = document.querySelector<HTMLInputElement>("[data-animation-workbench-variant-all-weapons]");
   const enabled = panel.querySelector<HTMLInputElement>("input[data-animation-enabled]");
+  const workbenchEnabled = document.querySelector<HTMLInputElement>("[data-animation-workbench-enabled]");
   const duration = panel.querySelector<HTMLInputElement>("input[data-animation-duration]");
   const durationNumber = panel.querySelector<HTMLInputElement>("input[data-animation-duration-number]");
+  const workbenchDuration = document.querySelector<HTMLInputElement>("[data-animation-workbench-duration]");
+  const workbenchProgress = document.querySelector<HTMLInputElement>("[data-animation-workbench-progress]");
+  const workbenchTime = document.querySelector<HTMLOutputElement>("[data-animation-workbench-time]");
+  const workbenchPlay = document.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
+  const workbenchKeyframes = document.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
+  const workbenchSelectedKey = document.querySelector<HTMLOutputElement>("[data-animation-workbench-selected-key]");
+  const workbenchEasing = document.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
+  const resetPose = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-pose]");
+  const applyPoseButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-apply-to-pose]")];
+  const setStartKeyframe = document.querySelector<HTMLButtonElement>("[data-animation-workbench-set-start]");
+  const setImpactKeyframe = document.querySelector<HTMLButtonElement>("[data-animation-workbench-set-impact]");
+  const deleteKeyframe = document.querySelector<HTMLButtonElement>("[data-animation-workbench-delete-keyframe]");
 
   if (animationSelect) {
     animationSelect.value = debugTuning.selectedBodyAnimation;
   }
 
+  if (workbenchAnimationSelect) {
+    workbenchAnimationSelect.value = debugTuning.selectedBodyAnimation;
+  }
+
+  if (workbenchVariantSelect) {
+    const options = getBodyAnimationVariantOptions(animationSlot);
+    const selectedVariantId = options.some((variant) => variant.variantId === debugTuning.selectedBodyAnimationVariantId)
+      ? debugTuning.selectedBodyAnimationVariantId
+      : BODY_ANIMATION_DEFAULT_VARIANT_ID;
+
+    workbenchVariantSelect.replaceChildren(
+      ...options.map((variant) => {
+        const option = document.createElement("option");
+        const variantId = variant.variantId ?? BODY_ANIMATION_DEFAULT_VARIANT_ID;
+
+        option.value = variantId;
+        option.textContent = variant.variantLabel ?? variantId;
+
+        return option;
+      }),
+    );
+    workbenchVariantSelect.value = selectedVariantId;
+  }
+
+  if (newVariant) {
+    newVariant.disabled = false;
+  }
+
+  if (duplicateVariant) {
+    duplicateVariant.disabled = false;
+  }
+
+  if (deleteVariant) {
+    deleteVariant.disabled = debugTuning.selectedBodyAnimationVariantId === BODY_ANIMATION_DEFAULT_VARIANT_ID;
+  }
+
+  if (variantWeight) {
+    variantWeight.value = `${animation.variantWeight ?? 1}`;
+  }
+
+  if (variantAllWeapons) {
+    variantAllWeapons.checked = animation.appliesToAllWeapons ?? true;
+  }
+
+  document.querySelectorAll<HTMLInputElement>("input[data-animation-variant-weapon]").forEach((input) => {
+    const weaponClass = input.dataset.animationVariantWeapon as BodyAnimationWeaponClass;
+    const allWeapons = animation.appliesToAllWeapons ?? true;
+
+    input.checked = (animation.weaponClasses ?? []).includes(weaponClass);
+    input.disabled = allWeapons;
+  });
+
   if (enabled) {
     enabled.checked = animation.enabled;
+  }
+
+  if (workbenchEnabled) {
+    workbenchEnabled.checked = animation.enabled;
   }
 
   if (duration) {
@@ -7105,15 +8887,188 @@ function syncAnimationEditor(panel: HTMLElement): void {
     durationNumber.value = `${animation.duration}`;
   }
 
+  if (workbenchDuration) {
+    workbenchDuration.value = `${animation.duration}`;
+  }
+
+  if (workbenchProgress) {
+    workbenchProgress.value = `${Math.round(debugTuning.animationPreviewProgress * 1000)}`;
+  }
+
+  if (workbenchTime) {
+    const playheadMs = Math.round(debugTuning.animationPreviewProgress * animation.duration);
+
+    workbenchTime.value = `${playheadMs} ms / ${animation.duration} ms`;
+  }
+
+  if (workbenchPlay) {
+    const isPlaying = animationWorkbenchPlaybackFrame !== undefined;
+
+    workbenchPlay.textContent = isPlaying ? "Pause" : "Play";
+    workbenchPlay.setAttribute("aria-pressed", `${isPlaying}`);
+  }
+
+  syncAnimationWorkbenchKeyframes(
+    animation,
+    workbenchKeyframes,
+    workbenchSelectedKey,
+    workbenchEasing,
+    resetPose,
+    applyPoseButtons,
+    setStartKeyframe,
+    setImpactKeyframe,
+    deleteKeyframe,
+  );
+
   document.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.animationEditMode === debugTuning.animationEditMode}`);
   });
 
-  panel.querySelectorAll<HTMLInputElement>("input[data-animation-part-key]").forEach((input) => {
+  document.querySelectorAll<HTMLInputElement>("input[data-animation-part-key]").forEach((input) => {
     const partKey = input.dataset.animationPartKey as RigPartKey;
 
     input.checked = animation.activeParts[partKey];
   });
+}
+
+function syncAnimationWorkbenchKeyframes(
+  animation: BodyAnimationTuning,
+  keyframesRail: HTMLElement | null,
+  selectedKeyOutput: HTMLOutputElement | null,
+  easing: HTMLSelectElement | null,
+  resetPose: HTMLButtonElement | null,
+  applyPoseButtons: HTMLButtonElement[],
+  setStartKeyframe: HTMLButtonElement | null,
+  setImpactKeyframe: HTMLButtonElement | null,
+  deleteKeyframe: HTMLButtonElement | null,
+): void {
+  const keyframes = getAnimationKeyframes(animation);
+  const selectedKeyframe = getSelectedAnimationKeyframe(animation);
+  const startKeyframe = getAnimationStartKeyframe(animation);
+  const impactKeyframe = getAnimationImpactKeyframe(animation);
+  const duration = Math.max(1, animation.duration);
+
+  if (keyframesRail) {
+    const startMarker = document.createElement("span");
+    const impactMarker = document.createElement("span");
+    const startProgress = startKeyframe ? clampNumber(startKeyframe.time / duration, 0, 1) : undefined;
+    const impactProgress = impactKeyframe ? clampNumber(impactKeyframe.time / duration, 0, 1) : undefined;
+
+    startMarker.className = "debug-animation-editor__start-marker";
+    startMarker.style.left = `${(startProgress ?? 0) * 100}%`;
+    startMarker.title = startKeyframe
+      ? `Move start ${formatAnimationKeyframeLabel(startKeyframe)} ${Math.round(startKeyframe.time)} ms`
+      : "Move start not set";
+    startMarker.setAttribute("aria-hidden", "true");
+    startMarker.hidden = !startKeyframe;
+
+    impactMarker.className = "debug-animation-editor__impact-marker";
+    impactMarker.style.left = `${(impactProgress ?? 0) * 100}%`;
+    impactMarker.title = impactKeyframe
+      ? `Impact ${formatAnimationKeyframeLabel(impactKeyframe)} ${Math.round(impactKeyframe.time)} ms`
+      : "Impact not set";
+    impactMarker.setAttribute("aria-hidden", "true");
+    impactMarker.hidden = !impactKeyframe;
+
+    keyframesRail.replaceChildren(
+      startMarker,
+      impactMarker,
+      ...keyframes.map((keyframe) => {
+        const button = document.createElement("button");
+        const progress = clampNumber(keyframe.time / duration, 0, 1);
+        const isStartKeyframe = keyframe.id === startKeyframe?.id;
+        const isImpactKeyframe = keyframe.id === impactKeyframe?.id;
+
+        button.type = "button";
+        button.className = `debug-animation-editor__keyframe${
+          isProtectedAnimationKeyframe(keyframe.id) ? " debug-animation-editor__keyframe--anchor" : " debug-animation-editor__keyframe--custom"
+        }${isStartKeyframe ? " debug-animation-editor__keyframe--start" : ""}${isImpactKeyframe ? " debug-animation-editor__keyframe--impact" : ""}`;
+        button.dataset.animationKeyframeId = keyframe.id;
+        button.style.left = `${progress * 100}%`;
+        button.textContent = keyframe.id === "pose-a" ? "A" : keyframe.id === "pose-b" ? "B" : isImpactKeyframe ? "!" : isStartKeyframe ? "S" : "";
+        button.title = `${keyframe.id} ${Math.round(progress * 100)}%${isStartKeyframe ? " move start" : ""}${isImpactKeyframe ? " impact" : ""}`;
+        button.setAttribute("aria-label", button.title);
+        button.setAttribute("aria-pressed", `${keyframe.id === selectedKeyframe?.id}`);
+
+        return button;
+      }),
+    );
+  }
+
+  if (selectedKeyOutput) {
+    const startText = startKeyframe ? ` | Move start: ${formatAnimationKeyframeLabel(startKeyframe)} ${Math.round(startKeyframe.time)} ms` : " | Move start: unset";
+    const impactText = impactKeyframe ? ` | Impact: ${formatAnimationKeyframeLabel(impactKeyframe)} ${Math.round(impactKeyframe.time)} ms` : " | Impact: unset";
+
+    selectedKeyOutput.value = selectedKeyframe
+      ? `Selected: ${formatAnimationKeyframeLabel(selectedKeyframe)} | ${Math.round(selectedKeyframe.time)} ms | ${selectedKeyframe.easing}${startText}${impactText}`
+      : `Selected: none${startText}${impactText}`;
+  }
+
+  if (easing) {
+    const easingKeyframe = getAnimationWorkbenchEasingKeyframe(animation, selectedKeyframe);
+
+    easing.value = easingKeyframe?.easing ?? selectedKeyframe?.easing ?? "easeInOut";
+    easing.disabled = !easingKeyframe;
+  }
+
+  if (resetPose) {
+    const poseId = getResettableAnimationPoseId();
+
+    resetPose.disabled = !poseId;
+    resetPose.textContent = poseId === "pose-a" ? "Reset Pose A" : poseId === "pose-b" ? "Reset Pose B" : "Reset Pose";
+  }
+
+  applyPoseButtons.forEach((button) => {
+    const targetPoseId = button.dataset.animationWorkbenchApplyToPose;
+    const isTargetPose = targetPoseId === "pose-a" || targetPoseId === "pose-b";
+
+    button.disabled = !selectedKeyframe || debugTuning.animationEditMode === "preview" || !isTargetPose || selectedKeyframe.id === targetPoseId;
+  });
+
+  if (setStartKeyframe) {
+    setStartKeyframe.disabled = !selectedKeyframe || debugTuning.animationEditMode === "preview" || selectedKeyframe.id === startKeyframe?.id;
+  }
+
+  if (setImpactKeyframe) {
+    setImpactKeyframe.disabled = !selectedKeyframe || debugTuning.animationEditMode === "preview" || selectedKeyframe.id === impactKeyframe?.id;
+  }
+
+  if (deleteKeyframe) {
+    deleteKeyframe.disabled = (!selectedKeyframe || isProtectedAnimationKeyframe(selectedKeyframe.id))
+      && !findEditableAnimationKeyframeAtProgress(animation, debugTuning.animationPreviewProgress);
+  }
+}
+
+function getAnimationImpactKeyframe(animation: BodyAnimationTuning): BodyAnimationKeyframe | undefined {
+  const impactKeyframeId = animation.impactKeyframeId;
+
+  if (!impactKeyframeId) {
+    return undefined;
+  }
+
+  return getAnimationKeyframes(animation).find((keyframe) => keyframe.id === impactKeyframeId);
+}
+
+function getAnimationStartKeyframe(animation: BodyAnimationTuning): BodyAnimationKeyframe | undefined {
+  const startKeyframeId = animation.movementStartKeyframeId;
+
+  if (!startKeyframeId) {
+    return undefined;
+  }
+
+  return getAnimationKeyframes(animation).find((keyframe) => keyframe.id === startKeyframeId);
+}
+
+function formatAnimationKeyframeLabel(keyframe: BodyAnimationKeyframe): string {
+  if (keyframe.id === "pose-a") {
+    return "Pose A";
+  }
+
+  if (keyframe.id === "pose-b") {
+    return "Pose B";
+  }
+
+  return keyframe.id;
 }
 
 function syncNudgeControls(): void {

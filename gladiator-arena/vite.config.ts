@@ -465,6 +465,12 @@ const equipmentSetImportTargetConfigs: readonly EquipmentSetImportTargetConfig[]
 
 const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
+const bodyAnimationDefaultVariantId = "default";
+const bodyAnimationWeaponClasses = ["sword", "axe", "bow", "mace", "spear", "shuriken"] as const;
+type BodyAnimationWeaponClass = (typeof bodyAnimationWeaponClasses)[number];
+
+const bodyAnimationKeyframeEasings = ["linear", "easeInOut", "hold"] as const;
+type BodyAnimationKeyframeEasing = (typeof bodyAnimationKeyframeEasings)[number];
 
 const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
 type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
@@ -599,14 +605,43 @@ interface ClassicActionButtonSlotTuning {
 }
 
 interface BodyAnimationUpdates {
-  key: BodyAnimationKey;
+  key?: BodyAnimationKey;
   enabled: boolean;
   duration: number;
+  variantId?: string;
+  variantLabel?: string;
+  variantWeight: number;
+  appliesToAllWeapons: boolean;
+  weaponClasses: BodyAnimationWeaponClass[];
+  selectedVariantId?: string;
   base: RigPartUpdates;
   breath: RigPartUpdates;
   faceBase: FacePartUpdates;
   faceBreath: FacePartUpdates;
   activeParts: Record<RigPartKey, boolean>;
+  movementStartKeyframeId?: string;
+  impactKeyframeId?: string;
+  keyframes: BodyAnimationKeyframeUpdates[];
+  variants: BodyAnimationUpdates[];
+}
+
+interface BodyPresetSelectedAnimationUpdates {
+  presetKey: BodyPresetKey;
+  animation: BodyAnimationUpdates;
+}
+
+interface BodyAnimationKeyframeUpdates {
+  id: string;
+  time: number;
+  easing: BodyAnimationKeyframeEasing;
+  rigParts: RigPartUpdates;
+  faceParts: FacePartUpdates;
+  rootOffset: RootOffsetUpdates;
+}
+
+interface RootOffsetUpdates {
+  x: number;
+  y: number;
 }
 
 interface PromoteEquipmentItemPayload {
@@ -890,13 +925,15 @@ function saveProdDefaultsPlugin(): Plugin {
 
         try {
           const payload = await readJson(request);
-          const animationUpdates = pickBodyAnimationUpdates(payload);
+          const animationUpdates = pickActiveBodyPresetAnimationDefaultUpdates(payload);
           const source = await readFile(debugTuningUrl, "utf8");
-          const nextSource = applyBodyAnimationDefaultUpdates(source, animationUpdates);
+          let nextSource = applyBodyAnimationDefaultUpdates(source, animationUpdates.animation);
+
+          nextSource = applyBodyPresetAnimationDefaultUpdates(nextSource, animationUpdates);
 
           await writeFile(debugTuningUrl, nextSource, "utf8");
           server.ws.send({ type: "full-reload" });
-          sendJson(response, 200, { message: `Saved ${animationUpdates.key} animation defaults to prod.`, updated: 1 });
+          sendJson(response, 200, { message: `Saved ${animationUpdates.presetKey} ${animationUpdates.animation.key} animation defaults to prod.`, updated: 1 });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod animation." });
         }
@@ -1551,6 +1588,47 @@ export function applyBodyAnimationDefaultUpdates(source: string, updates: BodyAn
   return source.replace(pattern, formatBodyAnimationDefaults(constantName, updates));
 }
 
+export function applyBodyPresetAnimationDefaultUpdates(source: string, updates: BodyPresetSelectedAnimationUpdates): string {
+  const declarationPattern = /export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetTuning> = \{/;
+  const declarationMatch = declarationPattern.exec(source);
+
+  if (!declarationMatch) {
+    throw new Error("Could not find DEFAULT_BODY_PRESET_TUNING in debugTuning.ts.");
+  }
+
+  const rootStart = declarationMatch.index + declarationMatch[0].lastIndexOf("{");
+  const rootEnd = findMatchingObjectBrace(source, rootStart);
+  const presetProperty = findObjectPropertyObject(source, rootStart, rootEnd, updates.presetKey, "body preset");
+  const bodyAnimationsProperty = findObjectPropertyObject(
+    source,
+    presetProperty.valueStart,
+    presetProperty.valueEnd,
+    "bodyAnimations",
+    `${updates.presetKey} bodyAnimations`,
+  );
+  const animationProperty = findObjectPropertyObject(
+    source,
+    bodyAnimationsProperty.valueStart,
+    bodyAnimationsProperty.valueEnd,
+    updates.animation.key,
+    `${updates.presetKey} ${updates.animation.key} animation`,
+  );
+  const formattedAnimation = formatBodyAnimationObject(updates.animation, animationProperty.indent);
+
+  return `${source.slice(0, animationProperty.valueStart)}${formattedAnimation}${source.slice(animationProperty.valueEnd + 1)}`;
+}
+
+export function pickActiveBodyPresetAnimationDefaultUpdates(payload: unknown): BodyPresetSelectedAnimationUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  return {
+    presetKey: readBodyPresetKey((payload as { paperDollBodyPreset?: unknown }).paperDollBodyPreset),
+    animation: pickBodyAnimationUpdates(payload),
+  };
+}
+
 export function pickBodyAnimationUpdates(payload: unknown): BodyAnimationUpdates {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Expected a JSON object with debug tuning values.");
@@ -1706,7 +1784,26 @@ function readBodyAnimationUpdate(bodyAnimations: Partial<Record<BodyAnimationKey
     throw new Error(`Expected ${key} animation in debug tuning payload.`);
   }
 
-  const animation = bodyAnimation as { enabled?: unknown; duration?: unknown; base?: unknown; breath?: unknown; faceBase?: unknown; faceBreath?: unknown; activeParts?: unknown };
+  const animation = bodyAnimation as {
+    enabled?: unknown;
+    duration?: unknown;
+    base?: unknown;
+    breath?: unknown;
+    faceBase?: unknown;
+    faceBreath?: unknown;
+    activeParts?: unknown;
+    variantId?: unknown;
+    variantLabel?: unknown;
+    variantWeight?: unknown;
+    appliesToAllWeapons?: unknown;
+    weaponClasses?: unknown;
+    selectedVariantId?: unknown;
+    movementStartKeyframeId?: unknown;
+    startKeyframeId?: unknown;
+    impactKeyframeId?: unknown;
+    keyframes?: unknown;
+    variants?: unknown;
+  };
 
   if (typeof animation.enabled !== "boolean") {
     throw new Error("Invalid body animation value: enabled.");
@@ -1716,16 +1813,127 @@ function readBodyAnimationUpdate(bodyAnimations: Partial<Record<BodyAnimationKey
     throw new Error("Invalid body animation value: duration.");
   }
 
+  const duration = Math.max(240, Math.min(2400, animation.duration));
+  const base = readRigPartRecord(animation.base, "base");
+  const breath = readRigPartRecord(animation.breath, "breath");
+  const faceBase = readFacePartRecord(animation.faceBase, "faceBase");
+  const faceBreath = readFacePartRecord(animation.faceBreath, "faceBreath");
+  const keyframes = readBodyAnimationKeyframes(animation.keyframes, { duration, base, breath, faceBase, faceBreath });
+  const variants = readBodyAnimationVariants(animation.variants);
+
   return {
     key,
     enabled: animation.enabled,
-    duration: Math.max(240, Math.min(2400, animation.duration)),
-    base: readRigPartRecord(animation.base, "base"),
-    breath: readRigPartRecord(animation.breath, "breath"),
-    faceBase: readFacePartRecord(animation.faceBase, "faceBase"),
-    faceBreath: readFacePartRecord(animation.faceBreath, "faceBreath"),
+    duration,
+    variantId: readBodyAnimationVariantId(animation.variantId, bodyAnimationDefaultVariantId),
+    variantLabel: readBodyAnimationVariantLabel(animation.variantLabel, bodyAnimationDefaultVariantId),
+    variantWeight: readBodyAnimationVariantWeight(animation.variantWeight),
+    appliesToAllWeapons: typeof animation.appliesToAllWeapons === "boolean" ? animation.appliesToAllWeapons : true,
+    weaponClasses: readBodyAnimationWeaponClasses(animation.weaponClasses),
+    selectedVariantId: readBodyAnimationSelectedVariantId(animation.selectedVariantId, variants),
+    base,
+    breath,
+    faceBase,
+    faceBreath,
     activeParts: readBodyAnimationActiveParts(animation.activeParts),
+    movementStartKeyframeId: readBodyAnimationTimelineKeyframeId(
+      animation.movementStartKeyframeId ?? animation.startKeyframeId,
+      keyframes,
+      "movement start",
+    ),
+    impactKeyframeId: readBodyAnimationImpactKeyframeId(animation.impactKeyframeId, keyframes),
+    keyframes,
+    variants,
   };
+}
+
+function readBodyAnimationVariants(input: unknown): BodyAnimationUpdates[] {
+  if (input === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(input)) {
+    throw new Error("Expected body animation variants.");
+  }
+
+  const usedIds = new Set([bodyAnimationDefaultVariantId]);
+
+  return input.flatMap((variant, index) => {
+    if (!variant || typeof variant !== "object" || Array.isArray(variant)) {
+      return [];
+    }
+
+    const update = readBodyAnimationUpdate({ idle: variant }, "idle");
+    const rawVariant = variant as { variantId?: unknown; variantLabel?: unknown };
+    const variantId = uniquifyBodyAnimationVariantId(readBodyAnimationVariantId(rawVariant.variantId, `variant-${index + 1}`), usedIds);
+
+    return [
+      {
+        ...update,
+        key: undefined,
+        variantId,
+        variantLabel: readBodyAnimationVariantLabel(rawVariant.variantLabel, variantId),
+        selectedVariantId: undefined,
+        variants: [],
+      },
+    ];
+  });
+}
+
+function readBodyAnimationVariantId(input: unknown, fallback: string): string {
+  const raw = typeof input === "string" ? input : fallback;
+  const id = raw.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 48);
+
+  return id || fallback;
+}
+
+function readBodyAnimationVariantLabel(input: unknown, fallback: string): string {
+  const label = typeof input === "string" ? input.trim().slice(0, 48) : "";
+
+  return label || fallback;
+}
+
+function readBodyAnimationVariantWeight(input: unknown): number {
+  const value = typeof input === "number" && Number.isFinite(input) ? input : 1;
+
+  return Math.round(Math.max(0, Math.min(20, value)) * 100) / 100;
+}
+
+function readBodyAnimationWeaponClasses(input: unknown): BodyAnimationWeaponClass[] {
+  const source = Array.isArray(input) ? input : [];
+  const classes: BodyAnimationWeaponClass[] = [];
+
+  source.forEach((value) => {
+    if (isBodyAnimationWeaponClass(value) && !classes.includes(value)) {
+      classes.push(value);
+    }
+  });
+
+  return classes;
+}
+
+function readBodyAnimationSelectedVariantId(input: unknown, variants: readonly BodyAnimationUpdates[]): string | undefined {
+  const requestedId = typeof input === "string" ? input : undefined;
+
+  if (!requestedId || requestedId === bodyAnimationDefaultVariantId) {
+    return requestedId;
+  }
+
+  return variants.some((variant) => variant.variantId === requestedId) ? requestedId : undefined;
+}
+
+function uniquifyBodyAnimationVariantId(id: string, usedIds: Set<string>): string {
+  let nextId = id === bodyAnimationDefaultVariantId ? "variant" : id;
+  let suffix = 2;
+
+  while (usedIds.has(nextId)) {
+    nextId = `${id}-${suffix}`;
+    suffix += 1;
+  }
+
+  usedIds.add(nextId);
+
+  return nextId;
 }
 
 export async function pickPromotedEquipmentItem(payload: unknown): Promise<PromotedEquipmentItem> {
@@ -2691,6 +2899,75 @@ function formatUpdatedGeneratedBossItemMessage(updatedRecords: GeneratedEquipmen
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findMatchingObjectBrace(source: string, openBraceIndex: number): number {
+  if (source[openBraceIndex] !== "{") {
+    throw new Error("Expected an opening object brace.");
+  }
+
+  let depth = 0;
+  let quote: string | undefined;
+  let escaped = false;
+
+  for (let index = openBraceIndex; index < source.length; index += 1) {
+    const char = source[index];
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  throw new Error("Could not find matching object brace.");
+}
+
+function findObjectPropertyObject(
+  source: string,
+  objectStart: number,
+  objectEnd: number,
+  propertyKey: string,
+  label: string,
+): { valueStart: number; valueEnd: number; indent: string } {
+  const propertyPattern = new RegExp(`\\n(\\s*)${escapeRegExp(formatObjectKey(propertyKey))}:\\s*\\{`, "m");
+  const objectSource = source.slice(objectStart + 1, objectEnd);
+  const propertyMatch = propertyPattern.exec(objectSource);
+
+  if (!propertyMatch) {
+    throw new Error(`Could not find ${label} in debugTuning.ts.`);
+  }
+
+  const matchStart = objectStart + 1 + propertyMatch.index;
+  const valueStart = matchStart + propertyMatch[0].lastIndexOf("{");
+
+  return {
+    valueStart,
+    valueEnd: findMatchingObjectBrace(source, valueStart),
+    indent: propertyMatch[1] ?? "",
+  };
 }
 
 function pickGeneratedEquipmentRemovalId(payload: unknown): string {
@@ -3981,6 +4258,7 @@ function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimatio
     `export const ${constantName}: BodyAnimationTuning = {`,
     `  enabled: ${updates.enabled},`,
     `  duration: ${formatNumber(updates.duration)},`,
+    ...formatBodyAnimationVariantMetaRows(updates, "  "),
     "  base: {",
     formatRigPartRows(updates.base),
     "  },",
@@ -3996,6 +4274,12 @@ function formatBodyAnimationDefaults(constantName: string, updates: BodyAnimatio
     "  activeParts: {",
     formatBodyAnimationActivePartRows(updates.activeParts),
     "  },",
+    ...formatBodyAnimationMovementStartKeyframeIdRows(updates.movementStartKeyframeId, "  "),
+    ...formatBodyAnimationImpactKeyframeIdRows(updates.impactKeyframeId, "  "),
+    "  keyframes: [",
+    formatBodyAnimationKeyframeRows(updates.keyframes),
+    "  ],",
+    ...formatBodyAnimationVariantRows(updates.variants, "  "),
     "};",
   ].join("\n");
 }
@@ -4008,6 +4292,7 @@ function formatBodyAnimationObject(updates: BodyAnimationUpdates, indent: string
     "{",
     `${propertyIndent}enabled: ${updates.enabled},`,
     `${propertyIndent}duration: ${formatNumber(updates.duration)},`,
+    ...formatBodyAnimationVariantMetaRows(updates, propertyIndent),
     `${propertyIndent}base: {`,
     formatRigPartRows(updates.base, nestedEntryIndent),
     `${propertyIndent}},`,
@@ -4023,8 +4308,39 @@ function formatBodyAnimationObject(updates: BodyAnimationUpdates, indent: string
     `${propertyIndent}activeParts: {`,
     formatBodyAnimationActivePartRows(updates.activeParts, nestedEntryIndent),
     `${propertyIndent}},`,
+    ...formatBodyAnimationMovementStartKeyframeIdRows(updates.movementStartKeyframeId, propertyIndent),
+    ...formatBodyAnimationImpactKeyframeIdRows(updates.impactKeyframeId, propertyIndent),
+    `${propertyIndent}keyframes: [`,
+    formatBodyAnimationKeyframeRows(updates.keyframes, nestedEntryIndent),
+    `${propertyIndent}],`,
+    ...formatBodyAnimationVariantRows(updates.variants, propertyIndent),
     `${indent}}`,
   ].join("\n");
+}
+
+function formatBodyAnimationVariantMetaRows(updates: BodyAnimationUpdates, indent: string): string[] {
+  return [
+    ...(updates.variantId ? [`${indent}variantId: ${JSON.stringify(updates.variantId)},`] : []),
+    ...(updates.variantLabel ? [`${indent}variantLabel: ${JSON.stringify(updates.variantLabel)},`] : []),
+    `${indent}variantWeight: ${formatNumber(updates.variantWeight)},`,
+    `${indent}appliesToAllWeapons: ${updates.appliesToAllWeapons},`,
+    ...(updates.weaponClasses.length > 0
+      ? [`${indent}weaponClasses: [${updates.weaponClasses.map((weaponClass) => JSON.stringify(weaponClass)).join(", ")}],`]
+      : []),
+    ...(updates.selectedVariantId ? [`${indent}selectedVariantId: ${JSON.stringify(updates.selectedVariantId)},`] : []),
+  ];
+}
+
+function formatBodyAnimationVariantRows(updates: readonly BodyAnimationUpdates[], indent: string): string[] {
+  if (updates.length === 0) {
+    return [];
+  }
+
+  return [
+    `${indent}variants: [`,
+    updates.map((variant) => formatBodyAnimationObject(variant, `${indent}  `)).join(",\n"),
+    `${indent}],`,
+  ];
 }
 
 function formatRigPartRows(updates: RigPartUpdates, indent = "    "): string {
@@ -4041,6 +4357,14 @@ function formatBodyAnimationActivePartRows(updates: Record<RigPartKey, boolean>,
   return rigPartKeys.map((key) => `${indent}${key}: ${updates[key]},`).join("\n");
 }
 
+function formatBodyAnimationImpactKeyframeIdRows(impactKeyframeId: string | undefined, indent: string): string[] {
+  return impactKeyframeId ? [`${indent}impactKeyframeId: ${JSON.stringify(impactKeyframeId)},`] : [];
+}
+
+function formatBodyAnimationMovementStartKeyframeIdRows(movementStartKeyframeId: string | undefined, indent: string): string[] {
+  return movementStartKeyframeId ? [`${indent}movementStartKeyframeId: ${JSON.stringify(movementStartKeyframeId)},`] : [];
+}
+
 function formatFacePartRows(updates: FacePartUpdates, indent = "    "): string {
   return facePartKeys
     .map((key) => {
@@ -4049,6 +4373,183 @@ function formatFacePartRows(updates: FacePartUpdates, indent = "    "): string {
       return `${indent}${key}: { x: ${formatNumber(part.x)}, y: ${formatNumber(part.y)}, scaleX: ${formatNumber(part.scaleX)}, scaleY: ${formatNumber(part.scaleY)} },`;
     })
     .join("\n");
+}
+
+function formatBodyAnimationKeyframeRows(updates: readonly BodyAnimationKeyframeUpdates[], indent = "    "): string {
+  const propertyIndent = `${indent}  `;
+  const nestedEntryIndent = `${indent}    `;
+
+  return updates
+    .map((keyframe) =>
+      [
+        `${indent}{`,
+        `${propertyIndent}id: ${JSON.stringify(keyframe.id)},`,
+        `${propertyIndent}time: ${formatNumber(keyframe.time)},`,
+        `${propertyIndent}easing: ${JSON.stringify(keyframe.easing)},`,
+        `${propertyIndent}rigParts: {`,
+        formatRigPartRows(keyframe.rigParts, nestedEntryIndent),
+        `${propertyIndent}},`,
+        `${propertyIndent}faceParts: {`,
+        formatFacePartRows(keyframe.faceParts, nestedEntryIndent),
+        `${propertyIndent}},`,
+        `${propertyIndent}rootOffset: { x: ${formatNumber(keyframe.rootOffset.x)}, y: ${formatNumber(keyframe.rootOffset.y)} },`,
+        `${indent}},`,
+      ].join("\n"),
+    )
+    .join("\n");
+}
+
+function readBodyAnimationKeyframes(
+  input: unknown,
+  legacyPoses: Pick<BodyAnimationUpdates, "duration" | "base" | "breath" | "faceBase" | "faceBreath">,
+): BodyAnimationKeyframeUpdates[] {
+  const legacyKeyframes = createLegacyBodyAnimationKeyframes(legacyPoses);
+
+  if (input === undefined) {
+    return legacyKeyframes;
+  }
+
+  if (!Array.isArray(input)) {
+    throw new Error("Expected body animation keyframes.");
+  }
+
+  if (input.length === 0) {
+    return legacyKeyframes;
+  }
+
+  const usedIds = new Set(["pose-a", "pose-b"]);
+  const extraKeyframes = input
+    .map((keyframe, index) => readBodyAnimationKeyframe(keyframe, index, legacyPoses.duration))
+    .filter((keyframe) => keyframe.id !== "pose-a" && keyframe.id !== "pose-b")
+    .map((keyframe) => uniquifyBodyAnimationKeyframeId(keyframe, usedIds));
+
+  return [legacyKeyframes[0], legacyKeyframes[1], ...extraKeyframes].sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+}
+
+function createLegacyBodyAnimationKeyframes(
+  legacyPoses: Pick<BodyAnimationUpdates, "duration" | "base" | "breath" | "faceBase" | "faceBreath">,
+): [BodyAnimationKeyframeUpdates, BodyAnimationKeyframeUpdates] {
+  return [
+    {
+      id: "pose-a",
+      time: 0,
+      easing: "easeInOut",
+      rigParts: cloneRigPartUpdates(legacyPoses.base),
+      faceParts: cloneFacePartUpdates(legacyPoses.faceBase),
+      rootOffset: { x: 0, y: 0 },
+    },
+    {
+      id: "pose-b",
+      time: legacyPoses.duration / 2,
+      easing: "easeInOut",
+      rigParts: cloneRigPartUpdates(legacyPoses.breath),
+      faceParts: cloneFacePartUpdates(legacyPoses.faceBreath),
+      rootOffset: { x: 0, y: 0 },
+    },
+  ];
+}
+
+function readBodyAnimationKeyframe(input: unknown, index: number, duration: number): BodyAnimationKeyframeUpdates {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`Invalid body animation keyframe: ${index}.`);
+  }
+
+  const keyframe = input as { id?: unknown; time?: unknown; easing?: unknown; rigParts?: unknown; faceParts?: unknown; rootOffset?: unknown };
+  const id = typeof keyframe.id === "string" ? keyframe.id.trim().slice(0, 48) : "";
+
+  if (!id) {
+    throw new Error(`Invalid body animation keyframe id: ${index}.`);
+  }
+
+  if (typeof keyframe.time !== "number" || !Number.isFinite(keyframe.time)) {
+    throw new Error(`Invalid body animation keyframe time: ${id}.`);
+  }
+
+  if (!isBodyAnimationKeyframeEasing(keyframe.easing)) {
+    throw new Error(`Invalid body animation keyframe easing: ${id}.`);
+  }
+
+  return {
+    id,
+    time: Math.max(0, Math.min(duration, keyframe.time)),
+    easing: keyframe.easing,
+    rigParts: readRigPartRecord(keyframe.rigParts, `${id} rigParts`),
+    faceParts: readFacePartRecord(keyframe.faceParts, `${id} faceParts`),
+    rootOffset: readRootOffset(keyframe.rootOffset),
+  };
+}
+
+function readRootOffset(input: unknown): RootOffsetUpdates {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { x: 0, y: 0 };
+  }
+
+  const offset = input as Partial<RootOffsetUpdates>;
+
+  return {
+    x: Math.max(-480, Math.min(480, typeof offset.x === "number" && Number.isFinite(offset.x) ? offset.x : 0)),
+    y: Math.max(-480, Math.min(480, typeof offset.y === "number" && Number.isFinite(offset.y) ? offset.y : 0)),
+  };
+}
+
+function readBodyAnimationImpactKeyframeId(input: unknown, keyframes: readonly BodyAnimationKeyframeUpdates[]): string | undefined {
+  return readBodyAnimationTimelineKeyframeId(input, keyframes, "impact");
+}
+
+function readBodyAnimationTimelineKeyframeId(
+  input: unknown,
+  keyframes: readonly BodyAnimationKeyframeUpdates[],
+  label: string,
+): string | undefined {
+  if (input === undefined) {
+    return undefined;
+  }
+
+  if (typeof input !== "string") {
+    throw new Error(`Invalid body animation ${label} keyframe.`);
+  }
+
+  const keyframeId = input.trim().slice(0, 48);
+
+  if (!keyframeId) {
+    return undefined;
+  }
+
+  if (!keyframes.some((keyframe) => keyframe.id === keyframeId)) {
+    throw new Error(`Body animation ${label} keyframe does not exist: ${keyframeId}.`);
+  }
+
+  return keyframeId;
+}
+
+function cloneRigPartUpdates(updates: RigPartUpdates): RigPartUpdates {
+  return Object.fromEntries(rigPartKeys.map((key) => [key, { ...updates[key] }])) as RigPartUpdates;
+}
+
+function cloneFacePartUpdates(updates: FacePartUpdates): FacePartUpdates {
+  return Object.fromEntries(facePartKeys.map((key) => [key, { ...updates[key] }])) as FacePartUpdates;
+}
+
+function uniquifyBodyAnimationKeyframeId(keyframe: BodyAnimationKeyframeUpdates, usedIds: Set<string>): BodyAnimationKeyframeUpdates {
+  let id = keyframe.id;
+  let suffix = 2;
+
+  while (usedIds.has(id)) {
+    id = `${keyframe.id}-${suffix}`;
+    suffix += 1;
+  }
+
+  usedIds.add(id);
+
+  return id === keyframe.id ? keyframe : { ...keyframe, id };
+}
+
+function isBodyAnimationKeyframeEasing(value: unknown): value is BodyAnimationKeyframeEasing {
+  return typeof value === "string" && bodyAnimationKeyframeEasings.includes(value as BodyAnimationKeyframeEasing);
+}
+
+function isBodyAnimationWeaponClass(value: unknown): value is BodyAnimationWeaponClass {
+  return typeof value === "string" && bodyAnimationWeaponClasses.includes(value as BodyAnimationWeaponClass);
 }
 
 function readRigPartRecord(input: unknown, label: string): RigPartUpdates {

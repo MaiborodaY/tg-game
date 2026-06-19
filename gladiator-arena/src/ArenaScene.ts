@@ -144,7 +144,9 @@ import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS, GENERA
 import {
   beginDebugUndoGroup,
   debugTuning,
+  BODY_ANIMATION_DEFAULT_VARIANT_ID,
   DEFAULT_BODY_ANIMATIONS,
+  BODY_ANIMATION_WEAPON_CLASSES,
   DEFAULT_BODY_PRESET_TUNING,
   DEFAULT_APPEARANCE_LAYERS,
   DEFAULT_EQUIPMENT,
@@ -153,23 +155,29 @@ import {
   DEFAULT_RIG_PARTS,
   DEFAULT_SLASH_ARCS,
   APPEARANCE_LAYER_KEYS,
+  defaultBodyAnimationRootOffset,
   defaultRigPartTuning,
   endDebugUndoGroup,
   FACE_ASSET_LAYER_KEYS,
+  FACE_PART_KEYS,
   RIG_PART_KEYS,
   subscribeDebugTuning,
   updateDebugTuning,
   type ArenaDebugTuning,
   type AppearanceLayerKey,
   type AppearanceLayerTuning,
+  type BodyAnimationKeyframe,
   type BodyAnimationKey,
+  type BodyAnimationRootOffset,
   type BodyAnimationTuning,
+  type BodyAnimationWeaponClass,
   type BodyPresetTuning,
   type DebugPopupPreviewKind,
   type EquipmentSlotKey,
   type EquipmentTuning,
   type FaceAssetLayerKey,
   type FaceAssetLayerTuning,
+  type FacePartKey,
   type FacePartTuning,
   type PaperDollBodyPreset,
   type RigPartKey,
@@ -256,11 +264,40 @@ interface DebugRigPartDragState {
   lastPointerY: number;
 }
 
+interface DebugCanvasPanState {
+  lastPointerX: number;
+  lastPointerY: number;
+}
+
+interface DebugAnimationRootDragState {
+  lastPointerX: number;
+  lastPointerY: number;
+}
+
 interface DebugEquipmentDragState {
   slotKey: PaperDollEquipmentSlotKey;
   itemId: HeroItemId | "";
   lastPointerLocalX: number;
   lastPointerLocalY: number;
+}
+
+interface PaperDollAnimationRootBase {
+  rootX: number;
+  rootY: number;
+  shadowX: number;
+  shadowY: number;
+  lowShadowX: number;
+  lowShadowY: number;
+  nameX: number;
+  nameY: number;
+  worldOffsetX: number;
+  worldOffsetY: number;
+}
+
+interface DebugAnimationFloorGuide {
+  graphics: Phaser.GameObjects.Graphics;
+  floorLabel: Phaser.GameObjects.Text;
+  rootLabel: Phaser.GameObjects.Text;
 }
 
 interface DebugInputEvent {
@@ -449,6 +486,7 @@ interface ArenaEffectPools {
 interface ActionAnimationHandle {
   done: Promise<void>;
   impact?: Promise<void>;
+  speedUp?: (multiplier: number) => void;
 }
 
 interface MeleeActionTiming {
@@ -459,11 +497,17 @@ interface MeleeActionTiming {
 
 interface ActionAnimationOptions {
   loopRestAfterComplete?: boolean;
+  variantSeed?: string;
 }
 
 interface BodyAnimationOnceOptions {
   loopAfterComplete?: BodyAnimationKey;
   speedMultiplier?: number;
+}
+
+interface BodyAnimationOnceHandle {
+  done: Promise<void>;
+  speedUp: (multiplier: number) => void;
 }
 
 interface ProjectileAnimationHandle {
@@ -572,6 +616,9 @@ const MELEE_ACTION_TIMINGS: Record<AttackBodyAnimationKey, MeleeActionTiming> = 
   heavy: { impactProgress: 0.52, weaponSwingProgress: 0.52, weaponAngle: 38 },
 };
 const LUNGE_ACTION_IMPACT_PROGRESS = 0.58;
+const DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE = 1.6;
+const MOVEMENT_START_DUST_COUNT = 8;
+const MOVEMENT_START_DUST_DELAY_EPSILON_MS = 8;
 const POPUP_PREVIEW_DAMAGE_AMOUNT = 10;
 const POPUP_PREVIEW_ARMOR_ABSORB_AMOUNT = 7;
 const POPUP_PREVIEW_SPACING_X = 54;
@@ -582,6 +629,7 @@ const paperDollLinkedEquipmentSlots = new WeakMap<FighterPart, FighterPart[]>();
 const paperDollWeaponOverlayCrops = new WeakMap<FighterPart, PaperDollWeaponOverlayCrop>();
 const paperDollEquipmentSlotImageStates = new WeakMap<FighterPart, PaperDollEquipmentSlotImageState>();
 const paperDollEquipmentTransformStates = new WeakMap<FighterPart, PaperDollEquipmentTransformState>();
+const paperDollAnimationRootBases = new WeakMap<FighterVisual, PaperDollAnimationRootBase>();
 const paperDollEquipmentLayerOrders = new WeakMap<Phaser.GameObjects.GameObject, number>();
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
   facing: 1,
@@ -1824,7 +1872,7 @@ export class ArenaScene extends Phaser.Scene {
         "right",
         nextState.player.weaponClass,
         playerSettings,
-        { loopRestAfterComplete: false },
+        { loopRestAfterComplete: false, variantSeed: getBodyAnimationVariantSeed(nextState, "player") },
       );
       actionAnimations.push(playerActionAnimation.done);
       if (lastPlayerAction === "rest") {
@@ -1841,6 +1889,7 @@ export class ArenaScene extends Phaser.Scene {
         "left",
         nextState.enemy.weaponClass,
         playerSettings,
+        { variantSeed: getBodyAnimationVariantSeed(nextState, "enemy") },
       );
       actionAnimations.push(enemyActionAnimation.done);
       if (lastEnemyAction === "rest") {
@@ -1850,6 +1899,9 @@ export class ArenaScene extends Phaser.Scene {
 
     const playerResultDelay = playerActionAnimation?.impact;
     const enemyResultDelay = enemyActionAnimation?.impact;
+
+    speedUpDamagingLungeAfterImpact(playerActionAnimation, lastPlayerAction, nextState.lastPlayerDamage);
+    speedUpDamagingLungeAfterImpact(enemyActionAnimation, lastEnemyAction, nextState.lastEnemyDamage);
 
     if (nextState.lastPlayerDamage > 0) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
@@ -3193,12 +3245,15 @@ export function mountHeroPortraitPreview(
 }
 
 interface DebugCharacterViewerOptions {
-  mode?: "debug" | "shop";
+  mode?: "debug" | "shop" | "animation";
 }
 
 class DebugCharacterScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private dragState?: DebugRigPartDragState;
+  private canvasPanState?: DebugCanvasPanState;
+  private rootDragState?: DebugAnimationRootDragState;
+  private animationFloorGuide?: DebugAnimationFloorGuide;
   private equipmentDragState?: DebugEquipmentDragState;
   private selectedEquipment?: Pick<DebugEquipmentDragState, "slotKey" | "itemId">;
   private unsubscribeDebugTuning?: () => void;
@@ -3224,23 +3279,25 @@ class DebugCharacterScene extends Phaser.Scene {
     this.fighter = createPaperDollFighter(this, {
       ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0),
       castsShadow: false,
-      enableSelectionHighlights: this.viewerMode === "debug",
+      enableSelectionHighlights: this.viewerMode !== "shop",
     });
     this.fighter.name.setVisible(false);
-    if (this.viewerMode === "debug") {
+    if (this.viewerMode !== "shop") {
       enableDebugPaperDollEquipmentPicking(this.fighter.paperDollRig, (slotKey, pointer, event) => this.beginEquipmentDrag(slotKey, pointer, event));
       enableDebugPaperDollPartPicking(this.fighter.paperDollRig, (partKey, pointer, event) => this.beginRigPartDrag(partKey, pointer, event));
       this.input.on("pointerdown", (pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]) =>
         this.handlePreviewPointerDown(pointer, gameObjects),
       );
       this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+        this.dragAnimationCanvas(pointer);
+        this.dragAnimationRoot(pointer);
         this.dragRigPart(pointer);
         this.dragEquipment(pointer);
       });
       this.input.on("pointerup", () => this.endDrag());
       this.input.on("pointerupoutside", () => this.endDrag());
-      this.input.on("wheel", (_pointer: Phaser.Input.Pointer, _gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
-        this.rotateSelectedWithWheel(deltaY);
+      this.input.on("wheel", (pointer: Phaser.Input.Pointer, _gameObjects: Phaser.GameObjects.GameObject[], _deltaX: number, deltaY: number) => {
+        this.handlePreviewWheel(pointer, deltaY);
       });
     }
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
@@ -3278,13 +3335,19 @@ class DebugCharacterScene extends Phaser.Scene {
 
     if (debugTuning.animationEditMode === "preview") {
       if (animation.enabled) {
-        applyBodyAnimation(this.fighter, time, animation);
+        if (this.viewerMode === "animation") {
+          applyBodyAnimationAtProgress(this.fighter, animation, debugTuning.animationPreviewProgress);
+          this.syncAnimationFloorGuide();
+        } else {
+          applyBodyAnimation(this.fighter, time, animation);
+        }
       }
 
       return;
     }
 
     applySelectedDebugAnimationEditPose(this.fighter);
+    this.syncAnimationFloorGuide();
   }
 
   private sync(): void {
@@ -3304,7 +3367,16 @@ class DebugCharacterScene extends Phaser.Scene {
 
     applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
     this.syncPreviewArmorAlpha();
-    applySelectedDebugAnimationEditPose(this.fighter);
+    if (this.viewerMode === "animation" && debugTuning.animationEditMode === "preview") {
+      const animation = getSelectedDebugBodyAnimation();
+
+      if (animation.enabled) {
+        applyBodyAnimationAtProgress(this.fighter, animation, debugTuning.animationPreviewProgress);
+      }
+    } else {
+      applySelectedDebugAnimationEditPose(this.fighter);
+    }
+    this.syncAnimationFloorGuide(layout);
     syncPaperDollSelectionHighlight(
       this.fighter.paperDollRig,
       debugTuning.characterCanvasEditMode === "parts" || debugTuning.characterCanvasEditMode === "bodyArt" ? debugTuning.selectedRigParts : [],
@@ -3334,6 +3406,10 @@ class DebugCharacterScene extends Phaser.Scene {
   }
 
   private getDebugCharacterLayout(): CityHeroLayout {
+    if (this.viewerMode === "animation") {
+      return this.getAnimationCharacterLayout();
+    }
+
     if (debugTuning.characterCanvasEditMode === "face") {
       return this.getFaceCharacterLayout();
     }
@@ -3343,6 +3419,103 @@ class DebugCharacterScene extends Phaser.Scene {
       feetY: debugTuning.characterPreviewFeetY,
       scale: debugTuning.characterPreviewScale,
     };
+  }
+
+  private getAnimationCharacterLayout(): CityHeroLayout {
+    const width = Math.max(1, this.scale.width || DEBUG_CHARACTER_VIEWER_WIDTH);
+    const height = Math.max(1, this.scale.height || DEBUG_CHARACTER_VIEWER_HEIGHT);
+    const visualHeightAtScaleOne = CITY_HERO_VIEWER_HEIGHT * PAPER_DOLL_BASE_SCALE;
+    const visualWidthAtScaleOne = CITY_HERO_VIEWER_WIDTH * CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO * PAPER_DOLL_BASE_SCALE;
+    const heightScaleLimit = Math.max(0.1, height - 72) / visualHeightAtScaleOne;
+    const widthScaleLimit = Math.max(0.1, width - 72) / visualWidthAtScaleOne;
+    const scale = clampNumber(Math.min(2.4, heightScaleLimit, widthScaleLimit), 0.75, 2.4) * debugTuning.animationEditorZoom;
+
+    return {
+      feetX: width / 2 + debugTuning.animationEditorOffsetX,
+      feetY: height - 34 + debugTuning.animationEditorOffsetY,
+      scale,
+    };
+  }
+
+  private getAnimationFloorGuide(): DebugAnimationFloorGuide {
+    if (this.animationFloorGuide) {
+      return this.animationFloorGuide;
+    }
+
+    const graphics = this.add.graphics().setDepth(80);
+    const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      color: "#fff2be",
+      fontFamily: "Georgia",
+      fontSize: "13px",
+      fontStyle: "900",
+      stroke: "#35180d",
+      strokeThickness: 3,
+    };
+    const floorLabel = this.add.text(0, 0, "game floor", textStyle).setDepth(81);
+    const rootLabel = this.add.text(0, 0, "root 0,0", textStyle).setDepth(81);
+
+    this.animationFloorGuide = { graphics, floorLabel, rootLabel };
+
+    return this.animationFloorGuide;
+  }
+
+  private syncAnimationFloorGuide(layout = this.viewerMode === "animation" ? this.getAnimationCharacterLayout() : undefined): void {
+    const guide = this.animationFloorGuide ?? (this.viewerMode === "animation" ? this.getAnimationFloorGuide() : undefined);
+
+    if (this.viewerMode !== "animation" || !guide || !layout) {
+      if (guide) {
+        guide.graphics.setVisible(false);
+        guide.floorLabel.setVisible(false);
+        guide.rootLabel.setVisible(false);
+      }
+      return;
+    }
+
+    const width = Math.max(1, this.scale.width || DEBUG_CHARACTER_VIEWER_WIDTH);
+    const height = Math.max(1, this.scale.height || DEBUG_CHARACTER_VIEWER_HEIGHT);
+    const floorX = layout.feetX;
+    const floorY = layout.feetY;
+    const root = this.fighter?.paperDollRig?.root;
+    const rootX = root?.x ?? floorX;
+    const rootY = root?.y ?? floorY;
+    const rootScaleX = !root || root.scaleX === 0 ? 1 : root.scaleX;
+    const rootScaleY = !root || root.scaleY === 0 ? 1 : root.scaleY;
+    const rootOffsetX = Math.round((rootX - floorX) / rootScaleX);
+    const rootOffsetY = Math.round((rootY - floorY) / rootScaleY);
+    const floorLabelText = floorY < 0 ? "game floor above" : floorY > height ? "game floor below" : "game floor";
+
+    guide.graphics
+      .clear()
+      .lineStyle(5, 0x35180d, 0.34)
+      .beginPath()
+      .moveTo(16, floorY)
+      .lineTo(width - 16, floorY)
+      .strokePath()
+      .lineStyle(2, 0xffd36a, 0.82)
+      .beginPath()
+      .moveTo(16, floorY)
+      .lineTo(width - 16, floorY)
+      .strokePath()
+      .lineStyle(2, 0x9ff8ff, 0.72)
+      .beginPath()
+      .moveTo(floorX, floorY)
+      .lineTo(rootX, rootY)
+      .strokePath()
+      .fillStyle(0xffd36a, 0.96)
+      .fillCircle(floorX, floorY, 4)
+      .lineStyle(2, 0x35180d, 0.72)
+      .strokeCircle(floorX, floorY, 4)
+      .fillStyle(0x9ff8ff, 0.96)
+      .fillCircle(rootX, rootY, 6)
+      .lineStyle(2, 0x35180d, 0.8)
+      .strokeCircle(rootX, rootY, 6);
+
+    guide.graphics.setVisible(true);
+    guide.floorLabel.setText(floorLabelText).setPosition(24, clampNumber(floorY - 24, 6, height - 22)).setVisible(true);
+    guide.rootLabel
+      .setText(`root ${rootOffsetX},${rootOffsetY}`)
+      .setPosition(clampNumber(rootX + 10, 6, width - 94), clampNumber(rootY - 22, 6, height - 22))
+      .setVisible(true);
   }
 
   private getFaceCharacterLayout(): CityHeroLayout {
@@ -3395,7 +3568,17 @@ class DebugCharacterScene extends Phaser.Scene {
   }
 
   private beginRigPartDrag(partKey: RigPartKey, pointer: Phaser.Input.Pointer, event?: DebugInputEvent): void {
+    if (this.viewerMode === "animation" && isAnimationCanvasPanPointer(pointer)) {
+      event?.stopPropagation();
+      this.beginAnimationCanvasPan(pointer);
+      return;
+    }
+
     if (debugTuning.characterCanvasEditMode !== "parts" && debugTuning.characterCanvasEditMode !== "bodyArt") {
+      if (this.viewerMode === "animation" && debugTuning.characterCanvasEditMode === "root" && isPrimaryPointerDown(pointer)) {
+        event?.stopPropagation();
+        this.beginAnimationRootDrag(pointer);
+      }
       return;
     }
 
@@ -3404,7 +3587,9 @@ class DebugCharacterScene extends Phaser.Scene {
     }
 
     event?.stopPropagation();
-    const selectedRigParts = getNextDebugRigPartSelection(partKey, isMultiSelectPointer(pointer));
+    const selectedRigParts = isRigPartGroupSelectPointer(pointer)
+      ? getDebugRigPartSelectionGroup(partKey)
+      : getNextDebugRigPartSelection(partKey, isMultiSelectPointer(pointer));
     const selectedRigPart = selectedRigParts.includes(partKey) ? partKey : selectedRigParts[0] ?? partKey;
 
     updateDebugTuning({ selectedRigPart, selectedRigParts }, { undoable: false });
@@ -3455,6 +3640,11 @@ class DebugCharacterScene extends Phaser.Scene {
   }
 
   private handlePreviewPointerDown(pointer: Phaser.Input.Pointer, gameObjects: Phaser.GameObjects.GameObject[]): void {
+    if (this.viewerMode === "animation" && isAnimationCanvasPanPointer(pointer)) {
+      this.beginAnimationCanvasPan(pointer);
+      return;
+    }
+
     if (gameObjects.length > 0) {
       return;
     }
@@ -3465,6 +3655,90 @@ class DebugCharacterScene extends Phaser.Scene {
 
     updateDebugTuning({ selectedRigParts: [] }, { undoable: false });
     this.endDrag();
+  }
+
+  private beginAnimationCanvasPan(pointer: Phaser.Input.Pointer): void {
+    this.endRigPartDrag();
+    this.endAnimationRootDrag();
+    this.endEquipmentDrag();
+    this.canvasPanState = {
+      lastPointerX: pointer.worldX,
+      lastPointerY: pointer.worldY,
+    };
+  }
+
+  private dragAnimationCanvas(pointer: Phaser.Input.Pointer): void {
+    if (!this.canvasPanState) {
+      return;
+    }
+
+    if (!pointer.isDown || !isAnimationCanvasPanPointer(pointer)) {
+      this.endAnimationCanvasPan();
+      return;
+    }
+
+    const pointerX = pointer.worldX;
+    const pointerY = pointer.worldY;
+    const deltaX = pointerX - this.canvasPanState.lastPointerX;
+    const deltaY = pointerY - this.canvasPanState.lastPointerY;
+
+    if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+      return;
+    }
+
+    updateDebugTuning(
+      {
+        animationEditorOffsetX: debugTuning.animationEditorOffsetX + deltaX,
+        animationEditorOffsetY: debugTuning.animationEditorOffsetY + deltaY,
+      },
+      { undoable: false },
+    );
+
+    this.canvasPanState.lastPointerX = pointerX;
+    this.canvasPanState.lastPointerY = pointerY;
+  }
+
+  private beginAnimationRootDrag(pointer: Phaser.Input.Pointer): void {
+    this.endRigPartDrag();
+    this.endEquipmentDrag();
+    this.endAnimationCanvasPan();
+    beginDebugUndoGroup();
+    this.rootDragState = {
+      lastPointerX: pointer.worldX,
+      lastPointerY: pointer.worldY,
+    };
+  }
+
+  private dragAnimationRoot(pointer: Phaser.Input.Pointer): void {
+    if (!this.rootDragState || !this.fighter?.paperDollRig) {
+      return;
+    }
+
+    if (!pointer.isDown) {
+      this.endAnimationRootDrag();
+      return;
+    }
+
+    const pointerX = pointer.worldX;
+    const pointerY = pointer.worldY;
+    const worldDeltaX = pointerX - this.rootDragState.lastPointerX;
+    const worldDeltaY = pointerY - this.rootDragState.lastPointerY;
+
+    if (Math.abs(worldDeltaX) < 0.1 && Math.abs(worldDeltaY) < 0.1) {
+      return;
+    }
+
+    const root = this.fighter.paperDollRig.root;
+    const scaleX = root.scaleX === 0 ? 1 : root.scaleX;
+    const scaleY = root.scaleY === 0 ? 1 : root.scaleY;
+
+    updateAnimationRootOffsetWithInteractiveDelta({
+      x: worldDeltaX / scaleX,
+      y: worldDeltaY / scaleY,
+    });
+
+    this.rootDragState.lastPointerX = pointerX;
+    this.rootDragState.lastPointerY = pointerY;
   }
 
   private dragRigPart(pointer: Phaser.Input.Pointer): void {
@@ -3550,17 +3824,46 @@ class DebugCharacterScene extends Phaser.Scene {
     endDebugUndoGroup();
   }
 
+  private endAnimationRootDrag(): void {
+    this.rootDragState = undefined;
+    endDebugUndoGroup();
+  }
+
   private endEquipmentDrag(): void {
     this.equipmentDragState = undefined;
     endDebugUndoGroup();
   }
 
+  private endAnimationCanvasPan(): void {
+    this.canvasPanState = undefined;
+  }
+
   private endDrag(): void {
     this.endRigPartDrag();
+    this.endAnimationRootDrag();
     this.endEquipmentDrag();
+    this.endAnimationCanvasPan();
+  }
+
+  private handlePreviewWheel(pointer: Phaser.Input.Pointer, deltaY: number): void {
+    if (this.viewerMode === "animation" && isAnimationCanvasZoomWheel(pointer)) {
+      updateDebugTuning(
+        {
+          animationEditorZoom: debugTuning.animationEditorZoom + (deltaY > 0 ? -0.06 : 0.06),
+        },
+        { undoable: false },
+      );
+      return;
+    }
+
+    this.rotateSelectedWithWheel(deltaY);
   }
 
   private rotateSelectedWithWheel(deltaY: number): void {
+    if (debugTuning.characterCanvasEditMode === "root") {
+      return;
+    }
+
     if (debugTuning.characterCanvasEditMode === "equipment") {
       this.rotateSelectedEquipmentWithWheel(deltaY);
       return;
@@ -3634,20 +3937,20 @@ class DebugCharacterScene extends Phaser.Scene {
 export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?: HeroEquipment, options: DebugCharacterViewerOptions = {}): () => void {
   usePlayerEquipment(playerEquipment);
   const viewerMode = options.mode ?? "debug";
-  const isShopMode = viewerMode === "shop";
+  const isResponsiveMode = viewerMode === "shop" || viewerMode === "animation";
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: isShopMode ? Math.max(1, parent.clientWidth || DEBUG_CHARACTER_VIEWER_WIDTH) : DEBUG_CHARACTER_VIEWER_WIDTH,
-    height: isShopMode ? Math.max(1, parent.clientHeight || DEBUG_CHARACTER_VIEWER_HEIGHT) : DEBUG_CHARACTER_VIEWER_HEIGHT,
+    width: isResponsiveMode ? Math.max(1, parent.clientWidth || DEBUG_CHARACTER_VIEWER_WIDTH) : DEBUG_CHARACTER_VIEWER_WIDTH,
+    height: isResponsiveMode ? Math.max(1, parent.clientHeight || DEBUG_CHARACTER_VIEWER_HEIGHT) : DEBUG_CHARACTER_VIEWER_HEIGHT,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
     render: PHASER_LOW_POWER_RENDER_CONFIG,
     scale: {
-      mode: isShopMode ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,
-      autoCenter: isShopMode ? Phaser.Scale.NO_CENTER : Phaser.Scale.CENTER_BOTH,
+      mode: isResponsiveMode ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,
+      autoCenter: isResponsiveMode ? Phaser.Scale.NO_CENTER : Phaser.Scale.CENTER_BOTH,
     },
     scene: new DebugCharacterScene(viewerMode),
   });
@@ -4234,6 +4537,13 @@ const PAPER_DOLL_PART_ORDER: PaperDollPartKey[] = [
   "frontHand",
 ];
 
+const DEBUG_RIG_PART_SELECTION_GROUPS: readonly (readonly RigPartKey[])[] = [
+  ["backUpperArm", "backForearm", "backHand"],
+  ["frontUpperArm", "frontForearm", "frontHand"],
+  ["backThigh", "backShin", "backFoot"],
+  ["frontThigh", "frontShin", "frontFoot"],
+];
+
 const PAPER_DOLL_PART_PIVOTS: Record<PaperDollPartKey, { x: number; y: number }> = {
   head: { x: 0, y: -205 },
   torso: { x: 0, y: -84 },
@@ -4291,6 +4601,7 @@ function applyPaperDollRigTuning(
   fighter.name.x = centerX;
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
+  rememberPaperDollAnimationRootBase(fighter);
 }
 
 function applyPaperDollShadowTuning(
@@ -4995,12 +5306,178 @@ function applyLoopingBodyAnimation(fighter: FighterVisual, time: number, animati
 function applyBodyAnimation(fighter: FighterVisual, time: number, animation: BodyAnimationTuning, amount = 1): void {
   const duration = Math.max(1, animation.duration);
   const phase = (time % duration) / duration;
-  const blend = (0.5 - Math.cos(phase * Math.PI * 2) * 0.5) * amount;
 
-  applyBodyAnimationBlend(fighter, animation, blend);
+  applyBodyAnimationAtProgress(fighter, animation, phase, amount);
+}
+
+function applyBodyAnimationAtProgress(fighter: FighterVisual, animation: BodyAnimationTuning, progress: number, amount = 1): void {
+  if (applyBodyAnimationKeyframesAtProgress(fighter, animation, progress, amount)) {
+    return;
+  }
+
+  applyBodyAnimationBlend(fighter, animation, getBodyAnimationYoyoBlend(progress, amount));
+}
+
+function getBodyAnimationYoyoBlend(progress: number, amount = 1): number {
+  const phase = ((progress % 1) + 1) % 1;
+
+  return (0.5 - Math.cos(phase * Math.PI * 2) * 0.5) * amount;
 }
 
 function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimationTuning, blend: number): void {
+  applyBodyAnimationPoseBlend(fighter, animation, animation.base, animation.breath, animation.faceBase, animation.faceBreath, blend);
+  applyBodyAnimationRootOffset(fighter, defaultBodyAnimationRootOffset);
+}
+
+function applyBodyAnimationKeyframesAtProgress(fighter: FighterVisual, animation: BodyAnimationTuning, progress: number, amount: number): boolean {
+  const keyframes = getBodyAnimationTimelineKeyframes(animation);
+
+  if (!keyframes) {
+    return false;
+  }
+
+  const baseKeyframe = keyframes[0];
+  const sampledPose = sampleBodyAnimationKeyframePose(keyframes, Math.max(1, animation.duration), progress);
+
+  if (!baseKeyframe || !sampledPose) {
+    return false;
+  }
+
+  applyBodyAnimationPoseBlend(fighter, animation, baseKeyframe.rigParts, sampledPose.rigParts, baseKeyframe.faceParts, sampledPose.faceParts, amount);
+  applyBodyAnimationRootOffsetBlend(fighter, baseKeyframe.rootOffset, sampledPose.rootOffset, amount);
+
+  return true;
+}
+
+function getBodyAnimationTimelineKeyframes(animation: BodyAnimationTuning): BodyAnimationKeyframe[] | undefined {
+  const duration = Math.max(1, animation.duration);
+  const keyframes = animation.keyframes;
+
+  if (!keyframes || keyframes.length < 2) {
+    return undefined;
+  }
+
+  return keyframes
+    .map((keyframe) => ({
+      ...keyframe,
+      time: clampNumber(Number.isFinite(keyframe.time) ? keyframe.time : 0, 0, duration),
+    }))
+    .sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+}
+
+interface SampledBodyAnimationPose {
+  rigParts: Record<RigPartKey, RigPartTuning>;
+  faceParts: Record<FacePartKey, FacePartTuning>;
+  rootOffset: BodyAnimationRootOffset;
+}
+
+function sampleBodyAnimationKeyframePose(
+  keyframes: readonly BodyAnimationKeyframe[],
+  duration: number,
+  progress: number,
+): SampledBodyAnimationPose | undefined {
+  const firstKeyframe = keyframes[0];
+
+  if (!firstKeyframe) {
+    return undefined;
+  }
+
+  const timelineTime = (((progress % 1) + 1) % 1) * duration;
+
+  for (let index = 0; index < keyframes.length - 1; index += 1) {
+    const from = keyframes[index];
+    const to = keyframes[index + 1];
+
+    if (!from || !to || timelineTime < from.time || timelineTime > to.time) {
+      continue;
+    }
+
+    return interpolateBodyAnimationKeyframes(from, to, getBodyAnimationKeyframeSegmentBlend(from, timelineTime - from.time, to.time - from.time));
+  }
+
+  const lastKeyframe = keyframes[keyframes.length - 1];
+
+  if (!lastKeyframe) {
+    return undefined;
+  }
+
+  const wrappedTimelineTime = timelineTime < firstKeyframe.time ? timelineTime + duration : timelineTime;
+  const wrappedDuration = firstKeyframe.time + duration - lastKeyframe.time;
+
+  return interpolateBodyAnimationKeyframes(
+    lastKeyframe,
+    firstKeyframe,
+    getBodyAnimationKeyframeSegmentBlend(lastKeyframe, wrappedTimelineTime - lastKeyframe.time, wrappedDuration),
+  );
+}
+
+function getBodyAnimationKeyframeSegmentBlend(keyframe: BodyAnimationKeyframe, elapsed: number, duration: number): number {
+  if (keyframe.easing === "hold") {
+    return 0;
+  }
+
+  const linearBlend = clampNumber(duration <= 0 ? 0 : elapsed / duration, 0, 1);
+
+  if (keyframe.easing === "linear") {
+    return linearBlend;
+  }
+
+  return 0.5 - Math.cos(linearBlend * Math.PI) * 0.5;
+}
+
+function interpolateBodyAnimationKeyframes(from: BodyAnimationKeyframe, to: BodyAnimationKeyframe, blend: number): SampledBodyAnimationPose {
+  return {
+    rigParts: Object.fromEntries(
+      RIG_PART_KEYS.map((key) => [
+        key,
+        interpolateRigPartTuning(from.rigParts[key] ?? defaultRigPartTuning, to.rigParts[key] ?? defaultRigPartTuning, blend),
+      ]),
+    ) as Record<RigPartKey, RigPartTuning>,
+    faceParts: {
+      eyeLeft: interpolateFacePartTuning(from.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft, to.faceParts.eyeLeft ?? DEFAULT_FACE_PARTS.eyeLeft, blend),
+      eyeRight: interpolateFacePartTuning(from.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight, to.faceParts.eyeRight ?? DEFAULT_FACE_PARTS.eyeRight, blend),
+    },
+    rootOffset: interpolateBodyAnimationRootOffset(from.rootOffset ?? defaultBodyAnimationRootOffset, to.rootOffset ?? defaultBodyAnimationRootOffset, blend),
+  };
+}
+
+function interpolateRigPartTuning(from: RigPartTuning, to: RigPartTuning, blend: number): RigPartTuning {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+    angle: lerp(from.angle, to.angle, blend),
+    scaleX: lerp(from.scaleX, to.scaleX, blend),
+    scaleY: lerp(from.scaleY, to.scaleY, blend),
+    flipX: blend < 0.5 ? from.flipX : to.flipX,
+    flipY: blend < 0.5 ? from.flipY : to.flipY,
+  };
+}
+
+function interpolateFacePartTuning(from: FacePartTuning, to: FacePartTuning, blend: number): FacePartTuning {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+    scaleX: lerp(from.scaleX, to.scaleX, blend),
+    scaleY: lerp(from.scaleY, to.scaleY, blend),
+  };
+}
+
+function interpolateBodyAnimationRootOffset(from: BodyAnimationRootOffset, to: BodyAnimationRootOffset, blend: number): BodyAnimationRootOffset {
+  return {
+    x: lerp(from.x, to.x, blend),
+    y: lerp(from.y, to.y, blend),
+  };
+}
+
+function applyBodyAnimationPoseBlend(
+  fighter: FighterVisual,
+  animation: BodyAnimationTuning,
+  fromRigParts: Record<RigPartKey, RigPartTuning>,
+  toRigParts: Record<RigPartKey, RigPartTuning>,
+  fromFaceParts: Record<"eyeLeft" | "eyeRight", FacePartTuning>,
+  toFaceParts: Record<"eyeLeft" | "eyeRight", FacePartTuning>,
+  blend: number,
+): void {
   if (fighter.isShattered) {
     return;
   }
@@ -5019,8 +5496,8 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
     const part = rig.parts[key];
     const shadowPart = rig.shadow?.parts[key];
     const pivot = PAPER_DOLL_PART_PIVOTS[key];
-    const base = animation.base[key] ?? defaultRigPartTuning;
-    const breath = animation.breath[key] ?? defaultRigPartTuning;
+    const base = fromRigParts[key] ?? defaultRigPartTuning;
+    const breath = toRigParts[key] ?? defaultRigPartTuning;
 
     applyRigPartTransformBlend(part, pivot, base, breath, blend);
     if (shadowPart) {
@@ -5037,34 +5514,118 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
     rig.faceParts.eyeLeft,
     HEAD_FACE_LEFT_EYE_X,
     HEAD_FACE_EYE_Y,
-    animation.faceBase.eyeLeft,
-    animation.faceBreath.eyeLeft,
+    fromFaceParts.eyeLeft,
+    toFaceParts.eyeLeft,
     blend,
   );
   applyFacePartTransformBlend(
     rig.faceParts.eyeRight,
     HEAD_FACE_RIGHT_EYE_X,
     HEAD_FACE_EYE_Y,
-    animation.faceBase.eyeRight,
-    animation.faceBreath.eyeRight,
+    fromFaceParts.eyeRight,
+    toFaceParts.eyeRight,
     blend,
   );
   applyFacePartTransformBlend(
     rig.shadow?.faceParts.eyeLeft,
     HEAD_FACE_LEFT_EYE_X,
     HEAD_FACE_EYE_Y,
-    animation.faceBase.eyeLeft,
-    animation.faceBreath.eyeLeft,
+    fromFaceParts.eyeLeft,
+    toFaceParts.eyeLeft,
     blend,
   );
   applyFacePartTransformBlend(
     rig.shadow?.faceParts.eyeRight,
     HEAD_FACE_RIGHT_EYE_X,
     HEAD_FACE_EYE_Y,
-    animation.faceBase.eyeRight,
-    animation.faceBreath.eyeRight,
+    fromFaceParts.eyeRight,
+    toFaceParts.eyeRight,
     blend,
   );
+}
+
+function rememberPaperDollAnimationRootBase(fighter: FighterVisual): void {
+  paperDollAnimationRootBases.set(fighter, {
+    rootX: fighter.body.x,
+    rootY: fighter.body.y,
+    shadowX: fighter.shadow.x,
+    shadowY: fighter.shadow.y,
+    lowShadowX: fighter.lowShadow.x,
+    lowShadowY: fighter.lowShadow.y,
+    nameX: fighter.name.x,
+    nameY: fighter.name.y,
+    worldOffsetX: 0,
+    worldOffsetY: 0,
+  });
+}
+
+function getPaperDollAnimationRootBase(fighter: FighterVisual): PaperDollAnimationRootBase {
+  const base = paperDollAnimationRootBases.get(fighter);
+
+  if (base) {
+    return base;
+  }
+
+  rememberPaperDollAnimationRootBase(fighter);
+
+  return paperDollAnimationRootBases.get(fighter) ?? {
+    rootX: fighter.body.x,
+    rootY: fighter.body.y,
+    shadowX: fighter.shadow.x,
+    shadowY: fighter.shadow.y,
+    lowShadowX: fighter.lowShadow.x,
+    lowShadowY: fighter.lowShadow.y,
+    nameX: fighter.name.x,
+    nameY: fighter.name.y,
+    worldOffsetX: 0,
+    worldOffsetY: 0,
+  };
+}
+
+function applyBodyAnimationRootOffsetBlend(
+  fighter: FighterVisual,
+  from: BodyAnimationRootOffset | undefined,
+  to: BodyAnimationRootOffset | undefined,
+  blend: number,
+): void {
+  applyBodyAnimationRootOffset(
+    fighter,
+    interpolateBodyAnimationRootOffset(from ?? defaultBodyAnimationRootOffset, to ?? defaultBodyAnimationRootOffset, blend),
+  );
+}
+
+function applyBodyAnimationRootOffset(fighter: FighterVisual, rootOffset: BodyAnimationRootOffset): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return;
+  }
+
+  const base = getPaperDollAnimationRootBase(fighter);
+  const scaleX = rig.root.scaleX === 0 ? 1 : rig.root.scaleX;
+  const scaleY = rig.root.scaleY === 0 ? 1 : rig.root.scaleY;
+  const worldOffsetX = rootOffset.x * scaleX;
+  const worldOffsetY = rootOffset.y * scaleY;
+
+  base.rootX = fighter.body.x - base.worldOffsetX;
+  base.rootY = fighter.body.y - base.worldOffsetY;
+  base.shadowX = fighter.shadow.x - base.worldOffsetX;
+  base.shadowY = fighter.shadow.y - base.worldOffsetY;
+  base.lowShadowX = fighter.lowShadow.x - base.worldOffsetX;
+  base.lowShadowY = fighter.lowShadow.y - base.worldOffsetY;
+  base.nameX = fighter.name.x - base.worldOffsetX;
+  base.nameY = fighter.name.y - base.worldOffsetY;
+  base.worldOffsetX = worldOffsetX;
+  base.worldOffsetY = worldOffsetY;
+
+  rig.root.x = base.rootX + worldOffsetX;
+  rig.root.y = base.rootY + worldOffsetY;
+  fighter.shadow.x = base.shadowX + worldOffsetX;
+  fighter.shadow.y = base.shadowY + worldOffsetY;
+  fighter.lowShadow.x = base.lowShadowX + worldOffsetX;
+  fighter.lowShadow.y = base.lowShadowY + worldOffsetY;
+  fighter.name.x = base.nameX + worldOffsetX;
+  fighter.name.y = base.nameY + worldOffsetY;
 }
 
 function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number }, tuning: RigPartTuning): void {
@@ -5318,10 +5879,34 @@ function getNextDebugRigPartSelection(partKey: RigPartKey, shouldToggle: boolean
   return selectedParts;
 }
 
+function getDebugRigPartSelectionGroup(partKey: RigPartKey): RigPartKey[] {
+  const group = DEBUG_RIG_PART_SELECTION_GROUPS.find((partGroup) => partGroup.includes(partKey));
+
+  return group ? [...group] : [partKey];
+}
+
+function isRigPartGroupSelectPointer(pointer: Phaser.Input.Pointer): boolean {
+  const event = (pointer as Phaser.Input.Pointer & { event?: { altKey?: boolean } }).event;
+
+  return Boolean(event?.altKey);
+}
+
 function isMultiSelectPointer(pointer: Phaser.Input.Pointer): boolean {
+  const event = (pointer as Phaser.Input.Pointer & { event?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean } }).event;
+
+  return Boolean(event?.ctrlKey || event?.metaKey || event?.shiftKey);
+}
+
+function isAnimationCanvasZoomWheel(pointer: Phaser.Input.Pointer): boolean {
   const event = (pointer as Phaser.Input.Pointer & { event?: { ctrlKey?: boolean; metaKey?: boolean } }).event;
 
   return Boolean(event?.ctrlKey || event?.metaKey);
+}
+
+function isAnimationCanvasPanPointer(pointer: Phaser.Input.Pointer): boolean {
+  const event = (pointer as Phaser.Input.Pointer & { event?: { ctrlKey?: boolean; metaKey?: boolean } }).event;
+
+  return Boolean(event?.ctrlKey || event?.metaKey) && isPrimaryPointerDown(pointer);
 }
 
 function isPrimaryPointerDown(pointer: Phaser.Input.Pointer): boolean {
@@ -5334,43 +5919,377 @@ function isPrimaryPointerDown(pointer: Phaser.Input.Pointer): boolean {
   return typeof pointer.leftButtonDown === "function" ? pointer.leftButtonDown() : true;
 }
 
+function updateAnimationRootOffsetWithInteractiveDelta(delta: Partial<BodyAnimationRootOffset>): void {
+  if (debugTuning.animationRootTransformMode === "poseOffset") {
+    updateAnimationPoseOffsetWithInteractiveDelta(delta);
+    return;
+  }
+
+  const selectedAnimation = getSelectedDebugBodyAnimationTarget();
+
+  if (!selectedAnimation) {
+    return;
+  }
+
+  const animation = selectedAnimation.animation;
+  const target = getDebugAnimationKeyframeUpdateTarget(animation);
+
+  if (!target) {
+    return;
+  }
+
+  const currentRootOffset = target.keyframe.rootOffset ?? defaultBodyAnimationRootOffset;
+  const nextKeyframe: BodyAnimationKeyframe = {
+    ...target.keyframe,
+    rootOffset: {
+      x: clampNumber(currentRootOffset.x + (delta.x ?? 0), -480, 480),
+      y: clampNumber(currentRootOffset.y + (delta.y ?? 0), -480, 480),
+    },
+  };
+  const nextAnimation: BodyAnimationTuning = {
+    ...animation,
+    keyframes: (target.exists
+      ? target.keyframes.map((keyframe) => (keyframe.id === nextKeyframe.id ? nextKeyframe : keyframe))
+      : [...target.keyframes, nextKeyframe]
+    ).sort(compareDebugAnimationKeyframes),
+  };
+
+  updateSelectedDebugBodyAnimation(nextAnimation, {
+    animationEditMode: "keyframe",
+    selectedAnimationKeyframeId: nextKeyframe.id,
+  });
+}
+
+function updateAnimationPoseOffsetWithInteractiveDelta(delta: Partial<BodyAnimationRootOffset>): void {
+  const shift = { x: delta.x ?? 0, y: delta.y ?? 0 };
+
+  if (Math.abs(shift.x) < 0.001 && Math.abs(shift.y) < 0.001) {
+    return;
+  }
+
+  const selectedAnimation = getSelectedDebugBodyAnimationTarget();
+
+  if (!selectedAnimation) {
+    return;
+  }
+
+  const animation = selectedAnimation.animation;
+  const target = getDebugAnimationKeyframeUpdateTarget(animation);
+
+  if (!target) {
+    return;
+  }
+
+  const nextRigParts = shiftDebugRigParts(target.keyframe.rigParts, shift);
+  const nextKeyframe: BodyAnimationKeyframe = {
+    ...target.keyframe,
+    rigParts: nextRigParts,
+  };
+  const nextAnimation: BodyAnimationTuning = {
+    ...animation,
+    keyframes: (target.exists
+      ? target.keyframes.map((keyframe) => (keyframe.id === nextKeyframe.id ? nextKeyframe : keyframe))
+      : [...target.keyframes, nextKeyframe]
+    ).sort(compareDebugAnimationKeyframes),
+  };
+
+  if (nextKeyframe.id === "pose-a") {
+    nextAnimation.base = nextRigParts;
+  }
+
+  if (nextKeyframe.id === "pose-b") {
+    nextAnimation.breath = nextRigParts;
+  }
+
+  updateSelectedDebugBodyAnimation(nextAnimation, {
+    animationEditMode: "keyframe",
+    selectedAnimationKeyframeId: nextKeyframe.id,
+  });
+}
+
 function updateRigPartsWithInteractiveDelta(partKeys: readonly RigPartKey[], delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): void {
   const poseKey = getActiveDebugAnimationRigPoseKey();
 
-  if (partKeys.length === 0 || !poseKey) {
+  if (partKeys.length === 0) {
     return;
   }
 
-  const animationKey = debugTuning.selectedBodyAnimation;
-  const presetKey = debugTuning.paperDollBodyPreset;
-  const presetTuning = getDebugBodyPresetTuning(presetKey);
-  const animation = presetTuning.bodyAnimations[animationKey];
-
-  if (!animation) {
+  if (!poseKey) {
+    updateSelectedDebugAnimationKeyframeRigPartsWithInteractiveDelta(partKeys, delta);
     return;
   }
 
+  const selectedAnimation = getSelectedDebugBodyAnimationTarget();
+
+  if (!selectedAnimation) {
+    return;
+  }
+
+  const animation = selectedAnimation.animation;
   const nextPose = { ...animation[poseKey] };
+  const rotatedPose = getPivotRotatedDebugRigParts(animation[poseKey], partKeys, delta);
+
+  if (rotatedPose) {
+    Object.assign(nextPose, rotatedPose);
+  } else {
+    partKeys.forEach((partKey) => {
+      nextPose[partKey] = applyRigPartInteractiveDelta(animation[poseKey][partKey] ?? defaultRigPartTuning, delta);
+    });
+  }
+
+  updateSelectedDebugBodyAnimation({
+    ...animation,
+    [poseKey]: nextPose,
+  });
+}
+
+function updateSelectedDebugAnimationKeyframeRigPartsWithInteractiveDelta(
+  partKeys: readonly RigPartKey[],
+  delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>,
+): void {
+  if (debugTuning.animationEditMode !== "keyframe" && debugTuning.animationEditMode !== "preview") {
+    return;
+  }
+
+  const selectedAnimation = getSelectedDebugBodyAnimationTarget();
+
+  if (!selectedAnimation) {
+    return;
+  }
+
+  const animation = selectedAnimation.animation;
+  const target = getDebugAnimationKeyframeUpdateTarget(animation);
+
+  if (!target) {
+    return;
+  }
+
+  const nextRigParts = { ...target.keyframe.rigParts };
+  const rotatedRigParts = getPivotRotatedDebugRigParts(target.keyframe.rigParts, partKeys, delta);
+
+  if (rotatedRigParts) {
+    Object.assign(nextRigParts, rotatedRigParts);
+  } else {
+    partKeys.forEach((partKey) => {
+      nextRigParts[partKey] = applyRigPartInteractiveDelta(target.keyframe.rigParts[partKey] ?? defaultRigPartTuning, delta);
+    });
+  }
+
+  const nextKeyframe: BodyAnimationKeyframe = { ...target.keyframe, rigParts: nextRigParts };
+  const nextAnimation: BodyAnimationTuning = {
+    ...animation,
+    keyframes: (target.exists
+      ? target.keyframes.map((keyframe) => (keyframe.id === nextKeyframe.id ? nextKeyframe : keyframe))
+      : [...target.keyframes, nextKeyframe]
+    ).sort(compareDebugAnimationKeyframes),
+  };
+
+  if (nextKeyframe.id === "pose-a") {
+    nextAnimation.base = nextRigParts;
+  }
+
+  if (nextKeyframe.id === "pose-b") {
+    nextAnimation.breath = nextRigParts;
+  }
+
+  updateSelectedDebugBodyAnimation(nextAnimation, {
+    animationEditMode: "keyframe",
+    selectedAnimationKeyframeId: nextKeyframe.id,
+  });
+}
+
+function getPivotRotatedDebugRigParts(
+  sourceParts: Record<RigPartKey, RigPartTuning>,
+  partKeys: readonly RigPartKey[],
+  delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>,
+): Partial<Record<RigPartKey, RigPartTuning>> | undefined {
+  if (delta.angle === undefined || delta.x !== undefined || delta.y !== undefined) {
+    return undefined;
+  }
+
+  const group = getMatchingDebugRigPartSelectionGroup(partKeys);
+
+  if (!group) {
+    return undefined;
+  }
+
+  return rotateDebugRigPartGroupAroundAnchor(sourceParts, group, delta.angle);
+}
+
+function getMatchingDebugRigPartSelectionGroup(partKeys: readonly RigPartKey[]): readonly RigPartKey[] | undefined {
+  return DEBUG_RIG_PART_SELECTION_GROUPS.find(
+    (partGroup) => partGroup.length === partKeys.length && partGroup.every((partKey) => partKeys.includes(partKey)),
+  );
+}
+
+function rotateDebugRigPartGroupAroundAnchor(
+  sourceParts: Record<RigPartKey, RigPartTuning>,
+  partKeys: readonly RigPartKey[],
+  degrees: number,
+): Partial<Record<RigPartKey, RigPartTuning>> {
+  const anchorKey = partKeys[0];
+  const radians = (degrees * Math.PI) / 180;
+  const sin = Math.sin(radians);
+  const cos = Math.cos(radians);
+  const anchorPivot = PAPER_DOLL_PART_PIVOTS[anchorKey];
+  const anchorTuning = sourceParts[anchorKey] ?? defaultRigPartTuning;
+  const originX = anchorPivot.x + anchorTuning.x;
+  const originY = anchorPivot.y + anchorTuning.y;
+  const nextParts: Partial<Record<RigPartKey, RigPartTuning>> = {};
 
   partKeys.forEach((partKey) => {
-    nextPose[partKey] = applyRigPartInteractiveDelta(animation[poseKey][partKey] ?? defaultRigPartTuning, delta);
+    const current = sourceParts[partKey] ?? defaultRigPartTuning;
+    const pivot = PAPER_DOLL_PART_PIVOTS[partKey];
+    const localX = pivot.x + current.x;
+    const localY = pivot.y + current.y;
+    const offsetX = localX - originX;
+    const offsetY = localY - originY;
+    const rotatedX = originX + offsetX * cos - offsetY * sin;
+    const rotatedY = originY + offsetX * sin + offsetY * cos;
+
+    nextParts[partKey] = {
+      ...current,
+      x: clampNumber(rotatedX - pivot.x, -480, 480),
+      y: clampNumber(rotatedY - pivot.y, -480, 480),
+      angle: clampNumber(current.angle + degrees, -180, 180),
+    };
   });
 
-  updateDebugTuning({
-    bodyPresetTuning: {
-      ...debugTuning.bodyPresetTuning,
-      [presetKey]: {
-        ...presetTuning,
-        bodyAnimations: {
-          ...presetTuning.bodyAnimations,
-          [animationKey]: {
-            ...animation,
-            [poseKey]: nextPose,
-          },
-        },
-      },
+  return nextParts;
+}
+
+function getDebugAnimationKeyframeUpdateTarget(animation: BodyAnimationTuning): { keyframes: BodyAnimationKeyframe[]; keyframe: BodyAnimationKeyframe; exists: boolean } | undefined {
+  const keyframes = getDebugAnimationEditKeyframes(animation);
+
+  if (debugTuning.animationEditMode === "poseA" || debugTuning.animationEditMode === "poseB") {
+    const targetId = debugTuning.animationEditMode === "poseA" ? "pose-a" : "pose-b";
+    const keyframe = keyframes.find((candidate) => candidate.id === targetId);
+
+    return keyframe ? { keyframes, keyframe, exists: true } : undefined;
+  }
+
+  if (debugTuning.animationEditMode === "keyframe") {
+    const keyframe = keyframes.find((candidate) => candidate.id === debugTuning.selectedAnimationKeyframeId) ?? keyframes[0];
+
+    return keyframe ? { keyframes, keyframe, exists: true } : undefined;
+  }
+
+  const duration = Math.max(1, animation.duration);
+  const time = Math.round(clampNumber(debugTuning.animationPreviewProgress, 0, 1) * duration);
+  const existingKeyframe = keyframes.find((keyframe) => Math.round(keyframe.time) === time);
+
+  if (existingKeyframe) {
+    return { keyframes, keyframe: existingKeyframe, exists: true };
+  }
+
+  const sampledPose = sampleDebugAnimationPreviewPose(animation);
+  const sourceKeyframe = keyframes[0];
+  const sourcePose = sampledPose ?? sourceKeyframe;
+
+  if (!sourcePose) {
+    return undefined;
+  }
+
+  return {
+    keyframes,
+    keyframe: {
+      id: createUniqueDebugAnimationKeyframeId(keyframes, `key-${Math.round((time / duration) * 1000)}`),
+      time,
+      easing: "easeInOut",
+      rigParts: cloneDebugRigParts(sourcePose.rigParts),
+      faceParts: cloneDebugFaceParts(sourcePose.faceParts),
+      rootOffset: cloneDebugBodyAnimationRootOffset(sourcePose.rootOffset),
     },
-  });
+    exists: false,
+  };
+}
+
+function sampleDebugAnimationPreviewPose(animation: BodyAnimationTuning): SampledBodyAnimationPose | undefined {
+  const keyframes = getDebugAnimationEditKeyframes(animation);
+
+  return sampleBodyAnimationKeyframePose(keyframes, Math.max(1, animation.duration), debugTuning.animationPreviewProgress);
+}
+
+function getDebugAnimationEditKeyframes(animation: BodyAnimationTuning): BodyAnimationKeyframe[] {
+  if (animation.keyframes && animation.keyframes.length > 0) {
+    return animation.keyframes.map(cloneDebugAnimationKeyframe).sort(compareDebugAnimationKeyframes);
+  }
+
+  return [
+    {
+      id: "pose-a",
+      time: 0,
+      easing: "easeInOut",
+      rigParts: cloneDebugRigParts(animation.base),
+      faceParts: cloneDebugFaceParts(animation.faceBase),
+      rootOffset: { ...defaultBodyAnimationRootOffset },
+    },
+    {
+      id: "pose-b",
+      time: Math.max(1, animation.duration) / 2,
+      easing: "easeInOut",
+      rigParts: cloneDebugRigParts(animation.breath),
+      faceParts: cloneDebugFaceParts(animation.faceBreath),
+      rootOffset: { ...defaultBodyAnimationRootOffset },
+    },
+  ];
+}
+
+function cloneDebugAnimationKeyframe(keyframe: BodyAnimationKeyframe): BodyAnimationKeyframe {
+  return {
+    ...keyframe,
+    rigParts: cloneDebugRigParts(keyframe.rigParts),
+    faceParts: cloneDebugFaceParts(keyframe.faceParts),
+    rootOffset: cloneDebugBodyAnimationRootOffset(keyframe.rootOffset),
+  };
+}
+
+function cloneDebugRigParts(source: Record<RigPartKey, RigPartTuning>): Record<RigPartKey, RigPartTuning> {
+  return Object.fromEntries(RIG_PART_KEYS.map((key) => [key, { ...(source[key] ?? defaultRigPartTuning) }])) as Record<RigPartKey, RigPartTuning>;
+}
+
+function shiftDebugRigParts(source: Record<RigPartKey, RigPartTuning>, delta: { x: number; y: number }): Record<RigPartKey, RigPartTuning> {
+  return Object.fromEntries(
+    RIG_PART_KEYS.map((key) => [
+      key,
+      {
+        ...(source[key] ?? defaultRigPartTuning),
+        x: clampNumber((source[key]?.x ?? defaultRigPartTuning.x) + delta.x, -480, 480),
+        y: clampNumber((source[key]?.y ?? defaultRigPartTuning.y) + delta.y, -480, 480),
+      },
+    ]),
+  ) as Record<RigPartKey, RigPartTuning>;
+}
+
+function cloneDebugFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<FacePartKey, FacePartTuning> {
+  return Object.fromEntries(FACE_PART_KEYS.map((key) => [key, { ...(source[key] ?? DEFAULT_FACE_PARTS[key]) }])) as Record<FacePartKey, FacePartTuning>;
+}
+
+function cloneDebugBodyAnimationRootOffset(source: BodyAnimationRootOffset | undefined): BodyAnimationRootOffset {
+  return { ...(source ?? defaultBodyAnimationRootOffset) };
+}
+
+function compareDebugAnimationKeyframes(a: BodyAnimationKeyframe, b: BodyAnimationKeyframe): number {
+  return a.time - b.time || a.id.localeCompare(b.id);
+}
+
+function createUniqueDebugAnimationKeyframeId(keyframes: readonly BodyAnimationKeyframe[], prefix: string): string {
+  const usedIds = new Set(keyframes.map((keyframe) => keyframe.id));
+  let id = sanitizeDebugAnimationKeyframeId(prefix);
+  let suffix = 2;
+
+  while (usedIds.has(id)) {
+    id = `${sanitizeDebugAnimationKeyframeId(prefix)}-${suffix}`;
+    suffix += 1;
+  }
+
+  return id;
+}
+
+function sanitizeDebugAnimationKeyframeId(value: string): string {
+  const id = value.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+
+  return id || "key";
 }
 
 function updateBodyPartLayersWithInteractivePointerDelta(
@@ -5467,13 +6386,42 @@ function getActiveDebugAnimationRigPoseKey(): AnimationRigPoseKey | undefined {
 }
 
 function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
+  const animation = getSelectedDebugBodyAnimation();
+
+  if (debugTuning.animationEditMode === "keyframe") {
+    const selectedKeyframe = getSelectedDebugAnimationKeyframe(animation);
+
+    if (!selectedKeyframe) {
+      return;
+    }
+
+    applyBodyAnimationPoseBlend(fighter, animation, animation.base, selectedKeyframe.rigParts, animation.faceBase, selectedKeyframe.faceParts, 1);
+    applyBodyAnimationRootOffset(fighter, selectedKeyframe.rootOffset ?? defaultBodyAnimationRootOffset);
+    return;
+  }
+
   const poseKey = getActiveDebugAnimationRigPoseKey();
 
   if (!poseKey) {
     return;
   }
 
-  applyBodyAnimationBlend(fighter, getSelectedDebugBodyAnimation(), poseKey === "base" ? 0 : 1);
+  applyBodyAnimationBlend(fighter, animation, poseKey === "base" ? 0 : 1);
+  applyBodyAnimationRootOffset(
+    fighter,
+    getDebugAnimationEditKeyframes(animation).find((keyframe) => keyframe.id === (poseKey === "base" ? "pose-a" : "pose-b"))?.rootOffset
+      ?? defaultBodyAnimationRootOffset,
+  );
+}
+
+function getSelectedDebugAnimationKeyframe(animation: BodyAnimationTuning | undefined): BodyAnimationKeyframe | undefined {
+  const keyframes = animation?.keyframes;
+
+  if (!keyframes || keyframes.length === 0) {
+    return undefined;
+  }
+
+  return keyframes.find((keyframe) => keyframe.id === debugTuning.selectedAnimationKeyframeId) ?? keyframes[0];
 }
 
 function applyRigPartInteractiveDelta(part: RigPartTuning, delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): RigPartTuning {
@@ -6450,6 +7398,14 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number, shadowMode = get
 function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState, playerSettings = getPlayerSettings()): void {
   const layout = getStageLayout(current, getActiveDebugTuning());
   const shouldSnap = isDebugTuningActive();
+  const playerMovementDelayMs = shouldSnap
+    ? 0
+    : getBodyAnimationMovementStartDelayMs(current.lastPlayerAction, visuals.player, current.player.weaponClass, getBodyAnimationVariantSeed(current, "player"));
+  const enemyMovementDelayMs = shouldSnap
+    ? 0
+    : getBodyAnimationMovementStartDelayMs(current.lastEnemyAction, visuals.enemy, current.enemy.weaponClass, getBodyAnimationVariantSeed(current, "enemy"));
+  const shouldShowPlayerMovementStartDust = isAxeLungeMovementStartDustAction(current.lastPlayerAction, current.player.weaponClass);
+  const shouldShowEnemyMovementStartDust = isAxeLungeMovementStartDustAction(current.lastEnemyAction, current.enemy.weaponClass);
 
   if (!visuals.player.isShattered) {
     positionFighterForLayout(
@@ -6460,6 +7416,8 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
       layout.playerY,
       shouldSnap,
       playerSettings,
+      playerMovementDelayMs,
+      shouldShowPlayerMovementStartDust,
     );
   }
 
@@ -6472,6 +7430,8 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
       layout.enemyY,
       shouldSnap,
       playerSettings,
+      enemyMovementDelayMs,
+      shouldShowEnemyMovementStartDust,
     );
   }
 }
@@ -6488,14 +7448,108 @@ function positionFighterForLayout(
   feetY: number,
   shouldSnap: boolean,
   playerSettings = getPlayerSettings(),
+  movementDelayMs = 0,
+  shouldShowMovementStartDust = false,
 ): void {
+  const startX = fighter.body.x;
+  const movementDeltaX = x - startX;
+
   if (shouldSnap) {
     setFighterXImmediate(fighter, x);
   } else {
-    setFighterX(target, fighter, x);
+    setFighterX(target, fighter, x, movementDelayMs);
+    if (shouldShowMovementStartDust) {
+      scheduleMovementStartDustBurst(target, startX, feetY, movementDeltaX, movementDelayMs, playerSettings);
+    }
   }
 
   applyFighterTuning(fighter, scale, feetY, playerSettings);
+}
+
+function isAxeLungeMovementStartDustAction(actionId: ActionId | undefined, weaponClass: HeroWeaponClass | undefined): boolean {
+  return actionId === "lunge" && weaponClass === "axe";
+}
+
+function scheduleMovementStartDustBurst(
+  target: Phaser.Scene,
+  x: number,
+  feetY: number,
+  movementDeltaX: number,
+  movementDelayMs: number,
+  playerSettings = getPlayerSettings(),
+): void {
+  if (!areArenaVfxEnabled(playerSettings) || Math.abs(movementDeltaX) < 0.5) {
+    return;
+  }
+
+  const delay = Math.max(0, Math.round(movementDelayMs));
+  const direction = movementDeltaX > 0 ? -1 : 1;
+  const spawn = () => createMovementStartDustBurst(target, x, feetY - 8, direction);
+
+  if (delay <= MOVEMENT_START_DUST_DELAY_EPSILON_MS) {
+    spawn();
+    return;
+  }
+
+  target.time.delayedCall(delay, spawn);
+}
+
+function getBodyAnimationMovementStartDelayMs(
+  actionId: ActionId | undefined,
+  fighter: FighterVisual,
+  weaponClass: HeroWeaponClass | undefined,
+  variantSeed: string,
+): number {
+  const animationKey = getMovementBodyAnimationKey(actionId);
+
+  if (!animationKey) {
+    return 0;
+  }
+
+  const animation = pickActiveBodyAnimationVariant(animationKey, fighter.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
+
+  if (!animation.enabled) {
+    return 0;
+  }
+
+  const movementStartKeyframe = getBodyAnimationMovementStartKeyframe(animation);
+
+  if (!movementStartKeyframe) {
+    return 0;
+  }
+
+  return Math.max(0, Math.round(clampNumber(movementStartKeyframe.time, 0, Math.max(1, animation.duration))));
+}
+
+function getMovementBodyAnimationKey(actionId: ActionId | undefined): BodyAnimationKey | undefined {
+  if (actionId === "forward" || actionId === "back") {
+    return "walkCycle";
+  }
+
+  if (actionId === "lunge") {
+    return "lunge";
+  }
+
+  return undefined;
+}
+
+function getBodyAnimationVariantSeed(state: CombatState, owner: "player" | "enemy"): string {
+  const actionId = owner === "player" ? state.lastPlayerAction : state.lastEnemyAction;
+  const damage = owner === "player" ? state.lastPlayerDamage : state.lastEnemyDamage;
+  const blocked = owner === "player" ? state.lastPlayerBlocked : state.lastEnemyBlocked;
+  const fighter = owner === "player" ? state.player : state.enemy;
+
+  return [
+    owner,
+    state.round,
+    actionId ?? "none",
+    fighter.weaponClass ?? "none",
+    state.playerPosition,
+    state.enemyPosition,
+    state.distance,
+    damage,
+    blocked ? 1 : 0,
+  ].join(":");
 }
 
 function applyFighterTuning(fighter: FighterVisual, scale: number, feetY: number, playerSettings = getPlayerSettings()): void {
@@ -6855,6 +7909,102 @@ function getActiveBodyAnimation(key: BodyAnimationKey, presetKey: PaperDollBodyP
   return getBodyPresetTuning(presetKey).bodyAnimations[key] ?? DEFAULT_BODY_ANIMATIONS[key];
 }
 
+function pickActiveBodyAnimationVariant(
+  key: BodyAnimationKey,
+  presetKey: PaperDollBodyPreset | undefined,
+  weaponClass: HeroWeaponClass | undefined,
+  seed: string,
+): BodyAnimationTuning {
+  const slot = getActiveBodyAnimation(key, presetKey);
+  const enabledVariants = getBodyAnimationRuntimeVariants(slot).filter((variant) => variant.enabled);
+  const weaponSpecificCandidates = enabledVariants.filter((variant) => isBodyAnimationVariantSpecificToWeapon(variant, weaponClass));
+  const genericCandidates =
+    weaponSpecificCandidates.length > 0 ? weaponSpecificCandidates : enabledVariants.filter((variant) => doesBodyAnimationVariantMatchWeapon(variant, weaponClass));
+
+  if (genericCandidates.length === 0) {
+    return slot;
+  }
+
+  return pickWeightedBodyAnimationVariant(genericCandidates, `${key}:${weaponClass ?? "none"}:${seed}`);
+}
+
+function getBodyAnimationRuntimeVariants(slot: BodyAnimationTuning): BodyAnimationTuning[] {
+  return [
+    {
+      ...slot,
+      variantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
+      variantLabel: slot.variantLabel ?? BODY_ANIMATION_DEFAULT_VARIANT_ID,
+      variantWeight: slot.variantWeight ?? 1,
+      appliesToAllWeapons: slot.appliesToAllWeapons ?? true,
+      weaponClasses: slot.weaponClasses ?? [],
+      variants: [],
+    },
+    ...(slot.variants ?? []),
+  ];
+}
+
+function doesBodyAnimationVariantMatchWeapon(animation: BodyAnimationTuning, weaponClass: HeroWeaponClass | undefined): boolean {
+  if (animation.appliesToAllWeapons ?? true) {
+    return true;
+  }
+
+  if (!weaponClass || !isBodyAnimationWeaponClass(weaponClass)) {
+    return false;
+  }
+
+  return (animation.weaponClasses ?? []).includes(weaponClass);
+}
+
+function isBodyAnimationVariantSpecificToWeapon(animation: BodyAnimationTuning, weaponClass: HeroWeaponClass | undefined): boolean {
+  if (animation.appliesToAllWeapons ?? true) {
+    return false;
+  }
+
+  if (!weaponClass || !isBodyAnimationWeaponClass(weaponClass)) {
+    return false;
+  }
+
+  return (animation.weaponClasses ?? []).includes(weaponClass);
+}
+
+function pickWeightedBodyAnimationVariant(candidates: BodyAnimationTuning[], seed: string): BodyAnimationTuning {
+  const weightedCandidates = candidates.map((animation) => ({
+    animation,
+    weight: Math.max(0, animation.variantWeight ?? 1),
+  }));
+  const totalWeight = weightedCandidates.reduce((total, candidate) => total + candidate.weight, 0);
+
+  if (totalWeight <= 0) {
+    return candidates[0] ?? DEFAULT_BODY_ANIMATIONS.idle;
+  }
+
+  let roll = hashStringToUnit(seed) * totalWeight;
+
+  for (const candidate of weightedCandidates) {
+    roll -= candidate.weight;
+    if (roll <= 0) {
+      return candidate.animation;
+    }
+  }
+
+  return weightedCandidates[weightedCandidates.length - 1]?.animation ?? candidates[0] ?? DEFAULT_BODY_ANIMATIONS.idle;
+}
+
+function hashStringToUnit(value: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0) / 0xffffffff;
+}
+
+function isBodyAnimationWeaponClass(value: unknown): value is BodyAnimationWeaponClass {
+  return typeof value === "string" && BODY_ANIMATION_WEAPON_CLASSES.includes(value as BodyAnimationWeaponClass);
+}
+
 function getActiveSlashArc(key: SlashArcAttackKey): SlashArcTuning {
   if (isDebugTuningActive()) {
     return debugTuning.slashArcs[key] ?? DEFAULT_SLASH_ARCS[key];
@@ -6864,7 +8014,82 @@ function getActiveSlashArc(key: SlashArcAttackKey): SlashArcTuning {
 }
 
 function getSelectedDebugBodyAnimation(): BodyAnimationTuning {
-  return getDebugBodyPresetTuning(debugTuning.paperDollBodyPreset).bodyAnimations[debugTuning.selectedBodyAnimation] ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
+  return getSelectedDebugBodyAnimationTarget()?.animation ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
+}
+
+function getSelectedDebugBodyAnimationTarget():
+  | {
+      animationKey: BodyAnimationKey;
+      presetKey: PaperDollBodyPreset;
+      presetTuning: BodyPresetTuning;
+      slot: BodyAnimationTuning;
+      animation: BodyAnimationTuning;
+      variantId: string;
+    }
+  | undefined {
+  const animationKey = debugTuning.selectedBodyAnimation;
+  const presetKey = debugTuning.paperDollBodyPreset;
+  const presetTuning = getDebugBodyPresetTuning(presetKey);
+  const slot = presetTuning.bodyAnimations[animationKey] ?? DEFAULT_BODY_ANIMATIONS[animationKey];
+
+  if (debugTuning.selectedBodyAnimationVariantId === BODY_ANIMATION_DEFAULT_VARIANT_ID) {
+    return {
+      animationKey,
+      presetKey,
+      presetTuning,
+      slot,
+      animation: slot,
+      variantId: BODY_ANIMATION_DEFAULT_VARIANT_ID,
+    };
+  }
+
+  const variant = slot.variants?.find((candidate) => candidate.variantId === debugTuning.selectedBodyAnimationVariantId);
+
+  return {
+    animationKey,
+    presetKey,
+    presetTuning,
+    slot,
+    animation: variant ?? slot,
+    variantId: variant?.variantId ?? BODY_ANIMATION_DEFAULT_VARIANT_ID,
+  };
+}
+
+function updateSelectedDebugBodyAnimation(nextAnimation: BodyAnimationTuning, debugPatch: Partial<ArenaDebugTuning> = {}): void {
+  const selectedAnimation = getSelectedDebugBodyAnimationTarget();
+
+  if (!selectedAnimation) {
+    return;
+  }
+
+  const nextSlot =
+    selectedAnimation.variantId === BODY_ANIMATION_DEFAULT_VARIANT_ID
+      ? nextAnimation
+      : {
+          ...selectedAnimation.slot,
+          variants: (selectedAnimation.slot.variants ?? []).map((variant) =>
+            variant.variantId === selectedAnimation.variantId
+              ? {
+                  ...nextAnimation,
+                  variantId: variant.variantId,
+                }
+              : variant,
+          ),
+        };
+
+  updateDebugTuning({
+    ...debugPatch,
+    bodyPresetTuning: {
+      ...debugTuning.bodyPresetTuning,
+      [selectedAnimation.presetKey]: {
+        ...selectedAnimation.presetTuning,
+        bodyAnimations: {
+          ...selectedAnimation.presetTuning.bodyAnimations,
+          [selectedAnimation.animationKey]: nextSlot,
+        },
+      },
+    },
+  });
 }
 
 function setFighterXImmediate(fighter: FighterVisual, nextX: number): void {
@@ -6879,18 +8104,21 @@ function setFighterXImmediate(fighter: FighterVisual, nextX: number): void {
   });
 }
 
-function setFighterX(target: Phaser.Scene, fighter: FighterVisual, nextX: number): void {
+function setFighterX(target: Phaser.Scene, fighter: FighterVisual, nextX: number, movementDelayMs = 0): void {
   const delta = nextX - fighter.body.x;
 
   if (Math.abs(delta) < 0.5) {
     return;
   }
 
+  const delay = Math.max(0, Math.round(movementDelayMs));
+
   getFighterParts(fighter).forEach((part) => {
     target.tweens.add({
       targets: part,
       x: part.x + delta,
       duration: FIGHTER_MOVE_DURATION,
+      delay,
       ease: "Sine.easeInOut",
     });
   });
@@ -6961,16 +8189,29 @@ function playBodyAnimationOnce(
   animation: BodyAnimationTuning,
   options: BodyAnimationOnceOptions = {},
 ): Promise<void> {
+  return playBodyAnimationOnceHandle(target, fighter, animation, options).done;
+}
+
+function playBodyAnimationOnceHandle(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  animation: BodyAnimationTuning,
+  options: BodyAnimationOnceOptions = {},
+): BodyAnimationOnceHandle {
   const rig = fighter.paperDollRig;
   const animationAmount = getArenaAnimationAmount();
 
   resetFighterBodyIdleAnimation(fighter, target.time.now);
 
   if (!rig || !animation.enabled || animationAmount <= 0) {
-    return Promise.resolve();
+    return {
+      done: Promise.resolve(),
+      speedUp: () => undefined,
+    };
   }
 
   const speedMultiplier = options.speedMultiplier && options.speedMultiplier > 0 ? options.speedMultiplier : 1;
+  const hasKeyframes = Boolean(getBodyAnimationTimelineKeyframes(animation));
   const duration = Math.max(1, animation.duration / speedMultiplier);
   const tweenDuration = Math.max(1, duration / 2);
   const fallbackDelay = duration + 60;
@@ -6978,9 +8219,14 @@ function playBodyAnimationOnce(
 
   fighter.bodyAnimationLockedUntil = lockedUntil;
   target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
-  applyBodyAnimationBlend(fighter, animation, 0);
+  if (hasKeyframes) {
+    applyBodyAnimationAtProgress(fighter, animation, 0, animationAmount);
+  } else {
+    applyBodyAnimationBlend(fighter, animation, 0);
+  }
 
-  return new Promise((resolve) => {
+  let speedUp: BodyAnimationOnceHandle["speedUp"] = () => undefined;
+  const done = new Promise<void>((resolve) => {
     let isResolved = false;
     const finish = (): void => {
       if (isResolved) {
@@ -6999,18 +8245,71 @@ function playBodyAnimationOnce(
     };
 
     target.time.delayedCall(fallbackDelay, finish);
-    target.tweens.addCounter({
+    if (hasKeyframes) {
+      const tween = target.tweens.addCounter({
+        from: 0,
+        to: 1,
+        duration,
+        yoyo: false,
+        ease: "Linear",
+        onUpdate: (tween) => {
+          if (isResolved) {
+            return;
+          }
+
+          applyBodyAnimationAtProgress(fighter, animation, tween.getValue() ?? 0, animationAmount);
+        },
+        onComplete: finish,
+      });
+      speedUp = (multiplier: number): void => {
+        if (isResolved) {
+          return;
+        }
+
+        tween.setTimeScale(Math.max(1, multiplier));
+      };
+
+      return;
+    }
+
+    const tween = target.tweens.addCounter({
       from: 0,
       to: animationAmount,
       duration: tweenDuration,
       yoyo: true,
       ease: "Sine.easeInOut",
       onUpdate: (tween) => {
+        if (isResolved) {
+          return;
+        }
+
         applyBodyAnimationBlend(fighter, animation, tween.getValue() ?? 0);
       },
       onComplete: finish,
     });
+    speedUp = (multiplier: number): void => {
+      if (isResolved) {
+        return;
+      }
+
+      tween.setTimeScale(Math.max(1, multiplier));
+    };
   });
+
+  return {
+    done,
+    speedUp: (multiplier: number) => speedUp(multiplier),
+  };
+}
+
+function speedUpDamagingLungeAfterImpact(actionAnimation: ActionAnimationHandle | undefined, actionId: ActionId | undefined, damage: number): void {
+  if (actionId !== "lunge" || damage <= 0 || !actionAnimation?.speedUp) {
+    return;
+  }
+
+  const impact = actionAnimation.impact ?? Promise.resolve();
+
+  void impact.then(() => actionAnimation.speedUp?.(DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE));
 }
 
 function animateAction(
@@ -7025,19 +8324,26 @@ function animateAction(
 ): ActionAnimationHandle {
   const sign = direction === "right" ? 1 : -1;
   const animationAmount = getArenaAnimationAmount();
+  const variantSeed = options.variantSeed ?? `${actionId}:${direction}:${weaponClass ?? "none"}`;
 
   if (actionId === "forward" || actionId === "back") {
-    const actionAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("walkCycle", actor.paperDollRig?.bodyPresetKey));
+    const actionAnimation = playBodyAnimationOnce(
+      target,
+      actor,
+      pickActiveBodyAnimationVariant("walkCycle", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed),
+    );
 
     return { done: actionAnimation };
   }
 
   if (actionId === "lunge") {
-    const animation = getActiveBodyAnimation("lunge", actor.paperDollRig?.bodyPresetKey);
+    const animation = pickActiveBodyAnimationVariant("lunge", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
+    const bodyAnimation = playBodyAnimationOnceHandle(target, actor, animation);
 
     return {
-      done: playBodyAnimationOnce(target, actor, animation),
+      done: bodyAnimation.done,
       impact: createSceneDelay(target, getBodyAnimationImpactDelayMs(animation, LUNGE_ACTION_IMPACT_PROGRESS)),
+      speedUp: bodyAnimation.speedUp,
     };
   }
 
@@ -7061,7 +8367,11 @@ function animateAction(
   }
 
   if (actionId === "shuriken") {
-    const bodyAnimation = playBodyAnimationOnce(target, actor, getActiveBodyAnimation("bowShot", actor.paperDollRig?.bodyPresetKey));
+    const bodyAnimation = playBodyAnimationOnce(
+      target,
+      actor,
+      pickActiveBodyAnimationVariant("bowShot", actor.paperDollRig?.bodyPresetKey, "shuriken", variantSeed),
+    );
     const projectileAnimation = playProjectile(target, actor, defender, actionId, direction);
 
     return {
@@ -7076,7 +8386,7 @@ function animateAction(
   if (isAttackBodyAnimationKey(actionId)) {
     const isRangedWeapon = isRangedWeaponClass(weaponClass);
     const bodyAnimationKey: BodyAnimationKey = isRangedWeapon ? "bowShot" : actionId;
-    const bodyAnimation = getActiveBodyAnimation(bodyAnimationKey, actor.paperDollRig?.bodyPresetKey);
+    const bodyAnimation = pickActiveBodyAnimationVariant(bodyAnimationKey, actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
 
     actionAnimations.push(playBodyAnimationOnce(target, actor, bodyAnimation));
     if (isRangedWeapon) {
@@ -7119,8 +8429,33 @@ function getMeleeActionTimeline(actionId: AttackBodyAnimationKey, animation: Bod
 
 function getBodyAnimationImpactDelayMs(animation: BodyAnimationTuning, impactProgress: number): number {
   const duration = Math.max(1, animation.duration);
+  const impactKeyframe = getBodyAnimationImpactKeyframe(animation);
+
+  if (impactKeyframe) {
+    return Math.max(1, Math.round(clampNumber(impactKeyframe.time, 0, duration)));
+  }
 
   return Math.max(1, Math.round(duration * impactProgress));
+}
+
+function getBodyAnimationImpactKeyframe(animation: BodyAnimationTuning): BodyAnimationKeyframe | undefined {
+  const impactKeyframeId = animation.impactKeyframeId;
+
+  if (!impactKeyframeId) {
+    return undefined;
+  }
+
+  return getBodyAnimationTimelineKeyframes(animation)?.find((keyframe) => keyframe.id === impactKeyframeId);
+}
+
+function getBodyAnimationMovementStartKeyframe(animation: BodyAnimationTuning): BodyAnimationKeyframe | undefined {
+  const startKeyframeId = animation.movementStartKeyframeId;
+
+  if (!startKeyframeId) {
+    return undefined;
+  }
+
+  return getBodyAnimationTimelineKeyframes(animation)?.find((keyframe) => keyframe.id === startKeyframeId);
 }
 
 function playWeaponSwing(
@@ -8261,6 +9596,38 @@ function createDust(target: Phaser.Scene, x: number, y: number): void {
       y: dot.y - 26 - Math.random() * 24,
       alpha: 0,
       duration: 480 + Math.random() * 180,
+      onComplete: () => releaseDustDot(target, dot),
+    });
+  }
+}
+
+function createMovementStartDustBurst(target: Phaser.Scene, x: number, y: number, direction: -1 | 1): void {
+  if (!areArenaVfxEnabled()) {
+    return;
+  }
+
+  for (let i = 0; i < MOVEMENT_START_DUST_COUNT; i += 1) {
+    const radius = 3 + Math.random() * 5;
+    const dot = acquireDustDot(target);
+    const startX = x + Math.random() * 28 - 14;
+    const startY = y + Math.random() * 8 - 3;
+    const driftX = direction * (24 + Math.random() * 42) + (Math.random() * 12 - 6);
+    const driftY = -8 - Math.random() * 18;
+
+    dot.setPosition(startX, startY);
+    dot.setRadius(radius);
+    dot.setFillStyle(0xf0bd72, 0.66);
+    dot.setScale(1, 0.58 + Math.random() * 0.32);
+
+    target.tweens.add({
+      targets: dot,
+      x: startX + driftX,
+      y: startY + driftY,
+      alpha: 0,
+      scaleX: 1.35,
+      scaleY: 0.22,
+      duration: 180 + Math.random() * 120,
+      ease: "Quad.easeOut",
       onComplete: () => releaseDustDot(target, dot),
     });
   }
