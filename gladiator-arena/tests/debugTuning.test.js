@@ -203,6 +203,9 @@ test("debug tuning normalizes unsafe values", () => {
     selectedFaceAssetLayer: "nose",
     selectedAppearanceLayer: "mustache",
     animationPreviewProgress: 99,
+    animationPreviewPlaybackSpeed: 99,
+    animationPreviewRandomWeapon: "yes",
+    animationPreviewWeaponItemId: "  generated_equipment_weapon_axe_01  ",
     animationRootTransformMode: "bodyTeleport",
     animationEditorZoom: 99,
     animationEditorOffsetX: -999,
@@ -300,6 +303,9 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.selectedFaceAssetLayer, "pupilLeft");
   assert.equal(normalized.selectedAppearanceLayer, "hair");
   assert.equal(normalized.animationPreviewProgress, 1);
+  assert.equal(normalized.animationPreviewPlaybackSpeed, 2);
+  assert.equal(normalized.animationPreviewRandomWeapon, false);
+  assert.equal(normalized.animationPreviewWeaponItemId, "generated_equipment_weapon_axe_01");
   assert.equal(normalized.animationRootTransformMode, "rootOffset");
   assert.equal(normalized.animationEditorZoom, 2.4);
   assert.equal(normalized.animationEditorOffsetX, -420);
@@ -340,6 +346,9 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.selectedFaceAssetLayer, "pupilLeft");
   assert.equal(debugTuningModule.defaultDebugTuning.selectedAppearanceLayer, "hair");
   assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewProgress, 0);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewPlaybackSpeed, 1);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewRandomWeapon, false);
+  assert.equal(debugTuningModule.defaultDebugTuning.animationPreviewWeaponItemId, null);
   assert.equal(debugTuningModule.defaultDebugTuning.animationRootTransformMode, "rootOffset");
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorZoom, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorOffsetX, 0);
@@ -767,10 +776,12 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
         keyframes: [
           {
             ...animation.keyframes[0],
+            time: 44,
             rootOffset: { x: 8, y: -9 },
           },
           {
             ...animation.keyframes[1],
+            time: 123,
             rootOffset: { x: 41, y: -27 },
           },
         ],
@@ -817,9 +828,11 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
     "root-hop",
   );
   assert.equal(anchorRootOffsetNormalized.keyframes[0].id, "pose-a");
+  assert.equal(anchorRootOffsetNormalized.keyframes[0].time, 0);
   assert.equal(anchorRootOffsetNormalized.keyframes[0].rootOffset.x, 8);
   assert.equal(anchorRootOffsetNormalized.keyframes[0].rootOffset.y, -9);
   assert.equal(anchorRootOffsetNormalized.keyframes[1].id, "pose-b");
+  assert.equal(anchorRootOffsetNormalized.keyframes[1].time, 123);
   assert.equal(anchorRootOffsetNormalized.keyframes[1].rigParts.torso.y, 33);
   assert.equal(anchorRootOffsetNormalized.keyframes[1].rootOffset.x, 41);
   assert.equal(anchorRootOffsetNormalized.keyframes[1].rootOffset.y, -27);
@@ -853,6 +866,73 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
   }).bodyAnimations.idle;
 
   assert.equal(missingImpactNormalized.impactKeyframeId, undefined);
+});
+
+test("debug tuning preserves multi-turn rig part animation angles", () => {
+  const animation = debugTuningModule.defaultDebugTuning.bodyAnimations.idle;
+  const spinKeyframe = {
+    ...animation.keyframes[0],
+    id: "spin",
+    time: 100,
+    rigParts: {
+      ...animation.keyframes[0].rigParts,
+      frontHand: {
+        ...animation.keyframes[0].rigParts.frontHand,
+        angle: 9999,
+      },
+    },
+  };
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    bodyAnimations: {
+      idle: {
+        ...animation,
+        base: {
+          ...animation.base,
+          frontHand: {
+            ...animation.base.frontHand,
+            angle: 720,
+          },
+        },
+        breath: {
+          ...animation.breath,
+          frontHand: {
+            ...animation.breath.frontHand,
+            angle: -720,
+          },
+        },
+        keyframes: [
+          {
+            ...animation.keyframes[0],
+            rigParts: {
+              ...animation.keyframes[0].rigParts,
+              frontHand: {
+                ...animation.keyframes[0].rigParts.frontHand,
+                angle: 720,
+              },
+            },
+          },
+          {
+            ...animation.keyframes[1],
+            rigParts: {
+              ...animation.keyframes[1].rigParts,
+              frontHand: {
+                ...animation.keyframes[1].rigParts.frontHand,
+                angle: -720,
+              },
+            },
+          },
+          spinKeyframe,
+        ],
+      },
+    },
+  }).bodyAnimations.idle;
+
+  assert.equal(debugTuningModule.RIG_PART_ANGLE_MAX, 2160);
+  assert.equal(normalized.base.frontHand.angle, 720);
+  assert.equal(normalized.breath.frontHand.angle, -720);
+  assert.equal(normalized.keyframes.find((keyframe) => keyframe.id === "pose-a").rigParts.frontHand.angle, 720);
+  assert.equal(normalized.keyframes.find((keyframe) => keyframe.id === "pose-b").rigParts.frontHand.angle, -720);
+  assert.equal(normalized.keyframes.find((keyframe) => keyframe.id === "spin").rigParts.frontHand.angle, debugTuningModule.RIG_PART_ANGLE_MAX);
 });
 
 test("debug tuning normalizes the selected animation keyframe id", () => {

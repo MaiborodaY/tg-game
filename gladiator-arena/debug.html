@@ -110,6 +110,20 @@
           <footer class="debug-animation-editor__timeline" aria-label="Animation timeline">
             <div class="debug-animation-editor__timeline-row debug-animation-editor__timeline-row--playback">
               <button class="debug-panel__reset debug-animation-editor__play" type="button" data-animation-workbench-play>Play</button>
+              <label class="debug-animation-editor__field debug-animation-editor__field--inline debug-animation-editor__speed">
+                <span>Speed</span>
+                <select class="debug-animation-editor__select" data-animation-workbench-speed>
+                  <option value="0.25">0.25x</option>
+                  <option value="0.5">0.5x</option>
+                  <option value="1">1x</option>
+                  <option value="1.5">1.5x</option>
+                  <option value="2">2x</option>
+                </select>
+              </label>
+              <label class="debug-animation-editor__toggle debug-animation-editor__toggle--inline">
+                <span>Random weapon</span>
+                <input type="checkbox" data-animation-workbench-random-weapon />
+              </label>
               <div class="debug-animation-editor__timeline-stack">
                 <div class="debug-animation-editor__keyframe-rail" data-animation-workbench-keyframes></div>
                 <input class="debug-animation-editor__scrub" type="range" min="0" max="1000" step="1" data-animation-workbench-progress />

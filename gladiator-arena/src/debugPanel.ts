@@ -28,6 +28,8 @@ import {
   isSlashArcAttackKey,
   PAPER_DOLL_BODY_PRESET_OPTIONS,
   resetDebugTuning,
+  RIG_PART_ANGLE_MAX,
+  RIG_PART_ANGLE_MIN,
   RIG_PART_KEYS,
   SLASH_ARC_ATTACK_KEYS,
   subscribeDebugTuning,
@@ -77,6 +79,7 @@ import {
   ALL_HERO_ITEM_IDS,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
+  getHeroItemWeaponClass,
   type ArenaDifficultyId,
   type ArenaGeneratedEquipmentPool,
   type ArenaBossDefinition,
@@ -692,7 +695,7 @@ const cityControlGroups: DebugControlGroup[] = [
 const rigNumericControls: RigNumericControlConfig[] = [
   { key: "x", label: "x", min: -480, max: 480, step: 1 },
   { key: "y", label: "y", min: -480, max: 480, step: 1 },
-  { key: "angle", label: "angle", min: -180, max: 180, step: 1 },
+  { key: "angle", label: "angle", min: RIG_PART_ANGLE_MIN, max: RIG_PART_ANGLE_MAX, step: 1 },
   { key: "scaleX", label: "scaleX", min: 0.1, max: 3, step: 0.01 },
   { key: "scaleY", label: "scaleY", min: 0.1, max: 3, step: 0.01 },
 ];
@@ -835,6 +838,9 @@ let slashPreviewTimer: number | undefined;
 let animationWorkbenchPlaybackFrame: number | undefined;
 let animationWorkbenchPlaybackPreviousTime = 0;
 let animationWorkbenchPlaybackReturnMode: AnimationEditMode | undefined;
+
+const ANIMATION_WORKBENCH_PLAYBACK_SPEEDS = [0.25, 0.5, 1, 1.5, 2] as const;
+const ANIMATION_WORKBENCH_MELEE_WEAPON_CLASSES: BodyAnimationWeaponClass[] = ["sword", "axe", "mace", "spear"];
 
 const oppositeRigPartMap: Partial<Record<RigPartKey, RigPartKey>> = {
   backUpperArm: "frontUpperArm",
@@ -2740,6 +2746,8 @@ function mountAnimationWorkbench(): void {
   const copyPoseAToB = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-copy-a-to-b]");
   const animationParts = editor.querySelector<HTMLElement>("[data-animation-workbench-parts]");
   const play = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
+  const playbackSpeed = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-speed]");
+  const randomWeapon = editor.querySelector<HTMLInputElement>("[data-animation-workbench-random-weapon]");
   const progress = editor.querySelector<HTMLInputElement>("[data-animation-workbench-progress]");
   const keyframes = editor.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
   const easing = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
@@ -2775,6 +2783,8 @@ function mountAnimationWorkbench(): void {
     !copyPoseAToB ||
     !animationParts ||
     !play ||
+    !playbackSpeed ||
+    !randomWeapon ||
     !progress ||
     !keyframes ||
     !easing ||
@@ -2967,7 +2977,7 @@ function mountAnimationWorkbench(): void {
     const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>("button[data-animation-keyframe-id]");
     const keyframeId = button?.dataset.animationKeyframeId;
 
-    if (!keyframeId || isProtectedAnimationKeyframe(keyframeId)) {
+    if (!keyframeId || !isMovableAnimationKeyframe(keyframeId)) {
       return;
     }
 
@@ -3059,6 +3069,20 @@ function mountAnimationWorkbench(): void {
     toggleAnimationWorkbenchPlayback();
   });
 
+  playbackSpeed.addEventListener("change", () => {
+    updateDebugTuning({ animationPreviewPlaybackSpeed: getAnimationWorkbenchPlaybackSpeed(playbackSpeed.value) }, { undoable: false });
+  });
+
+  randomWeapon.addEventListener("change", () => {
+    updateDebugTuning(
+      {
+        animationPreviewRandomWeapon: randomWeapon.checked,
+        animationPreviewWeaponItemId: randomWeapon.checked ? debugTuning.animationPreviewWeaponItemId : null,
+      },
+      { undoable: false },
+    );
+  });
+
   editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-jump]").forEach((button) => {
     button.addEventListener("click", () => {
       stopAnimationWorkbenchPlayback({ restoreEditMode: false });
@@ -3081,6 +3105,7 @@ function startAnimationWorkbenchPlayback(): void {
     return;
   }
 
+  refreshAnimationWorkbenchPreviewWeapon();
   animationWorkbenchPlaybackReturnMode = getAnimationWorkbenchReturnMode();
   animationWorkbenchPlaybackPreviousTime = window.performance.now();
   animationWorkbenchPlaybackFrame = window.requestAnimationFrame(tickAnimationWorkbenchPlayback);
@@ -3090,7 +3115,8 @@ function tickAnimationWorkbenchPlayback(time: number): void {
   const elapsed = Math.max(0, time - animationWorkbenchPlaybackPreviousTime);
   const animation = getSelectedBodyAnimation();
   const duration = Math.max(1, animation.duration);
-  const nextProgress = (debugTuning.animationPreviewProgress + elapsed / duration) % 1;
+  const speed = clampAnimationWorkbenchPlaybackSpeed(debugTuning.animationPreviewPlaybackSpeed);
+  const nextProgress = (debugTuning.animationPreviewProgress + (elapsed * speed) / duration) % 1;
 
   animationWorkbenchPlaybackPreviousTime = time;
   updateDebugTuning(
@@ -3103,6 +3129,59 @@ function tickAnimationWorkbenchPlayback(time: number): void {
   );
 
   animationWorkbenchPlaybackFrame = window.requestAnimationFrame(tickAnimationWorkbenchPlayback);
+}
+
+function refreshAnimationWorkbenchPreviewWeapon(): void {
+  if (!debugTuning.animationPreviewRandomWeapon) {
+    return;
+  }
+
+  updateDebugTuning(
+    { animationPreviewWeaponItemId: pickRandomAnimationWorkbenchPreviewWeaponItemId() },
+    { undoable: false, persist: false },
+  );
+}
+
+function pickRandomAnimationWorkbenchPreviewWeaponItemId(): HeroItemId | null {
+  const animation = getSelectedBodyAnimation();
+  const weaponClasses = getAnimationWorkbenchPreviewWeaponClasses(animation);
+  const candidates = Object.values(HERO_ITEM_CATALOG).filter((item) => {
+    if (item.kind !== "weapon" || (item.equipmentSlot !== "weaponMain" && item.equipmentSlot !== "weaponBow")) {
+      return false;
+    }
+
+    const weaponClass = getHeroItemWeaponClass(item);
+
+    return BODY_ANIMATION_WEAPON_CLASSES.includes(weaponClass as BodyAnimationWeaponClass) && weaponClasses.includes(weaponClass as BodyAnimationWeaponClass);
+  });
+  const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+
+  return candidate?.id ?? null;
+}
+
+function getAnimationWorkbenchPreviewWeaponClasses(animation: BodyAnimationTuning): BodyAnimationWeaponClass[] {
+  if (!(animation.appliesToAllWeapons ?? true)) {
+    const specificClasses = (animation.weaponClasses ?? []).filter((weaponClass) => BODY_ANIMATION_WEAPON_CLASSES.includes(weaponClass));
+
+    if (specificClasses.length > 0) {
+      return specificClasses;
+    }
+  }
+
+  return debugTuning.selectedBodyAnimation === "bowShot" ? ["bow"] : ANIMATION_WORKBENCH_MELEE_WEAPON_CLASSES;
+}
+
+function getAnimationWorkbenchPlaybackSpeed(value: string): number {
+  return clampAnimationWorkbenchPlaybackSpeed(Number(value));
+}
+
+function clampAnimationWorkbenchPlaybackSpeed(value: number): number {
+  const finiteValue = Number.isFinite(value) ? value : defaultDebugTuning.animationPreviewPlaybackSpeed;
+  const clampedValue = clampNumber(finiteValue, 0.25, 2);
+
+  return ANIMATION_WORKBENCH_PLAYBACK_SPEEDS.reduce((closest, option) =>
+    Math.abs(option - clampedValue) < Math.abs(closest - clampedValue) ? option : closest,
+  );
 }
 
 function stopAnimationWorkbenchPlayback(options: { restoreEditMode?: boolean } = {}): void {
@@ -3372,7 +3451,7 @@ function moveAnimationKeyframeToProgress(keyframeId: string, progress: number): 
   const animation = getSelectedBodyAnimation();
   const keyframe = getAnimationKeyframes(animation).find((candidate) => candidate.id === keyframeId);
 
-  if (!keyframe || isProtectedAnimationKeyframe(keyframe.id)) {
+  if (!keyframe || !isMovableAnimationKeyframe(keyframe.id)) {
     return;
   }
 
@@ -3797,6 +3876,10 @@ function sanitizeAnimationKeyframeId(value: string): string {
 
 function isProtectedAnimationKeyframe(keyframeId: string): boolean {
   return keyframeId === "pose-a" || keyframeId === "pose-b";
+}
+
+function isMovableAnimationKeyframe(keyframeId: string): boolean {
+  return keyframeId !== "pose-a";
 }
 
 function mountFaceAssetEditor(editor: HTMLElement): void {
@@ -4758,7 +4841,7 @@ function updateRigNumericTuning(key: RigNumericControlKey, value: number): void 
   }
 
   if (isBodyArtCanvasMode()) {
-    updateBodyPartLayerTuning(debugTuning.selectedRigPart, { [key]: clampRigNumericValue(key, value) } as Partial<BodyPartLayerTuning>);
+    updateBodyPartLayerTuning(debugTuning.selectedRigPart, { [key]: clampBodyPartLayerNumericValue(key, value) } as Partial<BodyPartLayerTuning>);
     return;
   }
 
@@ -4967,32 +5050,32 @@ function nudgeSelectedBodyPartLayer(action: RigNudgeAction): void {
   const step = activeNudgeStep;
 
   if (action === "left") {
-    updateSelectedBodyPartLayer((current) => ({ x: clampRigNumericValue("x", current.x - step) }));
+    updateSelectedBodyPartLayer((current) => ({ x: clampBodyPartLayerNumericValue("x", current.x - step) }));
     return;
   }
 
   if (action === "right") {
-    updateSelectedBodyPartLayer((current) => ({ x: clampRigNumericValue("x", current.x + step) }));
+    updateSelectedBodyPartLayer((current) => ({ x: clampBodyPartLayerNumericValue("x", current.x + step) }));
     return;
   }
 
   if (action === "up") {
-    updateSelectedBodyPartLayer((current) => ({ y: clampRigNumericValue("y", current.y - step) }));
+    updateSelectedBodyPartLayer((current) => ({ y: clampBodyPartLayerNumericValue("y", current.y - step) }));
     return;
   }
 
   if (action === "down") {
-    updateSelectedBodyPartLayer((current) => ({ y: clampRigNumericValue("y", current.y + step) }));
+    updateSelectedBodyPartLayer((current) => ({ y: clampBodyPartLayerNumericValue("y", current.y + step) }));
     return;
   }
 
   if (action === "rotateLeft") {
-    updateSelectedBodyPartLayer((current) => ({ angle: clampRigNumericValue("angle", current.angle - step) }));
+    updateSelectedBodyPartLayer((current) => ({ angle: clampBodyPartLayerNumericValue("angle", current.angle - step) }));
     return;
   }
 
   if (action === "rotateRight") {
-    updateSelectedBodyPartLayer((current) => ({ angle: clampRigNumericValue("angle", current.angle + step) }));
+    updateSelectedBodyPartLayer((current) => ({ angle: clampBodyPartLayerNumericValue("angle", current.angle + step) }));
     return;
   }
 
@@ -5000,15 +5083,15 @@ function nudgeSelectedBodyPartLayer(action: RigNudgeAction): void {
 
   if (action === "scaleDown") {
     updateSelectedBodyPartLayer((current) => ({
-      scaleX: clampRigNumericValue("scaleX", current.scaleX - scaleDelta),
-      scaleY: clampRigNumericValue("scaleY", current.scaleY - scaleDelta),
+      scaleX: clampBodyPartLayerNumericValue("scaleX", current.scaleX - scaleDelta),
+      scaleY: clampBodyPartLayerNumericValue("scaleY", current.scaleY - scaleDelta),
     }));
     return;
   }
 
   updateSelectedBodyPartLayer((current) => ({
-    scaleX: clampRigNumericValue("scaleX", current.scaleX + scaleDelta),
-    scaleY: clampRigNumericValue("scaleY", current.scaleY + scaleDelta),
+    scaleX: clampBodyPartLayerNumericValue("scaleX", current.scaleX + scaleDelta),
+    scaleY: clampBodyPartLayerNumericValue("scaleY", current.scaleY + scaleDelta),
   }));
 }
 
@@ -5787,6 +5870,18 @@ function getInventoryItemQuantity(itemId: HeroItemId): number {
 }
 
 function clampRigNumericValue(key: RigNumericControlKey, value: number): number {
+  if (key === "angle") {
+    return clampNumber(value, RIG_PART_ANGLE_MIN, RIG_PART_ANGLE_MAX);
+  }
+
+  if (key === "scaleX" || key === "scaleY") {
+    return clampNumber(value, 0.1, 3);
+  }
+
+  return clampNumber(value, -480, 480);
+}
+
+function clampBodyPartLayerNumericValue(key: RigNumericControlKey, value: number): number {
   if (key === "angle") {
     return clampNumber(value, -180, 180);
   }
@@ -8586,7 +8681,11 @@ function syncRigEditor(panel: HTMLElement): void {
 
   document.querySelectorAll<HTMLInputElement>("input[data-rig-key]").forEach((input) => {
     const key = input.dataset.rigKey as RigNumericControlKey;
+    const control = getActiveRigNumericControlConfig(key);
 
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
     input.value = `${selectedTuning[key]}`;
     input.disabled = !isEditable || (isRootMode && key !== "x" && key !== "y");
   });
@@ -8594,7 +8693,11 @@ function syncRigEditor(panel: HTMLElement): void {
   document.querySelectorAll<HTMLInputElement>("input[data-rig-number-key]").forEach((input) => {
     const key = input.dataset.rigNumberKey as RigNumericControlKey;
     const value = selectedTuning[key];
+    const control = getActiveRigNumericControlConfig(key);
 
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
     input.disabled = !isEditable || (isRootMode && key !== "x" && key !== "y");
   });
@@ -8605,6 +8708,16 @@ function syncRigEditor(panel: HTMLElement): void {
     input.checked = selectedTuning[key];
     input.disabled = !isEditable || isRootMode;
   });
+}
+
+function getActiveRigNumericControlConfig(key: RigNumericControlKey): RigNumericControlConfig {
+  const control = rigNumericControls.find((item) => item.key === key) ?? { key, label: key, min: -480, max: 480, step: 1 };
+
+  if (key === "angle" && isBodyArtCanvasMode()) {
+    return { ...control, min: -180, max: 180 };
+  }
+
+  return control;
 }
 
 function syncFaceEditor(panel: HTMLElement): void {
@@ -8806,6 +8919,8 @@ function syncAnimationEditor(panel: HTMLElement): void {
   const workbenchProgress = document.querySelector<HTMLInputElement>("[data-animation-workbench-progress]");
   const workbenchTime = document.querySelector<HTMLOutputElement>("[data-animation-workbench-time]");
   const workbenchPlay = document.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
+  const workbenchPlaybackSpeed = document.querySelector<HTMLSelectElement>("[data-animation-workbench-speed]");
+  const workbenchRandomWeapon = document.querySelector<HTMLInputElement>("[data-animation-workbench-random-weapon]");
   const workbenchKeyframes = document.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
   const workbenchSelectedKey = document.querySelector<HTMLOutputElement>("[data-animation-workbench-selected-key]");
   const workbenchEasing = document.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
@@ -8908,6 +9023,14 @@ function syncAnimationEditor(panel: HTMLElement): void {
     workbenchPlay.setAttribute("aria-pressed", `${isPlaying}`);
   }
 
+  if (workbenchPlaybackSpeed) {
+    workbenchPlaybackSpeed.value = `${clampAnimationWorkbenchPlaybackSpeed(debugTuning.animationPreviewPlaybackSpeed)}`;
+  }
+
+  if (workbenchRandomWeapon) {
+    workbenchRandomWeapon.checked = debugTuning.animationPreviewRandomWeapon;
+  }
+
   syncAnimationWorkbenchKeyframes(
     animation,
     workbenchKeyframes,
@@ -8982,7 +9105,9 @@ function syncAnimationWorkbenchKeyframes(
         button.type = "button";
         button.className = `debug-animation-editor__keyframe${
           isProtectedAnimationKeyframe(keyframe.id) ? " debug-animation-editor__keyframe--anchor" : " debug-animation-editor__keyframe--custom"
-        }${isStartKeyframe ? " debug-animation-editor__keyframe--start" : ""}${isImpactKeyframe ? " debug-animation-editor__keyframe--impact" : ""}`;
+        }${isMovableAnimationKeyframe(keyframe.id) ? " debug-animation-editor__keyframe--draggable" : ""}${
+          isStartKeyframe ? " debug-animation-editor__keyframe--start" : ""
+        }${isImpactKeyframe ? " debug-animation-editor__keyframe--impact" : ""}`;
         button.dataset.animationKeyframeId = keyframe.id;
         button.style.left = `${progress * 100}%`;
         button.textContent = keyframe.id === "pose-a" ? "A" : keyframe.id === "pose-b" ? "B" : isImpactKeyframe ? "!" : isStartKeyframe ? "S" : "";

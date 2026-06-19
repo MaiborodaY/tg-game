@@ -8710,7 +8710,7 @@ body.debug-mode-animation .debug-preview-column {
 }
 
 .debug-animation-editor__timeline-row--playback {
-  grid-template-columns: 74px minmax(0, 1fr) 126px;
+  grid-template-columns: 74px 112px 138px minmax(0, 1fr) 126px;
 }
 
 .debug-animation-editor__timeline-row--tools {
@@ -8721,6 +8721,19 @@ body.debug-mode-animation .debug-preview-column {
   display: grid;
   gap: 2px;
   min-width: 0;
+}
+
+.debug-animation-editor__speed {
+  min-width: 0;
+}
+
+.debug-animation-editor__toggle--inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .debug-animation-editor__keyframe-rail {
@@ -8799,10 +8812,13 @@ body.debug-mode-animation .debug-preview-column {
 
 .debug-animation-editor__keyframe--custom {
   z-index: 3;
+}
+
+.debug-animation-editor__keyframe--draggable {
   cursor: grab;
 }
 
-.debug-animation-editor__keyframe--custom:active {
+.debug-animation-editor__keyframe--draggable:active {
   cursor: grabbing;
 }
 
@@ -9074,7 +9090,16 @@ body.debug-active .battle-screen {
   }
 
   .debug-animation-editor__timeline {
-    grid-template-columns: 68px minmax(0, 1fr) 48px;
+    gap: 8px;
+  }
+
+  .debug-animation-editor__timeline-row--playback {
+    grid-template-columns: 68px minmax(96px, 1fr) minmax(132px, 1fr);
+  }
+
+  .debug-animation-editor__timeline-stack,
+  .debug-animation-editor__time {
+    grid-column: 1 / -1;
   }
 
   .debug-preview-tools {

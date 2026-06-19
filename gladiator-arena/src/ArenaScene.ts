@@ -127,6 +127,7 @@ import {
   createDefaultHeroEquipment,
   DEFAULT_ENEMY_VISUAL_PRESET,
   HERO_EQUIPMENT_SLOT_KEYS,
+  HERO_ITEM_CATALOG,
   type HeroAppearance,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
@@ -160,6 +161,8 @@ import {
   endDebugUndoGroup,
   FACE_ASSET_LAYER_KEYS,
   FACE_PART_KEYS,
+  RIG_PART_ANGLE_MAX,
+  RIG_PART_ANGLE_MIN,
   RIG_PART_KEYS,
   subscribeDebugTuning,
   updateDebugTuning,
@@ -3089,6 +3092,10 @@ function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appear
   return `${equipmentKey}|${appearanceKey}`;
 }
 
+function getAnimationPreviewEquipmentKey(equipment: HeroEquipment | undefined): string {
+  return HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => `${slotKey}:${equipment?.[slotKey] ?? ""}`).join("|");
+}
+
 export interface HeroPortraitPreviewApi {
   setEquipment: (equipment: HeroEquipment) => void;
   setAppearance: (appearance: HeroAppearance) => void;
@@ -3256,6 +3263,7 @@ class DebugCharacterScene extends Phaser.Scene {
   private animationFloorGuide?: DebugAnimationFloorGuide;
   private equipmentDragState?: DebugEquipmentDragState;
   private selectedEquipment?: Pick<DebugEquipmentDragState, "slotKey" | "itemId">;
+  private animationPreviewEquipmentKey = "";
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
@@ -3277,7 +3285,7 @@ class DebugCharacterScene extends Phaser.Scene {
       drawDebugCharacterBackdrop(this);
     }
     this.fighter = createPaperDollFighter(this, {
-      ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0),
+      ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0, this.getPreviewEquipment()),
       castsShadow: false,
       enableSelectionHighlights: this.viewerMode !== "shop",
     });
@@ -3356,6 +3364,7 @@ class DebugCharacterScene extends Phaser.Scene {
     }
 
     syncFighterBodyPreset(this.fighter);
+    this.syncPreviewEquipment();
     if (this.viewerMode === "shop") {
       const layout = this.getShopCharacterLayout();
 
@@ -3385,9 +3394,10 @@ class DebugCharacterScene extends Phaser.Scene {
 
   private syncPlayerEquipment(changedSlots?: readonly PaperDollEquipmentSlotKey[]): void {
     const syncToken = this.equipmentSyncToken + 1;
+    const equipment = this.getPreviewEquipment();
 
     this.equipmentSyncToken = syncToken;
-    void ensurePaperDollEquipmentAssetsLoaded(this, [activePlayerEquipment]).then(() => {
+    void ensurePaperDollEquipmentAssetsLoaded(this, [equipment]).then(() => {
       if (syncToken !== this.equipmentSyncToken) {
         return;
       }
@@ -3402,7 +3412,68 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
+    if (this.viewerMode === "animation") {
+      this.animationPreviewEquipmentKey = "";
+      this.syncPreviewEquipment(changedSlots);
+      return;
+    }
+
     this.sync();
+  }
+
+  private syncPreviewEquipment(slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS): void {
+    if (this.viewerMode !== "animation") {
+      return;
+    }
+
+    const equipment = this.getPreviewEquipment();
+    const equipmentKey = getAnimationPreviewEquipmentKey(equipment);
+
+    if (equipmentKey === this.animationPreviewEquipmentKey) {
+      return;
+    }
+
+    const syncToken = this.equipmentSyncToken + 1;
+
+    this.animationPreviewEquipmentKey = equipmentKey;
+    this.equipmentSyncToken = syncToken;
+    void ensurePaperDollEquipmentAssetsLoaded(this, [equipment]).then(() => {
+      if (syncToken !== this.equipmentSyncToken) {
+        return;
+      }
+
+      syncPaperDollEquipmentState(this.fighter?.paperDollRig, slotKeys, equipment);
+    });
+  }
+
+  private getPreviewEquipment(): HeroEquipment | undefined {
+    if (this.viewerMode !== "animation") {
+      return activePlayerEquipment;
+    }
+
+    const baseEquipment = activePlayerEquipment ?? createDefaultHeroEquipment();
+    const itemId = debugTuning.animationPreviewWeaponItemId;
+
+    if (!debugTuning.animationPreviewRandomWeapon || !itemId) {
+      return baseEquipment;
+    }
+
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    if (!item || item.kind !== "weapon" || (item.equipmentSlot !== "weaponMain" && item.equipmentSlot !== "weaponBow")) {
+      return baseEquipment;
+    }
+
+    const equipment: HeroEquipment = {
+      ...baseEquipment,
+      [item.equipmentSlot]: itemId,
+    };
+
+    if (item.equipmentSlot === "weaponBow") {
+      equipment.weaponMain = null;
+    }
+
+    return equipment;
   }
 
   private getDebugCharacterLayout(): CityHeroLayout {
@@ -6151,7 +6222,7 @@ function rotateDebugRigPartGroupAroundAnchor(
       ...current,
       x: clampNumber(rotatedX - pivot.x, -480, 480),
       y: clampNumber(rotatedY - pivot.y, -480, 480),
-      angle: clampNumber(current.angle + degrees, -180, 180),
+      angle: clampNumber(current.angle + degrees, RIG_PART_ANGLE_MIN, RIG_PART_ANGLE_MAX),
     };
   });
 
@@ -6349,7 +6420,7 @@ function updateBodyPartLayersWithInteractiveDeltas(
     }
 
     hasDelta = true;
-    nextBodyPartLayers[partKey] = applyRigPartInteractiveDelta(nextBodyPartLayers[partKey] ?? defaultRigPartTuning, delta);
+    nextBodyPartLayers[partKey] = applyRigPartInteractiveDelta(nextBodyPartLayers[partKey] ?? defaultRigPartTuning, delta, -180, 180);
   });
 
   if (!hasDelta) {
@@ -6424,12 +6495,17 @@ function getSelectedDebugAnimationKeyframe(animation: BodyAnimationTuning | unde
   return keyframes.find((keyframe) => keyframe.id === debugTuning.selectedAnimationKeyframeId) ?? keyframes[0];
 }
 
-function applyRigPartInteractiveDelta(part: RigPartTuning, delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>): RigPartTuning {
+function applyRigPartInteractiveDelta(
+  part: RigPartTuning,
+  delta: Partial<Pick<RigPartTuning, "x" | "y" | "angle">>,
+  angleMin = RIG_PART_ANGLE_MIN,
+  angleMax = RIG_PART_ANGLE_MAX,
+): RigPartTuning {
   return {
     ...part,
     x: delta.x === undefined ? part.x : clampNumber(part.x + delta.x, -480, 480),
     y: delta.y === undefined ? part.y : clampNumber(part.y + delta.y, -480, 480),
-    angle: delta.angle === undefined ? part.angle : clampNumber(part.angle + delta.angle, -180, 180),
+    angle: delta.angle === undefined ? part.angle : clampNumber(part.angle + delta.angle, angleMin, angleMax),
   };
 }
 
