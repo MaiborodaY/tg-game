@@ -7513,6 +7513,7 @@ body.debug-mode-character .debug-effects-panel,
 body.debug-mode-arena .debug-character-shell,
 body.debug-mode-arena .debug-animation-editor,
 body.debug-mode-arena .debug-rig-panel,
+body.debug-mode-arena .debug-face-panel,
 body.debug-mode-arena .debug-hud-panel,
 body.debug-mode-arena .debug-city-panel,
 body.debug-mode-arena .debug-effects-panel,
@@ -9406,6 +9407,36 @@ body.debug-active .battle-screen {
   display: grid;
   gap: 7px;
   padding: 0 0 10px;
+}
+
+.debug-parallax-editor__section {
+  display: grid;
+  gap: 7px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 211, 132, 0.18);
+}
+
+.debug-parallax-editor__section--tier {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.debug-parallax-editor__subhead {
+  color: #ffd384;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.debug-parallax-editor__status {
+  min-height: 14px;
+  margin: 0 0 8px;
+  color: rgba(255, 240, 189, 0.78);
+  font-size: 0.58rem;
+  font-weight: 800;
 }
 
 .debug-app-panel .debug-panel__row,

@@ -60,5 +60,36 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
         rewards: {"win":{"gold":50,"xp":32},"loss":{"gold":1,"xp":1}},
       },
     ],
+  },
+  {
+    id: 3,
+    name: "Aztec3",
+    unlockBossId: "arena_boss_2",
+    opponents: [
+      {
+        id: "arena_3_easy",
+        difficultyId: "easy",
+        name: "Dust Arena 3 Easy",
+        randomBaseStatPoints: 15,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":0.83},{"itemRarities":["uncommon"],"rollChance":0.4}],
+        rewards: {"win":{"gold":35,"xp":22},"loss":{"gold":1,"xp":1}},
+      },
+      {
+        id: "arena_3_medium",
+        difficultyId: "medium",
+        name: "Dust Arena 3 Medium",
+        randomBaseStatPoints: 9,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":0.89},{"itemRarities":["uncommon"],"rollChance":0.5}],
+        rewards: {"win":{"gold":40,"xp":26},"loss":{"gold":1,"xp":1}},
+      },
+      {
+        id: "arena_3_hard",
+        difficultyId: "hard",
+        name: "Dust Arena 3 Hard",
+        randomBaseStatPoints: 26,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":0.93},{"itemRarities":["uncommon"],"rollChance":0.59}],
+        rewards: {"win":{"gold":45,"xp":30},"loss":{"gold":1,"xp":1}},
+      },
+    ],
   }
 ];

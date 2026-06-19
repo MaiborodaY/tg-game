@@ -81,19 +81,6 @@ const prodDefaultFields = {
   DEFAULT_CAMERA_FEET_SCREEN_Y: "cameraFeetScreenY",
   DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y: "cameraCloseFeetShiftY",
   DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO: "cameraFeetMinScreenRatio",
-  DEFAULT_ARENA_BACK_FOLLOW_X: "arenaBackFollowX",
-  DEFAULT_ARENA_BACK_FOLLOW_Y: "arenaBackFollowY",
-  DEFAULT_ARENA_BACK_ZOOM: "arenaBackZoom",
-  DEFAULT_ARENA_BACK_LOOK_UP_Y: "arenaBackLookUpY",
-  DEFAULT_ARENA_MID_FOLLOW_X: "arenaMidFollowX",
-  DEFAULT_ARENA_MID_FOLLOW_Y: "arenaMidFollowY",
-  DEFAULT_ARENA_MID_ZOOM: "arenaMidZoom",
-  DEFAULT_ARENA_MID_LOOK_UP_Y: "arenaMidLookUpY",
-  DEFAULT_ARENA_MID_ZOOM_DARKEN: "arenaMidZoomDarken",
-  DEFAULT_ARENA_GROUND_FOLLOW_X: "arenaGroundFollowX",
-  DEFAULT_ARENA_GROUND_FOLLOW_Y: "arenaGroundFollowY",
-  DEFAULT_ARENA_GROUND_ZOOM: "arenaGroundZoom",
-  DEFAULT_ARENA_GROUND_LOOK_UP_Y: "arenaGroundLookUpY",
   DEFAULT_FORWARD_MOVE_DISTANCE: "forwardMoveDistance",
   DEFAULT_BACK_MOVE_DISTANCE: "backMoveDistance",
   DEFAULT_LUNGE_MOVE_DISTANCE: "lungeMoveDistance",
@@ -146,11 +133,112 @@ const debugTuningDefaultFields = {
   armorBreakPopupOffsetY: "armorBreakPopupOffsetY",
   armorAbsorbPopupScale: "armorAbsorbPopupScale",
   armorBreakPopupScale: "armorBreakPopupScale",
+  arenaTier1BackFollowX: "arenaTier1BackFollowX",
+  arenaTier1BackFollowY: "arenaTier1BackFollowY",
+  arenaTier1BackZoom: "arenaTier1BackZoom",
+  arenaTier1BackLookUpY: "arenaTier1BackLookUpY",
+  arenaTier1MidFollowX: "arenaTier1MidFollowX",
+  arenaTier1MidFollowY: "arenaTier1MidFollowY",
+  arenaTier1MidZoom: "arenaTier1MidZoom",
+  arenaTier1MidLookUpY: "arenaTier1MidLookUpY",
+  arenaTier1MidZoomDarken: "arenaTier1MidZoomDarken",
+  arenaTier1GroundFollowX: "arenaTier1GroundFollowX",
+  arenaTier1GroundFollowY: "arenaTier1GroundFollowY",
+  arenaTier1GroundZoom: "arenaTier1GroundZoom",
+  arenaTier1GroundLookUpY: "arenaTier1GroundLookUpY",
+  arenaTier2BackFollowX: "arenaTier2BackFollowX",
+  arenaTier2BackFollowY: "arenaTier2BackFollowY",
+  arenaTier2BackZoom: "arenaTier2BackZoom",
+  arenaTier2BackLookUpY: "arenaTier2BackLookUpY",
+  arenaTier2MidFollowX: "arenaTier2MidFollowX",
+  arenaTier2MidFollowY: "arenaTier2MidFollowY",
+  arenaTier2MidZoom: "arenaTier2MidZoom",
+  arenaTier2MidLookUpY: "arenaTier2MidLookUpY",
+  arenaTier2MidZoomDarken: "arenaTier2MidZoomDarken",
+  arenaTier2GroundFollowX: "arenaTier2GroundFollowX",
+  arenaTier2GroundFollowY: "arenaTier2GroundFollowY",
+  arenaTier2GroundZoom: "arenaTier2GroundZoom",
+  arenaTier2GroundLookUpY: "arenaTier2GroundLookUpY",
+  arenaTier2FrontFollowX: "arenaTier2FrontFollowX",
+  arenaTier2FrontFollowY: "arenaTier2FrontFollowY",
+  arenaTier2FrontZoom: "arenaTier2FrontZoom",
+  arenaTier2FrontLookUpY: "arenaTier2FrontLookUpY",
+  arenaTier2AmbientFollowX: "arenaTier2AmbientFollowX",
+  arenaTier2AmbientFollowY: "arenaTier2AmbientFollowY",
+  arenaTier2AmbientZoom: "arenaTier2AmbientZoom",
+  arenaTier2AmbientLookUpY: "arenaTier2AmbientLookUpY",
+  arenaTier1BackgroundBackX: "arenaTier1BackgroundBackX",
+  arenaTier1BackgroundBackY: "arenaTier1BackgroundBackY",
+  arenaTier1BackgroundBackScale: "arenaTier1BackgroundBackScale",
+  arenaTier1BackgroundBackAlpha: "arenaTier1BackgroundBackAlpha",
+  arenaTier1BackgroundMidX: "arenaTier1BackgroundMidX",
+  arenaTier1BackgroundMidY: "arenaTier1BackgroundMidY",
+  arenaTier1BackgroundMidScale: "arenaTier1BackgroundMidScale",
+  arenaTier1BackgroundMidAlpha: "arenaTier1BackgroundMidAlpha",
+  arenaTier1BackgroundGroundX: "arenaTier1BackgroundGroundX",
+  arenaTier1BackgroundGroundY: "arenaTier1BackgroundGroundY",
+  arenaTier1BackgroundGroundScale: "arenaTier1BackgroundGroundScale",
+  arenaTier1BackgroundGroundAlpha: "arenaTier1BackgroundGroundAlpha",
+  arenaTier2BackgroundBackX: "arenaTier2BackgroundBackX",
+  arenaTier2BackgroundBackY: "arenaTier2BackgroundBackY",
+  arenaTier2BackgroundBackScale: "arenaTier2BackgroundBackScale",
+  arenaTier2BackgroundBackAlpha: "arenaTier2BackgroundBackAlpha",
+  arenaTier2BackgroundMidX: "arenaTier2BackgroundMidX",
+  arenaTier2BackgroundMidY: "arenaTier2BackgroundMidY",
+  arenaTier2BackgroundMidScale: "arenaTier2BackgroundMidScale",
+  arenaTier2BackgroundMidAlpha: "arenaTier2BackgroundMidAlpha",
+  arenaTier2BackgroundGroundX: "arenaTier2BackgroundGroundX",
+  arenaTier2BackgroundGroundY: "arenaTier2BackgroundGroundY",
+  arenaTier2BackgroundGroundScale: "arenaTier2BackgroundGroundScale",
+  arenaTier2BackgroundGroundAlpha: "arenaTier2BackgroundGroundAlpha",
+  arenaTier2BackgroundFrontX: "arenaTier2BackgroundFrontX",
+  arenaTier2BackgroundFrontY: "arenaTier2BackgroundFrontY",
+  arenaTier2BackgroundFrontScale: "arenaTier2BackgroundFrontScale",
+  arenaTier2BackgroundFrontAlpha: "arenaTier2BackgroundFrontAlpha",
+  arenaTier2BackgroundAmbientX: "arenaTier2BackgroundAmbientX",
+  arenaTier2BackgroundAmbientY: "arenaTier2BackgroundAmbientY",
+  arenaTier2BackgroundAmbientScale: "arenaTier2BackgroundAmbientScale",
+  arenaTier2BackgroundAmbientAlpha: "arenaTier2BackgroundAmbientAlpha",
 } as const;
 
 type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;
 type DebugTuningDefaultPayload = Record<(typeof debugTuningDefaultFields)[DebugTuningDefaultField], unknown>;
-type DebugTuningDefaultUpdates = Record<DebugTuningDefaultField, number>;
+type DebugTuningDefaultUpdates = Record<DebugTuningDefaultField, number>
+  & Partial<Record<DebugTuningBooleanDefaultField, boolean>>
+  & { arenaBackgroundTiers: ArenaBackgroundTierTuningPayload };
+
+const debugTuningBooleanDefaultFields = {
+  arenaTier1BackgroundBackVisible: "arenaTier1BackgroundBackVisible",
+  arenaTier1BackgroundMidVisible: "arenaTier1BackgroundMidVisible",
+  arenaTier1BackgroundGroundVisible: "arenaTier1BackgroundGroundVisible",
+  arenaTier2BackgroundBackVisible: "arenaTier2BackgroundBackVisible",
+  arenaTier2BackgroundMidVisible: "arenaTier2BackgroundMidVisible",
+  arenaTier2BackgroundGroundVisible: "arenaTier2BackgroundGroundVisible",
+  arenaTier2BackgroundFrontVisible: "arenaTier2BackgroundFrontVisible",
+  arenaTier2BackgroundAmbientVisible: "arenaTier2BackgroundAmbientVisible",
+} as const;
+
+type DebugTuningBooleanDefaultField = keyof typeof debugTuningBooleanDefaultFields;
+type DebugTuningBooleanDefaultPayload = Record<(typeof debugTuningBooleanDefaultFields)[DebugTuningBooleanDefaultField], unknown>;
+
+type ArenaBackgroundLayerKey = "back" | "mid" | "ground" | "front" | "ambient";
+type ArenaBackgroundTierTuningPayload = Record<string, Partial<Record<ArenaBackgroundLayerKey, {
+  layout: {
+    x: number;
+    y: number;
+    scale: number;
+    alpha: number;
+    visible: boolean;
+  };
+  parallax: {
+    followX: number;
+    followY: number;
+    zoom: number;
+    lookUpY: number;
+    zoomDarken?: number;
+  };
+}>>>;
+const arenaBackgroundLayerKeys = ["back", "mid", "ground", "front", "ambient"] as const;
 
 const playerSettingDefaultFields = {
   DEFAULT_PLAYER_HUD_MODE: "hudMode",
@@ -1199,13 +1287,23 @@ export function pickCombatDefaultUpdates(payload: unknown): CombatDefaultUpdates
 
 export function applyDebugTuningDefaultUpdates(source: string, updates: DebugTuningDefaultUpdates): string {
   return Object.entries(updates).reduce((nextSource, [fieldName, value]) => {
-    const pattern = new RegExp(`(\\n\\s*${fieldName}: )[-0-9.]+(,)`);
+    if (fieldName === "arenaBackgroundTiers") {
+      const pattern = /(\n\s*arenaBackgroundTiers: )[\s\S]*?(\n\s*arenaTier1BackFollowX: )/u;
+
+      if (!pattern.test(nextSource)) {
+        throw new Error("Could not find defaultDebugTuning.arenaBackgroundTiers in debugTuning.ts.");
+      }
+
+      return nextSource.replace(pattern, `$1${formatJsonLikeObject(value)},$2`);
+    }
+
+    const pattern = new RegExp(`(\\n\\s*${fieldName}: )[^,\\n]+(,)`);
 
     if (!pattern.test(nextSource)) {
       throw new Error(`Could not find defaultDebugTuning.${fieldName} in debugTuning.ts.`);
     }
 
-    return nextSource.replace(pattern, `$1${formatNumber(value)}$2`);
+    return nextSource.replace(pattern, `$1${typeof value === "boolean" ? value : formatNumber(value as number)}$2`);
   }, source);
 }
 
@@ -1214,12 +1312,24 @@ export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefa
     throw new Error("Expected a JSON object with debug tuning values.");
   }
 
-  return Object.fromEntries(
+  const numericUpdates = Object.fromEntries(
     Object.entries(debugTuningDefaultFields).map(([fieldName, payloadField]) => [
       fieldName,
       readFiniteNumber(payload as DebugTuningDefaultPayload, payloadField),
     ]),
-  ) as DebugTuningDefaultUpdates;
+  ) as Record<DebugTuningDefaultField, number>;
+  const booleanUpdates = Object.fromEntries(
+    Object.entries(debugTuningBooleanDefaultFields).map(([fieldName, payloadField]) => [
+      fieldName,
+      readBoolean(payload as DebugTuningBooleanDefaultPayload, payloadField),
+    ]),
+  ) as Record<DebugTuningBooleanDefaultField, boolean>;
+
+  return {
+    ...numericUpdates,
+    ...booleanUpdates,
+    arenaBackgroundTiers: readArenaBackgroundTierTunings((payload as { arenaBackgroundTiers?: unknown }).arenaBackgroundTiers),
+  };
 }
 
 export function applyPlayerSettingDefaultUpdates(source: string, updates: PlayerSettingDefaultUpdates): string {
@@ -4072,6 +4182,83 @@ function readFiniteNumber(payload: Record<string, unknown>, fieldName: string): 
   return value;
 }
 
+function readBoolean(payload: Record<string, unknown>, fieldName: string): boolean {
+  const value = payload[fieldName];
+
+  if (typeof value !== "boolean") {
+    throw new Error(`Invalid boolean tuning value: ${String(fieldName)}.`);
+  }
+
+  return value;
+}
+
+function readArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTierTuningPayload {
+  if (input === undefined) {
+    return {};
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Invalid arena background tier tuning object.");
+  }
+
+  const result: ArenaBackgroundTierTuningPayload = {};
+
+  Object.entries(input as Record<string, unknown>).forEach(([tierKey, tierInput]) => {
+    const tierId = Math.round(Number(tierKey));
+
+    if (!Number.isInteger(tierId) || tierId < 1) {
+      throw new Error(`Invalid arena background tier id: ${tierKey}.`);
+    }
+
+    if (!tierInput || typeof tierInput !== "object" || Array.isArray(tierInput)) {
+      throw new Error(`Invalid arena background tier ${tierKey}.`);
+    }
+
+    arenaBackgroundLayerKeys.forEach((layer) => {
+      const layerInput = (tierInput as Partial<Record<ArenaBackgroundLayerKey, unknown>>)[layer];
+
+      if (layerInput === undefined) {
+        return;
+      }
+
+      result[tierId] = {
+        ...result[tierId],
+        [layer]: readArenaBackgroundLayerTuning(layerInput, `${tierKey}.${layer}`),
+      };
+    });
+  });
+
+  return result;
+}
+
+function readArenaBackgroundLayerTuning(input: unknown, label: string): ArenaBackgroundTierTuningPayload[string][ArenaBackgroundLayerKey] {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`Invalid arena background layer tuning: ${label}.`);
+  }
+
+  const layer = input as { layout?: unknown; parallax?: unknown };
+  const layout = readPlainObject(layer.layout, `${label}.layout`);
+  const parallax = readPlainObject(layer.parallax, `${label}.parallax`);
+  const tuning = {
+    layout: {
+      x: readFinitePayloadNumber(layout.x, `${label}.layout.x`),
+      y: readFinitePayloadNumber(layout.y, `${label}.layout.y`),
+      scale: readFinitePayloadNumber(layout.scale, `${label}.layout.scale`),
+      alpha: readFinitePayloadNumber(layout.alpha, `${label}.layout.alpha`),
+      visible: readBoolean(layout as Record<string, unknown>, "visible"),
+    },
+    parallax: {
+      followX: readFinitePayloadNumber(parallax.followX, `${label}.parallax.followX`),
+      followY: readFinitePayloadNumber(parallax.followY, `${label}.parallax.followY`),
+      zoom: readFinitePayloadNumber(parallax.zoom, `${label}.parallax.zoom`),
+      lookUpY: readFinitePayloadNumber(parallax.lookUpY, `${label}.parallax.lookUpY`),
+      ...(parallax.zoomDarken === undefined ? {} : { zoomDarken: readFinitePayloadNumber(parallax.zoomDarken, `${label}.parallax.zoomDarken`) }),
+    },
+  };
+
+  return tuning;
+}
+
 function readPlayerHudMode(payload: Record<string, unknown>, fieldName: string): PlayerHudMode {
   const value = payload[fieldName];
 
@@ -4086,6 +4273,16 @@ function formatNumber(value: number): string {
   const rounded = Math.round(value * 1000) / 1000;
 
   return `${rounded}`;
+}
+
+function formatJsonLikeObject(value: unknown): string {
+  return JSON.stringify(value, (_key, nestedValue: unknown) => {
+    if (typeof nestedValue === "number" && Number.isFinite(nestedValue)) {
+      return Math.round(nestedValue * 1000) / 1000;
+    }
+
+    return nestedValue;
+  }, 2).replace(/\n/gu, "\n  ");
 }
 
 function formatRigPartDefaults(updates: RigPartUpdates): string {

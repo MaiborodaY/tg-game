@@ -10207,8 +10207,8 @@
       "weaponMainAssetKey": "weapon-axe-epic-axe-3"
     },
     "equipmentTuning": {
-      "x": -22,
-      "y": 16,
+      "x": -17.68824118451984,
+      "y": 17.101249188439624,
       "angle": 104,
       "scaleX": 1.72,
       "scaleY": 1.8,
@@ -10525,8 +10525,8 @@
       "weaponMainAssetKey": "weapon-axe-simple-axe"
     },
     "equipmentTuning": {
-      "x": 0,
-      "y": 31,
+      "x": -7.919841696056025,
+      "y": 25.008040381821957,
       "angle": 85,
       "scaleX": 0.75,
       "scaleY": 0.75,

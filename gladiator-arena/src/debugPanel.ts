@@ -25,6 +25,8 @@ import {
   DEFAULT_SLASH_ARCS,
   defaultFacePartTuning,
   FACE_PART_KEYS,
+  createDefaultArenaBackgroundLayerTuning,
+  getDynamicArenaBackgroundLayerTuning,
   isSlashArcAttackKey,
   PAPER_DOLL_BODY_PRESET_OPTIONS,
   resetDebugTuning,
@@ -37,6 +39,8 @@ import {
   updateDebugTuning,
   type AnimationEditMode,
   type AnimationRootTransformMode,
+  type ArenaBackgroundEditLayer,
+  type ArenaBackgroundLayerTuning,
   type AppearanceLayerKey,
   type AppearanceLayerTuning,
   type ArenaDebugTuning,
@@ -93,6 +97,7 @@ import {
   type HeroItemRarity,
   type HeroWeaponClass,
 } from "./hero";
+import { getArenaBackgroundLayerAssetKeysForTier } from "./assets";
 import {
   AUTO_EQUIPMENT_ITEM_CATALOG,
   AUTO_EQUIPMENT_ITEM_RECORDS,
@@ -121,6 +126,7 @@ interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
   heroInventory?: HeroInventoryEntry[];
   onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
+  onRestartArenaTierPreview?: (tierId: number) => void;
   onPreviewSlashArc?: (actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void;
   onPreviewPopup?: (kind: DebugPopupPreviewKind) => void;
 }
@@ -171,6 +177,14 @@ type EquipmentControlKey = EquipmentNumericControlKey | EquipmentToggleControlKe
 type DebugItemEquipmentTypeFilter = "all" | HeroWeaponClass | NonNullable<HeroItemDefinition["armorCategory"]>;
 type DebugItemEquipmentRarityFilter = "all" | HeroItemRarity;
 type SlashArcNumericControlKey = Exclude<keyof SlashArcTuning, "color">;
+type ArenaBackgroundEditTierId = number;
+type ArenaBackgroundLayoutField = "x" | "y" | "scale" | "alpha" | "visible";
+type ArenaParallaxLayerKey = ArenaBackgroundEditLayer;
+type ArenaParallaxField = "followX" | "followY" | "zoom" | "lookUpY" | "zoomDarken";
+type ArenaBackgroundLayerTuningPatch = {
+  layout?: Partial<ArenaBackgroundLayerTuning["layout"]>;
+  parallax?: Partial<ArenaBackgroundLayerTuning["parallax"]>;
+};
 type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
 type AnimationRigPoseKey = "base" | "breath";
@@ -180,6 +194,15 @@ type DebugGeneratedShopItemRecord = (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[nu
 interface DebugControlGroup {
   title: string;
   controls: DebugControlConfig[];
+}
+
+interface ArenaParallaxControlConfig {
+  layer: ArenaParallaxLayerKey;
+  field: ArenaParallaxField;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
 }
 
 interface RigNumericControlConfig {
@@ -458,6 +481,31 @@ const DEBUG_BOSS_EQUIPMENT_SLOT_LABELS: Record<HeroEquipmentSlotKey, string> = {
   frontBoot: "Front boot",
 };
 
+const ARENA_PARALLAX_CONTROLS: readonly ArenaParallaxControlConfig[] = [
+  { layer: "back", field: "followX", label: "Follow X", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "back", field: "followY", label: "Follow Y", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "back", field: "zoom", label: "Zoom", min: 0, max: 1.5, step: 0.01 },
+  { layer: "back", field: "lookUpY", label: "Look up", min: -240, max: 240, step: 1 },
+  { layer: "mid", field: "followX", label: "Follow X", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "mid", field: "followY", label: "Follow Y", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "mid", field: "zoom", label: "Zoom", min: 0, max: 1.5, step: 0.01 },
+  { layer: "mid", field: "lookUpY", label: "Look up", min: -240, max: 240, step: 1 },
+  { layer: "mid", field: "zoomDarken", label: "Darken", min: 0, max: 1, step: 0.01 },
+  { layer: "ground", field: "followX", label: "Follow X", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "ground", field: "followY", label: "Follow Y", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "ground", field: "zoom", label: "Zoom", min: 0, max: 1.5, step: 0.01 },
+  { layer: "ground", field: "lookUpY", label: "Look up", min: -240, max: 240, step: 1 },
+  { layer: "front", field: "followX", label: "Follow X", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "front", field: "followY", label: "Follow Y", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "front", field: "zoom", label: "Zoom", min: 0, max: 1.5, step: 0.01 },
+  { layer: "front", field: "lookUpY", label: "Look up", min: -240, max: 240, step: 1 },
+  { layer: "ambient", field: "followX", label: "Follow X", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "ambient", field: "followY", label: "Follow Y", min: -0.5, max: 1.5, step: 0.01 },
+  { layer: "ambient", field: "zoom", label: "Zoom", min: 0, max: 1.5, step: 0.01 },
+  { layer: "ambient", field: "lookUpY", label: "Look up", min: -240, max: 240, step: 1 },
+];
+let arenaParallaxEditorLayer: ArenaParallaxLayerKey = "back";
+
 function formatPaperDollBodyPresetOptions(): string {
   return PAPER_DOLL_BODY_PRESET_OPTIONS.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
 }
@@ -495,24 +543,6 @@ const controlGroups: DebugControlGroup[] = [
       { type: "range", key: "cameraFeetScreenY", label: "Feet Y", min: 260, max: 720, step: 1, resetValue: defaultDebugTuning.cameraFeetScreenY },
       { type: "range", key: "cameraCloseFeetShiftY", label: "Close shift", min: -180, max: 180, step: 1, resetValue: defaultDebugTuning.cameraCloseFeetShiftY },
       { type: "range", key: "cameraFeetMinScreenRatio", label: "Min ratio", min: 0.35, max: 0.75, step: 0.01, resetValue: defaultDebugTuning.cameraFeetMinScreenRatio },
-    ],
-  },
-  {
-    title: "Arena parallax",
-    controls: [
-      { type: "range", key: "arenaBackFollowX", label: "Back follow X", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaBackFollowX },
-      { type: "range", key: "arenaBackFollowY", label: "Back follow Y", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaBackFollowY },
-      { type: "range", key: "arenaBackZoom", label: "Back zoom", min: 0, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaBackZoom },
-      { type: "range", key: "arenaBackLookUpY", label: "Back look up", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.arenaBackLookUpY },
-      { type: "range", key: "arenaMidFollowX", label: "Mid follow X", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaMidFollowX },
-      { type: "range", key: "arenaMidFollowY", label: "Mid follow Y", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaMidFollowY },
-      { type: "range", key: "arenaMidZoom", label: "Mid zoom", min: 0, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaMidZoom },
-      { type: "range", key: "arenaMidLookUpY", label: "Mid look up", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.arenaMidLookUpY },
-      { type: "range", key: "arenaMidZoomDarken", label: "Mid darken", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.arenaMidZoomDarken },
-      { type: "range", key: "arenaGroundFollowX", label: "Ground follow X", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaGroundFollowX },
-      { type: "range", key: "arenaGroundFollowY", label: "Ground follow Y", min: -0.5, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaGroundFollowY },
-      { type: "range", key: "arenaGroundZoom", label: "Ground zoom", min: 0, max: 1.5, step: 0.01, resetValue: defaultDebugTuning.arenaGroundZoom },
-      { type: "range", key: "arenaGroundLookUpY", label: "Ground look up", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.arenaGroundLookUpY },
     ],
   },
   {
@@ -1323,6 +1353,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     return;
   }
 
+  body.append(createArenaBackgroundEditor(options.onRestartArenaTierPreview));
+
   for (const group of controlGroups) {
     body.append(createControlGroup(group));
   }
@@ -1671,6 +1703,439 @@ function createControlGroup(group: DebugControlGroup): HTMLElement {
   details.append(body);
 
   return details;
+}
+
+function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number) => void): HTMLElement {
+  const details = document.createElement("details");
+
+  details.className = "debug-panel__group debug-parallax-editor debug-arena-bg-editor";
+  details.open = true;
+  details.innerHTML = `
+    <summary>Parallax Editor</summary>
+    <div class="debug-parallax-editor__section debug-parallax-editor__section--tier">
+      <div class="debug-parallax-editor__subhead">Tier</div>
+      <label class="debug-panel__row">
+        <span>Preview tier</span>
+        <input class="debug-panel__number" type="number" min="1" max="${DEBUG_BOSS_TIER_MAX}" step="1" data-arena-bg-preview-tier />
+        <button class="debug-panel__control-reset debug-parallax-editor__restart-tier" type="button">Fight</button>
+        <span></span>
+      </label>
+      <div class="debug-rig-editor__actions">
+        <button class="debug-panel__reset debug-arena-bg-editor__reset-tier" type="button">Reset current tier BG</button>
+      </div>
+    </div>
+    <div class="debug-parallax-editor__section">
+      <div class="debug-parallax-editor__subhead">Layer layout</div>
+      <label class="debug-panel__row debug-panel__row--toggle">
+        <span>Drag selected</span>
+        <input type="checkbox" data-debug-key="arenaBackgroundEditMode" />
+        <span></span>
+        <span></span>
+      </label>
+      <label class="debug-panel__row">
+        <span>Layer</span>
+        <select class="debug-panel__number" data-debug-select-key="arenaBackgroundEditLayer">
+          ${getArenaBackgroundEditLayersForTier(getArenaBackgroundEditTierId()).map((layer) => `<option value="${layer}">${formatArenaBackgroundLayerLabel(layer)}</option>`).join("")}
+        </select>
+        <span></span>
+        <span></span>
+      </label>
+      <label class="debug-panel__row debug-panel__row--toggle">
+        <span>Visible</span>
+        <input type="checkbox" data-arena-bg-field="visible" />
+        <span></span>
+        <span></span>
+      </label>
+      ${createArenaBackgroundNumberRow("x", "X", -640, 640, 1)}
+      ${createArenaBackgroundNumberRow("y", "Y", -900, 900, 1)}
+      ${createArenaBackgroundNumberRow("scale", "Scale", 0.25, 2.5, 0.01)}
+      ${createArenaBackgroundNumberRow("alpha", "Alpha", 0, 1, 0.01)}
+      <div class="debug-rig-editor__actions">
+        <button class="debug-panel__reset debug-arena-bg-editor__reset-layer" type="button">Reset layer</button>
+      </div>
+    </div>
+    <div class="debug-parallax-editor__section">
+      <div class="debug-parallax-editor__subhead">Camera parallax</div>
+      <label class="debug-panel__row">
+        <span>Parallax layer</span>
+        <select class="debug-panel__number" data-arena-parallax-layer-select>
+          ${getArenaParallaxLayersForTier(getArenaBackgroundEditTierId()).map((layer) => `<option value="${layer}">${formatArenaParallaxLayerLabel(layer)}</option>`).join("")}
+        </select>
+        <span></span>
+        <span></span>
+      </label>
+      <div class="debug-panel__group-body debug-parallax-editor__camera-controls">
+        ${ARENA_PARALLAX_CONTROLS.map(createArenaParallaxNumberRow).join("")}
+      </div>
+    </div>
+    <p class="debug-parallax-editor__status" aria-live="polite"></p>
+  `;
+
+  const status = details.querySelector<HTMLElement>(".debug-parallax-editor__status");
+  const previewTier = details.querySelector<HTMLInputElement>("[data-arena-bg-preview-tier]");
+  const layerSelect = details.querySelector<HTMLSelectElement>('select[data-debug-select-key="arenaBackgroundEditLayer"]');
+  const parallaxLayerSelect = details.querySelector<HTMLSelectElement>("[data-arena-parallax-layer-select]");
+  const restartTier = details.querySelector<HTMLButtonElement>(".debug-parallax-editor__restart-tier");
+
+  if (!getArenaBackgroundEditLayersForTier(getArenaBackgroundEditTierId()).includes(debugTuning.arenaBackgroundEditLayer)) {
+    updateDebugTuning({ arenaBackgroundEditLayer: "ground" }, { undoable: false });
+  }
+
+  previewTier?.addEventListener("input", () => {
+    const tierId = Math.round(clampFiniteNumber(Number(previewTier.value), 1, DEBUG_BOSS_TIER_MAX));
+    const editTierId = getArenaBackgroundEditTierIdFromPreviewTier(tierId);
+
+    updateDebugTuning({
+      arenaBackgroundPreviewTier: tierId,
+      arenaBackgroundEditLayer: getSelectedArenaBackgroundEditLayerForTier(editTierId),
+    }, { undoable: false });
+  });
+  layerSelect?.addEventListener("change", () => {
+    if (getArenaBackgroundEditLayersForTier(getArenaBackgroundEditTierId()).includes(layerSelect.value as ArenaBackgroundEditLayer)) {
+      updateDebugTuning({ arenaBackgroundEditLayer: layerSelect.value as ArenaBackgroundEditLayer }, { undoable: false });
+    }
+  });
+  parallaxLayerSelect?.addEventListener("change", () => {
+    const layer = parallaxLayerSelect.value;
+
+    if (isArenaParallaxLayer(layer) && getArenaParallaxLayersForTier(getArenaBackgroundEditTierId()).includes(layer)) {
+      arenaParallaxEditorLayer = layer;
+      syncArenaBackgroundParallaxControls(details);
+    }
+  });
+  restartTier?.addEventListener("click", () => {
+    const tierId = Math.round(clampFiniteNumber(Number(previewTier?.value || debugTuning.arenaBackgroundPreviewTier), 1, DEBUG_BOSS_TIER_MAX));
+
+    updateDebugTuning({ arenaBackgroundPreviewTier: tierId });
+    onRestartArenaTierPreview?.(tierId);
+    if (status) {
+      status.textContent = onRestartArenaTierPreview ? `Preview fight restarted on tier ${tierId}.` : "Debug fight restart is not mounted.";
+    }
+  });
+  if (restartTier) {
+    restartTier.disabled = !onRestartArenaTierPreview;
+  }
+
+  details.querySelectorAll<HTMLInputElement>("[data-arena-bg-field]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const field = input.dataset.arenaBgField;
+
+      if (isArenaBackgroundLayoutField(field)) {
+        updateSelectedArenaBackgroundLayer(field, input.type === "checkbox" ? input.checked : Number(input.value));
+      }
+    });
+  });
+  details.querySelectorAll<HTMLInputElement>("[data-arena-parallax-field]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const layer = input.dataset.arenaParallaxLayer;
+      const field = input.dataset.arenaParallaxField;
+
+      if (isArenaParallaxLayer(layer) && isArenaParallaxField(field) && isArenaParallaxFieldSupported(layer, field)) {
+        updateArenaParallaxValue(getArenaBackgroundEditTierId(), layer, field, Number(input.value));
+      }
+    });
+  });
+  details.querySelectorAll<HTMLButtonElement>("[data-arena-parallax-reset-layer]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      const layer = button.dataset.arenaParallaxResetLayer;
+      const field = button.dataset.arenaParallaxResetField;
+
+      if (isArenaParallaxLayer(layer) && isArenaParallaxField(field) && isArenaParallaxFieldSupported(layer, field)) {
+        resetArenaParallaxValue(getArenaBackgroundEditTierId(), layer, field);
+      }
+    });
+  });
+
+  details.querySelector<HTMLButtonElement>(".debug-arena-bg-editor__reset-layer")?.addEventListener("click", () => {
+    updateDebugTuning(getArenaBackgroundLayerResetPatch(getArenaBackgroundEditTierId(), getSelectedArenaBackgroundEditLayer()));
+  });
+  details.querySelector<HTMLButtonElement>(".debug-arena-bg-editor__reset-tier")?.addEventListener("click", () => {
+    updateDebugTuning(getArenaBackgroundTierResetPatch());
+  });
+
+  return details;
+}
+
+function createArenaBackgroundNumberRow(field: Exclude<ArenaBackgroundLayoutField, "visible">, label: string, min: number, max: number, step: number): string {
+  return `
+    <label class="debug-panel__row">
+      <span>${label}</span>
+      <input class="debug-panel__range" type="range" min="${min}" max="${max}" step="${step}" data-arena-bg-field="${field}" />
+      <input class="debug-panel__number" type="number" min="${min}" max="${max}" step="${step}" data-arena-bg-field="${field}" />
+      <span></span>
+    </label>
+  `;
+}
+
+function createArenaParallaxNumberRow(control: ArenaParallaxControlConfig): string {
+  return `
+    <label class="debug-panel__row" data-arena-parallax-row="${control.layer}">
+      <span>${control.label}</span>
+      <input class="debug-panel__range" type="range" min="${control.min}" max="${control.max}" step="${control.step}" data-arena-parallax-layer="${control.layer}" data-arena-parallax-field="${control.field}" />
+      <input class="debug-panel__number" type="number" min="${control.min}" max="${control.max}" step="${control.step}" data-arena-parallax-layer="${control.layer}" data-arena-parallax-field="${control.field}" />
+      <button class="debug-panel__control-reset" type="button" data-arena-parallax-reset-layer="${control.layer}" data-arena-parallax-reset-field="${control.field}">Reset</button>
+    </label>
+  `;
+}
+
+function updateSelectedArenaBackgroundLayer(field: ArenaBackgroundLayoutField, value: number | boolean): void {
+  const tierId = getArenaBackgroundEditTierId();
+  const layer = getSelectedArenaBackgroundEditLayer();
+
+  if (tierId > 2) {
+    updateDebugTuning(getDynamicArenaBackgroundLayerPatch(tierId, layer, {
+      layout: { [field]: value } as Partial<ArenaBackgroundLayerTuning["layout"]>,
+    }));
+    return;
+  }
+
+  const key = getArenaBackgroundLayerTuningKey(getArenaBackgroundEditTierId(), getSelectedArenaBackgroundEditLayer(), field);
+
+  updateDebugTuning({ [key]: value } as Partial<ArenaDebugTuning>);
+}
+
+function getArenaBackgroundLayerResetPatch(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer): Partial<ArenaDebugTuning> {
+  if (tierId > 2) {
+    return getDynamicArenaBackgroundLayerPatch(tierId, layer, createDefaultArenaBackgroundLayerTuning(layer));
+  }
+
+  const patch: Partial<ArenaDebugTuning> = {};
+
+  (["x", "y", "scale", "alpha", "visible"] as const).forEach((field) => {
+    const key = getArenaBackgroundLayerTuningKey(tierId, layer, field);
+
+    patch[key] = defaultDebugTuning[key] as never;
+  });
+
+  return patch;
+}
+
+function getArenaBackgroundTierResetPatch(): Partial<ArenaDebugTuning> {
+  const tierId = getArenaBackgroundEditTierId();
+
+  return getArenaBackgroundEditLayersForTier(tierId).reduce<Partial<ArenaDebugTuning>>((patch, layer) => ({ ...patch, ...getArenaBackgroundLayerResetPatch(tierId, layer) }), {});
+}
+
+function getArenaBackgroundLayerTuningKey(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer, field: ArenaBackgroundLayoutField): keyof ArenaDebugTuning {
+  const prefix = getArenaBackgroundLayerTuningPrefix(tierId, layer);
+  const suffix = field === "scale" ? "Scale" : field === "alpha" ? "Alpha" : field === "visible" ? "Visible" : field.toUpperCase();
+
+  return `${prefix}${suffix}` as keyof ArenaDebugTuning;
+}
+
+function getArenaBackgroundLayerLayoutValue(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer, field: ArenaBackgroundLayoutField): number | boolean {
+  if (tierId > 2) {
+    return getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer).layout[field];
+  }
+
+  return debugTuning[getArenaBackgroundLayerTuningKey(tierId, layer, field)] as number | boolean;
+}
+
+function getDynamicArenaBackgroundLayerPatch(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaBackgroundEditLayer,
+  patch: ArenaBackgroundLayerTuningPatch,
+): Partial<ArenaDebugTuning> {
+  const current = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer);
+  const nextLayer = {
+    layout: { ...current.layout, ...patch.layout },
+    parallax: { ...current.parallax, ...patch.parallax },
+  };
+
+  return {
+    arenaBackgroundTiers: {
+      ...debugTuning.arenaBackgroundTiers,
+      [tierId]: {
+        ...debugTuning.arenaBackgroundTiers[String(tierId)],
+        [layer]: nextLayer,
+      },
+    },
+  };
+}
+
+function getArenaBackgroundLayerTuningPrefix(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer):
+  | "arenaTier1BackgroundBack"
+  | "arenaTier1BackgroundMid"
+  | "arenaTier1BackgroundGround"
+  | "arenaTier2BackgroundBack"
+  | "arenaTier2BackgroundMid"
+  | "arenaTier2BackgroundGround"
+  | "arenaTier2BackgroundFront"
+  | "arenaTier2BackgroundAmbient" {
+  if (tierId === 1) {
+    switch (layer) {
+      case "back":
+        return "arenaTier1BackgroundBack";
+      case "mid":
+        return "arenaTier1BackgroundMid";
+      case "ground":
+      case "front":
+      case "ambient":
+        return "arenaTier1BackgroundGround";
+    }
+  }
+
+  switch (layer) {
+    case "back":
+      return "arenaTier2BackgroundBack";
+    case "mid":
+      return "arenaTier2BackgroundMid";
+    case "ground":
+      return "arenaTier2BackgroundGround";
+    case "front":
+      return "arenaTier2BackgroundFront";
+    case "ambient":
+      return "arenaTier2BackgroundAmbient";
+  }
+}
+
+function formatArenaBackgroundLayerLabel(layer: ArenaBackgroundEditLayer): string {
+  switch (layer) {
+    case "back":
+      return "Back";
+    case "mid":
+      return "Mid";
+    case "ground":
+      return "Ground";
+    case "front":
+      return "Front Trees";
+    case "ambient":
+      return "Ambient";
+  }
+}
+
+function formatArenaParallaxLayerLabel(layer: ArenaParallaxLayerKey): string {
+  return formatArenaBackgroundLayerLabel(layer);
+}
+
+function isArenaBackgroundLayoutField(value: string | undefined): value is ArenaBackgroundLayoutField {
+  return value === "x" || value === "y" || value === "scale" || value === "alpha" || value === "visible";
+}
+
+function getSelectedArenaBackgroundEditLayer(): ArenaBackgroundEditLayer {
+  return getSelectedArenaBackgroundEditLayerForTier(getArenaBackgroundEditTierId());
+}
+
+function getSelectedArenaBackgroundEditLayerForTier(tierId: ArenaBackgroundEditTierId): ArenaBackgroundEditLayer {
+  const layers = getArenaBackgroundEditLayersForTier(tierId);
+
+  return layers.includes(debugTuning.arenaBackgroundEditLayer) ? debugTuning.arenaBackgroundEditLayer : "ground";
+}
+
+function getArenaBackgroundEditLayersForTier(tierId: ArenaBackgroundEditTierId): readonly ArenaBackgroundEditLayer[] {
+  return getArenaBackgroundLayerAssetKeysForTier(tierId);
+}
+
+function getSelectedArenaParallaxLayer(): ArenaParallaxLayerKey {
+  return getSelectedArenaParallaxLayerForTier(getArenaBackgroundEditTierId());
+}
+
+function getSelectedArenaParallaxLayerForTier(tierId: ArenaBackgroundEditTierId): ArenaParallaxLayerKey {
+  const layers = getArenaParallaxLayersForTier(tierId);
+
+  return layers.includes(arenaParallaxEditorLayer) ? arenaParallaxEditorLayer : "back";
+}
+
+function getArenaParallaxLayersForTier(tierId: ArenaBackgroundEditTierId): readonly ArenaParallaxLayerKey[] {
+  return getArenaBackgroundEditLayersForTier(tierId);
+}
+
+function getArenaBackgroundEditTierId(): ArenaBackgroundEditTierId {
+  return getArenaBackgroundEditTierIdFromPreviewTier(debugTuning.arenaBackgroundPreviewTier);
+}
+
+function getArenaBackgroundEditTierIdFromPreviewTier(tierId: number): ArenaBackgroundEditTierId {
+  return Math.max(1, Math.round(tierId));
+}
+
+function getArenaParallaxTuningKey(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField): keyof ArenaDebugTuning {
+  const prefix = getArenaParallaxTuningPrefix(tierId, layer);
+  const suffix = field === "followX" ? "FollowX" : field === "followY" ? "FollowY" : field === "zoom" ? "Zoom" : field === "lookUpY" ? "LookUpY" : "ZoomDarken";
+
+  return `${prefix}${suffix}` as keyof ArenaDebugTuning;
+}
+
+function getArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField): number {
+  if (tierId > 2) {
+    const value = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer).parallax[field];
+
+    return typeof value === "number" ? value : createDefaultArenaBackgroundLayerTuning(layer).parallax[field] ?? 1;
+  }
+
+  return debugTuning[getArenaParallaxTuningKey(tierId, layer, field)] as number;
+}
+
+function updateArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField, value: number): void {
+  if (tierId > 2) {
+    updateDebugTuning(getDynamicArenaBackgroundLayerPatch(tierId, layer, {
+      parallax: { [field]: value } as Partial<ArenaBackgroundLayerTuning["parallax"]>,
+    }));
+    return;
+  }
+
+  updateDebugTuning({ [getArenaParallaxTuningKey(tierId, layer, field)]: value } as Partial<ArenaDebugTuning>);
+}
+
+function resetArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField): void {
+  if (tierId > 2) {
+    updateDebugTuning(getDynamicArenaBackgroundLayerPatch(tierId, layer, {
+      parallax: { [field]: createDefaultArenaBackgroundLayerTuning(layer).parallax[field] ?? 1 } as Partial<ArenaBackgroundLayerTuning["parallax"]>,
+    }));
+    return;
+  }
+
+  const key = getArenaParallaxTuningKey(tierId, layer, field);
+
+  updateDebugTuning({ [key]: defaultDebugTuning[key] } as Partial<ArenaDebugTuning>);
+}
+
+function getArenaParallaxTuningPrefix(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey):
+  | "arenaTier1Back"
+  | "arenaTier1Mid"
+  | "arenaTier1Ground"
+  | "arenaTier2Back"
+  | "arenaTier2Mid"
+  | "arenaTier2Ground"
+  | "arenaTier2Front"
+  | "arenaTier2Ambient" {
+  if (tierId === 1) {
+    switch (layer) {
+      case "back":
+        return "arenaTier1Back";
+      case "mid":
+        return "arenaTier1Mid";
+      case "ground":
+      case "front":
+      case "ambient":
+        return "arenaTier1Ground";
+    }
+  }
+
+  switch (layer) {
+    case "back":
+      return "arenaTier2Back";
+    case "mid":
+      return "arenaTier2Mid";
+    case "ground":
+      return "arenaTier2Ground";
+    case "front":
+      return "arenaTier2Front";
+    case "ambient":
+      return "arenaTier2Ambient";
+  }
+}
+
+function isArenaParallaxLayer(value: string | undefined): value is ArenaParallaxLayerKey {
+  return value === "back" || value === "mid" || value === "ground" || value === "front" || value === "ambient";
+}
+
+function isArenaParallaxField(value: string | undefined): value is ArenaParallaxField {
+  return value === "followX" || value === "followY" || value === "zoom" || value === "lookUpY" || value === "zoomDarken";
+}
+
+function isArenaParallaxFieldSupported(layer: ArenaParallaxLayerKey, field: ArenaParallaxField): boolean {
+  return field !== "zoomDarken" || layer === "mid";
 }
 
 function createControl(control: DebugControlConfig): HTMLElement {
@@ -6485,6 +6950,7 @@ function syncDebugTools(panel: HTMLElement): void {
   syncFaceEditor(panel);
   syncFaceAssetEditor(panel);
   syncEquipmentEditor(panel);
+  syncArenaBackgroundEditor(panel);
   syncEffectsEditor(panel);
   syncClassicActionButtonEditor(panel);
   syncHeroEquipmentEditor(panel);
@@ -6492,6 +6958,100 @@ function syncDebugTools(panel: HTMLElement): void {
   syncAnimationEditor(panel);
   syncNudgeControls();
   syncGrid();
+}
+
+function syncArenaBackgroundEditor(panel: HTMLElement): void {
+  const editor = panel.querySelector<HTMLElement>(".debug-arena-bg-editor");
+
+  if (!editor) {
+    return;
+  }
+
+  const previewTier = editor.querySelector<HTMLInputElement>("[data-arena-bg-preview-tier]");
+  if (previewTier) {
+    previewTier.value = `${debugTuning.arenaBackgroundPreviewTier}`;
+  }
+
+  const layerSelect = editor.querySelector<HTMLSelectElement>('select[data-debug-select-key="arenaBackgroundEditLayer"]');
+  if (layerSelect) {
+    syncArenaBackgroundLayerSelectOptions(layerSelect, getArenaBackgroundEditTierId());
+    layerSelect.value = getSelectedArenaBackgroundEditLayer();
+  }
+
+  editor.querySelectorAll<HTMLInputElement>("[data-arena-bg-field]").forEach((input) => {
+    const field = input.dataset.arenaBgField;
+
+    if (!isArenaBackgroundLayoutField(field)) {
+      return;
+    }
+
+    const value = getArenaBackgroundLayerLayoutValue(getArenaBackgroundEditTierId(), getSelectedArenaBackgroundEditLayer(), field);
+
+    if (input.type === "checkbox") {
+      input.checked = Boolean(value);
+      return;
+    }
+
+    input.value = typeof value === "number" && !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+  });
+
+  editor.querySelectorAll<HTMLInputElement>("[data-arena-parallax-field]").forEach((input) => {
+    const layer = input.dataset.arenaParallaxLayer;
+    const field = input.dataset.arenaParallaxField;
+
+    if (!isArenaParallaxLayer(layer) || !isArenaParallaxField(field) || !isArenaParallaxFieldSupported(layer, field)) {
+      return;
+    }
+
+    const value = getArenaParallaxValue(getArenaBackgroundEditTierId(), layer, field);
+
+    input.value = typeof value === "number" && !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+  });
+  syncArenaBackgroundParallaxControls(editor);
+
+  const resetTier = editor.querySelector<HTMLButtonElement>(".debug-arena-bg-editor__reset-tier");
+  if (resetTier) {
+    resetTier.textContent = `Reset tier ${getArenaBackgroundEditTierId()} BG`;
+  }
+}
+
+function syncArenaBackgroundParallaxControls(editor: HTMLElement): void {
+  const selectedLayer = getSelectedArenaParallaxLayer();
+  const select = editor.querySelector<HTMLSelectElement>("[data-arena-parallax-layer-select]");
+  arenaParallaxEditorLayer = selectedLayer;
+
+  if (select) {
+    syncArenaParallaxLayerSelectOptions(select, getArenaBackgroundEditTierId());
+    select.value = selectedLayer;
+  }
+
+  editor.querySelectorAll<HTMLElement>("[data-arena-parallax-row]").forEach((row) => {
+    row.hidden = row.dataset.arenaParallaxRow !== selectedLayer;
+  });
+}
+
+function syncArenaBackgroundLayerSelectOptions(select: HTMLSelectElement, tierId: ArenaBackgroundEditTierId): void {
+  const layers = getArenaBackgroundEditLayersForTier(tierId);
+  const signature = layers.join("|");
+
+  if (select.dataset.arenaBgLayerSignature === signature) {
+    return;
+  }
+
+  select.innerHTML = layers.map((layer) => `<option value="${layer}">${formatArenaBackgroundLayerLabel(layer)}</option>`).join("");
+  select.dataset.arenaBgLayerSignature = signature;
+}
+
+function syncArenaParallaxLayerSelectOptions(select: HTMLSelectElement, tierId: ArenaBackgroundEditTierId): void {
+  const layers = getArenaParallaxLayersForTier(tierId);
+  const signature = layers.join("|");
+
+  if (select.dataset.arenaParallaxLayerSignature === signature) {
+    return;
+  }
+
+  select.innerHTML = layers.map((layer) => `<option value="${layer}">${formatArenaParallaxLayerLabel(layer)}</option>`).join("");
+  select.dataset.arenaParallaxLayerSignature = signature;
 }
 
 function syncHeroEquipmentEditor(panel: HTMLElement): void {

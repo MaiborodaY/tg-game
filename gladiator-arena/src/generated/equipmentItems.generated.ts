@@ -2757,7 +2757,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_3","name":"Epic Axe 01","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":25,"weaponClass":"axe","levelRequirement":45},
     assetKeys: {"weaponMainAssetKey":"weapon-axe-epic-axe-3"},
-    equipmentTuning: {"x":-22,"y":16,"angle":104,"scaleX":1.72,"scaleY":1.8,"flipX":true,"flipY":false},
+    equipmentTuning: {"x":-17.68824118451984,"y":17.101249188439624,"angle":104,"scaleX":1.72,"scaleY":1.8,"flipX":true,"flipY":false},
     asset: {
       key: "weapon-axe-epic-axe-3",
       sourcePath: "assets/fighters/weapons/weapon-axe-epic-axe-3.webp",
@@ -2852,7 +2852,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_axe_simple_axe","name":"Common Axe 03","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"axe","levelRequirement":10},
     assetKeys: {"weaponMainAssetKey":"weapon-axe-simple-axe"},
-    equipmentTuning: {"x":0,"y":31,"angle":85,"scaleX":0.75,"scaleY":0.75,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":-7.919841696056025,"y":25.008040381821957,"angle":85,"scaleX":0.75,"scaleY":0.75,"flipX":false,"flipY":false},
     asset: {
       key: "weapon-axe-simple-axe",
       sourcePath: "assets/fighters/weapons/weapon-axe-simple-axe.webp",

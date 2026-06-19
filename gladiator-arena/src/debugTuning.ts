@@ -147,6 +147,7 @@ export type FaceAssetLayerKey = (typeof FACE_ASSET_LAYER_KEYS)[number];
 
 export const APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const;
 export type AppearanceLayerKey = (typeof APPEARANCE_LAYER_KEYS)[number];
+export const ARENA_BACKGROUND_EDIT_LAYERS = ["back", "mid", "ground", "front", "ambient"] as const;
 
 export const EQUIPMENT_SLOT_KEYS = [
   "weaponMain",
@@ -281,6 +282,31 @@ export interface ClassicActionButtonSlotTuning {
   rotation: number;
 }
 
+export type ArenaBackgroundEditLayer = (typeof ARENA_BACKGROUND_EDIT_LAYERS)[number];
+
+export interface ArenaBackgroundLayerLayoutTuning {
+  x: number;
+  y: number;
+  scale: number;
+  alpha: number;
+  visible: boolean;
+}
+
+export interface ArenaBackgroundLayerParallaxTuning {
+  followX: number;
+  followY: number;
+  zoom: number;
+  lookUpY: number;
+  zoomDarken?: number;
+}
+
+export interface ArenaBackgroundLayerTuning {
+  layout: ArenaBackgroundLayerLayoutTuning;
+  parallax: ArenaBackgroundLayerParallaxTuning;
+}
+
+export type ArenaBackgroundTierTuningMap = Record<string, Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>>>;
+
 export interface ArenaDebugTuning {
   debugTuningVersion: number;
   showGrid: boolean;
@@ -316,6 +342,132 @@ export interface ArenaDebugTuning {
   arenaGroundFollowY: number;
   arenaGroundZoom: number;
   arenaGroundLookUpY: number;
+  arenaBackgroundPreviewTier: number;
+  arenaBackgroundEditMode: boolean;
+  arenaBackgroundEditLayer: ArenaBackgroundEditLayer;
+  arenaBackgroundTiers: {
+    "3": {
+      "back": {
+        "layout": {
+          "x": 0,
+          "y": -125,
+          "scale": 0.53,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.2,
+          "followY": -0.12,
+          "zoom": 0.39,
+          "lookUpY": -19
+        }
+      },
+      "ground": {
+        "layout": {
+          "x": 0,
+          "y": -158,
+          "scale": 1,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.37,
+          "followY": 0.47,
+          "zoom": 0.74,
+          "lookUpY": 13
+        }
+      },
+      "front": {
+        "layout": {
+          "x": 0,
+          "y": -28,
+          "scale": 0.5,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.35,
+          "followY": 0.47,
+          "zoom": 0.34,
+          "lookUpY": 33
+        }
+      }
+    }
+  },
+  arenaTier1BackFollowX: number;
+  arenaTier1BackFollowY: number;
+  arenaTier1BackZoom: number;
+  arenaTier1BackLookUpY: number;
+  arenaTier1MidFollowX: number;
+  arenaTier1MidFollowY: number;
+  arenaTier1MidZoom: number;
+  arenaTier1MidLookUpY: number;
+  arenaTier1MidZoomDarken: number;
+  arenaTier1GroundFollowX: number;
+  arenaTier1GroundFollowY: number;
+  arenaTier1GroundZoom: number;
+  arenaTier1GroundLookUpY: number;
+  arenaTier2BackFollowX: number;
+  arenaTier2BackFollowY: number;
+  arenaTier2BackZoom: number;
+  arenaTier2BackLookUpY: number;
+  arenaTier2MidFollowX: number;
+  arenaTier2MidFollowY: number;
+  arenaTier2MidZoom: number;
+  arenaTier2MidLookUpY: number;
+  arenaTier2MidZoomDarken: number;
+  arenaTier2GroundFollowX: number;
+  arenaTier2GroundFollowY: number;
+  arenaTier2GroundZoom: number;
+  arenaTier2GroundLookUpY: number;
+  arenaTier2FrontFollowX: number;
+  arenaTier2FrontFollowY: number;
+  arenaTier2FrontZoom: number;
+  arenaTier2FrontLookUpY: number;
+  arenaTier2AmbientFollowX: number;
+  arenaTier2AmbientFollowY: number;
+  arenaTier2AmbientZoom: number;
+  arenaTier2AmbientLookUpY: number;
+  arenaTier1BackgroundBackX: number;
+  arenaTier1BackgroundBackY: number;
+  arenaTier1BackgroundBackScale: number;
+  arenaTier1BackgroundBackAlpha: number;
+  arenaTier1BackgroundBackVisible: boolean;
+  arenaTier1BackgroundMidX: number;
+  arenaTier1BackgroundMidY: number;
+  arenaTier1BackgroundMidScale: number;
+  arenaTier1BackgroundMidAlpha: number;
+  arenaTier1BackgroundMidVisible: boolean;
+  arenaTier1BackgroundGroundX: number;
+  arenaTier1BackgroundGroundY: number;
+  arenaTier1BackgroundGroundScale: number;
+  arenaTier1BackgroundGroundAlpha: number;
+  arenaTier1BackgroundGroundVisible: boolean;
+  arenaTier2BackgroundBackX: number;
+  arenaTier2BackgroundBackY: number;
+  arenaTier2BackgroundBackScale: number;
+  arenaTier2BackgroundBackAlpha: number;
+  arenaTier2BackgroundBackVisible: boolean;
+  arenaTier2BackgroundMidX: number;
+  arenaTier2BackgroundMidY: number;
+  arenaTier2BackgroundMidScale: number;
+  arenaTier2BackgroundMidAlpha: number;
+  arenaTier2BackgroundMidVisible: boolean;
+  arenaTier2BackgroundGroundX: number;
+  arenaTier2BackgroundGroundY: number;
+  arenaTier2BackgroundGroundScale: number;
+  arenaTier2BackgroundGroundAlpha: number;
+  arenaTier2BackgroundGroundVisible: boolean;
+  arenaTier2BackgroundFrontX: number;
+  arenaTier2BackgroundFrontY: number;
+  arenaTier2BackgroundFrontScale: number;
+  arenaTier2BackgroundFrontAlpha: number;
+  arenaTier2BackgroundFrontVisible: boolean;
+  arenaTier2BackgroundAmbientX: number;
+  arenaTier2BackgroundAmbientY: number;
+  arenaTier2BackgroundAmbientScale: number;
+  arenaTier2BackgroundAmbientAlpha: number;
+  arenaTier2BackgroundAmbientVisible: boolean;
   actionArcEditMode: boolean;
   actionArcRotation: number;
   actionArcRadius: number;
@@ -479,8 +631,6 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
-  switchWeapon: { x: 0, y: 0 },
-  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -569,7 +719,7 @@ export const DEFAULT_APPEARANCE_LAYERS: Record<AppearanceLayerKey, AppearanceLay
 export const DEFAULT_BODY_PART_LAYERS: Record<RigPartKey, BodyPartLayerTuning> = createDefaultBodyPartLayers();
 
 export const DEFAULT_EQUIPMENT: Record<EquipmentSlotKey, EquipmentTuning> = {
-  weaponMain: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
+  weaponMain: { x: 16.755, y: -89.271, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
   weaponBow: { x: 3, y: 35, angle: 55, scaleX: 0.6, scaleY: 0.49, flipX: false, flipY: false },
   helmet: { x: -1, y: 6, angle: 0, scaleX: 0.84, scaleY: 0.94, flipX: false, flipY: false },
   breastplate: { x: 0, y: 13, angle: 0, scaleX: 1.04, scaleY: 1.49, flipX: false, flipY: false },
@@ -794,7 +944,7 @@ export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
   variantLabel: "default",
   variantWeight: 1,
   appliesToAllWeapons: true,
-  selectedVariantId: "lunge3",
+  selectedVariantId: "lunge4",
   base: {
     head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
     torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -1771,6 +1921,361 @@ export const DEFAULT_LUNGE_ANIMATION: BodyAnimationTuning = {
             eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
           },
           rootOffset: { x: -2.779, y: 0 },
+        },
+      ],
+    },
+{
+      enabled: true,
+      duration: 700,
+      variantId: "lunge4",
+      variantLabel: "lunge4",
+      variantWeight: 1,
+      appliesToAllWeapons: false,
+      weaponClasses: ["sword"],
+      base: {
+        head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+        torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+        backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+        backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+        backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+        frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+        frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+        frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+        backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+        backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+        backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+        frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+        frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+        frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      },
+      breath: {
+        head: { x: 110.02, y: 83.25, angle: 50.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+        torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+        backUpperArm: { x: 89.148, y: 41.129, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+        backForearm: { x: 67.526, y: 27.979, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+        backHand: { x: 73.59, y: 30.628, angle: -29.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+        frontUpperArm: { x: 106.301, y: 105.571, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+        frontForearm: { x: 44.023, y: 95.014, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+        frontHand: { x: -21.792, y: 51.072, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+        backThigh: { x: 23.653, y: 60.913, angle: -38.265, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+        backShin: { x: 74.148, y: 77.804, angle: -8.443, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+        backFoot: { x: 119.234, y: 100.421, angle: -11.637, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+        frontThigh: { x: 28.069, y: 74.13, angle: 36.916, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+        frontShin: { x: -16.165, y: 93.253, angle: 71.206, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+        frontFoot: { x: -91.929, y: 80.804, angle: 82.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+      },
+      faceBase: {
+        eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+        eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+      },
+      faceBreath: {
+        eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+        eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+      },
+      activeParts: {
+        head: true,
+        torso: true,
+        backUpperArm: true,
+        backForearm: true,
+        backHand: true,
+        frontUpperArm: true,
+        frontForearm: true,
+        frontHand: true,
+        backThigh: true,
+        backShin: true,
+        backFoot: true,
+        frontThigh: true,
+        frontShin: true,
+        frontFoot: true,
+      },
+      movementStartKeyframeId: "key-263",
+      impactKeyframeId: "key-927",
+      keyframes: [
+        {
+          id: "pose-a",
+          time: 0,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+            frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+            backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+            backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+            backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: 0, y: 0 },
+        },
+        {
+          id: "key-145",
+          time: 64,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 85.949, y: 38.637, angle: 18.572, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 39.208, y: 28.451, angle: 23.748, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 58.902, y: 21.998, angle: 32.748, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 33.711, y: 15.459, angle: 9.748, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 41.574, y: 20.396, angle: 3.748, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 83.515, y: 65.602, angle: 8.748, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 60.702, y: 74.235, angle: 29.748, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: 14.78, y: 65.222, angle: 22.87, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 33.86, y: 46.066, angle: 26.748, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: 7.172, y: 73.11, angle: 30.748, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: 3.371, y: 104.071, angle: 22.762, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 34.737, y: 56.165, angle: 2.748, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 25.761, y: 85.2, angle: 32.748, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -14.429, y: 106.049, angle: -0.55, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: 0.133, y: 0.057 },
+        },
+        {
+          id: "key-215",
+          time: 127,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 101.785, y: 55.482, angle: 25.978, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 42.876, y: 35.128, angle: 29.445, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 72.859, y: 26.757, angle: 38.445, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 42.006, y: 15.99, angle: 15.445, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 43.4, y: 20.857, angle: 9.445, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 92.698, y: 81.2, angle: 14.445, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 62.587, y: 88.767, angle: 35.445, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: 9.215, y: 73.75, angle: 37.112, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 35.297, y: 49.631, angle: 32.445, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: 2.264, y: 73.166, angle: 36.445, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -17.239, y: 111.057, angle: 57.513, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 34.97, y: 64.754, angle: 8.445, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 18.915, y: 94.713, angle: 38.445, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -28.013, y: 110.062, angle: -1.689, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -3.162, y: 0 },
+        },
+        {
+          id: "key-263",
+          time: 208,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 102.024, y: 73.656, angle: 29.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 38.866, y: 45.543, angle: 27.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 74.755, y: 39.53, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 53.134, y: 26.38, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 59.198, y: 29.029, angle: -23.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 87.111, y: 99.174, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 24.834, y: 88.617, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -40.981, y: 44.676, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 31.649, y: 57.715, angle: 37.067, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: -4.244, y: 76.735, angle: 39.89, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -28.642, y: 111.353, angle: 63.695, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 28.069, y: 74.13, angle: 11.911, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 8.591, y: 102.827, angle: 38.867, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -38.505, y: 117.774, angle: 1.678, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.914, y: 0 },
+        },
+        {
+          id: "key-408",
+          time: 241,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 108.421, y: 83.25, angle: 47.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 74.755, y: 39.53, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 53.134, y: 26.38, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 59.198, y: 29.029, angle: -29.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 87.111, y: 99.174, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 24.834, y: 88.617, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -40.981, y: 44.676, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 31.649, y: 57.715, angle: 54.735, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: -19.495, y: 61.276, angle: 84.557, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -70.03, y: 63.399, angle: 81.363, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 28.069, y: 74.13, angle: -41.084, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 66.111, y: 82.829, angle: -9.794, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: 67.052, y: 119.362, angle: 10.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.914, y: 0 },
+        },
+        {
+          id: "key-433",
+          time: 289,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 111.619, y: 83.25, angle: 29.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 74.755, y: 39.53, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 53.134, y: 26.38, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 59.198, y: 29.029, angle: -35.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 87.111, y: 99.174, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 24.834, y: 88.617, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -40.981, y: 44.676, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 31.649, y: 57.715, angle: 45.735, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: -12.29, y: 69.703, angle: 123.557, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -70.812, y: 20.942, angle: 108.363, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 12.989, y: 74.13, angle: -11.084, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 20.183, y: 106.589, angle: 50.206, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -41.766, y: 115.961, angle: 4.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.914, y: 0 },
+        },
+        {
+          id: "pose-b",
+          time: 352.8,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 110.02, y: 83.25, angle: 50.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 89.148, y: 41.129, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 67.526, y: 27.979, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 73.59, y: 30.628, angle: -29.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 106.301, y: 105.571, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 44.023, y: 95.014, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -21.792, y: 51.072, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 23.653, y: 60.913, angle: -38.265, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: 74.148, y: 77.804, angle: -8.443, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: 119.234, y: 100.421, angle: -11.637, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 28.069, y: 74.13, angle: 36.916, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: -16.165, y: 93.253, angle: 71.206, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -91.929, y: 80.804, angle: 82.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.914, y: 0 },
+        },
+        {
+          id: "key-563",
+          time: 387,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 102.024, y: 73.656, angle: 44.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 38.866, y: 45.543, angle: 33.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 81.152, y: 45.926, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 59.53, y: 32.776, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 65.595, y: 35.426, angle: -35.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 107.9, y: 111.968, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 45.622, y: 101.41, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -20.192, y: 57.469, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 31.649, y: 57.715, angle: 6.735, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: 31.677, y: 94.858, angle: 57.557, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -7.663, y: 122.568, angle: 60.363, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 28.069, y: 74.13, angle: -41.084, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 66.111, y: 82.829, angle: -36.794, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: 99.035, y: 109.767, angle: -13.983, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.914, y: 0 },
+        },
+        {
+          id: "key-860",
+          time: 535,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 101.825, y: 73.493, angle: 25.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 38.79, y: 45.426, angle: 31.715, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 56.616, y: 40.553, angle: -2.088, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 74.626, y: 36.706, angle: -25.326, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 112.43, y: 19.646, angle: -29.774, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+            frontUpperArm: { x: 93.405, y: 100.534, angle: 43.82, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 33.667, y: 86.825, angle: 63.283, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -28.778, y: 41.852, angle: 65.032, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+            backThigh: { x: 31.587, y: 57.602, angle: 27.943, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: 6.491, y: 82.058, angle: 45.087, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -22.36, y: 114.619, angle: 62.577, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 28.014, y: 73.986, angle: -3.928, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 25.734, y: 96.72, angle: 16.211, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: 2.597, y: 115.291, angle: -2.999, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.908, y: 0 },
+        },
+        {
+          id: "key-927",
+          time: 630,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: 94.101, y: 73.005, angle: 16.911, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 37.068, y: 42.789, angle: 29.449, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: 51.927, y: 43.241, angle: -16.48, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: 84.893, y: 50.396, angle: -39.5, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 138.042, y: 26.913, angle: -28.611, scaleX: 1.129, scaleY: 1.062, flipX: false, flipY: false },
+            frontUpperArm: { x: 84.396, y: 89.421, angle: 31.195, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 34.664, y: 87.703, angle: 49.662, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -25.505, y: 56.687, angle: 52.309, scaleX: 1.113, scaleY: 1.046, flipX: true, flipY: false },
+            backThigh: { x: 30.185, y: 55.046, angle: 35.353, scaleX: 1.002, scaleY: 1, flipX: false, flipY: false },
+            backShin: { x: -3.909, y: 74.713, angle: 38.091, scaleX: 0.945, scaleY: 0.96, flipX: false, flipY: false },
+            backFoot: { x: -28.15, y: 109.44, angle: 60.75, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            frontThigh: { x: 26.759, y: 70.702, angle: 11.36, scaleX: 1.002, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: 8.043, y: 99.551, angle: 37.07, scaleX: 0.964, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -37.199, y: 115.564, angle: 1.601, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: -2.779, y: 0 },
+        },
+        {
+          id: "key-1000",
+          time: 700,
+          easing: "easeInOut",
+          rigParts: {
+            head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+            torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+            backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+            backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            backHand: { x: 4.11, y: -3.786, angle: -4, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+            frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+            frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+            backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+            backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+            backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+            frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+            frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+            frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+          },
+          faceParts: {
+            eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+          },
+          rootOffset: { x: 0, y: 0 },
         },
       ],
     }
@@ -4079,6 +4584,11 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       idle: {
         enabled: true,
         duration: 2000,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4135,10 +4645,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 1000,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -11.571, angle: 3, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -18, angle: 0, scaleX: 0.98, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -13, angle: -2, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -9.379, y: -2.871, angle: -1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 8.721, y: -6.045, angle: -21, scaleX: 1.12, scaleY: 1.05, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -13, angle: 2, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 8.63, y: -2.897, angle: -1, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -7.546, y: -2, angle: 21, scaleX: 1.12, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 0.93, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       walkCycle: {
         enabled: true,
         duration: 420,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4195,10 +4764,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 210,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 9, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.91, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 20, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -37.35, y: -7.233, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: -28.666, y: -10.012, angle: -5, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 10, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: -1.088, y: -3.62, angle: 19, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -34.026, y: -11.706, angle: 29, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 10, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -8.533, y: 26.963, angle: -1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -24.771, y: 72.088, angle: -20, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: -24, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 23.754, y: 23.864, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 14.504, y: 60.385, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 1, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 13, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       lunge: {
         enabled: true,
         duration: 400,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4255,10 +4883,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 200,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: 25.61, y: -1.762, angle: 18, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 12, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -16.06, y: -2.952, angle: -40, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 45.299, y: -5.333, angle: -39, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 98.79, y: -27.027, angle: -56, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 16.898, y: 13.821, angle: -39, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              frontForearm: { x: 38.673, y: 11.247, angle: -117, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              frontHand: { x: 80.019, y: -83.172, angle: -149, scaleX: 1.17, scaleY: 0.97, flipX: false, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 42, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -37.506, y: 8.592, angle: 4, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -56.056, y: 58.519, angle: -33, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: -39, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 36.266, y: 11.053, angle: 24, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 3.256, y: 35.623, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 2, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 13.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       light: {
         enabled: true,
         duration: 500,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4315,10 +5002,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 250,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: 18.572, y: -8.766, angle: 5, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 8.541, y: -13.627, angle: 5, scaleX: 0.95, scaleY: 0.91, flipX: false, flipY: false },
+              backUpperArm: { x: -3.849, y: 3.77, angle: -55, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 69.72, y: -14.116, angle: -54, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 128.386, y: -49.581, angle: -80, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 38.399, y: -4.608, angle: 15, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 8.093, y: 3.936, angle: 12, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -19.94, y: -1.423, angle: 34, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 6.893, y: -2.858, angle: 13, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -3.38, y: 26.59, angle: 2, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -25.23, y: 59.615, angle: 1, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: 6.454, y: 2.454, angle: 13, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -11.717, y: 33.911, angle: 16, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -35.996, y: 63.999, angle: 19, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 2, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 15, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       medium: {
         enabled: true,
         duration: 500,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4375,10 +5121,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 250,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -2.11, y: 42.167, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -1.98, y: 35.595, angle: 3, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -19.03, y: 49.523, angle: -45, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 41.46, y: 44.881, angle: -119, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 94.2, y: -51.619, angle: -94, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 15.07, y: 46.595, angle: -57, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 64.71, y: 16.571, angle: -66, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 110.969, y: -9.352, angle: -44, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 4.95, y: 36.119, angle: 39, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -25.71, y: 44.714, angle: -5, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -37.81, y: 76.833, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -6.19, y: 31.238, angle: -33, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 23.48, y: 46.643, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 16.48, y: 76.833, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 1.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 14.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       heavy: {
         enabled: true,
         duration: 700,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4435,10 +5240,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 350,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -2.11, y: -158.927, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -1.98, y: -163.356, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -23.98, y: -160.356, angle: -30, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 19.68, y: -155.237, angle: -119, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 70.44, y: -249.784, angle: -136, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 14.08, y: -153.522, angle: -36, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 46.89, y: -162.07, angle: -54, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 85.23, y: -179.208, angle: -32, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: -1.98, y: -149.356, angle: 42, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -42.54, y: -143.689, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -55.63, y: -93.022, angle: -36, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -1.24, y: -149.356, angle: -57, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 52.19, y: -152.498, angle: -63, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 105.579, y: -151.593, angle: -27, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 2.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 15, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       bowShot: {
         enabled: true,
         duration: 500,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4495,10 +5359,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 250,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -62.578, y: 61.479, angle: -24, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -19.215, y: 49.471, angle: -21, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -68.115, y: 100.785, angle: -66, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 17.783, y: 70.997, angle: -74, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 84.812, y: 16.947, angle: -95, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: -33.723, y: 33.524, angle: -54, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 13.171, y: 9.421, angle: -30, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 28.814, y: 3.684, angle: 43, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: -5.764, y: 54.945, angle: 42, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -43.155, y: 61.42, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -65.115, y: 98.42, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -11.779, y: 61.576, angle: -30, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 20.768, y: 83.156, angle: -30, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 46.605, y: 112.63, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 0, y: -1, scaleX: 1.73, scaleY: 0.36 },
+              eyeRight: { x: 12.5, y: -2, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       hit: {
         enabled: true,
         duration: 400,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4555,10 +5478,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 200,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: 20.653, y: 13.954, angle: 35, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -4.157, y: 1.999, angle: 13, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -16.353, y: -3.211, angle: 1, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -5.471, y: 5.895, angle: -7, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 22.128, y: 7.789, angle: -14, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 41.293, y: 30.893, angle: 2, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 28.779, y: 40.946, angle: -2, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 13.757, y: 41.893, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: -3.039, y: 13.263, angle: 7, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -6.647, y: 39.631, angle: -14, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -11.314, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -11.936, y: 5.684, angle: 7, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -22.465, y: 38.631, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -30.254, y: 72.842, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.37, scaleY: 0.87 },
+              eyeRight: { x: 3.5, y: -2, scaleX: 1.66, scaleY: 0.19 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       block: {
         enabled: true,
         duration: 500,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4615,10 +5597,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 250,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -21.423, y: -3.098, angle: 5, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -3, y: -16, angle: -11, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -36.607, y: 17.998, angle: -76, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 49.84, y: -23.526, angle: -58, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 115.615, y: -61.262, angle: -76, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 14.471, y: -15.211, angle: -28, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 39.915, y: -19.947, angle: 19, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 5.128, y: -27.369, angle: 36, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: -2, y: 0, angle: 21, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -24.901, y: 27.316, angle: 22, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -68.958, y: 61.474, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -9.936, y: 2.842, angle: -33, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 21.729, y: 19.685, angle: -3, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 16.822, y: 59.579, angle: 12, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -1, y: -1.5, scaleX: 1.3, scaleY: 0.7 },
+              eyeRight: { x: 12, y: -1.5, scaleX: 1.3, scaleY: 0.7 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       taunt: {
         enabled: true,
         duration: 600,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4675,10 +5716,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -3, y: 0, scaleX: 1.26, scaleY: 1 },
+              eyeRight: { x: 2, y: 0, scaleX: 1.34, scaleY: 1 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 300,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: 5.634, y: -36.096, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 1.921, y: -43.367, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -31.841, angle: -30, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 27.39, y: -29.42, angle: -32, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 73.283, y: -46.416, angle: -22, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 9.159, y: -25.811, angle: -102, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 67.65, y: -111.506, angle: -105, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 120.899, y: -174.668, angle: -74, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 5.764, y: -24.631, angle: 36, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -31.157, y: -5.869, angle: 40, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -87.802, y: 32.996, angle: -33, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -1.211, y: -17.999, angle: -39, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 40.944, y: -3.051, angle: -39, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 75.255, y: 24.528, angle: 21, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 1, y: 0.5, scaleX: 1.26, scaleY: 1 },
+              eyeRight: { x: -3.5, y: 0, scaleX: 1.34, scaleY: 1 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       rest: {
         enabled: true,
         duration: 1000,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4735,6 +5835,60 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 500,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 18, scaleX: 1.03, scaleY: 0.88, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.94, flipX: false, flipY: false },
+              backUpperArm: { x: -22.99, y: -11.976, angle: -6, scaleX: 0.85, scaleY: 0.95, flipX: false, flipY: false },
+              backForearm: { x: -4.08, y: -1, angle: 1, scaleX: 1.05, scaleY: 1.05, flipX: false, flipY: false },
+              backHand: { x: 13.02, y: 0.119, angle: -25, scaleX: 1.15, scaleY: 0.95, flipX: false, flipY: false },
+              frontUpperArm: { x: 24.97, y: -8.071, angle: 15, scaleX: 0.85, scaleY: 0.95, flipX: true, flipY: false },
+              frontForearm: { x: -4.59, y: 0.952, angle: -3, scaleX: 1.05, scaleY: 1.05, flipX: true, flipY: false },
+              frontHand: { x: -15.75, y: 1.386, angle: 19, scaleX: 1.22, scaleY: 1.02, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -2, scaleX: 1.81, scaleY: 0.31 },
+              eyeRight: { x: 4, y: -2.5, scaleX: 2.12, scaleY: 0.26 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
     },
   },
@@ -4774,6 +5928,11 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       idle: {
         enabled: true,
         duration: 2000,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4830,10 +5989,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 1000,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -11.571, angle: 3, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -18, angle: 0, scaleX: 0.98, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -13, angle: -2, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -9.379, y: -2.871, angle: -1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 8.721, y: -6.045, angle: -21, scaleX: 1.12, scaleY: 1.05, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -13, angle: 2, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 8.63, y: -2.897, angle: -1, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -7.546, y: -2, angle: 21, scaleX: 1.12, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 0.93, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.93, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       walkCycle: {
         enabled: true,
         duration: 420,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -4890,6 +6108,60 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 210,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 9, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.91, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 20, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -37.35, y: -7.233, angle: 9, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: -28.666, y: -10.012, angle: -5, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 10, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: -1.088, y: -3.62, angle: 19, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -34.026, y: -11.706, angle: 29, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 10, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -8.533, y: 26.963, angle: -1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -24.771, y: 72.088, angle: -20, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: -24, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 23.754, y: 23.864, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 14.504, y: 60.385, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 1, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 13, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       lunge: {
         enabled: true,
@@ -4898,7 +6170,7 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
         variantLabel: "default",
         variantWeight: 1,
         appliesToAllWeapons: true,
-        selectedVariantId: "lunge3",
+        selectedVariantId: "lunge4",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -5877,6 +7149,361 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
                 rootOffset: { x: -2.779, y: 0 },
               },
             ],
+          },
+{
+            enabled: true,
+            duration: 700,
+            variantId: "lunge4",
+            variantLabel: "lunge4",
+            variantWeight: 1,
+            appliesToAllWeapons: false,
+            weaponClasses: ["sword"],
+            base: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            breath: {
+              head: { x: 110.02, y: 83.25, angle: 50.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: 89.148, y: 41.129, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 67.526, y: 27.979, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 73.59, y: 30.628, angle: -29.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 106.301, y: 105.571, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 44.023, y: 95.014, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -21.792, y: 51.072, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 23.653, y: 60.913, angle: -38.265, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backShin: { x: 74.148, y: 77.804, angle: -8.443, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+              backFoot: { x: 119.234, y: 100.421, angle: -11.637, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              frontThigh: { x: 28.069, y: 74.13, angle: 36.916, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -16.165, y: 93.253, angle: 71.206, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -91.929, y: 80.804, angle: 82.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceBase: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            faceBreath: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            activeParts: {
+              head: true,
+              torso: true,
+              backUpperArm: true,
+              backForearm: true,
+              backHand: true,
+              frontUpperArm: true,
+              frontForearm: true,
+              frontHand: true,
+              backThigh: true,
+              backShin: true,
+              backFoot: true,
+              frontThigh: true,
+              frontShin: true,
+              frontFoot: true,
+            },
+            movementStartKeyframeId: "key-263",
+            impactKeyframeId: "key-927",
+            keyframes: [
+              {
+                id: "pose-a",
+                time: 0,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+                  frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+                  backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+                  backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+                  backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: 0, y: 0 },
+              },
+              {
+                id: "key-145",
+                time: 64,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 85.949, y: 38.637, angle: 18.572, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 39.208, y: 28.451, angle: 23.748, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 58.902, y: 21.998, angle: 32.748, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 33.711, y: 15.459, angle: 9.748, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 41.574, y: 20.396, angle: 3.748, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 83.515, y: 65.602, angle: 8.748, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 60.702, y: 74.235, angle: 29.748, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: 14.78, y: 65.222, angle: 22.87, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 33.86, y: 46.066, angle: 26.748, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: 7.172, y: 73.11, angle: 30.748, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: 3.371, y: 104.071, angle: 22.762, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 34.737, y: 56.165, angle: 2.748, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 25.761, y: 85.2, angle: 32.748, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -14.429, y: 106.049, angle: -0.55, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: 0.133, y: 0.057 },
+              },
+              {
+                id: "key-215",
+                time: 127,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 101.785, y: 55.482, angle: 25.978, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 42.876, y: 35.128, angle: 29.445, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 72.859, y: 26.757, angle: 38.445, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 42.006, y: 15.99, angle: 15.445, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 43.4, y: 20.857, angle: 9.445, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 92.698, y: 81.2, angle: 14.445, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 62.587, y: 88.767, angle: 35.445, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: 9.215, y: 73.75, angle: 37.112, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 35.297, y: 49.631, angle: 32.445, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: 2.264, y: 73.166, angle: 36.445, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -17.239, y: 111.057, angle: 57.513, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 34.97, y: 64.754, angle: 8.445, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 18.915, y: 94.713, angle: 38.445, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -28.013, y: 110.062, angle: -1.689, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -3.162, y: 0 },
+              },
+              {
+                id: "key-263",
+                time: 208,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 102.024, y: 73.656, angle: 29.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 38.866, y: 45.543, angle: 27.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 74.755, y: 39.53, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 53.134, y: 26.38, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 59.198, y: 29.029, angle: -23.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 87.111, y: 99.174, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 24.834, y: 88.617, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -40.981, y: 44.676, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 31.649, y: 57.715, angle: 37.067, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: -4.244, y: 76.735, angle: 39.89, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -28.642, y: 111.353, angle: 63.695, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 28.069, y: 74.13, angle: 11.911, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 8.591, y: 102.827, angle: 38.867, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -38.505, y: 117.774, angle: 1.678, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.914, y: 0 },
+              },
+              {
+                id: "key-408",
+                time: 241,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 108.421, y: 83.25, angle: 47.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 74.755, y: 39.53, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 53.134, y: 26.38, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 59.198, y: 29.029, angle: -29.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 87.111, y: 99.174, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 24.834, y: 88.617, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -40.981, y: 44.676, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 31.649, y: 57.715, angle: 54.735, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: -19.495, y: 61.276, angle: 84.557, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -70.03, y: 63.399, angle: 81.363, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 28.069, y: 74.13, angle: -41.084, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 66.111, y: 82.829, angle: -9.794, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: 67.052, y: 119.362, angle: 10.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.914, y: 0 },
+              },
+              {
+                id: "key-433",
+                time: 289,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 111.619, y: 83.25, angle: 29.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 74.755, y: 39.53, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 53.134, y: 26.38, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 59.198, y: 29.029, angle: -35.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 87.111, y: 99.174, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 24.834, y: 88.617, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -40.981, y: 44.676, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 31.649, y: 57.715, angle: 45.735, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: -12.29, y: 69.703, angle: 123.557, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -70.812, y: 20.942, angle: 108.363, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 12.989, y: 74.13, angle: -11.084, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 20.183, y: 106.589, angle: 50.206, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -41.766, y: 115.961, angle: 4.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.914, y: 0 },
+              },
+              {
+                id: "pose-b",
+                time: 352.8,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 110.02, y: 83.25, angle: 50.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 38.866, y: 45.543, angle: 39.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 89.148, y: 41.129, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 67.526, y: 27.979, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 73.59, y: 30.628, angle: -29.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 106.301, y: 105.571, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 44.023, y: 95.014, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -21.792, y: 51.072, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 23.653, y: 60.913, angle: -38.265, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: 74.148, y: 77.804, angle: -8.443, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: 119.234, y: 100.421, angle: -11.637, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 28.069, y: 74.13, angle: 36.916, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: -16.165, y: 93.253, angle: 71.206, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -91.929, y: 80.804, angle: 82.017, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.914, y: 0 },
+              },
+              {
+                id: "key-563",
+                time: 387,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 102.024, y: 73.656, angle: 44.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 38.866, y: 45.543, angle: 33.885, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 81.152, y: 45.926, angle: 30.169, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 59.53, y: 32.776, angle: 8.993, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 65.595, y: 35.426, angle: -35.463, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 107.9, y: 111.968, angle: 43.37, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 45.622, y: 101.41, angle: 62.878, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -20.192, y: 57.469, angle: 64.587, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 31.649, y: 57.715, angle: 6.735, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: 31.677, y: 94.858, angle: 57.557, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -7.663, y: 122.568, angle: 60.363, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 28.069, y: 74.13, angle: -41.084, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 66.111, y: 82.829, angle: -36.794, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: 99.035, y: 109.767, angle: -13.983, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.914, y: 0 },
+              },
+              {
+                id: "key-860",
+                time: 535,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 101.825, y: 73.493, angle: 25.765, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 38.79, y: 45.426, angle: 31.715, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 56.616, y: 40.553, angle: -2.088, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 74.626, y: 36.706, angle: -25.326, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 112.43, y: 19.646, angle: -29.774, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+                  frontUpperArm: { x: 93.405, y: 100.534, angle: 43.82, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 33.667, y: 86.825, angle: 63.283, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -28.778, y: 41.852, angle: 65.032, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+                  backThigh: { x: 31.587, y: 57.602, angle: 27.943, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: 6.491, y: 82.058, angle: 45.087, scaleX: 0.94, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -22.36, y: 114.619, angle: 62.577, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 28.014, y: 73.986, angle: -3.928, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 25.734, y: 96.72, angle: 16.211, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: 2.597, y: 115.291, angle: -2.999, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.908, y: 0 },
+              },
+              {
+                id: "key-927",
+                time: 630,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: 94.101, y: 73.005, angle: 16.911, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 37.068, y: 42.789, angle: 29.449, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: 51.927, y: 43.241, angle: -16.48, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: 84.893, y: 50.396, angle: -39.5, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 138.042, y: 26.913, angle: -28.611, scaleX: 1.129, scaleY: 1.062, flipX: false, flipY: false },
+                  frontUpperArm: { x: 84.396, y: 89.421, angle: 31.195, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 34.664, y: 87.703, angle: 49.662, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -25.505, y: 56.687, angle: 52.309, scaleX: 1.113, scaleY: 1.046, flipX: true, flipY: false },
+                  backThigh: { x: 30.185, y: 55.046, angle: 35.353, scaleX: 1.002, scaleY: 1, flipX: false, flipY: false },
+                  backShin: { x: -3.909, y: 74.713, angle: 38.091, scaleX: 0.945, scaleY: 0.96, flipX: false, flipY: false },
+                  backFoot: { x: -28.15, y: 109.44, angle: 60.75, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  frontThigh: { x: 26.759, y: 70.702, angle: 11.36, scaleX: 1.002, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: 8.043, y: 99.551, angle: 37.07, scaleX: 0.964, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -37.199, y: 115.564, angle: 1.601, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: -2.779, y: 0 },
+              },
+              {
+                id: "key-1000",
+                time: 700,
+                easing: "easeInOut",
+                rigParts: {
+                  head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+                  torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+                  backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+                  backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                  backHand: { x: 4.11, y: -3.786, angle: -4, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+                  frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+                  frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontHand: { x: -2.973, y: -3.587, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+                  backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+                  backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+                  backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+                  frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+                  frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+                },
+                faceParts: {
+                  eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                  eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+                },
+                rootOffset: { x: 0, y: 0 },
+              },
+            ],
           }
         ],
       },
@@ -6440,7 +8067,7 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
               backForearm: { x: 55.949, y: 30.67, angle: -70.822, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
               backHand: { x: 130.55, y: -18.984, angle: -28.381, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
               frontUpperArm: { x: 11.597, y: 47.407, angle: -71.822, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
-              frontForearm: { x: 67.863, y: 0.283, angle: 42.051, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontForearm: { x: 66.682, y: 1.463, angle: 42.051, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
               frontHand: { x: 7.693, y: -19.096, angle: 52, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
               backThigh: { x: 4.74, y: 34.588, angle: 37.347, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
               backShin: { x: -24.493, y: 44.218, angle: -4.746, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
@@ -6537,7 +8164,7 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
                   backForearm: { x: 55.949, y: 30.67, angle: -70.822, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
                   backHand: { x: 130.55, y: -18.984, angle: -28.381, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
                   frontUpperArm: { x: 11.597, y: 47.407, angle: -71.822, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
-                  frontForearm: { x: 67.863, y: 0.283, angle: 42.051, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+                  frontForearm: { x: 66.682, y: 1.463, angle: 42.051, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
                   frontHand: { x: 7.693, y: -19.096, angle: 52, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
                   backThigh: { x: 4.74, y: 34.588, angle: 37.347, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
                   backShin: { x: -24.493, y: 44.218, angle: -4.746, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
@@ -7651,6 +9278,11 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       bowShot: {
         enabled: true,
         duration: 500,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -7707,6 +9339,60 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 250,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -62.578, y: 61.479, angle: -24, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -19.215, y: 49.471, angle: -21, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -68.115, y: 100.785, angle: -66, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 17.783, y: 70.997, angle: -74, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 84.812, y: 16.947, angle: -95, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: -33.723, y: 33.524, angle: -54, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 13.171, y: 9.421, angle: -30, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 28.814, y: 3.684, angle: 43, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: -5.764, y: 54.945, angle: 42, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -43.155, y: 61.42, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -65.115, y: 98.42, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -11.779, y: 61.576, angle: -30, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 20.768, y: 83.156, angle: -30, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 46.605, y: 112.63, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 0, y: -1, scaleX: 1.73, scaleY: 0.36 },
+              eyeRight: { x: 12.5, y: -2, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       hit: {
         enabled: true,
@@ -7950,6 +9636,11 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
       block: {
         enabled: true,
         duration: 500,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -8006,10 +9697,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -2, angle: -20, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -2.89, y: -2, angle: 19, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 2, y: 33, angle: 1, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -19, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -12, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 250,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -21.423, y: -3.098, angle: 5, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: -3, y: -16, angle: -11, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -36.607, y: 17.998, angle: -76, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 49.84, y: -23.526, angle: -58, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 115.615, y: -61.262, angle: -76, scaleX: 1.13, scaleY: 1.07, flipX: false, flipY: false },
+              frontUpperArm: { x: 14.471, y: -15.211, angle: -28, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 39.915, y: -19.947, angle: 19, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 5.128, y: -27.369, angle: 36, scaleX: 1.11, scaleY: 1.05, flipX: true, flipY: false },
+              backThigh: { x: -2, y: 0, angle: 21, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -24.901, y: 27.316, angle: 22, scaleX: 0.94, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -68.958, y: 61.474, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -9.936, y: 2.842, angle: -33, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 21.729, y: 19.685, angle: -3, scaleX: 0.96, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 16.822, y: 59.579, angle: 12, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -1, y: -1.5, scaleX: 1.3, scaleY: 0.7 },
+              eyeRight: { x: 12, y: -1.5, scaleX: 1.3, scaleY: 0.7 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       taunt: {
         enabled: true,
         duration: 600,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -8066,10 +9816,69 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -3, y: 0, scaleX: 1.26, scaleY: 1 },
+              eyeRight: { x: 2, y: 0, scaleX: 1.34, scaleY: 1 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 300,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: 5.634, y: -36.096, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 1.921, y: -43.367, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -31.841, angle: -30, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: 27.39, y: -29.42, angle: -32, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 73.283, y: -46.416, angle: -22, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 9.159, y: -25.811, angle: -102, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 67.65, y: -111.506, angle: -105, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: 120.899, y: -174.668, angle: -74, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 5.764, y: -24.631, angle: 36, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: -31.157, y: -5.869, angle: 40, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -87.802, y: 32.996, angle: -33, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -1.211, y: -17.999, angle: -39, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: 40.944, y: -3.051, angle: -39, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: 75.255, y: 24.528, angle: 21, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: 1, y: 0.5, scaleX: 1.26, scaleY: 1 },
+              eyeRight: { x: -3.5, y: 0, scaleX: 1.34, scaleY: 1 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
       rest: {
         enabled: true,
         duration: 1000,
+        variantId: "default",
+        variantLabel: "default",
+        variantWeight: 1,
+        appliesToAllWeapons: true,
+        selectedVariantId: "default",
         base: {
           head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
           torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
@@ -8126,6 +9935,60 @@ export const DEFAULT_BODY_PRESET_TUNING: Record<PaperDollBodyPreset, BodyPresetT
           frontShin: true,
           frontFoot: true,
         },
+        keyframes: [
+          {
+            id: "pose-a",
+            time: 0,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 0, scaleX: 0.98, scaleY: 0.83, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.93, scaleY: 0.89, flipX: false, flipY: false },
+              backUpperArm: { x: -22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: false, flipY: false },
+              backForearm: { x: -12, y: -1, angle: 1, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+              backHand: { x: 4.11, y: -3.786, angle: -25, scaleX: 1.1, scaleY: 0.9, flipX: false, flipY: false },
+              frontUpperArm: { x: 22, y: -11, angle: 0, scaleX: 0.8, scaleY: 0.9, flipX: true, flipY: false },
+              frontForearm: { x: 11.25, y: -1, angle: -3, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontHand: { x: -1.89, y: -2.519, angle: 19, scaleX: 1.17, scaleY: 0.97, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+              eyeRight: { x: 3.5, y: -1.5, scaleX: 1.3, scaleY: 0.97 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+          {
+            id: "pose-b",
+            time: 500,
+            easing: "easeInOut",
+            rigParts: {
+              head: { x: -0.13, y: -9.571, angle: 18, scaleX: 1.03, scaleY: 0.88, flipX: false, flipY: false },
+              torso: { x: 0, y: -14, angle: 0, scaleX: 0.98, scaleY: 0.94, flipX: false, flipY: false },
+              backUpperArm: { x: -22.99, y: -11.976, angle: -6, scaleX: 0.85, scaleY: 0.95, flipX: false, flipY: false },
+              backForearm: { x: -4.08, y: -1, angle: 1, scaleX: 1.05, scaleY: 1.05, flipX: false, flipY: false },
+              backHand: { x: 13.02, y: 0.119, angle: -25, scaleX: 1.15, scaleY: 0.95, flipX: false, flipY: false },
+              frontUpperArm: { x: 24.97, y: -8.071, angle: 15, scaleX: 0.85, scaleY: 0.95, flipX: true, flipY: false },
+              frontForearm: { x: -4.59, y: 0.952, angle: -3, scaleX: 1.05, scaleY: 1.05, flipX: true, flipY: false },
+              frontHand: { x: -15.75, y: 1.386, angle: 19, scaleX: 1.22, scaleY: 1.02, flipX: true, flipY: false },
+              backThigh: { x: 0, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: true, flipY: false },
+              backShin: { x: 3, y: 33, angle: 1, scaleX: 1.05, scaleY: 0.96, flipX: true, flipY: false },
+              backFoot: { x: -18.01, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: true, flipY: false },
+              frontThigh: { x: -0.25, y: 0, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontShin: { x: -3.25, y: 32, angle: 0, scaleX: 1.05, scaleY: 1, flipX: false, flipY: false },
+              frontFoot: { x: -10.25, y: 70, angle: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
+            },
+            faceParts: {
+              eyeLeft: { x: -5.5, y: -2, scaleX: 1.81, scaleY: 0.31 },
+              eyeRight: { x: 4, y: -2.5, scaleX: 2.12, scaleY: 0.26 },
+            },
+            rootOffset: { x: 0, y: 0 },
+          },
+        ],
       },
     },
   },
@@ -8242,6 +10105,118 @@ export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
   },
 };
 
+const DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS: Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning> = {
+  back: {
+    layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
+    parallax: { followX: 0.2, followY: -0.12, zoom: 0.39, lookUpY: 240 },
+  },
+  mid: {
+    layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
+    parallax: { followX: -0.5, followY: 0.68, zoom: 0.2, lookUpY: 132, zoomDarken: 1 },
+  },
+  ground: {
+    layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
+    parallax: { followX: 0.37, followY: 0.47, zoom: 0.74, lookUpY: 13 },
+  },
+  front: {
+    layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
+    parallax: { followX: 0.35, followY: 0.47, zoom: 0.34, lookUpY: 33 },
+  },
+  ambient: {
+    layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
+    parallax: { followX: 0.37, followY: 0.48, zoom: 0.5, lookUpY: -16 },
+  },
+};
+
+export function createDefaultArenaBackgroundLayerTuning(layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
+  const fallback = DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS[layer];
+
+  return {
+    layout: { ...fallback.layout },
+    parallax: { ...fallback.parallax },
+  };
+}
+
+export function getDynamicArenaBackgroundLayerTuning(tuning: ArenaDebugTuning, tierId: number, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
+  const stored = tuning.arenaBackgroundTiers[String(Math.max(1, Math.round(tierId)))]?.[layer];
+  const fallback = createDefaultArenaBackgroundLayerTuning(layer);
+
+  return {
+    layout: {
+      x: clampNumber(stored?.layout?.x, -640, 640, fallback.layout.x),
+      y: clampNumber(stored?.layout?.y, -900, 900, fallback.layout.y),
+      scale: clampNumber(stored?.layout?.scale, 0.25, 2.5, fallback.layout.scale),
+      alpha: clampNumber(stored?.layout?.alpha, 0, 1, fallback.layout.alpha),
+      visible: typeof stored?.layout?.visible === "boolean" ? stored.layout.visible : fallback.layout.visible,
+    },
+    parallax: {
+      followX: clampNumber(stored?.parallax?.followX, -0.5, 1.5, fallback.parallax.followX),
+      followY: clampNumber(stored?.parallax?.followY, -0.5, 1.5, fallback.parallax.followY),
+      zoom: clampNumber(stored?.parallax?.zoom, 0, 1.5, fallback.parallax.zoom),
+      lookUpY: clampNumber(stored?.parallax?.lookUpY, -240, 240, fallback.parallax.lookUpY),
+      ...(layer === "mid" ? { zoomDarken: clampNumber(stored?.parallax?.zoomDarken, 0, 1, fallback.parallax.zoomDarken ?? 1) } : {}),
+    },
+  };
+}
+
+function normalizeArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTierTuningMap {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {};
+  }
+
+  const normalized: ArenaBackgroundTierTuningMap = {};
+
+  Object.entries(input as Record<string, unknown>).forEach(([tierKey, value]) => {
+    const tierId = Math.round(Number(tierKey));
+
+    if (!Number.isInteger(tierId) || tierId < 1 || !value || typeof value !== "object" || Array.isArray(value)) {
+      return;
+    }
+
+    ARENA_BACKGROUND_EDIT_LAYERS.forEach((layer) => {
+      const layerInput = (value as Partial<Record<ArenaBackgroundEditLayer, unknown>>)[layer];
+
+      if (!layerInput || typeof layerInput !== "object" || Array.isArray(layerInput)) {
+        return;
+      }
+
+      normalized[tierId] = {
+        ...normalized[tierId],
+        [layer]: normalizeArenaBackgroundLayerTuning(layerInput, layer),
+      };
+    });
+  });
+
+  return normalized;
+}
+
+function normalizeArenaBackgroundLayerTuning(input: unknown, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
+  const fallback = createDefaultArenaBackgroundLayerTuning(layer);
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return fallback;
+  }
+
+  const stored = input as Partial<ArenaBackgroundLayerTuning>;
+
+  return {
+    layout: {
+      x: clampNumber(stored.layout?.x, -640, 640, fallback.layout.x),
+      y: clampNumber(stored.layout?.y, -900, 900, fallback.layout.y),
+      scale: clampNumber(stored.layout?.scale, 0.25, 2.5, fallback.layout.scale),
+      alpha: clampNumber(stored.layout?.alpha, 0, 1, fallback.layout.alpha),
+      visible: typeof stored.layout?.visible === "boolean" ? stored.layout.visible : fallback.layout.visible,
+    },
+    parallax: {
+      followX: clampNumber(stored.parallax?.followX, -0.5, 1.5, fallback.parallax.followX),
+      followY: clampNumber(stored.parallax?.followY, -0.5, 1.5, fallback.parallax.followY),
+      zoom: clampNumber(stored.parallax?.zoom, 0, 1.5, fallback.parallax.zoom),
+      lookUpY: clampNumber(stored.parallax?.lookUpY, -240, 240, fallback.parallax.lookUpY),
+      ...(layer === "mid" ? { zoomDarken: clampNumber(stored.parallax?.zoomDarken, 0, 1, fallback.parallax.zoomDarken ?? 1) } : {}),
+    },
+  };
+}
+
 export const defaultDebugTuning: ArenaDebugTuning = {
   debugTuningVersion: DEBUG_TUNING_STORAGE_VERSION,
   showGrid: true,
@@ -8277,6 +10252,84 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaGroundFollowY: DEFAULT_ARENA_GROUND_FOLLOW_Y,
   arenaGroundZoom: DEFAULT_ARENA_GROUND_ZOOM,
   arenaGroundLookUpY: DEFAULT_ARENA_GROUND_LOOK_UP_Y,
+  arenaBackgroundPreviewTier: 2,
+  arenaBackgroundEditMode: false,
+  arenaBackgroundEditLayer: "ground",
+  arenaBackgroundTiers: {},
+  arenaTier1BackFollowX: 0.2,
+  arenaTier1BackFollowY: -0.12,
+  arenaTier1BackZoom: 0.39,
+  arenaTier1BackLookUpY: 240,
+  arenaTier1MidFollowX: -0.5,
+  arenaTier1MidFollowY: 0.68,
+  arenaTier1MidZoom: 0.2,
+  arenaTier1MidLookUpY: 132,
+  arenaTier1MidZoomDarken: 1,
+  arenaTier1GroundFollowX: 0.37,
+  arenaTier1GroundFollowY: 0.47,
+  arenaTier1GroundZoom: 0.74,
+  arenaTier1GroundLookUpY: 13,
+  arenaTier2BackFollowX: 0.2,
+  arenaTier2BackFollowY: -0.12,
+  arenaTier2BackZoom: 0.37,
+  arenaTier2BackLookUpY: -161,
+  arenaTier2MidFollowX: -0.5,
+  arenaTier2MidFollowY: 0.68,
+  arenaTier2MidZoom: 0.2,
+  arenaTier2MidLookUpY: 132,
+  arenaTier2MidZoomDarken: 1,
+  arenaTier2GroundFollowX: 0.37,
+  arenaTier2GroundFollowY: 0.47,
+  arenaTier2GroundZoom: 0.74,
+  arenaTier2GroundLookUpY: 13,
+  arenaTier2FrontFollowX: 0.35,
+  arenaTier2FrontFollowY: 0.47,
+  arenaTier2FrontZoom: 0.34,
+  arenaTier2FrontLookUpY: 33,
+  arenaTier2AmbientFollowX: 0.37,
+  arenaTier2AmbientFollowY: 0.48,
+  arenaTier2AmbientZoom: 0.5,
+  arenaTier2AmbientLookUpY: -16,
+  arenaTier1BackgroundBackX: 0,
+  arenaTier1BackgroundBackY: 0,
+  arenaTier1BackgroundBackScale: 1,
+  arenaTier1BackgroundBackAlpha: 1,
+  arenaTier1BackgroundBackVisible: true,
+  arenaTier1BackgroundMidX: 0,
+  arenaTier1BackgroundMidY: 0,
+  arenaTier1BackgroundMidScale: 1,
+  arenaTier1BackgroundMidAlpha: 1,
+  arenaTier1BackgroundMidVisible: true,
+  arenaTier1BackgroundGroundX: 0,
+  arenaTier1BackgroundGroundY: 0,
+  arenaTier1BackgroundGroundScale: 1,
+  arenaTier1BackgroundGroundAlpha: 1,
+  arenaTier1BackgroundGroundVisible: true,
+  arenaTier2BackgroundBackX: 0,
+  arenaTier2BackgroundBackY: -28,
+  arenaTier2BackgroundBackScale: 0.49,
+  arenaTier2BackgroundBackAlpha: 1,
+  arenaTier2BackgroundBackVisible: true,
+  arenaTier2BackgroundMidX: 0,
+  arenaTier2BackgroundMidY: 0,
+  arenaTier2BackgroundMidScale: 1,
+  arenaTier2BackgroundMidAlpha: 1,
+  arenaTier2BackgroundMidVisible: true,
+  arenaTier2BackgroundGroundX: 0,
+  arenaTier2BackgroundGroundY: -169,
+  arenaTier2BackgroundGroundScale: 1,
+  arenaTier2BackgroundGroundAlpha: 1,
+  arenaTier2BackgroundGroundVisible: true,
+  arenaTier2BackgroundFrontX: 0,
+  arenaTier2BackgroundFrontY: -65,
+  arenaTier2BackgroundFrontScale: 0.5,
+  arenaTier2BackgroundFrontAlpha: 1,
+  arenaTier2BackgroundFrontVisible: true,
+  arenaTier2BackgroundAmbientX: 0,
+  arenaTier2BackgroundAmbientY: -16,
+  arenaTier2BackgroundAmbientScale: 0.55,
+  arenaTier2BackgroundAmbientAlpha: 0.56,
+  arenaTier2BackgroundAmbientVisible: true,
   actionArcEditMode: false,
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
   actionArcRadius: DEFAULT_ACTION_ARC_RADIUS,
@@ -8548,6 +10601,86 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     arenaGroundFollowY: clampNumber(input.arenaGroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaGroundFollowY),
     arenaGroundZoom: clampNumber(input.arenaGroundZoom, 0, 1.5, defaultDebugTuning.arenaGroundZoom),
     arenaGroundLookUpY: clampNumber(input.arenaGroundLookUpY, -240, 240, defaultDebugTuning.arenaGroundLookUpY),
+    arenaBackgroundPreviewTier: Math.round(clampNumber(input.arenaBackgroundPreviewTier, 1, 50, defaultDebugTuning.arenaBackgroundPreviewTier)),
+    arenaBackgroundEditMode: typeof input.arenaBackgroundEditMode === "boolean" ? input.arenaBackgroundEditMode : defaultDebugTuning.arenaBackgroundEditMode,
+    arenaBackgroundEditLayer: isArenaBackgroundEditLayer(input.arenaBackgroundEditLayer)
+      ? input.arenaBackgroundEditLayer
+      : defaultDebugTuning.arenaBackgroundEditLayer,
+    arenaBackgroundTiers: normalizeArenaBackgroundTierTunings(input.arenaBackgroundTiers),
+    arenaTier1BackFollowX: clampNumber(input.arenaTier1BackFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowX),
+    arenaTier1BackFollowY: clampNumber(input.arenaTier1BackFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowY),
+    arenaTier1BackZoom: clampNumber(input.arenaTier1BackZoom, 0, 1.5, defaultDebugTuning.arenaTier1BackZoom),
+    arenaTier1BackLookUpY: clampNumber(input.arenaTier1BackLookUpY, -240, 240, defaultDebugTuning.arenaTier1BackLookUpY),
+    arenaTier1MidFollowX: clampNumber(input.arenaTier1MidFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1MidFollowX),
+    arenaTier1MidFollowY: clampNumber(input.arenaTier1MidFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1MidFollowY),
+    arenaTier1MidZoom: clampNumber(input.arenaTier1MidZoom, 0, 1.5, defaultDebugTuning.arenaTier1MidZoom),
+    arenaTier1MidLookUpY: clampNumber(input.arenaTier1MidLookUpY, -240, 240, defaultDebugTuning.arenaTier1MidLookUpY),
+    arenaTier1MidZoomDarken: clampNumber(input.arenaTier1MidZoomDarken, 0, 1, defaultDebugTuning.arenaTier1MidZoomDarken),
+    arenaTier1GroundFollowX: clampNumber(input.arenaTier1GroundFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowX),
+    arenaTier1GroundFollowY: clampNumber(input.arenaTier1GroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowY),
+    arenaTier1GroundZoom: clampNumber(input.arenaTier1GroundZoom, 0, 1.5, defaultDebugTuning.arenaTier1GroundZoom),
+    arenaTier1GroundLookUpY: clampNumber(input.arenaTier1GroundLookUpY, -240, 240, defaultDebugTuning.arenaTier1GroundLookUpY),
+    arenaTier2BackFollowX: clampNumber(input.arenaTier2BackFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier2BackFollowX),
+    arenaTier2BackFollowY: clampNumber(input.arenaTier2BackFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2BackFollowY),
+    arenaTier2BackZoom: clampNumber(input.arenaTier2BackZoom, 0, 1.5, defaultDebugTuning.arenaTier2BackZoom),
+    arenaTier2BackLookUpY: clampNumber(input.arenaTier2BackLookUpY, -240, 240, defaultDebugTuning.arenaTier2BackLookUpY),
+    arenaTier2MidFollowX: clampNumber(input.arenaTier2MidFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier2MidFollowX),
+    arenaTier2MidFollowY: clampNumber(input.arenaTier2MidFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2MidFollowY),
+    arenaTier2MidZoom: clampNumber(input.arenaTier2MidZoom, 0, 1.5, defaultDebugTuning.arenaTier2MidZoom),
+    arenaTier2MidLookUpY: clampNumber(input.arenaTier2MidLookUpY, -240, 240, defaultDebugTuning.arenaTier2MidLookUpY),
+    arenaTier2MidZoomDarken: clampNumber(input.arenaTier2MidZoomDarken, 0, 1, defaultDebugTuning.arenaTier2MidZoomDarken),
+    arenaTier2GroundFollowX: clampNumber(input.arenaTier2GroundFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier2GroundFollowX),
+    arenaTier2GroundFollowY: clampNumber(input.arenaTier2GroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2GroundFollowY),
+    arenaTier2GroundZoom: clampNumber(input.arenaTier2GroundZoom, 0, 1.5, defaultDebugTuning.arenaTier2GroundZoom),
+    arenaTier2GroundLookUpY: clampNumber(input.arenaTier2GroundLookUpY, -240, 240, defaultDebugTuning.arenaTier2GroundLookUpY),
+    arenaTier2FrontFollowX: clampNumber(input.arenaTier2FrontFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier2FrontFollowX),
+    arenaTier2FrontFollowY: clampNumber(input.arenaTier2FrontFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2FrontFollowY),
+    arenaTier2FrontZoom: clampNumber(input.arenaTier2FrontZoom, 0, 1.5, defaultDebugTuning.arenaTier2FrontZoom),
+    arenaTier2FrontLookUpY: clampNumber(input.arenaTier2FrontLookUpY, -240, 240, defaultDebugTuning.arenaTier2FrontLookUpY),
+    arenaTier2AmbientFollowX: clampNumber(input.arenaTier2AmbientFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier2AmbientFollowX),
+    arenaTier2AmbientFollowY: clampNumber(input.arenaTier2AmbientFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2AmbientFollowY),
+    arenaTier2AmbientZoom: clampNumber(input.arenaTier2AmbientZoom, 0, 1.5, defaultDebugTuning.arenaTier2AmbientZoom),
+    arenaTier2AmbientLookUpY: clampNumber(input.arenaTier2AmbientLookUpY, -240, 240, defaultDebugTuning.arenaTier2AmbientLookUpY),
+    arenaTier1BackgroundBackX: clampNumber(input.arenaTier1BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier1BackgroundBackX),
+    arenaTier1BackgroundBackY: clampNumber(input.arenaTier1BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier1BackgroundBackY),
+    arenaTier1BackgroundBackScale: clampNumber(input.arenaTier1BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundBackScale),
+    arenaTier1BackgroundBackAlpha: clampNumber(input.arenaTier1BackgroundBackAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundBackAlpha),
+    arenaTier1BackgroundBackVisible: typeof input.arenaTier1BackgroundBackVisible === "boolean" ? input.arenaTier1BackgroundBackVisible : defaultDebugTuning.arenaTier1BackgroundBackVisible,
+    arenaTier1BackgroundMidX: clampNumber(input.arenaTier1BackgroundMidX, -640, 640, defaultDebugTuning.arenaTier1BackgroundMidX),
+    arenaTier1BackgroundMidY: clampNumber(input.arenaTier1BackgroundMidY, -900, 900, defaultDebugTuning.arenaTier1BackgroundMidY),
+    arenaTier1BackgroundMidScale: clampNumber(input.arenaTier1BackgroundMidScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundMidScale),
+    arenaTier1BackgroundMidAlpha: clampNumber(input.arenaTier1BackgroundMidAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundMidAlpha),
+    arenaTier1BackgroundMidVisible: typeof input.arenaTier1BackgroundMidVisible === "boolean" ? input.arenaTier1BackgroundMidVisible : defaultDebugTuning.arenaTier1BackgroundMidVisible,
+    arenaTier1BackgroundGroundX: clampNumber(input.arenaTier1BackgroundGroundX, -640, 640, defaultDebugTuning.arenaTier1BackgroundGroundX),
+    arenaTier1BackgroundGroundY: clampNumber(input.arenaTier1BackgroundGroundY, -900, 900, defaultDebugTuning.arenaTier1BackgroundGroundY),
+    arenaTier1BackgroundGroundScale: clampNumber(input.arenaTier1BackgroundGroundScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundGroundScale),
+    arenaTier1BackgroundGroundAlpha: clampNumber(input.arenaTier1BackgroundGroundAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundGroundAlpha),
+    arenaTier1BackgroundGroundVisible: typeof input.arenaTier1BackgroundGroundVisible === "boolean" ? input.arenaTier1BackgroundGroundVisible : defaultDebugTuning.arenaTier1BackgroundGroundVisible,
+    arenaTier2BackgroundBackX: clampNumber(input.arenaTier2BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier2BackgroundBackX),
+    arenaTier2BackgroundBackY: clampNumber(input.arenaTier2BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier2BackgroundBackY),
+    arenaTier2BackgroundBackScale: clampNumber(input.arenaTier2BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier2BackgroundBackScale),
+    arenaTier2BackgroundBackAlpha: clampNumber(input.arenaTier2BackgroundBackAlpha, 0, 1, defaultDebugTuning.arenaTier2BackgroundBackAlpha),
+    arenaTier2BackgroundBackVisible: typeof input.arenaTier2BackgroundBackVisible === "boolean" ? input.arenaTier2BackgroundBackVisible : defaultDebugTuning.arenaTier2BackgroundBackVisible,
+    arenaTier2BackgroundMidX: clampNumber(input.arenaTier2BackgroundMidX, -640, 640, defaultDebugTuning.arenaTier2BackgroundMidX),
+    arenaTier2BackgroundMidY: clampNumber(input.arenaTier2BackgroundMidY, -900, 900, defaultDebugTuning.arenaTier2BackgroundMidY),
+    arenaTier2BackgroundMidScale: clampNumber(input.arenaTier2BackgroundMidScale, 0.25, 2.5, defaultDebugTuning.arenaTier2BackgroundMidScale),
+    arenaTier2BackgroundMidAlpha: clampNumber(input.arenaTier2BackgroundMidAlpha, 0, 1, defaultDebugTuning.arenaTier2BackgroundMidAlpha),
+    arenaTier2BackgroundMidVisible: typeof input.arenaTier2BackgroundMidVisible === "boolean" ? input.arenaTier2BackgroundMidVisible : defaultDebugTuning.arenaTier2BackgroundMidVisible,
+    arenaTier2BackgroundGroundX: clampNumber(input.arenaTier2BackgroundGroundX, -640, 640, defaultDebugTuning.arenaTier2BackgroundGroundX),
+    arenaTier2BackgroundGroundY: clampNumber(input.arenaTier2BackgroundGroundY, -900, 900, defaultDebugTuning.arenaTier2BackgroundGroundY),
+    arenaTier2BackgroundGroundScale: clampNumber(input.arenaTier2BackgroundGroundScale, 0.25, 2.5, defaultDebugTuning.arenaTier2BackgroundGroundScale),
+    arenaTier2BackgroundGroundAlpha: clampNumber(input.arenaTier2BackgroundGroundAlpha, 0, 1, defaultDebugTuning.arenaTier2BackgroundGroundAlpha),
+    arenaTier2BackgroundGroundVisible: typeof input.arenaTier2BackgroundGroundVisible === "boolean" ? input.arenaTier2BackgroundGroundVisible : defaultDebugTuning.arenaTier2BackgroundGroundVisible,
+    arenaTier2BackgroundFrontX: clampNumber(input.arenaTier2BackgroundFrontX, -640, 640, defaultDebugTuning.arenaTier2BackgroundFrontX),
+    arenaTier2BackgroundFrontY: clampNumber(input.arenaTier2BackgroundFrontY, -900, 900, defaultDebugTuning.arenaTier2BackgroundFrontY),
+    arenaTier2BackgroundFrontScale: clampNumber(input.arenaTier2BackgroundFrontScale, 0.25, 2.5, defaultDebugTuning.arenaTier2BackgroundFrontScale),
+    arenaTier2BackgroundFrontAlpha: clampNumber(input.arenaTier2BackgroundFrontAlpha, 0, 1, defaultDebugTuning.arenaTier2BackgroundFrontAlpha),
+    arenaTier2BackgroundFrontVisible: typeof input.arenaTier2BackgroundFrontVisible === "boolean" ? input.arenaTier2BackgroundFrontVisible : defaultDebugTuning.arenaTier2BackgroundFrontVisible,
+    arenaTier2BackgroundAmbientX: clampNumber(input.arenaTier2BackgroundAmbientX, -640, 640, defaultDebugTuning.arenaTier2BackgroundAmbientX),
+    arenaTier2BackgroundAmbientY: clampNumber(input.arenaTier2BackgroundAmbientY, -900, 900, defaultDebugTuning.arenaTier2BackgroundAmbientY),
+    arenaTier2BackgroundAmbientScale: clampNumber(input.arenaTier2BackgroundAmbientScale, 0.25, 2.5, defaultDebugTuning.arenaTier2BackgroundAmbientScale),
+    arenaTier2BackgroundAmbientAlpha: clampNumber(input.arenaTier2BackgroundAmbientAlpha, 0, 1, defaultDebugTuning.arenaTier2BackgroundAmbientAlpha),
+    arenaTier2BackgroundAmbientVisible: typeof input.arenaTier2BackgroundAmbientVisible === "boolean" ? input.arenaTier2BackgroundAmbientVisible : defaultDebugTuning.arenaTier2BackgroundAmbientVisible,
     actionArcEditMode: typeof input.actionArcEditMode === "boolean" ? input.actionArcEditMode : defaultDebugTuning.actionArcEditMode,
     actionArcRotation: clampNumber(input.actionArcRotation, -180, 180, defaultDebugTuning.actionArcRotation),
     actionArcRadius: clampNumber(input.actionArcRadius, 24, 150, defaultDebugTuning.actionArcRadius),
@@ -9540,6 +11673,10 @@ function isActionButtonOffsetKey(value: unknown): value is ActionButtonOffsetKey
 
 function isClassicActionWheelMode(value: unknown): value is ClassicActionWheelMode {
   return typeof value === "string" && CLASSIC_ACTION_WHEEL_MODES.includes(value as ClassicActionWheelMode);
+}
+
+function isArenaBackgroundEditLayer(value: unknown): value is ArenaBackgroundEditLayer {
+  return typeof value === "string" && ARENA_BACKGROUND_EDIT_LAYERS.includes(value as ArenaBackgroundEditLayer);
 }
 
 function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {

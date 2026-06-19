@@ -679,8 +679,10 @@ test("boss victories are recorded once in hero progression", () => {
 test("hero can unlock all arena boss tiers", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
   const unlockedHero = hero.unlockAllArenaBossTiers(baseHero, "2026-01-01T00:01:00.000Z");
+  const expectedBossIds = Array.from(hero.ARENA_TIER_CONFIGS, (tier) => tier.unlockBossId)
+    .filter((bossId) => typeof bossId === "string");
 
-  assert.deepEqual([...unlockedHero.defeatedArenaBossIds], ["dust_arena_champion"]);
+  assert.deepEqual([...unlockedHero.defeatedArenaBossIds], expectedBossIds);
   assert.equal(unlockedHero.updatedAt, "2026-01-01T00:01:00.000Z");
   assert.equal(hero.unlockAllArenaBossTiers(unlockedHero, "2026-01-01T00:02:00.000Z"), unlockedHero);
 });

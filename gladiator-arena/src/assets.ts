@@ -6,6 +6,91 @@ export const ARENA_BACKGROUND_MID_LAYER_ASSET_KEY = "arena-bg-mid-layer";
 export const ARENA_BACKGROUND_MID_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-mid.webp", import.meta.url).href;
 export const ARENA_BACKGROUND_GROUND_LAYER_ASSET_KEY = "arena-bg-ground-layer";
 export const ARENA_BACKGROUND_GROUND_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-ground.webp", import.meta.url).href;
+export const ARENA_TIER_2_BACKGROUND_BACK_LAYER_ASSET_KEY = "arena-tier-2-bg-back-layer";
+export const ARENA_TIER_2_BACKGROUND_BACK_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-tier-2-back.webp", import.meta.url).href;
+export const ARENA_TIER_2_BACKGROUND_GROUND_LAYER_ASSET_KEY = "arena-tier-2-bg-ground-layer";
+export const ARENA_TIER_2_BACKGROUND_GROUND_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-tier-2-ground.webp", import.meta.url).href;
+export const ARENA_TIER_2_BACKGROUND_FRONT_LAYER_ASSET_KEY = "arena-tier-2-bg-front-layer";
+export const ARENA_TIER_2_BACKGROUND_FRONT_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-tier-2-front-trees.webp", import.meta.url).href;
+export const ARENA_TIER_2_BACKGROUND_AMBIENT_LAYER_ASSET_KEY = "arena-tier-2-bg-ambient-layer";
+export const ARENA_TIER_2_BACKGROUND_AMBIENT_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-tier-2-ambient-particles.webp", import.meta.url).href;
+
+export const ARENA_BACKGROUND_LAYER_ORDER = ["back", "mid", "ground", "front", "ambient"] as const;
+export type ArenaBackgroundLayerAssetKey = (typeof ARENA_BACKGROUND_LAYER_ORDER)[number];
+
+export interface ArenaBackgroundLayerAsset {
+  tierId: number;
+  layer: ArenaBackgroundLayerAssetKey;
+  key: string;
+  url: string;
+  shadeWithCamera?: boolean;
+}
+
+const arenaBackgroundLayerAssetModules = import.meta.glob("./assets/arena/layers/arena*.{png,webp}", {
+  eager: true,
+  import: "default",
+  query: "?url",
+}) as Record<string, string>;
+
+export const ARENA_BACKGROUND_LAYER_ASSETS: readonly ArenaBackgroundLayerAsset[] = Object.entries(arenaBackgroundLayerAssetModules)
+  .map(([path, url]) => createArenaBackgroundLayerAsset(path, url))
+  .filter((asset): asset is ArenaBackgroundLayerAsset => !!asset)
+  .sort((a, b) => a.tierId - b.tierId || ARENA_BACKGROUND_LAYER_ORDER.indexOf(a.layer) - ARENA_BACKGROUND_LAYER_ORDER.indexOf(b.layer));
+
+export function getArenaBackgroundLayerAssetKeysForTier(tierId: number): ArenaBackgroundLayerAssetKey[] {
+  const tierLayers = ARENA_BACKGROUND_LAYER_ASSETS.filter((asset) => asset.tierId === tierId).map((asset) => asset.layer);
+
+  return tierLayers.length > 0 ? tierLayers : getArenaBackgroundLayerAssetKeysForTier(1);
+}
+
+function createArenaBackgroundLayerAsset(path: string, url: string): ArenaBackgroundLayerAsset | undefined {
+  const baseMatch = /\/arena-(back|mid|ground|front|ambient)\.(?:png|webp)$/u.exec(path);
+
+  if (baseMatch) {
+    const layer = baseMatch[1] as ArenaBackgroundLayerAssetKey;
+
+    return {
+      tierId: 1,
+      layer,
+      key: `arena-tier-1-bg-${layer}-layer`,
+      url,
+      shadeWithCamera: layer === "mid",
+    };
+  }
+
+  const tierMatch = /\/arena-tier-(\d+)-([a-z0-9-]+)\.(?:png|webp)$/u.exec(path);
+
+  if (!tierMatch) {
+    return undefined;
+  }
+
+  const tierId = Number(tierMatch[1]);
+  const layer = normalizeArenaBackgroundLayerToken(tierMatch[2]);
+
+  if (!Number.isInteger(tierId) || tierId < 1 || !layer) {
+    return undefined;
+  }
+
+  return {
+    tierId,
+    layer,
+    key: `arena-tier-${tierId}-bg-${layer}-layer`,
+    url,
+    shadeWithCamera: layer === "mid",
+  };
+}
+
+function normalizeArenaBackgroundLayerToken(token: string): ArenaBackgroundLayerAssetKey | undefined {
+  if (token === "front-trees" || token === "front-tree" || token === "trees") {
+    return "front";
+  }
+
+  if (token === "ambient-particles" || token === "particles") {
+    return "ambient";
+  }
+
+  return ARENA_BACKGROUND_LAYER_ORDER.includes(token as ArenaBackgroundLayerAssetKey) ? token as ArenaBackgroundLayerAssetKey : undefined;
+}
 
 export const DAMAGE_BLOCK_ICON_ASSET_KEY = "damage-block-icon";
 export const DAMAGE_BLOCK_ICON_ASSET_URL = new URL("./assets/ui/damage-icons/damage-block.webp", import.meta.url).href;

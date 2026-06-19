@@ -378,6 +378,14 @@ function refreshArenaLayout(): void {
 }
 
 function restart(): void {
+  restartCombat();
+}
+
+function restartArenaTierPreview(tierId: number): void {
+  restartCombat(tierId);
+}
+
+function restartCombat(tierId?: number): void {
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
   battleResultPresentation = undefined;
@@ -385,7 +393,7 @@ function restart(): void {
   battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  void commitState(createCombatStateFromHero(hero));
+  void commitState(tierId === undefined ? createCombatStateFromHero(hero) : createCombatStateFromHero(hero, tierId));
 }
 
 function delay(durationMs: number): Promise<void> {
@@ -804,6 +812,7 @@ function startDebugApp(): void {
       hero.equipment = equipment;
       setPlayerEquipment(hero.equipment);
     },
+    onRestartArenaTierPreview: restartArenaTierPreview,
     onPreviewSlashArc: previewSlashArc,
     onPreviewPopup: previewPopup,
   });

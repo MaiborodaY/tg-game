@@ -145,6 +145,14 @@ test("debug tuning normalizes unsafe values", () => {
     arenaGroundFollowY: -99,
     arenaGroundZoom: 99,
     arenaGroundLookUpY: 999,
+    arenaTier2FrontFollowX: 99,
+    arenaTier2FrontFollowY: -99,
+    arenaTier2FrontZoom: 99,
+    arenaTier2FrontLookUpY: 999,
+    arenaTier2AmbientFollowX: -99,
+    arenaTier2AmbientFollowY: 99,
+    arenaTier2AmbientZoom: -99,
+    arenaTier2AmbientLookUpY: -999,
     actionArcRotation: 999,
     actionArcRadius: -5,
     actionButtonScale: 99,
@@ -247,6 +255,14 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.arenaGroundFollowY, -0.5);
   assert.equal(normalized.arenaGroundZoom, 1.5);
   assert.equal(normalized.arenaGroundLookUpY, 240);
+  assert.equal(normalized.arenaTier2FrontFollowX, 1.5);
+  assert.equal(normalized.arenaTier2FrontFollowY, -0.5);
+  assert.equal(normalized.arenaTier2FrontZoom, 1.5);
+  assert.equal(normalized.arenaTier2FrontLookUpY, 240);
+  assert.equal(normalized.arenaTier2AmbientFollowX, -0.5);
+  assert.equal(normalized.arenaTier2AmbientFollowY, 1.5);
+  assert.equal(normalized.arenaTier2AmbientZoom, 0);
+  assert.equal(normalized.arenaTier2AmbientLookUpY, -240);
   assert.equal(normalized.actionArcRotation, 180);
   assert.equal(normalized.actionArcRadius, 24);
   assert.equal(normalized.actionButtonScale, 2);
