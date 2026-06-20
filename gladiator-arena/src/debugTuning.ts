@@ -10420,24 +10420,24 @@ function createLegacyArenaTier1BackgroundVariantTuning(
 function resetLegacyArenaTier1BackgroundTuning(input: Partial<ArenaDebugTuning>): Partial<ArenaDebugTuning> {
   return {
     ...input,
-    arenaTier1BackFollowX: 0.2,
-    arenaTier1BackFollowY: -0.12,
-    arenaTier1BackZoom: 0.39,
-    arenaTier1BackLookUpY: 240,
-    arenaTier1GroundFollowX: 0.37,
-    arenaTier1GroundFollowY: 0.4,
-    arenaTier1GroundZoom: 0.6,
-    arenaTier1GroundLookUpY: 13,
-    arenaTier1BackgroundBackX: 0,
-    arenaTier1BackgroundBackY: 0,
-    arenaTier1BackgroundBackScale: 1,
-    arenaTier1BackgroundBackAlpha: 1,
-    arenaTier1BackgroundBackVisible: true,
-    arenaTier1BackgroundGroundX: 0,
-    arenaTier1BackgroundGroundY: -2,
-    arenaTier1BackgroundGroundScale: 1,
-    arenaTier1BackgroundGroundAlpha: 1,
-    arenaTier1BackgroundGroundVisible: true,
+    arenaTier1BackFollowX: defaultDebugTuning.arenaTier1BackFollowX,
+    arenaTier1BackFollowY: defaultDebugTuning.arenaTier1BackFollowY,
+    arenaTier1BackZoom: defaultDebugTuning.arenaTier1BackZoom,
+    arenaTier1BackLookUpY: defaultDebugTuning.arenaTier1BackLookUpY,
+    arenaTier1GroundFollowX: defaultDebugTuning.arenaTier1GroundFollowX,
+    arenaTier1GroundFollowY: defaultDebugTuning.arenaTier1GroundFollowY,
+    arenaTier1GroundZoom: defaultDebugTuning.arenaTier1GroundZoom,
+    arenaTier1GroundLookUpY: defaultDebugTuning.arenaTier1GroundLookUpY,
+    arenaTier1BackgroundBackX: defaultDebugTuning.arenaTier1BackgroundBackX,
+    arenaTier1BackgroundBackY: defaultDebugTuning.arenaTier1BackgroundBackY,
+    arenaTier1BackgroundBackScale: defaultDebugTuning.arenaTier1BackgroundBackScale,
+    arenaTier1BackgroundBackAlpha: defaultDebugTuning.arenaTier1BackgroundBackAlpha,
+    arenaTier1BackgroundBackVisible: defaultDebugTuning.arenaTier1BackgroundBackVisible,
+    arenaTier1BackgroundGroundX: defaultDebugTuning.arenaTier1BackgroundGroundX,
+    arenaTier1BackgroundGroundY: defaultDebugTuning.arenaTier1BackgroundGroundY,
+    arenaTier1BackgroundGroundScale: defaultDebugTuning.arenaTier1BackgroundGroundScale,
+    arenaTier1BackgroundGroundAlpha: defaultDebugTuning.arenaTier1BackgroundGroundAlpha,
+    arenaTier1BackgroundGroundVisible: defaultDebugTuning.arenaTier1BackgroundGroundVisible,
   };
 }
 
@@ -10759,6 +10759,91 @@ export const defaultDebugTuning: ArenaDebugTuning = {
             "followY": 0.2,
             "zoom": 0.35,
             "lookUpY": -20
+          }
+        }
+      },
+      "variants": {
+        "variant-2": {
+          "back": {
+            "layout": {
+              "x": 0,
+              "y": -60,
+              "scale": 0.52,
+              "alpha": 1,
+              "visible": true
+            },
+            "parallax": {
+              "followX": 0.1,
+              "followY": 0.05,
+              "zoom": 0.12,
+              "lookUpY": -10
+            }
+          },
+          "ground": {
+            "layout": {
+              "x": 0,
+              "y": -48,
+              "scale": 0.7,
+              "alpha": 1,
+              "visible": true
+            },
+            "parallax": {
+              "followX": 0.2,
+              "followY": 0.2,
+              "zoom": 0.35,
+              "lookUpY": -20
+            }
+          }
+        }
+      }
+    },
+    "7": {
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": 40,
+            "scale": 0.55,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.08,
+            "followY": 0.06,
+            "zoom": 0.05,
+            "lookUpY": -4
+          }
+        },
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": 79,
+            "scale": 0.67,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.37,
+            "followY": 0.54,
+            "zoom": 0.74,
+            "lookUpY": 13
+          }
+        },
+        "ambient": {
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "scale": 0.51,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.37,
+            "followY": 0.48,
+            "zoom": 0.5,
+            "lookUpY": -16,
+            "farAlpha": 0,
+            "nearAlpha": 0.6
           }
         }
       }

@@ -816,11 +816,9 @@ test("debug tuning keeps default tier 1 variant defaults when storage has no var
     arenaBackgroundTiers: {},
   });
   const variant = normalized.arenaBackgroundTiers["1"].variants["variant-2"];
+  const defaultVariant = debugTuningModule.defaultDebugTuning.arenaBackgroundTiers["1"].variants["variant-2"];
 
-  assert.equal(variant.back.layout.scale, 0.5);
-  assert.equal(variant.back.parallax.lookUpY, -64);
-  assert.equal(variant.ground.layout.y, 17);
-  assert.equal(variant.ground.layout.scale, 0.6);
+  assert.deepEqual(variant, defaultVariant);
 });
 
 test("debug tuning builds Pose A and Pose B animation keyframes from legacy poses", () => {

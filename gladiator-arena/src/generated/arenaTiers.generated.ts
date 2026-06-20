@@ -184,5 +184,36 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
         rewards: {"win":{"gold":75,"xp":48},"loss":{"gold":1,"xp":1}},
       },
     ],
+  },
+  {
+    id: 7,
+    name: "Dust Arena 7",
+    unlockBossId: "arena_boss_6",
+    opponents: [
+      {
+        id: "dust_arena_7_easy",
+        difficultyId: "easy",
+        name: "Dust Arena 7 Easy",
+        randomBaseStatPoints: 18,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":1},{"itemRarities":["uncommon"],"rollChance":1}],
+        rewards: {"win":{"gold":75,"xp":46},"loss":{"gold":1,"xp":1}},
+      },
+      {
+        id: "dust_arena_7_medium",
+        difficultyId: "medium",
+        name: "Dust Arena 7 Medium",
+        randomBaseStatPoints: 21,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":1},{"itemRarities":["uncommon"],"rollChance":1}],
+        rewards: {"win":{"gold":80,"xp":50},"loss":{"gold":1,"xp":1}},
+      },
+      {
+        id: "dust_arena_7_hard",
+        difficultyId: "hard",
+        name: "Dust Arena 7 Hard",
+        randomBaseStatPoints: 24,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":1},{"itemRarities":["uncommon"],"rollChance":1}],
+        rewards: {"win":{"gold":85,"xp":54},"loss":{"gold":1,"xp":1}},
+      },
+    ],
   }
 ];
