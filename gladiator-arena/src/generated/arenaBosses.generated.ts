@@ -38,5 +38,16 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
       {"id":"arena_boss_2_generated_equipment_back_wrist_boar_boss_01_generated_equipment_front_wrist_boar_boss_01_drop","itemIds":["generated_equipment_back_wrist_boar_boss_01","generated_equipment_front_wrist_boar_boss_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_2_generated_equipment_weapon_mace_boar_mace_drop","itemIds":["generated_equipment_weapon_mace_boar_mace"],"chance":1,"quantity":1},
     ],
+  },
+  {
+    id: "arena_boss_3",
+    tierId: 3,
+    name: "Arena Boss 3",
+    baseStats: {"strength":24,"agility":20,"vitality":36},
+    equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01"},
+    rewards: {"win":{"gold":1900,"xp":627},"loss":{"gold":1,"xp":2}},
+    lootTable: [
+      {"id":"arena_boss_3_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
+    ],
   }
 ];

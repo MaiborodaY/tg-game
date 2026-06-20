@@ -278,5 +278,102 @@
         }
       }
     ]
+  },
+  {
+    "id": 4,
+    "name": "Dust Arena 4",
+    "unlockBossId": "arena_boss_3",
+    "opponents": [
+      {
+        "id": "dust_arena_4_easy",
+        "difficultyId": "easy",
+        "name": "Dust Arena 4 Easy",
+        "randomBaseStatPoints": 21,
+        "equipmentPools": [
+          {
+            "itemRarities": [
+              "common"
+            ],
+            "rollChance": 0.9200000000000002
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.6000000000000001
+          }
+        ],
+        "rewards": {
+          "win": {
+            "gold": 45,
+            "xp": 28
+          },
+          "loss": {
+            "gold": 1,
+            "xp": 1
+          }
+        }
+      },
+      {
+        "id": "dust_arena_4_medium",
+        "difficultyId": "medium",
+        "name": "Dust Arena 4 Medium",
+        "randomBaseStatPoints": 21,
+        "equipmentPools": [
+          {
+            "itemRarities": [
+              "common"
+            ],
+            "rollChance": 0.9700000000000001
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.7000000000000001
+          }
+        ],
+        "rewards": {
+          "win": {
+            "gold": 50,
+            "xp": 32
+          },
+          "loss": {
+            "gold": 1,
+            "xp": 1
+          }
+        }
+      },
+      {
+        "id": "dust_arena_4_hard",
+        "difficultyId": "hard",
+        "name": "Dust Arena 4 Hard",
+        "randomBaseStatPoints": 26,
+        "equipmentPools": [
+          {
+            "itemRarities": [
+              "common"
+            ],
+            "rollChance": 1
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.8
+          }
+        ],
+        "rewards": {
+          "win": {
+            "gold": 55,
+            "xp": 36
+          },
+          "loss": {
+            "gold": 1,
+            "xp": 1
+          }
+        }
+      }
+    ]
   }
 ]
