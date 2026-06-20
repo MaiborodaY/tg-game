@@ -738,6 +738,9 @@ test("arena tier two uses the forest background layer set", () => {
     "arena-tier-4-ground.webp",
     "arena-tier-5-back.webp",
     "arena-tier-5-ground.webp",
+    "arena-tier-8-back.webp",
+    "arena-tier-8-ground.webp",
+    "arena-tier-8-mid.webp",
   ].forEach((assetName) => {
     assert.equal(existsSync(resolve(currentDir, `../src/assets/arena/layers/${assetName}`)), true);
   });
@@ -756,6 +759,9 @@ test("arena tier two uses the forest background layer set", () => {
     "arena-tier-4-ground.png",
     "arena-tier-5-back.png",
     "arena-tier-5-ground.png",
+    "arena-tier-8-back.png",
+    "arena-tier-8-ground.png",
+    "arena-tier-8-mid.png",
   ].forEach((assetName) => {
     assert.equal(existsSync(resolve(currentDir, `../art-source/png/assets/arena/layers/${assetName}`)), true);
   });
@@ -784,6 +790,7 @@ test("arena tier two uses the forest background layer set", () => {
   assert.equal(optimizeAssetsSource.includes("3-(?:back|ground|front)"), true);
   assert.equal(optimizeAssetsSource.includes("4-(?:ambient|back(?:-2)?|ground)"), true);
   assert.equal(optimizeAssetsSource.includes("5-(?:back|ground)"), true);
+  assert.equal(optimizeAssetsSource.includes("8-(?:back|ground|mid)"), true);
   assert.equal(optimizeAssetsSource.includes("alphaQuality: targetAlphaQuality"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-mid.webp"), false);
   assert.equal(arenaSceneSource.includes("function createArenaBackgroundAssetSets()"), true);
