@@ -14,6 +14,7 @@ const domUiSource = readFileSync(resolve(currentDir, "../src/domUi.ts"), "utf8")
 const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 const viteConfigSource = readFileSync(resolve(currentDir, "../vite.config.ts"), "utf8");
+const optimizeAssetsSource = readFileSync(resolve(currentDir, "../scripts/optimize-assets.mjs"), "utf8");
 
 test("fighter alpha only touches Phaser game objects", () => {
   assert.equal(arenaSceneSource.includes("Object.values(fighter).forEach((part) => part.setAlpha(alpha))"), false);
@@ -664,8 +665,14 @@ test("arena starts close between fighters and eases back to the normal camera", 
 });
 
 test("arena parallax can be tuned from debug settings", () => {
-  assert.equal(arenaSceneSource.includes("function getArenaLayerParallax(tuning?: ArenaDebugTuning, tierId?: number)"), true);
-  assert.equal(arenaSceneSource.includes("getArenaBackgroundTuningTierId(tierId)"), true);
+  const updateCameraSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function updateCamera("),
+    arenaSceneSource.indexOf("function getArenaEntryStartCameraTarget("),
+  );
+
+  assert.equal(arenaSceneSource.includes("function getArenaBackgroundLayerTuningForTier("), true);
+  assert.equal(arenaSceneSource.includes("function getArenaBackgroundLayerParallaxForTier("), true);
+  assert.equal(arenaSceneSource.includes("getArenaBackgroundTuningTierId(layers.backgroundTierId)"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier1BackFollowY"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier2BackFollowY"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier1MidLookUpY"), true);
@@ -674,12 +681,29 @@ test("arena parallax can be tuned from debug settings", () => {
   assert.equal(arenaSceneSource.includes("source.arenaTier2GroundZoom"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier2FrontFollowX"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier2AmbientFollowX"), true);
-  assert.equal(arenaSceneSource.includes("front: { followX: DEFAULT_ARENA_GROUND_FOLLOW_X"), true);
-  assert.equal(arenaSceneSource.includes("getArenaLayerTransform(layers.front, cameraTarget, parallax.front)"), true);
+  assert.equal(arenaSceneSource.includes("source.arenaTier2AmbientFarAlpha"), true);
+  assert.equal(arenaSceneSource.includes("source.arenaTier2AmbientNearAlpha"), true);
+  assert.equal(arenaSceneSource.includes("layers.backgroundLayerIds.forEach((layerKey)"), true);
+  assert.equal(arenaSceneSource.includes("getArenaLayerTransform(layer, cameraTarget, tuningLayer.parallax)"), true);
+  assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerCameraAlpha(layerKey, tuningLayer, cameraTarget)"), true);
+  assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, current)"), true);
+  assert.equal(arenaSceneSource.includes("isArenaBackgroundLayerCameraAlphaManaged(layerKey)"), true);
+  assert.equal(arenaSceneSource.includes("!isDebugTuningActive() && layers.backgroundTierId === assetSet.tierId"), true);
+  assert.equal(arenaSceneSource.includes("const isNewImage = !image;"), true);
+  assert.equal(arenaSceneSource.includes("const isTextureChange = !!image && image.texture.key !== config.key;"), true);
+  assert.equal(arenaSceneSource.includes("isNewImage || isTextureChange || isTierChange"), true);
+  assert.equal(arenaSceneSource.includes('applyArenaBackgroundLayerLayout(image, layout, { applyAlpha: !isArenaBackgroundLayerCameraAlphaManaged(layerKey) })'), true);
   assert.equal(arenaSceneSource.includes("getArenaLayerTransforms(layers, cameraTarget, debug)"), true);
   assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE, debug)"), true);
   assert.equal(arenaSceneSource.includes("arenaTier1MidZoomDarken"), true);
   assert.equal(arenaSceneSource.includes("arenaTier2MidZoomDarken"), true);
+  assert.equal(arenaSceneSource.includes("tuning.parallax.farAlpha"), true);
+  assert.equal(arenaSceneSource.includes("tuning.parallax.nearAlpha"), true);
+  assert.equal(arenaSceneSource.includes("isArenaBackgroundLayerCameraAlphaManaged(layerKey) ? { ...layout, alpha: 1 } : layout"), true);
+  assert.equal(arenaSceneSource.includes("return clamp01(cameraAlpha);"), true);
+  assert.equal(arenaSceneSource.includes("tuning.layout.alpha * cameraAlpha"), false);
+  assert.equal(updateCameraSource.includes("targets: transform.alphaImage"), true);
+  assert.equal(updateCameraSource.includes("alpha: transform.alpha"), true);
   assert.equal(arenaSceneSource.includes("syncArenaMidLayerTint"), true);
   assert.equal(arenaSceneSource.includes("ARENA_MID_LAYER_CLOSE_TINT"), true);
 });
@@ -690,11 +714,25 @@ test("arena tier two uses the forest background layer set", () => {
     "arena-tier-2-ground.webp",
     "arena-tier-2-front-trees.webp",
     "arena-tier-2-ambient-particles.webp",
+    "arena-tier-2-ambient-2.webp",
+    "arena-tier-3-ambient.webp",
+    "arena-tier-3-back.webp",
+    "arena-tier-3-ground.webp",
+    "arena-tier-3-front.webp",
+  ].forEach((assetName) => {
+    assert.equal(existsSync(resolve(currentDir, `../src/assets/arena/layers/${assetName}`)), true);
+  });
+
+  [
+    "arena-tier-2-front-trees.png",
+    "arena-tier-2-ambient-particles.png",
+    "arena-tier-2-ambient-2.png",
+    "arena-tier-3-ambient.png",
     "arena-tier-3-back.png",
     "arena-tier-3-ground.png",
     "arena-tier-3-front.png",
   ].forEach((assetName) => {
-    assert.equal(existsSync(resolve(currentDir, `../src/assets/arena/layers/${assetName}`)), true);
+    assert.equal(existsSync(resolve(currentDir, `../art-source/png/assets/arena/layers/${assetName}`)), true);
   });
 
   assert.equal(assetsSource.includes("ARENA_BACKGROUND_LAYER_ASSETS"), true);
@@ -703,11 +741,22 @@ test("arena tier two uses the forest background layer set", () => {
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-ground.webp"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-front-trees.webp"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-ambient-particles.webp"), true);
-  assert.equal(assetsSource.includes('token === "front-trees"'), true);
-  assert.equal(assetsSource.includes('token === "ambient-particles"'), true);
+  assert.equal(assetsSource.includes('baseToken === "front-trees"'), true);
+  assert.equal(assetsSource.includes('baseToken === "ambient-particles"'), true);
+  assert.equal(assetsSource.includes('id: normalized.instance <= 1 ? normalized.role : `${normalized.role}-${normalized.instance}`'), true);
+  assert.equal(assetsSource.includes("ARENA_BACKGROUND_LAYER_ORDER.indexOf(normalized.role) * 100 + normalized.instance"), true);
+  assert.equal(assetsSource.includes("const instanceMatch = /^(.*?)-([2-9]\\d*)$/u.exec(token);"), true);
+  assert.equal(optimizeAssetsSource.includes("smallerAssetRules"), true);
+  assert.equal(optimizeAssetsSource.includes("maximumQuality: 46"), true);
+  assert.equal(optimizeAssetsSource.includes("maximumAlphaQuality: 70"), true);
+  assert.equal(optimizeAssetsSource.includes("2-(?:front-trees|ambient-particles)"), true);
+  assert.equal(optimizeAssetsSource.includes("3-(?:back|ground|front)"), true);
+  assert.equal(optimizeAssetsSource.includes("alphaQuality: targetAlphaQuality"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-mid.webp"), false);
   assert.equal(arenaSceneSource.includes("function createArenaBackgroundAssetSets()"), true);
   assert.equal(arenaSceneSource.includes("ARENA_BACKGROUND_LAYER_ASSETS.forEach"), true);
+  assert.equal(arenaSceneSource.includes("layers.backgroundLayerIds = assetSet.layers.map((layer) => layer.layer);"), true);
+  assert.equal(arenaSceneSource.includes('const backgroundLayerContainers: ArenaLayers["backgroundLayerContainers"] = {};'), true);
   assert.equal(arenaSceneSource.includes("getArenaBackgroundAssetSetForTier(current.encounter?.tierId)"), true);
   assert.equal(arenaSceneSource.includes("ARENA_TIER_2_BACKGROUND_MID_LAYER_ASSET_KEY"), false);
   assert.equal(arenaSceneSource.includes("ARENA_TIER_2_BACKGROUND_FRONT_LAYER_ASSET_KEY"), false);
@@ -731,11 +780,23 @@ test("debug arena background editor can tune tier two layer layout", () => {
   assert.equal(debugPanelSource.includes("getArenaBackgroundLayerAssetKeysForTier"), true);
   assert.equal(debugPanelSource.includes("return getArenaBackgroundLayerAssetKeysForTier(tierId);"), true);
   assert.equal(debugPanelSource.includes("syncArenaParallaxLayerSelectOptions"), true);
+  assert.equal(debugPanelSource.includes("syncArenaBackgroundParallaxValues(details);"), true);
+  assert.equal(debugPanelSource.includes("function syncArenaBackgroundParallaxValues(editor: HTMLElement): void"), true);
+  assert.equal(debugPanelSource.includes("formatDebugNumberInputValue(getArenaParallaxValue(getArenaBackgroundEditTierId(), layer, field))"), true);
   assert.equal(debugPanelSource.includes("arenaTier2Front"), true);
   assert.equal(debugPanelSource.includes("arenaTier2Ambient"), true);
+  assert.equal(debugPanelSource.includes('"Far alpha"'), true);
+  assert.equal(debugPanelSource.includes('"Near alpha"'), true);
+  assert.equal(debugPanelSource.includes('field === "farAlpha" || field === "nearAlpha"'), true);
+  assert.equal(debugPanelSource.includes('data-arena-bg-layout-row="${field}"'), true);
+  assert.equal(debugPanelSource.includes("isArenaBackgroundLayoutFieldSupported"), true);
+  assert.equal(debugPanelSource.includes('field !== "alpha" || getArenaBackgroundLayerRole(layer) !== "ambient"'), true);
   assert.equal(debugPanelSource.includes("getDynamicArenaBackgroundLayerPatch"), true);
   assert.equal(debugPanelSource.includes("updateArenaParallaxValue(getArenaBackgroundEditTierId()"), true);
-  assert.equal(debugPanelSource.includes("Parallax Editor"), true);
+  assert.equal(debugPanelSource.includes("Arena background"), true);
+  assert.equal(debugPanelSource.includes("Save tier BG as prod"), true);
+  assert.equal(debugPanelSource.includes("createArenaTierBackgroundPayload"), true);
+  assert.equal(debugPanelSource.includes("saveArenaTierBackground(createArenaTierBackgroundPayload(tierId))"), true);
   assert.equal(debugPanelSource.includes("onRestartArenaTierPreview"), true);
   assert.equal(debugPanelSource.includes("data-arena-bg-preview-tier"), true);
   assert.equal(debugPanelSource.includes('layerSelect?.addEventListener("change"'), true);
@@ -753,6 +814,9 @@ test("debug arena background editor can tune tier two layer layout", () => {
   assert.equal(arenaSceneSource.includes("ARENA_WORLD_LEFT + layout.x - (width - ARENA_WORLD_WIDTH) / 2"), true);
   assert.equal(viteConfigSource.includes("arenaTier2BackgroundBackX"), true);
   assert.equal(viteConfigSource.includes("arenaBackgroundTiers"), true);
+  assert.equal(viteConfigSource.includes('"farAlpha", "nearAlpha"'), true);
+  assert.equal(viteConfigSource.includes("parallax.farAlpha"), true);
+  assert.equal(viteConfigSource.includes('getArenaBackgroundLayerRole(layerKey) === "ambient" ? 1'), true);
   assert.equal(viteConfigSource.includes("function readBoolean(payload"), true);
 });
 

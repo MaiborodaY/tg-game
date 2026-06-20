@@ -9409,6 +9409,12 @@ body.debug-active .battle-screen {
   padding: 0 0 10px;
 }
 
+.debug-arena-bg-editor > .debug-parallax-editor__section,
+.debug-arena-bg-editor > .debug-parallax-editor__status {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
 .debug-parallax-editor__section {
   display: grid;
   gap: 7px;

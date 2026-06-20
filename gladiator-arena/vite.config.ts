@@ -167,6 +167,8 @@ const debugTuningDefaultFields = {
   arenaTier2AmbientFollowY: "arenaTier2AmbientFollowY",
   arenaTier2AmbientZoom: "arenaTier2AmbientZoom",
   arenaTier2AmbientLookUpY: "arenaTier2AmbientLookUpY",
+  arenaTier2AmbientFarAlpha: "arenaTier2AmbientFarAlpha",
+  arenaTier2AmbientNearAlpha: "arenaTier2AmbientNearAlpha",
   arenaTier1BackgroundBackX: "arenaTier1BackgroundBackX",
   arenaTier1BackgroundBackY: "arenaTier1BackgroundBackY",
   arenaTier1BackgroundBackScale: "arenaTier1BackgroundBackScale",
@@ -221,8 +223,9 @@ const debugTuningBooleanDefaultFields = {
 type DebugTuningBooleanDefaultField = keyof typeof debugTuningBooleanDefaultFields;
 type DebugTuningBooleanDefaultPayload = Record<(typeof debugTuningBooleanDefaultFields)[DebugTuningBooleanDefaultField], unknown>;
 
-type ArenaBackgroundLayerKey = "back" | "mid" | "ground" | "front" | "ambient";
-type ArenaBackgroundTierTuningPayload = Record<string, Partial<Record<ArenaBackgroundLayerKey, {
+type ArenaBackgroundLayerRole = "back" | "mid" | "ground" | "front" | "ambient";
+type ArenaBackgroundLayerKey = string;
+type ArenaBackgroundLayerTuningPayload = {
   layout: {
     x: number;
     y: number;
@@ -236,9 +239,17 @@ type ArenaBackgroundTierTuningPayload = Record<string, Partial<Record<ArenaBackg
     zoom: number;
     lookUpY: number;
     zoomDarken?: number;
+    farAlpha?: number;
+    nearAlpha?: number;
   };
-}>>>;
-const arenaBackgroundLayerKeys = ["back", "mid", "ground", "front", "ambient"] as const;
+};
+type ArenaBackgroundTierTuningPayload = Record<string, Partial<Record<ArenaBackgroundLayerKey, ArenaBackgroundLayerTuningPayload>>>;
+type ArenaTierBackgroundDefaultUpdates = {
+  tierId: number;
+  layers: Partial<Record<ArenaBackgroundLayerKey, ArenaBackgroundLayerTuningPayload>>;
+};
+type ArenaTierBackgroundLegacyField = DebugTuningDefaultField | DebugTuningBooleanDefaultField;
+type ArenaTierBackgroundLegacyUpdates = Partial<Record<ArenaTierBackgroundLegacyField, number | boolean>>;
 
 const playerSettingDefaultFields = {
   DEFAULT_PLAYER_HUD_MODE: "hudMode",
@@ -563,7 +574,7 @@ type BodyAnimationKeyframeEasing = (typeof bodyAnimationKeyframeEasings)[number]
 const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
 type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
 
-const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "taunt", "rest"] as const;
+const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"] as const;
 type ActionButtonOffsetKey = (typeof actionButtonOffsetKeys)[number];
 
 const classicActionButtonSlotKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"] as const;
@@ -1237,6 +1248,26 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save arena tier." });
         }
       });
+
+      server.middlewares.use("/__dust-arena/save-arena-tier-background", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save arena tier background." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const updates = pickArenaTierBackgroundDefaultUpdates(payload);
+          const source = await readFile(debugTuningUrl, "utf8");
+          const nextSource = applyArenaTierBackgroundDefaultUpdates(source, updates);
+
+          await writeFile(debugTuningUrl, nextSource, "utf8");
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: `Saved tier ${updates.tierId} background defaults to prod.`, updated: Object.keys(updates.layers).length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save arena tier background." });
+        }
+      });
     },
   };
 }
@@ -1288,13 +1319,7 @@ export function pickCombatDefaultUpdates(payload: unknown): CombatDefaultUpdates
 export function applyDebugTuningDefaultUpdates(source: string, updates: DebugTuningDefaultUpdates): string {
   return Object.entries(updates).reduce((nextSource, [fieldName, value]) => {
     if (fieldName === "arenaBackgroundTiers") {
-      const pattern = /(\n\s*arenaBackgroundTiers: )[\s\S]*?(\n\s*arenaTier1BackFollowX: )/u;
-
-      if (!pattern.test(nextSource)) {
-        throw new Error("Could not find defaultDebugTuning.arenaBackgroundTiers in debugTuning.ts.");
-      }
-
-      return nextSource.replace(pattern, `$1${formatJsonLikeObject(value)},$2`);
+      return replaceDefaultArenaBackgroundTiers(nextSource, value);
     }
 
     const pattern = new RegExp(`(\\n\\s*${fieldName}: )[^,\\n]+(,)`);
@@ -1305,6 +1330,259 @@ export function applyDebugTuningDefaultUpdates(source: string, updates: DebugTun
 
     return nextSource.replace(pattern, `$1${typeof value === "boolean" ? value : formatNumber(value as number)}$2`);
   }, source);
+}
+
+export function applyArenaTierBackgroundDefaultUpdates(source: string, updates: ArenaTierBackgroundDefaultUpdates): string {
+  const sourceWithLegacyUpdates = Object.entries(createLegacyArenaTierBackgroundDefaultUpdates(updates)).reduce((nextSource, [fieldName, value]) => {
+    const pattern = new RegExp(`(\\n\\s*${fieldName}: )[^,\\n]+(,)`);
+
+    if (!pattern.test(nextSource)) {
+      throw new Error(`Could not find defaultDebugTuning.${fieldName} in debugTuning.ts.`);
+    }
+
+    return nextSource.replace(pattern, `$1${typeof value === "boolean" ? value : formatNumber(value)}$2`);
+  }, source);
+  const dynamicTierUpdates = createDynamicArenaTierBackgroundDefaultUpdates(updates);
+
+  if (Object.keys(dynamicTierUpdates).length === 0) {
+    return sourceWithLegacyUpdates;
+  }
+
+  const existingTiers = readDefaultArenaBackgroundTierTuningsFromSource(sourceWithLegacyUpdates);
+  const tierKey = String(updates.tierId);
+  const nextTier = updates.tierId <= 2
+    ? {
+        ...existingTiers[tierKey],
+        ...dynamicTierUpdates,
+      }
+    : dynamicTierUpdates;
+
+  return replaceDefaultArenaBackgroundTiers(sourceWithLegacyUpdates, {
+    ...existingTiers,
+    [tierKey]: nextTier,
+  });
+}
+
+function createLegacyArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgroundDefaultUpdates): ArenaTierBackgroundLegacyUpdates {
+  const result: ArenaTierBackgroundLegacyUpdates = {};
+
+  Object.entries(updates.layers).forEach(([layer, tuning]) => {
+    if (!tuning) {
+      return;
+    }
+
+    (["x", "y", "scale", "alpha", "visible"] as const).forEach((field) => {
+      const key = getLegacyArenaTierBackgroundLayoutDefaultField(updates.tierId, layer as ArenaBackgroundLayerKey, field);
+      const value = tuning.layout[field];
+
+      if (key) {
+        result[key] = value;
+      }
+    });
+
+    (["followX", "followY", "zoom", "lookUpY", "zoomDarken", "farAlpha", "nearAlpha"] as const).forEach((field) => {
+      const key = getLegacyArenaTierBackgroundParallaxDefaultField(updates.tierId, layer as ArenaBackgroundLayerKey, field);
+      const value = tuning.parallax[field];
+
+      if (key && typeof value === "number" && Number.isFinite(value)) {
+        result[key] = value;
+      }
+    });
+  });
+
+  return result;
+}
+
+function createDynamicArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgroundDefaultUpdates): ArenaBackgroundTierTuningPayload[string] {
+  const result: ArenaBackgroundTierTuningPayload[string] = {};
+
+  Object.entries(updates.layers).forEach(([layer, tuning]) => {
+    if (!tuning) {
+      return;
+    }
+
+    const layerKey = layer as ArenaBackgroundLayerKey;
+
+    if (!usesDynamicArenaTierBackgroundDefaultUpdates(updates.tierId, layerKey)) {
+      return;
+    }
+
+    result[layerKey] = {
+      layout: tuning.layout,
+      parallax: tuning.parallax,
+    };
+  });
+
+  return result;
+}
+
+function usesDynamicArenaTierBackgroundDefaultUpdates(tierId: number, layer: ArenaBackgroundLayerKey): boolean {
+  return !getLegacyArenaTierBackgroundLayoutDefaultPrefix(tierId, layer)
+    && !getLegacyArenaTierBackgroundParallaxDefaultPrefix(tierId, layer);
+}
+
+function getLegacyArenaTierBackgroundLayoutDefaultField(
+  tierId: number,
+  layer: ArenaBackgroundLayerKey,
+  field: keyof ArenaBackgroundLayerTuningPayload["layout"],
+): ArenaTierBackgroundLegacyField | undefined {
+  const prefix = getLegacyArenaTierBackgroundLayoutDefaultPrefix(tierId, layer);
+
+  if (!prefix) {
+    return undefined;
+  }
+
+  const suffix = field === "scale" ? "Scale" : field === "alpha" ? "Alpha" : field === "visible" ? "Visible" : field.toUpperCase();
+  const key = `${prefix}${suffix}`;
+
+  return key in debugTuningDefaultFields || key in debugTuningBooleanDefaultFields ? key as ArenaTierBackgroundLegacyField : undefined;
+}
+
+function getLegacyArenaTierBackgroundParallaxDefaultField(
+  tierId: number,
+  layer: ArenaBackgroundLayerKey,
+  field: keyof ArenaBackgroundLayerTuningPayload["parallax"],
+): DebugTuningDefaultField | undefined {
+  const prefix = getLegacyArenaTierBackgroundParallaxDefaultPrefix(tierId, layer);
+
+  if (!prefix) {
+    return undefined;
+  }
+
+  const suffix = field === "followX"
+    ? "FollowX"
+    : field === "followY"
+      ? "FollowY"
+      : field === "zoom"
+        ? "Zoom"
+        : field === "lookUpY"
+          ? "LookUpY"
+          : field === "farAlpha"
+            ? "FarAlpha"
+            : field === "nearAlpha"
+              ? "NearAlpha"
+              : "ZoomDarken";
+  const key = `${prefix}${suffix}`;
+
+  return key in debugTuningDefaultFields ? key as DebugTuningDefaultField : undefined;
+}
+
+function isBaseArenaBackgroundLayer(layer: ArenaBackgroundLayerKey): boolean {
+  return layer === getArenaBackgroundLayerRole(layer);
+}
+
+function getArenaBackgroundLayerRole(layer: ArenaBackgroundLayerKey): ArenaBackgroundLayerRole {
+  const match = /^(back|mid|ground|front|ambient)(?:-\d+)?$/u.exec(layer);
+
+  return match ? match[1] as ArenaBackgroundLayerRole : "ground";
+}
+
+function isArenaBackgroundLayerKey(value: string): value is ArenaBackgroundLayerKey {
+  return /^(back|mid|ground|front|ambient)(?:-\d+)?$/u.test(value);
+}
+
+function getLegacyArenaTierBackgroundLayoutDefaultPrefix(tierId: number, layer: ArenaBackgroundLayerKey): string | undefined {
+  if (!isBaseArenaBackgroundLayer(layer)) {
+    return undefined;
+  }
+
+  const role = getArenaBackgroundLayerRole(layer);
+
+  if (tierId === 1) {
+    switch (role) {
+      case "back":
+        return "arenaTier1BackgroundBack";
+      case "mid":
+        return "arenaTier1BackgroundMid";
+      case "ground":
+        return "arenaTier1BackgroundGround";
+      case "front":
+      case "ambient":
+        return undefined;
+    }
+  }
+
+  if (tierId === 2) {
+    switch (role) {
+      case "back":
+        return "arenaTier2BackgroundBack";
+      case "mid":
+        return "arenaTier2BackgroundMid";
+      case "ground":
+        return "arenaTier2BackgroundGround";
+      case "front":
+        return "arenaTier2BackgroundFront";
+      case "ambient":
+        return "arenaTier2BackgroundAmbient";
+    }
+  }
+
+  return undefined;
+}
+
+function getLegacyArenaTierBackgroundParallaxDefaultPrefix(tierId: number, layer: ArenaBackgroundLayerKey): string | undefined {
+  if (!isBaseArenaBackgroundLayer(layer)) {
+    return undefined;
+  }
+
+  const role = getArenaBackgroundLayerRole(layer);
+
+  if (tierId === 1) {
+    switch (role) {
+      case "back":
+        return "arenaTier1Back";
+      case "mid":
+        return "arenaTier1Mid";
+      case "ground":
+        return "arenaTier1Ground";
+      case "front":
+      case "ambient":
+        return undefined;
+    }
+  }
+
+  if (tierId === 2) {
+    switch (role) {
+      case "back":
+        return "arenaTier2Back";
+      case "mid":
+        return "arenaTier2Mid";
+      case "ground":
+        return "arenaTier2Ground";
+      case "front":
+        return "arenaTier2Front";
+      case "ambient":
+        return "arenaTier2Ambient";
+    }
+  }
+
+  return undefined;
+}
+
+function replaceDefaultArenaBackgroundTiers(source: string, value: ArenaBackgroundTierTuningPayload): string {
+  const pattern = /(export const defaultDebugTuning: ArenaDebugTuning = \{[\s\S]*?\n\s*arenaBackgroundTiers: )[\s\S]*?(\n\s*arenaTier1BackFollowX: )/u;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find defaultDebugTuning.arenaBackgroundTiers in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, `$1${formatJsonLikeObject(value)},$2`);
+}
+
+function readDefaultArenaBackgroundTierTuningsFromSource(source: string): ArenaBackgroundTierTuningPayload {
+  const match = source.match(/export const defaultDebugTuning: ArenaDebugTuning = \{[\s\S]*?\n\s*arenaBackgroundTiers: ([\s\S]*?),\n\s*arenaTier1BackFollowX: /u);
+
+  if (!match?.[1]) {
+    throw new Error("Could not find defaultDebugTuning.arenaBackgroundTiers in debugTuning.ts.");
+  }
+
+  try {
+    return readArenaBackgroundTierTunings(JSON.parse(match[1]));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid arenaBackgroundTiers JSON.";
+
+    throw new Error(`Could not parse defaultDebugTuning.arenaBackgroundTiers: ${message}`);
+  }
 }
 
 export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefaultUpdates {
@@ -1330,6 +1608,27 @@ export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefa
     ...booleanUpdates,
     arenaBackgroundTiers: readArenaBackgroundTierTunings((payload as { arenaBackgroundTiers?: unknown }).arenaBackgroundTiers),
   };
+}
+
+export function pickArenaTierBackgroundDefaultUpdates(payload: unknown): ArenaTierBackgroundDefaultUpdates {
+  const input = readPlainObject(payload, "arena tier background values");
+  const tierId = Math.max(1, Math.round(readFinitePayloadNumber(input.tierId, "arena tier background tierId")));
+  const layersInput = readPlainObject(input.layers, "arena tier background layers");
+  const layers: ArenaTierBackgroundDefaultUpdates["layers"] = {};
+
+  Object.entries(layersInput).forEach(([layer, layerInput]) => {
+    if (!isArenaBackgroundLayerKey(layer)) {
+      return;
+    }
+
+    layers[layer] = readArenaBackgroundLayerTuning(layerInput, `${tierId}.${layer}`, layer);
+  });
+
+  if (Object.keys(layers).length === 0) {
+    throw new Error("Expected at least one arena tier background layer.");
+  }
+
+  return { tierId, layers };
 }
 
 export function applyPlayerSettingDefaultUpdates(source: string, updates: PlayerSettingDefaultUpdates): string {
@@ -4214,16 +4513,14 @@ function readArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTierTuni
       throw new Error(`Invalid arena background tier ${tierKey}.`);
     }
 
-    arenaBackgroundLayerKeys.forEach((layer) => {
-      const layerInput = (tierInput as Partial<Record<ArenaBackgroundLayerKey, unknown>>)[layer];
-
-      if (layerInput === undefined) {
+    Object.entries(tierInput as Record<string, unknown>).forEach(([layer, layerInput]) => {
+      if (!isArenaBackgroundLayerKey(layer)) {
         return;
       }
 
       result[tierId] = {
         ...result[tierId],
-        [layer]: readArenaBackgroundLayerTuning(layerInput, `${tierKey}.${layer}`),
+        [layer]: readArenaBackgroundLayerTuning(layerInput, `${tierKey}.${layer}`, layer),
       };
     });
   });
@@ -4231,7 +4528,7 @@ function readArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTierTuni
   return result;
 }
 
-function readArenaBackgroundLayerTuning(input: unknown, label: string): ArenaBackgroundTierTuningPayload[string][ArenaBackgroundLayerKey] {
+function readArenaBackgroundLayerTuning(input: unknown, label: string, layerKey: ArenaBackgroundLayerKey): ArenaBackgroundLayerTuningPayload {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error(`Invalid arena background layer tuning: ${label}.`);
   }
@@ -4244,7 +4541,7 @@ function readArenaBackgroundLayerTuning(input: unknown, label: string): ArenaBac
       x: readFinitePayloadNumber(layout.x, `${label}.layout.x`),
       y: readFinitePayloadNumber(layout.y, `${label}.layout.y`),
       scale: readFinitePayloadNumber(layout.scale, `${label}.layout.scale`),
-      alpha: readFinitePayloadNumber(layout.alpha, `${label}.layout.alpha`),
+      alpha: getArenaBackgroundLayerRole(layerKey) === "ambient" ? 1 : readFinitePayloadNumber(layout.alpha, `${label}.layout.alpha`),
       visible: readBoolean(layout as Record<string, unknown>, "visible"),
     },
     parallax: {
@@ -4253,6 +4550,8 @@ function readArenaBackgroundLayerTuning(input: unknown, label: string): ArenaBac
       zoom: readFinitePayloadNumber(parallax.zoom, `${label}.parallax.zoom`),
       lookUpY: readFinitePayloadNumber(parallax.lookUpY, `${label}.parallax.lookUpY`),
       ...(parallax.zoomDarken === undefined ? {} : { zoomDarken: readFinitePayloadNumber(parallax.zoomDarken, `${label}.parallax.zoomDarken`) }),
+      ...(parallax.farAlpha === undefined ? {} : { farAlpha: readFinitePayloadNumber(parallax.farAlpha, `${label}.parallax.farAlpha`) }),
+      ...(parallax.nearAlpha === undefined ? {} : { nearAlpha: readFinitePayloadNumber(parallax.nearAlpha, `${label}.parallax.nearAlpha`) }),
     },
   };
 

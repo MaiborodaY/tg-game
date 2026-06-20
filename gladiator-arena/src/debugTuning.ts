@@ -147,7 +147,8 @@ export type FaceAssetLayerKey = (typeof FACE_ASSET_LAYER_KEYS)[number];
 
 export const APPEARANCE_LAYER_KEYS = ["hair", "beard"] as const;
 export type AppearanceLayerKey = (typeof APPEARANCE_LAYER_KEYS)[number];
-export const ARENA_BACKGROUND_EDIT_LAYERS = ["back", "mid", "ground", "front", "ambient"] as const;
+export const ARENA_BACKGROUND_LAYER_ROLES = ["back", "mid", "ground", "front", "ambient"] as const;
+export const ARENA_BACKGROUND_EDIT_LAYERS = ARENA_BACKGROUND_LAYER_ROLES;
 
 export const EQUIPMENT_SLOT_KEYS = [
   "weaponMain",
@@ -282,7 +283,8 @@ export interface ClassicActionButtonSlotTuning {
   rotation: number;
 }
 
-export type ArenaBackgroundEditLayer = (typeof ARENA_BACKGROUND_EDIT_LAYERS)[number];
+export type ArenaBackgroundLayerRole = (typeof ARENA_BACKGROUND_LAYER_ROLES)[number];
+export type ArenaBackgroundEditLayer = string;
 
 export interface ArenaBackgroundLayerLayoutTuning {
   x: number;
@@ -298,6 +300,8 @@ export interface ArenaBackgroundLayerParallaxTuning {
   zoom: number;
   lookUpY: number;
   zoomDarken?: number;
+  farAlpha?: number;
+  nearAlpha?: number;
 }
 
 export interface ArenaBackgroundLayerTuning {
@@ -345,55 +349,7 @@ export interface ArenaDebugTuning {
   arenaBackgroundPreviewTier: number;
   arenaBackgroundEditMode: boolean;
   arenaBackgroundEditLayer: ArenaBackgroundEditLayer;
-  arenaBackgroundTiers: {
-    "3": {
-      "back": {
-        "layout": {
-          "x": 0,
-          "y": -125,
-          "scale": 0.53,
-          "alpha": 1,
-          "visible": true
-        },
-        "parallax": {
-          "followX": 0.2,
-          "followY": -0.12,
-          "zoom": 0.39,
-          "lookUpY": -19
-        }
-      },
-      "ground": {
-        "layout": {
-          "x": 0,
-          "y": -158,
-          "scale": 1,
-          "alpha": 1,
-          "visible": true
-        },
-        "parallax": {
-          "followX": 0.37,
-          "followY": 0.47,
-          "zoom": 0.74,
-          "lookUpY": 13
-        }
-      },
-      "front": {
-        "layout": {
-          "x": 0,
-          "y": -28,
-          "scale": 0.5,
-          "alpha": 1,
-          "visible": true
-        },
-        "parallax": {
-          "followX": 0.35,
-          "followY": 0.47,
-          "zoom": 0.34,
-          "lookUpY": 33
-        }
-      }
-    }
-  },
+  arenaBackgroundTiers: ArenaBackgroundTierTuningMap;
   arenaTier1BackFollowX: number;
   arenaTier1BackFollowY: number;
   arenaTier1BackZoom: number;
@@ -428,6 +384,8 @@ export interface ArenaDebugTuning {
   arenaTier2AmbientFollowY: number;
   arenaTier2AmbientZoom: number;
   arenaTier2AmbientLookUpY: number;
+  arenaTier2AmbientFarAlpha: number;
+  arenaTier2AmbientNearAlpha: number;
   arenaTier1BackgroundBackX: number;
   arenaTier1BackgroundBackY: number;
   arenaTier1BackgroundBackScale: number;
@@ -631,6 +589,8 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   light: { x: 0, y: 0 },
   medium: { x: -14, y: 8 },
   heavy: { x: 0, y: 18 },
+  switchWeapon: { x: 0, y: 0 },
+  shuriken: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -10105,7 +10065,7 @@ export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
   },
 };
 
-const DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS: Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning> = {
+const DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS: Record<ArenaBackgroundLayerRole, ArenaBackgroundLayerTuning> = {
   back: {
     layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
     parallax: { followX: 0.2, followY: -0.12, zoom: 0.39, lookUpY: 240 },
@@ -10124,12 +10084,12 @@ const DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS: Record<ArenaBackgroundEditLayer, 
   },
   ambient: {
     layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
-    parallax: { followX: 0.37, followY: 0.48, zoom: 0.5, lookUpY: -16 },
+    parallax: { followX: 0.37, followY: 0.48, zoom: 0.5, lookUpY: -16, farAlpha: 1, nearAlpha: 1 },
   },
 };
 
 export function createDefaultArenaBackgroundLayerTuning(layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
-  const fallback = DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS[layer];
+  const fallback = DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS[getArenaBackgroundLayerRole(layer)];
 
   return {
     layout: { ...fallback.layout },
@@ -10140,6 +10100,7 @@ export function createDefaultArenaBackgroundLayerTuning(layer: ArenaBackgroundEd
 export function getDynamicArenaBackgroundLayerTuning(tuning: ArenaDebugTuning, tierId: number, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
   const stored = tuning.arenaBackgroundTiers[String(Math.max(1, Math.round(tierId)))]?.[layer];
   const fallback = createDefaultArenaBackgroundLayerTuning(layer);
+  const role = getArenaBackgroundLayerRole(layer);
 
   return {
     layout: {
@@ -10154,7 +10115,13 @@ export function getDynamicArenaBackgroundLayerTuning(tuning: ArenaDebugTuning, t
       followY: clampNumber(stored?.parallax?.followY, -0.5, 1.5, fallback.parallax.followY),
       zoom: clampNumber(stored?.parallax?.zoom, 0, 1.5, fallback.parallax.zoom),
       lookUpY: clampNumber(stored?.parallax?.lookUpY, -240, 240, fallback.parallax.lookUpY),
-      ...(layer === "mid" ? { zoomDarken: clampNumber(stored?.parallax?.zoomDarken, 0, 1, fallback.parallax.zoomDarken ?? 1) } : {}),
+      ...(role === "mid" ? { zoomDarken: clampNumber(stored?.parallax?.zoomDarken, 0, 1, fallback.parallax.zoomDarken ?? 1) } : {}),
+      ...(role === "ambient"
+        ? {
+            farAlpha: clampNumber(stored?.parallax?.farAlpha, 0, 1, fallback.parallax.farAlpha ?? 1),
+            nearAlpha: clampNumber(stored?.parallax?.nearAlpha, 0, 1, fallback.parallax.nearAlpha ?? 1),
+          }
+        : {}),
     },
   };
 }
@@ -10173,8 +10140,10 @@ function normalizeArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTie
       return;
     }
 
-    ARENA_BACKGROUND_EDIT_LAYERS.forEach((layer) => {
-      const layerInput = (value as Partial<Record<ArenaBackgroundEditLayer, unknown>>)[layer];
+    Object.entries(value as Record<string, unknown>).forEach(([layer, layerInput]) => {
+      if (!isArenaBackgroundEditLayer(layer)) {
+        return;
+      }
 
       if (!layerInput || typeof layerInput !== "object" || Array.isArray(layerInput)) {
         return;
@@ -10192,6 +10161,7 @@ function normalizeArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTie
 
 function normalizeArenaBackgroundLayerTuning(input: unknown, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
   const fallback = createDefaultArenaBackgroundLayerTuning(layer);
+  const role = getArenaBackgroundLayerRole(layer);
 
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return fallback;
@@ -10212,7 +10182,13 @@ function normalizeArenaBackgroundLayerTuning(input: unknown, layer: ArenaBackgro
       followY: clampNumber(stored.parallax?.followY, -0.5, 1.5, fallback.parallax.followY),
       zoom: clampNumber(stored.parallax?.zoom, 0, 1.5, fallback.parallax.zoom),
       lookUpY: clampNumber(stored.parallax?.lookUpY, -240, 240, fallback.parallax.lookUpY),
-      ...(layer === "mid" ? { zoomDarken: clampNumber(stored.parallax?.zoomDarken, 0, 1, fallback.parallax.zoomDarken ?? 1) } : {}),
+      ...(role === "mid" ? { zoomDarken: clampNumber(stored.parallax?.zoomDarken, 0, 1, fallback.parallax.zoomDarken ?? 1) } : {}),
+      ...(role === "ambient"
+        ? {
+            farAlpha: clampNumber(stored.parallax?.farAlpha, 0, 1, fallback.parallax.farAlpha ?? 1),
+            nearAlpha: clampNumber(stored.parallax?.nearAlpha, 0, 1, fallback.parallax.nearAlpha ?? 1),
+          }
+        : {}),
     },
   };
 }
@@ -10255,7 +10231,91 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaBackgroundPreviewTier: 2,
   arenaBackgroundEditMode: false,
   arenaBackgroundEditLayer: "ground",
-  arenaBackgroundTiers: {},
+  arenaBackgroundTiers: {
+    "2": {
+      "ambient-2": {
+        "layout": {
+          "x": 0,
+          "y": 0,
+          "scale": 0.86,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0,
+          "followY": 0,
+          "zoom": 0,
+          "lookUpY": 0,
+          "farAlpha": 0,
+          "nearAlpha": 0.5
+        }
+      }
+    },
+    "3": {
+      "back": {
+        "layout": {
+          "x": 0,
+          "y": -125,
+          "scale": 0.53,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.2,
+          "followY": -0.1,
+          "zoom": 0.3,
+          "lookUpY": -19
+        }
+      },
+      "ground": {
+        "layout": {
+          "x": 0,
+          "y": -158,
+          "scale": 1,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.4,
+          "followY": 0.45,
+          "zoom": 0.7,
+          "lookUpY": 13
+        }
+      },
+      "front": {
+        "layout": {
+          "x": 0,
+          "y": -50,
+          "scale": 0.49,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.3,
+          "followY": 0.3,
+          "zoom": 0.45,
+          "lookUpY": 0
+        }
+      },
+      "ambient": {
+        "layout": {
+          "x": 0,
+          "y": 0,
+          "scale": 0.57,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.37,
+          "followY": 0.48,
+          "zoom": 0.5,
+          "lookUpY": -16,
+          "farAlpha": 0.4,
+          "nearAlpha": 0.6
+        }
+      }
+    }
+  },
   arenaTier1BackFollowX: 0.2,
   arenaTier1BackFollowY: -0.12,
   arenaTier1BackZoom: 0.39,
@@ -10269,27 +10329,29 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaTier1GroundFollowY: 0.47,
   arenaTier1GroundZoom: 0.74,
   arenaTier1GroundLookUpY: 13,
-  arenaTier2BackFollowX: 0.2,
-  arenaTier2BackFollowY: -0.12,
-  arenaTier2BackZoom: 0.37,
-  arenaTier2BackLookUpY: -161,
+  arenaTier2BackFollowX: 0.1,
+  arenaTier2BackFollowY: -0.1,
+  arenaTier2BackZoom: 0.05,
+  arenaTier2BackLookUpY: -40,
   arenaTier2MidFollowX: -0.5,
   arenaTier2MidFollowY: 0.68,
   arenaTier2MidZoom: 0.2,
   arenaTier2MidLookUpY: 132,
   arenaTier2MidZoomDarken: 1,
-  arenaTier2GroundFollowX: 0.37,
-  arenaTier2GroundFollowY: 0.47,
-  arenaTier2GroundZoom: 0.74,
+  arenaTier2GroundFollowX: 0.3,
+  arenaTier2GroundFollowY: 0.35,
+  arenaTier2GroundZoom: 0.3,
   arenaTier2GroundLookUpY: 13,
-  arenaTier2FrontFollowX: 0.35,
-  arenaTier2FrontFollowY: 0.47,
-  arenaTier2FrontZoom: 0.34,
-  arenaTier2FrontLookUpY: 33,
-  arenaTier2AmbientFollowX: 0.37,
-  arenaTier2AmbientFollowY: 0.48,
-  arenaTier2AmbientZoom: 0.5,
-  arenaTier2AmbientLookUpY: -16,
+  arenaTier2FrontFollowX: 0.3,
+  arenaTier2FrontFollowY: 0.3,
+  arenaTier2FrontZoom: 0.15,
+  arenaTier2FrontLookUpY: 10,
+  arenaTier2AmbientFollowX: 0.2,
+  arenaTier2AmbientFollowY: 0.01,
+  arenaTier2AmbientZoom: 0.2,
+  arenaTier2AmbientLookUpY: -15,
+  arenaTier2AmbientFarAlpha: 0,
+  arenaTier2AmbientNearAlpha: 0.66,
   arenaTier1BackgroundBackX: 0,
   arenaTier1BackgroundBackY: 0,
   arenaTier1BackgroundBackScale: 1,
@@ -10316,7 +10378,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaTier2BackgroundMidAlpha: 1,
   arenaTier2BackgroundMidVisible: true,
   arenaTier2BackgroundGroundX: 0,
-  arenaTier2BackgroundGroundY: -169,
+  arenaTier2BackgroundGroundY: -196,
   arenaTier2BackgroundGroundScale: 1,
   arenaTier2BackgroundGroundAlpha: 1,
   arenaTier2BackgroundGroundVisible: true,
@@ -10328,7 +10390,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaTier2BackgroundAmbientX: 0,
   arenaTier2BackgroundAmbientY: -16,
   arenaTier2BackgroundAmbientScale: 0.55,
-  arenaTier2BackgroundAmbientAlpha: 0.56,
+  arenaTier2BackgroundAmbientAlpha: 1,
   arenaTier2BackgroundAmbientVisible: true,
   actionArcEditMode: false,
   actionArcRotation: DEFAULT_ACTION_ARC_ROTATION,
@@ -10475,10 +10537,6 @@ export function updateDebugTuning(patch: Partial<ArenaDebugTuning>, options: Deb
   }
   listeners.forEach((listener) => listener());
   dispatchDebugTuningChange();
-}
-
-export function resetDebugTuning(): void {
-  updateDebugTuning(defaultDebugTuning);
 }
 
 export function beginDebugUndoGroup(): void {
@@ -10641,6 +10699,8 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     arenaTier2AmbientFollowY: clampNumber(input.arenaTier2AmbientFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2AmbientFollowY),
     arenaTier2AmbientZoom: clampNumber(input.arenaTier2AmbientZoom, 0, 1.5, defaultDebugTuning.arenaTier2AmbientZoom),
     arenaTier2AmbientLookUpY: clampNumber(input.arenaTier2AmbientLookUpY, -240, 240, defaultDebugTuning.arenaTier2AmbientLookUpY),
+    arenaTier2AmbientFarAlpha: clampNumber(input.arenaTier2AmbientFarAlpha, 0, 1, defaultDebugTuning.arenaTier2AmbientFarAlpha),
+    arenaTier2AmbientNearAlpha: clampNumber(input.arenaTier2AmbientNearAlpha, 0, 1, defaultDebugTuning.arenaTier2AmbientNearAlpha),
     arenaTier1BackgroundBackX: clampNumber(input.arenaTier1BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier1BackgroundBackX),
     arenaTier1BackgroundBackY: clampNumber(input.arenaTier1BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier1BackgroundBackY),
     arenaTier1BackgroundBackScale: clampNumber(input.arenaTier1BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundBackScale),
@@ -11675,8 +11735,14 @@ function isClassicActionWheelMode(value: unknown): value is ClassicActionWheelMo
   return typeof value === "string" && CLASSIC_ACTION_WHEEL_MODES.includes(value as ClassicActionWheelMode);
 }
 
-function isArenaBackgroundEditLayer(value: unknown): value is ArenaBackgroundEditLayer {
-  return typeof value === "string" && ARENA_BACKGROUND_EDIT_LAYERS.includes(value as ArenaBackgroundEditLayer);
+export function getArenaBackgroundLayerRole(layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerRole {
+  const match = /^(back|mid|ground|front|ambient)(?:-\d+)?$/u.exec(layer);
+
+  return match ? match[1] as ArenaBackgroundLayerRole : "ground";
+}
+
+export function isArenaBackgroundEditLayer(value: unknown): value is ArenaBackgroundEditLayer {
+  return typeof value === "string" && /^(back|mid|ground|front|ambient)(?:-\d+)?$/u.test(value);
 }
 
 function isBodyAnimationKey(value: unknown): value is BodyAnimationKey {

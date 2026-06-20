@@ -1,4 +1,4 @@
-import type { ArenaDebugTuning, EquipmentTuning } from "./debugTuning";
+import type { ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning, ArenaDebugTuning, EquipmentTuning } from "./debugTuning";
 import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
 import type { ArenaBossDefinition, ArenaTierConfig, HeroItemDefinition, HeroItemRarity } from "./hero";
 
@@ -34,6 +34,11 @@ export interface UpdateGeneratedShopItemPayload {
 export interface UpdateGeneratedBossItemPayload {
   itemIds: string[];
   stat: number;
+}
+
+export interface ArenaTierBackgroundPayload {
+  tierId: number;
+  layers: Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>>;
 }
 
 export interface RenameEquipmentSetAssetEntry {
@@ -103,6 +108,7 @@ const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
 const renameEquipmentSetAssetsEndpoint = "/__dust-arena/rename-equipment-set-assets";
 const saveArenaBossEndpoint = "/__dust-arena/save-arena-boss";
 const saveArenaTierEndpoint = "/__dust-arena/save-arena-tier";
+const saveArenaTierBackgroundEndpoint = "/__dust-arena/save-arena-tier-background";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
   const response = await fetch(saveProdDefaultsEndpoint, {
@@ -282,6 +288,21 @@ export async function saveArenaTier(payload: ArenaTierConfig): Promise<string> {
   }
 
   return responsePayload.message ?? "Saved arena tier.";
+}
+
+export async function saveArenaTierBackground(payload: ArenaTierBackgroundPayload): Promise<string> {
+  const response = await fetch(saveArenaTierBackgroundEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not save arena tier background. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Saved arena tier background.";
 }
 
 async function readResponse(response: Response): Promise<SaveProdDefaultsResponse> {

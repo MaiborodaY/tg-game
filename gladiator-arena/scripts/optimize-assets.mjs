@@ -29,6 +29,13 @@ const highQualityRules = [
   { minimumQuality: 95, pattern: /^fighters\/body-parts\/(?:arms|legs|head|torso)\/.+-dummy-01\.png$/ },
   { minimumQuality: 95, pattern: /^fighters\/body-parts\/face\/(?:pupil-(?:left|right)|brow-(?:left|right)-dummy-01)\.png$/ },
 ];
+const smallerAssetRules = [
+  {
+    maximumAlphaQuality: 70,
+    maximumQuality: 46,
+    pattern: /^arena\/layers\/arena-tier-(?:2-(?:front-trees|ambient-particles)|3-(?:back|ground|front))\.png$/,
+  },
+];
 
 const pngFiles = targetFile ? [targetFile] : await listFiles(sourceRoot, ".png");
 let originalTotal = 0;
@@ -48,6 +55,7 @@ for (const pngPath of pngFiles) {
   const webpPath = path.join(outputRoot, relativePngPath).replace(/\.png$/i, ".webp");
   const maxSide = getResizeMaxSide(relativePngPath);
   const targetQuality = getWebpQuality(relativePngPath);
+  const targetAlphaQuality = getWebpAlphaQuality(relativePngPath);
   const pipeline = sharp(png);
 
   if (maxSide) {
@@ -61,7 +69,7 @@ for (const pngPath of pngFiles) {
 
   const webp = await pipeline
     .webp({
-      alphaQuality: 100,
+      alphaQuality: targetAlphaQuality,
       effort: 6,
       quality: targetQuality,
       smartSubsample: true,
@@ -110,9 +118,17 @@ function getResizeMaxSide(relativePath) {
 }
 
 function getWebpQuality(relativePath) {
-  const rule = highQualityRules.find((qualityRule) => qualityRule.pattern.test(relativePath));
+  const highQualityRule = highQualityRules.find((qualityRule) => qualityRule.pattern.test(relativePath));
+  const smallerAssetRule = smallerAssetRules.find((qualityRule) => qualityRule.pattern.test(relativePath));
+  const quality = highQualityRule ? Math.max(webpQuality, highQualityRule.minimumQuality) : webpQuality;
 
-  return rule ? Math.max(webpQuality, rule.minimumQuality) : webpQuality;
+  return smallerAssetRule ? Math.min(quality, smallerAssetRule.maximumQuality) : quality;
+}
+
+function getWebpAlphaQuality(relativePath) {
+  const rule = smallerAssetRules.find((qualityRule) => qualityRule.pattern.test(relativePath));
+
+  return rule ? rule.maximumAlphaQuality : 100;
 }
 
 function readSourceRoot() {

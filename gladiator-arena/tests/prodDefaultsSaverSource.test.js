@@ -82,6 +82,15 @@ test("client saver can save generated arena tiers through the local dev endpoint
   assert.match(source, /JSON\.stringify\(payload\)/);
 });
 
+test("client saver can save selected arena tier background through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/save-arena-tier-background/);
+  assert.match(source, /saveArenaTierBackground/);
+  assert.match(source, /ArenaTierBackgroundPayload/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("vite dev middleware only writes whitelisted arena layout defaults", () => {
   const source = readFileSync(join(root, "vite.config.ts"), "utf8");
 
@@ -283,6 +292,21 @@ test("vite dev middleware writes generated arena tiers", () => {
   assert.match(source, /upsertGeneratedArenaTierRecords/);
   assert.match(generatedTierSource, /GENERATED_ARENA_TIERS/);
   assert.match(generatedTierJson, /dust_arena_brawler/);
+});
+
+test("vite dev middleware saves selected arena tier background defaults", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /save-arena-tier-background/);
+  assert.match(source, /pickArenaTierBackgroundDefaultUpdates/);
+  assert.match(source, /applyArenaTierBackgroundDefaultUpdates/);
+  assert.match(source, /createLegacyArenaTierBackgroundDefaultUpdates/);
+  assert.match(source, /createDynamicArenaTierBackgroundDefaultUpdates/);
+  assert.match(source, /usesDynamicArenaTierBackgroundDefaultUpdates/);
+  assert.match(source, /sourceWithLegacyUpdates/);
+  assert.match(source, /\.\.\.existingTiers\[tierKey\]/);
+  assert.match(source, /replaceDefaultArenaBackgroundTiers/);
+  assert.match(source, /defaultDebugTuning: ArenaDebugTuning/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {
