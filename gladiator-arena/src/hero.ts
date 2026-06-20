@@ -9,6 +9,7 @@ import {
   getArenaTierDefinition as resolveArenaTierDefinition,
   getArenaTierDefinitions as resolveArenaTierDefinitions,
 } from "./arenaOpponents";
+import { RANDOM_ARENA_OPPONENT_NAMES } from "./arenaOpponentNames";
 import type {
   ArenaDifficultyId,
   ArenaBossDefinition,
@@ -387,14 +388,15 @@ export function createArenaRandomEnemyEncounter(
   const difficultyOpponents = resolveArenaRandomOpponentsForTier(tier.id).filter((opponent) => opponent.difficultyId === difficultyId);
   const opponents = difficultyOpponents.length > 0 ? difficultyOpponents : resolveArenaRandomOpponentsForTier(tier.id);
   const opponent = opponents.length > 0 ? pickRandom(opponents, encounterRandom) : createFallbackRandomOpponent(tier);
+  const enemyLoadout = createRandomEnemyLoadoutForOpponent(opponent, encounterRandom);
 
   return {
     id: `random:${opponent.id}`,
     kind: "random",
     tierId: opponent.tierId,
     opponentId: opponent.id,
-    name: opponent.name,
-    enemyLoadout: createRandomEnemyLoadoutForOpponent(opponent, encounterRandom),
+    name: pickRandomArenaOpponentName(encounterRandom),
+    enemyLoadout,
     rewards: opponent.rewards,
     lootTable: [],
   };
@@ -421,13 +423,14 @@ export function createArenaBossEncounter(bossId: string): ArenaEncounter {
 
 function createRandomEnemyLoadoutFromPools(equipmentPools: readonly ArenaGeneratedEquipmentPool[], random = Math.random): EnemyLoadout {
   const equipment = createDefaultHeroEquipment();
-  const shurikenItemId = rollEnemyShurikenItemId(getEquipmentPoolItemRarities(equipmentPools), random);
+  const shurikenItemId = rollEnemyShurikenItemIdFromPools(equipmentPools, random);
 
   equipmentPools.forEach((equipmentPool) => {
     HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
       const itemIds = getEnemyItemIdsBySlot(slotKey, equipmentPool.itemRarities);
+      const rollChance = getEnemyEquipmentSlotRollChance(equipmentPool, slotKey);
 
-      if (itemIds.length === 0 || random() >= equipmentPool.rollChance) {
+      if (itemIds.length === 0 || random() >= rollChance) {
         return;
       }
 
@@ -455,6 +458,10 @@ function createRandomEnemyLoadoutForOpponent(opponent: ArenaRandomOpponentDefini
     ...createRandomEnemyLoadoutFromPools(opponent.equipmentPools, random),
     ...(baseStats ? { baseStats } : {}),
   };
+}
+
+function pickRandomArenaOpponentName(random: () => number): string {
+  return RANDOM_ARENA_OPPONENT_NAMES.length > 0 ? pickRandom(RANDOM_ARENA_OPPONENT_NAMES, random) : "Arena Opponent";
 }
 
 function createRandomOpponentBaseStats(opponent: ArenaRandomOpponentDefinition, random: () => number): HeroBaseStats | undefined {
@@ -495,7 +502,6 @@ function createFallbackRandomOpponent(tier: ArenaTierDefinition): ArenaRandomOpp
     id: `tier_${tier.id}_fallback`,
     tierId: tier.id,
     difficultyId: DEFAULT_ARENA_DIFFICULTY_ID,
-    name: "Grumbus",
     equipmentPools: tier.enemyEquipmentPools,
     rewards: {
       win: BATTLE_WIN_REWARD,
@@ -1379,14 +1385,64 @@ function getEquipmentPoolItemRarities(equipmentPools: readonly ArenaGeneratedEqu
   return [...new Set(equipmentPools.flatMap((equipmentPool) => equipmentPool.itemRarities))];
 }
 
-function rollEnemyShurikenItemId(itemRarities: readonly HeroItemRarity[], random: () => number): HeroItemId | undefined {
+function getEnemyEquipmentSlotRollChance(equipmentPool: ArenaGeneratedEquipmentPool, slotKey: HeroEquipmentSlotKey): number {
+  if (slotKey === "weaponMain") {
+    return getEnemyRollChanceOrFallback(equipmentPool.weaponChance, equipmentPool.rollChance);
+  }
+
+  if (slotKey === "weaponBow") {
+    return getEnemyRollChanceOrFallback(equipmentPool.bowChance, equipmentPool.rollChance);
+  }
+
+  if (slotKey === "shield") {
+    return getEnemyRollChanceOrFallback(equipmentPool.shieldChance, equipmentPool.rollChance);
+  }
+
+  return clampEnemyRollChance(equipmentPool.rollChance);
+}
+
+function rollEnemyShurikenItemIdFromPools(equipmentPools: readonly ArenaGeneratedEquipmentPool[], random: () => number): HeroItemId | undefined {
+  const hasCustomShurikenChance = equipmentPools.some((equipmentPool) => isFiniteNumber(equipmentPool.shurikenChance));
+
+  if (!hasCustomShurikenChance) {
+    return rollEnemyShurikenItemId(getEquipmentPoolItemRarities(equipmentPools), ENEMY_SHURIKEN_ROLL_CHANCE, random);
+  }
+
+  for (const equipmentPool of equipmentPools) {
+    const shurikenItemId = rollEnemyShurikenItemId(
+      equipmentPool.itemRarities,
+      getEnemyRollChanceOrFallback(equipmentPool.shurikenChance, ENEMY_SHURIKEN_ROLL_CHANCE),
+      random,
+    );
+
+    if (shurikenItemId) {
+      return shurikenItemId;
+    }
+  }
+
+  return undefined;
+}
+
+function rollEnemyShurikenItemId(itemRarities: readonly HeroItemRarity[], rollChance: number, random: () => number): HeroItemId | undefined {
   const itemIds = getEnemyShurikenItemIds(itemRarities);
 
-  if (itemIds.length === 0 || random() >= ENEMY_SHURIKEN_ROLL_CHANCE) {
+  if (itemIds.length === 0 || random() >= clampEnemyRollChance(rollChance)) {
     return undefined;
   }
 
   return pickRandom(itemIds, random);
+}
+
+function getEnemyRollChanceOrFallback(value: number | undefined, fallback: number): number {
+  return isFiniteNumber(value) ? clampEnemyRollChance(value) : clampEnemyRollChance(fallback);
+}
+
+function clampEnemyRollChance(value: number): number {
+  return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function getEnemyShurikenItemIds(itemRarities: readonly HeroItemRarity[]): HeroItemId[] {

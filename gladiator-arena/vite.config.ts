@@ -908,7 +908,6 @@ interface ArenaTierJsonRecord {
 interface ArenaTierOpponentJsonRecord {
   id: string;
   difficultyId: "easy" | "medium" | "hard";
-  name: string;
   baseStats?: ArenaBossJsonRecord["baseStats"];
   randomBaseStatPoints?: number;
   equipmentPools: ArenaTierEquipmentPoolJsonRecord[];
@@ -918,6 +917,10 @@ interface ArenaTierOpponentJsonRecord {
 interface ArenaTierEquipmentPoolJsonRecord {
   itemRarities: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>[];
   rollChance: number;
+  weaponChance?: number;
+  bowChance?: number;
+  shieldChance?: number;
+  shurikenChance?: number;
 }
 
 interface PromotedEquipmentItem {
@@ -3500,7 +3503,6 @@ function formatGeneratedArenaTierOpponentRecord(record: ArenaTierOpponentJsonRec
     "      {",
     `        id: ${JSON.stringify(record.id)},`,
     `        difficultyId: ${JSON.stringify(record.difficultyId)},`,
-    `        name: ${JSON.stringify(record.name)},`,
     ...(record.baseStats ? [`        baseStats: ${JSON.stringify(record.baseStats)},`] : []),
     ...(record.randomBaseStatPoints !== undefined ? [`        randomBaseStatPoints: ${record.randomBaseStatPoints},`] : []),
     `        equipmentPools: ${JSON.stringify(record.equipmentPools)},`,
@@ -4210,7 +4212,6 @@ function validateArenaTierOpponentRecord(input: unknown, tierId: number): ArenaT
   return {
     id: readArenaOpponentId(record.id, tierId, difficultyId),
     difficultyId,
-    name: readNonEmptyString(record.name, "arena tier opponent name").slice(0, 80),
     ...(baseStats ? { baseStats } : {}),
     ...(randomBaseStatPoints !== undefined && randomBaseStatPoints > 0 ? { randomBaseStatPoints } : {}),
     equipmentPools: validateArenaTierEquipmentPools(record.equipmentPools),
@@ -4223,17 +4224,37 @@ function validateArenaTierEquipmentPools(input: unknown): ArenaTierEquipmentPool
     return [];
   }
 
-  return input.map(validateArenaTierEquipmentPool).filter((pool) => pool.itemRarities.length > 0 && pool.rollChance > 0);
+  return input.map(validateArenaTierEquipmentPool).filter((pool) => pool.itemRarities.length > 0 && hasArenaTierEquipmentPoolRollChance(pool));
 }
 
 function validateArenaTierEquipmentPool(input: unknown): ArenaTierEquipmentPoolJsonRecord {
   const pool = readPlainObject(input, "arena tier equipment pool");
   const itemRarities = readNonEmptyStringArray(pool.itemRarities, "arena tier equipment pool rarities").map((rarity) => readItemRarity(rarity));
+  const weaponChance = readOptionalArenaTierRollChance(pool.weaponChance, "arena tier equipment weapon chance");
+  const bowChance = readOptionalArenaTierRollChance(pool.bowChance, "arena tier equipment bow chance");
+  const shieldChance = readOptionalArenaTierRollChance(pool.shieldChance, "arena tier equipment shield chance");
+  const shurikenChance = readOptionalArenaTierRollChance(pool.shurikenChance, "arena tier equipment shuriken chance");
 
   return {
     itemRarities,
-    rollChance: Math.max(0, Math.min(1, readFinitePayloadNumber(pool.rollChance, "arena tier equipment roll chance"))),
+    rollChance: readArenaTierRollChance(pool.rollChance, "arena tier equipment roll chance"),
+    ...(weaponChance !== undefined ? { weaponChance } : {}),
+    ...(bowChance !== undefined ? { bowChance } : {}),
+    ...(shieldChance !== undefined ? { shieldChance } : {}),
+    ...(shurikenChance !== undefined ? { shurikenChance } : {}),
   };
+}
+
+function hasArenaTierEquipmentPoolRollChance(pool: ArenaTierEquipmentPoolJsonRecord): boolean {
+  return Math.max(pool.rollChance, pool.weaponChance ?? 0, pool.bowChance ?? 0, pool.shieldChance ?? 0, pool.shurikenChance ?? 0) > 0;
+}
+
+function readOptionalArenaTierRollChance(value: unknown, label: string): number | undefined {
+  return value === undefined || value === null || value === "" ? undefined : readArenaTierRollChance(value, label);
+}
+
+function readArenaTierRollChance(value: unknown, label: string): number {
+  return Math.max(0, Math.min(1, readFinitePayloadNumber(value, label)));
 }
 
 function readArenaDifficultyId(value: unknown): ArenaTierOpponentJsonRecord["difficultyId"] {

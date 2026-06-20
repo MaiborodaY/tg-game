@@ -10,6 +10,10 @@ export type ArenaDifficultyId = (typeof ARENA_DIFFICULTY_IDS)[number];
 export interface ArenaGeneratedEquipmentPool {
   itemRarities: readonly HeroItemRarity[];
   rollChance: number;
+  weaponChance?: number;
+  bowChance?: number;
+  shieldChance?: number;
+  shurikenChance?: number;
 }
 
 export interface ArenaOpponentRewards {
@@ -20,7 +24,6 @@ export interface ArenaOpponentRewards {
 export interface ArenaTierOpponentDefinition {
   id: ArenaOpponentId;
   difficultyId: ArenaDifficultyId;
-  name: string;
   baseStats?: HeroBaseStats;
   randomBaseStatPoints?: number;
   equipmentPools: readonly ArenaGeneratedEquipmentPool[];

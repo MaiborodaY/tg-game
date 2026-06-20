@@ -32,6 +32,7 @@ function loadTypeScriptModule(modulePath, context = {}) {
 }
 
 const combat = loadTypeScriptModule("../src/combat.ts");
+const arenaOpponentNames = loadTypeScriptModule("../src/arenaOpponentNames.ts");
 const generatedArenaBosses = loadTypeScriptModule("../src/generated/arenaBosses.generated.ts");
 const generatedArenaTiers = loadTypeScriptModule("../src/generated/arenaTiers.generated.ts");
 const arenaOpponents = loadTypeScriptModule("../src/arenaOpponents.ts", {
@@ -181,6 +182,10 @@ const hero = loadTypeScriptModule("../src/hero.ts", {
 
     if (id === "./arenaOpponents") {
       return arenaOpponents;
+    }
+
+    if (id === "./arenaOpponentNames") {
+      return arenaOpponentNames;
     }
 
     if (id === "./generated/equipmentItems.generated") {
@@ -378,7 +383,7 @@ test("arena tier one default enemy loadouts only roll common equipment", () => {
   assert.equal(tierOneEquipmentPools.length, 1);
   assert.equal(tierOneEquipmentPools[0].itemRarities.length, 1);
   assert.equal(tierOneEquipmentPools[0].itemRarities[0], "common");
-  assert.equal(tierOneEquipmentPools[0].rollChance, 0.52);
+  assert.equal(tierOneEquipmentPools[0].rollChance, 0.2);
 
   const loadout = hero.createRandomEnemyLoadout(() => 0, 1);
   const equippedItemIds = Object.values(loadout.equipment).filter(Boolean);
@@ -421,6 +426,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(easyOpponents[0].baseStats?.strength, 0);
   assert.equal(easyOpponents[0].baseStats?.agility, 0);
   assert.equal(easyOpponents[0].baseStats?.vitality, 0);
+  assert.equal("name" in easyOpponents[0], false);
   assert.equal(easyOpponents[0].equipmentPools.length, 0);
   assert.equal(easyOpponents[0].rewards.win.gold, 4);
   assert.equal(easyOpponents[0].rewards.win.xp, 4);
@@ -428,6 +434,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(easyOpponents[0].rewards.loss.xp, 1);
   assert.equal(mediumOpponents.length, 1);
   assert.equal(mediumOpponents[0].id, "dust_arena_brawler");
+  assert.equal("name" in mediumOpponents[0], false);
   assert.equal(mediumOpponents[0].equipmentPools.length, 1);
   assert.equal(mediumOpponents[0].equipmentPools[0].itemRarities.length, 1);
   assert.equal(mediumOpponents[0].equipmentPools[0].itemRarities[0], "common");
@@ -439,12 +446,13 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents.length, 1);
   assert.equal(hardOpponents[0].id, "dust_arena_veteran");
   assert.equal(hardOpponents[0].baseStats, undefined);
+  assert.equal("name" in hardOpponents[0], false);
   assert.equal(hardOpponents[0].randomBaseStatPoints, 3);
   assert.equal(hardOpponents[0].equipmentPools.length, 2);
   assert.equal(hardOpponents[0].equipmentPools[0].itemRarities[0], "common");
-  assert.equal(hardOpponents[0].equipmentPools[0].rollChance, 0.7);
+  assert.equal(hardOpponents[0].equipmentPools[0].rollChance, 0.5);
   assert.equal(hardOpponents[0].equipmentPools[1].itemRarities[0], "uncommon");
-  assert.equal(hardOpponents[0].equipmentPools[1].rollChance, 0.15);
+  assert.equal(hardOpponents[0].equipmentPools[1].rollChance, 0.1);
   assert.equal(hardOpponents[0].rewards.win.gold, 15);
   assert.equal(hardOpponents[0].rewards.win.xp, 10);
   assert.equal(hardOpponents[0].rewards.loss.gold, 1);
@@ -498,20 +506,20 @@ test("arena encounters can create combat states from random opponents and bosses
   const variantState = hero.createCombatStateFromHero(baseHero, variantEncounter);
 
   assert.equal(randomEncounter.kind, "random");
-  assert.equal(randomEncounter.name, "Grumbus");
+  assert.equal(randomEncounter.name, "Grubbo");
   assert.equal(randomState.encounter?.id, "random:dust_arena_brawler");
   assert.equal(randomState.encounter?.kind, "random");
   assert.equal(variantState.encounter?.backgroundVariantId, "variant-2");
-  assert.equal(randomState.enemy.name, "Grumbus");
+  assert.equal(randomState.enemy.name, randomEncounter.name);
   assert.equal(randomState.enemy.equipment?.weaponMain, "weapon_sword_01");
   assert.equal(randomState.enemy.shurikenItemId, "generated_equipment_weapon_shuriken_01");
   assert.equal(randomState.enemy.shurikenCount, 1);
   assert.equal(randomState.enemy.shurikenDamage, 2);
 
   assert.equal(easyEncounter.kind, "random");
-  assert.equal(easyEncounter.name, "Training Dummy");
+  assert.equal(easyEncounter.name, "Grubbo");
   assert.equal(easyState.encounter?.id, "random:dust_arena_dummy");
-  assert.equal(easyState.enemy.name, "Training Dummy");
+  assert.equal(easyState.enemy.name, easyEncounter.name);
   assert.equal(easyState.enemy.maxArmor, 0);
   assert.equal(easyState.enemy.maxHp, 10);
   assert.equal(easyState.enemy.shurikenCount, 0);
@@ -525,9 +533,9 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(hero.getBattleReward(easyState).xp, 1);
 
   assert.equal(hardEncounter.kind, "random");
-  assert.equal(hardEncounter.name, "Dust Arena Veteran");
+  assert.equal(hardEncounter.name, "Grubbo");
   assert.equal(hardState.encounter?.id, "random:dust_arena_veteran");
-  assert.equal(hardState.enemy.name, "Dust Arena Veteran");
+  assert.equal(hardState.enemy.name, hardEncounter.name);
   assert.equal(
     Object.values(hardState.enemy.equipment ?? {}).some((itemId) => Boolean(itemId && hero.HERO_ITEM_CATALOG[itemId]?.rarity === "uncommon")),
     true,

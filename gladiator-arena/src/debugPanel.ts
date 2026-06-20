@@ -83,6 +83,7 @@ import {
   ARENA_DIFFICULTY_IDS,
   ARENA_TIER_CONFIGS,
   ALL_HERO_ITEM_IDS,
+  ENEMY_SHURIKEN_ROLL_CHANCE,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
   getHeroItemWeaponClass,
@@ -368,6 +369,26 @@ interface DebugArenaTierDifficultyDefaults {
   randomBaseStatPoints: number;
   equipmentPools: ArenaGeneratedEquipmentPool[];
 }
+
+type ArenaTierPoolChanceKey = "rollChance" | "weaponChance" | "bowChance" | "shieldChance" | "shurikenChance";
+type DebugArenaTierIconKey =
+  | "strength"
+  | "agility"
+  | "vitality"
+  | "random-points"
+  | "armor"
+  | "weapon"
+  | "bow"
+  | "shield"
+  | "shuriken";
+
+const DEBUG_ARENA_TIER_POOL_CHANCE_FIELDS: readonly { key: ArenaTierPoolChanceKey; label: string; icon: DebugArenaTierIconKey }[] = [
+  { key: "rollChance", label: "Armor", icon: "armor" },
+  { key: "weaponChance", label: "Weapon", icon: "weapon" },
+  { key: "bowChance", label: "Bow", icon: "bow" },
+  { key: "shieldChance", label: "Shield", icon: "shield" },
+  { key: "shurikenChance", label: "Shuriken", icon: "shuriken" },
+];
 
 type ClassicSlotNumericKey = keyof ClassicActionButtonSlotTuning;
 
@@ -7747,19 +7768,15 @@ function formatArenaTierDifficultyEditor(difficultyId: ArenaDifficultyId): strin
         <span>Opponent ID</span>
         <input class="debug-tier-editor__opponent-id" type="text" />
       </label>
-      <label class="debug-rig-editor__part">
-        <span>Opponent name</span>
-        <input class="debug-tier-editor__opponent-name" type="text" />
-      </label>
       <label class="debug-panel__toggle">
         <input class="debug-tier-editor__fixed-stats" type="checkbox" />
         <span>Fixed stats</span>
       </label>
       <div class="debug-tier-editor__stats">
-        ${formatArenaTierNumberInput("STR", "stat", "strength", 0, DEBUG_BOSS_STAT_MAX, 1)}
-        ${formatArenaTierNumberInput("AGI", "stat", "agility", 0, DEBUG_BOSS_STAT_MAX, 1)}
-        ${formatArenaTierNumberInput("VIT", "stat", "vitality", 0, DEBUG_BOSS_STAT_MAX, 1)}
-        ${formatArenaTierNumberInput("Random points", "random-points", "", 0, DEBUG_BOSS_STAT_MAX, 1)}
+        ${formatArenaTierNumberInput("STR", "stat", "strength", 0, DEBUG_BOSS_STAT_MAX, 1, "strength")}
+        ${formatArenaTierNumberInput("AGI", "stat", "agility", 0, DEBUG_BOSS_STAT_MAX, 1, "agility")}
+        ${formatArenaTierNumberInput("VIT", "stat", "vitality", 0, DEBUG_BOSS_STAT_MAX, 1, "vitality")}
+        ${formatArenaTierNumberInput("Random points", "random-points", "", 0, DEBUG_BOSS_STAT_MAX, 1, "random-points")}
       </div>
       <div class="debug-tier-editor__rewards">
         ${formatArenaTierNumberInput("Win gold", "reward", "win-gold", 0, DEBUG_BOSS_REWARD_MAX, 1)}
@@ -7768,26 +7785,74 @@ function formatArenaTierDifficultyEditor(difficultyId: ArenaDifficultyId): strin
         ${formatArenaTierNumberInput("Loss XP", "reward", "loss-xp", 0, DEBUG_BOSS_REWARD_MAX, 1)}
       </div>
       <div class="debug-tier-editor__pools">
-        <span class="debug-tier-editor__pool-title">Per-slot rarity roll chance</span>
-        ${DEBUG_ARENA_TIER_RARITIES.map((rarity) => formatArenaTierNumberInput(AUTO_EQUIPMENT_RARITY_LABELS[rarity], "rarity", rarity, 0, 1, 0.01)).join("")}
+        <span class="debug-tier-editor__pool-title">Equipment roll chances by rarity</span>
+        ${formatArenaTierEquipmentPoolGrid()}
       </div>
     </fieldset>
   `;
 }
 
-function formatArenaTierNumberInput(label: string, kind: "stat" | "random-points" | "reward" | "rarity", key: string, min: number, max: number, step: number): string {
+function formatArenaTierEquipmentPoolGrid(): string {
+  return `
+    <div class="debug-tier-editor__pool-grid">
+      <span class="debug-tier-editor__pool-header debug-tier-editor__pool-header--rarity">Rarity</span>
+      ${DEBUG_ARENA_TIER_POOL_CHANCE_FIELDS.map(
+        (field) => `<span class="debug-tier-editor__pool-header">${formatArenaTierIcon(field.icon)}<span>${field.label}</span></span>`,
+      ).join("")}
+      ${DEBUG_ARENA_TIER_RARITIES.map((rarity) => formatArenaTierEquipmentPoolRow(rarity)).join("")}
+    </div>
+  `;
+}
+
+function formatArenaTierEquipmentPoolRow(rarity: HeroItemRarity): string {
+  return `
+    <span class="debug-tier-editor__pool-rarity debug-tier-editor__pool-rarity--${rarity}" data-tier-pool-rarity="${rarity}">${AUTO_EQUIPMENT_RARITY_LABELS[rarity]}</span>
+    ${DEBUG_ARENA_TIER_POOL_CHANCE_FIELDS.map((field) => formatArenaTierPoolChanceInput(rarity, field)).join("")}
+  `;
+}
+
+function formatArenaTierPoolChanceInput(rarity: HeroItemRarity, field: (typeof DEBUG_ARENA_TIER_POOL_CHANCE_FIELDS)[number]): string {
+  const label = `${AUTO_EQUIPMENT_RARITY_LABELS[rarity]} ${field.label}`;
+
+  return `
+    <label class="debug-tier-editor__pool-cell debug-tier-editor__pool-cell--${rarity}">
+      <input class="debug-panel__number debug-tier-editor__pool-input" type="number" min="0" max="1" step="0.01" value="0" aria-label="${label}" data-tier-pool-chance="${getArenaTierPoolChanceKey(rarity, field.key)}" />
+    </label>
+  `;
+}
+
+function formatArenaTierIcon(icon: DebugArenaTierIconKey): string {
+  return `<span class="debug-tier-editor__icon debug-tier-editor__icon--${icon}" aria-hidden="true"></span>`;
+}
+
+function formatArenaTierFieldLabel(label: string, icon?: DebugArenaTierIconKey): string {
+  return `
+    <span class="debug-tier-editor__field-label">
+      ${icon ? formatArenaTierIcon(icon) : ""}
+      <span class="debug-tier-editor__field-label-text">${label}</span>
+    </span>
+  `;
+}
+
+function formatArenaTierNumberInput(
+  label: string,
+  kind: "stat" | "random-points" | "reward",
+  key: string,
+  min: number,
+  max: number,
+  step: number,
+  icon?: DebugArenaTierIconKey,
+): string {
   const dataAttribute =
     kind === "stat"
       ? `data-tier-stat="${key}"`
       : kind === "reward"
         ? `data-tier-reward="${key}"`
-        : kind === "rarity"
-          ? `data-tier-rarity="${key}"`
-          : "data-tier-random-points";
+        : "data-tier-random-points";
 
   return `
     <label class="debug-panel__row debug-rig-editor__row">
-      <span>${label}</span>
+      ${formatArenaTierFieldLabel(label, icon)}
       <input class="debug-panel__number" type="number" min="${min}" max="${max}" step="${step}" value="${min}" ${dataAttribute} />
     </label>
   `;
@@ -7849,16 +7914,11 @@ function applyArenaTierOpponentToEditor(editor: HTMLElement, difficultyId: Arena
   }
 
   const idInput = fieldset.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-id");
-  const nameInput = fieldset.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-name");
   const fixedStatsInput = fieldset.querySelector<HTMLInputElement>(".debug-tier-editor__fixed-stats");
   const baseStats = opponent.baseStats ?? { strength: 0, agility: 0, vitality: 0 };
 
   if (idInput) {
     idInput.value = opponent.id;
-  }
-
-  if (nameInput) {
-    nameInput.value = opponent.name;
   }
 
   if (fixedStatsInput) {
@@ -7877,7 +7937,11 @@ function applyArenaTierOpponentToEditor(editor: HTMLElement, difficultyId: Arena
   DEBUG_ARENA_TIER_RARITIES.forEach((rarity) => {
     const pool = opponent.equipmentPools.find((candidate) => candidate.itemRarities.includes(rarity));
 
-    setArenaTierNumberInput(fieldset, `[data-tier-rarity="${rarity}"]`, pool?.rollChance ?? 0);
+    setArenaTierPoolChanceInput(fieldset, rarity, "rollChance", pool?.rollChance ?? 0);
+    setArenaTierPoolChanceInput(fieldset, rarity, "weaponChance", pool ? (pool.weaponChance ?? pool.rollChance) : 0);
+    setArenaTierPoolChanceInput(fieldset, rarity, "bowChance", pool ? (pool.bowChance ?? pool.rollChance) : 0);
+    setArenaTierPoolChanceInput(fieldset, rarity, "shieldChance", pool ? (pool.shieldChance ?? pool.rollChance) : 0);
+    setArenaTierPoolChanceInput(fieldset, rarity, "shurikenChance", pool ? (pool.shurikenChance ?? ENEMY_SHURIKEN_ROLL_CHANCE) : 0);
   });
 }
 
@@ -7901,7 +7965,6 @@ function readArenaTierOpponentDraft(editor: HTMLElement, tierId: number, difficu
   const fieldset = getArenaTierDifficultyFieldset(editor, difficultyId);
   const fixedStatsInput = fieldset?.querySelector<HTMLInputElement>(".debug-tier-editor__fixed-stats");
   const idInput = fieldset?.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-id");
-  const nameInput = fieldset?.querySelector<HTMLInputElement>(".debug-tier-editor__opponent-name");
   const fixedStats = fixedStatsInput?.checked === true;
   const baseStats = {
     strength: readArenaTierInteger(fieldset, `[data-tier-stat="strength"]`, 0, DEBUG_BOSS_STAT_MAX),
@@ -7913,7 +7976,6 @@ function readArenaTierOpponentDraft(editor: HTMLElement, tierId: number, difficu
   return {
     id: normalizeDebugIdentifier(idInput?.value || `tier_${tierId}_${difficultyId}`),
     difficultyId,
-    name: nameInput?.value.trim() || `${DEBUG_ARENA_TIER_DIFFICULTY_LABELS[difficultyId]} Opponent`,
     ...(fixedStats ? { baseStats } : randomBaseStatPoints > 0 ? { randomBaseStatPoints } : {}),
     equipmentPools: readArenaTierEquipmentPools(fieldset),
     rewards: {
@@ -7935,9 +7997,27 @@ function readArenaTierEquipmentPools(fieldset: HTMLElement | undefined): ArenaGe
   }
 
   return DEBUG_ARENA_TIER_RARITIES.flatMap((rarity) => {
-    const rollChance = readArenaTierNumber(fieldset, `[data-tier-rarity="${rarity}"]`, 0, 1);
+    const rollChance = readArenaTierPoolChance(fieldset, rarity, "rollChance");
+    const weaponChance = readArenaTierPoolChance(fieldset, rarity, "weaponChance");
+    const bowChance = readArenaTierPoolChance(fieldset, rarity, "bowChance");
+    const shieldChance = readArenaTierPoolChance(fieldset, rarity, "shieldChance");
+    const shurikenChance = readArenaTierPoolChance(fieldset, rarity, "shurikenChance");
+    const nonShurikenChance = Math.max(rollChance, weaponChance, bowChance, shieldChance);
 
-    return rollChance > 0 ? [{ itemRarities: [rarity], rollChance }] : [];
+    if (Math.max(rollChance, weaponChance, bowChance, shieldChance, shurikenChance) <= 0) {
+      return [];
+    }
+
+    return [
+      {
+        itemRarities: [rarity],
+        rollChance,
+        ...(weaponChance !== rollChance ? { weaponChance } : {}),
+        ...(bowChance !== rollChance ? { bowChance } : {}),
+        ...(shieldChance !== rollChance ? { shieldChance } : {}),
+        ...(shurikenChance !== ENEMY_SHURIKEN_ROLL_CHANCE || nonShurikenChance <= 0 ? { shurikenChance } : {}),
+      },
+    ];
   });
 }
 
@@ -7961,6 +8041,22 @@ function setArenaTierNumberInput(root: HTMLElement, selector: string, value: num
   if (input) {
     input.value = `${value}`;
   }
+}
+
+function setArenaTierPoolChanceInput(root: HTMLElement, rarity: HeroItemRarity, key: ArenaTierPoolChanceKey, value: number): void {
+  setArenaTierNumberInput(root, getArenaTierPoolChanceSelector(rarity, key), value);
+}
+
+function readArenaTierPoolChance(root: HTMLElement | undefined, rarity: HeroItemRarity, key: ArenaTierPoolChanceKey): number {
+  return readArenaTierNumber(root, getArenaTierPoolChanceSelector(rarity, key), 0, 1);
+}
+
+function getArenaTierPoolChanceSelector(rarity: HeroItemRarity, key: ArenaTierPoolChanceKey): string {
+  return `[data-tier-pool-chance="${getArenaTierPoolChanceKey(rarity, key)}"]`;
+}
+
+function getArenaTierPoolChanceKey(rarity: HeroItemRarity, key: ArenaTierPoolChanceKey): string {
+  return `${rarity}:${key}`;
 }
 
 function readArenaTierInteger(root: HTMLElement | undefined, selector: string, min: number, max: number): number {
@@ -8003,7 +8099,6 @@ function createDefaultArenaTierOpponentDraft(tierId: number, difficultyId: Arena
   return {
     id: `dust_arena_${tierId}_${difficultyId}`,
     difficultyId,
-    name: `Dust Arena ${tierId} ${DEBUG_ARENA_TIER_DIFFICULTY_LABELS[difficultyId]}`,
     randomBaseStatPoints: defaults.randomBaseStatPoints,
     equipmentPools: defaults.equipmentPools,
     rewards: {
@@ -8066,8 +8161,8 @@ function cloneArenaTierConfig(tier: ArenaTierConfig): ArenaTierConfig {
       ...opponent,
       ...(opponent.baseStats ? { baseStats: { ...opponent.baseStats } } : {}),
       equipmentPools: opponent.equipmentPools.map((pool) => ({
+        ...pool,
         itemRarities: [...pool.itemRarities],
-        rollChance: pool.rollChance,
       })),
       rewards: {
         win: { ...opponent.rewards.win },

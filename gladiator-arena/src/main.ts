@@ -634,13 +634,13 @@ function renderCityArenaMenu(): void {
   syncCityArenaTierSelect(cityArenaTierSelect, availableTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
   if (cityArenaEasyName) {
-    cityArenaEasyName.textContent = easyOpponent?.name ?? "Easy Fight";
+    cityArenaEasyName.textContent = "Easy Fight";
   }
   if (cityArenaRandomName) {
-    cityArenaRandomName.textContent = randomOpponent?.name ?? "Random Fight";
+    cityArenaRandomName.textContent = "Random Fight";
   }
   if (cityArenaHardName) {
-    cityArenaHardName.textContent = hardOpponent?.name ?? "Hard Fight";
+    cityArenaHardName.textContent = "Hard Fight";
   }
   cityArenaEasyReward.textContent = `Win ${formatCityArenaReward(easyOpponent?.rewards.win ?? { gold: 4, xp: 4 })}`;
   cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 8, xp: 6 })}`;

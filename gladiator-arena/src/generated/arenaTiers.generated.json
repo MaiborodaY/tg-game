@@ -6,7 +6,6 @@
       {
         "id": "dust_arena_dummy",
         "difficultyId": "easy",
-        "name": "Training Dummy",
         "baseStats": {
           "strength": 0,
           "agility": 0,
@@ -27,13 +26,13 @@
       {
         "id": "dust_arena_brawler",
         "difficultyId": "medium",
-        "name": "Grumbus",
+        "randomBaseStatPoints": 1,
         "equipmentPools": [
           {
             "itemRarities": [
               "common"
             ],
-            "rollChance": 0.52
+            "rollChance": 0.2
           }
         ],
         "rewards": {
@@ -50,20 +49,19 @@
       {
         "id": "dust_arena_veteran",
         "difficultyId": "hard",
-        "name": "Dust Arena Veteran",
         "randomBaseStatPoints": 3,
         "equipmentPools": [
           {
             "itemRarities": [
               "common"
             ],
-            "rollChance": 0.7
+            "rollChance": 0.5
           },
           {
             "itemRarities": [
               "uncommon"
             ],
-            "rollChance": 0.15
+            "rollChance": 0.1
           }
         ],
         "rewards": {
@@ -87,7 +85,6 @@
       {
         "id": "dust_arena_2_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena II Rookie",
         "randomBaseStatPoints": 5,
         "equipmentPools": [
           {
@@ -117,7 +114,6 @@
       {
         "id": "dust_arena_2_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena II Brawler",
         "randomBaseStatPoints": 10,
         "equipmentPools": [
           {
@@ -153,7 +149,6 @@
       {
         "id": "dust_arena_2_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena II Veteran",
         "randomBaseStatPoints": 15,
         "equipmentPools": [
           {
@@ -190,7 +185,6 @@
       {
         "id": "arena_3_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena 3 Easy",
         "randomBaseStatPoints": 15,
         "equipmentPools": [
           {
@@ -220,7 +214,6 @@
       {
         "id": "arena_3_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena 3 Medium",
         "randomBaseStatPoints": 9,
         "equipmentPools": [
           {
@@ -250,7 +243,6 @@
       {
         "id": "arena_3_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena 3 Hard",
         "randomBaseStatPoints": 26,
         "equipmentPools": [
           {
@@ -287,7 +279,6 @@
       {
         "id": "dust_arena_4_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena 4 Easy",
         "randomBaseStatPoints": 21,
         "equipmentPools": [
           {
@@ -317,7 +308,6 @@
       {
         "id": "dust_arena_4_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena 4 Medium",
         "randomBaseStatPoints": 21,
         "equipmentPools": [
           {
@@ -347,7 +337,6 @@
       {
         "id": "dust_arena_4_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena 4 Hard",
         "randomBaseStatPoints": 26,
         "equipmentPools": [
           {
@@ -384,7 +373,6 @@
       {
         "id": "dust_arena_5_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena 5 Easy",
         "randomBaseStatPoints": 31,
         "equipmentPools": [
           {
@@ -414,7 +402,6 @@
       {
         "id": "dust_arena_5_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena 5 Medium",
         "randomBaseStatPoints": 38,
         "equipmentPools": [
           {
@@ -444,7 +431,6 @@
       {
         "id": "dust_arena_5_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena 5 Hard",
         "randomBaseStatPoints": 41,
         "equipmentPools": [
           {
@@ -481,7 +467,6 @@
       {
         "id": "dust_arena_6_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena 6 Easy",
         "randomBaseStatPoints": 39,
         "equipmentPools": [
           {
@@ -511,7 +496,6 @@
       {
         "id": "dust_arena_6_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena 6 Medium",
         "randomBaseStatPoints": 40,
         "equipmentPools": [
           {
@@ -541,7 +525,6 @@
       {
         "id": "dust_arena_6_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena 6 Hard",
         "randomBaseStatPoints": 29,
         "equipmentPools": [
           {
@@ -578,7 +561,6 @@
       {
         "id": "dust_arena_7_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena 7 Easy",
         "randomBaseStatPoints": 18,
         "equipmentPools": [
           {
@@ -608,7 +590,6 @@
       {
         "id": "dust_arena_7_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena 7 Medium",
         "randomBaseStatPoints": 21,
         "equipmentPools": [
           {
@@ -638,7 +619,6 @@
       {
         "id": "dust_arena_7_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena 7 Hard",
         "randomBaseStatPoints": 24,
         "equipmentPools": [
           {
@@ -675,7 +655,6 @@
       {
         "id": "dust_arena_8_easy",
         "difficultyId": "easy",
-        "name": "Dust Arena 8 Easy",
         "randomBaseStatPoints": 21,
         "equipmentPools": [
           {
@@ -705,7 +684,6 @@
       {
         "id": "dust_arena_8_medium",
         "difficultyId": "medium",
-        "name": "Dust Arena 8 Medium",
         "randomBaseStatPoints": 24,
         "equipmentPools": [
           {
@@ -735,7 +713,6 @@
       {
         "id": "dust_arena_8_hard",
         "difficultyId": "hard",
-        "name": "Dust Arena 8 Hard",
         "randomBaseStatPoints": 27,
         "equipmentPools": [
           {

@@ -8211,6 +8211,86 @@ body.debug-mode-hud .battle-screen .status-strip {
   gap: 6px;
 }
 
+.debug-tier-editor__stats,
+.debug-tier-editor__rewards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 7px;
+}
+
+.debug-tier-editor__stats .debug-panel__row,
+.debug-tier-editor__rewards .debug-panel__row {
+  grid-template-columns: minmax(52px, 1fr) minmax(66px, 92px);
+  gap: 5px;
+}
+
+.debug-tier-editor__stats .debug-panel__row > span,
+.debug-tier-editor__rewards .debug-panel__row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-tier-editor__field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.debug-tier-editor__field-label-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-tier-editor__icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.9));
+}
+
+.debug-tier-editor__icon--strength {
+  background-image: url("./assets/ui/profile/attribute-strength.webp");
+}
+
+.debug-tier-editor__icon--agility {
+  background-image: url("./assets/ui/profile/attribute-agility.webp");
+}
+
+.debug-tier-editor__icon--vitality {
+  background-image: url("./assets/ui/profile/attribute-vitality.webp");
+}
+
+.debug-tier-editor__icon--random-points {
+  background-image: url("./assets/ui/profile/stat-recovery.webp");
+}
+
+.debug-tier-editor__icon--armor {
+  background-image: url("./assets/ui/shop/category-body.webp");
+}
+
+.debug-tier-editor__icon--weapon {
+  background-image: url("./assets/ui/shop/category-sword.webp");
+}
+
+.debug-tier-editor__icon--bow {
+  background-image: url("./assets/ui/shop/category-bow.webp");
+}
+
+.debug-tier-editor__icon--shield {
+  background-image: url("./assets/shop-icons/shield-common-03.webp");
+}
+
+.debug-tier-editor__icon--shuriken {
+  background-image: url("./assets/ui/shop/category-shuriken.webp");
+}
+
 .debug-tier-editor__difficulty {
   min-width: 0;
 }
@@ -8222,6 +8302,133 @@ body.debug-mode-hud .battle-screen .status-strip {
   color: #ffd384;
   font-size: 0.62rem;
   font-weight: 900;
+}
+
+.debug-tier-editor__pool-grid {
+  min-width: 100%;
+  overflow-x: auto;
+  display: grid;
+  grid-template-columns: minmax(82px, 1.2fr) repeat(5, minmax(64px, 0.86fr));
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid rgba(255, 211, 132, 0.32);
+  border-radius: 7px;
+  background: rgba(22, 7, 3, 0.18);
+}
+
+.debug-tier-editor__pool-header,
+.debug-tier-editor__pool-rarity,
+.debug-tier-editor__pool-cell {
+  min-width: 0;
+  min-height: 27px;
+  display: grid;
+  align-items: center;
+}
+
+.debug-tier-editor__pool-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 4px;
+  color: #ffd384;
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.debug-tier-editor__pool-header--rarity {
+  display: grid;
+  align-items: center;
+  justify-content: start;
+  text-align: left;
+}
+
+.debug-tier-editor__pool-header .debug-tier-editor__icon {
+  width: 17px;
+  height: 17px;
+}
+
+.debug-tier-editor__pool-rarity {
+  --debug-tier-rarity: #927446;
+  --debug-tier-rarity-light: #d8c08a;
+  --debug-tier-rarity-soft: rgba(146, 116, 70, 0.24);
+  --debug-tier-rarity-dark: #3d2b17;
+  padding: 0 7px;
+  border: 1px solid var(--debug-tier-rarity);
+  border-left-width: 4px;
+  border-radius: 5px;
+  color: var(--debug-tier-rarity-light);
+  background:
+    linear-gradient(90deg, var(--debug-tier-rarity-soft), rgba(22, 7, 3, 0.42)),
+    linear-gradient(180deg, rgba(35, 10, 4, 0.86), rgba(16, 5, 2, 0.86));
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #160703;
+}
+
+.debug-tier-editor__pool-cell {
+  --debug-tier-rarity: #927446;
+  --debug-tier-rarity-light: #d8c08a;
+  --debug-tier-rarity-soft: rgba(146, 116, 70, 0.14);
+  padding: 2px;
+  border: 1px solid rgba(255, 211, 132, 0.16);
+  border-radius: 5px;
+  background: linear-gradient(180deg, var(--debug-tier-rarity-soft), rgba(22, 7, 3, 0.08));
+}
+
+.debug-tier-editor__pool-rarity--common,
+.debug-tier-editor__pool-cell--common {
+  --debug-tier-rarity: #927446;
+  --debug-tier-rarity-light: #d8c08a;
+  --debug-tier-rarity-soft: rgba(146, 116, 70, 0.24);
+}
+
+.debug-tier-editor__pool-rarity--uncommon,
+.debug-tier-editor__pool-cell--uncommon {
+  --debug-tier-rarity: #39743b;
+  --debug-tier-rarity-light: #82b35b;
+  --debug-tier-rarity-soft: rgba(57, 116, 59, 0.28);
+}
+
+.debug-tier-editor__pool-rarity--rare,
+.debug-tier-editor__pool-cell--rare {
+  --debug-tier-rarity: #2a78b8;
+  --debug-tier-rarity-light: #77b9e9;
+  --debug-tier-rarity-soft: rgba(42, 120, 184, 0.32);
+}
+
+.debug-tier-editor__pool-rarity--epic,
+.debug-tier-editor__pool-cell--epic {
+  --debug-tier-rarity: #7f39ad;
+  --debug-tier-rarity-light: #bd78df;
+  --debug-tier-rarity-soft: rgba(127, 57, 173, 0.34);
+}
+
+.debug-tier-editor__pool-rarity--legendary,
+.debug-tier-editor__pool-cell--legendary {
+  --debug-tier-rarity: #b4651c;
+  --debug-tier-rarity-light: #e9aa46;
+  --debug-tier-rarity-soft: rgba(180, 101, 28, 0.34);
+}
+
+.debug-tier-editor__pool-rarity--mythical,
+.debug-tier-editor__pool-cell--mythical {
+  --debug-tier-rarity: #9d1824;
+  --debug-tier-rarity-light: #e1575d;
+  --debug-tier-rarity-soft: rgba(157, 24, 36, 0.36);
+}
+
+.debug-tier-editor__pool-input {
+  width: 100%;
+  min-width: 0;
+  height: 27px;
+  border-color: var(--debug-tier-rarity);
+  padding: 2px 5px;
+  text-align: center;
 }
 
 .debug-boss-editor__boss-row {

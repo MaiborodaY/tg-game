@@ -290,8 +290,16 @@ test("vite dev middleware writes generated arena tiers", () => {
   assert.match(source, /writeGeneratedArenaTierRecords/);
   assert.match(source, /formatGeneratedArenaTiersSource/);
   assert.match(source, /upsertGeneratedArenaTierRecords/);
+  assert.match(source, /weaponChance/);
+  assert.match(source, /bowChance/);
+  assert.match(source, /shieldChance/);
+  assert.match(source, /shurikenChance/);
+  assert.match(source, /hasArenaTierEquipmentPoolRollChance/);
+  assert.doesNotMatch(source, /arena tier opponent name/);
   assert.match(generatedTierSource, /GENERATED_ARENA_TIERS/);
   assert.match(generatedTierJson, /dust_arena_brawler/);
+  assert.doesNotMatch(generatedTierSource, /Training Dummy|Grumbus|Dust Arena Veteran/);
+  assert.doesNotMatch(generatedTierJson, /Training Dummy|Grumbus|Dust Arena Veteran/);
 });
 
 test("vite dev middleware saves selected arena tier background defaults", () => {
