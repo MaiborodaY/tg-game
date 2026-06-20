@@ -77,6 +77,13 @@ const generatedItems = {
     equipmentSlot: "weaponMain",
     damageBonus: 2,
   },
+  scroll_crack_armor_01: {
+    id: "scroll_crack_armor_01",
+    name: "Crack Armor Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+  },
   cloth_breastplate_01: {
     id: "cloth_breastplate_01",
     name: "Cloth Breastplate 01",
@@ -99,13 +106,15 @@ const shopPresentation = loadTypeScriptModule("../src/shopPresentation.ts", {
         areHeroItemsEquipped: () => false,
         areHeroItemsOwned: () => false,
         areHeroItemsConsumable: (itemIds) =>
-          itemIds.every((itemId) => generatedItems[itemId]?.weaponClass === "shuriken"),
+          itemIds.every((itemId) => generatedItems[itemId]?.weaponClass === "shuriken" || generatedItems[itemId]?.kind === "scroll"),
         canHeroEquipItems: () => true,
         deriveHeroStats: (hero) => ({ meleeDamagePercentBonus: hero.meleeDamagePercentBonus ?? 0 }),
         getHeroConsumableMaxQuantity: () => 0,
         getHeroItemQuantity: () => 0,
+        getHeroRemainingScrollCapacity: (hero) => hero.scrollCapacity ?? 0,
         getHeroItemRequirementChecks: () => [],
         getHeroItemWeaponClass: (item) => item?.weaponClass ?? "sword",
+        isHeroScrollItemId: (itemId) => generatedItems[itemId]?.kind === "scroll",
       };
     }
 
@@ -131,4 +140,9 @@ test("shop display damage scales melee weapons by strength while leaving ranged 
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["cloth_breastplate_01"], "armor"), 3);
   assert.equal(shopPresentation.getEquippedShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 2);
   assert.equal(shopPresentation.getEquippedShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 5);
+});
+
+test("scroll shop products use the shared scroll inventory cap", () => {
+  assert.equal(shopPresentation.getShopProductActionState({ gold: 100, scrollCapacity: 1 }, ["scroll_crack_armor_01"], 30), "buy");
+  assert.equal(shopPresentation.getShopProductActionState({ gold: 100, scrollCapacity: 0 }, ["scroll_crack_armor_01"], 30), "max");
 });

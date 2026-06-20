@@ -1,7 +1,13 @@
 import {
   HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
+  HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
+  HERO_FIREBALL_SCROLL_ITEM_ID,
+  HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
+  HERO_WARD_SCROLL_ITEM_ID,
   getHeroConsumableMaxQuantity,
   getHeroItemQuantity,
+  getHeroScrollQuantity,
+  isHeroScrollItemId,
   type HeroItemId,
   type HeroState,
 } from "./hero";
@@ -18,6 +24,7 @@ import {
   getShopRarityLabel,
   type ShopItemRarity,
 } from "./shopPresentation";
+import { getShopProductIconUrl } from "./shopItemIcons";
 
 export interface MagicProduct {
   id: string;
@@ -52,6 +59,38 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     itemIds: [HERO_CRACK_ARMOR_SCROLL_ITEM_ID],
     rarity: "common",
     effect: "Breaks one random armor piece in battle",
+  },
+  {
+    id: "fireball_scroll",
+    name: "Fireball Scroll",
+    price: 30,
+    itemIds: [HERO_FIREBALL_SCROLL_ITEM_ID],
+    rarity: "common",
+    effect: "Deals 5 direct damage in battle",
+  },
+  {
+    id: "ward_scroll",
+    name: "Ward Scroll",
+    price: 30,
+    itemIds: [HERO_WARD_SCROLL_ITEM_ID],
+    rarity: "common",
+    effect: "Absorbs the next incoming hit",
+  },
+  {
+    id: "precise_strike_scroll",
+    name: "Precise Strike Scroll",
+    price: 30,
+    itemIds: [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID],
+    rarity: "common",
+    effect: "Makes your next strike guaranteed",
+  },
+  {
+    id: "double_strike_scroll",
+    name: "Double Strike Scroll",
+    price: 30,
+    itemIds: [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID],
+    rarity: "common",
+    effect: "Makes your next strike hit twice",
   },
 ];
 
@@ -276,7 +315,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     card.classList.toggle("armory-shop__option--max", actionState === "max");
     card.classList.toggle("armory-shop__option--for-sale", actionState === "buy");
     icon.className = "armory-shop__product-icon magic-shop__product-icon";
-    icon.src = SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+    icon.src = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
     icon.alt = "";
     icon.decoding = "async";
     icon.draggable = false;
@@ -313,6 +352,10 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
 function getMagicProductQuantity(hero: HeroState, product: MagicProduct): number {
   const itemId = product.itemIds[0];
+
+  if (itemId && isHeroScrollItemId(itemId)) {
+    return Math.min(getHeroScrollQuantity(hero), getHeroConsumableMaxQuantity(itemId));
+  }
 
   return itemId ? Math.min(getHeroItemQuantity(hero, itemId), getHeroConsumableMaxQuantity(itemId)) : 0;
 }

@@ -182,7 +182,8 @@ test("classic action bar swaps semicircle wheel layouts by distance", () => {
   assert.equal(classicActionBarSource.includes('"--classic-wheel-fit-scale"'), true);
   assert.equal(classicActionBarSource.includes("createClassicButtonLayer"), true);
   assert.equal(classicActionBarSource.includes("projectSlotForWheelAngle"), true);
-  assert.equal(classicActionBarSource.includes("const layers = [createClassicButtonLayer(onAction), createClassicButtonLayer(onAction)]"), true);
+  assert.equal(classicActionBarSource.includes("const handleActionButtonClick = (actionId: ActionId, button: HTMLButtonElement): void =>"), true);
+  assert.equal(classicActionBarSource.includes("const layers = [createClassicButtonLayer(handleActionButtonClick), createClassicButtonLayer(handleActionButtonClick)]"), true);
   assert.equal(classicActionBarSource.includes('button.style.setProperty("--classic-slot-x"'), true);
   assert.equal(classicActionBarSource.includes('button.style.setProperty("--classic-slot-y"'), true);
   assert.equal(stylesSource.includes(".classic-action-bar__wheel::before"), true);

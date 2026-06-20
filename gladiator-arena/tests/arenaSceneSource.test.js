@@ -275,8 +275,8 @@ test("arena action turns can wait for animation completion", () => {
   assert.equal(arenaSceneSource.includes("sync(nextState: CombatState, options: ArenaSyncOptions = {}): Promise<void>"), true);
   assert.equal(arenaSceneSource.includes("const prepared = await this.prepareStateVisuals(nextState, { animateActions: true, hudState: options.hudState });"), true);
   assert.equal(arenaSceneSource.includes("const actionAnimations: Promise<void>[] = []"), true);
-  assert.equal(arenaSceneSource.includes("playerActionAnimation = animateAction("), true);
-  assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateAction("), true);
+  assert.equal(arenaSceneSource.includes("playerActionAnimation = animateActionSequence("), true);
+  assert.equal(arenaSceneSource.includes("enemyActionAnimation = animateActionSequence("), true);
   assert.equal(arenaSceneSource.includes("playerActionAnimation.done"), true);
   assert.equal(arenaSceneSource.includes("const playerResultDelay = playerActionAnimation?.impact;"), true);
   assert.equal(arenaSceneSource.includes("const enemyResultDelay = enemyActionAnimation?.impact;"), true);

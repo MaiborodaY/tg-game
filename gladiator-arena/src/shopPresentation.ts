@@ -7,10 +7,12 @@ import {
   canHeroEquipItems,
   getHeroConsumableMaxQuantity,
   getHeroItemQuantity,
+  getHeroRemainingScrollCapacity,
   getHeroItemRequirementChecks,
   deriveHeroStats,
   getHeroItemWeaponClass,
   hasHeroUnlockedShopRarity,
+  isHeroScrollItemId,
   type HeroAttributeKey,
   type HeroItemDefinition,
   type HeroItemId,
@@ -317,6 +319,10 @@ function isMeleeWeaponShopItem(item: HeroItemDefinition | undefined): item is He
 }
 
 function isShopConsumableAtMax(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+  if (itemIds.some(isHeroScrollItemId)) {
+    return getHeroRemainingScrollCapacity(hero) <= 0;
+  }
+
   return itemIds.every((itemId) => {
     const maxQuantity = getHeroConsumableMaxQuantity(itemId);
 

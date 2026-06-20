@@ -981,23 +981,35 @@ test("shurikens buy as capped consumables without equipping", () => {
   assert.equal(blockedPurchase, secondPurchase);
 });
 
-test("crack armor scrolls buy as capped consumables without equipping", () => {
+test("scrolls share one capped consumable inventory pool without equipping", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
-    gold: 100,
+    gold: 120,
   };
-  const scrollItemId = hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
-  const firstPurchase = hero.buyAndEquipHeroItems(baseHero, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:01:00.000Z");
-  const secondPurchase = hero.buyAndEquipHeroItems(firstPurchase, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:02:00.000Z");
-  const thirdPurchase = hero.buyAndEquipHeroItems(secondPurchase, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:03:00.000Z");
-  const blockedPurchase = hero.buyAndEquipHeroItems(thirdPurchase, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:04:00.000Z");
+  const crackScrollId = hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
+  const fireballScrollId = hero.HERO_FIREBALL_SCROLL_ITEM_ID;
+  const wardScrollId = hero.HERO_WARD_SCROLL_ITEM_ID;
+  const preciseStrikeScrollId = hero.HERO_PRECISE_STRIKE_SCROLL_ITEM_ID;
+  const doubleStrikeScrollId = hero.HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID;
+  const firstPurchase = hero.buyAndEquipHeroItems(baseHero, { itemIds: [crackScrollId], price: 30 }, "2026-01-01T00:01:00.000Z");
+  const secondPurchase = hero.buyAndEquipHeroItems(firstPurchase, { itemIds: [fireballScrollId], price: 30 }, "2026-01-01T00:02:00.000Z");
+  const thirdPurchase = hero.buyAndEquipHeroItems(secondPurchase, { itemIds: [doubleStrikeScrollId], price: 30 }, "2026-01-01T00:03:00.000Z");
+  const blockedPurchase = hero.buyAndEquipHeroItems(thirdPurchase, { itemIds: [wardScrollId], price: 30 }, "2026-01-01T00:04:00.000Z");
 
-  assert.equal(hero.HERO_ITEM_CATALOG[scrollItemId]?.kind, "scroll");
-  assert.equal(hero.areHeroItemsConsumable([scrollItemId]), true);
-  assert.equal(hero.getHeroConsumableMaxQuantity(scrollItemId), hero.HERO_SCROLL_MAX_QUANTITY);
-  assert.equal(thirdPurchase.gold, 10);
+  for (const scrollItemId of [crackScrollId, fireballScrollId, doubleStrikeScrollId]) {
+    assert.equal(hero.HERO_ITEM_CATALOG[scrollItemId]?.kind, "scroll");
+    assert.equal(hero.areHeroItemsConsumable([scrollItemId]), true);
+    assert.equal(hero.getHeroConsumableMaxQuantity(scrollItemId), hero.HERO_SCROLL_MAX_QUANTITY);
+    assert.equal(hero.getHeroItemQuantity(thirdPurchase, scrollItemId), 1);
+  }
+
+  assert.equal(hero.HERO_ITEM_CATALOG[wardScrollId]?.kind, "scroll");
+  assert.equal(hero.HERO_ITEM_CATALOG[preciseStrikeScrollId]?.kind, "scroll");
+  assert.equal(hero.getHeroItemQuantity(thirdPurchase, wardScrollId), 0);
+  assert.equal(thirdPurchase.gold, 30);
   assert.equal(thirdPurchase.equipment.weaponMain, null);
-  assert.equal(hero.getHeroItemQuantity(thirdPurchase, scrollItemId), hero.HERO_SCROLL_MAX_QUANTITY);
+  assert.equal(hero.getHeroScrollQuantity(thirdPurchase), hero.HERO_SCROLL_MAX_QUANTITY);
+  assert.equal(hero.getHeroRemainingScrollCapacity(thirdPurchase), 0);
   assert.equal(blockedPurchase, thirdPurchase);
 });
 
@@ -1042,6 +1054,108 @@ test("combat state exposes scroll count and rewards persist spent scrolls", () =
     player: {
       ...combatState.player,
       scrollCount: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, scrollItemId), 1);
+});
+
+test("combat state exposes fireball scroll count and rewards persist spent fireball scrolls", () => {
+  const scrollItemId = hero.HERO_FIREBALL_SCROLL_ITEM_ID;
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: scrollItemId, quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.fireballScrollCount, 2);
+  assert.equal(combatState.player.fireballScrollItemId, scrollItemId);
+
+  const spentCombatState = {
+    ...combatState,
+    result: "lose",
+    player: {
+      ...combatState.player,
+      fireballScrollCount: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, scrollItemId), 1);
+});
+
+test("combat state exposes ward scroll count and rewards persist spent ward scrolls", () => {
+  const scrollItemId = hero.HERO_WARD_SCROLL_ITEM_ID;
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: scrollItemId, quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.wardScrollCount, 2);
+  assert.equal(combatState.player.wardScrollItemId, scrollItemId);
+  assert.equal(combatState.player.wardHits, 0);
+
+  const spentCombatState = {
+    ...combatState,
+    result: "lose",
+    player: {
+      ...combatState.player,
+      wardScrollCount: 1,
+      wardHits: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, scrollItemId), 1);
+});
+
+test("combat state exposes precise strike scroll count and rewards persist spent precise strike scrolls", () => {
+  const scrollItemId = hero.HERO_PRECISE_STRIKE_SCROLL_ITEM_ID;
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: scrollItemId, quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.preciseStrikeScrollCount, 2);
+  assert.equal(combatState.player.preciseStrikeScrollItemId, scrollItemId);
+  assert.equal(combatState.player.preciseStrikeHits, 0);
+
+  const spentCombatState = {
+    ...combatState,
+    result: "win",
+    player: {
+      ...combatState.player,
+      preciseStrikeScrollCount: 1,
+      preciseStrikeHits: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, scrollItemId), 1);
+});
+
+test("combat state exposes double strike scroll count and rewards persist spent double strike scrolls", () => {
+  const scrollItemId = hero.HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID;
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: scrollItemId, quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.doubleStrikeScrollCount, 2);
+  assert.equal(combatState.player.doubleStrikeScrollItemId, scrollItemId);
+  assert.equal(combatState.player.doubleStrikeHits, 0);
+
+  const spentCombatState = {
+    ...combatState,
+    result: "win",
+    player: {
+      ...combatState.player,
+      doubleStrikeScrollCount: 1,
+      doubleStrikeHits: 1,
     },
   };
   const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);

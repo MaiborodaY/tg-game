@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const armoryShopSource = readFileSync(resolve(currentDir, "../src/armoryShopUi.ts"), "utf8");
 const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.ts"), "utf8");
+const magicShopSource = readFileSync(resolve(currentDir, "../src/magicShopUi.ts"), "utf8");
 const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
@@ -208,7 +209,7 @@ test("armory shop locked products are dimmed and show level requirement ribbons"
 });
 
 test("city shops report their bottom menu position for hero centering", () => {
-  [armoryShopSource, weaponShopSource].forEach((source) => {
+  [armoryShopSource, weaponShopSource, magicShopSource].forEach((source) => {
     assert.equal(source.includes("onLayoutChange?: (menuTopY?: number) => void"), true);
     assert.equal(source.includes("window.addEventListener(\"resize\", scheduleLayoutSync);"), true);
     assert.equal(source.includes("window.visualViewport?.addEventListener(\"resize\", scheduleLayoutSync);"), true);
@@ -225,7 +226,7 @@ test("city shops report their bottom menu position for hero centering", () => {
 
   assert.equal(mainSource.includes("function syncCityShopLayout(menuTopY?: number): void"), true);
   assert.equal(mainSource.includes("cityScene?.setShopMenuTop(menuTopY);"), true);
-  assert.equal(mainSource.match(/onLayoutChange: syncCityShopLayout/g)?.length, 2);
+  assert.equal(mainSource.match(/onLayoutChange: syncCityShopLayout/g)?.length, 3);
 });
 
 test("city shop mode has a screen frame and compact title plaque", () => {
@@ -524,13 +525,15 @@ test("shop purchases sync only the active shop state after hero changes", () => 
   assert.notEqual(end, -1);
   assert.equal(armoryShopSource.includes("syncHeroState: (options?: ArmoryShopHeroSyncOptions) => void"), true);
   assert.equal(weaponShopSource.includes("syncHeroState: (options?: WeaponShopHeroSyncOptions) => void"), true);
+  assert.equal(magicShopSource.includes("syncHeroState: () => void"), true);
   assert.equal(armoryShopSource.includes("function syncHeroState(syncOptions: ArmoryShopHeroSyncOptions = {}): void"), true);
   assert.equal(weaponShopSource.includes("function syncHeroState(syncOptions: WeaponShopHeroSyncOptions = {}): void"), true);
   assert.equal(handleShopBuySource.includes("const previousHero = hero;"), true);
   assert.equal(handleShopBuySource.includes("syncShopHeroStateForProduct(product, previousHero);"), true);
   assert.equal(handleShopBuySource.includes("armoryShop?.render();"), false);
   assert.equal(handleShopBuySource.includes("weaponShop?.render();"), false);
-  assert.match(mainSource, /function syncShopHeroStateForProduct\(product: ArmoryProduct \| WeaponProduct, previousHero: HeroState\): void[\s\S]*armoryShop\?\.syncHeroState\(\{ product, previousHero \}\);[\s\S]*weaponShop\?\.syncHeroState\(\{ product, previousHero \}\);/);
+  assert.equal(handleShopBuySource.includes("magicShop?.render();"), false);
+  assert.match(mainSource, /function syncShopHeroStateForProduct\(product: CityShopProduct, previousHero: HeroState\): void[\s\S]*if \(isMagicShopProduct\(product\)\) \{[\s\S]*magicShop\?\.syncHeroState\(\);[\s\S]*armoryShop\?\.syncHeroState\(\{ product, previousHero \}\);[\s\S]*weaponShop\?\.syncHeroState\(\{ product, previousHero \}\);/);
   assert.equal(armoryShopSource.includes("function refreshRenderedProductButtons"), false);
   assert.equal(weaponShopSource.includes("function refreshRenderedProductButtons"), false);
   assert.match(armoryShopSource, /function syncHeroState\(syncOptions: ArmoryShopHeroSyncOptions = \{\}\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshChangedProductButtons\(hero, syncOptions\);[\s\S]*renderSelectedProduct\(hero\);/);

@@ -15,7 +15,7 @@ import {
   canFighterSwitchWeapon,
   distanceBand,
   isActionHitChanceRestBoosted,
-  getFighterScrollCount,
+  getFighterSpellbookScrollCount,
   getFighterShurikenCount,
   getFighterClinchRange,
   getActionTitle,
@@ -26,6 +26,14 @@ import {
   type CombatState,
 } from "./combat";
 import type { ActionButtonOffsetKey, ClassicActionButtonSlotTuning, ClassicActionWheelMode } from "./debugTuning";
+import {
+  createSpellbookMenu,
+  getSpellbookButtonDetail,
+  getSpellbookButtonTitle,
+  isSpellbookButtonAction,
+  shouldEnableSpellbookButton,
+  shouldShowSpellbookButton,
+} from "./spellbookMenu";
 
 type ClassicActionSlotTuning = Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
 type TuningProvider = () => ActionTokenTuning & { classicActionButtonSlots?: ClassicActionSlotTuning };
@@ -119,9 +127,27 @@ export function mountClassicActionBar(
 
   const wheel = document.createElement("div");
   const wheelShadow = document.createElement("div");
-  const layers = [createClassicButtonLayer(onAction), createClassicButtonLayer(onAction)];
-  let activeLayer = layers[0];
   let lastState: CombatState | undefined;
+  const spellbookMenu = createSpellbookMenu(host, () => lastState, onAction);
+  const handleActionButtonClick = (actionId: ActionId, button: HTMLButtonElement): void => {
+    button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
+
+    if (button.disabled) {
+      return;
+    }
+
+    pressActionTokenButton(button);
+
+    if (lastState && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(lastState)) {
+      spellbookMenu.toggle(button);
+      return;
+    }
+
+    spellbookMenu.close();
+    onAction(actionId);
+  };
+  const layers = [createClassicButtonLayer(handleActionButtonClick), createClassicButtonLayer(handleActionButtonClick)];
+  let activeLayer = layers[0];
   let wheelRotationAngle = 0;
   let isWheelTurning = false;
   let wheelTurnTimer: number | undefined;
@@ -213,7 +239,7 @@ export function mountClassicActionBar(
       syncActionTokenButton(button, icon, actionId, tuning, buttonScale, getActionTokenIconUrl(actionId, state));
       const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, projectedSlot, isVisible, wheelRotationAngle);
       const costLabel = syncClassicActionCostBadge(costBadge, actionId, state, projectedSlot, isVisible, isDimmed, wheelRotationAngle, buttonScale);
-      button.disabled = !isInteractiveLayer || !isVisible || !canUseAction(state, actionId, "player");
+      button.disabled = !isInteractiveLayer || !isVisible || !isClassicActionButtonEnabled(state, actionId);
       button.tabIndex = isVisible && isInteractiveLayer ? 0 : -1;
       button.setAttribute("aria-hidden", isVisible ? "false" : "true");
       button.classList.toggle("classic-action-bar__button--visible", isVisible);
@@ -222,11 +248,15 @@ export function mountClassicActionBar(
       button.classList.toggle("action-arc__button--exhausted-rest", isVisible && actionId === "rest" && isPlayerExhausted(state));
       chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
 
-      const title = getActionTitle(actionId, state.player);
+      const title = isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state) ? getSpellbookButtonTitle() : getActionTitle(actionId, state.player);
+      const detail =
+        isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state) ? getSpellbookButtonDetail() : actions[actionId].detail;
 
-      button.setAttribute("aria-label", `${title} ${actions[actionId].detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
-      button.title = `${title} ${actions[actionId].detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
+      button.setAttribute("aria-label", `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
+      button.title = `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
     }
+
+    spellbookMenu.sync();
   }
 
   function startWheelTransition(nextWheelMode: ClassicWheelMode): void {
@@ -287,6 +317,7 @@ export function mountClassicActionBar(
 
       window.removeEventListener("arena-debug-tuning-change", syncFromDebugTuning);
       window.removeEventListener("resize", syncWheelFitScale);
+      spellbookMenu.destroy();
       actionBarRoot.replaceChildren();
     },
   };
@@ -387,10 +418,18 @@ function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId): bo
   }
 
   if (actionId === "scroll") {
-    return getFighterScrollCount(state.player) > 0 && state.enemy.armor > 0;
+    return getFighterSpellbookScrollCount(state.player) > 0;
   }
 
   return true;
+}
+
+function isClassicActionButtonEnabled(state: CombatState, actionId: ActionId): boolean {
+  if (isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state)) {
+    return shouldEnableSpellbookButton(state);
+  }
+
+  return canUseAction(state, actionId, "player");
 }
 
 function getDefaultClassicActionSlots(wheelMode: ClassicWheelMode): ClassicActionSlot[] {
@@ -401,7 +440,7 @@ function getDefaultClassicActionSlots(wheelMode: ClassicWheelMode): ClassicActio
   return wheelMode === "clinch" ? CLASSIC_CLINCH_SLOTS : CLASSIC_DISTANCE_SLOTS;
 }
 
-function createClassicButtonLayer(onAction: (actionId: ActionId) => void): ClassicButtonLayer {
+function createClassicButtonLayer(onAction: (actionId: ActionId, button: HTMLButtonElement) => void): ClassicButtonLayer {
   const element = document.createElement("div");
   const buttons = new Map<ActionId, HTMLButtonElement>();
   const chanceBadges = new Map<ActionId, HTMLSpanElement>();
@@ -425,14 +464,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId) => void): Class
     chanceBadge.setAttribute("aria-hidden", "true");
     costBadge.classList.add("classic-action-bar__cost");
     button.append(icon);
-    button.addEventListener("click", () => {
-      button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
-
-      if (!button.disabled) {
-        pressActionTokenButton(button);
-        onAction(actionId);
-      }
-    });
+    button.addEventListener("click", () => onAction(actionId, button));
     buttons.set(actionId, button);
     chanceBadges.set(actionId, chanceBadge);
     costBadges.set(actionId, costBadge);

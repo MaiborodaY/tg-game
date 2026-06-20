@@ -17,7 +17,7 @@ import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
 import {
   MAX_STAMINA,
   canFighterSwitchWeapon,
-  getFighterScrollCount,
+  getFighterSpellbookScrollCount,
   getFighterShurikenCount,
   isBowFighter,
   isFighterInClinchRange,
@@ -107,7 +107,11 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   heavy: { label: "STRONG", detail: "4 dmg" },
   switchWeapon: { label: "SWAP", detail: "Weapon" },
   shuriken: { label: "STAR", detail: "Throw" },
-  scroll: { label: "SCROLL", detail: "Crack" },
+  scroll: { label: "SPELL", detail: "Book" },
+  fireball: { label: "FIRE", detail: "5 dmg" },
+  ward: { label: "WARD", detail: "Absorb" },
+  preciseStrike: { label: "TRUE", detail: "Strike" },
+  doubleStrike: { label: "2X", detail: "Strike" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
@@ -146,6 +150,14 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
       return 21;
     case "scroll":
       return 58;
+    case "fireball":
+      return 72;
+    case "ward":
+      return 86;
+    case "preciseStrike":
+      return 100;
+    case "doubleStrike":
+      return 114;
     case "taunt":
       return tuning?.actionTauntArcAngle ?? DEFAULT_ACTION_TAUNT_ANGLE;
     case "rest":
@@ -234,7 +246,7 @@ function shouldShowActionArcSlot(state: CombatState, actionId: ActionId): boolea
   }
 
   if (actionId === "scroll") {
-    return getFighterScrollCount(state.player) > 0 && state.enemy.armor > 0;
+    return getFighterSpellbookScrollCount(state.player) > 0;
   }
 
   return true;

@@ -1,15 +1,37 @@
-import { HERO_ITEM_CATALOG, type HeroItemId } from "./hero";
+import {
+  HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
+  HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
+  HERO_FIREBALL_SCROLL_ITEM_ID,
+  HERO_ITEM_CATALOG,
+  HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
+  HERO_WARD_SCROLL_ITEM_ID,
+  type HeroItemId,
+} from "./hero";
 import { GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
 
-const SHOP_ICON_ASSET_URLS = import.meta.glob("./assets/shop-icons/*.webp", {
+const SHOP_ICON_ASSET_URLS = import.meta.glob("./assets/shop-icons/*.{png,webp}", {
   eager: true,
   query: "?url",
   import: "default",
 }) as Record<string, string>;
 
-const SHOP_ITEM_ICON_URLS = Object.fromEntries(
-  GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, getShopIconAssetUrl(record.asset.key)]),
-) as Partial<Record<HeroItemId, string>>;
+const SCROLL_SHOP_ICON_ASSET_KEYS: Partial<Record<HeroItemId, string>> = {
+  [HERO_CRACK_ARMOR_SCROLL_ITEM_ID]: "scroll-crack-armor-01",
+  [HERO_FIREBALL_SCROLL_ITEM_ID]: "scroll-fireball-01",
+  [HERO_WARD_SCROLL_ITEM_ID]: "scroll-ward-01",
+  [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID]: "scroll-precise-strike-01",
+  [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]: "scroll-double-strike-01",
+};
+
+const SHOP_ITEM_ICON_URLS = {
+  ...Object.fromEntries(GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, getShopIconAssetUrl(record.asset.key)])),
+  ...Object.fromEntries(
+    Object.entries(SCROLL_SHOP_ICON_ASSET_KEYS).map(([itemId, assetKey]) => [
+      itemId,
+      assetKey ? getShopIconAssetUrl(assetKey) : undefined,
+    ]),
+  ),
+} as Partial<Record<HeroItemId, string>>;
 
 let shopItemIconPrewarmPromise: Promise<void> | undefined;
 const shopItemIconPrewarmImages = new Set<HTMLImageElement>();
@@ -43,7 +65,7 @@ export function prewarmShopItemIconsForBrowserCache(): Promise<void> {
 }
 
 function getShopIconAssetUrl(assetKey: string): string | undefined {
-  return SHOP_ICON_ASSET_URLS[`./assets/shop-icons/${assetKey}.webp`];
+  return SHOP_ICON_ASSET_URLS[`./assets/shop-icons/${assetKey}.webp`] ?? SHOP_ICON_ASSET_URLS[`./assets/shop-icons/${assetKey}.png`];
 }
 
 function prewarmShopIconUrl(url: string): Promise<void> {

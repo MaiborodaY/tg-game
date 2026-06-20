@@ -41,7 +41,17 @@ function loadActionArcLayoutModule() {
             canFighterSwitchWeapon: (fighter) =>
               (fighter?.weaponClass === "bow" || (fighter?.bowWeaponClass === "bow" && (fighter?.bowShotsRemaining ?? 0) > 0)) &&
               (fighter?.mainWeaponClass ?? "sword") !== "bow",
+            getFighterFireballScrollCount: (fighter) => Math.max(0, fighter?.fireballScrollCount ?? 0),
+            getFighterScrollCount: (fighter) => Math.max(0, fighter?.scrollCount ?? 0),
             getFighterShurikenCount: (fighter) => Math.max(0, fighter?.shurikenCount ?? 0),
+            getFighterSpellbookScrollCount: (fighter) =>
+              Math.max(0, fighter?.scrollCount ?? 0) +
+              Math.max(0, fighter?.fireballScrollCount ?? 0) +
+              Math.max(0, fighter?.wardScrollCount ?? 0) +
+              Math.max(0, fighter?.preciseStrikeScrollCount ?? 0) +
+              Math.max(0, fighter?.doubleStrikeScrollCount ?? 0),
+            getFighterWardHits: (fighter) => Math.max(0, fighter?.wardHits ?? 0),
+            getFighterWardScrollCount: (fighter) => Math.max(0, fighter?.wardScrollCount ?? 0),
             isBowFighter: (fighter) => fighter?.weaponClass === "bow",
             isFighterInClinchRange: (state, actor) => state.distance <= Math.max(0, state[actor]?.clinchRangeBonus ?? 0),
             isRangedFighter: (fighter) => fighter?.weaponClass === "bow",
@@ -163,6 +173,52 @@ test("shuriken consumables add a throw button without making the fighter ranged"
     ["forward", "back", "lunge", "shuriken", "taunt"],
   );
   assert.equal(labels.shuriken, "STAR");
+});
+
+test("ward scroll consumables add the spellbook button", () => {
+  const readyLayout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, wardScrollCount: 1, wardHits: 0 } }));
+  const activeLayout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, wardScrollCount: 1, wardHits: 1 } }));
+  const labels = Object.fromEntries(readyLayout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(readyLayout.buttons, (button) => button.actionId),
+    ["forward", "back", "lunge", "scroll", "taunt"],
+  );
+  assert.equal(labels.scroll, "SPELL");
+  assert.equal(activeLayout.buttons.some((button) => button.actionId === "scroll"), true);
+});
+
+test("fireball scroll consumables add the spellbook button", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, fireballScrollCount: 1 } }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["forward", "back", "lunge", "scroll", "taunt"],
+  );
+  assert.equal(labels.scroll, "SPELL");
+});
+
+test("precise strike scroll consumables add the spellbook button", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, preciseStrikeScrollCount: 1 } }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["forward", "back", "lunge", "scroll", "taunt"],
+  );
+  assert.equal(labels.scroll, "SPELL");
+});
+
+test("double strike scroll consumables add the spellbook button", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, doubleStrikeScrollCount: 1 } }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["forward", "back", "lunge", "scroll", "taunt"],
+  );
+  assert.equal(labels.scroll, "SPELL");
 });
 
 test("arc button centers stay inside the mobile game frame", () => {

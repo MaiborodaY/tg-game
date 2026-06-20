@@ -10,6 +10,10 @@ export type ActionId =
   | "switchWeapon"
   | "shuriken"
   | "scroll"
+  | "fireball"
+  | "ward"
+  | "preciseStrike"
+  | "doubleStrike"
   | "taunt"
   | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
@@ -41,6 +45,13 @@ interface DamageApplication {
   armorAbsorbed: number;
   armorBroken: boolean;
   removedArmorSlots?: CombatArmorSlotState[];
+  wardAbsorbed?: boolean;
+}
+
+interface WeaponHitResolution {
+  damage: number;
+  blocked: boolean;
+  appliedDamage: DamageApplication;
 }
 
 export interface CombatArmorSlotState {
@@ -77,6 +88,17 @@ export interface FighterState {
   shurikenItemId?: HeroItemId;
   scrollCount?: number;
   scrollItemId?: HeroItemId;
+  fireballScrollCount?: number;
+  fireballScrollItemId?: HeroItemId;
+  wardScrollCount?: number;
+  wardScrollItemId?: HeroItemId;
+  wardHits?: number;
+  preciseStrikeScrollCount?: number;
+  preciseStrikeScrollItemId?: HeroItemId;
+  preciseStrikeHits?: number;
+  doubleStrikeScrollCount?: number;
+  doubleStrikeScrollItemId?: HeroItemId;
+  doubleStrikeHits?: number;
   equipment?: HeroEquipment;
   armorSlots?: CombatArmorSlotState[];
   visualPreset?: EnemyVisualPreset;
@@ -120,6 +142,10 @@ export interface CombatState {
   lastEnemyArmorBroken: boolean;
   lastPlayerRemovedArmorSlots?: CombatArmorSlotState[];
   lastEnemyRemovedArmorSlots?: CombatArmorSlotState[];
+  lastPlayerWardAbsorbed: boolean;
+  lastEnemyWardAbsorbed: boolean;
+  lastPlayerDoubleStrikeRepeat: boolean;
+  lastEnemyDoubleStrikeRepeat: boolean;
   lastPlayerBlocked: boolean;
   lastEnemyBlocked: boolean;
   log: LogEntry[];
@@ -131,6 +157,7 @@ export const MIN_DISTANCE = 0;
 export const MAX_DISTANCE = 4;
 export const START_DISTANCE = 3;
 export const MELEE_RANGE = 0;
+export const FIREBALL_SCROLL_DAMAGE = 5;
 export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
 export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
@@ -253,8 +280,34 @@ export const actions: Record<ActionId, ActionConfig> = {
     id: "scroll",
     title: "Crack Armor Scroll",
     detail: "Break random armor",
-    cost: 2,
+    cost: 0,
     rangeMax: MAX_DISTANCE,
+  },
+  fireball: {
+    id: "fireball",
+    title: "Fireball Scroll",
+    detail: "Deal direct damage",
+    cost: 0,
+    damage: FIREBALL_SCROLL_DAMAGE,
+    rangeMax: MAX_DISTANCE,
+  },
+  ward: {
+    id: "ward",
+    title: "Ward Scroll",
+    detail: "Absorb next hit",
+    cost: 0,
+  },
+  preciseStrike: {
+    id: "preciseStrike",
+    title: "Precise Strike Scroll",
+    detail: "Next strike always hits",
+    cost: 0,
+  },
+  doubleStrike: {
+    id: "doubleStrike",
+    title: "Double Strike Scroll",
+    detail: "Next strike hits twice",
+    cost: 0,
   },
   taunt: {
     id: "taunt",
@@ -274,7 +327,23 @@ export const actions: Record<ActionId, ActionConfig> = {
   },
 };
 
-export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "taunt", "rest"];
+export const actionOrder: ActionId[] = [
+  "forward",
+  "back",
+  "lunge",
+  "light",
+  "medium",
+  "heavy",
+  "switchWeapon",
+  "shuriken",
+  "scroll",
+  "fireball",
+  "ward",
+  "preciseStrike",
+  "doubleStrike",
+  "taunt",
+  "rest",
+];
 
 export function setCombatMovementTuning(nextTuning: Partial<CombatMovementTuning>): void {
   combatMovementTuning = {
@@ -387,6 +456,10 @@ export function freshState(): CombatState {
     lastEnemyArmorBroken: false,
     lastPlayerRemovedArmorSlots: undefined,
     lastEnemyRemovedArmorSlots: undefined,
+    lastPlayerWardAbsorbed: false,
+    lastEnemyWardAbsorbed: false,
+    lastPlayerDoubleStrikeRepeat: false,
+    lastEnemyDoubleStrikeRepeat: false,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
     log: [
@@ -411,6 +484,10 @@ export function getFighterMaxStamina(fighter: FighterState): number {
 export function getActionBlockChance(action: ActionConfig, attacker?: FighterState, defender?: FighterState): number {
   void defender;
 
+  if (isPreciseStrikeBoostedAction(action.id, attacker)) {
+    return 0;
+  }
+
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), 0);
 }
 
@@ -419,11 +496,17 @@ export function getActionBlockChanceForState(state: CombatState, actionId: Actio
   const attacker = actor === "player" ? state.player : state.enemy;
   const defenderOwner = actor === "player" ? "enemy" : "player";
 
+  if (isPreciseStrikeBoostedAction(actionId, attacker)) {
+    return 0;
+  }
+
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestBlockChancePenalty(state, defenderOwner));
 }
 
 export function isActionHitChanceRestBoosted(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
-  return isAttackAction(actionId) && getRestBlockChancePenalty(state, actor === "player" ? "enemy" : "player") > 0;
+  const attacker = actor === "player" ? state.player : state.enemy;
+
+  return !isPreciseStrikeBoostedAction(actionId, attacker) && isAttackAction(actionId) && getRestBlockChancePenalty(state, actor === "player" ? "enemy" : "player") > 0;
 }
 
 function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
@@ -531,6 +614,44 @@ export function getFighterScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.scrollCount ?? 0));
 }
 
+export function getFighterFireballScrollCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.fireballScrollCount ?? 0));
+}
+
+export function getFighterWardScrollCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.wardScrollCount ?? 0));
+}
+
+export function getFighterPreciseStrikeScrollCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.preciseStrikeScrollCount ?? 0));
+}
+
+export function getFighterDoubleStrikeScrollCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.doubleStrikeScrollCount ?? 0));
+}
+
+export function getFighterSpellbookScrollCount(fighter: FighterState): number {
+  return (
+    getFighterScrollCount(fighter) +
+    getFighterFireballScrollCount(fighter) +
+    getFighterWardScrollCount(fighter) +
+    getFighterPreciseStrikeScrollCount(fighter) +
+    getFighterDoubleStrikeScrollCount(fighter)
+  );
+}
+
+export function getFighterWardHits(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.wardHits ?? 0));
+}
+
+export function getFighterPreciseStrikeHits(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.preciseStrikeHits ?? 0));
+}
+
+export function getFighterDoubleStrikeHits(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.doubleStrikeHits ?? 0));
+}
+
 export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
   if (actionId === "switchWeapon" && actor) {
     return isBowFighter(actor) ? "Draw Steel" : "Draw Bow";
@@ -558,7 +679,7 @@ export function availableActionIds(state: CombatState, actor: TurnOwner): Action
 }
 
 function doesActionEndTurn(actionId: ActionId): boolean {
-  return actionId !== "switchWeapon";
+  return actionId !== "switchWeapon" && actionId !== "preciseStrike" && actionId !== "doubleStrike";
 }
 
 export function getFighterClinchRange(fighter?: FighterState): number {
@@ -594,7 +715,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   const fighterClinchRange = getFighterClinchRange(fighter);
   const fighterInClinch = isFighterInClinchRange(state, actor);
 
-  if (actor === "player" && fighter.stamina <= 0 && actionId !== "rest") {
+  if (actor === "player" && fighter.stamina <= 0 && actionId !== "rest" && !isScrollAction(actionId)) {
     return false;
   }
 
@@ -626,6 +747,22 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
     const defender = actor === "player" ? state.enemy : state.player;
 
     return getFighterScrollCount(fighter) > 0 && hasCrackableArmorSlot(defender);
+  }
+
+  if (actionId === "fireball") {
+    return getFighterFireballScrollCount(fighter) > 0;
+  }
+
+  if (actionId === "ward") {
+    return getFighterWardScrollCount(fighter) > 0 && getFighterWardHits(fighter) <= 0;
+  }
+
+  if (actionId === "preciseStrike") {
+    return getFighterPreciseStrikeScrollCount(fighter) > 0 && getFighterPreciseStrikeHits(fighter) <= 0;
+  }
+
+  if (actionId === "doubleStrike") {
+    return getFighterDoubleStrikeScrollCount(fighter) > 0 && getFighterDoubleStrikeHits(fighter) <= 0;
   }
 
   if (isAttackAction(actionId) && isBowFighter(fighter)) {
@@ -735,6 +872,10 @@ function cloneStateForTurn(current: CombatState): CombatState {
     lastEnemyArmorBroken: false,
     lastPlayerRemovedArmorSlots: undefined,
     lastEnemyRemovedArmorSlots: undefined,
+    lastPlayerWardAbsorbed: false,
+    lastEnemyWardAbsorbed: false,
+    lastPlayerDoubleStrikeRepeat: false,
+    lastEnemyDoubleStrikeRepeat: false,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
   };
@@ -879,27 +1020,70 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     damage = appliedDamage.armorAbsorbed;
   }
 
+  if (actionId === "fireball" && getFighterFireballScrollCount(attacker) > 0) {
+    attacker.fireballScrollCount = getFighterFireballScrollCount(attacker) - 1;
+    damage = FIREBALL_SCROLL_DAMAGE;
+    if (consumeWardHit(defender)) {
+      damage = 0;
+      appliedDamage = { armorAbsorbed: 0, armorBroken: false, wardAbsorbed: true };
+    } else {
+      appliedDamage = applyDirectDamageToFighter(defender, damage);
+    }
+  }
+
+  if (actionId === "ward" && getFighterWardScrollCount(attacker) > 0) {
+    attacker.wardScrollCount = getFighterWardScrollCount(attacker) - 1;
+    attacker.wardHits = 1;
+  }
+
+  if (actionId === "preciseStrike" && getFighterPreciseStrikeScrollCount(attacker) > 0) {
+    attacker.preciseStrikeScrollCount = getFighterPreciseStrikeScrollCount(attacker) - 1;
+    attacker.preciseStrikeHits = 1;
+  }
+
+  if (actionId === "doubleStrike" && getFighterDoubleStrikeScrollCount(attacker) > 0) {
+    attacker.doubleStrikeScrollCount = getFighterDoubleStrikeScrollCount(attacker) - 1;
+    attacker.doubleStrikeHits = 1;
+  }
+
   if (isAttackAction(actionId) && isBowFighter(attacker) && getBowShotsRemaining(attacker) > 0) {
     attacker.bowShotsRemaining = getBowShotsRemaining(attacker) - 1;
   }
 
-  if (damage > 0 && !inRange && actionId !== "scroll") {
+  if (damage > 0 && !inRange && actionId !== "scroll" && actionId !== "fireball") {
     damage = 0;
   }
 
-  if (damage > 0 && actionId !== "scroll") {
-    blocked = isActionBlocked(state, action, attacker, defender, defenderOwner, random);
+  const preciseStrikeBoosted = shouldConsumePreciseStrikeForAction(actionId, attacker, damage, inRange);
+  const doubleStrikeBoosted = shouldConsumeDoubleStrikeForAction(actionId, attacker, damage, inRange);
+  let doubleStrikeRepeat = false;
 
-    if (blocked) {
-      damage = 0;
-      clearIncomingAttackModifiers(state, defenderOwner);
-    } else {
-      damage = applyIncomingBonus(state, actor, damage);
-      damage = applyWeaponArmorDamageBonus(actionId, attacker, defender, damage);
-      appliedDamage = applyDamageToFighter(defender, damage);
+  if (damage > 0 && actionId !== "scroll" && actionId !== "fireball") {
+    const firstHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, damage, random, true);
+
+    damage = firstHit.damage;
+    blocked = firstHit.blocked;
+    appliedDamage = firstHit.appliedDamage;
+
+    if (doubleStrikeBoosted && defender.hp > 0 && canResolveDoubleStrikeRepeat(actionId, attacker)) {
+      doubleStrikeRepeat = true;
+      consumeDoubleStrikeRepeatCost(actionId, attacker);
+      const secondHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, getActionDamage(actionId, attacker), random, false);
+
+      damage += secondHit.damage;
+      blocked ||= secondHit.blocked;
+      appliedDamage = mergeDamageApplications(appliedDamage, secondHit.appliedDamage);
     }
   } else {
     clearIncomingAttackModifiers(state, defenderOwner);
+  }
+
+  if (preciseStrikeBoosted) {
+    consumePreciseStrikeHit(attacker);
+  }
+
+  if (doubleStrikeBoosted) {
+    consumeDoubleStrikeHit(attacker);
   }
 
   if (actor === "player") {
@@ -913,6 +1097,8 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastPlayerArmorAbsorbed = appliedDamage.armorAbsorbed;
     state.lastPlayerArmorBroken = appliedDamage.armorBroken;
     state.lastPlayerRemovedArmorSlots = appliedDamage.removedArmorSlots;
+    state.lastPlayerWardAbsorbed = Boolean(appliedDamage.wardAbsorbed);
+    state.lastPlayerDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastPlayerBlocked = blocked;
   } else {
     state.lastEnemyAction = actionId;
@@ -920,10 +1106,12 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastEnemyArmorAbsorbed = appliedDamage.armorAbsorbed;
     state.lastEnemyArmorBroken = appliedDamage.armorBroken;
     state.lastEnemyRemovedArmorSlots = appliedDamage.removedArmorSlots;
+    state.lastEnemyWardAbsorbed = Boolean(appliedDamage.wardAbsorbed);
+    state.lastEnemyDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastEnemyBlocked = blocked;
   }
 
-  addActionLog(state, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked, getFighterClinchRange(attacker), staminaRestore, heal);
+  addActionLog(state, actor, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked, getFighterClinchRange(attacker), staminaRestore, heal);
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
@@ -940,9 +1128,75 @@ function isActionBlocked(
 ): boolean {
   void defender;
 
+  if (isPreciseStrikeBoostedAction(action.id, attacker)) {
+    return false;
+  }
+
   const blockChance = getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestBlockChancePenalty(state, defenderOwner));
 
   return blockChance > 0 && random() < blockChance;
+}
+
+function resolveWeaponHit(
+  state: CombatState,
+  actor: TurnOwner,
+  action: ActionConfig,
+  attacker: FighterState,
+  defender: FighterState,
+  defenderOwner: TurnOwner,
+  baseDamage: number,
+  random: () => number,
+  includeIncomingBonus: boolean,
+): WeaponHitResolution {
+  let damage = Math.max(0, Math.floor(baseDamage));
+  let blocked = false;
+  let appliedDamage: DamageApplication = { armorAbsorbed: 0, armorBroken: false };
+
+  if (damage <= 0) {
+    return { damage: 0, blocked, appliedDamage };
+  }
+
+  blocked = isActionBlocked(state, action, attacker, defender, defenderOwner, random);
+
+  if (blocked) {
+    clearIncomingAttackModifiers(state, defenderOwner);
+    return { damage: 0, blocked, appliedDamage };
+  }
+
+  if (includeIncomingBonus) {
+    damage = applyIncomingBonus(state, actor, damage);
+  }
+
+  damage = applyWeaponArmorDamageBonus(action.id, attacker, defender, damage);
+
+  if (consumeWardHit(defender)) {
+    return {
+      damage: 0,
+      blocked,
+      appliedDamage: { armorAbsorbed: 0, armorBroken: false, wardAbsorbed: true },
+    };
+  }
+
+  appliedDamage = applyDamageToFighter(defender, damage);
+  return { damage, blocked, appliedDamage };
+}
+
+function mergeDamageApplications(first: DamageApplication, second: DamageApplication): DamageApplication {
+  return {
+    armorAbsorbed: first.armorAbsorbed + second.armorAbsorbed,
+    armorBroken: first.armorBroken || second.armorBroken,
+    removedArmorSlots: mergeRemovedArmorSlots(first.removedArmorSlots, second.removedArmorSlots),
+    wardAbsorbed: first.wardAbsorbed || second.wardAbsorbed,
+  };
+}
+
+function mergeRemovedArmorSlots(
+  first: CombatArmorSlotState[] | undefined,
+  second: CombatArmorSlotState[] | undefined,
+): CombatArmorSlotState[] | undefined {
+  const merged = [...(first ?? []), ...(second ?? [])];
+
+  return merged.length > 0 ? merged : undefined;
 }
 
 function getActionDamageBonus(attacker?: FighterState): number {
@@ -1043,6 +1297,28 @@ function applyDamageToFighter(defender: FighterState, damage: number): DamageApp
   };
 }
 
+function applyDirectDamageToFighter(defender: FighterState, damage: number): DamageApplication {
+  const hpDamage = Math.max(0, Math.floor(damage));
+
+  if (hpDamage <= 0) {
+    return { armorAbsorbed: 0, armorBroken: false };
+  }
+
+  defender.hp = clamp(defender.hp - hpDamage, 0, getFighterMaxHp(defender));
+  return { armorAbsorbed: 0, armorBroken: false };
+}
+
+function consumeWardHit(defender: FighterState): boolean {
+  const wardHits = getFighterWardHits(defender);
+
+  if (wardHits <= 0) {
+    return false;
+  }
+
+  defender.wardHits = Math.max(0, wardHits - 1);
+  return true;
+}
+
 function applyCrackArmorScroll(_attacker: FighterState, defender: FighterState, random: () => number): DamageApplication {
   const slot = pickCrackableArmorSlot(defender, random);
 
@@ -1132,6 +1408,7 @@ function getCrackableArmorSlots(defender: FighterState): CombatArmorSlotState[] 
 
 function addActionLog(
   state: CombatState,
+  actor: TurnOwner,
   actorLabel: string,
   defenderLabel: string,
   action: ActionConfig,
@@ -1152,6 +1429,28 @@ function addActionLog(
       }.`,
       damage >= 10,
     );
+    return;
+  }
+
+  if (action.id === "ward") {
+    addLog(state, `${actorLabel} used ${actionTitle}. The next hit will be absorbed.`, true);
+    return;
+  }
+
+  if (action.id === "preciseStrike") {
+    addLog(state, `${actorLabel} used ${actionTitle}. The next strike will land.`, true);
+    return;
+  }
+
+  if (action.id === "doubleStrike") {
+    addLog(state, `${actorLabel} used ${actionTitle}. The next strike will hit twice.`, true);
+    return;
+  }
+
+  const wardAbsorbed = actor === "player" ? state.lastPlayerWardAbsorbed : state.lastEnemyWardAbsorbed;
+
+  if (wardAbsorbed) {
+    addLog(state, `${actorLabel} used ${actionTitle}, but the ward absorbed it.`, true);
     return;
   }
 
@@ -1221,6 +1520,52 @@ function getActionRangeMax(action: ActionConfig, attacker: FighterState): number
 
 function isAttackAction(actionId: ActionId): boolean {
   return actionId === "light" || actionId === "medium" || actionId === "heavy";
+}
+
+function isScrollAction(actionId: ActionId): boolean {
+  return actionId === "scroll" || actionId === "fireball" || actionId === "ward" || actionId === "preciseStrike" || actionId === "doubleStrike";
+}
+
+function isPreciseStrikeAction(actionId: ActionId): boolean {
+  return isAttackAction(actionId) || actionId === "lunge";
+}
+
+function isPreciseStrikeBoostedAction(actionId: ActionId, attacker?: FighterState): boolean {
+  return Boolean(attacker && isPreciseStrikeAction(actionId) && getFighterPreciseStrikeHits(attacker) > 0);
+}
+
+function shouldConsumePreciseStrikeForAction(actionId: ActionId, attacker: FighterState, damage: number, inRange: boolean): boolean {
+  return isPreciseStrikeBoostedAction(actionId, attacker) && damage > 0 && inRange;
+}
+
+function consumePreciseStrikeHit(fighter: FighterState): void {
+  fighter.preciseStrikeHits = Math.max(0, getFighterPreciseStrikeHits(fighter) - 1);
+}
+
+function isDoubleStrikeAction(actionId: ActionId): boolean {
+  return isAttackAction(actionId);
+}
+
+function isDoubleStrikeBoostedAction(actionId: ActionId, attacker?: FighterState): boolean {
+  return Boolean(attacker && isDoubleStrikeAction(actionId) && getFighterDoubleStrikeHits(attacker) > 0);
+}
+
+function shouldConsumeDoubleStrikeForAction(actionId: ActionId, attacker: FighterState, damage: number, inRange: boolean): boolean {
+  return isDoubleStrikeBoostedAction(actionId, attacker) && damage > 0 && inRange;
+}
+
+function canResolveDoubleStrikeRepeat(actionId: ActionId, attacker: FighterState): boolean {
+  return !isBowFighter(attacker) || (isAttackAction(actionId) && getBowShotsRemaining(attacker) > 0);
+}
+
+function consumeDoubleStrikeRepeatCost(actionId: ActionId, attacker: FighterState): void {
+  if (isAttackAction(actionId) && isBowFighter(attacker)) {
+    attacker.bowShotsRemaining = Math.max(0, getBowShotsRemaining(attacker) - 1);
+  }
+}
+
+function consumeDoubleStrikeHit(fighter: FighterState): void {
+  fighter.doubleStrikeHits = Math.max(0, getFighterDoubleStrikeHits(fighter) - 1);
 }
 
 function finishBattle(state: CombatState): void {

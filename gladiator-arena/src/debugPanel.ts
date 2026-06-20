@@ -418,6 +418,10 @@ const actionButtonLabels: Record<ActionButtonOffsetKey, string> = {
   switchWeapon: "Swap",
   shuriken: "Shuriken",
   scroll: "Scroll",
+  fireball: "Fireball",
+  ward: "Ward",
+  preciseStrike: "Precise strike",
+  doubleStrike: "Double strike",
   taunt: "Taunt",
   rest: "Rest",
 };
@@ -429,6 +433,10 @@ const bowDistanceActionButtonLabels: Partial<Record<ActionButtonOffsetKey, strin
   switchWeapon: "Swap",
   shuriken: "Shuriken",
   scroll: "Scroll",
+  fireball: "Fireball",
+  ward: "Ward",
+  preciseStrike: "Precise strike",
+  doubleStrike: "Double strike",
 };
 
 const AUTO_EQUIPMENT_STAT_MIN = 0;

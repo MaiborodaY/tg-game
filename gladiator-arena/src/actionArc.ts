@@ -42,6 +42,12 @@ import {
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
 import { getShopProductIconUrl } from "./shopItemIcons";
+import {
+  createSpellbookMenu,
+  isSpellbookButtonAction,
+  shouldEnableSpellbookButton,
+  shouldShowSpellbookButton,
+} from "./spellbookMenu";
 
 type StageLayoutTuning = Parameters<typeof getStageLayout>[1];
 export type ActionTokenTuning = StageLayoutTuning;
@@ -79,6 +85,10 @@ const ACTION_ICONS: Record<ActionId, string> = {
   switchWeapon: "S",
   shuriken: "*",
   scroll: "?",
+  fireball: "F",
+  ward: "W",
+  preciseStrike: "P",
+  doubleStrike: "2",
   taunt: "!",
   rest: "*",
 };
@@ -95,6 +105,10 @@ const ACTION_UTILITY_ICON_URLS: Partial<Record<ActionId, string>> = {
   lunge: new URL("./assets/ui/action-icons/lunge.webp", import.meta.url).href,
   switchWeapon: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   scroll: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  fireball: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  ward: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  preciseStrike: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  doubleStrike: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   taunt: new URL("./assets/ui/action-icons/taunt.webp", import.meta.url).href,
   rest: new URL("./assets/ui/action-icons/rest.webp", import.meta.url).href,
 };
@@ -346,6 +360,7 @@ export function mountActionArc(
   let lastLayout: ReturnType<typeof getActionArcLayout> | undefined;
   let selectedTarget: SelectedActionArcTarget | undefined;
   let dragState: ActionArcDragState | undefined;
+  const spellbookMenu = createSpellbookMenu(overlay, () => lastState, onAction);
 
   root.className = "action-arc";
   root.setAttribute("aria-label", "Available combat actions");
@@ -377,6 +392,12 @@ export function mountActionArc(
 
       if (!button.disabled) {
         pressActionTokenButton(button);
+        if (lastState && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(lastState)) {
+          spellbookMenu.toggle(button);
+          return;
+        }
+
+        spellbookMenu.close();
         onAction(actionId);
       }
     });
@@ -419,7 +440,7 @@ export function mountActionArc(
       }
 
       button.hidden = false;
-      button.disabled = !editMode && !canUseAction(state, actionId, "player");
+      button.disabled = !editMode && !isActionArcButtonEnabled(state, actionId);
       button.classList.toggle("action-arc__button--exhausted-rest", actionId === "rest" && isPlayerExhausted(state));
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
@@ -435,6 +456,7 @@ export function mountActionArc(
     }
 
     updateEditClasses();
+    spellbookMenu.sync();
   }
 
   function syncFromDebugTuning(): void {
@@ -452,6 +474,7 @@ export function mountActionArc(
     destroy() {
       window.removeEventListener("arena-debug-tuning-change", syncFromDebugTuning);
       overlay.removeEventListener("pointerdown", handleOverlayPointerDown);
+      spellbookMenu.destroy();
       root.remove();
     },
   };
@@ -612,6 +635,14 @@ export function mountActionArc(
   }
 }
 
+function isActionArcButtonEnabled(state: CombatState, actionId: ActionId): boolean {
+  if (isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state)) {
+    return shouldEnableSpellbookButton(state);
+  }
+
+  return canUseAction(state, actionId, "player");
+}
+
 export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): string | undefined {
   if (actionId === "switchWeapon") {
     const targetItemId = isBowFighter(state.player) ? state.player.equipment?.weaponMain : state.player.equipment?.weaponBow;
@@ -624,8 +655,18 @@ export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): s
   }
 
   if (actionId === "scroll") {
-    return state.player.scrollItemId
-      ? getShopProductIconUrl([state.player.scrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+    return SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+  }
+
+  if (actionId === "ward") {
+    return state.player.wardScrollItemId
+      ? getShopProductIconUrl([state.player.wardScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+      : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+  }
+
+  if (actionId === "fireball") {
+    return state.player.fireballScrollItemId
+      ? getShopProductIconUrl([state.player.fireballScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
       : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
   }
 

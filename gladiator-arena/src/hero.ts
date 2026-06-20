@@ -180,7 +180,7 @@ export interface HeroItemDefinition {
 }
 
 export interface HeroScrollEffect {
-  kind: "crackArmorSlot";
+  kind: "crackArmorSlot" | "fireballDamage" | "wardHit" | "preciseStrike" | "doubleStrike";
 }
 
 export interface HeroInventoryEntry {
@@ -359,6 +359,10 @@ export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
 export const HERO_SCROLL_MAX_QUANTITY = 3;
 export const HERO_CRACK_ARMOR_SCROLL_ITEM_ID = "scroll_crack_armor_01";
+export const HERO_FIREBALL_SCROLL_ITEM_ID = "scroll_fireball_01";
+export const HERO_WARD_SCROLL_ITEM_ID = "scroll_ward_01";
+export const HERO_PRECISE_STRIKE_SCROLL_ITEM_ID = "scroll_precise_strike_01";
+export const HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID = "scroll_double_strike_01";
 export const HERO_STARTING_SKILL_POINTS = 1;
 export const ENEMY_SHURIKEN_ROLL_CHANCE = 0.25;
 export const ENEMY_SHURIKEN_QUANTITY = 1;
@@ -374,6 +378,46 @@ const HERO_SCROLL_ITEMS: Record<HeroItemId, HeroItemDefinition> = {
     equipmentSlot: "weaponMain",
     scrollEffect: {
       kind: "crackArmorSlot",
+    },
+  },
+  [HERO_FIREBALL_SCROLL_ITEM_ID]: {
+    id: HERO_FIREBALL_SCROLL_ITEM_ID,
+    name: "Fireball Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+    scrollEffect: {
+      kind: "fireballDamage",
+    },
+  },
+  [HERO_WARD_SCROLL_ITEM_ID]: {
+    id: HERO_WARD_SCROLL_ITEM_ID,
+    name: "Ward Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+    scrollEffect: {
+      kind: "wardHit",
+    },
+  },
+  [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID]: {
+    id: HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
+    name: "Precise Strike Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+    scrollEffect: {
+      kind: "preciseStrike",
+    },
+  },
+  [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]: {
+    id: HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
+    name: "Double Strike Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+    scrollEffect: {
+      kind: "doubleStrike",
     },
   },
 };
@@ -741,6 +785,14 @@ export function isHeroConsumableItem(item: HeroItemDefinition | undefined): bool
   return item?.kind === "scroll" || getHeroItemWeaponClass(item) === "shuriken";
 }
 
+export function isHeroScrollItem(item: HeroItemDefinition | undefined): boolean {
+  return item?.kind === "scroll";
+}
+
+export function isHeroScrollItemId(itemId: HeroItemId): boolean {
+  return isHeroScrollItem(HERO_ITEM_CATALOG[itemId]);
+}
+
 export function isHeroConsumableItemId(itemId: HeroItemId): boolean {
   return isHeroConsumableItem(HERO_ITEM_CATALOG[itemId]);
 }
@@ -775,6 +827,20 @@ export function getHeroShurikenCount(hero: HeroState): number {
   return shurikenItemId ? getHeroItemQuantity(hero, shurikenItemId) : 0;
 }
 
+export function getHeroScrollQuantity(hero: HeroState): number {
+  return hero.inventory.reduce((total, entry) => {
+    if (!isHeroScrollItemId(entry.itemId)) {
+      return total;
+    }
+
+    return total + Math.max(0, Math.floor(entry.quantity ?? 0));
+  }, 0);
+}
+
+export function getHeroRemainingScrollCapacity(hero: HeroState): number {
+  return Math.max(0, HERO_SCROLL_MAX_QUANTITY - getHeroScrollQuantity(hero));
+}
+
 export function getHeroShurikenDamage(): number {
   return getShurikenItemDamage(getHeroShurikenItemId());
 }
@@ -789,6 +855,54 @@ export function getHeroCrackArmorScrollCount(hero: HeroState): number {
 
 export function getHeroCrackArmorScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_CRACK_ARMOR_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
+export function getHeroFireballScrollItemId(): HeroItemId {
+  return HERO_FIREBALL_SCROLL_ITEM_ID;
+}
+
+export function getHeroFireballScrollCount(hero: HeroState): number {
+  return getHeroItemQuantity(hero, HERO_FIREBALL_SCROLL_ITEM_ID);
+}
+
+export function getHeroFireballScrollEffect(): HeroScrollEffect {
+  return HERO_SCROLL_ITEMS[HERO_FIREBALL_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
+export function getHeroWardScrollItemId(): HeroItemId {
+  return HERO_WARD_SCROLL_ITEM_ID;
+}
+
+export function getHeroWardScrollCount(hero: HeroState): number {
+  return getHeroItemQuantity(hero, HERO_WARD_SCROLL_ITEM_ID);
+}
+
+export function getHeroWardScrollEffect(): HeroScrollEffect {
+  return HERO_SCROLL_ITEMS[HERO_WARD_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
+export function getHeroPreciseStrikeScrollItemId(): HeroItemId {
+  return HERO_PRECISE_STRIKE_SCROLL_ITEM_ID;
+}
+
+export function getHeroPreciseStrikeScrollCount(hero: HeroState): number {
+  return getHeroItemQuantity(hero, HERO_PRECISE_STRIKE_SCROLL_ITEM_ID);
+}
+
+export function getHeroPreciseStrikeScrollEffect(): HeroScrollEffect {
+  return HERO_SCROLL_ITEMS[HERO_PRECISE_STRIKE_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
+export function getHeroDoubleStrikeScrollItemId(): HeroItemId {
+  return HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID;
+}
+
+export function getHeroDoubleStrikeScrollCount(hero: HeroState): number {
+  return getHeroItemQuantity(hero, HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID);
+}
+
+export function getHeroDoubleStrikeScrollEffect(): HeroScrollEffect {
+  return HERO_SCROLL_ITEMS[HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]!.scrollEffect!;
 }
 
 function getShurikenItemDamage(itemId: HeroItemId | undefined): number {
@@ -887,6 +1001,10 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyWeaponClass = enemyEquipment.weaponMain ? enemyMainWeaponClass : enemyBowWeaponClass ?? enemyMainWeaponClass;
   const playerShurikenItemId = getHeroShurikenItemId();
   const playerScrollItemId = getHeroCrackArmorScrollItemId();
+  const playerFireballScrollItemId = getHeroFireballScrollItemId();
+  const playerWardScrollItemId = getHeroWardScrollItemId();
+  const playerPreciseStrikeScrollItemId = getHeroPreciseStrikeScrollItemId();
+  const playerDoubleStrikeScrollItemId = getHeroDoubleStrikeScrollItemId();
   const playerBowShotCapacity = getHeroBowShotCapacity(hero);
   const state = freshState();
 
@@ -920,6 +1038,17 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenItemId: playerShurikenItemId,
       scrollCount: getHeroCrackArmorScrollCount(hero),
       scrollItemId: playerScrollItemId,
+      fireballScrollCount: getHeroFireballScrollCount(hero),
+      fireballScrollItemId: playerFireballScrollItemId,
+      wardScrollCount: getHeroWardScrollCount(hero),
+      wardScrollItemId: playerWardScrollItemId,
+      wardHits: 0,
+      preciseStrikeScrollCount: getHeroPreciseStrikeScrollCount(hero),
+      preciseStrikeScrollItemId: playerPreciseStrikeScrollItemId,
+      preciseStrikeHits: 0,
+      doubleStrikeScrollCount: getHeroDoubleStrikeScrollCount(hero),
+      doubleStrikeScrollItemId: playerDoubleStrikeScrollItemId,
+      doubleStrikeHits: 0,
       equipment: { ...heroEquipment },
       armorSlots: getHeroEquipmentArmorSlots(heroEquipment),
     },
@@ -1123,6 +1252,10 @@ function applyCombatConsumableUsage(hero: HeroState, combat: CombatState, now: s
   const consumables = [
     { itemId: combat.player.shurikenItemId, remaining: combat.player.shurikenCount },
     { itemId: combat.player.scrollItemId, remaining: combat.player.scrollCount },
+    { itemId: combat.player.fireballScrollItemId, remaining: combat.player.fireballScrollCount },
+    { itemId: combat.player.wardScrollItemId, remaining: combat.player.wardScrollCount },
+    { itemId: combat.player.preciseStrikeScrollItemId, remaining: combat.player.preciseStrikeScrollCount },
+    { itemId: combat.player.doubleStrikeScrollItemId, remaining: combat.player.doubleStrikeScrollCount },
   ];
   let inventory = hero.inventory.map((entry) => ({ ...entry }));
   let hasChange = false;
@@ -1399,8 +1532,12 @@ function buyHeroConsumableItems(hero: HeroState, purchase: HeroItemPurchase, now
     const maxQuantity = getHeroConsumableMaxQuantity(itemId);
     const existingEntry = inventory.find((entry) => entry.itemId === itemId);
     const currentQuantity = Math.max(0, Math.floor(existingEntry?.quantity ?? 0));
+    const isScroll = isHeroScrollItemId(itemId);
+    const totalScrollQuantity = isScroll
+      ? inventory.reduce((total, entry) => (isHeroScrollItemId(entry.itemId) ? total + Math.max(0, Math.floor(entry.quantity ?? 0)) : total), 0)
+      : 0;
 
-    if (maxQuantity <= 0 || currentQuantity >= maxQuantity) {
+    if (maxQuantity <= 0 || currentQuantity >= maxQuantity || (isScroll && totalScrollQuantity >= HERO_SCROLL_MAX_QUANTITY)) {
       return hero;
     }
 

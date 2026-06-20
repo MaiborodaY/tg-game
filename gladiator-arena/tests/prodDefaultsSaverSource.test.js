@@ -475,7 +475,8 @@ test("save as prod defaults persists classic action button slots", () => {
   assert.match(debugTuningSource, /switchWeapon: \{ x: -145, y: -200, rotation: 0 \}/);
   assert.match(debugTuningSource, /shuriken: \{ x: 95, y: -118, rotation: 10 \}/);
   assert.match(debugTuningSource, /classicActionButtonSlots: cloneClassicActionButtonSlots/);
-  assert.match(source, /const classicActionButtonSlotKeys = \["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"\] as const/);
+  assert.match(source, /const actionButtonOffsetKeys = \["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"\] as const/);
+  assert.match(source, /const classicActionButtonSlotKeys = \["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"\] as const/);
   assert.match(source, /pickClassicActionButtonSlotDefaultUpdates/);
   assert.match(source, /applyClassicActionButtonSlotDefaultUpdates/);
   assert.match(source, /formatClassicActionButtonSlotDefaults/);

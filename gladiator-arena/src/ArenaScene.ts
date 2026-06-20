@@ -2021,7 +2021,7 @@ export class ArenaScene extends Phaser.Scene {
     let enemyActionAnimation: ActionAnimationHandle | undefined;
 
     if (lastPlayerAction) {
-      playerActionAnimation = animateAction(
+      playerActionAnimation = animateActionSequence(
         this,
         visuals.player,
         visuals.enemy,
@@ -2030,6 +2030,7 @@ export class ArenaScene extends Phaser.Scene {
         getFighterBodyAnimationWeaponClass(nextState.player),
         playerSettings,
         { loopRestAfterComplete: false, variantSeed: getBodyAnimationVariantSeed(nextState, "player") },
+        nextState.lastPlayerDoubleStrikeRepeat,
       );
       actionAnimations.push(playerActionAnimation.done);
       if (lastPlayerAction === "rest") {
@@ -2038,7 +2039,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     if (lastEnemyAction) {
-      enemyActionAnimation = animateAction(
+      enemyActionAnimation = animateActionSequence(
         this,
         visuals.enemy,
         visuals.player,
@@ -2047,6 +2048,7 @@ export class ArenaScene extends Phaser.Scene {
         getFighterBodyAnimationWeaponClass(nextState.enemy),
         playerSettings,
         { variantSeed: getBodyAnimationVariantSeed(nextState, "enemy") },
+        nextState.lastEnemyDoubleStrikeRepeat,
       );
       actionAnimations.push(enemyActionAnimation.done);
       if (lastEnemyAction === "rest") {
@@ -2088,6 +2090,12 @@ export class ArenaScene extends Phaser.Scene {
 
         return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit", visuals.enemy.paperDollRig?.bodyPresetKey));
       });
+    } else if (nextState.lastPlayerWardAbsorbed) {
+      queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
+        showWardAbsorbPopupFromFighter(this, visuals.enemy);
+
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block", visuals.enemy.paperDollRig?.bodyPresetKey));
+      });
     } else if (nextState.lastPlayerBlocked) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.enemy);
@@ -2108,6 +2116,12 @@ export class ArenaScene extends Phaser.Scene {
         );
 
         return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit", visuals.player.paperDollRig?.bodyPresetKey));
+      });
+    } else if (nextState.lastEnemyWardAbsorbed) {
+      queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
+        showWardAbsorbPopupFromFighter(this, visuals.player);
+
+        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block", visuals.player.paperDollRig?.bodyPresetKey));
       });
     } else if (nextState.lastEnemyBlocked) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
@@ -9541,6 +9555,45 @@ function speedUpDamagingLungeAfterImpact(actionAnimation: ActionAnimationHandle 
   void impact.then(() => actionAnimation.speedUp?.(DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE));
 }
 
+function animateActionSequence(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  defender: FighterVisual,
+  actionId: ActionId,
+  direction: "left" | "right",
+  weaponClass?: HeroWeaponClass,
+  playerSettings = getPlayerSettings(),
+  options: ActionAnimationOptions = {},
+  repeat = false,
+): ActionAnimationHandle {
+  const firstAnimation = animateAction(target, actor, defender, actionId, direction, weaponClass, playerSettings, options);
+
+  if (!repeat || !isDoubleStrikeAnimationAction(actionId)) {
+    return firstAnimation;
+  }
+
+  let secondAnimationPromise: Promise<ActionAnimationHandle> | undefined;
+  const getSecondAnimation = (): Promise<ActionAnimationHandle> => {
+    secondAnimationPromise ??= firstAnimation.done.then(() =>
+      animateAction(target, actor, defender, actionId, direction, weaponClass, playerSettings, {
+        ...options,
+        variantSeed: `${options.variantSeed ?? actionId}:double`,
+      }),
+    );
+
+    return secondAnimationPromise;
+  };
+
+  return {
+    done: getSecondAnimation().then((secondAnimation) => secondAnimation.done),
+    impact: getSecondAnimation().then((secondAnimation) => secondAnimation.impact ?? secondAnimation.done),
+  };
+}
+
+function isDoubleStrikeAnimationAction(actionId: ActionId): boolean {
+  return actionId === "light" || actionId === "medium" || actionId === "heavy";
+}
+
 function animateAction(
   target: Phaser.Scene,
   actor: FighterVisual,
@@ -9601,6 +9654,42 @@ function animateAction(
     return {
       done: createSceneDelay(target, 260),
       impact: createSceneDelay(target, 120),
+    };
+  }
+
+  if (actionId === "ward") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "WARD", "#b7f7ff");
+    return {
+      done: createSceneDelay(target, 260),
+      impact: createSceneDelay(target, 120),
+    };
+  }
+
+  if (actionId === "preciseStrike") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "TRUE", "#fff0a8");
+    return {
+      done: createSceneDelay(target, 260),
+      impact: createSceneDelay(target, 120),
+    };
+  }
+
+  if (actionId === "doubleStrike") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "DOUBLE", "#ffd37a");
+    return {
+      done: createSceneDelay(target, 260),
+      impact: createSceneDelay(target, 120),
+    };
+  }
+
+  if (actionId === "fireball") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "FIRE", "#ff9b38");
+    return {
+      done: createSceneDelay(target, 320),
+      impact: createSceneDelay(target, 170),
     };
   }
 
@@ -10346,6 +10435,12 @@ function showBlockPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual,
   const point = getFighterHeadPopupPoint(target, fighter, getBlockPopupHeadOffsetY());
 
   showBlockPopup(target, getPopupXWithScreenOffset(target, point.x, screenOffsetX), point.y);
+}
+
+function showWardAbsorbPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual): void {
+  const point = getFighterHeadPopupPoint(target, fighter, getBlockPopupHeadOffsetY());
+
+  showFloatingText(target, point.x, point.y, "WARD", "#b7f7ff");
 }
 
 function showDamagePopupFromFighter(
