@@ -10512,7 +10512,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
           "back": {
             "layout": {
               "x": 0,
-              "y": 5,
+              "y": 7,
               "scale": 0.6,
               "alpha": 1,
               "visible": true
@@ -10527,8 +10527,8 @@ export const defaultDebugTuning: ArenaDebugTuning = {
           "ground": {
             "layout": {
               "x": 0,
-              "y": 13,
-              "scale": 0.6,
+              "y": 5,
+              "scale": 0.63,
               "alpha": 1,
               "visible": true
             },
