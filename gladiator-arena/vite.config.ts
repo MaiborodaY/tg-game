@@ -777,6 +777,14 @@ interface UpdateGeneratedBossItemPayload {
   stat?: unknown;
 }
 
+interface UpdateGeneratedEquipmentItemPayload {
+  itemIds?: unknown;
+  rarity?: unknown;
+  stat?: unknown;
+  price?: unknown;
+  equipmentTuningByItemId?: unknown;
+}
+
 interface RenameEquipmentSetAssetsPayload {
   setName?: unknown;
   variant?: unknown;
@@ -1216,6 +1224,24 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: formatUpdatedGeneratedBossItemMessage(updatedRecords), updated: updatedRecords.length });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated boss item." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/update-generated-equipment-item", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to update generated equipment items." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const update = pickGeneratedEquipmentItemUpdate(payload);
+          const updatedRecords = await updateGeneratedEquipmentItem(update);
+
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: formatUpdatedGeneratedEquipmentItemMessage(updatedRecords), updated: updatedRecords.length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not update generated equipment item." });
         }
       });
 
@@ -3345,6 +3371,132 @@ function formatUpdatedGeneratedBossItemMessage(updatedRecords: GeneratedEquipmen
   }
 
   return `Updated ${updatedRecords.length} linked generated boss items.`;
+}
+
+interface GeneratedEquipmentItemUpdate {
+  itemIds: string[];
+  rarity?: NonNullable<GeneratedEquipmentJsonRecord["rarity"]>;
+  stat?: number;
+  price?: number;
+  equipmentTuningByItemId: Record<string, RigPartTuning>;
+}
+
+function pickGeneratedEquipmentItemUpdate(payload: unknown): GeneratedEquipmentItemUpdate {
+  const update = readPlainObject(payload, "generated equipment item update") as UpdateGeneratedEquipmentItemPayload;
+  const itemIds = readNonEmptyStringArray(update.itemIds, "generated equipment item ids");
+  const rarity = update.rarity === undefined ? undefined : readItemRarity(update.rarity);
+  const stat = update.stat === undefined ? undefined : Math.max(0, Math.floor(readFinitePayloadNumber(update.stat, "generated equipment item stat")));
+  const price =
+    update.price === undefined
+      ? undefined
+      : Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(update.price, "generated equipment item price"))));
+  const equipmentTuningByItemId = readGeneratedEquipmentItemTuningPatch(update.equipmentTuningByItemId);
+
+  return {
+    itemIds,
+    ...(rarity ? { rarity } : {}),
+    ...(stat !== undefined ? { stat } : {}),
+    ...(price !== undefined ? { price } : {}),
+    equipmentTuningByItemId,
+  };
+}
+
+function readGeneratedEquipmentItemTuningPatch(input: unknown): Record<string, RigPartTuning> {
+  if (input === undefined || input === null || input === "") {
+    return {};
+  }
+
+  if (typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Expected generated equipment item tuning map.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(input).flatMap(([itemId, tuning]) => {
+      if (!itemId.trim()) {
+        return [];
+      }
+
+      return [[itemId, readLooseEquipmentTuning(tuning, itemId)]];
+    }),
+  );
+}
+
+async function updateGeneratedEquipmentItem(update: GeneratedEquipmentItemUpdate): Promise<GeneratedEquipmentJsonRecord[]> {
+  const records = await readGeneratedEquipmentRecords();
+  const targetIds = new Set(update.itemIds);
+  const tuningIds = new Set(Object.keys(update.equipmentTuningByItemId));
+  const touchedIds = new Set([...targetIds, ...tuningIds]);
+  const targetRecords = update.itemIds.map((itemId) => {
+    const record = records.find((candidate) => candidate.id === itemId);
+
+    if (!record) {
+      throw new Error(`Generated equipment item not found: ${itemId}.`);
+    }
+
+    return record;
+  });
+
+  tuningIds.forEach((itemId) => {
+    if (!records.some((record) => record.id === itemId)) {
+      throw new Error(`Generated equipment item not found: ${itemId}.`);
+    }
+  });
+
+  const shouldUpdateStat = update.stat !== undefined;
+  const kind = targetRecords[0]?.kind;
+  const maxStat = kind === "weapon" ? promotedEquipmentMaxDamageBonus : promotedEquipmentMaxArmorHp;
+  const clampedStat = shouldUpdateStat ? Math.max(0, Math.min(maxStat, update.stat ?? 0)) : undefined;
+
+  if (shouldUpdateStat && (!kind || !targetRecords.every((record) => record.kind === kind))) {
+    throw new Error("Generated equipment item edit cannot mix armor and weapons.");
+  }
+
+  const nextRecords = records.map((record) => {
+    if (!touchedIds.has(record.id)) {
+      return record;
+    }
+
+    const targetIndex = update.itemIds.indexOf(record.id);
+    const tuning = update.equipmentTuningByItemId[record.id];
+
+    return updateGeneratedEquipmentItemRecord(record, update, clampedStat, targetIndex, tuning);
+  });
+
+  await writeGeneratedEquipmentRecords(nextRecords);
+
+  return nextRecords.filter((record) => touchedIds.has(record.id));
+}
+
+function updateGeneratedEquipmentItemRecord(
+  record: GeneratedEquipmentJsonRecord,
+  update: GeneratedEquipmentItemUpdate,
+  clampedStat: number | undefined,
+  targetIndex: number,
+  equipmentTuning: RigPartTuning | undefined,
+): GeneratedEquipmentJsonRecord {
+  const itemStat = record.kind === "armor" && targetIndex > 0 ? 0 : clampedStat;
+
+  return {
+    ...record,
+    ...(update.rarity && targetIndex >= 0 ? { rarity: update.rarity } : {}),
+    ...(itemStat !== undefined && record.kind === "armor" ? { armorHp: itemStat } : {}),
+    ...(itemStat !== undefined && record.kind === "weapon" ? { damageBonus: itemStat } : {}),
+    ...(update.price !== undefined && record.armoryProduct ? { armoryProduct: { ...record.armoryProduct, price: update.price } } : {}),
+    ...(update.price !== undefined && record.weaponProduct ? { weaponProduct: { ...record.weaponProduct, price: update.price } } : {}),
+    ...(equipmentTuning ? { equipmentTuning } : {}),
+  };
+}
+
+function formatUpdatedGeneratedEquipmentItemMessage(updatedRecords: GeneratedEquipmentJsonRecord[]): string {
+  if (updatedRecords.length === 0) {
+    return "Updated generated equipment item.";
+  }
+
+  if (updatedRecords.length === 1) {
+    return `Saved ${updatedRecords[0]!.name}.`;
+  }
+
+  return `Saved ${updatedRecords.length} linked generated equipment items.`;
 }
 
 function escapeRegExp(value: string): string {

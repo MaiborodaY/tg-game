@@ -5083,6 +5083,16 @@ body.debug-active .city-menu__portrait-button:active {
   grid-template-columns: var(--shop-city-rail-width) minmax(0, 1fr) var(--shop-city-rail-width);
 }
 
+.magic-shop.armory-shop--city-mode .armory-shop__menu {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.magic-shop.armory-shop--city-mode .armory-shop__header {
+  left: 0;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(58px, auto);
+}
+
 .armory-shop--city-mode .armory-shop__header::after {
   content: "";
   position: absolute;
@@ -5149,6 +5159,15 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 10px;
   font-size: 1.22rem;
   letter-spacing: 0.11em;
+}
+
+.magic-shop.armory-shop--city-mode .armory-shop__title {
+  width: min(236px, calc(100% - 112px));
+  min-width: 0;
+  max-width: calc(100% - 112px);
+  padding: 10px 24px 11px;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
 }
 
 .armory-shop--city-mode:not(.weapon-shop) .armory-shop__title {
@@ -6226,6 +6245,13 @@ body.debug-active .city-menu__portrait-button:active {
   height: 0;
 }
 
+.magic-shop.armory-shop--city-mode .armory-shop__content--products {
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(184px, auto);
+  align-content: center;
+  padding: 10px;
+}
+
 .armory-shop__scroll-indicator {
   display: none;
 }
@@ -6470,6 +6496,113 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop__option--sealed .armory-shop__product-icon--missing {
   color: rgba(8, 2, 1, 0.72);
+}
+
+.magic-shop__product {
+  cursor: default;
+}
+
+.magic-shop.armory-shop--city-mode .magic-shop__product {
+  gap: 6px;
+  align-content: start;
+  justify-items: center;
+  padding: 24px 12px 12px;
+}
+
+.magic-shop.armory-shop--city-mode .magic-shop__product-icon {
+  width: 64px;
+  height: 64px;
+}
+
+.magic-shop__product-name {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: #fff0bd;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.08;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.95);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.magic-shop__product-rarity {
+  position: relative;
+  z-index: 3;
+  color: var(--shop-rarity-light, #fff0bd);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.88);
+  text-transform: uppercase;
+}
+
+.magic-shop__product-effect {
+  position: relative;
+  z-index: 3;
+  max-width: 220px;
+  margin: 0;
+  color: #2f150a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.12;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 246, 210, 0.42);
+  text-transform: none;
+}
+
+.magic-shop__product-footer {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(74px, auto);
+  gap: 8px;
+  align-items: center;
+  width: min(100%, 250px);
+  margin-top: auto;
+}
+
+.magic-shop__product-price {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid rgba(53, 24, 13, 0.34);
+  border-radius: 999px;
+  color: #35180d;
+  background: rgba(255, 240, 189, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 246, 210, 0.3);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 246, 210, 0.52);
+}
+
+.magic-shop__product-price .armory-shop__price-icon {
+  position: static;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.magic-shop__buy {
+  min-height: 34px;
+  padding: 6px 10px;
 }
 
 .armory-shop__sealed-ribbon {
@@ -7312,57 +7445,11 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 .debug-panel__city-body,
 .debug-effects,
 .debug-item-equipment,
-.debug-auto-equipment,
-.debug-shop-items,
-.debug-boss-items {
+.debug-auto-equipment {
   display: grid;
   gap: 6px;
   min-height: 0;
   padding: 0 10px 8px;
-}
-
-.debug-hero-equipment {
-  display: grid;
-  gap: 6px;
-  max-height: 176px;
-  overflow-y: auto;
-  padding: 0 10px 10px;
-}
-
-.debug-hero-equipment__row {
-  display: grid;
-  grid-template-columns: minmax(72px, 0.7fr) minmax(0, 1.1fr) minmax(48px, 0.5fr);
-  gap: 7px;
-  align-items: center;
-  min-width: 0;
-  color: #fff0bd;
-  font-size: 0.6rem;
-  font-weight: 800;
-}
-
-.debug-hero-equipment__select {
-  min-width: 0;
-  padding: 4px 6px;
-  border: 1px solid rgba(255, 211, 132, 0.72);
-  border-radius: 7px;
-  color: #fff0bd;
-  background: rgba(22, 7, 3, 0.78);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.6rem;
-  font-weight: 900;
-}
-
-.debug-hero-equipment__slot,
-.debug-hero-equipment__item {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.debug-hero-equipment__slot {
-  color: #ffd384;
-  font-weight: 900;
 }
 
 .debug-panel__row {
@@ -7500,11 +7587,8 @@ body.debug-mode-animation .debug-arena-panel,
 body.debug-mode-animation .debug-hud-panel,
 body.debug-mode-animation .debug-city-panel,
 body.debug-mode-animation .debug-effects-panel,
-body.debug-mode-animation .debug-hero-equipment-panel,
 body.debug-mode-animation .debug-item-equipment-panel,
 body.debug-mode-animation .debug-auto-equipment-panel,
-body.debug-mode-animation .debug-shop-items-panel,
-body.debug-mode-animation .debug-boss-items-panel,
 body.debug-mode-animation .debug-set-import-preview,
 body.debug-mode-character .debug-arena-panel,
 body.debug-mode-character .debug-hud-panel,
@@ -7517,11 +7601,8 @@ body.debug-mode-arena .debug-face-panel,
 body.debug-mode-arena .debug-hud-panel,
 body.debug-mode-arena .debug-city-panel,
 body.debug-mode-arena .debug-effects-panel,
-body.debug-mode-arena .debug-hero-equipment-panel,
 body.debug-mode-arena .debug-item-equipment-panel,
 body.debug-mode-arena .debug-auto-equipment-panel,
-body.debug-mode-arena .debug-shop-items-panel,
-body.debug-mode-arena .debug-boss-items-panel,
 body.debug-mode-arena .debug-set-import-preview,
 body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
@@ -7530,11 +7611,8 @@ body.debug-mode-city .debug-rig-panel,
 body.debug-mode-city .debug-arena-panel,
 body.debug-mode-city .debug-hud-panel,
 body.debug-mode-city .debug-effects-panel,
-body.debug-mode-city .debug-hero-equipment-panel,
 body.debug-mode-city .debug-item-equipment-panel,
 body.debug-mode-city .debug-auto-equipment-panel,
-body.debug-mode-city .debug-shop-items-panel,
-body.debug-mode-city .debug-boss-items-panel,
 body.debug-mode-city .debug-set-import-preview,
 body.debug-mode-city .battle-screen,
 body.debug-mode-hud .debug-character-shell,
@@ -7543,11 +7621,8 @@ body.debug-mode-hud .debug-rig-panel,
 body.debug-mode-hud .debug-city-panel,
 body.debug-mode-hud .debug-arena-panel,
 body.debug-mode-hud .debug-effects-panel,
-body.debug-mode-hud .debug-hero-equipment-panel,
 body.debug-mode-hud .debug-item-equipment-panel,
 body.debug-mode-hud .debug-auto-equipment-panel,
-body.debug-mode-hud .debug-shop-items-panel,
-body.debug-mode-hud .debug-boss-items-panel,
 body.debug-mode-hud .debug-set-import-preview,
 body.debug-mode-hud .main-menu,
 body.debug-mode-effects .debug-character-shell,
@@ -7556,11 +7631,8 @@ body.debug-mode-effects .debug-rig-panel,
 body.debug-mode-effects .debug-city-panel,
 body.debug-mode-effects .debug-arena-panel,
 body.debug-mode-effects .debug-hud-panel,
-body.debug-mode-effects .debug-hero-equipment-panel,
 body.debug-mode-effects .debug-item-equipment-panel,
 body.debug-mode-effects .debug-auto-equipment-panel,
-body.debug-mode-effects .debug-shop-items-panel,
-body.debug-mode-effects .debug-boss-items-panel,
 body.debug-mode-effects .debug-set-import-preview,
 body.debug-mode-effects .main-menu {
   display: none;
@@ -7589,9 +7661,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 .debug-auto-equipment__set-name,
 .debug-auto-equipment__set-variant,
 .debug-auto-equipment__set-slot,
-.debug-shop-items__select,
-.debug-shop-items__rarity,
-.debug-boss-items__select,
+.debug-item-equipment__value-rarity,
 .debug-auto-equipment__name,
 .debug-effects__slash-select {
   min-width: 0;
@@ -7610,6 +7680,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rig-editor__face,
+.debug-item-equipment__values,
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
 .debug-auto-equipment__set-importer,
@@ -7623,6 +7694,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rig-editor__face,
+.debug-item-equipment__values,
 .debug-auto-equipment__transform,
 .debug-auto-equipment__generated,
 .debug-auto-equipment__set-importer,
@@ -7643,6 +7715,7 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-rig-editor__face legend,
+.debug-item-equipment__values legend,
 .debug-auto-equipment__transform legend,
 .debug-auto-equipment__generated legend,
 .debug-auto-equipment__set-importer legend,
@@ -7987,10 +8060,8 @@ body.debug-mode-hud .battle-screen .status-strip {
 }
 
 .debug-auto-equipment__status,
-.debug-shop-items__ids,
-.debug-shop-items__status,
-.debug-boss-items__id,
-.debug-boss-items__status {
+.debug-item-equipment__value-ids,
+.debug-item-equipment__value-status {
   min-height: 16px;
   margin: 0 10px 8px;
   color: #fff0bd;
@@ -7998,17 +8069,14 @@ body.debug-mode-hud .battle-screen .status-strip {
   font-weight: 800;
 }
 
-.debug-shop-items__ids,
-.debug-boss-items__id {
+.debug-item-equipment__value-ids {
   word-break: break-word;
   opacity: 0.82;
 }
 
 .debug-rarity-select,
 .debug-item-equipment__item-select,
-.debug-auto-equipment__generated-select,
-.debug-shop-items__select,
-.debug-boss-items__select {
+.debug-auto-equipment__generated-select {
   transition:
     border-color 120ms ease,
     box-shadow 120ms ease,
@@ -8017,63 +8085,49 @@ body.debug-mode-hud .battle-screen .status-strip {
 
 .debug-rarity-select[data-rarity="common"],
 .debug-item-equipment__item-select[data-rarity="common"],
-.debug-auto-equipment__generated-select[data-rarity="common"],
-.debug-shop-items__select[data-rarity="common"],
-.debug-boss-items__select[data-rarity="common"] {
+.debug-auto-equipment__generated-select[data-rarity="common"] {
   border-color: rgba(230, 214, 174, 0.88);
   background: linear-gradient(180deg, rgba(84, 70, 46, 0.92), rgba(34, 24, 14, 0.9));
 }
 
 .debug-rarity-select[data-rarity="uncommon"],
 .debug-item-equipment__item-select[data-rarity="uncommon"],
-.debug-auto-equipment__generated-select[data-rarity="uncommon"],
-.debug-shop-items__select[data-rarity="uncommon"],
-.debug-boss-items__select[data-rarity="uncommon"] {
+.debug-auto-equipment__generated-select[data-rarity="uncommon"] {
   border-color: rgba(88, 214, 112, 0.9);
   background: linear-gradient(180deg, rgba(48, 117, 54, 0.92), rgba(20, 55, 27, 0.9));
 }
 
 .debug-rarity-select[data-rarity="rare"],
 .debug-item-equipment__item-select[data-rarity="rare"],
-.debug-auto-equipment__generated-select[data-rarity="rare"],
-.debug-shop-items__select[data-rarity="rare"],
-.debug-boss-items__select[data-rarity="rare"] {
+.debug-auto-equipment__generated-select[data-rarity="rare"] {
   border-color: rgba(96, 184, 255, 0.96);
   background: linear-gradient(180deg, rgba(45, 118, 178, 0.94), rgba(17, 53, 92, 0.92));
 }
 
 .debug-rarity-select[data-rarity="epic"],
 .debug-item-equipment__item-select[data-rarity="epic"],
-.debug-auto-equipment__generated-select[data-rarity="epic"],
-.debug-shop-items__select[data-rarity="epic"],
-.debug-boss-items__select[data-rarity="epic"] {
+.debug-auto-equipment__generated-select[data-rarity="epic"] {
   border-color: rgba(205, 103, 255, 0.96);
   background: linear-gradient(180deg, rgba(117, 54, 154, 0.94), rgba(52, 22, 82, 0.92));
 }
 
 .debug-rarity-select[data-rarity="legendary"],
 .debug-item-equipment__item-select[data-rarity="legendary"],
-.debug-auto-equipment__generated-select[data-rarity="legendary"],
-.debug-shop-items__select[data-rarity="legendary"],
-.debug-boss-items__select[data-rarity="legendary"] {
+.debug-auto-equipment__generated-select[data-rarity="legendary"] {
   border-color: rgba(255, 186, 64, 0.98);
   background: linear-gradient(180deg, rgba(176, 103, 24, 0.95), rgba(82, 42, 10, 0.92));
 }
 
 .debug-rarity-select[data-rarity="mythical"],
 .debug-item-equipment__item-select[data-rarity="mythical"],
-.debug-auto-equipment__generated-select[data-rarity="mythical"],
-.debug-shop-items__select[data-rarity="mythical"],
-.debug-boss-items__select[data-rarity="mythical"] {
+.debug-auto-equipment__generated-select[data-rarity="mythical"] {
   border-color: rgba(255, 84, 91, 0.98);
   background: linear-gradient(180deg, rgba(137, 24, 32, 0.95), rgba(48, 5, 10, 0.92));
 }
 
 .debug-rarity-select[data-rarity="unique"],
 .debug-item-equipment__item-select[data-rarity="unique"],
-.debug-auto-equipment__generated-select[data-rarity="unique"],
-.debug-shop-items__select[data-rarity="unique"],
-.debug-boss-items__select[data-rarity="unique"] {
+.debug-auto-equipment__generated-select[data-rarity="unique"] {
   border-color: rgba(88, 232, 222, 0.98);
   background: linear-gradient(180deg, rgba(22, 139, 134, 0.95), rgba(4, 50, 49, 0.92));
 }

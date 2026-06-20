@@ -77,7 +77,6 @@ import {
   type DebugCharacterEquipmentSelection,
 } from "./debugCharacterEquipmentBridge";
 import {
-  createDefaultHeroInventory,
   createDefaultHeroEquipment,
   ARENA_BOSSES,
   ARENA_DIFFICULTY_IDS,
@@ -94,7 +93,6 @@ import {
   type ArenaTierOpponentDefinition,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
-  type HeroInventoryEntry,
   type HeroItemDefinition,
   type HeroItemId,
   type HeroItemRarity,
@@ -121,8 +119,7 @@ import {
   saveArenaBoss,
   saveArenaTierBackground,
   saveArenaTier,
-  saveGeneratedBossItem,
-  saveGeneratedShopItem,
+  saveGeneratedEquipmentItem,
   saveProdAnimation,
   saveProdDefaults,
   savePromotedEquipmentItem,
@@ -134,7 +131,6 @@ import {
 
 interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
-  heroInventory?: HeroInventoryEntry[];
   onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
   onRestartArenaTierPreview?: (tierId: number, backgroundVariantId?: ArenaBackgroundVariantId) => void;
   onPreviewSlashArc?: (actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void;
@@ -316,6 +312,20 @@ interface DebugGeneratedBossItem {
   stat: number;
 }
 
+interface DebugItemEquipmentValueContext {
+  itemIds: HeroItemId[];
+  kind?: HeroItemDefinition["kind"];
+  rarity?: HeroItemRarity;
+  stat?: number;
+  price?: number;
+  idsText: string;
+  statusText: string;
+  canEditRarity: boolean;
+  canEditStat: boolean;
+  canEditPrice: boolean;
+  canSave: boolean;
+}
+
 interface DebugRemovableGeneratedEquipmentItem {
   id: string;
   name: string;
@@ -407,6 +417,7 @@ const actionButtonLabels: Record<ActionButtonOffsetKey, string> = {
   heavy: "Heavy",
   switchWeapon: "Swap",
   shuriken: "Shuriken",
+  scroll: "Scroll",
   taunt: "Taunt",
   rest: "Rest",
 };
@@ -417,6 +428,7 @@ const bowDistanceActionButtonLabels: Partial<Record<ActionButtonOffsetKey, strin
   heavy: "Power shot",
   switchWeapon: "Swap",
   shuriken: "Shuriken",
+  scroll: "Scroll",
 };
 
 const AUTO_EQUIPMENT_STAT_MIN = 0;
@@ -891,7 +903,6 @@ let debugArenaTiers: ArenaTierConfig[] = ARENA_TIER_CONFIGS.map(cloneArenaTierCo
 let isDebugUndoShortcutMounted = false;
 let isCharacterCanvasEquipmentBridgeMounted = false;
 let debugHeroEquipment: HeroEquipment | undefined;
-let debugHeroInventory: HeroInventoryEntry[] = createDefaultHeroInventory();
 let notifyHeroEquipmentChange: ((equipment: HeroEquipment) => void) | undefined;
 let previewSlashArc: ((actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void) | undefined;
 let previewPopup: ((kind: DebugPopupPreviewKind) => void) | undefined;
@@ -1035,10 +1046,6 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         </div>
       </div>
     </details>
-    <details class="debug-hero-equipment-panel">
-      <summary>Hero equipment</summary>
-      <div class="debug-hero-equipment"></div>
-    </details>
     <details class="debug-item-equipment-panel">
       <summary>Item equipment</summary>
       <div class="debug-item-equipment">
@@ -1059,6 +1066,28 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
         <div class="debug-item-equipment__picker" role="listbox" aria-label="Item equipment"></div>
         <p class="debug-item-equipment__empty" aria-live="polite"></p>
         <div class="debug-item-equipment__controls"></div>
+        <fieldset class="debug-item-equipment__values">
+          <legend>Item values</legend>
+          <label class="debug-rig-editor__part debug-item-equipment__value-rarity-row">
+            <span>Rarity</span>
+            <select class="debug-item-equipment__value-rarity debug-rarity-select">${formatAutoEquipmentRarityOptions()}</select>
+          </label>
+          <label class="debug-panel__row debug-rig-editor__row debug-item-equipment__value-stat-row">
+            <span class="debug-item-equipment__value-stat-label">Armor HP</span>
+            <input class="debug-panel__range" type="range" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-item-equipment-stat />
+            <input class="debug-panel__number" type="number" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-item-equipment-stat-number />
+          </label>
+          <label class="debug-panel__row debug-rig-editor__row debug-item-equipment__value-price-row">
+            <span>Price</span>
+            <input class="debug-panel__range" type="range" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-item-equipment-price />
+            <input class="debug-panel__number" type="number" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-item-equipment-price-number />
+          </label>
+          <p class="debug-item-equipment__value-ids"></p>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset debug-item-equipment__save" type="button">Save item</button>
+          </div>
+          <p class="debug-item-equipment__value-status" aria-live="polite"></p>
+        </fieldset>
         <div class="debug-rig-editor__actions">
           <button class="debug-panel__reset debug-item-equipment__reset" type="button">Reset selected</button>
         </div>
@@ -1167,53 +1196,6 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           </div>
         </fieldset>
         <p class="debug-auto-equipment__status" aria-live="polite"></p>
-      </div>
-    </details>
-    <details class="debug-shop-items-panel">
-      <summary>Shop items</summary>
-      <div class="debug-shop-items">
-        <label class="debug-rig-editor__part">
-          <span>Item</span>
-          <select class="debug-shop-items__select"></select>
-        </label>
-        <label class="debug-rig-editor__part">
-          <span>Rarity</span>
-          <select class="debug-shop-items__rarity debug-rarity-select">${formatAutoEquipmentRarityOptions()}</select>
-        </label>
-        <label class="debug-panel__row debug-rig-editor__row">
-          <span class="debug-shop-items__stat-label">Armor HP</span>
-          <input class="debug-panel__range" type="range" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-shop-item-stat />
-          <input class="debug-panel__number" type="number" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-shop-item-stat-number />
-        </label>
-        <label class="debug-panel__row debug-rig-editor__row">
-          <span>Price</span>
-          <input class="debug-panel__range" type="range" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-shop-item-price />
-          <input class="debug-panel__number" type="number" min="0" max="${AUTO_EQUIPMENT_PRICE_MAX}" step="1" value="0" data-shop-item-price-number />
-        </label>
-        <p class="debug-shop-items__ids"></p>
-        <div class="debug-rig-editor__actions">
-          <button class="debug-panel__reset debug-shop-items__save" type="button">Save shop item</button>
-        </div>
-        <p class="debug-shop-items__status" aria-live="polite"></p>
-      </div>
-    </details>
-    <details class="debug-boss-items-panel">
-      <summary>Boss items</summary>
-      <div class="debug-boss-items">
-        <label class="debug-rig-editor__part">
-          <span>Item</span>
-          <select class="debug-boss-items__select"></select>
-        </label>
-        <label class="debug-panel__row debug-rig-editor__row">
-          <span class="debug-boss-items__stat-label">Armor HP</span>
-          <input class="debug-panel__range" type="range" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-boss-item-stat />
-          <input class="debug-panel__number" type="number" min="${AUTO_EQUIPMENT_STAT_MIN}" max="${AUTO_EQUIPMENT_ARMOR_MAX}" step="1" value="0" data-boss-item-stat-number />
-        </label>
-        <p class="debug-boss-items__id"></p>
-        <div class="debug-rig-editor__actions">
-          <button class="debug-panel__reset debug-boss-items__save" type="button">Save boss item</button>
-        </div>
-        <p class="debug-boss-items__status" aria-live="polite"></p>
       </div>
     </details>
     <details class="debug-tier-editor-panel">
@@ -1347,11 +1329,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
   const facePanel = panel.querySelector<HTMLDetailsElement>(".debug-face-panel");
   const faceAssetEditor = panel.querySelector<HTMLElement>(".debug-face-editor");
-  const heroEquipmentBody = panel.querySelector<HTMLElement>(".debug-hero-equipment");
   const itemEquipmentBody = panel.querySelector<HTMLElement>(".debug-item-equipment");
   const autoEquipmentBody = panel.querySelector<HTMLElement>(".debug-auto-equipment");
-  const shopItemsBody = panel.querySelector<HTMLElement>(".debug-shop-items");
-  const bossItemsBody = panel.querySelector<HTMLElement>(".debug-boss-items");
   const tierEditorBody = panel.querySelector<HTMLElement>(".debug-tier-editor");
   const bossEditorBody = panel.querySelector<HTMLElement>(".debug-boss-editor");
   const saveButton = panel.querySelector<HTMLButtonElement>(".debug-panel__save-prod");
@@ -1366,11 +1345,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     !rigEditor ||
     !facePanel ||
     !faceAssetEditor ||
-    !heroEquipmentBody ||
     !itemEquipmentBody ||
     !autoEquipmentBody ||
-    !shopItemsBody ||
-    !bossItemsBody ||
     !tierEditorBody ||
     !bossEditorBody ||
     !saveButton ||
@@ -1417,11 +1393,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountAnimationWorkbench();
   mountFaceAssetEditor(faceAssetEditor);
   mountEffectsEditor(effectsBody);
-  mountHeroEquipmentEditor(heroEquipmentBody);
   mountItemEquipmentEditor(itemEquipmentBody);
   mountAutoEquipmentEditor(autoEquipmentBody);
-  mountGeneratedShopItemsEditor(shopItemsBody);
-  mountGeneratedBossItemsEditor(bossItemsBody);
   mountArenaTierEditor(tierEditorBody);
   mountBossEditor(bossEditorBody);
   mountNudgeToolbar(nudgeToolbar);
@@ -1456,14 +1429,9 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
 
 function configureHeroEquipmentDebug(options: DebugPanelOptions): void {
   debugHeroEquipment = options.heroEquipment ? { ...options.heroEquipment } : undefined;
-  debugHeroInventory = options.heroInventory ? cloneHeroInventory(options.heroInventory) : createDefaultHeroInventory();
   notifyHeroEquipmentChange = options.onHeroEquipmentChange;
   previewSlashArc = options.onPreviewSlashArc;
   previewPopup = options.onPreviewPopup;
-}
-
-function cloneHeroInventory(source: readonly HeroInventoryEntry[]): HeroInventoryEntry[] {
-  return source.map((entry) => ({ ...entry }));
 }
 
 function createHeroPortraitButtonReset(): HTMLButtonElement {
@@ -2591,48 +2559,36 @@ function createClassicSlotNumberRow(field: ClassicSlotNumericKey, label: string,
   `;
 }
 
-function mountHeroEquipmentEditor(root: HTMLElement): void {
-  root.innerHTML = "";
-
-  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    root.append(createHeroEquipmentRow(slotKey));
-  });
-}
-
-function createHeroEquipmentRow(slotKey: HeroEquipmentSlotKey): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "debug-hero-equipment__row";
-
-  const slot = document.createElement("span");
-  slot.className = "debug-hero-equipment__slot";
-  slot.textContent = slotKey;
-
-  const select = document.createElement("select");
-  select.className = "debug-hero-equipment__select";
-  select.dataset.heroEquipmentSlot = slotKey;
-
-  const item = document.createElement("span");
-  item.className = "debug-hero-equipment__item";
-  item.dataset.heroEquipmentItem = slotKey;
-
-  select.addEventListener("change", () => {
-    updateHeroEquipmentSlot(slotKey, getHeroEquipmentSelectItemId(select.value));
-  });
-
-  row.append(slot, select, item);
-
-  return row;
-}
-
 function mountItemEquipmentEditor(editor: HTMLElement): void {
   const select = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__select");
   const typeFilter = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__type-filter");
   const rarityFilter = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__rarity-filter");
   const picker = editor.querySelector<HTMLElement>(".debug-item-equipment__picker");
   const controls = editor.querySelector<HTMLElement>(".debug-item-equipment__controls");
+  const valueRarity = editor.querySelector<HTMLSelectElement>(".debug-item-equipment__value-rarity");
+  const valueStatRange = editor.querySelector<HTMLInputElement>("input[data-item-equipment-stat]");
+  const valueStatNumber = editor.querySelector<HTMLInputElement>("input[data-item-equipment-stat-number]");
+  const valuePriceRange = editor.querySelector<HTMLInputElement>("input[data-item-equipment-price]");
+  const valuePriceNumber = editor.querySelector<HTMLInputElement>("input[data-item-equipment-price-number]");
+  const save = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__save");
+  const valueStatus = editor.querySelector<HTMLElement>(".debug-item-equipment__value-status");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__reset");
 
-  if (!select || !typeFilter || !rarityFilter || !picker || !controls || !reset) {
+  if (
+    !select ||
+    !typeFilter ||
+    !rarityFilter ||
+    !picker ||
+    !controls ||
+    !valueRarity ||
+    !valueStatRange ||
+    !valueStatNumber ||
+    !valuePriceRange ||
+    !valuePriceNumber ||
+    !save ||
+    !valueStatus ||
+    !reset
+  ) {
     return;
   }
 
@@ -2645,6 +2601,8 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
 
   equipmentNumericControls.forEach((control) => controls.append(createEquipmentRangeControl(control)));
   equipmentToggleControls.forEach((control) => controls.append(createEquipmentToggleControl(control)));
+  syncLinkedNumberInputs(valueStatRange, valueStatNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
+  syncLinkedNumberInputs(valuePriceRange, valuePriceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
 
   select.addEventListener("change", () => {
     if (isEquipmentSlotKey(select.value)) {
@@ -2672,6 +2630,10 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
     syncEquipmentEditor(panel ?? editor);
   });
 
+  valueRarity.addEventListener("change", () => {
+    setDebugRarityDataset(valueRarity, getDebugItemRarity(valueRarity.value, "common"));
+  });
+
   picker.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>("[data-item-equipment-item]");
 
@@ -2695,6 +2657,34 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
 
   reset.addEventListener("click", () => {
     resetActiveEquipmentTuning();
+  });
+
+  save.addEventListener("click", async () => {
+    const context = getActiveItemEquipmentValueContext();
+
+    if (!context.canSave || !activeEquipmentItemId) {
+      valueStatus.textContent = "Select a generated item to save.";
+      return;
+    }
+
+    save.disabled = true;
+    valueStatus.textContent = "Saving item...";
+
+    try {
+      valueStatus.textContent = await saveGeneratedEquipmentItem({
+        itemIds: context.itemIds,
+        ...(context.canEditRarity ? { rarity: getDebugItemRarity(valueRarity.value, context.rarity ?? "common") } : {}),
+        ...(context.canEditStat ? { stat: clampNumber(Number(valueStatNumber.value), AUTO_EQUIPMENT_STAT_MIN, getItemEquipmentValueStatMax(context)) } : {}),
+        ...(context.canEditPrice ? { price: clampNumber(Number(valuePriceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX) } : {}),
+        equipmentTuningByItemId: {
+          [activeEquipmentItemId]: getCurrentEquipmentItemTuning(activeEquipmentItemId, activeEquipmentSlot),
+        },
+      });
+    } catch (error) {
+      valueStatus.textContent = error instanceof Error ? error.message : "Could not save generated item.";
+    } finally {
+      save.disabled = !getActiveItemEquipmentValueContext().canSave;
+    }
   });
 }
 
@@ -3034,114 +3024,6 @@ function mountAutoEquipmentEditor(editor: HTMLElement): void {
       status.textContent = error instanceof Error ? error.message : "Could not promote shield imports.";
     } finally {
       shieldPromote.disabled = getShieldImportAssets().length === 0;
-    }
-  });
-}
-
-function mountGeneratedShopItemsEditor(editor: HTMLElement): void {
-  const select = editor.querySelector<HTMLSelectElement>(".debug-shop-items__select");
-  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-shop-items__rarity");
-  const statRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat]");
-  const statNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat-number]");
-  const priceRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-price]");
-  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-price-number]");
-  const save = editor.querySelector<HTMLButtonElement>(".debug-shop-items__save");
-  const status = editor.querySelector<HTMLElement>(".debug-shop-items__status");
-
-  if (!select || !raritySelect || !statRange || !statNumber || !priceRange || !priceNumber || !save || !status) {
-    return;
-  }
-
-  const products = getGeneratedShopProducts();
-
-  products.forEach((product) => {
-    select.append(createGeneratedShopProductOption(product));
-  });
-
-  syncLinkedNumberInputs(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
-  syncLinkedNumberInputs(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
-  syncGeneratedShopItemsEditor(editor, products);
-
-  select.addEventListener("change", () => {
-    syncGeneratedShopItemsEditor(editor, products);
-    previewGeneratedShopProduct(getSelectedGeneratedShopProduct(products, select.value));
-  });
-
-  raritySelect.addEventListener("change", () => {
-    setDebugRarityDataset(raritySelect, getDebugItemRarity(raritySelect.value, "common"));
-  });
-
-  save.addEventListener("click", async () => {
-    const product = getSelectedGeneratedShopProduct(products, select.value);
-
-    if (!product) {
-      status.textContent = "No generated shop item selected.";
-      return;
-    }
-
-    save.disabled = true;
-    status.textContent = "Saving shop item...";
-
-    try {
-      status.textContent = await saveGeneratedShopItem({
-        itemIds: product.itemIds,
-        rarity: getDebugItemRarity(raritySelect.value, product.rarity),
-        stat: clampNumber(Number(statNumber.value), AUTO_EQUIPMENT_STAT_MIN, getGeneratedShopProductStatMax(product)),
-        price: clampNumber(Number(priceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX),
-      });
-    } catch (error) {
-      status.textContent = error instanceof Error ? error.message : "Could not save generated shop item.";
-    } finally {
-      save.disabled = false;
-    }
-  });
-}
-
-function mountGeneratedBossItemsEditor(editor: HTMLElement): void {
-  const select = editor.querySelector<HTMLSelectElement>(".debug-boss-items__select");
-  const statRange = editor.querySelector<HTMLInputElement>("input[data-boss-item-stat]");
-  const statNumber = editor.querySelector<HTMLInputElement>("input[data-boss-item-stat-number]");
-  const save = editor.querySelector<HTMLButtonElement>(".debug-boss-items__save");
-  const status = editor.querySelector<HTMLElement>(".debug-boss-items__status");
-
-  if (!select || !statRange || !statNumber || !save || !status) {
-    return;
-  }
-
-  const items = getGeneratedBossItems();
-
-  items.forEach((item) => {
-    select.append(createGeneratedBossItemOption(item));
-  });
-
-  syncLinkedNumberInputs(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, AUTO_EQUIPMENT_ARMOR_MAX);
-  syncGeneratedBossItemsEditor(editor, items);
-
-  select.addEventListener("change", () => {
-    syncGeneratedBossItemsEditor(editor, items);
-    previewGeneratedBossItem(getSelectedGeneratedBossItem(items, select.value));
-  });
-
-  save.addEventListener("click", async () => {
-    const item = getSelectedGeneratedBossItem(items, select.value);
-
-    if (!item) {
-      status.textContent = "No generated boss item selected.";
-      return;
-    }
-
-    save.disabled = true;
-    status.textContent = "Saving boss item...";
-
-    try {
-      status.textContent = await saveGeneratedBossItem({
-        itemIds: item.itemIds,
-        stat: clampNumber(Number(statNumber.value), AUTO_EQUIPMENT_STAT_MIN, getGeneratedBossItemStatMax(item)),
-      });
-    } catch (error) {
-      status.textContent = error instanceof Error ? error.message : "Could not save generated boss item.";
-    } finally {
-      save.disabled = false;
     }
   });
 }
@@ -5704,17 +5586,6 @@ function syncClassicActionSelectOptions(select: HTMLSelectElement, mode: Classic
   select.value = selectedActionId;
 }
 
-function updateHeroEquipmentSlot(slotKey: HeroEquipmentSlotKey, itemId: HeroItemId | null): void {
-  if (!debugHeroEquipment) {
-    return;
-  }
-
-  updateHeroEquipment({
-    ...debugHeroEquipment,
-    [slotKey]: itemId,
-  });
-}
-
 function updateHeroEquipmentItemWithPair(itemId: HeroItemId, slotKey: HeroEquipmentSlotKey): void {
   if (!debugHeroEquipment) {
     return;
@@ -5736,7 +5607,7 @@ function updateHeroEquipment(nextEquipment: HeroEquipment): void {
   const panel = document.querySelector<HTMLElement>(".debug-panel");
 
   if (panel) {
-    syncHeroEquipmentEditor(panel);
+    syncEquipmentEditor(panel);
   }
 }
 
@@ -6461,34 +6332,6 @@ function isHeroEquipmentSlotKey(value: string | undefined): value is HeroEquipme
   return typeof value === "string" && HERO_EQUIPMENT_SLOT_KEYS.includes(value as HeroEquipmentSlotKey);
 }
 
-function isHeroItemId(value: string | undefined): value is HeroItemId {
-  return typeof value === "string" && Boolean(getDebugHeroItemDefinition(value));
-}
-
-function getHeroEquipmentSelectItemId(value: string): HeroItemId | null {
-  return isHeroItemId(value) ? value : null;
-}
-
-function getInventoryItemIdsForSlot(slotKey: HeroEquipmentSlotKey): HeroItemId[] {
-  const itemIds = getDebugItemIdsForSlot(slotKey);
-  const inventoryItemIds = debugHeroInventory.flatMap((entry) => {
-    if (entry.quantity <= 0 || !isHeroItemId(entry.itemId)) {
-      return [];
-    }
-
-    return getDebugHeroItemDefinition(entry.itemId)?.equipmentSlot === slotKey ? [entry.itemId] : [];
-  });
-
-  itemIds.push(...inventoryItemIds);
-  const equippedItemId = debugHeroEquipment?.[slotKey];
-
-  if (equippedItemId && getDebugHeroItemDefinition(equippedItemId)?.equipmentSlot === slotKey) {
-    itemIds.push(equippedItemId);
-  }
-
-  return [...new Set(itemIds)];
-}
-
 function getDebugItemIdsForSlot(slotKey: EquipmentSlotKey): HeroItemId[] {
   return [...new Set(ALL_HERO_ITEM_IDS)].filter((itemId) => getDebugHeroItemDefinition(itemId)?.equipmentSlot === slotKey);
 }
@@ -6775,10 +6618,6 @@ function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItem
 
 function getHeroItemDefinitionRarity(definition: HeroItemDefinition): HeroItemRarity {
   return definition.rarity ?? "common";
-}
-
-function getInventoryItemQuantity(itemId: HeroItemId): number {
-  return debugHeroInventory.reduce((quantity, entry) => (entry.itemId === itemId ? quantity + entry.quantity : quantity), 0);
 }
 
 function clampRigNumericValue(key: RigNumericControlKey, value: number): number {
@@ -7239,7 +7078,6 @@ function syncDebugTools(panel: HTMLElement): void {
   syncArenaBackgroundEditor(panel);
   syncEffectsEditor(panel);
   syncClassicActionButtonEditor(panel);
-  syncHeroEquipmentEditor(panel);
   syncBossEditor(panel);
   syncAnimationEditor(panel);
   syncNudgeControls();
@@ -7373,60 +7211,6 @@ function formatDebugNumberInputValue(value: number): string {
   const safeValue = Number.isFinite(value) ? value : 0;
 
   return Number.isInteger(safeValue) ? `${safeValue}` : safeValue.toFixed(2);
-}
-
-function syncHeroEquipmentEditor(panel: HTMLElement): void {
-  const fieldset = panel.querySelector<HTMLElement>(".debug-hero-equipment-panel");
-
-  if (fieldset) {
-    fieldset.hidden = !debugHeroEquipment;
-  }
-
-  if (!debugHeroEquipment) {
-    return;
-  }
-
-  panel.querySelectorAll<HTMLSelectElement>("select[data-hero-equipment-slot]").forEach((select) => {
-    const slotKey = select.dataset.heroEquipmentSlot;
-
-    if (!isHeroEquipmentSlotKey(slotKey)) {
-      return;
-    }
-
-    const currentItemId = debugHeroEquipment?.[slotKey] ?? null;
-    const inventoryItemIds = getInventoryItemIdsForSlot(slotKey);
-
-    select.replaceChildren(createHeroEquipmentOption("", "empty"));
-
-    inventoryItemIds.forEach((itemId) => {
-      const definition = getDebugHeroItemDefinition(itemId);
-
-      if (!definition) {
-        return;
-      }
-
-      const quantity = getInventoryItemQuantity(itemId);
-      const label = quantity > 1 ? `${definition.name} x${quantity}` : definition.name;
-
-      select.append(createHeroEquipmentOption(itemId, label));
-    });
-
-    select.value = currentItemId ?? "";
-    select.disabled = inventoryItemIds.length === 0 && !currentItemId;
-  });
-
-  panel.querySelectorAll<HTMLElement>("[data-hero-equipment-item]").forEach((item) => {
-    const slotKey = item.dataset.heroEquipmentItem;
-
-    if (!isHeroEquipmentSlotKey(slotKey)) {
-      return;
-    }
-
-    const itemId = debugHeroEquipment?.[slotKey];
-    const definition = getDebugHeroItemDefinition(itemId);
-
-    item.textContent = definition ? definition.id : "empty";
-  });
 }
 
 function syncPreviewToolbar(panel: HTMLElement): void {
@@ -7642,111 +7426,6 @@ function syncAutoEquipmentAvailabilityControls(editor: HTMLElement): void {
       priceRange.value = "0";
       priceNumber.value = "0";
     }
-  }
-}
-
-function syncGeneratedShopItemsEditor(editor: HTMLElement, products: readonly DebugGeneratedShopProduct[]): void {
-  const select = editor.querySelector<HTMLSelectElement>(".debug-shop-items__select");
-  const raritySelect = editor.querySelector<HTMLSelectElement>(".debug-shop-items__rarity");
-  const statLabel = editor.querySelector<HTMLElement>(".debug-shop-items__stat-label");
-  const statRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat]");
-  const statNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-stat-number]");
-  const priceRange = editor.querySelector<HTMLInputElement>("input[data-shop-item-price]");
-  const priceNumber = editor.querySelector<HTMLInputElement>("input[data-shop-item-price-number]");
-  const ids = editor.querySelector<HTMLElement>(".debug-shop-items__ids");
-  const save = editor.querySelector<HTMLButtonElement>(".debug-shop-items__save");
-  const status = editor.querySelector<HTMLElement>(".debug-shop-items__status");
-  const product = getSelectedGeneratedShopProduct(products, select?.value);
-  const isAvailable = Boolean(product);
-
-  if (select) {
-    select.disabled = products.length === 0;
-    setDebugRarityDataset(select, product?.rarity);
-  }
-
-  if (raritySelect) {
-    const rarity = product?.rarity ?? "common";
-
-    raritySelect.value = rarity;
-    raritySelect.disabled = !isAvailable;
-    setDebugRarityDataset(raritySelect, isAvailable ? rarity : undefined);
-  }
-
-  if (statLabel) {
-    statLabel.textContent = product?.kind === "weapon" ? "Damage" : "Armor HP";
-  }
-
-  if (statRange && statNumber) {
-    const maxStat = getGeneratedShopProductStatMax(product);
-
-    setLinkedNumberInputBounds(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, maxStat);
-    statRange.value = `${product?.stat ?? 0}`;
-    statNumber.value = `${product?.stat ?? 0}`;
-    statRange.disabled = !isAvailable;
-    statNumber.disabled = !isAvailable;
-  }
-
-  if (priceRange && priceNumber) {
-    setLinkedNumberInputBounds(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
-    priceRange.value = `${product?.price ?? 0}`;
-    priceNumber.value = `${product?.price ?? 0}`;
-    priceRange.disabled = !isAvailable;
-    priceNumber.disabled = !isAvailable;
-  }
-
-  if (ids) {
-    ids.textContent = product ? product.itemIds.join(" + ") : "No generated shop items.";
-  }
-
-  if (save) {
-    save.disabled = !isAvailable;
-  }
-
-  if (status) {
-    status.textContent = product?.itemIds.length === 2 ? "Merged generated pair." : isAvailable ? "Single generated item." : "";
-  }
-}
-
-function syncGeneratedBossItemsEditor(editor: HTMLElement, items: readonly DebugGeneratedBossItem[]): void {
-  const select = editor.querySelector<HTMLSelectElement>(".debug-boss-items__select");
-  const statLabel = editor.querySelector<HTMLElement>(".debug-boss-items__stat-label");
-  const statRange = editor.querySelector<HTMLInputElement>("input[data-boss-item-stat]");
-  const statNumber = editor.querySelector<HTMLInputElement>("input[data-boss-item-stat-number]");
-  const id = editor.querySelector<HTMLElement>(".debug-boss-items__id");
-  const save = editor.querySelector<HTMLButtonElement>(".debug-boss-items__save");
-  const status = editor.querySelector<HTMLElement>(".debug-boss-items__status");
-  const item = getSelectedGeneratedBossItem(items, select?.value);
-  const isAvailable = Boolean(item);
-
-  if (select) {
-    select.disabled = items.length === 0;
-    setDebugRarityDataset(select, item?.rarity);
-  }
-
-  if (statLabel) {
-    statLabel.textContent = item?.kind === "weapon" ? "Damage" : "Armor HP";
-  }
-
-  if (statRange && statNumber) {
-    const maxStat = getGeneratedBossItemStatMax(item);
-
-    setLinkedNumberInputBounds(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, maxStat);
-    statRange.value = `${item?.stat ?? 0}`;
-    statNumber.value = `${item?.stat ?? 0}`;
-    statRange.disabled = !isAvailable;
-    statNumber.disabled = !isAvailable;
-  }
-
-  if (id) {
-    id.textContent = item ? item.itemIds.join(" + ") : "No generated boss items.";
-  }
-
-  if (save) {
-    save.disabled = !isAvailable;
-  }
-
-  if (status) {
-    status.textContent = item?.itemIds.length === 2 ? "Merged boss pair." : isAvailable ? "Single boss item." : "";
   }
 }
 
@@ -9189,24 +8868,6 @@ function getGeneratedBossItems(): DebugGeneratedBossItem[] {
   return items.sort(compareDebugGeneratedBossItems);
 }
 
-function getSelectedGeneratedBossItem(
-  items: readonly DebugGeneratedBossItem[],
-  itemId: string | undefined,
-): DebugGeneratedBossItem | undefined {
-  return items.find((item) => item.id === itemId);
-}
-
-function createGeneratedBossItemOption(item: DebugGeneratedBossItem): HTMLOptionElement {
-  const option = document.createElement("option");
-
-  option.value = item.id;
-  option.textContent = formatGeneratedBossItemOption(item);
-  option.className = `debug-rarity-option debug-rarity-option--${item.rarity}`;
-  option.dataset.rarity = item.rarity;
-
-  return option;
-}
-
 function createBossEquipmentProductOption(product: DebugGeneratedBossItem): HTMLOptionElement {
   const option = createHeroEquipmentOption(product.id, formatGeneratedBossItemOption(product));
 
@@ -9220,31 +8881,6 @@ function formatGeneratedBossItemOption(item: DebugGeneratedBossItem): string {
   const statLabel = item.kind === "weapon" ? "DMG" : "AR";
 
   return `${AUTO_EQUIPMENT_RARITY_LABELS[item.rarity]} | ${item.name} | ${statLabel} ${item.stat}`;
-}
-
-function previewGeneratedBossItem(item: DebugGeneratedBossItem | undefined): void {
-  if (!item) {
-    return;
-  }
-
-  item.itemIds.forEach((itemId) => {
-    const definition = getDebugHeroItemDefinition(itemId);
-
-    if (!definition) {
-      return;
-    }
-
-    if (isEquipmentSlotKey(definition.equipmentSlot)) {
-      activeEquipmentSlot = definition.equipmentSlot;
-      activeEquipmentItemId = definition.id;
-    }
-
-    updateHeroEquipmentSlot(definition.equipmentSlot, definition.id);
-  });
-}
-
-function getGeneratedBossItemStatMax(item: DebugGeneratedBossItem | undefined): number {
-  return item?.kind === "weapon" ? AUTO_EQUIPMENT_DAMAGE_MAX : AUTO_EQUIPMENT_ARMOR_MAX;
 }
 
 function compareDebugGeneratedBossItems(left: DebugGeneratedBossItem, right: DebugGeneratedBossItem): number {
@@ -9309,30 +8945,6 @@ function getGeneratedShopProducts(): DebugGeneratedShopProduct[] {
   return products.sort(compareDebugGeneratedShopProducts);
 }
 
-function getSelectedGeneratedShopProduct(
-  products: readonly DebugGeneratedShopProduct[],
-  productId: string | undefined,
-): DebugGeneratedShopProduct | undefined {
-  return products.find((product) => product.id === productId);
-}
-
-function createGeneratedShopProductOption(product: DebugGeneratedShopProduct): HTMLOptionElement {
-  const option = document.createElement("option");
-
-  option.value = product.id;
-  option.textContent = formatGeneratedShopProductOption(product);
-  option.className = `debug-rarity-option debug-rarity-option--${product.rarity}`;
-  option.dataset.rarity = product.rarity;
-
-  return option;
-}
-
-function formatGeneratedShopProductOption(product: DebugGeneratedShopProduct): string {
-  const statLabel = product.kind === "weapon" ? "DMG" : "AR";
-
-  return `${AUTO_EQUIPMENT_RARITY_LABELS[product.rarity]} | ${product.name} | ${statLabel} ${product.stat} | Gold ${product.price}`;
-}
-
 function setDebugRarityDataset(element: HTMLElement, rarity: HeroItemRarity | undefined): void {
   if (rarity) {
     element.dataset.rarity = rarity;
@@ -9340,27 +8952,6 @@ function setDebugRarityDataset(element: HTMLElement, rarity: HeroItemRarity | un
   }
 
   delete element.dataset.rarity;
-}
-
-function previewGeneratedShopProduct(product: DebugGeneratedShopProduct | undefined): void {
-  if (!product) {
-    return;
-  }
-
-  product.itemIds.forEach((itemId) => {
-    const definition = getDebugHeroItemDefinition(itemId);
-
-    if (!definition) {
-      return;
-    }
-
-    if (isEquipmentSlotKey(definition.equipmentSlot)) {
-      activeEquipmentSlot = definition.equipmentSlot;
-      activeEquipmentItemId = definition.id;
-    }
-
-    updateHeroEquipmentSlot(definition.equipmentSlot, definition.id);
-  });
 }
 
 function createDebugGeneratedShopProduct(record: DebugGeneratedShopItemRecord): DebugGeneratedShopProduct {
@@ -9457,10 +9048,6 @@ function getGeneratedShopRecordStat(record: DebugGeneratedShopItemRecord): numbe
 
 function getGeneratedShopRecordPrice(record: DebugGeneratedShopItemRecord): number {
   return record.armoryProduct?.price ?? record.weaponProduct?.price ?? 0;
-}
-
-function getGeneratedShopProductStatMax(product: DebugGeneratedShopProduct | undefined): number {
-  return product?.kind === "weapon" ? AUTO_EQUIPMENT_DAMAGE_MAX : AUTO_EQUIPMENT_ARMOR_MAX;
 }
 
 function compareDebugGeneratedShopProducts(left: DebugGeneratedShopProduct, right: DebugGeneratedShopProduct): number {
@@ -9601,6 +9188,189 @@ function getCurrentEquipmentItemTuning(itemId: HeroItemId, slotKey: EquipmentSlo
       DEFAULT_EQUIPMENT[slotKey]
     ),
   };
+}
+
+function syncItemEquipmentValueEditor(panel: HTMLElement): void {
+  const valueRarityRow = panel.querySelector<HTMLElement>(".debug-item-equipment__value-rarity-row");
+  const valueRarity = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__value-rarity");
+  const statRow = panel.querySelector<HTMLElement>(".debug-item-equipment__value-stat-row");
+  const statLabel = panel.querySelector<HTMLElement>(".debug-item-equipment__value-stat-label");
+  const statRange = panel.querySelector<HTMLInputElement>("input[data-item-equipment-stat]");
+  const statNumber = panel.querySelector<HTMLInputElement>("input[data-item-equipment-stat-number]");
+  const priceRow = panel.querySelector<HTMLElement>(".debug-item-equipment__value-price-row");
+  const priceRange = panel.querySelector<HTMLInputElement>("input[data-item-equipment-price]");
+  const priceNumber = panel.querySelector<HTMLInputElement>("input[data-item-equipment-price-number]");
+  const ids = panel.querySelector<HTMLElement>(".debug-item-equipment__value-ids");
+  const save = panel.querySelector<HTMLButtonElement>(".debug-item-equipment__save");
+  const status = panel.querySelector<HTMLElement>(".debug-item-equipment__value-status");
+  const context = getActiveItemEquipmentValueContext();
+
+  if (valueRarityRow) {
+    valueRarityRow.hidden = !context.canEditRarity;
+  }
+
+  if (valueRarity) {
+    const rarity = context.rarity ?? "common";
+
+    valueRarity.value = rarity;
+    valueRarity.disabled = !context.canEditRarity;
+    setDebugRarityDataset(valueRarity, context.canEditRarity ? rarity : undefined);
+  }
+
+  if (statRow) {
+    statRow.hidden = !context.canEditStat;
+  }
+
+  if (statLabel) {
+    statLabel.textContent = context.kind === "weapon" ? "Damage" : "Armor HP";
+  }
+
+  if (statRange && statNumber) {
+    const maxStat = getItemEquipmentValueStatMax(context);
+
+    setLinkedNumberInputBounds(statRange, statNumber, AUTO_EQUIPMENT_STAT_MIN, maxStat);
+    statRange.value = `${context.stat ?? 0}`;
+    statNumber.value = `${context.stat ?? 0}`;
+    statRange.disabled = !context.canEditStat;
+    statNumber.disabled = !context.canEditStat;
+  }
+
+  if (priceRow) {
+    priceRow.hidden = !context.canEditPrice;
+  }
+
+  if (priceRange && priceNumber) {
+    setLinkedNumberInputBounds(priceRange, priceNumber, 0, AUTO_EQUIPMENT_PRICE_MAX);
+    priceRange.value = `${context.price ?? 0}`;
+    priceNumber.value = `${context.price ?? 0}`;
+    priceRange.disabled = !context.canEditPrice;
+    priceNumber.disabled = !context.canEditPrice;
+  }
+
+  if (ids) {
+    ids.textContent = context.idsText;
+  }
+
+  if (save) {
+    save.disabled = !context.canSave;
+  }
+
+  if (status) {
+    status.textContent = context.statusText;
+  }
+}
+
+function getItemEquipmentValueStatMax(context: DebugItemEquipmentValueContext): number {
+  return context.kind === "weapon" ? AUTO_EQUIPMENT_DAMAGE_MAX : AUTO_EQUIPMENT_ARMOR_MAX;
+}
+
+function getActiveItemEquipmentValueContext(): DebugItemEquipmentValueContext {
+  const itemId = activeEquipmentItemId;
+
+  if (!itemId) {
+    return createEmptyItemEquipmentValueContext("Select a generated item.");
+  }
+
+  const record = getSelectedGeneratedEquipmentRecord(itemId);
+
+  if (!record) {
+    return createEmptyItemEquipmentValueContext("Selected item is not generated.");
+  }
+
+  if (getGeneratedEquipmentPairRole(record) === "front") {
+    return {
+      itemIds: [record.item.id],
+      kind: record.item.kind,
+      rarity: getHeroItemDefinitionRarity(record.item),
+      idsText: record.item.id,
+      statusText: "Front pair item: transform only. Select the back item for armor and price.",
+      canEditRarity: false,
+      canEditStat: false,
+      canEditPrice: false,
+      canSave: true,
+    };
+  }
+
+  const shopProduct = getGeneratedShopProductForItem(itemId);
+
+  if (shopProduct) {
+    return {
+      itemIds: shopProduct.itemIds,
+      kind: shopProduct.kind,
+      rarity: shopProduct.rarity,
+      stat: shopProduct.stat,
+      price: shopProduct.price,
+      idsText: shopProduct.itemIds.join(" + "),
+      statusText: shopProduct.itemIds.length === 2 ? "Shop pair: values save through the back item." : "Shop item.",
+      canEditRarity: true,
+      canEditStat: true,
+      canEditPrice: true,
+      canSave: true,
+    };
+  }
+
+  const bossItem = getGeneratedBossItemForItem(itemId);
+
+  if (bossItem) {
+    return {
+      itemIds: bossItem.itemIds,
+      kind: bossItem.kind,
+      rarity: bossItem.rarity,
+      stat: bossItem.stat,
+      idsText: bossItem.itemIds.join(" + "),
+      statusText: bossItem.itemIds.length === 2 ? "Boss pair: armor saves through the back item." : "Boss item.",
+      canEditRarity: false,
+      canEditStat: true,
+      canEditPrice: false,
+      canSave: true,
+    };
+  }
+
+  return {
+    itemIds: [record.item.id],
+    kind: record.item.kind,
+    rarity: getHeroItemDefinitionRarity(record.item),
+    idsText: record.item.id,
+    statusText: "Generated item: transform only.",
+    canEditRarity: false,
+    canEditStat: false,
+    canEditPrice: false,
+    canSave: true,
+  };
+}
+
+function createEmptyItemEquipmentValueContext(statusText: string): DebugItemEquipmentValueContext {
+  return {
+    itemIds: [],
+    idsText: "No generated item selected.",
+    statusText,
+    canEditRarity: false,
+    canEditStat: false,
+    canEditPrice: false,
+    canSave: false,
+  };
+}
+
+function getGeneratedShopProductForItem(itemId: HeroItemId): DebugGeneratedShopProduct | undefined {
+  return getGeneratedShopProducts().find((product) => product.itemIds.includes(itemId));
+}
+
+function getGeneratedBossItemForItem(itemId: HeroItemId): DebugGeneratedBossItem | undefined {
+  return getGeneratedBossItems().find((item) => item.itemIds.includes(itemId));
+}
+
+function getGeneratedEquipmentPairRole(record: DebugGeneratedShopItemRecord): "back" | "front" | undefined {
+  if (record.item.kind !== "armor" || !isEquipmentSlotKey(record.item.equipmentSlot)) {
+    return undefined;
+  }
+
+  const pairConfig = getDebugShopItemPairConfig(record.item.equipmentSlot);
+
+  if (!pairConfig) {
+    return undefined;
+  }
+
+  return record.item.equipmentSlot === pairConfig.frontSlot ? "front" : "back";
 }
 
 function syncLinkedNumberInputs(range: HTMLInputElement, number: HTMLInputElement, min: number, max: number): void {
@@ -9982,6 +9752,8 @@ function syncEquipmentEditor(panel: HTMLElement): void {
     button.disabled = !pairItem;
     button.title = pairItem ? `Copy from ${pairItem.name}` : "Select paired generated armor";
   });
+
+  syncItemEquipmentValueEditor(panel);
 }
 
 function syncEffectsEditor(panel: HTMLElement): void {

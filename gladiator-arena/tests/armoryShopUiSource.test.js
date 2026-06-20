@@ -13,6 +13,47 @@ const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIco
 const shopPresentationSource = readFileSync(resolve(currentDir, "../src/shopPresentation.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
+function getFunctionSource(source, functionName) {
+  const signature = `function ${functionName}`;
+  const start = source.indexOf(signature);
+
+  assert.notEqual(start, -1);
+
+  const bodyStart = source.indexOf("{", start);
+  let depth = 0;
+
+  assert.notEqual(bodyStart, -1);
+
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const char = source[index];
+
+    if (char === "{") {
+      depth += 1;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+
+      if (depth === 0) {
+        return source.slice(start, index + 1);
+      }
+    }
+  }
+
+  assert.fail(`Could not find end of ${functionName}`);
+}
+
+function assertInOrder(source, ...needles) {
+  let offset = 0;
+
+  needles.forEach((needle) => {
+    const index = source.indexOf(needle, offset);
+
+    assert.notEqual(index, -1, `Expected to find ${needle}`);
+    offset = index + needle.length;
+  });
+}
+
 test("armory shop groups generated back and front equipment into one product", () => {
   assert.equal(armoryShopSource.includes("pairGeneratedArmoryProducts(products)"), true);
   assert.equal(armoryShopSource.includes("PAIRED_ARMORY_SLOT_CONFIGS"), true);
@@ -136,11 +177,11 @@ test("armory shop seals boss-locked rarity tiers before purchase", () => {
   assert.equal(shopPresentationSource.includes("hero.defeatedArenaBossIds ?? []"), true);
   assert.equal(shopPresentationSource.includes("hasHeroUnlockedShopRarity(hero, rarity)"), true);
 
-  assert.equal(armoryShopSource.includes("getArmoryProductActionState(hero, product)"), true);
+  assert.equal(armoryShopSource.includes("getArmoryProductCardState(hero, product)"), true);
   assert.equal(armoryShopSource.includes('armory-shop__option--sealed'), true);
   assert.equal(armoryShopSource.includes('ribbon.textContent = "SEALED";'), true);
-  assert.equal(armoryShopSource.includes('button.disabled = actionState === "sealed" || actionState === "locked";'), true);
-  assert.equal(armoryShopSource.includes('actionState === "buy" || actionState === "no-gold"'), true);
+  assert.equal(armoryShopSource.includes('button.disabled = cardState === "sealed" || cardState === "locked";'), true);
+  assert.equal(armoryShopSource.includes('return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";'), true);
   assert.equal(armoryShopSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
 
   assert.equal(mainSource.includes("isSealedArmoryPurchase"), true);
@@ -152,13 +193,13 @@ test("armory shop locked products are dimmed and show level requirement ribbons"
   assert.equal(shopPresentationSource.includes("export function getShopProductRequirementBadge"), true);
   assert.equal(armoryShopSource.includes("getShopProductRequirementBadge"), true);
   assert.equal(armoryShopSource.includes("getShopProductRequirementDescription"), true);
-  assert.equal(armoryShopSource.includes('button.classList.toggle("armory-shop__option--locked", actionState === "locked");'), true);
+  assert.equal(armoryShopSource.includes('button.classList.toggle("armory-shop__option--locked", cardState === "locked");'), true);
   assert.equal(
-    armoryShopSource.includes('button.classList.toggle("armory-shop__option--sealed", actionState === "sealed" || actionState === "locked");'),
+    armoryShopSource.includes('button.classList.toggle("armory-shop__option--sealed", cardState === "sealed" || cardState === "locked");'),
     true,
   );
-  assert.equal(armoryShopSource.includes('button.disabled = actionState === "sealed" || actionState === "locked";'), true);
-  assert.match(armoryShopSource, /if \(actionState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
+  assert.equal(armoryShopSource.includes('button.disabled = cardState === "sealed" || cardState === "locked";'), true);
+  assert.match(armoryShopSource, /if \(cardState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
   assert.equal(armoryShopSource.includes('const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;'), true);
   assert.equal(armoryShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;'), true);
   assert.equal(armoryShopSource.includes('icon.textContent = requirement.kind === "level" ? "LVL" : "";'), true);
@@ -316,11 +357,11 @@ test("weapon shop purchase keeps the selected product preview open", () => {
 
 test("weapon shop locked products are dimmed and show centered stat requirement ribbons", () => {
   assert.equal(shopPresentationSource.includes("export function getShopProductRequirementBadge"), true);
-  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--locked", actionState === "locked");'), true);
-  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--sealed", actionState === "locked");'), true);
-  assert.equal(weaponShopSource.includes('button.disabled = actionState === "locked";'), true);
-  assert.match(weaponShopSource, /if \(actionState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
-  assert.match(weaponShopSource, /if \(actionState === "buy" \|\| actionState === "no-gold"\) \{[\s\S]*createProductStats\("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product\.price\)/);
+  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--locked", cardState === "locked");'), true);
+  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--sealed", cardState === "locked");'), true);
+  assert.equal(weaponShopSource.includes('button.disabled = cardState === "locked";'), true);
+  assert.match(weaponShopSource, /if \(cardState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
+  assert.match(weaponShopSource, /if \(cardState === "buy"\) \{[\s\S]*createProductStats\("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product\.price\)/);
   assert.equal(weaponShopSource.includes('const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;'), true);
   assert.equal(weaponShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;'), true);
   assert.equal(weaponShopSource.includes('icon.textContent = requirement.kind === "level" ? "LVL" : "";'), true);
@@ -339,10 +380,10 @@ test("weapon shop shows bow capacity upgrade only for the bows category", () => 
   assert.equal(weaponShopSource.includes("ARROW_ICON_ASSET_URL"), true);
   assert.equal(weaponShopSource.includes("onBowCapacityUpgrade?: () => void"), true);
   assert.match(weaponShopSource, /selectedCategory\.id === BOW_CATEGORY_ID && isBowCategoryAvailable\(hero, selectedCategory\)[\s\S]*bowUpgrade\.hidden = !isVisible;/);
-  assert.match(weaponShopSource, /function isBowCategoryAvailable\(hero: HeroState, category: WeaponCategory\): boolean \{[\s\S]*getShopProductActionState\(hero, product\.itemIds, product\.price\) !== "locked"/);
+  assert.match(weaponShopSource, /function isBowCategoryAvailable\(hero: HeroState, category: WeaponCategory\): boolean \{[\s\S]*getWeaponProductCardState\(hero, product\) !== "locked"/);
   assert.match(weaponShopSource, /getHeroBowShotCapacity\(hero\)[\s\S]*HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX[\s\S]*HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE/);
   assert.equal(weaponShopSource.includes('name.textContent = "Arrows";'), true);
-  assert.match(weaponShopSource, /button\.addEventListener\("click", \(\) => \{[\s\S]*options\.onBowCapacityUpgrade\?\.\(\);[\s\S]*render\(\);[\s\S]*\}\);/);
+  assert.match(weaponShopSource, /button\.addEventListener\("click", \(\) => \{\s*options\.onBowCapacityUpgrade\?\.\(\);\s*\}\);/);
   assert.equal(mainSource.includes("function handleBowCapacityUpgrade(): void"), true);
   assert.equal(mainSource.includes("upgradeHeroBowShotCapacity(hero)"), true);
   assert.equal(mainSource.includes("onBowCapacityUpgrade: handleBowCapacityUpgrade"), true);
@@ -481,16 +522,77 @@ test("shop purchases sync only the active shop state after hero changes", () => 
 
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);
-  assert.equal(armoryShopSource.includes("syncHeroState: () => void"), true);
-  assert.equal(weaponShopSource.includes("syncHeroState: () => void"), true);
-  assert.equal(armoryShopSource.includes("function syncHeroState(): void"), true);
-  assert.equal(weaponShopSource.includes("function syncHeroState(): void"), true);
-  assert.equal(handleShopBuySource.includes("syncShopHeroStateForProduct(product);"), true);
+  assert.equal(armoryShopSource.includes("syncHeroState: (options?: ArmoryShopHeroSyncOptions) => void"), true);
+  assert.equal(weaponShopSource.includes("syncHeroState: (options?: WeaponShopHeroSyncOptions) => void"), true);
+  assert.equal(armoryShopSource.includes("function syncHeroState(syncOptions: ArmoryShopHeroSyncOptions = {}): void"), true);
+  assert.equal(weaponShopSource.includes("function syncHeroState(syncOptions: WeaponShopHeroSyncOptions = {}): void"), true);
+  assert.equal(handleShopBuySource.includes("const previousHero = hero;"), true);
+  assert.equal(handleShopBuySource.includes("syncShopHeroStateForProduct(product, previousHero);"), true);
   assert.equal(handleShopBuySource.includes("armoryShop?.render();"), false);
   assert.equal(handleShopBuySource.includes("weaponShop?.render();"), false);
-  assert.match(mainSource, /function syncShopHeroStateForProduct\(product: ArmoryProduct \| WeaponProduct\): void[\s\S]*armoryShop\?\.syncHeroState\(\);[\s\S]*weaponShop\?\.syncHeroState\(\);/);
-  assert.match(armoryShopSource, /function syncHeroState\(\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshRenderedProductButtons\(hero\);[\s\S]*renderSelectedProduct\(hero\);/);
-  assert.match(weaponShopSource, /function syncHeroState\(\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshSelectedProduct\(hero\);[\s\S]*refreshRenderedProductButtons\(hero\);/);
+  assert.match(mainSource, /function syncShopHeroStateForProduct\(product: ArmoryProduct \| WeaponProduct, previousHero: HeroState\): void[\s\S]*armoryShop\?\.syncHeroState\(\{ product, previousHero \}\);[\s\S]*weaponShop\?\.syncHeroState\(\{ product, previousHero \}\);/);
+  assert.equal(armoryShopSource.includes("function refreshRenderedProductButtons"), false);
+  assert.equal(weaponShopSource.includes("function refreshRenderedProductButtons"), false);
+  assert.match(armoryShopSource, /function syncHeroState\(syncOptions: ArmoryShopHeroSyncOptions = \{\}\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshChangedProductButtons\(hero, syncOptions\);[\s\S]*renderSelectedProduct\(hero\);/);
+  assert.match(weaponShopSource, /function syncHeroState\(syncOptions: WeaponShopHeroSyncOptions = \{\}\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshSelectedProduct\(hero\);[\s\S]*refreshChangedProductButtons\(hero, syncOptions\);/);
+  assert.equal(armoryShopSource.includes("function normalizeProductButtonActionState"), false);
+  assert.equal(weaponShopSource.includes("function normalizeProductButtonActionState"), false);
+  assert.match(armoryShopSource, /if \(productButtonVisualStates\.get\(product\.id\) === nextVisualState\) \{\s*return;\s*\}/);
+  assert.match(weaponShopSource, /if \(productButtonVisualStates\.get\(product\.id\) === nextVisualState\) \{\s*return;\s*\}/);
+});
+
+test("shop product card sync replaces only cards with changed visual state", () => {
+  [armoryShopSource, weaponShopSource].forEach((source) => {
+    const refreshSource = getFunctionSource(source, "refreshChangedProductButtons");
+
+    assertInOrder(
+      refreshSource,
+      "const productIds = getProductButtonRefreshIds(syncOptions.product, syncOptions.previousHero);",
+      "if (productIds)",
+      "productIds.forEach((productId) => refreshProductButton(productId, hero));",
+      "return;",
+      "renderedProducts.forEach((product) => refreshProductButton(product.id, hero));",
+    );
+    assert.equal(refreshSource.includes("renderedProducts.forEach((product) => {"), false);
+  });
+  [armoryShopSource, weaponShopSource].forEach((source) => {
+    const refreshSource = getFunctionSource(source, "refreshProductButton");
+
+    assertInOrder(
+      refreshSource,
+      "const nextVisualState = getProductButtonVisualState(hero, product);",
+      "if (productButtonVisualStates.get(product.id) === nextVisualState)",
+      "return;",
+      "const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);",
+      "currentButton.replaceWith(nextButton);",
+      "productButtons.set(product.id, nextButton);",
+      "productButtonVisualStates.set(product.id, nextVisualState);",
+    );
+    assert.equal(refreshSource.includes("currentButton.replaceWith(nextButton);"), true);
+    assert.equal(refreshSource.indexOf("productButtonVisualStates.get(product.id)"), refreshSource.lastIndexOf("productButtonVisualStates.get(product.id)"));
+  });
+  assert.match(armoryShopSource, /productButtonVisualStates\.set\(product\.id, getProductButtonVisualState\(hero, product\)\);/);
+  assert.match(weaponShopSource, /productButtonVisualStates\.set\(product\.id, getProductButtonVisualState\(hero, product\)\);/);
+  assert.match(armoryShopSource, /previousHero\.equipment\[slotKey\]/);
+  assert.match(weaponShopSource, /previousHero\.equipment\[slotKey\]/);
+});
+
+test("shop product cards leave gold checks to the confirm strip", () => {
+  [armoryShopSource, weaponShopSource].forEach((source) => {
+    const productButtonSource = getFunctionSource(source, "createProductButton");
+    const visualStateSource = getFunctionSource(source, "getProductButtonVisualState");
+
+    assert.equal(productButtonSource.includes("no-gold"), false);
+    assert.equal(productButtonSource.includes("getShopProductActionState(hero, product.itemIds, product.price)"), false);
+    assert.equal(visualStateSource.includes("hero.gold"), false);
+  });
+  assert.match(armoryShopSource, /const cardState = getArmoryProductCardState\(hero, product\);/);
+  assert.match(weaponShopSource, /const cardState = getWeaponProductCardState\(hero, product\);/);
+  assert.match(armoryShopSource, /function updateSelectedProductStrip[\s\S]*const actionState = getArmoryProductActionState\(hero, product\);[\s\S]*actionState === "equipped" \|\| actionState === "no-gold"/);
+  assert.match(
+    weaponShopSource,
+    /function createPreviewBuyButton[\s\S]*const actionState = getShopProductActionState\(hero, product\.itemIds, product\.price\);[\s\S]*actionState === "equipped" \|\| actionState === "no-gold"/,
+  );
 });
 
 test("city shops lazily prewarm visible equipment products", () => {

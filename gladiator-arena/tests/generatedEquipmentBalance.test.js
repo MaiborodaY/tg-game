@@ -208,6 +208,28 @@ test("generated shields follow the heavy defensive purchase curve", () => {
   });
 });
 
+test("boar boss armor sits between rare low and rare mid", () => {
+  assertGeneratedBossArmorSet("boar_boss", {
+    armor: 91,
+    slots: {
+      breastplate: 23,
+      helmet: 14,
+      backShoulderguard: 10,
+      frontShoulderguard: 0,
+      backGreave: 10,
+      frontGreave: 0,
+      backShinguard: 10,
+      frontShinguard: 0,
+      backGlove: 8,
+      frontGlove: 0,
+      backBoot: 8,
+      frontBoot: 0,
+      backWrist: 8,
+      frontWrist: 0,
+    },
+  });
+});
+
 test("generated armor items carry equipment set metadata", () => {
   const armorItems = generatedItems.filter((item) => item.kind === "armor" && item.equipmentSlot !== "shield");
 
@@ -362,6 +384,22 @@ function assertGeneratedArmorSet(token, expected) {
   assert.equal(sumBy(setItems, (item) => item.armoryProduct?.price ?? 0), expected.price);
   assert.equal(sumBy(frontPairItems, (item) => item.armorHp ?? 0), 0);
   assert.equal(sumBy(frontPairItems, (item) => item.armoryProduct?.price ?? 0), 0);
+}
+
+function assertGeneratedBossArmorSet(token, expected) {
+  const setItems = generatedItems.filter((item) => item.kind === "armor" && item.equipmentSet?.id === token);
+  const rarities = new Set(setItems.map((item) => item.rarity));
+
+  assert.equal(setItems.length, 14);
+  assert.deepEqual([...rarities], ["unique"]);
+  assert.equal(sumBy(setItems, (item) => item.armorHp ?? 0), expected.armor);
+
+  Object.entries(expected.slots).forEach(([slot, armor]) => {
+    const item = setItems.find((candidate) => candidate.equipmentSlot === slot);
+
+    assert.ok(item, `missing ${token} ${slot}`);
+    assert.equal(item.armorHp ?? 0, armor, `${item.id} armor`);
+  });
 }
 
 function assertGeneratedShield(id, expected) {

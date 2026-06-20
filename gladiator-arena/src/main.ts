@@ -69,6 +69,7 @@ import {
   type HeroAttributeKey,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
+import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
@@ -99,9 +100,11 @@ const cityArenaHardName = cityArenaHardButton?.querySelector<HTMLElement>("stron
 const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
+const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId };
+type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 let hero: HeroState = createDefaultHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -120,6 +123,7 @@ let hasStarted = false;
 let isInCity = true;
 let armoryShop: ArmoryShopApi | undefined;
 let weaponShop: WeaponShopApi | undefined;
+let magicShop: MagicShopApi | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
@@ -579,11 +583,13 @@ function mountCityPreviews(): Promise<void> {
   return cityScene?.ready ?? Promise.resolve();
 }
 
-function focusCityShop(mode: "armory" | "weaponShop"): void {
+function focusCityShop(mode: "armory" | "weaponShop" | "magicShop"): void {
   if (mode === "armory") {
     cityScene?.focusArmory(true);
-  } else {
+  } else if (mode === "weaponShop") {
     cityScene?.focusWeaponShop(true);
+  } else {
+    cityScene?.focusDefault(true);
   }
 }
 
@@ -827,6 +833,7 @@ function flushRewardUiRenderIfDirty(): void {
 
   rewardUiRenderDirty = false;
   cityHeroEquipmentMenu.render();
+  magicShop?.syncHeroState();
 }
 
 async function waitForCityFirstPaint(): Promise<void> {
@@ -882,6 +889,7 @@ function startGame(): void {
   unmountCityScenePreview();
   weaponShop?.close();
   armoryShop?.close();
+  magicShop?.close();
 
   if (hasStarted) {
     isInCity = false;
@@ -1025,7 +1033,7 @@ function updatePendingBossEquipmentHints(keepItemId: (itemId: HeroItemId) => boo
   return true;
 }
 
-function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
+function handleShopBuy(product: CityShopProduct): void {
   const isSealedArmoryPurchase =
     isArmoryShopProduct(product) &&
     !areHeroItemsOwned(hero, product.itemIds) &&
@@ -1036,7 +1044,8 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   }
 
   cancelShopPreviewPrewarm();
-  const nextHero = buyAndEquipHeroItems(hero, {
+  const previousHero = hero;
+  const nextHero = buyAndEquipHeroItems(previousHero, {
     itemIds: product.itemIds,
     price: product.price,
   });
@@ -1052,7 +1061,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     heroPortraitPreview?.setEquipment(hero.equipment);
   }
   renderCityHero();
-  syncShopHeroStateForProduct(product);
+  syncShopHeroStateForProduct(product, previousHero);
   cityHeroEquipmentMenu.render();
 }
 
@@ -1069,8 +1078,12 @@ function handleBowCapacityUpgrade(): void {
   cityHeroEquipmentMenu.render();
 }
 
-function isArmoryShopProduct(product: ArmoryProduct | WeaponProduct): product is ArmoryProduct {
+function isArmoryShopProduct(product: CityShopProduct): product is ArmoryProduct {
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
+}
+
+function isMagicShopProduct(product: CityShopProduct): product is MagicProduct {
+  return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "scroll");
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
@@ -1131,18 +1144,24 @@ function handleTemporaryChurchSkillGrant(): void {
   cityHeroEquipmentMenu.render();
 }
 
-function syncShopHeroStateForProduct(product: ArmoryProduct | WeaponProduct): void {
-  if (isArmoryShopProduct(product)) {
-    armoryShop?.syncHeroState();
+function syncShopHeroStateForProduct(product: CityShopProduct, previousHero: HeroState): void {
+  if (isMagicShopProduct(product)) {
+    magicShop?.syncHeroState();
     return;
   }
 
-  weaponShop?.syncHeroState();
+  if (isArmoryShopProduct(product)) {
+    armoryShop?.syncHeroState({ product, previousHero });
+    return;
+  }
+
+  weaponShop?.syncHeroState({ product, previousHero });
 }
 
 function syncCityShopHeroState(): void {
   armoryShop?.syncHeroState();
   weaponShop?.syncHeroState();
+  magicShop?.syncHeroState();
 }
 
 function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipment: HeroEquipment = hero.equipment): HeroEquipment {
@@ -1336,6 +1355,7 @@ weaponShopButton?.addEventListener("click", () => {
   cityHeroProfile?.close();
   closeCityArenaMenu();
   armoryShop?.close();
+  magicShop?.close();
   flushRewardUiRenderIfDirty();
   weaponShop?.open();
 });
@@ -1343,8 +1363,17 @@ armoryButton?.addEventListener("click", () => {
   cityHeroProfile?.close();
   closeCityArenaMenu();
   weaponShop?.close();
+  magicShop?.close();
   flushRewardUiRenderIfDirty();
   armoryShop?.open();
+});
+magicShopButton?.addEventListener("click", () => {
+  cityHeroProfile?.close();
+  closeCityArenaMenu();
+  weaponShop?.close();
+  armoryShop?.close();
+  flushRewardUiRenderIfDirty();
+  magicShop?.open();
 });
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
@@ -1379,6 +1408,18 @@ if (cityMenu) {
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("armory"));
+    },
+    onClose: () => {
+      playCityCurtainTransition(focusCityDefaultFromShop);
+    },
+    onLayoutChange: syncCityShopLayout,
+  });
+  magicShop = mountMagicShop(cityMenu, {
+    getHero: () => hero,
+    onBuy: handleShopBuy,
+    transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
+    onOpen: () => {
+      playCityCurtainTransition(() => focusCityShop("magicShop"));
     },
     onClose: () => {
       playCityCurtainTransition(focusCityDefaultFromShop);

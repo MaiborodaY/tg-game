@@ -64,6 +64,16 @@ test("client saver can update generated boss items through the local dev endpoin
   assert.match(source, /JSON\.stringify\(payload\)/);
 });
 
+test("client saver can update a generated equipment item through the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/update-generated-equipment-item/);
+  assert.match(source, /UpdateGeneratedEquipmentItemPayload/);
+  assert.match(source, /equipmentTuningByItemId/);
+  assert.match(source, /saveGeneratedEquipmentItem/);
+  assert.match(source, /JSON\.stringify\(payload\)/);
+});
+
 test("client saver can save generated arena bosses through the local dev endpoint", () => {
   const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
 
@@ -260,6 +270,23 @@ test("vite dev middleware updates generated boss item stats", () => {
   assert.match(source, /record\.availability\?\.bossUnique === true \|\| record\.rarity === "unique"/);
   assert.match(source, /targetIndex > 0 \? 0 : clampedStat/);
   assert.match(source, /updatedRecords\.length/);
+});
+
+test("vite dev middleware updates a generated equipment item and item tuning", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(source, /update-generated-equipment-item/);
+  assert.match(source, /pickGeneratedEquipmentItemUpdate/);
+  assert.match(source, /readGeneratedEquipmentItemTuningPatch/);
+  assert.match(source, /updateGeneratedEquipmentItem/);
+  assert.match(source, /updateGeneratedEquipmentItemRecord/);
+  assert.match(source, /formatUpdatedGeneratedEquipmentItemMessage/);
+  assert.match(source, /equipmentTuningByItemId/);
+  assert.match(source, /readLooseEquipmentTuning\(tuning, itemId\)/);
+  assert.match(source, /const itemStat = record\.kind === "armor" && targetIndex > 0 \? 0 : clampedStat/);
+  assert.match(source, /equipmentTuning \? \{ equipmentTuning \} : \{\}/);
+  assert.match(source, /armoryProduct: \{ \.\.\.record\.armoryProduct, price: update\.price \}/);
+  assert.match(source, /weaponProduct: \{ \.\.\.record\.weaponProduct, price: update\.price \}/);
 });
 
 test("vite dev middleware writes generated arena bosses", () => {

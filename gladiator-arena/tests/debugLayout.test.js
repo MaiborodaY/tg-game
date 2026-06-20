@@ -397,17 +397,15 @@ test("character debug sections are collapsed by default", () => {
   const characterSectionClasses = [
     "debug-rig-panel",
     "debug-face-panel",
-    "debug-hero-equipment-panel",
     "debug-item-equipment-panel",
     "debug-auto-equipment-panel",
-    "debug-shop-items-panel",
-    "debug-boss-items-panel",
   ];
 
   characterSectionClasses.forEach((className) => {
     assert.match(debugPanelSource, new RegExp(`<details class="${className}">`));
     assert.doesNotMatch(debugPanelSource, new RegExp(`<details class="${className}" open>`));
   });
+  assert.equal(debugPanelSource.includes("debug-hero-equipment-panel"), false);
 });
 
 test("debug rig editor can switch paper doll body presets", () => {
@@ -571,12 +569,13 @@ test("debug panel exposes item equipment tuning separately", () => {
   assert.equal(stylesSource.includes(".debug-item-equipment__badge--warning"), true);
 });
 
-test("debug hero equipment picker can list catalog-only items", () => {
+test("debug item equipment picker can list catalog-only items", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 
   assert.equal(debugPanelSource.includes("ALL_HERO_ITEM_IDS"), true);
   assert.equal(debugPanelSource.includes("new Set(ALL_HERO_ITEM_IDS)"), true);
-  assert.equal(debugPanelSource.includes("debugHeroInventory.flatMap"), true);
+  assert.equal(debugPanelSource.includes("getDebugItemIdsForSlot"), true);
+  assert.equal(debugPanelSource.includes("getFilteredDebugItemEquipmentIds(activeEquipmentSlot)"), true);
 });
 
 test("debug panel exposes armory background tuning controls", () => {
@@ -700,17 +699,12 @@ test("auto equipment preview starts from fallback and isolates the selected asse
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
   const autoMountSource = debugPanelSource.slice(
     debugPanelSource.indexOf("function mountAutoEquipmentEditor"),
-    debugPanelSource.indexOf("function mountGeneratedShopItemsEditor"),
+    debugPanelSource.indexOf("function mountArenaTierEditor"),
   );
   const autoPreviewSource = debugPanelSource.slice(
     debugPanelSource.indexOf("function previewSelectedAutoEquipment"),
     debugPanelSource.indexOf("function getSelectedAutoEquipmentRecord"),
   );
-  const shopItemsMountSource = debugPanelSource.slice(
-    debugPanelSource.indexOf("function mountGeneratedShopItemsEditor"),
-    debugPanelSource.indexOf("function mountRigEditor"),
-  );
-  const shopItemsInitialMountSource = shopItemsMountSource.slice(0, shopItemsMountSource.indexOf('select.addEventListener("change"'));
 
   assert.equal(debugPanelSource.includes("createDefaultHeroEquipment"), true);
   assert.equal(autoMountSource.includes('select.append(createHeroEquipmentOption("", "fallback"));'), true);
@@ -720,53 +714,47 @@ test("auto equipment preview starts from fallback and isolates the selected asse
   assert.equal(autoPreviewSource.includes("updateHeroEquipment(previewEquipment);"), true);
   assert.equal(autoPreviewSource.includes("updateHeroEquipmentSlot(record.item.equipmentSlot"), false);
   assert.equal(autoPreviewSource.includes("updateHeroEquipment(createDefaultHeroEquipment());"), true);
-  assert.equal(shopItemsInitialMountSource.includes("previewGeneratedShopProduct"), false);
-  assert.match(shopItemsMountSource, /select\.addEventListener\("change"[\s\S]*previewGeneratedShopProduct\(getSelectedGeneratedShopProduct\(products, select\.value\)\);/);
+  assert.equal(debugPanelSource.includes("previewGeneratedShopProduct"), false);
 });
 
-test("debug panel exposes generated shop item editor", () => {
+test("debug panel merges generated shop and boss item values into item equipment", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 
-  assert.equal(debugPanelSource.includes("debug-shop-items-panel"), true);
-  assert.equal(debugPanelSource.includes("Shop items"), true);
-  assert.equal(debugPanelSource.includes("saveGeneratedShopItem"), true);
-  assert.equal(debugPanelSource.includes("mountGeneratedShopItemsEditor"), true);
-  assert.equal(debugPanelSource.includes("previewGeneratedShopProduct"), true);
-  assert.equal(debugPanelSource.includes("updateHeroEquipmentSlot(definition.equipmentSlot, definition.id)"), true);
-  assert.equal(debugPanelSource.includes("formatGeneratedShopProductOption"), true);
+  assert.equal(debugPanelSource.includes("debug-shop-items-panel"), false);
+  assert.equal(debugPanelSource.includes("debug-boss-items-panel"), false);
+  assert.equal(debugPanelSource.includes("saveGeneratedShopItem"), false);
+  assert.equal(debugPanelSource.includes("saveGeneratedBossItem"), false);
+  assert.equal(debugPanelSource.includes("saveGeneratedEquipmentItem"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__values"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__value-rarity"), true);
+  assert.equal(debugPanelSource.includes("data-item-equipment-stat"), true);
+  assert.equal(debugPanelSource.includes("data-item-equipment-price"), true);
+  assert.equal(debugPanelSource.includes("debug-item-equipment__save"), true);
+  assert.equal(debugPanelSource.includes("getActiveItemEquipmentValueContext"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedShopProductForItem"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedBossItemForItem"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedEquipmentPairRole"), true);
+  assert.equal(debugPanelSource.includes('getGeneratedEquipmentPairRole(record) === "front"'), true);
+  assert.equal(debugPanelSource.includes("Front pair item: transform only"), true);
+  assert.equal(debugPanelSource.includes("Shop pair: values save through the back item."), true);
+  assert.equal(debugPanelSource.includes("Boss pair: armor saves through the back item."), true);
+  assert.equal(debugPanelSource.includes("equipmentTuningByItemId"), true);
+  assert.equal(debugPanelSource.includes("itemIds: context.itemIds"), true);
+  assert.equal(debugPanelSource.includes("updateHeroEquipmentItemWithPair(definition.id, definition.equipmentSlot)"), true);
   assert.equal(debugPanelSource.includes("setDebugRarityDataset"), true);
   assert.equal(debugPanelSource.includes("getGeneratedShopProducts"), true);
+  assert.equal(debugPanelSource.includes("getGeneratedBossItems"), true);
   assert.equal(debugPanelSource.includes("DEBUG_SHOP_ITEM_PAIR_CONFIGS"), true);
   assert.equal(debugPanelSource.includes("createDebugGeneratedShopPairProduct"), true);
+  assert.equal(debugPanelSource.includes("createDebugGeneratedBossPairItem"), true);
   assert.equal(debugPanelSource.includes("Math.max(getGeneratedShopRecordStat(backRecord), getGeneratedShopRecordStat(frontRecord))"), true);
-  assert.equal(debugPanelSource.includes("data-shop-item-stat"), true);
-  assert.equal(debugPanelSource.includes("data-shop-item-price"), true);
-  assert.equal(debugPanelSource.includes("debug-shop-items__rarity"), true);
-  assert.equal(debugPanelSource.includes("itemIds: product.itemIds"), true);
   assert.equal(debugPanelSource.includes("debug-rarity-option--"), true);
   assert.equal(stylesSource.includes('.debug-rarity-select[data-rarity="rare"]'), true);
   assert.equal(stylesSource.includes('.debug-rarity-select[data-rarity="mythical"]'), true);
   assert.equal(stylesSource.includes(".armory-shop__option--rarity-mythical"), true);
-  assert.equal(stylesSource.includes(".debug-shop-items__select"), true);
-});
-
-test("debug panel exposes generated boss item editor", () => {
-  const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
-
-  assert.equal(debugPanelSource.includes("debug-boss-items-panel"), true);
-  assert.equal(debugPanelSource.includes("Boss items"), true);
-  assert.equal(debugPanelSource.includes("saveGeneratedBossItem"), true);
-  assert.equal(debugPanelSource.includes("mountGeneratedBossItemsEditor"), true);
-  assert.equal(debugPanelSource.includes("getGeneratedBossItems"), true);
-  assert.equal(debugPanelSource.includes("previewGeneratedBossItem"), true);
-  assert.equal(debugPanelSource.includes("data-boss-item-stat"), true);
-  assert.equal(debugPanelSource.includes("getGeneratedBossItemStatMax"), true);
-  assert.equal(debugPanelSource.includes("isBossUniqueItem(record.item.id)"), true);
-  assert.equal(debugPanelSource.includes("itemIds: item.itemIds"), true);
-  assert.equal(debugPanelSource.includes("createDebugGeneratedBossPairItem"), true);
-  assert.equal(debugPanelSource.includes("Merged boss pair."), true);
-  assert.equal(stylesSource.includes(".debug-boss-items__select"), true);
-  assert.equal(stylesSource.includes(".debug-boss-items-panel"), true);
+  assert.equal(stylesSource.includes(".debug-item-equipment__values"), true);
+  assert.equal(stylesSource.includes(".debug-shop-items__select"), false);
+  assert.equal(stylesSource.includes(".debug-boss-items__select"), false);
 });
 
 test("debug panel exposes arena boss editor", () => {

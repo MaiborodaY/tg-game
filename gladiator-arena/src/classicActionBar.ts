@@ -15,6 +15,7 @@ import {
   canFighterSwitchWeapon,
   distanceBand,
   isActionHitChanceRestBoosted,
+  getFighterScrollCount,
   getFighterShurikenCount,
   getFighterClinchRange,
   getActionTitle,
@@ -64,6 +65,7 @@ const CLASSIC_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "back", x: -88, y: -38, rotation: -12 },
   { actionId: "switchWeapon", x: -104, y: -96, rotation: -16 },
   { actionId: "shuriken", x: 88, y: -92, rotation: 12 },
+  { actionId: "scroll", x: 102, y: -150, rotation: 14 },
   { actionId: "taunt", x: 0, y: -54, rotation: 0 },
   { actionId: "rest", x: 88, y: -38, rotation: 12 },
 ];
@@ -74,6 +76,7 @@ const CLASSIC_CLINCH_SLOTS: ClassicActionSlot[] = [
   { actionId: "heavy", x: 76, y: -112, rotation: 14 },
   { actionId: "back", x: -90, y: -38, rotation: -12 },
   { actionId: "shuriken", x: 90, y: -88, rotation: 12 },
+  { actionId: "scroll", x: 102, y: -150, rotation: 14 },
   { actionId: "taunt", x: 0, y: -50, rotation: 0 },
   { actionId: "rest", x: 90, y: -38, rotation: 12 },
 ];
@@ -85,6 +88,7 @@ const CLASSIC_BOW_DISTANCE_SLOTS: ClassicActionSlot[] = [
   { actionId: "back", x: -118, y: -36, rotation: -14 },
   { actionId: "switchWeapon", x: -130, y: -78, rotation: -16 },
   { actionId: "shuriken", x: 78, y: -58, rotation: 10 },
+  { actionId: "scroll", x: 108, y: -96, rotation: 12 },
   { actionId: "taunt", x: 40, y: -52, rotation: 6 },
   { actionId: "rest", x: 118, y: -36, rotation: 14 },
 ];
@@ -380,6 +384,10 @@ function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId): bo
 
   if (actionId === "shuriken") {
     return getFighterShurikenCount(state.player) > 0;
+  }
+
+  if (actionId === "scroll") {
+    return getFighterScrollCount(state.player) > 0 && state.enemy.armor > 0;
   }
 
   return true;

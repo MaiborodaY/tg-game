@@ -20,7 +20,12 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
 } from "./arenaLayout";
-import { SHOP_CATEGORY_BOW_ICON_ASSET_URL, SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL, SHOP_CATEGORY_SWORD_ICON_ASSET_URL } from "./assets";
+import {
+  SHOP_CATEGORY_BOW_ICON_ASSET_URL,
+  SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
+  SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
+} from "./assets";
 import { getBattleSafeArea } from "./battleSafeArea";
 import {
   actionOrder,
@@ -73,6 +78,7 @@ const ACTION_ICONS: Record<ActionId, string> = {
   heavy: "",
   switchWeapon: "S",
   shuriken: "*",
+  scroll: "?",
   taunt: "!",
   rest: "*",
 };
@@ -88,6 +94,7 @@ const ACTION_UTILITY_ICON_URLS: Partial<Record<ActionId, string>> = {
   back: new URL("./assets/ui/action-icons/move-forward.webp", import.meta.url).href,
   lunge: new URL("./assets/ui/action-icons/lunge.webp", import.meta.url).href,
   switchWeapon: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
+  scroll: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   taunt: new URL("./assets/ui/action-icons/taunt.webp", import.meta.url).href,
   rest: new URL("./assets/ui/action-icons/rest.webp", import.meta.url).href,
 };
@@ -614,6 +621,12 @@ export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): s
       : isBowFighter(state.player)
         ? SHOP_CATEGORY_SWORD_ICON_ASSET_URL
         : SHOP_CATEGORY_BOW_ICON_ASSET_URL;
+  }
+
+  if (actionId === "scroll") {
+    return state.player.scrollItemId
+      ? getShopProductIconUrl([state.player.scrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+      : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
   }
 
   if (actionId !== "shuriken") {

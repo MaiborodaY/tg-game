@@ -981,6 +981,26 @@ test("shurikens buy as capped consumables without equipping", () => {
   assert.equal(blockedPurchase, secondPurchase);
 });
 
+test("crack armor scrolls buy as capped consumables without equipping", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 100,
+  };
+  const scrollItemId = hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
+  const firstPurchase = hero.buyAndEquipHeroItems(baseHero, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:01:00.000Z");
+  const secondPurchase = hero.buyAndEquipHeroItems(firstPurchase, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:02:00.000Z");
+  const thirdPurchase = hero.buyAndEquipHeroItems(secondPurchase, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:03:00.000Z");
+  const blockedPurchase = hero.buyAndEquipHeroItems(thirdPurchase, { itemIds: [scrollItemId], price: 30 }, "2026-01-01T00:04:00.000Z");
+
+  assert.equal(hero.HERO_ITEM_CATALOG[scrollItemId]?.kind, "scroll");
+  assert.equal(hero.areHeroItemsConsumable([scrollItemId]), true);
+  assert.equal(hero.getHeroConsumableMaxQuantity(scrollItemId), hero.HERO_SCROLL_MAX_QUANTITY);
+  assert.equal(thirdPurchase.gold, 10);
+  assert.equal(thirdPurchase.equipment.weaponMain, null);
+  assert.equal(hero.getHeroItemQuantity(thirdPurchase, scrollItemId), hero.HERO_SCROLL_MAX_QUANTITY);
+  assert.equal(blockedPurchase, thirdPurchase);
+});
+
 test("combat state exposes shuriken count and rewards persist spent consumables", () => {
   const stockedHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
@@ -1003,6 +1023,30 @@ test("combat state exposes shuriken count and rewards persist spent consumables"
   const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
 
   assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, "generated_equipment_weapon_shuriken_01"), 1);
+});
+
+test("combat state exposes scroll count and rewards persist spent scrolls", () => {
+  const scrollItemId = hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: scrollItemId, quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.scrollCount, 2);
+  assert.equal(combatState.player.scrollItemId, scrollItemId);
+
+  const spentCombatState = {
+    ...combatState,
+    result: "lose",
+    player: {
+      ...combatState.player,
+      scrollCount: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, scrollItemId), 1);
 });
 
 test("bow capacity upgrade costs gold and expands combat shots", () => {

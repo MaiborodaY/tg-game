@@ -57,7 +57,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 25,
+    "armorHp": 8,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-boar-boss-01"
@@ -729,7 +729,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 25,
+    "armorHp": 8,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-boar-boss-01"
@@ -1448,7 +1448,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 20,
+    "armorHp": 10,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-boar-boss-01"
@@ -2167,7 +2167,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 20,
+    "armorHp": 10,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-boar-boss-01"
@@ -2839,7 +2839,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 30,
+    "armorHp": 10,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-boar-boss-01"
@@ -3511,7 +3511,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 20,
+    "armorHp": 8,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-boar-boss-01"
@@ -4183,7 +4183,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 50,
+    "armorHp": 23,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-boar-boss-01"
@@ -8934,7 +8934,7 @@
       "rank": 15,
       "grade": "boss"
     },
-    "armorHp": 35,
+    "armorHp": 14,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-boar-boss-01"

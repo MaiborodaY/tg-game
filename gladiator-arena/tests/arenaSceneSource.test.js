@@ -32,6 +32,17 @@ test("equipment texture swaps reapply slot image sizing", () => {
   assert.match(arenaSceneSource, /if \(image && previousState && image\.texture\.key === textureKey && arePaperDollEquipmentSlotImageStatesEqual\(previousState, nextState\)\) \{[\s\S]*return image;[\s\S]*\}/);
 });
 
+test("enemy visual recreation key ignores equipment changes", () => {
+  const loadoutKeySource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function getFighterLoadoutKey"),
+    arenaSceneSource.indexOf("function destroyFighterVisual"),
+  );
+
+  assert.equal(loadoutKeySource.includes("equipment:"), false);
+  assert.equal(loadoutKeySource.includes("name: fighter.name"), true);
+  assert.equal(loadoutKeySource.includes("visualPreset: fighter.visualPreset"), true);
+});
+
 test("paper doll parents wrist equipment to forearms glove equipment to hands and shield to front forearm", () => {
   const armArmorSource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("function addPaperDollArmArmorVisual"),

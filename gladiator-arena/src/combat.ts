@@ -1,6 +1,17 @@
-import type { EnemyVisualPreset, HeroEquipment, HeroItemId, HeroWeaponClass } from "./hero";
+import type { EnemyVisualPreset, HeroEquipment, HeroEquipmentSlotKey, HeroItemId, HeroWeaponClass } from "./hero";
 
-export type ActionId = "forward" | "back" | "lunge" | "light" | "medium" | "heavy" | "switchWeapon" | "shuriken" | "taunt" | "rest";
+export type ActionId =
+  | "forward"
+  | "back"
+  | "lunge"
+  | "light"
+  | "medium"
+  | "heavy"
+  | "switchWeapon"
+  | "shuriken"
+  | "scroll"
+  | "taunt"
+  | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
 
@@ -29,6 +40,14 @@ export interface CombatMovementTuning {
 interface DamageApplication {
   armorAbsorbed: number;
   armorBroken: boolean;
+  removedArmorSlots?: CombatArmorSlotState[];
+}
+
+export interface CombatArmorSlotState {
+  slotKey: HeroEquipmentSlotKey;
+  itemId: HeroItemId;
+  label: string;
+  armorHp: number;
 }
 
 export interface FighterState {
@@ -56,7 +75,10 @@ export interface FighterState {
   shurikenCount?: number;
   shurikenDamage?: number;
   shurikenItemId?: HeroItemId;
+  scrollCount?: number;
+  scrollItemId?: HeroItemId;
   equipment?: HeroEquipment;
+  armorSlots?: CombatArmorSlotState[];
   visualPreset?: EnemyVisualPreset;
 }
 
@@ -96,6 +118,8 @@ export interface CombatState {
   lastEnemyArmorAbsorbed: number;
   lastPlayerArmorBroken: boolean;
   lastEnemyArmorBroken: boolean;
+  lastPlayerRemovedArmorSlots?: CombatArmorSlotState[];
+  lastEnemyRemovedArmorSlots?: CombatArmorSlotState[];
   lastPlayerBlocked: boolean;
   lastEnemyBlocked: boolean;
   log: LogEntry[];
@@ -136,6 +160,14 @@ export const SPEAR_LUNGE_MOVE_BONUS = 0.3;
 export const SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION = 0.30;
 export const SPEAR_LUNGE_DAMAGE_MULTIPLIER = 1.5;
 export const REST_BLOCK_CHANCE_PENALTY = 0.2;
+const PAIRED_ARMOR_SLOT_KEYS: readonly (readonly [HeroEquipmentSlotKey, HeroEquipmentSlotKey])[] = [
+  ["backShoulderguard", "frontShoulderguard"],
+  ["backWrist", "frontWrist"],
+  ["backGlove", "frontGlove"],
+  ["backGreave", "frontGreave"],
+  ["backShinguard", "frontShinguard"],
+  ["backBoot", "frontBoot"],
+];
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -217,6 +249,13 @@ export const actions: Record<ActionId, ActionConfig> = {
     blockChance: 0,
     rangeMax: MAX_DISTANCE,
   },
+  scroll: {
+    id: "scroll",
+    title: "Crack Armor Scroll",
+    detail: "Break random armor",
+    cost: 2,
+    rangeMax: MAX_DISTANCE,
+  },
   taunt: {
     id: "taunt",
     title: "Taunt Crowd",
@@ -235,7 +274,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   },
 };
 
-export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"];
+export const actionOrder: ActionId[] = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "taunt", "rest"];
 
 export function setCombatMovementTuning(nextTuning: Partial<CombatMovementTuning>): void {
   combatMovementTuning = {
@@ -346,6 +385,8 @@ export function freshState(): CombatState {
     lastEnemyArmorAbsorbed: 0,
     lastPlayerArmorBroken: false,
     lastEnemyArmorBroken: false,
+    lastPlayerRemovedArmorSlots: undefined,
+    lastEnemyRemovedArmorSlots: undefined,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
     log: [
@@ -486,6 +527,10 @@ export function getFighterShurikenCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.shurikenCount ?? 0));
 }
 
+export function getFighterScrollCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.scrollCount ?? 0));
+}
+
 export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
   if (actionId === "switchWeapon" && actor) {
     return isBowFighter(actor) ? "Draw Steel" : "Draw Bow";
@@ -575,6 +620,12 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
 
   if (actionId === "shuriken") {
     return getFighterShurikenCount(fighter) > 0;
+  }
+
+  if (actionId === "scroll") {
+    const defender = actor === "player" ? state.enemy : state.player;
+
+    return getFighterScrollCount(fighter) > 0 && hasCrackableArmorSlot(defender);
   }
 
   if (isAttackAction(actionId) && isBowFighter(fighter)) {
@@ -682,6 +733,8 @@ function cloneStateForTurn(current: CombatState): CombatState {
     lastEnemyArmorAbsorbed: 0,
     lastPlayerArmorBroken: false,
     lastEnemyArmorBroken: false,
+    lastPlayerRemovedArmorSlots: undefined,
+    lastEnemyRemovedArmorSlots: undefined,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
   };
@@ -691,6 +744,7 @@ function cloneFighterState(fighter: FighterState): FighterState {
   return {
     ...fighter,
     equipment: fighter.equipment ? { ...fighter.equipment } : undefined,
+    armorSlots: fighter.armorSlots?.map((slot) => ({ ...slot })),
     visualPreset: fighter.visualPreset ? { ...fighter.visualPreset } : undefined,
   };
 }
@@ -819,15 +873,21 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     attacker.shurikenCount = getFighterShurikenCount(attacker) - 1;
   }
 
+  if (actionId === "scroll" && getFighterScrollCount(attacker) > 0) {
+    attacker.scrollCount = getFighterScrollCount(attacker) - 1;
+    appliedDamage = applyCrackArmorScroll(attacker, defender, random);
+    damage = appliedDamage.armorAbsorbed;
+  }
+
   if (isAttackAction(actionId) && isBowFighter(attacker) && getBowShotsRemaining(attacker) > 0) {
     attacker.bowShotsRemaining = getBowShotsRemaining(attacker) - 1;
   }
 
-  if (damage > 0 && !inRange) {
+  if (damage > 0 && !inRange && actionId !== "scroll") {
     damage = 0;
   }
 
-  if (damage > 0) {
+  if (damage > 0 && actionId !== "scroll") {
     blocked = isActionBlocked(state, action, attacker, defender, defenderOwner, random);
 
     if (blocked) {
@@ -852,12 +912,14 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastPlayerDamage = damage;
     state.lastPlayerArmorAbsorbed = appliedDamage.armorAbsorbed;
     state.lastPlayerArmorBroken = appliedDamage.armorBroken;
+    state.lastPlayerRemovedArmorSlots = appliedDamage.removedArmorSlots;
     state.lastPlayerBlocked = blocked;
   } else {
     state.lastEnemyAction = actionId;
     state.lastEnemyDamage = damage;
     state.lastEnemyArmorAbsorbed = appliedDamage.armorAbsorbed;
     state.lastEnemyArmorBroken = appliedDamage.armorBroken;
+    state.lastEnemyRemovedArmorSlots = appliedDamage.removedArmorSlots;
     state.lastEnemyBlocked = blocked;
   }
 
@@ -981,6 +1043,93 @@ function applyDamageToFighter(defender: FighterState, damage: number): DamageApp
   };
 }
 
+function applyCrackArmorScroll(_attacker: FighterState, defender: FighterState, random: () => number): DamageApplication {
+  const slot = pickCrackableArmorSlot(defender, random);
+
+  if (!slot) {
+    return { armorAbsorbed: 0, armorBroken: false };
+  }
+
+  const currentArmor = Math.max(0, defender.armor ?? 0);
+  const removedArmorSlots = getRemovedArmorSlotsForCrack(defender, slot);
+  const armorDamage = Math.min(
+    currentArmor,
+    removedArmorSlots.reduce((total, removedSlot) => total + Math.max(0, Math.floor(removedSlot.armorHp)), 0),
+  );
+
+  if (armorDamage <= 0) {
+    return { armorAbsorbed: 0, armorBroken: false };
+  }
+
+  removedArmorSlots.forEach((removedSlot) => {
+    const armorSlot = defender.armorSlots?.find((candidate) => candidate.slotKey === removedSlot.slotKey);
+
+    if (armorSlot) {
+      armorSlot.armorHp = 0;
+    }
+  });
+  defender.armor = clamp(currentArmor - armorDamage, 0, getFighterMaxArmor(defender));
+  if (defender.equipment) {
+    removedArmorSlots.forEach((removedSlot) => {
+      defender.equipment![removedSlot.slotKey] = null;
+    });
+  }
+
+  return {
+    armorAbsorbed: armorDamage,
+    armorBroken: currentArmor > 0 && armorDamage >= currentArmor,
+    removedArmorSlots,
+  };
+}
+
+function getRemovedArmorSlotsForCrack(defender: FighterState, rolledSlot: CombatArmorSlotState): CombatArmorSlotState[] {
+  return getArmorSlotRemovalKeys(rolledSlot.slotKey).flatMap((slotKey) => {
+    const armorSlot = defender.armorSlots?.find((candidate) => candidate.slotKey === slotKey);
+
+    if (armorSlot) {
+      return [{ ...armorSlot }];
+    }
+
+    const itemId = defender.equipment?.[slotKey];
+    if (!itemId) {
+      return [];
+    }
+
+    return [
+      {
+        slotKey,
+        itemId,
+        label: itemId,
+        armorHp: 0,
+      },
+    ];
+  });
+}
+
+function getArmorSlotRemovalKeys(slotKey: HeroEquipmentSlotKey): readonly HeroEquipmentSlotKey[] {
+  const pair = PAIRED_ARMOR_SLOT_KEYS.find(([left, right]) => left === slotKey || right === slotKey);
+
+  return pair ?? [slotKey];
+}
+
+function pickCrackableArmorSlot(defender: FighterState, random: () => number): CombatArmorSlotState | undefined {
+  const slots = getCrackableArmorSlots(defender);
+
+  return slots[Math.floor(random() * slots.length)];
+}
+
+function hasCrackableArmorSlot(defender: FighterState): boolean {
+  return getCrackableArmorSlots(defender).length > 0;
+}
+
+function getCrackableArmorSlots(defender: FighterState): CombatArmorSlotState[] {
+  if (Math.max(0, defender.armor ?? 0) <= 0) {
+    return [];
+  }
+
+  return (defender.armorSlots ?? []).filter((slot) => Math.max(0, Math.floor(slot.armorHp)) > 0);
+}
+
 function addActionLog(
   state: CombatState,
   actorLabel: string,
@@ -995,6 +1144,17 @@ function addActionLog(
   staminaRestore: number,
   heal: number,
 ): void {
+  if (action.id === "scroll") {
+    addLog(
+      state,
+      `${actorLabel} used ${actionTitle} and ${
+        damage > 0 ? `cracked ${defenderLabel}'s armor for ${damage}` : "found no armor to crack"
+      }.`,
+      damage >= 10,
+    );
+    return;
+  }
+
   if (actionMove && action.damage) {
     addLog(
       state,

@@ -108,16 +108,16 @@ export type SlashArcAttackKey = (typeof SLASH_ARC_ATTACK_KEYS)[number];
 
 export type DebugPopupPreviewKind = "all" | "damage" | "block" | "armorAbsorb" | "armorBreak";
 
-export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "taunt", "rest"] as const;
+export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "taunt", "rest"] as const;
 export type ActionButtonOffsetKey = (typeof ACTION_BUTTON_OFFSET_KEYS)[number];
 
 export const CLASSIC_ACTION_WHEEL_MODES = ["distance", "clinch", "bowDistance"] as const;
 export type ClassicActionWheelMode = (typeof CLASSIC_ACTION_WHEEL_MODES)[number];
 
 export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, ActionButtonOffsetKey[]> = {
-  distance: ["forward", "lunge", "back", "switchWeapon", "shuriken", "taunt", "rest"],
-  clinch: ["light", "medium", "heavy", "back", "shuriken", "taunt", "rest"],
-  bowDistance: ["light", "medium", "heavy", "switchWeapon", "shuriken", "back", "taunt", "rest"],
+  distance: ["forward", "lunge", "back", "switchWeapon", "shuriken", "scroll", "taunt", "rest"],
+  clinch: ["light", "medium", "heavy", "back", "shuriken", "scroll", "taunt", "rest"],
+  bowDistance: ["light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "back", "taunt", "rest"],
 };
 
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "keyframe", "preview"] as const;
@@ -600,6 +600,7 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   heavy: { x: 0, y: 18 },
   switchWeapon: { x: 0, y: 0 },
   shuriken: { x: 0, y: 0 },
+  scroll: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -622,6 +623,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     heavy: { x: 0, y: 18, rotation: 0 },
     switchWeapon: { x: -145, y: -200, rotation: -14 },
     shuriken: { x: 100, y: -148, rotation: 12 },
+    scroll: { x: 132, y: -92, rotation: 14 },
     taunt: { x: 30, y: -120, rotation: 0 },
     rest: { x: -30, y: -120, rotation: 12 },
   }),
@@ -634,6 +636,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     heavy: { x: 60, y: -185, rotation: 0 },
     switchWeapon: { x: -120, y: -92, rotation: -18 },
     shuriken: { x: 100, y: -148, rotation: 12 },
+    scroll: { x: 132, y: -92, rotation: 14 },
     taunt: { x: 30, y: -120, rotation: 0 },
     rest: { x: -30, y: -120, rotation: 12 },
   }),
@@ -646,6 +649,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     heavy: { x: 60, y: -185, rotation: 14 },
     switchWeapon: { x: -145, y: -200, rotation: 0 },
     shuriken: { x: 95, y: -118, rotation: 10 },
+    scroll: { x: 132, y: -92, rotation: 12 },
     taunt: { x: 30, y: -130, rotation: 5 },
     rest: { x: -30, y: -130, rotation: -5 },
   }),

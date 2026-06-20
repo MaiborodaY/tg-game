@@ -48,7 +48,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"cloth_breastplate_01","name":"Cloth Breastplate 01","price":8,"itemIds":["cloth_breastplate_01"],"categoryId":"body"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_boar_boss_01","name":"Boar Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":25},
+    item: {"id":"generated_equipment_back_boot_boar_boss_01","name":"Boar Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":8},
     assetKeys: {"backBootAssetKey":"back-boot-boar-boss-01"},
     equipmentTuning: {"x":16.458146581740465,"y":1.1368683772161603e-13,"angle":0,"scaleX":1.38,"scaleY":1.23,"flipX":false,"flipY":false},
     asset: {
@@ -226,7 +226,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_glove_boar_boss_01","name":"Boar Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":25},
+    item: {"id":"generated_equipment_back_glove_boar_boss_01","name":"Boar Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":8},
     assetKeys: {"backGloveAssetKey":"back-glove-boar-boss-01"},
     equipmentTuning: {"x":0,"y":3,"angle":0,"scaleX":1.11,"scaleY":1.03,"flipX":false,"flipY":false},
     asset: {
@@ -416,7 +416,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_greave_boar_boss_01","name":"Boar Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":20},
+    item: {"id":"generated_equipment_back_greave_boar_boss_01","name":"Boar Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":10},
     assetKeys: {"backGreaveAssetKey":"back-greave-boar-boss-01"},
     equipmentTuning: {"x":-3.1184936879924976,"y":6.491399209914391,"angle":-3,"scaleX":1.28,"scaleY":1.36,"flipX":false,"flipY":false},
     asset: {
@@ -606,7 +606,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_boar_boss_01","name":"Boar Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":20},
+    item: {"id":"generated_equipment_back_shinguard_boar_boss_01","name":"Boar Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":10},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-boar-boss-01"},
     equipmentTuning: {"x":-4.459189988282532,"y":12.602298893539341,"angle":0,"scaleX":1.66,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -784,7 +784,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_boar_boss_01","name":"Boar Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":30},
+    item: {"id":"generated_equipment_back_shoulderguard_boar_boss_01","name":"Boar Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":10},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-boar-boss-01"},
     equipmentTuning: {"x":23.213002492699303,"y":14.99678641019625,"angle":24,"scaleX":2.35,"scaleY":1.87,"flipX":true,"flipY":false},
     asset: {
@@ -962,7 +962,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_boar_boss_01","name":"Boar Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":20},
+    item: {"id":"generated_equipment_back_wrist_boar_boss_01","name":"Boar Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":8},
     assetKeys: {"backWristAssetKey":"back-wrist-boar-boss-01"},
     equipmentTuning: {"x":-0.07095838228923412,"y":30.624527649693277,"angle":-6,"scaleX":1.23,"scaleY":1.09,"flipX":false,"flipY":false},
     asset: {
@@ -1140,7 +1140,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_breastplate_boar_boss_01","name":"Boar Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":50},
+    item: {"id":"generated_equipment_breastplate_boar_boss_01","name":"Boar Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":23},
     assetKeys: {"breastplateAssetKey":"breastplate-boar-boss-01"},
     equipmentTuning: {"x":0,"y":63,"angle":0,"scaleX":1.65,"scaleY":1.66,"flipX":false,"flipY":false},
     asset: {
@@ -2398,7 +2398,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_helmet_boar_boss_01","name":"Boar Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"helmet","armorHp":35},
+    item: {"id":"generated_equipment_helmet_boar_boss_01","name":"Boar Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"boar_boss","name":"Boar Boss","rank":15,"grade":"boss"},"equipmentSlot":"helmet","armorHp":14},
     assetKeys: {"helmetAssetKey":"helmet-boar-boss-01"},
     equipmentTuning: {"x":0,"y":22,"angle":0,"scaleX":1,"scaleY":1.09,"flipX":false,"flipY":false},
     asset: {

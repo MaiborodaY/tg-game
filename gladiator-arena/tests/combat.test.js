@@ -254,6 +254,74 @@ test("exhausted player can only rest", () => {
   assert.equal(combat.canUseAction(state, "switchWeapon"), false);
 });
 
+test("scroll cracks one random armor slot without damaging hp", () => {
+  const state = combat.freshState();
+
+  state.distance = combat.MAX_DISTANCE;
+  state.player.scrollCount = 1;
+  state.player.scrollItemId = "scroll_crack_armor_01";
+  state.enemy.armor = 13;
+  state.enemy.maxArmor = 13;
+  state.enemy.armorSlots = [
+    { slotKey: "helmet", itemId: "helmet_01", label: "Helmet", armorHp: 5 },
+    { slotKey: "breastplate", itemId: "breastplate_01", label: "Breastplate", armorHp: 8 },
+  ];
+  state.enemy.equipment = {
+    helmet: "helmet_01",
+    breastplate: "breastplate_01",
+  };
+
+  assert.equal(combat.canUseAction(state, "scroll"), true);
+
+  const nextState = combat.resolvePlayerTurn(state, "scroll", () => 0.99);
+
+  assert.equal(nextState.player.scrollCount, 0);
+  assert.equal(nextState.player.stamina, combat.MAX_STAMINA - combat.actions.scroll.cost);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
+  assert.equal(nextState.enemy.armor, 5);
+  assert.equal(nextState.enemy.armorSlots[0].armorHp, 5);
+  assert.equal(nextState.enemy.armorSlots[1].armorHp, 0);
+  assert.equal(nextState.enemy.equipment.helmet, "helmet_01");
+  assert.equal(nextState.enemy.equipment.breastplate, null);
+  assert.equal(nextState.lastPlayerRemovedArmorSlots.length, 1);
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[0].slotKey, "breastplate");
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[0].itemId, "breastplate_01");
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[0].label, "Breastplate");
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[0].armorHp, 8);
+  assert.equal(nextState.lastPlayerAction, "scroll");
+  assert.equal(nextState.lastPlayerDamage, 8);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, 8);
+  assert.equal(nextState.activeTurn, "enemy");
+  assert.equal(nextState.log[0].text.includes("cracked Grumbus's armor for 8"), true);
+});
+
+test("scroll removes both sides of a paired armor item when one side is rolled", () => {
+  const state = combat.freshState();
+
+  state.distance = combat.MAX_DISTANCE;
+  state.player.scrollCount = 1;
+  state.player.scrollItemId = "scroll_crack_armor_01";
+  state.enemy.armor = 5;
+  state.enemy.maxArmor = 5;
+  state.enemy.armorSlots = [{ slotKey: "backBoot", itemId: "back_boot_01", label: "Back Boot", armorHp: 5 }];
+  state.enemy.equipment = {
+    backBoot: "back_boot_01",
+    frontBoot: "front_boot_01",
+  };
+
+  const nextState = combat.resolvePlayerTurn(state, "scroll", () => 0);
+
+  assert.equal(nextState.enemy.armor, 0);
+  assert.equal(nextState.enemy.armorSlots[0].armorHp, 0);
+  assert.equal(nextState.enemy.equipment.backBoot, null);
+  assert.equal(nextState.enemy.equipment.frontBoot, null);
+  assert.equal(nextState.lastPlayerRemovedArmorSlots.length, 2);
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[0].slotKey, "backBoot");
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[1].slotKey, "frontBoot");
+  assert.equal(nextState.lastPlayerDamage, 5);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
+});
+
 test("rest restores stamina and heals one hp without incoming penalty", () => {
   const state = combat.freshState();
 

@@ -36,6 +36,14 @@ export interface UpdateGeneratedBossItemPayload {
   stat: number;
 }
 
+export interface UpdateGeneratedEquipmentItemPayload {
+  itemIds: string[];
+  rarity?: HeroItemRarity;
+  stat?: number;
+  price?: number;
+  equipmentTuningByItemId?: Record<string, EquipmentTuning>;
+}
+
 export interface ArenaTierBackgroundPayload {
   tierId: number;
   variantId?: string;
@@ -105,6 +113,7 @@ const promoteWeaponImportsEndpoint = "/__dust-arena/promote-weapon-imports";
 const promoteShieldImportsEndpoint = "/__dust-arena/promote-shield-imports";
 const updateGeneratedShopItemEndpoint = "/__dust-arena/update-generated-shop-item";
 const updateGeneratedBossItemEndpoint = "/__dust-arena/update-generated-boss-item";
+const updateGeneratedEquipmentItemEndpoint = "/__dust-arena/update-generated-equipment-item";
 const removeEquipmentItemEndpoint = "/__dust-arena/remove-equipment-item";
 const renameEquipmentSetAssetsEndpoint = "/__dust-arena/rename-equipment-set-assets";
 const saveArenaBossEndpoint = "/__dust-arena/save-arena-boss";
@@ -244,6 +253,21 @@ export async function saveGeneratedBossItem(payload: UpdateGeneratedBossItemPayl
   }
 
   return responsePayload.message ?? "Updated generated boss item.";
+}
+
+export async function saveGeneratedEquipmentItem(payload: UpdateGeneratedEquipmentItemPayload): Promise<string> {
+  const response = await fetch(updateGeneratedEquipmentItemEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const responsePayload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(responsePayload.message ?? "Could not update generated equipment item. Is the Vite dev server running?");
+  }
+
+  return responsePayload.message ?? "Updated generated equipment item.";
 }
 
 export async function renameEquipmentSetAssets(payload: RenameEquipmentSetAssetsPayload): Promise<string> {

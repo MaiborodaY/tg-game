@@ -54,6 +54,7 @@ import {
   type HeroAttributeKey,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
+import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
 import { logTurnProbe, mountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
@@ -69,6 +70,7 @@ const cityMenu = document.querySelector<HTMLElement>(".city-menu");
 const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
+const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 const heroPortraitButton = cityHeroWidgetRefs.portraitButton;
@@ -85,6 +87,8 @@ let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
 let weaponShop: WeaponShopApi | undefined;
 let armoryShop: ArmoryShopApi | undefined;
+let magicShop: MagicShopApi | undefined;
+type DebugShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 
@@ -428,6 +432,7 @@ function flushRewardUiRenderIfDirty(): void {
   rewardUiRenderDirty = false;
   weaponShop?.render();
   armoryShop?.render();
+  magicShop?.render();
 }
 
 function handleActionArcClick(event: Event): void {
@@ -461,7 +466,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   return nextState;
 }
 
-function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
+function handleShopBuy(product: DebugShopProduct): void {
   const nextHero = buyAndEquipHeroItems(hero, {
     itemIds: product.itemIds,
     price: product.price,
@@ -477,6 +482,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   armoryShop?.render();
+  magicShop?.render();
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
@@ -491,6 +497,7 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   armoryShop?.render();
+  magicShop?.render();
   restart();
 }
 
@@ -501,6 +508,7 @@ function handleTemporaryChurchSkillGrant(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
   weaponShop?.render();
   armoryShop?.render();
+  magicShop?.render();
 }
 
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
@@ -812,10 +820,13 @@ function startDebugApp(): void {
       onPreview: handleShopPreview,
       onPreviewClear: clearShopPreview,
     });
+    magicShop = mountMagicShop(cityMenu, {
+      getHero: () => hero,
+      onBuy: handleShopBuy,
+    });
   }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen, {
     heroEquipment: hero.equipment,
-    heroInventory: hero.inventory,
     onHeroEquipmentChange: (equipment) => {
       hero.equipment = equipment;
       setPlayerEquipment(hero.equipment);
@@ -871,13 +882,21 @@ dom.restartButton.addEventListener("click", restart);
 dom.cityButton.addEventListener("click", restart);
 weaponShopButton?.addEventListener("click", () => {
   armoryShop?.close();
+  magicShop?.close();
   flushRewardUiRenderIfDirty();
   weaponShop?.open();
 });
 armoryButton?.addEventListener("click", () => {
   weaponShop?.close();
+  magicShop?.close();
   flushRewardUiRenderIfDirty();
   armoryShop?.open();
+});
+magicShopButton?.addEventListener("click", () => {
+  weaponShop?.close();
+  armoryShop?.close();
+  flushRewardUiRenderIfDirty();
+  magicShop?.open();
 });
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 startDebugApp();

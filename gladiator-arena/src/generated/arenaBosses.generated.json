@@ -121,9 +121,9 @@
     "tierId": 2,
     "name": "Boar Boss",
     "baseStats": {
-      "strength": 20,
-      "agility": 10,
-      "vitality": 10
+      "strength": 15,
+      "agility": 30,
+      "vitality": 20
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_mace_boar_mace",

@@ -1,10 +1,15 @@
 import {
   HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX,
   HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE,
+  HERO_ITEM_CATALOG,
+  areHeroItemsEquipped,
   areHeroItemsConsumable,
+  areHeroItemsOwned,
+  canHeroEquipItems,
   getHeroBowShotCapacity,
   getHeroConsumableMaxQuantity,
   getHeroItemQuantity,
+  type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
 } from "./hero";
@@ -35,6 +40,7 @@ import {
   getShopRarityLabel,
   type ShopProductRequirementBadge,
   type ShopItemRarity,
+  type ShopProductActionState,
 } from "./shopPresentation";
 
 export interface WeaponProduct {
@@ -49,7 +55,12 @@ export interface WeaponShopApi {
   open: () => void;
   close: () => void;
   render: () => void;
-  syncHeroState: () => void;
+  syncHeroState: (options?: WeaponShopHeroSyncOptions) => void;
+}
+
+export interface WeaponShopHeroSyncOptions {
+  product?: WeaponProduct;
+  previousHero?: HeroState;
 }
 
 interface WeaponCategory {
@@ -208,6 +219,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   let productPrewarmFrame: number | undefined;
   let productPrewarmTimer: number | undefined;
   let productButtons = new Map<string, HTMLButtonElement>();
+  let productButtonVisualStates = new Map<string, string>();
+  let productIdsByItemId = new Map<HeroItemId, Set<string>>();
+  let renderedProductsById = new Map<string, WeaponProduct>();
   let renderedProducts: WeaponProduct[] = [];
   const usesCityHeroPreview = !options.mountPreview;
   const transitionDelayMs = options.transitionDelayMs ?? 0;
@@ -400,6 +414,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     selected.replaceChildren();
     bowUpgrade.replaceChildren();
     productButtons = new Map();
+    productButtonVisualStates = new Map();
+    productIdsByItemId = new Map();
+    renderedProductsById = new Map(selectedCategory.products.map((product) => [product.id, product]));
     renderedProducts = selectedCategory.products;
     clearScrollIndicator();
     clearVisibleProductPrewarm();
@@ -431,7 +448,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     selectedCategory.products.forEach((product) => {
       const button = createProductButton(product, hero, previewProduct?.id === product.id);
 
-      productButtons.set(product.id, button);
+      trackProductButton(product, button, hero);
       content.append(button);
     });
     scheduleVisibleProductPrewarm();
@@ -454,7 +471,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
 
   function isBowCategoryAvailable(hero: HeroState, category: WeaponCategory): boolean {
-    return category.products.some((product) => getShopProductActionState(hero, product.itemIds, product.price) !== "locked");
+    return category.products.some((product) => getWeaponProductCardState(hero, product) !== "locked");
   }
 
   function ensurePreviewMounted(): void {
@@ -510,7 +527,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const iconUrl = getShopProductIconUrl(product.itemIds);
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
-    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const cardState = getWeaponProductCardState(hero, product);
     const displayName = getShopProductDisplayName(product.name);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
@@ -518,28 +535,28 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
     button.classList.toggle("armory-shop__option--selected", isSelected);
-    button.classList.toggle("armory-shop__option--owned", actionState === "equip");
-    button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
-    button.classList.toggle("armory-shop__option--max", actionState === "max");
-    button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
-    button.classList.toggle("armory-shop__option--locked", actionState === "locked");
-    button.classList.toggle("armory-shop__option--sealed", actionState === "locked");
+    button.classList.toggle("armory-shop__option--owned", cardState === "equip");
+    button.classList.toggle("armory-shop__option--equipped", cardState === "equipped");
+    button.classList.toggle("armory-shop__option--max", cardState === "max");
+    button.classList.toggle("armory-shop__option--for-sale", cardState === "buy");
+    button.classList.toggle("armory-shop__option--locked", cardState === "locked");
+    button.classList.toggle("armory-shop__option--sealed", cardState === "locked");
     button.classList.toggle("armory-shop__option--consumable", Boolean(consumableInfo));
     button.type = "button";
-    button.disabled = actionState === "locked";
+    button.disabled = cardState === "locked";
     button.title = requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
-      `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(actionState, product.price)}`,
+      `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(cardState, product.price)}`,
     );
     button.append(createProductIcon(iconUrl));
     if (consumableInfo) {
       button.append(createConsumableCardBadges(consumableInfo));
     }
-    if (actionState === "locked" && requirementBadge) {
+    if (cardState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
     }
-    if (actionState === "buy" || actionState === "no-gold") {
+    if (cardState === "buy") {
       button.append(createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price));
     }
     button.addEventListener("click", () => {
@@ -632,7 +649,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     return card;
   }
 
-  function syncHeroState(): void {
+  function syncHeroState(syncOptions: WeaponShopHeroSyncOptions = {}): void {
     if (shop.hidden) {
       return;
     }
@@ -643,7 +660,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     updateShopHeroMeta(hero);
     syncSelectionState();
     refreshSelectedProduct(hero);
-    refreshRenderedProductButtons(hero);
+    refreshChangedProductButtons(hero, syncOptions);
     refreshBowCapacityUpgrade(hero, selectedCategory);
     scheduleLayoutSync();
   }
@@ -671,19 +688,120 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
   }
 
-  function refreshRenderedProductButtons(hero: HeroState): void {
-    renderedProducts.forEach((product) => {
-      const currentButton = productButtons.get(product.id);
+  function trackProductButton(product: WeaponProduct, button: HTMLButtonElement, hero: HeroState): void {
+    productButtons.set(product.id, button);
+    productButtonVisualStates.set(product.id, getProductButtonVisualState(hero, product));
+    product.itemIds.forEach((itemId) => addProductIdToItemIndex(itemId, product.id));
+  }
 
-      if (!currentButton) {
-        return;
-      }
+  function addProductIdToItemIndex(itemId: HeroItemId, productId: string): void {
+    const productIds = productIdsByItemId.get(itemId) ?? new Set<string>();
 
-      const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);
+    productIds.add(productId);
+    productIdsByItemId.set(itemId, productIds);
+  }
 
-      currentButton.replaceWith(nextButton);
-      productButtons.set(product.id, nextButton);
+  function refreshChangedProductButtons(hero: HeroState, syncOptions: WeaponShopHeroSyncOptions): void {
+    const productIds = getProductButtonRefreshIds(syncOptions.product, syncOptions.previousHero);
+
+    if (productIds) {
+      productIds.forEach((productId) => refreshProductButton(productId, hero));
+      return;
+    }
+
+    renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
+  }
+
+  function refreshProductButton(productId: string, hero: HeroState): void {
+    const product = renderedProductsById.get(productId);
+
+    if (!product) {
+      return;
+    }
+
+    const currentButton = productButtons.get(product.id);
+
+    if (!currentButton) {
+      return;
+    }
+
+    const nextVisualState = getProductButtonVisualState(hero, product);
+
+    if (productButtonVisualStates.get(product.id) === nextVisualState) {
+      return;
+    }
+
+    const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);
+
+    currentButton.replaceWith(nextButton);
+    productButtons.set(product.id, nextButton);
+    productButtonVisualStates.set(product.id, nextVisualState);
+  }
+
+  function getProductButtonRefreshIds(product: WeaponProduct | undefined, previousHero: HeroState | undefined): Set<string> | undefined {
+    if (!product) {
+      return undefined;
+    }
+
+    const productIds = new Set<string>();
+
+    productIds.add(product.id);
+    product.itemIds.forEach((itemId) => addIndexedProductIds(productIds, itemId));
+
+    if (previousHero) {
+      getProductEquipmentSlots(product).forEach((slotKey) => {
+        const previousItemId = previousHero.equipment[slotKey];
+
+        if (previousItemId) {
+          addIndexedProductIds(productIds, previousItemId);
+        }
+      });
+    }
+
+    return productIds;
+  }
+
+  function addIndexedProductIds(productIds: Set<string>, itemId: HeroItemId): void {
+    productIdsByItemId.get(itemId)?.forEach((productId) => productIds.add(productId));
+  }
+
+  function getProductEquipmentSlots(product: WeaponProduct): HeroEquipmentSlotKey[] {
+    return product.itemIds.flatMap((itemId) => {
+      const slotKey = HERO_ITEM_CATALOG[itemId]?.equipmentSlot;
+
+      return slotKey ? [slotKey] : [];
     });
+  }
+
+  function getProductButtonVisualState(hero: HeroState, product: WeaponProduct): string {
+    const actionState = getWeaponProductCardState(hero, product);
+    const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
+    const consumableInfo = getConsumableCardInfo(hero, product.itemIds);
+    const consumableState = consumableInfo ? `${consumableInfo.quantity}/${consumableInfo.maxQuantity}` : "";
+
+    return `${actionState}|${damage}|${consumableState}`;
+  }
+
+  function getWeaponProductCardState(hero: HeroState, product: WeaponProduct): ShopProductActionState {
+    if (areHeroItemsConsumable(product.itemIds)) {
+      const isMax = product.itemIds.every((itemId) => getHeroItemQuantity(hero, itemId) >= getHeroConsumableMaxQuantity(itemId));
+
+      return isMax ? "max" : "buy";
+    }
+
+    if (areHeroItemsEquipped(hero, product.itemIds)) {
+      return "equipped";
+    }
+
+    if (!canHeroEquipItems(hero, product.itemIds)) {
+      return "locked";
+    }
+
+    if (areHeroItemsOwned(hero, product.itemIds)) {
+      return "equip";
+    }
+
+    return "buy";
   }
 
   function refreshBowCapacityUpgrade(hero: HeroState, selectedCategory: WeaponCategory): void {

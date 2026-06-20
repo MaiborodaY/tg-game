@@ -1,5 +1,8 @@
 import {
   HERO_ITEM_CATALOG,
+  areHeroItemsEquipped,
+  areHeroItemsOwned,
+  canHeroEquipItems,
   type HeroEquipmentSetInfo,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -40,7 +43,12 @@ export interface ArmoryShopApi {
   open: () => void;
   close: () => void;
   render: () => void;
-  syncHeroState: () => void;
+  syncHeroState: (options?: ArmoryShopHeroSyncOptions) => void;
+}
+
+export interface ArmoryShopHeroSyncOptions {
+  product?: ArmoryProduct;
+  previousHero?: HeroState;
 }
 
 interface ArmoryCategory {
@@ -584,6 +592,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   let productPrewarmTimer: number | undefined;
   let selectedStripElements: ArmorySelectedStripElements | undefined;
   let productButtons = new Map<string, HTMLButtonElement>();
+  let productButtonVisualStates = new Map<string, string>();
+  let productIdsByItemId = new Map<HeroItemId, Set<string>>();
+  let renderedProductsById = new Map<string, ArmoryProduct>();
   let renderedProducts: ArmoryProduct[] = [];
   const usesCityHeroPreview = !options.mountPreview;
   const transitionDelayMs = options.transitionDelayMs ?? 0;
@@ -836,6 +847,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     subcategories.replaceChildren();
     content.replaceChildren();
     productButtons = new Map();
+    productButtonVisualStates = new Map();
+    productIdsByItemId = new Map();
+    renderedProductsById = new Map(selectedProducts.map((product) => [product.id, product]));
     renderedProducts = selectedProducts;
     clearScrollIndicator();
     clearVisibleProductPrewarm();
@@ -993,33 +1007,33 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const iconUrl = getShopProductIconUrl(product.itemIds);
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const armor = getShopProductStat(product.itemIds, "armor");
-    const actionState = getArmoryProductActionState(hero, product);
+    const cardState = getArmoryProductCardState(hero, product);
     const displayName = getShopProductDisplayName(product.name);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
 
     button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
     button.classList.toggle("armory-shop__option--selected", isSelected);
-    button.classList.toggle("armory-shop__option--owned", actionState === "equip");
-    button.classList.toggle("armory-shop__option--equipped", actionState === "equipped");
-    button.classList.toggle("armory-shop__option--for-sale", actionState === "buy" || actionState === "no-gold");
-    button.classList.toggle("armory-shop__option--locked", actionState === "locked");
-    button.classList.toggle("armory-shop__option--sealed", actionState === "sealed" || actionState === "locked");
+    button.classList.toggle("armory-shop__option--owned", cardState === "equip");
+    button.classList.toggle("armory-shop__option--equipped", cardState === "equipped");
+    button.classList.toggle("armory-shop__option--for-sale", cardState === "buy");
+    button.classList.toggle("armory-shop__option--locked", cardState === "locked");
+    button.classList.toggle("armory-shop__option--sealed", cardState === "sealed" || cardState === "locked");
     button.type = "button";
-    button.disabled = actionState === "sealed" || actionState === "locked";
-    button.title = actionState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
+    button.disabled = cardState === "sealed" || cardState === "locked";
+    button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
-      `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${requirementDescription || getShopProductActionLabel(actionState, product.price)}`,
+      `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${requirementDescription || getShopProductActionLabel(cardState, product.price)}`,
     );
     button.append(createProductIcon(iconUrl));
-    if (actionState === "sealed") {
+    if (cardState === "sealed") {
       button.append(createSealedRibbon());
     }
-    if (actionState === "locked" && requirementBadge) {
+    if (cardState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
     }
-    if (actionState === "buy" || actionState === "no-gold") {
+    if (cardState === "buy") {
       button.append(createProductStats("AR", armor, product.price));
     }
     button.addEventListener("click", () => {
@@ -1037,11 +1051,13 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const button = createProductButton(product, hero, previewProduct?.id === product.id);
 
     productButtons.set(product.id, button);
+    productButtonVisualStates.set(product.id, getProductButtonVisualState(hero, product));
+    product.itemIds.forEach((itemId) => addProductIdToItemIndex(itemId, product.id));
 
     return button;
   }
 
-  function syncHeroState(): void {
+  function syncHeroState(syncOptions: ArmoryShopHeroSyncOptions = {}): void {
     if (shop.hidden) {
       return;
     }
@@ -1049,7 +1065,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const hero = options.getHero();
 
     updateShopHeroMeta(hero);
-    refreshRenderedProductButtons(hero);
+    refreshChangedProductButtons(hero, syncOptions);
     renderSelectedProduct(hero);
     scheduleLayoutSync();
   }
@@ -1061,19 +1077,103 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     level.setAttribute("aria-label", `Level ${hero.level}`);
   }
 
-  function refreshRenderedProductButtons(hero: HeroState): void {
-    renderedProducts.forEach((product) => {
-      const currentButton = productButtons.get(product.id);
+  function addProductIdToItemIndex(itemId: HeroItemId, productId: string): void {
+    const productIds = productIdsByItemId.get(itemId) ?? new Set<string>();
 
-      if (!currentButton) {
-        return;
-      }
+    productIds.add(productId);
+    productIdsByItemId.set(itemId, productIds);
+  }
 
-      const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);
+  function refreshChangedProductButtons(hero: HeroState, syncOptions: ArmoryShopHeroSyncOptions): void {
+    const productIds = getProductButtonRefreshIds(syncOptions.product, syncOptions.previousHero);
 
-      currentButton.replaceWith(nextButton);
-      productButtons.set(product.id, nextButton);
+    if (productIds) {
+      productIds.forEach((productId) => refreshProductButton(productId, hero));
+      return;
+    }
+
+    renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
+  }
+
+  function refreshProductButton(productId: string, hero: HeroState): void {
+    const product = renderedProductsById.get(productId);
+
+    if (!product) {
+      return;
+    }
+
+    const currentButton = productButtons.get(product.id);
+
+    if (!currentButton) {
+      return;
+    }
+
+    const nextVisualState = getProductButtonVisualState(hero, product);
+
+    if (productButtonVisualStates.get(product.id) === nextVisualState) {
+      return;
+    }
+
+    const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);
+
+    currentButton.replaceWith(nextButton);
+    productButtons.set(product.id, nextButton);
+    productButtonVisualStates.set(product.id, nextVisualState);
+  }
+
+  function getProductButtonRefreshIds(product: ArmoryProduct | undefined, previousHero: HeroState | undefined): Set<string> | undefined {
+    if (!product) {
+      return undefined;
+    }
+
+    const productIds = new Set<string>();
+
+    productIds.add(product.id);
+    product.itemIds.forEach((itemId) => addIndexedProductIds(productIds, itemId));
+
+    if (previousHero) {
+      getProductEquipmentSlots(product).forEach((slotKey) => {
+        const previousItemId = previousHero.equipment[slotKey];
+
+        if (previousItemId) {
+          addIndexedProductIds(productIds, previousItemId);
+        }
+      });
+    }
+
+    return productIds;
+  }
+
+  function addIndexedProductIds(productIds: Set<string>, itemId: HeroItemId): void {
+    productIdsByItemId.get(itemId)?.forEach((productId) => productIds.add(productId));
+  }
+
+  function getProductEquipmentSlots(product: ArmoryProduct): HeroEquipmentSlotKey[] {
+    return product.itemIds.flatMap((itemId) => {
+      const slotKey = HERO_ITEM_CATALOG[itemId]?.equipmentSlot;
+
+      return slotKey ? [slotKey] : [];
     });
+  }
+
+  function getProductButtonVisualState(hero: HeroState, product: ArmoryProduct): string {
+    return getArmoryProductCardState(hero, product);
+  }
+
+  function getArmoryProductCardState(hero: HeroState, product: ArmoryProduct): ShopProductActionState {
+    if (areHeroItemsEquipped(hero, product.itemIds)) {
+      return "equipped";
+    }
+
+    if (!canHeroEquipItems(hero, product.itemIds)) {
+      return "locked";
+    }
+
+    if (areHeroItemsOwned(hero, product.itemIds)) {
+      return "equip";
+    }
+
+    return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";
   }
 
   function createSelectedProductStrip(onBuy: () => void): ArmorySelectedStripElements {

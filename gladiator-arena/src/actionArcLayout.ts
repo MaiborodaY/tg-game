@@ -17,6 +17,7 @@ import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
 import {
   MAX_STAMINA,
   canFighterSwitchWeapon,
+  getFighterScrollCount,
   getFighterShurikenCount,
   isBowFighter,
   isFighterInClinchRange,
@@ -72,6 +73,7 @@ const DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "lunge" },
   { actionId: "switchWeapon" },
   { actionId: "shuriken" },
+  { actionId: "scroll" },
   { actionId: "utility" },
 ];
 
@@ -82,6 +84,7 @@ const BOW_DISTANCE_SLOTS: ActionArcSlot[] = [
   { actionId: "light" },
   { actionId: "switchWeapon" },
   { actionId: "shuriken" },
+  { actionId: "scroll" },
   { actionId: "utility" },
 ];
 
@@ -91,6 +94,7 @@ const CLINCH_SLOTS: ActionArcSlot[] = [
   { actionId: "medium" },
   { actionId: "light" },
   { actionId: "shuriken" },
+  { actionId: "scroll" },
   { actionId: "utility" },
 ];
 
@@ -103,6 +107,7 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   heavy: { label: "STRONG", detail: "4 dmg" },
   switchWeapon: { label: "SWAP", detail: "Weapon" },
   shuriken: { label: "STAR", detail: "Throw" },
+  scroll: { label: "SCROLL", detail: "Crack" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
@@ -139,6 +144,8 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
       return -7;
     case "shuriken":
       return 21;
+    case "scroll":
+      return 58;
     case "taunt":
       return tuning?.actionTauntArcAngle ?? DEFAULT_ACTION_TAUNT_ANGLE;
     case "rest":
@@ -224,6 +231,10 @@ function shouldShowActionArcSlot(state: CombatState, actionId: ActionId): boolea
 
   if (actionId === "shuriken") {
     return getFighterShurikenCount(state.player) > 0;
+  }
+
+  if (actionId === "scroll") {
+    return getFighterScrollCount(state.player) > 0 && state.enemy.armor > 0;
   }
 
   return true;

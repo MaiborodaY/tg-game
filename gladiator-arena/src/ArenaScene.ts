@@ -105,6 +105,7 @@ import {
   isBowFighter,
   isRangedWeaponClass,
   type ActionId,
+  type CombatArmorSlotState,
   type CombatState,
   type FighterState,
 } from "./combat";
@@ -1998,9 +1999,17 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   async sync(nextState: CombatState, options: ArenaSyncOptions = {}): Promise<void> {
+    const playerRemovedArmorSprites = this.visuals
+      ? createRemovedArmorSlotSprites(this, this.visuals.enemy, nextState.lastPlayerRemovedArmorSlots)
+      : [];
+    const enemyRemovedArmorSprites = this.visuals
+      ? createRemovedArmorSlotSprites(this, this.visuals.player, nextState.lastEnemyRemovedArmorSlots)
+      : [];
     const prepared = await this.prepareStateVisuals(nextState, { animateActions: true, hudState: options.hudState });
 
     if (!prepared) {
+      playerRemovedArmorSprites.forEach((sprite) => sprite.destroy());
+      enemyRemovedArmorSprites.forEach((sprite) => sprite.destroy());
       return;
     }
 
@@ -2048,6 +2057,9 @@ export class ArenaScene extends Phaser.Scene {
     const playerResultDelay = playerActionAnimation?.impact;
     const enemyResultDelay = enemyActionAnimation?.impact;
     const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, enemyResultDelay);
+
+    queueRemovedArmorSlotFlyOff(this, actionAnimations, playerRemovedArmorSprites, playerResultDelay, 1);
+    queueRemovedArmorSlotFlyOff(this, actionAnimations, enemyRemovedArmorSprites, enemyResultDelay, -1);
 
     if (options.hudState && options.hudState !== nextState) {
       void (hudImpactDelay ?? Promise.resolve()).then(() => {
@@ -8120,7 +8132,7 @@ function syncEnemyVisualForState(
 
 function getFighterLoadoutKey(fighter: FighterState): string {
   return JSON.stringify({
-    equipment: fighter.equipment ?? null,
+    name: fighter.name,
     visualPreset: fighter.visualPreset ?? null,
   });
 }
@@ -8144,6 +8156,110 @@ function addToArenaEffectsLayer(target: Phaser.Scene, gameObject: Phaser.GameObj
 
 function getArenaEffectsLayerScale(target: Phaser.Scene): number {
   return Math.max(0.001, Math.abs(getArenaEffectsLayer(target)?.scaleX ?? 1));
+}
+
+function createRemovedArmorSlotSprites(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  removedSlots: readonly CombatArmorSlotState[] | undefined,
+): Phaser.GameObjects.Image[] {
+  if (!removedSlots?.length) {
+    return [];
+  }
+
+  return removedSlots.flatMap((removedSlot) => {
+    const sourceSlot = fighter.paperDollRig?.equipment[removedSlot.slotKey];
+    const sourceImage = sourceSlot ? getPaperDollEquipmentSlotImage(sourceSlot) : undefined;
+
+    if (!sourceImage || !target.textures.exists(sourceImage.texture.key)) {
+      return [];
+    }
+
+    const transform = getArenaEffectImageTransform(target, sourceImage);
+    const sprite = target.add.image(transform.x, transform.y, sourceImage.texture.key, sourceImage.frame.name);
+
+    sprite.setOrigin(sourceImage.originX, sourceImage.originY);
+    sprite.setScale(transform.scaleX, transform.scaleY);
+    sprite.setAngle(transform.angle);
+    sprite.setAlpha(0.98);
+    addToArenaEffectsLayer(target, sprite);
+
+    return [sprite];
+  });
+}
+
+function getArenaEffectImageTransform(
+  target: Phaser.Scene,
+  image: Phaser.GameObjects.Image,
+): { x: number; y: number; scaleX: number; scaleY: number; angle: number } {
+  const matrix = image.getWorldTransformMatrix();
+  const worldX = matrix.getX(0, 0);
+  const worldY = matrix.getY(0, 0);
+  const xAxisX = matrix.getX(1, 0) - worldX;
+  const xAxisY = matrix.getY(1, 0) - worldY;
+  const yAxisX = matrix.getX(0, 1) - worldX;
+  const yAxisY = matrix.getY(0, 1) - worldY;
+  const effectsLayer = getArenaEffectsLayer(target);
+  const localPoint = effectsLayer ? effectsLayer.getWorldTransformMatrix().applyInverse(worldX, worldY) : { x: worldX, y: worldY };
+  const layerScale = getArenaEffectsLayerScale(target);
+  const scaleX = Math.max(0.001, Math.hypot(xAxisX, xAxisY));
+  const determinant = xAxisX * yAxisY - xAxisY * yAxisX;
+  const scaleY = determinant / scaleX;
+
+  return {
+    x: localPoint.x,
+    y: localPoint.y,
+    scaleX: scaleX / layerScale,
+    scaleY: scaleY / layerScale,
+    angle: Phaser.Math.RadToDeg(Math.atan2(xAxisY, xAxisX)),
+  };
+}
+
+function queueRemovedArmorSlotFlyOff(
+  target: Phaser.Scene,
+  actionAnimations: Promise<void>[],
+  sprites: readonly Phaser.GameObjects.Image[],
+  impactDelay: Promise<void> | undefined,
+  worldDirection: -1 | 1,
+): void {
+  if (sprites.length <= 0) {
+    return;
+  }
+
+  queueCombatResultAnimation(actionAnimations, impactDelay, () => {
+    return Promise.all(sprites.map((sprite, index) => animateRemovedArmorSlotFlyOff(target, sprite, worldDirection, index, sprites.length))).then(
+      () => undefined,
+    );
+  });
+}
+
+function animateRemovedArmorSlotFlyOff(
+  target: Phaser.Scene,
+  sprite: Phaser.GameObjects.Image,
+  worldDirection: -1 | 1,
+  index = 0,
+  count = 1,
+): Promise<void> {
+  const layerScale = getArenaEffectsLayerScale(target);
+  const spreadIndex = index - (count - 1) / 2;
+
+  return new Promise((resolve) => {
+    target.tweens.add({
+      targets: sprite,
+      x: sprite.x + (worldDirection * (58 + Math.abs(spreadIndex) * 18)) / layerScale,
+      y: sprite.y - (74 - spreadIndex * 18) / layerScale,
+      angle: sprite.angle + worldDirection * (95 + spreadIndex * 24),
+      alpha: 0,
+      scaleX: sprite.scaleX * 0.78,
+      scaleY: sprite.scaleY * 0.78,
+      duration: 520,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        sprite.destroy();
+        resolve();
+      },
+    });
+  });
 }
 
 function queueDeathEffects(
@@ -9477,6 +9593,15 @@ function animateAction(
     resetFighterBodyIdleAnimation(actor, target.time.now);
     showFloatingText(target, actor.body.x, actor.body.y - 120, "MELEE", "#ffe7a4");
     return { done: Promise.resolve() };
+  }
+
+  if (actionId === "scroll") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "SCROLL", "#d7f0ff");
+    return {
+      done: createSceneDelay(target, 260),
+      impact: createSceneDelay(target, 120),
+    };
   }
 
   if (actionId === "shuriken") {

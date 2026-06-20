@@ -19,7 +19,7 @@ import type {
   ArenaRandomOpponentDefinition,
   ArenaTierDefinition,
 } from "./arenaOpponents";
-import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatState } from "./combat";
+import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatArmorSlotState, type CombatState } from "./combat";
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
 
 export {
@@ -165,17 +165,22 @@ export interface HeroEquipmentSetInfo {
 export interface HeroItemDefinition {
   id: HeroItemId;
   name: string;
-  kind: "weapon" | "armor";
+  kind: "weapon" | "armor" | "scroll";
   rarity?: HeroItemRarity;
   weaponClass?: HeroWeaponClass;
   armorCategory?: "leather" | "cloth" | "chain" | "plate";
   equipmentSlot: HeroEquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  scrollEffect?: HeroScrollEffect;
   equipmentSet?: HeroEquipmentSetInfo;
   levelRequirement?: number;
   requirements?: Partial<HeroBaseStats>;
   statBonuses?: Partial<HeroBaseStats>;
+}
+
+export interface HeroScrollEffect {
+  kind: "crackArmorSlot";
 }
 
 export interface HeroInventoryEntry {
@@ -352,15 +357,32 @@ export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
+export const HERO_SCROLL_MAX_QUANTITY = 3;
+export const HERO_CRACK_ARMOR_SCROLL_ITEM_ID = "scroll_crack_armor_01";
 export const HERO_STARTING_SKILL_POINTS = 1;
 export const ENEMY_SHURIKEN_ROLL_CHANCE = 0.25;
 export const ENEMY_SHURIKEN_QUANTITY = 1;
 export const HERO_BOW_SHOT_CAPACITY_BASE = BOW_SHOTS_PER_BATTLE;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX = 10;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE = 500;
-export const HERO_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_IDS;
+const HERO_SCROLL_ITEMS: Record<HeroItemId, HeroItemDefinition> = {
+  [HERO_CRACK_ARMOR_SCROLL_ITEM_ID]: {
+    id: HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
+    name: "Crack Armor Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+    scrollEffect: {
+      kind: "crackArmorSlot",
+    },
+  },
+};
+export const HERO_ITEM_IDS = [...GENERATED_EQUIPMENT_ITEM_IDS, ...Object.keys(HERO_SCROLL_ITEMS)] as readonly HeroItemId[];
 export const ALL_HERO_ITEM_IDS = HERO_ITEM_IDS;
-export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = GENERATED_EQUIPMENT_ITEM_CATALOG;
+export const HERO_ITEM_CATALOG: Record<HeroItemId, HeroItemDefinition> = {
+  ...GENERATED_EQUIPMENT_ITEM_CATALOG,
+  ...HERO_SCROLL_ITEMS,
+};
 
 export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
   skin: 0xefaa7b,
@@ -619,6 +641,31 @@ export function getHeroEquipmentArmor(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((armor, item) => armor + (item.armorHp ?? 0), 0);
 }
 
+export function getHeroEquipmentArmorSlots(equipment: HeroEquipment): CombatArmorSlotState[] {
+  return HERO_EQUIPMENT_SLOT_KEYS.flatMap((slotKey) => {
+    const itemId = equipment[slotKey];
+    if (!itemId) {
+      return [];
+    }
+
+    const item = HERO_ITEM_CATALOG[itemId];
+    const armorHp = Math.max(0, Math.floor(item?.armorHp ?? 0));
+
+    if (!item || item.equipmentSlot !== slotKey || isHeroConsumableItem(item) || armorHp <= 0) {
+      return [];
+    }
+
+    return [
+      {
+        slotKey,
+        itemId,
+        label: item.name,
+        armorHp,
+      },
+    ];
+  });
+}
+
 export function getHeroEquipmentDamageBonus(equipment: HeroEquipment): number {
   return getEquippedHeroItems(equipment).reduce((damageBonus, item) => damageBonus + (item.damageBonus ?? 0), 0);
 }
@@ -691,7 +738,7 @@ export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[
 }
 
 export function isHeroConsumableItem(item: HeroItemDefinition | undefined): boolean {
-  return getHeroItemWeaponClass(item) === "shuriken";
+  return item?.kind === "scroll" || getHeroItemWeaponClass(item) === "shuriken";
 }
 
 export function isHeroConsumableItemId(itemId: HeroItemId): boolean {
@@ -709,6 +756,12 @@ export function getHeroItemQuantity(hero: HeroState, itemId: HeroItemId): number
 }
 
 export function getHeroConsumableMaxQuantity(itemId: HeroItemId): number {
+  const item = HERO_ITEM_CATALOG[itemId];
+
+  if (item?.kind === "scroll") {
+    return HERO_SCROLL_MAX_QUANTITY;
+  }
+
   return isHeroConsumableItemId(itemId) ? HERO_SHURIKEN_MAX_QUANTITY : 0;
 }
 
@@ -724,6 +777,18 @@ export function getHeroShurikenCount(hero: HeroState): number {
 
 export function getHeroShurikenDamage(): number {
   return getShurikenItemDamage(getHeroShurikenItemId());
+}
+
+export function getHeroCrackArmorScrollItemId(): HeroItemId {
+  return HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
+}
+
+export function getHeroCrackArmorScrollCount(hero: HeroState): number {
+  return getHeroItemQuantity(hero, HERO_CRACK_ARMOR_SCROLL_ITEM_ID);
+}
+
+export function getHeroCrackArmorScrollEffect(): HeroScrollEffect {
+  return HERO_SCROLL_ITEMS[HERO_CRACK_ARMOR_SCROLL_ITEM_ID]!.scrollEffect!;
 }
 
 function getShurikenItemDamage(itemId: HeroItemId | undefined): number {
@@ -821,6 +886,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyBowWeaponClass = getHeroEquipmentBowWeaponClass(enemyEquipment);
   const enemyWeaponClass = enemyEquipment.weaponMain ? enemyMainWeaponClass : enemyBowWeaponClass ?? enemyMainWeaponClass;
   const playerShurikenItemId = getHeroShurikenItemId();
+  const playerScrollItemId = getHeroCrackArmorScrollItemId();
   const playerBowShotCapacity = getHeroBowShotCapacity(hero);
   const state = freshState();
 
@@ -852,7 +918,10 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenCount: getHeroShurikenCount(hero),
       shurikenDamage: getHeroShurikenDamage(),
       shurikenItemId: playerShurikenItemId,
+      scrollCount: getHeroCrackArmorScrollCount(hero),
+      scrollItemId: playerScrollItemId,
       equipment: { ...heroEquipment },
+      armorSlots: getHeroEquipmentArmorSlots(heroEquipment),
     },
     enemy: {
       ...state.enemy,
@@ -881,6 +950,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenDamage: Math.max(0, Math.floor(enemyLoadout.shurikenDamage ?? 0)),
       shurikenItemId: enemyLoadout.shurikenItemId,
       equipment: { ...enemyEquipment },
+      armorSlots: getHeroEquipmentArmorSlots(enemyEquipment),
       visualPreset: { ...enemyLoadout.visualPreset },
     },
     encounter: {
@@ -1050,24 +1120,36 @@ function applyArenaLootWithAppliedDrops(
 }
 
 function applyCombatConsumableUsage(hero: HeroState, combat: CombatState, now: string): HeroState {
-  const shurikenItemId = combat.player.shurikenItemId;
+  const consumables = [
+    { itemId: combat.player.shurikenItemId, remaining: combat.player.shurikenCount },
+    { itemId: combat.player.scrollItemId, remaining: combat.player.scrollCount },
+  ];
+  let inventory = hero.inventory.map((entry) => ({ ...entry }));
+  let hasChange = false;
 
-  if (!shurikenItemId || !isHeroConsumableItemId(shurikenItemId)) {
-    return hero;
-  }
+  consumables.forEach(({ itemId, remaining }) => {
+    if (!itemId || !isHeroConsumableItemId(itemId)) {
+      return;
+    }
 
-  const currentQuantity = getHeroItemQuantity(hero, shurikenItemId);
-  const remainingQuantity = Math.min(currentQuantity, Math.max(0, Math.floor(combat.player.shurikenCount ?? currentQuantity)));
+    const currentQuantity = Math.max(0, Math.floor(inventory.find((entry) => entry.itemId === itemId)?.quantity ?? 0));
+    const remainingQuantity = Math.min(currentQuantity, Math.max(0, Math.floor(remaining ?? currentQuantity)));
 
-  if (remainingQuantity >= currentQuantity) {
+    if (remainingQuantity >= currentQuantity) {
+      return;
+    }
+
+    inventory = inventory.map((entry) => (entry.itemId === itemId ? { ...entry, quantity: remainingQuantity } : entry));
+    hasChange = true;
+  });
+
+  if (!hasChange) {
     return hero;
   }
 
   return {
     ...hero,
-    inventory: hero.inventory
-      .map((entry) => (entry.itemId === shurikenItemId ? { ...entry, quantity: remainingQuantity } : { ...entry }))
-      .filter((entry) => entry.quantity > 0),
+    inventory: inventory.filter((entry) => entry.quantity > 0),
     updatedAt: now,
   };
 }
@@ -1449,7 +1531,7 @@ function getEnemyShurikenItemIds(itemRarities: readonly HeroItemRarity[]): HeroI
   return GENERATED_EQUIPMENT_ITEM_RECORDS.filter(
     (record) =>
       canRollGeneratedEquipmentForEnemy(record) &&
-      isHeroConsumableItem(record.item) &&
+      getHeroItemWeaponClass(record.item) === "shuriken" &&
       itemRarities.includes(getHeroItemRarity(record.item)),
   ).map((record) => record.item.id);
 }
