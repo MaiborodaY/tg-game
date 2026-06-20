@@ -40,6 +40,7 @@ export interface ArmoryShopApi {
   open: () => void;
   close: () => void;
   render: () => void;
+  syncHeroState: () => void;
 }
 
 interface ArmoryCategory {
@@ -909,7 +910,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
         previewProduct = undefined;
         options.onBuy(product);
-        render();
       });
       selected.replaceChildren(selectedStripElements.card);
     }
@@ -1039,6 +1039,41 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     productButtons.set(product.id, button);
 
     return button;
+  }
+
+  function syncHeroState(): void {
+    if (shop.hidden) {
+      return;
+    }
+
+    const hero = options.getHero();
+
+    updateShopHeroMeta(hero);
+    refreshRenderedProductButtons(hero);
+    renderSelectedProduct(hero);
+    scheduleLayoutSync();
+  }
+
+  function updateShopHeroMeta(hero: HeroState): void {
+    goldAmount.textContent = String(hero.gold);
+    gold.setAttribute("aria-label", `Gold ${hero.gold}`);
+    levelValue.textContent = String(hero.level);
+    level.setAttribute("aria-label", `Level ${hero.level}`);
+  }
+
+  function refreshRenderedProductButtons(hero: HeroState): void {
+    renderedProducts.forEach((product) => {
+      const currentButton = productButtons.get(product.id);
+
+      if (!currentButton) {
+        return;
+      }
+
+      const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);
+
+      currentButton.replaceWith(nextButton);
+      productButtons.set(product.id, nextButton);
+    });
   }
 
   function createSelectedProductStrip(onBuy: () => void): ArmorySelectedStripElements {
@@ -1358,7 +1393,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     tray.classList.remove("armory-shop__tray--scrolling");
   }
 
-  return { open, close, render };
+  return { open, close, render, syncHeroState };
 }
 
 function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {

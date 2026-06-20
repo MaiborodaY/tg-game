@@ -23,7 +23,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
         id: "dust_arena_veteran",
         difficultyId: "hard",
         randomBaseStatPoints: 3,
-        equipmentPools: [{"itemRarities":["common"],"rollChance":0.5},{"itemRarities":["uncommon"],"rollChance":0.1}],
+        equipmentPools: [{"itemRarities":["common"],"rollChance":0.5,"weaponChance":1,"shieldChance":0.1},{"itemRarities":["uncommon"],"rollChance":0.15,"weaponChance":0,"bowChance":0,"shieldChance":0,"shurikenChance":0}],
         rewards: {"win":{"gold":15,"xp":10},"loss":{"gold":1,"xp":1}},
       },
     ],

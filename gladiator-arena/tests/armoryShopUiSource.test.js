@@ -307,9 +307,11 @@ test("weapon shop purchase keeps the selected product preview open", () => {
   assert.notEqual(end, -1);
   assert.match(
     previewBuyButtonSource,
-    /button\.addEventListener\("click", \(\) => \{\s*options\.onBuy\(product\);\s*render\(\);\s*\}\);/,
+    /button\.addEventListener\("click", \(\) => \{\s*options\.onBuy\(product\);\s*\}\);/,
   );
   assert.equal(previewBuyButtonSource.includes("previewProduct = undefined"), false);
+  assert.equal(previewBuyButtonSource.includes("render();"), false);
+  assert.equal(weaponShopSource.includes("function refreshSelectedProduct"), true);
 });
 
 test("weapon shop locked products are dimmed and show centered stat requirement ribbons", () => {
@@ -470,6 +472,25 @@ test("shop purchases refresh the hero portrait for every non-consumable equipmen
   assert.match(mainSource, /if \(!areHeroItemsConsumable\(product\.itemIds\)\) \{\s*heroPortraitPreview\?\.setEquipment\(hero\.equipment\);\s*\}/);
   assert.equal(mainSource.includes("HERO_PORTRAIT_REFRESH_SLOTS"), false);
   assert.equal(mainSource.includes("function shouldRefreshHeroPortrait"), false);
+});
+
+test("shop purchases sync only the active shop state after hero changes", () => {
+  const start = mainSource.indexOf("function handleShopBuy");
+  const end = mainSource.indexOf("function handleBowCapacityUpgrade", start);
+  const handleShopBuySource = mainSource.slice(start, end);
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  assert.equal(armoryShopSource.includes("syncHeroState: () => void"), true);
+  assert.equal(weaponShopSource.includes("syncHeroState: () => void"), true);
+  assert.equal(armoryShopSource.includes("function syncHeroState(): void"), true);
+  assert.equal(weaponShopSource.includes("function syncHeroState(): void"), true);
+  assert.equal(handleShopBuySource.includes("syncShopHeroStateForProduct(product);"), true);
+  assert.equal(handleShopBuySource.includes("armoryShop?.render();"), false);
+  assert.equal(handleShopBuySource.includes("weaponShop?.render();"), false);
+  assert.match(mainSource, /function syncShopHeroStateForProduct\(product: ArmoryProduct \| WeaponProduct\): void[\s\S]*armoryShop\?\.syncHeroState\(\);[\s\S]*weaponShop\?\.syncHeroState\(\);/);
+  assert.match(armoryShopSource, /function syncHeroState\(\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshRenderedProductButtons\(hero\);[\s\S]*renderSelectedProduct\(hero\);/);
+  assert.match(weaponShopSource, /function syncHeroState\(\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshSelectedProduct\(hero\);[\s\S]*refreshRenderedProductButtons\(hero\);/);
 });
 
 test("city shops lazily prewarm visible equipment products", () => {

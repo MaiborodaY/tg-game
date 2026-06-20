@@ -49,6 +49,7 @@ export interface WeaponShopApi {
   open: () => void;
   close: () => void;
   render: () => void;
+  syncHeroState: () => void;
 }
 
 interface WeaponCategory {
@@ -403,11 +404,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     clearScrollIndicator();
     clearVisibleProductPrewarm();
     options.onPrewarmProducts?.([]);
-    shop.classList.toggle("armory-shop--has-selection", Boolean(previewProduct));
-    selected.hidden = !previewProduct;
+    syncSelectionState();
     content.classList.toggle("armory-shop__content--categories", false);
     content.classList.toggle("armory-shop__content--products", true);
-    content.classList.toggle("armory-shop__content--has-selection", Boolean(previewProduct));
     content.classList.toggle("armory-shop__content--confirm", false);
 
     if (usesCityHeroPreview) {
@@ -588,7 +587,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       options.onBuy(product);
-      render();
     });
 
     return button;
@@ -627,12 +625,70 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.textContent = isMaxed ? "Max" : canBuy ? "Buy" : "No gold";
     button.addEventListener("click", () => {
       options.onBowCapacityUpgrade?.();
-      render();
     });
     meta.append(name, capacity, price);
     card.append(icon, meta, button);
 
     return card;
+  }
+
+  function syncHeroState(): void {
+    if (shop.hidden) {
+      return;
+    }
+
+    const hero = options.getHero();
+    const selectedCategory = WEAPON_CATEGORIES.find((category) => category.id === selectedCategoryId) ?? WEAPON_CATEGORIES[0]!;
+
+    updateShopHeroMeta(hero);
+    syncSelectionState();
+    refreshSelectedProduct(hero);
+    refreshRenderedProductButtons(hero);
+    refreshBowCapacityUpgrade(hero, selectedCategory);
+    scheduleLayoutSync();
+  }
+
+  function updateShopHeroMeta(hero: HeroState): void {
+    goldAmount.textContent = String(hero.gold);
+    gold.setAttribute("aria-label", `Gold ${hero.gold}`);
+    levelValue.textContent = String(hero.level);
+    level.setAttribute("aria-label", `Level ${hero.level}`);
+  }
+
+  function syncSelectionState(): void {
+    const hasSelection = Boolean(previewProduct);
+
+    shop.classList.toggle("armory-shop--has-selection", hasSelection);
+    selected.hidden = !hasSelection;
+    content.classList.toggle("armory-shop__content--has-selection", hasSelection);
+  }
+
+  function refreshSelectedProduct(hero: HeroState): void {
+    selected.replaceChildren();
+
+    if (previewProduct) {
+      selected.append(createSelectedProductStrip(previewProduct, hero));
+    }
+  }
+
+  function refreshRenderedProductButtons(hero: HeroState): void {
+    renderedProducts.forEach((product) => {
+      const currentButton = productButtons.get(product.id);
+
+      if (!currentButton) {
+        return;
+      }
+
+      const nextButton = createProductButton(product, hero, previewProduct?.id === product.id);
+
+      currentButton.replaceWith(nextButton);
+      productButtons.set(product.id, nextButton);
+    });
+  }
+
+  function refreshBowCapacityUpgrade(hero: HeroState, selectedCategory: WeaponCategory): void {
+    bowUpgrade.replaceChildren();
+    renderBowCapacityUpgrade(hero, selectedCategory);
   }
 
   function clearProductPreview(): void {
@@ -870,7 +926,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     tray.classList.remove("armory-shop__tray--scrolling");
   }
 
-  return { open, close, render };
+  return { open, close, render, syncHeroState };
 }
 
 function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {

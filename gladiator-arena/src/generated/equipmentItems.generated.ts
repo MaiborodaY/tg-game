@@ -2933,7 +2933,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_mace_bad_club","name":"Common Mace 01","price":9,"itemIds":["generated_equipment_weapon_mace_bad_club"],"categoryId":"maces"},
   },
   {
-    item: {"id":"generated_equipment_weapon_mace_boar_mace","name":"Boar mace","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"mace"},
+    item: {"id":"generated_equipment_weapon_mace_boar_mace","name":"Boar mace","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":13,"weaponClass":"mace"},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-boar-mace"},
     equipmentTuning: {"x":-13,"y":9,"angle":109,"scaleX":1.6,"scaleY":1.6,"flipX":false,"flipY":false},
     asset: {

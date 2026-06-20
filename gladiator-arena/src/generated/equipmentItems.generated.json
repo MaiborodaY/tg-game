@@ -10796,7 +10796,7 @@
     "name": "Boar mace",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 20,
+    "damageBonus": 13,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {

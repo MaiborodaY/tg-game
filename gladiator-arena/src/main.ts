@@ -826,8 +826,6 @@ function flushRewardUiRenderIfDirty(): void {
   }
 
   rewardUiRenderDirty = false;
-  armoryShop?.render();
-  weaponShop?.render();
   cityHeroEquipmentMenu.render();
 }
 
@@ -1054,8 +1052,7 @@ function handleShopBuy(product: ArmoryProduct | WeaponProduct): void {
     heroPortraitPreview?.setEquipment(hero.equipment);
   }
   renderCityHero();
-  armoryShop?.render();
-  weaponShop?.render();
+  syncShopHeroStateForProduct(product);
   cityHeroEquipmentMenu.render();
 }
 
@@ -1068,7 +1065,7 @@ function handleBowCapacityUpgrade(): void {
 
   hero = nextHero;
   renderCityHero();
-  weaponShop?.render();
+  weaponShop?.syncHeroState();
   cityHeroEquipmentMenu.render();
 }
 
@@ -1086,8 +1083,7 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
   hero = nextHero;
   syncPlayerCityBodyScale();
   renderCityHero();
-  armoryShop?.render();
-  weaponShop?.render();
+  syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
 }
 
@@ -1108,8 +1104,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   setPlayerEquipment(hero.equipment);
   heroPortraitPreview?.setEquipment(hero.equipment);
   renderCityHero();
-  armoryShop?.render();
-  weaponShop?.render();
+  syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
 }
 
@@ -1132,9 +1127,22 @@ function handleTemporaryChurchSkillGrant(): void {
 
   hero = unlockAllArenaBossTiers(unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 20, now), 1000, now), now), now);
   renderCityHero();
-  armoryShop?.render();
-  weaponShop?.render();
+  syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
+}
+
+function syncShopHeroStateForProduct(product: ArmoryProduct | WeaponProduct): void {
+  if (isArmoryShopProduct(product)) {
+    armoryShop?.syncHeroState();
+    return;
+  }
+
+  weaponShop?.syncHeroState();
+}
+
+function syncCityShopHeroState(): void {
+  armoryShop?.syncHeroState();
+  weaponShop?.syncHeroState();
 }
 
 function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipment: HeroEquipment = hero.equipment): HeroEquipment {
