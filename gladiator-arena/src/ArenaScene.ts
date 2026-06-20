@@ -8634,7 +8634,11 @@ function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<t
     }
 
     const tuningLayer = getArenaBackgroundLayerTuningForTier(source, tierId, layerKey);
-    const transform = getArenaLayerTransform(layer, cameraTarget, tuningLayer.parallax);
+    const transform = clampArenaBackgroundLayerTransformToViewport(
+      getArenaLayerTransform(layer, cameraTarget, tuningLayer.parallax),
+      image,
+      cameraTarget,
+    );
 
     backgroundTransforms.push({
       ...transform,
@@ -8751,6 +8755,30 @@ function getArenaLayerTransform(
     y: snapPosition ? snapArenaPixel(y) : y,
     scale,
   };
+}
+
+function clampArenaBackgroundLayerTransformToViewport(
+  transform: ArenaLayerTransform,
+  image: Phaser.GameObjects.Image,
+  cameraTarget: ReturnType<typeof getCameraTarget>,
+): ArenaLayerTransform {
+  const screenWidth = image.displayWidth * transform.scale;
+
+  if (!Number.isFinite(screenWidth) || screenWidth <= cameraTarget.viewportWidth) {
+    return transform;
+  }
+
+  const left = transform.x + image.x * transform.scale;
+  const right = left + screenWidth;
+  let x = transform.x;
+
+  if (left > 0) {
+    x -= left;
+  } else if (right < cameraTarget.viewportWidth) {
+    x += cameraTarget.viewportWidth - right;
+  }
+
+  return x === transform.x ? transform : { ...transform, x };
 }
 
 function snapArenaPixel(value: number): number {

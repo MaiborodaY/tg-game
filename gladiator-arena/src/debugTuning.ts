@@ -10355,10 +10355,10 @@ export const defaultDebugTuning: ArenaDebugTuning = {
           "visible": true
         },
         "parallax": {
-          "followX": 0.42,
-          "followY": 0.32,
-          "zoom": 0.75,
-          "lookUpY": 10
+          "followX": 0.25,
+          "followY": 0.3,
+          "zoom": 0.4,
+          "lookUpY": -10
         }
       },
       "ambient": {
@@ -10374,8 +10374,40 @@ export const defaultDebugTuning: ArenaDebugTuning = {
           "followY": 0.48,
           "zoom": 0.5,
           "lookUpY": -16,
-          "farAlpha": 0,
-          "nearAlpha": 0.2
+          "farAlpha": 0.1,
+          "nearAlpha": 0.3
+        }
+      }
+    },
+    "5": {
+      "back": {
+        "layout": {
+          "x": 0,
+          "y": -30,
+          "scale": 0.5,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.25,
+          "followY": 0.2,
+          "zoom": 0.4,
+          "lookUpY": -35
+        }
+      },
+      "ground": {
+        "layout": {
+          "x": 0,
+          "y": -85,
+          "scale": 0.8,
+          "alpha": 1,
+          "visible": true
+        },
+        "parallax": {
+          "followX": 0.1,
+          "followY": 0.05,
+          "zoom": 0.3,
+          "lookUpY": -45
         }
       }
     }

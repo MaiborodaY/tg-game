@@ -685,6 +685,9 @@ test("arena parallax can be tuned from debug settings", () => {
   assert.equal(arenaSceneSource.includes("source.arenaTier2AmbientNearAlpha"), true);
   assert.equal(arenaSceneSource.includes("layers.backgroundLayerIds.forEach((layerKey)"), true);
   assert.equal(arenaSceneSource.includes("getArenaLayerTransform(layer, cameraTarget, tuningLayer.parallax)"), true);
+  assert.equal(arenaSceneSource.includes("clampArenaBackgroundLayerTransformToViewport("), true);
+  assert.equal(arenaSceneSource.includes("image.displayWidth * transform.scale"), true);
+  assert.equal(arenaSceneSource.includes("right < cameraTarget.viewportWidth"), true);
   assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerCameraAlpha(layerKey, tuningLayer, cameraTarget)"), true);
   assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, current)"), true);
   assert.equal(arenaSceneSource.includes("isArenaBackgroundLayerCameraAlphaManaged(layerKey)"), true);
@@ -719,6 +722,12 @@ test("arena tier two uses the forest background layer set", () => {
     "arena-tier-3-back.webp",
     "arena-tier-3-ground.webp",
     "arena-tier-3-front.webp",
+    "arena-tier-4-ambient.webp",
+    "arena-tier-4-back.webp",
+    "arena-tier-4-back-2.webp",
+    "arena-tier-4-ground.webp",
+    "arena-tier-5-back.webp",
+    "arena-tier-5-ground.webp",
   ].forEach((assetName) => {
     assert.equal(existsSync(resolve(currentDir, `../src/assets/arena/layers/${assetName}`)), true);
   });
@@ -731,6 +740,12 @@ test("arena tier two uses the forest background layer set", () => {
     "arena-tier-3-back.png",
     "arena-tier-3-ground.png",
     "arena-tier-3-front.png",
+    "arena-tier-4-ambient.png",
+    "arena-tier-4-back.png",
+    "arena-tier-4-back-2.png",
+    "arena-tier-4-ground.png",
+    "arena-tier-5-back.png",
+    "arena-tier-5-ground.png",
   ].forEach((assetName) => {
     assert.equal(existsSync(resolve(currentDir, `../art-source/png/assets/arena/layers/${assetName}`)), true);
   });
@@ -751,6 +766,8 @@ test("arena tier two uses the forest background layer set", () => {
   assert.equal(optimizeAssetsSource.includes("maximumAlphaQuality: 70"), true);
   assert.equal(optimizeAssetsSource.includes("2-(?:front-trees|ambient-particles)"), true);
   assert.equal(optimizeAssetsSource.includes("3-(?:back|ground|front)"), true);
+  assert.equal(optimizeAssetsSource.includes("4-(?:ambient|back(?:-2)?|ground)"), true);
+  assert.equal(optimizeAssetsSource.includes("5-(?:back|ground)"), true);
   assert.equal(optimizeAssetsSource.includes("alphaQuality: targetAlphaQuality"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-mid.webp"), false);
   assert.equal(arenaSceneSource.includes("function createArenaBackgroundAssetSets()"), true);

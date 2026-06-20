@@ -49,5 +49,15 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     lootTable: [
       {"id":"arena_boss_3_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
     ],
+  },
+  {
+    id: "arena_boss_4",
+    tierId: 4,
+    name: "Arena Boss 4",
+    baseStats: {"strength":10,"agility":15,"vitality":18},
+    equipment: {},
+    rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":1,"xp":2}},
+    lootTable: [
+    ],
   }
 ];
