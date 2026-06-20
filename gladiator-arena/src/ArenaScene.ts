@@ -557,6 +557,7 @@ interface ArenaLayers {
   backgroundLayerIds: ArenaBackgroundLayerKey[];
   backgroundTierId?: number;
   backgroundVariantId?: ArenaBackgroundVariantId;
+  backgroundViewportKey?: string;
   midShade: ArenaMidLayerShadeState;
   all: Phaser.GameObjects.Container[];
 }
@@ -592,6 +593,18 @@ const ARENA_BACKGROUND_ROLE_DEPTHS: Record<ArenaBackgroundLayerRole, number> = {
   mid: -20,
   front: -15,
   ambient: -12,
+};
+
+const ARENA_BACKGROUND_VIEWPORT_COVER_OVERSCAN = 1.02;
+const ARENA_BACKGROUND_VIEWPORT_COVER_START_SCALE = 1.12;
+const ARENA_BACKGROUND_VIEWPORT_COVER_MAX_SCALE = 1.35;
+
+const ARENA_BACKGROUND_ROLE_COVER_ANCHOR_Y: Record<ArenaBackgroundLayerRole, number> = {
+  back: 0.5,
+  ground: 0.78,
+  mid: 0.55,
+  front: 0.78,
+  ambient: 0.5,
 };
 
 const ARENA_MID_LAYER_BASE_TINT = 0xb1a18f;
@@ -4364,8 +4377,9 @@ function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
 
 function syncArenaBackgroundForState(target: Phaser.Scene, layers: ArenaLayers, current: CombatState): void {
   const assetSet = getArenaBackgroundAssetSetForEncounter(current.encounter);
+  const viewportKey = getArenaBackgroundViewportKey(target);
 
-  if (!isDebugTuningActive() && layers.backgroundTierId === assetSet.tierId && layers.backgroundVariantId === assetSet.variantId) {
+  if (!isDebugTuningActive() && layers.backgroundTierId === assetSet.tierId && layers.backgroundVariantId === assetSet.variantId && layers.backgroundViewportKey === viewportKey) {
     return;
   }
 
@@ -4407,6 +4421,7 @@ function syncArenaBackgroundAssetSet(target: Phaser.Scene, layers: ArenaLayers, 
   layers.all = [...layers.backgroundLayerIds.map((layerKey) => layers.backgroundLayerContainers[layerKey]).filter((container): container is Phaser.GameObjects.Container => !!container), layers.actors, layers.effects];
   layers.backgroundTierId = assetSet.tierId;
   layers.backgroundVariantId = assetSet.variantId;
+  layers.backgroundViewportKey = getArenaBackgroundViewportKey(target);
 }
 
 function createArenaBackgroundAssetSets(): ArenaBackgroundAssetSet[] {
@@ -4485,7 +4500,7 @@ function syncArenaBackgroundLayer(
     image.setAlpha(getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, variantId, current));
   }
 
-  applyArenaBackgroundLayerLayout(image, layout, { applyAlpha: !isArenaBackgroundLayerCameraAlphaManaged(layerKey) });
+  applyArenaBackgroundLayerLayout(target, image, layout, config.role, { applyAlpha: !isArenaBackgroundLayerCameraAlphaManaged(layerKey) });
 
   if (config.shadeWithCamera) {
     layers.midImages.add(image);
@@ -4498,12 +4513,29 @@ function syncArenaBackgroundLayer(
   image.clearTint();
 }
 
-function applyArenaBackgroundLayerLayout(image: Phaser.GameObjects.Image, layout: ArenaBackgroundLayerLayout, options: { applyAlpha?: boolean } = {}): void {
-  const width = ARENA_WORLD_WIDTH * layout.scale;
-  const height = ARENA_WORLD_HEIGHT * layout.scale;
+function applyArenaBackgroundLayerLayout(
+  target: Phaser.Scene,
+  image: Phaser.GameObjects.Image,
+  layout: ArenaBackgroundLayerLayout,
+  role: ArenaBackgroundLayerRole,
+  options: { applyAlpha?: boolean } = {},
+): void {
+  const coverScale = getArenaBackgroundViewportCoverScale(getArenaViewport(target));
+  const baseWidth = ARENA_WORLD_WIDTH * layout.scale;
+  const baseHeight = ARENA_WORLD_HEIGHT * layout.scale;
+  const width = baseWidth * coverScale;
+  const height = baseHeight * coverScale;
+  const layoutExtraWidth = baseWidth - ARENA_WORLD_WIDTH;
+  const layoutExtraHeight = baseHeight - ARENA_WORLD_HEIGHT;
+  const coverExtraWidth = width - baseWidth;
+  const coverExtraHeight = height - baseHeight;
+  const coverAnchorY = ARENA_BACKGROUND_ROLE_COVER_ANCHOR_Y[role];
 
   image
-    .setPosition(ARENA_WORLD_LEFT + layout.x - (width - ARENA_WORLD_WIDTH) / 2, ARENA_WORLD_TOP + layout.y - (height - ARENA_WORLD_HEIGHT) / 2)
+    .setPosition(
+      ARENA_WORLD_LEFT + layout.x - layoutExtraWidth / 2 - coverExtraWidth / 2,
+      ARENA_WORLD_TOP + layout.y - layoutExtraHeight / 2 - coverExtraHeight * coverAnchorY,
+    )
     .setDisplaySize(width, height);
 
   if (options.applyAlpha ?? true) {
@@ -4511,6 +4543,29 @@ function applyArenaBackgroundLayerLayout(image: Phaser.GameObjects.Image, layout
   }
 
   image.setVisible(layout.visible);
+}
+
+function getArenaBackgroundViewportKey(target: Phaser.Scene): string {
+  const viewport = getArenaViewport(target);
+
+  return `${Math.round(viewport.width)}:${Math.round(viewport.height)}`;
+}
+
+function getArenaBackgroundViewportCoverScale(viewport: CameraViewport): number {
+  const designAspect = GAME_WIDTH / GAME_HEIGHT;
+  const viewportAspect = viewport.width / viewport.height;
+
+  if (!Number.isFinite(viewportAspect) || viewportAspect >= designAspect) {
+    return 1;
+  }
+
+  const rawCoverScale = designAspect / viewportAspect;
+
+  if (!Number.isFinite(rawCoverScale) || rawCoverScale <= ARENA_BACKGROUND_VIEWPORT_COVER_START_SCALE) {
+    return 1;
+  }
+
+  return clampNumber(rawCoverScale * ARENA_BACKGROUND_VIEWPORT_COVER_OVERSCAN, 1, ARENA_BACKGROUND_VIEWPORT_COVER_MAX_SCALE);
 }
 
 function getArenaBackgroundLayerLayoutForTier(
