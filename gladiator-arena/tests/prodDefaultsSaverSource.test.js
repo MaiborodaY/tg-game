@@ -304,7 +304,10 @@ test("vite dev middleware saves selected arena tier background defaults", () => 
   assert.match(source, /createDynamicArenaTierBackgroundDefaultUpdates/);
   assert.match(source, /usesDynamicArenaTierBackgroundDefaultUpdates/);
   assert.match(source, /sourceWithLegacyUpdates/);
-  assert.match(source, /\.\.\.existingTiers\[tierKey\]/);
+  assert.match(source, /variantId = normalizeArenaBackgroundVariantId\(updates\.variantId\)/);
+  assert.match(source, /isDefaultArenaBackgroundVariantId\(variantId\)/);
+  assert.match(source, /\.\.\.existingTier\.variants/);
+  assert.match(source, /\[variantId\]: \{/);
   assert.match(source, /replaceDefaultArenaBackgroundTiers/);
   assert.match(source, /defaultDebugTuning: ArenaDebugTuning/);
 });

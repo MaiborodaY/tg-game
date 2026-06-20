@@ -99,7 +99,12 @@ import {
   type HeroItemRarity,
   type HeroWeaponClass,
 } from "./hero";
-import { getArenaBackgroundLayerAssetKeysForTier } from "./assets";
+import {
+  DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+  getArenaBackgroundLayerAssetKeysForTier,
+  getArenaBackgroundVariantIdsForTier,
+  type ArenaBackgroundVariantId,
+} from "./assets";
 import {
   AUTO_EQUIPMENT_ITEM_CATALOG,
   AUTO_EQUIPMENT_ITEM_RECORDS,
@@ -130,7 +135,7 @@ interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
   heroInventory?: HeroInventoryEntry[];
   onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
-  onRestartArenaTierPreview?: (tierId: number) => void;
+  onRestartArenaTierPreview?: (tierId: number, backgroundVariantId?: ArenaBackgroundVariantId) => void;
   onPreviewSlashArc?: (actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void;
   onPreviewPopup?: (kind: DebugPopupPreviewKind) => void;
 }
@@ -1687,7 +1692,7 @@ function createControlGroup(group: DebugControlGroup): HTMLElement {
   return details;
 }
 
-function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number) => void): HTMLElement {
+function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number, backgroundVariantId?: ArenaBackgroundVariantId) => void): HTMLElement {
   const details = document.createElement("details");
 
   details.className = "debug-arena-panel debug-parallax-editor debug-arena-bg-editor";
@@ -1700,6 +1705,14 @@ function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number
         <span>Preview tier</span>
         <input class="debug-panel__number" type="number" min="1" max="${DEBUG_BOSS_TIER_MAX}" step="1" data-arena-bg-preview-tier />
         <button class="debug-panel__control-reset debug-parallax-editor__restart-tier" type="button">Fight</button>
+        <span></span>
+      </label>
+      <label class="debug-panel__row">
+        <span>Variant</span>
+        <select class="debug-panel__number" data-arena-bg-preview-variant>
+          ${getArenaBackgroundVariantOptionsForTier(getArenaBackgroundEditTierId()).map((variantId) => `<option value="${variantId}">${formatArenaBackgroundVariantLabel(variantId)}</option>`).join("")}
+        </select>
+        <span></span>
         <span></span>
       </label>
       <div class="debug-rig-editor__actions">
@@ -1756,22 +1769,41 @@ function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number
 
   const status = details.querySelector<HTMLElement>(".debug-parallax-editor__status");
   const previewTier = details.querySelector<HTMLInputElement>("[data-arena-bg-preview-tier]");
+  const variantSelect = details.querySelector<HTMLSelectElement>("[data-arena-bg-preview-variant]");
   const layerSelect = details.querySelector<HTMLSelectElement>('select[data-debug-select-key="arenaBackgroundEditLayer"]');
   const parallaxLayerSelect = details.querySelector<HTMLSelectElement>("[data-arena-parallax-layer-select]");
   const restartTier = details.querySelector<HTMLButtonElement>(".debug-parallax-editor__restart-tier");
   const saveTierBackground = details.querySelector<HTMLButtonElement>(".debug-arena-bg-editor__save-tier-background");
 
-  if (!getArenaBackgroundEditLayersForTier(getArenaBackgroundEditTierId()).includes(debugTuning.arenaBackgroundEditLayer)) {
-    updateDebugTuning({ arenaBackgroundEditLayer: "ground" }, { undoable: false });
+  const initialTierId = getArenaBackgroundEditTierId();
+  const initialVariantId = getArenaBackgroundEditVariantIdForTier(initialTierId);
+
+  if (debugTuning.arenaBackgroundPreviewVariant !== initialVariantId) {
+    updateDebugTuning({ arenaBackgroundPreviewVariant: initialVariantId }, { undoable: false });
+  }
+
+  if (!getArenaBackgroundEditLayersForTier(initialTierId, initialVariantId).includes(debugTuning.arenaBackgroundEditLayer)) {
+    updateDebugTuning({ arenaBackgroundEditLayer: getSelectedArenaBackgroundEditLayerForTier(initialTierId, initialVariantId) }, { undoable: false });
   }
 
   previewTier?.addEventListener("input", () => {
     const tierId = Math.round(clampFiniteNumber(Number(previewTier.value), 1, DEBUG_BOSS_TIER_MAX));
     const editTierId = getArenaBackgroundEditTierIdFromPreviewTier(tierId);
+    const variantId = resolveArenaBackgroundPreviewVariantForTier(editTierId);
 
     updateDebugTuning({
       arenaBackgroundPreviewTier: tierId,
-      arenaBackgroundEditLayer: getSelectedArenaBackgroundEditLayerForTier(editTierId),
+      arenaBackgroundPreviewVariant: variantId,
+      arenaBackgroundEditLayer: getSelectedArenaBackgroundEditLayerForTier(editTierId, variantId),
+    }, { undoable: false });
+  });
+  variantSelect?.addEventListener("change", () => {
+    const tierId = getArenaBackgroundEditTierId();
+    const variantId = resolveArenaBackgroundPreviewVariantForTier(tierId, variantSelect.value);
+
+    updateDebugTuning({
+      arenaBackgroundPreviewVariant: variantId,
+      arenaBackgroundEditLayer: getSelectedArenaBackgroundEditLayerForTier(tierId, variantId),
     }, { undoable: false });
   });
   layerSelect?.addEventListener("change", () => {
@@ -1790,11 +1822,15 @@ function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number
   });
   restartTier?.addEventListener("click", () => {
     const tierId = Math.round(clampFiniteNumber(Number(previewTier?.value || debugTuning.arenaBackgroundPreviewTier), 1, DEBUG_BOSS_TIER_MAX));
+    const editTierId = getArenaBackgroundEditTierIdFromPreviewTier(tierId);
+    const variantId = resolveArenaBackgroundPreviewVariantForTier(editTierId, variantSelect?.value);
 
-    updateDebugTuning({ arenaBackgroundPreviewTier: tierId });
-    onRestartArenaTierPreview?.(tierId);
+    updateDebugTuning({ arenaBackgroundPreviewTier: tierId, arenaBackgroundPreviewVariant: variantId });
+    onRestartArenaTierPreview?.(tierId, variantId);
     if (status) {
-      status.textContent = onRestartArenaTierPreview ? `Preview fight restarted on tier ${tierId}.` : "Debug fight restart is not mounted.";
+      status.textContent = onRestartArenaTierPreview
+        ? `Preview fight restarted on tier ${tierId}, ${formatArenaBackgroundVariantLabel(variantId)}.`
+        : "Debug fight restart is not mounted.";
     }
   });
   if (restartTier) {
@@ -1866,38 +1902,45 @@ function createArenaBackgroundEditor(onRestartArenaTierPreview?: (tierId: number
 }
 
 function createArenaTierBackgroundPayload(tierId: ArenaBackgroundEditTierId): ArenaTierBackgroundPayload {
+  const variantId = getArenaBackgroundEditVariantIdForTier(tierId);
+
   return {
     tierId,
+    variantId,
     layers: Object.fromEntries(
-      getArenaBackgroundEditLayersForTier(tierId).map((layer) => [layer, createArenaTierBackgroundLayerPayload(tierId, layer)]),
+      getArenaBackgroundEditLayersForTier(tierId, variantId).map((layer) => [layer, createArenaTierBackgroundLayerPayload(tierId, layer, variantId)]),
     ) as ArenaTierBackgroundPayload["layers"],
   };
 }
 
-function createArenaTierBackgroundLayerPayload(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
+function createArenaTierBackgroundLayerPayload(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaBackgroundEditLayer,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): ArenaBackgroundLayerTuning {
   const parallax: ArenaBackgroundLayerTuning["parallax"] = {
-    followX: getArenaParallaxValue(tierId, layer, "followX"),
-    followY: getArenaParallaxValue(tierId, layer, "followY"),
-    zoom: getArenaParallaxValue(tierId, layer, "zoom"),
-    lookUpY: getArenaParallaxValue(tierId, layer, "lookUpY"),
+    followX: getArenaParallaxValue(tierId, layer, "followX", variantId),
+    followY: getArenaParallaxValue(tierId, layer, "followY", variantId),
+    zoom: getArenaParallaxValue(tierId, layer, "zoom", variantId),
+    lookUpY: getArenaParallaxValue(tierId, layer, "lookUpY", variantId),
   };
 
   if (isArenaParallaxFieldSupported(layer, "zoomDarken")) {
-    parallax.zoomDarken = getArenaParallaxValue(tierId, layer, "zoomDarken");
+    parallax.zoomDarken = getArenaParallaxValue(tierId, layer, "zoomDarken", variantId);
   }
 
   if (isArenaParallaxFieldSupported(layer, "farAlpha")) {
-    parallax.farAlpha = getArenaParallaxValue(tierId, layer, "farAlpha");
-    parallax.nearAlpha = getArenaParallaxValue(tierId, layer, "nearAlpha");
+    parallax.farAlpha = getArenaParallaxValue(tierId, layer, "farAlpha", variantId);
+    parallax.nearAlpha = getArenaParallaxValue(tierId, layer, "nearAlpha", variantId);
   }
 
   return {
     layout: {
-      x: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "x")),
-      y: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "y")),
-      scale: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "scale")),
-      alpha: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "alpha")),
-      visible: Boolean(getArenaBackgroundLayerLayoutValue(tierId, layer, "visible")),
+      x: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "x", variantId)),
+      y: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "y", variantId)),
+      scale: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "scale", variantId)),
+      alpha: Number(getArenaBackgroundLayerLayoutValue(tierId, layer, "alpha", variantId)),
+      visible: Boolean(getArenaBackgroundLayerLayoutValue(tierId, layer, "visible", variantId)),
     },
     parallax,
   };
@@ -1928,11 +1971,12 @@ function createArenaParallaxNumberRow(control: ArenaParallaxControlConfig): stri
 function updateSelectedArenaBackgroundLayer(field: ArenaBackgroundLayoutField, value: number | boolean): void {
   const tierId = getArenaBackgroundEditTierId();
   const layer = getSelectedArenaBackgroundEditLayer();
+  const variantId = getArenaBackgroundEditVariantIdForTier(tierId);
 
-  if (usesDynamicArenaBackgroundLayerTuning(tierId, layer)) {
+  if (usesDynamicArenaBackgroundLayerTuning(tierId, layer, variantId)) {
     updateDebugTuning(getDynamicArenaBackgroundLayerPatch(tierId, layer, {
       layout: { [field]: value } as Partial<ArenaBackgroundLayerTuning["layout"]>,
-    }));
+    }, variantId));
     return;
   }
 
@@ -1941,9 +1985,13 @@ function updateSelectedArenaBackgroundLayer(field: ArenaBackgroundLayoutField, v
   updateDebugTuning({ [key]: value } as Partial<ArenaDebugTuning>);
 }
 
-function getArenaBackgroundLayerResetPatch(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer): Partial<ArenaDebugTuning> {
-  if (usesDynamicArenaBackgroundLayerTuning(tierId, layer)) {
-    return getDynamicArenaBackgroundLayerPatch(tierId, layer, createDefaultArenaBackgroundLayerTuning(layer));
+function getArenaBackgroundLayerResetPatch(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaBackgroundEditLayer,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): Partial<ArenaDebugTuning> {
+  if (usesDynamicArenaBackgroundLayerTuning(tierId, layer, variantId)) {
+    return getDynamicArenaBackgroundLayerPatch(tierId, layer, createDefaultArenaBackgroundLayerTuning(layer), variantId);
   }
 
   const patch: Partial<ArenaDebugTuning> = {};
@@ -1959,8 +2007,9 @@ function getArenaBackgroundLayerResetPatch(tierId: ArenaBackgroundEditTierId, la
 
 function getArenaBackgroundTierResetPatch(): Partial<ArenaDebugTuning> {
   const tierId = getArenaBackgroundEditTierId();
+  const variantId = getArenaBackgroundEditVariantIdForTier(tierId);
 
-  return getArenaBackgroundEditLayersForTier(tierId).reduce<Partial<ArenaDebugTuning>>((patch, layer) => ({ ...patch, ...getArenaBackgroundLayerResetPatch(tierId, layer) }), {});
+  return getArenaBackgroundEditLayersForTier(tierId, variantId).reduce<Partial<ArenaDebugTuning>>((patch, layer) => ({ ...patch, ...getArenaBackgroundLayerResetPatch(tierId, layer, variantId) }), {});
 }
 
 function getArenaBackgroundLayerTuningKey(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer, field: ArenaBackgroundLayoutField): keyof ArenaDebugTuning {
@@ -1974,13 +2023,18 @@ function getArenaBackgroundLayerTuningKey(tierId: ArenaBackgroundEditTierId, lay
   return `${prefix}${suffix}` as keyof ArenaDebugTuning;
 }
 
-function getArenaBackgroundLayerLayoutValue(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer, field: ArenaBackgroundLayoutField): number | boolean {
+function getArenaBackgroundLayerLayoutValue(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaBackgroundEditLayer,
+  field: ArenaBackgroundLayoutField,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): number | boolean {
   if (!isArenaBackgroundLayoutFieldSupported(layer, field)) {
     return field === "alpha" ? 1 : false;
   }
 
-  if (usesDynamicArenaBackgroundLayerTuning(tierId, layer)) {
-    return getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer).layout[field];
+  if (usesDynamicArenaBackgroundLayerTuning(tierId, layer, variantId)) {
+    return getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer, variantId).layout[field];
   }
 
   return debugTuning[getArenaBackgroundLayerTuningKey(tierId, layer, field)] as number | boolean;
@@ -1990,30 +2044,62 @@ function getDynamicArenaBackgroundLayerPatch(
   tierId: ArenaBackgroundEditTierId,
   layer: ArenaBackgroundEditLayer,
   patch: ArenaBackgroundLayerTuningPatch,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
 ): Partial<ArenaDebugTuning> {
-  const current = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer);
+  const current = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer, variantId);
   const nextLayer = {
     layout: { ...current.layout, ...patch.layout },
     parallax: { ...current.parallax, ...patch.parallax },
   };
+  const tierKey = String(tierId);
+  const tierTuning = debugTuning.arenaBackgroundTiers[tierKey] ?? {};
+
+  if (variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID) {
+    return {
+      arenaBackgroundTiers: {
+        ...debugTuning.arenaBackgroundTiers,
+        [tierKey]: {
+          ...tierTuning,
+          variants: {
+            ...tierTuning.variants,
+            [variantId]: {
+              ...tierTuning.variants?.[variantId],
+              [layer]: nextLayer,
+            },
+          },
+        },
+      },
+    };
+  }
 
   return {
     arenaBackgroundTiers: {
       ...debugTuning.arenaBackgroundTiers,
-      [tierId]: {
-        ...debugTuning.arenaBackgroundTiers[String(tierId)],
-        [layer]: nextLayer,
+      [tierKey]: {
+        ...tierTuning,
+        layers: {
+          ...tierTuning.layers,
+          [layer]: nextLayer,
+        },
       },
     },
   };
 }
 
-function usesDynamicArenaBackgroundLayerTuning(tierId: ArenaBackgroundEditTierId, layer: ArenaBackgroundEditLayer): boolean {
-  return tierId > 2 || !getArenaBackgroundLayerTuningPrefix(tierId, layer);
+function usesDynamicArenaBackgroundLayerTuning(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaBackgroundEditLayer,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): boolean {
+  return variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID || tierId > 2 || !getArenaBackgroundLayerTuningPrefix(tierId, layer);
 }
 
-function usesDynamicArenaParallaxTuning(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey): boolean {
-  return tierId > 2 || !getArenaParallaxTuningPrefix(tierId, layer);
+function usesDynamicArenaParallaxTuning(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaParallaxLayerKey,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): boolean {
+  return variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID || tierId > 2 || !getArenaParallaxTuningPrefix(tierId, layer);
 }
 
 function isBaseArenaBackgroundLayer(layer: ArenaBackgroundEditLayer): boolean {
@@ -2105,14 +2191,45 @@ function getSelectedArenaBackgroundEditLayer(): ArenaBackgroundEditLayer {
   return getSelectedArenaBackgroundEditLayerForTier(getArenaBackgroundEditTierId());
 }
 
-function getSelectedArenaBackgroundEditLayerForTier(tierId: ArenaBackgroundEditTierId): ArenaBackgroundEditLayer {
-  const layers = getArenaBackgroundEditLayersForTier(tierId);
+function getSelectedArenaBackgroundEditLayerForTier(
+  tierId: ArenaBackgroundEditTierId,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): ArenaBackgroundEditLayer {
+  const layers = getArenaBackgroundEditLayersForTier(tierId, variantId);
 
   return layers.includes(debugTuning.arenaBackgroundEditLayer) ? debugTuning.arenaBackgroundEditLayer : layers[0] ?? "ground";
 }
 
-function getArenaBackgroundEditLayersForTier(tierId: ArenaBackgroundEditTierId): readonly ArenaBackgroundEditLayer[] {
-  return getArenaBackgroundLayerAssetKeysForTier(tierId);
+function getArenaBackgroundEditLayersForTier(
+  tierId: ArenaBackgroundEditTierId,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): readonly ArenaBackgroundEditLayer[] {
+  return getArenaBackgroundLayerAssetKeysForTier(tierId, variantId);
+}
+
+function getArenaBackgroundEditVariantId(): ArenaBackgroundVariantId {
+  return getArenaBackgroundEditVariantIdForTier(getArenaBackgroundEditTierId());
+}
+
+function getArenaBackgroundEditVariantIdForTier(tierId: ArenaBackgroundEditTierId): ArenaBackgroundVariantId {
+  return resolveArenaBackgroundPreviewVariantForTier(tierId);
+}
+
+function getArenaBackgroundVariantOptionsForTier(tierId: ArenaBackgroundEditTierId): readonly ArenaBackgroundVariantId[] {
+  return getArenaBackgroundVariantIdsForTier(tierId);
+}
+
+function resolveArenaBackgroundPreviewVariantForTier(
+  tierId: ArenaBackgroundEditTierId,
+  variantId = debugTuning.arenaBackgroundPreviewVariant,
+): ArenaBackgroundVariantId {
+  const variants = getArenaBackgroundVariantOptionsForTier(tierId);
+
+  return variants.includes(variantId) ? variantId : variants[0] ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID;
+}
+
+function formatArenaBackgroundVariantLabel(variantId: ArenaBackgroundVariantId): string {
+  return variantId === DEFAULT_ARENA_BACKGROUND_VARIANT_ID ? "Default" : variantId;
 }
 
 function getSelectedArenaParallaxLayer(): ArenaParallaxLayerKey {
@@ -2160,9 +2277,14 @@ function getArenaParallaxTuningKey(tierId: ArenaBackgroundEditTierId, layer: Are
   return `${prefix}${suffix}` as keyof ArenaDebugTuning;
 }
 
-function getArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField): number {
-  if (usesDynamicArenaParallaxTuning(tierId, layer)) {
-    const value = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer).parallax[field];
+function getArenaParallaxValue(
+  tierId: ArenaBackgroundEditTierId,
+  layer: ArenaParallaxLayerKey,
+  field: ArenaParallaxField,
+  variantId = getArenaBackgroundEditVariantIdForTier(tierId),
+): number {
+  if (usesDynamicArenaParallaxTuning(tierId, layer, variantId)) {
+    const value = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layer, variantId).parallax[field];
 
     return typeof value === "number" ? value : createDefaultArenaBackgroundLayerTuning(layer).parallax[field] ?? 1;
   }
@@ -2171,10 +2293,12 @@ function getArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaPa
 }
 
 function updateArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField, value: number): void {
-  if (usesDynamicArenaParallaxTuning(tierId, layer)) {
+  const variantId = getArenaBackgroundEditVariantIdForTier(tierId);
+
+  if (usesDynamicArenaParallaxTuning(tierId, layer, variantId)) {
     updateDebugTuning(getDynamicArenaBackgroundLayerPatch(tierId, layer, {
       parallax: { [field]: value } as Partial<ArenaBackgroundLayerTuning["parallax"]>,
-    }));
+    }, variantId));
     return;
   }
 
@@ -2182,10 +2306,12 @@ function updateArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: Aren
 }
 
 function resetArenaParallaxValue(tierId: ArenaBackgroundEditTierId, layer: ArenaParallaxLayerKey, field: ArenaParallaxField): void {
-  if (usesDynamicArenaParallaxTuning(tierId, layer)) {
+  const variantId = getArenaBackgroundEditVariantIdForTier(tierId);
+
+  if (usesDynamicArenaParallaxTuning(tierId, layer, variantId)) {
     updateDebugTuning(getDynamicArenaBackgroundLayerPatch(tierId, layer, {
       parallax: { [field]: createDefaultArenaBackgroundLayerTuning(layer).parallax[field] ?? 1 } as Partial<ArenaBackgroundLayerTuning["parallax"]>,
-    }));
+    }, variantId));
     return;
   }
 
@@ -7106,15 +7232,22 @@ function syncArenaBackgroundEditor(panel: HTMLElement): void {
     return;
   }
   const selectedLayer = getSelectedArenaBackgroundEditLayer();
+  const selectedVariantId = getArenaBackgroundEditVariantId();
 
   const previewTier = editor.querySelector<HTMLInputElement>("[data-arena-bg-preview-tier]");
   if (previewTier) {
     previewTier.value = `${debugTuning.arenaBackgroundPreviewTier}`;
   }
 
+  const variantSelect = editor.querySelector<HTMLSelectElement>("[data-arena-bg-preview-variant]");
+  if (variantSelect) {
+    syncArenaBackgroundVariantSelectOptions(variantSelect, getArenaBackgroundEditTierId());
+    variantSelect.value = selectedVariantId;
+  }
+
   const layerSelect = editor.querySelector<HTMLSelectElement>('select[data-debug-select-key="arenaBackgroundEditLayer"]');
   if (layerSelect) {
-    syncArenaBackgroundLayerSelectOptions(layerSelect, getArenaBackgroundEditTierId());
+    syncArenaBackgroundLayerSelectOptions(layerSelect, getArenaBackgroundEditTierId(), selectedVariantId);
     layerSelect.value = selectedLayer;
   }
 
@@ -7179,9 +7312,21 @@ function syncArenaBackgroundParallaxControls(editor: HTMLElement): void {
   });
 }
 
-function syncArenaBackgroundLayerSelectOptions(select: HTMLSelectElement, tierId: ArenaBackgroundEditTierId): void {
-  const layers = getArenaBackgroundEditLayersForTier(tierId);
-  const signature = layers.join("|");
+function syncArenaBackgroundVariantSelectOptions(select: HTMLSelectElement, tierId: ArenaBackgroundEditTierId): void {
+  const variants = getArenaBackgroundVariantOptionsForTier(tierId);
+  const signature = variants.join("|");
+
+  if (select.dataset.arenaBgVariantSignature === signature) {
+    return;
+  }
+
+  select.innerHTML = variants.map((variantId) => `<option value="${variantId}">${formatArenaBackgroundVariantLabel(variantId)}</option>`).join("");
+  select.dataset.arenaBgVariantSignature = signature;
+}
+
+function syncArenaBackgroundLayerSelectOptions(select: HTMLSelectElement, tierId: ArenaBackgroundEditTierId, variantId = getArenaBackgroundEditVariantIdForTier(tierId)): void {
+  const layers = getArenaBackgroundEditLayersForTier(tierId, variantId);
+  const signature = `${variantId}:${layers.join("|")}`;
 
   if (select.dataset.arenaBgLayerSignature === signature) {
     return;

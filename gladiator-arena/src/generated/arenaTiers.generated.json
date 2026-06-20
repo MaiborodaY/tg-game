@@ -472,5 +472,102 @@
         }
       }
     ]
+  },
+  {
+    "id": 6,
+    "name": "Dust Arena 6",
+    "unlockBossId": "arena_boss_5",
+    "opponents": [
+      {
+        "id": "dust_arena_6_easy",
+        "difficultyId": "easy",
+        "name": "Dust Arena 6 Easy",
+        "randomBaseStatPoints": 39,
+        "equipmentPools": [
+          {
+            "itemRarities": [
+              "common"
+            ],
+            "rollChance": 1
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 1
+          }
+        ],
+        "rewards": {
+          "win": {
+            "gold": 65,
+            "xp": 40
+          },
+          "loss": {
+            "gold": 1,
+            "xp": 1
+          }
+        }
+      },
+      {
+        "id": "dust_arena_6_medium",
+        "difficultyId": "medium",
+        "name": "Dust Arena 6 Medium",
+        "randomBaseStatPoints": 40,
+        "equipmentPools": [
+          {
+            "itemRarities": [
+              "common"
+            ],
+            "rollChance": 1
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 1
+          }
+        ],
+        "rewards": {
+          "win": {
+            "gold": 70,
+            "xp": 44
+          },
+          "loss": {
+            "gold": 1,
+            "xp": 1
+          }
+        }
+      },
+      {
+        "id": "dust_arena_6_hard",
+        "difficultyId": "hard",
+        "name": "Dust Arena 6 Hard",
+        "randomBaseStatPoints": 29,
+        "equipmentPools": [
+          {
+            "itemRarities": [
+              "common"
+            ],
+            "rollChance": 1
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 1
+          }
+        ],
+        "rewards": {
+          "win": {
+            "gold": 75,
+            "xp": 48
+          },
+          "loss": {
+            "gold": 1,
+            "xp": 1
+          }
+        }
+      }
+    ]
   }
 ]

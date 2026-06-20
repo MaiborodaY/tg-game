@@ -309,7 +309,15 @@ export interface ArenaBackgroundLayerTuning {
   parallax: ArenaBackgroundLayerParallaxTuning;
 }
 
-export type ArenaBackgroundTierTuningMap = Record<string, Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>>>;
+export type ArenaBackgroundVariantTuningMap = Record<string, Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>>>;
+
+export interface ArenaBackgroundTierTuning {
+  layers?: Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>>;
+  variants?: ArenaBackgroundVariantTuningMap;
+  [legacyLayer: string]: unknown;
+}
+
+export type ArenaBackgroundTierTuningMap = Record<string, ArenaBackgroundTierTuning>;
 
 export interface ArenaDebugTuning {
   debugTuningVersion: number;
@@ -347,6 +355,7 @@ export interface ArenaDebugTuning {
   arenaGroundZoom: number;
   arenaGroundLookUpY: number;
   arenaBackgroundPreviewTier: number;
+  arenaBackgroundPreviewVariant: string;
   arenaBackgroundEditMode: boolean;
   arenaBackgroundEditLayer: ArenaBackgroundEditLayer;
   arenaBackgroundTiers: ArenaBackgroundTierTuningMap;
@@ -10021,7 +10030,7 @@ function cloneExistingSpearAttackBodyAnimationVariant(source: BodyAnimationTunin
 
 applySpearAttackBodyAnimationDefaults();
 
-export const DEBUG_TUNING_STORAGE_VERSION = 2;
+export const DEBUG_TUNING_STORAGE_VERSION = 3;
 
 export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
   light: {
@@ -10097,8 +10106,13 @@ export function createDefaultArenaBackgroundLayerTuning(layer: ArenaBackgroundEd
   };
 }
 
-export function getDynamicArenaBackgroundLayerTuning(tuning: ArenaDebugTuning, tierId: number, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
-  const stored = tuning.arenaBackgroundTiers[String(Math.max(1, Math.round(tierId)))]?.[layer];
+export function getDynamicArenaBackgroundLayerTuning(
+  tuning: ArenaDebugTuning,
+  tierId: number,
+  layer: ArenaBackgroundEditLayer,
+  variantId = "default",
+): ArenaBackgroundLayerTuning {
+  const stored = getStoredArenaBackgroundLayerTuning(tuning.arenaBackgroundTiers[String(Math.max(1, Math.round(tierId)))], layer, variantId);
   const fallback = createDefaultArenaBackgroundLayerTuning(layer);
   const role = getArenaBackgroundLayerRole(layer);
 
@@ -10126,6 +10140,23 @@ export function getDynamicArenaBackgroundLayerTuning(tuning: ArenaDebugTuning, t
   };
 }
 
+function getStoredArenaBackgroundLayerTuning(
+  tierTuning: ArenaBackgroundTierTuning | undefined,
+  layer: ArenaBackgroundEditLayer,
+  variantId: string,
+): ArenaBackgroundLayerTuning | undefined {
+  if (!tierTuning) {
+    return undefined;
+  }
+
+  const normalizedVariantId = normalizeArenaBackgroundVariantId(variantId);
+  const variantLayer = normalizedVariantId === "default" ? undefined : tierTuning.variants?.[normalizedVariantId]?.[layer];
+  const defaultLayer = tierTuning.layers?.[layer] ?? tierTuning.variants?.default?.[layer];
+  const legacyLayer = isArenaBackgroundLayerTuning(tierTuning[layer]) ? tierTuning[layer] : undefined;
+
+  return variantLayer ?? defaultLayer ?? legacyLayer;
+}
+
 function normalizeArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTierTuningMap {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return {};
@@ -10133,30 +10164,80 @@ function normalizeArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTie
 
   const normalized: ArenaBackgroundTierTuningMap = {};
 
-  Object.entries(input as Record<string, unknown>).forEach(([tierKey, value]) => {
+  Object.entries(input as Record<string, unknown>).forEach(([tierKey, tierInput]) => {
     const tierId = Math.round(Number(tierKey));
 
-    if (!Number.isInteger(tierId) || tierId < 1 || !value || typeof value !== "object" || Array.isArray(value)) {
+    if (!Number.isInteger(tierId) || tierId < 1 || !tierInput || typeof tierInput !== "object" || Array.isArray(tierInput)) {
       return;
     }
 
-    Object.entries(value as Record<string, unknown>).forEach(([layer, layerInput]) => {
-      if (!isArenaBackgroundEditLayer(layer)) {
+    const tierTuning: ArenaBackgroundTierTuning = {};
+    const layers = normalizeArenaBackgroundLayerTuningMap((tierInput as ArenaBackgroundTierTuning).layers);
+    const variants = normalizeArenaBackgroundVariantTunings((tierInput as ArenaBackgroundTierTuning).variants);
+
+    Object.entries(tierInput as Record<string, unknown>).forEach(([layer, layerInput]) => {
+      if (layer === "layers" || layer === "variants" || !isArenaBackgroundEditLayer(layer)) {
         return;
       }
 
-      if (!layerInput || typeof layerInput !== "object" || Array.isArray(layerInput)) {
-        return;
-      }
-
-      normalized[tierId] = {
-        ...normalized[tierId],
-        [layer]: normalizeArenaBackgroundLayerTuning(layerInput, layer),
-      };
+      layers[layer] = normalizeArenaBackgroundLayerTuning(layerInput, layer);
     });
+
+    if (Object.keys(layers).length > 0) {
+      tierTuning.layers = layers;
+    }
+
+    if (Object.keys(variants).length > 0) {
+      tierTuning.variants = variants;
+    }
+
+    if (tierTuning.layers || tierTuning.variants) {
+      normalized[tierId] = tierTuning;
+    }
   });
 
   return normalized;
+}
+
+function normalizeArenaBackgroundLayerTuningMap(input: unknown): Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {};
+  }
+
+  const normalized: Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>> = {};
+
+  Object.entries(input as Record<string, unknown>).forEach(([layer, layerInput]) => {
+    if (isArenaBackgroundEditLayer(layer)) {
+      normalized[layer] = normalizeArenaBackgroundLayerTuning(layerInput, layer);
+    }
+  });
+
+  return normalized;
+}
+
+function normalizeArenaBackgroundVariantTunings(input: unknown): ArenaBackgroundVariantTuningMap {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {};
+  }
+
+  const normalized: ArenaBackgroundVariantTuningMap = {};
+
+  Object.entries(input as Record<string, unknown>).forEach(([variantId, variantInput]) => {
+    const normalizedVariantId = normalizeArenaBackgroundVariantId(variantId);
+    const layers = normalizeArenaBackgroundLayerTuningMap(variantInput);
+
+    if (normalizedVariantId && Object.keys(layers).length > 0) {
+      normalized[normalizedVariantId] = layers;
+    }
+  });
+
+  return normalized;
+}
+
+function normalizeArenaBackgroundVariantId(input: unknown): string {
+  const value = typeof input === "string" ? input.trim().slice(0, 80) : "";
+
+  return value || "default";
 }
 
 function normalizeArenaBackgroundLayerTuning(input: unknown, layer: ArenaBackgroundEditLayer): ArenaBackgroundLayerTuning {
@@ -10191,6 +10272,198 @@ function normalizeArenaBackgroundLayerTuning(input: unknown, layer: ArenaBackgro
         : {}),
     },
   };
+}
+
+function isArenaBackgroundLayerTuning(input: unknown): input is ArenaBackgroundLayerTuning {
+  return !!input && typeof input === "object" && !Array.isArray(input) && "layout" in input && "parallax" in input;
+}
+
+interface ArenaTier1VariantMigrationResult {
+  input: Partial<ArenaDebugTuning>;
+  arenaBackgroundTiers: ArenaBackgroundTierTuningMap;
+}
+
+const LEGACY_TIER_1_VARIANT_MIGRATION_ID = "variant-2";
+
+function migrateLegacyArenaTier1BackgroundVariantTuning(
+  input: Partial<ArenaDebugTuning>,
+  arenaBackgroundTiers: ArenaBackgroundTierTuningMap,
+  selectedVariantId: string,
+  shouldMigrate: boolean,
+): ArenaTier1VariantMigrationResult {
+  if (!shouldMigrate || !hasLegacyArenaTier1BackgroundVariantChanges(input)) {
+    return { input, arenaBackgroundTiers };
+  }
+
+  const variantId = selectedVariantId === "default" ? LEGACY_TIER_1_VARIANT_MIGRATION_ID : selectedVariantId;
+  const tierKey = "1";
+  const tierTuning = arenaBackgroundTiers[tierKey] ?? {};
+  const migratedLayers = createLegacyArenaTier1BackgroundVariantTuning(input);
+
+  return {
+    input: resetLegacyArenaTier1BackgroundTuning(input),
+    arenaBackgroundTiers: {
+      ...arenaBackgroundTiers,
+      [tierKey]: {
+        ...tierTuning,
+        variants: {
+          ...tierTuning.variants,
+          [variantId]: {
+            ...migratedLayers,
+            ...tierTuning.variants?.[variantId],
+          },
+        },
+      },
+    },
+  };
+}
+
+function mergeArenaBackgroundTierTunings(
+  defaults: ArenaBackgroundTierTuningMap,
+  overrides: ArenaBackgroundTierTuningMap,
+): ArenaBackgroundTierTuningMap {
+  const result: ArenaBackgroundTierTuningMap = {};
+  const tierKeys = new Set([...Object.keys(defaults), ...Object.keys(overrides)]);
+
+  tierKeys.forEach((tierKey) => {
+    const defaultTier = defaults[tierKey] ?? {};
+    const overrideTier = overrides[tierKey] ?? {};
+    const layers = {
+      ...defaultTier.layers,
+      ...overrideTier.layers,
+    };
+    const variants = mergeArenaBackgroundVariantTunings(defaultTier.variants ?? {}, overrideTier.variants ?? {});
+    const tierTuning: ArenaBackgroundTierTuning = {};
+
+    if (Object.keys(layers).length > 0) {
+      tierTuning.layers = layers;
+    }
+
+    if (Object.keys(variants).length > 0) {
+      tierTuning.variants = variants;
+    }
+
+    if (tierTuning.layers || tierTuning.variants) {
+      result[tierKey] = tierTuning;
+    }
+  });
+
+  return result;
+}
+
+function mergeArenaBackgroundVariantTunings(
+  defaults: ArenaBackgroundVariantTuningMap,
+  overrides: ArenaBackgroundVariantTuningMap,
+): ArenaBackgroundVariantTuningMap {
+  const result: ArenaBackgroundVariantTuningMap = {};
+  const variantIds = new Set([...Object.keys(defaults), ...Object.keys(overrides)]);
+
+  variantIds.forEach((variantId) => {
+    const layers = {
+      ...defaults[variantId],
+      ...overrides[variantId],
+    };
+
+    if (Object.keys(layers).length > 0) {
+      result[variantId] = layers;
+    }
+  });
+
+  return result;
+}
+
+function hasLegacyArenaTier1BackgroundVariantChanges(input: Partial<ArenaDebugTuning>): boolean {
+  const current = createLegacyArenaTier1BackgroundVariantTuning(input);
+  const fallback = createLegacyArenaTier1BackgroundVariantTuning(defaultDebugTuning);
+
+  return !areArenaBackgroundLayerTuningsEqual(current.back, fallback.back)
+    || !areArenaBackgroundLayerTuningsEqual(current.ground, fallback.ground);
+}
+
+function createLegacyArenaTier1BackgroundVariantTuning(
+  input: Partial<ArenaDebugTuning>,
+): Required<Pick<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>, "back" | "ground">> {
+  return {
+    back: {
+      layout: {
+        x: clampNumber(input.arenaTier1BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier1BackgroundBackX),
+        y: clampNumber(input.arenaTier1BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier1BackgroundBackY),
+        scale: clampNumber(input.arenaTier1BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundBackScale),
+        alpha: clampNumber(input.arenaTier1BackgroundBackAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundBackAlpha),
+        visible: typeof input.arenaTier1BackgroundBackVisible === "boolean" ? input.arenaTier1BackgroundBackVisible : defaultDebugTuning.arenaTier1BackgroundBackVisible,
+      },
+      parallax: {
+        followX: clampNumber(input.arenaTier1BackFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowX),
+        followY: clampNumber(input.arenaTier1BackFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowY),
+        zoom: clampNumber(input.arenaTier1BackZoom, 0, 1.5, defaultDebugTuning.arenaTier1BackZoom),
+        lookUpY: clampNumber(input.arenaTier1BackLookUpY, -240, 240, defaultDebugTuning.arenaTier1BackLookUpY),
+      },
+    },
+    ground: {
+      layout: {
+        x: clampNumber(input.arenaTier1BackgroundGroundX, -640, 640, defaultDebugTuning.arenaTier1BackgroundGroundX),
+        y: clampNumber(input.arenaTier1BackgroundGroundY, -900, 900, defaultDebugTuning.arenaTier1BackgroundGroundY),
+        scale: clampNumber(input.arenaTier1BackgroundGroundScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundGroundScale),
+        alpha: clampNumber(input.arenaTier1BackgroundGroundAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundGroundAlpha),
+        visible: typeof input.arenaTier1BackgroundGroundVisible === "boolean" ? input.arenaTier1BackgroundGroundVisible : defaultDebugTuning.arenaTier1BackgroundGroundVisible,
+      },
+      parallax: {
+        followX: clampNumber(input.arenaTier1GroundFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowX),
+        followY: clampNumber(input.arenaTier1GroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowY),
+        zoom: clampNumber(input.arenaTier1GroundZoom, 0, 1.5, defaultDebugTuning.arenaTier1GroundZoom),
+        lookUpY: clampNumber(input.arenaTier1GroundLookUpY, -240, 240, defaultDebugTuning.arenaTier1GroundLookUpY),
+      },
+    },
+  };
+}
+
+function resetLegacyArenaTier1BackgroundTuning(input: Partial<ArenaDebugTuning>): Partial<ArenaDebugTuning> {
+  return {
+    ...input,
+    arenaTier1BackFollowX: 0.2,
+    arenaTier1BackFollowY: -0.12,
+    arenaTier1BackZoom: 0.39,
+    arenaTier1BackLookUpY: 240,
+    arenaTier1GroundFollowX: 0.37,
+    arenaTier1GroundFollowY: 0.4,
+    arenaTier1GroundZoom: 0.6,
+    arenaTier1GroundLookUpY: 13,
+    arenaTier1BackgroundBackX: 0,
+    arenaTier1BackgroundBackY: 0,
+    arenaTier1BackgroundBackScale: 1,
+    arenaTier1BackgroundBackAlpha: 1,
+    arenaTier1BackgroundBackVisible: true,
+    arenaTier1BackgroundGroundX: 0,
+    arenaTier1BackgroundGroundY: -2,
+    arenaTier1BackgroundGroundScale: 1,
+    arenaTier1BackgroundGroundAlpha: 1,
+    arenaTier1BackgroundGroundVisible: true,
+  };
+}
+
+function areArenaBackgroundLayerTuningsEqual(first: ArenaBackgroundLayerTuning, second: ArenaBackgroundLayerTuning): boolean {
+  return areNumbersClose(first.layout.x, second.layout.x)
+    && areNumbersClose(first.layout.y, second.layout.y)
+    && areNumbersClose(first.layout.scale, second.layout.scale)
+    && areNumbersClose(first.layout.alpha, second.layout.alpha)
+    && first.layout.visible === second.layout.visible
+    && areNumbersClose(first.parallax.followX, second.parallax.followX)
+    && areNumbersClose(first.parallax.followY, second.parallax.followY)
+    && areNumbersClose(first.parallax.zoom, second.parallax.zoom)
+    && areNumbersClose(first.parallax.lookUpY, second.parallax.lookUpY)
+    && areOptionalNumbersClose(first.parallax.zoomDarken, second.parallax.zoomDarken)
+    && areOptionalNumbersClose(first.parallax.farAlpha, second.parallax.farAlpha)
+    && areOptionalNumbersClose(first.parallax.nearAlpha, second.parallax.nearAlpha);
+}
+
+function areNumbersClose(first: number, second: number): boolean {
+  return Math.abs(first - second) <= 0.0001;
+}
+
+function areOptionalNumbersClose(first: number | undefined, second: number | undefined): boolean {
+  return first === undefined && second === undefined
+    ? true
+    : first !== undefined && second !== undefined && areNumbersClose(first, second);
 }
 
 export const defaultDebugTuning: ArenaDebugTuning = {
@@ -10229,185 +10502,264 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaGroundZoom: DEFAULT_ARENA_GROUND_ZOOM,
   arenaGroundLookUpY: DEFAULT_ARENA_GROUND_LOOK_UP_Y,
   arenaBackgroundPreviewTier: 2,
+  arenaBackgroundPreviewVariant: "default",
   arenaBackgroundEditMode: false,
   arenaBackgroundEditLayer: "ground",
   arenaBackgroundTiers: {
+    "1": {
+      "variants": {
+        "variant-2": {
+          "back": {
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "scale": 0.5,
+              "alpha": 1,
+              "visible": true
+            },
+            "parallax": {
+              "followX": 0.2,
+              "followY": -0.2,
+              "zoom": 0.6,
+              "lookUpY": -55
+            }
+          },
+          "ground": {
+            "layout": {
+              "x": 0,
+              "y": 17,
+              "scale": 0.6,
+              "alpha": 1,
+              "visible": true
+            },
+            "parallax": {
+              "followX": 0.2,
+              "followY": 0.3,
+              "zoom": 0.65,
+              "lookUpY": 7
+            }
+          }
+        }
+      }
+    },
     "2": {
-      "ambient-2": {
-        "layout": {
-          "x": 0,
-          "y": 0,
-          "scale": 0.86,
-          "alpha": 1,
-          "visible": true
-        },
-        "parallax": {
-          "followX": 0,
-          "followY": 0,
-          "zoom": 0,
-          "lookUpY": 0,
-          "farAlpha": 0,
-          "nearAlpha": 0.5
+      "layers": {
+        "ambient-2": {
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "scale": 0.86,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0,
+            "followY": 0,
+            "zoom": 0,
+            "lookUpY": 0,
+            "farAlpha": 0,
+            "nearAlpha": 0.5
+          }
         }
       }
     },
     "3": {
-      "back": {
-        "layout": {
-          "x": 0,
-          "y": -125,
-          "scale": 0.53,
-          "alpha": 1,
-          "visible": true
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": -125,
+            "scale": 0.53,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": -0.1,
+            "zoom": 0.3,
+            "lookUpY": -19
+          }
         },
-        "parallax": {
-          "followX": 0.2,
-          "followY": -0.1,
-          "zoom": 0.3,
-          "lookUpY": -19
-        }
-      },
-      "ground": {
-        "layout": {
-          "x": 0,
-          "y": -158,
-          "scale": 1,
-          "alpha": 1,
-          "visible": true
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": -158,
+            "scale": 1,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.4,
+            "followY": 0.45,
+            "zoom": 0.7,
+            "lookUpY": 13
+          }
         },
-        "parallax": {
-          "followX": 0.4,
-          "followY": 0.45,
-          "zoom": 0.7,
-          "lookUpY": 13
-        }
-      },
-      "front": {
-        "layout": {
-          "x": 0,
-          "y": -50,
-          "scale": 0.49,
-          "alpha": 1,
-          "visible": true
+        "front": {
+          "layout": {
+            "x": 0,
+            "y": -50,
+            "scale": 0.49,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.3,
+            "followY": 0.3,
+            "zoom": 0.45,
+            "lookUpY": 0
+          }
         },
-        "parallax": {
-          "followX": 0.3,
-          "followY": 0.3,
-          "zoom": 0.45,
-          "lookUpY": 0
-        }
-      },
-      "ambient": {
-        "layout": {
-          "x": 0,
-          "y": 0,
-          "scale": 0.57,
-          "alpha": 1,
-          "visible": true
-        },
-        "parallax": {
-          "followX": 0.37,
-          "followY": 0.48,
-          "zoom": 0.5,
-          "lookUpY": -16,
-          "farAlpha": 0.4,
-          "nearAlpha": 0.6
+        "ambient": {
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "scale": 0.57,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.37,
+            "followY": 0.48,
+            "zoom": 0.5,
+            "lookUpY": -16,
+            "farAlpha": 0.4,
+            "nearAlpha": 0.6
+          }
         }
       }
     },
     "4": {
-      "back": {
-        "layout": {
-          "x": 0,
-          "y": -40,
-          "scale": 0.5,
-          "alpha": 1,
-          "visible": true
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": -40,
+            "scale": 0.5,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": -0.12,
+            "zoom": 0.15,
+            "lookUpY": 40
+          }
         },
-        "parallax": {
-          "followX": 0.2,
-          "followY": -0.12,
-          "zoom": 0.15,
-          "lookUpY": 40
-        }
-      },
-      "back-2": {
-        "layout": {
-          "x": 0,
-          "y": -16,
-          "scale": 0.5,
-          "alpha": 1,
-          "visible": true
+        "back-2": {
+          "layout": {
+            "x": 0,
+            "y": -16,
+            "scale": 0.5,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": -0.12,
+            "zoom": 0.2,
+            "lookUpY": 45
+          }
         },
-        "parallax": {
-          "followX": 0.2,
-          "followY": -0.12,
-          "zoom": 0.2,
-          "lookUpY": 45
-        }
-      },
-      "ground": {
-        "layout": {
-          "x": 0,
-          "y": -100,
-          "scale": 0.8,
-          "alpha": 1,
-          "visible": true
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": -100,
+            "scale": 0.8,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.25,
+            "followY": 0.3,
+            "zoom": 0.4,
+            "lookUpY": -10
+          }
         },
-        "parallax": {
-          "followX": 0.25,
-          "followY": 0.3,
-          "zoom": 0.4,
-          "lookUpY": -10
-        }
-      },
-      "ambient": {
-        "layout": {
-          "x": 0,
-          "y": 37,
-          "scale": 0.5,
-          "alpha": 1,
-          "visible": true
-        },
-        "parallax": {
-          "followX": 0.37,
-          "followY": 0.48,
-          "zoom": 0.5,
-          "lookUpY": -16,
-          "farAlpha": 0.1,
-          "nearAlpha": 0.3
+        "ambient": {
+          "layout": {
+            "x": 0,
+            "y": 37,
+            "scale": 0.5,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.37,
+            "followY": 0.48,
+            "zoom": 0.5,
+            "lookUpY": -16,
+            "farAlpha": 0.1,
+            "nearAlpha": 0.3
+          }
         }
       }
     },
     "5": {
-      "back": {
-        "layout": {
-          "x": 0,
-          "y": -30,
-          "scale": 0.5,
-          "alpha": 1,
-          "visible": true
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": -30,
+            "scale": 0.5,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.25,
+            "followY": 0.2,
+            "zoom": 0.4,
+            "lookUpY": -35
+          }
         },
-        "parallax": {
-          "followX": 0.25,
-          "followY": 0.2,
-          "zoom": 0.4,
-          "lookUpY": -35
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": -85,
+            "scale": 0.8,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.1,
+            "followY": 0.05,
+            "zoom": 0.3,
+            "lookUpY": -45
+          }
         }
-      },
-      "ground": {
-        "layout": {
-          "x": 0,
-          "y": -85,
-          "scale": 0.8,
-          "alpha": 1,
-          "visible": true
+      }
+    },
+    "6": {
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": -60,
+            "scale": 0.52,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.1,
+            "followY": 0.05,
+            "zoom": 0.12,
+            "lookUpY": -10
+          }
         },
-        "parallax": {
-          "followX": 0.1,
-          "followY": 0.05,
-          "zoom": 0.3,
-          "lookUpY": -45
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": -48,
+            "scale": 0.7,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": 0.2,
+            "zoom": 0.35,
+            "lookUpY": -20
+          }
         }
       }
     }
@@ -10465,7 +10817,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   arenaTier1BackgroundGroundVisible: true,
   arenaTier2BackgroundBackX: 0,
   arenaTier2BackgroundBackY: -28,
-  arenaTier2BackgroundBackScale: 0.49,
+  arenaTier2BackgroundBackScale: 0.51,
   arenaTier2BackgroundBackAlpha: 1,
   arenaTier2BackgroundBackVisible: true,
   arenaTier2BackgroundMidX: 0,
@@ -10719,6 +11071,19 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     selectedBodyAnimationVariantId === BODY_ANIMATION_DEFAULT_VARIANT_ID
       ? selectedBodyPresetAnimation
       : selectedBodyPresetAnimation.variants?.find((variant) => variant.variantId === selectedBodyAnimationVariantId) ?? selectedBodyPresetAnimation;
+  const arenaBackgroundPreviewVariant = normalizeDebugString(input.arenaBackgroundPreviewVariant, defaultDebugTuning.arenaBackgroundPreviewVariant, 80);
+  const normalizedArenaBackgroundTierOverrides = normalizeArenaBackgroundTierTunings(input.arenaBackgroundTiers);
+  const arenaTier1VariantMigration = migrateLegacyArenaTier1BackgroundVariantTuning(
+    input,
+    normalizedArenaBackgroundTierOverrides,
+    arenaBackgroundPreviewVariant,
+    inputVersion < 3,
+  );
+  const arenaInput = arenaTier1VariantMigration.input;
+  const arenaBackgroundTiers = mergeArenaBackgroundTierTunings(
+    normalizeArenaBackgroundTierTunings(defaultDebugTuning.arenaBackgroundTiers),
+    arenaTier1VariantMigration.arenaBackgroundTiers,
+  );
 
   return {
     debugTuningVersion: DEBUG_TUNING_STORAGE_VERSION,
@@ -10756,24 +11121,25 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     arenaGroundZoom: clampNumber(input.arenaGroundZoom, 0, 1.5, defaultDebugTuning.arenaGroundZoom),
     arenaGroundLookUpY: clampNumber(input.arenaGroundLookUpY, -240, 240, defaultDebugTuning.arenaGroundLookUpY),
     arenaBackgroundPreviewTier: Math.round(clampNumber(input.arenaBackgroundPreviewTier, 1, 50, defaultDebugTuning.arenaBackgroundPreviewTier)),
+    arenaBackgroundPreviewVariant,
     arenaBackgroundEditMode: typeof input.arenaBackgroundEditMode === "boolean" ? input.arenaBackgroundEditMode : defaultDebugTuning.arenaBackgroundEditMode,
     arenaBackgroundEditLayer: isArenaBackgroundEditLayer(input.arenaBackgroundEditLayer)
       ? input.arenaBackgroundEditLayer
       : defaultDebugTuning.arenaBackgroundEditLayer,
-    arenaBackgroundTiers: normalizeArenaBackgroundTierTunings(input.arenaBackgroundTiers),
-    arenaTier1BackFollowX: clampNumber(input.arenaTier1BackFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowX),
-    arenaTier1BackFollowY: clampNumber(input.arenaTier1BackFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowY),
-    arenaTier1BackZoom: clampNumber(input.arenaTier1BackZoom, 0, 1.5, defaultDebugTuning.arenaTier1BackZoom),
-    arenaTier1BackLookUpY: clampNumber(input.arenaTier1BackLookUpY, -240, 240, defaultDebugTuning.arenaTier1BackLookUpY),
+    arenaBackgroundTiers,
+    arenaTier1BackFollowX: clampNumber(arenaInput.arenaTier1BackFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowX),
+    arenaTier1BackFollowY: clampNumber(arenaInput.arenaTier1BackFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1BackFollowY),
+    arenaTier1BackZoom: clampNumber(arenaInput.arenaTier1BackZoom, 0, 1.5, defaultDebugTuning.arenaTier1BackZoom),
+    arenaTier1BackLookUpY: clampNumber(arenaInput.arenaTier1BackLookUpY, -240, 240, defaultDebugTuning.arenaTier1BackLookUpY),
     arenaTier1MidFollowX: clampNumber(input.arenaTier1MidFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1MidFollowX),
     arenaTier1MidFollowY: clampNumber(input.arenaTier1MidFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1MidFollowY),
     arenaTier1MidZoom: clampNumber(input.arenaTier1MidZoom, 0, 1.5, defaultDebugTuning.arenaTier1MidZoom),
     arenaTier1MidLookUpY: clampNumber(input.arenaTier1MidLookUpY, -240, 240, defaultDebugTuning.arenaTier1MidLookUpY),
     arenaTier1MidZoomDarken: clampNumber(input.arenaTier1MidZoomDarken, 0, 1, defaultDebugTuning.arenaTier1MidZoomDarken),
-    arenaTier1GroundFollowX: clampNumber(input.arenaTier1GroundFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowX),
-    arenaTier1GroundFollowY: clampNumber(input.arenaTier1GroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowY),
-    arenaTier1GroundZoom: clampNumber(input.arenaTier1GroundZoom, 0, 1.5, defaultDebugTuning.arenaTier1GroundZoom),
-    arenaTier1GroundLookUpY: clampNumber(input.arenaTier1GroundLookUpY, -240, 240, defaultDebugTuning.arenaTier1GroundLookUpY),
+    arenaTier1GroundFollowX: clampNumber(arenaInput.arenaTier1GroundFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowX),
+    arenaTier1GroundFollowY: clampNumber(arenaInput.arenaTier1GroundFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier1GroundFollowY),
+    arenaTier1GroundZoom: clampNumber(arenaInput.arenaTier1GroundZoom, 0, 1.5, defaultDebugTuning.arenaTier1GroundZoom),
+    arenaTier1GroundLookUpY: clampNumber(arenaInput.arenaTier1GroundLookUpY, -240, 240, defaultDebugTuning.arenaTier1GroundLookUpY),
     arenaTier2BackFollowX: clampNumber(input.arenaTier2BackFollowX, -0.5, 1.5, defaultDebugTuning.arenaTier2BackFollowX),
     arenaTier2BackFollowY: clampNumber(input.arenaTier2BackFollowY, -0.5, 1.5, defaultDebugTuning.arenaTier2BackFollowY),
     arenaTier2BackZoom: clampNumber(input.arenaTier2BackZoom, 0, 1.5, defaultDebugTuning.arenaTier2BackZoom),
@@ -10797,21 +11163,21 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     arenaTier2AmbientLookUpY: clampNumber(input.arenaTier2AmbientLookUpY, -240, 240, defaultDebugTuning.arenaTier2AmbientLookUpY),
     arenaTier2AmbientFarAlpha: clampNumber(input.arenaTier2AmbientFarAlpha, 0, 1, defaultDebugTuning.arenaTier2AmbientFarAlpha),
     arenaTier2AmbientNearAlpha: clampNumber(input.arenaTier2AmbientNearAlpha, 0, 1, defaultDebugTuning.arenaTier2AmbientNearAlpha),
-    arenaTier1BackgroundBackX: clampNumber(input.arenaTier1BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier1BackgroundBackX),
-    arenaTier1BackgroundBackY: clampNumber(input.arenaTier1BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier1BackgroundBackY),
-    arenaTier1BackgroundBackScale: clampNumber(input.arenaTier1BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundBackScale),
-    arenaTier1BackgroundBackAlpha: clampNumber(input.arenaTier1BackgroundBackAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundBackAlpha),
-    arenaTier1BackgroundBackVisible: typeof input.arenaTier1BackgroundBackVisible === "boolean" ? input.arenaTier1BackgroundBackVisible : defaultDebugTuning.arenaTier1BackgroundBackVisible,
+    arenaTier1BackgroundBackX: clampNumber(arenaInput.arenaTier1BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier1BackgroundBackX),
+    arenaTier1BackgroundBackY: clampNumber(arenaInput.arenaTier1BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier1BackgroundBackY),
+    arenaTier1BackgroundBackScale: clampNumber(arenaInput.arenaTier1BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundBackScale),
+    arenaTier1BackgroundBackAlpha: clampNumber(arenaInput.arenaTier1BackgroundBackAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundBackAlpha),
+    arenaTier1BackgroundBackVisible: typeof arenaInput.arenaTier1BackgroundBackVisible === "boolean" ? arenaInput.arenaTier1BackgroundBackVisible : defaultDebugTuning.arenaTier1BackgroundBackVisible,
     arenaTier1BackgroundMidX: clampNumber(input.arenaTier1BackgroundMidX, -640, 640, defaultDebugTuning.arenaTier1BackgroundMidX),
     arenaTier1BackgroundMidY: clampNumber(input.arenaTier1BackgroundMidY, -900, 900, defaultDebugTuning.arenaTier1BackgroundMidY),
     arenaTier1BackgroundMidScale: clampNumber(input.arenaTier1BackgroundMidScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundMidScale),
     arenaTier1BackgroundMidAlpha: clampNumber(input.arenaTier1BackgroundMidAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundMidAlpha),
     arenaTier1BackgroundMidVisible: typeof input.arenaTier1BackgroundMidVisible === "boolean" ? input.arenaTier1BackgroundMidVisible : defaultDebugTuning.arenaTier1BackgroundMidVisible,
-    arenaTier1BackgroundGroundX: clampNumber(input.arenaTier1BackgroundGroundX, -640, 640, defaultDebugTuning.arenaTier1BackgroundGroundX),
-    arenaTier1BackgroundGroundY: clampNumber(input.arenaTier1BackgroundGroundY, -900, 900, defaultDebugTuning.arenaTier1BackgroundGroundY),
-    arenaTier1BackgroundGroundScale: clampNumber(input.arenaTier1BackgroundGroundScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundGroundScale),
-    arenaTier1BackgroundGroundAlpha: clampNumber(input.arenaTier1BackgroundGroundAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundGroundAlpha),
-    arenaTier1BackgroundGroundVisible: typeof input.arenaTier1BackgroundGroundVisible === "boolean" ? input.arenaTier1BackgroundGroundVisible : defaultDebugTuning.arenaTier1BackgroundGroundVisible,
+    arenaTier1BackgroundGroundX: clampNumber(arenaInput.arenaTier1BackgroundGroundX, -640, 640, defaultDebugTuning.arenaTier1BackgroundGroundX),
+    arenaTier1BackgroundGroundY: clampNumber(arenaInput.arenaTier1BackgroundGroundY, -900, 900, defaultDebugTuning.arenaTier1BackgroundGroundY),
+    arenaTier1BackgroundGroundScale: clampNumber(arenaInput.arenaTier1BackgroundGroundScale, 0.25, 2.5, defaultDebugTuning.arenaTier1BackgroundGroundScale),
+    arenaTier1BackgroundGroundAlpha: clampNumber(arenaInput.arenaTier1BackgroundGroundAlpha, 0, 1, defaultDebugTuning.arenaTier1BackgroundGroundAlpha),
+    arenaTier1BackgroundGroundVisible: typeof arenaInput.arenaTier1BackgroundGroundVisible === "boolean" ? arenaInput.arenaTier1BackgroundGroundVisible : defaultDebugTuning.arenaTier1BackgroundGroundVisible,
     arenaTier2BackgroundBackX: clampNumber(input.arenaTier2BackgroundBackX, -640, 640, defaultDebugTuning.arenaTier2BackgroundBackX),
     arenaTier2BackgroundBackY: clampNumber(input.arenaTier2BackgroundBackY, -900, 900, defaultDebugTuning.arenaTier2BackgroundBackY),
     arenaTier2BackgroundBackScale: clampNumber(input.arenaTier2BackgroundBackScale, 0.25, 2.5, defaultDebugTuning.arenaTier2BackgroundBackScale),
@@ -11716,6 +12082,12 @@ function normalizeBodyAnimationVariantLabel(input: unknown, fallback: string): s
   const label = typeof input === "string" ? input.trim().slice(0, 48) : "";
 
   return label || fallback || BODY_ANIMATION_DEFAULT_VARIANT_ID;
+}
+
+function normalizeDebugString(input: unknown, fallback: string, maxLength: number): string {
+  const value = typeof input === "string" ? input.trim().slice(0, maxLength) : "";
+
+  return value || fallback;
 }
 
 function normalizeBodyAnimationVariantWeight(input: unknown, fallback = 1): number {

@@ -38,6 +38,7 @@ export interface UpdateGeneratedBossItemPayload {
 
 export interface ArenaTierBackgroundPayload {
   tierId: number;
+  variantId?: string;
   layers: Partial<Record<ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning>>;
 }
 

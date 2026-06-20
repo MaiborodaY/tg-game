@@ -59,5 +59,15 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":1,"xp":2}},
     lootTable: [
     ],
+  },
+  {
+    id: "arena_boss_5",
+    tierId: 5,
+    name: "Arena Boss 5",
+    baseStats: {"strength":32,"agility":22,"vitality":13},
+    equipment: {},
+    rewards: {"win":{"gold":1900,"xp":1264},"loss":{"gold":1,"xp":2}},
+    lootTable: [
+    ],
   }
 ];

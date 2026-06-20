@@ -494,11 +494,14 @@ test("arena encounters can create combat states from random opponents and bosses
   const hardStatRolls = [0, 0, 0.4, 0.8, 0.99];
   const hardSplitStatsEncounter = hero.createArenaRandomEnemyEncounter(1, "hard", () => hardStatRolls.shift() ?? 0.99);
   const hardSplitStatsState = hero.createCombatStateFromHero(baseHero, hardSplitStatsEncounter);
+  const variantEncounter = { ...randomEncounter, backgroundVariantId: "variant-2" };
+  const variantState = hero.createCombatStateFromHero(baseHero, variantEncounter);
 
   assert.equal(randomEncounter.kind, "random");
   assert.equal(randomEncounter.name, "Grumbus");
   assert.equal(randomState.encounter?.id, "random:dust_arena_brawler");
   assert.equal(randomState.encounter?.kind, "random");
+  assert.equal(variantState.encounter?.backgroundVariantId, "variant-2");
   assert.equal(randomState.enemy.name, "Grumbus");
   assert.equal(randomState.enemy.equipment?.weaponMain, "weapon_sword_01");
   assert.equal(randomState.enemy.shurikenItemId, "generated_equipment_weapon_shuriken_01");

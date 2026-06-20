@@ -28,6 +28,7 @@ import {
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { pickArenaBackgroundVariantIdForTier } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
@@ -609,7 +610,12 @@ function prewarmShopItemIconsWhenIdle(): void {
 }
 
 function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaEncounter {
-  return selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId);
+  const encounter = selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId);
+
+  return {
+    ...encounter,
+    backgroundVariantId: pickArenaBackgroundVariantIdForTier(encounter.tierId),
+  };
 }
 
 function renderCityArenaMenu(): void {

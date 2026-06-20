@@ -40,6 +40,7 @@ import {
   allocateHeroSkillPoints,
   applyCombatReward,
   buyAndEquipHeroItems,
+  createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
   createDefaultHero,
   deriveHeroStats,
@@ -381,11 +382,11 @@ function restart(): void {
   restartCombat();
 }
 
-function restartArenaTierPreview(tierId: number): void {
-  restartCombat(tierId);
+function restartArenaTierPreview(tierId: number, backgroundVariantId?: string): void {
+  restartCombat(tierId, backgroundVariantId);
 }
 
-function restartCombat(tierId?: number): void {
+function restartCombat(tierId?: number, backgroundVariantId?: string): void {
   turnSequenceToken += 1;
   setTurnAnimationLocked(false);
   battleResultPresentation = undefined;
@@ -393,7 +394,14 @@ function restartCombat(tierId?: number): void {
   battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  void commitState(tierId === undefined ? createCombatStateFromHero(hero) : createCombatStateFromHero(hero, tierId));
+  const encounter = tierId === undefined
+    ? undefined
+    : {
+        ...createArenaRandomEnemyEncounter(tierId),
+        backgroundVariantId,
+      };
+
+  void commitState(encounter ? createCombatStateFromHero(hero, encounter) : createCombatStateFromHero(hero));
 }
 
 function delay(durationMs: number): Promise<void> {

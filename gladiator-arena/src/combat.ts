@@ -70,6 +70,7 @@ export interface CombatEncounterState {
   kind: "random" | "boss";
   tierId: number;
   opponentId: string;
+  backgroundVariantId?: string;
 }
 
 export interface CombatState {

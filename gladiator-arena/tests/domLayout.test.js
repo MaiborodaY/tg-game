@@ -225,6 +225,8 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("createArenaEncounterForSelection"), true);
   assert.equal(mainSource.includes("createArenaBossEncounter(selection.bossId)"), true);
   assert.equal(mainSource.includes("createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId)"), true);
+  assert.equal(mainSource.includes("pickArenaBackgroundVariantIdForTier(encounter.tierId)"), true);
+  assert.equal(mainSource.includes("backgroundVariantId:"), true);
   assert.equal(mainSource.includes("getArenaTierDefinitions"), true);
   assert.equal(mainSource.includes("getAvailableCityArenaTiers"), true);
   assert.equal(mainSource.includes("getArenaBossesForTier"), true);

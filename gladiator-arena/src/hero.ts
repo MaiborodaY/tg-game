@@ -213,6 +213,7 @@ export interface ArenaEncounter {
   kind: "random" | "boss";
   tierId: number;
   opponentId: string;
+  backgroundVariantId?: string;
   name: string;
   enemyLoadout: EnemyLoadout;
   rewards: ArenaOpponentRewards;
@@ -881,6 +882,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       kind: encounter.kind,
       tierId: encounter.tierId,
       opponentId: encounter.opponentId,
+      backgroundVariantId: encounter.backgroundVariantId,
     },
     log: [
       { text: `The gate slams open. ${hero.name} and ${encounter.name} enter the sand.`, important: true },

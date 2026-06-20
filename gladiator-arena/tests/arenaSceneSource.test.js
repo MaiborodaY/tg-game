@@ -671,8 +671,10 @@ test("arena parallax can be tuned from debug settings", () => {
   );
 
   assert.equal(arenaSceneSource.includes("function getArenaBackgroundLayerTuningForTier("), true);
+  assert.equal(arenaSceneSource.includes("variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID"), true);
   assert.equal(arenaSceneSource.includes("function getArenaBackgroundLayerParallaxForTier("), true);
   assert.equal(arenaSceneSource.includes("getArenaBackgroundTuningTierId(layers.backgroundTierId)"), true);
+  assert.equal(arenaSceneSource.includes("layers.backgroundVariantId ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier1BackFollowY"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier2BackFollowY"), true);
   assert.equal(arenaSceneSource.includes("source.arenaTier1MidLookUpY"), true);
@@ -689,7 +691,7 @@ test("arena parallax can be tuned from debug settings", () => {
   assert.equal(arenaSceneSource.includes("image.displayWidth * transform.scale"), true);
   assert.equal(arenaSceneSource.includes("right < cameraTarget.viewportWidth"), true);
   assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerCameraAlpha(layerKey, tuningLayer, cameraTarget)"), true);
-  assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, current)"), true);
+  assert.equal(arenaSceneSource.includes("getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, variantId, current)"), true);
   assert.equal(arenaSceneSource.includes("isArenaBackgroundLayerCameraAlphaManaged(layerKey)"), true);
   assert.equal(arenaSceneSource.includes("!isDebugTuningActive() && layers.backgroundTierId === assetSet.tierId"), true);
   assert.equal(arenaSceneSource.includes("const isNewImage = !image;"), true);
@@ -700,6 +702,7 @@ test("arena parallax can be tuned from debug settings", () => {
   assert.equal(arenaSceneSource.includes("tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE, debug)"), true);
   assert.equal(arenaSceneSource.includes("arenaTier1MidZoomDarken"), true);
   assert.equal(arenaSceneSource.includes("arenaTier2MidZoomDarken"), true);
+  assert.equal(arenaSceneSource.includes('variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID || scopedTierId > 2'), true);
   assert.equal(arenaSceneSource.includes("tuning.parallax.farAlpha"), true);
   assert.equal(arenaSceneSource.includes("tuning.parallax.nearAlpha"), true);
   assert.equal(arenaSceneSource.includes("isArenaBackgroundLayerCameraAlphaManaged(layerKey) ? { ...layout, alpha: 1 } : layout"), true);
@@ -752,6 +755,12 @@ test("arena tier two uses the forest background layer set", () => {
 
   assert.equal(assetsSource.includes("ARENA_BACKGROUND_LAYER_ASSETS"), true);
   assert.equal(assetsSource.includes('import.meta.glob("./assets/arena/layers/arena*.{png,webp}"'), true);
+  assert.equal(assetsSource.includes('DEFAULT_ARENA_BACKGROUND_VARIANT_ID = "default"'), true);
+  assert.equal(assetsSource.includes("getArenaBackgroundVariantIdsForTier"), true);
+  assert.equal(assetsSource.includes("pickArenaBackgroundVariantIdForTier"), true);
+  assert.equal(assetsSource.includes("variantId: ArenaBackgroundVariantId"), true);
+  assert.equal(assetsSource.includes("arena-tier-(\\d+)-((?:variant|scene)-\\d+)-([a-z0-9-]+)"), true);
+  assert.equal(assetsSource.includes("arena-((?:variant|scene)-\\d+)-([a-z0-9-]+)"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-back.webp"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-ground.webp"), true);
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-front-trees.webp"), true);
@@ -772,13 +781,16 @@ test("arena tier two uses the forest background layer set", () => {
   assert.equal(assetsSource.includes("./assets/arena/layers/arena-tier-2-mid.webp"), false);
   assert.equal(arenaSceneSource.includes("function createArenaBackgroundAssetSets()"), true);
   assert.equal(arenaSceneSource.includes("ARENA_BACKGROUND_LAYER_ASSETS.forEach"), true);
+  assert.equal(arenaSceneSource.includes("variantId: asset.variantId"), true);
+  assert.equal(arenaSceneSource.includes("getArenaBackgroundAssetSetForEncounter(current.encounter)"), true);
+  assert.equal(arenaSceneSource.includes("layers.backgroundVariantId === assetSet.variantId"), true);
   assert.equal(arenaSceneSource.includes("layers.backgroundLayerIds = assetSet.layers.map((layer) => layer.layer);"), true);
   assert.equal(arenaSceneSource.includes('const backgroundLayerContainers: ArenaLayers["backgroundLayerContainers"] = {};'), true);
-  assert.equal(arenaSceneSource.includes("getArenaBackgroundAssetSetForTier(current.encounter?.tierId)"), true);
+  assert.equal(arenaSceneSource.includes("layers.backgroundVariantId = assetSet.variantId;"), true);
   assert.equal(arenaSceneSource.includes("ARENA_TIER_2_BACKGROUND_MID_LAYER_ASSET_KEY"), false);
   assert.equal(arenaSceneSource.includes("ARENA_TIER_2_BACKGROUND_FRONT_LAYER_ASSET_KEY"), false);
   assert.equal(arenaSceneSource.includes("ARENA_TIER_2_BACKGROUND_AMBIENT_LAYER_ASSET_KEY"), false);
-  assert.equal(arenaSceneSource.includes("current.encounter?.tierId"), true);
+  assert.equal(arenaSceneSource.includes("encounter?.backgroundVariantId"), true);
   assert.equal(arenaSceneSource.includes("syncArenaBackgroundForState(target, target.arenaLayers, current)"), true);
 });
 
@@ -789,13 +801,18 @@ test("debug arena background editor can tune tier two layer layout", () => {
   assert.equal(debugMainSource.includes("beginEdit: beginDebugUndoGroup"), true);
   assert.equal(debugMainSource.includes("endEdit: endDebugUndoGroup"), true);
   assert.equal(debugTuningSource.includes("arenaBackgroundPreviewTier"), true);
+  assert.equal(debugTuningSource.includes("arenaBackgroundPreviewVariant"), true);
   assert.equal(debugTuningSource.includes("arenaBackgroundEditMode"), true);
   assert.equal(debugTuningSource.includes("arenaBackgroundTiers: ArenaBackgroundTierTuningMap"), true);
   assert.equal(debugTuningSource.includes("getDynamicArenaBackgroundLayerTuning"), true);
   assert.equal(debugTuningSource.includes("arenaTier1BackgroundBackX"), true);
   assert.equal(debugTuningSource.includes("arenaTier2BackgroundBackX"), true);
+  assert.equal(debugPanelSource.includes("getArenaBackgroundVariantIdsForTier"), true);
+  assert.equal(debugPanelSource.includes("data-arena-bg-preview-variant"), true);
+  assert.equal(debugPanelSource.includes("syncArenaBackgroundVariantSelectOptions"), true);
+  assert.equal(debugPanelSource.includes("resolveArenaBackgroundPreviewVariantForTier"), true);
   assert.equal(debugPanelSource.includes("getArenaBackgroundLayerAssetKeysForTier"), true);
-  assert.equal(debugPanelSource.includes("return getArenaBackgroundLayerAssetKeysForTier(tierId);"), true);
+  assert.equal(debugPanelSource.includes("return getArenaBackgroundLayerAssetKeysForTier(tierId, variantId);"), true);
   assert.equal(debugPanelSource.includes("syncArenaParallaxLayerSelectOptions"), true);
   assert.equal(debugPanelSource.includes("syncArenaBackgroundParallaxValues(details);"), true);
   assert.equal(debugPanelSource.includes("function syncArenaBackgroundParallaxValues(editor: HTMLElement): void"), true);
@@ -816,11 +833,13 @@ test("debug arena background editor can tune tier two layer layout", () => {
   assert.equal(debugPanelSource.includes("saveArenaTierBackground(createArenaTierBackgroundPayload(tierId))"), true);
   assert.equal(debugPanelSource.includes("onRestartArenaTierPreview"), true);
   assert.equal(debugPanelSource.includes("data-arena-bg-preview-tier"), true);
+  assert.equal(debugPanelSource.includes("onRestartArenaTierPreview?.(tierId, variantId)"), true);
   assert.equal(debugPanelSource.includes('layerSelect?.addEventListener("change"'), true);
   assert.equal(debugPanelSource.includes("arenaBackgroundEditLayer: layerSelect.value as ArenaBackgroundEditLayer"), true);
   assert.equal(debugPanelSource.includes("createArenaBackgroundEditor(options.onRestartArenaTierPreview)"), true);
-  assert.equal(debugMainSource.includes("function restartArenaTierPreview(tierId: number): void"), true);
-  assert.equal(debugMainSource.includes("createCombatStateFromHero(hero, tierId)"), true);
+  assert.equal(debugMainSource.includes("function restartArenaTierPreview(tierId: number, backgroundVariantId?: string): void"), true);
+  assert.equal(debugMainSource.includes("createArenaRandomEnemyEncounter(tierId)"), true);
+  assert.equal(debugMainSource.includes("backgroundVariantId,"), true);
   assert.equal(debugPanelSource.includes('createArenaBackgroundNumberRow("x", "X"'), true);
   assert.equal(debugPanelSource.includes("Reset current tier BG"), true);
   assert.equal(arenaSceneSource.includes("beginArenaBackgroundLayerDrag(pointer"), true);

@@ -18,9 +18,12 @@ export const ARENA_TIER_2_BACKGROUND_AMBIENT_LAYER_ASSET_URL = new URL("./assets
 export const ARENA_BACKGROUND_LAYER_ORDER = ["back", "mid", "ground", "front", "ambient"] as const;
 export type ArenaBackgroundLayerRole = (typeof ARENA_BACKGROUND_LAYER_ORDER)[number];
 export type ArenaBackgroundLayerAssetKey = string;
+export const DEFAULT_ARENA_BACKGROUND_VARIANT_ID = "default";
+export type ArenaBackgroundVariantId = string;
 
 export interface ArenaBackgroundLayerAsset {
   tierId: number;
+  variantId: ArenaBackgroundVariantId;
   layer: ArenaBackgroundLayerAssetKey;
   role: ArenaBackgroundLayerRole;
   order: number;
@@ -38,57 +41,111 @@ const arenaBackgroundLayerAssetModules = import.meta.glob("./assets/arena/layers
 export const ARENA_BACKGROUND_LAYER_ASSETS: readonly ArenaBackgroundLayerAsset[] = Object.entries(arenaBackgroundLayerAssetModules)
   .map(([path, url]) => createArenaBackgroundLayerAsset(path, url))
   .filter((asset): asset is ArenaBackgroundLayerAsset => !!asset)
-  .sort((a, b) => a.tierId - b.tierId || a.order - b.order || a.layer.localeCompare(b.layer));
+  .sort((a, b) => (
+    a.tierId - b.tierId ||
+    compareArenaBackgroundVariantIds(a.variantId, b.variantId) ||
+    a.order - b.order ||
+    a.layer.localeCompare(b.layer)
+  ));
 
-export function getArenaBackgroundLayerAssetKeysForTier(tierId: number): ArenaBackgroundLayerAssetKey[] {
-  const tierLayers = ARENA_BACKGROUND_LAYER_ASSETS.filter((asset) => asset.tierId === tierId).map((asset) => asset.layer);
+export function getArenaBackgroundVariantIdsForTier(tierId: number): ArenaBackgroundVariantId[] {
+  const variantIds = getExactArenaBackgroundVariantIdsForTier(tierId);
 
-  return tierLayers.length > 0 ? tierLayers : getArenaBackgroundLayerAssetKeysForTier(1);
+  return variantIds.length > 0 ? variantIds : tierId === 1 ? [DEFAULT_ARENA_BACKGROUND_VARIANT_ID] : getArenaBackgroundVariantIdsForTier(1);
+}
+
+export function pickArenaBackgroundVariantIdForTier(tierId: number, random = Math.random): ArenaBackgroundVariantId {
+  const variantIds = getArenaBackgroundVariantIdsForTier(tierId);
+
+  return variantIds[Math.floor(clampRandom(random()) * variantIds.length)] ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID;
+}
+
+export function getArenaBackgroundLayerAssetKeysForTier(tierId: number, variantId?: ArenaBackgroundVariantId): ArenaBackgroundLayerAssetKey[] {
+  const resolvedVariantId = resolveArenaBackgroundVariantIdForTier(tierId, variantId);
+  const tierLayers = ARENA_BACKGROUND_LAYER_ASSETS
+    .filter((asset) => asset.tierId === tierId && asset.variantId === resolvedVariantId)
+    .map((asset) => asset.layer);
+
+  return tierLayers.length > 0 ? tierLayers : tierId === 1 ? [] : getArenaBackgroundLayerAssetKeysForTier(1);
 }
 
 function createArenaBackgroundLayerAsset(path: string, url: string): ArenaBackgroundLayerAsset | undefined {
+  const tierVariantMatch = /\/arena-tier-(\d+)-((?:variant|scene)-\d+)-([a-z0-9-]+)\.(?:png|webp)$/u.exec(path);
+
+  if (tierVariantMatch) {
+    return createArenaBackgroundLayerAssetConfig({
+      tierId: Number(tierVariantMatch[1]),
+      variantId: tierVariantMatch[2],
+      layerToken: tierVariantMatch[3],
+      url,
+    });
+  }
+
   const tierMatch = /\/arena-tier-(\d+)-([a-z0-9-]+)\.(?:png|webp)$/u.exec(path);
 
   if (tierMatch) {
-    const tierId = Number(tierMatch[1]);
-    const layer = parseArenaBackgroundLayerToken(tierMatch[2]);
-
-    if (!Number.isInteger(tierId) || tierId < 1 || !layer) {
-      return undefined;
-    }
-
-    return {
-      tierId,
-      layer: layer.id,
-      role: layer.role,
-      order: layer.order,
-      key: `arena-tier-${tierId}-bg-${layer.id}-layer`,
+    return createArenaBackgroundLayerAssetConfig({
+      tierId: Number(tierMatch[1]),
+      variantId: DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+      layerToken: tierMatch[2],
       url,
-      shadeWithCamera: layer.role === "mid",
-    };
+    });
+  }
+
+  const baseVariantMatch = /\/arena-((?:variant|scene)-\d+)-([a-z0-9-]+)\.(?:png|webp)$/u.exec(path);
+
+  if (baseVariantMatch) {
+    return createArenaBackgroundLayerAssetConfig({
+      tierId: 1,
+      variantId: baseVariantMatch[1],
+      layerToken: baseVariantMatch[2],
+      url,
+    });
   }
 
   const baseMatch = /\/arena-([a-z0-9-]+)\.(?:png|webp)$/u.exec(path);
 
   if (baseMatch) {
-    const layer = parseArenaBackgroundLayerToken(baseMatch[1]);
-
-    if (!layer) {
-      return undefined;
-    }
-
-    return {
+    return createArenaBackgroundLayerAssetConfig({
       tierId: 1,
-      layer: layer.id,
-      role: layer.role,
-      order: layer.order,
-      key: `arena-tier-1-bg-${layer.id}-layer`,
+      variantId: DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+      layerToken: baseMatch[1],
       url,
-      shadeWithCamera: layer.role === "mid",
-    };
+    });
   }
 
   return undefined;
+}
+
+function createArenaBackgroundLayerAssetConfig({
+  tierId,
+  variantId,
+  layerToken,
+  url,
+}: {
+  tierId: number;
+  variantId: ArenaBackgroundVariantId;
+  layerToken: string;
+  url: string;
+}): ArenaBackgroundLayerAsset | undefined {
+  const layer = parseArenaBackgroundLayerToken(layerToken);
+
+  if (!Number.isInteger(tierId) || tierId < 1 || !layer) {
+    return undefined;
+  }
+
+  const keyPrefix = variantId === DEFAULT_ARENA_BACKGROUND_VARIANT_ID ? `arena-tier-${tierId}` : `arena-tier-${tierId}-${variantId}`;
+
+  return {
+    tierId,
+    variantId,
+    layer: layer.id,
+    role: layer.role,
+    order: layer.order,
+    key: `${keyPrefix}-bg-${layer.id}-layer`,
+    url,
+    shadeWithCamera: layer.role === "mid",
+  };
 }
 
 function parseArenaBackgroundLayerToken(token: string): { id: ArenaBackgroundLayerAssetKey; role: ArenaBackgroundLayerRole; order: number } | undefined {
@@ -127,6 +184,40 @@ function normalizeArenaBackgroundLayerToken(token: string): { role: ArenaBackgro
   return ARENA_BACKGROUND_LAYER_ORDER.includes(baseToken as ArenaBackgroundLayerRole)
     ? { role: baseToken as ArenaBackgroundLayerRole, instance }
     : undefined;
+}
+
+function getExactArenaBackgroundVariantIdsForTier(tierId: number): ArenaBackgroundVariantId[] {
+  return [...new Set(
+    ARENA_BACKGROUND_LAYER_ASSETS
+      .filter((asset) => asset.tierId === tierId)
+      .map((asset) => asset.variantId),
+  )].sort(compareArenaBackgroundVariantIds);
+}
+
+function resolveArenaBackgroundVariantIdForTier(tierId: number, variantId?: ArenaBackgroundVariantId): ArenaBackgroundVariantId {
+  const variantIds = getArenaBackgroundVariantIdsForTier(tierId);
+
+  return variantId && variantIds.includes(variantId) ? variantId : variantIds[0] ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID;
+}
+
+function compareArenaBackgroundVariantIds(left: ArenaBackgroundVariantId, right: ArenaBackgroundVariantId): number {
+  if (left === right) {
+    return 0;
+  }
+
+  if (left === DEFAULT_ARENA_BACKGROUND_VARIANT_ID) {
+    return -1;
+  }
+
+  if (right === DEFAULT_ARENA_BACKGROUND_VARIANT_ID) {
+    return 1;
+  }
+
+  return left.localeCompare(right);
+}
+
+function clampRandom(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(value, 0.999999999)) : 0;
 }
 
 export const DAMAGE_BLOCK_ICON_ASSET_KEY = "damage-block-icon";

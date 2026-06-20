@@ -14,8 +14,10 @@ import {
   ARROW_ICON_ASSET_KEY,
   ARROW_ICON_ASSET_URL,
   ARENA_BACKGROUND_LAYER_ASSETS,
+  DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
   type ArenaBackgroundLayerAssetKey,
   type ArenaBackgroundLayerRole,
+  type ArenaBackgroundVariantId,
   CITY_ARMORY_BACKGROUND_ASSET_KEY,
   CITY_BACKGROUND_ASSET_KEY,
   CITY_BACKGROUND_ASSET_URL,
@@ -554,6 +556,7 @@ interface ArenaLayers {
   backgroundLayerRoles: Partial<Record<ArenaBackgroundLayerKey, ArenaBackgroundLayerRole>>;
   backgroundLayerIds: ArenaBackgroundLayerKey[];
   backgroundTierId?: number;
+  backgroundVariantId?: ArenaBackgroundVariantId;
   midShade: ArenaMidLayerShadeState;
   all: Phaser.GameObjects.Container[];
 }
@@ -613,6 +616,7 @@ interface ArenaBackgroundLayerLayout {
 
 interface ArenaBackgroundLayerDragState {
   tierId: ArenaBackgroundTuningTierId;
+  variantId: ArenaBackgroundVariantId;
   layerKey: ArenaBackgroundEditLayer;
   lastPointerX: number;
   lastPointerY: number;
@@ -622,6 +626,7 @@ type ArenaBackgroundTuningTierId = number;
 
 interface ArenaBackgroundAssetSet {
   tierId: number;
+  variantId: ArenaBackgroundVariantId;
   layers: ArenaBackgroundLayerConfig[];
 }
 
@@ -1911,13 +1916,14 @@ export class ArenaScene extends Phaser.Scene {
       return;
     }
 
-    const assetSet = getArenaBackgroundAssetSetForTier(this.currentState.encounter?.tierId);
+    const assetSet = getArenaBackgroundAssetSetForEncounter(this.currentState.encounter);
     const tierId = getArenaBackgroundTuningTierId(assetSet.tierId);
 
     beginDebugUndoGroup();
     this.arenaBackgroundLayerDragState = {
       tierId,
-      layerKey: getEditableArenaBackgroundLayer(tierId, debugTuning.arenaBackgroundEditLayer),
+      variantId: assetSet.variantId,
+      layerKey: getEditableArenaBackgroundLayer(tierId, debugTuning.arenaBackgroundEditLayer, assetSet.variantId),
       lastPointerX: pointer.worldX,
       lastPointerY: pointer.worldY,
     };
@@ -1944,12 +1950,12 @@ export class ArenaScene extends Phaser.Scene {
     const layerScale = Math.max(0.001, Math.abs(layerContainer.scaleX || 1));
     const deltaX = (pointer.worldX - dragState.lastPointerX) / layerScale;
     const deltaY = (pointer.worldY - dragState.lastPointerY) / layerScale;
-    const layout = getArenaBackgroundLayerLayoutForTier(dragState.tierId, dragState.layerKey, debugTuning);
+    const layout = getArenaBackgroundLayerLayoutForTier(dragState.tierId, dragState.layerKey, debugTuning, dragState.variantId);
 
     updateArenaBackgroundLayerLayout(dragState.tierId, dragState.layerKey, {
       x: layout.x + deltaX,
       y: layout.y + deltaY,
-    });
+    }, dragState.variantId);
 
     dragState.lastPointerX = pointer.worldX;
     dragState.lastPointerY = pointer.worldY;
@@ -4357,17 +4363,27 @@ function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
 }
 
 function syncArenaBackgroundForState(target: Phaser.Scene, layers: ArenaLayers, current: CombatState): void {
-  const assetSet = getArenaBackgroundAssetSetForTier(current.encounter?.tierId);
+  const assetSet = getArenaBackgroundAssetSetForEncounter(current.encounter);
 
-  if (!isDebugTuningActive() && layers.backgroundTierId === assetSet.tierId) {
+  if (!isDebugTuningActive() && layers.backgroundTierId === assetSet.tierId && layers.backgroundVariantId === assetSet.variantId) {
     return;
   }
 
   syncArenaBackgroundAssetSet(target, layers, assetSet, current);
 }
 
-function getArenaBackgroundAssetSetForTier(tierId?: number): ArenaBackgroundAssetSet {
-  return ARENA_BACKGROUND_ASSET_SETS.find((assetSet) => assetSet.tierId === tierId) ?? ARENA_BACKGROUND_ASSET_SETS[0];
+function getArenaBackgroundAssetSetForEncounter(encounter?: CombatState["encounter"]): ArenaBackgroundAssetSet {
+  return getArenaBackgroundAssetSetForTier(encounter?.tierId, encounter?.backgroundVariantId);
+}
+
+function getArenaBackgroundAssetSetForTier(tierId?: number, variantId?: ArenaBackgroundVariantId): ArenaBackgroundAssetSet {
+  const tierAssetSets = ARENA_BACKGROUND_ASSET_SETS.filter((assetSet) => assetSet.tierId === tierId);
+
+  return (
+    tierAssetSets.find((assetSet) => variantId && assetSet.variantId === variantId) ??
+    tierAssetSets[0] ??
+    ARENA_BACKGROUND_ASSET_SETS[0]
+  );
 }
 
 function getArenaBackgroundTuningTierId(tierId?: number): ArenaBackgroundTuningTierId {
@@ -4385,20 +4401,22 @@ function syncArenaBackgroundAssetSet(target: Phaser.Scene, layers: ArenaLayers, 
     }
   });
   assetSet.layers.forEach((config, index) => {
-    syncArenaBackgroundLayer(target, layers, config, index, assetSet.tierId, current);
+    syncArenaBackgroundLayer(target, layers, config, index, assetSet.tierId, assetSet.variantId, current);
   });
   layers.backgroundLayerIds = assetSet.layers.map((layer) => layer.layer);
   layers.all = [...layers.backgroundLayerIds.map((layerKey) => layers.backgroundLayerContainers[layerKey]).filter((container): container is Phaser.GameObjects.Container => !!container), layers.actors, layers.effects];
   layers.backgroundTierId = assetSet.tierId;
+  layers.backgroundVariantId = assetSet.variantId;
 }
 
 function createArenaBackgroundAssetSets(): ArenaBackgroundAssetSet[] {
-  const byTier = new Map<number, ArenaBackgroundLayerConfig[]>();
+  const byTierAndVariant = new Map<string, ArenaBackgroundAssetSet>();
 
   ARENA_BACKGROUND_LAYER_ASSETS.forEach((asset) => {
-    const layers = byTier.get(asset.tierId) ?? [];
+    const key = getArenaBackgroundAssetSetKey(asset.tierId, asset.variantId);
+    const assetSet = byTierAndVariant.get(key) ?? { tierId: asset.tierId, variantId: asset.variantId, layers: [] };
 
-    layers.push({
+    assetSet.layers.push({
       layer: asset.layer,
       role: asset.role,
       order: asset.order,
@@ -4406,12 +4424,16 @@ function createArenaBackgroundAssetSets(): ArenaBackgroundAssetSet[] {
       url: asset.url,
       shadeWithCamera: asset.shadeWithCamera,
     });
-    byTier.set(asset.tierId, layers);
+    byTierAndVariant.set(key, assetSet);
   });
 
-  return Array.from(byTier.entries())
-    .map(([tierId, layers]) => ({ tierId, layers: [...layers].sort((a, b) => a.order - b.order || a.layer.localeCompare(b.layer)) }))
-    .sort((a, b) => a.tierId - b.tierId);
+  return Array.from(byTierAndVariant.values())
+    .map((assetSet) => ({ ...assetSet, layers: [...assetSet.layers].sort((a, b) => a.order - b.order || a.layer.localeCompare(b.layer)) }))
+    .sort((a, b) => a.tierId - b.tierId || a.variantId.localeCompare(b.variantId));
+}
+
+function getArenaBackgroundAssetSetKey(tierId: number, variantId: ArenaBackgroundVariantId): string {
+  return `${tierId}:${variantId}`;
 }
 
 function syncArenaBackgroundLayer(
@@ -4420,6 +4442,7 @@ function syncArenaBackgroundLayer(
   config: ArenaBackgroundLayerConfig,
   index: number,
   tierId: number,
+  variantId: ArenaBackgroundVariantId,
   current?: CombatState,
 ): void {
   const layerKey = config.layer;
@@ -4456,10 +4479,10 @@ function syncArenaBackgroundLayer(
 
   image.setTexture(config.key);
 
-  const layout = getArenaBackgroundLayerLayoutForTier(getArenaBackgroundTuningTierId(tierId), layerKey, debugTuning);
+  const layout = getArenaBackgroundLayerLayoutForTier(getArenaBackgroundTuningTierId(tierId), layerKey, debugTuning, variantId);
 
   if (isArenaBackgroundLayerCameraAlphaManaged(layerKey) && (isNewImage || isTextureChange || isTierChange)) {
-    image.setAlpha(getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, current));
+    image.setAlpha(getArenaBackgroundLayerImmediateAlpha(target, layerKey, tierId, variantId, current));
   }
 
   applyArenaBackgroundLayerLayout(image, layout, { applyAlpha: !isArenaBackgroundLayerCameraAlphaManaged(layerKey) });
@@ -4490,19 +4513,24 @@ function applyArenaBackgroundLayerLayout(image: Phaser.GameObjects.Image, layout
   image.setVisible(layout.visible);
 }
 
-function getArenaBackgroundLayerLayoutForTier(tierId: ArenaBackgroundTuningTierId, layerKey: ArenaBackgroundEditLayer, tuning: ArenaDebugTuning): ArenaBackgroundLayerLayout {
+function getArenaBackgroundLayerLayoutForTier(
+  tierId: ArenaBackgroundTuningTierId,
+  layerKey: ArenaBackgroundEditLayer,
+  tuning: ArenaDebugTuning,
+  variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+): ArenaBackgroundLayerLayout {
   const normalizeLayout = (layout: ArenaBackgroundLayerLayout): ArenaBackgroundLayerLayout => (
     isArenaBackgroundLayerCameraAlphaManaged(layerKey) ? { ...layout, alpha: 1 } : layout
   );
 
-  if (usesDynamicArenaBackgroundLayerTuning(tierId, layerKey)) {
-    return normalizeLayout(getDynamicArenaBackgroundLayerTuning(tuning, tierId, layerKey).layout);
+  if (usesDynamicArenaBackgroundLayerTuning(tierId, layerKey, variantId)) {
+    return normalizeLayout(getDynamicArenaBackgroundLayerTuning(tuning, tierId, layerKey, variantId).layout);
   }
 
   const keyPrefix = getArenaBackgroundLayerTuningPrefix(tierId, layerKey);
 
   if (!keyPrefix) {
-    return normalizeLayout(getDynamicArenaBackgroundLayerTuning(tuning, tierId, layerKey).layout);
+    return normalizeLayout(getDynamicArenaBackgroundLayerTuning(tuning, tierId, layerKey, variantId).layout);
   }
 
   return normalizeLayout({
@@ -4514,24 +4542,58 @@ function getArenaBackgroundLayerLayoutForTier(tierId: ArenaBackgroundTuningTierI
   });
 }
 
-function getEditableArenaBackgroundLayer(tierId: ArenaBackgroundTuningTierId, layerKey: ArenaBackgroundEditLayer): ArenaBackgroundEditLayer {
-  const layers = getArenaBackgroundLayerKeysForTier(tierId);
+function getEditableArenaBackgroundLayer(
+  tierId: ArenaBackgroundTuningTierId,
+  layerKey: ArenaBackgroundEditLayer,
+  variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+): ArenaBackgroundEditLayer {
+  const layers = getArenaBackgroundLayerKeysForTier(tierId, variantId);
 
   return layers.includes(layerKey) ? layerKey : layers[0] ?? "ground";
 }
 
-function updateArenaBackgroundLayerLayout(tierId: ArenaBackgroundTuningTierId, layerKey: ArenaBackgroundEditLayer, patch: Partial<ArenaBackgroundLayerLayout>): void {
-  if (usesDynamicArenaBackgroundLayerTuning(tierId, layerKey)) {
-    const current = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layerKey);
+function updateArenaBackgroundLayerLayout(
+  tierId: ArenaBackgroundTuningTierId,
+  layerKey: ArenaBackgroundEditLayer,
+  patch: Partial<ArenaBackgroundLayerLayout>,
+  variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+): void {
+  if (usesDynamicArenaBackgroundLayerTuning(tierId, layerKey, variantId)) {
+    const current = getDynamicArenaBackgroundLayerTuning(debugTuning, tierId, layerKey, variantId);
+    const tierKey = String(tierId);
+    const tierTuning = debugTuning.arenaBackgroundTiers[tierKey] ?? {};
+    const nextLayer = {
+      ...current,
+      layout: { ...current.layout, ...patch },
+    };
+
+    if (variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID) {
+      updateDebugTuning({
+        arenaBackgroundTiers: {
+          ...debugTuning.arenaBackgroundTiers,
+          [tierKey]: {
+            ...tierTuning,
+            variants: {
+              ...tierTuning.variants,
+              [variantId]: {
+                ...tierTuning.variants?.[variantId],
+                [layerKey]: nextLayer,
+              },
+            },
+          },
+        },
+      });
+      return;
+    }
 
     updateDebugTuning({
       arenaBackgroundTiers: {
         ...debugTuning.arenaBackgroundTiers,
-        [tierId]: {
-          ...debugTuning.arenaBackgroundTiers[String(tierId)],
-          [layerKey]: {
-            ...current,
-            layout: { ...current.layout, ...patch },
+        [tierKey]: {
+          ...tierTuning,
+          layers: {
+            ...tierTuning.layers,
+            [layerKey]: nextLayer,
           },
         },
       },
@@ -4569,15 +4631,19 @@ function updateArenaBackgroundLayerLayout(tierId: ArenaBackgroundTuningTierId, l
   updateDebugTuning(nextPatch as Partial<ArenaDebugTuning>);
 }
 
-function getArenaBackgroundLayerKeysForTier(tierId: ArenaBackgroundTuningTierId): ArenaBackgroundEditLayer[] {
-  const assetSet = getArenaBackgroundAssetSetForTier(tierId);
+function getArenaBackgroundLayerKeysForTier(tierId: ArenaBackgroundTuningTierId, variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID): ArenaBackgroundEditLayer[] {
+  const assetSet = getArenaBackgroundAssetSetForTier(tierId, variantId);
   const layers = assetSet.layers.map((layer) => layer.layer);
 
   return layers.length > 0 ? layers : ["ground"];
 }
 
-function usesDynamicArenaBackgroundLayerTuning(tierId: ArenaBackgroundTuningTierId, layerKey: ArenaBackgroundEditLayer): boolean {
-  return tierId > 2 || !getArenaBackgroundLayerTuningPrefix(tierId, layerKey);
+function usesDynamicArenaBackgroundLayerTuning(
+  tierId: ArenaBackgroundTuningTierId,
+  layerKey: ArenaBackgroundEditLayer,
+  variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+): boolean {
+  return variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID || tierId > 2 || !getArenaBackgroundLayerTuningPrefix(tierId, layerKey);
 }
 
 function isBaseArenaBackgroundLayer(layerKey: ArenaBackgroundEditLayer): boolean {
@@ -8505,7 +8571,7 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
   });
   target.tweens.add({
     targets: layers.midShade,
-    amount: getArenaMidLayerShade(cameraTarget, debug, layers.backgroundTierId),
+    amount: getArenaMidLayerShade(cameraTarget, debug, layers.backgroundTierId, layers.backgroundVariantId),
     duration: ARENA_CAMERA_TWEEN_DURATION_MS,
     ease: ARENA_CAMERA_TWEEN_EASE,
     onUpdate: () => {
@@ -8540,7 +8606,7 @@ function tweenArenaTransform(
   const transforms = getArenaLayerTransforms(layers, cameraTarget, tuning);
 
   if (transforms.length <= 0) {
-    setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId));
+    setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId, layers.backgroundVariantId));
     return Promise.resolve();
   }
 
@@ -8570,7 +8636,7 @@ function tweenArenaTransform(
 
     target.tweens.add({
       targets: layers.midShade,
-      amount: getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId),
+      amount: getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId, layers.backgroundVariantId),
       duration,
       ease,
       onUpdate: () => {
@@ -8617,12 +8683,13 @@ function applyArenaTransform(layers: ArenaLayers, cameraTarget: ReturnType<typeo
     transform.layer.setScale(transform.scale);
     transform.alphaImage?.setAlpha(transform.alpha ?? transform.alphaImage.alpha);
   });
-  setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId));
+  setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId, layers.backgroundVariantId));
 }
 
 function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>, tuning?: ArenaDebugTuning): ArenaLayerTransform[] {
   const source = tuning ?? debugTuning;
   const tierId = getArenaBackgroundTuningTierId(layers.backgroundTierId);
+  const variantId = layers.backgroundVariantId ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID;
   const backgroundTransforms: ArenaLayerTransform[] = [];
 
   layers.backgroundLayerIds.forEach((layerKey) => {
@@ -8633,7 +8700,7 @@ function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<t
       return;
     }
 
-    const tuningLayer = getArenaBackgroundLayerTuningForTier(source, tierId, layerKey);
+    const tuningLayer = getArenaBackgroundLayerTuningForTier(source, tierId, layerKey, variantId);
     const transform = clampArenaBackgroundLayerTransformToViewport(
       getArenaLayerTransform(layer, cameraTarget, tuningLayer.parallax),
       image,
@@ -8654,13 +8721,18 @@ function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<t
   ];
 }
 
-function getArenaBackgroundLayerTuningForTier(source: ArenaDebugTuning, tierId: ArenaBackgroundTuningTierId, layerKey: ArenaBackgroundLayerKey): ArenaBackgroundLayerTuning {
-  if (usesDynamicArenaBackgroundLayerTuning(tierId, layerKey)) {
-    return getDynamicArenaBackgroundLayerTuning(source, tierId, layerKey);
+function getArenaBackgroundLayerTuningForTier(
+  source: ArenaDebugTuning,
+  tierId: ArenaBackgroundTuningTierId,
+  layerKey: ArenaBackgroundLayerKey,
+  variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+): ArenaBackgroundLayerTuning {
+  if (usesDynamicArenaBackgroundLayerTuning(tierId, layerKey, variantId)) {
+    return getDynamicArenaBackgroundLayerTuning(source, tierId, layerKey, variantId);
   }
 
   return {
-    layout: getArenaBackgroundLayerLayoutForTier(tierId, layerKey, source),
+    layout: getArenaBackgroundLayerLayoutForTier(tierId, layerKey, source, variantId),
     parallax: getArenaBackgroundLayerParallaxForTier(source, tierId, layerKey),
   };
 }
@@ -8706,9 +8778,10 @@ function getArenaBackgroundLayerImmediateAlpha(
   target: Phaser.Scene,
   layerKey: ArenaBackgroundLayerKey,
   tierId: ArenaBackgroundTuningTierId,
+  variantId: ArenaBackgroundVariantId,
   current?: CombatState,
 ): number {
-  const tuningLayer = getArenaBackgroundLayerTuningForTier(debugTuning, getArenaBackgroundTuningTierId(tierId), layerKey);
+  const tuningLayer = getArenaBackgroundLayerTuningForTier(debugTuning, getArenaBackgroundTuningTierId(tierId), layerKey, variantId);
 
   if (!isArenaBackgroundLayerCameraAlphaManaged(layerKey)) {
     return tuningLayer.layout.alpha;
@@ -8802,11 +8875,16 @@ function syncArenaMidLayerTint(layers: ArenaLayers): void {
   layers.midImages.forEach((image) => image.setTint(tint));
 }
 
-function getArenaMidLayerShade(cameraTarget: CameraTarget, tuning?: ArenaDebugTuning, tierId?: number): number {
+function getArenaMidLayerShade(
+  cameraTarget: CameraTarget,
+  tuning?: ArenaDebugTuning,
+  tierId?: number,
+  variantId = DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+): number {
   const source = tuning ?? debugTuning;
   const scopedTierId = getArenaBackgroundTuningTierId(tierId);
-  const maxDarken = clamp01(scopedTierId > 2
-    ? getDynamicArenaBackgroundLayerTuning(source, scopedTierId, "mid").parallax.zoomDarken ?? 1
+  const maxDarken = clamp01(variantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID || scopedTierId > 2
+    ? getDynamicArenaBackgroundLayerTuning(source, scopedTierId, "mid", variantId).parallax.zoomDarken ?? 1
     : scopedTierId === 2
       ? source.arenaTier2MidZoomDarken
       : source.arenaTier1MidZoomDarken);

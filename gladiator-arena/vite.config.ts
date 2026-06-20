@@ -243,10 +243,17 @@ type ArenaBackgroundLayerTuningPayload = {
     nearAlpha?: number;
   };
 };
-type ArenaBackgroundTierTuningPayload = Record<string, Partial<Record<ArenaBackgroundLayerKey, ArenaBackgroundLayerTuningPayload>>>;
+type ArenaBackgroundLayerTuningMapPayload = Partial<Record<ArenaBackgroundLayerKey, ArenaBackgroundLayerTuningPayload>>;
+type ArenaBackgroundVariantTuningPayload = Record<string, ArenaBackgroundLayerTuningMapPayload>;
+type ArenaBackgroundTierTuningPayloadEntry = {
+  layers?: ArenaBackgroundLayerTuningMapPayload;
+  variants?: ArenaBackgroundVariantTuningPayload;
+};
+type ArenaBackgroundTierTuningPayload = Record<string, ArenaBackgroundTierTuningPayloadEntry>;
 type ArenaTierBackgroundDefaultUpdates = {
   tierId: number;
-  layers: Partial<Record<ArenaBackgroundLayerKey, ArenaBackgroundLayerTuningPayload>>;
+  variantId?: string;
+  layers: ArenaBackgroundLayerTuningMapPayload;
 };
 type ArenaTierBackgroundLegacyField = DebugTuningDefaultField | DebugTuningBooleanDefaultField;
 type ArenaTierBackgroundLegacyUpdates = Partial<Record<ArenaTierBackgroundLegacyField, number | boolean>>;
@@ -1342,20 +1349,34 @@ export function applyArenaTierBackgroundDefaultUpdates(source: string, updates: 
 
     return nextSource.replace(pattern, `$1${typeof value === "boolean" ? value : formatNumber(value)}$2`);
   }, source);
-  const dynamicTierUpdates = createDynamicArenaTierBackgroundDefaultUpdates(updates);
+  const dynamicLayerUpdates = createDynamicArenaTierBackgroundDefaultUpdates(updates);
 
-  if (Object.keys(dynamicTierUpdates).length === 0) {
+  if (Object.keys(dynamicLayerUpdates).length === 0) {
     return sourceWithLegacyUpdates;
   }
 
   const existingTiers = readDefaultArenaBackgroundTierTuningsFromSource(sourceWithLegacyUpdates);
   const tierKey = String(updates.tierId);
-  const nextTier = updates.tierId <= 2
+  const existingTier = existingTiers[tierKey] ?? {};
+  const variantId = normalizeArenaBackgroundVariantId(updates.variantId);
+  const nextTier = isDefaultArenaBackgroundVariantId(variantId)
     ? {
-        ...existingTiers[tierKey],
-        ...dynamicTierUpdates,
+        ...existingTier,
+        layers: {
+          ...existingTier.layers,
+          ...dynamicLayerUpdates,
+        },
       }
-    : dynamicTierUpdates;
+    : {
+        ...existingTier,
+        variants: {
+          ...existingTier.variants,
+          [variantId]: {
+            ...existingTier.variants?.[variantId],
+            ...dynamicLayerUpdates,
+          },
+        },
+      };
 
   return replaceDefaultArenaBackgroundTiers(sourceWithLegacyUpdates, {
     ...existingTiers,
@@ -1365,6 +1386,10 @@ export function applyArenaTierBackgroundDefaultUpdates(source: string, updates: 
 
 function createLegacyArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgroundDefaultUpdates): ArenaTierBackgroundLegacyUpdates {
   const result: ArenaTierBackgroundLegacyUpdates = {};
+
+  if (!isDefaultArenaBackgroundVariantId(updates.variantId)) {
+    return result;
+  }
 
   Object.entries(updates.layers).forEach(([layer, tuning]) => {
     if (!tuning) {
@@ -1393,8 +1418,8 @@ function createLegacyArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgro
   return result;
 }
 
-function createDynamicArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgroundDefaultUpdates): ArenaBackgroundTierTuningPayload[string] {
-  const result: ArenaBackgroundTierTuningPayload[string] = {};
+function createDynamicArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgroundDefaultUpdates): ArenaBackgroundLayerTuningMapPayload {
+  const result: ArenaBackgroundLayerTuningMapPayload = {};
 
   Object.entries(updates.layers).forEach(([layer, tuning]) => {
     if (!tuning) {
@@ -1403,7 +1428,7 @@ function createDynamicArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgr
 
     const layerKey = layer as ArenaBackgroundLayerKey;
 
-    if (!usesDynamicArenaTierBackgroundDefaultUpdates(updates.tierId, layerKey)) {
+    if (isDefaultArenaBackgroundVariantId(updates.variantId) && !usesDynamicArenaTierBackgroundDefaultUpdates(updates.tierId, layerKey)) {
       return;
     }
 
@@ -1414,6 +1439,16 @@ function createDynamicArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgr
   });
 
   return result;
+}
+
+function normalizeArenaBackgroundVariantId(value: unknown): string {
+  const variantId = typeof value === "string" ? value.trim().slice(0, 80) : "";
+
+  return variantId || "default";
+}
+
+function isDefaultArenaBackgroundVariantId(value: unknown): boolean {
+  return normalizeArenaBackgroundVariantId(value) === "default";
 }
 
 function usesDynamicArenaTierBackgroundDefaultUpdates(tierId: number, layer: ArenaBackgroundLayerKey): boolean {
@@ -1613,6 +1648,7 @@ export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefa
 export function pickArenaTierBackgroundDefaultUpdates(payload: unknown): ArenaTierBackgroundDefaultUpdates {
   const input = readPlainObject(payload, "arena tier background values");
   const tierId = Math.max(1, Math.round(readFinitePayloadNumber(input.tierId, "arena tier background tierId")));
+  const variantId = normalizeArenaBackgroundVariantId(input.variantId);
   const layersInput = readPlainObject(input.layers, "arena tier background layers");
   const layers: ArenaTierBackgroundDefaultUpdates["layers"] = {};
 
@@ -1628,7 +1664,7 @@ export function pickArenaTierBackgroundDefaultUpdates(payload: unknown): ArenaTi
     throw new Error("Expected at least one arena tier background layer.");
   }
 
-  return { tierId, layers };
+  return { tierId, variantId, layers };
 }
 
 export function applyPlayerSettingDefaultUpdates(source: string, updates: PlayerSettingDefaultUpdates): string {
@@ -4513,16 +4549,64 @@ function readArenaBackgroundTierTunings(input: unknown): ArenaBackgroundTierTuni
       throw new Error(`Invalid arena background tier ${tierKey}.`);
     }
 
-    Object.entries(tierInput as Record<string, unknown>).forEach(([layer, layerInput]) => {
-      if (!isArenaBackgroundLayerKey(layer)) {
-        return;
-      }
+    const layers = readArenaBackgroundLayerTuningMap((tierInput as ArenaBackgroundTierTuningPayloadEntry).layers, `${tierKey}.layers`);
+    const variants = readArenaBackgroundVariantTunings((tierInput as ArenaBackgroundTierTuningPayloadEntry).variants, `${tierKey}.variants`);
 
-      result[tierId] = {
-        ...result[tierId],
-        [layer]: readArenaBackgroundLayerTuning(layerInput, `${tierKey}.${layer}`, layer),
-      };
+    Object.entries(tierInput as Record<string, unknown>).forEach(([layer, layerInput]) => {
+      if (layer !== "layers" && layer !== "variants" && isArenaBackgroundLayerKey(layer)) {
+        layers[layer] = readArenaBackgroundLayerTuning(layerInput, `${tierKey}.${layer}`, layer);
+      }
     });
+
+    if (Object.keys(layers).length > 0 || Object.keys(variants).length > 0) {
+      result[tierId] = {
+        ...(Object.keys(layers).length > 0 ? { layers } : {}),
+        ...(Object.keys(variants).length > 0 ? { variants } : {}),
+      };
+    }
+  });
+
+  return result;
+}
+
+function readArenaBackgroundLayerTuningMap(input: unknown, label: string): ArenaBackgroundLayerTuningMapPayload {
+  if (input === undefined) {
+    return {};
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`Invalid arena background layer tuning map: ${label}.`);
+  }
+
+  const result: ArenaBackgroundLayerTuningMapPayload = {};
+
+  Object.entries(input as Record<string, unknown>).forEach(([layer, layerInput]) => {
+    if (isArenaBackgroundLayerKey(layer)) {
+      result[layer] = readArenaBackgroundLayerTuning(layerInput, `${label}.${layer}`, layer);
+    }
+  });
+
+  return result;
+}
+
+function readArenaBackgroundVariantTunings(input: unknown, label: string): ArenaBackgroundVariantTuningPayload {
+  if (input === undefined) {
+    return {};
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error(`Invalid arena background variant tuning map: ${label}.`);
+  }
+
+  const result: ArenaBackgroundVariantTuningPayload = {};
+
+  Object.entries(input as Record<string, unknown>).forEach(([variantId, variantInput]) => {
+    const normalizedVariantId = normalizeArenaBackgroundVariantId(variantId);
+    const layers = readArenaBackgroundLayerTuningMap(variantInput, `${label}.${normalizedVariantId}`);
+
+    if (Object.keys(layers).length > 0) {
+      result[normalizedVariantId] = layers;
+    }
   });
 
   return result;

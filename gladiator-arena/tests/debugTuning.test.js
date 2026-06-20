@@ -768,7 +768,7 @@ test("debug tuning repairs stored default animations without dropping variants",
   });
   const repairedLunge = normalized.bodyPresetTuning["dummy-v2"].bodyAnimations.lunge;
 
-  assert.equal(normalized.debugTuningVersion, 2);
+  assert.equal(normalized.debugTuningVersion, debugTuningModule.DEBUG_TUNING_STORAGE_VERSION);
   assert.equal(normalized.selectedBodyAnimationVariantId, "lunge2");
   assert.equal(repairedLunge.base.torso.x, lunge.base.torso.x);
   assert.equal(repairedLunge.base.torso.angle, lunge.base.torso.angle);
@@ -776,6 +776,51 @@ test("debug tuning repairs stored default animations without dropping variants",
   assert.equal(repairedLunge.variants.length, 1);
   assert.equal(repairedLunge.variants[0].variantId, "lunge2");
   assert.equal(repairedLunge.variants[0].base.torso.x, 55);
+});
+
+test("debug tuning migrates old tier 1 variant edits away from the default scene", () => {
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    debugTuningVersion: 2,
+    arenaBackgroundPreviewTier: 1,
+    arenaBackgroundPreviewVariant: "variant-2",
+    arenaTier1BackLookUpY: -64,
+    arenaTier1GroundFollowY: 0.45,
+    arenaTier1GroundZoom: 0.6,
+    arenaTier1GroundLookUpY: 30,
+    arenaTier1BackgroundBackScale: 0.5,
+    arenaTier1BackgroundGroundY: 17,
+    arenaTier1BackgroundGroundScale: 0.6,
+    arenaBackgroundTiers: {},
+  });
+  const variant = normalized.arenaBackgroundTiers["1"].variants["variant-2"];
+
+  assert.equal(normalized.arenaTier1BackLookUpY, debugTuningModule.defaultDebugTuning.arenaTier1BackLookUpY);
+  assert.equal(normalized.arenaTier1GroundFollowY, debugTuningModule.defaultDebugTuning.arenaTier1GroundFollowY);
+  assert.equal(normalized.arenaTier1GroundZoom, debugTuningModule.defaultDebugTuning.arenaTier1GroundZoom);
+  assert.equal(normalized.arenaTier1GroundLookUpY, debugTuningModule.defaultDebugTuning.arenaTier1GroundLookUpY);
+  assert.equal(normalized.arenaTier1BackgroundBackScale, debugTuningModule.defaultDebugTuning.arenaTier1BackgroundBackScale);
+  assert.equal(normalized.arenaTier1BackgroundGroundY, debugTuningModule.defaultDebugTuning.arenaTier1BackgroundGroundY);
+  assert.equal(normalized.arenaTier1BackgroundGroundScale, debugTuningModule.defaultDebugTuning.arenaTier1BackgroundGroundScale);
+  assert.equal(variant.back.layout.scale, 0.5);
+  assert.equal(variant.back.parallax.lookUpY, -64);
+  assert.equal(variant.ground.layout.y, 17);
+  assert.equal(variant.ground.layout.scale, 0.6);
+  assert.equal(variant.ground.parallax.followY, 0.45);
+  assert.equal(variant.ground.parallax.zoom, 0.6);
+  assert.equal(variant.ground.parallax.lookUpY, 30);
+});
+
+test("debug tuning keeps default tier 1 variant defaults when storage has no variant map", () => {
+  const normalized = debugTuningModule.normalizeDebugTuning({
+    debugTuningVersion: debugTuningModule.DEBUG_TUNING_STORAGE_VERSION,
+    arenaBackgroundTiers: {},
+  });
+  const variant = normalized.arenaBackgroundTiers["1"].variants["variant-2"];
+
+  assert.equal(variant.back.layout.scale, 0.5);
+  assert.equal(variant.back.parallax.lookUpY, -64);
+  assert.equal(variant.ground.layout.y, 17);
+  assert.equal(variant.ground.layout.scale, 0.6);
 });
 
 test("debug tuning builds Pose A and Pose B animation keyframes from legacy poses", () => {
