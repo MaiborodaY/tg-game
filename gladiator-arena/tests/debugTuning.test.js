@@ -235,6 +235,17 @@ test("debug tuning normalizes unsafe values", () => {
     animationEditorZoom: 99,
     animationEditorOffsetX: -999,
     animationEditorOffsetY: 999,
+    wardShield: {
+      scale: 99,
+      offsetX: -999,
+      offsetY: 999,
+      alpha: -1,
+      fadeInMs: -20,
+      castDurationMs: 9999,
+      absorbDurationMs: -50,
+      startScale: 99,
+      endScale: -1,
+    },
     faceAssetLayers: {
       pupilLeft: { x: 999, y: -999, angle: 999, scaleX: 99, scaleY: -99 },
     },
@@ -344,6 +355,15 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.animationEditorZoom, 2.4);
   assert.equal(normalized.animationEditorOffsetX, -420);
   assert.equal(normalized.animationEditorOffsetY, 420);
+  assert.equal(normalized.wardShield.scale, 2.5);
+  assert.equal(normalized.wardShield.offsetX, -240);
+  assert.equal(normalized.wardShield.offsetY, 240);
+  assert.equal(normalized.wardShield.alpha, 0.1);
+  assert.equal(normalized.wardShield.fadeInMs, 10);
+  assert.equal(normalized.wardShield.castDurationMs, 2000);
+  assert.equal(normalized.wardShield.absorbDurationMs, 30);
+  assert.equal(normalized.wardShield.startScale, 3);
+  assert.equal(normalized.wardShield.endScale, 0.1);
   assert.equal(normalized.faceAssetLayers.pupilLeft.x, 80);
   assert.equal(normalized.faceAssetLayers.pupilLeft.y, -120);
   assert.equal(normalized.faceAssetLayers.pupilLeft.angle, 180);
@@ -388,6 +408,8 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorZoom, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorOffsetX, 0);
   assert.equal(debugTuningModule.defaultDebugTuning.animationEditorOffsetY, 0);
+  assert.deepEqual(debugTuningModule.defaultDebugTuning.wardShield, debugTuningModule.DEFAULT_WARD_SHIELD_TUNING);
+  assert.notEqual(debugTuningModule.defaultDebugTuning.wardShield, debugTuningModule.DEFAULT_WARD_SHIELD_TUNING);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilLeft.x, -20);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.pupilRight.y, -44);
   assert.equal(debugTuningModule.defaultDebugTuning.faceAssetLayers.browLeft.angle, -7);

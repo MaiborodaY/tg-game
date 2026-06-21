@@ -4,6 +4,7 @@ import {
   mountCityHeroPreview,
   mountDebugCharacterViewer,
   mountHeroPortraitPreview,
+  previewDebugAnimationWardShield,
   setPlayerBodyScaleBonus,
   setPlayerAppearance,
   setPlayerEquipment,
@@ -535,6 +536,10 @@ function previewSlashArc(actionId: SlashArcAttackKey, withBodyAnimation: boolean
   arenaScene?.previewSlashArc(actionId, withBodyAnimation);
 }
 
+function previewWardShield(): void {
+  previewDebugAnimationWardShield();
+}
+
 function previewPopup(kind: DebugPopupPreviewKind): void {
   arenaScene?.previewPopup(kind);
 }
@@ -833,6 +838,7 @@ function startDebugApp(): void {
     },
     onRestartArenaTierPreview: restartArenaTierPreview,
     onPreviewSlashArc: previewSlashArc,
+    onPreviewWardShield: previewWardShield,
     onPreviewPopup: previewPopup,
   });
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning, {

@@ -209,15 +209,23 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.equal(magicShopSource.includes('root.classList.remove("city-menu--magic-shop-open");'), true);
   assert.equal(magicShopSource.includes('scrollCapacity.className = "magic-shop__scroll-capacity";'), true);
   assert.equal(magicShopSource.includes("Math.min(getHeroScrollQuantity(hero), HERO_SCROLL_MAX_QUANTITY)"), true);
-  assert.equal(magicShopSource.includes("scrollCapacityAmount.textContent = `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`;"), true);
-  assert.equal(magicShopSource.includes("createMagicProductPreview(selectedProduct, hero)"), true);
-  assert.equal(magicShopSource.includes("createMagicProductListItem(product, hero)"), true);
+  assert.equal(magicShopSource.includes("setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`);"), true);
+  assert.equal(magicShopSource.includes("const previewElements = createMagicProductPreview();"), true);
+  assert.equal(magicShopSource.includes("const productListItems = MAGIC_PRODUCTS.map((product) => [product.id, createMagicProductListItem(product)] as const);"), true);
+  assert.equal(magicShopSource.includes("preview.append(previewElements.card);"), true);
+  assert.equal(magicShopSource.includes("productList.append(...productListItems.map(([, elements]) => elements.item));"), true);
+  assert.equal(magicShopSource.includes("preview.replaceChildren"), false);
+  assert.equal(magicShopSource.includes("productList.replaceChildren"), false);
   assert.equal(magicShopSource.includes("armory-shop__product-consumable-badges"), false);
   assert.equal(magicShopSource.includes("quantityBadge.textContent"), false);
   assert.equal(magicShopSource.includes('title.className = "magic-shop__preview-title";'), true);
   assert.equal(magicShopSource.includes("title.append(name, rarityNode);"), true);
   assert.equal(magicShopSource.includes("body.append(name, rarityNode, effect);"), false);
   assert.equal(magicShopSource.includes("card.append(title, icon, effect, footer);"), true);
+  assert.equal(magicShopSource.includes("function refreshHeroState(hero: HeroState): void"), true);
+  assert.equal(magicShopSource.includes("function refreshSelectedProduct(hero: HeroState): void"), true);
+  assert.equal(magicShopSource.includes("function refreshProductList(hero: HeroState): void"), true);
+  assert.equal(magicShopSource.includes("function selectMagicProduct(productId: string): void"), true);
 
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*content: "MAGIC SHOP";[\s\S]*\}/);
   assert.equal(assetsSource.includes('MAGIC_SHOP_TITLE_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-title-frame.webp", import.meta.url).href'), true);
@@ -282,6 +290,9 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.match(stylesSource, /\.magic-shop__preview-effect\s*\{[\s\S]*grid-area: effect;[\s\S]*align-self: end;[\s\S]*max-width: var\(--magic-shop-preview-effect-width\);[\s\S]*font-size: var\(--magic-shop-preview-effect-font-size\);[\s\S]*line-height: var\(--magic-shop-preview-effect-line-height\);[\s\S]*transform: translateY\(var\(--magic-shop-preview-effect-offset-y\)\);/);
   assert.match(stylesSource, /\.magic-shop__preview-footer\s*\{[\s\S]*grid-area: action;/);
   assert.match(stylesSource, /\.magic-shop__buy\s*\{[\s\S]*min-height: calc\(var\(--magic-shop-buy-height\) \* var\(--magic-shop-button-scale\)\);/);
+  assert.match(stylesSource, /\.armory-shop__selected-buy\s*\{[\s\S]*--shop-selected-buy-press-y: 0px;[\s\S]*transform: translateY\(var\(--shop-selected-buy-press-y\)\);/);
+  assert.match(stylesSource, /\.armory-shop__selected-buy:active:not\(:disabled\)\s*\{[\s\S]*--shop-selected-buy-press-y: 1px;[\s\S]*box-shadow:/);
+  assert.match(stylesSource, /\.magic-shop__buy\s*\{[\s\S]*calc\(var\(--magic-shop-buy-offset-y\) \* var\(--magic-shop-button-scale\) \+ var\(--shop-selected-buy-press-y, 0px\)\)/);
   assert.match(stylesSource, /\.magic-shop__list-price\s*\{[\s\S]*font-size: calc\(var\(--magic-shop-list-price-font-size\) \* var\(--magic-shop-button-scale\)\);/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__content--products\s*\{[\s\S]*grid-template-rows: minmax\(0, 1fr\) auto;/);
   assert.equal(uiLayoutTuningSource.includes('UI_LAYOUT_TUNING_STORAGE_KEY = "dust-arena-ui-layout-tuning"'), true);
@@ -708,6 +719,7 @@ test("shop purchases sync only the active shop state after hero changes", () => 
   assert.equal(magicShopSource.includes("syncHeroState: () => void"), true);
   assert.equal(armoryShopSource.includes("function syncHeroState(syncOptions: ArmoryShopHeroSyncOptions = {}): void"), true);
   assert.equal(weaponShopSource.includes("function syncHeroState(syncOptions: WeaponShopHeroSyncOptions = {}): void"), true);
+  assert.equal(magicShopSource.includes("function syncHeroState(): void"), true);
   assert.equal(handleShopBuySource.includes("const previousHero = hero;"), true);
   assert.equal(handleShopBuySource.includes("syncShopHeroStateForProduct(product, previousHero);"), true);
   assert.equal(handleShopBuySource.includes("armoryShop?.render();"), false);
@@ -718,6 +730,10 @@ test("shop purchases sync only the active shop state after hero changes", () => 
   assert.equal(weaponShopSource.includes("function refreshRenderedProductButtons"), false);
   assert.match(armoryShopSource, /function syncHeroState\(syncOptions: ArmoryShopHeroSyncOptions = \{\}\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshChangedProductButtons\(hero, syncOptions\);[\s\S]*renderSelectedProduct\(hero\);/);
   assert.match(weaponShopSource, /function syncHeroState\(syncOptions: WeaponShopHeroSyncOptions = \{\}\): void \{\s*if \(shop\.hidden\) \{[\s\S]*return;[\s\S]*refreshSelectedProduct\(hero\);[\s\S]*refreshChangedProductButtons\(hero, syncOptions\);/);
+  assert.match(getFunctionSource(magicShopSource, "syncHeroState"), /refreshHeroState\(options\.getHero\(\)\);/);
+  assert.equal(getFunctionSource(magicShopSource, "syncHeroState").includes("render();"), false);
+  assert.equal(magicShopSource.includes("preview.replaceChildren"), false);
+  assert.equal(magicShopSource.includes("productList.replaceChildren"), false);
   assert.equal(armoryShopSource.includes("function normalizeProductButtonActionState"), false);
   assert.equal(weaponShopSource.includes("function normalizeProductButtonActionState"), false);
   assert.match(armoryShopSource, /if \(productButtonVisualStates\.get\(product\.id\) === nextVisualState\) \{\s*return;\s*\}/);

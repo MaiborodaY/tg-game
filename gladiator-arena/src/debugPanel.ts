@@ -24,6 +24,8 @@ import {
   EQUIPMENT_SLOT_KEYS,
   FACE_ASSET_LAYER_KEYS,
   DEFAULT_SLASH_ARCS,
+  DEFAULT_WARD_SHIELD_TUNING,
+  clearDebugTuningStorage,
   defaultFacePartTuning,
   FACE_PART_KEYS,
   createDefaultArenaBackgroundLayerTuning,
@@ -71,6 +73,7 @@ import {
   type RigPartTuning,
   type SlashArcAttackKey,
   type SlashArcTuning,
+  type WardShieldTuning,
 } from "./debugTuning";
 import {
   subscribeDebugCharacterEquipmentDelta,
@@ -124,6 +127,7 @@ import {
   saveGeneratedEquipmentItem,
   saveProdAnimation,
   saveProdDefaults,
+  saveProdVfxDefaults,
   saveUiLayoutProdDefaults,
   savePromotedEquipmentItem,
   savePromotedEquipmentSet,
@@ -163,6 +167,7 @@ interface DebugPanelOptions {
   onHeroEquipmentChange?: (equipment: HeroEquipment) => void;
   onRestartArenaTierPreview?: (tierId: number, backgroundVariantId?: ArenaBackgroundVariantId) => void;
   onPreviewSlashArc?: (actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void;
+  onPreviewWardShield?: () => void;
   onPreviewPopup?: (kind: DebugPopupPreviewKind) => void;
 }
 
@@ -203,7 +208,6 @@ type CharacterPreviewControlKey =
   | "facePreviewScale"
   | "facePreviewFocusX"
   | "facePreviewFocusY";
-type AnimationEditorViewControlKey = "animationEditorZoom" | "animationEditorOffsetX" | "animationEditorOffsetY";
 type CharacterPreviewControlMode = "body" | "face";
 type FaceNumericControlKey = keyof FacePartTuning;
 type FaceAssetLayerNumericControlKey = keyof FaceAssetLayerTuning;
@@ -214,6 +218,7 @@ type EquipmentControlKey = EquipmentNumericControlKey | EquipmentToggleControlKe
 type DebugItemEquipmentTypeFilter = "all" | HeroWeaponClass | NonNullable<HeroItemDefinition["armorCategory"]>;
 type DebugItemEquipmentRarityFilter = "all" | HeroItemRarity;
 type SlashArcNumericControlKey = Exclude<keyof SlashArcTuning, "color">;
+type WardShieldNumericControlKey = keyof WardShieldTuning;
 type ArenaBackgroundEditTierId = number;
 type ArenaBackgroundLayoutField = "x" | "y" | "scale" | "alpha" | "visible";
 type ArenaParallaxLayerKey = ArenaBackgroundEditLayer;
@@ -315,6 +320,14 @@ interface EquipmentToggleControlConfig {
 
 interface SlashArcNumericControlConfig {
   key: SlashArcNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface WardShieldNumericControlConfig {
+  key: WardShieldNumericControlKey;
   label: string;
   min: number;
   max: number;
@@ -853,36 +866,6 @@ const characterPreviewControls: CharacterPreviewControlConfig[] = [
   { key: "facePreviewFocusY", label: "face Y", min: 80, max: 560, step: 1, mode: "face" },
 ];
 
-const animationEditorViewControls: (DebugRangeControlConfig & { key: AnimationEditorViewControlKey })[] = [
-  {
-    type: "range",
-    key: "animationEditorZoom",
-    label: "zoom",
-    min: 0.5,
-    max: 2.4,
-    step: 0.01,
-    resetValue: defaultDebugTuning.animationEditorZoom,
-  },
-  {
-    type: "range",
-    key: "animationEditorOffsetX",
-    label: "pan X",
-    min: -420,
-    max: 420,
-    step: 1,
-    resetValue: defaultDebugTuning.animationEditorOffsetX,
-  },
-  {
-    type: "range",
-    key: "animationEditorOffsetY",
-    label: "pan Y",
-    min: -420,
-    max: 420,
-    step: 1,
-    resetValue: defaultDebugTuning.animationEditorOffsetY,
-  },
-];
-
 const faceNumericControls: FaceNumericControlConfig[] = [
   { key: "x", label: "x", min: -40, max: 40, step: 0.5 },
   { key: "y", label: "y", min: -40, max: 40, step: 0.5 },
@@ -932,6 +915,18 @@ const slashArcNumericControls: SlashArcNumericControlConfig[] = [
   { key: "sweep", label: "sweep", min: -180, max: 180, step: 1 },
 ];
 
+const wardShieldNumericControls: WardShieldNumericControlConfig[] = [
+  { key: "scale", label: "scale", min: 0.2, max: 2.5, step: 0.01 },
+  { key: "offsetX", label: "offset X", min: -240, max: 240, step: 1 },
+  { key: "offsetY", label: "offset Y", min: -240, max: 240, step: 1 },
+  { key: "alpha", label: "alpha", min: 0.1, max: 1, step: 0.01 },
+  { key: "fadeInMs", label: "fade in", min: 10, max: 1000, step: 10 },
+  { key: "castDurationMs", label: "cast ms", min: 30, max: 2000, step: 10 },
+  { key: "absorbDurationMs", label: "absorb ms", min: 30, max: 2000, step: 10 },
+  { key: "startScale", label: "start scale", min: 0.1, max: 3, step: 0.01 },
+  { key: "endScale", label: "end scale", min: 0.1, max: 3, step: 0.01 },
+];
+
 const rigLimbRotateConfigs: RigLimbRotateConfig[] = [
   { key: "leftArm", label: "Left arm", anchor: "backUpperArm", parts: ["backUpperArm", "backForearm", "backHand"] },
   { key: "rightArm", label: "Right arm", anchor: "frontUpperArm", parts: ["frontUpperArm", "frontForearm", "frontHand"] },
@@ -970,6 +965,7 @@ let isCharacterCanvasEquipmentBridgeMounted = false;
 let debugHeroEquipment: HeroEquipment | undefined;
 let notifyHeroEquipmentChange: ((equipment: HeroEquipment) => void) | undefined;
 let previewSlashArc: ((actionId: SlashArcAttackKey, withBodyAnimation: boolean) => void) | undefined;
+let previewWardShield: (() => void) | undefined;
 let previewPopup: ((kind: DebugPopupPreviewKind) => void) | undefined;
 let isSlashPreviewLoopRunning = false;
 let slashPreviewTimer: number | undefined;
@@ -1484,6 +1480,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
 
     try {
       status.textContent = await saveProdDefaults(debugTuning);
+      clearDebugTuningStorage();
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : "Could not save prod defaults.";
     } finally {
@@ -1502,6 +1499,7 @@ function configureHeroEquipmentDebug(options: DebugPanelOptions): void {
   debugHeroEquipment = options.heroEquipment ? { ...options.heroEquipment } : undefined;
   notifyHeroEquipmentChange = options.onHeroEquipmentChange;
   previewSlashArc = options.onPreviewSlashArc;
+  previewWardShield = options.onPreviewWardShield;
   previewPopup = options.onPreviewPopup;
 }
 
@@ -3496,10 +3494,8 @@ function mountAnimationWorkbench(): void {
   const variantAllWeapons = editor.querySelector<HTMLInputElement>("[data-animation-workbench-variant-all-weapons]");
   const variantWeapons = editor.querySelector<HTMLElement>("[data-animation-workbench-variant-weapons]");
   const animationModeButtons = [...editor.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]")];
-  const viewControls = editor.querySelector<HTMLElement>("[data-animation-workbench-view-controls]");
   const resetPose = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-pose]");
   const applyPoseButtons = [...editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-apply-to-pose]")];
-  const resetView = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-view]");
   const partSelect = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-part-select]");
   const rootTransformMode = editor.querySelector<HTMLElement>("[data-animation-workbench-root-transform-mode]");
   const rootTransformModeButtons = [
@@ -3528,7 +3524,6 @@ function mountAnimationWorkbench(): void {
   const progress = editor.querySelector<HTMLInputElement>("[data-animation-workbench-progress]");
   const keyframes = editor.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
   const easing = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
-  const addKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-add-keyframe]");
   const duplicateKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-duplicate-keyframe]");
   const setStartKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-set-start]");
   const setImpactKeyframe = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-set-impact]");
@@ -3544,11 +3539,8 @@ function mountAnimationWorkbench(): void {
     !variantWeight ||
     !variantAllWeapons ||
     !variantWeapons ||
-    animationModeButtons.length === 0 ||
-    !viewControls ||
     !resetPose ||
     applyPoseButtons.length === 0 ||
-    !resetView ||
     !partSelect ||
     !rootTransformMode ||
     rootTransformModeButtons.length === 0 ||
@@ -3575,7 +3567,6 @@ function mountAnimationWorkbench(): void {
     !progress ||
     !keyframes ||
     !easing ||
-    !addKeyframe ||
     !duplicateKeyframe ||
     !setStartKeyframe ||
     !setImpactKeyframe ||
@@ -3587,7 +3578,6 @@ function mountAnimationWorkbench(): void {
 
   editor.dataset.animationWorkbenchMounted = "true";
 
-  animationEditorViewControls.forEach((control) => viewControls.append(createRangeControl(control)));
   BODY_ANIMATION_KEYS.forEach((key) => {
     const option = document.createElement("option");
     option.value = key;
@@ -3625,6 +3615,7 @@ function mountAnimationWorkbench(): void {
   });
   animationCastPropNumericControls.forEach((control) => castPropControls.append(createAnimationCastPropRangeControl(control)));
   animationCastPropToggleControls.forEach((control) => castPropControls.append(createAnimationCastPropToggleControl(control)));
+  mountAnimationVfxEditor(editor);
   rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
@@ -3696,14 +3687,6 @@ function mountAnimationWorkbench(): void {
       if (targetPoseId === "pose-a" || targetPoseId === "pose-b") {
         applySelectedAnimationKeyframeToPose(targetPoseId);
       }
-    });
-  });
-
-  resetView.addEventListener("click", () => {
-    updateDebugTuning({
-      animationEditorZoom: defaultDebugTuning.animationEditorZoom,
-      animationEditorOffsetX: defaultDebugTuning.animationEditorOffsetX,
-      animationEditorOffsetY: defaultDebugTuning.animationEditorOffsetY,
     });
   });
 
@@ -3862,11 +3845,6 @@ function mountAnimationWorkbench(): void {
     updateAnimationWorkbenchEasing(easing.value as BodyAnimationKeyframeEasing);
   });
 
-  addKeyframe.addEventListener("click", () => {
-    stopAnimationWorkbenchPlayback({ restoreEditMode: false });
-    addAnimationKeyframeAtProgress();
-  });
-
   duplicateKeyframe.addEventListener("click", () => {
     stopAnimationWorkbenchPlayback({ restoreEditMode: false });
     duplicateSelectedAnimationKeyframeAtProgress();
@@ -3919,12 +3897,6 @@ function mountAnimationWorkbench(): void {
     resetAnimationWorkbenchPreviewWeaponTuning();
   });
 
-  editor.querySelectorAll<HTMLButtonElement>("[data-animation-workbench-jump]").forEach((button) => {
-    button.addEventListener("click", () => {
-      stopAnimationWorkbenchPlayback({ restoreEditMode: false });
-      setAnimationWorkbenchProgress(Number(button.dataset.animationWorkbenchJump));
-    });
-  });
 }
 
 function toggleAnimationWorkbenchPlayback(): void {
@@ -4175,42 +4147,6 @@ function selectAnimationKeyframe(keyframeId: string): void {
       selectedAnimationKeyframeId: keyframe.id,
     },
     { undoable: false },
-  );
-}
-
-function addAnimationKeyframeAtProgress(): void {
-  const animation = getSelectedBodyAnimation();
-  const duration = Math.max(1, animation.duration);
-  const time = Math.round(clampNumber(debugTuning.animationPreviewProgress, 0, 1) * duration);
-  const keyframes = getAnimationKeyframes(animation);
-  const sourceKeyframe = getSelectedAnimationKeyframe(animation) ?? keyframes[0];
-
-  if (!sourceKeyframe) {
-    return;
-  }
-
-  const id = createUniqueAnimationKeyframeId(keyframes, `key-${Math.round((time / duration) * 1000)}`);
-  const sampledPose = sampleAnimationKeyframePose(animation, debugTuning.animationPreviewProgress);
-  const nextKeyframe: BodyAnimationKeyframe = {
-    id,
-    time,
-    easing: "easeInOut",
-    rigParts: cloneRigParts(sampledPose?.rigParts ?? sourceKeyframe.rigParts),
-    faceParts: cloneFaceParts(sampledPose?.faceParts ?? sourceKeyframe.faceParts),
-    rootOffset: cloneBodyAnimationRootOffset(sampledPose?.rootOffset ?? sourceKeyframe.rootOffset),
-    weaponMirrorX: sampledPose?.weaponMirrorX ?? sourceKeyframe.weaponMirrorX,
-    weaponMirrorY: sampledPose?.weaponMirrorY ?? sourceKeyframe.weaponMirrorY,
-    castProp: cloneBodyAnimationCastProp(sampledPose?.castProp ?? sourceKeyframe.castProp),
-  };
-
-  updateSelectedBodyAnimation(
-    {
-      keyframes: [...keyframes, nextKeyframe].sort(compareAnimationKeyframes),
-    },
-    {
-      animationEditMode: "keyframe",
-      selectedAnimationKeyframeId: id,
-    },
   );
 }
 
@@ -5016,6 +4952,59 @@ function mountEffectsEditor(editor: HTMLElement): void {
   });
 }
 
+function mountAnimationVfxEditor(editor: HTMLElement): void {
+  const slashControls = editor.querySelector<HTMLElement>("[data-animation-workbench-slash-vfx-controls]");
+  const wardControls = editor.querySelector<HTMLElement>("[data-animation-workbench-ward-vfx-controls]");
+  const previewSlash = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-preview-slash-vfx]");
+  const resetSlash = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-slash-vfx]");
+  const previewWard = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-preview-ward-vfx]");
+  const resetWard = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-ward-vfx]");
+  const saveVfxProd = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-save-vfx-prod]");
+  const saveVfxStatus = editor.querySelector<HTMLElement>("[data-animation-workbench-vfx-status]");
+
+  if (!slashControls || !wardControls || !previewSlash || !resetSlash || !previewWard || !resetWard || !saveVfxProd || !saveVfxStatus) {
+    return;
+  }
+
+  slashArcNumericControls.forEach((control) => slashControls.append(createAnimationSlashArcRangeControl(control)));
+  wardShieldNumericControls.forEach((control) => wardControls.append(createWardShieldRangeControl(control)));
+
+  previewSlash.addEventListener("click", () => {
+    const actionId = getAnimationVfxSlashArcKey();
+
+    if (actionId) {
+      previewSlashArc?.(actionId, true);
+    }
+  });
+
+  resetSlash.addEventListener("click", () => {
+    resetAnimationSlashArc();
+  });
+
+  previewWard.addEventListener("click", () => {
+    previewWardShield?.();
+  });
+
+  resetWard.addEventListener("click", () => {
+    resetWardShieldTuning();
+  });
+
+  saveVfxProd.addEventListener("click", async () => {
+    saveVfxProd.disabled = true;
+    saveVfxStatus.textContent = "Saving prod VFX...";
+
+    try {
+      saveVfxStatus.textContent = await saveProdVfxDefaults(debugTuning);
+      clearDebugTuningStorage();
+    } catch (error) {
+      saveVfxStatus.textContent = error instanceof Error ? error.message : "Could not save prod VFX.";
+    } finally {
+      saveVfxProd.disabled = false;
+      syncAnimationVfxEditor();
+    }
+  });
+}
+
 function mountPopupPreviewTriggers(root: HTMLElement): void {
   root.querySelectorAll<HTMLInputElement>("[data-debug-key], [data-debug-number-key]").forEach((input) => {
     input.addEventListener("input", () => {
@@ -5161,6 +5150,80 @@ function createSlashArcRangeControl(control: SlashArcNumericControlConfig): HTML
 
   number?.addEventListener("input", () => {
     updateSelectedSlashArc({ [control.key]: Number(number.value) } as Partial<SlashArcTuning>);
+  });
+
+  return row;
+}
+
+function createAnimationSlashArcRangeControl(control: SlashArcNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-animation-slash-arc-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-animation-slash-arc-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateAnimationSlashArc({ [control.key]: Number(range.value) } as Partial<SlashArcTuning>);
+  });
+
+  number?.addEventListener("input", () => {
+    updateAnimationSlashArc({ [control.key]: Number(number.value) } as Partial<SlashArcTuning>);
+  });
+
+  return row;
+}
+
+function createWardShieldRangeControl(control: WardShieldNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-ward-shield-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-ward-shield-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateWardShieldTuning({ [control.key]: clampWardShieldNumericValue(control.key, Number(range.value)) } as Partial<WardShieldTuning>);
+  });
+
+  number?.addEventListener("input", () => {
+    updateWardShieldTuning({ [control.key]: clampWardShieldNumericValue(control.key, Number(number.value)) } as Partial<WardShieldTuning>);
   });
 
   return row;
@@ -5798,13 +5861,26 @@ function updateSelectedSlashArc(patch: Partial<SlashArcTuning>): void {
   const key = debugTuning.selectedSlashArc;
   const current = debugTuning.slashArcs[key] ?? DEFAULT_SLASH_ARCS[key];
 
+  updateSlashArc(key, { ...current, ...patch });
+}
+
+function updateAnimationSlashArc(patch: Partial<SlashArcTuning>): void {
+  const key = getAnimationVfxSlashArcKey();
+
+  if (!key) {
+    return;
+  }
+
+  const current = debugTuning.slashArcs[key] ?? DEFAULT_SLASH_ARCS[key];
+
+  updateSlashArc(key, { ...current, ...patch });
+}
+
+function updateSlashArc(key: SlashArcAttackKey, tuning: SlashArcTuning): void {
   updateDebugTuning({
     slashArcs: {
       ...debugTuning.slashArcs,
-      [key]: {
-        ...current,
-        ...patch,
-      },
+      [key]: tuning,
     },
   });
 }
@@ -5812,12 +5888,43 @@ function updateSelectedSlashArc(patch: Partial<SlashArcTuning>): void {
 function resetSelectedSlashArc(): void {
   const key = debugTuning.selectedSlashArc;
 
+  resetSlashArc(key);
+}
+
+function resetAnimationSlashArc(): void {
+  const key = getAnimationVfxSlashArcKey();
+
+  if (key) {
+    resetSlashArc(key);
+  }
+}
+
+function resetSlashArc(key: SlashArcAttackKey): void {
   updateDebugTuning({
     slashArcs: {
       ...debugTuning.slashArcs,
       [key]: { ...DEFAULT_SLASH_ARCS[key] },
     },
   });
+}
+
+function updateWardShieldTuning(patch: Partial<WardShieldTuning>): void {
+  updateDebugTuning({
+    wardShield: {
+      ...debugTuning.wardShield,
+      ...patch,
+    },
+  });
+}
+
+function resetWardShieldTuning(): void {
+  updateDebugTuning({
+    wardShield: { ...DEFAULT_WARD_SHIELD_TUNING },
+  });
+}
+
+function getAnimationVfxSlashArcKey(): SlashArcAttackKey | undefined {
+  return isSlashArcAttackKey(debugTuning.selectedBodyAnimation) ? debugTuning.selectedBodyAnimation : undefined;
 }
 
 function updateSelectedClassicActionButtonSlot(patch: Partial<ClassicActionButtonSlotTuning>): void {
@@ -6786,8 +6893,18 @@ function clampAnimationCastPropNumericValue(key: AnimationCastPropNumericControl
   return clampNumber(value, control.min, control.max);
 }
 
+function clampWardShieldNumericValue(key: WardShieldNumericControlKey, value: number): number {
+  const control = getWardShieldNumericControlConfig(key);
+
+  return clampNumber(value, control.min, control.max);
+}
+
 function getAnimationCastPropNumericControlConfig(key: AnimationCastPropNumericControlKey): AnimationCastPropNumericControlConfig {
   return animationCastPropNumericControls.find((control) => control.key === key) ?? { key, label: key, min: -480, max: 480, step: 1 };
+}
+
+function getWardShieldNumericControlConfig(key: WardShieldNumericControlKey): WardShieldNumericControlConfig {
+  return wardShieldNumericControls.find((control) => control.key === key) ?? { key, label: key, min: -240, max: 240, step: 1 };
 }
 
 function formatScrollCastPropAssetLabel(key: ScrollCastPropAssetKey): string {
@@ -9928,6 +10045,7 @@ function syncAnimationEditor(panel: HTMLElement): void {
   const workbenchResetWeapon = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-weapon]");
   const workbenchWeaponMirrorX = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-x]");
   const workbenchWeaponMirrorY = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-y]");
+  const workbenchViewReadout = document.querySelector<HTMLElement>("[data-animation-workbench-view-readout]");
   const workbenchCastPropPanel = document.querySelector<HTMLElement>("[data-animation-workbench-cast-prop-panel]");
   const workbenchCastPropVisible = document.querySelector<HTMLInputElement>("[data-animation-workbench-cast-prop-visible]");
   const workbenchCastPropAsset = document.querySelector<HTMLSelectElement>("[data-animation-workbench-cast-prop-asset]");
@@ -10049,6 +10167,8 @@ function syncAnimationEditor(panel: HTMLElement): void {
     workbenchResetWeapon.disabled = getAnimationWorkbenchPreviewWeaponTuningTargets().length === 0;
   }
 
+  syncAnimationViewReadout(workbenchViewReadout);
+
   syncAnimationWorkbenchKeyframes(
     animation,
     workbenchKeyframes,
@@ -10063,6 +10183,7 @@ function syncAnimationEditor(panel: HTMLElement): void {
     workbenchWeaponMirrorY,
   );
   syncAnimationWorkbenchCastProp(workbenchCastPropPanel, workbenchCastPropVisible, workbenchCastPropAsset);
+  syncAnimationVfxEditor();
 
   document.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.animationEditMode === debugTuning.animationEditMode}`);
@@ -10249,6 +10370,117 @@ function syncAnimationWorkbenchCastProp(
     input.checked = castProp?.[key] ?? defaultBodyAnimationCastProp[key];
     input.disabled = !canEdit;
   });
+}
+
+function syncAnimationVfxEditor(): void {
+  const panel = document.querySelector<HTMLElement>("[data-animation-workbench-vfx-panel]");
+  const empty = document.querySelector<HTMLElement>("[data-animation-workbench-vfx-empty]");
+  const slashPanel = document.querySelector<HTMLElement>("[data-animation-workbench-slash-vfx-panel]");
+  const wardPanel = document.querySelector<HTMLElement>("[data-animation-workbench-ward-vfx-panel]");
+  const previewSlash = document.querySelector<HTMLButtonElement>("[data-animation-workbench-preview-slash-vfx]");
+  const resetSlash = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-slash-vfx]");
+  const previewWard = document.querySelector<HTMLButtonElement>("[data-animation-workbench-preview-ward-vfx]");
+  const resetWard = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-ward-vfx]");
+  const saveVfxProd = document.querySelector<HTMLButtonElement>("[data-animation-workbench-save-vfx-prod]");
+  const slashArcKey = getAnimationVfxSlashArcKey();
+  const canEditSlash = Boolean(slashArcKey);
+  const canEditWard = debugTuning.selectedBodyAnimation === "scrollCast";
+  const canEditVfx = canEditSlash || canEditWard;
+
+  if (panel) {
+    panel.hidden = false;
+  }
+
+  if (empty) {
+    empty.hidden = canEditVfx;
+  }
+
+  if (slashPanel) {
+    slashPanel.hidden = !canEditSlash;
+  }
+
+  if (wardPanel) {
+    wardPanel.hidden = !canEditWard;
+  }
+
+  if (previewSlash) {
+    previewSlash.disabled = !slashArcKey || !previewSlashArc;
+  }
+
+  if (resetSlash) {
+    resetSlash.disabled = !slashArcKey;
+  }
+
+  if (previewWard) {
+    previewWard.disabled = !canEditWard || !previewWardShield;
+  }
+
+  if (resetWard) {
+    resetWard.disabled = !canEditWard;
+  }
+
+  if (saveVfxProd) {
+    saveVfxProd.disabled = !canEditVfx;
+    saveVfxProd.textContent = canEditWard ? "Save ward VFX as prod" : canEditSlash ? "Save slash VFX as prod" : "Save VFX as prod";
+  }
+
+  if (slashArcKey) {
+    const slashArc = debugTuning.slashArcs[slashArcKey] ?? DEFAULT_SLASH_ARCS[slashArcKey];
+
+    document.querySelectorAll<HTMLInputElement>("input[data-animation-slash-arc-key]").forEach((input) => {
+      const key = input.dataset.animationSlashArcKey as SlashArcNumericControlKey;
+
+      input.value = `${slashArc[key]}`;
+      input.disabled = false;
+    });
+
+    document.querySelectorAll<HTMLInputElement>("input[data-animation-slash-arc-number-key]").forEach((input) => {
+      const key = input.dataset.animationSlashArcNumberKey as SlashArcNumericControlKey;
+      const value = slashArc[key];
+
+      input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+      input.disabled = false;
+    });
+  } else {
+    document.querySelectorAll<HTMLInputElement>("input[data-animation-slash-arc-key], input[data-animation-slash-arc-number-key]").forEach((input) => {
+      input.disabled = true;
+    });
+  }
+
+  document.querySelectorAll<HTMLInputElement>("input[data-ward-shield-key]").forEach((input) => {
+    const key = input.dataset.wardShieldKey as WardShieldNumericControlKey;
+    const control = getWardShieldNumericControlConfig(key);
+
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
+    input.value = `${debugTuning.wardShield[key]}`;
+    input.disabled = !canEditWard;
+  });
+
+  document.querySelectorAll<HTMLInputElement>("input[data-ward-shield-number-key]").forEach((input) => {
+    const key = input.dataset.wardShieldNumberKey as WardShieldNumericControlKey;
+    const control = getWardShieldNumericControlConfig(key);
+    const value = debugTuning.wardShield[key];
+
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+    input.disabled = !canEditWard;
+  });
+}
+
+function syncAnimationViewReadout(readout: HTMLElement | null): void {
+  if (!readout) {
+    return;
+  }
+
+  readout.textContent = [
+    `zoom ${debugTuning.animationEditorZoom.toFixed(2)}x`,
+    `x ${Math.round(debugTuning.animationEditorOffsetX)}`,
+    `y ${Math.round(debugTuning.animationEditorOffsetY)}`,
+  ].join(" | ");
 }
 
 function getAnimationImpactKeyframe(animation: BodyAnimationTuning): BodyAnimationKeyframe | undefined {

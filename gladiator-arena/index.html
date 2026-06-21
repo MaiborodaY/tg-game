@@ -300,15 +300,51 @@
                   </div>
                 </div>
               </article>
-              <div class="combat-debuff-tray" aria-label="Active combat debuffs">
-                <span id="playerPoison" class="poison-status combat-debuff-tray__item" hidden>
-                  <img alt="" draggable="false" />
-                  <span>0</span>
-                </span>
-                <span id="enemyPoison" class="poison-status combat-debuff-tray__item" hidden>
-                  <img alt="" draggable="false" />
-                  <span>0</span>
-                </span>
+              <div class="combat-status-line" aria-label="Active combat effects">
+                <div class="combat-status-owner combat-status-owner--player" aria-label="Player active combat effects">
+                  <div class="combat-buff-tray" aria-label="Player active combat buffs">
+                    <span id="playerWard" class="combat-status ward-status combat-buff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                    <span id="playerPreciseStrike" class="combat-status precise-strike-status combat-buff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                    <span id="playerDoubleStrike" class="combat-status double-strike-status combat-buff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                  </div>
+                  <div class="combat-debuff-tray" aria-label="Player active combat debuffs">
+                    <span id="playerPoison" class="combat-status poison-status combat-debuff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="combat-status-owner combat-status-owner--enemy" aria-label="Enemy active combat effects">
+                  <div class="combat-buff-tray" aria-label="Enemy active combat buffs">
+                    <span id="enemyWard" class="combat-status ward-status combat-buff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                    <span id="enemyPreciseStrike" class="combat-status precise-strike-status combat-buff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                    <span id="enemyDoubleStrike" class="combat-status double-strike-status combat-buff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                  </div>
+                  <div class="combat-debuff-tray" aria-label="Enemy active combat debuffs">
+                    <span id="enemyPoison" class="combat-status poison-status combat-debuff-tray__item" hidden>
+                      <img alt="" draggable="false" />
+                      <span>0</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             </section>
             <section class="fighters-strip arena-fighters-strip flask-hud" aria-label="Fighter stats">

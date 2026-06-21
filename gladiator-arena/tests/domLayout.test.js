@@ -43,17 +43,40 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(mainSource.includes("loot,"), true);
 });
 
-test("battle hud exposes poison status with the poison scroll shop icon", () => {
+test("battle hud exposes combat buff and debuff status trays with scroll icons", () => {
+  assert.equal(html.includes('class="combat-status-line"'), true);
+  assert.equal(html.includes('class="combat-buff-tray"'), true);
   assert.equal(html.includes('class="combat-debuff-tray"'), true);
   assert.equal(html.includes('id="classicPlayerPoison"'), false);
   assert.equal(html.includes('id="classicEnemyPoison"'), false);
+  assert.equal(html.includes('id="playerWard"'), true);
+  assert.equal(html.includes('id="playerPreciseStrike"'), true);
+  assert.equal(html.includes('id="playerDoubleStrike"'), true);
   assert.equal(html.includes('id="playerPoison"'), true);
+  assert.equal(html.includes('id="enemyWard"'), true);
+  assert.equal(html.includes('id="enemyPreciseStrike"'), true);
+  assert.equal(html.includes('id="enemyDoubleStrike"'), true);
   assert.equal(html.includes('id="enemyPoison"'), true);
+  assert.equal(domUiSource.includes("HERO_WARD_SCROLL_ITEM_ID"), true);
+  assert.equal(domUiSource.includes("HERO_PRECISE_STRIKE_SCROLL_ITEM_ID"), true);
+  assert.equal(domUiSource.includes("HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID"), true);
   assert.equal(domUiSource.includes("HERO_POISON_SCROLL_ITEM_ID"), true);
+  assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_WARD_SCROLL_ITEM_ID])"), true);
+  assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_PRECISE_STRIKE_SCROLL_ITEM_ID])"), true);
+  assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID])"), true);
   assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_POISON_SCROLL_ITEM_ID])"), true);
+  assert.equal(domUiSource.includes("getFighterWardHits"), true);
+  assert.equal(domUiSource.includes("getFighterPreciseStrikeHits"), true);
+  assert.equal(domUiSource.includes("getFighterDoubleStrikeHits"), true);
   assert.equal(domUiSource.includes("getFighterPoisonTurns"), true);
+  assert.equal(stylesSource.includes(".combat-status-line"), true);
+  assert.equal(stylesSource.includes(".combat-buff-tray"), true);
+  assert.equal(stylesSource.includes(".ward-status"), true);
+  assert.equal(stylesSource.includes(".precise-strike-status"), true);
+  assert.equal(stylesSource.includes(".double-strike-status"), true);
   assert.equal(stylesSource.includes(".poison-status"), true);
   assert.equal(stylesSource.includes(".combat-debuff-tray"), true);
+  assert.equal(stylesSource.includes("justify-content: flex-start;"), true);
   assert.equal(stylesSource.includes("justify-content: flex-end;"), true);
 });
 

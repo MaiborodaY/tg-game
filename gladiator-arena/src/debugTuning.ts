@@ -309,6 +309,18 @@ export interface SlashArcTuning {
   sweep: number;
 }
 
+export interface WardShieldTuning {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  alpha: number;
+  fadeInMs: number;
+  castDurationMs: number;
+  absorbDurationMs: number;
+  startScale: number;
+  endScale: number;
+}
+
 export interface ActionButtonOffsetTuning {
   x: number;
   y: number;
@@ -581,6 +593,7 @@ export interface ArenaDebugTuning {
   bodyAnimations: Record<BodyAnimationKey, BodyAnimationTuning>;
   selectedSlashArc: SlashArcAttackKey;
   slashArcs: Record<SlashArcAttackKey, SlashArcTuning>;
+  wardShield: WardShieldTuning;
 }
 
 export const defaultRigPartTuning: RigPartTuning = {
@@ -10526,6 +10539,18 @@ export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {
   },
 };
 
+export const DEFAULT_WARD_SHIELD_TUNING: WardShieldTuning = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: 60,
+  alpha: 0.78,
+  fadeInMs: 110,
+  castDurationMs: 760,
+  absorbDurationMs: 520,
+  startScale: 0.88,
+  endScale: 1.08,
+};
+
 const DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS: Record<ArenaBackgroundLayerRole, ArenaBackgroundLayerTuning> = {
   back: {
     layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
@@ -11536,6 +11561,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   bodyAnimations: cloneBodyAnimations(DEFAULT_BODY_ANIMATIONS),
   selectedSlashArc: "light",
   slashArcs: cloneSlashArcs(DEFAULT_SLASH_ARCS),
+  wardShield: { ...DEFAULT_WARD_SHIELD_TUNING },
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -11557,6 +11583,14 @@ export function hydrateDebugTuningFromStorage(): void {
   debugUndoStack.length = 0;
   activeDebugUndoGroupSnapshot = undefined;
   shouldPersistDebugTuning = true;
+}
+
+export function clearDebugTuningStorage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(storageKey);
 }
 
 export function updateDebugTuning(patch: Partial<ArenaDebugTuning>, options: DebugTuningUpdateOptions = {}): void {
@@ -11915,6 +11949,7 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     bodyAnimations,
     selectedSlashArc: isSlashArcAttackKey(input.selectedSlashArc) ? input.selectedSlashArc : defaultDebugTuning.selectedSlashArc,
     slashArcs: normalizeSlashArcs(input.slashArcs),
+    wardShield: normalizeWardShield(input.wardShield, DEFAULT_WARD_SHIELD_TUNING),
   };
 }
 
@@ -12058,6 +12093,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     equipmentItems: cloneEquipmentItems(source.equipmentItems),
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
     slashArcs: cloneSlashArcs(source.slashArcs),
+    wardShield: { ...source.wardShield },
   };
 }
 
@@ -12786,6 +12822,22 @@ function normalizeSlashArc(input: unknown, fallback: SlashArcTuning): SlashArcTu
     endAngle: clampNumber(source.endAngle, -6.28, 6.28, fallback.endAngle),
     angle: clampNumber(source.angle, -180, 180, fallback.angle),
     sweep: clampNumber(source.sweep, -180, 180, fallback.sweep),
+  };
+}
+
+function normalizeWardShield(input: unknown, fallback: WardShieldTuning): WardShieldTuning {
+  const source = typeof input === "object" && input !== null ? (input as Partial<WardShieldTuning>) : {};
+
+  return {
+    scale: clampNumber(source.scale, 0.2, 2.5, fallback.scale),
+    offsetX: clampNumber(source.offsetX, -240, 240, fallback.offsetX),
+    offsetY: clampNumber(source.offsetY, -240, 240, fallback.offsetY),
+    alpha: clampNumber(source.alpha, 0.1, 1, fallback.alpha),
+    fadeInMs: clampNumber(source.fadeInMs, 10, 1000, fallback.fadeInMs),
+    castDurationMs: clampNumber(source.castDurationMs, 30, 2000, fallback.castDurationMs),
+    absorbDurationMs: clampNumber(source.absorbDurationMs, 30, 2000, fallback.absorbDurationMs),
+    startScale: clampNumber(source.startScale, 0.1, 3, fallback.startScale),
+    endScale: clampNumber(source.endScale, 0.1, 3, fallback.endScale),
   };
 }
 

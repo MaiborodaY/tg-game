@@ -40,24 +40,11 @@
               </label>
               <div class="debug-animation-editor__weapon-grid" data-animation-workbench-variant-weapons></div>
             </fieldset>
-            <div class="debug-animation-editor__mode-buttons" role="group" aria-label="Animation edit mode">
-              <button class="debug-panel__reset" type="button" data-animation-edit-mode="poseA">Pose A</button>
-              <button class="debug-panel__reset" type="button" data-animation-edit-mode="poseB">Pose B</button>
-              <button class="debug-panel__reset" type="button" data-animation-edit-mode="keyframe">Key</button>
-              <button class="debug-panel__reset" type="button" data-animation-edit-mode="preview">Preview</button>
-            </div>
             <div class="debug-animation-editor__pose-actions">
               <button class="debug-panel__reset debug-animation-editor__reset-pose" type="button" data-animation-workbench-reset-pose>Reset Pose</button>
               <button class="debug-panel__reset" type="button" data-animation-workbench-apply-to-pose="pose-a">Apply to Pose A</button>
               <button class="debug-panel__reset" type="button" data-animation-workbench-apply-to-pose="pose-b">Apply to Pose B</button>
             </div>
-            <fieldset class="debug-animation-editor__fieldset">
-              <legend>View</legend>
-              <div class="debug-animation-editor__view-controls" data-animation-workbench-view-controls></div>
-              <div class="debug-animation-editor__actions">
-                <button class="debug-panel__reset" type="button" data-animation-workbench-reset-view>Reset view</button>
-              </div>
-            </fieldset>
             <fieldset class="debug-animation-editor__fieldset">
               <legend>Doll rotate</legend>
               <div class="debug-animation-editor__actions">
@@ -67,6 +54,9 @@
             </fieldset>
           </aside>
           <div class="debug-animation-editor__stage">
+            <div class="debug-animation-editor__view-readout" data-animation-workbench-view-readout aria-live="polite">
+              zoom 1.00x | x 0 | y 0
+            </div>
             <div id="debugAnimationViewer" class="debug-animation-viewer"></div>
           </div>
           <aside class="debug-animation-editor__inspector" aria-label="Animation inspector">
@@ -114,6 +104,30 @@
                 <select class="debug-animation-editor__select" data-animation-workbench-cast-prop-asset></select>
               </label>
               <div class="debug-animation-editor__rig-controls" data-animation-workbench-cast-prop-controls></div>
+            </fieldset>
+            <fieldset class="debug-animation-editor__fieldset" data-animation-workbench-vfx-panel>
+              <legend>VFX</legend>
+              <p class="debug-panel__status debug-animation-editor__vfx-empty" data-animation-workbench-vfx-empty>
+                Select light, medium, heavy, or scrollCast.
+              </p>
+              <div data-animation-workbench-slash-vfx-panel hidden>
+                <p class="debug-animation-editor__eyebrow">Slash arc</p>
+                <div class="debug-animation-editor__rig-controls" data-animation-workbench-slash-vfx-controls></div>
+                <div class="debug-animation-editor__actions">
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-preview-slash-vfx>Preview</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-reset-slash-vfx>Reset arc</button>
+                </div>
+              </div>
+              <div data-animation-workbench-ward-vfx-panel hidden>
+                <p class="debug-animation-editor__eyebrow">Ward shield</p>
+                <div class="debug-animation-editor__rig-controls" data-animation-workbench-ward-vfx-controls></div>
+                <div class="debug-animation-editor__actions">
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-preview-ward-vfx>Preview</button>
+                  <button class="debug-panel__reset" type="button" data-animation-workbench-reset-ward-vfx>Reset shield</button>
+                </div>
+              </div>
+              <button class="debug-panel__reset" type="button" data-animation-workbench-save-vfx-prod>Save VFX as prod</button>
+              <p class="debug-panel__status debug-animation-editor__status" data-animation-workbench-vfx-status aria-live="polite"></p>
             </fieldset>
             <details class="debug-animation-editor__details">
               <summary>Active parts</summary>
@@ -168,17 +182,11 @@
               </label>
               <div class="debug-animation-editor__timeline-button-row">
                 <div class="debug-animation-editor__timeline-actions">
-                  <button class="debug-panel__reset" type="button" data-animation-workbench-add-keyframe>Add Key</button>
                   <button class="debug-panel__reset" type="button" data-animation-workbench-duplicate-keyframe>Duplicate</button>
                   <button class="debug-panel__reset" type="button" data-animation-workbench-set-start>Set Start</button>
                   <button class="debug-panel__reset" type="button" data-animation-workbench-set-impact>Set Impact</button>
                   <button class="debug-panel__reset" type="button" data-animation-workbench-delete-keyframe>Delete</button>
                   <button class="debug-panel__reset" type="button" data-animation-workbench-full-reset>Full reset</button>
-                </div>
-                <div class="debug-animation-editor__timeline-actions debug-animation-editor__timeline-actions--jumps">
-                  <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0">A</button>
-                  <button class="debug-panel__reset" type="button" data-animation-workbench-jump="0.5">B</button>
-                  <button class="debug-panel__reset" type="button" data-animation-workbench-jump="1">Loop</button>
                 </div>
               </div>
             </div>
@@ -389,15 +397,51 @@
                     </div>
                   </div>
                 </article>
-                <div class="combat-debuff-tray" aria-label="Active combat debuffs">
-                  <span id="playerPoison" class="poison-status combat-debuff-tray__item" hidden>
-                    <img alt="" draggable="false" />
-                    <span>0</span>
-                  </span>
-                  <span id="enemyPoison" class="poison-status combat-debuff-tray__item" hidden>
-                    <img alt="" draggable="false" />
-                    <span>0</span>
-                  </span>
+                <div class="combat-status-line" aria-label="Active combat effects">
+                  <div class="combat-status-owner combat-status-owner--player" aria-label="Player active combat effects">
+                    <div class="combat-buff-tray" aria-label="Player active combat buffs">
+                      <span id="playerWard" class="combat-status ward-status combat-buff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                      <span id="playerPreciseStrike" class="combat-status precise-strike-status combat-buff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                      <span id="playerDoubleStrike" class="combat-status double-strike-status combat-buff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                    </div>
+                    <div class="combat-debuff-tray" aria-label="Player active combat debuffs">
+                      <span id="playerPoison" class="combat-status poison-status combat-debuff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="combat-status-owner combat-status-owner--enemy" aria-label="Enemy active combat effects">
+                    <div class="combat-buff-tray" aria-label="Enemy active combat buffs">
+                      <span id="enemyWard" class="combat-status ward-status combat-buff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                      <span id="enemyPreciseStrike" class="combat-status precise-strike-status combat-buff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                      <span id="enemyDoubleStrike" class="combat-status double-strike-status combat-buff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                    </div>
+                    <div class="combat-debuff-tray" aria-label="Enemy active combat debuffs">
+                      <span id="enemyPoison" class="combat-status poison-status combat-debuff-tray__item" hidden>
+                        <img alt="" draggable="false" />
+                        <span>0</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </section>
               <section class="fighters-strip arena-fighters-strip flask-hud" aria-label="Fighter stats">

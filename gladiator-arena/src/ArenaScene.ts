@@ -152,6 +152,7 @@ import {
   DEFAULT_FACE_PARTS,
   DEFAULT_RIG_PARTS,
   DEFAULT_SLASH_ARCS,
+  DEFAULT_WARD_SHIELD_TUNING,
   APPEARANCE_LAYER_KEYS,
   defaultBodyAnimationCastProp,
   defaultBodyAnimationRootOffset,
@@ -190,6 +191,7 @@ import {
   type RigPartTuning,
   type SlashArcAttackKey,
   type SlashArcTuning,
+  type WardShieldTuning,
 } from "./debugTuning";
 import { emitDebugCharacterEquipmentDelta, emitDebugCharacterEquipmentSelect } from "./debugCharacterEquipmentBridge";
 import { getPlayerSettings, subscribePlayerSettings, type PlayerSettings } from "./settingsMenu";
@@ -491,6 +493,7 @@ interface ArenaEffectPools {
   armorAbsorbPopups: ArenaIconTextPopupVisual[];
   armorBreakPopups: ArenaIconTextPopupVisual[];
   damageIconPopups: ArenaIconTextPopupVisual[];
+  poisonDamagePopups: ArenaIconTextPopupVisual[];
   damageBurstPopups: ArenaDamageBurstPopupVisual[];
   damageTextPopups: ArenaTextPopupVisual[];
   restRecoveryPopups: ArenaRestRecoveryPopupVisual[];
@@ -514,8 +517,6 @@ interface MeleeActionTiming {
 }
 
 interface ScrollCastActionTiming {
-  label: string;
-  color: string;
   propAssetKey: ScrollCastPropAssetKey;
   doneDelayMs: number;
   impactDelayMs: number;
@@ -691,6 +692,8 @@ const BLOCK_POPUP_SCREEN_SIZE = 88;
 const DAMAGE_HIT_POPUP_SCREEN_SIZE = 112;
 const DAMAGE_ARMOR_ABSORB_POPUP_SCREEN_SIZE = 108;
 const DAMAGE_ARMOR_BREAK_POPUP_SCREEN_SIZE = 112;
+const POISON_DAMAGE_POPUP_ICON_ASSET_KEY = "scroll-poison-01";
+const POISON_DAMAGE_POPUP_ICON_SCREEN_SIZE = 42;
 const REST_RECOVERY_POPUP_ICON_SCREEN_SIZE = 34;
 const REST_BODY_ANIMATION_SPEED_MULTIPLIER = 1;
 const REST_ZZZ_ICON_SCREEN_SIZE = 40;
@@ -713,26 +716,22 @@ const PROJECTILE_START_LOCAL_Y = -205;
 const PROJECTILE_TARGET_LOCAL_X = 44;
 const PROJECTILE_TARGET_LOCAL_Y = -250;
 const WARD_SHIELD_EFFECT_DEPTH = 35;
-const WARD_SHIELD_SCREEN_HEIGHT = 315;
+const WARD_SHIELD_BASE_SCREEN_HEIGHT = 315;
 const WARD_SHIELD_MIN_SCALE_MULTIPLIER = 0.76;
 const WARD_SHIELD_MAX_SCALE_MULTIPLIER = 1.12;
 const WARD_SHIELD_CENTER_Y_RATIO = 0.44;
-const WARD_SHIELD_ALPHA = 0.78;
-const WARD_SHIELD_FADE_IN_MS = 110;
-const WARD_SHIELD_CAST_DURATION_MS = 760;
-const WARD_SHIELD_ABSORB_DURATION_MS = 520;
 const MELEE_ACTION_TIMINGS: Record<AttackBodyAnimationKey, MeleeActionTiming> = {
   light: { impactProgress: 0.45, weaponSwingProgress: 0.45, weaponAngle: 28 },
   medium: { impactProgress: 0.48, weaponSwingProgress: 0.48, weaponAngle: 32 },
   heavy: { impactProgress: 0.52, weaponSwingProgress: 0.52, weaponAngle: 38 },
 };
 const SCROLL_CAST_ACTION_TIMINGS: Partial<Record<ActionId, ScrollCastActionTiming>> = {
-  scroll: { label: "SCROLL", color: "#d7f0ff", propAssetKey: "scroll-crack-armor-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
-  ward: { label: "WARD", color: "#b7f7ff", propAssetKey: "scroll-ward-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
-  preciseStrike: { label: "TRUE", color: "#fff0a8", propAssetKey: "scroll-precise-strike-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
-  doubleStrike: { label: "DOUBLE", color: "#ffd37a", propAssetKey: "scroll-double-strike-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
-  poison: { label: "TOXIN", color: "#b6ff72", propAssetKey: "scroll-poison-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
-  fireball: { label: "FIRE", color: "#ff9b38", propAssetKey: "scroll-fireball-01", doneDelayMs: 320, impactDelayMs: 170, impactProgress: 170 / 320 },
+  scroll: { propAssetKey: "scroll-crack-armor-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  ward: { propAssetKey: "scroll-ward-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  preciseStrike: { propAssetKey: "scroll-precise-strike-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  doubleStrike: { propAssetKey: "scroll-double-strike-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  poison: { propAssetKey: "scroll-poison-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  fireball: { propAssetKey: "scroll-fireball-01", doneDelayMs: 320, impactDelayMs: 170, impactProgress: 170 / 320 },
 };
 const LUNGE_ACTION_IMPACT_PROGRESS = 0.58;
 const DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE = 1.6;
@@ -1250,6 +1249,7 @@ interface PlayerEquipmentChangeDetail {
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
+let debugAnimationScene: DebugCharacterScene | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
 let activePlayerAppearance: HeroAppearance = createDefaultHeroAppearance();
 let activePlayerBodyScaleBonus = 0;
@@ -3560,6 +3560,10 @@ interface DebugCharacterViewerOptions {
   mode?: "debug" | "shop" | "animation";
 }
 
+export function previewDebugAnimationWardShield(): void {
+  debugAnimationScene?.previewWardShield();
+}
+
 class DebugCharacterScene extends Phaser.Scene {
   private fighter?: FighterVisual;
   private dragState?: DebugRigPartDragState;
@@ -3583,10 +3587,16 @@ class DebugCharacterScene extends Phaser.Scene {
 
   preload(): void {
     preloadPaperDollAssets(this);
+    if (this.viewerMode === "animation") {
+      this.load.image(WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL);
+    }
   }
 
   create(): void {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
+    if (this.viewerMode === "animation") {
+      debugAnimationScene = this;
+    }
     if (this.viewerMode === "debug") {
       drawDebugCharacterBackdrop(this);
     }
@@ -3629,9 +3639,20 @@ class DebugCharacterScene extends Phaser.Scene {
       this.unsubscribePlayerEquipment?.();
       this.unsubscribePlayerSettings?.();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.handleResize, this);
+      if (debugAnimationScene === this) {
+        debugAnimationScene = undefined;
+      }
     });
     this.sync();
     this.syncPlayerEquipment();
+  }
+
+  previewWardShield(): void {
+    if (this.viewerMode !== "animation" || !this.fighter) {
+      return;
+    }
+
+    void playWardShieldEffect(this, this.fighter, "cast", { force: true });
   }
 
   update(time: number): void {
@@ -9414,6 +9435,14 @@ function getActiveSlashArc(key: SlashArcAttackKey): SlashArcTuning {
   return DEFAULT_SLASH_ARCS[key];
 }
 
+function getActiveWardShieldTuning(): WardShieldTuning {
+  if (isDebugTuningActive()) {
+    return debugTuning.wardShield ?? DEFAULT_WARD_SHIELD_TUNING;
+  }
+
+  return DEFAULT_WARD_SHIELD_TUNING;
+}
+
 function getSelectedDebugBodyAnimation(): BodyAnimationTuning {
   return getSelectedDebugBodyAnimationTarget()?.animation ?? DEFAULT_BODY_ANIMATIONS[debugTuning.selectedBodyAnimation];
 }
@@ -9873,8 +9902,6 @@ function animateScrollCastAction(
 ): ActionAnimationHandle {
   const animation = pickActiveBodyAnimationVariant("scrollCast", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
 
-  showFloatingText(target, actor.body.x, actor.body.y - 120, timing.label, timing.color);
-
   if (!actor.paperDollRig || !animation.enabled || getArenaAnimationAmount() <= 0) {
     resetFighterBodyIdleAnimation(actor, target.time.now);
 
@@ -9899,12 +9926,10 @@ function animateScrollCastAction(
   const projectileAnimation = actionId === "fireball"
     ? playFireballProjectileFromScroll(target, actor, defender, direction, impactDelayMs)
     : undefined;
-  if (actionId === "ward" && areArenaVfxEnabled()) {
-    target.time.delayedCall(impactDelayMs, () => {
-      void playWardShieldEffect(target, actor, WARD_SHIELD_CAST_DURATION_MS);
-    });
-  }
   const impact = projectileAnimation?.impact ?? createSceneDelay(target, impactDelayMs);
+  if (actionId === "ward") {
+    void impact.then(() => playWardShieldEffect(target, actor, "cast"));
+  }
 
   return {
     done: Promise.all([bodyAnimation.done, projectileAnimation?.done ?? Promise.resolve()]).then(() => undefined),
@@ -10073,7 +10098,7 @@ function playCombatHitResultAnimation(
 function playPoisonDamageAnimation(target: Phaser.Scene, defender: FighterVisual, damage: number): Promise<void> {
   const point = getFighterHeadPopupPoint(target, defender, getDamagePopupHeadOffsetY());
 
-  showFloatingText(target, point.x, point.y, `POISON -${damage}`, "#b6ff72");
+  showPoisonDamagePopup(target, point.x, point.y, damage);
 
   return createSceneDelay(target, 320);
 }
@@ -10273,6 +10298,7 @@ function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
       armorAbsorbPopups: [],
       armorBreakPopups: [],
       damageIconPopups: [],
+      poisonDamagePopups: [],
       damageBurstPopups: [],
       damageTextPopups: [],
       restRecoveryPopups: [],
@@ -10482,6 +10508,26 @@ function acquireDamageIconPopup(target: Phaser.Scene): ArenaIconTextPopupVisual 
 
 function releaseDamageIconPopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
   releaseIconTextPopup(target, popup, getArenaEffectPools(target).damageIconPopups);
+}
+
+function acquirePoisonDamagePopup(target: Phaser.Scene): ArenaIconTextPopupVisual {
+  const pool = getArenaEffectPools(target).poisonDamagePopups;
+  const popup = pool.pop() ?? createIconTextPopup(target, POISON_DAMAGE_POPUP_ICON_ASSET_KEY, -6, {
+    color: "#efffc7",
+    fontFamily: "Georgia",
+    fontSize: "30px",
+    fontStyle: "900",
+    stroke: "#243b17",
+    strokeThickness: 5,
+  });
+
+  resetIconTextPopup(target, popup);
+
+  return popup;
+}
+
+function releasePoisonDamagePopup(target: Phaser.Scene, popup: ArenaIconTextPopupVisual): void {
+  releaseIconTextPopup(target, popup, getArenaEffectPools(target).poisonDamagePopups);
 }
 
 function acquireDamageTextPopup(target: Phaser.Scene): ArenaTextPopupVisual {
@@ -10751,42 +10797,50 @@ function drawSlashArc(graphics: Phaser.GameObjects.Graphics, config: SlashArcTun
   graphics.strokePath();
 }
 
-function playWardShieldEffect(target: Phaser.Scene, fighter: FighterVisual, durationMs = WARD_SHIELD_CAST_DURATION_MS): Promise<void> {
-  if (!areArenaVfxEnabled() || !target.textures.exists(WARD_SHIELD_EFFECT_ASSET_KEY)) {
+function playWardShieldEffect(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  phase: "cast" | "absorb" = "cast",
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if ((!options.force && !areArenaVfxEnabled()) || !target.textures.exists(WARD_SHIELD_EFFECT_ASSET_KEY)) {
     return Promise.resolve();
   }
 
+  const config = getActiveWardShieldTuning();
+  const durationMs = phase === "absorb" ? config.absorbDurationMs : config.castDurationMs;
   const source = target.textures.get(WARD_SHIELD_EFFECT_ASSET_KEY).getSourceImage() as { height?: number } | undefined;
   const sourceHeight = Math.max(1, source?.height ?? 320);
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = 1 / layerScale;
-  const displayHeight = getWardShieldDisplayHeight(fighter);
+  const displayHeight = getWardShieldDisplayHeight(fighter, config);
   const shieldScale = (displayHeight / sourceHeight) * fixedScreenScale;
-  const point = getFighterWardShieldEffectPoint(target, fighter, displayHeight);
+  const point = getFighterWardShieldEffectPoint(target, fighter, displayHeight, config);
   const shield = acquireWardShield(target);
-  const fadeOutDurationMs = Math.max(1, durationMs - WARD_SHIELD_FADE_IN_MS);
+  const fadeInMs = Math.min(config.fadeInMs, Math.max(1, durationMs - 1));
+  const fadeOutDurationMs = Math.max(1, durationMs - fadeInMs);
 
   shield.setPosition(point.x, point.y);
   shield.setDepth(WARD_SHIELD_EFFECT_DEPTH);
-  shield.setScale(shieldScale * 0.88);
+  shield.setScale(shieldScale * config.startScale);
   shield.setAlpha(0);
   shield.setBlendMode(Phaser.BlendModes.ADD);
 
   return new Promise<void>((resolve) => {
     target.tweens.add({
       targets: shield,
-      alpha: WARD_SHIELD_ALPHA,
+      alpha: config.alpha,
       scaleX: shieldScale,
       scaleY: shieldScale,
-      duration: WARD_SHIELD_FADE_IN_MS,
+      duration: fadeInMs,
       ease: "Quad.easeOut",
     });
-    target.time.delayedCall(WARD_SHIELD_FADE_IN_MS, () => {
+    target.time.delayedCall(fadeInMs, () => {
       target.tweens.add({
         targets: shield,
         alpha: 0,
-        scaleX: shieldScale * 1.08,
-        scaleY: shieldScale * 1.08,
+        scaleX: shieldScale * config.endScale,
+        scaleY: shieldScale * config.endScale,
         duration: fadeOutDurationMs,
         ease: "Sine.easeOut",
         onComplete: () => {
@@ -10798,27 +10852,34 @@ function playWardShieldEffect(target: Phaser.Scene, fighter: FighterVisual, dura
   });
 }
 
-function getWardShieldDisplayHeight(fighter: FighterVisual): number {
+function getWardShieldDisplayHeight(fighter: FighterVisual, config: WardShieldTuning): number {
   const scaleMultiplier = clampNumber(fighter.debugScale, WARD_SHIELD_MIN_SCALE_MULTIPLIER, WARD_SHIELD_MAX_SCALE_MULTIPLIER);
 
-  return WARD_SHIELD_SCREEN_HEIGHT * scaleMultiplier;
+  return WARD_SHIELD_BASE_SCREEN_HEIGHT * config.scale * scaleMultiplier;
 }
 
-function getFighterWardShieldEffectPoint(target: Phaser.Scene, fighter: FighterVisual, displayHeight: number): { x: number; y: number } {
+function getFighterWardShieldEffectPoint(
+  target: Phaser.Scene,
+  fighter: FighterVisual,
+  displayHeight: number,
+  config: WardShieldTuning,
+): { x: number; y: number } {
   const bodyMatrix = fighter.body.getWorldTransformMatrix();
   const worldX = bodyMatrix.getX(0, 0);
   const worldY = bodyMatrix.getY(0, 0);
   const effectsLayer = getArenaEffectsLayer(target);
   const layerScale = getArenaEffectsLayerScale(target);
   const centerOffsetY = (displayHeight * WARD_SHIELD_CENTER_Y_RATIO) / layerScale;
+  const offsetX = config.offsetX / layerScale;
+  const offsetY = config.offsetY / layerScale;
 
   if (!effectsLayer) {
-    return { x: worldX, y: worldY - centerOffsetY };
+    return { x: worldX + offsetX, y: worldY - centerOffsetY + offsetY };
   }
 
   const localPoint = effectsLayer.getWorldTransformMatrix().applyInverse(worldX, worldY);
 
-  return { x: localPoint.x, y: localPoint.y - centerOffsetY };
+  return { x: localPoint.x + offsetX, y: localPoint.y - centerOffsetY + offsetY };
 }
 
 function showFloatingText(target: Phaser.Scene, x: number, y: number, text: string, color: string): void {
@@ -10875,10 +10936,7 @@ function showBlockPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual,
 }
 
 function showWardAbsorbPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual): void {
-  const point = getFighterHeadPopupPoint(target, fighter, getBlockPopupHeadOffsetY());
-
-  void playWardShieldEffect(target, fighter, WARD_SHIELD_ABSORB_DURATION_MS);
-  showFloatingText(target, point.x, point.y, "WARD", "#b7f7ff");
+  void playWardShieldEffect(target, fighter, "absorb");
 }
 
 function showDamagePopupFromFighter(
@@ -11173,6 +11231,46 @@ function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount:
     delay: 180,
     ease: "Quad.easeOut",
     onComplete: () => releaseArmorBreakPopup(target, popup),
+  });
+}
+
+function showPoisonDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number): void {
+  if (!target.textures.exists(POISON_DAMAGE_POPUP_ICON_ASSET_KEY)) {
+    return;
+  }
+
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const popupScale = getDamagePopupScale();
+  const liftY = 36 / layerScale;
+  const source = target.textures.get(POISON_DAMAGE_POPUP_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
+  const sourceWidth = Math.max(1, source?.width ?? 256);
+  const endScale = fixedScreenScale * popupScale;
+  const startScale = endScale * 0.74;
+  const popup = acquirePoisonDamagePopup(target);
+
+  popup.container.setPosition(x, y).setDepth(40);
+  setPhaserTextIfChanged(popup.label, `${amount}`);
+  popup.icon.setScale(POISON_DAMAGE_POPUP_ICON_SCREEN_SIZE / sourceWidth);
+  popup.container.setScale(startScale);
+  popup.container.setAngle(-4);
+
+  target.tweens.add({
+    targets: popup.container,
+    scale: endScale,
+    angle: 2,
+    duration: 140,
+    ease: "Back.easeOut",
+  });
+
+  target.tweens.add({
+    targets: popup.container,
+    y: y - liftY,
+    alpha: 0,
+    duration: 700,
+    delay: 180,
+    ease: "Quad.easeOut",
+    onComplete: () => releasePoisonDamagePopup(target, popup),
   });
 }
 

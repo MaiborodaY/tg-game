@@ -552,8 +552,12 @@ test("bow attacks and damage reactions use dedicated body animations", () => {
 test("scroll actions use the editable scroll cast body animation", () => {
   assert.equal(arenaSceneSource.includes("SCROLL_CAST_ACTION_TIMINGS"), true);
   assert.equal(arenaSceneSource.includes("function animateScrollCastAction"), true);
-  assert.equal(arenaSceneSource.includes('scroll: { label: "SCROLL"'), true);
-  assert.equal(arenaSceneSource.includes('fireball: { label: "FIRE"'), true);
+  assert.equal(arenaSceneSource.includes('scroll: { propAssetKey: "scroll-crack-armor-01"'), true);
+  assert.equal(arenaSceneSource.includes('fireball: { propAssetKey: "scroll-fireball-01"'), true);
+  assert.equal(arenaSceneSource.includes('label: "SCROLL"'), false);
+  assert.equal(arenaSceneSource.includes('label: "FIRE"'), false);
+  assert.equal(arenaSceneSource.includes("timing.label"), false);
+  assert.equal(arenaSceneSource.includes("timing.color"), false);
   assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-crack-armor-01"'), true);
   assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-fireball-01"'), true);
   assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-ward-01"'), true);
@@ -595,19 +599,25 @@ test("prod body animations use the active body preset tuning", () => {
   assert.equal(activeAnimationSource.includes("return DEFAULT_BODY_ANIMATIONS[key];"), false);
 });
 
-test("ward scroll casts and absorbs show a shield effect around the fighter", () => {
+test("ward shield VFX plays in gameplay and animation debug preview", () => {
   assert.equal(assetsSource.includes("WARD_SHIELD_EFFECT_ASSET_KEY"), true);
   assert.equal(assetsSource.includes("./assets/ui/effects/ward.webp"), true);
   assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/effects/ward.webp")), true);
   assert.ok(statSync(resolve(currentDir, "../src/assets/ui/effects/ward.webp")).size < 20 * 1024);
   assert.equal(arenaSceneSource.includes("target.load.image(WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL);"), true);
-  assert.equal(arenaSceneSource.includes("WARD_SHIELD_EFFECT_ASSET_URL"), true);
-  assert.equal(arenaSceneSource.includes('actionId === "ward" && areArenaVfxEnabled()'), true);
-  assert.equal(arenaSceneSource.includes("playWardShieldEffect(target, actor, WARD_SHIELD_CAST_DURATION_MS)"), true);
-  assert.equal(arenaSceneSource.includes("void playWardShieldEffect(target, fighter, WARD_SHIELD_ABSORB_DURATION_MS);"), true);
+  assert.equal(arenaSceneSource.includes("WARD_SHIELD_EFFECT_ASSET_URL,"), true);
+  assert.equal(arenaSceneSource.includes('void impact.then(() => playWardShieldEffect(target, actor, "cast"));'), true);
+  assert.equal(arenaSceneSource.includes('void playWardShieldEffect(target, fighter, "absorb");'), true);
+  assert.equal(arenaSceneSource.includes("this.load.image(WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("previewDebugAnimationWardShield"), true);
+  assert.equal(arenaSceneSource.includes("debugAnimationScene?.previewWardShield();"), true);
+  assert.equal(arenaSceneSource.includes('void playWardShieldEffect(this, this.fighter, "cast", { force: true });'), true);
+  assert.equal(arenaSceneSource.includes("DEFAULT_WARD_SHIELD_TUNING"), true);
+  assert.equal(arenaSceneSource.includes("debugTuning.wardShield ?? DEFAULT_WARD_SHIELD_TUNING"), true);
+  assert.equal(arenaSceneSource.includes("previewWardShield()"), true);
   assert.equal(arenaSceneSource.includes("function playWardShieldEffect("), true);
   assert.equal(arenaSceneSource.includes("function getFighterWardShieldEffectPoint("), true);
-  assert.equal(arenaSceneSource.includes("WARD_SHIELD_SCREEN_HEIGHT"), true);
+  assert.equal(arenaSceneSource.includes("WARD_SHIELD_BASE_SCREEN_HEIGHT"), true);
   assert.equal(arenaSceneSource.includes("WARD_SHIELD_CENTER_Y_RATIO"), true);
   assert.equal(optimizeAssetsSource.includes("ui\\/effects\\/ward\\.png"), true);
 });
@@ -1233,9 +1243,16 @@ test("double strike queues separate combat result popups per impact", () => {
 test("poison ticks show a combat result popup without consuming ward visuals", () => {
   assert.equal(arenaSceneSource.includes("lastPlayerPoisonDamage"), true);
   assert.equal(arenaSceneSource.includes("lastEnemyPoisonDamage"), true);
-  assert.equal(arenaSceneSource.includes('poison: { label: "TOXIN"'), true);
+  assert.equal(arenaSceneSource.includes('poison: { propAssetKey: "scroll-poison-01"'), true);
   assert.equal(arenaSceneSource.includes("playPoisonDamageAnimation"), true);
-  assert.equal(arenaSceneSource.includes("`POISON -${damage}`"), true);
+  assert.equal(arenaSceneSource.includes("POISON_DAMAGE_POPUP_ICON_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes('const POISON_DAMAGE_POPUP_ICON_ASSET_KEY = "scroll-poison-01";'), true);
+  assert.equal(arenaSceneSource.includes("showPoisonDamagePopup(target, point.x, point.y, damage);"), true);
+  assert.equal(arenaSceneSource.includes("poisonDamagePopups: ArenaIconTextPopupVisual[];"), true);
+  assert.equal(arenaSceneSource.includes("poisonDamagePopups: []"), true);
+  assert.equal(arenaSceneSource.includes("acquirePoisonDamagePopup"), true);
+  assert.equal(arenaSceneSource.includes("releasePoisonDamagePopup"), true);
+  assert.equal(arenaSceneSource.includes("`POISON -${damage}`"), false);
 });
 
 test("armor damage uses absorb and break icon popups", () => {

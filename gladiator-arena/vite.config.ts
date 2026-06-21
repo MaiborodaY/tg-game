@@ -707,6 +707,7 @@ type AppearanceLayerUpdates = Record<AppearanceLayerKey, AppearanceLayerTuning>;
 type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
+type WardShieldUpdates = WardShieldTuning;
 type ActionButtonOffsetUpdates = Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
 type ClassicActionButtonSlotUpdates = Record<ClassicActionWheelMode, Record<ClassicActionButtonSlotKey, ClassicActionButtonSlotTuning>>;
 
@@ -722,6 +723,18 @@ interface SlashArcTuning {
   endAngle: number;
   angle: number;
   sweep: number;
+}
+
+interface WardShieldTuning {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  alpha: number;
+  fadeInMs: number;
+  castDurationMs: number;
+  absorbDurationMs: number;
+  startScale: number;
+  endScale: number;
 }
 
 interface ActionButtonOffsetTuning {
@@ -1018,6 +1031,7 @@ function saveProdDefaultsPlugin(): Plugin {
             generatedEquipmentItemUpdates,
           );
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
+          const wardShieldUpdates = pickWardShieldDefaultUpdates(payload);
           const actionButtonOffsetUpdates = pickActionButtonOffsetDefaultUpdates(payload);
           const classicActionButtonSlotUpdates = pickClassicActionButtonSlotDefaultUpdates(payload);
           const [layoutSource, combatSource, debugTuningSource, settingsMenuSource] = await Promise.all([
@@ -1045,6 +1059,7 @@ function saveProdDefaultsPlugin(): Plugin {
           nextDebugTuningSource = applyEquipmentDefaultUpdates(nextDebugTuningSource, equipmentUpdates);
           nextDebugTuningSource = applyEquipmentItemDefaultUpdates(nextDebugTuningSource, equipmentItemUpdates);
           nextDebugTuningSource = applySlashArcDefaultUpdates(nextDebugTuningSource, slashArcUpdates);
+          nextDebugTuningSource = applyWardShieldDefaultUpdates(nextDebugTuningSource, wardShieldUpdates);
           nextDebugTuningSource = applyDebugTuningDefaultUpdates(nextDebugTuningSource, debugTuningDefaultUpdates);
 
           await Promise.all([
@@ -1058,7 +1073,7 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(bodyPartLayerUpdates).length} body art presets, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, and ${Object.keys(slashArcUpdates).length} slash effect defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(bodyPartLayerUpdates).length} body art presets, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, ${Object.keys(slashArcUpdates).length} slash effect defaults, and ward shield defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
@@ -1073,10 +1088,37 @@ function saveProdDefaultsPlugin(): Plugin {
               Object.keys(equipmentUpdates).length +
               Object.keys(equipmentItemUpdates).length +
               Object.keys(generatedEquipmentItemUpdates).length +
-              Object.keys(slashArcUpdates).length,
+              Object.keys(slashArcUpdates).length +
+              1,
           });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod defaults." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/save-prod-vfx-defaults", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save prod VFX defaults." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
+          const wardShieldUpdates = pickWardShieldDefaultUpdates(payload);
+          const source = await readFile(debugTuningUrl, "utf8");
+          let nextSource = applySlashArcDefaultUpdates(source, slashArcUpdates);
+
+          nextSource = applyWardShieldDefaultUpdates(nextSource, wardShieldUpdates);
+
+          await writeFile(debugTuningUrl, nextSource, "utf8");
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, {
+            message: `Saved ${Object.keys(slashArcUpdates).length} slash effect defaults and ward shield defaults to prod.`,
+            updated: Object.keys(slashArcUpdates).length + 1,
+          });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod VFX defaults." });
         }
       });
 
@@ -2089,6 +2131,30 @@ export function pickSlashArcDefaultUpdates(payload: unknown): SlashArcUpdates {
   }
 
   return Object.fromEntries(slashArcAttackKeys.map((key) => [key, readSlashArcTuning(slashArcs, key)])) as SlashArcUpdates;
+}
+
+export function applyWardShieldDefaultUpdates(source: string, updates: WardShieldUpdates): string {
+  const pattern = /export const DEFAULT_WARD_SHIELD_TUNING: WardShieldTuning = (?:\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_WARD_SHIELD_TUNING in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatWardShieldDefault(updates));
+}
+
+export function pickWardShieldDefaultUpdates(payload: unknown): WardShieldUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const wardShield = (payload as { wardShield?: unknown }).wardShield;
+
+  if (!wardShield || typeof wardShield !== "object" || Array.isArray(wardShield)) {
+    throw new Error("Expected wardShield in debug tuning payload.");
+  }
+
+  return readWardShieldTuning(wardShield);
 }
 
 export function applyActionButtonOffsetDefaultUpdates(source: string, updates: ActionButtonOffsetUpdates): string {
@@ -5150,6 +5216,22 @@ function formatSlashArcDefaults(updates: SlashArcUpdates): string {
   return `export const DEFAULT_SLASH_ARCS: Record<SlashArcAttackKey, SlashArcTuning> = {\n${rows.join("\n")}\n};`;
 }
 
+function formatWardShieldDefault(updates: WardShieldUpdates): string {
+  return [
+    "export const DEFAULT_WARD_SHIELD_TUNING: WardShieldTuning = {",
+    `  scale: ${formatNumber(updates.scale)},`,
+    `  offsetX: ${formatNumber(updates.offsetX)},`,
+    `  offsetY: ${formatNumber(updates.offsetY)},`,
+    `  alpha: ${formatNumber(updates.alpha)},`,
+    `  fadeInMs: ${formatNumber(updates.fadeInMs)},`,
+    `  castDurationMs: ${formatNumber(updates.castDurationMs)},`,
+    `  absorbDurationMs: ${formatNumber(updates.absorbDurationMs)},`,
+    `  startScale: ${formatNumber(updates.startScale)},`,
+    `  endScale: ${formatNumber(updates.endScale)},`,
+    "};",
+  ].join("\n");
+}
+
 function formatActionButtonOffsetDefaults(updates: ActionButtonOffsetUpdates): string {
   const rows = actionButtonOffsetKeys.map((key) => {
     const offset = updates[key];
@@ -5806,6 +5888,22 @@ function readSlashArcTuning(slashArcs: object, key: SlashArcAttackKey): SlashArc
   };
 }
 
+function readWardShieldTuning(wardShield: object): WardShieldTuning {
+  const tuning = wardShield as Partial<Record<keyof WardShieldTuning, unknown>>;
+
+  return {
+    scale: readFiniteWardShieldNumber(tuning, "scale"),
+    offsetX: readFiniteWardShieldNumber(tuning, "offsetX"),
+    offsetY: readFiniteWardShieldNumber(tuning, "offsetY"),
+    alpha: readFiniteWardShieldNumber(tuning, "alpha"),
+    fadeInMs: readFiniteWardShieldNumber(tuning, "fadeInMs"),
+    castDurationMs: readFiniteWardShieldNumber(tuning, "castDurationMs"),
+    absorbDurationMs: readFiniteWardShieldNumber(tuning, "absorbDurationMs"),
+    startScale: readFiniteWardShieldNumber(tuning, "startScale"),
+    endScale: readFiniteWardShieldNumber(tuning, "endScale"),
+  };
+}
+
 function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey: string, fieldName: keyof RigPartTuning): number {
   const value = payload[fieldName];
 
@@ -5887,6 +5985,16 @@ function readFiniteSlashArcNumber(payload: Partial<Record<keyof SlashArcTuning, 
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid slash arc tuning value: ${arcKey}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteWardShieldNumber(payload: Partial<Record<keyof WardShieldTuning, unknown>>, fieldName: keyof WardShieldTuning): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid ward shield tuning value: ${fieldName}.`);
   }
 
   return value;

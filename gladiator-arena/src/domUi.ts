@@ -5,15 +5,21 @@ import {
   getFighterMaxArmor,
   getFighterMaxHp,
   getFighterMaxStamina,
+  getFighterDoubleStrikeHits,
   getFighterPoisonTurns,
+  getFighterPreciseStrikeHits,
+  getFighterWardHits,
   type CombatState,
   type DistanceBand,
 } from "./combat";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
+  HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
   HERO_ITEM_CATALOG,
   HERO_MAX_LEVEL,
   HERO_POISON_SCROLL_ITEM_ID,
+  HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
+  HERO_WARD_SCROLL_ITEM_ID,
   getHeroXpToNextLevel,
   type ArenaLootDrop,
   type BattleReward,
@@ -59,7 +65,13 @@ export interface DomRefs {
   enemyHpText: HTMLElement;
   enemyArmorText: HTMLElement;
   enemyStaText: HTMLElement;
+  playerWard: HTMLElement;
+  playerPreciseStrike: HTMLElement;
+  playerDoubleStrike: HTMLElement;
   playerPoison: HTMLElement;
+  enemyWard: HTMLElement;
+  enemyPreciseStrike: HTMLElement;
+  enemyDoubleStrike: HTMLElement;
   enemyPoison: HTMLElement;
   classicEnemyHpFill: HTMLElement;
   classicEnemyArmorFill: HTMLElement;
@@ -109,7 +121,13 @@ export function getDomRefs(): DomRefs {
     enemyHpText: document.querySelector<HTMLElement>("#enemyHpText"),
     enemyArmorText: document.querySelector<HTMLElement>("#enemyArmorText"),
     enemyStaText: document.querySelector<HTMLElement>("#enemyStaText"),
+    playerWard: document.querySelector<HTMLElement>("#playerWard"),
+    playerPreciseStrike: document.querySelector<HTMLElement>("#playerPreciseStrike"),
+    playerDoubleStrike: document.querySelector<HTMLElement>("#playerDoubleStrike"),
     playerPoison: document.querySelector<HTMLElement>("#playerPoison"),
+    enemyWard: document.querySelector<HTMLElement>("#enemyWard"),
+    enemyPreciseStrike: document.querySelector<HTMLElement>("#enemyPreciseStrike"),
+    enemyDoubleStrike: document.querySelector<HTMLElement>("#enemyDoubleStrike"),
     enemyPoison: document.querySelector<HTMLElement>("#enemyPoison"),
     classicEnemyHpFill: document.querySelector<HTMLElement>("#classicEnemyHpFill"),
     classicEnemyArmorFill: document.querySelector<HTMLElement>("#classicEnemyArmorFill"),
@@ -150,6 +168,9 @@ export interface DomRenderContext {
   resultReturn?: BattleResultReturnState;
 }
 
+const WARD_STATUS_ICON_URL = getShopProductIconUrl([HERO_WARD_SCROLL_ITEM_ID]);
+const PRECISE_STRIKE_STATUS_ICON_URL = getShopProductIconUrl([HERO_PRECISE_STRIKE_SCROLL_ITEM_ID]);
+const DOUBLE_STRIKE_STATUS_ICON_URL = getShopProductIconUrl([HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]);
 const POISON_STATUS_ICON_URL = getShopProductIconUrl([HERO_POISON_SCROLL_ITEM_ID]);
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
@@ -196,7 +217,13 @@ function renderStats(dom: DomRefs, state: CombatState): void {
 
   setText(dom.classicPlayerName, state.player.name);
   setText(dom.classicEnemyName, state.enemy.name);
+  syncWardStatus(dom.playerWard, state.player.name, getFighterWardHits(state.player));
+  syncPreciseStrikeStatus(dom.playerPreciseStrike, state.player.name, getFighterPreciseStrikeHits(state.player));
+  syncDoubleStrikeStatus(dom.playerDoubleStrike, state.player.name, getFighterDoubleStrikeHits(state.player));
   syncPoisonStatus(dom.playerPoison, state.player.name, getFighterPoisonTurns(state.player));
+  syncWardStatus(dom.enemyWard, state.enemy.name, getFighterWardHits(state.enemy));
+  syncPreciseStrikeStatus(dom.enemyPreciseStrike, state.enemy.name, getFighterPreciseStrikeHits(state.enemy));
+  syncDoubleStrikeStatus(dom.enemyDoubleStrike, state.enemy.name, getFighterDoubleStrikeHits(state.enemy));
   syncPoisonStatus(dom.enemyPoison, state.enemy.name, getFighterPoisonTurns(state.enemy));
   setText(dom.playerHpText, playerHpText);
   setText(dom.playerArmorText, playerArmorText);
@@ -225,27 +252,69 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   setBarFill(dom.classicEnemyStaFill, state.enemy.stamina / enemyMaxStamina);
 }
 
+function syncWardStatus(element: HTMLElement, fighterName: string, hits: number): void {
+  const safeHits = Math.max(0, Math.floor(hits));
+
+  syncIconCountStatus(
+    element,
+    safeHits,
+    WARD_STATUS_ICON_URL,
+    `${fighterName} shielded for ${safeHits} ${safeHits === 1 ? "hit" : "hits"}`,
+  );
+}
+
+function syncPreciseStrikeStatus(element: HTMLElement, fighterName: string, hits: number): void {
+  const safeHits = Math.max(0, Math.floor(hits));
+
+  syncIconCountStatus(
+    element,
+    safeHits,
+    PRECISE_STRIKE_STATUS_ICON_URL,
+    `${fighterName} has true strike ready for ${safeHits} ${safeHits === 1 ? "hit" : "hits"}`,
+  );
+}
+
+function syncDoubleStrikeStatus(element: HTMLElement, fighterName: string, hits: number): void {
+  const safeHits = Math.max(0, Math.floor(hits));
+
+  syncIconCountStatus(
+    element,
+    safeHits,
+    DOUBLE_STRIKE_STATUS_ICON_URL,
+    `${fighterName} has double strike ready for ${safeHits} ${safeHits === 1 ? "hit" : "hits"}`,
+  );
+}
+
 function syncPoisonStatus(element: HTMLElement, fighterName: string, turns: number): void {
   const safeTurns = Math.max(0, Math.floor(turns));
 
-  element.hidden = safeTurns <= 0;
+  syncIconCountStatus(
+    element,
+    safeTurns,
+    POISON_STATUS_ICON_URL,
+    `${fighterName} poisoned for ${safeTurns} ${safeTurns === 1 ? "turn" : "turns"}`,
+  );
+}
 
-  if (safeTurns <= 0) {
+function syncIconCountStatus(element: HTMLElement, count: number, iconUrl: string | undefined, ariaLabel: string): void {
+  element.hidden = count <= 0;
+
+  if (count <= 0) {
     return;
   }
 
   const icon = element.querySelector<HTMLImageElement>("img");
   const label = element.querySelector<HTMLElement>("span");
 
-  if (icon && POISON_STATUS_ICON_URL && icon.src !== POISON_STATUS_ICON_URL) {
-    icon.src = POISON_STATUS_ICON_URL;
+  if (icon && iconUrl && icon.src !== iconUrl) {
+    icon.src = iconUrl;
   }
 
   if (label) {
-    setText(label, String(safeTurns));
+    setText(label, String(count));
   }
 
-  element.setAttribute("aria-label", `${fighterName} poisoned for ${safeTurns} turns`);
+  element.setAttribute("aria-label", ariaLabel);
 }
 
 function setFlaskFill(element: HTMLElement, ratio: number): void {

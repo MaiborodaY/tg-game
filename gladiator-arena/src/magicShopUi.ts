@@ -55,6 +55,19 @@ interface MagicShopOptions {
   transitionDelayMs?: number;
 }
 
+interface MagicProductPreviewElements {
+  card: HTMLElement;
+  icon: HTMLImageElement;
+  name: HTMLHeadingElement;
+  rarity: HTMLSpanElement;
+  effect: HTMLParagraphElement;
+  buyButton: HTMLButtonElement;
+}
+
+interface MagicProductListItemElements {
+  item: HTMLButtonElement;
+}
+
 const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "crack_armor_scroll",
@@ -199,6 +212,12 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   back.append(backIcon);
   back.addEventListener("click", close);
 
+  const previewElements = createMagicProductPreview();
+  const productListItems = MAGIC_PRODUCTS.map((product) => [product.id, createMagicProductListItem(product)] as const);
+  const productListItemsById = new Map(productListItems);
+
+  preview.append(previewElements.card);
+  productList.append(...productListItems.map(([, elements]) => elements.item));
   content.append(productList, wallet);
   header.append(title);
   tray.append(header, content);
@@ -245,15 +264,8 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
   function render(): void {
     const hero = options.getHero();
-    const scrollCount = Math.min(getHeroScrollQuantity(hero), HERO_SCROLL_MAX_QUANTITY);
-    const selectedProduct = getSelectedMagicProduct();
 
-    goldAmount.textContent = String(hero.gold);
-    gold.setAttribute("aria-label", `Gold ${hero.gold}`);
-    scrollCapacityAmount.textContent = `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`;
-    scrollCapacity.setAttribute("aria-label", `Scrolls ${scrollCount} of ${HERO_SCROLL_MAX_QUANTITY}`);
-    preview.replaceChildren(createMagicProductPreview(selectedProduct, hero));
-    productList.replaceChildren(...MAGIC_PRODUCTS.map((product) => createMagicProductListItem(product, hero)));
+    refreshHeroState(hero);
     scheduleLayoutSync();
   }
 
@@ -262,7 +274,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
       return;
     }
 
-    render();
+    refreshHeroState(options.getHero());
   }
 
   function scheduleShopTransition(callback: () => void): void {
@@ -352,11 +364,68 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     return selectedProduct;
   }
 
-  function createMagicProductPreview(product: MagicProduct, hero: HeroState): HTMLElement {
-    const card = document.createElement("article");
+  function refreshHeroState(hero: HeroState): void {
+    refreshWallet(hero);
+    refreshSelectedProduct(hero);
+    refreshProductList(hero);
+  }
+
+  function refreshWallet(hero: HeroState): void {
+    const scrollCount = Math.min(getHeroScrollQuantity(hero), HERO_SCROLL_MAX_QUANTITY);
+
+    setTextContentIfChanged(goldAmount, String(hero.gold));
+    gold.setAttribute("aria-label", `Gold ${hero.gold}`);
+    setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`);
+    scrollCapacity.setAttribute("aria-label", `Scrolls ${scrollCount} of ${HERO_SCROLL_MAX_QUANTITY}`);
+  }
+
+  function refreshSelectedProduct(hero: HeroState): void {
+    const product = getSelectedMagicProduct();
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
     const displayName = getMagicProductDisplayName(product);
+    const iconUrl = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+    const actionLabel = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
+
+    previewElements.card.className = `magic-shop__preview-card armory-shop__selected-card--rarity-${rarity}`;
+    previewElements.card.classList.toggle("magic-shop__preview-card--max", actionState === "max");
+    setImageSourceIfChanged(previewElements.icon, iconUrl);
+    setTextContentIfChanged(previewElements.name, displayName);
+    setTextContentIfChanged(previewElements.rarity, getShopRarityLabel(rarity));
+    setTextContentIfChanged(previewElements.effect, product.effect);
+    previewElements.buyButton.disabled = actionState === "no-gold" || actionState === "max";
+    setTextContentIfChanged(previewElements.buyButton, actionLabel);
+  }
+
+  function refreshProductList(hero: HeroState): void {
+    MAGIC_PRODUCTS.forEach((product) => {
+      const elements = productListItemsById.get(product.id);
+
+      if (!elements) {
+        return;
+      }
+
+      const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+
+      elements.item.classList.toggle("magic-shop__list-item--selected", product.id === selectedProductId);
+      elements.item.classList.toggle("magic-shop__list-item--max", actionState === "max");
+      elements.item.classList.toggle("magic-shop__list-item--no-gold", actionState === "no-gold");
+      elements.item.setAttribute("aria-pressed", product.id === selectedProductId ? "true" : "false");
+    });
+  }
+
+  function selectMagicProduct(productId: string): void {
+    if (selectedProductId === productId) {
+      return;
+    }
+
+    selectedProductId = productId;
+    refreshHeroState(options.getHero());
+    scheduleLayoutSync();
+  }
+
+  function createMagicProductPreview(): MagicProductPreviewElements {
+    const card = document.createElement("article");
     const icon = document.createElement("img");
     const title = document.createElement("div");
     const name = document.createElement("h3");
@@ -365,41 +434,33 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const footer = document.createElement("div");
     const buyButton = document.createElement("button");
 
-    card.className = `magic-shop__preview-card armory-shop__selected-card--rarity-${rarity}`;
-    card.classList.toggle("magic-shop__preview-card--max", actionState === "max");
+    card.className = "magic-shop__preview-card";
     icon.className = "magic-shop__preview-icon";
-    icon.src = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
     icon.alt = "";
     icon.decoding = "async";
     icon.draggable = false;
     title.className = "magic-shop__preview-title";
     name.className = "magic-shop__preview-name";
-    name.textContent = displayName;
     rarityNode.className = "magic-shop__preview-rarity";
-    rarityNode.textContent = getShopRarityLabel(rarity);
     effect.className = "magic-shop__preview-effect";
-    effect.textContent = product.effect;
     title.append(name, rarityNode);
     footer.className = "magic-shop__preview-footer";
     buyButton.className = "armory-shop__selected-buy magic-shop__buy";
     buyButton.type = "button";
-    buyButton.disabled = actionState === "no-gold" || actionState === "max";
-    buyButton.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
     buyButton.addEventListener("click", () => {
       if (!buyButton.disabled) {
-        options.onBuy(product);
+        options.onBuy(getSelectedMagicProduct());
       }
     });
     footer.append(buyButton);
     card.append(title, icon, effect, footer);
 
-    return card;
+    return { card, icon, name, rarity: rarityNode, effect, buyButton };
   }
 
-  function createMagicProductListItem(product: MagicProduct, hero: HeroState): HTMLElement {
+  function createMagicProductListItem(product: MagicProduct): MagicProductListItemElements {
     const item = document.createElement("button");
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
-    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
     const displayName = getMagicProductDisplayName(product);
     const icon = document.createElement("img");
     const text = document.createElement("span");
@@ -407,15 +468,10 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const price = document.createElement("span");
 
     item.className = `magic-shop__list-item armory-shop__option--rarity-${rarity}`;
-    item.classList.toggle("magic-shop__list-item--selected", product.id === selectedProductId);
-    item.classList.toggle("magic-shop__list-item--max", actionState === "max");
-    item.classList.toggle("magic-shop__list-item--no-gold", actionState === "no-gold");
     item.type = "button";
     item.title = displayName;
-    item.setAttribute("aria-pressed", product.id === selectedProductId ? "true" : "false");
     item.addEventListener("click", () => {
-      selectedProductId = product.id;
-      render();
+      selectMagicProduct(product.id);
     });
     icon.className = "magic-shop__list-icon";
     icon.src = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
@@ -430,10 +486,26 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     appendPriceContent(price, product.price);
     item.append(icon, text, price);
 
-    return item;
+    return { item };
   }
 
   return { open, close, render, syncHeroState };
+}
+
+function setTextContentIfChanged(node: HTMLElement, text: string): void {
+  if (node.textContent === text) {
+    return;
+  }
+
+  node.textContent = text;
+}
+
+function setImageSourceIfChanged(image: HTMLImageElement, src: string): void {
+  if (image.getAttribute("src") === src) {
+    return;
+  }
+
+  image.src = src;
 }
 
 function appendPriceContent(priceNode: HTMLElement, price: number): void {

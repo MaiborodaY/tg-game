@@ -12,6 +12,7 @@ test("debug panel exposes save as prod defaults action", () => {
 
   assert.match(source, /Save as prod defaults/);
   assert.match(source, /saveProdDefaults\(debugTuning\)/);
+  assert.match(source, /clearDebugTuningStorage\(\)/);
 });
 
 test("client saver posts debug tuning to the local dev endpoint", () => {
@@ -20,6 +21,30 @@ test("client saver posts debug tuning to the local dev endpoint", () => {
   assert.match(source, /\/__dust-arena\/save-prod-defaults/);
   assert.match(source, /method: "POST"/);
   assert.match(source, /JSON\.stringify\(tuning\)/);
+});
+
+test("animation editor saves VFX defaults through a scoped endpoint", () => {
+  const clientSource = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+  const debugPanelSource = readFileSync(join(root, "src", "debugPanel.ts"), "utf8");
+  const debugHtmlSource = readFileSync(join(root, "debug.html"), "utf8");
+  const viteSource = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(clientSource, /\/__dust-arena\/save-prod-vfx-defaults/);
+  assert.match(clientSource, /saveProdVfxDefaults\(tuning: ArenaDebugTuning\)/);
+  assert.match(clientSource, /slashArcs: tuning\.slashArcs/);
+  assert.match(clientSource, /wardShield: tuning\.wardShield/);
+  assert.match(debugHtmlSource, /data-animation-workbench-vfx-panel/);
+  assert.match(debugHtmlSource, /data-animation-workbench-ward-vfx-controls/);
+  assert.match(debugHtmlSource, /data-animation-workbench-slash-vfx-controls/);
+  assert.match(debugPanelSource, /saveProdVfxDefaults\(debugTuning\)/);
+  assert.match(debugPanelSource, /data-animation-workbench-save-vfx-prod/);
+  assert.match(debugPanelSource, /getAnimationVfxSlashArcKey/);
+  assert.match(debugPanelSource, /previewWardShield/);
+  assert.match(debugPanelSource, /clearDebugTuningStorage\(\)/);
+  assert.match(viteSource, /"\/__dust-arena\/save-prod-vfx-defaults"/);
+  assert.match(viteSource, /applyWardShieldDefaultUpdates/);
+  assert.match(viteSource, /pickWardShieldDefaultUpdates/);
+  assert.match(viteSource, /DEFAULT_WARD_SHIELD_TUNING/);
 });
 
 test("client saver posts scoped UI layout tuning to the local dev endpoint", () => {
