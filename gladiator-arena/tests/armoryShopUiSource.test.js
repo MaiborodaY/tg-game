@@ -197,8 +197,10 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.equal(magicShopSource.includes('displayName: "Armor Crack"'), true);
   assert.equal(magicShopSource.includes('displayName: "True Strike"'), true);
   assert.equal(magicShopSource.includes('displayName: "Double Hit"'), true);
-  assert.equal(magicShopSource.includes('listEffect: "Removes 1 random armor piece"'), true);
-  assert.equal(magicShopSource.includes('effect.className = "magic-shop__list-effect";'), true);
+  assert.equal(magicShopSource.includes("listEffect"), false);
+  assert.equal(magicShopSource.includes('effect.className = "magic-shop__list-effect";'), false);
+  assert.equal(magicShopSource.includes("text.append(name, effect);"), false);
+  assert.equal(magicShopSource.includes("text.append(name);"), true);
   assert.equal(magicShopSource.includes("wallet.append(scrollCapacity, gold);"), true);
   assert.equal(magicShopSource.includes("content.append(productList, wallet);"), true);
   assert.equal(magicShopSource.includes("panel.append(preview, menu, back);"), true);
@@ -229,7 +231,7 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.match(stylesSource, /\.magic-shop__preview-card::before\s*\{[\s\S]*var\(--magic-shop-selected-card-frame-image\)[\s\S]*\}/);
   assert.match(stylesSource, /\.magic-shop__preview-card::after\s*\{[\s\S]*content: none;[\s\S]*\}/);
   assert.equal(stylesSource.includes(".magic-shop__list-item"), true);
-  assert.equal(stylesSource.includes(".magic-shop__list-effect"), true);
+  assert.equal(stylesSource.includes(".magic-shop__list-effect"), false);
   assert.equal(stylesSource.includes(".magic-shop__list-item--selected::before"), true);
   assert.match(stylesSource, /\.magic-shop__list\s*\{[\s\S]*gap: 0;[\s\S]*align-self: end;[\s\S]*border: 1px solid rgba\(255, 211, 132, 0\.3\);/);
   assert.match(stylesSource, /\.magic-shop__list\s*\{[\s\S]*max-height: calc\(var\(--magic-shop-list-row-height\) \* var\(--magic-shop-list-visible-items\) \+ 16px\);/);
@@ -248,6 +250,7 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__panel::after\s*\{[\s\S]*content: none;[\s\S]*\}/);
   assert.match(stylesSource, /\.magic-shop__list-item\s*\{[\s\S]*border: 0;[\s\S]*box-shadow: none;/);
   assert.match(stylesSource, /\.magic-shop__list-icon\s*\{[\s\S]*border: 0;[\s\S]*background: transparent;/);
+  assert.match(stylesSource, /\.magic-shop__list-name\s*\{[\s\S]*font-size: clamp\(0\.75rem, 2\.7vw, 0\.86rem\);/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__tray\s*\{[\s\S]*border: 0;[\s\S]*background: transparent;[\s\S]*box-shadow: none;/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-products-height: clamp\(248px, var\(--ui-magic-shop-compact-products-height, 266px\), 296px\);/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-title-actual-top: var\(--magic-shop-title-top\);/);

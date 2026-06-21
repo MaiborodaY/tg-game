@@ -7029,29 +7029,19 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__list-text {
   display: grid;
   gap: 2px;
+  align-items: center;
   min-width: 0;
 }
 
 .magic-shop__list-name {
   overflow: hidden;
   color: #fff0bd;
-  font-size: clamp(0.68rem, 2.45vw, 0.78rem);
+  font-size: clamp(0.75rem, 2.7vw, 0.86rem);
   font-weight: 900;
   line-height: 1;
   text-overflow: ellipsis;
   text-shadow: 0 1px 0 #160703;
   text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.magic-shop__list-effect {
-  overflow: hidden;
-  color: #d6b886;
-  font-size: 0.58rem;
-  font-weight: 900;
-  line-height: 1;
-  text-overflow: ellipsis;
-  text-shadow: 0 1px 0 #160703;
   white-space: nowrap;
 }
 
@@ -7722,11 +7712,7 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__list-name {
-    font-size: clamp(0.62rem, 2.25vw, 0.72rem);
-  }
-
-  .magic-shop__list-effect {
-    font-size: 0.52rem;
+    font-size: clamp(0.68rem, 2.48vw, 0.79rem);
   }
 
   .magic-shop__list-price {
@@ -7903,11 +7889,7 @@ body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="c
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-name {
-  font-size: clamp(0.62rem, 2.25vw, 0.72rem);
-}
-
-body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-effect {
-  font-size: 0.52rem;
+  font-size: clamp(0.68rem, 2.48vw, 0.79rem);
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-price {

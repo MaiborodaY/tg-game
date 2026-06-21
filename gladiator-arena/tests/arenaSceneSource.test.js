@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -563,6 +563,8 @@ test("scroll actions use the editable scroll cast body animation", () => {
   assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("scrollCast"'), true);
   assert.equal(arenaSceneSource.includes("actor.scrollCastPropAssetKey = timing.propAssetKey;"), true);
   assert.equal(arenaSceneSource.includes("actor.scrollCastPropAssetKey = previousScrollCastPropAssetKey;"), true);
+  assert.equal(arenaSceneSource.includes('actionId === "fireball"'), true);
+  assert.equal(arenaSceneSource.includes("playFireballProjectileFromScroll(target, actor, defender, direction, impactDelayMs)"), true);
   assert.equal(arenaSceneSource.includes("getBodyAnimationImpactKeyframe(animation)"), true);
   assert.equal(arenaSceneSource.includes("getBodyAnimationImpactDelayMs(animation, timing.impactProgress)"), true);
   assert.equal(arenaSceneSource.includes("function applyBodyAnimationCastProp"), true);
@@ -593,20 +595,56 @@ test("prod body animations use the active body preset tuning", () => {
   assert.equal(activeAnimationSource.includes("return DEFAULT_BODY_ANIMATIONS[key];"), false);
 });
 
-test("arena uses pooled projectiles for arrows and shurikens", () => {
+test("ward scroll casts and absorbs show a shield effect around the fighter", () => {
+  assert.equal(assetsSource.includes("WARD_SHIELD_EFFECT_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/effects/ward.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/effects/ward.webp")), true);
+  assert.ok(statSync(resolve(currentDir, "../src/assets/ui/effects/ward.webp")).size < 20 * 1024);
+  assert.equal(arenaSceneSource.includes("target.load.image(WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("WARD_SHIELD_EFFECT_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes('actionId === "ward" && areArenaVfxEnabled()'), true);
+  assert.equal(arenaSceneSource.includes("playWardShieldEffect(target, actor, WARD_SHIELD_CAST_DURATION_MS)"), true);
+  assert.equal(arenaSceneSource.includes("void playWardShieldEffect(target, fighter, WARD_SHIELD_ABSORB_DURATION_MS);"), true);
+  assert.equal(arenaSceneSource.includes("function playWardShieldEffect("), true);
+  assert.equal(arenaSceneSource.includes("function getFighterWardShieldEffectPoint("), true);
+  assert.equal(arenaSceneSource.includes("WARD_SHIELD_SCREEN_HEIGHT"), true);
+  assert.equal(arenaSceneSource.includes("WARD_SHIELD_CENTER_Y_RATIO"), true);
+  assert.equal(optimizeAssetsSource.includes("ui\\/effects\\/ward\\.png"), true);
+});
+
+test("arena uses pooled projectiles for arrows shurikens and fireballs", () => {
   assert.equal(assetsSource.includes("SHURIKEN_PROJECTILE_ASSET_KEY"), true);
   assert.equal(assetsSource.includes("./assets/ui/projectiles/shuriken.webp"), true);
   assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/projectiles/shuriken.webp")), true);
+  assert.equal(assetsSource.includes("FIREBALL_PROJECTILE_ASSET_KEY"), true);
+  assert.equal(assetsSource.includes("./assets/ui/projectiles/fireball.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/ui/projectiles/fireball.webp")), true);
+  assert.ok(statSync(resolve(currentDir, "../src/assets/ui/projectiles/fireball.webp")).size < 8 * 1024);
   assert.equal(arenaSceneSource.includes("target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);"), true);
+  assert.equal(arenaSceneSource.includes("target.load.image(FIREBALL_PROJECTILE_ASSET_KEY, FIREBALL_PROJECTILE_ASSET_URL);"), true);
   assert.equal(arenaSceneSource.includes("SHURIKEN_PROJECTILE_ASSET_URL"), true);
+  assert.equal(arenaSceneSource.includes("FIREBALL_PROJECTILE_ASSET_URL"), true);
   assert.equal(arenaSceneSource.includes("projectiles: Phaser.GameObjects.Image[];"), true);
   assert.equal(arenaSceneSource.includes("projectiles: []"), true);
   assert.equal(arenaSceneSource.includes("function playProjectile("), true);
+  assert.equal(arenaSceneSource.includes("function playFireballProjectileFromScroll("), true);
+  assert.equal(arenaSceneSource.includes("function getFighterScrollCastProjectilePoint("), true);
   assert.equal(arenaSceneSource.includes("interface ProjectileAnimationHandle"), true);
   assert.equal(arenaSceneSource.includes("PROJECTILE_IMPACT_LEAD_MS"), true);
+  assert.equal(arenaSceneSource.includes("FIREBALL_PROJECTILE_START_SCREEN_SIZE"), true);
+  assert.equal(arenaSceneSource.includes("FIREBALL_PROJECTILE_END_SCREEN_SIZE"), true);
+  assert.equal(arenaSceneSource.includes("FIREBALL_PROJECTILE_FLIGHT_DURATION_MS"), true);
+  assert.equal(arenaSceneSource.includes("FIREBALL_PROJECTILE_LAUNCH_PROGRESS"), false);
+  assert.equal(arenaSceneSource.includes("const launchDelayMs = Math.max(0, castImpactDelayMs);"), true);
+  assert.equal(arenaSceneSource.includes("const hitDelayMs = launchDelayMs + FIREBALL_PROJECTILE_FLIGHT_DURATION_MS;"), true);
   assert.equal(arenaSceneSource.includes("impactDelayMs"), true);
   assert.equal(arenaSceneSource.includes("resolveImpactOnce"), true);
   assert.equal(arenaSceneSource.includes("impact: projectileAnimation.impact"), true);
+  assert.equal(arenaSceneSource.includes("playFireballProjectileFromScroll(target, actor, defender, direction, impactDelayMs)"), true);
+  assert.equal(arenaSceneSource.includes("scaleX: endScale"), true);
+  assert.equal(arenaSceneSource.includes("scaleY: endScale"), true);
+  assert.equal(arenaSceneSource.includes("duration: FIREBALL_PROJECTILE_FLIGHT_DURATION_MS"), true);
+  assert.equal(optimizeAssetsSource.includes("ui\\/projectiles\\/fireball\\.png"), true);
   assert.equal(arenaSceneSource.includes("function acquireProjectile("), true);
   assert.equal(arenaSceneSource.includes("function releaseProjectile("), true);
   assert.equal(arenaSceneSource.includes('actionId === "shuriken"'), true);
@@ -1307,10 +1345,13 @@ test("arena pools transient popup and effect objects", () => {
   assert.equal(arenaSceneSource.includes("damageTextPopups: ArenaTextPopupVisual[]"), true);
   assert.equal(arenaSceneSource.includes("restRecoveryPopups: ArenaRestRecoveryPopupVisual[]"), true);
   assert.equal(arenaSceneSource.includes("restZzzIcons: Phaser.GameObjects.Image[]"), true);
+  assert.equal(arenaSceneSource.includes("wardShields: Phaser.GameObjects.Image[]"), true);
   assert.equal(arenaSceneSource.includes("acquireFloatingTextLabel(target)"), true);
   assert.equal(arenaSceneSource.includes("releaseFloatingTextLabel(target, label)"), true);
   assert.equal(arenaSceneSource.includes("acquireRestZzzIcon(target)"), true);
   assert.equal(arenaSceneSource.includes("releaseRestZzzIcon(target, icon)"), true);
+  assert.equal(arenaSceneSource.includes("acquireWardShield(target)"), true);
+  assert.equal(arenaSceneSource.includes("releaseWardShield(target, shield)"), true);
   assert.equal(arenaSceneSource.includes("acquireSlashArc(target)"), true);
   assert.equal(arenaSceneSource.includes("releaseSlashArc(target, slash)"), true);
   assert.equal(arenaSceneSource.includes("acquireDustDot(target)"), true);

@@ -20,6 +20,8 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/armor\/legs\// },
   { maxSide: 512, pattern: /^fighters\/weapons\// },
   { maxSide: 512, pattern: /^fighters\/appearance\// },
+  { maxSide: 320, pattern: /^ui\/effects\/ward\.png$/ },
+  { maxSide: 128, pattern: /^ui\/projectiles\/fireball\.png$/ },
   { maxSide: 160, pattern: /^shop-icons\/scroll-.+\.png$/ },
 ];
 const originalSizeRules = [
@@ -40,6 +42,16 @@ const smallerAssetRules = [
     maximumAlphaQuality: 88,
     maximumQuality: 82,
     pattern: /^shop-icons\/scroll-.+\.png$/,
+  },
+  {
+    maximumAlphaQuality: 76,
+    maximumQuality: 68,
+    pattern: /^ui\/projectiles\/fireball\.png$/,
+  },
+  {
+    maximumAlphaQuality: 74,
+    maximumQuality: 64,
+    pattern: /^ui\/effects\/ward\.png$/,
   },
 ];
 

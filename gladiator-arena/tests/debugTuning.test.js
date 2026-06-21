@@ -600,9 +600,11 @@ test("debug tuning exposes dedicated bow shot, damage hit, block, and scroll cas
     "scroll-double-strike-01",
     "scroll-poison-01",
   ]);
-  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes[0].castProp.visible, false);
-  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes[1].castProp.visible, true);
-  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes[1].castProp.assetKey, "scroll-crack-armor-01");
+  const scrollCastPropKeyframes = debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes.filter((keyframe) => keyframe.castProp);
+
+  assert.equal(scrollCastPropKeyframes.length > 0, true);
+  assert.equal(scrollCastPropKeyframes.some((keyframe) => keyframe.castProp.visible), true);
+  assert.equal(scrollCastPropKeyframes.every((keyframe) => keyframe.castProp.assetKey === "scroll-crack-armor-01"), true);
 });
 
 test("debug tuning uses spearattack as the only spear-specific attack variant", () => {

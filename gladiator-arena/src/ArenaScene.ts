@@ -80,6 +80,8 @@ import {
   FIGHTER_PAPER_DOLL_ASSETS,
   FIGHTER_TORSO_DUMMY_ASSET_KEY,
   FIGHTER_TORSO_LIGHT_ASSET_KEY,
+  FIREBALL_PROJECTILE_ASSET_KEY,
+  FIREBALL_PROJECTILE_ASSET_URL,
   FIGHTER_WEAPON_SWORD_01_ASSET_KEY,
   GAME_HEIGHT,
   GAME_WIDTH,
@@ -96,6 +98,8 @@ import {
   SHURIKEN_PROJECTILE_ASSET_KEY,
   SHURIKEN_PROJECTILE_ASSET_URL,
   type ScrollCastPropAssetKey,
+  WARD_SHIELD_EFFECT_ASSET_KEY,
+  WARD_SHIELD_EFFECT_ASSET_URL,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
 import type { CameraTarget, CameraViewport } from "./arenaCamera";
@@ -492,6 +496,7 @@ interface ArenaEffectPools {
   restRecoveryPopups: ArenaRestRecoveryPopupVisual[];
   restZzzIcons: Phaser.GameObjects.Image[];
   projectiles: Phaser.GameObjects.Image[];
+  wardShields: Phaser.GameObjects.Image[];
   dustDots: Phaser.GameObjects.Arc[];
 }
 
@@ -697,13 +702,25 @@ const REST_ZZZ_SIDE_OFFSETS = [-11, 8, -4, 13];
 const REST_ZZZ_DRIFT_X = [11, -9, 7, -12];
 const ARROW_PROJECTILE_SCREEN_SIZE = 36;
 const SHURIKEN_PROJECTILE_SCREEN_SIZE = 20;
+const FIREBALL_PROJECTILE_START_SCREEN_SIZE = 14;
+const FIREBALL_PROJECTILE_END_SCREEN_SIZE = 58;
 const PROJECTILE_FLIGHT_DURATION_MS = 280;
+const FIREBALL_PROJECTILE_FLIGHT_DURATION_MS = PROJECTILE_FLIGHT_DURATION_MS;
 const PROJECTILE_IMPACT_LEAD_MS = 45;
 const ARROW_PROJECTILE_ANGLE_OFFSET = 45;
 const PROJECTILE_START_LOCAL_X = 90;
 const PROJECTILE_START_LOCAL_Y = -205;
 const PROJECTILE_TARGET_LOCAL_X = 44;
 const PROJECTILE_TARGET_LOCAL_Y = -250;
+const WARD_SHIELD_EFFECT_DEPTH = 35;
+const WARD_SHIELD_SCREEN_HEIGHT = 315;
+const WARD_SHIELD_MIN_SCALE_MULTIPLIER = 0.76;
+const WARD_SHIELD_MAX_SCALE_MULTIPLIER = 1.12;
+const WARD_SHIELD_CENTER_Y_RATIO = 0.44;
+const WARD_SHIELD_ALPHA = 0.78;
+const WARD_SHIELD_FADE_IN_MS = 110;
+const WARD_SHIELD_CAST_DURATION_MS = 760;
+const WARD_SHIELD_ABSORB_DURATION_MS = 520;
 const MELEE_ACTION_TIMINGS: Record<AttackBodyAnimationKey, MeleeActionTiming> = {
   light: { impactProgress: 0.45, weaponSwingProgress: 0.45, weaponAngle: 28 },
   medium: { impactProgress: 0.48, weaponSwingProgress: 0.48, weaponAngle: 32 },
@@ -1277,6 +1294,8 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(REST_ZZZ_ICON_ASSET_KEY, REST_ZZZ_ICON_ASSET_URL);
   target.load.image(ARROW_ICON_ASSET_KEY, ARROW_ICON_ASSET_URL);
   target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);
+  target.load.image(FIREBALL_PROJECTILE_ASSET_KEY, FIREBALL_PROJECTILE_ASSET_URL);
+  target.load.image(WARD_SHIELD_EFFECT_ASSET_KEY, WARD_SHIELD_EFFECT_ASSET_URL);
   target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);
   target.load.image(REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL);
   preloadScrollCastPropAssets(target);
@@ -1582,6 +1601,8 @@ function getArenaAssetPrewarmUrls(): string[] {
     REST_ZZZ_ICON_ASSET_URL,
     ARROW_ICON_ASSET_URL,
     SHURIKEN_PROJECTILE_ASSET_URL,
+    FIREBALL_PROJECTILE_ASSET_URL,
+    WARD_SHIELD_EFFECT_ASSET_URL,
     REST_HEALTH_ICON_ASSET_URL,
     REST_STAMINA_ICON_ASSET_URL,
     ...SCROLL_CAST_PROP_ASSETS.map((asset) => asset.url),
@@ -9791,7 +9812,7 @@ function animateAction(
 
   const scrollCastTiming = SCROLL_CAST_ACTION_TIMINGS[actionId];
   if (scrollCastTiming) {
-    return animateScrollCastAction(target, actor, weaponClass, variantSeed, scrollCastTiming);
+    return animateScrollCastAction(target, actor, defender, direction, actionId, weaponClass, variantSeed, scrollCastTiming);
   }
 
   if (actionId === "shuriken") {
@@ -9843,6 +9864,9 @@ function animateAction(
 function animateScrollCastAction(
   target: Phaser.Scene,
   actor: FighterVisual,
+  defender: FighterVisual,
+  direction: "left" | "right",
+  actionId: ActionId,
   weaponClass: HeroWeaponClass | undefined,
   variantSeed: string,
   timing: ScrollCastActionTiming,
@@ -9872,10 +9896,19 @@ function animateScrollCastAction(
   const impactDelayMs = getBodyAnimationImpactKeyframe(animation)
     ? getBodyAnimationImpactDelayMs(animation, timing.impactProgress)
     : timing.impactDelayMs;
+  const projectileAnimation = actionId === "fireball"
+    ? playFireballProjectileFromScroll(target, actor, defender, direction, impactDelayMs)
+    : undefined;
+  if (actionId === "ward" && areArenaVfxEnabled()) {
+    target.time.delayedCall(impactDelayMs, () => {
+      void playWardShieldEffect(target, actor, WARD_SHIELD_CAST_DURATION_MS);
+    });
+  }
+  const impact = projectileAnimation?.impact ?? createSceneDelay(target, impactDelayMs);
 
   return {
-    done: bodyAnimation.done,
-    impact: createSceneDelay(target, impactDelayMs),
+    done: Promise.all([bodyAnimation.done, projectileAnimation?.done ?? Promise.resolve()]).then(() => undefined),
+    impact,
     speedUp: bodyAnimation.speedUp,
   };
 }
@@ -10116,8 +10149,99 @@ function playProjectile(
   return { done, impact };
 }
 
+function playFireballProjectileFromScroll(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  defender: FighterVisual,
+  direction: "left" | "right",
+  castImpactDelayMs: number,
+): ProjectileAnimationHandle {
+  const launchDelayMs = Math.max(0, castImpactDelayMs);
+
+  if (!target.textures.exists(FIREBALL_PROJECTILE_ASSET_KEY)) {
+    const done = createSceneDelay(target, launchDelayMs);
+
+    return { done, impact: done };
+  }
+
+  const sign = direction === "right" ? 1 : -1;
+  const hitDelayMs = launchDelayMs + FIREBALL_PROJECTILE_FLIGHT_DURATION_MS;
+  let impactResolved = false;
+  let resolveImpact: () => void = () => undefined;
+  const impact = new Promise<void>((resolve) => {
+    resolveImpact = resolve;
+  });
+  const resolveImpactOnce = (): void => {
+    if (impactResolved) {
+      return;
+    }
+
+    impactResolved = true;
+    resolveImpact();
+  };
+  const done = new Promise<void>((resolve) => {
+    target.time.delayedCall(launchDelayMs, () => {
+      const start = getFighterScrollCastProjectilePoint(target, actor, sign);
+      const end = getFighterProjectilePoint(target, defender, -PROJECTILE_TARGET_LOCAL_X * sign, PROJECTILE_TARGET_LOCAL_Y);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const flightAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const source = target.textures.get(FIREBALL_PROJECTILE_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
+      const sourceWidth = Math.max(1, source?.width ?? 128);
+      const fixedScreenScale = 1 / getArenaEffectsLayerScale(target);
+      const startScale = (FIREBALL_PROJECTILE_START_SCREEN_SIZE / sourceWidth) * fixedScreenScale;
+      const endScale = (FIREBALL_PROJECTILE_END_SCREEN_SIZE / sourceWidth) * fixedScreenScale;
+      const projectile = acquireProjectile(target, FIREBALL_PROJECTILE_ASSET_KEY);
+
+      projectile.setPosition(start.x, start.y);
+      projectile.setDepth(39);
+      projectile.setScale(startScale);
+      projectile.setAngle(flightAngle);
+      projectile.setBlendMode(Phaser.BlendModes.ADD);
+      target.tweens.add({
+        targets: projectile,
+        x: end.x,
+        y: end.y,
+        scaleX: endScale,
+        scaleY: endScale,
+        duration: FIREBALL_PROJECTILE_FLIGHT_DURATION_MS,
+        ease: "Sine.easeInOut",
+        onComplete: () => {
+          resolveImpactOnce();
+          releaseProjectile(target, projectile);
+          resolve();
+        },
+      });
+    });
+    target.time.delayedCall(hitDelayMs, resolveImpactOnce);
+  });
+
+  return { done, impact };
+}
+
 function getProjectileTextureKey(actionId: ActionId): string {
   return actionId === "shuriken" ? SHURIKEN_PROJECTILE_ASSET_KEY : ARROW_ICON_ASSET_KEY;
+}
+
+function getFighterScrollCastProjectilePoint(target: Phaser.Scene, fighter: FighterVisual, sign: -1 | 1): { x: number; y: number } {
+  const castProp = fighter.paperDollRig?.castProp;
+
+  if (!castProp) {
+    return getFighterProjectilePoint(target, fighter, PROJECTILE_START_LOCAL_X * sign, PROJECTILE_START_LOCAL_Y);
+  }
+
+  const matrix = castProp.getWorldTransformMatrix();
+  const worldX = matrix.getX(0, 0);
+  const worldY = matrix.getY(0, 0);
+  const effectsLayer = getArenaEffectsLayer(target);
+
+  if (!effectsLayer) {
+    return { x: worldX, y: worldY };
+  }
+
+  const localPoint = effectsLayer.getWorldTransformMatrix().applyInverse(worldX, worldY);
+
+  return { x: localPoint.x, y: localPoint.y };
 }
 
 function getFighterProjectilePoint(target: Phaser.Scene, fighter: FighterVisual, localOffsetX: number, localOffsetY: number): { x: number; y: number } {
@@ -10154,6 +10278,7 @@ function getArenaEffectPools(target: Phaser.Scene): ArenaEffectPools {
       restRecoveryPopups: [],
       restZzzIcons: [],
       projectiles: [],
+      wardShields: [],
       dustDots: [],
     };
     arenaEffectPoolsByScene.set(target, pools);
@@ -10184,6 +10309,33 @@ function createPooledProjectile(target: Phaser.Scene, textureKey: string): Phase
 function releaseProjectile(target: Phaser.Scene, projectile: Phaser.GameObjects.Image): void {
   projectile.setActive(false).setVisible(false).setAlpha(1).setBlendMode(Phaser.BlendModes.NORMAL);
   getArenaEffectPools(target).projectiles.push(projectile);
+}
+
+function acquireWardShield(target: Phaser.Scene): Phaser.GameObjects.Image {
+  const pool = getArenaEffectPools(target).wardShields;
+  const shield = pool.pop() ?? createPooledWardShield(target);
+
+  target.tweens.killTweensOf(shield);
+  shield.setActive(true).setVisible(true).setAlpha(1).setAngle(0).setScale(1);
+
+  return shield;
+}
+
+function createPooledWardShield(target: Phaser.Scene): Phaser.GameObjects.Image {
+  const shield = target.add
+    .image(0, 0, WARD_SHIELD_EFFECT_ASSET_KEY)
+    .setOrigin(0.5)
+    .setActive(false)
+    .setVisible(false);
+
+  addToArenaEffectsLayer(target, shield);
+
+  return shield;
+}
+
+function releaseWardShield(target: Phaser.Scene, shield: Phaser.GameObjects.Image): void {
+  shield.setActive(false).setVisible(false).setAlpha(1).setBlendMode(Phaser.BlendModes.NORMAL);
+  getArenaEffectPools(target).wardShields.push(shield);
 }
 
 function acquireFloatingTextLabel(target: Phaser.Scene): Phaser.GameObjects.Text {
@@ -10599,6 +10751,76 @@ function drawSlashArc(graphics: Phaser.GameObjects.Graphics, config: SlashArcTun
   graphics.strokePath();
 }
 
+function playWardShieldEffect(target: Phaser.Scene, fighter: FighterVisual, durationMs = WARD_SHIELD_CAST_DURATION_MS): Promise<void> {
+  if (!areArenaVfxEnabled() || !target.textures.exists(WARD_SHIELD_EFFECT_ASSET_KEY)) {
+    return Promise.resolve();
+  }
+
+  const source = target.textures.get(WARD_SHIELD_EFFECT_ASSET_KEY).getSourceImage() as { height?: number } | undefined;
+  const sourceHeight = Math.max(1, source?.height ?? 320);
+  const layerScale = getArenaEffectsLayerScale(target);
+  const fixedScreenScale = 1 / layerScale;
+  const displayHeight = getWardShieldDisplayHeight(fighter);
+  const shieldScale = (displayHeight / sourceHeight) * fixedScreenScale;
+  const point = getFighterWardShieldEffectPoint(target, fighter, displayHeight);
+  const shield = acquireWardShield(target);
+  const fadeOutDurationMs = Math.max(1, durationMs - WARD_SHIELD_FADE_IN_MS);
+
+  shield.setPosition(point.x, point.y);
+  shield.setDepth(WARD_SHIELD_EFFECT_DEPTH);
+  shield.setScale(shieldScale * 0.88);
+  shield.setAlpha(0);
+  shield.setBlendMode(Phaser.BlendModes.ADD);
+
+  return new Promise<void>((resolve) => {
+    target.tweens.add({
+      targets: shield,
+      alpha: WARD_SHIELD_ALPHA,
+      scaleX: shieldScale,
+      scaleY: shieldScale,
+      duration: WARD_SHIELD_FADE_IN_MS,
+      ease: "Quad.easeOut",
+    });
+    target.time.delayedCall(WARD_SHIELD_FADE_IN_MS, () => {
+      target.tweens.add({
+        targets: shield,
+        alpha: 0,
+        scaleX: shieldScale * 1.08,
+        scaleY: shieldScale * 1.08,
+        duration: fadeOutDurationMs,
+        ease: "Sine.easeOut",
+        onComplete: () => {
+          releaseWardShield(target, shield);
+          resolve();
+        },
+      });
+    });
+  });
+}
+
+function getWardShieldDisplayHeight(fighter: FighterVisual): number {
+  const scaleMultiplier = clampNumber(fighter.debugScale, WARD_SHIELD_MIN_SCALE_MULTIPLIER, WARD_SHIELD_MAX_SCALE_MULTIPLIER);
+
+  return WARD_SHIELD_SCREEN_HEIGHT * scaleMultiplier;
+}
+
+function getFighterWardShieldEffectPoint(target: Phaser.Scene, fighter: FighterVisual, displayHeight: number): { x: number; y: number } {
+  const bodyMatrix = fighter.body.getWorldTransformMatrix();
+  const worldX = bodyMatrix.getX(0, 0);
+  const worldY = bodyMatrix.getY(0, 0);
+  const effectsLayer = getArenaEffectsLayer(target);
+  const layerScale = getArenaEffectsLayerScale(target);
+  const centerOffsetY = (displayHeight * WARD_SHIELD_CENTER_Y_RATIO) / layerScale;
+
+  if (!effectsLayer) {
+    return { x: worldX, y: worldY - centerOffsetY };
+  }
+
+  const localPoint = effectsLayer.getWorldTransformMatrix().applyInverse(worldX, worldY);
+
+  return { x: localPoint.x, y: localPoint.y - centerOffsetY };
+}
+
 function showFloatingText(target: Phaser.Scene, x: number, y: number, text: string, color: string): void {
   const layerScale = getArenaEffectsLayerScale(target);
   const fixedScreenScale = 1 / layerScale;
@@ -10655,6 +10877,7 @@ function showBlockPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual,
 function showWardAbsorbPopupFromFighter(target: Phaser.Scene, fighter: FighterVisual): void {
   const point = getFighterHeadPopupPoint(target, fighter, getBlockPopupHeadOffsetY());
 
+  void playWardShieldEffect(target, fighter, WARD_SHIELD_ABSORB_DURATION_MS);
   showFloatingText(target, point.x, point.y, "WARD", "#b7f7ff");
 }
 
