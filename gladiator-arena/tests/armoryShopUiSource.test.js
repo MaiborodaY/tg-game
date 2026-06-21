@@ -171,6 +171,14 @@ test("magic shop exposes scroll icons as compressed runtime webp assets", () => 
     assert.equal(existsSync(resolve(currentDir, `../src/assets/shop-icons/${assetKey}.webp`)), true);
     assert.equal(existsSync(resolve(currentDir, `../src/assets/shop-icons/${assetKey}.png`)), false);
   });
+
+  [
+    "magic-shop-title-frame",
+    "magic-shop-selected-card-frame",
+  ].forEach((assetKey) => {
+    assert.equal(existsSync(resolve(currentDir, `../src/assets/ui/magic-shop/${assetKey}.webp`)), true);
+    assert.equal(existsSync(resolve(currentDir, `../art-source/png/assets/ui/magic-shop/${assetKey}.png`)), true);
+  });
 });
 
 test("magic shop uses one selected scroll preview and a shared scroll cap counter", () => {
@@ -179,7 +187,11 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.equal(magicShopSource.includes('productList.className = "magic-shop__list";'), true);
   assert.equal(magicShopSource.includes('wallet.className = "magic-shop__wallet";'), true);
   assert.equal(magicShopSource.includes("CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL"), true);
+  assert.equal(magicShopSource.includes("MAGIC_SHOP_TITLE_FRAME_ASSET_URL"), true);
+  assert.equal(magicShopSource.includes("MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL"), true);
   assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-background-image"'), true);
+  assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-title-frame-image"'), true);
+  assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-selected-card-frame-image"'), true);
   assert.equal(magicShopSource.includes('displayName: "Armor Crack"'), true);
   assert.equal(magicShopSource.includes('displayName: "True Strike"'), true);
   assert.equal(magicShopSource.includes('displayName: "Double Hit"'), true);
@@ -200,17 +212,27 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.equal(magicShopSource.includes("quantityBadge.textContent"), false);
 
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*content: "MAGIC SHOP";[\s\S]*\}/);
+  assert.equal(assetsSource.includes('MAGIC_SHOP_TITLE_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-title-frame.webp", import.meta.url).href'), true);
+  assert.equal(assetsSource.includes('MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-selected-card-frame.webp", import.meta.url).href'), true);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*var\(--magic-shop-title-frame-image\)[\s\S]*\}/);
   assert.equal(stylesSource.includes(".magic-shop__preview-card"), true);
+  assert.match(stylesSource, /\.magic-shop__preview-card::before\s*\{[\s\S]*var\(--magic-shop-selected-card-frame-image\)[\s\S]*\}/);
+  assert.match(stylesSource, /\.magic-shop__preview-card::after\s*\{[\s\S]*content: none;[\s\S]*\}/);
   assert.equal(stylesSource.includes(".magic-shop__list-item"), true);
   assert.equal(stylesSource.includes(".magic-shop__list-effect"), true);
   assert.equal(stylesSource.includes(".magic-shop__list-item--selected::before"), true);
-  assert.match(stylesSource, /\.magic-shop__list\s*\{[\s\S]*gap: 0;[\s\S]*border: 1px solid rgba\(255, 211, 132, 0\.3\);/);
+  assert.match(stylesSource, /\.magic-shop__list\s*\{[\s\S]*gap: 0;[\s\S]*align-self: end;[\s\S]*border: 1px solid rgba\(255, 211, 132, 0\.3\);/);
   assert.match(stylesSource, /\.magic-shop__list-item\s*\{[\s\S]*border: 0;[\s\S]*box-shadow: none;/);
   assert.match(stylesSource, /\.magic-shop__list-icon\s*\{[\s\S]*border: 0;[\s\S]*background: transparent;/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__tray\s*\{[\s\S]*border: 0;[\s\S]*background: transparent;[\s\S]*box-shadow: none;/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-products-height: clamp\(284px, 43dvh, 322px\);/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*left: calc\(var\(--shop-frame-side-width\) \+ 50px\);[\s\S]*min-width: 0;[\s\S]*transform: none;/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop__preview-card\s*\{[\s\S]*width: min\(220px, calc\(100% - 8px\)\);/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop__list-item\s*\{[\s\S]*min-height: 38px;/);
   assert.equal(stylesSource.includes(".magic-shop__wallet"), true);
   assert.equal(stylesSource.includes(".magic-shop__scroll-capacity"), true);
   assert.match(stylesSource, /\.city-menu--magic-shop-open \.city-menu__hero\s*\{[\s\S]*opacity: 0;[\s\S]*\}/);
-  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-header-height: 0px;[\s\S]*--shop-city-products-height: clamp\(338px, 50dvh, 388px\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-header-height: 0px;[\s\S]*--shop-city-products-height: clamp\(328px, 48dvh, 372px\);/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__panel::before\s*\{[\s\S]*var\(--magic-shop-background-image\);[\s\S]*\}/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__tray\s*\{[\s\S]*grid-template-rows: var\(--shop-city-products-height\);/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__header\s*\{[\s\S]*display: none;[\s\S]*\}/);

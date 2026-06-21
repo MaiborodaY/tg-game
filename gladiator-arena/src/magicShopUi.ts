@@ -12,6 +12,8 @@ import {
 } from "./hero";
 import {
   CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
+  MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL,
+  MAGIC_SHOP_TITLE_FRAME_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
@@ -128,6 +130,8 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   shop.className = "armory-shop weapon-shop magic-shop armory-shop--city-mode";
   shop.hidden = true;
   shop.style.setProperty("--magic-shop-background-image", `url("${CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL}")`);
+  shop.style.setProperty("--magic-shop-title-frame-image", `url("${MAGIC_SHOP_TITLE_FRAME_ASSET_URL}")`);
+  shop.style.setProperty("--magic-shop-selected-card-frame-image", `url("${MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL}")`);
   shop.setAttribute("aria-label", "Magic shop");
 
   const panel = document.createElement("div");
