@@ -206,9 +206,9 @@ const debugTuningDefaultFields = {
 
 type DebugTuningDefaultField = keyof typeof debugTuningDefaultFields;
 type DebugTuningDefaultPayload = Record<(typeof debugTuningDefaultFields)[DebugTuningDefaultField], unknown>;
-type DebugTuningDefaultUpdates = Record<DebugTuningDefaultField, number>
+type DebugTuningDefaultUpdates = Partial<Record<DebugTuningDefaultField, number>>
   & Partial<Record<DebugTuningBooleanDefaultField, boolean>>
-  & { arenaBackgroundTiers: ArenaBackgroundTierTuningPayload };
+  & { arenaBackgroundTiers?: ArenaBackgroundTierTuningPayload };
 
 const debugTuningBooleanDefaultFields = {
   arenaTier1BackgroundBackVisible: "arenaTier1BackgroundBackVisible",

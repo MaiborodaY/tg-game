@@ -144,6 +144,12 @@ test("debug tuning normalizes unsafe values", () => {
     enemyStageY: -999,
     playerScale: 99,
     enemyScale: -4,
+    shadowPreviewMode: "medium",
+    lowShadowOffsetX: 999,
+    lowShadowOffsetY: -999,
+    lowShadowScaleX: 99,
+    lowShadowScaleY: -99,
+    lowShadowAlpha: 99,
     shadowBlur: 999,
     cameraFeetScreenY: 999,
     cameraCloseFeetShiftY: -999,
@@ -265,6 +271,12 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.enemyStageY, -500);
   assert.equal(normalized.playerScale, 6);
   assert.equal(normalized.enemyScale, 0.1);
+  assert.equal(normalized.shadowPreviewMode, "high");
+  assert.equal(normalized.lowShadowOffsetX, 240);
+  assert.equal(normalized.lowShadowOffsetY, -240);
+  assert.equal(normalized.lowShadowScaleX, 4);
+  assert.equal(normalized.lowShadowScaleY, -2);
+  assert.equal(normalized.lowShadowAlpha, 1);
   assert.equal(normalized.shadowBlur, 6);
   assert.equal(normalized.cameraFeetScreenY, 720);
   assert.equal(normalized.cameraCloseFeetShiftY, -180);
@@ -385,6 +397,11 @@ test("debug tuning normalizes unsafe values", () => {
   assert.equal(normalized.bodyPresetTuning["dummy-v2"].appearanceLayers.hair.y, -160);
 });
 
+test("debug shadow preview modes only expose editable shadow variants", () => {
+  assert.deepEqual(Array.from(debugTuningModule.SHADOW_PREVIEW_MODES), ["high", "low"]);
+  assert.equal(debugTuningModule.SHADOW_PREVIEW_MODES.includes("off"), false);
+});
+
 test("debug tuning defaults use a stage origin coordinate system", () => {
   assert.equal(debugTuningModule.defaultDebugTuning.debugTuningVersion, debugTuningModule.DEBUG_TUNING_STORAGE_VERSION);
   assert.equal(debugTuningModule.defaultDebugTuning.showGrid, true);
@@ -434,7 +451,12 @@ test("debug tuning defaults use a stage origin coordinate system", () => {
     debugTuningModule.defaultDebugTuning.bodyPresetTuning.classic.bodyPartLayers,
     debugTuningModule.defaultDebugTuning.bodyPresetTuning["dummy-v2"].bodyPartLayers,
   );
-  assert.equal(debugTuningModule.defaultDebugTuning.shadowBlur, 1.2);
+  assert.equal(debugTuningModule.defaultDebugTuning.shadowBlur, 1.8);
+  assert.equal(debugTuningModule.defaultDebugTuning.shadowPreviewMode, "high");
+  assert.equal(debugTuningModule.defaultDebugTuning.lowShadowOffsetY, 20);
+  assert.equal(debugTuningModule.defaultDebugTuning.lowShadowScaleX, 0.6);
+  assert.equal(debugTuningModule.defaultDebugTuning.lowShadowScaleY, 0.93);
+  assert.equal(debugTuningModule.defaultDebugTuning.lowShadowAlpha, 1);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetScreenY, 560);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraCloseFeetShiftY, 70);
   assert.equal(debugTuningModule.defaultDebugTuning.cameraFeetMinScreenRatio, 0.58);

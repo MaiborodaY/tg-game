@@ -209,6 +209,24 @@ test("paper doll high shadow can use a cached blur filter", () => {
   assert.equal(arenaSceneSource.includes("applyPaperDollShadowBlur(fighter.shadow);"), true);
 });
 
+test("paper doll low shadow uses one tunable contact ellipse", () => {
+  assert.equal(arenaSceneSource.includes("function createPaperDollLowShadow("), true);
+  assert.equal(arenaSceneSource.includes("target.add.ellipse(x, y, 94, 25, PAPER_DOLL_SHADOW_COLOR, 1)"), true);
+  assert.equal(arenaSceneSource.includes("softOuter"), false);
+  assert.equal(arenaSceneSource.includes("bodyContact"), false);
+  assert.equal(arenaSceneSource.includes("footContact"), false);
+  assert.equal(arenaSceneSource.includes("debugTuning.lowShadowOffsetY"), true);
+  assert.equal(arenaSceneSource.includes("fighter.lowShadow.x = centerX + debugTuning.lowShadowOffsetX * scale;"), true);
+  assert.equal(arenaSceneSource.includes("fighter.lowShadow.scaleX = lowShadowScale * debugTuning.lowShadowScaleX;"), true);
+  assert.equal(arenaSceneSource.includes("fighter.lowShadow.scaleY = lowShadowScale * debugTuning.lowShadowScaleY;"), true);
+  assert.equal(arenaSceneSource.includes("fighter.lowShadow.setAlpha(lowShadowVisible ? debugTuning.lowShadowAlpha : 0);"), true);
+  assert.equal(arenaSceneSource.includes("alpha * debugTuning.lowShadowAlpha"), true);
+  assert.equal(arenaSceneSource.includes("function getEffectiveArenaShadowMode("), true);
+  assert.equal(arenaSceneSource.includes("debugTuning.shadowPreviewMode"), true);
+  assert.equal(arenaSceneSource.includes(".ellipse(options.x, initialFeetY + 8, 68, 18, 0x35180d, 0.22)"), false);
+  assert.equal(arenaSceneSource.includes("alpha * 0.26"), false);
+});
+
 test("paper doll loader lazily resolves generated and auto equipment assets", () => {
   assert.equal(arenaSceneSource.includes("GENERATED_EQUIPMENT_ASSETS"), true);
   assert.equal(arenaSceneSource.includes("AUTO_EQUIPMENT_ASSETS"), true);
@@ -454,17 +472,13 @@ test("fighter movement can start from a selected animation keyframe", () => {
   assert.equal(arenaSceneSource.includes("function getBodyAnimationMovementStartDelayMs("), true);
   assert.equal(arenaSceneSource.includes("function getBodyAnimationMovementStartKeyframe("), true);
   assert.equal(arenaSceneSource.includes("animation.movementStartKeyframeId"), true);
-  assert.equal(
-    arenaSceneSource.includes(
-      "getBodyAnimationMovementStartDelayMs(\n      current.lastPlayerAction,\n      visuals.player,\n      getFighterBodyAnimationWeaponClass(current.player),",
-    ),
-    true,
+  assert.match(
+    arenaSceneSource,
+    /getBodyAnimationMovementStartDelayMs\(\s*current\.lastPlayerAction,\s*visuals\.player,\s*getFighterBodyAnimationWeaponClass\(current\.player\),/,
   );
-  assert.equal(
-    arenaSceneSource.includes(
-      "getBodyAnimationMovementStartDelayMs(\n      current.lastEnemyAction,\n      visuals.enemy,\n      getFighterBodyAnimationWeaponClass(current.enemy),",
-    ),
-    true,
+  assert.match(
+    arenaSceneSource,
+    /getBodyAnimationMovementStartDelayMs\(\s*current\.lastEnemyAction,\s*visuals\.enemy,\s*getFighterBodyAnimationWeaponClass\(current\.enemy\),/,
   );
   assert.equal(arenaSceneSource.includes("pickActiveBodyAnimationVariant(animationKey, fighter.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)"), true);
   assert.equal(arenaSceneSource.includes('if (actionId === "lunge")'), true);

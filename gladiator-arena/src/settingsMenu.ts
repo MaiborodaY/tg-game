@@ -20,7 +20,7 @@ const defaultSettings: PlayerSettings = {
   lowEffects: false,
   renderFps: 30,
   vfxEnabled: true,
-  shadowMode: "high",
+  shadowMode: "low",
   hudMode: DEFAULT_PLAYER_HUD_MODE,
   showFps: false,
 };

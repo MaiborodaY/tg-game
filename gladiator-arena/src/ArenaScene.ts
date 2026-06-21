@@ -684,6 +684,7 @@ const PAPER_DOLL_SHADOW_COLOR = 0x120805;
 const PAPER_DOLL_SHADOW_BLUR_QUALITY = 0;
 const PAPER_DOLL_SHADOW_BLUR_STRENGTH = 0.75;
 const PAPER_DOLL_SHADOW_BLUR_STEPS = 2;
+const PAPER_DOLL_LOW_SHADOW_MIN_SCALE = 0.72;
 const FIGHTER_ARROW_COUNTER_LOCAL_Y = -366;
 const FIGHTER_ARROW_COUNTER_SCALE_MIN = 0.86;
 const FIGHTER_ARROW_COUNTER_SCALE_MULTIPLIER = 1.2;
@@ -5015,12 +5016,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
   const initialFeetY = options.y + PLAYER_AVATAR_FEET_Y_OFFSET;
   const castsShadow = options.castsShadow !== false;
   const shadowRig = createPaperDollShadowRig(target, options, appearance, initialFeetY, castsShadow);
-  const lowShadow = part(
-    target.add
-      .ellipse(options.x, initialFeetY + 8, 68, 18, 0x35180d, 0.22)
-      .setDepth(PAPER_DOLL_SHADOW_DEPTH)
-      .setVisible(false),
-  );
+  const lowShadow = createPaperDollLowShadow(target, options.x, initialFeetY + debugTuning.lowShadowOffsetY);
   const rootContainer = target.add.container(options.x, initialFeetY);
   const root = part(rootContainer);
   const parts = {} as Record<PaperDollPartKey, FighterPart>;
@@ -5114,6 +5110,10 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     bodyIdleAnimationKey: "idle",
     bodyIdleAnimationStartedAt: target.time.now,
   };
+}
+
+function createPaperDollLowShadow(target: Phaser.Scene, x: number, y: number): FighterPart {
+  return part(target.add.ellipse(x, y, 94, 25, PAPER_DOLL_SHADOW_COLOR, 1).setDepth(PAPER_DOLL_SHADOW_DEPTH).setVisible(false));
 }
 
 function createPaperDollShadowRig(
@@ -5466,7 +5466,7 @@ function applyPaperDollRigTuning(
   rig.root.scaleY = PAPER_DOLL_BASE_SCALE * scale;
   applyRigPartDebugTuning(rig);
   syncPaperDollEquipmentVisibility(rig);
-  applyPaperDollShadowTuning(fighter, scale, feetY, centerX, playerSettings.shadowMode);
+  applyPaperDollShadowTuning(fighter, scale, feetY, centerX, getEffectiveArenaShadowMode(playerSettings));
   fighter.name.x = centerX;
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
@@ -5482,7 +5482,7 @@ function applyPaperDollShadowTuning(
 ): void {
   const highShadowVisible = fighter.castsShadow && shadowMode === "high" && !fighter.isShattered;
   const lowShadowVisible = fighter.castsShadow && shadowMode === "low" && !fighter.isShattered;
-  const lowShadowScale = Math.max(0.62, scale / DEFAULT_PLAYER_SCALE);
+  const lowShadowScale = Math.max(PAPER_DOLL_LOW_SHADOW_MIN_SCALE, scale / DEFAULT_PLAYER_SCALE);
   const wasHighShadowVisible = fighter.shadow.visible;
 
   fighter.shadow.x = centerX + debugTuning.shadowOffsetX * scale;
@@ -5496,13 +5496,13 @@ function applyPaperDollShadowTuning(
   if (highShadowVisible && !wasHighShadowVisible) {
     syncPaperDollEquipmentState(fighter.paperDollRig);
   }
-  fighter.lowShadow.x = centerX + debugTuning.shadowOffsetX * scale;
-  fighter.lowShadow.y = feetY + 9 * scale;
-  fighter.lowShadow.scaleX = lowShadowScale * 0.95;
-  fighter.lowShadow.scaleY = lowShadowScale * 0.72;
+  fighter.lowShadow.x = centerX + debugTuning.lowShadowOffsetX * scale;
+  fighter.lowShadow.y = feetY + debugTuning.lowShadowOffsetY * scale;
+  fighter.lowShadow.scaleX = lowShadowScale * debugTuning.lowShadowScaleX;
+  fighter.lowShadow.scaleY = lowShadowScale * debugTuning.lowShadowScaleY;
   fighter.lowShadow.angle = 0;
   fighter.lowShadow.setVisible(lowShadowVisible);
-  fighter.lowShadow.setAlpha(lowShadowVisible ? 0.26 : 0);
+  fighter.lowShadow.setAlpha(lowShadowVisible ? debugTuning.lowShadowAlpha : 0);
 }
 
 function applyRigPartDebugTuning(rig: PaperDollRig): void {
@@ -8209,6 +8209,7 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   }
 
   positionFightersForState(target, target.visuals, current, playerSettings);
+  const shadowMode = getEffectiveArenaShadowMode(playerSettings);
   syncFighterCombatEquipment(target.visuals.player, current.player);
   syncFighterCombatEquipment(target.visuals.enemy, current.enemy);
   updateCamera(target, current);
@@ -8218,11 +8219,11 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   setFighterArrowCounter(target.visuals.enemy, current.enemy);
 
   if (!target.visuals.player.isShattered) {
-    setFighterAlpha(target.visuals.player, 1, playerSettings.shadowMode);
+    setFighterAlpha(target.visuals.player, 1, shadowMode);
   }
 
   if (!target.visuals.enemy.isShattered) {
-    setFighterAlpha(target.visuals.enemy, 1, playerSettings.shadowMode);
+    setFighterAlpha(target.visuals.enemy, 1, shadowMode);
   }
 }
 
@@ -8635,7 +8636,7 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number, shadowMode = get
       const shadowVisible = fighter.castsShadow && shadowMode === "low" && !fighter.isShattered;
 
       part.setVisible(shadowVisible);
-      part.setAlpha(shadowVisible ? alpha * 0.26 : 0);
+      part.setAlpha(shadowVisible ? alpha * debugTuning.lowShadowAlpha : 0);
       return;
     }
 
@@ -11510,8 +11511,12 @@ function areArenaVfxEnabled(playerSettings = getPlayerSettings()): boolean {
   return playerSettings.vfxEnabled;
 }
 
+function getEffectiveArenaShadowMode(playerSettings = getPlayerSettings()): PlayerSettings["shadowMode"] {
+  return isDebugTuningActive() ? debugTuning.shadowPreviewMode : playerSettings.shadowMode;
+}
+
 function getArenaShadowMode(): PlayerSettings["shadowMode"] {
-  return getPlayerSettings().shadowMode;
+  return getEffectiveArenaShadowMode();
 }
 
 function syncFighterShadowVisibility(fighter: FighterVisual, alpha: number): void {
@@ -11522,5 +11527,5 @@ function syncFighterShadowVisibility(fighter: FighterVisual, alpha: number): voi
   fighter.shadow.setVisible(highShadowVisible);
   fighter.shadow.setAlpha(highShadowVisible ? alpha * debugTuning.shadowAlpha : 0);
   fighter.lowShadow.setVisible(lowShadowVisible);
-  fighter.lowShadow.setAlpha(lowShadowVisible ? alpha * 0.26 : 0);
+  fighter.lowShadow.setAlpha(lowShadowVisible ? alpha * debugTuning.lowShadowAlpha : 0);
 }

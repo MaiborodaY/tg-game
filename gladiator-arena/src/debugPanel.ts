@@ -37,6 +37,7 @@ import {
   RIG_PART_ANGLE_MAX,
   RIG_PART_ANGLE_MIN,
   RIG_PART_KEYS,
+  SHADOW_PREVIEW_MODES,
   SLASH_ARC_ATTACK_KEYS,
   subscribeDebugTuning,
   undoDebugTuning,
@@ -73,6 +74,7 @@ import {
   type RigPartTuning,
   type SlashArcAttackKey,
   type SlashArcTuning,
+  type ShadowPreviewMode,
   type WardShieldTuning,
 } from "./debugTuning";
 import {
@@ -179,6 +181,7 @@ interface DebugRangeControlConfig {
   max: number;
   step: number;
   resetValue: number;
+  shadowModes?: readonly ShadowPreviewMode[];
 }
 
 interface DebugToggleControlConfig {
@@ -186,6 +189,7 @@ interface DebugToggleControlConfig {
   key: keyof ArenaDebugTuning;
   label: string;
   resetValue: boolean;
+  shadowModes?: readonly ShadowPreviewMode[];
 }
 
 interface DebugSelectControlConfig {
@@ -194,6 +198,7 @@ interface DebugSelectControlConfig {
   label: string;
   options: { value: string; label: string }[];
   resetValue: string;
+  shadowModes?: readonly ShadowPreviewMode[];
 }
 
 type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig | DebugSelectControlConfig;
@@ -619,6 +624,8 @@ function formatPaperDollBodyPresetOptions(): string {
   return PAPER_DOLL_BODY_PRESET_OPTIONS.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
 }
 
+const shadowPreviewModeOptions = SHADOW_PREVIEW_MODES.map((mode) => ({ value: mode, label: mode.toUpperCase() }));
+
 const controlGroups: DebugControlGroup[] = [
   {
     title: "Grid",
@@ -657,12 +664,18 @@ const controlGroups: DebugControlGroup[] = [
   {
     title: "Fighter shadow",
     controls: [
-      { type: "range", key: "shadowOffsetX", label: "Shadow X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetX },
-      { type: "range", key: "shadowOffsetY", label: "Shadow Y", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetY },
-      { type: "range", key: "shadowScaleX", label: "Shadow scale X", min: -4, max: 4, step: 0.01, resetValue: defaultDebugTuning.shadowScaleX },
-      { type: "range", key: "shadowScaleY", label: "Shadow scale Y", min: -1, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowScaleY },
-      { type: "range", key: "shadowAlpha", label: "Shadow alpha", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowAlpha },
-      { type: "range", key: "shadowBlur", label: "Shadow blur", min: 0, max: 6, step: 0.1, resetValue: defaultDebugTuning.shadowBlur },
+      { type: "select", key: "shadowPreviewMode", label: "Mode", options: shadowPreviewModeOptions, resetValue: defaultDebugTuning.shadowPreviewMode },
+      { type: "range", key: "shadowOffsetX", label: "High X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetX, shadowModes: ["high"] },
+      { type: "range", key: "shadowOffsetY", label: "High Y", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.shadowOffsetY, shadowModes: ["high"] },
+      { type: "range", key: "shadowScaleX", label: "High scale X", min: -4, max: 4, step: 0.01, resetValue: defaultDebugTuning.shadowScaleX, shadowModes: ["high"] },
+      { type: "range", key: "shadowScaleY", label: "High scale Y", min: -1, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowScaleY, shadowModes: ["high"] },
+      { type: "range", key: "shadowAlpha", label: "High alpha", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.shadowAlpha, shadowModes: ["high"] },
+      { type: "range", key: "shadowBlur", label: "High blur", min: 0, max: 6, step: 0.1, resetValue: defaultDebugTuning.shadowBlur, shadowModes: ["high"] },
+      { type: "range", key: "lowShadowOffsetX", label: "Low X", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.lowShadowOffsetX, shadowModes: ["low"] },
+      { type: "range", key: "lowShadowOffsetY", label: "Low Y", min: -240, max: 240, step: 1, resetValue: defaultDebugTuning.lowShadowOffsetY, shadowModes: ["low"] },
+      { type: "range", key: "lowShadowScaleX", label: "Low scale X", min: 0, max: 4, step: 0.01, resetValue: defaultDebugTuning.lowShadowScaleX, shadowModes: ["low"] },
+      { type: "range", key: "lowShadowScaleY", label: "Low scale Y", min: -2, max: 2, step: 0.01, resetValue: defaultDebugTuning.lowShadowScaleY, shadowModes: ["low"] },
+      { type: "range", key: "lowShadowAlpha", label: "Low alpha", min: 0, max: 1, step: 0.01, resetValue: defaultDebugTuning.lowShadowAlpha, shadowModes: ["low"] },
     ],
   },
   {
@@ -2525,15 +2538,21 @@ function isArenaParallaxFieldSupported(layer: ArenaParallaxLayerKey, field: Aren
 }
 
 function createControl(control: DebugControlConfig): HTMLElement {
+  let element: HTMLElement;
+
   if (control.type === "toggle") {
-    return createToggleControl(control);
+    element = createToggleControl(control);
+  } else if (control.type === "select") {
+    element = createSelectControl(control);
+  } else {
+    element = createRangeControl(control);
   }
 
-  if (control.type === "select") {
-    return createSelectControl(control);
+  if ("shadowModes" in control && control.shadowModes) {
+    element.dataset.debugShadowModes = control.shadowModes.join(",");
   }
 
-  return createRangeControl(control);
+  return element;
 }
 
 function createToggleControl(control: DebugToggleControlConfig): HTMLElement {
@@ -9702,6 +9721,16 @@ function syncInputs(): void {
     const key = select.dataset.debugSelectKey as keyof ArenaDebugTuning;
 
     select.value = `${debugTuning[key]}`;
+  });
+
+  syncShadowModeControls();
+}
+
+function syncShadowModeControls(): void {
+  document.querySelectorAll<HTMLElement>("[data-debug-shadow-modes]").forEach((element) => {
+    const modes = element.dataset.debugShadowModes?.split(",") ?? [];
+
+    element.hidden = !modes.includes(debugTuning.shadowPreviewMode);
   });
 }
 

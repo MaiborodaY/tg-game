@@ -333,6 +333,11 @@ test("settings replace animation mode with a reload-gated render fps choice", ()
   assert.equal(settingsMenuSource.includes("animationMode"), false);
 });
 
+test("new players start with low arena shadows by default", () => {
+  assert.equal(settingsMenuSource.includes('shadowMode: "low"'), true);
+  assert.equal(settingsMenuSource.includes('shadowMode: "high"'), false);
+});
+
 test("arena turn flow waits for action animations and adds readable turn pacing", () => {
   assert.equal(mainSource.includes("const actionAnimation = commitState(nextState);"), true);
   assert.equal(mainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
@@ -380,7 +385,7 @@ test("debug panel source contains precision controls and grid", () => {
   assert.equal(debugPanelSource.includes("Origin Y"), true);
   assert.equal(debugPanelSource.includes("Player Y"), true);
   assert.equal(debugPanelSource.includes("Enemy Y"), true);
-  assert.equal(debugPanelSource.includes("Shadow blur"), true);
+  assert.equal(debugPanelSource.includes("High blur"), true);
   assert.equal(debugPanelSource.includes("Buttons rel X"), false);
   assert.equal(debugPanelSource.includes("Arc rotation"), true);
   assert.equal(debugPanelSource.includes("Arc radius"), true);
@@ -407,6 +412,13 @@ test("debug panel groups controls by tuning category", () => {
   assert.equal(debugPanelSource.includes('title: "Grid"'), true);
   assert.equal(debugPanelSource.includes('title: "Origin"'), true);
   assert.equal(debugPanelSource.includes('title: "Fighters from origin"'), true);
+  assert.equal(debugPanelSource.includes('title: "Fighter shadow"'), true);
+  assert.equal(debugPanelSource.includes('key: "shadowPreviewMode"'), true);
+  assert.equal(debugPanelSource.includes('shadowModes: ["high"]'), true);
+  assert.equal(debugPanelSource.includes('shadowModes: ["low"]'), true);
+  assert.equal(debugPanelSource.includes("syncShadowModeControls"), true);
+  assert.equal(debugPanelSource.includes('key: "lowShadowScaleX"'), true);
+  assert.equal(debugPanelSource.includes('label: "Low scale Y"'), true);
   assert.equal(debugPanelSource.includes('title: "Immersive flask HUD"'), true);
   assert.equal(debugPanelSource.includes('title: "Classic action wheel"'), true);
   assert.equal(debugPanelSource.includes('title: "Armory background"'), true);

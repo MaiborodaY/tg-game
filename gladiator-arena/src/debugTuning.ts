@@ -147,6 +147,9 @@ export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, Action
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "keyframe", "preview"] as const;
 export type AnimationEditMode = (typeof ANIMATION_EDIT_MODES)[number];
 
+export const SHADOW_PREVIEW_MODES = ["high", "low"] as const;
+export type ShadowPreviewMode = (typeof SHADOW_PREVIEW_MODES)[number];
+
 export const BODY_ANIMATION_KEYFRAME_EASINGS = ["linear", "easeInOut", "hold"] as const;
 export type BodyAnimationKeyframeEasing = (typeof BODY_ANIMATION_KEYFRAME_EASINGS)[number];
 
@@ -381,12 +384,18 @@ export interface ArenaDebugTuning {
   enemyStageY: number;
   playerScale: number;
   enemyScale: number;
+  shadowPreviewMode: ShadowPreviewMode;
   shadowOffsetX: number;
   shadowOffsetY: number;
   shadowScaleX: number;
   shadowScaleY: number;
   shadowAlpha: number;
   shadowBlur: number;
+  lowShadowOffsetX: number;
+  lowShadowOffsetY: number;
+  lowShadowScaleX: number;
+  lowShadowScaleY: number;
+  lowShadowAlpha: number;
   cameraFeetScreenY: number;
   cameraCloseFeetShiftY: number;
   cameraFeetMinScreenRatio: number;
@@ -10956,12 +10965,18 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   enemyStageY: DEFAULT_ENEMY_STAGE_Y,
   playerScale: DEFAULT_PLAYER_SCALE,
   enemyScale: DEFAULT_ENEMY_SCALE,
+  shadowPreviewMode: "high",
   shadowOffsetX: 0,
   shadowOffsetY: 66,
   shadowScaleX: 1.08,
   shadowScaleY: -0.49,
   shadowAlpha: 0.8,
-  shadowBlur: 1.2,
+  shadowBlur: 1.8,
+  lowShadowOffsetX: 0,
+  lowShadowOffsetY: 45,
+  lowShadowScaleX: 0.3,
+  lowShadowScaleY: 0.6,
+  lowShadowAlpha: 0.25,
   cameraFeetScreenY: DEFAULT_CAMERA_FEET_SCREEN_Y,
   cameraCloseFeetShiftY: DEFAULT_CAMERA_CLOSE_FEET_SHIFT_Y,
   cameraFeetMinScreenRatio: DEFAULT_CAMERA_FEET_MIN_SCREEN_RATIO,
@@ -11719,12 +11734,18 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     enemyStageY: clampNumber(input.enemyStageY, -500, 500, defaultDebugTuning.enemyStageY),
     playerScale: clampNumber(input.playerScale, 0.1, 6, defaultDebugTuning.playerScale),
     enemyScale: clampNumber(input.enemyScale, 0.1, 6, defaultDebugTuning.enemyScale),
+    shadowPreviewMode: isDebugShadowMode(input.shadowPreviewMode) ? input.shadowPreviewMode : defaultDebugTuning.shadowPreviewMode,
     shadowOffsetX: clampNumber(input.shadowOffsetX, -240, 240, defaultDebugTuning.shadowOffsetX),
     shadowOffsetY: clampNumber(input.shadowOffsetY, -240, 240, defaultDebugTuning.shadowOffsetY),
     shadowScaleX: clampNumber(input.shadowScaleX, -4, 4, defaultDebugTuning.shadowScaleX),
     shadowScaleY: clampNumber(input.shadowScaleY, -1, 1, defaultDebugTuning.shadowScaleY),
     shadowAlpha: clampNumber(input.shadowAlpha, 0, 1, defaultDebugTuning.shadowAlpha),
     shadowBlur: clampNumber(input.shadowBlur, 0, 6, defaultDebugTuning.shadowBlur),
+    lowShadowOffsetX: clampNumber(input.lowShadowOffsetX, -240, 240, defaultDebugTuning.lowShadowOffsetX),
+    lowShadowOffsetY: clampNumber(input.lowShadowOffsetY, -240, 240, defaultDebugTuning.lowShadowOffsetY),
+    lowShadowScaleX: clampNumber(input.lowShadowScaleX, 0, 4, defaultDebugTuning.lowShadowScaleX),
+    lowShadowScaleY: clampNumber(input.lowShadowScaleY, -2, 2, defaultDebugTuning.lowShadowScaleY),
+    lowShadowAlpha: clampNumber(input.lowShadowAlpha, 0, 1, defaultDebugTuning.lowShadowAlpha),
     cameraFeetScreenY: clampNumber(input.cameraFeetScreenY, 260, 720, defaultDebugTuning.cameraFeetScreenY),
     cameraCloseFeetShiftY: clampNumber(input.cameraCloseFeetShiftY, -180, 180, defaultDebugTuning.cameraCloseFeetShiftY),
     cameraFeetMinScreenRatio: clampNumber(input.cameraFeetMinScreenRatio, 0.35, 0.75, defaultDebugTuning.cameraFeetMinScreenRatio),
@@ -12909,6 +12930,10 @@ function isPaperDollBodyPreset(value: unknown): value is PaperDollBodyPreset {
 
 function isDebugHudMode(value: unknown): value is PlayerHudMode {
   return value === "immersive" || value === "classic";
+}
+
+function isDebugShadowMode(value: unknown): value is ShadowPreviewMode {
+  return typeof value === "string" && SHADOW_PREVIEW_MODES.includes(value as ShadowPreviewMode);
 }
 
 function loadDebugTuning(): ArenaDebugTuning {
