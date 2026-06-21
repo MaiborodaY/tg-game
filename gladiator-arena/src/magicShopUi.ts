@@ -18,6 +18,7 @@ import {
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
+import { applyUiLayoutTuning } from "./uiLayoutTuning";
 import {
   getShopProductActionLabel,
   getShopProductActionState,
@@ -133,6 +134,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   shop.style.setProperty("--magic-shop-title-frame-image", `url("${MAGIC_SHOP_TITLE_FRAME_ASSET_URL}")`);
   shop.style.setProperty("--magic-shop-selected-card-frame-image", `url("${MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL}")`);
   shop.setAttribute("aria-label", "Magic shop");
+  applyUiLayoutTuning(shop);
 
   const panel = document.createElement("div");
   panel.className = "armory-shop__panel";

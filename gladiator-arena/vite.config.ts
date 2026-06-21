@@ -6,6 +6,7 @@ import { defineConfig, type Plugin } from "vite";
 const arenaLayoutUrl = new URL("./src/arenaLayout.ts", import.meta.url);
 const combatUrl = new URL("./src/combat.ts", import.meta.url);
 const debugTuningUrl = new URL("./src/debugTuning.ts", import.meta.url);
+const uiLayoutTuningUrl = new URL("./src/uiLayoutTuning.ts", import.meta.url);
 const settingsMenuUrl = new URL("./src/settingsMenu.ts", import.meta.url);
 const generatedEquipmentJsonUrl = new URL("./src/generated/equipmentItems.generated.json", import.meta.url);
 const generatedEquipmentTsUrl = new URL("./src/generated/equipmentItems.generated.ts", import.meta.url);
@@ -931,6 +932,12 @@ interface ArenaTierEquipmentPoolJsonRecord {
   shurikenChance?: number;
 }
 
+interface UiLayoutDefaultsUpdateResult {
+  source: string;
+  screenId: string;
+  updated: number;
+}
+
 interface PromotedEquipmentItem {
   record: GeneratedEquipmentJsonRecord;
   mirrorPairFlipX: boolean;
@@ -1055,6 +1062,25 @@ function saveProdDefaultsPlugin(): Plugin {
           sendJson(response, 200, { message: `Saved ${animationUpdates.presetKey} ${animationUpdates.animation.key} animation defaults to prod.`, updated: 1 });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod animation." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/save-ui-layout-defaults", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save UI layout defaults." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const source = await readFile(uiLayoutTuningUrl, "utf8");
+          const update = applyUiLayoutDefaultUpdates(source, payload);
+
+          await writeFile(uiLayoutTuningUrl, update.source, "utf8");
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: `Saved ${update.updated} ${update.screenId} UI layout defaults to prod.`, updated: update.updated });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save UI layout defaults." });
         }
       });
 
@@ -1411,6 +1437,33 @@ export function applyArenaTierBackgroundDefaultUpdates(source: string, updates: 
     ...existingTiers,
     [tierKey]: nextTier,
   });
+}
+
+export function applyUiLayoutDefaultUpdates(source: string, payload: unknown): UiLayoutDefaultsUpdateResult {
+  const screenId = readUiLayoutScreenId(payload);
+  const values = readUiLayoutValues(payload);
+  const existingValues = readUiLayoutDefaultValuesFromSource(source);
+  const nextValues = { ...existingValues };
+  let updated = 0;
+
+  for (const [key, value] of Object.entries(values)) {
+    if (!key.startsWith(`${screenId}.`)) {
+      continue;
+    }
+
+    nextValues[key] = value;
+    updated += 1;
+  }
+
+  if (updated === 0) {
+    throw new Error(`No ${screenId} UI layout values to save.`);
+  }
+
+  return {
+    source: replaceUiLayoutDefaultValues(source, nextValues),
+    screenId,
+    updated,
+  };
 }
 
 function createLegacyArenaTierBackgroundDefaultUpdates(updates: ArenaTierBackgroundDefaultUpdates): ArenaTierBackgroundLegacyUpdates {
@@ -3501,6 +3554,88 @@ function formatUpdatedGeneratedEquipmentItemMessage(updatedRecords: GeneratedEqu
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readUiLayoutScreenId(payload: unknown): string {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with UI layout defaults.");
+  }
+
+  const screenId = (payload as { screenId?: unknown }).screenId;
+
+  if (screenId === "magicShop") {
+    return screenId;
+  }
+
+  throw new Error("Only magicShop UI layout defaults can be saved right now.");
+}
+
+function readUiLayoutValues(payload: unknown): Record<string, number> {
+  const tuning = (payload as { tuning?: unknown }).tuning;
+
+  if (!tuning || typeof tuning !== "object" || Array.isArray(tuning)) {
+    throw new Error("Expected a UI layout tuning object.");
+  }
+
+  const rawValues = (tuning as { values?: unknown }).values;
+
+  if (!rawValues || typeof rawValues !== "object" || Array.isArray(rawValues)) {
+    throw new Error("Expected UI layout tuning values.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(rawValues).flatMap(([key, value]) => {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        return [];
+      }
+
+      return [[key, value]];
+    }),
+  );
+}
+
+function readUiLayoutDefaultValuesFromSource(source: string): Record<string, number> {
+  const valuesSource = readUiLayoutDefaultValuesSource(source);
+  const values: Record<string, number> = {};
+  const entryPattern = /"([^"]+)":\s*(-?[0-9]+(?:\.[0-9]+)?),?/gu;
+  let match: RegExpExecArray | null;
+
+  while ((match = entryPattern.exec(valuesSource))) {
+    values[match[1]!] = Number(match[2]);
+  }
+
+  if (Object.keys(values).length === 0) {
+    throw new Error("Could not read DEFAULT_UI_LAYOUT_TUNING.values.");
+  }
+
+  return values;
+}
+
+function replaceUiLayoutDefaultValues(source: string, values: Record<string, number>): string {
+  const valuesSource = readUiLayoutDefaultValuesSource(source);
+
+  return source.replace(valuesSource, formatUiLayoutDefaultValues(values));
+}
+
+function readUiLayoutDefaultValuesSource(source: string): string {
+  const valuesStart = source.indexOf("  values: {");
+
+  if (valuesStart < 0) {
+    throw new Error("Could not find DEFAULT_UI_LAYOUT_TUNING.values.");
+  }
+
+  const openBraceIndex = source.indexOf("{", valuesStart);
+  const closeBraceIndex = findMatchingObjectBrace(source, openBraceIndex);
+
+  return source.slice(openBraceIndex, closeBraceIndex + 1);
+}
+
+function formatUiLayoutDefaultValues(values: Record<string, number>): string {
+  const entries = Object.entries(values)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `    "${key}": ${formatNumber(value)},`);
+
+  return `{\n${entries.join("\n")}\n  }`;
 }
 
 function findMatchingObjectBrace(source: string, openBraceIndex: number): number {

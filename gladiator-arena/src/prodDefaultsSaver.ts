@@ -1,6 +1,7 @@
 import type { ArenaBackgroundEditLayer, ArenaBackgroundLayerTuning, ArenaDebugTuning, EquipmentTuning } from "./debugTuning";
 import type { EquipmentAssetDefinition, EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
 import type { ArenaBossDefinition, ArenaTierConfig, HeroItemDefinition, HeroItemRarity } from "./hero";
+import type { UiLayoutTuningState } from "./uiLayoutTuning";
 
 interface SaveProdDefaultsResponse {
   message?: string;
@@ -119,6 +120,7 @@ const renameEquipmentSetAssetsEndpoint = "/__dust-arena/rename-equipment-set-ass
 const saveArenaBossEndpoint = "/__dust-arena/save-arena-boss";
 const saveArenaTierEndpoint = "/__dust-arena/save-arena-tier";
 const saveArenaTierBackgroundEndpoint = "/__dust-arena/save-arena-tier-background";
+const saveUiLayoutDefaultsEndpoint = "/__dust-arena/save-ui-layout-defaults";
 
 export async function saveProdDefaults(tuning: ArenaDebugTuning): Promise<string> {
   const response = await fetch(saveProdDefaultsEndpoint, {
@@ -148,6 +150,21 @@ export async function saveProdAnimation(tuning: ArenaDebugTuning): Promise<strin
   }
 
   return payload.message ?? "Saved animation to prod.";
+}
+
+export async function saveUiLayoutProdDefaults(screenId: string, tuning: UiLayoutTuningState): Promise<string> {
+  const response = await fetch(saveUiLayoutDefaultsEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ screenId, tuning }),
+  });
+  const payload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(payload.message ?? "Could not save UI layout defaults. Is the Vite dev server running?");
+  }
+
+  return payload.message ?? `Saved ${payload.updated ?? 0} UI layout defaults.`;
 }
 
 export async function savePromotedEquipmentItem(payload: PromoteEquipmentItemPayload): Promise<string> {

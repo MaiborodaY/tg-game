@@ -22,6 +22,17 @@ test("client saver posts debug tuning to the local dev endpoint", () => {
   assert.match(source, /JSON\.stringify\(tuning\)/);
 });
 
+test("client saver posts scoped UI layout tuning to the local dev endpoint", () => {
+  const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+  const uiLayoutSource = readFileSync(join(root, "src", "uiLayoutTuning.ts"), "utf8");
+
+  assert.match(source, /\/__dust-arena\/save-ui-layout-defaults/);
+  assert.match(source, /saveUiLayoutProdDefaults\(screenId: string, tuning: UiLayoutTuningState\)/);
+  assert.match(source, /JSON\.stringify\(\{ screenId, tuning \}\)/);
+  assert.match(uiLayoutSource, /DEFAULT_UI_LAYOUT_TUNING: UiLayoutTuningState/);
+  assert.match(uiLayoutSource, /"magicShop\.preview\.width\.compact": 210/);
+});
+
 test("client saver can promote auto equipment through the local dev endpoint", () => {
   const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
 
@@ -345,6 +356,35 @@ test("vite dev middleware saves selected arena tier background defaults", () => 
   assert.match(source, /\[variantId\]: \{/);
   assert.match(source, /replaceDefaultArenaBackgroundTiers/);
   assert.match(source, /defaultDebugTuning: ArenaDebugTuning/);
+});
+
+test("vite dev middleware saves scoped UI layout defaults", () => {
+  const source = readFileSync(join(root, "vite.config.ts"), "utf8");
+  const debugPanelSource = readFileSync(join(root, "src", "debugPanel.ts"), "utf8");
+  const stylesSource = readFileSync(join(root, "src", "styles.css"), "utf8");
+
+  assert.match(source, /save-ui-layout-defaults/);
+  assert.match(source, /const uiLayoutTuningUrl = new URL\("\.\/src\/uiLayoutTuning\.ts"/);
+  assert.match(source, /applyUiLayoutDefaultUpdates\(source, payload\)/);
+  assert.match(source, /Only magicShop UI layout defaults can be saved right now/);
+  assert.match(source, /key\.startsWith\(`\$\{screenId\}\.`\)/);
+  assert.match(source, /replaceUiLayoutDefaultValues/);
+  assert.match(debugPanelSource, /data-debug-mode="ui"/);
+  assert.match(debugPanelSource, /Save current screen UI as prod/);
+  assert.match(debugPanelSource, /saveUiLayoutProdDefaults\(uiLayoutTuning\.selectedScreenId, uiLayoutTuning\)/);
+  assert.match(debugPanelSource, /clearUiLayoutTuningStorage\(\)/);
+  assert.match(debugPanelSource, /document\.body\.classList\.toggle\("debug-mode-ui", mode === "ui"\);[\s\S]*applyUiLayoutTuning\(\);/);
+  assert.doesNotMatch(debugPanelSource, /createNudgeToolbar|mountNudgeToolbar|debug-nudge-toolbar|data-nudge-action|data-nudge-step/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.debug-preview-tools,/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.debug-face-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.debug-tier-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.debug-boss-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.battle-screen,/);
+  assert.match(stylesSource, /body\.debug-mode-arena \.debug-preview-tools,/);
+  assert.match(stylesSource, /body\.debug-mode-city \.debug-preview-tools,/);
+  assert.match(stylesSource, /body\.debug-mode-hud \.debug-preview-tools,/);
+  assert.match(stylesSource, /body\.debug-mode-effects \.debug-preview-tools,/);
+  assert.doesNotMatch(stylesSource, /debug-nudge-toolbar/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {

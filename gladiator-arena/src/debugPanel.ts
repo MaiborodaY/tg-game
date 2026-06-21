@@ -122,12 +122,34 @@ import {
   saveGeneratedEquipmentItem,
   saveProdAnimation,
   saveProdDefaults,
+  saveUiLayoutProdDefaults,
   savePromotedEquipmentItem,
   savePromotedEquipmentSet,
   savePromotedShieldImports,
   savePromotedWeaponImports,
   type ArenaTierBackgroundPayload,
 } from "./prodDefaultsSaver";
+import {
+  UI_LAYOUT_SCREENS,
+  UI_LAYOUT_VIEWPORTS,
+  applyUiLayoutTuning,
+  clearUiLayoutTuningStorage,
+  getUiLayoutBlock,
+  getUiLayoutControlValue,
+  getUiLayoutScreen,
+  resetUiLayoutBlock,
+  resetUiLayoutControlValue,
+  resetUiLayoutScreen,
+  selectUiLayoutTuning,
+  subscribeUiLayoutTuning,
+  syncUiLayoutTargetHighlight,
+  uiLayoutTuning,
+  updateUiLayoutControlValue,
+  type UiLayoutBlockConfig,
+  type UiLayoutControlConfig,
+  type UiLayoutScreenConfig,
+  type UiLayoutViewport,
+} from "./uiLayoutTuning";
 
 interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
@@ -191,7 +213,6 @@ type ArenaBackgroundLayerTuningPatch = {
   layout?: Partial<ArenaBackgroundLayerTuning["layout"]>;
   parallax?: Partial<ArenaBackgroundLayerTuning["parallax"]>;
 };
-type RigNudgeAction = "left" | "right" | "up" | "down" | "rotateLeft" | "rotateRight" | "scaleDown" | "scaleUp";
 type RigLimbKey = "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
 type AnimationRigPoseKey = "base" | "breath";
 type AnimationFacePoseKey = "faceBase" | "faceBreath";
@@ -901,8 +922,8 @@ const rigPartRootPivots: Record<RigPartKey, { x: number; y: number }> = {
 };
 
 const ANIMATION_WORKBENCH_ROOT_SELECT_VALUE = "root";
+const RIG_LIMB_ROTATE_STEP_DEGREES = 5;
 
-let activeNudgeStep = 5;
 let activeEquipmentSlot: EquipmentSlotKey = "weaponMain";
 let activeEquipmentItemId: HeroItemId | "" = "";
 let activeEquipmentTypeFilter: DebugItemEquipmentTypeFilter = "all";
@@ -956,6 +977,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="city" aria-pressed="false">City</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="arena" aria-pressed="false">Arena</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="hud" aria-pressed="false">HUD</button>
+      <button class="debug-panel__mode-tab" type="button" data-debug-mode="ui" aria-pressed="false">UI</button>
       <button class="debug-panel__mode-tab" type="button" data-debug-mode="effects" aria-pressed="false">Effects</button>
     </nav>
     <details class="debug-rig-panel">
@@ -1305,6 +1327,10 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
       <summary>City tuning</summary>
       <div class="debug-panel__city-body"></div>
     </details>
+    <details class="debug-ui-layout-panel" open>
+      <summary>UI layout tuner</summary>
+      <div class="debug-ui-layout"></div>
+    </details>
     <details class="debug-effects-panel" open>
       <summary>Effects</summary>
       <div class="debug-effects">
@@ -1334,6 +1360,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   const hudBody = panel.querySelector<HTMLElement>(".debug-panel__hud-body");
   const classicSlotsBody = panel.querySelector<HTMLElement>(".debug-classic-slots");
   const cityBody = panel.querySelector<HTMLElement>(".debug-panel__city-body");
+  const uiLayoutBody = panel.querySelector<HTMLElement>(".debug-ui-layout");
   const effectsBody = panel.querySelector<HTMLElement>(".debug-effects");
   const rigEditor = panel.querySelector<HTMLElement>(".debug-rig-editor");
   const facePanel = panel.querySelector<HTMLDetailsElement>(".debug-face-panel");
@@ -1350,6 +1377,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
     !hudBody ||
     !classicSlotsBody ||
     !cityBody ||
+    !uiLayoutBody ||
     !effectsBody ||
     !rigEditor ||
     !facePanel ||
@@ -1383,8 +1411,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   cityBody.append(createHeroPortraitButtonReset());
 
   const previewToolbar = createPreviewToolbar();
-  const nudgeToolbar = createNudgeToolbar();
-  const previewTools = createPreviewTools(previewToolbar, nudgeToolbar);
+  const previewTools = createPreviewTools(previewToolbar);
   const previewColumn = document.querySelector<HTMLElement>(".debug-preview-column");
   const characterShell = document.querySelector<HTMLElement>("#debugCharacterShell");
 
@@ -1402,11 +1429,11 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountAnimationWorkbench();
   mountFaceAssetEditor(faceAssetEditor);
   mountEffectsEditor(effectsBody);
+  mountUiLayoutEditor(uiLayoutBody);
   mountItemEquipmentEditor(itemEquipmentBody);
   mountAutoEquipmentEditor(autoEquipmentBody);
   mountArenaTierEditor(tierEditorBody);
   mountBossEditor(bossEditorBody);
-  mountNudgeToolbar(nudgeToolbar);
   mountCharacterCanvasEquipmentBridge(panel);
   mountModeTabs(panel);
 
@@ -1441,6 +1468,140 @@ function configureHeroEquipmentDebug(options: DebugPanelOptions): void {
   notifyHeroEquipmentChange = options.onHeroEquipmentChange;
   previewSlashArc = options.onPreviewSlashArc;
   previewPopup = options.onPreviewPopup;
+}
+
+function mountUiLayoutEditor(root: HTMLElement): void {
+  root.innerHTML = `
+    <label class="debug-rig-editor__part">
+      <span>Screen</span>
+      <select class="debug-ui-layout__screen"></select>
+    </label>
+    <label class="debug-rig-editor__part">
+      <span>Block</span>
+      <select class="debug-ui-layout__block"></select>
+    </label>
+    <label class="debug-rig-editor__part">
+      <span>Viewport</span>
+      <select class="debug-ui-layout__viewport"></select>
+    </label>
+    <div class="debug-ui-layout__controls"></div>
+    <div class="debug-rig-editor__actions">
+      <button class="debug-panel__reset debug-ui-layout__reset-block" type="button">Reset block</button>
+      <button class="debug-panel__reset debug-ui-layout__reset-screen" type="button">Reset screen</button>
+    </div>
+    <button class="debug-panel__reset debug-ui-layout__save-screen" type="button">Save current screen UI as prod</button>
+    <p class="debug-ui-layout__status" aria-live="polite"></p>
+  `;
+
+  const screenSelect = root.querySelector<HTMLSelectElement>(".debug-ui-layout__screen");
+  const blockSelect = root.querySelector<HTMLSelectElement>(".debug-ui-layout__block");
+  const viewportSelect = root.querySelector<HTMLSelectElement>(".debug-ui-layout__viewport");
+  const controls = root.querySelector<HTMLElement>(".debug-ui-layout__controls");
+  const resetBlock = root.querySelector<HTMLButtonElement>(".debug-ui-layout__reset-block");
+  const resetScreen = root.querySelector<HTMLButtonElement>(".debug-ui-layout__reset-screen");
+  const saveScreen = root.querySelector<HTMLButtonElement>(".debug-ui-layout__save-screen");
+  const status = root.querySelector<HTMLElement>(".debug-ui-layout__status");
+
+  if (!screenSelect || !blockSelect || !viewportSelect || !controls || !resetBlock || !resetScreen || !saveScreen || !status) {
+    return;
+  }
+
+  screenSelect.innerHTML = UI_LAYOUT_SCREENS.map((screen) => `<option value="${screen.id}">${screen.label}</option>`).join("");
+  viewportSelect.innerHTML = UI_LAYOUT_VIEWPORTS.map((viewport) => `<option value="${viewport}">${viewport}</option>`).join("");
+
+  screenSelect.addEventListener("change", () => {
+    const screen = getUiLayoutScreen(screenSelect.value);
+    selectUiLayoutTuning({ selectedScreenId: screen.id, selectedBlockId: screen.blocks[0]?.id ?? uiLayoutTuning.selectedBlockId });
+  });
+
+  blockSelect.addEventListener("change", () => {
+    selectUiLayoutTuning({ selectedBlockId: blockSelect.value });
+  });
+
+  viewportSelect.addEventListener("change", () => {
+    selectUiLayoutTuning({ selectedViewport: normalizeUiLayoutViewport(viewportSelect.value) });
+  });
+
+  resetBlock.addEventListener("click", () => {
+    resetUiLayoutBlock(uiLayoutTuning.selectedScreenId, uiLayoutTuning.selectedBlockId, uiLayoutTuning.selectedViewport);
+    status.textContent = `Reset ${getUiLayoutBlock().label} ${uiLayoutTuning.selectedViewport}.`;
+  });
+
+  resetScreen.addEventListener("click", () => {
+    resetUiLayoutScreen(uiLayoutTuning.selectedScreenId, uiLayoutTuning.selectedViewport);
+    status.textContent = `Reset ${getUiLayoutScreen().label} ${uiLayoutTuning.selectedViewport}.`;
+  });
+
+  saveScreen.addEventListener("click", async () => {
+    saveScreen.disabled = true;
+    status.textContent = "Saving UI layout defaults...";
+
+    try {
+      status.textContent = await saveUiLayoutProdDefaults(uiLayoutTuning.selectedScreenId, uiLayoutTuning);
+      clearUiLayoutTuningStorage();
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not save UI layout defaults.";
+    } finally {
+      saveScreen.disabled = false;
+    }
+  });
+
+  const sync = () => {
+    const screen = getUiLayoutScreen();
+    const block = getUiLayoutBlock(screen.id);
+
+    screenSelect.value = screen.id;
+    blockSelect.innerHTML = screen.blocks.map((candidate) => `<option value="${candidate.id}">${candidate.label}</option>`).join("");
+    blockSelect.value = block.id;
+    viewportSelect.value = uiLayoutTuning.selectedViewport;
+    controls.replaceChildren(...block.controls.map((control) => createUiLayoutControlRow(screen, block, control, uiLayoutTuning.selectedViewport)));
+    applyUiLayoutTuning();
+    syncUiLayoutTargetHighlight();
+  };
+
+  subscribeUiLayoutTuning(sync);
+  sync();
+}
+
+function createUiLayoutControlRow(
+  screen: UiLayoutScreenConfig,
+  block: UiLayoutBlockConfig,
+  control: UiLayoutControlConfig,
+  viewport: UiLayoutViewport,
+): HTMLElement {
+  const row = document.createElement("label");
+  const value = getUiLayoutControlValue(screen.id, block.id, control, viewport);
+
+  row.className = "debug-panel__row debug-ui-layout__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input class="debug-panel__range" type="range" min="${control.min}" max="${control.max}" step="${control.step}" value="${value}" />
+    <input class="debug-panel__number" type="number" min="${control.min}" max="${control.max}" step="${control.step}" value="${value}" />
+    <button class="debug-panel__control-reset" type="button">Reset</button>
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+  const reset = row.querySelector<HTMLButtonElement>(".debug-panel__control-reset");
+
+  range?.addEventListener("input", () => {
+    updateUiLayoutControlValue(screen.id, block.id, control, viewport, Number(range.value));
+  });
+
+  number?.addEventListener("input", () => {
+    updateUiLayoutControlValue(screen.id, block.id, control, viewport, Number(number.value));
+  });
+
+  reset?.addEventListener("click", (event) => {
+    event.preventDefault();
+    resetUiLayoutControlValue(screen.id, block.id, control, viewport);
+  });
+
+  return row;
+}
+
+function normalizeUiLayoutViewport(value: string): UiLayoutViewport {
+  return UI_LAYOUT_VIEWPORTS.includes(value as UiLayoutViewport) ? value as UiLayoutViewport : "desktop";
 }
 
 function createHeroPortraitButtonReset(): HTMLButtonElement {
@@ -1562,62 +1723,6 @@ function mountPreviewToolbar(toolbar: HTMLElement): void {
   });
 }
 
-function createNudgeToolbar(): HTMLElement {
-  const toolbar = document.createElement("aside");
-  toolbar.className = "debug-nudge-toolbar";
-  toolbar.setAttribute("aria-label", "Rig nudge controls");
-  toolbar.innerHTML = `
-    <fieldset class="debug-nudge-toolbar__group">
-      <legend>Nudge</legend>
-      <div class="debug-nudge-toolbar__steps" role="group" aria-label="Nudge step">
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-step="1">1</button>
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-step="5">5</button>
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-step="10">10</button>
-      </div>
-      <div class="debug-nudge-toolbar__grid" role="group" aria-label="Nudge selected part position">
-        <span class="debug-nudge-toolbar__empty"></span>
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="up">&uarr;</button>
-        <span class="debug-nudge-toolbar__empty"></span>
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="left">&larr;</button>
-        <span class="debug-nudge-toolbar__center"></span>
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="right">&rarr;</button>
-        <span class="debug-nudge-toolbar__empty"></span>
-        <button class="debug-panel__reset debug-nudge-toolbar__button" type="button" data-nudge-action="down">&darr;</button>
-        <span class="debug-nudge-toolbar__empty"></span>
-      </div>
-      <div class="debug-nudge-toolbar__actions">
-        <button class="debug-panel__reset" type="button" data-nudge-action="rotateLeft">Rot -</button>
-        <button class="debug-panel__reset" type="button" data-nudge-action="rotateRight">Rot +</button>
-      </div>
-      <div class="debug-nudge-toolbar__actions">
-        <button class="debug-panel__reset" type="button" data-nudge-action="scaleDown">Scl -</button>
-        <button class="debug-panel__reset" type="button" data-nudge-action="scaleUp">Scl +</button>
-      </div>
-    </fieldset>
-  `;
-
-  return toolbar;
-}
-
-function mountNudgeToolbar(toolbar: HTMLElement): void {
-  toolbar.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]").forEach((button) => {
-    button.addEventListener("click", () => {
-      activeNudgeStep = Number(button.dataset.nudgeStep) || activeNudgeStep;
-      syncNudgeControls();
-    });
-  });
-
-  toolbar.querySelectorAll<HTMLButtonElement>("button[data-nudge-action]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.nudgeAction;
-
-      if (isRigNudgeAction(action)) {
-        nudgeSelectedRigPart(action);
-      }
-    });
-  });
-}
-
 function mountCharacterCanvasEquipmentBridge(panel: HTMLElement): void {
   if (isCharacterCanvasEquipmentBridgeMounted) {
     return;
@@ -1637,7 +1742,7 @@ function mountCharacterCanvasEquipmentBridge(panel: HTMLElement): void {
   });
 }
 
-type DebugMode = "character" | "animation" | "city" | "arena" | "hud" | "effects";
+type DebugMode = "character" | "animation" | "city" | "arena" | "hud" | "ui" | "effects";
 
 function mountModeTabs(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
@@ -1658,12 +1763,14 @@ function setDebugMode(mode: DebugMode): void {
   document.body.classList.toggle("debug-mode-city", mode === "city");
   document.body.classList.toggle("debug-mode-arena", mode === "arena");
   document.body.classList.toggle("debug-mode-hud", mode === "hud");
+  document.body.classList.toggle("debug-mode-ui", mode === "ui");
   document.body.classList.toggle("debug-mode-effects", mode === "effects");
+  applyUiLayoutTuning();
   window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
 }
 
 function getDebugModeFromValue(value: string | undefined): DebugMode {
-  if (value === "animation" || value === "city" || value === "arena" || value === "hud" || value === "effects") {
+  if (value === "animation" || value === "city" || value === "arena" || value === "hud" || value === "ui" || value === "effects") {
     return value;
   }
 
@@ -4969,7 +5076,7 @@ function createLimbRotateControl(config: RigLimbRotateConfig): HTMLElement {
       const direction = button.dataset.limbDirection === "-1" ? -1 : 1;
 
       if (isRigLimbKey(limbKey)) {
-        rotateRigLimb(limbKey, activeNudgeStep * direction);
+        rotateRigLimb(limbKey, RIG_LIMB_ROTATE_STEP_DEGREES * direction);
       }
     });
   });
@@ -5653,97 +5760,6 @@ function updateRigToggleTuning(key: RigToggleControlKey, value: boolean): void {
   updateRigPartTuning(debugTuning.selectedRigPart, { [key]: value } as Partial<RigPartTuning>);
 }
 
-function nudgeSelectedRigPart(action: RigNudgeAction): void {
-  if (isRootCanvasMode()) {
-    if (isRootPoseTransformMode()) {
-      nudgeSelectedPoseOffset(action);
-    } else {
-      nudgeSelectedRootOffset(action);
-    }
-    return;
-  }
-
-  if (isBodyArtCanvasMode()) {
-    nudgeSelectedBodyPartLayer(action);
-    return;
-  }
-
-  const step = activeNudgeStep;
-
-  if (action === "left") {
-    updateSelectedRigPart((current) => ({ x: clampRigNumericValue("x", current.x - step) }));
-    return;
-  }
-
-  if (action === "right") {
-    updateSelectedRigPart((current) => ({ x: clampRigNumericValue("x", current.x + step) }));
-    return;
-  }
-
-  if (action === "up") {
-    updateSelectedRigPart((current) => ({ y: clampRigNumericValue("y", current.y - step) }));
-    return;
-  }
-
-  if (action === "down") {
-    updateSelectedRigPart((current) => ({ y: clampRigNumericValue("y", current.y + step) }));
-    return;
-  }
-
-  if (action === "rotateLeft") {
-    updateSelectedRigPart((current) => ({ angle: clampRigNumericValue("angle", current.angle - step) }));
-    return;
-  }
-
-  if (action === "rotateRight") {
-    updateSelectedRigPart((current) => ({ angle: clampRigNumericValue("angle", current.angle + step) }));
-    return;
-  }
-
-  const scaleDelta = step / 100;
-
-  if (action === "scaleDown") {
-    updateSelectedRigPart((current) => ({
-      scaleX: clampRigNumericValue("scaleX", current.scaleX - scaleDelta),
-      scaleY: clampRigNumericValue("scaleY", current.scaleY - scaleDelta),
-    }));
-    return;
-  }
-
-  updateSelectedRigPart((current) => ({
-    scaleX: clampRigNumericValue("scaleX", current.scaleX + scaleDelta),
-    scaleY: clampRigNumericValue("scaleY", current.scaleY + scaleDelta),
-  }));
-}
-
-function nudgeSelectedRootOffset(action: RigNudgeAction): void {
-  const step = activeNudgeStep;
-  const rootOffset = getEditableRootOffset();
-
-  if (!rootOffset) {
-    return;
-  }
-
-  if (action === "left") {
-    updateSelectedRootOffset({ x: clampRigNumericValue("x", rootOffset.x - step) });
-    return;
-  }
-
-  if (action === "right") {
-    updateSelectedRootOffset({ x: clampRigNumericValue("x", rootOffset.x + step) });
-    return;
-  }
-
-  if (action === "up") {
-    updateSelectedRootOffset({ y: clampRigNumericValue("y", rootOffset.y - step) });
-    return;
-  }
-
-  if (action === "down") {
-    updateSelectedRootOffset({ y: clampRigNumericValue("y", rootOffset.y + step) });
-  }
-}
-
 function updateSelectedRootOffset(patch: Partial<BodyAnimationRootOffset>): void {
   const rootOffset = getEditableRootOffset();
 
@@ -5755,34 +5771,6 @@ function updateSelectedRootOffset(patch: Partial<BodyAnimationRootOffset>): void
     x: clampRigNumericValue("x", patch.x ?? rootOffset.x),
     y: clampRigNumericValue("y", patch.y ?? rootOffset.y),
   });
-}
-
-function nudgeSelectedPoseOffset(action: RigNudgeAction): void {
-  const step = activeNudgeStep;
-  const currentOffset = getEditablePoseOffset();
-
-  if (!currentOffset) {
-    return;
-  }
-
-  if (action === "left") {
-    updateSelectedPoseOffset({ x: clampRigNumericValue("x", currentOffset.x - step) });
-    return;
-  }
-
-  if (action === "right") {
-    updateSelectedPoseOffset({ x: clampRigNumericValue("x", currentOffset.x + step) });
-    return;
-  }
-
-  if (action === "up") {
-    updateSelectedPoseOffset({ y: clampRigNumericValue("y", currentOffset.y - step) });
-    return;
-  }
-
-  if (action === "down") {
-    updateSelectedPoseOffset({ y: clampRigNumericValue("y", currentOffset.y + step) });
-  }
 }
 
 function updateSelectedPoseOffset(patch: Partial<Pick<RigPartTuning, "x" | "y">>): void {
@@ -5815,92 +5803,6 @@ function shiftEditableAnimationPose(delta: { x: number; y: number }): void {
   }
 
   updateEditableAnimationPoseParts(shiftRigParts(rigParts, delta), cloneFaceParts(faceParts));
-}
-
-function updateSelectedRigPart(getPatch: (current: RigPartTuning, partKey: RigPartKey) => Partial<RigPartTuning>): void {
-  const rigParts = getEditableRigParts();
-
-  if (!rigParts) {
-    return;
-  }
-
-  const nextRigParts = { ...rigParts };
-
-  getSelectedRigPartsForBulkAction().forEach((partKey) => {
-    const current = rigParts[partKey];
-
-    nextRigParts[partKey] = {
-      ...current,
-      ...getPatch(current, partKey),
-    };
-  });
-
-  updateEditableRigParts(nextRigParts);
-}
-
-function nudgeSelectedBodyPartLayer(action: RigNudgeAction): void {
-  const step = activeNudgeStep;
-
-  if (action === "left") {
-    updateSelectedBodyPartLayer((current) => ({ x: clampBodyPartLayerNumericValue("x", current.x - step) }));
-    return;
-  }
-
-  if (action === "right") {
-    updateSelectedBodyPartLayer((current) => ({ x: clampBodyPartLayerNumericValue("x", current.x + step) }));
-    return;
-  }
-
-  if (action === "up") {
-    updateSelectedBodyPartLayer((current) => ({ y: clampBodyPartLayerNumericValue("y", current.y - step) }));
-    return;
-  }
-
-  if (action === "down") {
-    updateSelectedBodyPartLayer((current) => ({ y: clampBodyPartLayerNumericValue("y", current.y + step) }));
-    return;
-  }
-
-  if (action === "rotateLeft") {
-    updateSelectedBodyPartLayer((current) => ({ angle: clampBodyPartLayerNumericValue("angle", current.angle - step) }));
-    return;
-  }
-
-  if (action === "rotateRight") {
-    updateSelectedBodyPartLayer((current) => ({ angle: clampBodyPartLayerNumericValue("angle", current.angle + step) }));
-    return;
-  }
-
-  const scaleDelta = step / 100;
-
-  if (action === "scaleDown") {
-    updateSelectedBodyPartLayer((current) => ({
-      scaleX: clampBodyPartLayerNumericValue("scaleX", current.scaleX - scaleDelta),
-      scaleY: clampBodyPartLayerNumericValue("scaleY", current.scaleY - scaleDelta),
-    }));
-    return;
-  }
-
-  updateSelectedBodyPartLayer((current) => ({
-    scaleX: clampBodyPartLayerNumericValue("scaleX", current.scaleX + scaleDelta),
-    scaleY: clampBodyPartLayerNumericValue("scaleY", current.scaleY + scaleDelta),
-  }));
-}
-
-function updateSelectedBodyPartLayer(getPatch: (current: BodyPartLayerTuning, partKey: RigPartKey) => Partial<BodyPartLayerTuning>): void {
-  const bodyPartLayers = getEditableBodyPartLayers();
-  const nextBodyPartLayers = { ...bodyPartLayers };
-
-  getSelectedRigPartsForBulkAction().forEach((partKey) => {
-    const current = bodyPartLayers[partKey];
-
-    nextBodyPartLayers[partKey] = {
-      ...current,
-      ...getPatch(current, partKey),
-    };
-  });
-
-  updateEditableBodyPartLayers(nextBodyPartLayers);
 }
 
 function rotatePaperDoll(degrees: number): void {
@@ -6262,19 +6164,6 @@ function getActiveAnimationFacePoseKey(): AnimationFacePoseKey | undefined {
   }
 
   return undefined;
-}
-
-function isRigNudgeAction(value: string | undefined): value is RigNudgeAction {
-  return (
-    value === "left" ||
-    value === "right" ||
-    value === "up" ||
-    value === "down" ||
-    value === "rotateLeft" ||
-    value === "rotateRight" ||
-    value === "scaleDown" ||
-    value === "scaleUp"
-  );
 }
 
 function isRigLimbKey(value: string | undefined): value is RigLimbKey {
@@ -7089,7 +6978,6 @@ function syncDebugTools(panel: HTMLElement): void {
   syncClassicActionButtonEditor(panel);
   syncBossEditor(panel);
   syncAnimationEditor(panel);
-  syncNudgeControls();
   syncGrid();
 }
 
@@ -9449,9 +9337,11 @@ function syncModeTabs(panel: HTMLElement): void {
         ? "animation"
         : document.body.classList.contains("debug-mode-city")
           ? "city"
-          : document.body.classList.contains("debug-mode-effects")
-            ? "effects"
-            : "character";
+          : document.body.classList.contains("debug-mode-ui")
+            ? "ui"
+            : document.body.classList.contains("debug-mode-effects")
+              ? "effects"
+              : "character";
 
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.debugMode === mode}`);
@@ -10119,12 +10009,6 @@ function formatAnimationKeyframeLabel(keyframe: BodyAnimationKeyframe): string {
   }
 
   return keyframe.id;
-}
-
-function syncNudgeControls(): void {
-  document.querySelectorAll<HTMLButtonElement>("button[data-nudge-step]").forEach((button) => {
-    button.setAttribute("aria-pressed", `${Number(button.dataset.nudgeStep) === activeNudgeStep}`);
-  });
 }
 
 function syncGrid(): void {

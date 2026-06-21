@@ -4754,12 +4754,12 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop.armory-shop--city-mode::after {
   content: "MAGIC SHOP";
-  top: 9px;
+  top: var(--magic-shop-title-top);
   display: grid;
   box-sizing: border-box;
   place-items: center;
-  width: min(300px, calc(100% - 104px));
-  height: 72px;
+  width: min(var(--magic-shop-title-width), calc(100% - 104px));
+  height: var(--magic-shop-title-height);
   min-width: 0;
   padding: 24px 48px 17px;
   border: 0;
@@ -4782,8 +4782,24 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop.armory-shop--city-mode {
   --shop-city-header-height: 0px;
-  --shop-city-products-height: clamp(328px, 48dvh, 372px);
+  --shop-city-products-height: clamp(280px, var(--ui-magic-shop-products-height, 306px), 338px);
   --shop-city-tray-height: var(--shop-city-products-height);
+  --magic-shop-title-top: var(--ui-magic-shop-title-top, 9px);
+  --magic-shop-title-width: var(--ui-magic-shop-title-width, 300px);
+  --magic-shop-title-height: var(--ui-magic-shop-title-height, 72px);
+  --magic-shop-list-row-height: var(--ui-magic-shop-list-row-height, 44px);
+  --magic-shop-list-visible-items: var(--ui-magic-shop-list-visible-rows, 5);
+  --magic-shop-list-width: min(var(--ui-magic-shop-list-width, 390px), calc(100% - 54px));
+  --magic-shop-preview-top: var(--ui-magic-shop-preview-top, 74px);
+  --magic-shop-preview-bottom-gap: var(--ui-magic-shop-preview-bottom-gap, 24px);
+  --magic-shop-preview-width: min(var(--ui-magic-shop-preview-width, 244px), calc(100% - 42px));
+  --magic-shop-preview-height: min(var(--ui-magic-shop-preview-height, 288px), 100%);
+  --magic-shop-preview-padding-top: var(--ui-magic-shop-preview-padding-top, 50px);
+  --magic-shop-preview-padding-x: var(--ui-magic-shop-preview-padding-x, 26px);
+  --magic-shop-preview-padding-bottom: var(--ui-magic-shop-preview-padding-bottom, 29px);
+  --magic-shop-preview-icon-size: var(--ui-magic-shop-preview-icon-size, 104px);
+  --magic-shop-wallet-margin-top: var(--ui-magic-shop-wallet-margin-top, 5px);
+  --magic-shop-wallet-min-width: var(--ui-magic-shop-wallet-min-width, 210px);
 }
 
 .armory-shop--city-mode.armory-shop--has-subcategories {
@@ -4835,20 +4851,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .magic-shop.armory-shop--city-mode .armory-shop__panel::after {
-  content: "";
-  position: absolute;
-  right: 20px;
-  bottom: calc(var(--shop-city-tray-height) - 8px);
-  left: 20px;
-  z-index: 1;
-  height: 112px;
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 50% 50%, transparent 32%, rgba(188, 64, 255, 0.22) 34% 36%, transparent 39%),
-    repeating-radial-gradient(ellipse at 50% 50%, rgba(203, 89, 255, 0.1) 0 1px, transparent 1px 13px);
-  filter: blur(0.2px);
-  opacity: 0.36;
-  pointer-events: none;
+  content: none;
 }
 
 .armory-shop__preview-shell,
@@ -6680,9 +6683,9 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop.armory-shop--city-mode .magic-shop__preview {
   position: absolute;
-  top: 82px;
+  top: var(--magic-shop-preview-top);
   right: 24px;
-  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + 12px);
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + var(--magic-shop-preview-bottom-gap));
   left: 24px;
   z-index: 4;
   display: grid;
@@ -6704,10 +6707,10 @@ body.debug-active .city-menu__portrait-button:active {
   justify-items: center;
   align-content: stretch;
   box-sizing: border-box;
-  width: min(258px, calc(100% - 18px));
-  height: min(302px, 100%);
+  width: var(--magic-shop-preview-width);
+  height: var(--magic-shop-preview-height);
   min-height: 0;
-  padding: 54px 29px 31px;
+  padding: var(--magic-shop-preview-padding-top) var(--magic-shop-preview-padding-x) var(--magic-shop-preview-padding-bottom);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -6718,7 +6721,7 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__preview-card::before {
   content: "";
   position: absolute;
-  inset: -18px -16px -17px;
+  inset: -17px -15px -16px;
   z-index: 0;
   background: var(--magic-shop-selected-card-frame-image) center / 100% 100% no-repeat;
   border: 0;
@@ -6738,8 +6741,8 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__preview-icon {
   position: relative;
   z-index: 1;
-  width: clamp(100px, 26vw, 116px);
-  height: clamp(100px, 26vw, 116px);
+  width: var(--magic-shop-preview-icon-size);
+  height: var(--magic-shop-preview-icon-size);
   object-fit: contain;
   filter:
     drop-shadow(0 3px 0 rgba(8, 2, 1, 0.58))
@@ -6799,7 +6802,7 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(78px, auto) minmax(106px, 1fr);
+  grid-template-columns: minmax(74px, auto) minmax(102px, 1fr);
   gap: 7px;
   align-items: center;
   width: 100%;
@@ -6842,10 +6845,14 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop__list {
   display: grid;
-  grid-auto-rows: minmax(44px, auto);
+  grid-auto-rows: minmax(var(--magic-shop-list-row-height), auto);
   gap: 0;
   overflow-y: auto;
   align-self: end;
+  justify-self: center;
+  box-sizing: border-box;
+  width: var(--magic-shop-list-width);
+  max-height: calc(var(--magic-shop-list-row-height) * var(--magic-shop-list-visible-items) + 16px);
   padding: 8px 8px 8px 10px;
   border: 1px solid rgba(255, 211, 132, 0.3);
   border-radius: 9px;
@@ -6883,7 +6890,7 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 9px;
   align-items: center;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--magic-shop-list-row-height);
   padding: 4px 7px 4px 4px;
   border: 0;
   border-radius: 0;
@@ -7012,8 +7019,8 @@ body.debug-active .city-menu__portrait-button:active {
   align-items: center;
   justify-content: center;
   justify-self: center;
-  min-width: min(210px, 100%);
-  margin-top: 5px;
+  min-width: min(var(--magic-shop-wallet-min-width), 100%);
+  margin-top: var(--magic-shop-wallet-margin-top);
   padding: 5px 12px;
   border: 1px solid rgba(255, 211, 132, 0.28);
   border-radius: 7px;
@@ -7496,17 +7503,33 @@ body.debug-active .city-menu__portrait-button:active {
 
 @media (max-width: 460px), (max-height: 760px) {
   .magic-shop.armory-shop--city-mode {
-    --shop-city-products-height: clamp(284px, 43dvh, 322px);
+    --shop-city-products-height: clamp(248px, var(--ui-magic-shop-compact-products-height, 266px), 296px);
     --shop-city-menu-pad-top: 5px;
+    --magic-shop-title-top: var(--ui-magic-shop-compact-title-top, 7px);
+    --magic-shop-title-width: var(--ui-magic-shop-compact-title-width, 260px);
+    --magic-shop-title-height: var(--ui-magic-shop-compact-title-height, 49px);
+    --magic-shop-list-row-height: var(--ui-magic-shop-compact-list-row-height, 38px);
+    --magic-shop-list-visible-items: var(--ui-magic-shop-compact-list-visible-rows, 5);
+    --magic-shop-list-width: min(var(--ui-magic-shop-compact-list-width, 372px), calc(100% - 32px));
+    --magic-shop-preview-top: var(--ui-magic-shop-compact-preview-top, 62px);
+    --magic-shop-preview-bottom-gap: var(--ui-magic-shop-compact-preview-bottom-gap, 18px);
+    --magic-shop-preview-width: min(var(--ui-magic-shop-compact-preview-width, 210px), calc(100% - 36px));
+    --magic-shop-preview-height: min(var(--ui-magic-shop-compact-preview-height, 236px), 100%);
+    --magic-shop-preview-padding-top: var(--ui-magic-shop-compact-preview-padding-top, 39px);
+    --magic-shop-preview-padding-x: var(--ui-magic-shop-compact-preview-padding-x, 22px);
+    --magic-shop-preview-padding-bottom: var(--ui-magic-shop-compact-preview-padding-bottom, 23px);
+    --magic-shop-preview-icon-size: var(--ui-magic-shop-compact-preview-icon-size, 84px);
+    --magic-shop-wallet-margin-top: var(--ui-magic-shop-compact-wallet-margin-top, 4px);
+    --magic-shop-wallet-min-width: var(--ui-magic-shop-compact-wallet-min-width, 180px);
   }
 
   .magic-shop.armory-shop--city-mode::after {
-    top: calc(var(--shop-frame-top-height) + 7px);
+    top: calc(var(--shop-frame-top-height) + var(--magic-shop-title-top));
     right: calc(var(--shop-frame-side-width) + 8px);
     left: calc(var(--shop-frame-side-width) + 50px);
     box-sizing: border-box;
     width: auto;
-    height: 49px;
+    height: var(--magic-shop-title-height);
     min-width: 0;
     max-width: none;
     padding: 16px 20px 12px;
@@ -7528,21 +7551,21 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop.armory-shop--city-mode .magic-shop__preview {
-    top: 68px;
+    top: var(--magic-shop-preview-top);
     right: 14px;
-    bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + 8px);
+    bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + var(--magic-shop-preview-bottom-gap));
     left: 14px;
   }
 
   .magic-shop__preview-card {
     gap: 4px;
-    width: min(220px, calc(100% - 8px));
-    height: min(246px, 100%);
-    padding: 41px 24px 24px;
+    width: var(--magic-shop-preview-width);
+    height: var(--magic-shop-preview-height);
+    padding: var(--magic-shop-preview-padding-top) var(--magic-shop-preview-padding-x) var(--magic-shop-preview-padding-bottom);
   }
 
   .magic-shop__preview-card::before {
-    inset: -14px -13px -12px;
+    inset: -13px -12px -12px;
   }
 
   .magic-shop__preview-card::after {
@@ -7550,8 +7573,8 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__preview-icon {
-    width: clamp(78px, 24vw, 96px);
-    height: clamp(78px, 24vw, 96px);
+    width: var(--magic-shop-preview-icon-size);
+    height: var(--magic-shop-preview-icon-size);
   }
 
   .magic-shop__preview-body {
@@ -7573,7 +7596,7 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__preview-footer {
-    grid-template-columns: minmax(70px, auto) minmax(92px, 1fr);
+    grid-template-columns: minmax(64px, auto) minmax(86px, 1fr);
     gap: 6px;
   }
 
@@ -7632,8 +7655,8 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__wallet {
-    min-width: min(180px, 100%);
-    margin-top: 4px;
+    min-width: min(var(--magic-shop-wallet-min-width), 100%);
+    margin-top: var(--magic-shop-wallet-margin-top);
     padding: 4px 8px;
   }
 
@@ -8040,7 +8063,7 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 
 .debug-panel__mode-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 7px;
 }
 
@@ -8060,6 +8083,31 @@ body.debug-active .battle-screen.hud-editing .flask-hud:active {
 .debug-panel__mode-tab[aria-pressed="true"] {
   color: #35180d;
   background: linear-gradient(180deg, #fff0bd, #e99c33);
+}
+
+.debug-ui-layout {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 12px;
+}
+
+.debug-ui-layout__controls {
+  display: grid;
+  gap: 6px;
+}
+
+.debug-ui-layout__status {
+  min-height: 1.2em;
+  margin: 0;
+  color: #ffd78a;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+body.debug-mode-ui .ui-layout-tuner__target--selected {
+  outline: 2px solid rgba(255, 212, 92, 0.95);
+  outline-offset: 3px;
+  box-shadow: 0 0 18px rgba(178, 72, 255, 0.48);
 }
 
 .debug-panel__body,
@@ -8208,6 +8256,7 @@ body.debug-mode-animation .debug-face-panel,
 body.debug-mode-animation .debug-arena-panel,
 body.debug-mode-animation .debug-hud-panel,
 body.debug-mode-animation .debug-city-panel,
+body.debug-mode-animation .debug-ui-layout-panel,
 body.debug-mode-animation .debug-effects-panel,
 body.debug-mode-animation .debug-item-equipment-panel,
 body.debug-mode-animation .debug-auto-equipment-panel,
@@ -8215,13 +8264,16 @@ body.debug-mode-animation .debug-set-import-preview,
 body.debug-mode-character .debug-arena-panel,
 body.debug-mode-character .debug-hud-panel,
 body.debug-mode-character .debug-city-panel,
+body.debug-mode-character .debug-ui-layout-panel,
 body.debug-mode-character .debug-effects-panel,
 body.debug-mode-arena .debug-character-shell,
 body.debug-mode-arena .debug-animation-editor,
 body.debug-mode-arena .debug-rig-panel,
 body.debug-mode-arena .debug-face-panel,
+body.debug-mode-arena .debug-preview-tools,
 body.debug-mode-arena .debug-hud-panel,
 body.debug-mode-arena .debug-city-panel,
+body.debug-mode-arena .debug-ui-layout-panel,
 body.debug-mode-arena .debug-effects-panel,
 body.debug-mode-arena .debug-item-equipment-panel,
 body.debug-mode-arena .debug-auto-equipment-panel,
@@ -8230,8 +8282,10 @@ body.debug-mode-arena .main-menu,
 body.debug-mode-city .debug-character-shell,
 body.debug-mode-city .debug-animation-editor,
 body.debug-mode-city .debug-rig-panel,
+body.debug-mode-city .debug-preview-tools,
 body.debug-mode-city .debug-arena-panel,
 body.debug-mode-city .debug-hud-panel,
+body.debug-mode-city .debug-ui-layout-panel,
 body.debug-mode-city .debug-effects-panel,
 body.debug-mode-city .debug-item-equipment-panel,
 body.debug-mode-city .debug-auto-equipment-panel,
@@ -8240,16 +8294,35 @@ body.debug-mode-city .battle-screen,
 body.debug-mode-hud .debug-character-shell,
 body.debug-mode-hud .debug-animation-editor,
 body.debug-mode-hud .debug-rig-panel,
+body.debug-mode-hud .debug-preview-tools,
 body.debug-mode-hud .debug-city-panel,
 body.debug-mode-hud .debug-arena-panel,
+body.debug-mode-hud .debug-ui-layout-panel,
 body.debug-mode-hud .debug-effects-panel,
 body.debug-mode-hud .debug-item-equipment-panel,
 body.debug-mode-hud .debug-auto-equipment-panel,
 body.debug-mode-hud .debug-set-import-preview,
 body.debug-mode-hud .main-menu,
+body.debug-mode-ui .debug-character-shell,
+body.debug-mode-ui .debug-animation-editor,
+body.debug-mode-ui .debug-rig-panel,
+body.debug-mode-ui .debug-preview-tools,
+body.debug-mode-ui .debug-face-panel,
+body.debug-mode-ui .debug-tier-editor-panel,
+body.debug-mode-ui .debug-boss-editor-panel,
+body.debug-mode-ui .debug-city-panel,
+body.debug-mode-ui .debug-arena-panel,
+body.debug-mode-ui .debug-hud-panel,
+body.debug-mode-ui .debug-effects-panel,
+body.debug-mode-ui .debug-item-equipment-panel,
+body.debug-mode-ui .debug-auto-equipment-panel,
+body.debug-mode-ui .debug-set-import-preview,
+body.debug-mode-ui .battle-screen,
+body.debug-mode-effects .debug-ui-layout-panel,
 body.debug-mode-effects .debug-character-shell,
 body.debug-mode-effects .debug-animation-editor,
 body.debug-mode-effects .debug-rig-panel,
+body.debug-mode-effects .debug-preview-tools,
 body.debug-mode-effects .debug-city-panel,
 body.debug-mode-effects .debug-arena-panel,
 body.debug-mode-effects .debug-hud-panel,
@@ -9895,17 +9968,11 @@ body.debug-mode-animation .debug-preview-column {
   width: auto;
 }
 
-.debug-preview-toolbar,
-.debug-nudge-toolbar {
+.debug-preview-toolbar {
   min-width: 0;
 }
 
-body.debug-mode-arena .debug-preview-tools {
-  display: none;
-}
-
-.debug-preview-toolbar__group,
-.debug-nudge-toolbar__group {
+.debug-preview-toolbar__group {
   display: grid;
   gap: 7px;
   margin: 0;
@@ -9916,8 +9983,7 @@ body.debug-mode-arena .debug-preview-tools {
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.26);
 }
 
-.debug-preview-toolbar__group legend,
-.debug-nudge-toolbar__group legend {
+.debug-preview-toolbar__group legend {
   padding: 0 4px;
   color: #ffd384;
   font-size: 0.56rem;
@@ -9927,9 +9993,6 @@ body.debug-mode-arena .debug-preview-tools {
 }
 
 .debug-preview-toolbar__controls,
-.debug-nudge-toolbar__steps,
-.debug-nudge-toolbar__grid,
-.debug-nudge-toolbar__actions,
 .debug-preview-toolbar__actions {
   display: grid;
   gap: 6px;
@@ -9950,18 +10013,11 @@ body.debug-mode-arena .debug-preview-tools {
   font-size: 0.56rem;
 }
 
-.debug-nudge-toolbar__steps,
-.debug-nudge-toolbar__grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.debug-nudge-toolbar__actions,
 .debug-preview-toolbar__actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.debug-preview-toolbar .debug-panel__reset,
-.debug-nudge-toolbar .debug-panel__reset {
+.debug-preview-toolbar .debug-panel__reset {
   width: 100%;
   min-width: 0;
   min-height: 27px;
@@ -9970,22 +10026,6 @@ body.debug-mode-arena .debug-preview-tools {
   border-radius: 8px;
   font-size: 0.56rem;
   line-height: 1;
-}
-
-.debug-nudge-toolbar__button[aria-pressed="true"] {
-  outline: 2px solid #ffe7a4;
-  outline-offset: 1px;
-  filter: brightness(1.08);
-}
-
-.debug-nudge-toolbar__empty,
-.debug-nudge-toolbar__center {
-  min-height: 27px;
-}
-
-.debug-nudge-toolbar__center {
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 211, 132, 0.78) 0 3px, rgba(255, 211, 132, 0.12) 4px 100%);
 }
 
 body.debug-active .debug-game-shell {

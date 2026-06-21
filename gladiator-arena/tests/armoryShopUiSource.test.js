@@ -12,6 +12,7 @@ const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
 const shopPresentationSource = readFileSync(resolve(currentDir, "../src/shopPresentation.ts"), "utf8");
+const uiLayoutTuningSource = readFileSync(resolve(currentDir, "../src/uiLayoutTuning.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 function getFunctionSource(source, functionName) {
@@ -189,6 +190,7 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.equal(magicShopSource.includes("CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL"), true);
   assert.equal(magicShopSource.includes("MAGIC_SHOP_TITLE_FRAME_ASSET_URL"), true);
   assert.equal(magicShopSource.includes("MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL"), true);
+  assert.equal(magicShopSource.includes("applyUiLayoutTuning"), true);
   assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-background-image"'), true);
   assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-title-frame-image"'), true);
   assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-selected-card-frame-image"'), true);
@@ -222,23 +224,40 @@ test("magic shop uses one selected scroll preview and a shared scroll cap counte
   assert.equal(stylesSource.includes(".magic-shop__list-effect"), true);
   assert.equal(stylesSource.includes(".magic-shop__list-item--selected::before"), true);
   assert.match(stylesSource, /\.magic-shop__list\s*\{[\s\S]*gap: 0;[\s\S]*align-self: end;[\s\S]*border: 1px solid rgba\(255, 211, 132, 0\.3\);/);
+  assert.match(stylesSource, /\.magic-shop__list\s*\{[\s\S]*max-height: calc\(var\(--magic-shop-list-row-height\) \* var\(--magic-shop-list-visible-items\) \+ 16px\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-list-visible-items: var\(--ui-magic-shop-list-visible-rows, 5\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-list-width: min\(var\(--ui-magic-shop-list-width, 390px\), calc\(100% - 54px\)\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-preview-width: min\(var\(--ui-magic-shop-preview-width, 244px\), calc\(100% - 42px\)\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__panel::after\s*\{[\s\S]*content: none;[\s\S]*\}/);
   assert.match(stylesSource, /\.magic-shop__list-item\s*\{[\s\S]*border: 0;[\s\S]*box-shadow: none;/);
   assert.match(stylesSource, /\.magic-shop__list-icon\s*\{[\s\S]*border: 0;[\s\S]*background: transparent;/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__tray\s*\{[\s\S]*border: 0;[\s\S]*background: transparent;[\s\S]*box-shadow: none;/);
-  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-products-height: clamp\(284px, 43dvh, 322px\);/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-products-height: clamp\(248px, var\(--ui-magic-shop-compact-products-height, 266px\), 296px\);/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*left: calc\(var\(--shop-frame-side-width\) \+ 50px\);[\s\S]*min-width: 0;[\s\S]*transform: none;/);
-  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop__preview-card\s*\{[\s\S]*width: min\(220px, calc\(100% - 8px\)\);/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-list-row-height: var\(--ui-magic-shop-compact-list-row-height, 38px\);/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-preview-width: min\(var\(--ui-magic-shop-compact-preview-width, 210px\), calc\(100% - 36px\)\);/);
+  assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop__preview-card\s*\{[\s\S]*width: var\(--magic-shop-preview-width\);/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop__list-item\s*\{[\s\S]*min-height: 38px;/);
   assert.equal(stylesSource.includes(".magic-shop__wallet"), true);
   assert.equal(stylesSource.includes(".magic-shop__scroll-capacity"), true);
   assert.match(stylesSource, /\.city-menu--magic-shop-open \.city-menu__hero\s*\{[\s\S]*opacity: 0;[\s\S]*\}/);
-  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-header-height: 0px;[\s\S]*--shop-city-products-height: clamp\(328px, 48dvh, 372px\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-header-height: 0px;[\s\S]*--shop-city-products-height: clamp\(280px, var\(--ui-magic-shop-products-height, 306px\), 338px\);/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__panel::before\s*\{[\s\S]*var\(--magic-shop-background-image\);[\s\S]*\}/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__tray\s*\{[\s\S]*grid-template-rows: var\(--shop-city-products-height\);/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__header\s*\{[\s\S]*display: none;[\s\S]*\}/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.magic-shop__preview\s*\{[\s\S]*position: absolute;[\s\S]*bottom: calc\(var\(--shop-city-tray-height\)/);
   assert.match(stylesSource, /\.magic-shop__preview-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);[\s\S]*justify-items: center;/);
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__content--products\s*\{[\s\S]*grid-template-rows: minmax\(0, 1fr\) auto;/);
+  assert.equal(uiLayoutTuningSource.includes('UI_LAYOUT_TUNING_STORAGE_KEY = "dust-arena-ui-layout-tuning"'), true);
+  assert.equal(uiLayoutTuningSource.includes('id: "magicShop"'), true);
+  assert.equal(uiLayoutTuningSource.includes('rootSelector: ".magic-shop.armory-shop--city-mode"'), true);
+  assert.equal(uiLayoutTuningSource.includes('id: "preview"'), true);
+  assert.equal(uiLayoutTuningSource.includes('id: "list"'), true);
+  assert.equal(uiLayoutTuningSource.includes('"magicShop.preview.width.compact"'), true);
+  assert.equal(uiLayoutTuningSource.includes("target.style.setProperty(control.cssVars[viewport]"), true);
+  assert.equal(uiLayoutTuningSource.includes("target.style.setProperty("), true);
+  assert.equal(uiLayoutTuningSource.includes("control.runtimeCssVar"), true);
+  assert.equal(uiLayoutTuningSource.includes("document.body.classList.contains(\"debug-mode-ui\")"), true);
 });
 
 test("shop product display names hide technical variants and rename shoulder guards", () => {
