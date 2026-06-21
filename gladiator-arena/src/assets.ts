@@ -258,6 +258,7 @@ export const CITY_DAY_BACKGROUND_ASSET_KEY = "city-menu-bg-day";
 export const CITY_DAY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city-day.webp", import.meta.url).href;
 export const CITY_SHOP_BACKGROUND_ASSET_KEY = "city-shop-bg";
 export const CITY_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-shop.webp", import.meta.url).href;
+export const CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/magic-shop.webp", import.meta.url).href;
 export const CITY_ARMORY_BACKGROUND_ASSET_KEY = CITY_SHOP_BACKGROUND_ASSET_KEY;
 export const CITY_ARMORY_BACKGROUND_ASSET_URL = CITY_SHOP_BACKGROUND_ASSET_URL;
 export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY = CITY_SHOP_BACKGROUND_ASSET_KEY;

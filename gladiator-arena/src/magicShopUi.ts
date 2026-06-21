@@ -11,6 +11,7 @@ import {
   type HeroState,
 } from "./hero";
 import {
+  CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
@@ -28,6 +29,8 @@ import { getShopProductIconUrl } from "./shopItemIcons";
 export interface MagicProduct {
   id: string;
   name: string;
+  displayName?: string;
+  listEffect?: string;
   price: number;
   itemIds: HeroItemId[];
   rarity?: ShopItemRarity;
@@ -54,6 +57,8 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "crack_armor_scroll",
     name: "Crack Armor Scroll",
+    displayName: "Armor Crack",
+    listEffect: "Removes 1 random armor piece",
     price: 30,
     itemIds: [HERO_CRACK_ARMOR_SCROLL_ITEM_ID],
     rarity: "common",
@@ -62,6 +67,8 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "fireball_scroll",
     name: "Fireball Scroll",
+    displayName: "Fireball",
+    listEffect: "Deals direct damage",
     price: 30,
     itemIds: [HERO_FIREBALL_SCROLL_ITEM_ID],
     rarity: "common",
@@ -70,6 +77,8 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "ward_scroll",
     name: "Ward Scroll",
+    displayName: "Ward",
+    listEffect: "Absorbs the next incoming hit",
     price: 30,
     itemIds: [HERO_WARD_SCROLL_ITEM_ID],
     rarity: "common",
@@ -78,6 +87,8 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "precise_strike_scroll",
     name: "Precise Strike Scroll",
+    displayName: "True Strike",
+    listEffect: "Your next attack is 100%",
     price: 30,
     itemIds: [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID],
     rarity: "common",
@@ -86,6 +97,8 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "double_strike_scroll",
     name: "Double Strike Scroll",
+    displayName: "Double Hit",
+    listEffect: "Your next attack hits twice",
     price: 30,
     itemIds: [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID],
     rarity: "common",
@@ -94,6 +107,8 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
     id: "poison_scroll",
     name: "Poison Scroll",
+    displayName: "Poison",
+    listEffect: "Poisons the enemy for 2 turns",
     price: 30,
     itemIds: [HERO_POISON_SCROLL_ITEM_ID],
     rarity: "common",
@@ -112,6 +127,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   const shop = document.createElement("section");
   shop.className = "armory-shop weapon-shop magic-shop armory-shop--city-mode";
   shop.hidden = true;
+  shop.style.setProperty("--magic-shop-background-image", `url("${CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL}")`);
   shop.setAttribute("aria-label", "Magic shop");
 
   const panel = document.createElement("div");
@@ -168,7 +184,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
   const wallet = document.createElement("div");
   wallet.className = "magic-shop__wallet";
-  wallet.append(gold, scrollCapacity);
+  wallet.append(scrollCapacity, gold);
 
   const back = document.createElement("button");
   const backIcon = document.createElement("img");
@@ -341,7 +357,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const card = document.createElement("article");
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
-    const displayName = getShopProductDisplayName(product.name);
+    const displayName = getMagicProductDisplayName(product);
     const icon = document.createElement("img");
     const body = document.createElement("div");
     const name = document.createElement("h3");
@@ -388,11 +404,11 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const item = document.createElement("button");
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
-    const displayName = getShopProductDisplayName(product.name);
+    const displayName = getMagicProductDisplayName(product);
     const icon = document.createElement("img");
     const text = document.createElement("span");
     const name = document.createElement("span");
-    const rarityNode = document.createElement("span");
+    const effect = document.createElement("span");
     const price = document.createElement("span");
 
     item.className = `magic-shop__list-item armory-shop__option--rarity-${rarity}`;
@@ -414,9 +430,9 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     text.className = "magic-shop__list-text";
     name.className = "magic-shop__list-name";
     name.textContent = displayName;
-    rarityNode.className = "magic-shop__list-rarity";
-    rarityNode.textContent = getShopRarityLabel(rarity);
-    text.append(name, rarityNode);
+    effect.className = "magic-shop__list-effect";
+    effect.textContent = product.listEffect ?? product.effect;
+    text.append(name, effect);
     price.className = "magic-shop__list-price";
     appendPriceContent(price, product.price);
     item.append(icon, text, price);
@@ -440,4 +456,10 @@ function appendPriceContent(priceNode: HTMLElement, price: number): void {
   amount.className = "armory-shop__price-amount";
   amount.textContent = String(price);
   priceNode.append(icon, amount);
+}
+
+function getMagicProductDisplayName(product: MagicProduct): string {
+  return getShopProductDisplayName(product.displayName ?? product.name)
+    .replace(/\s+Scroll\b/giu, "")
+    .trim();
 }
