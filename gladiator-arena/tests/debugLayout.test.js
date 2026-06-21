@@ -30,6 +30,9 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugHtml.includes('/src/debugMain.ts'), true);
   assert.equal(debugHtml.includes('id="gameScreen" class="game-screen battle-screen"'), true);
   assert.equal(debugHtml.includes('id="resultLoot"'), true);
+  assert.equal(debugHtml.includes('class="combat-debuff-tray"'), true);
+  assert.equal(debugHtml.includes('id="playerPoison"'), true);
+  assert.equal(debugHtml.includes('id="enemyPoison"'), true);
   assert.equal(debugMainSource.includes("mountDebugPanel"), true);
 });
 

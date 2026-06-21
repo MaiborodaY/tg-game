@@ -106,6 +106,7 @@ import {
   isRangedWeaponClass,
   type ActionId,
   type CombatArmorSlotState,
+  type CombatHitResult,
   type CombatState,
   type FighterState,
 } from "./combat";
@@ -490,6 +491,7 @@ interface ArenaEffectPools {
 interface ActionAnimationHandle {
   done: Promise<void>;
   impact?: Promise<void>;
+  impacts?: Promise<void>[];
   speedUp?: (multiplier: number) => void;
 }
 
@@ -2058,6 +2060,8 @@ export class ArenaScene extends Phaser.Scene {
 
     const playerResultDelay = playerActionAnimation?.impact;
     const enemyResultDelay = enemyActionAnimation?.impact;
+    const playerResultDelays = playerActionAnimation?.impacts ?? (playerResultDelay ? [playerResultDelay] : undefined);
+    const enemyResultDelays = enemyActionAnimation?.impacts ?? (enemyResultDelay ? [enemyResultDelay] : undefined);
     const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, enemyResultDelay);
 
     queueRemovedArmorSlotFlyOff(this, actionAnimations, playerRemovedArmorSprites, playerResultDelay, 1);
@@ -2077,7 +2081,27 @@ export class ArenaScene extends Phaser.Scene {
     speedUpDamagingLungeAfterImpact(playerActionAnimation, lastPlayerAction, nextState.lastPlayerDamage);
     speedUpDamagingLungeAfterImpact(enemyActionAnimation, lastEnemyAction, nextState.lastEnemyDamage);
 
-    if (nextState.lastPlayerDamage > 0) {
+    if (nextState.lastPlayerPoisonDamage > 0) {
+      queueCombatResultAnimation(actionAnimations, undefined, () =>
+        playPoisonDamageAnimation(this, visuals.enemy, nextState.lastPlayerPoisonDamage),
+      );
+    }
+
+    if (nextState.lastEnemyPoisonDamage > 0) {
+      queueCombatResultAnimation(actionAnimations, undefined, () =>
+        playPoisonDamageAnimation(this, visuals.player, nextState.lastEnemyPoisonDamage),
+      );
+    }
+
+    const queuedPlayerHitResults = queueCombatHitResultAnimations(
+      this,
+      actionAnimations,
+      visuals.enemy,
+      nextState.lastPlayerHitResults,
+      playerResultDelays,
+      playerSettings,
+    );
+    if (!queuedPlayerHitResults && nextState.lastPlayerDamage > 0) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
         showDamageResultPopupFromFighter(
           this,
@@ -2090,13 +2114,13 @@ export class ArenaScene extends Phaser.Scene {
 
         return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit", visuals.enemy.paperDollRig?.bodyPresetKey));
       });
-    } else if (nextState.lastPlayerWardAbsorbed) {
+    } else if (!queuedPlayerHitResults && nextState.lastPlayerWardAbsorbed) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
         showWardAbsorbPopupFromFighter(this, visuals.enemy);
 
         return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block", visuals.enemy.paperDollRig?.bodyPresetKey));
       });
-    } else if (nextState.lastPlayerBlocked) {
+    } else if (!queuedPlayerHitResults && nextState.lastPlayerBlocked) {
       queueCombatResultAnimation(actionAnimations, playerResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.enemy);
 
@@ -2104,7 +2128,15 @@ export class ArenaScene extends Phaser.Scene {
       });
     }
 
-    if (nextState.lastEnemyDamage > 0) {
+    const queuedEnemyHitResults = queueCombatHitResultAnimations(
+      this,
+      actionAnimations,
+      visuals.player,
+      nextState.lastEnemyHitResults,
+      enemyResultDelays,
+      playerSettings,
+    );
+    if (!queuedEnemyHitResults && nextState.lastEnemyDamage > 0) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
         showDamageResultPopupFromFighter(
           this,
@@ -2117,13 +2149,13 @@ export class ArenaScene extends Phaser.Scene {
 
         return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit", visuals.player.paperDollRig?.bodyPresetKey));
       });
-    } else if (nextState.lastEnemyWardAbsorbed) {
+    } else if (!queuedEnemyHitResults && nextState.lastEnemyWardAbsorbed) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
         showWardAbsorbPopupFromFighter(this, visuals.player);
 
         return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block", visuals.player.paperDollRig?.bodyPresetKey));
       });
-    } else if (nextState.lastEnemyBlocked) {
+    } else if (!queuedEnemyHitResults && nextState.lastEnemyBlocked) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
         showBlockPopupFromFighter(this, visuals.player);
 
@@ -9584,9 +9616,13 @@ function animateActionSequence(
     return secondAnimationPromise;
   };
 
+  const firstImpact = firstAnimation.impact ?? firstAnimation.done;
+  const secondImpact = getSecondAnimation().then((secondAnimation) => secondAnimation.impact ?? secondAnimation.done);
+
   return {
     done: getSecondAnimation().then((secondAnimation) => secondAnimation.done),
-    impact: getSecondAnimation().then((secondAnimation) => secondAnimation.impact ?? secondAnimation.done),
+    impact: secondImpact,
+    impacts: [firstImpact, secondImpact],
   };
 }
 
@@ -9678,6 +9714,15 @@ function animateAction(
   if (actionId === "doubleStrike") {
     resetFighterBodyIdleAnimation(actor, target.time.now);
     showFloatingText(target, actor.body.x, actor.body.y - 120, "DOUBLE", "#ffd37a");
+    return {
+      done: createSceneDelay(target, 260),
+      impact: createSceneDelay(target, 120),
+    };
+  }
+
+  if (actionId === "poison") {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+    showFloatingText(target, actor.body.x, actor.body.y - 120, "TOXIN", "#b6ff72");
     return {
       done: createSceneDelay(target, 260),
       impact: createSceneDelay(target, 120),
@@ -9828,6 +9873,80 @@ function queueCombatResultAnimation(
   animateResult: () => Promise<void>,
 ): void {
   actionAnimations.push(delay ? delay.then(animateResult) : animateResult());
+}
+
+function queueCombatHitResultAnimations(
+  target: Phaser.Scene,
+  actionAnimations: Promise<void>[],
+  defender: FighterVisual,
+  hitResults: readonly CombatHitResult[] | undefined,
+  delays: readonly (Promise<void> | undefined)[] | undefined,
+  playerSettings: PlayerSettings,
+): boolean {
+  if (!hitResults?.length) {
+    return false;
+  }
+
+  hitResults.forEach((hitResult, index) => {
+    queueCombatResultAnimation(actionAnimations, getCombatHitResultDelay(delays, index), () =>
+      playCombatHitResultAnimation(target, defender, hitResult, playerSettings),
+    );
+  });
+
+  return true;
+}
+
+function getCombatHitResultDelay(
+  delays: readonly (Promise<void> | undefined)[] | undefined,
+  index: number,
+): Promise<void> | undefined {
+  if (!delays?.length) {
+    return undefined;
+  }
+
+  return delays[index] ?? delays[delays.length - 1];
+}
+
+function playCombatHitResultAnimation(
+  target: Phaser.Scene,
+  defender: FighterVisual,
+  hitResult: CombatHitResult,
+  playerSettings: PlayerSettings,
+): Promise<void> {
+  if (hitResult.damage > 0) {
+    showDamageResultPopupFromFighter(
+      target,
+      defender,
+      hitResult.damage,
+      hitResult.armorAbsorbed,
+      hitResult.armorBroken,
+      playerSettings,
+    );
+
+    return playBodyAnimationOnce(target, defender, getActiveBodyAnimation("hit", defender.paperDollRig?.bodyPresetKey));
+  }
+
+  if (hitResult.wardAbsorbed) {
+    showWardAbsorbPopupFromFighter(target, defender);
+
+    return playBodyAnimationOnce(target, defender, getActiveBodyAnimation("block", defender.paperDollRig?.bodyPresetKey));
+  }
+
+  if (hitResult.blocked) {
+    showBlockPopupFromFighter(target, defender);
+
+    return playBodyAnimationOnce(target, defender, getActiveBodyAnimation("block", defender.paperDollRig?.bodyPresetKey));
+  }
+
+  return Promise.resolve();
+}
+
+function playPoisonDamageAnimation(target: Phaser.Scene, defender: FighterVisual, damage: number): Promise<void> {
+  const point = getFighterHeadPopupPoint(target, defender, getDamagePopupHeadOffsetY());
+
+  showFloatingText(target, point.x, point.y, `POISON -${damage}`, "#b6ff72");
+
+  return createSceneDelay(target, 320);
 }
 
 function playProjectile(

@@ -89,6 +89,7 @@ const ACTION_ICONS: Record<ActionId, string> = {
   ward: "W",
   preciseStrike: "P",
   doubleStrike: "2",
+  poison: "P",
   taunt: "!",
   rest: "*",
 };
@@ -109,6 +110,7 @@ const ACTION_UTILITY_ICON_URLS: Partial<Record<ActionId, string>> = {
   ward: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   preciseStrike: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   doubleStrike: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  poison: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   taunt: new URL("./assets/ui/action-icons/taunt.webp", import.meta.url).href,
   rest: new URL("./assets/ui/action-icons/rest.webp", import.meta.url).href,
 };
@@ -667,6 +669,12 @@ export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): s
   if (actionId === "fireball") {
     return state.player.fireballScrollItemId
       ? getShopProductIconUrl([state.player.fireballScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+      : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+  }
+
+  if (actionId === "poison") {
+    return state.player.poisonScrollItemId
+      ? getShopProductIconUrl([state.player.poisonScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
       : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
   }
 

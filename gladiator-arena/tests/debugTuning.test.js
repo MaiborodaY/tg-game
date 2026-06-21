@@ -1152,6 +1152,7 @@ test("debug tuning exposes real classic wheel action sets", () => {
     "ward",
     "preciseStrike",
     "doubleStrike",
+    "poison",
     "taunt",
     "rest",
   ]);
@@ -1166,6 +1167,7 @@ test("debug tuning exposes real classic wheel action sets", () => {
     "ward",
     "preciseStrike",
     "doubleStrike",
+    "poison",
     "taunt",
     "rest",
   ]);
@@ -1180,6 +1182,7 @@ test("debug tuning exposes real classic wheel action sets", () => {
     "ward",
     "preciseStrike",
     "doubleStrike",
+    "poison",
     "back",
     "taunt",
     "rest",

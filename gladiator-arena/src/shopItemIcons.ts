@@ -3,6 +3,7 @@ import {
   HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
   HERO_FIREBALL_SCROLL_ITEM_ID,
   HERO_ITEM_CATALOG,
+  HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_WARD_SCROLL_ITEM_ID,
   type HeroItemId,
@@ -21,6 +22,7 @@ const SCROLL_SHOP_ICON_ASSET_KEYS: Partial<Record<HeroItemId, string>> = {
   [HERO_WARD_SCROLL_ITEM_ID]: "scroll-ward-01",
   [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID]: "scroll-precise-strike-01",
   [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]: "scroll-double-strike-01",
+  [HERO_POISON_SCROLL_ITEM_ID]: "scroll-poison-01",
 };
 
 const SHOP_ITEM_ICON_URLS = {

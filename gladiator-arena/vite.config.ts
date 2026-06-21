@@ -581,10 +581,10 @@ type BodyAnimationKeyframeEasing = (typeof bodyAnimationKeyframeEasings)[number]
 const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
 type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
 
-const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"] as const;
+const actionButtonOffsetKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison", "taunt", "rest"] as const;
 type ActionButtonOffsetKey = (typeof actionButtonOffsetKeys)[number];
 
-const classicActionButtonSlotKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"] as const;
+const classicActionButtonSlotKeys = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison", "taunt", "rest"] as const;
 type ClassicActionButtonSlotKey = (typeof classicActionButtonSlotKeys)[number];
 
 const classicActionWheelModes = ["distance", "clinch", "bowDistance"] as const;

@@ -180,7 +180,7 @@ export interface HeroItemDefinition {
 }
 
 export interface HeroScrollEffect {
-  kind: "crackArmorSlot" | "fireballDamage" | "wardHit" | "preciseStrike" | "doubleStrike";
+  kind: "crackArmorSlot" | "fireballDamage" | "wardHit" | "preciseStrike" | "doubleStrike" | "poison";
 }
 
 export interface HeroInventoryEntry {
@@ -363,6 +363,7 @@ export const HERO_FIREBALL_SCROLL_ITEM_ID = "scroll_fireball_01";
 export const HERO_WARD_SCROLL_ITEM_ID = "scroll_ward_01";
 export const HERO_PRECISE_STRIKE_SCROLL_ITEM_ID = "scroll_precise_strike_01";
 export const HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID = "scroll_double_strike_01";
+export const HERO_POISON_SCROLL_ITEM_ID = "scroll_poison_01";
 export const HERO_STARTING_SKILL_POINTS = 1;
 export const ENEMY_SHURIKEN_ROLL_CHANCE = 0.25;
 export const ENEMY_SHURIKEN_QUANTITY = 1;
@@ -418,6 +419,16 @@ const HERO_SCROLL_ITEMS: Record<HeroItemId, HeroItemDefinition> = {
     equipmentSlot: "weaponMain",
     scrollEffect: {
       kind: "doubleStrike",
+    },
+  },
+  [HERO_POISON_SCROLL_ITEM_ID]: {
+    id: HERO_POISON_SCROLL_ITEM_ID,
+    name: "Poison Scroll",
+    kind: "scroll",
+    rarity: "common",
+    equipmentSlot: "weaponMain",
+    scrollEffect: {
+      kind: "poison",
     },
   },
 };
@@ -905,6 +916,18 @@ export function getHeroDoubleStrikeScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]!.scrollEffect!;
 }
 
+export function getHeroPoisonScrollItemId(): HeroItemId {
+  return HERO_POISON_SCROLL_ITEM_ID;
+}
+
+export function getHeroPoisonScrollCount(hero: HeroState): number {
+  return getHeroItemQuantity(hero, HERO_POISON_SCROLL_ITEM_ID);
+}
+
+export function getHeroPoisonScrollEffect(): HeroScrollEffect {
+  return HERO_SCROLL_ITEMS[HERO_POISON_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
 function getShurikenItemDamage(itemId: HeroItemId | undefined): number {
   const shurikenItem = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
 
@@ -1005,6 +1028,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const playerWardScrollItemId = getHeroWardScrollItemId();
   const playerPreciseStrikeScrollItemId = getHeroPreciseStrikeScrollItemId();
   const playerDoubleStrikeScrollItemId = getHeroDoubleStrikeScrollItemId();
+  const playerPoisonScrollItemId = getHeroPoisonScrollItemId();
   const playerBowShotCapacity = getHeroBowShotCapacity(hero);
   const state = freshState();
 
@@ -1049,6 +1073,9 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       doubleStrikeScrollCount: getHeroDoubleStrikeScrollCount(hero),
       doubleStrikeScrollItemId: playerDoubleStrikeScrollItemId,
       doubleStrikeHits: 0,
+      poisonScrollCount: getHeroPoisonScrollCount(hero),
+      poisonScrollItemId: playerPoisonScrollItemId,
+      poisonTurns: 0,
       equipment: { ...heroEquipment },
       armorSlots: getHeroEquipmentArmorSlots(heroEquipment),
     },
@@ -1078,6 +1105,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenCount: Math.max(0, Math.floor(enemyLoadout.shurikenCount ?? 0)),
       shurikenDamage: Math.max(0, Math.floor(enemyLoadout.shurikenDamage ?? 0)),
       shurikenItemId: enemyLoadout.shurikenItemId,
+      poisonTurns: 0,
       equipment: { ...enemyEquipment },
       armorSlots: getHeroEquipmentArmorSlots(enemyEquipment),
       visualPreset: { ...enemyLoadout.visualPreset },
@@ -1256,6 +1284,7 @@ function applyCombatConsumableUsage(hero: HeroState, combat: CombatState, now: s
     { itemId: combat.player.wardScrollItemId, remaining: combat.player.wardScrollCount },
     { itemId: combat.player.preciseStrikeScrollItemId, remaining: combat.player.preciseStrikeScrollCount },
     { itemId: combat.player.doubleStrikeScrollItemId, remaining: combat.player.doubleStrikeScrollCount },
+    { itemId: combat.player.poisonScrollItemId, remaining: combat.player.poisonScrollCount },
   ];
   let inventory = hero.inventory.map((entry) => ({ ...entry }));
   let hasChange = false;

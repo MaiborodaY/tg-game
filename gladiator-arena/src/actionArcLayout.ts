@@ -112,6 +112,7 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   ward: { label: "WARD", detail: "Absorb" },
   preciseStrike: { label: "TRUE", detail: "Strike" },
   doubleStrike: { label: "2X", detail: "Strike" },
+  poison: { label: "TOXIN", detail: "2 turns" },
   taunt: { label: "TAUNT", detail: "Crowd" },
   rest: { label: "REST", detail: "Breath" },
 };
@@ -158,6 +159,8 @@ function getActionAngle(actionId: ActionId, tuning?: StageLayoutTuning): number 
       return 100;
     case "doubleStrike":
       return 114;
+    case "poison":
+      return 128;
     case "taunt":
       return tuning?.actionTauntArcAngle ?? DEFAULT_ACTION_TAUNT_ANGLE;
     case "rest":

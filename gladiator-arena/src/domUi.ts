@@ -5,11 +5,20 @@ import {
   getFighterMaxArmor,
   getFighterMaxHp,
   getFighterMaxStamina,
+  getFighterPoisonTurns,
   type CombatState,
   type DistanceBand,
 } from "./combat";
 import { getShopProductIconUrl } from "./shopItemIcons";
-import { HERO_ITEM_CATALOG, HERO_MAX_LEVEL, getHeroXpToNextLevel, type ArenaLootDrop, type BattleReward, type HeroState } from "./hero";
+import {
+  HERO_ITEM_CATALOG,
+  HERO_MAX_LEVEL,
+  HERO_POISON_SCROLL_ITEM_ID,
+  getHeroXpToNextLevel,
+  type ArenaLootDrop,
+  type BattleReward,
+  type HeroState,
+} from "./hero";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -50,6 +59,8 @@ export interface DomRefs {
   enemyHpText: HTMLElement;
   enemyArmorText: HTMLElement;
   enemyStaText: HTMLElement;
+  playerPoison: HTMLElement;
+  enemyPoison: HTMLElement;
   classicEnemyHpFill: HTMLElement;
   classicEnemyArmorFill: HTMLElement;
   classicEnemyStaFill: HTMLElement;
@@ -98,6 +109,8 @@ export function getDomRefs(): DomRefs {
     enemyHpText: document.querySelector<HTMLElement>("#enemyHpText"),
     enemyArmorText: document.querySelector<HTMLElement>("#enemyArmorText"),
     enemyStaText: document.querySelector<HTMLElement>("#enemyStaText"),
+    playerPoison: document.querySelector<HTMLElement>("#playerPoison"),
+    enemyPoison: document.querySelector<HTMLElement>("#enemyPoison"),
     classicEnemyHpFill: document.querySelector<HTMLElement>("#classicEnemyHpFill"),
     classicEnemyArmorFill: document.querySelector<HTMLElement>("#classicEnemyArmorFill"),
     classicEnemyStaFill: document.querySelector<HTMLElement>("#classicEnemyStaFill"),
@@ -136,6 +149,8 @@ export interface DomRenderContext {
   deferResultPresentation?: boolean;
   resultReturn?: BattleResultReturnState;
 }
+
+const POISON_STATUS_ICON_URL = getShopProductIconUrl([HERO_POISON_SCROLL_ITEM_ID]);
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
   const playerClinchRange = getFighterClinchRange(state.player);
@@ -181,6 +196,8 @@ function renderStats(dom: DomRefs, state: CombatState): void {
 
   setText(dom.classicPlayerName, state.player.name);
   setText(dom.classicEnemyName, state.enemy.name);
+  syncPoisonStatus(dom.playerPoison, state.player.name, getFighterPoisonTurns(state.player));
+  syncPoisonStatus(dom.enemyPoison, state.enemy.name, getFighterPoisonTurns(state.enemy));
   setText(dom.playerHpText, playerHpText);
   setText(dom.playerArmorText, playerArmorText);
   setText(dom.playerStaText, playerStaminaText);
@@ -206,6 +223,29 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   setBarFill(dom.classicEnemyHpFill, state.enemy.hp / enemyMaxHp);
   setBarFill(dom.classicEnemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
   setBarFill(dom.classicEnemyStaFill, state.enemy.stamina / enemyMaxStamina);
+}
+
+function syncPoisonStatus(element: HTMLElement, fighterName: string, turns: number): void {
+  const safeTurns = Math.max(0, Math.floor(turns));
+
+  element.hidden = safeTurns <= 0;
+
+  if (safeTurns <= 0) {
+    return;
+  }
+
+  const icon = element.querySelector<HTMLImageElement>("img");
+  const label = element.querySelector<HTMLElement>("span");
+
+  if (icon && POISON_STATUS_ICON_URL && icon.src !== POISON_STATUS_ICON_URL) {
+    icon.src = POISON_STATUS_ICON_URL;
+  }
+
+  if (label) {
+    setText(label, String(safeTurns));
+  }
+
+  element.setAttribute("aria-label", `${fighterName} poisoned for ${safeTurns} turns`);
 }
 
 function setFlaskFill(element: HTMLElement, ratio: number): void {

@@ -422,6 +422,7 @@ const actionButtonLabels: Record<ActionButtonOffsetKey, string> = {
   ward: "Ward",
   preciseStrike: "Precise strike",
   doubleStrike: "Double strike",
+  poison: "Poison",
   taunt: "Taunt",
   rest: "Rest",
 };

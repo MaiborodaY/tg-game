@@ -49,7 +49,8 @@ function loadActionArcLayoutModule() {
               Math.max(0, fighter?.fireballScrollCount ?? 0) +
               Math.max(0, fighter?.wardScrollCount ?? 0) +
               Math.max(0, fighter?.preciseStrikeScrollCount ?? 0) +
-              Math.max(0, fighter?.doubleStrikeScrollCount ?? 0),
+              Math.max(0, fighter?.doubleStrikeScrollCount ?? 0) +
+              Math.max(0, fighter?.poisonScrollCount ?? 0),
             getFighterWardHits: (fighter) => Math.max(0, fighter?.wardHits ?? 0),
             getFighterWardScrollCount: (fighter) => Math.max(0, fighter?.wardScrollCount ?? 0),
             isBowFighter: (fighter) => fighter?.weaponClass === "bow",
@@ -212,6 +213,17 @@ test("precise strike scroll consumables add the spellbook button", () => {
 
 test("double strike scroll consumables add the spellbook button", () => {
   const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, doubleStrikeScrollCount: 1 } }));
+  const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
+
+  assert.deepEqual(
+    Array.from(layout.buttons, (button) => button.actionId),
+    ["forward", "back", "lunge", "scroll", "taunt"],
+  );
+  assert.equal(labels.scroll, "SPELL");
+});
+
+test("poison scroll consumables add the spellbook button", () => {
+  const layout = actionArcLayout.getActionArcLayout(makeState(3, { player: { stamina: 10, poisonScrollCount: 1 } }));
   const labels = Object.fromEntries(layout.buttons.map((button) => [button.actionId, button.label]));
 
   assert.deepEqual(

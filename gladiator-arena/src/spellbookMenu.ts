@@ -6,6 +6,7 @@ import {
   getFighterDoubleStrikeHits,
   getFighterDoubleStrikeScrollCount,
   getFighterFireballScrollCount,
+  getFighterPoisonScrollCount,
   getFighterPreciseStrikeHits,
   getFighterPreciseStrikeScrollCount,
   getFighterScrollCount,
@@ -17,7 +18,7 @@ import {
 } from "./combat";
 
 export const SPELLBOOK_BUTTON_ACTION_ID: ActionId = "scroll";
-export const SPELLBOOK_ACTION_IDS = ["scroll", "fireball", "ward", "preciseStrike", "doubleStrike"] as const;
+export const SPELLBOOK_ACTION_IDS = ["scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison"] as const;
 
 export type SpellbookActionId = (typeof SPELLBOOK_ACTION_IDS)[number];
 
@@ -254,6 +255,10 @@ function getSpellbookActionCount(state: CombatState, actionId: SpellbookActionId
 
   if (actionId === "doubleStrike") {
     return getFighterDoubleStrikeScrollCount(state.player);
+  }
+
+  if (actionId === "poison") {
+    return getFighterPoisonScrollCount(state.player);
   }
 
   return getFighterWardScrollCount(state.player);

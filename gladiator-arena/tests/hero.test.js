@@ -991,6 +991,7 @@ test("scrolls share one capped consumable inventory pool without equipping", () 
   const wardScrollId = hero.HERO_WARD_SCROLL_ITEM_ID;
   const preciseStrikeScrollId = hero.HERO_PRECISE_STRIKE_SCROLL_ITEM_ID;
   const doubleStrikeScrollId = hero.HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID;
+  const poisonScrollId = hero.HERO_POISON_SCROLL_ITEM_ID;
   const firstPurchase = hero.buyAndEquipHeroItems(baseHero, { itemIds: [crackScrollId], price: 30 }, "2026-01-01T00:01:00.000Z");
   const secondPurchase = hero.buyAndEquipHeroItems(firstPurchase, { itemIds: [fireballScrollId], price: 30 }, "2026-01-01T00:02:00.000Z");
   const thirdPurchase = hero.buyAndEquipHeroItems(secondPurchase, { itemIds: [doubleStrikeScrollId], price: 30 }, "2026-01-01T00:03:00.000Z");
@@ -1005,7 +1006,9 @@ test("scrolls share one capped consumable inventory pool without equipping", () 
 
   assert.equal(hero.HERO_ITEM_CATALOG[wardScrollId]?.kind, "scroll");
   assert.equal(hero.HERO_ITEM_CATALOG[preciseStrikeScrollId]?.kind, "scroll");
+  assert.equal(hero.HERO_ITEM_CATALOG[poisonScrollId]?.kind, "scroll");
   assert.equal(hero.getHeroItemQuantity(thirdPurchase, wardScrollId), 0);
+  assert.equal(hero.getHeroItemQuantity(thirdPurchase, poisonScrollId), 0);
   assert.equal(thirdPurchase.gold, 30);
   assert.equal(thirdPurchase.equipment.weaponMain, null);
   assert.equal(hero.getHeroScrollQuantity(thirdPurchase), hero.HERO_SCROLL_MAX_QUANTITY);
@@ -1156,6 +1159,35 @@ test("combat state exposes double strike scroll count and rewards persist spent 
       ...combatState.player,
       doubleStrikeScrollCount: 1,
       doubleStrikeHits: 1,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, scrollItemId), 1);
+});
+
+test("combat state exposes poison scroll count and rewards persist spent poison scrolls", () => {
+  const scrollItemId = hero.HERO_POISON_SCROLL_ITEM_ID;
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [{ itemId: scrollItemId, quantity: 2 }],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.poisonScrollCount, 2);
+  assert.equal(combatState.player.poisonScrollItemId, scrollItemId);
+  assert.equal(combatState.player.poisonTurns, 0);
+
+  const spentCombatState = {
+    ...combatState,
+    result: "win",
+    player: {
+      ...combatState.player,
+      poisonScrollCount: 1,
+    },
+    enemy: {
+      ...combatState.enemy,
+      poisonTurns: 1,
     },
   };
   const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);

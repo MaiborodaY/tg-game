@@ -1149,6 +1149,22 @@ test("damage hits use the hit icon popup from the fighter head", () => {
   assert.equal(arenaSceneSource.includes("releaseDamageIconPopup(target, popup)"), true);
 });
 
+test("double strike queues separate combat result popups per impact", () => {
+  assert.equal(arenaSceneSource.includes("lastPlayerHitResults"), true);
+  assert.equal(arenaSceneSource.includes("lastEnemyHitResults"), true);
+  assert.equal(arenaSceneSource.includes("playerActionAnimation?.impacts"), true);
+  assert.equal(arenaSceneSource.includes("queueCombatHitResultAnimations"), true);
+  assert.equal(arenaSceneSource.includes("playCombatHitResultAnimation"), true);
+});
+
+test("poison ticks show a combat result popup without consuming ward visuals", () => {
+  assert.equal(arenaSceneSource.includes("lastPlayerPoisonDamage"), true);
+  assert.equal(arenaSceneSource.includes("lastEnemyPoisonDamage"), true);
+  assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "TOXIN"'), true);
+  assert.equal(arenaSceneSource.includes("playPoisonDamageAnimation"), true);
+  assert.equal(arenaSceneSource.includes("`POISON -${damage}`"), true);
+});
+
 test("armor damage uses absorb and break icon popups", () => {
   assert.equal(assetsSource.includes("DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY"), true);
   assert.equal(assetsSource.includes("./assets/ui/damage-icons/damage-armor-absorb.webp"), true);

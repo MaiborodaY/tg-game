@@ -20,6 +20,7 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/armor\/legs\// },
   { maxSide: 512, pattern: /^fighters\/weapons\// },
   { maxSide: 512, pattern: /^fighters\/appearance\// },
+  { maxSide: 160, pattern: /^shop-icons\/scroll-.+\.png$/ },
 ];
 const originalSizeRules = [
   /^fighters\/body-parts\/(?:arms|legs|head|torso)\/.+-dummy-01\.png$/,
@@ -34,6 +35,11 @@ const smallerAssetRules = [
     maximumAlphaQuality: 70,
     maximumQuality: 46,
     pattern: /^arena\/layers\/arena-tier-(?:1-variant-2-(?:back|ground)|2-(?:front-trees|ambient-particles)|3-(?:back|ground|front)|4-(?:ambient|back(?:-2)?|ground)|5-(?:back|ground)|6-(?:back|ground)|7-(?:ambient|back|ground)|8-(?:back|ground|mid))\.png$/,
+  },
+  {
+    maximumAlphaQuality: 88,
+    maximumQuality: 82,
+    pattern: /^shop-icons\/scroll-.+\.png$/,
   },
 ];
 

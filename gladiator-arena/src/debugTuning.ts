@@ -108,16 +108,16 @@ export type SlashArcAttackKey = (typeof SLASH_ARC_ATTACK_KEYS)[number];
 
 export type DebugPopupPreviewKind = "all" | "damage" | "block" | "armorAbsorb" | "armorBreak";
 
-export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"] as const;
+export const ACTION_BUTTON_OFFSET_KEYS = ["forward", "back", "lunge", "light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison", "taunt", "rest"] as const;
 export type ActionButtonOffsetKey = (typeof ACTION_BUTTON_OFFSET_KEYS)[number];
 
 export const CLASSIC_ACTION_WHEEL_MODES = ["distance", "clinch", "bowDistance"] as const;
 export type ClassicActionWheelMode = (typeof CLASSIC_ACTION_WHEEL_MODES)[number];
 
 export const CLASSIC_ACTION_WHEEL_BUTTONS: Record<ClassicActionWheelMode, ActionButtonOffsetKey[]> = {
-  distance: ["forward", "lunge", "back", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"],
-  clinch: ["light", "medium", "heavy", "back", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "taunt", "rest"],
-  bowDistance: ["light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "back", "taunt", "rest"],
+  distance: ["forward", "lunge", "back", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison", "taunt", "rest"],
+  clinch: ["light", "medium", "heavy", "back", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison", "taunt", "rest"],
+  bowDistance: ["light", "medium", "heavy", "switchWeapon", "shuriken", "scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison", "back", "taunt", "rest"],
 };
 
 export const ANIMATION_EDIT_MODES = ["poseA", "poseB", "keyframe", "preview"] as const;
@@ -605,6 +605,7 @@ export const DEFAULT_ACTION_BUTTON_OFFSETS: Record<ActionButtonOffsetKey, Action
   ward: { x: 0, y: 0 },
   preciseStrike: { x: 0, y: 0 },
   doubleStrike: { x: 0, y: 0 },
+  poison: { x: 0, y: 0 },
   taunt: { x: 23, y: -24 },
   rest: { x: 19, y: -29 },
 };
@@ -632,6 +633,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     ward: { x: -132, y: -92, rotation: -14 },
     preciseStrike: { x: 0, y: -180, rotation: 0 },
     doubleStrike: { x: 0, y: -148, rotation: 0 },
+    poison: { x: 132, y: -128, rotation: 12 },
     taunt: { x: 30, y: -120, rotation: 0 },
     rest: { x: -30, y: -120, rotation: 12 },
   }),
@@ -649,6 +651,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     ward: { x: -132, y: -92, rotation: -14 },
     preciseStrike: { x: 0, y: -180, rotation: 0 },
     doubleStrike: { x: 0, y: -148, rotation: 0 },
+    poison: { x: 132, y: -128, rotation: 12 },
     taunt: { x: 30, y: -120, rotation: 0 },
     rest: { x: -30, y: -120, rotation: 12 },
   }),
@@ -666,6 +669,7 @@ export const DEFAULT_CLASSIC_ACTION_BUTTON_SLOTS: Record<ClassicActionWheelMode,
     ward: { x: -132, y: -92, rotation: -12 },
     preciseStrike: { x: 0, y: -128, rotation: 0 },
     doubleStrike: { x: 0, y: -148, rotation: 0 },
+    poison: { x: 132, y: -128, rotation: 12 },
     taunt: { x: 30, y: -130, rotation: 5 },
     rest: { x: -30, y: -130, rotation: -5 },
   }),

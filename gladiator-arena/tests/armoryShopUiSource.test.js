@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -151,6 +151,59 @@ test("armory paired product cards prefer front equipment icons", () => {
   assert.equal(shopItemIconsSource.includes("getRepresentativeShopItemIconId(itemIds)"), true);
   assert.equal(shopItemIconsSource.includes('slot?.startsWith("front")'), true);
   assert.equal(shopItemIconsSource.includes("return frontItemId ?? [...itemIds].reverse().find"), true);
+});
+
+test("magic shop exposes scroll icons as compressed runtime webp assets", () => {
+  assert.equal(magicShopSource.includes("HERO_POISON_SCROLL_ITEM_ID"), true);
+  assert.equal(magicShopSource.includes('id: "poison_scroll"'), true);
+  assert.equal(magicShopSource.includes("Poisons the enemy for 2 turns"), true);
+  assert.equal(shopItemIconsSource.includes("HERO_POISON_SCROLL_ITEM_ID"), true);
+  assert.equal(shopItemIconsSource.includes('"scroll-poison-01"'), true);
+
+  [
+    "scroll-crack-armor-01",
+    "scroll-double-strike-01",
+    "scroll-fireball-01",
+    "scroll-poison-01",
+    "scroll-precise-strike-01",
+    "scroll-ward-01",
+  ].forEach((assetKey) => {
+    assert.equal(existsSync(resolve(currentDir, `../src/assets/shop-icons/${assetKey}.webp`)), true);
+    assert.equal(existsSync(resolve(currentDir, `../src/assets/shop-icons/${assetKey}.png`)), false);
+  });
+});
+
+test("magic shop uses one selected scroll preview and a shared scroll cap counter", () => {
+  assert.equal(magicShopSource.includes("let selectedProductId = MAGIC_PRODUCTS[0]?.id ?? \"\";"), true);
+  assert.equal(magicShopSource.includes('preview.className = "magic-shop__preview";'), true);
+  assert.equal(magicShopSource.includes('productList.className = "magic-shop__list";'), true);
+  assert.equal(magicShopSource.includes('wallet.className = "magic-shop__wallet";'), true);
+  assert.equal(magicShopSource.includes("wallet.append(gold, scrollCapacity);"), true);
+  assert.equal(magicShopSource.includes("content.append(productList, wallet);"), true);
+  assert.equal(magicShopSource.includes("panel.append(preview, menu, back);"), true);
+  assert.equal(magicShopSource.includes("content.append(preview, productList, wallet);"), false);
+  assert.equal(magicShopSource.includes('root.classList.add("city-menu--magic-shop-open");'), true);
+  assert.equal(magicShopSource.includes('root.classList.remove("city-menu--magic-shop-open");'), true);
+  assert.equal(magicShopSource.includes('scrollCapacity.className = "magic-shop__scroll-capacity";'), true);
+  assert.equal(magicShopSource.includes("Math.min(getHeroScrollQuantity(hero), HERO_SCROLL_MAX_QUANTITY)"), true);
+  assert.equal(magicShopSource.includes("scrollCapacityAmount.textContent = `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`;"), true);
+  assert.equal(magicShopSource.includes("createMagicProductPreview(selectedProduct, hero)"), true);
+  assert.equal(magicShopSource.includes("createMagicProductListItem(product, hero)"), true);
+  assert.equal(magicShopSource.includes("armory-shop__product-consumable-badges"), false);
+  assert.equal(magicShopSource.includes("quantityBadge.textContent"), false);
+
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*content: "MAGIC SHOP";[\s\S]*\}/);
+  assert.equal(stylesSource.includes(".magic-shop__preview-card"), true);
+  assert.equal(stylesSource.includes(".magic-shop__list-item"), true);
+  assert.equal(stylesSource.includes(".magic-shop__wallet"), true);
+  assert.equal(stylesSource.includes(".magic-shop__scroll-capacity"), true);
+  assert.match(stylesSource, /\.city-menu--magic-shop-open \.city-menu__hero\s*\{[\s\S]*opacity: 0;[\s\S]*\}/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--shop-city-header-height: 0px;[\s\S]*--shop-city-products-height: clamp\(314px, 47dvh, 358px\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__tray\s*\{[\s\S]*grid-template-rows: var\(--shop-city-products-height\);/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__header\s*\{[\s\S]*display: none;[\s\S]*\}/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.magic-shop__preview\s*\{[\s\S]*position: absolute;[\s\S]*bottom: calc\(var\(--shop-city-tray-height\)/);
+  assert.match(stylesSource, /\.magic-shop__preview-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);[\s\S]*justify-items: center;/);
+  assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__content--products\s*\{[\s\S]*grid-template-rows: minmax\(0, 1fr\) auto;/);
 });
 
 test("shop product display names hide technical variants and rename shoulder guards", () => {

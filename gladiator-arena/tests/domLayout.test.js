@@ -43,6 +43,20 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(mainSource.includes("loot,"), true);
 });
 
+test("battle hud exposes poison status with the poison scroll shop icon", () => {
+  assert.equal(html.includes('class="combat-debuff-tray"'), true);
+  assert.equal(html.includes('id="classicPlayerPoison"'), false);
+  assert.equal(html.includes('id="classicEnemyPoison"'), false);
+  assert.equal(html.includes('id="playerPoison"'), true);
+  assert.equal(html.includes('id="enemyPoison"'), true);
+  assert.equal(domUiSource.includes("HERO_POISON_SCROLL_ITEM_ID"), true);
+  assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_POISON_SCROLL_ITEM_ID])"), true);
+  assert.equal(domUiSource.includes("getFighterPoisonTurns"), true);
+  assert.equal(stylesSource.includes(".poison-status"), true);
+  assert.equal(stylesSource.includes(".combat-debuff-tray"), true);
+  assert.equal(stylesSource.includes("justify-content: flex-end;"), true);
+});
+
 test("city hero widget keeps the top HUD compact", () => {
   const heroWidgetStart = html.indexOf('id="heroWidget"');
   const heroWidgetEnd = html.indexOf('id="cityTimeToggle"');

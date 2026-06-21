@@ -14,6 +14,7 @@ export type ActionId =
   | "ward"
   | "preciseStrike"
   | "doubleStrike"
+  | "poison"
   | "taunt"
   | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
@@ -61,6 +62,15 @@ export interface CombatArmorSlotState {
   armorHp: number;
 }
 
+export interface CombatHitResult {
+  damage: number;
+  armorAbsorbed: number;
+  armorBroken: boolean;
+  removedArmorSlots?: CombatArmorSlotState[];
+  wardAbsorbed: boolean;
+  blocked: boolean;
+}
+
 export interface FighterState {
   name: string;
   hp: number;
@@ -99,6 +109,9 @@ export interface FighterState {
   doubleStrikeScrollCount?: number;
   doubleStrikeScrollItemId?: HeroItemId;
   doubleStrikeHits?: number;
+  poisonScrollCount?: number;
+  poisonScrollItemId?: HeroItemId;
+  poisonTurns?: number;
   equipment?: HeroEquipment;
   armorSlots?: CombatArmorSlotState[];
   visualPreset?: EnemyVisualPreset;
@@ -144,6 +157,10 @@ export interface CombatState {
   lastEnemyRemovedArmorSlots?: CombatArmorSlotState[];
   lastPlayerWardAbsorbed: boolean;
   lastEnemyWardAbsorbed: boolean;
+  lastPlayerHitResults?: CombatHitResult[];
+  lastEnemyHitResults?: CombatHitResult[];
+  lastPlayerPoisonDamage: number;
+  lastEnemyPoisonDamage: number;
   lastPlayerDoubleStrikeRepeat: boolean;
   lastEnemyDoubleStrikeRepeat: boolean;
   lastPlayerBlocked: boolean;
@@ -158,6 +175,8 @@ export const MAX_DISTANCE = 4;
 export const START_DISTANCE = 3;
 export const MELEE_RANGE = 0;
 export const FIREBALL_SCROLL_DAMAGE = 5;
+export const POISON_SCROLL_DAMAGE = 5;
+export const POISON_SCROLL_TURNS = 2;
 export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
 export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
@@ -309,6 +328,13 @@ export const actions: Record<ActionId, ActionConfig> = {
     detail: "Next strike hits twice",
     cost: 0,
   },
+  poison: {
+    id: "poison",
+    title: "Poison Scroll",
+    detail: "Poison for 2 turns",
+    cost: 0,
+    rangeMax: MAX_DISTANCE,
+  },
   taunt: {
     id: "taunt",
     title: "Taunt Crowd",
@@ -341,6 +367,7 @@ export const actionOrder: ActionId[] = [
   "ward",
   "preciseStrike",
   "doubleStrike",
+  "poison",
   "taunt",
   "rest",
 ];
@@ -458,6 +485,10 @@ export function freshState(): CombatState {
     lastEnemyRemovedArmorSlots: undefined,
     lastPlayerWardAbsorbed: false,
     lastEnemyWardAbsorbed: false,
+    lastPlayerHitResults: undefined,
+    lastEnemyHitResults: undefined,
+    lastPlayerPoisonDamage: 0,
+    lastEnemyPoisonDamage: 0,
     lastPlayerDoubleStrikeRepeat: false,
     lastEnemyDoubleStrikeRepeat: false,
     lastPlayerBlocked: false,
@@ -630,13 +661,22 @@ export function getFighterDoubleStrikeScrollCount(fighter: FighterState): number
   return Math.max(0, Math.floor(fighter.doubleStrikeScrollCount ?? 0));
 }
 
+export function getFighterPoisonScrollCount(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.poisonScrollCount ?? 0));
+}
+
+export function getFighterPoisonTurns(fighter: FighterState): number {
+  return Math.max(0, Math.floor(fighter.poisonTurns ?? 0));
+}
+
 export function getFighterSpellbookScrollCount(fighter: FighterState): number {
   return (
     getFighterScrollCount(fighter) +
     getFighterFireballScrollCount(fighter) +
     getFighterWardScrollCount(fighter) +
     getFighterPreciseStrikeScrollCount(fighter) +
-    getFighterDoubleStrikeScrollCount(fighter)
+    getFighterDoubleStrikeScrollCount(fighter) +
+    getFighterPoisonScrollCount(fighter)
   );
 }
 
@@ -765,6 +805,10 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
     return getFighterDoubleStrikeScrollCount(fighter) > 0 && getFighterDoubleStrikeHits(fighter) <= 0;
   }
 
+  if (actionId === "poison") {
+    return getFighterPoisonScrollCount(fighter) > 0;
+  }
+
   if (isAttackAction(actionId) && isBowFighter(fighter)) {
     return !fighterInClinch && getBowShotsRemaining(fighter) > 0;
   }
@@ -815,6 +859,13 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
   const state = cloneStateForTurn(current);
 
   forceClinchWeapons(state);
+  if (state.result === "playing" && state.activeTurn === "player") {
+    applyPoisonTurnStart(state, "player");
+  }
+
+  if (state.result !== "playing") {
+    return state;
+  }
 
   if (!canUseAction(state, playerActionId, "player")) {
     addLog(state, `${getActionTitle(playerActionId, state.player)} is not available right now.`);
@@ -838,6 +889,12 @@ export function resolveEnemyTurn(current: CombatState, random = Math.random): Co
   }
 
   forceClinchWeapons(state);
+  applyPoisonTurnStart(state, "enemy");
+
+  if (state.result !== "playing") {
+    return state;
+  }
+
   let enemyActionId = chooseEnemyAction(state, random);
 
   applyAction(state, "enemy", enemyActionId, random);
@@ -874,6 +931,10 @@ function cloneStateForTurn(current: CombatState): CombatState {
     lastEnemyRemovedArmorSlots: undefined,
     lastPlayerWardAbsorbed: false,
     lastEnemyWardAbsorbed: false,
+    lastPlayerHitResults: undefined,
+    lastEnemyHitResults: undefined,
+    lastPlayerPoisonDamage: 0,
+    lastEnemyPoisonDamage: 0,
     lastPlayerDoubleStrikeRepeat: false,
     lastEnemyDoubleStrikeRepeat: false,
     lastPlayerBlocked: false,
@@ -1009,6 +1070,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
   const inRange = actionRangeMax === undefined || state.distance <= actionRangeMax;
   let blocked = false;
   let appliedDamage: DamageApplication = { armorAbsorbed: 0, armorBroken: false };
+  let hitResults: CombatHitResult[] | undefined;
 
   if (actionId === "shuriken" && getFighterShurikenCount(attacker) > 0) {
     attacker.shurikenCount = getFighterShurikenCount(attacker) - 1;
@@ -1046,6 +1108,11 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     attacker.doubleStrikeHits = 1;
   }
 
+  if (actionId === "poison" && getFighterPoisonScrollCount(attacker) > 0) {
+    attacker.poisonScrollCount = getFighterPoisonScrollCount(attacker) - 1;
+    defender.poisonTurns = getFighterPoisonTurns(defender) + POISON_SCROLL_TURNS;
+  }
+
   if (isAttackAction(actionId) && isBowFighter(attacker) && getBowShotsRemaining(attacker) > 0) {
     attacker.bowShotsRemaining = getBowShotsRemaining(attacker) - 1;
   }
@@ -1064,6 +1131,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     damage = firstHit.damage;
     blocked = firstHit.blocked;
     appliedDamage = firstHit.appliedDamage;
+    hitResults = [createCombatHitResult(firstHit)];
 
     if (doubleStrikeBoosted && defender.hp > 0 && canResolveDoubleStrikeRepeat(actionId, attacker)) {
       doubleStrikeRepeat = true;
@@ -1073,8 +1141,9 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
       damage += secondHit.damage;
       blocked ||= secondHit.blocked;
       appliedDamage = mergeDamageApplications(appliedDamage, secondHit.appliedDamage);
+      hitResults.push(createCombatHitResult(secondHit));
     }
-  } else {
+  } else if (doesActionEndTurn(actionId)) {
     clearIncomingAttackModifiers(state, defenderOwner);
   }
 
@@ -1098,6 +1167,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastPlayerArmorBroken = appliedDamage.armorBroken;
     state.lastPlayerRemovedArmorSlots = appliedDamage.removedArmorSlots;
     state.lastPlayerWardAbsorbed = Boolean(appliedDamage.wardAbsorbed);
+    state.lastPlayerHitResults = hitResults;
     state.lastPlayerDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastPlayerBlocked = blocked;
   } else {
@@ -1107,6 +1177,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
     state.lastEnemyArmorBroken = appliedDamage.armorBroken;
     state.lastEnemyRemovedArmorSlots = appliedDamage.removedArmorSlots;
     state.lastEnemyWardAbsorbed = Boolean(appliedDamage.wardAbsorbed);
+    state.lastEnemyHitResults = hitResults;
     state.lastEnemyDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastEnemyBlocked = blocked;
   }
@@ -1187,6 +1258,17 @@ function mergeDamageApplications(first: DamageApplication, second: DamageApplica
     armorBroken: first.armorBroken || second.armorBroken,
     removedArmorSlots: mergeRemovedArmorSlots(first.removedArmorSlots, second.removedArmorSlots),
     wardAbsorbed: first.wardAbsorbed || second.wardAbsorbed,
+  };
+}
+
+function createCombatHitResult(hit: WeaponHitResolution): CombatHitResult {
+  return {
+    damage: hit.damage,
+    armorAbsorbed: hit.appliedDamage.armorAbsorbed,
+    armorBroken: hit.appliedDamage.armorBroken,
+    removedArmorSlots: hit.appliedDamage.removedArmorSlots,
+    wardAbsorbed: Boolean(hit.appliedDamage.wardAbsorbed),
+    blocked: hit.blocked,
   };
 }
 
@@ -1306,6 +1388,30 @@ function applyDirectDamageToFighter(defender: FighterState, damage: number): Dam
 
   defender.hp = clamp(defender.hp - hpDamage, 0, getFighterMaxHp(defender));
   return { armorAbsorbed: 0, armorBroken: false };
+}
+
+function applyPoisonTurnStart(state: CombatState, owner: TurnOwner): void {
+  const fighter = owner === "player" ? state.player : state.enemy;
+  const poisonTurns = getFighterPoisonTurns(fighter);
+
+  if (poisonTurns <= 0 || fighter.hp <= 0) {
+    return;
+  }
+
+  fighter.poisonTurns = poisonTurns - 1;
+  applyDirectDamageToFighter(fighter, POISON_SCROLL_DAMAGE);
+
+  if (owner === "enemy") {
+    state.lastPlayerPoisonDamage = POISON_SCROLL_DAMAGE;
+  } else {
+    state.lastEnemyPoisonDamage = POISON_SCROLL_DAMAGE;
+  }
+
+  addLog(state, `${fighter.name} suffers ${POISON_SCROLL_DAMAGE} poison damage.`, true);
+
+  if (fighter.hp <= 0) {
+    finishBattle(state);
+  }
 }
 
 function consumeWardHit(defender: FighterState): boolean {
@@ -1447,6 +1553,11 @@ function addActionLog(
     return;
   }
 
+  if (action.id === "poison") {
+    addLog(state, `${actorLabel} used ${actionTitle}. ${defenderLabel} is poisoned.`, true);
+    return;
+  }
+
   const wardAbsorbed = actor === "player" ? state.lastPlayerWardAbsorbed : state.lastEnemyWardAbsorbed;
 
   if (wardAbsorbed) {
@@ -1523,7 +1634,14 @@ function isAttackAction(actionId: ActionId): boolean {
 }
 
 function isScrollAction(actionId: ActionId): boolean {
-  return actionId === "scroll" || actionId === "fireball" || actionId === "ward" || actionId === "preciseStrike" || actionId === "doubleStrike";
+  return (
+    actionId === "scroll" ||
+    actionId === "fireball" ||
+    actionId === "ward" ||
+    actionId === "preciseStrike" ||
+    actionId === "doubleStrike" ||
+    actionId === "poison"
+  );
 }
 
 function isPreciseStrikeAction(actionId: ActionId): boolean {

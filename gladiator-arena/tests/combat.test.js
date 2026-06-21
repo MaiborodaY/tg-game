@@ -38,6 +38,10 @@ function setConsistentDistance(state, distance) {
   state.playerPosition = combat.START_DISTANCE - distance;
 }
 
+function getPlainPlayerHitResults(state) {
+  return JSON.parse(JSON.stringify(state.lastPlayerHitResults.map(({ damage, blocked }) => ({ damage, blocked }))));
+}
+
 test("melee attacks only work in clinch", () => {
   const state = combat.freshState();
 
@@ -349,6 +353,7 @@ test("scroll actions do not spend stamina", () => {
   assert.equal(combat.getActionStaminaCost("ward"), 0);
   assert.equal(combat.getActionStaminaCost("preciseStrike"), 0);
   assert.equal(combat.getActionStaminaCost("doubleStrike"), 0);
+  assert.equal(combat.getActionStaminaCost("poison"), 0);
 });
 
 test("precise strike scroll arms a guaranteed next strike without ending the turn", () => {
@@ -404,9 +409,37 @@ test("double strike scroll repeats the next strike without ending the scroll tur
   assert.equal(hit.lastPlayerBlocked, false);
   assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
   assert.equal(hit.lastPlayerDamage, 8);
+  assert.deepEqual(getPlainPlayerHitResults(hit), [
+    { damage: 4, blocked: false },
+    { damage: 4, blocked: false },
+  ]);
   assert.equal(hit.enemy.hp, combat.MAX_HP - 8);
   assert.equal(hit.player.doubleStrikeHits, 0);
   assert.equal(hit.player.stamina, combat.MAX_STAMINA - combat.actions.medium.cost);
+});
+
+test("double strike keeps separate hit results when one repeat is blocked", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.doubleStrikeHits = 1;
+  state.player.damageBonus = 2;
+  state.enemy.hp = combat.MAX_HP;
+  state.enemy.armor = 0;
+
+  const randomValues = [0, 0.99];
+  const hit = combat.resolvePlayerTurn(state, "medium", () => randomValues.shift() ?? 0.99);
+
+  assert.equal(hit.activeTurn, "enemy");
+  assert.equal(hit.lastPlayerBlocked, true);
+  assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
+  assert.equal(hit.lastPlayerDamage, 4);
+  assert.deepEqual(getPlainPlayerHitResults(hit), [
+    { damage: 0, blocked: true },
+    { damage: 4, blocked: false },
+  ]);
+  assert.equal(hit.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(hit.player.doubleStrikeHits, 0);
 });
 
 test("double strike does not repeat when the first strike ends the battle", () => {
@@ -423,8 +456,72 @@ test("double strike does not repeat when the first strike ends the battle", () =
   assert.equal(hit.result, "win");
   assert.equal(hit.lastPlayerDoubleStrikeRepeat, false);
   assert.equal(hit.lastPlayerDamage, 4);
+  assert.deepEqual(getPlainPlayerHitResults(hit), [{ damage: 4, blocked: false }]);
   assert.equal(hit.enemy.hp, 0);
   assert.equal(hit.player.doubleStrikeHits, 0);
+});
+
+test("poison scroll stacks duration and passes the turn", () => {
+  const state = combat.freshState();
+
+  state.player.poisonScrollCount = 1;
+  state.player.poisonScrollItemId = "scroll_poison_01";
+  state.enemy.poisonTurns = 2;
+
+  assert.equal(combat.canUseAction(state, "poison"), true);
+
+  const poisoned = combat.resolvePlayerTurn(state, "poison", () => 0);
+
+  assert.equal(poisoned.activeTurn, "enemy");
+  assert.equal(poisoned.player.poisonScrollCount, 0);
+  assert.equal(poisoned.player.stamina, combat.MAX_STAMINA);
+  assert.equal(poisoned.enemy.poisonTurns, 4);
+  assert.equal(poisoned.enemy.hp, combat.MAX_HP);
+  assert.equal(poisoned.lastPlayerAction, "poison");
+  assert.equal(poisoned.lastPlayerPoisonDamage, 0);
+});
+
+test("poison ticks at enemy turn start and ignores ward armor and block", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.hp = combat.MAX_HP;
+  state.enemy.armor = 9;
+  state.enemy.maxArmor = 9;
+  state.enemy.wardHits = 1;
+  state.enemy.poisonTurns = 2;
+  state.enemy.stamina = combat.MAX_STAMINA;
+  setConsistentDistance(state, 3);
+
+  const ticked = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(ticked.result, "playing");
+  assert.equal(ticked.activeTurn, "player");
+  assert.equal(ticked.enemy.hp, combat.MAX_HP - combat.POISON_SCROLL_DAMAGE);
+  assert.equal(ticked.enemy.armor, 9);
+  assert.equal(ticked.enemy.wardHits, 1);
+  assert.equal(ticked.enemy.poisonTurns, 1);
+  assert.equal(ticked.lastPlayerPoisonDamage, combat.POISON_SCROLL_DAMAGE);
+  assert.notEqual(ticked.lastEnemyAction, "rest");
+});
+
+test("poison lethal tick wins before the enemy can act", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.hp = combat.POISON_SCROLL_DAMAGE;
+  state.enemy.wardHits = 1;
+  state.enemy.poisonTurns = 2;
+  state.enemy.stamina = combat.MAX_STAMINA;
+
+  const ticked = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(ticked.result, "win");
+  assert.equal(ticked.enemy.hp, 0);
+  assert.equal(ticked.enemy.wardHits, 1);
+  assert.equal(ticked.enemy.poisonTurns, 1);
+  assert.equal(ticked.lastPlayerPoisonDamage, combat.POISON_SCROLL_DAMAGE);
+  assert.equal(ticked.lastEnemyAction, undefined);
 });
 
 test("active ward absorbs exactly one incoming damaging hit", () => {
@@ -549,6 +646,29 @@ test("rest hit chance penalty is consumed by the next incoming attack", () => {
   assert.equal(nextState.enemyRestBlockChancePenalty, 0);
   assert.equal(combat.isActionHitChanceRestBoosted(nextState, "heavy", "player"), false);
   assert.equal(nextState.lastPlayerDamage > 0, true);
+});
+
+test("rest hit chance penalty survives non-turn scroll buffs", () => {
+  for (const actionId of ["preciseStrike", "doubleStrike"]) {
+    const state = combat.freshState();
+
+    state.activeTurn = "enemy";
+    state.enemy.stamina = 0;
+    state.player[`${actionId}ScrollCount`] = 1;
+    setConsistentDistance(state, combat.MELEE_RANGE);
+
+    const rested = combat.resolveEnemyTurn(state, () => 0);
+    const buffed = combat.resolvePlayerTurn(rested, actionId, () => 0);
+    const hitRolls = [0.4, 0.99];
+    const hit = combat.resolvePlayerTurn(buffed, "medium", () => hitRolls.shift() ?? 0.99);
+
+    assert.equal(rested.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
+    assert.equal(buffed.activeTurn, "player");
+    assert.equal(buffed.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
+    assert.equal(combat.isActionHitChanceRestBoosted(buffed, "medium", "player"), actionId !== "preciseStrike");
+    assert.equal(hit.enemyRestBlockChancePenalty, 0);
+    assert.equal(hit.lastPlayerBlocked, false);
+  }
 });
 
 test("enemy auto rests at zero stamina instead of acting", () => {

@@ -807,6 +807,53 @@ h1 {
   text-transform: uppercase;
 }
 
+.poison-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: fit-content;
+  min-width: 34px;
+  min-height: 20px;
+  padding: 2px 6px;
+  border: 2px solid #243b17;
+  border-radius: 7px;
+  color: #efffc7;
+  background:
+    linear-gradient(180deg, rgba(78, 126, 33, 0.96), rgba(31, 65, 22, 0.98)),
+    #31531f;
+  box-shadow:
+    inset 0 1px 0 rgba(240, 255, 194, 0.45),
+    0 2px 0 rgba(0, 0, 0, 0.35);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+.poison-status[hidden] {
+  display: none;
+}
+
+.poison-status img {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+}
+
+.combat-debuff-tray {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: max(8px, calc(env(safe-area-inset-right) + 8px));
+  z-index: 1;
+  display: flex;
+  width: min(180px, calc(100% - 16px));
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
 .resource-flask {
   position: relative;
   isolation: isolate;
@@ -1980,6 +2027,11 @@ h1 {
   opacity: 0;
   pointer-events: none;
   transform: translateY(-10px);
+}
+
+.city-menu--magic-shop-open .city-menu__hero {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .city-menu--profile-open .city-menu__hero-widget {
@@ -4700,8 +4752,36 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: 166px;
 }
 
+.magic-shop.armory-shop--city-mode::after {
+  content: "MAGIC SHOP";
+  top: 17px;
+  min-width: 202px;
+  padding: 10px 28px 12px;
+  border-width: 3px;
+  border-radius: 9px;
+  color: #ffe4a2;
+  background:
+    radial-gradient(circle at 50% -14px, rgba(182, 73, 255, 0.32), transparent 42%),
+    linear-gradient(90deg, rgba(22, 7, 3, 0.88), rgba(62, 27, 16, 0.62) 18% 82%, rgba(22, 7, 3, 0.88)),
+    linear-gradient(180deg, #7b3b19 0%, #341207 54%, #160703 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 224, 150, 0.28),
+    inset 0 -6px 0 rgba(8, 2, 1, 0.28),
+    0 3px 0 rgba(8, 2, 1, 0.78),
+    0 0 0 1px rgba(255, 211, 132, 0.16),
+    0 0 22px rgba(155, 64, 255, 0.24);
+  font-size: 1.06rem;
+  letter-spacing: 0.09em;
+}
+
 .weapon-shop.armory-shop--city-mode {
   --shop-city-product-columns: 3;
+}
+
+.magic-shop.armory-shop--city-mode {
+  --shop-city-header-height: 0px;
+  --shop-city-products-height: clamp(314px, 47dvh, 358px);
+  --shop-city-tray-height: var(--shop-city-products-height);
 }
 
 .armory-shop--city-mode.armory-shop--has-subcategories {
@@ -4721,6 +4801,47 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.magic-shop.armory-shop--city-mode .armory-shop__panel {
+  isolation: isolate;
+}
+
+.magic-shop.armory-shop--city-mode .armory-shop__panel::before {
+  content: "";
+  position: absolute;
+  inset: var(--shop-frame-top-height) var(--shop-frame-side-width) var(--shop-frame-bottom-height);
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 84%, rgba(143, 38, 255, 0.46), transparent 24%),
+    radial-gradient(circle at 20% 68%, rgba(56, 223, 206, 0.18), transparent 18%),
+    radial-gradient(circle at 78% 28%, rgba(185, 64, 255, 0.22), transparent 18%),
+    radial-gradient(circle at 50% 37%, rgba(106, 37, 150, 0.34), transparent 28%),
+    linear-gradient(180deg, rgba(6, 3, 11, 0.28), rgba(8, 2, 12, 0.88) 58%, rgba(15, 4, 18, 0.98)),
+    var(--ui-panel-wood-texture) center / 260px 260px repeat,
+    #150817;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 211, 132, 0.12),
+    inset 0 0 42px rgba(0, 0, 0, 0.72),
+    inset 0 -120px 100px rgba(49, 10, 56, 0.42);
+  pointer-events: none;
+}
+
+.magic-shop.armory-shop--city-mode .armory-shop__panel::after {
+  content: "";
+  position: absolute;
+  right: 20px;
+  bottom: calc(var(--shop-city-tray-height) + 8px);
+  left: 20px;
+  z-index: 1;
+  height: 86px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 36%, rgba(188, 64, 255, 0.28) 38% 40%, transparent 42%),
+    repeating-radial-gradient(ellipse at 50% 50%, rgba(203, 89, 255, 0.18) 0 1px, transparent 1px 12px);
+  filter: blur(0.2px);
+  opacity: 0.74;
+  pointer-events: none;
 }
 
 .armory-shop__preview-shell,
@@ -4844,6 +4965,19 @@ body.debug-active .city-menu__portrait-button:active {
 .weapon-shop.armory-shop--city-mode .armory-shop__tray {
   order: 2;
   grid-template-rows: var(--shop-city-header-height) var(--shop-city-products-height);
+}
+
+.magic-shop.armory-shop--city-mode .armory-shop__tray {
+  grid-template-rows: var(--shop-city-products-height);
+  padding: 0;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 10px 10px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(8, 2, 1, 0.26)),
+    rgba(16, 7, 6, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.12),
+    0 -2px 0 rgba(8, 2, 1, 0.5);
 }
 
 .armory-shop__category-rail {
@@ -5085,12 +5219,14 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop.armory-shop--city-mode .armory-shop__menu {
   grid-template-columns: minmax(0, 1fr);
+  z-index: 5;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(35, 10, 4, 0.62)),
+    rgba(10, 4, 9, 0.92);
 }
 
 .magic-shop.armory-shop--city-mode .armory-shop__header {
-  left: 0;
-  width: 100%;
-  grid-template-columns: minmax(0, 1fr) minmax(58px, auto);
+  display: none;
 }
 
 .armory-shop--city-mode .armory-shop__header::after {
@@ -6246,10 +6382,14 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .magic-shop.armory-shop--city-mode .armory-shop__content--products {
+  grid-row: 1;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: minmax(184px, auto);
-  align-content: center;
-  padding: 10px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-auto-rows: auto;
+  align-content: stretch;
+  gap: 8px;
+  overflow: hidden;
+  padding: 10px 12px 9px;
 }
 
 .armory-shop__scroll-indicator {
@@ -6498,98 +6638,188 @@ body.debug-active .city-menu__portrait-button:active {
   color: rgba(8, 2, 1, 0.72);
 }
 
-.magic-shop__product {
-  cursor: default;
-}
-
-.magic-shop.armory-shop--city-mode .magic-shop__product {
-  gap: 6px;
-  align-content: start;
-  justify-items: center;
-  padding: 24px 12px 12px;
-}
-
-.magic-shop.armory-shop--city-mode .magic-shop__product-icon {
-  width: 64px;
-  height: 64px;
-}
-
-.magic-shop__product-name {
+.magic-shop__scroll-capacity {
   position: relative;
-  z-index: 3;
-  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  color: #d9b5ff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 #160703,
+    0 0 5px rgba(188, 96, 255, 0.2);
+}
+
+.magic-shop__scroll-capacity-icon {
+  display: block;
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.72))
+    drop-shadow(0 0 4px rgba(188, 96, 255, 0.24));
+}
+
+.magic-shop__scroll-capacity-amount {
+  color: #f1ddff;
+}
+
+.magic-shop__preview,
+.magic-shop__list,
+.magic-shop__wallet {
+  min-width: 0;
+  min-height: 0;
+}
+
+.magic-shop.armory-shop--city-mode .magic-shop__preview {
+  position: absolute;
+  top: 74px;
+  right: 20px;
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + 14px);
+  left: 20px;
+  z-index: 4;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  padding: 0;
+  pointer-events: none;
+}
+
+.magic-shop__preview-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  justify-items: center;
+  width: min(286px, calc(100% - 18px));
+  min-height: 0;
+  padding: 16px 14px 14px;
+  border: 2px solid var(--shop-rarity, rgba(255, 211, 132, 0.44));
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(186, 74, 255, 0.34), transparent 36%),
+    radial-gradient(circle at 50% 32%, var(--shop-rarity-soft, rgba(188, 96, 255, 0.2)), transparent 50%),
+    linear-gradient(180deg, rgba(72, 26, 65, 0.9), rgba(28, 9, 22, 0.96)),
+    var(--ui-panel-wood-texture) center / 220px 220px repeat,
+    #21100b;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 210, 0.1),
+    inset 0 3px 0 rgba(255, 246, 210, 0.1),
+    inset 0 -7px 0 rgba(8, 2, 1, 0.28),
+    0 3px 0 rgba(8, 2, 1, 0.82),
+    0 0 0 1px rgba(255, 211, 132, 0.18),
+    0 0 22px rgba(151, 53, 255, 0.24);
+  pointer-events: auto;
+}
+
+.magic-shop__preview-card--max {
+  filter: saturate(0.86);
+}
+
+.magic-shop__preview-icon {
+  position: relative;
+  z-index: 1;
+  width: clamp(102px, 30vw, 126px);
+  height: clamp(102px, 30vw, 126px);
+  object-fit: contain;
+  filter:
+    drop-shadow(0 3px 0 rgba(8, 2, 1, 0.58))
+    drop-shadow(0 0 14px var(--shop-rarity-soft, rgba(188, 96, 255, 0.3)));
+}
+
+.magic-shop__preview-body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+  text-align: center;
+}
+
+.magic-shop__preview-name {
   margin: 0;
   overflow: hidden;
   color: #fff0bd;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.92rem;
-  font-weight: 900;
-  line-height: 1.08;
-  text-align: center;
-  text-overflow: ellipsis;
-  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.95);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.magic-shop__product-rarity {
-  position: relative;
-  z-index: 3;
-  color: var(--shop-rarity-light, #fff0bd);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.68rem;
+  font-size: clamp(1rem, 4.4vw, 1.18rem);
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.88);
+  text-overflow: ellipsis;
+  text-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.95),
+    0 0 8px rgba(255, 211, 132, 0.16);
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+.magic-shop__preview-rarity {
+  color: var(--shop-rarity-light, #fff0bd);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.9);
   text-transform: uppercase;
 }
 
-.magic-shop__product-effect {
-  position: relative;
-  z-index: 3;
-  max-width: 220px;
+.magic-shop__preview-effect {
   margin: 0;
-  color: #2f150a;
+  max-width: 230px;
+  color: #efd4a2;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.78rem;
+  font-size: clamp(0.7rem, 2.45vw, 0.8rem);
   font-weight: 900;
-  line-height: 1.12;
+  line-height: 1.15;
   text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 246, 210, 0.42);
-  text-transform: none;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.86);
 }
 
-.magic-shop__product-footer {
+.magic-shop__preview-footer {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(74px, auto);
+  grid-template-columns: minmax(82px, auto) minmax(108px, 1fr);
   gap: 8px;
   align-items: center;
-  width: min(100%, 250px);
-  margin-top: auto;
+  width: 100%;
+  min-width: 0;
 }
 
-.magic-shop__product-price {
+.magic-shop__preview-price,
+.magic-shop__list-price {
   display: inline-flex;
   gap: 5px;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 4px 8px;
-  border: 1px solid rgba(53, 24, 13, 0.34);
+  min-height: 30px;
+  padding: 4px 8px 5px;
+  border: 1px solid rgba(255, 211, 132, 0.28);
   border-radius: 999px;
-  color: #35180d;
-  background: rgba(255, 240, 189, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255, 246, 210, 0.3);
+  color: #ffe6a0;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.1), rgba(8, 2, 1, 0.34)),
+    rgba(22, 7, 3, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 246, 210, 0.12);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 1px 0 rgba(255, 246, 210, 0.52);
+  text-shadow: 0 1px 0 #160703;
 }
 
-.magic-shop__product-price .armory-shop__price-icon {
+.magic-shop__preview-price .armory-shop__price-icon,
+.magic-shop__list-price .armory-shop__price-icon {
   position: static;
   width: 20px;
   height: 20px;
@@ -6600,9 +6830,158 @@ body.debug-active .city-menu__portrait-button:active {
   transform: none;
 }
 
+.magic-shop__list {
+  display: grid;
+  grid-auto-rows: minmax(52px, auto);
+  gap: 6px;
+  overflow-y: auto;
+  padding-right: 2px;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(188, 96, 255, 0.52) rgba(22, 7, 3, 0.54);
+  scrollbar-width: thin;
+}
+
+.magic-shop__list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.magic-shop__list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(22, 7, 3, 0.54);
+}
+
+.magic-shop__list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(188, 96, 255, 0.52);
+}
+
+.magic-shop__list-item {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) minmax(58px, auto);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 211, 132, 0.22);
+  border-radius: 8px;
+  color: #fff0bd;
+  background:
+    linear-gradient(90deg, var(--shop-rarity-soft, rgba(188, 96, 255, 0.14)), transparent 44%),
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(8, 2, 1, 0.36)),
+    rgba(24, 8, 3, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.08),
+    0 1px 0 rgba(8, 2, 1, 0.62);
+  cursor: pointer;
+  font-family: Georgia, "Times New Roman", serif;
+  text-align: left;
+}
+
+.magic-shop__list-item--selected {
+  border-color: var(--shop-rarity-light, #fff0bd);
+  background:
+    linear-gradient(90deg, var(--shop-rarity-soft, rgba(188, 96, 255, 0.28)), transparent 56%),
+    linear-gradient(180deg, rgba(255, 226, 142, 0.16), rgba(8, 2, 1, 0.3)),
+    rgba(45, 14, 38, 0.82);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 210, 0.16),
+    0 0 0 1px rgba(8, 2, 1, 0.76),
+    0 0 10px var(--shop-rarity-soft, rgba(188, 96, 255, 0.24));
+}
+
+.magic-shop__list-item--max,
+.magic-shop__list-item--no-gold {
+  opacity: 0.82;
+}
+
+.magic-shop__list-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 0 rgba(8, 2, 1, 0.58));
+}
+
+.magic-shop__list-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.magic-shop__list-name {
+  overflow: hidden;
+  color: #fff0bd;
+  font-size: clamp(0.7rem, 2.55vw, 0.82rem);
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 #160703;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.magic-shop__list-rarity {
+  overflow: hidden;
+  color: var(--shop-rarity-light, #f0c57a);
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 #160703;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.magic-shop__list-price {
+  justify-self: end;
+  min-height: 28px;
+  padding-inline: 7px;
+  font-size: 0.74rem;
+}
+
+.magic-shop__list-price .armory-shop__price-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.magic-shop__wallet {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: center;
+  min-width: min(214px, 100%);
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 211, 132, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(8, 2, 1, 0.34)),
+    rgba(18, 5, 2, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.08),
+    0 1px 0 rgba(8, 2, 1, 0.6);
+}
+
+.magic-shop__wallet .armory-shop__gold,
+.magic-shop__wallet .magic-shop__scroll-capacity {
+  padding: 2px 7px 3px;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 999px;
+  background: rgba(8, 2, 1, 0.34);
+}
+
 .magic-shop__buy {
-  min-height: 34px;
+  min-height: 36px;
   padding: 6px 10px;
+  border-color: rgba(205, 116, 255, 0.62);
+  color: #ffe6a0;
+  background:
+    linear-gradient(180deg, rgba(157, 66, 208, 0.96), rgba(64, 19, 82, 0.98)),
+    #4a165c;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.2),
+    0 2px 0 rgba(8, 2, 1, 0.74),
+    0 0 10px rgba(151, 53, 255, 0.22);
 }
 
 .armory-shop__sealed-ribbon {
