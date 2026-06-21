@@ -32,7 +32,13 @@ test("client saver posts scoped UI layout tuning to the local dev endpoint", () 
   assert.match(uiLayoutSource, /DEFAULT_UI_LAYOUT_TUNING: UiLayoutTuningState/);
   assert.match(uiLayoutSource, /"magicShop\.preview\.width\.compact": \d+/);
   assert.match(uiLayoutSource, /"magicShop\.preview\.titleGap\.compact": \d+/);
+  assert.match(uiLayoutSource, /"magicShop\.previewTitle\.offsetY\.compact": -?\d+(?:\.\d+)?/);
+  assert.match(uiLayoutSource, /"magicShop\.previewTitle\.nameFont\.compact": \d+/);
+  assert.match(uiLayoutSource, /"magicShop\.previewEffect\.offsetY\.compact": -?\d+(?:\.\d+)?/);
+  assert.match(uiLayoutSource, /"magicShop\.previewEffect\.effectLineHeight\.compact": \d+(?:\.\d+)?/);
   assert.match(uiLayoutSource, /"magicShop\.buttons\.scale\.compact": 1/);
+  assert.match(uiLayoutSource, /"magicShop\.buttons\.buyOffsetX\.compact": -?\d+(?:\.\d+)?/);
+  assert.match(uiLayoutSource, /"magicShop\.buttons\.buyOffsetY\.compact": -?\d+(?:\.\d+)?/);
   assert.match(uiLayoutSource, /"magicShop\.buttons\.buyHeight\.compact": \d+/);
   assert.match(uiLayoutSource, /"magicShop\.buttons\.listCoinSize\.compact": \d+/);
   assert.match(uiLayoutSource, /"magicShop\.wallet\.height\.compact": \d+/);

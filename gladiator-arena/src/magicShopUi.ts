@@ -365,12 +365,11 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
     const displayName = getMagicProductDisplayName(product);
     const icon = document.createElement("img");
-    const body = document.createElement("div");
+    const title = document.createElement("div");
     const name = document.createElement("h3");
     const rarityNode = document.createElement("span");
     const effect = document.createElement("p");
     const footer = document.createElement("div");
-    const price = document.createElement("span");
     const buyButton = document.createElement("button");
 
     card.className = `magic-shop__preview-card armory-shop__selected-card--rarity-${rarity}`;
@@ -380,17 +379,15 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     icon.alt = "";
     icon.decoding = "async";
     icon.draggable = false;
-    body.className = "magic-shop__preview-body";
+    title.className = "magic-shop__preview-title";
     name.className = "magic-shop__preview-name";
     name.textContent = displayName;
     rarityNode.className = "magic-shop__preview-rarity";
     rarityNode.textContent = getShopRarityLabel(rarity);
     effect.className = "magic-shop__preview-effect";
     effect.textContent = product.effect;
-    body.append(name, rarityNode, effect);
+    title.append(name, rarityNode);
     footer.className = "magic-shop__preview-footer";
-    price.className = "magic-shop__preview-price";
-    appendPriceContent(price, product.price);
     buyButton.className = "armory-shop__selected-buy magic-shop__buy";
     buyButton.type = "button";
     buyButton.disabled = actionState === "no-gold" || actionState === "max";
@@ -400,8 +397,8 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
         options.onBuy(product);
       }
     });
-    footer.append(price, buyButton);
-    card.append(icon, body, footer);
+    footer.append(buyButton);
+    card.append(title, icon, effect, footer);
 
     return card;
   }
