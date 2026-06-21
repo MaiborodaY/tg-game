@@ -28,7 +28,7 @@ import {
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
-import { pickArenaBackgroundVariantIdForTier } from "./assets";
+import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
@@ -640,17 +640,17 @@ function renderCityArenaMenu(): void {
   syncCityArenaTierSelect(cityArenaTierSelect, availableTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
   if (cityArenaEasyName) {
-    cityArenaEasyName.textContent = "Easy Fight";
+    cityArenaEasyName.textContent = "Easy";
   }
   if (cityArenaRandomName) {
-    cityArenaRandomName.textContent = "Random Fight";
+    cityArenaRandomName.textContent = "Medium";
   }
   if (cityArenaHardName) {
-    cityArenaHardName.textContent = "Hard Fight";
+    cityArenaHardName.textContent = "Hard";
   }
-  cityArenaEasyReward.textContent = `Win ${formatCityArenaReward(easyOpponent?.rewards.win ?? { gold: 4, xp: 4 })}`;
-  cityArenaRandomReward.textContent = `Win ${formatCityArenaReward(randomOpponent?.rewards.win ?? { gold: 8, xp: 6 })}`;
-  cityArenaHardReward.textContent = `Win ${formatCityArenaReward(hardOpponent?.rewards.win ?? { gold: 15, xp: 10 })}`;
+  syncCityArenaReward(cityArenaEasyReward, easyOpponent?.rewards.win ?? { gold: 4, xp: 4 });
+  syncCityArenaReward(cityArenaRandomReward, randomOpponent?.rewards.win ?? { gold: 8, xp: 6 });
+  syncCityArenaReward(cityArenaHardReward, hardOpponent?.rewards.win ?? { gold: 15, xp: 10 });
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
 }
 
@@ -687,21 +687,21 @@ function createCityArenaTierOption(tier: ArenaTierDefinition): HTMLOptionElement
 
 function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement {
   const button = document.createElement("button");
-  const eyebrow = document.createElement("span");
   const name = document.createElement("strong");
-  const stats = document.createElement("span");
+  const rewardLine = document.createElement("span");
   const reward = document.createElement("span");
+  const uniqueReward = document.createElement("span");
 
   button.className = "city-arena-menu__boss";
   button.type = "button";
-  eyebrow.className = "city-arena-menu__eyebrow";
-  eyebrow.textContent = `Tier ${boss.tierId} Boss`;
-  name.textContent = boss.name;
-  stats.className = "city-arena-menu__boss-stats";
-  stats.textContent = `STR ${boss.baseStats.strength} / AGI ${boss.baseStats.agility} / VIT ${boss.baseStats.vitality}`;
+  name.textContent = "Boss";
+  rewardLine.className = "city-arena-menu__boss-reward-line";
   reward.className = "city-arena-menu__reward";
-  reward.textContent = `Win ${formatCityArenaReward(boss.rewards.win)}`;
-  button.append(eyebrow, name, stats, reward);
+  syncCityArenaReward(reward, boss.rewards.win);
+  uniqueReward.className = "city-arena-menu__unique-reward";
+  uniqueReward.textContent = "+ unique reward";
+  rewardLine.append(reward, uniqueReward);
+  button.append(name, rewardLine);
   button.addEventListener("click", () => {
     startSelectedArena({ kind: "boss", bossId: boss.id });
   });
@@ -718,8 +718,30 @@ function createCityArenaEmptyBossMessage(): HTMLElement {
   return message;
 }
 
-function formatCityArenaReward(reward: { gold: number; xp: number }): string {
-  return `${reward.gold} Gold / ${reward.xp} XP`;
+function syncCityArenaReward(container: HTMLElement, reward: { gold: number; xp: number }): void {
+  container.setAttribute("aria-label", `${reward.gold} gold, ${reward.xp} XP`);
+  container.replaceChildren(
+    createCityArenaRewardItem(SHOP_GOLD_COIN_ICON_ASSET_URL, "Gold", reward.gold),
+    createCityArenaRewardItem(SHOP_XP_ICON_ASSET_URL, "XP", reward.xp),
+  );
+}
+
+function createCityArenaRewardItem(iconUrl: string, label: string, value: number): HTMLElement {
+  const item = document.createElement("span");
+  const icon = document.createElement("img");
+  const amount = document.createElement("span");
+
+  item.className = "city-arena-menu__reward-item";
+  item.setAttribute("aria-label", `${value} ${label}`);
+  icon.className = "city-arena-menu__reward-icon";
+  icon.src = iconUrl;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  amount.className = "city-arena-menu__reward-amount";
+  amount.textContent = String(value);
+  item.append(icon, amount);
+  return item;
 }
 
 function openCityArenaMenu(): void {

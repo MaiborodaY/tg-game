@@ -2422,12 +2422,45 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__tier span,
 .city-arena-menu__eyebrow,
-.city-arena-menu__boss-stats,
 .city-arena-menu__reward {
   color: #e0b96f;
   font-size: 0.6rem;
   font-weight: 900;
   line-height: 1;
+}
+
+.city-arena-menu__reward {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 0.72rem;
+}
+
+.city-arena-menu__reward-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 1px 5px 1px 1px;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 999px;
+  background: rgba(14, 4, 2, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.08),
+    0 1px 2px rgba(8, 2, 1, 0.45);
+}
+
+.city-arena-menu__reward-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(8, 2, 1, 0.8));
+}
+
+.city-arena-menu__reward-amount {
+  font-variant-numeric: tabular-nums;
 }
 
 .city-arena-menu__tier strong {
@@ -2463,11 +2496,14 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu__boss {
   position: relative;
   z-index: 1;
-  display: grid;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
   min-width: 0;
+  min-height: 86px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 42px 12px 76px;
   border: 2px solid #1a0803;
   border-radius: 8px;
   color: #fff0bd;
@@ -2482,22 +2518,95 @@ body.debug-active .city-menu__portrait-button:active {
   cursor: pointer;
 }
 
+.city-arena-menu__fight::before,
+.city-arena-menu__boss::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  z-index: 1;
+  width: 58px;
+  height: 96px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter:
+    drop-shadow(0 4px 2px rgba(8, 2, 1, 0.9))
+    drop-shadow(0 0 4px rgba(255, 211, 132, 0.14));
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.city-arena-menu__fight::after,
+.city-arena-menu__boss::after {
+  content: "\203A";
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  z-index: 1;
+  color: #e4ad55;
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 0.8;
+  text-shadow:
+    0 2px 0 rgba(8, 2, 1, 0.78),
+    0 0 8px rgba(255, 211, 132, 0.18);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
 .city-arena-menu__fight--easy {
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 229, 161, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(99, 63, 34, 0.86), rgba(38, 17, 9, 0.94));
+    linear-gradient(90deg, rgba(18, 33, 10, 0.3), transparent 28%, rgba(7, 2, 1, 0.36) 100%),
+    radial-gradient(circle at 20% 22%, rgba(216, 255, 148, 0.26), transparent 36%),
+    linear-gradient(180deg, rgba(73, 103, 30, 0.95), rgba(17, 35, 12, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(231, 255, 169, 0.28),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(134, 170, 74, 0.2),
+    0 3px 0 rgba(8, 2, 1, 0.72);
+}
+
+.city-arena-menu__fight--easy::before {
+  background-image: url("./assets/ui/arena-difficulty/difficulty-easy.webp");
+}
+
+.city-arena-menu__fight--medium::before {
+  background-image: url("./assets/ui/arena-difficulty/difficulty-medium.webp");
+}
+
+.city-arena-menu__fight--medium {
+  background:
+    linear-gradient(90deg, rgba(50, 19, 5, 0.22), transparent 28%, rgba(7, 2, 1, 0.36) 100%),
+    radial-gradient(circle at 20% 22%, rgba(255, 205, 103, 0.28), transparent 36%),
+    linear-gradient(180deg, rgba(153, 75, 20, 0.96), rgba(61, 21, 7, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 212, 129, 0.3),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(196, 100, 28, 0.2),
+    0 3px 0 rgba(8, 2, 1, 0.72);
 }
 
 .city-arena-menu__fight--hard {
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 229, 161, 0.2), transparent 34%),
-    linear-gradient(180deg, rgba(151, 55, 31, 0.92), rgba(48, 11, 7, 0.96));
+    linear-gradient(90deg, rgba(57, 8, 6, 0.24), transparent 28%, rgba(7, 2, 1, 0.38) 100%),
+    radial-gradient(circle at 20% 22%, rgba(255, 151, 115, 0.28), transparent 36%),
+    linear-gradient(180deg, rgba(153, 44, 31, 0.97), rgba(73, 13, 9, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 185, 139, 0.28),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(200, 68, 48, 0.22),
+    0 3px 0 rgba(8, 2, 1, 0.72);
+}
+
+.city-arena-menu__fight--hard::before {
+  background-image: url("./assets/ui/arena-difficulty/difficulty-hard.webp");
 }
 
 .city-arena-menu__fight strong,
 .city-arena-menu__boss strong {
   overflow: hidden;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 900;
   line-height: 1;
   text-overflow: ellipsis;
@@ -2541,14 +2650,41 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss {
+  min-height: 98px;
+  padding-left: 86px;
   background:
-    radial-gradient(circle at 16% 18%, rgba(85, 224, 214, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(18, 91, 86, 0.76), rgba(32, 12, 7, 0.96));
+    linear-gradient(90deg, rgba(10, 57, 53, 0.26), transparent 28%, rgba(7, 2, 1, 0.38) 100%),
+    radial-gradient(circle at 18% 20%, rgba(92, 255, 235, 0.24), transparent 36%),
+    linear-gradient(180deg, rgba(20, 104, 95, 0.88), rgba(27, 13, 8, 0.98));
   box-shadow:
-    inset 0 1px 0 rgba(174, 255, 246, 0.18),
-    inset 0 -8px 14px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(85, 224, 214, 0.22),
+    inset 0 1px 0 rgba(174, 255, 246, 0.24),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(85, 224, 214, 0.28),
     0 3px 0 rgba(8, 2, 1, 0.7);
+}
+
+.city-arena-menu__boss::before {
+  left: 6px;
+  width: 76px;
+  height: 112px;
+  background-image: url("./assets/ui/arena-difficulty/difficulty-boss.webp");
+}
+
+.city-arena-menu__boss-reward-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.city-arena-menu__unique-reward {
+  color: #f3d38e;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.78);
+  white-space: nowrap;
 }
 
 .city-arena-menu__empty {
