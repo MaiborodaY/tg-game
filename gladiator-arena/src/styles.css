@@ -4785,12 +4785,14 @@ body.debug-active .city-menu__portrait-button:active {
   --shop-city-products-height: clamp(280px, var(--ui-magic-shop-products-height, 306px), 338px);
   --shop-city-tray-height: var(--shop-city-products-height);
   --magic-shop-title-top: var(--ui-magic-shop-title-top, 9px);
+  --magic-shop-title-actual-top: var(--magic-shop-title-top);
   --magic-shop-title-width: var(--ui-magic-shop-title-width, 300px);
   --magic-shop-title-height: var(--ui-magic-shop-title-height, 72px);
+  --magic-shop-title-preview-gap: var(--ui-magic-shop-title-preview-gap, 10px);
   --magic-shop-list-row-height: var(--ui-magic-shop-list-row-height, 44px);
   --magic-shop-list-visible-items: var(--ui-magic-shop-list-visible-rows, 5);
   --magic-shop-list-width: min(var(--ui-magic-shop-list-width, 390px), calc(100% - 54px));
-  --magic-shop-preview-top: var(--ui-magic-shop-preview-top, 74px);
+  --magic-shop-preview-top: calc(var(--magic-shop-title-actual-top) + var(--magic-shop-title-height) + var(--magic-shop-title-preview-gap));
   --magic-shop-preview-bottom-gap: var(--ui-magic-shop-preview-bottom-gap, 24px);
   --magic-shop-preview-width: min(var(--ui-magic-shop-preview-width, 244px), calc(100% - 42px));
   --magic-shop-preview-height: min(var(--ui-magic-shop-preview-height, 288px), 100%);
@@ -4798,8 +4800,25 @@ body.debug-active .city-menu__portrait-button:active {
   --magic-shop-preview-padding-x: var(--ui-magic-shop-preview-padding-x, 26px);
   --magic-shop-preview-padding-bottom: var(--ui-magic-shop-preview-padding-bottom, 29px);
   --magic-shop-preview-icon-size: var(--ui-magic-shop-preview-icon-size, 104px);
+  --magic-shop-button-scale: var(--ui-magic-shop-button-scale, 1);
+  --magic-shop-preview-footer-gap: var(--ui-magic-shop-preview-footer-gap, 7px);
+  --magic-shop-preview-price-min-width: var(--ui-magic-shop-preview-price-min-width, 74px);
+  --magic-shop-preview-price-height: var(--ui-magic-shop-preview-price-height, 30px);
+  --magic-shop-preview-price-font-size: var(--ui-magic-shop-preview-price-font-size, 13px);
+  --magic-shop-preview-price-coin-size: var(--ui-magic-shop-preview-price-coin-size, 20px);
+  --magic-shop-buy-min-width: var(--ui-magic-shop-buy-min-width, 102px);
+  --magic-shop-buy-height: var(--ui-magic-shop-buy-height, 34px);
+  --magic-shop-buy-font-size: var(--ui-magic-shop-buy-font-size, 13px);
+  --magic-shop-list-price-min-width: var(--ui-magic-shop-list-price-min-width, 56px);
+  --magic-shop-list-price-height: var(--ui-magic-shop-list-price-height, 27px);
+  --magic-shop-list-price-font-size: var(--ui-magic-shop-list-price-font-size, 11.5px);
+  --magic-shop-list-price-coin-size: var(--ui-magic-shop-list-price-coin-size, 16px);
   --magic-shop-wallet-margin-top: var(--ui-magic-shop-wallet-margin-top, 5px);
   --magic-shop-wallet-min-width: var(--ui-magic-shop-wallet-min-width, 210px);
+  --magic-shop-wallet-gap: var(--ui-magic-shop-wallet-gap, 8px);
+  --magic-shop-wallet-height: var(--ui-magic-shop-wallet-height, 32px);
+  --magic-shop-wallet-font-size: var(--ui-magic-shop-wallet-font-size, 11.5px);
+  --magic-shop-wallet-icon-size: var(--ui-magic-shop-wallet-icon-size, 15px);
 }
 
 .armory-shop--city-mode.armory-shop--has-subcategories {
@@ -6802,8 +6821,8 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(74px, auto) minmax(102px, 1fr);
-  gap: 7px;
+  grid-template-columns: minmax(calc(var(--magic-shop-preview-price-min-width) * var(--magic-shop-button-scale)), auto) minmax(calc(var(--magic-shop-buy-min-width) * var(--magic-shop-button-scale)), 1fr);
+  gap: calc(var(--magic-shop-preview-footer-gap) * var(--magic-shop-button-scale));
   align-items: center;
   width: 100%;
   min-width: 0;
@@ -6815,8 +6834,9 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 5px;
   align-items: center;
   justify-content: center;
-  min-height: 30px;
-  padding: 4px 8px 5px;
+  min-width: calc(var(--magic-shop-preview-price-min-width) * var(--magic-shop-button-scale));
+  min-height: calc(var(--magic-shop-preview-price-height) * var(--magic-shop-button-scale));
+  padding: calc(4px * var(--magic-shop-button-scale)) calc(8px * var(--magic-shop-button-scale)) calc(5px * var(--magic-shop-button-scale));
   border: 1px solid rgba(255, 211, 132, 0.28);
   border-radius: 999px;
   color: #ffe6a0;
@@ -6825,7 +6845,7 @@ body.debug-active .city-menu__portrait-button:active {
     rgba(22, 7, 3, 0.58);
   box-shadow: inset 0 1px 0 rgba(255, 246, 210, 0.12);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.82rem;
+  font-size: calc(var(--magic-shop-preview-price-font-size) * var(--magic-shop-button-scale));
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 0 #160703;
@@ -6834,8 +6854,8 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__preview-price .armory-shop__price-icon,
 .magic-shop__list-price .armory-shop__price-icon {
   position: static;
-  width: 20px;
-  height: 20px;
+  width: calc(var(--magic-shop-preview-price-coin-size) * var(--magic-shop-button-scale));
+  height: calc(var(--magic-shop-preview-price-coin-size) * var(--magic-shop-button-scale));
   padding: 0;
   border: 0;
   background: transparent;
@@ -6886,7 +6906,7 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__list-item {
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) minmax(56px, auto);
+  grid-template-columns: 40px minmax(0, 1fr) minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
   gap: 9px;
   align-items: center;
   min-width: 0;
@@ -7003,23 +7023,25 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop__list-price {
   justify-self: end;
-  min-height: 27px;
-  padding-inline: 7px;
-  font-size: 0.72rem;
+  min-width: calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale));
+  min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
+  padding-inline: calc(7px * var(--magic-shop-button-scale));
+  font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
 }
 
 .magic-shop__list-price .armory-shop__price-icon {
-  width: 16px;
-  height: 16px;
+  width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale));
+  height: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale));
 }
 
 .magic-shop__wallet {
   display: flex;
-  gap: 8px;
+  gap: var(--magic-shop-wallet-gap);
   align-items: center;
   justify-content: center;
   justify-self: center;
   min-width: min(var(--magic-shop-wallet-min-width), 100%);
+  min-height: var(--magic-shop-wallet-height);
   margin-top: var(--magic-shop-wallet-margin-top);
   padding: 5px 12px;
   border: 1px solid rgba(255, 211, 132, 0.28);
@@ -7038,11 +7060,19 @@ body.debug-active .city-menu__portrait-button:active {
   border: 1px solid rgba(255, 211, 132, 0.18);
   border-radius: 999px;
   background: rgba(8, 2, 1, 0.34);
+  font-size: var(--magic-shop-wallet-font-size);
+}
+
+.magic-shop__wallet .armory-shop__gold-icon,
+.magic-shop__wallet .magic-shop__scroll-capacity-icon {
+  width: var(--magic-shop-wallet-icon-size);
+  height: var(--magic-shop-wallet-icon-size);
 }
 
 .magic-shop__buy {
-  min-height: 34px;
-  padding: 6px 10px;
+  min-width: calc(var(--magic-shop-buy-min-width) * var(--magic-shop-button-scale));
+  min-height: calc(var(--magic-shop-buy-height) * var(--magic-shop-button-scale));
+  padding: calc(6px * var(--magic-shop-button-scale)) calc(10px * var(--magic-shop-button-scale));
   border-color: rgba(205, 116, 255, 0.62);
   color: #ffe6a0;
   background:
@@ -7053,6 +7083,7 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 1px 0 rgba(255, 240, 189, 0.2),
     0 2px 0 rgba(8, 2, 1, 0.74),
     0 0 12px rgba(151, 53, 255, 0.28);
+  font-size: calc(var(--magic-shop-buy-font-size) * var(--magic-shop-button-scale));
 }
 
 .armory-shop__sealed-ribbon {
@@ -7506,12 +7537,13 @@ body.debug-active .city-menu__portrait-button:active {
     --shop-city-products-height: clamp(248px, var(--ui-magic-shop-compact-products-height, 266px), 296px);
     --shop-city-menu-pad-top: 5px;
     --magic-shop-title-top: var(--ui-magic-shop-compact-title-top, 7px);
+    --magic-shop-title-actual-top: calc(var(--shop-frame-top-height) + var(--magic-shop-title-top));
     --magic-shop-title-width: var(--ui-magic-shop-compact-title-width, 260px);
     --magic-shop-title-height: var(--ui-magic-shop-compact-title-height, 49px);
+    --magic-shop-title-preview-gap: var(--ui-magic-shop-compact-title-preview-gap, 19px);
     --magic-shop-list-row-height: var(--ui-magic-shop-compact-list-row-height, 38px);
     --magic-shop-list-visible-items: var(--ui-magic-shop-compact-list-visible-rows, 5);
     --magic-shop-list-width: min(var(--ui-magic-shop-compact-list-width, 372px), calc(100% - 32px));
-    --magic-shop-preview-top: var(--ui-magic-shop-compact-preview-top, 62px);
     --magic-shop-preview-bottom-gap: var(--ui-magic-shop-compact-preview-bottom-gap, 18px);
     --magic-shop-preview-width: min(var(--ui-magic-shop-compact-preview-width, 210px), calc(100% - 36px));
     --magic-shop-preview-height: min(var(--ui-magic-shop-compact-preview-height, 236px), 100%);
@@ -7519,8 +7551,25 @@ body.debug-active .city-menu__portrait-button:active {
     --magic-shop-preview-padding-x: var(--ui-magic-shop-compact-preview-padding-x, 22px);
     --magic-shop-preview-padding-bottom: var(--ui-magic-shop-compact-preview-padding-bottom, 23px);
     --magic-shop-preview-icon-size: var(--ui-magic-shop-compact-preview-icon-size, 84px);
+    --magic-shop-button-scale: var(--ui-magic-shop-compact-button-scale, 1);
+    --magic-shop-preview-footer-gap: var(--ui-magic-shop-compact-preview-footer-gap, 6px);
+    --magic-shop-preview-price-min-width: var(--ui-magic-shop-compact-preview-price-min-width, 64px);
+    --magic-shop-preview-price-height: var(--ui-magic-shop-compact-preview-price-height, 26px);
+    --magic-shop-preview-price-font-size: var(--ui-magic-shop-compact-preview-price-font-size, 11px);
+    --magic-shop-preview-price-coin-size: var(--ui-magic-shop-compact-preview-price-coin-size, 20px);
+    --magic-shop-buy-min-width: var(--ui-magic-shop-compact-buy-min-width, 86px);
+    --magic-shop-buy-height: var(--ui-magic-shop-compact-buy-height, 30px);
+    --magic-shop-buy-font-size: var(--ui-magic-shop-compact-buy-font-size, 11px);
+    --magic-shop-list-price-min-width: var(--ui-magic-shop-compact-list-price-min-width, 50px);
+    --magic-shop-list-price-height: var(--ui-magic-shop-compact-list-price-height, 24px);
+    --magic-shop-list-price-font-size: var(--ui-magic-shop-compact-list-price-font-size, 10.5px);
+    --magic-shop-list-price-coin-size: var(--ui-magic-shop-compact-list-price-coin-size, 14px);
     --magic-shop-wallet-margin-top: var(--ui-magic-shop-compact-wallet-margin-top, 4px);
     --magic-shop-wallet-min-width: var(--ui-magic-shop-compact-wallet-min-width, 180px);
+    --magic-shop-wallet-gap: var(--ui-magic-shop-compact-wallet-gap, 8px);
+    --magic-shop-wallet-height: var(--ui-magic-shop-compact-wallet-height, 28px);
+    --magic-shop-wallet-font-size: var(--ui-magic-shop-compact-wallet-font-size, 11px);
+    --magic-shop-wallet-icon-size: var(--ui-magic-shop-compact-wallet-icon-size, 15px);
   }
 
   .magic-shop.armory-shop--city-mode::after {
@@ -7596,21 +7645,21 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__preview-footer {
-    grid-template-columns: minmax(64px, auto) minmax(86px, 1fr);
-    gap: 6px;
+    grid-template-columns: minmax(calc(var(--magic-shop-preview-price-min-width) * var(--magic-shop-button-scale)), auto) minmax(calc(var(--magic-shop-buy-min-width) * var(--magic-shop-button-scale)), 1fr);
+    gap: calc(var(--magic-shop-preview-footer-gap) * var(--magic-shop-button-scale));
   }
 
   .magic-shop__preview-price,
   .magic-shop__list-price {
-    min-height: 26px;
-    padding: 3px 7px 4px;
-    font-size: 0.7rem;
+    min-height: calc(var(--magic-shop-preview-price-height) * var(--magic-shop-button-scale));
+    padding: calc(3px * var(--magic-shop-button-scale)) calc(7px * var(--magic-shop-button-scale)) calc(4px * var(--magic-shop-button-scale));
+    font-size: calc(var(--magic-shop-preview-price-font-size) * var(--magic-shop-button-scale));
   }
 
   .magic-shop__buy {
-    min-height: 30px;
-    padding: 5px 8px;
-    font-size: clamp(0.62rem, 2.3vw, 0.7rem);
+    min-height: calc(var(--magic-shop-buy-height) * var(--magic-shop-button-scale));
+    padding: calc(5px * var(--magic-shop-button-scale)) calc(8px * var(--magic-shop-button-scale));
+    font-size: calc(var(--magic-shop-buy-font-size) * var(--magic-shop-button-scale));
   }
 
   .magic-shop.armory-shop--city-mode .armory-shop__content--products {
@@ -7624,7 +7673,7 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__list-item {
-    grid-template-columns: 34px minmax(0, 1fr) minmax(50px, auto);
+    grid-template-columns: 34px minmax(0, 1fr) minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
     gap: 7px;
     min-height: 38px;
     padding: 3px 5px 3px 2px;
@@ -7644,18 +7693,19 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__list-price {
-    min-height: 24px;
-    padding-inline: 6px;
-    font-size: 0.66rem;
+    min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
+    padding-inline: calc(6px * var(--magic-shop-button-scale));
+    font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
   }
 
   .magic-shop__list-price .armory-shop__price-icon {
-    width: 14px;
-    height: 14px;
+    width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale));
+    height: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale));
   }
 
   .magic-shop__wallet {
     min-width: min(var(--magic-shop-wallet-min-width), 100%);
+    min-height: var(--magic-shop-wallet-height);
     margin-top: var(--magic-shop-wallet-margin-top);
     padding: 4px 8px;
   }
@@ -7664,6 +7714,188 @@ body.debug-active .city-menu__portrait-button:active {
   .magic-shop__wallet .magic-shop__scroll-capacity {
     padding: 1px 6px 2px;
   }
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] {
+  --shop-city-products-height: clamp(248px, var(--ui-magic-shop-compact-products-height, 266px), 296px);
+  --shop-city-menu-pad-top: 5px;
+  --magic-shop-title-top: var(--ui-magic-shop-compact-title-top, 7px);
+  --magic-shop-title-actual-top: calc(var(--shop-frame-top-height) + var(--magic-shop-title-top));
+  --magic-shop-title-width: var(--ui-magic-shop-compact-title-width, 260px);
+  --magic-shop-title-height: var(--ui-magic-shop-compact-title-height, 49px);
+  --magic-shop-title-preview-gap: var(--ui-magic-shop-compact-title-preview-gap, 19px);
+  --magic-shop-list-row-height: var(--ui-magic-shop-compact-list-row-height, 38px);
+  --magic-shop-list-visible-items: var(--ui-magic-shop-compact-list-visible-rows, 5);
+  --magic-shop-list-width: min(var(--ui-magic-shop-compact-list-width, 372px), calc(100% - 32px));
+  --magic-shop-preview-bottom-gap: var(--ui-magic-shop-compact-preview-bottom-gap, 18px);
+  --magic-shop-preview-width: min(var(--ui-magic-shop-compact-preview-width, 210px), calc(100% - 36px));
+  --magic-shop-preview-height: min(var(--ui-magic-shop-compact-preview-height, 236px), 100%);
+  --magic-shop-preview-padding-top: var(--ui-magic-shop-compact-preview-padding-top, 39px);
+  --magic-shop-preview-padding-x: var(--ui-magic-shop-compact-preview-padding-x, 22px);
+  --magic-shop-preview-padding-bottom: var(--ui-magic-shop-compact-preview-padding-bottom, 23px);
+  --magic-shop-preview-icon-size: var(--ui-magic-shop-compact-preview-icon-size, 84px);
+  --magic-shop-button-scale: var(--ui-magic-shop-compact-button-scale, 1);
+  --magic-shop-preview-footer-gap: var(--ui-magic-shop-compact-preview-footer-gap, 6px);
+  --magic-shop-preview-price-min-width: var(--ui-magic-shop-compact-preview-price-min-width, 64px);
+  --magic-shop-preview-price-height: var(--ui-magic-shop-compact-preview-price-height, 26px);
+  --magic-shop-preview-price-font-size: var(--ui-magic-shop-compact-preview-price-font-size, 11px);
+  --magic-shop-preview-price-coin-size: var(--ui-magic-shop-compact-preview-price-coin-size, 20px);
+  --magic-shop-buy-min-width: var(--ui-magic-shop-compact-buy-min-width, 86px);
+  --magic-shop-buy-height: var(--ui-magic-shop-compact-buy-height, 30px);
+  --magic-shop-buy-font-size: var(--ui-magic-shop-compact-buy-font-size, 11px);
+  --magic-shop-list-price-min-width: var(--ui-magic-shop-compact-list-price-min-width, 50px);
+  --magic-shop-list-price-height: var(--ui-magic-shop-compact-list-price-height, 24px);
+  --magic-shop-list-price-font-size: var(--ui-magic-shop-compact-list-price-font-size, 10.5px);
+  --magic-shop-list-price-coin-size: var(--ui-magic-shop-compact-list-price-coin-size, 14px);
+  --magic-shop-wallet-margin-top: var(--ui-magic-shop-compact-wallet-margin-top, 4px);
+  --magic-shop-wallet-min-width: var(--ui-magic-shop-compact-wallet-min-width, 180px);
+  --magic-shop-wallet-gap: var(--ui-magic-shop-compact-wallet-gap, 8px);
+  --magic-shop-wallet-height: var(--ui-magic-shop-compact-wallet-height, 28px);
+  --magic-shop-wallet-font-size: var(--ui-magic-shop-compact-wallet-font-size, 11px);
+  --magic-shop-wallet-icon-size: var(--ui-magic-shop-compact-wallet-icon-size, 15px);
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"]::after {
+  top: calc(var(--shop-frame-top-height) + var(--magic-shop-title-top));
+  right: calc(var(--shop-frame-side-width) + 8px);
+  left: calc(var(--shop-frame-side-width) + 50px);
+  box-sizing: border-box;
+  width: auto;
+  height: var(--magic-shop-title-height);
+  min-width: 0;
+  max-width: none;
+  padding: 16px 20px 12px;
+  overflow: hidden;
+  background-size: 100% 100%;
+  clip-path: none;
+  font-size: clamp(0.78rem, 4.8vw, 0.92rem);
+  text-overflow: ellipsis;
+  transform: none;
+  white-space: nowrap;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .armory-shop__back {
+  top: calc(var(--shop-frame-top-height) + 7px);
+  left: calc(var(--shop-frame-side-width) + 7px);
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview {
+  top: var(--magic-shop-preview-top);
+  right: 14px;
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + var(--magic-shop-preview-bottom-gap));
+  left: 14px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-card {
+  gap: 4px;
+  width: var(--magic-shop-preview-width);
+  height: var(--magic-shop-preview-height);
+  padding: var(--magic-shop-preview-padding-top) var(--magic-shop-preview-padding-x) var(--magic-shop-preview-padding-bottom);
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-card::before {
+  inset: -13px -12px -12px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-card::after {
+  content: none;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-icon {
+  width: var(--magic-shop-preview-icon-size);
+  height: var(--magic-shop-preview-icon-size);
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-body {
+  gap: 2px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-name {
+  font-size: clamp(0.82rem, 4vw, 1rem);
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-rarity {
+  font-size: 0.62rem;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-effect {
+  max-width: 190px;
+  font-size: clamp(0.6rem, 2.3vw, 0.7rem);
+  line-height: 1.1;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-footer {
+  grid-template-columns: minmax(calc(var(--magic-shop-preview-price-min-width) * var(--magic-shop-button-scale)), auto) minmax(calc(var(--magic-shop-buy-min-width) * var(--magic-shop-button-scale)), 1fr);
+  gap: calc(var(--magic-shop-preview-footer-gap) * var(--magic-shop-button-scale));
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-price,
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-price {
+  min-height: calc(var(--magic-shop-preview-price-height) * var(--magic-shop-button-scale));
+  padding: calc(3px * var(--magic-shop-button-scale)) calc(7px * var(--magic-shop-button-scale)) calc(4px * var(--magic-shop-button-scale));
+  font-size: calc(var(--magic-shop-preview-price-font-size) * var(--magic-shop-button-scale));
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__buy {
+  min-height: calc(var(--magic-shop-buy-height) * var(--magic-shop-button-scale));
+  padding: calc(5px * var(--magic-shop-button-scale)) calc(8px * var(--magic-shop-button-scale));
+  font-size: calc(var(--magic-shop-buy-font-size) * var(--magic-shop-button-scale));
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .armory-shop__content--products {
+  gap: 5px;
+  padding: 6px 14px 10px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list {
+  grid-auto-rows: minmax(38px, auto);
+  padding: 5px 6px 5px 8px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-item {
+  grid-template-columns: 34px minmax(0, 1fr) minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
+  gap: 7px;
+  min-height: 38px;
+  padding: 3px 5px 3px 2px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-icon {
+  width: 34px;
+  height: 34px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-name {
+  font-size: clamp(0.62rem, 2.25vw, 0.72rem);
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-effect {
+  font-size: 0.52rem;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-price {
+  min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
+  padding-inline: calc(6px * var(--magic-shop-button-scale));
+  font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-price .armory-shop__price-icon {
+  width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale));
+  height: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale));
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__wallet {
+  min-width: min(var(--magic-shop-wallet-min-width), 100%);
+  min-height: var(--magic-shop-wallet-height);
+  margin-top: var(--magic-shop-wallet-margin-top);
+  padding: 4px 8px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__wallet .armory-shop__gold,
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__wallet .magic-shop__scroll-capacity {
+  padding: 1px 6px 2px;
 }
 
 .armory-shop--city-mode .armory-shop__product-stat,
@@ -10040,6 +10272,29 @@ body.debug-active .battle-screen {
   border: 3px solid var(--ink);
   border-radius: 24px;
   box-shadow: 0 10px 0 rgba(0, 0, 0, 0.24);
+}
+
+body.debug-mode-ui:has(.magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"]) .debug-app {
+  grid-template-columns: minmax(0, 393px) minmax(360px, 480px);
+}
+
+body.debug-mode-ui:has(.magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"]) .debug-preview-column {
+  width: min(393px, 100%);
+}
+
+body.debug-mode-ui:has(.magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"]) .debug-game-shell.shell {
+  width: min(393px, 100%);
+  min-height: 720px;
+  height: 720px;
+  max-height: 720px;
+  overflow: hidden;
+}
+
+body.debug-mode-ui:has(.magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"]) .debug-game-shell .main-menu,
+body.debug-mode-ui:has(.magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"]) .debug-game-shell .city-menu {
+  min-height: 720px;
+  height: 720px;
+  max-height: 720px;
 }
 
 .debug-app-panel {

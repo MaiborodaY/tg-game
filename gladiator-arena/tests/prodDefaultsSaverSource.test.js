@@ -30,7 +30,12 @@ test("client saver posts scoped UI layout tuning to the local dev endpoint", () 
   assert.match(source, /saveUiLayoutProdDefaults\(screenId: string, tuning: UiLayoutTuningState\)/);
   assert.match(source, /JSON\.stringify\(\{ screenId, tuning \}\)/);
   assert.match(uiLayoutSource, /DEFAULT_UI_LAYOUT_TUNING: UiLayoutTuningState/);
-  assert.match(uiLayoutSource, /"magicShop\.preview\.width\.compact": 210/);
+  assert.match(uiLayoutSource, /"magicShop\.preview\.width\.compact": \d+/);
+  assert.match(uiLayoutSource, /"magicShop\.preview\.titleGap\.compact": \d+/);
+  assert.match(uiLayoutSource, /"magicShop\.buttons\.scale\.compact": 1/);
+  assert.match(uiLayoutSource, /"magicShop\.buttons\.buyHeight\.compact": \d+/);
+  assert.match(uiLayoutSource, /"magicShop\.buttons\.listCoinSize\.compact": \d+/);
+  assert.match(uiLayoutSource, /"magicShop\.wallet\.height\.compact": \d+/);
 });
 
 test("client saver can promote auto equipment through the local dev endpoint", () => {

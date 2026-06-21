@@ -545,6 +545,12 @@ test("debug panel keeps long tuning sections scrollable", () => {
   assert.equal(stylesSource.includes("overscroll-behavior: contain"), true);
 });
 
+test("debug UI compact mode emulates the mobile city viewport size", () => {
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-app\s*\{[^}]*grid-template-columns: minmax\(0, 393px\) minmax\(360px, 480px\);/s);
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell\.shell\s*\{[^}]*width: min\(393px, 100%\);[^}]*height: 720px;/s);
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell \.main-menu,[\s\S]*\.debug-game-shell \.city-menu\s*\{[^}]*height: 720px;/s);
+});
+
 test("debug panel exposes item equipment tuning separately", () => {
   const debugPanelSource = readFileSync(resolve(currentDir, "../src/debugPanel.ts"), "utf8");
 
