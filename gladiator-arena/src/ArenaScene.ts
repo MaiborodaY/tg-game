@@ -91,8 +91,11 @@ import {
   REST_STAMINA_ICON_ASSET_URL,
   REST_ZZZ_ICON_ASSET_KEY,
   REST_ZZZ_ICON_ASSET_URL,
+  DEFAULT_SCROLL_CAST_PROP_ASSET_KEY,
+  SCROLL_CAST_PROP_ASSETS,
   SHURIKEN_PROJECTILE_ASSET_KEY,
   SHURIKEN_PROJECTILE_ASSET_URL,
+  type ScrollCastPropAssetKey,
 } from "./assets";
 import { getCameraTarget } from "./arenaCamera";
 import type { CameraTarget, CameraViewport } from "./arenaCamera";
@@ -146,6 +149,7 @@ import {
   DEFAULT_RIG_PARTS,
   DEFAULT_SLASH_ARCS,
   APPEARANCE_LAYER_KEYS,
+  defaultBodyAnimationCastProp,
   defaultBodyAnimationRootOffset,
   defaultRigPartTuning,
   endDebugUndoGroup,
@@ -165,6 +169,7 @@ import {
   type AppearanceLayerTuning,
   type BodyAnimationKeyframe,
   type BodyAnimationKey,
+  type BodyAnimationCastPropTuning,
   type BodyAnimationRootOffset,
   type BodyAnimationTuning,
   type BodyAnimationWeaponClass,
@@ -232,6 +237,7 @@ interface FighterVisual {
   bodyIdleAnimationKey?: BodyAnimationKey;
   bodyIdleAnimationStartedAt?: number;
   bodyAnimationLockedUntil?: number;
+  scrollCastPropAssetKey?: ScrollCastPropAssetKey;
   restZzzNextSpawnAt?: number;
   restZzzSpawnIndex?: number;
   isShattered?: boolean;
@@ -330,6 +336,7 @@ interface PaperDollRig {
   equipmentState?: HeroEquipment;
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
+  castProp?: FighterPart;
   selectionHighlights?: Partial<Record<PaperDollPartKey, Phaser.GameObjects.Graphics>>;
   usesPlayerEquipment: boolean;
   shadow?: PaperDollShadowRig;
@@ -499,6 +506,15 @@ interface MeleeActionTiming {
   impactProgress: number;
   weaponSwingProgress: number;
   weaponAngle: number;
+}
+
+interface ScrollCastActionTiming {
+  label: string;
+  color: string;
+  propAssetKey: ScrollCastPropAssetKey;
+  doneDelayMs: number;
+  impactDelayMs: number;
+  impactProgress: number;
 }
 
 interface ActionAnimationOptions {
@@ -692,6 +708,14 @@ const MELEE_ACTION_TIMINGS: Record<AttackBodyAnimationKey, MeleeActionTiming> = 
   light: { impactProgress: 0.45, weaponSwingProgress: 0.45, weaponAngle: 28 },
   medium: { impactProgress: 0.48, weaponSwingProgress: 0.48, weaponAngle: 32 },
   heavy: { impactProgress: 0.52, weaponSwingProgress: 0.52, weaponAngle: 38 },
+};
+const SCROLL_CAST_ACTION_TIMINGS: Partial<Record<ActionId, ScrollCastActionTiming>> = {
+  scroll: { label: "SCROLL", color: "#d7f0ff", propAssetKey: "scroll-crack-armor-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  ward: { label: "WARD", color: "#b7f7ff", propAssetKey: "scroll-ward-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  preciseStrike: { label: "TRUE", color: "#fff0a8", propAssetKey: "scroll-precise-strike-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  doubleStrike: { label: "DOUBLE", color: "#ffd37a", propAssetKey: "scroll-double-strike-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  poison: { label: "TOXIN", color: "#b6ff72", propAssetKey: "scroll-poison-01", doneDelayMs: 260, impactDelayMs: 120, impactProgress: 120 / 260 },
+  fireball: { label: "FIRE", color: "#ff9b38", propAssetKey: "scroll-fireball-01", doneDelayMs: 320, impactDelayMs: 170, impactProgress: 170 / 320 },
 };
 const LUNGE_ACTION_IMPACT_PROGRESS = 0.58;
 const DAMAGING_LUNGE_AFTER_IMPACT_TIME_SCALE = 1.6;
@@ -1255,6 +1279,7 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   target.load.image(SHURIKEN_PROJECTILE_ASSET_KEY, SHURIKEN_PROJECTILE_ASSET_URL);
   target.load.image(REST_HEALTH_ICON_ASSET_KEY, REST_HEALTH_ICON_ASSET_URL);
   target.load.image(REST_STAMINA_ICON_ASSET_KEY, REST_STAMINA_ICON_ASSET_URL);
+  preloadScrollCastPropAssets(target);
 }
 
 export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
@@ -1281,6 +1306,8 @@ function preloadCityAssets(target: Phaser.Scene): void {
 function preloadPaperDollAssets(target: Phaser.Scene, equipmentStates: readonly (HeroEquipment | undefined)[] = [activePlayerEquipment]): void {
   activePaperDollAssetsUseLowRes = getPlayerSettings().lowEffects;
   const loadedAssetKeys = new Set<string>();
+
+  preloadScrollCastPropAssets(target);
 
   getSyncPaperDollAssetLoadEntriesForEquipmentStates(activePaperDollAssetsUseLowRes, equipmentStates, [activePlayerAppearance]).forEach((asset) => {
     const textureKey = asset.key;
@@ -1557,6 +1584,7 @@ function getArenaAssetPrewarmUrls(): string[] {
     SHURIKEN_PROJECTILE_ASSET_URL,
     REST_HEALTH_ICON_ASSET_URL,
     REST_STAMINA_ICON_ASSET_URL,
+    ...SCROLL_CAST_PROP_ASSETS.map((asset) => asset.url),
   ];
 }
 
@@ -4655,6 +4683,10 @@ function getArenaBackgroundLayerLayoutForTier(
   });
 }
 
+function preloadScrollCastPropAssets(target: Phaser.Scene): void {
+  SCROLL_CAST_PROP_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
+}
+
 function getEditableArenaBackgroundLayer(
   tierId: ArenaBackgroundTuningTierId,
   layerKey: ArenaBackgroundEditLayer,
@@ -4973,6 +5005,9 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     parts[key] = part(partContainer);
   });
 
+  const castProp = part(target.add.image(0, 0, DEFAULT_SCROLL_CAST_PROP_ASSET_KEY).setOrigin(0.5).setVisible(false));
+
+  rootContainer.add(castProp);
   root.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing;
   root.scaleY = PAPER_DOLL_BASE_SCALE;
   const paperDollRig: PaperDollRig = {
@@ -4993,6 +5028,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     equipmentState: options.equipment ? { ...options.equipment } : undefined,
     faceParts,
     appearance,
+    castProp,
     selectionHighlights,
     usesPlayerEquipment: Boolean(options.usesPlayerEquipment),
     shadow: shadowRig,
@@ -6119,6 +6155,7 @@ function applyBodyAnimationBlend(fighter: FighterVisual, animation: BodyAnimatio
   applyBodyAnimationPoseBlend(fighter, animation, animation.base, animation.breath, animation.faceBase, animation.faceBreath, blend);
   applyBodyAnimationRootOffset(fighter, defaultBodyAnimationRootOffset);
   applyBodyAnimationWeaponMirrors(fighter, false, false);
+  applyBodyAnimationCastProp(fighter);
 }
 
 function applyBodyAnimationKeyframesAtProgress(fighter: FighterVisual, animation: BodyAnimationTuning, progress: number, amount: number): boolean {
@@ -6138,6 +6175,7 @@ function applyBodyAnimationKeyframesAtProgress(fighter: FighterVisual, animation
   applyBodyAnimationPoseBlend(fighter, animation, baseKeyframe.rigParts, sampledPose.rigParts, baseKeyframe.faceParts, sampledPose.faceParts, amount);
   applyBodyAnimationRootOffsetBlend(fighter, baseKeyframe.rootOffset, sampledPose.rootOffset, amount);
   applyBodyAnimationWeaponMirrors(fighter, sampledPose.weaponMirrorX ?? false, sampledPose.weaponMirrorY ?? false);
+  applyBodyAnimationCastProp(fighter, sampledPose.castProp);
 
   return true;
 }
@@ -6164,6 +6202,7 @@ interface SampledBodyAnimationPose {
   rootOffset: BodyAnimationRootOffset;
   weaponMirrorX?: boolean;
   weaponMirrorY?: boolean;
+  castProp?: BodyAnimationCastPropTuning;
 }
 
 function sampleBodyAnimationKeyframePose(
@@ -6235,6 +6274,33 @@ function interpolateBodyAnimationKeyframes(from: BodyAnimationKeyframe, to: Body
     rootOffset: interpolateBodyAnimationRootOffset(from.rootOffset ?? defaultBodyAnimationRootOffset, to.rootOffset ?? defaultBodyAnimationRootOffset, blend),
     weaponMirrorX: blend < 0.5 ? from.weaponMirrorX : to.weaponMirrorX,
     weaponMirrorY: blend < 0.5 ? from.weaponMirrorY : to.weaponMirrorY,
+    castProp: interpolateBodyAnimationCastProp(from.castProp, to.castProp, blend),
+  };
+}
+
+function interpolateBodyAnimationCastProp(
+  from: BodyAnimationCastPropTuning | undefined,
+  to: BodyAnimationCastPropTuning | undefined,
+  blend: number,
+): BodyAnimationCastPropTuning | undefined {
+  if (!from && !to) {
+    return undefined;
+  }
+
+  const fromProp = from ?? defaultBodyAnimationCastProp;
+  const toProp = to ?? defaultBodyAnimationCastProp;
+  const pickedProp = blend < 0.5 ? fromProp : toProp;
+
+  return {
+    visible: pickedProp.visible,
+    assetKey: pickedProp.assetKey,
+    x: lerp(fromProp.x, toProp.x, blend),
+    y: lerp(fromProp.y, toProp.y, blend),
+    angle: lerp(fromProp.angle, toProp.angle, blend),
+    scaleX: lerp(fromProp.scaleX, toProp.scaleX, blend),
+    scaleY: lerp(fromProp.scaleY, toProp.scaleY, blend),
+    flipX: pickedProp.flipX,
+    flipY: pickedProp.flipY,
   };
 }
 
@@ -6423,6 +6489,37 @@ function applyBodyAnimationRootOffset(fighter: FighterVisual, rootOffset: BodyAn
   fighter.lowShadow.y = base.lowShadowY + worldOffsetY;
   fighter.name.x = base.nameX + worldOffsetX;
   fighter.name.y = base.nameY + worldOffsetY;
+}
+
+function applyBodyAnimationCastProp(fighter: FighterVisual, tuning?: BodyAnimationCastPropTuning): void {
+  const prop = fighter.paperDollRig?.castProp;
+
+  if (!prop) {
+    return;
+  }
+
+  if (!tuning?.visible) {
+    setFighterPartVisible(prop, false);
+    return;
+  }
+
+  const textureKey = fighter.scrollCastPropAssetKey ?? tuning.assetKey ?? DEFAULT_SCROLL_CAST_PROP_ASSET_KEY;
+
+  if (!prop.scene.textures.exists(textureKey)) {
+    setFighterPartVisible(prop, false);
+    return;
+  }
+
+  if (prop instanceof Phaser.GameObjects.Image && prop.texture.key !== textureKey) {
+    prop.setTexture(textureKey);
+  }
+
+  prop.x = tuning.x;
+  prop.y = tuning.y;
+  prop.angle = tuning.angle;
+  prop.scaleX = tuning.scaleX * (tuning.flipX ? -1 : 1);
+  prop.scaleY = tuning.scaleY * (tuning.flipY ? -1 : 1);
+  setFighterPartVisible(prop, true);
 }
 
 function applyRigPartTransform(part: FighterPart, pivot: { x: number; y: number }, tuning: RigPartTuning): void {
@@ -7109,6 +7206,7 @@ function getDebugAnimationKeyframeUpdateTarget(animation: BodyAnimationTuning): 
       rootOffset: cloneDebugBodyAnimationRootOffset(sourcePose.rootOffset),
       weaponMirrorX: sourcePose.weaponMirrorX,
       weaponMirrorY: sourcePose.weaponMirrorY,
+      castProp: cloneDebugBodyAnimationCastProp(sourcePose.castProp),
     },
     exists: false,
   };
@@ -7151,6 +7249,7 @@ function cloneDebugAnimationKeyframe(keyframe: BodyAnimationKeyframe): BodyAnima
     rigParts: cloneDebugRigParts(keyframe.rigParts),
     faceParts: cloneDebugFaceParts(keyframe.faceParts),
     rootOffset: cloneDebugBodyAnimationRootOffset(keyframe.rootOffset),
+    castProp: cloneDebugBodyAnimationCastProp(keyframe.castProp),
   };
 }
 
@@ -7177,6 +7276,10 @@ function cloneDebugFaceParts(source: Record<FacePartKey, FacePartTuning>): Recor
 
 function cloneDebugBodyAnimationRootOffset(source: BodyAnimationRootOffset | undefined): BodyAnimationRootOffset {
   return { ...(source ?? defaultBodyAnimationRootOffset) };
+}
+
+function cloneDebugBodyAnimationCastProp(source: BodyAnimationCastPropTuning | undefined): BodyAnimationCastPropTuning | undefined {
+  return source ? { ...source } : undefined;
 }
 
 function compareDebugAnimationKeyframes(a: BodyAnimationKeyframe, b: BodyAnimationKeyframe): number {
@@ -7312,6 +7415,7 @@ function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
       selectedKeyframe.weaponMirrorX ?? false,
       selectedKeyframe.weaponMirrorY ?? false,
     );
+    applyBodyAnimationCastProp(fighter, selectedKeyframe.castProp);
     return;
   }
 
@@ -7330,6 +7434,7 @@ function applySelectedDebugAnimationEditPose(fighter: FighterVisual): void {
     keyframe?.weaponMirrorX ?? false,
     keyframe?.weaponMirrorY ?? false,
   );
+  applyBodyAnimationCastProp(fighter, keyframe?.castProp);
 }
 
 function applyCurrentDebugAnimationWeaponPose(fighter: FighterVisual): void {
@@ -9493,7 +9598,7 @@ function playBodyAnimationOnceHandle(
   const lockedUntil = target.time.now + fallbackDelay;
 
   fighter.bodyAnimationLockedUntil = lockedUntil;
-  target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
+  target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig), ...(rig.castProp ? [rig.castProp] : [])]);
   if (hasKeyframes) {
     applyBodyAnimationAtProgress(fighter, animation, 0, animationAmount);
   } else {
@@ -9684,58 +9789,9 @@ function animateAction(
     return { done: Promise.resolve() };
   }
 
-  if (actionId === "scroll") {
-    resetFighterBodyIdleAnimation(actor, target.time.now);
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "SCROLL", "#d7f0ff");
-    return {
-      done: createSceneDelay(target, 260),
-      impact: createSceneDelay(target, 120),
-    };
-  }
-
-  if (actionId === "ward") {
-    resetFighterBodyIdleAnimation(actor, target.time.now);
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "WARD", "#b7f7ff");
-    return {
-      done: createSceneDelay(target, 260),
-      impact: createSceneDelay(target, 120),
-    };
-  }
-
-  if (actionId === "preciseStrike") {
-    resetFighterBodyIdleAnimation(actor, target.time.now);
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "TRUE", "#fff0a8");
-    return {
-      done: createSceneDelay(target, 260),
-      impact: createSceneDelay(target, 120),
-    };
-  }
-
-  if (actionId === "doubleStrike") {
-    resetFighterBodyIdleAnimation(actor, target.time.now);
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "DOUBLE", "#ffd37a");
-    return {
-      done: createSceneDelay(target, 260),
-      impact: createSceneDelay(target, 120),
-    };
-  }
-
-  if (actionId === "poison") {
-    resetFighterBodyIdleAnimation(actor, target.time.now);
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "TOXIN", "#b6ff72");
-    return {
-      done: createSceneDelay(target, 260),
-      impact: createSceneDelay(target, 120),
-    };
-  }
-
-  if (actionId === "fireball") {
-    resetFighterBodyIdleAnimation(actor, target.time.now);
-    showFloatingText(target, actor.body.x, actor.body.y - 120, "FIRE", "#ff9b38");
-    return {
-      done: createSceneDelay(target, 320),
-      impact: createSceneDelay(target, 170),
-    };
+  const scrollCastTiming = SCROLL_CAST_ACTION_TIMINGS[actionId];
+  if (scrollCastTiming) {
+    return animateScrollCastAction(target, actor, weaponClass, variantSeed, scrollCastTiming);
   }
 
   if (actionId === "shuriken") {
@@ -9781,6 +9837,46 @@ function animateAction(
   return {
     done: Promise.all(actionAnimations).then(() => undefined),
     impact,
+  };
+}
+
+function animateScrollCastAction(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  weaponClass: HeroWeaponClass | undefined,
+  variantSeed: string,
+  timing: ScrollCastActionTiming,
+): ActionAnimationHandle {
+  const animation = pickActiveBodyAnimationVariant("scrollCast", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed);
+
+  showFloatingText(target, actor.body.x, actor.body.y - 120, timing.label, timing.color);
+
+  if (!actor.paperDollRig || !animation.enabled || getArenaAnimationAmount() <= 0) {
+    resetFighterBodyIdleAnimation(actor, target.time.now);
+
+    return {
+      done: createSceneDelay(target, timing.doneDelayMs),
+      impact: createSceneDelay(target, timing.impactDelayMs),
+    };
+  }
+
+  const previousScrollCastPropAssetKey = actor.scrollCastPropAssetKey;
+
+  actor.scrollCastPropAssetKey = timing.propAssetKey;
+  const bodyAnimation = playBodyAnimationOnceHandle(target, actor, animation);
+  void bodyAnimation.done.finally(() => {
+    if (actor.scrollCastPropAssetKey === timing.propAssetKey) {
+      actor.scrollCastPropAssetKey = previousScrollCastPropAssetKey;
+    }
+  });
+  const impactDelayMs = getBodyAnimationImpactKeyframe(animation)
+    ? getBodyAnimationImpactDelayMs(animation, timing.impactProgress)
+    : timing.impactDelayMs;
+
+  return {
+    done: bodyAnimation.done,
+    impact: createSceneDelay(target, impactDelayMs),
+    speedUp: bodyAnimation.speedUp,
   };
 }
 

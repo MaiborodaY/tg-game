@@ -52,6 +52,10 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugHtml.includes("data-animation-workbench-reset-weapon"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-weapon-mirror-x"), true);
   assert.equal(debugHtml.includes("data-animation-workbench-weapon-mirror-y"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-cast-prop-panel"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-cast-prop-visible"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-cast-prop-asset"), true);
+  assert.equal(debugHtml.includes("data-animation-workbench-cast-prop-controls"), true);
   assert.equal(
     debugHtml.indexOf("data-animation-workbench-random-weapon") < debugHtml.indexOf("data-animation-workbench-weapon-mirror-x"),
     true,
@@ -83,6 +87,8 @@ test("debug app exposes a dedicated animation editor workbench", () => {
   assert.equal(debugPanelSource.includes('data-debug-mode="animation"'), true);
   assert.equal(debugPanelSource.includes("mountAnimationWorkbench"), true);
   assert.equal(debugPanelSource.includes("setAnimationWorkbenchProgress"), true);
+  assert.equal(debugPanelSource.includes("syncAnimationWorkbenchCastProp"), true);
+  assert.equal(debugPanelSource.includes("updateSelectedAnimationCastProp"), true);
   assert.equal(debugPanelSource.includes("createBodyAnimationVariant"), true);
   assert.equal(debugPanelSource.includes("deleteSelectedBodyAnimationVariant"), true);
   assert.equal(debugPanelSource.includes("updateSelectedBodyAnimationVariantMeta"), true);

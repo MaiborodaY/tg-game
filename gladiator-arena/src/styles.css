@@ -9790,6 +9790,10 @@ body.debug-mode-animation .debug-preview-column {
   box-shadow: inset 0 1px 0 rgba(255, 240, 189, 0.04);
 }
 
+.debug-animation-editor__fieldset[hidden] {
+  display: none;
+}
+
 .debug-animation-editor__fieldset legend,
 .debug-animation-editor__details summary {
   padding: 0 4px;

@@ -103,6 +103,18 @@
               <button class="debug-panel__reset" type="button" data-animation-workbench-save-prod>Save animation as prod</button>
               <p class="debug-panel__status debug-animation-editor__status" data-animation-workbench-save-status aria-live="polite"></p>
             </fieldset>
+            <fieldset class="debug-animation-editor__fieldset" data-animation-workbench-cast-prop-panel hidden>
+              <legend>Cast prop</legend>
+              <label class="debug-animation-editor__toggle">
+                <span>Visible</span>
+                <input type="checkbox" data-animation-workbench-cast-prop-visible />
+              </label>
+              <label class="debug-animation-editor__field">
+                <span>Asset</span>
+                <select class="debug-animation-editor__select" data-animation-workbench-cast-prop-asset></select>
+              </label>
+              <div class="debug-animation-editor__rig-controls" data-animation-workbench-cast-prop-controls></div>
+            </fieldset>
             <details class="debug-animation-editor__details">
               <summary>Active parts</summary>
               <div class="debug-animation-editor__parts" data-animation-workbench-parts></div>

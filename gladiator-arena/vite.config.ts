@@ -570,7 +570,20 @@ const equipmentSetImportTargetConfigs: readonly EquipmentSetImportTargetConfig[]
   },
 ];
 
-const bodyAnimationKeys = ["idle", "walkCycle", "lunge", "light", "medium", "heavy", "bowShot", "hit", "block", "taunt", "rest"] as const;
+const bodyAnimationKeys = [
+  "idle",
+  "walkCycle",
+  "lunge",
+  "light",
+  "medium",
+  "heavy",
+  "bowShot",
+  "hit",
+  "block",
+  "taunt",
+  "rest",
+  "scrollCast",
+] as const;
 type BodyAnimationKey = (typeof bodyAnimationKeys)[number];
 const bodyAnimationDefaultVariantId = "default";
 const bodyAnimationWeaponClasses = ["sword", "axe", "bow", "mace", "spear", "shuriken"] as const;
@@ -578,6 +591,16 @@ type BodyAnimationWeaponClass = (typeof bodyAnimationWeaponClasses)[number];
 
 const bodyAnimationKeyframeEasings = ["linear", "easeInOut", "hold"] as const;
 type BodyAnimationKeyframeEasing = (typeof bodyAnimationKeyframeEasings)[number];
+const scrollCastPropAssetKeys = [
+  "scroll-crack-armor-01",
+  "scroll-fireball-01",
+  "scroll-ward-01",
+  "scroll-precise-strike-01",
+  "scroll-double-strike-01",
+  "scroll-poison-01",
+] as const;
+type ScrollCastPropAssetKey = (typeof scrollCastPropAssetKeys)[number];
+const defaultScrollCastPropAssetKey: ScrollCastPropAssetKey = "scroll-crack-armor-01";
 
 const slashArcAttackKeys = ["light", "medium", "heavy"] as const;
 type SlashArcAttackKey = (typeof slashArcAttackKeys)[number];
@@ -603,6 +626,7 @@ const bodyAnimationDefaultConstants: Record<BodyAnimationKey, string> = {
   block: "DEFAULT_BLOCK_ANIMATION",
   taunt: "DEFAULT_TAUNT_ANIMATION",
   rest: "DEFAULT_REST_ANIMATION",
+  scrollCast: "DEFAULT_SCROLL_CAST_ANIMATION",
 };
 
 interface RigPartTuningPayload {
@@ -746,6 +770,19 @@ interface BodyAnimationKeyframeUpdates {
   rootOffset: RootOffsetUpdates;
   weaponMirrorX?: boolean;
   weaponMirrorY?: boolean;
+  castProp?: BodyAnimationCastPropUpdates;
+}
+
+interface BodyAnimationCastPropUpdates {
+  visible: boolean;
+  assetKey: ScrollCastPropAssetKey;
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+  flipX: boolean;
+  flipY: boolean;
 }
 
 interface RootOffsetUpdates {
@@ -5285,10 +5322,19 @@ function formatBodyAnimationKeyframeRows(updates: readonly BodyAnimationKeyframe
         `${propertyIndent}rootOffset: { x: ${formatNumber(keyframe.rootOffset.x)}, y: ${formatNumber(keyframe.rootOffset.y)} },`,
         keyframe.weaponMirrorX ? `${propertyIndent}weaponMirrorX: true,` : "",
         keyframe.weaponMirrorY ? `${propertyIndent}weaponMirrorY: true,` : "",
+        formatBodyAnimationCastPropRow(keyframe.castProp, propertyIndent),
         `${indent}},`,
       ].filter(Boolean).join("\n"),
     )
     .join("\n");
+}
+
+function formatBodyAnimationCastPropRow(castProp: BodyAnimationCastPropUpdates | undefined, indent: string): string {
+  if (!castProp) {
+    return "";
+  }
+
+  return `${indent}castProp: { visible: ${castProp.visible}, assetKey: ${JSON.stringify(castProp.assetKey)}, x: ${formatNumber(castProp.x)}, y: ${formatNumber(castProp.y)}, angle: ${formatNumber(castProp.angle)}, scaleX: ${formatNumber(castProp.scaleX)}, scaleY: ${formatNumber(castProp.scaleY)}, flipX: ${castProp.flipX}, flipY: ${castProp.flipY} },`;
 }
 
 function readBodyAnimationKeyframes(
@@ -5338,6 +5384,7 @@ function readBodyAnimationAnchorKeyframe(
     rootOffset: sourceKeyframe.rootOffset,
     weaponMirrorX: sourceKeyframe.weaponMirrorX,
     weaponMirrorY: sourceKeyframe.weaponMirrorY,
+    castProp: sourceKeyframe.castProp,
   };
 }
 
@@ -5378,6 +5425,7 @@ function readBodyAnimationKeyframe(input: unknown, index: number, duration: numb
     rootOffset?: unknown;
     weaponMirrorX?: unknown;
     weaponMirrorY?: unknown;
+    castProp?: unknown;
   };
   const id = typeof keyframe.id === "string" ? keyframe.id.trim().slice(0, 48) : "";
 
@@ -5402,7 +5450,46 @@ function readBodyAnimationKeyframe(input: unknown, index: number, duration: numb
     rootOffset: readRootOffset(keyframe.rootOffset),
     weaponMirrorX: keyframe.weaponMirrorX === true ? true : undefined,
     weaponMirrorY: keyframe.weaponMirrorY === true ? true : undefined,
+    castProp: readBodyAnimationCastProp(keyframe.castProp),
   };
+}
+
+function readBodyAnimationCastProp(input: unknown): BodyAnimationCastPropUpdates | undefined {
+  if (input === undefined) {
+    return undefined;
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {
+      visible: false,
+      assetKey: defaultScrollCastPropAssetKey,
+      x: 18,
+      y: -116,
+      angle: -12,
+      scaleX: 0.46,
+      scaleY: 0.46,
+      flipX: false,
+      flipY: false,
+    };
+  }
+
+  const prop = input as Partial<BodyAnimationCastPropUpdates>;
+
+  return {
+    visible: prop.visible === true,
+    assetKey: isScrollCastPropAssetKey(prop.assetKey) ? prop.assetKey : defaultScrollCastPropAssetKey,
+    x: readClampedNumber(prop.x, -480, 480, 18),
+    y: readClampedNumber(prop.y, -480, 480, -116),
+    angle: readClampedNumber(prop.angle, -2160, 2160, -12),
+    scaleX: readClampedNumber(prop.scaleX, 0.05, 3, 0.46),
+    scaleY: readClampedNumber(prop.scaleY, 0.05, 3, 0.46),
+    flipX: prop.flipX === true,
+    flipY: prop.flipY === true,
+  };
+}
+
+function readClampedNumber(input: unknown, min: number, max: number, fallback: number): number {
+  return Math.max(min, Math.min(max, typeof input === "number" && Number.isFinite(input) ? input : fallback));
 }
 
 function readRootOffset(input: unknown): RootOffsetUpdates {
@@ -5472,6 +5559,10 @@ function uniquifyBodyAnimationKeyframeId(keyframe: BodyAnimationKeyframeUpdates,
 
 function isBodyAnimationKeyframeEasing(value: unknown): value is BodyAnimationKeyframeEasing {
   return typeof value === "string" && bodyAnimationKeyframeEasings.includes(value as BodyAnimationKeyframeEasing);
+}
+
+function isScrollCastPropAssetKey(value: unknown): value is ScrollCastPropAssetKey {
+  return typeof value === "string" && scrollCastPropAssetKeys.includes(value as ScrollCastPropAssetKey);
 }
 
 function isBodyAnimationWeaponClass(value: unknown): value is BodyAnimationWeaponClass {

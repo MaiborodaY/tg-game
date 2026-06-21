@@ -507,6 +507,7 @@ test("arena action body animations can pick weighted weapon-specific variants", 
   assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("lunge", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)'), true);
   assert.equal(arenaSceneSource.includes("pickActiveBodyAnimationVariant(bodyAnimationKey, actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)"), true);
   assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("bowShot", actor.paperDollRig?.bodyPresetKey, "shuriken", variantSeed)'), true);
+  assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("scrollCast", actor.paperDollRig?.bodyPresetKey, weaponClass, variantSeed)'), true);
 });
 
 test("debug animation canvas edits write to the selected animation variant", () => {
@@ -546,6 +547,40 @@ test("bow attacks and damage reactions use dedicated body animations", () => {
   assert.equal(arenaSceneSource.includes('getActiveBodyAnimation("hit",'), true);
   assert.equal(arenaSceneSource.includes("nextState.lastPlayerDamage > 0"), true);
   assert.equal(arenaSceneSource.includes("nextState.lastEnemyDamage > 0"), true);
+});
+
+test("scroll actions use the editable scroll cast body animation", () => {
+  assert.equal(arenaSceneSource.includes("SCROLL_CAST_ACTION_TIMINGS"), true);
+  assert.equal(arenaSceneSource.includes("function animateScrollCastAction"), true);
+  assert.equal(arenaSceneSource.includes('scroll: { label: "SCROLL"'), true);
+  assert.equal(arenaSceneSource.includes('fireball: { label: "FIRE"'), true);
+  assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-crack-armor-01"'), true);
+  assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-fireball-01"'), true);
+  assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-ward-01"'), true);
+  assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-precise-strike-01"'), true);
+  assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-double-strike-01"'), true);
+  assert.equal(arenaSceneSource.includes('propAssetKey: "scroll-poison-01"'), true);
+  assert.equal(arenaSceneSource.includes('pickActiveBodyAnimationVariant("scrollCast"'), true);
+  assert.equal(arenaSceneSource.includes("actor.scrollCastPropAssetKey = timing.propAssetKey;"), true);
+  assert.equal(arenaSceneSource.includes("actor.scrollCastPropAssetKey = previousScrollCastPropAssetKey;"), true);
+  assert.equal(arenaSceneSource.includes("getBodyAnimationImpactKeyframe(animation)"), true);
+  assert.equal(arenaSceneSource.includes("getBodyAnimationImpactDelayMs(animation, timing.impactProgress)"), true);
+  assert.equal(arenaSceneSource.includes("function applyBodyAnimationCastProp"), true);
+  assert.equal(arenaSceneSource.includes("fighter.scrollCastPropAssetKey ?? tuning.assetKey ?? DEFAULT_SCROLL_CAST_PROP_ASSET_KEY"), true);
+  assert.equal(arenaSceneSource.includes("castProp?: FighterPart"), true);
+  assert.equal(arenaSceneSource.includes("rootContainer.add(castProp);"), true);
+  assert.equal(arenaSceneSource.includes("SCROLL_CAST_PROP_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));"), true);
+  assert.equal(assetsSource.includes("SCROLL_CAST_PROP_ASSETS"), true);
+  [
+    "scroll-crack-armor-01.webp",
+    "scroll-fireball-01.webp",
+    "scroll-ward-01.webp",
+    "scroll-precise-strike-01.webp",
+    "scroll-double-strike-01.webp",
+    "scroll-poison-01.webp",
+  ].forEach((assetName) => {
+    assert.equal(existsSync(resolve(currentDir, `../src/assets/shop-icons/${assetName}`)), true);
+  });
 });
 
 test("prod body animations use the active body preset tuning", () => {
@@ -1160,7 +1195,7 @@ test("double strike queues separate combat result popups per impact", () => {
 test("poison ticks show a combat result popup without consuming ward visuals", () => {
   assert.equal(arenaSceneSource.includes("lastPlayerPoisonDamage"), true);
   assert.equal(arenaSceneSource.includes("lastEnemyPoisonDamage"), true);
-  assert.equal(arenaSceneSource.includes('showFloatingText(target, actor.body.x, actor.body.y - 120, "TOXIN"'), true);
+  assert.equal(arenaSceneSource.includes('poison: { label: "TOXIN"'), true);
   assert.equal(arenaSceneSource.includes("playPoisonDamageAnimation"), true);
   assert.equal(arenaSceneSource.includes("`POISON -${damage}`"), true);
 });

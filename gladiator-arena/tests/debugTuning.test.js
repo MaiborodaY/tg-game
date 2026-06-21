@@ -103,6 +103,22 @@ function loadDebugTuningModule() {
           };
         }
 
+        if (id === "./scrollCastPropAssets") {
+          const SCROLL_CAST_PROP_ASSET_KEYS = [
+            "scroll-crack-armor-01",
+            "scroll-fireball-01",
+            "scroll-ward-01",
+            "scroll-precise-strike-01",
+            "scroll-double-strike-01",
+            "scroll-poison-01",
+          ];
+
+          return {
+            DEFAULT_SCROLL_CAST_PROP_ASSET_KEY: "scroll-crack-armor-01",
+            SCROLL_CAST_PROP_ASSET_KEYS,
+          };
+        }
+
         throw new Error(`Unexpected require: ${id}`);
       },
     },
@@ -563,16 +579,30 @@ test("debug tuning lifts saved classic switch buttons out of the hidden wheel ar
   );
 });
 
-test("debug tuning exposes dedicated bow shot, damage hit, and block body animations", () => {
+test("debug tuning exposes dedicated bow shot, damage hit, block, and scroll cast body animations", () => {
   assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("bowShot"), true);
   assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("hit"), true);
   assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("block"), true);
+  assert.equal(debugTuningModule.BODY_ANIMATION_KEYS.includes("scrollCast"), true);
   assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.bowShot), true);
   assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.hit), true);
   assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.block), true);
+  assert.equal(Boolean(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast), true);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.bowShot.enabled, true);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.hit.enabled, true);
   assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.block.enabled, true);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.enabled, true);
+  assert.deepEqual(Array.from(debugTuningModule.SCROLL_CAST_PROP_ASSET_KEYS), [
+    "scroll-crack-armor-01",
+    "scroll-fireball-01",
+    "scroll-ward-01",
+    "scroll-precise-strike-01",
+    "scroll-double-strike-01",
+    "scroll-poison-01",
+  ]);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes[0].castProp.visible, false);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes[1].castProp.visible, true);
+  assert.equal(debugTuningModule.defaultDebugTuning.bodyAnimations.scrollCast.keyframes[1].castProp.assetKey, "scroll-crack-armor-01");
 });
 
 test("debug tuning uses spearattack as the only spear-specific attack variant", () => {
@@ -876,6 +906,17 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
             weaponMirrorX: true,
             weaponMirrorY: true,
             weaponOffset: { x: 12, y: -8 },
+            castProp: {
+              visible: true,
+              assetKey: "scroll-poison-01",
+              x: 999,
+              y: -999,
+              angle: 9999,
+              scaleX: 99,
+              scaleY: -99,
+              flipX: true,
+              flipY: true,
+            },
           },
         ],
       },
@@ -886,6 +927,15 @@ test("debug tuning builds Pose A and Pose B animation keyframes from legacy pose
   assert.equal(rootHopKeyframe.rootOffset.y, -35);
   assert.equal(rootHopKeyframe.weaponMirrorX, true);
   assert.equal(rootHopKeyframe.weaponMirrorY, true);
+  assert.equal(rootHopKeyframe.castProp.visible, true);
+  assert.equal(rootHopKeyframe.castProp.assetKey, "scroll-poison-01");
+  assert.equal(rootHopKeyframe.castProp.x, 480);
+  assert.equal(rootHopKeyframe.castProp.y, -480);
+  assert.equal(rootHopKeyframe.castProp.angle, debugTuningModule.RIG_PART_ANGLE_MAX);
+  assert.equal(rootHopKeyframe.castProp.scaleX, 3);
+  assert.equal(rootHopKeyframe.castProp.scaleY, 0.05);
+  assert.equal(rootHopKeyframe.castProp.flipX, true);
+  assert.equal(rootHopKeyframe.castProp.flipY, true);
   assert.equal(rootHopKeyframe.weaponOffset, undefined);
   assert.equal(
     debugTuningModule.normalizeDebugTuning({

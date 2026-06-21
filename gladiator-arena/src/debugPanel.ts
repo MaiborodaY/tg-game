@@ -16,6 +16,7 @@ import {
   DEFAULT_EQUIPMENT,
   DEFAULT_EQUIPMENT_ITEM_TUNING,
   debugTuning,
+  defaultBodyAnimationCastProp,
   defaultBodyAnimationRootOffset,
   defaultBodyPartLayerTuning,
   defaultDebugTuning,
@@ -47,6 +48,7 @@ import {
   type AppearanceLayerTuning,
   type ArenaDebugTuning,
   type BodyPartLayerTuning,
+  type BodyAnimationCastPropTuning,
   type BodyAnimationKeyframe,
   type BodyAnimationKeyframeEasing,
   type BodyAnimationKey,
@@ -150,6 +152,11 @@ import {
   type UiLayoutScreenConfig,
   type UiLayoutViewport,
 } from "./uiLayoutTuning";
+import {
+  DEFAULT_SCROLL_CAST_PROP_ASSET_KEY,
+  SCROLL_CAST_PROP_ASSET_KEYS,
+  type ScrollCastPropAssetKey,
+} from "./scrollCastPropAssets";
 
 interface DebugPanelOptions {
   heroEquipment?: HeroEquipment;
@@ -187,6 +194,8 @@ interface DebugSelectControlConfig {
 type DebugControlConfig = DebugRangeControlConfig | DebugToggleControlConfig | DebugSelectControlConfig;
 type RigNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
 type RigToggleControlKey = "flipX" | "flipY";
+type AnimationCastPropNumericControlKey = "x" | "y" | "angle" | "scaleX" | "scaleY";
+type AnimationCastPropToggleControlKey = "flipX" | "flipY";
 type CharacterPreviewControlKey =
   | "characterPreviewScale"
   | "characterPreviewFeetX"
@@ -242,6 +251,19 @@ interface RigNumericControlConfig {
 
 interface RigToggleControlConfig {
   key: RigToggleControlKey;
+  label: string;
+}
+
+interface AnimationCastPropNumericControlConfig {
+  key: AnimationCastPropNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface AnimationCastPropToggleControlConfig {
+  key: AnimationCastPropToggleControlKey;
   label: string;
 }
 
@@ -805,6 +827,19 @@ const rigNumericControls: RigNumericControlConfig[] = [
 ];
 
 const rigToggleControls: RigToggleControlConfig[] = [
+  { key: "flipX", label: "mirror X" },
+  { key: "flipY", label: "mirror Y" },
+];
+
+const animationCastPropNumericControls: AnimationCastPropNumericControlConfig[] = [
+  { key: "x", label: "x", min: -480, max: 480, step: 1 },
+  { key: "y", label: "y", min: -480, max: 480, step: 1 },
+  { key: "angle", label: "angle", min: RIG_PART_ANGLE_MIN, max: RIG_PART_ANGLE_MAX, step: 1 },
+  { key: "scaleX", label: "scaleX", min: 0.05, max: 3, step: 0.01 },
+  { key: "scaleY", label: "scaleY", min: 0.05, max: 3, step: 0.01 },
+];
+
+const animationCastPropToggleControls: AnimationCastPropToggleControlConfig[] = [
   { key: "flipX", label: "mirror X" },
   { key: "flipY", label: "mirror Y" },
 ];
@@ -3480,6 +3515,10 @@ function mountAnimationWorkbench(): void {
   const saveAnimationStatus = editor.querySelector<HTMLElement>("[data-animation-workbench-save-status]");
   const weaponMirrorX = editor.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-x]");
   const weaponMirrorY = editor.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-y]");
+  const castPropPanel = editor.querySelector<HTMLElement>("[data-animation-workbench-cast-prop-panel]");
+  const castPropVisible = editor.querySelector<HTMLInputElement>("[data-animation-workbench-cast-prop-visible]");
+  const castPropAsset = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-cast-prop-asset]");
+  const castPropControls = editor.querySelector<HTMLElement>("[data-animation-workbench-cast-prop-controls]");
   const animationParts = editor.querySelector<HTMLElement>("[data-animation-workbench-parts]");
   const play = editor.querySelector<HTMLButtonElement>("[data-animation-workbench-play]");
   const playbackSpeed = editor.querySelector<HTMLSelectElement>("[data-animation-workbench-speed]");
@@ -3523,6 +3562,10 @@ function mountAnimationWorkbench(): void {
     !saveAnimationStatus ||
     !weaponMirrorX ||
     !weaponMirrorY ||
+    !castPropPanel ||
+    !castPropVisible ||
+    !castPropAsset ||
+    !castPropControls ||
     !animationParts ||
     !play ||
     !playbackSpeed ||
@@ -3573,6 +3616,15 @@ function mountAnimationWorkbench(): void {
 
   rigNumericControls.forEach((control) => rigControls.append(createRigRangeControl(control)));
   rigToggleControls.forEach((control) => rigControls.append(createRigToggleControl(control)));
+  SCROLL_CAST_PROP_ASSET_KEYS.forEach((key) => {
+    const option = document.createElement("option");
+
+    option.value = key;
+    option.textContent = formatScrollCastPropAssetLabel(key);
+    castPropAsset.append(option);
+  });
+  animationCastPropNumericControls.forEach((control) => castPropControls.append(createAnimationCastPropRangeControl(control)));
+  animationCastPropToggleControls.forEach((control) => castPropControls.append(createAnimationCastPropToggleControl(control)));
   rigLimbRotateConfigs.forEach((config) => limbGrid.append(createLimbRotateControl(config)));
   RIG_PART_KEYS.forEach((key) => animationParts.append(createAnimationPartToggle(key)));
 
@@ -3724,6 +3776,14 @@ function mountAnimationWorkbench(): void {
 
   weaponMirrorY.addEventListener("change", () => {
     updateSelectedAnimationKeyframe({ weaponMirrorY: weaponMirrorY.checked });
+  });
+
+  castPropVisible.addEventListener("change", () => {
+    updateSelectedAnimationCastProp({ visible: castPropVisible.checked });
+  });
+
+  castPropAsset.addEventListener("change", () => {
+    updateSelectedAnimationCastProp({ assetKey: isScrollCastPropAssetKey(castPropAsset.value) ? castPropAsset.value : DEFAULT_SCROLL_CAST_PROP_ASSET_KEY });
   });
 
   progress.addEventListener("input", () => {
@@ -4140,6 +4200,7 @@ function addAnimationKeyframeAtProgress(): void {
     rootOffset: cloneBodyAnimationRootOffset(sampledPose?.rootOffset ?? sourceKeyframe.rootOffset),
     weaponMirrorX: sampledPose?.weaponMirrorX ?? sourceKeyframe.weaponMirrorX,
     weaponMirrorY: sampledPose?.weaponMirrorY ?? sourceKeyframe.weaponMirrorY,
+    castProp: cloneBodyAnimationCastProp(sampledPose?.castProp ?? sourceKeyframe.castProp),
   };
 
   updateSelectedBodyAnimation(
@@ -4175,6 +4236,7 @@ function duplicateSelectedAnimationKeyframeAtProgress(): void {
     rootOffset: cloneBodyAnimationRootOffset(selectedKeyframe.rootOffset),
     weaponMirrorX: selectedKeyframe.weaponMirrorX,
     weaponMirrorY: selectedKeyframe.weaponMirrorY,
+    castProp: cloneBodyAnimationCastProp(selectedKeyframe.castProp),
   };
 
   updateSelectedBodyAnimation(
@@ -4233,7 +4295,7 @@ function setSelectedAnimationStartKeyframe(): void {
 }
 
 function updateAnimationPreviewKeyframe(
-  patch: Partial<Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY">>,
+  patch: Partial<Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY" | "castProp">>,
 ): void {
   const animation = getSelectedBodyAnimation();
   const duration = Math.max(1, animation.duration);
@@ -4257,6 +4319,7 @@ function updateAnimationPreviewKeyframe(
     rootOffset: cloneBodyAnimationRootOffset(sourcePose.rootOffset),
     weaponMirrorX: sourcePose.weaponMirrorX,
     weaponMirrorY: sourcePose.weaponMirrorY,
+    castProp: cloneBodyAnimationCastProp(sourcePose.castProp),
   };
   const nextKeyframe: BodyAnimationKeyframe = {
     ...targetKeyframe,
@@ -4434,6 +4497,7 @@ function resetSelectedAnimationPoseToDefault(): void {
       rootOffset: cloneBodyAnimationRootOffset(defaultKeyframe.rootOffset),
       weaponMirrorX: defaultKeyframe.weaponMirrorX,
       weaponMirrorY: defaultKeyframe.weaponMirrorY,
+      castProp: cloneBodyAnimationCastProp(defaultKeyframe.castProp),
     },
     {
       animationEditMode: poseId === "pose-a" ? "poseA" : "poseB",
@@ -4462,6 +4526,7 @@ function applySelectedAnimationKeyframeToPose(targetPoseId: "pose-a" | "pose-b")
       rootOffset: cloneBodyAnimationRootOffset(sourceKeyframe.rootOffset),
       weaponMirrorX: sourceKeyframe.weaponMirrorX,
       weaponMirrorY: sourceKeyframe.weaponMirrorY,
+      castProp: cloneBodyAnimationCastProp(sourceKeyframe.castProp),
     },
     {
       animationEditMode: targetPoseId === "pose-a" ? "poseA" : "poseB",
@@ -4524,6 +4589,35 @@ function updateSelectedAnimationKeyframe(patch: Partial<BodyAnimationKeyframe>):
   }
 
   updateAnimationKeyframeById(selectedKeyframe.id, patch);
+}
+
+function updateSelectedAnimationCastProp(patch: Partial<BodyAnimationCastPropTuning>): void {
+  if (debugTuning.selectedBodyAnimation !== "scrollCast") {
+    return;
+  }
+
+  const current = getEditableAnimationCastProp();
+  const nextCastProp: BodyAnimationCastPropTuning = {
+    ...defaultBodyAnimationCastProp,
+    ...(current ?? {}),
+    ...patch,
+    assetKey: isScrollCastPropAssetKey(patch.assetKey ?? current?.assetKey)
+      ? (patch.assetKey ?? current?.assetKey ?? DEFAULT_SCROLL_CAST_PROP_ASSET_KEY)
+      : DEFAULT_SCROLL_CAST_PROP_ASSET_KEY,
+  };
+
+  if (debugTuning.animationEditMode === "preview") {
+    updateAnimationPreviewKeyframe({ castProp: nextCastProp });
+    return;
+  }
+
+  const keyframe = getActiveAnimationRootKeyframe();
+
+  if (!keyframe) {
+    return;
+  }
+
+  updateAnimationKeyframeById(keyframe.id, { castProp: nextCastProp });
 }
 
 function updateAnimationKeyframeById(
@@ -4648,14 +4742,14 @@ function findAnimationKeyframeAtProgress(
   return candidates[0]?.keyframe;
 }
 
-function getAnimationPreviewPose(): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY"> | undefined {
+function getAnimationPreviewPose(): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY" | "castProp"> | undefined {
   return sampleAnimationKeyframePose(getSelectedBodyAnimation(), debugTuning.animationPreviewProgress);
 }
 
 function sampleAnimationKeyframePose(
   animation: BodyAnimationTuning,
   progress: number,
-): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY"> | undefined {
+): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY" | "castProp"> | undefined {
   const keyframes = getAnimationKeyframes(animation);
   const firstKeyframe = keyframes[0];
   const duration = Math.max(1, animation.duration);
@@ -4707,7 +4801,7 @@ function interpolateAnimationKeyframes(
   from: BodyAnimationKeyframe,
   to: BodyAnimationKeyframe,
   blend: number,
-): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY"> {
+): Pick<BodyAnimationKeyframe, "rigParts" | "faceParts" | "rootOffset" | "weaponMirrorX" | "weaponMirrorY" | "castProp"> {
   return {
     rigParts: Object.fromEntries(
       RIG_PART_KEYS.map((key) => [
@@ -4721,6 +4815,7 @@ function interpolateAnimationKeyframes(
     rootOffset: interpolateBodyAnimationRootOffset(from.rootOffset ?? defaultBodyAnimationRootOffset, to.rootOffset ?? defaultBodyAnimationRootOffset, blend),
     weaponMirrorX: blend < 0.5 ? from.weaponMirrorX : to.weaponMirrorX,
     weaponMirrorY: blend < 0.5 ? from.weaponMirrorY : to.weaponMirrorY,
+    castProp: interpolateBodyAnimationCastProp(from.castProp, to.castProp, blend),
   };
 }
 
@@ -4752,12 +4847,39 @@ function interpolateBodyAnimationRootOffset(from: BodyAnimationRootOffset, to: B
   };
 }
 
+function interpolateBodyAnimationCastProp(
+  from: BodyAnimationCastPropTuning | undefined,
+  to: BodyAnimationCastPropTuning | undefined,
+  blend: number,
+): BodyAnimationCastPropTuning | undefined {
+  if (!from && !to) {
+    return undefined;
+  }
+
+  const fromProp = from ?? defaultBodyAnimationCastProp;
+  const toProp = to ?? defaultBodyAnimationCastProp;
+  const pickedProp = blend < 0.5 ? fromProp : toProp;
+
+  return {
+    visible: pickedProp.visible,
+    assetKey: pickedProp.assetKey,
+    x: lerp(fromProp.x, toProp.x, blend),
+    y: lerp(fromProp.y, toProp.y, blend),
+    angle: lerp(fromProp.angle, toProp.angle, blend),
+    scaleX: lerp(fromProp.scaleX, toProp.scaleX, blend),
+    scaleY: lerp(fromProp.scaleY, toProp.scaleY, blend),
+    flipX: pickedProp.flipX,
+    flipY: pickedProp.flipY,
+  };
+}
+
 function cloneBodyAnimationKeyframe(keyframe: BodyAnimationKeyframe): BodyAnimationKeyframe {
   return {
     ...keyframe,
     rigParts: cloneRigParts(keyframe.rigParts),
     faceParts: cloneFaceParts(keyframe.faceParts),
     rootOffset: cloneBodyAnimationRootOffset(keyframe.rootOffset),
+    castProp: cloneBodyAnimationCastProp(keyframe.castProp),
   };
 }
 
@@ -5056,6 +5178,60 @@ function createRigToggleControl(control: RigToggleControlConfig): HTMLElement {
 
   input?.addEventListener("change", () => {
     updateRigToggleTuning(control.key, input.checked);
+  });
+
+  return row;
+}
+
+function createAnimationCastPropRangeControl(control: AnimationCastPropNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-animation-cast-prop-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-animation-cast-prop-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateSelectedAnimationCastProp({ [control.key]: clampAnimationCastPropNumericValue(control.key, Number(range.value)) } as Partial<BodyAnimationCastPropTuning>);
+  });
+
+  number?.addEventListener("input", () => {
+    updateSelectedAnimationCastProp({ [control.key]: clampAnimationCastPropNumericValue(control.key, Number(number.value)) } as Partial<BodyAnimationCastPropTuning>);
+  });
+
+  return row;
+}
+
+function createAnimationCastPropToggleControl(control: AnimationCastPropToggleControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-panel__row--toggle debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input type="checkbox" data-animation-cast-prop-toggle-key="${control.key}" />
+  `;
+
+  const input = row.querySelector<HTMLInputElement>("input");
+
+  input?.addEventListener("change", () => {
+    updateSelectedAnimationCastProp({ [control.key]: input.checked } as Partial<BodyAnimationCastPropTuning>);
   });
 
   return row;
@@ -6021,6 +6197,20 @@ function getEditableRootOffset(): BodyAnimationRootOffset | undefined {
   return keyframe?.rootOffset;
 }
 
+function getEditableAnimationCastProp(): BodyAnimationCastPropTuning | undefined {
+  if (debugTuning.selectedBodyAnimation !== "scrollCast") {
+    return undefined;
+  }
+
+  if (debugTuning.animationEditMode === "preview") {
+    return getAnimationPreviewPose()?.castProp ?? defaultBodyAnimationCastProp;
+  }
+
+  const keyframe = getActiveAnimationRootKeyframe();
+
+  return keyframe?.castProp ?? defaultBodyAnimationCastProp;
+}
+
 function getActiveAnimationRootKeyframe(): BodyAnimationKeyframe | undefined {
   const animation = getSelectedBodyAnimation();
   const keyframes = getAnimationKeyframes(animation);
@@ -6590,6 +6780,24 @@ function clampEquipmentNumericValue(key: EquipmentNumericControlKey, value: numb
   return clampNumber(value, -240, 240);
 }
 
+function clampAnimationCastPropNumericValue(key: AnimationCastPropNumericControlKey, value: number): number {
+  const control = getAnimationCastPropNumericControlConfig(key);
+
+  return clampNumber(value, control.min, control.max);
+}
+
+function getAnimationCastPropNumericControlConfig(key: AnimationCastPropNumericControlKey): AnimationCastPropNumericControlConfig {
+  return animationCastPropNumericControls.find((control) => control.key === key) ?? { key, label: key, min: -480, max: 480, step: 1 };
+}
+
+function formatScrollCastPropAssetLabel(key: ScrollCastPropAssetKey): string {
+  return key.replace(/^scroll-/u, "").replace(/-01$/u, "").replace(/-/gu, " ");
+}
+
+function isScrollCastPropAssetKey(value: unknown): value is ScrollCastPropAssetKey {
+  return typeof value === "string" && SCROLL_CAST_PROP_ASSET_KEYS.includes(value as ScrollCastPropAssetKey);
+}
+
 function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -6619,6 +6827,7 @@ function copyAnimationPoseAToB(): void {
     rootOffset: cloneBodyAnimationRootOffset(poseA?.rootOffset),
     weaponMirrorX: poseA?.weaponMirrorX,
     weaponMirrorY: poseA?.weaponMirrorY,
+    castProp: cloneBodyAnimationCastProp(poseA?.castProp),
   });
 }
 
@@ -6652,6 +6861,10 @@ function cloneFaceParts(source: Record<FacePartKey, FacePartTuning>): Record<Fac
 
 function cloneBodyAnimationRootOffset(source: BodyAnimationRootOffset | undefined): BodyAnimationRootOffset {
   return { ...(source ?? defaultBodyAnimationRootOffset) };
+}
+
+function cloneBodyAnimationCastProp(source: BodyAnimationCastPropTuning | undefined): BodyAnimationCastPropTuning | undefined {
+  return source ? { ...source } : undefined;
 }
 
 function shiftRigParts(source: Record<RigPartKey, RigPartTuning>, delta: { x: number; y: number }): Record<RigPartKey, RigPartTuning> {
@@ -6693,6 +6906,7 @@ function cloneBodyAnimation(source: BodyAnimationTuning): BodyAnimationTuning {
       rigParts: cloneRigParts(keyframe.rigParts),
       faceParts: cloneFaceParts(keyframe.faceParts),
       rootOffset: cloneBodyAnimationRootOffset(keyframe.rootOffset),
+      castProp: cloneBodyAnimationCastProp(keyframe.castProp),
     })),
   };
 }
@@ -9714,6 +9928,9 @@ function syncAnimationEditor(panel: HTMLElement): void {
   const workbenchResetWeapon = document.querySelector<HTMLButtonElement>("[data-animation-workbench-reset-weapon]");
   const workbenchWeaponMirrorX = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-x]");
   const workbenchWeaponMirrorY = document.querySelector<HTMLInputElement>("[data-animation-workbench-weapon-mirror-y]");
+  const workbenchCastPropPanel = document.querySelector<HTMLElement>("[data-animation-workbench-cast-prop-panel]");
+  const workbenchCastPropVisible = document.querySelector<HTMLInputElement>("[data-animation-workbench-cast-prop-visible]");
+  const workbenchCastPropAsset = document.querySelector<HTMLSelectElement>("[data-animation-workbench-cast-prop-asset]");
   const workbenchKeyframes = document.querySelector<HTMLElement>("[data-animation-workbench-keyframes]");
   const workbenchSelectedKey = document.querySelector<HTMLOutputElement>("[data-animation-workbench-selected-key]");
   const workbenchEasing = document.querySelector<HTMLSelectElement>("[data-animation-workbench-easing]");
@@ -9845,6 +10062,7 @@ function syncAnimationEditor(panel: HTMLElement): void {
     workbenchWeaponMirrorX,
     workbenchWeaponMirrorY,
   );
+  syncAnimationWorkbenchCastProp(workbenchCastPropPanel, workbenchCastPropVisible, workbenchCastPropAsset);
 
   document.querySelectorAll<HTMLButtonElement>("button[data-animation-edit-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", `${button.dataset.animationEditMode === debugTuning.animationEditMode}`);
@@ -9977,6 +10195,60 @@ function syncAnimationWorkbenchKeyframes(
     weaponMirrorY.checked = selectedKeyframe?.weaponMirrorY ?? false;
     weaponMirrorY.disabled = !selectedKeyframe || debugTuning.animationEditMode === "preview";
   }
+}
+
+function syncAnimationWorkbenchCastProp(
+  panel: HTMLElement | null,
+  visibleInput: HTMLInputElement | null,
+  assetSelect: HTMLSelectElement | null,
+): void {
+  const castProp = getEditableAnimationCastProp();
+  const canEdit = Boolean(castProp);
+
+  if (panel) {
+    panel.hidden = debugTuning.selectedBodyAnimation !== "scrollCast";
+  }
+
+  if (visibleInput) {
+    visibleInput.checked = castProp?.visible ?? false;
+    visibleInput.disabled = !canEdit;
+  }
+
+  if (assetSelect) {
+    assetSelect.value = castProp?.assetKey ?? DEFAULT_SCROLL_CAST_PROP_ASSET_KEY;
+    assetSelect.disabled = !canEdit;
+  }
+
+  document.querySelectorAll<HTMLInputElement>("input[data-animation-cast-prop-key]").forEach((input) => {
+    const key = input.dataset.animationCastPropKey as AnimationCastPropNumericControlKey;
+    const value = castProp?.[key] ?? defaultBodyAnimationCastProp[key];
+    const control = getAnimationCastPropNumericControlConfig(key);
+
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
+    input.value = `${value}`;
+    input.disabled = !canEdit;
+  });
+
+  document.querySelectorAll<HTMLInputElement>("input[data-animation-cast-prop-number-key]").forEach((input) => {
+    const key = input.dataset.animationCastPropNumberKey as AnimationCastPropNumericControlKey;
+    const value = castProp?.[key] ?? defaultBodyAnimationCastProp[key];
+    const control = getAnimationCastPropNumericControlConfig(key);
+
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+    input.disabled = !canEdit;
+  });
+
+  document.querySelectorAll<HTMLInputElement>("input[data-animation-cast-prop-toggle-key]").forEach((input) => {
+    const key = input.dataset.animationCastPropToggleKey as AnimationCastPropToggleControlKey;
+
+    input.checked = castProp?.[key] ?? defaultBodyAnimationCastProp[key];
+    input.disabled = !canEdit;
+  });
 }
 
 function getAnimationImpactKeyframe(animation: BodyAnimationTuning): BodyAnimationKeyframe | undefined {

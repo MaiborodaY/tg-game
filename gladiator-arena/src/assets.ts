@@ -1,4 +1,11 @@
 export { GAME_HEIGHT, GAME_WIDTH } from "./arenaLayout";
+import { SCROLL_CAST_PROP_ASSET_KEYS, type ScrollCastPropAssetKey } from "./scrollCastPropAssets";
+
+export {
+  DEFAULT_SCROLL_CAST_PROP_ASSET_KEY,
+  SCROLL_CAST_PROP_ASSET_KEYS,
+  type ScrollCastPropAssetKey,
+} from "./scrollCastPropAssets";
 
 export const ARENA_BACKGROUND_BACK_LAYER_ASSET_KEY = "arena-bg-back-layer";
 export const ARENA_BACKGROUND_BACK_LAYER_ASSET_URL = new URL("./assets/arena/layers/arena-back.webp", import.meta.url).href;
@@ -239,6 +246,14 @@ export const REST_HEALTH_ICON_ASSET_KEY = "rest-health-icon";
 export const REST_HEALTH_ICON_ASSET_URL = new URL("./assets/ui/profile/stat-health.webp", import.meta.url).href;
 export const REST_STAMINA_ICON_ASSET_KEY = "rest-stamina-icon";
 export const REST_STAMINA_ICON_ASSET_URL = new URL("./assets/ui/profile/stat-stamina.webp", import.meta.url).href;
+export const SCROLL_CAST_PROP_ASSETS: readonly { key: ScrollCastPropAssetKey; url: string }[] = [
+  { key: "scroll-crack-armor-01", url: new URL("./assets/shop-icons/scroll-crack-armor-01.webp", import.meta.url).href },
+  { key: "scroll-fireball-01", url: new URL("./assets/shop-icons/scroll-fireball-01.webp", import.meta.url).href },
+  { key: "scroll-ward-01", url: new URL("./assets/shop-icons/scroll-ward-01.webp", import.meta.url).href },
+  { key: "scroll-precise-strike-01", url: new URL("./assets/shop-icons/scroll-precise-strike-01.webp", import.meta.url).href },
+  { key: "scroll-double-strike-01", url: new URL("./assets/shop-icons/scroll-double-strike-01.webp", import.meta.url).href },
+  { key: "scroll-poison-01", url: new URL("./assets/shop-icons/scroll-poison-01.webp", import.meta.url).href },
+].filter((asset) => SCROLL_CAST_PROP_ASSET_KEYS.includes(asset.key));
 export const SHOP_BACK_ICON_ASSET_URL = new URL("./assets/ui/shop/back.webp", import.meta.url).href;
 export const SHOP_GOLD_COIN_ICON_ASSET_URL = new URL("./assets/ui/shop/gold-coin.webp", import.meta.url).href;
 export const SHOP_CATEGORY_HEAD_ICON_ASSET_URL = new URL("./assets/ui/shop/category-head.webp", import.meta.url).href;

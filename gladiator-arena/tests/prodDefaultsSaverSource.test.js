@@ -437,21 +437,31 @@ test("save as prod defaults also persists the selected rig editor animation", ()
   assert.match(source, /rootOffset: RootOffsetUpdates/);
   assert.match(source, /weaponMirrorX\?: boolean/);
   assert.match(source, /weaponMirrorY\?: boolean/);
+  assert.match(source, /castProp\?: BodyAnimationCastPropUpdates/);
+  assert.match(source, /interface BodyAnimationCastPropUpdates/);
+  assert.match(source, /const scrollCastPropAssetKeys = \[/);
   assert.match(source, /rootOffset: readRootOffset\(keyframe\.rootOffset\)/);
   assert.match(source, /weaponMirrorX: keyframe\.weaponMirrorX === true \? true : undefined/);
   assert.match(source, /weaponMirrorY: keyframe\.weaponMirrorY === true \? true : undefined/);
+  assert.match(source, /castProp: readBodyAnimationCastProp\(keyframe\.castProp\)/);
   assert.match(source, /weaponMirrorX: sourceKeyframe\.weaponMirrorX/);
   assert.match(source, /weaponMirrorY: sourceKeyframe\.weaponMirrorY/);
+  assert.match(source, /castProp: sourceKeyframe\.castProp/);
   assert.match(source, /rootOffset: \{ x: \$\{formatNumber\(keyframe\.rootOffset\.x\)\}, y: \$\{formatNumber\(keyframe\.rootOffset\.y\)\} \}/);
   assert.match(source, /keyframe\.weaponMirrorX \? `\$\{propertyIndent\}weaponMirrorX: true,` : ""/);
   assert.match(source, /keyframe\.weaponMirrorY \? `\$\{propertyIndent\}weaponMirrorY: true,` : ""/);
+  assert.match(source, /formatBodyAnimationCastPropRow\(keyframe\.castProp, propertyIndent\)/);
+  assert.match(source, /function readBodyAnimationCastProp/);
+  assert.match(source, /function isScrollCastPropAssetKey/);
   assert.doesNotMatch(source, /weaponOffset/);
   assert.match(source, /"bowShot"/);
   assert.match(source, /"hit"/);
   assert.match(source, /"block"/);
+  assert.match(source, /"scrollCast"/);
   assert.match(source, /DEFAULT_BOW_SHOT_ANIMATION/);
   assert.match(source, /DEFAULT_HIT_ANIMATION/);
   assert.match(source, /DEFAULT_BLOCK_ANIMATION/);
+  assert.match(source, /DEFAULT_SCROLL_CAST_ANIMATION/);
 });
 
 test("save animation as prod persists the active body preset animation", () => {
