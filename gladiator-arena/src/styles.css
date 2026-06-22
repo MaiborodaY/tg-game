@@ -7,6 +7,10 @@
   --burnt: #7a2d16;
   --red: #c83b2d;
   --teal: #42b7aa;
+  --ui-hud-button-frame: url("./assets/ui/panels/hud-button-frame.webp");
+  --ui-hud-portrait-frame: url("./assets/ui/panels/hud-portrait-frame.webp");
+  --ui-hud-wide-panel-frame: url("./assets/ui/panels/hud-wide-panel-frame.webp");
+  --ui-hud-xp-bar-frame: url("./assets/ui/panels/hud-xp-bar-frame.webp");
   --ui-panel-wood-texture: url("./assets/ui/panels/ui-panel-wood.webp");
   --ui-panel-wood-size: 256px 256px;
   --ui-profile-backdrop-texture: url("./assets/ui/profile/portrait-backdrop-texture.webp");
@@ -1934,9 +1938,7 @@ h1 {
   isolation: isolate;
   overflow: hidden;
   min-height: 100dvh;
-  border: 4px solid #35180d;
   background: #b59b61;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.36);
 }
 
 .city-menu::after {
@@ -2041,10 +2043,11 @@ h1 {
   height: var(--city-top-hud-height);
   padding: 8px 13px 10px 9px;
   border: 0;
-  border-bottom: 4px solid #1d0a05;
+  border-bottom: 0;
   border-radius: 0 0 14px 14px;
   color: #ffe8a9;
   background:
+    var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat,
     radial-gradient(circle at 7% 50%, rgba(255, 194, 88, 0.22), transparent 20%),
     radial-gradient(circle at 22% 6%, rgba(255, 197, 95, 0.18), transparent 34%),
     linear-gradient(180deg, rgba(62, 30, 15, 0.42), rgba(12, 4, 2, 0.72)),
@@ -2200,10 +2203,11 @@ h1 {
   width: 80px;
   height: 80px;
   padding: 0;
-  border: 3px solid #2a1208;
+  border: 0;
   border-radius: 50%;
   color: #ffe8a9;
   background:
+    var(--ui-hud-portrait-frame) center / 100% 100% no-repeat,
     radial-gradient(circle at 48% 45%, rgba(255, 224, 160, 0.52), rgba(115, 52, 23, 0.28) 58%, rgba(17, 5, 2, 0.74) 100%),
     linear-gradient(180deg, #a56528, #321207);
   clip-path: none;
@@ -2280,8 +2284,10 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-menu__portrait {
   position: absolute;
-  inset: 0;
+  inset: 8px;
   z-index: 1;
+  overflow: hidden;
+  border-radius: 50%;
   pointer-events: none;
 }
 
@@ -4564,6 +4570,7 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__hero-name,
 .city-menu__hero-gold,
 .city-menu__hero-level,
+.city-menu__hero-rank,
 .city-menu__hero-xp-text {
   overflow: hidden;
   font-weight: 900;
@@ -4598,37 +4605,115 @@ body.debug-active .city-menu__portrait-button:active {
   filter: drop-shadow(0 1px 0 rgba(53, 24, 13, 0.45));
 }
 
+.city-menu__hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+  min-width: 0;
+}
+
 .city-menu__hero-level,
+.city-menu__hero-rank,
 .city-menu__hero-xp-text {
   color: #f2c978;
-  font-size: clamp(0.54rem, 2.05vw, 0.66rem);
-  letter-spacing: 0.07em;
+  font-size: 0.62rem;
+  letter-spacing: 0;
+}
+
+.city-menu__hero-rank {
+  min-width: 0;
+  color: #ffe4a1;
+  text-transform: uppercase;
+}
+
+.city-menu__hero-rank::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin: 0 5px 1px 0;
+  border-radius: 999px;
+  background: rgba(255, 211, 132, 0.7);
+  box-shadow: 0 0 4px rgba(255, 211, 132, 0.24);
 }
 
 .city-menu__hero-xp {
   display: grid;
-  grid-template-columns: minmax(64px, 1fr) auto;
-  gap: 6px;
+  grid-template-columns: 22px minmax(96px, 1fr);
+  gap: 0;
   align-items: center;
 }
 
+.city-menu__hero-xp-icon {
+  position: relative;
+  z-index: 4;
+  width: 22px;
+  height: 22px;
+  margin-right: -8px;
+  border-radius: 50%;
+  background: url("./assets/ui/shop/xp-icon.webp") center / contain no-repeat;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.75))
+    drop-shadow(0 0 4px rgba(66, 183, 170, 0.24));
+}
+
 .city-menu__hero-xp-track {
+  position: relative;
+  display: grid;
+  place-items: center;
   overflow: hidden;
-  height: 9px;
-  border: 2px solid #170703;
+  min-width: 0;
+  height: 20px;
+  margin-left: -8px;
+  border: 0;
   border-radius: 999px;
-  background: rgba(19, 6, 3, 0.84);
+  background:
+    radial-gradient(circle at 12px 50%, rgba(66, 183, 170, 0.18), transparent 24px),
+    linear-gradient(180deg, rgba(255, 239, 185, 0.1), transparent 44%),
+    rgba(19, 6, 3, 0.84);
   box-shadow:
     inset 0 2px 4px rgba(0, 0, 0, 0.52),
     0 1px 0 rgba(255, 220, 146, 0.12);
 }
 
+.city-menu__hero-xp-track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--ui-hud-xp-bar-frame) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
 .city-menu__hero-xp-fill {
+  position: absolute;
+  inset: 5px auto 5px 14px;
+  z-index: 1;
   width: 0;
-  height: 100%;
+  height: auto;
   border-radius: inherit;
-  background: linear-gradient(90deg, #42b7aa, #fff0bd);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 42%),
+    linear-gradient(90deg, #218b87, #42b7aa 62%, #fff0bd);
+  box-shadow:
+    inset 0 -3px 5px rgba(8, 2, 1, 0.18),
+    0 0 8px rgba(66, 183, 170, 0.28);
   transition: width 180ms ease;
+}
+
+.city-menu__hero-xp-text {
+  position: relative;
+  z-index: 4;
+  max-width: 100%;
+  padding: 0 6px 0 12px;
+  color: #fff3c6;
+  font-size: 0.58rem;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.9),
+    0 0 4px rgba(8, 2, 1, 0.72);
 }
 
 .city-menu__hero-attributes {
@@ -4704,19 +4789,25 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-menu__nav {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: max(6px, env(safe-area-inset-bottom));
+  left: 2px;
+  right: 2px;
+  bottom: max(3px, env(safe-area-inset-bottom));
   z-index: 3;
   display: grid;
+  box-sizing: border-box;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   justify-items: stretch;
-  gap: 4px;
-  padding: 0;
+  gap: 2px;
+  padding: 7px 8px 8px;
   border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  border-radius: 13px;
+  background:
+    var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat,
+    linear-gradient(180deg, rgba(55, 25, 12, 0.72), rgba(16, 5, 2, 0.82)),
+    var(--ui-panel-wood-texture) center / var(--ui-panel-wood-size) repeat;
+  box-shadow:
+    0 3px 0 rgba(8, 2, 1, 0.76),
+    0 10px 18px rgba(8, 2, 1, 0.28);
   backdrop-filter: none;
   transition: opacity 200ms ease, transform 220ms ease;
 }
@@ -4747,19 +4838,15 @@ body.debug-active .city-menu__portrait-button:active {
   justify-items: center;
   width: 100%;
   min-width: 0;
-  min-height: 62px;
-  padding: 8px;
-  border: 3px solid #170b06;
+  min-height: 58px;
+  padding: 7px;
+  border: 0;
   border-radius: 10px;
   color: #35180d;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255, 222, 137, 0.28), transparent 30%),
-    linear-gradient(90deg, #3b1a0d 0 11%, #6a3518 20% 80%, #2a1209 92% 100%);
+  background: transparent;
   box-shadow:
-    inset 0 0 0 2px rgba(255, 205, 106, 0.15),
-    inset 0 5px 8px rgba(255, 210, 118, 0.16),
-    0 2px 0 #160703,
-    0 5px 7px rgba(0, 0, 0, 0.22);
+    0 1px 0 rgba(255, 220, 146, 0.08),
+    0 2px 0 rgba(8, 2, 1, 0.48);
   cursor: pointer;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(0.46rem, 2.05vw, 0.6rem);
@@ -4776,19 +4863,12 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__button::before {
   content: "";
   position: absolute;
-  inset: 2px;
-  z-index: 1;
+  inset: 0;
+  z-index: 0;
   border: 0;
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 8px 8px, #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) top left / 20px 20px no-repeat,
-    radial-gradient(circle at calc(100% - 8px) 8px, #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) top right / 20px 20px no-repeat,
-    radial-gradient(circle at 8px calc(100% - 8px), #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) bottom left / 20px 20px no-repeat,
-    radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #ffe08a 0 2px, #7a3415 2.5px 4px, transparent 4.5px) bottom right / 20px 20px no-repeat,
-    linear-gradient(135deg, #f0aa3c 0 11px, transparent 11px) top left / 22px 22px no-repeat,
-    linear-gradient(225deg, #c7822e 0 11px, transparent 11px) top right / 22px 22px no-repeat,
-    linear-gradient(45deg, #8a4d1f 0 11px, transparent 11px) bottom left / 22px 22px no-repeat,
-    linear-gradient(315deg, #d99132 0 11px, transparent 11px) bottom right / 22px 22px no-repeat;
+  border-radius: inherit;
+  background: var(--ui-hud-button-frame) center / 100% 100% no-repeat;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.42));
   pointer-events: none;
 }
 
@@ -4803,10 +4883,8 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__button:active:not(:disabled):not(.city-menu__button--locked) {
   transform: translateY(2px);
   box-shadow:
-    inset 0 0 0 2px rgba(255, 205, 106, 0.15),
-    inset 0 4px 7px rgba(255, 210, 118, 0.14),
-    0 1px 0 #160703,
-    0 3px 5px rgba(0, 0, 0, 0.2);
+    0 1px 0 rgba(255, 220, 146, 0.06),
+    0 1px 0 rgba(8, 2, 1, 0.46);
 }
 
 .city-menu__button:disabled,
@@ -4828,9 +4906,9 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__icon {
   display: block;
   position: relative;
-  z-index: 1;
-  width: min(50px, 12.5vw);
-  height: min(50px, 12.5vw);
+  z-index: 2;
+  width: min(44px, 11.8vw);
+  height: min(44px, 11.8vw);
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;

@@ -129,6 +129,17 @@ const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
 ];
 
 const CITY_EQUIPMENT_CATEGORIES: readonly CityEquipmentCategory[] = [...CITY_EQUIPMENT_WEAPON_CATEGORIES, ...CITY_EQUIPMENT_ARMOR_CATEGORIES];
+const HERO_RANKS: readonly { minLevel: number; title: string }[] = [
+  { minLevel: 90, title: "Immortal" },
+  { minLevel: 70, title: "Legend" },
+  { minLevel: 50, title: "Warlord" },
+  { minLevel: 35, title: "Champion" },
+  { minLevel: 25, title: "Veteran" },
+  { minLevel: 15, title: "Gladiator" },
+  { minLevel: 10, title: "Arena Blood" },
+  { minLevel: 5, title: "Pit Fighter" },
+  { minLevel: 1, title: "Novice" },
+];
 const CITY_APPEARANCE_SLOT_OPTIONS: readonly { slot: HeroAppearanceSlotKey; label: string }[] = [
   { slot: "hair", label: "Hair" },
   { slot: "beard", label: "Beard" },
@@ -167,6 +178,7 @@ export interface CityHeroWidgetRefs {
   portraitButton: HTMLButtonElement | null;
   name: HTMLElement | null;
   level: HTMLElement | null;
+  rank: HTMLElement | null;
   gold: HTMLElement | null;
   xpFill: HTMLElement | null;
   xpText: HTMLElement | null;
@@ -191,6 +203,7 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     portraitButton: root.querySelector<HTMLButtonElement>("#heroPortraitButton"),
     name: root.querySelector<HTMLElement>("#heroInfoName"),
     level: root.querySelector<HTMLElement>("#heroInfoLevel"),
+    rank: root.querySelector<HTMLElement>("#heroInfoRank"),
     gold: root.querySelector<HTMLElement>("#heroInfoGold"),
     xpFill: root.querySelector<HTMLElement>("#heroInfoXpFill"),
     xpText: root.querySelector<HTMLElement>("#heroInfoXpText"),
@@ -223,6 +236,12 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
   };
 }
 
+export function getHeroRankTitle(level: number): string {
+  const normalizedLevel = Math.max(1, Math.floor(level));
+
+  return HERO_RANKS.find((rank) => normalizedLevel >= rank.minLevel)?.title ?? "Novice";
+}
+
 export function syncCityHeroWidgetPosition(
   refs: CityHeroWidgetRefs,
   tuning: Pick<ArenaDebugTuning, "heroPortraitButtonX" | "heroPortraitButtonY" | "heroPortraitButtonScale">,
@@ -249,6 +268,10 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
 
   if (refs.level) {
     refs.level.textContent = `LVL ${hero.level}`;
+  }
+
+  if (refs.rank) {
+    refs.rank.textContent = getHeroRankTitle(hero.level);
   }
 
   if (refs.gold) {

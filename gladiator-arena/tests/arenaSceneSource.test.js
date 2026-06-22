@@ -1126,6 +1126,18 @@ test("city shop background is subdued without overlaying the live hero", () => {
   assert.equal(arenaSceneSource.includes("CITY_SHOP_HERO_BACKDROP"), false);
 });
 
+test("main city background assets use the optimized city art pipeline", () => {
+  assert.equal(assetsSource.includes("./assets/menu/main-city.webp"), true);
+  assert.equal(assetsSource.includes("./assets/menu/main-city-day.webp"), true);
+  assert.equal(existsSync(resolve(currentDir, "../art-source/png/assets/menu/main-city.png")), true);
+  assert.equal(existsSync(resolve(currentDir, "../art-source/png/assets/menu/main-city-day.png")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/menu/main-city.webp")), true);
+  assert.equal(existsSync(resolve(currentDir, "../src/assets/menu/main-city-day.webp")), true);
+  assert.equal(optimizeAssetsSource.includes("maxSide: 1672"), true);
+  assert.equal(optimizeAssetsSource.includes("menu\\/main-city(?:-day)?\\.png"), true);
+  assert.equal(optimizeAssetsSource.includes("maximumQuality: 74"), true);
+});
+
 test("city scene can zoom the background camera into the coliseum for arena entry", () => {
   assert.equal(arenaSceneSource.includes('type CityCameraMode = "default" | "armory" | "weaponShop" | "arena"'), true);
   assert.equal(arenaSceneSource.includes("focusArenaTransition: () => Promise<void>"), true);
