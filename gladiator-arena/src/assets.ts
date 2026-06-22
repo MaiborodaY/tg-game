@@ -257,7 +257,7 @@ export const SCROLL_CAST_PROP_ASSETS: readonly { key: ScrollCastPropAssetKey; ur
   { key: "scroll-precise-strike-01", url: new URL("./assets/shop-icons/scroll-precise-strike-01.webp", import.meta.url).href },
   { key: "scroll-double-strike-01", url: new URL("./assets/shop-icons/scroll-double-strike-01.webp", import.meta.url).href },
   { key: "scroll-poison-01", url: new URL("./assets/shop-icons/scroll-poison-01.webp", import.meta.url).href },
-].filter((asset) => SCROLL_CAST_PROP_ASSET_KEYS.includes(asset.key));
+];
 export const SHOP_BACK_ICON_ASSET_URL = new URL("./assets/ui/shop/back.webp", import.meta.url).href;
 export const SHOP_GOLD_COIN_ICON_ASSET_URL = new URL("./assets/ui/shop/gold-coin.webp", import.meta.url).href;
 export const SHOP_XP_ICON_ASSET_URL = new URL("./assets/ui/shop/xp-icon.webp", import.meta.url).href;

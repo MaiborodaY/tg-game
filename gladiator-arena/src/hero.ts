@@ -69,6 +69,7 @@ export interface HeroState {
   baseStats: HeroBaseStats;
   appearance: HeroAppearance;
   equipment: HeroEquipment;
+  weaponEnchantments: HeroWeaponEnchantments;
   inventory: HeroInventoryEntry[];
   unlockedShopRarities: HeroItemRarity[];
   defeatedArenaBossIds: string[];
@@ -152,8 +153,16 @@ export type HeroItemId = string;
 export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
 export type HeroEquipmentSetGrade = "starter" | "low" | "mid" | "high" | "boss";
+export type HeroWeaponEnchantmentElement = "water";
+
+export interface HeroWeaponEnchantment {
+  element: HeroWeaponEnchantmentElement;
+}
+
+export type HeroWeaponEnchantments = Partial<Record<HeroItemId, HeroWeaponEnchantment>>;
 
 export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
+export const HERO_WATER_WEAPON_ENCHANT_PRICE = 50;
 
 interface PairedArmorSlotConfig {
   backSlot: HeroEquipmentSlotKey;
@@ -667,6 +676,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     },
     appearance: createDefaultHeroAppearance(),
     equipment: createDefaultHeroEquipment(),
+    weaponEnchantments: {},
     inventory: createDefaultHeroInventory(),
     unlockedShopRarities: [],
     defeatedArenaBossIds: [],
@@ -730,6 +740,56 @@ export function areHeroItemsEquipped(hero: HeroState, itemIds: readonly HeroItem
 
     return Boolean(item && !isHeroConsumableItem(item) && hero.equipment[item.equipmentSlot] === itemId);
   });
+}
+
+export function getActiveEnchantableHeroWeaponItemId(hero: HeroState): HeroItemId | undefined {
+  const itemId = hero.equipment.weaponMain;
+  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  if (!item || item.kind !== "weapon" || item.equipmentSlot !== "weaponMain" || item.weaponClass === "shuriken") {
+    return undefined;
+  }
+
+  return itemId ?? undefined;
+}
+
+export function getHeroWeaponEnchantment(
+  enchantments: HeroWeaponEnchantments | undefined,
+  itemId: HeroItemId | null | undefined,
+): HeroWeaponEnchantment | undefined {
+  return itemId ? enchantments?.[itemId] : undefined;
+}
+
+export function canEnchantHeroActiveWeaponWithWater(hero: HeroState): boolean {
+  const itemId = getActiveEnchantableHeroWeaponItemId(hero);
+
+  if (!itemId || getHeroWeaponEnchantment(hero.weaponEnchantments, itemId)?.element === "water") {
+    return false;
+  }
+
+  return hero.gold >= HERO_WATER_WEAPON_ENCHANT_PRICE;
+}
+
+export function enchantHeroActiveWeaponWithWater(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const itemId = getActiveEnchantableHeroWeaponItemId(hero);
+
+  if (!itemId || getHeroWeaponEnchantment(hero.weaponEnchantments, itemId)?.element === "water") {
+    return hero;
+  }
+
+  if (hero.gold < HERO_WATER_WEAPON_ENCHANT_PRICE) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold - HERO_WATER_WEAPON_ENCHANT_PRICE,
+    weaponEnchantments: {
+      ...hero.weaponEnchantments,
+      [itemId]: { element: "water" },
+    },
+    updatedAt: now,
+  };
 }
 
 export function getHeroEquipmentStatBonuses(equipment: HeroEquipment): HeroBaseStats {
@@ -1228,6 +1288,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       poisonScrollItemId: playerPoisonScrollItemId,
       poisonTurns: 0,
       equipment: { ...heroEquipment },
+      weaponEnchantments: { ...hero.weaponEnchantments },
       armorSlots: getHeroEquipmentArmorSlots(heroEquipment),
     },
     enemy: {

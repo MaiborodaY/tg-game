@@ -8,6 +8,7 @@ import {
   setPlayerBodyScaleBonus,
   setPlayerAppearance,
   setPlayerEquipment,
+  setPlayerWeaponEnchantments,
   type ArenaScene,
 } from "./ArenaScene";
 import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
@@ -45,6 +46,7 @@ import {
   createDefaultHero,
   createHeroPreviewEquipment,
   deriveHeroStats,
+  enchantHeroActiveWeaponWithWater,
   grantHeroGold,
   grantHeroLevels,
   getBattleReward,
@@ -123,6 +125,8 @@ let battleResultPresentationId = 0;
 let battleResultPresentationRevealToken = 0;
 let statsRevealToken = 0;
 let rewardUiRenderDirty = false;
+let debugCharacterViewerUnmount: (() => void) | undefined;
+let debugCharacterViewerMode: "debug" | "enchantGlow" | undefined;
 
 function commitState(nextState: CombatState): Promise<void> {
   const previousState = state;
@@ -486,6 +490,19 @@ function handleShopBuy(product: DebugShopProduct): void {
   magicShop?.render();
 }
 
+function handleMagicWeaponEnchant(): void {
+  const nextHero = enchantHeroActiveWeaponWithWater(hero);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  setPlayerWeaponEnchantments(hero.weaponEnchantments);
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  magicShop?.render();
+}
+
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
   const nextHero = allocateHeroSkillPoints(hero, attribute, amount);
 
@@ -538,6 +555,32 @@ function previewPopup(kind: DebugPopupPreviewKind): void {
 
 function syncHeroPortraitButton(): void {
   syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
+}
+
+function syncDebugCharacterViewer(): void {
+  if (!debugCharacterViewer) {
+    return;
+  }
+
+  const nextMode = document.body.classList.contains("debug-mode-effects") ? "enchantGlow" : "debug";
+
+  if (debugCharacterViewerMode === nextMode) {
+    return;
+  }
+
+  debugCharacterViewerUnmount?.();
+  debugCharacterViewer.replaceChildren();
+  debugCharacterViewerMode = nextMode;
+  debugCharacterViewerUnmount = mountDebugCharacterViewer(
+    debugCharacterViewer,
+    hero.equipment,
+    nextMode === "enchantGlow" ? { mode: "enchantGlow" } : undefined,
+  );
+}
+
+function mountDebugCharacterViewerModeSync(): void {
+  syncDebugCharacterViewer();
+  window.addEventListener("dust-arena-debug-mode-change", syncDebugCharacterViewer);
 }
 
 function mountHeroPortraitButtonDebug(): void {
@@ -784,9 +827,7 @@ function startDebugApp(): void {
   dom.mainMenu.hidden = false;
   dom.gameScreen.hidden = false;
   setPlayerAppearance(hero.appearance);
-  if (debugCharacterViewer) {
-    mountDebugCharacterViewer(debugCharacterViewer, hero.equipment);
-  }
+  mountDebugCharacterViewerModeSync();
   if (debugAnimationViewer) {
     mountDebugCharacterViewer(debugAnimationViewer, hero.equipment, { mode: "animation" });
   }
@@ -820,6 +861,7 @@ function startDebugApp(): void {
     magicShop = mountMagicShop(cityMenu, {
       getHero: () => hero,
       onBuy: handleShopBuy,
+      onEnchantWeapon: handleMagicWeaponEnchant,
     });
   }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen, {

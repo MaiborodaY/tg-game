@@ -24,6 +24,7 @@ import {
   EQUIPMENT_SLOT_KEYS,
   FACE_ASSET_LAYER_KEYS,
   DEFAULT_SLASH_ARCS,
+  DEFAULT_WEAPON_ENCHANT_GLOW_TUNING,
   DEFAULT_WARD_SHIELD_TUNING,
   clearDebugTuningStorage,
   defaultFacePartTuning,
@@ -76,6 +77,8 @@ import {
   type SlashArcTuning,
   type ShadowPreviewMode,
   type WardShieldTuning,
+  type WeaponEnchantGlowElement,
+  type WeaponEnchantGlowTuning,
 } from "./debugTuning";
 import {
   subscribeDebugCharacterEquipmentDelta,
@@ -132,6 +135,7 @@ import {
   saveProdCityHeroTransform,
   saveProdDefaults,
   saveProdVfxDefaults,
+  saveProdWeaponEnchantGlowDefaults,
   saveUiLayoutProdDefaults,
   savePromotedEquipmentItem,
   savePromotedEquipmentSet,
@@ -226,6 +230,7 @@ type DebugItemEquipmentTypeFilter = "all" | HeroWeaponClass | NonNullable<HeroIt
 type DebugItemEquipmentRarityFilter = "all" | HeroItemRarity;
 type SlashArcNumericControlKey = Exclude<keyof SlashArcTuning, "color">;
 type WardShieldNumericControlKey = keyof WardShieldTuning;
+type WeaponEnchantGlowNumericControlKey = Exclude<keyof WeaponEnchantGlowTuning, "color" | "blendMode" | "layer">;
 type ArenaBackgroundEditTierId = number;
 type ArenaBackgroundLayoutField = "x" | "y" | "scale" | "alpha" | "visible";
 type ArenaParallaxLayerKey = ArenaBackgroundEditLayer;
@@ -335,6 +340,14 @@ interface SlashArcNumericControlConfig {
 
 interface WardShieldNumericControlConfig {
   key: WardShieldNumericControlKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+interface WeaponEnchantGlowNumericControlConfig {
+  key: WeaponEnchantGlowNumericControlKey;
   label: string;
   min: number;
   max: number;
@@ -944,6 +957,17 @@ const wardShieldNumericControls: WardShieldNumericControlConfig[] = [
   { key: "endScale", label: "end scale", min: 0.1, max: 3, step: 0.01 },
 ];
 
+const weaponEnchantGlowNumericControls: WeaponEnchantGlowNumericControlConfig[] = [
+  { key: "alpha", label: "alpha", min: 0, max: 1, step: 0.01 },
+  { key: "scale", label: "scale", min: 0.1, max: 3, step: 0.01 },
+  { key: "blur", label: "blur", min: 0, max: 8, step: 0.05 },
+  { key: "blurStrength", label: "blur strength", min: 0, max: 3, step: 0.05 },
+  { key: "offsetX", label: "offset X", min: -120, max: 120, step: 1 },
+  { key: "offsetY", label: "offset Y", min: -120, max: 120, step: 1 },
+  { key: "originX", label: "origin X", min: -0.5, max: 1.5, step: 0.01 },
+  { key: "originY", label: "origin Y", min: -0.5, max: 1.5, step: 0.01 },
+];
+
 const rigLimbRotateConfigs: RigLimbRotateConfig[] = [
   { key: "leftArm", label: "Left arm", anchor: "backUpperArm", parts: ["backUpperArm", "backForearm", "backHand"] },
   { key: "rightArm", label: "Right arm", anchor: "frontUpperArm", parts: ["frontUpperArm", "frontForearm", "frontHand"] },
@@ -1395,6 +1419,37 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           </div>
           <button class="debug-panel__reset debug-effects__reset-slash" type="button">Reset slash</button>
         </details>
+        <details class="debug-panel__group debug-effects__group debug-weapon-enchant-glow" open>
+          <summary>Weapon enchant glow</summary>
+          <label class="debug-rig-editor__part">
+            <span>Weapon</span>
+            <select class="debug-weapon-enchant-glow__weapon" data-weapon-enchant-glow-weapon></select>
+          </label>
+          <label class="debug-rig-editor__part">
+            <span>Color</span>
+            <input class="debug-weapon-enchant-glow__color" type="text" inputmode="text" spellcheck="false" data-weapon-enchant-glow-color />
+          </label>
+          <label class="debug-rig-editor__part">
+            <span>Blend</span>
+            <select class="debug-weapon-enchant-glow__blend" data-weapon-enchant-glow-blend>
+              <option value="add">Add</option>
+              <option value="normal">Normal</option>
+            </select>
+          </label>
+          <label class="debug-rig-editor__part">
+            <span>Layer</span>
+            <select class="debug-weapon-enchant-glow__layer" data-weapon-enchant-glow-layer>
+              <option value="over">Over weapon</option>
+              <option value="behind">Behind weapon</option>
+            </select>
+          </label>
+          <div class="debug-weapon-enchant-glow__controls" data-weapon-enchant-glow-controls></div>
+          <div class="debug-rig-editor__actions">
+            <button class="debug-panel__reset" type="button" data-weapon-enchant-glow-reset>Reset water glow</button>
+            <button class="debug-panel__reset" type="button" data-weapon-enchant-glow-save-prod>Save weapon glow as prod</button>
+          </div>
+          <p class="debug-panel__status" data-weapon-enchant-glow-status aria-live="polite"></p>
+        </details>
         <div class="debug-effects__popup-controls"></div>
       </div>
     </details>
@@ -1830,6 +1885,7 @@ function mountCharacterCanvasEquipmentBridge(panel: HTMLElement): void {
 }
 
 type DebugMode = "character" | "animation" | "city" | "arena" | "hud" | "ui" | "effects";
+const DEBUG_MODE_CHANGE_EVENT = "dust-arena-debug-mode-change";
 
 function mountModeTabs(panel: HTMLElement): void {
   panel.querySelectorAll<HTMLButtonElement>("button[data-debug-mode]").forEach((button) => {
@@ -1853,6 +1909,7 @@ function setDebugMode(mode: DebugMode): void {
   document.body.classList.toggle("debug-mode-ui", mode === "ui");
   document.body.classList.toggle("debug-mode-effects", mode === "effects");
   applyUiLayoutTuning();
+  window.dispatchEvent(new CustomEvent(DEBUG_MODE_CHANGE_EVENT, { detail: mode }));
   window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
 }
 
@@ -4972,11 +5029,34 @@ function mountEffectsEditor(editor: HTMLElement): void {
   const slashSelect = editor.querySelector<HTMLSelectElement>(".debug-effects__slash-select");
   const slashControls = editor.querySelector<HTMLElement>(".debug-effects__slash-controls");
   const popupControls = editor.querySelector<HTMLElement>(".debug-effects__popup-controls");
+  const weaponEnchantGlowWeapon = editor.querySelector<HTMLSelectElement>("[data-weapon-enchant-glow-weapon]");
+  const weaponEnchantGlowColor = editor.querySelector<HTMLInputElement>("[data-weapon-enchant-glow-color]");
+  const weaponEnchantGlowBlend = editor.querySelector<HTMLSelectElement>("[data-weapon-enchant-glow-blend]");
+  const weaponEnchantGlowLayer = editor.querySelector<HTMLSelectElement>("[data-weapon-enchant-glow-layer]");
+  const weaponEnchantGlowControls = editor.querySelector<HTMLElement>("[data-weapon-enchant-glow-controls]");
+  const weaponEnchantGlowReset = editor.querySelector<HTMLButtonElement>("[data-weapon-enchant-glow-reset]");
+  const weaponEnchantGlowSaveProd = editor.querySelector<HTMLButtonElement>("[data-weapon-enchant-glow-save-prod]");
+  const weaponEnchantGlowStatus = editor.querySelector<HTMLElement>("[data-weapon-enchant-glow-status]");
   const start = editor.querySelector<HTMLButtonElement>(".debug-effects__start");
   const stop = editor.querySelector<HTMLButtonElement>(".debug-effects__stop");
   const resetSlash = editor.querySelector<HTMLButtonElement>(".debug-effects__reset-slash");
 
-  if (!slashSelect || !slashControls || !popupControls || !start || !stop || !resetSlash) {
+  if (
+    !slashSelect ||
+    !slashControls ||
+    !popupControls ||
+    !weaponEnchantGlowWeapon ||
+    !weaponEnchantGlowColor ||
+    !weaponEnchantGlowBlend ||
+    !weaponEnchantGlowLayer ||
+    !weaponEnchantGlowControls ||
+    !weaponEnchantGlowReset ||
+    !weaponEnchantGlowSaveProd ||
+    !weaponEnchantGlowStatus ||
+    !start ||
+    !stop ||
+    !resetSlash
+  ) {
     return;
   }
 
@@ -4988,6 +5068,9 @@ function mountEffectsEditor(editor: HTMLElement): void {
   });
 
   slashArcNumericControls.forEach((control) => slashControls.append(createSlashArcRangeControl(control)));
+  weaponEnchantGlowWeapon.replaceChildren(...getDebugWeaponEnchantGlowPreviewWeaponOptions());
+  ensureWeaponEnchantGlowPreviewWeaponSelection();
+  weaponEnchantGlowNumericControls.forEach((control) => weaponEnchantGlowControls.append(createWeaponEnchantGlowRangeControl(control)));
   const popupGroup = createControlGroup(popupControlGroup);
   popupControls.append(popupGroup);
   mountPopupPreviewTriggers(popupGroup);
@@ -5008,6 +5091,50 @@ function mountEffectsEditor(editor: HTMLElement): void {
 
   resetSlash.addEventListener("click", () => {
     resetSelectedSlashArc();
+  });
+
+  weaponEnchantGlowWeapon.addEventListener("change", () => {
+    const itemId = weaponEnchantGlowWeapon.value;
+
+    updateDebugTuning({ weaponEnchantGlowPreviewWeaponItemId: itemId || null }, { undoable: false });
+  });
+
+  weaponEnchantGlowColor.addEventListener("change", () => {
+    const color = parseDebugHexColor(weaponEnchantGlowColor.value);
+
+    if (color === undefined) {
+      syncWeaponEnchantGlowEditor(editor);
+      return;
+    }
+
+    updateSelectedWeaponEnchantGlow({ color });
+  });
+
+  weaponEnchantGlowBlend.addEventListener("change", () => {
+    updateSelectedWeaponEnchantGlow({ blendMode: weaponEnchantGlowBlend.value === "normal" ? "normal" : "add" });
+  });
+
+  weaponEnchantGlowLayer.addEventListener("change", () => {
+    updateSelectedWeaponEnchantGlow({ layer: weaponEnchantGlowLayer.value === "behind" ? "behind" : "over" });
+  });
+
+  weaponEnchantGlowReset.addEventListener("click", () => {
+    resetSelectedWeaponEnchantGlow();
+  });
+
+  weaponEnchantGlowSaveProd.addEventListener("click", async () => {
+    weaponEnchantGlowSaveProd.disabled = true;
+    weaponEnchantGlowStatus.textContent = "Saving weapon glow...";
+
+    try {
+      weaponEnchantGlowStatus.textContent = await saveProdWeaponEnchantGlowDefaults(debugTuning);
+      clearDebugTuningStorage();
+    } catch (error) {
+      weaponEnchantGlowStatus.textContent = error instanceof Error ? error.message : "Could not save weapon glow.";
+    } finally {
+      weaponEnchantGlowSaveProd.disabled = false;
+      syncWeaponEnchantGlowEditor(editor);
+    }
   });
 }
 
@@ -5283,6 +5410,43 @@ function createWardShieldRangeControl(control: WardShieldNumericControlConfig): 
 
   number?.addEventListener("input", () => {
     updateWardShieldTuning({ [control.key]: clampWardShieldNumericValue(control.key, Number(number.value)) } as Partial<WardShieldTuning>);
+  });
+
+  return row;
+}
+
+function createWeaponEnchantGlowRangeControl(control: WeaponEnchantGlowNumericControlConfig): HTMLElement {
+  const row = document.createElement("label");
+  row.className = "debug-panel__row debug-rig-editor__row";
+  row.innerHTML = `
+    <span>${control.label}</span>
+    <input
+      class="debug-panel__range"
+      type="range"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-weapon-enchant-glow-key="${control.key}"
+    />
+    <input
+      class="debug-panel__number"
+      type="number"
+      min="${control.min}"
+      max="${control.max}"
+      step="${control.step}"
+      data-weapon-enchant-glow-number-key="${control.key}"
+    />
+  `;
+
+  const range = row.querySelector<HTMLInputElement>(".debug-panel__range");
+  const number = row.querySelector<HTMLInputElement>(".debug-panel__number");
+
+  range?.addEventListener("input", () => {
+    updateSelectedWeaponEnchantGlow({ [control.key]: clampWeaponEnchantGlowNumericValue(control.key, Number(range.value)) } as Partial<WeaponEnchantGlowTuning>);
+  });
+
+  number?.addEventListener("input", () => {
+    updateSelectedWeaponEnchantGlow({ [control.key]: clampWeaponEnchantGlowNumericValue(control.key, Number(number.value)) } as Partial<WeaponEnchantGlowTuning>);
   });
 
   return row;
@@ -5980,6 +6144,54 @@ function resetWardShieldTuning(): void {
   updateDebugTuning({
     wardShield: { ...DEFAULT_WARD_SHIELD_TUNING },
   });
+}
+
+function updateSelectedWeaponEnchantGlow(patch: Partial<WeaponEnchantGlowTuning>): void {
+  const element = getSelectedWeaponEnchantGlowElement();
+  const current = getSelectedWeaponEnchantGlowTuning();
+
+  updateDebugTuning({
+    weaponEnchantGlow: {
+      ...debugTuning.weaponEnchantGlow,
+      [element]: { ...current, ...patch },
+    },
+  });
+}
+
+function resetSelectedWeaponEnchantGlow(): void {
+  const element = getSelectedWeaponEnchantGlowElement();
+
+  updateDebugTuning({
+    weaponEnchantGlow: {
+      ...debugTuning.weaponEnchantGlow,
+      [element]: { ...DEFAULT_WEAPON_ENCHANT_GLOW_TUNING[element] },
+    },
+  });
+}
+
+function ensureWeaponEnchantGlowPreviewWeaponSelection(): void {
+  const selectedItemId = debugTuning.weaponEnchantGlowPreviewWeaponItemId;
+
+  if (selectedItemId && isDebugWeaponEnchantGlowPreviewWeaponItemId(selectedItemId)) {
+    return;
+  }
+
+  updateDebugTuning(
+    {
+      weaponEnchantGlowPreviewWeaponItemId: getDebugWeaponEnchantGlowPreviewWeaponItemIds()[0] ?? null,
+    },
+    { undoable: false },
+  );
+}
+
+function getSelectedWeaponEnchantGlowElement(): WeaponEnchantGlowElement {
+  return debugTuning.selectedWeaponEnchantGlowElement;
+}
+
+function getSelectedWeaponEnchantGlowTuning(): WeaponEnchantGlowTuning {
+  const element = getSelectedWeaponEnchantGlowElement();
+
+  return debugTuning.weaponEnchantGlow[element] ?? DEFAULT_WEAPON_ENCHANT_GLOW_TUNING[element];
 }
 
 function getAnimationVfxSlashArcKey(): SlashArcAttackKey | undefined {
@@ -6866,6 +7078,52 @@ function getDebugHeroItemDefinition(itemId: string | null | undefined): HeroItem
   );
 }
 
+function getDebugWeaponEnchantGlowPreviewWeaponOptions(): HTMLOptionElement[] {
+  return getDebugWeaponEnchantGlowPreviewWeaponItemIds().map((itemId) => {
+    const definition = getDebugHeroItemDefinition(itemId);
+    const option = document.createElement("option");
+
+    option.value = itemId;
+    option.textContent = definition ? `${formatDebugItemEquipmentType(definition.weaponClass ?? "all")} | ${definition.name}` : itemId;
+    return option;
+  });
+}
+
+function getDebugWeaponEnchantGlowPreviewWeaponItemIds(): HeroItemId[] {
+  const itemIds = [
+    ...ALL_HERO_ITEM_IDS,
+    ...AUTO_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id),
+    ...GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id),
+  ];
+
+  return [...new Set(itemIds)].filter(isDebugWeaponEnchantGlowPreviewWeaponItemId).sort(compareDebugWeaponEnchantGlowPreviewWeapons);
+}
+
+function isDebugWeaponEnchantGlowPreviewWeaponItemId(itemId: string): itemId is HeroItemId {
+  const definition = getDebugHeroItemDefinition(itemId);
+
+  return Boolean(
+    definition &&
+      definition.kind === "weapon" &&
+      definition.equipmentSlot === "weaponMain" &&
+      definition.weaponClass !== "bow" &&
+      definition.weaponClass !== "shuriken",
+  );
+}
+
+function compareDebugWeaponEnchantGlowPreviewWeapons(leftItemId: HeroItemId, rightItemId: HeroItemId): number {
+  const left = getDebugHeroItemDefinition(leftItemId);
+  const right = getDebugHeroItemDefinition(rightItemId);
+  const leftClass = left?.weaponClass ?? "";
+  const rightClass = right?.weaponClass ?? "";
+
+  return (
+    leftClass.localeCompare(rightClass) ||
+    (left?.name ?? leftItemId).localeCompare(right?.name ?? rightItemId) ||
+    leftItemId.localeCompare(rightItemId)
+  );
+}
+
 function getHeroItemDefinitionRarity(definition: HeroItemDefinition): HeroItemRarity {
   return definition.rarity ?? "common";
 }
@@ -6954,12 +7212,22 @@ function clampWardShieldNumericValue(key: WardShieldNumericControlKey, value: nu
   return clampNumber(value, control.min, control.max);
 }
 
+function clampWeaponEnchantGlowNumericValue(key: WeaponEnchantGlowNumericControlKey, value: number): number {
+  const control = getWeaponEnchantGlowNumericControlConfig(key);
+
+  return clampNumber(value, control.min, control.max);
+}
+
 function getAnimationCastPropNumericControlConfig(key: AnimationCastPropNumericControlKey): AnimationCastPropNumericControlConfig {
   return animationCastPropNumericControls.find((control) => control.key === key) ?? { key, label: key, min: -480, max: 480, step: 1 };
 }
 
 function getWardShieldNumericControlConfig(key: WardShieldNumericControlKey): WardShieldNumericControlConfig {
   return wardShieldNumericControls.find((control) => control.key === key) ?? { key, label: key, min: -240, max: 240, step: 1 };
+}
+
+function getWeaponEnchantGlowNumericControlConfig(key: WeaponEnchantGlowNumericControlKey): WeaponEnchantGlowNumericControlConfig {
+  return weaponEnchantGlowNumericControls.find((control) => control.key === key) ?? { key, label: key, min: -120, max: 120, step: 1 };
 }
 
 function formatScrollCastPropAssetLabel(key: ScrollCastPropAssetKey): string {
@@ -6972,6 +7240,20 @@ function isScrollCastPropAssetKey(value: unknown): value is ScrollCastPropAssetK
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function parseDebugHexColor(value: string): number | undefined {
+  const normalized = value.trim().replace(/^#/u, "").replace(/^0x/iu, "");
+
+  if (!/^[0-9a-f]{1,6}$/iu.test(normalized)) {
+    return undefined;
+  }
+
+  return Number.parseInt(normalized.padStart(6, "0"), 16);
+}
+
+function formatDebugHexColor(value: number): string {
+  return `#${Math.max(0, Math.min(0xffffff, Math.round(value))).toString(16).padStart(6, "0")}`;
 }
 
 function lerp(from: number, to: number, blend: number): number {
@@ -10084,6 +10366,61 @@ function syncEffectsEditor(panel: HTMLElement): void {
     const key = input.dataset.slashArcNumberKey as SlashArcNumericControlKey;
     const value = selectedSlashArc[key];
 
+    input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
+  });
+
+  syncWeaponEnchantGlowEditor(panel);
+}
+
+function syncWeaponEnchantGlowEditor(panel: HTMLElement): void {
+  const weaponSelect = panel.querySelector<HTMLSelectElement>("[data-weapon-enchant-glow-weapon]");
+  const colorInput = panel.querySelector<HTMLInputElement>("[data-weapon-enchant-glow-color]");
+  const blendSelect = panel.querySelector<HTMLSelectElement>("[data-weapon-enchant-glow-blend]");
+  const layerSelect = panel.querySelector<HTMLSelectElement>("[data-weapon-enchant-glow-layer]");
+  const saveProd = panel.querySelector<HTMLButtonElement>("[data-weapon-enchant-glow-save-prod]");
+  const tuning = getSelectedWeaponEnchantGlowTuning();
+  const previewWeaponIds = getDebugWeaponEnchantGlowPreviewWeaponItemIds();
+  const selectedWeaponId = debugTuning.weaponEnchantGlowPreviewWeaponItemId;
+  const previewWeaponId = selectedWeaponId && previewWeaponIds.includes(selectedWeaponId as HeroItemId) ? selectedWeaponId : previewWeaponIds[0] ?? "";
+
+  if (weaponSelect) {
+    weaponSelect.value = previewWeaponId;
+  }
+
+  if (colorInput) {
+    colorInput.value = formatDebugHexColor(tuning.color);
+  }
+
+  if (blendSelect) {
+    blendSelect.value = tuning.blendMode;
+  }
+
+  if (layerSelect) {
+    layerSelect.value = tuning.layer;
+  }
+
+  if (saveProd) {
+    saveProd.disabled = false;
+  }
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-weapon-enchant-glow-key]").forEach((input) => {
+    const key = input.dataset.weaponEnchantGlowKey as WeaponEnchantGlowNumericControlKey;
+    const control = getWeaponEnchantGlowNumericControlConfig(key);
+
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
+    input.value = `${tuning[key]}`;
+  });
+
+  panel.querySelectorAll<HTMLInputElement>("input[data-weapon-enchant-glow-number-key]").forEach((input) => {
+    const key = input.dataset.weaponEnchantGlowNumberKey as WeaponEnchantGlowNumericControlKey;
+    const control = getWeaponEnchantGlowNumericControlConfig(key);
+    const value = tuning[key];
+
+    input.min = `${control.min}`;
+    input.max = `${control.max}`;
+    input.step = `${control.step}`;
     input.value = !Number.isInteger(value) ? value.toFixed(2) : `${value}`;
   });
 }

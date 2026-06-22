@@ -1,4 +1,4 @@
-import type { EnemyVisualPreset, HeroEquipment, HeroEquipmentSlotKey, HeroItemId, HeroWeaponClass } from "./hero";
+import type { EnemyVisualPreset, HeroEquipment, HeroEquipmentSlotKey, HeroItemId, HeroWeaponClass, HeroWeaponEnchantments } from "./hero";
 
 export type ActionId =
   | "forward"
@@ -113,6 +113,7 @@ export interface FighterState {
   poisonScrollItemId?: HeroItemId;
   poisonTurns?: number;
   equipment?: HeroEquipment;
+  weaponEnchantments?: HeroWeaponEnchantments;
   armorSlots?: CombatArmorSlotState[];
   visualPreset?: EnemyVisualPreset;
 }
@@ -950,6 +951,7 @@ function cloneFighterState(fighter: FighterState): FighterState {
   return {
     ...fighter,
     equipment: fighter.equipment ? { ...fighter.equipment } : undefined,
+    weaponEnchantments: fighter.weaponEnchantments ? { ...fighter.weaponEnchantments } : undefined,
     armorSlots: fighter.armorSlots?.map((slot) => ({ ...slot })),
     visualPreset: fighter.visualPreset ? { ...fighter.visualPreset } : undefined,
   };

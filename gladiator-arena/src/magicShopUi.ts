@@ -5,8 +5,13 @@ import {
   HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_SCROLL_MAX_QUANTITY,
+  HERO_ITEM_CATALOG,
+  HERO_WATER_WEAPON_ENCHANT_PRICE,
   HERO_WARD_SCROLL_ITEM_ID,
+  canEnchantHeroActiveWeaponWithWater,
+  getActiveEnchantableHeroWeaponItemId,
   getHeroScrollQuantity,
+  getHeroWeaponEnchantment,
   type HeroItemId,
   type HeroState,
 } from "./hero";
@@ -16,6 +21,7 @@ import {
   MAGIC_SHOP_TITLE_FRAME_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
 import { applyUiLayoutTuning } from "./uiLayoutTuning";
@@ -49,6 +55,7 @@ export interface MagicShopApi {
 interface MagicShopOptions {
   getHero: () => HeroState;
   onBuy: (product: MagicProduct) => void;
+  onEnchantWeapon: () => void;
   onOpen?: () => void;
   onClose?: () => void;
   onLayoutChange?: (menuTopY?: number) => void;
@@ -67,6 +74,8 @@ interface MagicProductPreviewElements {
 interface MagicProductListItemElements {
   item: HTMLButtonElement;
 }
+
+type MagicShopMode = "home" | "scrolls" | "weaponEnchantment";
 
 const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
@@ -131,6 +140,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   let transitionTimer: number | undefined;
   let layoutFrame: number | undefined;
   let layoutSettleTimers: number[] = [];
+  let mode: MagicShopMode = "home";
   let selectedProductId = MAGIC_PRODUCTS[0]?.id ?? "";
 
   const shop = document.createElement("section");
@@ -191,6 +201,23 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   preview.className = "magic-shop__preview";
   preview.setAttribute("aria-label", "Selected scroll");
 
+  const home = document.createElement("div");
+  home.className = "magic-shop__home";
+  const scrollsModeButton = createMagicShopHomeAction({
+    label: "Scrolls",
+    detail: "Battle magic",
+    iconUrl: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+    onClick: () => setMode("scrolls"),
+  });
+  const enchantModeButton = createMagicShopHomeAction({
+    label: "Weapon Enchantment",
+    detail: "Water glow",
+    iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
+    onClick: () => setMode("weaponEnchantment"),
+  });
+
+  home.append(scrollsModeButton, enchantModeButton);
+
   const productList = document.createElement("div");
   productList.className = "magic-shop__list";
 
@@ -210,7 +237,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   backIcon.decoding = "async";
   backIcon.draggable = false;
   back.append(backIcon);
-  back.addEventListener("click", close);
+  back.addEventListener("click", handleBack);
 
   const previewElements = createMagicProductPreview();
   const productListItems = MAGIC_PRODUCTS.map((product) => [product.id, createMagicProductListItem(product)] as const);
@@ -218,7 +245,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
   preview.append(previewElements.card);
   productList.append(...productListItems.map(([, elements]) => elements.item));
-  content.append(productList, wallet);
+  content.append(home, productList, wallet);
   header.append(title);
   tray.append(header, content);
   menu.append(tray);
@@ -239,6 +266,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     clearTransitionTimer();
     options.onOpen?.();
     scheduleShopTransition(() => {
+      mode = "home";
       root.classList.add("city-menu--armory-open");
       root.classList.add("city-menu--magic-shop-open");
       shop.hidden = false;
@@ -260,6 +288,15 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
       shop.hidden = true;
       clearLayoutSync();
     });
+  }
+
+  function handleBack(): void {
+    if (mode !== "home") {
+      setMode("home");
+      return;
+    }
+
+    close();
   }
 
   function render(): void {
@@ -364,10 +401,38 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     return selectedProduct;
   }
 
+  function setMode(nextMode: MagicShopMode): void {
+    if (mode === nextMode) {
+      return;
+    }
+
+    mode = nextMode;
+    refreshHeroState(options.getHero());
+    scheduleLayoutSync();
+  }
+
   function refreshHeroState(hero: HeroState): void {
+    refreshMode();
     refreshWallet(hero);
-    refreshSelectedProduct(hero);
-    refreshProductList(hero);
+    if (mode === "scrolls") {
+      refreshSelectedProduct(hero);
+      refreshProductList(hero);
+      return;
+    }
+
+    if (mode === "weaponEnchantment") {
+      refreshWeaponEnchantment(hero);
+    }
+  }
+
+  function refreshMode(): void {
+    shop.classList.toggle("magic-shop--mode-home", mode === "home");
+    shop.classList.toggle("magic-shop--mode-scrolls", mode === "scrolls");
+    shop.classList.toggle("magic-shop--mode-enchantment", mode === "weaponEnchantment");
+    preview.hidden = mode === "home";
+    home.hidden = mode !== "home";
+    productList.hidden = mode !== "scrolls";
+    preview.setAttribute("aria-label", mode === "weaponEnchantment" ? "Weapon enchantment" : "Selected scroll");
   }
 
   function refreshWallet(hero: HeroState): void {
@@ -375,6 +440,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
     setTextContentIfChanged(goldAmount, String(hero.gold));
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
+    scrollCapacity.hidden = mode !== "scrolls";
     setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`);
     scrollCapacity.setAttribute("aria-label", `Scrolls ${scrollCount} of ${HERO_SCROLL_MAX_QUANTITY}`);
   }
@@ -395,6 +461,30 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     setTextContentIfChanged(previewElements.effect, product.effect);
     previewElements.buyButton.disabled = actionState === "no-gold" || actionState === "max";
     setTextContentIfChanged(previewElements.buyButton, actionLabel);
+  }
+
+  function refreshWeaponEnchantment(hero: HeroState): void {
+    const activeWeaponItemId = hero.equipment.weaponMain;
+    const enchantableItemId = getActiveEnchantableHeroWeaponItemId(hero);
+    const displayItemId = enchantableItemId ?? activeWeaponItemId;
+    const displayItem = displayItemId ? HERO_ITEM_CATALOG[displayItemId] : undefined;
+    const enchantment = getHeroWeaponEnchantment(hero.weaponEnchantments, enchantableItemId);
+    const canEnchant = canEnchantHeroActiveWeaponWithWater(hero);
+    const hasWaterEnchantment = enchantment?.element === "water";
+    const hasEnoughGold = hero.gold >= HERO_WATER_WEAPON_ENCHANT_PRICE;
+    const iconUrl = displayItemId ? getShopProductIconUrl([displayItemId]) : undefined;
+    const displayName = displayItem ? getShopProductDisplayName(displayItem.name) : "No Weapon";
+    const status = hasWaterEnchantment ? "Water" : "No Enchantment";
+    const effect = getWeaponEnchantmentEffectText(Boolean(activeWeaponItemId), Boolean(enchantableItemId), hasWaterEnchantment, hasEnoughGold);
+
+    previewElements.card.className = "magic-shop__preview-card magic-shop__preview-card--water";
+    previewElements.card.classList.toggle("magic-shop__preview-card--max", hasWaterEnchantment);
+    setImageSourceIfChanged(previewElements.icon, iconUrl ?? SHOP_CATEGORY_SWORD_ICON_ASSET_URL);
+    setTextContentIfChanged(previewElements.name, displayName);
+    setTextContentIfChanged(previewElements.rarity, status);
+    setTextContentIfChanged(previewElements.effect, effect);
+    previewElements.buyButton.disabled = !canEnchant;
+    setTextContentIfChanged(previewElements.buyButton, getWeaponEnchantmentActionLabel(Boolean(activeWeaponItemId), Boolean(enchantableItemId), hasWaterEnchantment, hasEnoughGold));
   }
 
   function refreshProductList(hero: HeroState): void {
@@ -448,7 +538,13 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     buyButton.className = "armory-shop__selected-buy magic-shop__buy";
     buyButton.type = "button";
     buyButton.addEventListener("click", () => {
-      if (!buyButton.disabled) {
+      if (buyButton.disabled) {
+        return;
+      }
+
+      if (mode === "weaponEnchantment") {
+        options.onEnchantWeapon();
+      } else {
         options.onBuy(getSelectedMagicProduct());
       }
     });
@@ -492,6 +588,32 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   return { open, close, render, syncHeroState };
 }
 
+function createMagicShopHomeAction(options: { label: string; detail: string; iconUrl: string; onClick: () => void }): HTMLButtonElement {
+  const button = document.createElement("button");
+  const icon = document.createElement("img");
+  const text = document.createElement("span");
+  const label = document.createElement("strong");
+  const detail = document.createElement("span");
+
+  button.className = "magic-shop__home-action";
+  button.type = "button";
+  button.addEventListener("click", options.onClick);
+  icon.className = "magic-shop__home-icon";
+  icon.src = options.iconUrl;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  text.className = "magic-shop__home-text";
+  label.className = "magic-shop__home-label";
+  detail.className = "magic-shop__home-detail";
+  label.textContent = options.label;
+  detail.textContent = options.detail;
+  text.append(label, detail);
+  button.append(icon, text);
+
+  return button;
+}
+
 function setTextContentIfChanged(node: HTMLElement, text: string): void {
   if (node.textContent === text) {
     return;
@@ -521,6 +643,46 @@ function appendPriceContent(priceNode: HTMLElement, price: number): void {
   amount.className = "armory-shop__price-amount";
   amount.textContent = String(price);
   priceNode.append(icon, amount);
+}
+
+function getWeaponEnchantmentEffectText(hasWeapon: boolean, isEnchantable: boolean, hasWaterEnchantment: boolean, hasEnoughGold: boolean): string {
+  if (!hasWeapon) {
+    return "Equip a melee weapon to enchant it";
+  }
+
+  if (!isEnchantable) {
+    return "Only melee weapons can be enchanted";
+  }
+
+  if (hasWaterEnchantment) {
+    return "This weapon carries water magic";
+  }
+
+  if (!hasEnoughGold) {
+    return `Water enchantment costs ${HERO_WATER_WEAPON_ENCHANT_PRICE} gold`;
+  }
+
+  return "Adds a blue water glow to this weapon";
+}
+
+function getWeaponEnchantmentActionLabel(hasWeapon: boolean, isEnchantable: boolean, hasWaterEnchantment: boolean, hasEnoughGold: boolean): string {
+  if (!hasWeapon) {
+    return "No Weapon";
+  }
+
+  if (!isEnchantable) {
+    return "Unavailable";
+  }
+
+  if (hasWaterEnchantment) {
+    return "Enchanted";
+  }
+
+  if (!hasEnoughGold) {
+    return "No Gold";
+  }
+
+  return `Enchant ${HERO_WATER_WEAPON_ENCHANT_PRICE}`;
 }
 
 function getMagicProductDisplayName(product: MagicProduct): string {

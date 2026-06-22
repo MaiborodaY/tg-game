@@ -108,6 +108,7 @@ export interface PromoteShieldImportsPayload {
 
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdVfxDefaultsEndpoint = "/__dust-arena/save-prod-vfx-defaults";
+const saveProdWeaponEnchantGlowDefaultsEndpoint = "/__dust-arena/save-prod-weapon-enchant-glow-defaults";
 const saveProdCityHeroTransformEndpoint = "/__dust-arena/save-prod-city-hero-transform";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
@@ -146,6 +147,7 @@ export async function saveProdVfxDefaults(tuning: ArenaDebugTuning): Promise<str
     body: JSON.stringify({
       slashArcs: tuning.slashArcs,
       wardShield: tuning.wardShield,
+      weaponEnchantGlow: tuning.weaponEnchantGlow,
     }),
   });
   const payload = await readResponse(response);
@@ -155,6 +157,23 @@ export async function saveProdVfxDefaults(tuning: ArenaDebugTuning): Promise<str
   }
 
   return payload.message ?? `Saved ${payload.updated ?? 0} VFX defaults.`;
+}
+
+export async function saveProdWeaponEnchantGlowDefaults(tuning: ArenaDebugTuning): Promise<string> {
+  const response = await fetch(saveProdWeaponEnchantGlowDefaultsEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      weaponEnchantGlow: tuning.weaponEnchantGlow,
+    }),
+  });
+  const payload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(payload.message ?? "Could not save weapon enchant glow defaults. Is the Vite dev server running?");
+  }
+
+  return payload.message ?? `Saved ${payload.updated ?? 0} weapon enchant glow defaults.`;
 }
 
 export async function saveProdCityHeroTransform(tuning: ArenaDebugTuning): Promise<string> {

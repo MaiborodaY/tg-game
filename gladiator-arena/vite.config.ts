@@ -718,6 +718,10 @@ type EquipmentUpdates = Record<EquipmentSlotKey, RigPartTuning>;
 type EquipmentItemUpdates = Record<string, RigPartTuning>;
 type SlashArcUpdates = Record<SlashArcAttackKey, SlashArcTuning>;
 type WardShieldUpdates = WardShieldTuning;
+type WeaponEnchantGlowElement = "water";
+type WeaponEnchantGlowBlendMode = "add" | "normal";
+type WeaponEnchantGlowLayer = "behind" | "over";
+type WeaponEnchantGlowUpdates = Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning>;
 type ActionButtonOffsetUpdates = Record<ActionButtonOffsetKey, ActionButtonOffsetTuning>;
 type ClassicActionButtonSlotUpdates = Record<ClassicActionWheelMode, Record<ClassicActionButtonSlotKey, ClassicActionButtonSlotTuning>>;
 
@@ -745,6 +749,20 @@ interface WardShieldTuning {
   absorbDurationMs: number;
   startScale: number;
   endScale: number;
+}
+
+interface WeaponEnchantGlowTuning {
+  color: number;
+  alpha: number;
+  scale: number;
+  blur: number;
+  blurStrength: number;
+  offsetX: number;
+  offsetY: number;
+  originX: number;
+  originY: number;
+  blendMode: WeaponEnchantGlowBlendMode;
+  layer: WeaponEnchantGlowLayer;
 }
 
 interface ActionButtonOffsetTuning {
@@ -1043,6 +1061,7 @@ function saveProdDefaultsPlugin(): Plugin {
           );
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
           const wardShieldUpdates = pickWardShieldDefaultUpdates(payload);
+          const weaponEnchantGlowUpdates = pickWeaponEnchantGlowDefaultUpdates(payload);
           const actionButtonOffsetUpdates = pickActionButtonOffsetDefaultUpdates(payload);
           const classicActionButtonSlotUpdates = pickClassicActionButtonSlotDefaultUpdates(payload);
           const [layoutSource, combatSource, debugTuningSource, settingsMenuSource] = await Promise.all([
@@ -1071,6 +1090,7 @@ function saveProdDefaultsPlugin(): Plugin {
           nextDebugTuningSource = applyEquipmentItemDefaultUpdates(nextDebugTuningSource, equipmentItemUpdates);
           nextDebugTuningSource = applySlashArcDefaultUpdates(nextDebugTuningSource, slashArcUpdates);
           nextDebugTuningSource = applyWardShieldDefaultUpdates(nextDebugTuningSource, wardShieldUpdates);
+          nextDebugTuningSource = applyWeaponEnchantGlowDefaultUpdates(nextDebugTuningSource, weaponEnchantGlowUpdates);
           nextDebugTuningSource = applyDebugTuningDefaultUpdates(nextDebugTuningSource, debugTuningDefaultUpdates);
 
           await Promise.all([
@@ -1084,7 +1104,7 @@ function saveProdDefaultsPlugin(): Plugin {
           ]);
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(bodyPartLayerUpdates).length} body art presets, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, ${Object.keys(slashArcUpdates).length} slash effect defaults, and ward shield defaults to prod.`,
+            message: `Saved ${Object.keys(layoutUpdates).length} layout defaults, ${Object.keys(combatUpdates).length} combat defaults, ${Object.keys(debugTuningDefaultUpdates).length} debug defaults, ${Object.keys(playerSettingDefaultUpdates).length} player setting defaults, ${Object.keys(actionButtonOffsetUpdates).length} action button offsets, ${Object.keys(classicActionButtonSlotUpdates).length} classic action wheels, ${Object.keys(rigPartUpdates).length} rig defaults, ${Object.keys(bodyPartLayerUpdates).length} body art presets, ${Object.keys(facePartUpdates).length} face defaults, ${bodyAnimationUpdates.key} body animation, ${Object.keys(equipmentUpdates).length} equipment defaults, ${Object.keys(equipmentItemUpdates).length} equipment item defaults, ${Object.keys(generatedEquipmentItemUpdates).length} generated equipment item defaults, ${Object.keys(slashArcUpdates).length} slash effect defaults, ward shield defaults, and weapon enchant glow defaults to prod.`,
             updated:
               Object.keys(layoutUpdates).length +
               Object.keys(combatUpdates).length +
@@ -1100,6 +1120,7 @@ function saveProdDefaultsPlugin(): Plugin {
               Object.keys(equipmentItemUpdates).length +
               Object.keys(generatedEquipmentItemUpdates).length +
               Object.keys(slashArcUpdates).length +
+              1 +
               1,
           });
         } catch (error) {
@@ -1117,19 +1138,44 @@ function saveProdDefaultsPlugin(): Plugin {
           const payload = await readJson(request);
           const slashArcUpdates = pickSlashArcDefaultUpdates(payload);
           const wardShieldUpdates = pickWardShieldDefaultUpdates(payload);
+          const weaponEnchantGlowUpdates = pickWeaponEnchantGlowDefaultUpdates(payload);
           const source = await readFile(debugTuningUrl, "utf8");
           let nextSource = applySlashArcDefaultUpdates(source, slashArcUpdates);
 
           nextSource = applyWardShieldDefaultUpdates(nextSource, wardShieldUpdates);
+          nextSource = applyWeaponEnchantGlowDefaultUpdates(nextSource, weaponEnchantGlowUpdates);
 
           await writeFile(debugTuningUrl, nextSource, "utf8");
           server.ws.send({ type: "full-reload" });
           sendJson(response, 200, {
-            message: `Saved ${Object.keys(slashArcUpdates).length} slash effect defaults and ward shield defaults to prod.`,
-            updated: Object.keys(slashArcUpdates).length + 1,
+            message: `Saved ${Object.keys(slashArcUpdates).length} slash effect defaults, ward shield defaults, and weapon enchant glow defaults to prod.`,
+            updated: Object.keys(slashArcUpdates).length + 2,
           });
         } catch (error) {
           sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save prod VFX defaults." });
+        }
+      });
+
+      server.middlewares.use("/__dust-arena/save-prod-weapon-enchant-glow-defaults", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save weapon enchant glow defaults." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const weaponEnchantGlowUpdates = pickWeaponEnchantGlowDefaultUpdates(payload);
+          const source = await readFile(debugTuningUrl, "utf8");
+          const nextSource = applyWeaponEnchantGlowDefaultUpdates(source, weaponEnchantGlowUpdates);
+
+          await writeFile(debugTuningUrl, nextSource, "utf8");
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, {
+            message: "Saved weapon enchant glow defaults to prod.",
+            updated: 1,
+          });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save weapon enchant glow defaults." });
         }
       });
 
@@ -2199,6 +2245,32 @@ export function pickWardShieldDefaultUpdates(payload: unknown): WardShieldUpdate
   }
 
   return readWardShieldTuning(wardShield);
+}
+
+export function applyWeaponEnchantGlowDefaultUpdates(source: string, updates: WeaponEnchantGlowUpdates): string {
+  const pattern = /export const DEFAULT_WEAPON_ENCHANT_GLOW_TUNING: Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning> = (?:\{[\s\S]*?\});/;
+
+  if (!pattern.test(source)) {
+    throw new Error("Could not find DEFAULT_WEAPON_ENCHANT_GLOW_TUNING in debugTuning.ts.");
+  }
+
+  return source.replace(pattern, formatWeaponEnchantGlowDefaults(updates));
+}
+
+export function pickWeaponEnchantGlowDefaultUpdates(payload: unknown): WeaponEnchantGlowUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with debug tuning values.");
+  }
+
+  const weaponEnchantGlow = (payload as { weaponEnchantGlow?: unknown }).weaponEnchantGlow;
+
+  if (!weaponEnchantGlow || typeof weaponEnchantGlow !== "object" || Array.isArray(weaponEnchantGlow)) {
+    throw new Error("Expected weaponEnchantGlow in debug tuning payload.");
+  }
+
+  return {
+    water: readWeaponEnchantGlowTuning(weaponEnchantGlow as object, "water"),
+  };
 }
 
 export function applyActionButtonOffsetDefaultUpdates(source: string, updates: ActionButtonOffsetUpdates): string {
@@ -5278,6 +5350,30 @@ function formatWardShieldDefault(updates: WardShieldUpdates): string {
   ].join("\n");
 }
 
+function formatWeaponEnchantGlowDefaults(updates: WeaponEnchantGlowUpdates): string {
+  const rows = (Object.keys(updates) as WeaponEnchantGlowElement[]).map((element) => {
+    const tuning = updates[element];
+
+    return [
+      `  ${element}: {`,
+      `    color: ${formatHexColor(tuning.color)},`,
+      `    alpha: ${formatNumber(tuning.alpha)},`,
+      `    scale: ${formatNumber(tuning.scale)},`,
+      `    blur: ${formatNumber(tuning.blur)},`,
+      `    blurStrength: ${formatNumber(tuning.blurStrength)},`,
+      `    offsetX: ${formatNumber(tuning.offsetX)},`,
+      `    offsetY: ${formatNumber(tuning.offsetY)},`,
+      `    originX: ${formatNumber(tuning.originX)},`,
+      `    originY: ${formatNumber(tuning.originY)},`,
+      `    blendMode: ${JSON.stringify(tuning.blendMode)},`,
+      `    layer: ${JSON.stringify(tuning.layer)},`,
+      "  },",
+    ].join("\n");
+  });
+
+  return `export const DEFAULT_WEAPON_ENCHANT_GLOW_TUNING: Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning> = {\n${rows.join("\n")}\n};`;
+}
+
 function formatActionButtonOffsetDefaults(updates: ActionButtonOffsetUpdates): string {
   const rows = actionButtonOffsetKeys.map((key) => {
     const offset = updates[key];
@@ -5950,6 +6046,30 @@ function readWardShieldTuning(wardShield: object): WardShieldTuning {
   };
 }
 
+function readWeaponEnchantGlowTuning(weaponEnchantGlow: object, element: WeaponEnchantGlowElement): WeaponEnchantGlowTuning {
+  const elementTuning = (weaponEnchantGlow as Partial<Record<WeaponEnchantGlowElement, unknown>>)[element];
+
+  if (!elementTuning || typeof elementTuning !== "object" || Array.isArray(elementTuning)) {
+    throw new Error(`Invalid weapon enchant glow tuning value: ${element}.`);
+  }
+
+  const tuning = elementTuning as Partial<Record<keyof WeaponEnchantGlowTuning, unknown>>;
+
+  return {
+    color: readFiniteWeaponEnchantGlowNumber(tuning, element, "color"),
+    alpha: readFiniteWeaponEnchantGlowNumber(tuning, element, "alpha"),
+    scale: readFiniteWeaponEnchantGlowNumber(tuning, element, "scale"),
+    blur: readFiniteWeaponEnchantGlowNumber(tuning, element, "blur"),
+    blurStrength: readFiniteWeaponEnchantGlowNumber(tuning, element, "blurStrength"),
+    offsetX: readFiniteWeaponEnchantGlowNumber(tuning, element, "offsetX"),
+    offsetY: readFiniteWeaponEnchantGlowNumber(tuning, element, "offsetY"),
+    originX: readFiniteWeaponEnchantGlowNumber(tuning, element, "originX"),
+    originY: readFiniteWeaponEnchantGlowNumber(tuning, element, "originY"),
+    blendMode: readWeaponEnchantGlowBlendMode(tuning, element),
+    layer: readWeaponEnchantGlowLayer(tuning, element),
+  };
+}
+
 function readFiniteRigPartNumber(payload: Partial<RigPartTuningPayload>, partKey: string, fieldName: keyof RigPartTuning): number {
   const value = payload[fieldName];
 
@@ -6041,6 +6161,46 @@ function readFiniteWardShieldNumber(payload: Partial<Record<keyof WardShieldTuni
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`Invalid ward shield tuning value: ${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readFiniteWeaponEnchantGlowNumber(
+  payload: Partial<Record<keyof WeaponEnchantGlowTuning, unknown>>,
+  element: WeaponEnchantGlowElement,
+  fieldName: keyof WeaponEnchantGlowTuning,
+): number {
+  const value = payload[fieldName];
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`Invalid weapon enchant glow tuning value: ${element}.${fieldName}.`);
+  }
+
+  return value;
+}
+
+function readWeaponEnchantGlowBlendMode(
+  payload: Partial<Record<keyof WeaponEnchantGlowTuning, unknown>>,
+  element: WeaponEnchantGlowElement,
+): WeaponEnchantGlowBlendMode {
+  const value = payload.blendMode;
+
+  if (value !== "add" && value !== "normal") {
+    throw new Error(`Invalid weapon enchant glow tuning value: ${element}.blendMode.`);
+  }
+
+  return value;
+}
+
+function readWeaponEnchantGlowLayer(
+  payload: Partial<Record<keyof WeaponEnchantGlowTuning, unknown>>,
+  element: WeaponEnchantGlowElement,
+): WeaponEnchantGlowLayer {
+  const value = payload.layer;
+
+  if (value !== "behind" && value !== "over") {
+    throw new Error(`Invalid weapon enchant glow tuning value: ${element}.layer.`);
   }
 
   return value;

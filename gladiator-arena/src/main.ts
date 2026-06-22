@@ -8,6 +8,7 @@ import {
   setPlayerBodyScaleBonus,
   setPlayerAppearance,
   setPlayerEquipment,
+  setPlayerWeaponEnchantments,
   type ArenaScene,
   type CitySceneApi,
   type HeroPortraitPreviewApi,
@@ -40,6 +41,7 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  enchantHeroActiveWeaponWithWater,
   createArenaBossEncounter,
   createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
@@ -1114,6 +1116,20 @@ function handleBowCapacityUpgrade(): void {
   cityHeroEquipmentMenu.render();
 }
 
+function handleMagicWeaponEnchant(): void {
+  const nextHero = enchantHeroActiveWeaponWithWater(hero);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  setPlayerWeaponEnchantments(hero.weaponEnchantments);
+  renderCityHero();
+  magicShop?.syncHeroState();
+  cityHeroEquipmentMenu.render();
+}
+
 function isArmoryShopProduct(product: CityShopProduct): product is ArmoryProduct {
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
 }
@@ -1408,6 +1424,7 @@ magicShopButton?.addEventListener("click", () => {
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 syncPlayerCityBodyScale();
+setPlayerWeaponEnchantments(hero.weaponEnchantments);
 renderCityHero();
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
 void finishInitialCityEntry();
@@ -1447,6 +1464,7 @@ if (cityMenu) {
   magicShop = mountMagicShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
+    onEnchantWeapon: handleMagicWeaponEnchant,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("magicShop"));

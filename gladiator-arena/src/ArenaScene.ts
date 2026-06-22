@@ -121,15 +121,20 @@ import {
   createDefaultHeroAppearance,
   createDefaultHeroEquipment,
   DEFAULT_ENEMY_VISUAL_PRESET,
+  ALL_HERO_ITEM_IDS,
   getHeroEquipmentBowWeaponClass,
   getHeroEquipmentWeaponClass,
+  getHeroWeaponEnchantment,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
   type HeroAppearance,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
+  type HeroItemDefinition,
   type HeroItemId,
   type HeroWeaponClass,
+  type HeroWeaponEnchantments,
+  type HeroWeaponEnchantmentElement,
 } from "./hero";
 import {
   getHeroAppearanceAsset,
@@ -137,8 +142,19 @@ import {
   HERO_APPEARANCE_ASSETS,
   resolveHeroAppearanceAssetUrl,
 } from "./appearanceAssetRegistry";
-import { AUTO_EQUIPMENT_ASSETS, AUTO_EQUIPMENT_ITEM_ASSET_KEYS, resolveEquipmentAssetUrl, type EquipmentItemAssetKeys } from "./equipmentAssetRegistry";
-import { GENERATED_EQUIPMENT_ASSETS, GENERATED_EQUIPMENT_ITEM_ASSET_KEYS, GENERATED_EQUIPMENT_ITEM_TUNING } from "./generated/equipmentItems.generated";
+import {
+  AUTO_EQUIPMENT_ASSETS,
+  AUTO_EQUIPMENT_ITEM_ASSET_KEYS,
+  AUTO_EQUIPMENT_ITEM_RECORDS,
+  resolveEquipmentAssetUrl,
+  type EquipmentItemAssetKeys,
+} from "./equipmentAssetRegistry";
+import {
+  GENERATED_EQUIPMENT_ASSETS,
+  GENERATED_EQUIPMENT_ITEM_ASSET_KEYS,
+  GENERATED_EQUIPMENT_ITEM_RECORDS,
+  GENERATED_EQUIPMENT_ITEM_TUNING,
+} from "./generated/equipmentItems.generated";
 import {
   beginDebugUndoGroup,
   debugTuning,
@@ -192,6 +208,7 @@ import {
   type SlashArcAttackKey,
   type SlashArcTuning,
   type WardShieldTuning,
+  type WeaponEnchantGlowTuning,
 } from "./debugTuning";
 import { emitDebugCharacterEquipmentDelta, emitDebugCharacterEquipmentSelect } from "./debugCharacterEquipmentBridge";
 import { getPlayerSettings, subscribePlayerSettings, type PlayerSettings } from "./settingsMenu";
@@ -216,6 +233,12 @@ type ShadowFilterTarget = FighterPart & {
   enableFilters?: () => ShadowFilterTarget;
   filters?: Phaser.Types.GameObjects.FiltersInternalExternal | null;
   setRenderFilters?: (value: boolean) => ShadowFilterTarget;
+};
+
+type RenderFilterTarget = Phaser.GameObjects.GameObject & {
+  enableFilters?: () => RenderFilterTarget;
+  filters?: Phaser.Types.GameObjects.FiltersInternalExternal | null;
+  setRenderFilters?: (value: boolean) => RenderFilterTarget;
 };
 
 interface FighterVisual {
@@ -340,6 +363,7 @@ interface PaperDollRig {
   equipment: PaperDollEquipment;
   equipmentAnchors: PaperDollEquipmentAnchors;
   equipmentState?: HeroEquipment;
+  weaponEnchantmentsState?: HeroWeaponEnchantments;
   faceParts: PaperDollFaceParts;
   appearance: PaperDollAppearance;
   castProp?: FighterPart;
@@ -437,6 +461,7 @@ interface PaperDollFighterOptions {
   bodyPartAssetKeys?: Partial<Record<PaperDollPartKey, string>>;
   weaponMainAssetKey?: string;
   weaponBowAssetKey?: string;
+  weaponEnchantments?: HeroWeaponEnchantments;
   appearanceAssetKeys?: Partial<Record<PaperDollAppearanceLayerKey, string>>;
   appearance?: HeroAppearance;
   equipment?: HeroEquipment;
@@ -749,6 +774,8 @@ const paperDollLinkedEquipmentSlots = new WeakMap<FighterPart, FighterPart[]>();
 const paperDollWeaponOverlayCrops = new WeakMap<FighterPart, PaperDollWeaponOverlayCrop>();
 const paperDollEquipmentSlotImageStates = new WeakMap<FighterPart, PaperDollEquipmentSlotImageState>();
 const paperDollEquipmentTransformStates = new WeakMap<FighterPart, PaperDollEquipmentTransformState>();
+const paperDollWeaponGlowImages = new WeakMap<FighterPart, Phaser.GameObjects.Image>();
+const paperDollWeaponGlowBlurFilters = new WeakMap<Phaser.GameObjects.Image, Phaser.Filters.Blur>();
 const paperDollAnimationRootBases = new WeakMap<FighterVisual, PaperDollAnimationRootBase>();
 const paperDollEquipmentLayerOrders = new WeakMap<Phaser.GameObjects.GameObject, number>();
 const DEFAULT_PAPER_DOLL_APPEARANCE: PaperDollAppearance = {
@@ -870,6 +897,8 @@ const CITY_CLOUD_FADE_DURATION = 180;
 const CITY_HERO_BODY_TINT = 0xf0b892;
 const CITY_HERO_EQUIPMENT_TINT = 0xd3ad84;
 const CITY_LIGHTING_TWEEN_DURATION = 260;
+const WEAPON_ENCHANTMENT_GLOW_BLUR_QUALITY = 0;
+const WEAPON_ENCHANTMENT_GLOW_BLUR_STEPS = 2;
 const HERO_PORTRAIT_VIEWER_SIZE = 112;
 const HERO_PORTRAIT_CENTER_X = HERO_PORTRAIT_VIEWER_SIZE / 2;
 const HERO_PORTRAIT_FEET_Y = 194;
@@ -1240,6 +1269,7 @@ function getHeroItemEquipmentAssetKeys(itemId: HeroItemId): PaperDollEquipmentAs
 export type CityTimeOfDay = "night" | "day";
 
 const PLAYER_EQUIPMENT_CHANGE_EVENT = "gladiator-player-equipment-change";
+const PLAYER_WEAPON_ENCHANTMENTS_CHANGE_EVENT = "gladiator-player-weapon-enchantments-change";
 const PLAYER_APPEARANCE_CHANGE_EVENT = "gladiator-player-appearance-change";
 const PLAYER_BODY_SCALE_CHANGE_EVENT = "gladiator-player-body-scale-change";
 const CITY_TIME_OF_DAY_CHANGE_EVENT = "gladiator-city-time-of-day-change";
@@ -1253,6 +1283,7 @@ let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
 let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
 let debugAnimationScene: DebugCharacterScene | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
+let activePlayerWeaponEnchantments: HeroWeaponEnchantments = {};
 let activePlayerAppearance: HeroAppearance = createDefaultHeroAppearance();
 let activePlayerBodyScaleBonus = 0;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
@@ -1265,6 +1296,8 @@ const paperDollAssetLoadPromisesByScene = new WeakMap<Phaser.Scene, Map<string, 
 
 const PAPER_DOLL_ASSETS_BY_KEY = createPaperDollAssetsByKey();
 const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
+  antialias: false,
+  antialiasGL: false,
   powerPreference: "low-power",
   roundPixels: true,
 };
@@ -1672,6 +1705,17 @@ export function setPlayerEquipment(equipment: HeroEquipment): void {
   notifyPlayerEquipmentChanged(changedSlots);
 }
 
+export function setPlayerWeaponEnchantments(enchantments: HeroWeaponEnchantments | undefined): void {
+  const nextEnchantments = { ...(enchantments ?? {}) };
+
+  if (areHeroWeaponEnchantmentsEqual(activePlayerWeaponEnchantments, nextEnchantments)) {
+    return;
+  }
+
+  activePlayerWeaponEnchantments = nextEnchantments;
+  notifyPlayerWeaponEnchantmentsChanged();
+}
+
 export function setPlayerAppearance(appearance: HeroAppearance): void {
   if (areHeroAppearanceStatesEqual(activePlayerAppearance, appearance)) {
     return;
@@ -1698,6 +1742,18 @@ function getCityPlayerBodyScaleMultiplier(liftProgress: number): number {
 
 function areHeroEquipmentStatesEqual(left: HeroEquipment, right: HeroEquipment): boolean {
   return HERO_EQUIPMENT_SLOT_KEYS.every((slotKey) => (left[slotKey] ?? null) === (right[slotKey] ?? null));
+}
+
+function areHeroWeaponEnchantmentsEqual(left: HeroWeaponEnchantments, right: HeroWeaponEnchantments): boolean {
+  const itemIds = new Set([...Object.keys(left), ...Object.keys(right)]);
+
+  for (const itemId of itemIds) {
+    if ((left[itemId]?.element ?? "") !== (right[itemId]?.element ?? "")) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function getChangedHeroEquipmentSlots(left: HeroEquipment, right: HeroEquipment): PaperDollEquipmentSlotKey[] {
@@ -1829,6 +1885,14 @@ function notifyPlayerEquipmentChanged(changedSlots?: readonly PaperDollEquipment
   window.dispatchEvent(new CustomEvent<PlayerEquipmentChangeDetail>(PLAYER_EQUIPMENT_CHANGE_EVENT, { detail: { changedSlots } }));
 }
 
+function notifyPlayerWeaponEnchantmentsChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(PLAYER_WEAPON_ENCHANTMENTS_CHANGE_EVENT));
+}
+
 function notifyPlayerAppearanceChanged(): void {
   if (typeof window === "undefined") {
     return;
@@ -1865,6 +1929,16 @@ function subscribePlayerEquipmentChanges(callback: (detail: PlayerEquipmentChang
   window.addEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, listener);
 
   return () => window.removeEventListener(PLAYER_EQUIPMENT_CHANGE_EVENT, listener);
+}
+
+function subscribePlayerWeaponEnchantmentsChanges(callback: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  window.addEventListener(PLAYER_WEAPON_ENCHANTMENTS_CHANGE_EVENT, callback);
+
+  return () => window.removeEventListener(PLAYER_WEAPON_ENCHANTMENTS_CHANGE_EVENT, callback);
 }
 
 function subscribePlayerAppearanceChanges(callback: (appearance: HeroAppearance) => void): () => void {
@@ -2423,6 +2497,7 @@ class CityHeroScene extends Phaser.Scene {
   private heroCamera?: Phaser.Cameras.Scene2D.Camera;
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
+  private unsubscribePlayerWeaponEnchantments?: () => void;
   private unsubscribePlayerAppearance?: () => void;
   private unsubscribePlayerBodyScale?: () => void;
   private unsubscribePlayerSettings?: () => void;
@@ -2472,6 +2547,9 @@ class CityHeroScene extends Phaser.Scene {
       this.previewEquipment = undefined;
       this.syncPlayerEquipment(changedSlots);
     });
+    this.unsubscribePlayerWeaponEnchantments = subscribePlayerWeaponEnchantmentsChanges(() => {
+      syncPaperDollWeaponEnchantments(this.fighter?.paperDollRig, ["weaponMain"], this.getDisplayedEquipment());
+    });
     this.unsubscribePlayerAppearance = subscribePlayerAppearanceChanges((appearance) => this.syncPlayerAppearance(appearance));
     this.unsubscribePlayerBodyScale = subscribePlayerBodyScaleChanges(() => this.syncFighterLayout());
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
@@ -2492,6 +2570,7 @@ class CityHeroScene extends Phaser.Scene {
       this.heroCamera = undefined;
       this.unsubscribeDebugTuning?.();
       this.unsubscribePlayerEquipment?.();
+      this.unsubscribePlayerWeaponEnchantments?.();
       this.unsubscribePlayerAppearance?.();
       this.unsubscribePlayerBodyScale?.();
       this.unsubscribePlayerSettings?.();
@@ -3400,6 +3479,110 @@ function createAnimationPreviewCombatFighterState(equipment: HeroEquipment): Fig
   };
 }
 
+function createDebugWeaponEnchantGlowPreviewFighterState(equipment: HeroEquipment): FighterState {
+  const mainWeaponClass = getHeroEquipmentWeaponClass(equipment);
+
+  return {
+    ...createAnimationPreviewCombatFighterState(equipment),
+    weaponClass: mainWeaponClass,
+    mainWeaponClass,
+    bowWeaponClass: undefined,
+    bowShotsRemaining: 0,
+    bowMaxShots: 0,
+    weaponEnchantments: createDebugWeaponEnchantGlowPreviewEnchantments(equipment),
+  };
+}
+
+function createDebugWeaponEnchantGlowPreviewEnchantments(equipment: HeroEquipment | undefined): HeroWeaponEnchantments {
+  const itemId = equipment?.weaponMain;
+
+  return itemId ? { [itemId]: { element: "water" } } : {};
+}
+
+function createDebugWeaponEnchantGlowPreviewEquipment(): HeroEquipment {
+  const equipment = createDefaultHeroEquipment();
+  const itemId = getDebugWeaponEnchantGlowPreviewWeaponItemId();
+
+  if (itemId) {
+    equipment.weaponMain = itemId;
+  }
+
+  return equipment;
+}
+
+function getDebugWeaponEnchantGlowPreviewWeaponItemId(): HeroItemId | undefined {
+  const selectedItemId = debugTuning.weaponEnchantGlowPreviewWeaponItemId;
+
+  if (isDebugWeaponEnchantGlowPreviewWeaponItemId(selectedItemId)) {
+    return selectedItemId;
+  }
+
+  return getDebugWeaponEnchantGlowPreviewWeaponItemIds()[0];
+}
+
+function isDebugWeaponEnchantGlowPreviewWeaponItemId(itemId: unknown): itemId is HeroItemId {
+  if (typeof itemId !== "string") {
+    return false;
+  }
+
+  const item = getDebugWeaponEnchantGlowPreviewItemDefinition(itemId);
+
+  return Boolean(item && item.kind === "weapon" && item.equipmentSlot === "weaponMain" && item.weaponClass !== "bow" && item.weaponClass !== "shuriken");
+}
+
+function getDebugWeaponEnchantGlowPreviewWeaponItemIds(): HeroItemId[] {
+  const itemIds = [
+    ...ALL_HERO_ITEM_IDS,
+    ...AUTO_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id),
+    ...GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id),
+  ];
+
+  return [...new Set(itemIds)].filter(isDebugWeaponEnchantGlowPreviewWeaponItemId).sort(compareDebugWeaponEnchantGlowPreviewWeapons);
+}
+
+function getDebugWeaponEnchantGlowPreviewItemDefinition(itemId: HeroItemId): HeroItemDefinition | undefined {
+  return (
+    HERO_ITEM_CATALOG[itemId] ??
+    AUTO_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId)?.item ??
+    GENERATED_EQUIPMENT_ITEM_RECORDS.find((record) => record.item.id === itemId)?.item
+  );
+}
+
+function compareDebugWeaponEnchantGlowPreviewWeapons(leftItemId: HeroItemId, rightItemId: HeroItemId): number {
+  const left = getDebugWeaponEnchantGlowPreviewItemDefinition(leftItemId);
+  const right = getDebugWeaponEnchantGlowPreviewItemDefinition(rightItemId);
+  const leftClass = left?.weaponClass ?? "";
+  const rightClass = right?.weaponClass ?? "";
+
+  return (
+    leftClass.localeCompare(rightClass) ||
+    (left?.name ?? leftItemId).localeCompare(right?.name ?? rightItemId) ||
+    leftItemId.localeCompare(rightItemId)
+  );
+}
+
+function getDebugWeaponEnchantGlowPreviewTuningKey(): string {
+  const itemId = getDebugWeaponEnchantGlowPreviewWeaponItemId() ?? "";
+  const element = debugTuning.selectedWeaponEnchantGlowElement;
+  const tuning = debugTuning.weaponEnchantGlow[element];
+
+  return [
+    itemId,
+    element,
+    tuning.color,
+    tuning.alpha,
+    tuning.scale,
+    tuning.blur,
+    tuning.blurStrength,
+    tuning.offsetX,
+    tuning.offsetY,
+    tuning.originX,
+    tuning.originY,
+    tuning.blendMode,
+    tuning.layer,
+  ].join("|");
+}
+
 function getAnimationPreviewCombatWeaponClass(
   equipment: HeroEquipment,
   mainWeaponClass: HeroWeaponClass,
@@ -3568,7 +3751,7 @@ export function mountHeroPortraitPreview(
 }
 
 interface DebugCharacterViewerOptions {
-  mode?: "debug" | "shop" | "animation";
+  mode?: "debug" | "shop" | "animation" | "enchantGlow";
 }
 
 export function previewDebugAnimationWardShield(): void {
@@ -3585,6 +3768,7 @@ class DebugCharacterScene extends Phaser.Scene {
   private equipmentDragState?: DebugEquipmentDragState;
   private selectedEquipment?: Pick<DebugEquipmentDragState, "slotKey" | "itemId">;
   private animationPreviewEquipmentKey = "";
+  private weaponEnchantGlowPreviewTuningKey = "";
   private unsubscribeDebugTuning?: () => void;
   private unsubscribePlayerEquipment?: () => void;
   private unsubscribePlayerSettings?: () => void;
@@ -3608,16 +3792,24 @@ class DebugCharacterScene extends Phaser.Scene {
     if (this.viewerMode === "animation") {
       debugAnimationScene = this;
     }
-    if (this.viewerMode === "debug") {
+    if (this.viewerMode === "debug" || this.viewerMode === "enchantGlow") {
       drawDebugCharacterBackdrop(this);
     }
+    const previewEquipment = this.getPreviewEquipment();
     this.fighter = createPaperDollFighter(this, {
-      ...createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0, this.getPreviewEquipment()),
+      ...(
+        this.viewerMode === "enchantGlow"
+          ? createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0, previewEquipment, activePlayerAppearance, {
+              weaponEnchantments: createDebugWeaponEnchantGlowPreviewEnchantments(previewEquipment),
+              usesPlayerEquipment: false,
+            })
+          : createPlayerPaperDollOptions(DEBUG_CHARACTER_CENTER_X, 0, previewEquipment)
+      ),
       castsShadow: false,
-      enableSelectionHighlights: this.viewerMode !== "shop",
+      enableSelectionHighlights: this.viewerMode !== "shop" && this.viewerMode !== "enchantGlow",
     });
     this.fighter.name.setVisible(false);
-    if (this.viewerMode !== "shop") {
+    if (this.viewerMode !== "shop" && this.viewerMode !== "enchantGlow") {
       if (this.viewerMode === "animation") {
         enableDebugPaperDollAnimationWeaponPicking(this.fighter.paperDollRig, (slotKey, pointer, event) => this.beginAnimationWeaponDrag(slotKey, pointer, event));
       }
@@ -3673,11 +3865,15 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
-    if (this.viewerMode === "shop") {
+    if (this.viewerMode === "shop" || this.viewerMode === "enchantGlow") {
       const idle = getActiveBodyAnimation("idle", this.fighter.paperDollRig?.bodyPresetKey);
 
       if (idle.enabled) {
         applyBodyAnimation(this.fighter, time, idle);
+      }
+
+      if (this.viewerMode === "enchantGlow") {
+        this.syncWeaponEnchantGlowTuningIfNeeded();
       }
 
       return;
@@ -3717,6 +3913,11 @@ class DebugCharacterScene extends Phaser.Scene {
     const layout = this.getDebugCharacterLayout();
 
     applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+    if (this.viewerMode === "enchantGlow") {
+      this.syncWeaponEnchantGlowPreview();
+      return;
+    }
+
     this.syncAnimationPreviewCombatEquipment();
     this.syncPreviewArmorAlpha();
     if (this.viewerMode === "animation" && debugTuning.animationEditMode === "preview") {
@@ -3764,13 +3965,19 @@ class DebugCharacterScene extends Phaser.Scene {
       return;
     }
 
+    if (this.viewerMode === "enchantGlow") {
+      this.animationPreviewEquipmentKey = "";
+      this.syncPreviewEquipment(changedSlots);
+      return;
+    }
+
     this.sync();
     syncPaperDollEquipmentState(this.fighter?.paperDollRig, changedSlots, equipment);
     this.syncPreviewArmorAlpha();
   }
 
   private syncPreviewEquipment(slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS): void {
-    if (this.viewerMode !== "animation") {
+    if (this.viewerMode !== "animation" && this.viewerMode !== "enchantGlow") {
       return;
     }
 
@@ -3790,6 +3997,11 @@ class DebugCharacterScene extends Phaser.Scene {
         return;
       }
 
+      if (this.viewerMode === "enchantGlow") {
+        this.syncWeaponEnchantGlowPreview(slotKeys);
+        return;
+      }
+
       this.syncAnimationPreviewCombatEquipment(slotKeys);
     });
   }
@@ -3806,6 +4018,40 @@ class DebugCharacterScene extends Phaser.Scene {
     this.syncAnimationWeaponDragPicking();
   }
 
+  private syncWeaponEnchantGlowPreview(slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS): void {
+    if (this.viewerMode !== "enchantGlow" || !this.fighter) {
+      return;
+    }
+
+    const equipment = this.getPreviewEquipment() ?? createDefaultHeroEquipment();
+
+    syncFighterCombatEquipment(this.fighter, createDebugWeaponEnchantGlowPreviewFighterState(equipment), slotKeys);
+    this.weaponEnchantGlowPreviewTuningKey = getDebugWeaponEnchantGlowPreviewTuningKey();
+  }
+
+  private syncWeaponEnchantGlowTuningIfNeeded(): void {
+    if (this.viewerMode !== "enchantGlow" || !this.fighter) {
+      return;
+    }
+
+    const tuningKey = getDebugWeaponEnchantGlowPreviewTuningKey();
+
+    if (tuningKey === this.weaponEnchantGlowPreviewTuningKey) {
+      return;
+    }
+
+    const equipment = this.getPreviewEquipment() ?? createDefaultHeroEquipment();
+    const equipmentKey = getAnimationPreviewEquipmentKey(equipment);
+
+    if (equipmentKey !== this.animationPreviewEquipmentKey) {
+      this.syncPreviewEquipment(["weaponMain"]);
+      return;
+    }
+
+    this.weaponEnchantGlowPreviewTuningKey = tuningKey;
+    syncPaperDollWeaponEnchantments(this.fighter.paperDollRig, ["weaponMain"], equipment, createDebugWeaponEnchantGlowPreviewEnchantments(equipment));
+  }
+
   private syncAnimationWeaponDragPicking(): void {
     if (this.viewerMode !== "animation") {
       return;
@@ -3815,6 +4061,10 @@ class DebugCharacterScene extends Phaser.Scene {
   }
 
   private getPreviewEquipment(): HeroEquipment | undefined {
+    if (this.viewerMode === "enchantGlow") {
+      return createDebugWeaponEnchantGlowPreviewEquipment();
+    }
+
     if (this.viewerMode !== "animation") {
       return activePlayerEquipment;
     }
@@ -4890,7 +5140,18 @@ function getArenaBackgroundLayerTuningPrefix(tierId: ArenaBackgroundTuningTierId
   }
 }
 
-function createPlayerPaperDollOptions(x: number, y: number, equipment = activePlayerEquipment, appearance = activePlayerAppearance): PaperDollFighterOptions {
+interface PlayerPaperDollOptionOverrides {
+  weaponEnchantments?: HeroWeaponEnchantments;
+  usesPlayerEquipment?: boolean;
+}
+
+function createPlayerPaperDollOptions(
+  x: number,
+  y: number,
+  equipment = activePlayerEquipment,
+  appearance = activePlayerAppearance,
+  overrides: PlayerPaperDollOptionOverrides = {},
+): PaperDollFighterOptions {
   const bodyPresetKey = debugTuning.paperDollBodyPreset;
   const bodyPreset = getPaperDollBodyPreset(bodyPresetKey);
   const equipmentAssetKeys = createPlayerEquipmentAssetKeys(equipment);
@@ -4912,7 +5173,9 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
     appearance: { ...appearance },
     appearanceAssetKeys,
     ...equipmentAssetKeys,
-    usesPlayerEquipment: true,
+    equipment: equipment ? { ...equipment } : undefined,
+    weaponEnchantments: overrides.weaponEnchantments ?? { ...activePlayerWeaponEnchantments },
+    usesPlayerEquipment: overrides.usesPlayerEquipment ?? true,
     bodyPartAssetKeys: bodyPreset.bodyPartAssetKeys,
   };
 }
@@ -4940,6 +5203,7 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
     bodyPartAssetKeys: bodyPreset.bodyPartAssetKeys,
     ...createPlayerEquipmentAssetKeys(equipment),
     equipment,
+    weaponEnchantments: enemy?.weaponEnchantments ? { ...enemy.weaponEnchantments } : undefined,
   };
 }
 
@@ -5073,6 +5337,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     equipment,
     equipmentAnchors,
     equipmentState: options.equipment ? { ...options.equipment } : undefined,
+    weaponEnchantmentsState: options.weaponEnchantments ? { ...options.weaponEnchantments } : undefined,
     faceParts,
     appearance,
     castProp,
@@ -5984,6 +6249,172 @@ function syncPaperDollEquipmentVisibility(
   if (shouldSyncShadowEquipment) {
     syncPaperDollShadowSilhouette(shadow, visibility, visibilitySlotKeys);
   }
+  syncPaperDollWeaponEnchantments(rig, visibilitySlotKeys, equipmentOverride);
+}
+
+function syncPaperDollWeaponEnchantments(
+  rig: PaperDollRig | undefined,
+  slotKeys: readonly PaperDollEquipmentSlotKey[] = PAPER_DOLL_EQUIPMENT_SLOT_KEYS,
+  equipmentOverride?: HeroEquipment,
+  enchantmentsOverride?: HeroWeaponEnchantments,
+): void {
+  if (!rig) {
+    return;
+  }
+
+  const equipment = equipmentOverride ?? (rig.usesPlayerEquipment ? activePlayerEquipment : rig.equipmentState);
+  const enchantments = enchantmentsOverride ?? (rig.usesPlayerEquipment ? activePlayerWeaponEnchantments : rig.weaponEnchantmentsState);
+
+  if (!equipment) {
+    return;
+  }
+
+  slotKeys.forEach((slotKey) => {
+    if (slotKey !== "weaponMain") {
+      return;
+    }
+
+    syncPaperDollWeaponSlotGlow(rig.equipment[slotKey], slotKey, equipment, enchantments);
+    getLinkedPaperDollEquipmentSlots(rig.equipment[slotKey]).forEach((linkedSlot) => {
+      syncPaperDollWeaponSlotGlow(linkedSlot, slotKey, equipment, enchantments);
+    });
+  });
+}
+
+function syncPaperDollWeaponSlotGlow(
+  slot: FighterPart | undefined,
+  slotKey: PaperDollEquipmentSlotKey,
+  equipment: HeroEquipment,
+  enchantments?: HeroWeaponEnchantments,
+): void {
+  if (!slot || slotKey !== "weaponMain") {
+    return;
+  }
+
+  const itemId = equipment[slotKey];
+  const enchantment = getHeroWeaponEnchantment(enchantments, itemId);
+  const image = getPaperDollEquipmentSlotImage(slot);
+  const glow = getOrCreatePaperDollWeaponGlowImage(slot, image);
+
+  if (!image || !glow || !enchantment) {
+    glow?.setVisible(false);
+    return;
+  }
+
+  const textureKey = image.texture.key;
+  const tuning = getWeaponEnchantGlowTuning(enchantment.element);
+
+  if (glow.texture.key !== textureKey || glow.frame.name !== image.frame.name) {
+    glow.setTexture(textureKey, image.frame.name);
+  }
+  glow.setPosition(image.x + tuning.offsetX, image.y + tuning.offsetY);
+  glow.setOrigin(tuning.originX, tuning.originY);
+  glow.setScale(image.scaleX * tuning.scale, image.scaleY * tuning.scale);
+  glow.setAngle(image.angle);
+  glow.setTint(tuning.color);
+  glow.setAlpha(tuning.alpha);
+  glow.setBlendMode(getWeaponEnchantGlowBlendMode(tuning));
+  syncPaperDollWeaponGlowLayer(slot as Phaser.GameObjects.Container, glow, tuning.layer);
+  applyPaperDollWeaponGlowBlur(glow, tuning);
+  if (paperDollWeaponOverlayCrops.has(slot)) {
+    applyPaperDollWeaponTopOverlayCrop(glow, getPaperDollWeaponOverlayCrop(slot, textureKey));
+  }
+  glow.setVisible(true);
+}
+
+function getWeaponEnchantGlowTuning(element: HeroWeaponEnchantmentElement): WeaponEnchantGlowTuning {
+  return debugTuning.weaponEnchantGlow[element];
+}
+
+function getWeaponEnchantGlowBlendMode(tuning: WeaponEnchantGlowTuning): number {
+  return tuning.blendMode === "normal" ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD;
+}
+
+function syncPaperDollWeaponGlowLayer(
+  slotContainer: Phaser.GameObjects.Container,
+  glow: Phaser.GameObjects.Image,
+  layer: WeaponEnchantGlowTuning["layer"],
+): void {
+  if (layer === "behind") {
+    slotContainer.sendToBack(glow);
+    return;
+  }
+
+  slotContainer.bringToTop(glow);
+}
+
+function applyPaperDollWeaponGlowBlur(glow: Phaser.GameObjects.Image, tuning: WeaponEnchantGlowTuning): void {
+  const target = glow as RenderFilterTarget;
+  const currentFilter = paperDollWeaponGlowBlurFilters.get(glow);
+
+  if (tuning.blur <= 0 || tuning.blurStrength <= 0) {
+    const filters = target.filters?.internal;
+
+    if (currentFilter && filters) {
+      filters.remove(currentFilter, true);
+    } else {
+      currentFilter?.destroy();
+    }
+
+    paperDollWeaponGlowBlurFilters.delete(glow);
+    target.setRenderFilters?.(false);
+    return;
+  }
+
+  if (!target.enableFilters) {
+    return;
+  }
+
+  target.enableFilters();
+  const filters = target.filters?.internal;
+
+  if (!filters) {
+    return;
+  }
+
+  target.setRenderFilters?.(true);
+
+  if (currentFilter) {
+    currentFilter.quality = WEAPON_ENCHANTMENT_GLOW_BLUR_QUALITY;
+    currentFilter.x = tuning.blur;
+    currentFilter.y = tuning.blur;
+    currentFilter.strength = tuning.blurStrength;
+    currentFilter.color = tuning.color;
+    currentFilter.steps = WEAPON_ENCHANTMENT_GLOW_BLUR_STEPS;
+    return;
+  }
+
+  const nextFilter = filters.addBlur(
+    WEAPON_ENCHANTMENT_GLOW_BLUR_QUALITY,
+    tuning.blur,
+    tuning.blur,
+    tuning.blurStrength,
+    tuning.color,
+    WEAPON_ENCHANTMENT_GLOW_BLUR_STEPS,
+  );
+
+  paperDollWeaponGlowBlurFilters.set(glow, nextFilter);
+}
+
+function getOrCreatePaperDollWeaponGlowImage(
+  slot: FighterPart,
+  sourceImage: Phaser.GameObjects.Image | undefined,
+): Phaser.GameObjects.Image | undefined {
+  let glow = paperDollWeaponGlowImages.get(slot);
+
+  if (glow || !sourceImage) {
+    return glow;
+  }
+
+  const slotContainer = slot as Phaser.GameObjects.Container;
+
+  glow = slotContainer.scene.add.image(sourceImage.x, sourceImage.y, sourceImage.texture.key, sourceImage.frame.name);
+  glow.setOrigin(sourceImage.originX, sourceImage.originY);
+  glow.setVisible(false);
+  slotContainer.add(glow);
+  paperDollWeaponGlowImages.set(slot, glow);
+
+  return glow;
 }
 
 function getPreferredPaperDollWeaponSlot(
@@ -8302,7 +8733,9 @@ function syncFighterCombatEquipment(
   }
 
   rig.equipmentState = equipment;
+  rig.weaponEnchantmentsState = state.weaponEnchantments ? { ...state.weaponEnchantments } : undefined;
   syncPaperDollEquipmentState(rig, slotKeys, equipment);
+  syncPaperDollWeaponEnchantments(rig, slotKeys, equipment, state.weaponEnchantments);
   syncFighterCombatWeaponVisibility(rig, state);
   if (rig.shadow) {
     syncFighterCombatWeaponVisibility(rig.shadow, state);

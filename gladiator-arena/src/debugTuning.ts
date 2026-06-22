@@ -324,6 +324,25 @@ export interface WardShieldTuning {
   endScale: number;
 }
 
+export const WEAPON_ENCHANT_GLOW_ELEMENTS = ["water"] as const;
+export type WeaponEnchantGlowElement = (typeof WEAPON_ENCHANT_GLOW_ELEMENTS)[number];
+export type WeaponEnchantGlowBlendMode = "add" | "normal";
+export type WeaponEnchantGlowLayer = "behind" | "over";
+
+export interface WeaponEnchantGlowTuning {
+  color: number;
+  alpha: number;
+  scale: number;
+  blur: number;
+  blurStrength: number;
+  offsetX: number;
+  offsetY: number;
+  originX: number;
+  originY: number;
+  blendMode: WeaponEnchantGlowBlendMode;
+  layer: WeaponEnchantGlowLayer;
+}
+
 export interface ActionButtonOffsetTuning {
   x: number;
   y: number;
@@ -603,6 +622,9 @@ export interface ArenaDebugTuning {
   selectedSlashArc: SlashArcAttackKey;
   slashArcs: Record<SlashArcAttackKey, SlashArcTuning>;
   wardShield: WardShieldTuning;
+  selectedWeaponEnchantGlowElement: WeaponEnchantGlowElement;
+  weaponEnchantGlowPreviewWeaponItemId: string | null;
+  weaponEnchantGlow: Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning>;
 }
 
 export const defaultRigPartTuning: RigPartTuning = {
@@ -10560,6 +10582,22 @@ export const DEFAULT_WARD_SHIELD_TUNING: WardShieldTuning = {
   endScale: 1.08,
 };
 
+export const DEFAULT_WEAPON_ENCHANT_GLOW_TUNING: Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning> = {
+  water: {
+    color: 0x22b8ff,
+    alpha: 1,
+    scale: 1.07,
+    blur: 0,
+    blurStrength: 0,
+    offsetX: 0,
+    offsetY: 11,
+    originX: 0.5,
+    originY: 0.95,
+    blendMode: "add",
+    layer: "over",
+  },
+};
+
 const DEFAULT_DYNAMIC_ARENA_BACKGROUND_LAYERS: Record<ArenaBackgroundLayerRole, ArenaBackgroundLayerTuning> = {
   back: {
     layout: { x: 0, y: 0, scale: 1, alpha: 1, visible: true },
@@ -11577,6 +11615,9 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   selectedSlashArc: "light",
   slashArcs: cloneSlashArcs(DEFAULT_SLASH_ARCS),
   wardShield: { ...DEFAULT_WARD_SHIELD_TUNING },
+  selectedWeaponEnchantGlowElement: "water",
+  weaponEnchantGlowPreviewWeaponItemId: null,
+  weaponEnchantGlow: cloneWeaponEnchantGlowTunings(DEFAULT_WEAPON_ENCHANT_GLOW_TUNING),
 };
 
 const storageKey = "dust-arena-debug-tuning";
@@ -11971,6 +12012,14 @@ export function normalizeDebugTuning(input: Partial<ArenaDebugTuning>): ArenaDeb
     selectedSlashArc: isSlashArcAttackKey(input.selectedSlashArc) ? input.selectedSlashArc : defaultDebugTuning.selectedSlashArc,
     slashArcs: normalizeSlashArcs(input.slashArcs),
     wardShield: normalizeWardShield(input.wardShield, DEFAULT_WARD_SHIELD_TUNING),
+    selectedWeaponEnchantGlowElement: isWeaponEnchantGlowElement(input.selectedWeaponEnchantGlowElement)
+      ? input.selectedWeaponEnchantGlowElement
+      : defaultDebugTuning.selectedWeaponEnchantGlowElement,
+    weaponEnchantGlowPreviewWeaponItemId:
+      typeof input.weaponEnchantGlowPreviewWeaponItemId === "string" && input.weaponEnchantGlowPreviewWeaponItemId.trim()
+        ? input.weaponEnchantGlowPreviewWeaponItemId.trim().slice(0, 120)
+        : defaultDebugTuning.weaponEnchantGlowPreviewWeaponItemId,
+    weaponEnchantGlow: normalizeWeaponEnchantGlowTunings(input.weaponEnchantGlow),
   };
 }
 
@@ -12099,6 +12148,15 @@ function cloneSlashArcs(source: Record<SlashArcAttackKey, SlashArcTuning>): Reco
   return Object.fromEntries(SLASH_ARC_ATTACK_KEYS.map((key) => [key, { ...source[key] }])) as Record<SlashArcAttackKey, SlashArcTuning>;
 }
 
+function cloneWeaponEnchantGlowTunings(
+  source: Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning>,
+): Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning> {
+  return Object.fromEntries(WEAPON_ENCHANT_GLOW_ELEMENTS.map((element) => [element, { ...source[element] }])) as Record<
+    WeaponEnchantGlowElement,
+    WeaponEnchantGlowTuning
+  >;
+}
+
 function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
   return {
     ...source,
@@ -12115,6 +12173,7 @@ function cloneDebugTuning(source: ArenaDebugTuning): ArenaDebugTuning {
     bodyAnimations: cloneBodyAnimations(source.bodyAnimations),
     slashArcs: cloneSlashArcs(source.slashArcs),
     wardShield: { ...source.wardShield },
+    weaponEnchantGlow: cloneWeaponEnchantGlowTunings(source.weaponEnchantGlow),
   };
 }
 
@@ -12860,6 +12919,47 @@ function normalizeWardShield(input: unknown, fallback: WardShieldTuning): WardSh
     startScale: clampNumber(source.startScale, 0.1, 3, fallback.startScale),
     endScale: clampNumber(source.endScale, 0.1, 3, fallback.endScale),
   };
+}
+
+function normalizeWeaponEnchantGlowTunings(input: unknown): Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning> {
+  const source = typeof input === "object" && input !== null ? (input as Partial<Record<WeaponEnchantGlowElement, unknown>>) : {};
+
+  return Object.fromEntries(
+    WEAPON_ENCHANT_GLOW_ELEMENTS.map((element) => [
+      element,
+      normalizeWeaponEnchantGlowTuning(source[element], DEFAULT_WEAPON_ENCHANT_GLOW_TUNING[element]),
+    ]),
+  ) as Record<WeaponEnchantGlowElement, WeaponEnchantGlowTuning>;
+}
+
+function normalizeWeaponEnchantGlowTuning(input: unknown, fallback: WeaponEnchantGlowTuning): WeaponEnchantGlowTuning {
+  const source = typeof input === "object" && input !== null ? (input as Partial<WeaponEnchantGlowTuning>) : {};
+
+  return {
+    color: Math.round(clampNumber(source.color, 0, 0xffffff, fallback.color)),
+    alpha: clampNumber(source.alpha, 0, 1, fallback.alpha),
+    scale: clampNumber(source.scale, 0.1, 3, fallback.scale),
+    blur: clampNumber(source.blur, 0, 8, fallback.blur),
+    blurStrength: clampNumber(source.blurStrength, 0, 3, fallback.blurStrength),
+    offsetX: clampNumber(source.offsetX, -120, 120, fallback.offsetX),
+    offsetY: clampNumber(source.offsetY, -120, 120, fallback.offsetY),
+    originX: clampNumber(source.originX, -0.5, 1.5, fallback.originX),
+    originY: clampNumber(source.originY, -0.5, 1.5, fallback.originY),
+    blendMode: isWeaponEnchantGlowBlendMode(source.blendMode) ? source.blendMode : fallback.blendMode,
+    layer: isWeaponEnchantGlowLayer(source.layer) ? source.layer : fallback.layer,
+  };
+}
+
+function isWeaponEnchantGlowElement(value: unknown): value is WeaponEnchantGlowElement {
+  return typeof value === "string" && WEAPON_ENCHANT_GLOW_ELEMENTS.includes(value as WeaponEnchantGlowElement);
+}
+
+function isWeaponEnchantGlowBlendMode(value: unknown): value is WeaponEnchantGlowBlendMode {
+  return value === "add" || value === "normal";
+}
+
+function isWeaponEnchantGlowLayer(value: unknown): value is WeaponEnchantGlowLayer {
+  return value === "behind" || value === "over";
 }
 
 function normalizeIdleActiveParts(input: unknown, fallback = createDefaultIdleActiveParts()): Record<RigPartKey, boolean> {
