@@ -7,10 +7,11 @@
   --burnt: #7a2d16;
   --red: #c83b2d;
   --teal: #42b7aa;
-  --ui-hud-button-frame: url("./assets/ui/panels/hud-button-frame.webp");
-  --ui-hud-portrait-frame: url("./assets/ui/panels/hud-portrait-frame.webp");
-  --ui-hud-wide-panel-frame: url("./assets/ui/panels/hud-wide-panel-frame.webp");
-  --ui-hud-xp-bar-frame: url("./assets/ui/panels/hud-xp-bar-frame.webp");
+  --city-hud-bronze: #a57535;
+  --city-hud-bronze-soft: rgba(213, 164, 87, 0.46);
+  --city-hud-bronze-muted: rgba(126, 83, 39, 0.8);
+  --city-hud-wood-shadow: rgba(19, 6, 3, 0.86);
+  --city-hud-wood-mid: rgba(63, 30, 14, 0.88);
   --ui-panel-wood-texture: url("./assets/ui/panels/ui-panel-wood.webp");
   --ui-panel-wood-size: 256px 256px;
   --ui-profile-backdrop-texture: url("./assets/ui/profile/portrait-backdrop-texture.webp");
@@ -1933,7 +1934,7 @@ h1 {
 }
 
 .city-menu {
-  --city-top-hud-height: 96px;
+  --city-top-hud-height: 88px;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -2036,28 +2037,28 @@ h1 {
   z-index: 4;
   display: grid;
   box-sizing: border-box;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 9px;
   align-items: center;
   width: 100%;
   height: var(--city-top-hud-height);
-  padding: 8px 13px 10px 9px;
-  border: 0;
-  border-bottom: 0;
-  border-radius: 0 0 14px 14px;
+  padding: 7px 12px 9px 8px;
+  border: 2px solid var(--city-hud-wood-shadow);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
   color: #ffe8a9;
   background:
-    var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat,
-    radial-gradient(circle at 7% 50%, rgba(255, 194, 88, 0.22), transparent 20%),
-    radial-gradient(circle at 22% 6%, rgba(255, 197, 95, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(62, 30, 15, 0.42), rgba(12, 4, 2, 0.72)),
+    linear-gradient(90deg, rgba(219, 164, 82, 0.1), transparent 22%, transparent 78%, rgba(219, 164, 82, 0.1)),
+    radial-gradient(circle at 16% 12%, rgba(255, 211, 132, 0.13), transparent 32%),
+    linear-gradient(180deg, rgba(72, 36, 18, 0.62), rgba(18, 6, 3, 0.82)),
     var(--ui-panel-wood-texture) center / var(--ui-panel-wood-size) repeat,
-    linear-gradient(180deg, #3c2518 0%, #21100a 58%, #110604 100%);
+    linear-gradient(180deg, #4a2b18 0%, #281109 60%, #140603 100%);
   box-shadow:
-    inset 0 2px 0 rgba(255, 219, 144, 0.28),
-    inset 0 -6px 14px rgba(16, 5, 2, 0.42),
-    0 4px 0 rgba(22, 7, 3, 0.58),
-    0 10px 18px rgba(22, 7, 3, 0.26);
+    inset 0 0 0 1px var(--city-hud-bronze-muted),
+    inset 0 2px 0 rgba(255, 220, 146, 0.18),
+    inset 0 -7px 13px rgba(16, 5, 2, 0.36),
+    0 3px 0 rgba(22, 7, 3, 0.62),
+    0 8px 16px rgba(22, 7, 3, 0.22);
   isolation: isolate;
   overflow: visible;
   pointer-events: auto;
@@ -2069,13 +2070,13 @@ h1 {
 .city-menu__hero-widget::before {
   content: "";
   position: absolute;
-  inset: 4px 6px 6px;
+  inset: 5px 7px 7px;
   z-index: 0;
-  border: 1px solid rgba(255, 220, 146, 0.36);
-  border-radius: 0 0 12px 12px;
+  border: 1px solid var(--city-hud-bronze-soft);
+  border-radius: 0 0 9px 9px;
   box-shadow:
-    inset 0 0 0 1px rgba(31, 11, 5, 0.42),
-    inset 0 0 18px rgba(255, 202, 104, 0.07);
+    inset 0 0 0 1px rgba(31, 11, 5, 0.36),
+    inset 0 0 16px rgba(255, 202, 104, 0.04);
   pointer-events: none;
 }
 
@@ -2200,22 +2201,22 @@ h1 {
   overflow: hidden;
   justify-self: center;
   box-sizing: border-box;
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   color: #ffe8a9;
   background:
-    var(--ui-hud-portrait-frame) center / 100% 100% no-repeat,
-    radial-gradient(circle at 48% 45%, rgba(255, 224, 160, 0.52), rgba(115, 52, 23, 0.28) 58%, rgba(17, 5, 2, 0.74) 100%),
-    linear-gradient(180deg, #a56528, #321207);
+    radial-gradient(circle at 48% 45%, rgba(255, 224, 160, 0.42), rgba(115, 52, 23, 0.24) 58%, rgba(17, 5, 2, 0.7) 100%),
+    linear-gradient(180deg, rgba(197, 137, 64, 0.78), rgba(87, 45, 20, 0.9) 42%, #170703 100%);
   clip-path: none;
   box-shadow:
-    inset 0 2px 0 rgba(255, 220, 146, 0.28),
-    inset 0 -5px 9px rgba(8, 2, 1, 0.42),
-    0 0 0 2px rgba(255, 201, 101, 0.18),
-    0 0 14px rgba(255, 179, 71, 0.24),
+    inset 0 0 0 2px var(--city-hud-bronze-muted),
+    inset 0 0 0 5px rgba(18, 5, 2, 0.72),
+    inset 0 2px 0 rgba(255, 220, 146, 0.2),
+    inset 0 -5px 9px rgba(8, 2, 1, 0.38),
+    0 0 0 1px rgba(255, 201, 101, 0.16),
     0 2px 0 rgba(8, 2, 1, 0.7);
   cursor: pointer;
   touch-action: manipulation;
@@ -2284,7 +2285,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-menu__portrait {
   position: absolute;
-  inset: 8px;
+  inset: 7px;
   z-index: 1;
   overflow: hidden;
   border-radius: 50%;
@@ -3212,16 +3213,16 @@ body.debug-active .city-menu__portrait-button:active {
   max-height: 100%;
   overflow: auto;
   padding: 37px 14px 12px;
-  border: 3px solid #160703;
+  border: 2px solid var(--city-hud-wood-shadow);
   border-radius: 6px;
   background:
-    linear-gradient(90deg, rgba(255, 220, 146, 0.08) 0 1px, transparent 1px calc(100% - 1px), rgba(255, 220, 146, 0.08) calc(100% - 1px)),
-    radial-gradient(circle at 14% 3%, rgba(255, 202, 104, 0.16), transparent 26%),
-    linear-gradient(180deg, rgba(84, 39, 18, 0.36), rgba(18, 6, 2, 0.82)),
+    linear-gradient(90deg, rgba(255, 220, 146, 0.06), transparent 22%, transparent 78%, rgba(255, 220, 146, 0.06)),
+    radial-gradient(circle at 14% 3%, rgba(255, 202, 104, 0.11), transparent 26%),
+    linear-gradient(180deg, rgba(79, 39, 20, 0.48), rgba(18, 6, 2, 0.82)),
     var(--ui-panel-wood-texture) center / var(--ui-panel-wood-size) repeat,
     linear-gradient(180deg, #5b2c14 0%, #2b1209 42%, #1a0904 100%);
   box-shadow:
-    inset 0 0 0 2px rgba(94, 52, 28, 0.58),
+    inset 0 0 0 1px var(--city-hud-bronze-muted),
     inset 0 2px 0 rgba(255, 220, 146, 0.18),
     inset 0 -10px 22px rgba(0, 0, 0, 0.38),
     0 5px 0 rgba(8, 2, 1, 0.82),
@@ -3236,7 +3237,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-profile__panel::before {
   inset: 8px;
-  border-color: rgba(255, 220, 146, 0.18);
+  border-color: rgba(255, 220, 146, 0.16);
   border-radius: 3px;
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.42),
@@ -3244,30 +3245,22 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__panel::after {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  border-radius: 3px;
-  background:
-    radial-gradient(circle at 0 0, rgba(255, 220, 146, 0.26) 0 3px, transparent 4px),
-    radial-gradient(circle at 100% 0, rgba(255, 220, 146, 0.26) 0 3px, transparent 4px),
-    radial-gradient(circle at 0 100%, rgba(255, 220, 146, 0.22) 0 3px, transparent 4px),
-    radial-gradient(circle at 100% 100%, rgba(255, 220, 146, 0.22) 0 3px, transparent 4px);
-  pointer-events: none;
+  display: none;
 }
 
 .city-profile__title {
   top: -3px;
   min-width: 158px;
   padding: 8px 24px 9px;
-  border-width: 3px;
-  border-radius: 4px;
+  border-width: 2px;
+  border-radius: 5px;
   background:
-    linear-gradient(90deg, rgba(255, 220, 146, 0.08), rgba(255, 220, 146, 0.24), rgba(255, 220, 146, 0.08)),
-    linear-gradient(180deg, rgba(117, 54, 24, 0.38), rgba(20, 6, 2, 0.72)),
+    linear-gradient(90deg, rgba(255, 220, 146, 0.06), rgba(255, 220, 146, 0.16), rgba(255, 220, 146, 0.06)),
+    linear-gradient(180deg, rgba(100, 49, 24, 0.46), rgba(20, 6, 2, 0.72)),
     var(--ui-panel-wood-texture) center / 220px 220px repeat,
-    linear-gradient(180deg, #7a3a19, #2a0d05);
+    linear-gradient(180deg, #633117, #240904);
   box-shadow:
+    inset 0 0 0 1px var(--city-hud-bronze-muted),
     inset 0 2px 0 rgba(255, 220, 146, 0.22),
     inset 0 -4px 9px rgba(10, 3, 1, 0.36),
     0 3px 0 rgba(8, 2, 1, 0.72);
@@ -3289,14 +3282,15 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 14px;
   align-items: center;
   padding: 13px 12px 13px;
-  border: 2px solid rgba(22, 7, 3, 0.88);
+  border: 1px solid rgba(22, 7, 3, 0.92);
   border-radius: 7px;
   background:
-    linear-gradient(90deg, rgba(255, 220, 146, 0.08), transparent 46%),
-    linear-gradient(180deg, rgba(58, 23, 10, 0.44), rgba(14, 4, 2, 0.54)),
+    linear-gradient(90deg, rgba(255, 220, 146, 0.06), transparent 46%),
+    linear-gradient(180deg, rgba(58, 23, 10, 0.42), rgba(14, 4, 2, 0.52)),
     var(--ui-panel-wood-texture) center / var(--ui-panel-wood-size) repeat,
     linear-gradient(180deg, rgba(58, 23, 10, 0.62), rgba(19, 6, 3, 0.32));
   box-shadow:
+    inset 0 0 0 1px rgba(195, 132, 58, 0.4),
     inset 0 1px 0 rgba(255, 220, 146, 0.12),
     inset 0 -8px 16px rgba(8, 2, 1, 0.24);
 }
@@ -3306,15 +3300,15 @@ body.debug-active .city-menu__portrait-button:active {
   width: 132px;
   height: 156px;
   padding: 8px;
-  border: 2px solid #120502;
-  border-radius: 9px;
+  border: 1px solid #120502;
+  border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(151, 87, 39, 0.96) 0%, rgba(68, 25, 10, 0.98) 48%, #150502 100%);
-  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+    linear-gradient(180deg, rgba(128, 71, 34, 0.96) 0%, rgba(57, 22, 10, 0.98) 48%, #150502 100%);
+  clip-path: none;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 218, 142, 0.2),
-    inset 0 0 0 4px rgba(31, 10, 4, 0.74),
-    inset 0 5px 10px rgba(255, 218, 142, 0.08),
+    inset 0 0 0 1px var(--city-hud-bronze-muted),
+    inset 0 0 0 4px rgba(31, 10, 4, 0.68),
+    inset 0 5px 10px rgba(255, 218, 142, 0.06),
     inset 0 -10px 14px rgba(8, 2, 1, 0.56),
     0 3px 0 rgba(8, 2, 1, 0.82),
     0 8px 14px rgba(8, 2, 1, 0.34);
@@ -3526,13 +3520,16 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 8px;
   min-height: 58px;
   padding: 7px 8px;
-  border-color: #160703;
+  border-color: rgba(22, 7, 3, 0.92);
   border-radius: 6px;
   background:
-    linear-gradient(90deg, rgba(255, 220, 146, 0.065), transparent 62%),
+    linear-gradient(90deg, rgba(255, 220, 146, 0.045), transparent 62%),
     linear-gradient(180deg, rgba(42, 17, 8, 0.66), rgba(12, 3, 1, 0.68)),
     var(--ui-panel-wood-texture) center / 220px 220px repeat,
     linear-gradient(180deg, rgba(50, 18, 8, 0.84), rgba(22, 7, 3, 0.74));
+  box-shadow:
+    inset 0 0 0 1px rgba(195, 132, 58, 0.32),
+    inset 0 1px 0 rgba(255, 220, 146, 0.08);
 }
 
 .city-profile__attribute-icon {
@@ -3589,12 +3586,14 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 8px;
   margin-top: 8px;
   padding: 9px;
-  border: 2px solid #160703;
+  border: 1px solid rgba(22, 7, 3, 0.92);
   border-radius: 7px;
   background:
     linear-gradient(180deg, rgba(17, 6, 3, 0.6), rgba(8, 2, 1, 0.48)),
     var(--ui-panel-wood-texture) center / 220px 220px repeat;
-  box-shadow: inset 0 1px 0 rgba(255, 220, 146, 0.1);
+  box-shadow:
+    inset 0 0 0 1px rgba(195, 132, 58, 0.28),
+    inset 0 1px 0 rgba(255, 220, 146, 0.08);
 }
 
 .city-profile__derived div {
@@ -3701,11 +3700,12 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   margin-top: 8px;
   padding: 8px;
-  border-color: #160703;
+  border-color: rgba(22, 7, 3, 0.92);
   border-radius: 7px;
   background:
     linear-gradient(180deg, rgba(17, 6, 3, 0.62), rgba(8, 2, 1, 0.52)),
     var(--ui-panel-wood-texture) center / 220px 220px repeat;
+  box-shadow: inset 0 0 0 1px rgba(195, 132, 58, 0.28);
 }
 
 .city-profile__equipment-list {
@@ -4640,7 +4640,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-menu__hero-xp {
   display: grid;
-  grid-template-columns: 22px minmax(96px, 1fr);
+  grid-template-columns: 10px minmax(96px, 1fr);
   gap: 0;
   align-items: center;
 }
@@ -4666,13 +4666,14 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: 0;
   height: 20px;
   margin-left: -8px;
-  border: 0;
+  border: 1px solid rgba(199, 142, 66, 0.72);
   border-radius: 999px;
   background:
     radial-gradient(circle at 12px 50%, rgba(66, 183, 170, 0.18), transparent 24px),
     linear-gradient(180deg, rgba(255, 239, 185, 0.1), transparent 44%),
     rgba(19, 6, 3, 0.84);
   box-shadow:
+    inset 0 0 0 1px rgba(25, 8, 3, 0.72),
     inset 0 2px 4px rgba(0, 0, 0, 0.52),
     0 1px 0 rgba(255, 220, 146, 0.12);
 }
@@ -4680,9 +4681,13 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__hero-xp-track::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 2px;
   z-index: 3;
-  background: var(--ui-hud-xp-bar-frame) center / 100% 100% no-repeat;
+  border: 1px solid rgba(255, 220, 146, 0.12);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.1),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.44);
   pointer-events: none;
 }
 
@@ -4789,25 +4794,28 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-menu__nav {
   position: absolute;
-  left: 2px;
-  right: 2px;
+  left: 4px;
+  right: 4px;
   bottom: max(3px, env(safe-area-inset-bottom));
   z-index: 3;
   display: grid;
   box-sizing: border-box;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   justify-items: stretch;
-  gap: 2px;
-  padding: 7px 8px 8px;
-  border: 0;
-  border-radius: 13px;
+  gap: 4px;
+  padding: 6px 8px 7px;
+  border: 2px solid var(--city-hud-wood-shadow);
+  border-radius: 11px;
   background:
-    var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(55, 25, 12, 0.72), rgba(16, 5, 2, 0.82)),
+    linear-gradient(90deg, rgba(214, 155, 76, 0.08), transparent 22%, transparent 78%, rgba(214, 155, 76, 0.08)),
+    linear-gradient(180deg, rgba(64, 31, 15, 0.78), rgba(17, 5, 2, 0.84)),
     var(--ui-panel-wood-texture) center / var(--ui-panel-wood-size) repeat;
   box-shadow:
+    inset 0 0 0 1px var(--city-hud-bronze-muted),
+    inset 0 2px 0 rgba(255, 220, 146, 0.13),
+    inset 0 -6px 12px rgba(8, 2, 1, 0.34),
     0 3px 0 rgba(8, 2, 1, 0.76),
-    0 10px 18px rgba(8, 2, 1, 0.28);
+    0 9px 16px rgba(8, 2, 1, 0.24);
   backdrop-filter: none;
   transition: opacity 200ms ease, transform 220ms ease;
 }
@@ -4838,15 +4846,20 @@ body.debug-active .city-menu__portrait-button:active {
   justify-items: center;
   width: 100%;
   min-width: 0;
-  min-height: 58px;
-  padding: 7px;
-  border: 0;
-  border-radius: 10px;
+  min-height: 57px;
+  padding: 6px;
+  border: 1px solid rgba(20, 7, 3, 0.92);
+  border-radius: 8px;
   color: #35180d;
-  background: transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 220, 146, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(87, 44, 21, 0.62), rgba(23, 8, 4, 0.82)),
+    var(--ui-panel-wood-texture) center / 180px 180px repeat;
   box-shadow:
-    0 1px 0 rgba(255, 220, 146, 0.08),
-    0 2px 0 rgba(8, 2, 1, 0.48);
+    inset 0 0 0 1px rgba(195, 132, 58, 0.62),
+    inset 0 2px 0 rgba(255, 220, 146, 0.12),
+    inset 0 -4px 8px rgba(8, 2, 1, 0.34),
+    0 2px 0 rgba(8, 2, 1, 0.52);
   cursor: pointer;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(0.46rem, 2.05vw, 0.6rem);
@@ -4863,35 +4876,52 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__button::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 4px;
   z-index: 0;
-  border: 0;
+  border: 1px solid rgba(255, 220, 146, 0.16);
   border-radius: inherit;
-  background: var(--ui-hud-button-frame) center / 100% 100% no-repeat;
-  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.42));
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(255, 220, 146, 0.11), transparent 62%),
+    linear-gradient(180deg, rgba(255, 220, 146, 0.035), rgba(8, 2, 1, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.08),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.36);
   pointer-events: none;
 }
 
 .city-menu__button::after {
-  display: none;
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 1;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 38%, rgba(255, 205, 103, 0.18), transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
 }
 
 .city-menu__button:hover:not(:disabled):not(.city-menu__button--locked) {
   filter: brightness(1.08);
 }
 
+.city-menu__button:hover:not(:disabled):not(.city-menu__button--locked)::after {
+  opacity: 1;
+}
+
 .city-menu__button:active:not(:disabled):not(.city-menu__button--locked) {
   transform: translateY(2px);
   box-shadow:
-    0 1px 0 rgba(255, 220, 146, 0.06),
+    inset 0 2px 8px rgba(8, 2, 1, 0.52),
+    inset 0 0 0 1px rgba(195, 132, 58, 0.46),
     0 1px 0 rgba(8, 2, 1, 0.46);
 }
 
 .city-menu__button:disabled,
 .city-menu__button--locked {
   cursor: default;
-  filter: grayscale(0.32) brightness(0.78);
-  opacity: 0.88;
+  filter: grayscale(0.42) brightness(0.7);
+  opacity: 0.82;
 }
 
 .city-menu__button span:last-child {

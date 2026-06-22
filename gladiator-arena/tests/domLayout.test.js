@@ -115,12 +115,14 @@ test("city hero widget keeps the top HUD compact", () => {
   assert.equal(stylesSource.includes(".city-menu__hero-rank"), true);
   assert.equal(stylesSource.includes(".city-menu__hero-xp-icon"), true);
   assert.equal(stylesSource.includes("./assets/ui/shop/xp-icon.webp"), true);
-  assert.equal(stylesSource.includes("--ui-hud-portrait-frame"), true);
-  assert.equal(stylesSource.includes("--ui-hud-wide-panel-frame"), true);
-  assert.equal(stylesSource.includes("--ui-hud-xp-bar-frame"), true);
-  assert.equal(stylesSource.includes("./assets/ui/panels/hud-portrait-frame.webp"), true);
-  assert.equal(stylesSource.includes("./assets/ui/panels/hud-wide-panel-frame.webp"), true);
-  assert.equal(stylesSource.includes("./assets/ui/panels/hud-xp-bar-frame.webp"), true);
+  assert.equal(stylesSource.includes("--city-hud-bronze"), true);
+  assert.equal(stylesSource.includes("--city-hud-wood-shadow"), true);
+  assert.equal(stylesSource.includes("--ui-hud-portrait-frame"), false);
+  assert.equal(stylesSource.includes("--ui-hud-wide-panel-frame"), false);
+  assert.equal(stylesSource.includes("--ui-hud-xp-bar-frame"), false);
+  assert.equal(stylesSource.includes("./assets/ui/panels/hud-portrait-frame.webp"), false);
+  assert.equal(stylesSource.includes("./assets/ui/panels/hud-wide-panel-frame.webp"), false);
+  assert.equal(stylesSource.includes("./assets/ui/panels/hud-xp-bar-frame.webp"), false);
   assert.equal(stylesSource.includes("grid-template-columns: 22px minmax(96px, 1fr)"), true);
   assert.equal(stylesSource.includes("place-items: center"), true);
 
@@ -360,10 +362,11 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(stylesSource.includes(".city-arena-menu__fight--hard"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__section-title"), false);
   assert.equal(stylesSource.includes(".city-menu--arena-select-open .city-menu__nav"), true);
-  assert.equal(stylesSource.includes("--ui-hud-button-frame"), true);
-  assert.equal(stylesSource.includes("./assets/ui/panels/hud-button-frame.webp"), true);
-  assert.equal(stylesSource.includes("var(--ui-hud-button-frame) center / 100% 100% no-repeat"), true);
-  assert.equal(stylesSource.includes("var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat"), true);
+  assert.equal(stylesSource.includes("--ui-hud-button-frame"), false);
+  assert.equal(stylesSource.includes("./assets/ui/panels/hud-button-frame.webp"), false);
+  assert.equal(stylesSource.includes("var(--ui-hud-button-frame) center / 100% 100% no-repeat"), false);
+  assert.equal(stylesSource.includes("var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat"), false);
+  assert.equal(stylesSource.includes("var(--ui-panel-wood-texture) center / 180px 180px repeat"), true);
 });
 
 test("fighter resources use flask HUD while preserving stat ids", () => {

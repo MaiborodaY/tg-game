@@ -22,10 +22,6 @@ const resizeRules = [
   { maxSide: 512, pattern: /^fighters\/appearance\// },
   { maxSide: 1672, pattern: /^menu\/main-city(?:-day)?\.png$/ },
   { maxSide: 320, pattern: /^ui\/effects\/ward\.png$/ },
-  { maxSide: 192, pattern: /^ui\/panels\/hud-button-frame\.png$/ },
-  { maxSide: 256, pattern: /^ui\/panels\/hud-portrait-frame\.png$/ },
-  { maxSide: 768, pattern: /^ui\/panels\/hud-wide-panel-frame\.png$/ },
-  { maxSide: 512, pattern: /^ui\/panels\/hud-xp-bar-frame\.png$/ },
   { maxSide: 128, pattern: /^ui\/projectiles\/fireball\.png$/ },
   { maxSide: 160, pattern: /^shop-icons\/scroll-.+\.png$/ },
 ];
@@ -62,11 +58,6 @@ const smallerAssetRules = [
     maximumAlphaQuality: 100,
     maximumQuality: 74,
     pattern: /^menu\/main-city(?:-day)?\.png$/,
-  },
-  {
-    maximumAlphaQuality: 84,
-    maximumQuality: 76,
-    pattern: /^ui\/panels\/hud-(?:button|portrait|wide-panel|xp-bar)-frame\.png$/,
   },
 ];
 
