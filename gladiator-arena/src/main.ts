@@ -629,7 +629,8 @@ function renderCityArenaMenu(): void {
     return;
   }
 
-  const availableTiers = getAvailableCityArenaTiers();
+  const visibleTiers = getVisibleCityArenaTiers();
+  const availableTiers = getAvailableCityArenaTiers(visibleTiers);
   const tier = getSelectedCityArenaTier(availableTiers);
   const randomOpponents = getArenaRandomOpponentsForTier(tier.id);
   const easyOpponent = randomOpponents.find((opponent) => opponent.difficultyId === "easy");
@@ -637,7 +638,7 @@ function renderCityArenaMenu(): void {
   const hardOpponent = randomOpponents.find((opponent) => opponent.difficultyId === "hard");
   const bosses = getArenaBossesForTier(tier.id);
 
-  syncCityArenaTierSelect(cityArenaTierSelect, availableTiers, tier.id);
+  syncCityArenaTierSelect(cityArenaTierSelect, visibleTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
   if (cityArenaEasyName) {
     cityArenaEasyName.textContent = "Easy";
@@ -654,8 +655,14 @@ function renderCityArenaMenu(): void {
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
 }
 
-function getAvailableCityArenaTiers(): ArenaTierDefinition[] {
-  const tiers = getArenaTierDefinitions().filter((tier) => tier.randomOpponentIds.length > 0 && isCityArenaTierUnlocked(tier));
+function getVisibleCityArenaTiers(): ArenaTierDefinition[] {
+  const tiers = getArenaTierDefinitions().filter((tier) => tier.randomOpponentIds.length > 0);
+
+  return tiers.length > 0 ? tiers : [getArenaTierDefinition(DEFAULT_ARENA_TIER_ID)];
+}
+
+function getAvailableCityArenaTiers(visibleTiers = getVisibleCityArenaTiers()): ArenaTierDefinition[] {
+  const tiers = visibleTiers.filter(isCityArenaTierUnlocked);
 
   return tiers.length > 0 ? tiers : [getArenaTierDefinition(DEFAULT_ARENA_TIER_ID)];
 }
@@ -671,17 +678,22 @@ function getSelectedCityArenaTier(availableTiers = getAvailableCityArenaTiers())
   return selectedTier;
 }
 
-function syncCityArenaTierSelect(select: HTMLSelectElement, availableTiers: readonly ArenaTierDefinition[], selectedTierId: number): void {
-  select.replaceChildren(...availableTiers.map((tier) => createCityArenaTierOption(tier)));
+function syncCityArenaTierSelect(select: HTMLSelectElement, visibleTiers: readonly ArenaTierDefinition[], selectedTierId: number): void {
+  select.replaceChildren(...visibleTiers.map((tier) => createCityArenaTierOption(tier)));
   select.value = `${selectedTierId}`;
-  select.disabled = availableTiers.length <= 1;
+  select.disabled = visibleTiers.length <= 1;
 }
 
 function createCityArenaTierOption(tier: ArenaTierDefinition): HTMLOptionElement {
   const option = document.createElement("option");
+  const isUnlocked = isCityArenaTierUnlocked(tier);
 
   option.value = `${tier.id}`;
-  option.textContent = tier.name;
+  option.disabled = !isUnlocked;
+  option.textContent = isUnlocked ? tier.name : `${tier.name} - Locked`;
+  if (!isUnlocked) {
+    option.title = "Defeat previous boss to unlock";
+  }
   return option;
 }
 

@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "name": "Dust Arena I",
+    "name": "Dust Arena",
     "opponents": [
       {
         "id": "dust_arena_dummy",

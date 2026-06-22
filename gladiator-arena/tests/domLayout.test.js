@@ -10,6 +10,7 @@ const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const domUiSource = readFileSync(resolve(currentDir, "../src/domUi.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"), "utf8");
+const arenaTiersSource = readFileSync(resolve(currentDir, "../src/generated/arenaTiers.generated.ts"), "utf8");
 
 test("fighter stats are mounted inside the battle overlay", () => {
   const statusStripIndex = html.indexOf('<section class="status-strip"');
@@ -258,11 +259,15 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(html.includes('id="cityArenaHardButton"'), true);
   assert.equal(html.includes('id="cityArenaTierSelect"'), true);
   assert.equal(html.includes('id="cityArenaBossList"'), true);
+  assert.equal(html.includes('aria-label="Arena choices"'), true);
   assert.equal(html.includes("Arena contracts"), false);
   assert.equal(html.includes("Easy contract"), false);
   assert.equal(html.includes("Medium contract"), false);
   assert.equal(html.includes("Hard contract"), false);
-  assert.equal(html.includes(">FIGHTS</div>"), true);
+  assert.equal(html.includes("<span>Tier</span>"), false);
+  assert.equal(html.includes('aria-label="Arena tier"'), false);
+  assert.equal(html.includes(">FIGHTS</div>"), false);
+  assert.equal(html.includes(">BOSS</div>"), false);
   assert.equal(html.includes(">COMMON</div>"), false);
   assert.equal(html.includes('<span class="city-arena-menu__eyebrow">Easy</span>'), false);
   assert.equal(html.includes('<span class="city-arena-menu__eyebrow">Medium</span>'), false);
@@ -280,13 +285,20 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("pickArenaBackgroundVariantIdForTier(encounter.tierId)"), true);
   assert.equal(mainSource.includes("backgroundVariantId:"), true);
   assert.equal(mainSource.includes("getArenaTierDefinitions"), true);
+  assert.equal(mainSource.includes("getVisibleCityArenaTiers"), true);
   assert.equal(mainSource.includes("getAvailableCityArenaTiers"), true);
   assert.equal(mainSource.includes("getArenaBossesForTier"), true);
+  assert.equal(mainSource.includes("option.disabled = !isUnlocked"), true);
+  assert.equal(mainSource.includes(" - Locked"), true);
+  assert.equal(mainSource.includes("Defeat previous boss to unlock"), true);
+  assert.equal(mainSource.includes("select.disabled = visibleTiers.length <= 1"), true);
   assert.equal(mainSource.includes('name.textContent = "Boss"'), true);
   assert.equal(mainSource.includes('cityArenaEasyName.textContent = "Easy"'), true);
   assert.equal(mainSource.includes('cityArenaRandomName.textContent = "Medium"'), true);
   assert.equal(mainSource.includes('cityArenaHardName.textContent = "Hard"'), true);
   assert.equal(mainSource.includes("+ unique reward"), true);
+  assert.equal(arenaTiersSource.includes('name: "Dust Arena"'), true);
+  assert.equal(arenaTiersSource.includes('name: "Dust Arena I"'), false);
   assert.equal(mainSource.includes("boss.baseStats"), false);
   assert.equal(mainSource.includes("city-arena-menu__boss-stats"), false);
   assert.equal(mainSource.includes("Tier ${boss.tierId} Boss"), false);
@@ -307,9 +319,16 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(stylesSource.includes(".city-arena-menu__unique-reward"), true);
   assert.equal(stylesSource.includes('content: "\\203A"'), true);
   assert.equal(stylesSource.includes("display: flex"), true);
-  assert.equal(stylesSource.includes("width: 76px"), true);
-  assert.equal(stylesSource.includes("height: 112px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-width: 44px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-width: 54px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-width: 64px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-width: 76px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-height: 78px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-height: 90px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-height: 102px"), true);
+  assert.equal(stylesSource.includes("--arena-banner-height: 112px"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__fight--hard"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__section-title"), false);
   assert.equal(stylesSource.includes(".city-menu--arena-select-open .city-menu__nav"), true);
 });
 

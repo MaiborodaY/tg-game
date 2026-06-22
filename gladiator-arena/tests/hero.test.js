@@ -415,7 +415,8 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   const tierTwoEasyOpponents = hero.getArenaRandomOpponentsForTierAndDifficulty(2, "easy");
 
   assert.equal(hero.DEFAULT_ARENA_DIFFICULTY_ID, "medium");
-  assert.equal(hero.ARENA_TIER_CONFIGS[0].name, "Dust Arena I");
+  assert.equal(hero.ARENA_TIER_CONFIGS[0].name, "Dust Arena");
+  assert.equal(tier.name, "Dust Arena");
   assert.equal(hero.getArenaTierDefinitions().some((arenaTier) => arenaTier.id === 1), true);
   assert.equal(tier.unlockBossId, undefined);
   assert.equal(tier.randomOpponentIds.length, 3);

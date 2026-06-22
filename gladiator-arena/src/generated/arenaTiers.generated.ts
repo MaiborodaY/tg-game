@@ -3,7 +3,7 @@ import type { ArenaTierConfig } from "../arenaOpponents";
 export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   {
     id: 1,
-    name: "Dust Arena I",
+    name: "Dust Arena",
     opponents: [
       {
         id: "dust_arena_dummy",

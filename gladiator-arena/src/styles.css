@@ -2409,18 +2409,13 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__tier {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 9px;
   min-width: 0;
-  padding: 8px 40px 8px 9px;
-  border: 1px solid rgba(255, 211, 132, 0.24);
-  border-radius: 8px;
-  background: rgba(21, 6, 3, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 211, 132, 0.08);
+  padding: 7px 38px 2px;
 }
 
-.city-arena-menu__tier span,
 .city-arena-menu__eyebrow,
 .city-arena-menu__reward {
   color: #e0b96f;
@@ -2464,18 +2459,36 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__tier strong {
-  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
   overflow: hidden;
   color: #fff0bd;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   font-weight: 900;
+  line-height: 1;
+  text-align: center;
   text-overflow: ellipsis;
+  text-transform: uppercase;
   white-space: nowrap;
+}
+
+.city-arena-menu__tier strong::before,
+.city-arena-menu__tier strong::after {
+  content: "";
+  flex: 1 1 32px;
+  max-width: 76px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 211, 132, 0.62), transparent);
 }
 
 .city-arena-menu__tier-select {
   min-width: 0;
-  width: 100%;
+  width: min(210px, 100%);
+  min-height: 24px;
+  padding: 2px 24px 3px 10px;
   border: 1px solid rgba(255, 211, 132, 0.3);
   border-radius: 6px;
   color: #fff0bd;
@@ -2483,6 +2496,8 @@ body.debug-active .city-menu__portrait-button:active {
   font: inherit;
   font-size: 0.76rem;
   font-weight: 900;
+  text-align: center;
+  text-transform: none;
 }
 
 .city-arena-menu__fight-list {
@@ -2494,6 +2509,10 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__fight,
 .city-arena-menu__boss {
+  --arena-banner-left: 12px;
+  --arena-banner-width: 58px;
+  --arena-banner-height: 96px;
+  --arena-card-padding-left: 76px;
   position: relative;
   z-index: 1;
   display: flex;
@@ -2503,7 +2522,7 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: 0;
   min-height: 86px;
   width: 100%;
-  padding: 12px 42px 12px 76px;
+  padding: 12px 42px 12px var(--arena-card-padding-left);
   border: 2px solid #1a0803;
   border-radius: 8px;
   color: #fff0bd;
@@ -2522,11 +2541,11 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu__boss::before {
   content: "";
   position: absolute;
-  left: 12px;
+  left: var(--arena-banner-left);
   top: 50%;
   z-index: 1;
-  width: 58px;
-  height: 96px;
+  width: var(--arena-banner-width);
+  height: var(--arena-banner-height);
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -2556,6 +2575,10 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__fight--easy {
+  --arena-banner-left: 15px;
+  --arena-banner-width: 44px;
+  --arena-banner-height: 78px;
+  --arena-card-padding-left: 76px;
   background:
     linear-gradient(90deg, rgba(18, 33, 10, 0.3), transparent 28%, rgba(7, 2, 1, 0.36) 100%),
     radial-gradient(circle at 20% 22%, rgba(216, 255, 148, 0.26), transparent 36%),
@@ -2576,6 +2599,10 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__fight--medium {
+  --arena-banner-left: 12px;
+  --arena-banner-width: 54px;
+  --arena-banner-height: 90px;
+  --arena-card-padding-left: 76px;
   background:
     linear-gradient(90deg, rgba(50, 19, 5, 0.22), transparent 28%, rgba(7, 2, 1, 0.36) 100%),
     radial-gradient(circle at 20% 22%, rgba(255, 205, 103, 0.28), transparent 36%),
@@ -2588,6 +2615,10 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__fight--hard {
+  --arena-banner-left: 9px;
+  --arena-banner-width: 64px;
+  --arena-banner-height: 102px;
+  --arena-card-padding-left: 80px;
   background:
     linear-gradient(90deg, rgba(57, 8, 6, 0.24), transparent 28%, rgba(7, 2, 1, 0.38) 100%),
     radial-gradient(circle at 20% 22%, rgba(255, 151, 115, 0.28), transparent 36%),
@@ -2624,34 +2655,20 @@ body.debug-active .city-menu__portrait-button:active {
   transform: translateY(2px);
 }
 
-.city-arena-menu__section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffd384;
-  font-size: 0.68rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.city-arena-menu__section-title::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 211, 132, 0.48), transparent);
-}
-
 .city-arena-menu__boss-list {
   display: grid;
   gap: 8px;
-  max-height: min(38dvh, 260px);
-  overflow-y: auto;
-  padding: 2px 2px 4px;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
 }
 
 .city-arena-menu__boss {
+  --arena-banner-left: 6px;
+  --arena-banner-width: 76px;
+  --arena-banner-height: 112px;
+  --arena-card-padding-left: 86px;
   min-height: 98px;
-  padding-left: 86px;
   background:
     linear-gradient(90deg, rgba(10, 57, 53, 0.26), transparent 28%, rgba(7, 2, 1, 0.38) 100%),
     radial-gradient(circle at 18% 20%, rgba(92, 255, 235, 0.24), transparent 36%),
@@ -2664,9 +2681,6 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss::before {
-  left: 6px;
-  width: 76px;
-  height: 112px;
   background-image: url("./assets/ui/arena-difficulty/difficulty-boss.webp");
 }
 

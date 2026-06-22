@@ -133,7 +133,7 @@ export function getArenaBossesForTier(tierId: number): ArenaBossDefinition[] {
 }
 
 function formatArenaTierName(tierId: number): string {
-  return tierId === 1 ? "Dust Arena I" : `Dust Arena ${tierId}`;
+  return tierId === 1 ? "Dust Arena" : `Dust Arena ${tierId}`;
 }
 
 function getDifficultySortIndex(difficultyId: ArenaDifficultyId): number {
