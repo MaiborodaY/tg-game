@@ -718,8 +718,12 @@ export function availableActionIds(state: CombatState, actor: TurnOwner): Action
   return actionOrder.filter((id) => canUseAction(state, id, actor));
 }
 
-function doesActionEndTurn(actionId: ActionId): boolean {
-  return actionId !== "switchWeapon" && actionId !== "preciseStrike" && actionId !== "doubleStrike";
+function doesActionEndTurn(actionId: ActionId, actor: TurnOwner): boolean {
+  if (actionId === "switchWeapon" || actionId === "preciseStrike" || actionId === "doubleStrike") {
+    return false;
+  }
+
+  return !(actor === "player" && actionId === "shuriken");
 }
 
 export function getFighterClinchRange(fighter?: FighterState): number {
@@ -874,7 +878,7 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
 
   applyAction(state, "player", playerActionId, random);
 
-  if (state.result === "playing" && doesActionEndTurn(playerActionId)) {
+  if (state.result === "playing" && doesActionEndTurn(playerActionId, "player")) {
     state.activeTurn = "enemy";
   }
 
@@ -899,7 +903,7 @@ export function resolveEnemyTurn(current: CombatState, random = Math.random): Co
 
   applyAction(state, "enemy", enemyActionId, random);
 
-  if (state.result === "playing" && !doesActionEndTurn(enemyActionId)) {
+  if (state.result === "playing" && !doesActionEndTurn(enemyActionId, "enemy")) {
     enemyActionId = chooseEnemyAction(state, random);
     applyAction(state, "enemy", enemyActionId, random);
   }
@@ -1208,7 +1212,7 @@ function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, r
       appliedDamage = mergeDamageApplications(appliedDamage, secondHit.appliedDamage);
       hitResults.push(createCombatHitResult(secondHit));
     }
-  } else if (doesActionEndTurn(actionId)) {
+  } else if (doesActionEndTurn(actionId, actor)) {
     clearIncomingAttackModifiers(state, defenderOwner);
   }
 

@@ -96,6 +96,15 @@ const generatedItems = {
     equipmentSlot: "weaponMain",
     damageBonus: 2,
   },
+  generated_equipment_weapon_shuriken_rare: {
+    id: "generated_equipment_weapon_shuriken_rare",
+    name: "Rare Shuriken",
+    kind: "weapon",
+    rarity: "rare",
+    weaponClass: "shuriken",
+    equipmentSlot: "weaponMain",
+    damageBonus: 7,
+  },
   cloth_breastplate_01: {
     id: "cloth_breastplate_01",
     name: "Cloth Breastplate 01",
@@ -1381,6 +1390,34 @@ test("combat state exposes shuriken count and rewards persist spent consumables"
   const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
 
   assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, "generated_equipment_weapon_shuriken_01"), 1);
+});
+
+test("combat state uses the strongest owned shuriken consumable", () => {
+  const stockedHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    inventory: [
+      { itemId: "generated_equipment_weapon_shuriken_01", quantity: 2 },
+      { itemId: "generated_equipment_weapon_shuriken_rare", quantity: 1 },
+    ],
+  };
+  const combatState = hero.createCombatStateFromHero(stockedHero, 1);
+
+  assert.equal(combatState.player.shurikenCount, 1);
+  assert.equal(combatState.player.shurikenDamage, 7);
+  assert.equal(combatState.player.shurikenItemId, "generated_equipment_weapon_shuriken_rare");
+
+  const spentCombatState = {
+    ...combatState,
+    result: "lose",
+    player: {
+      ...combatState.player,
+      shurikenCount: 0,
+    },
+  };
+  const rewardApplication = hero.applyCombatReward(stockedHero, spentCombatState, "2026-01-01T00:01:00.000Z", () => 0.99);
+
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, "generated_equipment_weapon_shuriken_01"), 2);
+  assert.equal(hero.getHeroItemQuantity(rewardApplication.heroAfterReward, "generated_equipment_weapon_shuriken_rare"), 0);
 });
 
 test("combat state exposes scroll count and rewards persist spent scrolls", () => {

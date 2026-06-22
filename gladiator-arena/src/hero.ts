@@ -961,12 +961,29 @@ export function getHeroConsumableMaxQuantity(itemId: HeroItemId): number {
   return isHeroConsumableItemId(itemId) ? HERO_SHURIKEN_MAX_QUANTITY : 0;
 }
 
-export function getHeroShurikenItemId(): HeroItemId | undefined {
-  return GENERATED_EQUIPMENT_ITEM_IDS.find((itemId) => isHeroConsumableItemId(itemId));
+function isHeroShurikenItemId(itemId: HeroItemId): boolean {
+  return getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) === "shuriken";
+}
+
+export function getHeroShurikenItemId(hero?: HeroState): HeroItemId | undefined {
+  const shurikenItemIds = HERO_ITEM_IDS.filter(isHeroShurikenItemId);
+
+  if (!hero) {
+    return shurikenItemIds[0];
+  }
+
+  return shurikenItemIds
+    .map((itemId) => ({
+      itemId,
+      quantity: getHeroItemQuantity(hero, itemId),
+      damage: getShurikenItemDamage(itemId),
+    }))
+    .filter((entry) => entry.quantity > 0)
+    .sort((left, right) => right.damage - left.damage)[0]?.itemId;
 }
 
 export function getHeroShurikenCount(hero: HeroState): number {
-  const shurikenItemId = getHeroShurikenItemId();
+  const shurikenItemId = getHeroShurikenItemId(hero);
 
   return shurikenItemId ? getHeroItemQuantity(hero, shurikenItemId) : 0;
 }
@@ -985,8 +1002,8 @@ export function getHeroRemainingScrollCapacity(hero: HeroState): number {
   return Math.max(0, HERO_SCROLL_MAX_QUANTITY - getHeroScrollQuantity(hero));
 }
 
-export function getHeroShurikenDamage(): number {
-  return getShurikenItemDamage(getHeroShurikenItemId());
+export function getHeroShurikenDamage(hero?: HeroState): number {
+  return getShurikenItemDamage(getHeroShurikenItemId(hero));
 }
 
 export function getHeroCrackArmorScrollItemId(): HeroItemId {
@@ -1156,7 +1173,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyMainWeaponClass = getHeroEquipmentWeaponClass(enemyEquipment);
   const enemyBowWeaponClass = getHeroEquipmentBowWeaponClass(enemyEquipment);
   const enemyWeaponClass = enemyEquipment.weaponMain ? enemyMainWeaponClass : enemyBowWeaponClass ?? enemyMainWeaponClass;
-  const playerShurikenItemId = getHeroShurikenItemId();
+  const playerShurikenItemId = getHeroShurikenItemId(hero);
   const playerScrollItemId = getHeroCrackArmorScrollItemId();
   const playerFireballScrollItemId = getHeroFireballScrollItemId();
   const playerWardScrollItemId = getHeroWardScrollItemId();
@@ -1192,7 +1209,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       bowShotsRemaining: playerBowWeaponClass === "bow" ? playerBowShotCapacity : 0,
       bowMaxShots: playerBowWeaponClass === "bow" ? playerBowShotCapacity : 0,
       shurikenCount: getHeroShurikenCount(hero),
-      shurikenDamage: getHeroShurikenDamage(),
+      shurikenDamage: getHeroShurikenDamage(hero),
       shurikenItemId: playerShurikenItemId,
       scrollCount: getHeroCrackArmorScrollCount(hero),
       scrollItemId: playerScrollItemId,

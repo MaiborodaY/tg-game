@@ -225,6 +225,7 @@ test("shurikens are consumable ranged throws with guaranteed hit", () => {
 
   assert.equal(nextState.enemy.hp, combat.MAX_HP - 2);
   assert.equal(nextState.player.shurikenCount, 1);
+  assert.equal(nextState.activeTurn, "player");
   assert.equal(nextState.lastPlayerBlocked, false);
   assert.match(nextState.log[0].text, /Throw Shuriken/);
 });
@@ -244,6 +245,7 @@ test("enemy fighters can throw rolled shuriken consumables", () => {
 
   assert.equal(nextState.player.hp, combat.MAX_HP - 2);
   assert.equal(nextState.enemy.shurikenCount, 0);
+  assert.equal(nextState.activeTurn, "player");
   assert.equal(nextState.lastEnemyAction, "shuriken");
   assert.equal(nextState.lastEnemyBlocked, false);
   assert.match(nextState.log[0].text, /Throw Shuriken/);
