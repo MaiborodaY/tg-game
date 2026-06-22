@@ -32,7 +32,38 @@
             "itemRarities": [
               "common"
             ],
-            "rollChance": 0.2
+            "rollChance": 0.2,
+            "weaponChance": 0.5,
+            "bowChance": 0.1,
+            "shieldChance": 0.1,
+            "shurikenChance": 0.1
+          },
+          {
+            "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.01,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
+          },
+          {
+            "itemRarities": [
+              "rare"
+            ],
+            "rollChance": 0.01,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
+          },
+          {
+            "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.01,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
           }
         ],
         "rewards": {
@@ -49,7 +80,7 @@
       {
         "id": "dust_arena_veteran",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 3,
+        "randomBaseStatPoints": 5,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -57,7 +88,8 @@
             ],
             "rollChance": 0.5,
             "weaponChance": 1,
-            "shieldChance": 0.1
+            "bowChance": 0.3,
+            "shieldChance": 0.15
           },
           {
             "itemRarities": [
@@ -65,6 +97,42 @@
             ],
             "rollChance": 0.15,
             "weaponChance": 0,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
+          },
+          {
+            "itemRarities": [
+              "rare"
+            ],
+            "rollChance": 0.02,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
+          },
+          {
+            "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.02,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.02,
+            "bowChance": 0,
+            "shieldChance": 0,
+            "shurikenChance": 0
+          },
+          {
+            "itemRarities": [
+              "mythical"
+            ],
+            "rollChance": 0.02,
             "bowChance": 0,
             "shieldChance": 0,
             "shurikenChance": 0

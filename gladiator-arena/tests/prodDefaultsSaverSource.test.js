@@ -47,6 +47,24 @@ test("animation editor saves VFX defaults through a scoped endpoint", () => {
   assert.match(viteSource, /DEFAULT_WARD_SHIELD_TUNING/);
 });
 
+test("city tuning saves city hero transform through a scoped endpoint", () => {
+  const clientSource = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
+  const debugPanelSource = readFileSync(join(root, "src", "debugPanel.ts"), "utf8");
+  const viteSource = readFileSync(join(root, "vite.config.ts"), "utf8");
+
+  assert.match(clientSource, /\/__dust-arena\/save-prod-city-hero-transform/);
+  assert.match(clientSource, /saveProdCityHeroTransform\(tuning: ArenaDebugTuning\)/);
+  assert.match(clientSource, /cityHeroX: tuning\.cityHeroX/);
+  assert.match(clientSource, /cityHeroY: tuning\.cityHeroY/);
+  assert.match(clientSource, /cityHeroScale: tuning\.cityHeroScale/);
+  assert.match(debugPanelSource, /Save city hero as prod/);
+  assert.match(debugPanelSource, /appendCityHeroTransformSave\(groupElement, status\)/);
+  assert.match(debugPanelSource, /saveProdCityHeroTransform\(debugTuning\)/);
+  assert.match(viteSource, /save-prod-city-hero-transform/);
+  assert.match(viteSource, /pickCityHeroTransformDefaultUpdates/);
+  assert.match(viteSource, /applyDebugTuningDefaultUpdates\(source, updates\)/);
+});
+
 test("client saver posts scoped UI layout tuning to the local dev endpoint", () => {
   const source = readFileSync(join(root, "src", "prodDefaultsSaver.ts"), "utf8");
   const uiLayoutSource = readFileSync(join(root, "src", "uiLayoutTuning.ts"), "utf8");
@@ -421,6 +439,21 @@ test("vite dev middleware saves scoped UI layout defaults", () => {
   assert.match(stylesSource, /body\.debug-mode-hud \.debug-preview-tools,/);
   assert.match(stylesSource, /body\.debug-mode-effects \.debug-preview-tools,/);
   assert.doesNotMatch(stylesSource, /debug-nudge-toolbar/);
+});
+
+test("debug panel keeps arena and face editors scoped to their own tabs", () => {
+  const stylesSource = readFileSync(join(root, "src", "styles.css"), "utf8");
+
+  assert.match(stylesSource, /body\.debug-mode-character \.debug-tier-editor-panel,\s*body\.debug-mode-character \.debug-boss-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-animation \.debug-face-panel,\s*body\.debug-mode-animation \.debug-tier-editor-panel,\s*body\.debug-mode-animation \.debug-boss-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-arena \.debug-face-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-city \.debug-face-panel,\s*body\.debug-mode-city \.debug-tier-editor-panel,\s*body\.debug-mode-city \.debug-boss-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-hud \.debug-face-panel,\s*body\.debug-mode-hud \.debug-tier-editor-panel,\s*body\.debug-mode-hud \.debug-boss-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.debug-face-panel,\s*body\.debug-mode-ui \.debug-tier-editor-panel,\s*body\.debug-mode-ui \.debug-boss-editor-panel,/);
+  assert.match(stylesSource, /body\.debug-mode-effects \.debug-face-panel,\s*body\.debug-mode-effects \.debug-tier-editor-panel,\s*body\.debug-mode-effects \.debug-boss-editor-panel,/);
+  assert.doesNotMatch(stylesSource, /body\.debug-mode-character \.debug-face-panel,/);
+  assert.doesNotMatch(stylesSource, /body\.debug-mode-arena \.debug-tier-editor-panel,/);
+  assert.doesNotMatch(stylesSource, /body\.debug-mode-arena \.debug-boss-editor-panel,/);
 });
 
 test("save as prod defaults also persists the selected rig editor animation", () => {

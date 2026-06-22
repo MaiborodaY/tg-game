@@ -108,6 +108,7 @@ export interface PromoteShieldImportsPayload {
 
 const saveProdDefaultsEndpoint = "/__dust-arena/save-prod-defaults";
 const saveProdVfxDefaultsEndpoint = "/__dust-arena/save-prod-vfx-defaults";
+const saveProdCityHeroTransformEndpoint = "/__dust-arena/save-prod-city-hero-transform";
 const saveProdAnimationEndpoint = "/__dust-arena/save-prod-animation";
 const promoteEquipmentItemEndpoint = "/__dust-arena/promote-equipment-item";
 const promoteEquipmentSetEndpoint = "/__dust-arena/promote-equipment-set";
@@ -154,6 +155,25 @@ export async function saveProdVfxDefaults(tuning: ArenaDebugTuning): Promise<str
   }
 
   return payload.message ?? `Saved ${payload.updated ?? 0} VFX defaults.`;
+}
+
+export async function saveProdCityHeroTransform(tuning: ArenaDebugTuning): Promise<string> {
+  const response = await fetch(saveProdCityHeroTransformEndpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      cityHeroX: tuning.cityHeroX,
+      cityHeroY: tuning.cityHeroY,
+      cityHeroScale: tuning.cityHeroScale,
+    }),
+  });
+  const payload = await readResponse(response);
+
+  if (!response.ok) {
+    throw new Error(payload.message ?? "Could not save city hero transform. Is the Vite dev server running?");
+  }
+
+  return payload.message ?? "Saved city hero transform to prod.";
 }
 
 export async function saveProdAnimation(tuning: ArenaDebugTuning): Promise<string> {

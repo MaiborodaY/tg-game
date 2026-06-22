@@ -210,6 +210,16 @@ type DebugTuningDefaultUpdates = Partial<Record<DebugTuningDefaultField, number>
   & Partial<Record<DebugTuningBooleanDefaultField, boolean>>
   & { arenaBackgroundTiers?: ArenaBackgroundTierTuningPayload };
 
+const cityHeroTransformDefaultFields = {
+  cityHeroX: "cityHeroX",
+  cityHeroY: "cityHeroY",
+  cityHeroScale: "cityHeroScale",
+} as const;
+
+type CityHeroTransformDefaultField = keyof typeof cityHeroTransformDefaultFields;
+type CityHeroTransformDefaultPayload = Record<(typeof cityHeroTransformDefaultFields)[CityHeroTransformDefaultField], unknown>;
+type CityHeroTransformDefaultUpdates = Record<CityHeroTransformDefaultField, number>;
+
 const debugTuningBooleanDefaultFields = {
   arenaTier1BackgroundBackVisible: "arenaTier1BackgroundBackVisible",
   arenaTier1BackgroundMidVisible: "arenaTier1BackgroundMidVisible",
@@ -1122,6 +1132,26 @@ function saveProdDefaultsPlugin(): Plugin {
         }
       });
 
+      server.middlewares.use("/__dust-arena/save-prod-city-hero-transform", async (request, response) => {
+        if (request.method !== "POST") {
+          sendJson(response, 405, { message: "Use POST to save city hero transform." });
+          return;
+        }
+
+        try {
+          const payload = await readJson(request);
+          const updates = pickCityHeroTransformDefaultUpdates(payload);
+          const source = await readFile(debugTuningUrl, "utf8");
+          const nextSource = applyDebugTuningDefaultUpdates(source, updates);
+
+          await writeFile(debugTuningUrl, nextSource, "utf8");
+          server.ws.send({ type: "full-reload" });
+          sendJson(response, 200, { message: "Saved city hero transform to prod.", updated: Object.keys(updates).length });
+        } catch (error) {
+          sendJson(response, 400, { message: error instanceof Error ? error.message : "Could not save city hero transform." });
+        }
+      });
+
       server.middlewares.use("/__dust-arena/save-prod-animation", async (request, response) => {
         if (request.method !== "POST") {
           sendJson(response, 405, { message: "Use POST to save prod animation." });
@@ -1804,6 +1834,19 @@ export function pickDebugTuningDefaultUpdates(payload: unknown): DebugTuningDefa
     ...booleanUpdates,
     arenaBackgroundTiers: readArenaBackgroundTierTunings((payload as { arenaBackgroundTiers?: unknown }).arenaBackgroundTiers),
   };
+}
+
+export function pickCityHeroTransformDefaultUpdates(payload: unknown): CityHeroTransformDefaultUpdates {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Expected a JSON object with city hero transform values.");
+  }
+
+  return Object.fromEntries(
+    Object.entries(cityHeroTransformDefaultFields).map(([fieldName, payloadField]) => [
+      fieldName,
+      readFiniteNumber(payload as CityHeroTransformDefaultPayload, payloadField),
+    ]),
+  ) as CityHeroTransformDefaultUpdates;
 }
 
 export function pickArenaTierBackgroundDefaultUpdates(payload: unknown): ArenaTierBackgroundDefaultUpdates {

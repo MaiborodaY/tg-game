@@ -155,6 +155,21 @@ export type HeroEquipmentSetGrade = "starter" | "low" | "mid" | "high" | "boss";
 
 export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
 
+interface PairedArmorSlotConfig {
+  backSlot: HeroEquipmentSlotKey;
+  frontSlot: HeroEquipmentSlotKey;
+  token: string;
+}
+
+const PAIRED_ARMOR_SLOT_CONFIGS: readonly PairedArmorSlotConfig[] = [
+  { backSlot: "backShoulderguard", frontSlot: "frontShoulderguard", token: "shoulderguard" },
+  { backSlot: "backWrist", frontSlot: "frontWrist", token: "wrist" },
+  { backSlot: "backGlove", frontSlot: "frontGlove", token: "glove" },
+  { backSlot: "backGreave", frontSlot: "frontGreave", token: "greave" },
+  { backSlot: "backShinguard", frontSlot: "frontShinguard", token: "shinguard" },
+  { backSlot: "backBoot", frontSlot: "frontBoot", token: "boot" },
+];
+
 export interface HeroEquipmentSetInfo {
   id: string;
   name: string;
@@ -504,6 +519,10 @@ function createRandomEnemyLoadoutFromPools(equipmentPools: readonly ArenaGenerat
 
   equipmentPools.forEach((equipmentPool) => {
     HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+      if (equipment[slotKey]) {
+        return;
+      }
+
       const itemIds = getEnemyItemIdsBySlot(slotKey, equipmentPool.itemRarities);
       const rollChance = getEnemyEquipmentSlotRollChance(equipmentPool, slotKey);
 
@@ -628,9 +647,9 @@ export function deriveHeroStats(hero: HeroState): HeroStats {
   return deriveFighterStats(hero.baseStats, hero.equipment);
 }
 
-function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment): HeroStats {
+function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment, armorOverride?: number): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
-  const armorBonus = getHeroEquipmentArmor(equipment);
+  const armorBonus = armorOverride ?? getHeroEquipmentArmor(equipment);
   const mainWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponMain");
   const bowWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponBow");
   const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength);
@@ -698,27 +717,105 @@ export function getHeroEquipmentArmor(equipment: HeroEquipment): number {
 
 export function getHeroEquipmentArmorSlots(equipment: HeroEquipment): CombatArmorSlotState[] {
   return HERO_EQUIPMENT_SLOT_KEYS.flatMap((slotKey) => {
-    const itemId = equipment[slotKey];
-    if (!itemId) {
-      return [];
-    }
+    const armorSlot = getHeroEquipmentArmorSlot(equipment, slotKey);
 
-    const item = HERO_ITEM_CATALOG[itemId];
-    const armorHp = Math.max(0, Math.floor(item?.armorHp ?? 0));
-
-    if (!item || item.equipmentSlot !== slotKey || isHeroConsumableItem(item) || armorHp <= 0) {
-      return [];
-    }
-
-    return [
-      {
-        slotKey,
-        itemId,
-        label: item.name,
-        armorHp,
-      },
-    ];
+    return armorSlot ? [armorSlot] : [];
   });
+}
+
+function getEnemyEquipmentArmorSlots(equipment: HeroEquipment): CombatArmorSlotState[] {
+  return HERO_EQUIPMENT_SLOT_KEYS.flatMap((slotKey) => {
+    const armorSlot = getHeroEquipmentArmorSlot(equipment, slotKey) ?? getEnemyOrphanFrontArmorSlot(equipment, slotKey);
+
+    return armorSlot ? [armorSlot] : [];
+  });
+}
+
+function getArmorSlotTotal(armorSlots: readonly CombatArmorSlotState[]): number {
+  return armorSlots.reduce((total, slot) => total + Math.max(0, Math.floor(slot.armorHp)), 0);
+}
+
+function getHeroEquipmentArmorSlot(equipment: HeroEquipment, slotKey: HeroEquipmentSlotKey): CombatArmorSlotState | undefined {
+  const itemId = equipment[slotKey];
+  if (!itemId) {
+    return undefined;
+  }
+
+  const item = HERO_ITEM_CATALOG[itemId];
+  const armorHp = Math.max(0, Math.floor(item?.armorHp ?? 0));
+
+  if (!item || item.equipmentSlot !== slotKey || isHeroConsumableItem(item) || armorHp <= 0) {
+    return undefined;
+  }
+
+  return {
+    slotKey,
+    itemId,
+    label: item.name,
+    armorHp,
+  };
+}
+
+function getEnemyOrphanFrontArmorSlot(equipment: HeroEquipment, slotKey: HeroEquipmentSlotKey): CombatArmorSlotState | undefined {
+  const pairConfig = getFrontArmorPairConfig(slotKey);
+  const itemId = pairConfig ? equipment[slotKey] : undefined;
+  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  if (!pairConfig || !itemId || !item || item.equipmentSlot !== slotKey || isHeroConsumableItem(item)) {
+    return undefined;
+  }
+
+  const matchingBackItem = findMatchingPairedBackArmorItem(item, pairConfig);
+  const matchingBackArmorHp = Math.max(0, Math.floor(matchingBackItem?.armorHp ?? 0));
+
+  if (!matchingBackItem || matchingBackArmorHp <= 0) {
+    return undefined;
+  }
+
+  const equippedBackItemId = equipment[pairConfig.backSlot];
+  const equippedBackItem = equippedBackItemId ? HERO_ITEM_CATALOG[equippedBackItemId] : undefined;
+  if (equippedBackItem && getPairedArmorItemKey(equippedBackItem, pairConfig) === getPairedArmorItemKey(item, pairConfig)) {
+    return undefined;
+  }
+
+  return {
+    slotKey,
+    itemId,
+    label: item.name,
+    armorHp: Math.ceil(matchingBackArmorHp / 2),
+  };
+}
+
+function getFrontArmorPairConfig(slotKey: HeroEquipmentSlotKey): PairedArmorSlotConfig | undefined {
+  return PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.frontSlot === slotKey);
+}
+
+function findMatchingPairedBackArmorItem(frontItem: HeroItemDefinition, pairConfig: PairedArmorSlotConfig): HeroItemDefinition | undefined {
+  const pairKey = getPairedArmorItemKey(frontItem, pairConfig);
+
+  return Object.values(HERO_ITEM_CATALOG).find(
+    (candidate) =>
+      candidate.kind === "armor" &&
+      candidate.equipmentSlot === pairConfig.backSlot &&
+      getPairedArmorItemKey(candidate, pairConfig) === pairKey,
+  );
+}
+
+function getPairedArmorItemKey(item: HeroItemDefinition, pairConfig: PairedArmorSlotConfig): string {
+  return normalizePairedArmorText(item.id, pairConfig);
+}
+
+function normalizePairedArmorText(value: string, pairConfig: PairedArmorSlotConfig): string {
+  const token = escapeRegExp(pairConfig.token);
+
+  return value
+    .toLowerCase()
+    .replace(new RegExp(`(^|[_\\s-])(?:back|front)([_\\s-]+)${token}(?=$|[_\\s-])`, "gu"), `$1${pairConfig.token}`)
+    .replace(new RegExp(`(^|[_\\s-])${token}([_\\s-]+)(?:back|front)(?=$|[_\\s-])`, "gu"), `$1${pairConfig.token}`);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function getHeroEquipmentDamageBonus(equipment: HeroEquipment): number {
@@ -1015,7 +1112,8 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyLoadout = encounter.enemyLoadout;
   const heroEquipment = hero.equipment;
   const enemyEquipment = enemyLoadout.equipment;
-  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyEquipment);
+  const enemyArmorSlots = getEnemyEquipmentArmorSlots(enemyEquipment);
+  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyEquipment, getArmorSlotTotal(enemyArmorSlots));
   const playerMainWeaponClass = getHeroEquipmentWeaponClass(heroEquipment);
   const playerBowWeaponClass = getHeroEquipmentBowWeaponClass(heroEquipment);
   const playerWeaponClass = heroEquipment.weaponMain ? playerMainWeaponClass : playerBowWeaponClass ?? playerMainWeaponClass;
@@ -1107,7 +1205,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenItemId: enemyLoadout.shurikenItemId,
       poisonTurns: 0,
       equipment: { ...enemyEquipment },
-      armorSlots: getHeroEquipmentArmorSlots(enemyEquipment),
+      armorSlots: enemyArmorSlots,
       visualPreset: { ...enemyLoadout.visualPreset },
     },
     encounter: {

@@ -128,6 +128,7 @@ import {
   saveArenaTier,
   saveGeneratedEquipmentItem,
   saveProdAnimation,
+  saveProdCityHeroTransform,
   saveProdDefaults,
   saveProdVfxDefaults,
   saveUiLayoutProdDefaults,
@@ -1449,7 +1450,13 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
   mountClassicActionButtonEditor(classicSlotsBody);
 
   for (const group of cityControlGroups) {
-    cityBody.append(createControlGroup(group));
+    const groupElement = createControlGroup(group);
+
+    if (group.title === "City hero") {
+      appendCityHeroTransformSave(groupElement, status);
+    }
+
+    cityBody.append(groupElement);
   }
 
   cityBody.append(createHeroPortraitButtonReset());
@@ -1648,6 +1655,37 @@ function createUiLayoutControlRow(
 
 function normalizeUiLayoutViewport(value: string): UiLayoutViewport {
   return UI_LAYOUT_VIEWPORTS.includes(value as UiLayoutViewport) ? value as UiLayoutViewport : "desktop";
+}
+
+function appendCityHeroTransformSave(groupElement: HTMLElement, status: HTMLElement): void {
+  const body = groupElement.querySelector<HTMLElement>(".debug-panel__group-body");
+  const actions = document.createElement("div");
+  const button = document.createElement("button");
+
+  if (!body) {
+    return;
+  }
+
+  actions.className = "debug-rig-editor__actions";
+  button.className = "debug-panel__reset debug-panel__save-prod debug-city-hero__save-prod";
+  button.type = "button";
+  button.textContent = "Save city hero as prod";
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    status.textContent = "Saving city hero transform...";
+
+    try {
+      status.textContent = await saveProdCityHeroTransform(debugTuning);
+      clearDebugTuningStorage();
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : "Could not save city hero transform.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  actions.append(button);
+  body.append(actions);
 }
 
 function createHeroPortraitButtonReset(): HTMLButtonElement {

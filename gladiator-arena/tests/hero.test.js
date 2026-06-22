@@ -68,6 +68,15 @@ const generatedItems = {
     damageBonus: 4,
     levelRequirement: 10,
   },
+  generated_equipment_weapon_sword_uncommon: {
+    id: "generated_equipment_weapon_sword_uncommon",
+    name: "Uncommon Sword",
+    kind: "weapon",
+    rarity: "uncommon",
+    weaponClass: "sword",
+    equipmentSlot: "weaponMain",
+    damageBonus: 5,
+  },
   generated_equipment_weapon_bow_01: {
     id: "generated_equipment_weapon_bow_01",
     name: "Bow 01",
@@ -129,6 +138,24 @@ const generatedItems = {
     kind: "armor",
     rarity: "uncommon",
     armorCategory: "leather",
+    equipmentSlot: "frontWrist",
+    armorHp: 0,
+  },
+  sand_back_wrist_01: {
+    id: "sand_back_wrist_01",
+    name: "Sand Back Wrist 01",
+    kind: "armor",
+    rarity: "common",
+    armorCategory: "sand",
+    equipmentSlot: "backWrist",
+    armorHp: 1,
+  },
+  sand_front_wrist_01: {
+    id: "sand_front_wrist_01",
+    name: "Sand Front Wrist 01",
+    kind: "armor",
+    rarity: "common",
+    armorCategory: "sand",
     equipmentSlot: "frontWrist",
     armorHp: 0,
   },
@@ -404,6 +431,67 @@ test("arena tier one default enemy loadouts only roll common equipment", () => {
   }
 });
 
+test("enemy equipment generation keeps the first rolled item for each slot", () => {
+  const testTier = {
+    id: 99,
+    name: "Test Tier",
+    enemyEquipmentPools: [
+      { itemRarities: ["common"], rollChance: 0, weaponChance: 1, shurikenChance: 0 },
+      { itemRarities: ["uncommon"], rollChance: 0, weaponChance: 1, shurikenChance: 0 },
+    ],
+    randomOpponentIds: [],
+    bossIds: [],
+  };
+  const isolatedArenaOpponents = {
+    ARENA_BOSSES: [],
+    ARENA_DIFFICULTY_IDS: ["easy", "medium", "hard"],
+    ARENA_RANDOM_OPPONENTS: [],
+    ARENA_TIER_CONFIGS: [],
+    ARENA_TIERS: [testTier],
+    BATTLE_LOSS_REWARD: { gold: 1, xp: 1 },
+    BATTLE_WIN_REWARD: { gold: 10, xp: 10 },
+    DEFAULT_ARENA_DIFFICULTY_ID: "medium",
+    DEFAULT_ARENA_TIER_ID: testTier.id,
+    getArenaBossDefinition: () => undefined,
+    getArenaBossesForTier: () => [],
+    getArenaRandomOpponentDefinition: () => undefined,
+    getArenaRandomOpponentsForTier: () => [],
+    getArenaRandomOpponentsForTierAndDifficulty: () => [],
+    getArenaTierConfig: () => undefined,
+    getArenaTierDefinition: () => testTier,
+    getArenaTierDefinitions: () => [testTier],
+  };
+  const isolatedHero = loadTypeScriptModule("../src/hero.ts", {
+    require: (id) => {
+      if (id === "./combat") {
+        return combat;
+      }
+
+      if (id === "./arenaOpponents") {
+        return isolatedArenaOpponents;
+      }
+
+      if (id === "./arenaOpponentNames") {
+        return arenaOpponentNames;
+      }
+
+      if (id === "./generated/equipmentItems.generated") {
+        return {
+          GENERATED_EQUIPMENT_ITEM_CATALOG: generatedItems,
+          GENERATED_EQUIPMENT_ITEM_IDS: Object.keys(generatedItems),
+          GENERATED_EQUIPMENT_ITEM_RECORDS: Object.values(generatedItems).map((item) => ({ item })),
+        };
+      }
+
+      throw new Error(`Unsupported isolated hero test import: ${id}`);
+    },
+  });
+
+  const loadout = isolatedHero.createRandomEnemyLoadout(() => 0, testTier.id);
+
+  assert.equal(loadout.equipment.weaponMain, "weapon_sword_01");
+});
+
 test("arena opponent model defines random opponents and boss hooks", () => {
   const tier = hero.getArenaTierDefinition(1);
   const randomOpponents = hero.getArenaRandomOpponentsForTier(1);
@@ -592,6 +680,71 @@ test("arena encounter enemy base stats derive combat stats", () => {
   assert.equal(combatState.enemy.movementDistanceBonus, 0.045);
   assert.equal(combatState.enemy.restHpRestoreBonus, 4);
   assert.equal(combatState.enemy.restStaminaRestoreBonus, 4);
+});
+
+test("enemy front pair armor grants half armor without changing player armor rules", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const makeEncounter = (equipment) => ({
+    id: "random:test_enemy_pair_armor",
+    kind: "random",
+    tierId: 1,
+    opponentId: "test_enemy_pair_armor",
+    name: "Pair Armor Test",
+    enemyLoadout: {
+      equipment,
+      visualPreset: { skin: 0, skinDark: 0, hair: 0 },
+    },
+    rewards: {
+      win: { gold: 0, xp: 0 },
+      loss: { gold: 0, xp: 0 },
+    },
+    lootTable: [],
+  });
+
+  const frontOnlyEquipment = {
+    ...hero.createDefaultHeroEquipment(),
+    frontWrist: "leather_front_wrist_01",
+  };
+  const frontOnlyState = hero.createCombatStateFromHero(baseHero, makeEncounter(frontOnlyEquipment));
+
+  assert.equal(frontOnlyState.enemy.armor, 1);
+  assert.equal(frontOnlyState.enemy.maxArmor, 1);
+  assert.deepEqual(Array.from(frontOnlyState.enemy.armorSlots ?? [], (slot) => [slot.slotKey, slot.itemId, slot.label, slot.armorHp]), [
+    ["frontWrist", "leather_front_wrist_01", "Leather Front Wrist 01", 1],
+  ]);
+
+  const playerFrontOnlyState = hero.createCombatStateFromHero(
+    { ...baseHero, equipment: frontOnlyEquipment },
+    makeEncounter(hero.createDefaultHeroEquipment()),
+  );
+
+  assert.equal(playerFrontOnlyState.player.armor, 0);
+  assert.deepEqual(Array.from(playerFrontOnlyState.player.armorSlots ?? []), []);
+
+  const matchingPairEquipment = {
+    ...hero.createDefaultHeroEquipment(),
+    backWrist: "leather_back_wrist_01",
+    frontWrist: "leather_front_wrist_01",
+  };
+  const matchingPairState = hero.createCombatStateFromHero(baseHero, makeEncounter(matchingPairEquipment));
+
+  assert.equal(matchingPairState.enemy.armor, 2);
+  assert.deepEqual(Array.from(matchingPairState.enemy.armorSlots ?? [], (slot) => [slot.slotKey, slot.itemId, slot.armorHp]), [
+    ["backWrist", "leather_back_wrist_01", 2],
+  ]);
+
+  const mixedPairEquipment = {
+    ...hero.createDefaultHeroEquipment(),
+    backWrist: "leather_back_wrist_01",
+    frontWrist: "sand_front_wrist_01",
+  };
+  const mixedPairState = hero.createCombatStateFromHero(baseHero, makeEncounter(mixedPairEquipment));
+
+  assert.equal(mixedPairState.enemy.armor, 3);
+  assert.deepEqual(Array.from(mixedPairState.enemy.armorSlots ?? [], (slot) => [slot.slotKey, slot.itemId, slot.armorHp]), [
+    ["backWrist", "leather_back_wrist_01", 2],
+    ["frontWrist", "sand_front_wrist_01", 1],
+  ]);
 });
 
 test("arena encounter loot rolls into hero inventory", () => {

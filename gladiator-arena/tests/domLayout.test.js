@@ -86,7 +86,7 @@ test("battle hud exposes combat buff and debuff status trays with scroll icons",
   assert.equal(stylesSource.includes("justify-content: flex-end;"), true);
 });
 
-test("city hero widget keeps the top HUD compact", () => {
+test("city hero widget lives in the bottom dock with a thumb-friendly portrait", () => {
   const heroWidgetStart = html.indexOf('id="heroWidget"');
   const heroWidgetEnd = html.indexOf('id="cityTimeToggle"');
   const heroWidgetHtml = html.slice(heroWidgetStart, heroWidgetEnd);
@@ -117,6 +117,12 @@ test("city hero widget keeps the top HUD compact", () => {
   assert.equal(stylesSource.includes("./assets/ui/shop/xp-icon.webp"), true);
   assert.equal(stylesSource.includes("--city-hud-bronze"), true);
   assert.equal(stylesSource.includes("--city-hud-wood-shadow"), true);
+  assert.equal(stylesSource.includes("--city-top-hud-height"), false);
+  assert.equal(stylesSource.includes("--city-bottom-safe"), true);
+  assert.equal(stylesSource.includes("bottom: calc(var(--city-bottom-safe) + var(--city-nav-height) + var(--city-bottom-dock-gap))"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: minmax(0, 1fr) 74px"), true);
+  assert.equal(stylesSource.includes("grid-column: 2"), true);
+  assert.equal(stylesSource.includes("bottom: var(--city-bottom-safe)"), true);
   assert.equal(stylesSource.includes("--ui-hud-portrait-frame"), false);
   assert.equal(stylesSource.includes("--ui-hud-wide-panel-frame"), false);
   assert.equal(stylesSource.includes("--ui-hud-xp-bar-frame"), false);
