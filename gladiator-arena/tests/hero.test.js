@@ -254,6 +254,31 @@ test("hero starts with empty equipment including gloves wrists and shield", () =
   assert.deepEqual([...hero.createDefaultHero().unlockedShopRarities], []);
 });
 
+test("preview equipment shows bows without mutating equipped melee weapons", () => {
+  const equipment = {
+    ...hero.createDefaultHeroEquipment(),
+    weaponMain: "weapon_sword_01",
+  };
+  const previewEquipment = hero.createHeroPreviewEquipment(equipment, ["generated_equipment_weapon_bow_01"]);
+
+  assert.equal(equipment.weaponMain, "weapon_sword_01");
+  assert.equal(equipment.weaponBow, null);
+  assert.equal(previewEquipment.weaponMain, "weapon_sword_01");
+  assert.equal(previewEquipment.weaponBow, "generated_equipment_weapon_bow_01");
+});
+
+test("preview equipment can show shurikens while they remain consumables", () => {
+  const equipment = {
+    ...hero.createDefaultHeroEquipment(),
+    weaponMain: "weapon_sword_01",
+  };
+  const previewEquipment = hero.createHeroPreviewEquipment(equipment, ["generated_equipment_weapon_shuriken_01"]);
+
+  assert.equal(hero.areHeroItemsConsumable(["generated_equipment_weapon_shuriken_01"]), true);
+  assert.equal(equipment.weaponMain, "weapon_sword_01");
+  assert.equal(previewEquipment.weaponMain, "generated_equipment_weapon_shuriken_01");
+});
+
 test("hero starts with default dummy appearance and can update cosmetic slots", () => {
   const defaultHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
 
@@ -472,7 +497,7 @@ test("arena tier one default enemy loadouts use tier one equipment pools", () =>
   assert.equal(tierOneEquipmentPools[0].bowChance, 0.1);
   assert.equal(tierOneEquipmentPools[0].shieldChance, 0.05);
   assert.equal(tierOneEquipmentPools[0].shurikenChance, 0.1);
-  assert.equal(tierOneEquipmentPools[0].scrollChance, 0.03);
+  assert.equal(tierOneEquipmentPools[0].scrollChance, 1);
   assert.equal(tierOneEquipmentPools[1].itemRarities[0], "uncommon");
   assert.equal(tierOneEquipmentPools[1].rollChance, 0.01);
   assert.equal(tierOneEquipmentPools[1].bowChance, 0);

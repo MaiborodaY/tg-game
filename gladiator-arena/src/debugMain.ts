@@ -37,13 +37,13 @@ import {
 } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
 import {
-  HERO_ITEM_CATALOG,
   allocateHeroSkillPoints,
   applyCombatReward,
   buyAndEquipHeroItems,
   createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
   createDefaultHero,
+  createHeroPreviewEquipment,
   deriveHeroStats,
   grantHeroGold,
   grantHeroLevels,
@@ -513,15 +513,7 @@ function handleTemporaryChurchSkillGrant(): void {
 }
 
 function createShopPreviewEquipment(itemIds: HeroItemId[]): HeroEquipment {
-  const equipment: HeroEquipment = { ...hero.equipment };
-
-  itemIds.forEach((itemId) => {
-    const item = HERO_ITEM_CATALOG[itemId];
-
-    equipment[item.equipmentSlot] = itemId;
-  });
-
-  return equipment;
+  return createHeroPreviewEquipment(hero.equipment, itemIds);
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {

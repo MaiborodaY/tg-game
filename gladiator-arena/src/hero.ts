@@ -626,6 +626,22 @@ export function createDefaultHeroEquipment(): HeroEquipment {
   return Object.fromEntries(HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])) as HeroEquipment;
 }
 
+export function createHeroPreviewEquipment(baseEquipment: HeroEquipment, itemIds: readonly HeroItemId[]): HeroEquipment {
+  const equipment: HeroEquipment = { ...baseEquipment };
+
+  itemIds.forEach((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    if (!isHeroEquipmentPreviewItem(item)) {
+      return;
+    }
+
+    equipment[item.equipmentSlot] = itemId;
+  });
+
+  return equipment;
+}
+
 export function createDefaultHeroAppearance(): HeroAppearance {
   return { ...DEFAULT_HERO_APPEARANCE };
 }
@@ -907,6 +923,10 @@ export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[
 
 export function isHeroConsumableItem(item: HeroItemDefinition | undefined): boolean {
   return item?.kind === "scroll" || getHeroItemWeaponClass(item) === "shuriken";
+}
+
+export function isHeroEquipmentPreviewItem(item: HeroItemDefinition | undefined): item is HeroItemDefinition {
+  return Boolean(item && item.kind !== "scroll");
 }
 
 export function isHeroScrollItem(item: HeroItemDefinition | undefined): boolean {

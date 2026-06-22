@@ -174,12 +174,12 @@ test("paper doll registers weapon slots before lazy weapon textures load", () =>
 
   assert.equal(partVisualSource.includes("options.weaponMainAssetKey && target.textures.exists"), false);
   assert.equal(partVisualSource.includes("options.weaponBowAssetKey && target.textures.exists"), false);
-  assert.match(partVisualSource, /if \(options\.weaponMainAssetKey\) \{[\s\S]*addPaperDollWeaponVisual/);
-  assert.match(partVisualSource, /if \(options\.weaponBowAssetKey\) \{[\s\S]*addPaperDollWeaponVisual/);
-  assert.match(weaponVisualSource, /if \(target\.textures\.exists\(assetKey\)\) \{[\s\S]*weaponContainer\.add\(image\);[\s\S]*\}/);
+  assert.match(partVisualSource, /if \(key === "backHand"\) \{[\s\S]*addPaperDollWeaponVisual\(target, partContainer, equipmentLayers, equipmentAnchors, "weaponMain", options\.weaponMainAssetKey, equipment\);[\s\S]*addPaperDollWeaponVisual\(target, partContainer, equipmentLayers, equipmentAnchors, "weaponBow", options\.weaponBowAssetKey, equipment\);[\s\S]*\}/);
+  assert.match(weaponVisualSource, /assetKey: string \| undefined/);
+  assert.match(weaponVisualSource, /if \(assetKey && target\.textures\.exists\(assetKey\)\) \{[\s\S]*weaponContainer\.add\(image\);[\s\S]*\}/);
   assert.match(weaponVisualSource, /addPaperDollWeaponTopOverlay/);
   assert.match(weaponVisualSource, /registerPaperDollEquipmentSlot\(weaponContainer, equipment, slotKey, config\);/);
-  assert.match(weaponOverlaySource, /if \(target\.textures\.exists\(assetKey\)\) \{[\s\S]*topContainer\.add\(topImage\);[\s\S]*\}/);
+  assert.match(weaponOverlaySource, /if \(assetKey && target\.textures\.exists\(assetKey\)\) \{[\s\S]*topContainer\.add\(topImage\);[\s\S]*\}/);
   assert.match(weaponOverlaySource, /paperDollEquipmentSlotConfigs\.set\(topSlot, config\);/);
 });
 
@@ -195,7 +195,7 @@ test("paper doll high shadow hides armor equipment and face overlays", () => {
   assert.equal(arenaSceneSource.includes("function shouldSyncPaperDollShadowEquipment("), true);
   assert.equal(arenaSceneSource.includes("return Boolean(rig.shadow?.root.visible);"), true);
   assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment && shadow\) \{[\s\S]*tintPaperDollShadowObject\(shadow\.root\)[\s\S]*\}/);
-  assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(shadow, visibility, slotKeys)"), true);
+  assert.equal(arenaSceneSource.includes("syncPaperDollShadowSilhouette(shadow, visibility, visibilitySlotKeys)"), true);
   assert.match(arenaSceneSource, /if \(shouldSyncShadowEquipment\) \{[\s\S]*syncPaperDollEquipmentSlot\(rig\.shadow\?\.equipment\[slotKey\], slotKey, textureKey\);[\s\S]*\}/);
   assert.match(arenaSceneSource, /!wasHighShadowVisible && this\.fighter\.shadow\.visible[\s\S]*syncPaperDollEquipmentState\(this\.fighter\.paperDollRig\);/);
   assert.doesNotMatch(arenaSceneSource, /rig\.shadow\?\.equipment\[slotKey\]\?\.setVisible\(visibility\[slotKey\]\)/);
@@ -1075,7 +1075,7 @@ test("shop equipment preview updates gear without resetting the animated pose", 
   assert.equal(equipmentSyncSource.includes("applyPaperDollEquipmentStateTuning(rig, slotKeys, equipmentOverride)"), true);
   assert.equal(equipmentSyncSource.includes("syncPaperDollEquipmentVisibility(rig, slotKeys, equipmentOverride)"), true);
   assert.equal(arenaSceneSource.includes("getPlayerEquipmentSlotAssetKey(equipmentState, slotKey)"), true);
-  assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots\);[\s\S]*return;/);
+  assert.match(arenaSceneSource, /this\.viewerMode === "shop"[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, equipment\);[\s\S]*return;/);
   assert.match(arenaSceneSource, /private syncPlayerEquipment\(changedSlots\?: readonly PaperDollEquipmentSlotKey\[\]\): void \{[\s\S]*syncPaperDollEquipmentState\(this\.fighter\?\.paperDollRig, changedSlots, this\.previewEquipment\);[\s\S]*applyCityHeroLighting\(this\.fighter, this\.cityLightingAmount, changedSlots\);/);
   assert.match(arenaSceneSource, /function applyCityHeroLighting\([\s\S]*equipmentSlotKeys\?: readonly PaperDollEquipmentSlotKey\[\],[\s\S]*if \(equipmentSlotKeys\) \{[\s\S]*tintPaperDollImages\(rig\.equipment\[slotKey\], CITY_HERO_EQUIPMENT_TINT, amount\);[\s\S]*return;/);
   assert.equal(mainSource.includes("function getShopPreviewItemIds(product: ArmoryProduct | WeaponProduct): HeroItemId[]"), false);

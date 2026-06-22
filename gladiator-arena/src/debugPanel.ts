@@ -85,6 +85,7 @@ import {
 } from "./debugCharacterEquipmentBridge";
 import {
   createDefaultHeroEquipment,
+  createHeroPreviewEquipment,
   ARENA_BOSSES,
   ARENA_DIFFICULTY_IDS,
   ARENA_TIER_CONFIGS,
@@ -4094,7 +4095,6 @@ function getAnimationWorkbenchPreviewEquipment(): HeroEquipment {
   return {
     ...baseEquipment,
     [item.equipmentSlot]: itemId,
-    ...(item.equipmentSlot === "weaponBow" ? { weaponMain: null } : {}),
   };
 }
 
@@ -6051,11 +6051,7 @@ function updateHeroEquipmentItemWithPair(itemId: HeroItemId, slotKey: HeroEquipm
 
   const pairItem = getGeneratedEquipmentPairItem(itemId);
 
-  updateHeroEquipment({
-    ...debugHeroEquipment,
-    [slotKey]: itemId,
-    ...(pairItem ? { [pairItem.slotKey]: pairItem.itemId } : {}),
-  });
+  updateHeroEquipment(createHeroPreviewEquipment(debugHeroEquipment, [itemId, ...(pairItem ? [pairItem.itemId] : [])]));
 }
 
 function updateHeroEquipment(nextEquipment: HeroEquipment): void {

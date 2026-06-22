@@ -10751,6 +10751,446 @@
     }
   },
   {
+    "id": "generated_equipment_weapon_bow_common_bow_02",
+    "name": "Common bow 02",
+    "kind": "weapon",
+    "rarity": "common",
+    "damageBonus": 2,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-common-bow-02"
+    },
+    "equipmentTuning": {
+      "x": -70,
+      "y": 7,
+      "angle": 90,
+      "scaleX": 1.3,
+      "scaleY": 1.3,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-common-bow-02",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-common-bow-02.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-common-bow-02.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_common_bow_02",
+      "name": "Common bow 02",
+      "price": 100,
+      "itemIds": [
+        "generated_equipment_weapon_bow_common_bow_02"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_epic_bow_1",
+    "name": "Epic bow 1",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 7,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-epic-bow-1"
+    },
+    "equipmentTuning": {
+      "x": -75,
+      "y": 4,
+      "angle": 90,
+      "scaleX": 1.6,
+      "scaleY": 1.4,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-epic-bow-1",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-epic-bow-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-epic-bow-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_epic_bow_1",
+      "name": "Epic bow 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_epic_bow_1"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_epic_bow_2",
+    "name": "Epic bow 2",
+    "kind": "weapon",
+    "rarity": "epic",
+    "damageBonus": 8,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-epic-bow-2"
+    },
+    "equipmentTuning": {
+      "x": -92,
+      "y": 7,
+      "angle": 90,
+      "scaleX": 2.12,
+      "scaleY": 1.69,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-epic-bow-2",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-epic-bow-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-epic-bow-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_epic_bow_2",
+      "name": "Epic bow 2",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_epic_bow_2"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_legendary_bow_1",
+    "name": "Legendary bow 1",
+    "kind": "weapon",
+    "rarity": "legendary",
+    "damageBonus": 9,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-legendary-bow-1"
+    },
+    "equipmentTuning": {
+      "x": -100,
+      "y": 1,
+      "angle": 90,
+      "scaleX": 2.07,
+      "scaleY": 1.9,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-legendary-bow-1",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-legendary-bow-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-legendary-bow-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_legendary_bow_1",
+      "name": "Legendary bow 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_legendary_bow_1"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_legendary_bow_2",
+    "name": "Legendary bow 2",
+    "kind": "weapon",
+    "rarity": "legendary",
+    "damageBonus": 10,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-legendary-bow-2"
+    },
+    "equipmentTuning": {
+      "x": -109,
+      "y": 10,
+      "angle": 90,
+      "scaleX": 1.37,
+      "scaleY": 2.02,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-legendary-bow-2",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-legendary-bow-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-legendary-bow-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_legendary_bow_2",
+      "name": "Legendary bow 2",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_legendary_bow_2"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_mythic_bow_1",
+    "name": "Mythic bow 1",
+    "kind": "weapon",
+    "rarity": "mythical",
+    "damageBonus": 11,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-mythic-bow-1"
+    },
+    "equipmentTuning": {
+      "x": -108,
+      "y": -7,
+      "angle": 90,
+      "scaleX": 1.8,
+      "scaleY": 1.99,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-mythic-bow-1",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-mythic-bow-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-mythic-bow-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_mythic_bow_1",
+      "name": "Mythic bow 1",
+      "price": 1139,
+      "itemIds": [
+        "generated_equipment_weapon_bow_mythic_bow_1"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_mythic_bow_2",
+    "name": "Mythic bow 2",
+    "kind": "weapon",
+    "rarity": "mythical",
+    "damageBonus": 12,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-mythic-bow-2"
+    },
+    "equipmentTuning": {
+      "x": -112,
+      "y": 4,
+      "angle": 90,
+      "scaleX": 1.3,
+      "scaleY": 2.02,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-mythic-bow-2",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-mythic-bow-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-mythic-bow-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_mythic_bow_2",
+      "name": "Mythic bow 2",
+      "price": 1033,
+      "itemIds": [
+        "generated_equipment_weapon_bow_mythic_bow_2"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_rare_bow_1",
+    "name": "Rare bow 1",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 5,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-rare-bow-1"
+    },
+    "equipmentTuning": {
+      "x": -74,
+      "y": 1,
+      "angle": 90,
+      "scaleX": 1.35,
+      "scaleY": 1.35,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-rare-bow-1",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-rare-bow-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-rare-bow-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_rare_bow_1",
+      "name": "Rare bow 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_rare_bow_1"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_rare_bow_2",
+    "name": "Rare bow 2",
+    "kind": "weapon",
+    "rarity": "rare",
+    "damageBonus": 6,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-rare-bow-2"
+    },
+    "equipmentTuning": {
+      "x": -75,
+      "y": 13,
+      "angle": 90,
+      "scaleX": 1.64,
+      "scaleY": 1.4,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-rare-bow-2",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-rare-bow-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-rare-bow-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_rare_bow_2",
+      "name": "Rare bow 2",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_rare_bow_2"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_uncommon_bow_1",
+    "name": "Uncommon bow 1",
+    "kind": "weapon",
+    "rarity": "uncommon",
+    "damageBonus": 3,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-uncommon-bow-1"
+    },
+    "equipmentTuning": {
+      "x": -68,
+      "y": 5,
+      "angle": 90,
+      "scaleX": 1.3,
+      "scaleY": 1.3,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-uncommon-bow-1",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-uncommon-bow-1.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-uncommon-bow-1.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_uncommon_bow_1",
+      "name": "Uncommon bow 1",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_uncommon_bow_1"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_bow_uncommon_bow_2",
+    "name": "Uncommon bow 2",
+    "kind": "weapon",
+    "rarity": "uncommon",
+    "damageBonus": 4,
+    "weaponClass": "bow",
+    "equipmentSlot": "weaponBow",
+    "assetKeys": {
+      "weaponBowAssetKey": "weapon-bow-uncommon-bow-2"
+    },
+    "equipmentTuning": {
+      "x": -69,
+      "y": 6,
+      "angle": 90,
+      "scaleX": 1.3,
+      "scaleY": 1.3,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-bow-uncommon-bow-2",
+      "sourcePath": "assets/fighters/weapons/weapon-bow-uncommon-bow-2.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-bow-uncommon-bow-2.webp"
+    },
+    "availability": {
+      "shop": true,
+      "enemyPool": true,
+      "bossUnique": false
+    },
+    "weaponProduct": {
+      "id": "generated_equipment_weapon_bow_uncommon_bow_2",
+      "name": "Uncommon bow 2",
+      "price": 0,
+      "itemIds": [
+        "generated_equipment_weapon_bow_uncommon_bow_2"
+      ],
+      "categoryId": "bows"
+    }
+  },
+  {
     "id": "generated_equipment_weapon_mace_bad_club",
     "name": "Common Mace 01",
     "kind": "weapon",

@@ -44,6 +44,7 @@ import {
   createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
   createDefaultHero,
+  createHeroPreviewEquipment,
   deriveHeroStats,
   grantHeroGold,
   grantHeroLevels,
@@ -53,6 +54,7 @@ import {
   getArenaTierDefinitions,
   getBattleReward,
   isHeroConsumableItem,
+  isHeroEquipmentPreviewItem,
   unlockAllArenaBossTiers,
   unlockAllHeroShopRarities,
   updateHeroAppearance,
@@ -1199,22 +1201,12 @@ function syncCityShopHeroState(): void {
 }
 
 function createShopPreviewEquipment(itemIds: readonly HeroItemId[], baseEquipment: HeroEquipment = hero.equipment): HeroEquipment {
-  const equipment: HeroEquipment = { ...baseEquipment };
-
-  itemIds.forEach((itemId) => {
-    const item = HERO_ITEM_CATALOG[itemId];
-
-    if (item && !isHeroConsumableItem(item)) {
-      equipment[item.equipmentSlot] = itemId;
-    }
-  });
-
-  return equipment;
+  return createHeroPreviewEquipment(baseEquipment, itemIds);
 }
 
 function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
   cancelShopPreviewPrewarm();
-  if (areHeroItemsConsumable(product.itemIds)) {
+  if (!hasHeroEquipmentPreviewItems(product.itemIds)) {
     clearShopPreview();
     return;
   }
@@ -1229,7 +1221,7 @@ function clearShopPreview(): void {
 
 function handleShopProductPrewarm(products: readonly (ArmoryProduct | WeaponProduct)[]): void {
   const itemIds = products
-    .filter((product) => !areHeroItemsConsumable(product.itemIds) && !isShopProductSealed(hero, product.itemIds, product.rarity))
+    .filter((product) => hasHeroEquipmentPreviewItems(product.itemIds) && !isShopProductSealed(hero, product.itemIds, product.rarity))
     .flatMap((product) => product.itemIds);
 
   scheduleShopPreviewPrewarm(itemIds);
@@ -1240,7 +1232,7 @@ function scheduleShopPreviewPrewarm(itemIds: readonly HeroItemId[]): void {
     .filter((itemId) => {
       const item = HERO_ITEM_CATALOG[itemId];
 
-      return Boolean(item && !isHeroConsumableItem(item));
+      return isHeroEquipmentPreviewItem(item);
     });
   const signature = uniqueItemIds.join("|");
 
@@ -1301,6 +1293,10 @@ function cancelShopPreviewPrewarm(): void {
 
 function previewShopEquipment(equipment: HeroEquipment): void {
   cityScene?.previewEquipment(equipment);
+}
+
+function hasHeroEquipmentPreviewItems(itemIds: readonly HeroItemId[]): boolean {
+  return itemIds.some((itemId) => isHeroEquipmentPreviewItem(HERO_ITEM_CATALOG[itemId]));
 }
 
 async function returnToCity(): Promise<void> {
