@@ -404,13 +404,81 @@ test("cloth and sword stay common while leather catalog items are uncommon", () 
   }
 });
 
-test("arena tier one default enemy loadouts only roll common equipment", () => {
+const arenaMatrixRarities = ["common", "uncommon", "rare", "epic", "legendary", "mythical"];
+const expectedArenaGoldRewards = new Map([
+  [1, { easy: 4, medium: 6, hard: 9, boss: 14 }],
+  [2, { easy: 14, medium: 16, hard: 19, boss: 25 }],
+  [3, { easy: 25, medium: 28, hard: 32, boss: 40 }],
+  [4, { easy: 40, medium: 44, hard: 49, boss: 60 }],
+  [5, { easy: 60, medium: 65, hard: 71, boss: 85 }],
+  [6, { easy: 85, medium: 91, hard: 99, boss: 115 }],
+  [7, { easy: 115, medium: 122, hard: 131, boss: 150 }],
+  [8, { easy: 150, medium: 158, hard: 168, boss: 190 }],
+]);
+
+function createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChance, shieldChance, shurikenChance, scrollChance) {
+  return {
+    itemRarities: [rarity],
+    rollChance,
+    weaponChance,
+    bowChance,
+    shieldChance,
+    shurikenChance,
+    ...(scrollChance > 0 ? { scrollChance } : {}),
+  };
+}
+
+function createExpectedArenaMatrixArmorOnlyPool(rarity, rollChance) {
+  return createExpectedArenaMatrixPool(rarity, rollChance, 0, 0, 0, 0, 0);
+}
+
+function getExpectedArenaMatrixCurrentRarityIndex(tierId) {
+  return Math.min(Math.max(tierId - 1, 1), arenaMatrixRarities.length - 1);
+}
+
+function getExpectedArenaMatrixEquipmentPools(tierId, difficultyId) {
+  const currentIndex = getExpectedArenaMatrixCurrentRarityIndex(tierId);
+  const previous = arenaMatrixRarities[currentIndex - 1];
+  const current = arenaMatrixRarities[currentIndex];
+  const next = arenaMatrixRarities[currentIndex + 1];
+
+  if (difficultyId === "easy") {
+    return [
+      createExpectedArenaMatrixPool(previous, 0.95, 0.7, 0.05, 0.05, 0.08, 0.02),
+      createExpectedArenaMatrixPool(current, 1, 1, 0.03, 0.03, 0.02, 0.03),
+    ];
+  }
+
+  if (difficultyId === "medium") {
+    return [
+      createExpectedArenaMatrixArmorOnlyPool(previous, 0.35),
+      createExpectedArenaMatrixPool(current, 1, 1, 0.07, 0.14, 0.08, 0.05),
+    ];
+  }
+
+  return next
+    ? [createExpectedArenaMatrixPool(current, 0.95, 0.95, 0.1, 0.22, 0.12, 0.1), createExpectedArenaMatrixPool(next, 1, 1, 0.04, 0.08, 0.04, 0.05)]
+    : [createExpectedArenaMatrixPool(current, 1, 1, 0.1, 0.22, 0.12, 0.1)];
+}
+
+test("arena tier one default enemy loadouts use tier one equipment pools", () => {
   const tierOneEquipmentPools = hero.getArenaTierDefinition(1).enemyEquipmentPools;
 
-  assert.equal(tierOneEquipmentPools.length, 1);
+  assert.equal(tierOneEquipmentPools.length, 2);
   assert.equal(tierOneEquipmentPools[0].itemRarities.length, 1);
   assert.equal(tierOneEquipmentPools[0].itemRarities[0], "common");
   assert.equal(tierOneEquipmentPools[0].rollChance, 0.2);
+  assert.equal(tierOneEquipmentPools[0].weaponChance, 0.5);
+  assert.equal(tierOneEquipmentPools[0].bowChance, 0.1);
+  assert.equal(tierOneEquipmentPools[0].shieldChance, 0.05);
+  assert.equal(tierOneEquipmentPools[0].shurikenChance, 0.1);
+  assert.equal(tierOneEquipmentPools[0].scrollChance, 0.03);
+  assert.equal(tierOneEquipmentPools[1].itemRarities[0], "uncommon");
+  assert.equal(tierOneEquipmentPools[1].rollChance, 0.01);
+  assert.equal(tierOneEquipmentPools[1].bowChance, 0);
+  assert.equal(tierOneEquipmentPools[1].shieldChance, 0);
+  assert.equal(tierOneEquipmentPools[1].shurikenChance, 0);
+  assert.equal(tierOneEquipmentPools[1].scrollChance, undefined);
 
   const loadout = hero.createRandomEnemyLoadout(() => 0, 1);
   const equippedItemIds = Object.values(loadout.equipment).filter(Boolean);
@@ -420,14 +488,40 @@ test("arena tier one default enemy loadouts only roll common equipment", () => {
   assert.equal(loadout.shurikenItemId, "generated_equipment_weapon_shuriken_01");
   assert.equal(loadout.shurikenCount, 1);
   assert.equal(loadout.shurikenDamage, 2);
+  assert.equal(loadout.scrollItemId, hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID);
+  assert.equal(loadout.scrollCount, 1);
   assert.equal(loadout.equipment.breastplate, "cloth_breastplate_01");
-  assert.equal(loadout.equipment.helmet, null);
-  assert.equal(loadout.equipment.backWrist, null);
-  assert.equal(loadout.equipment.frontWrist, null);
 
   assert.equal(equippedItemIds.includes("generated_equipment_weapon_shuriken_01"), false);
   for (const itemId of equippedItemIds) {
-    assert.equal(hero.HERO_ITEM_CATALOG[itemId]?.rarity, "common");
+    assert.equal(["common", "uncommon"].includes(hero.HERO_ITEM_CATALOG[itemId]?.rarity), true);
+  }
+});
+
+test("arena tier equipment pools follow the difficulty matrix from tier two onward", () => {
+  for (const tier of hero.ARENA_TIER_CONFIGS.filter((arenaTier) => arenaTier.id >= 2)) {
+    for (const opponent of tier.opponents) {
+      assert.deepEqual(JSON.parse(JSON.stringify(opponent.equipmentPools)), getExpectedArenaMatrixEquipmentPools(tier.id, opponent.difficultyId));
+    }
+  }
+});
+
+test("arena win gold rewards follow the permanent equipment economy curve", () => {
+  for (const tier of hero.ARENA_TIER_CONFIGS) {
+    const expectedTierRewards = expectedArenaGoldRewards.get(tier.id);
+
+    assert.ok(expectedTierRewards, `Missing expected reward curve for arena tier ${tier.id}`);
+
+    for (const opponent of tier.opponents) {
+      assert.equal(opponent.rewards.win.gold, expectedTierRewards[opponent.difficultyId]);
+    }
+  }
+
+  for (const boss of hero.ARENA_BOSSES) {
+    const expectedTierRewards = expectedArenaGoldRewards.get(boss.tierId);
+
+    assert.ok(expectedTierRewards, `Missing expected boss reward curve for arena tier ${boss.tierId}`);
+    assert.equal(boss.rewards.win.gold, expectedTierRewards.boss);
   }
 });
 
@@ -492,6 +586,69 @@ test("enemy equipment generation keeps the first rolled item for each slot", () 
   assert.equal(loadout.equipment.weaponMain, "weapon_sword_01");
 });
 
+test("enemy scroll generation keeps the first rolled scroll rarity", () => {
+  const testTier = {
+    id: 100,
+    name: "Scroll Test Tier",
+    enemyEquipmentPools: [
+      { itemRarities: ["common"], rollChance: 0, shurikenChance: 0, scrollChance: 1 },
+      { itemRarities: ["uncommon"], rollChance: 0, shurikenChance: 0, scrollChance: 1 },
+    ],
+    randomOpponentIds: [],
+    bossIds: [],
+  };
+  const isolatedArenaOpponents = {
+    ARENA_BOSSES: [],
+    ARENA_DIFFICULTY_IDS: ["easy", "medium", "hard"],
+    ARENA_RANDOM_OPPONENTS: [],
+    ARENA_TIER_CONFIGS: [],
+    ARENA_TIERS: [testTier],
+    BATTLE_LOSS_REWARD: { gold: 1, xp: 1 },
+    BATTLE_WIN_REWARD: { gold: 10, xp: 10 },
+    DEFAULT_ARENA_DIFFICULTY_ID: "medium",
+    DEFAULT_ARENA_TIER_ID: testTier.id,
+    getArenaBossDefinition: () => undefined,
+    getArenaBossesForTier: () => [],
+    getArenaRandomOpponentDefinition: () => undefined,
+    getArenaRandomOpponentsForTier: () => [],
+    getArenaRandomOpponentsForTierAndDifficulty: () => [],
+    getArenaTierConfig: () => undefined,
+    getArenaTierDefinition: () => testTier,
+    getArenaTierDefinitions: () => [testTier],
+  };
+  const isolatedHero = loadTypeScriptModule("../src/hero.ts", {
+    require: (id) => {
+      if (id === "./combat") {
+        return combat;
+      }
+
+      if (id === "./arenaOpponents") {
+        return isolatedArenaOpponents;
+      }
+
+      if (id === "./arenaOpponentNames") {
+        return arenaOpponentNames;
+      }
+
+      if (id === "./generated/equipmentItems.generated") {
+        return {
+          GENERATED_EQUIPMENT_ITEM_CATALOG: generatedItems,
+          GENERATED_EQUIPMENT_ITEM_IDS: Object.keys(generatedItems),
+          GENERATED_EQUIPMENT_ITEM_RECORDS: Object.values(generatedItems).map((item) => ({ item })),
+        };
+      }
+
+      throw new Error(`Unexpected import: ${id}`);
+    },
+  });
+
+  const loadout = isolatedHero.createRandomEnemyLoadout(() => 0, testTier.id);
+
+  assert.equal(loadout.scrollItemId, hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID);
+  assert.equal(loadout.scrollCount, 1);
+  assert.equal(loadout.fireballScrollCount, undefined);
+});
+
 test("arena opponent model defines random opponents and boss hooks", () => {
   const tier = hero.getArenaTierDefinition(1);
   const randomOpponents = hero.getArenaRandomOpponentsForTier(1);
@@ -524,11 +681,13 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(mediumOpponents.length, 1);
   assert.equal(mediumOpponents[0].id, "dust_arena_brawler");
   assert.equal("name" in mediumOpponents[0], false);
-  assert.equal(mediumOpponents[0].equipmentPools.length, 1);
+  assert.equal(mediumOpponents[0].equipmentPools.length, 2);
   assert.equal(mediumOpponents[0].equipmentPools[0].itemRarities.length, 1);
   assert.equal(mediumOpponents[0].equipmentPools[0].itemRarities[0], "common");
   assert.equal(mediumOpponents[0].equipmentPools[0].rollChance, tier.enemyEquipmentPools[0].rollChance);
-  assert.equal(mediumOpponents[0].rewards.win.gold, 8);
+  assert.equal(mediumOpponents[0].equipmentPools[1].itemRarities[0], "uncommon");
+  assert.equal(mediumOpponents[0].equipmentPools[1].rollChance, 0.01);
+  assert.equal(mediumOpponents[0].rewards.win.gold, 6);
   assert.equal(mediumOpponents[0].rewards.win.xp, 6);
   assert.equal(mediumOpponents[0].rewards.loss.gold, 1);
   assert.equal(mediumOpponents[0].rewards.loss.xp, 1);
@@ -539,17 +698,22 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].randomBaseStatPoints, 3);
   assert.equal(hardOpponents[0].equipmentPools.length, 2);
   assert.equal(hardOpponents[0].equipmentPools[0].itemRarities[0], "common");
-  assert.equal(hardOpponents[0].equipmentPools[0].rollChance, 0.5);
+  assert.equal(hardOpponents[0].equipmentPools[0].rollChance, 0.95);
+  assert.equal(hardOpponents[0].equipmentPools[0].bowChance, 0.3);
+  assert.equal(hardOpponents[0].equipmentPools[0].shieldChance, 0.1);
   assert.equal(hardOpponents[0].equipmentPools[1].itemRarities[0], "uncommon");
-  assert.equal(hardOpponents[0].equipmentPools[1].rollChance, 0.1);
-  assert.equal(hardOpponents[0].rewards.win.gold, 15);
+  assert.equal(hardOpponents[0].equipmentPools[1].rollChance, 1);
+  assert.equal(hardOpponents[0].equipmentPools[1].bowChance, 0);
+  assert.equal(hardOpponents[0].equipmentPools[1].shieldChance, 0);
+  assert.equal(hardOpponents[0].equipmentPools[1].shurikenChance, 0);
+  assert.equal(hardOpponents[0].rewards.win.gold, 9);
   assert.equal(hardOpponents[0].rewards.win.xp, 10);
   assert.equal(hardOpponents[0].rewards.loss.gold, 1);
   assert.equal(hardOpponents[0].rewards.loss.xp, 1);
   assert.equal(tierTwo.name, "Dust Arena II");
   assert.equal(tierTwo.unlockBossId, "dust_arena_champion");
   assert.equal(tierTwo.randomOpponentIds.length, 3);
-  assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 25);
+  assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 14);
   assert.equal(tierTwoEasyOpponents[0].rewards.win.xp, 15);
 
   assert.equal(tier.bossIds.length, 1);
@@ -633,9 +797,9 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(hardSplitStatsState.enemy.maxStamina, 11);
   assert.equal(hardSplitStatsState.enemy.meleeDamagePercentBonus, 0.05);
   assert.equal(hardSplitStatsState.enemy.movementDistanceBonus, 0.015);
-  assert.deepEqual(Object.values(hardSplitStatsState.enemy.equipment ?? {}), Object.values(hero.createDefaultHeroEquipment()));
+  assert.equal(hero.HERO_ITEM_CATALOG[hardSplitStatsState.enemy.equipment?.weaponMain]?.rarity, "uncommon");
   hardState.result = "win";
-  assert.equal(hero.getBattleReward(hardState).gold, 15);
+  assert.equal(hero.getBattleReward(hardState).gold, 9);
   assert.equal(hero.getBattleReward(hardState).xp, 10);
   hardState.result = "lose";
   assert.equal(hero.getBattleReward(hardState).gold, 1);
@@ -652,7 +816,7 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(bossState.enemy.armor, 20);
 
   bossState.result = "win";
-  assert.equal(hero.getBattleReward(bossState).gold, 20);
+  assert.equal(hero.getBattleReward(bossState).gold, 14);
   assert.equal(hero.getBattleReward(bossState).xp, 12);
 });
 
@@ -794,7 +958,7 @@ test("combat reward application grants one random missing boss loot once", () =>
   assert.ok(lastLootEntry);
 
   const rewardApplication = hero.applyCombatReward(baseHero, bossState, "2026-01-01T00:01:00.000Z", () => 0.999);
-  assert.equal(rewardApplication.reward.gold, 20);
+  assert.equal(rewardApplication.reward.gold, 14);
   assert.equal(rewardApplication.reward.xp, 12);
   assert.equal(rewardApplication.loot.length, 1);
   assert.equal(rewardApplication.loot[0].sourceId, lastLootEntry.id);
@@ -825,7 +989,7 @@ test("combat reward application grants one random missing boss loot once", () =>
     return 0.5;
   });
 
-  assert.equal(emptyLootRewardApplication.reward.gold, 20);
+  assert.equal(emptyLootRewardApplication.reward.gold, 14);
   assert.equal(emptyLootRewardApplication.reward.xp, 12);
   assert.equal(emptyLootRewardApplication.loot.length, 0);
   assert.equal(randomCalls, 0);

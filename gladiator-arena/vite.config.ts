@@ -990,6 +990,7 @@ interface ArenaTierEquipmentPoolJsonRecord {
   bowChance?: number;
   shieldChance?: number;
   shurikenChance?: number;
+  scrollChance?: number;
 }
 
 interface UiLayoutDefaultsUpdateResult {
@@ -4667,6 +4668,7 @@ function validateArenaTierEquipmentPool(input: unknown): ArenaTierEquipmentPoolJ
   const bowChance = readOptionalArenaTierRollChance(pool.bowChance, "arena tier equipment bow chance");
   const shieldChance = readOptionalArenaTierRollChance(pool.shieldChance, "arena tier equipment shield chance");
   const shurikenChance = readOptionalArenaTierRollChance(pool.shurikenChance, "arena tier equipment shuriken chance");
+  const scrollChance = readOptionalArenaTierRollChance(pool.scrollChance, "arena tier equipment scroll chance");
 
   return {
     itemRarities,
@@ -4675,11 +4677,12 @@ function validateArenaTierEquipmentPool(input: unknown): ArenaTierEquipmentPoolJ
     ...(bowChance !== undefined ? { bowChance } : {}),
     ...(shieldChance !== undefined ? { shieldChance } : {}),
     ...(shurikenChance !== undefined ? { shurikenChance } : {}),
+    ...(scrollChance !== undefined ? { scrollChance } : {}),
   };
 }
 
 function hasArenaTierEquipmentPoolRollChance(pool: ArenaTierEquipmentPoolJsonRecord): boolean {
-  return Math.max(pool.rollChance, pool.weaponChance ?? 0, pool.bowChance ?? 0, pool.shieldChance ?? 0, pool.shurikenChance ?? 0) > 0;
+  return Math.max(pool.rollChance, pool.weaponChance ?? 0, pool.bowChance ?? 0, pool.shieldChance ?? 0, pool.shurikenChance ?? 0, pool.scrollChance ?? 0) > 0;
 }
 
 function readOptionalArenaTierRollChance(value: unknown, label: string): number | undefined {

@@ -843,6 +843,7 @@ test("debug panel exposes arena tier editor", () => {
   assert.equal(debugPanelSource.includes('icon: "armor"'), true);
   assert.equal(debugPanelSource.includes('icon: "weapon"'), true);
   assert.equal(debugPanelSource.includes('icon: "shuriken"'), true);
+  assert.equal(debugPanelSource.includes('icon: "scroll"'), true);
   assert.equal(debugPanelSource.includes("debug-tier-editor__pool-grid"), true);
   assert.equal(debugPanelSource.includes("debug-tier-editor__pool-rarity--${rarity}"), true);
   assert.equal(debugPanelSource.includes("debug-tier-editor__pool-cell--${rarity}"), true);
@@ -852,12 +853,14 @@ test("debug panel exposes arena tier editor", () => {
   assert.equal(debugPanelSource.includes("bowChance"), true);
   assert.equal(debugPanelSource.includes("shieldChance"), true);
   assert.equal(debugPanelSource.includes("shurikenChance"), true);
+  assert.equal(debugPanelSource.includes("scrollChance"), true);
   assert.equal(debugPanelSource.includes("createDefaultArenaTierDraft"), true);
   assert.equal(stylesSource.includes(".debug-tier-editor"), true);
   assert.equal(stylesSource.includes(".debug-tier-editor__icon--strength"), true);
   assert.equal(stylesSource.includes("./assets/ui/profile/attribute-strength.webp"), true);
   assert.equal(stylesSource.includes("./assets/ui/shop/category-sword.webp"), true);
   assert.equal(stylesSource.includes("./assets/shop-icons/shield-common-03.webp"), true);
+  assert.equal(stylesSource.includes("./assets/ui/city-buttons/city-magic-shop-icon.webp"), true);
   assert.equal(stylesSource.includes(".debug-tier-editor__pool-grid"), true);
   assert.equal(stylesSource.includes(".debug-tier-editor__pool-rarity--rare"), true);
   assert.equal(stylesSource.includes(".debug-tier-editor__pool-rarity--mythical"), true);

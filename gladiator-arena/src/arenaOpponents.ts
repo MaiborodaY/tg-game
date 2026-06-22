@@ -14,6 +14,7 @@ export interface ArenaGeneratedEquipmentPool {
   bowChance?: number;
   shieldChance?: number;
   shurikenChance?: number;
+  scrollChance?: number;
 }
 
 export interface ArenaOpponentRewards {

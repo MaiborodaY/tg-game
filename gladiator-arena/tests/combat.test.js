@@ -597,6 +597,26 @@ test("active ward absorbs fireball damage", () => {
   assert.equal(nextState.log[0].text.includes("ward absorbed it"), true);
 });
 
+test("enemy fighters can choose and cast fireball scrolls", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.fireballScrollCount = 1;
+  state.enemy.fireballScrollItemId = "scroll_fireball_01";
+  setConsistentDistance(state, combat.MAX_DISTANCE);
+
+  assert.equal(combat.canUseAction(state, "fireball", "enemy"), true);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0.9);
+
+  assert.equal(nextState.activeTurn, "player");
+  assert.equal(nextState.enemy.fireballScrollCount, 0);
+  assert.equal(nextState.player.hp, combat.MAX_HP - combat.FIREBALL_SCROLL_DAMAGE);
+  assert.equal(nextState.lastEnemyAction, "fireball");
+  assert.equal(nextState.lastEnemyDamage, combat.FIREBALL_SCROLL_DAMAGE);
+  assert.equal(nextState.lastEnemyBlocked, false);
+});
+
 test("rest restores stamina and heals one hp without incoming penalty", () => {
   const state = combat.freshState();
 

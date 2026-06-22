@@ -7,7 +7,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Dust Arena Champion",
     baseStats: {"strength":5,"agility":5,"vitality":5},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01","helmet":"generated_equipment_helmet_wood_boss_01","breastplate":"generated_equipment_breastplate_wood_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_wood_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_wood_boss_01","backWrist":"generated_equipment_back_wrist_wood_boss_01","frontWrist":"generated_equipment_front_wrist_wood_boss_01","backGlove":"generated_equipment_back_glove_wood_boss_01","frontGlove":"generated_equipment_front_glove_wood_boss_01","backGreave":"generated_equipment_back_greave_wood_boss_01","frontGreave":"generated_equipment_front_greave_wood_boss_01","backShinguard":"generated_equipment_back_shinguard_wood_boss_01","frontShinguard":"generated_equipment_front_shinguard_wood_boss_01","backBoot":"generated_equipment_back_boot_wood_boss_01","frontBoot":"generated_equipment_front_boot_wood_boss_01"},
-    rewards: {"win":{"gold":20,"xp":12},"loss":{"gold":0,"xp":0}},
+    rewards: {"win":{"gold":14,"xp":12},"loss":{"gold":0,"xp":0}},
     lootTable: [
       {"id":"dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_back_boot_wood_boss_01_generated_equipment_front_boot_wood_boss_01_drop","itemIds":["generated_equipment_back_boot_wood_boss_01","generated_equipment_front_boot_wood_boss_01"],"chance":1,"quantity":1},
@@ -26,7 +26,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Boar Boss",
     baseStats: {"strength":15,"agility":30,"vitality":20},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_boar_mace","helmet":"generated_equipment_helmet_boar_boss_01","breastplate":"generated_equipment_breastplate_boar_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_boar_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_boar_boss_01","backWrist":"generated_equipment_back_wrist_boar_boss_01","frontWrist":"generated_equipment_front_wrist_boar_boss_01","backGlove":"generated_equipment_back_glove_boar_boss_01","frontGlove":"generated_equipment_front_glove_boar_boss_01","backGreave":"generated_equipment_back_greave_boar_boss_01","frontGreave":"generated_equipment_front_greave_boar_boss_01","backShinguard":"generated_equipment_back_shinguard_boar_boss_01","frontShinguard":"generated_equipment_front_shinguard_boar_boss_01","backBoot":"generated_equipment_back_boot_boar_boss_01","frontBoot":"generated_equipment_front_boot_boar_boss_01"},
-    rewards: {"win":{"gold":200,"xp":100},"loss":{"gold":0,"xp":0}},
+    rewards: {"win":{"gold":25,"xp":100},"loss":{"gold":0,"xp":0}},
     lootTable: [
       {"id":"arena_boss_2_generated_equipment_back_boot_boar_boss_01_generated_equipment_front_boot_boar_boss_01_drop","itemIds":["generated_equipment_back_boot_boar_boss_01","generated_equipment_front_boot_boar_boss_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_2_generated_equipment_breastplate_boar_boss_01_drop","itemIds":["generated_equipment_breastplate_boar_boss_01"],"chance":1,"quantity":1},
@@ -45,7 +45,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 3",
     baseStats: {"strength":24,"agility":20,"vitality":36},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01"},
-    rewards: {"win":{"gold":1900,"xp":627},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":40,"xp":627},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_3_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
     ],
@@ -56,7 +56,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 4",
     baseStats: {"strength":10,"agility":15,"vitality":18},
     equipment: {},
-    rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":60,"xp":15},"loss":{"gold":1,"xp":2}},
     lootTable: [
     ],
   },
@@ -66,7 +66,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 5",
     baseStats: {"strength":32,"agility":22,"vitality":13},
     equipment: {},
-    rewards: {"win":{"gold":1900,"xp":1264},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":85,"xp":1264},"loss":{"gold":1,"xp":2}},
     lootTable: [
     ],
   },
@@ -76,7 +76,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 6",
     baseStats: {"strength":25,"agility":33,"vitality":33},
     equipment: {},
-    rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":115,"xp":15},"loss":{"gold":1,"xp":2}},
     lootTable: [
     ],
   },
@@ -86,7 +86,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 7",
     baseStats: {"strength":0,"agility":0,"vitality":0},
     equipment: {},
-    rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":150,"xp":15},"loss":{"gold":1,"xp":2}},
     lootTable: [
     ],
   },
@@ -96,7 +96,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 8",
     baseStats: {"strength":0,"agility":0,"vitality":0},
     equipment: {},
-    rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":190,"xp":15},"loss":{"gold":1,"xp":2}},
     lootTable: [
     ],
   }

@@ -9618,6 +9618,10 @@ body.debug-mode-hud .battle-screen .status-strip {
   background-image: url("./assets/ui/shop/category-shuriken.webp");
 }
 
+.debug-tier-editor__icon--scroll {
+  background-image: url("./assets/ui/city-buttons/city-magic-shop-icon.webp");
+}
+
 .debug-tier-editor__difficulty {
   min-width: 0;
 }
@@ -9635,7 +9639,7 @@ body.debug-mode-hud .battle-screen .status-strip {
   min-width: 100%;
   overflow-x: auto;
   display: grid;
-  grid-template-columns: minmax(82px, 1.2fr) repeat(5, minmax(64px, 0.86fr));
+  grid-template-columns: minmax(82px, 1.2fr) repeat(6, minmax(64px, 0.86fr));
   gap: 3px;
   padding: 6px;
   border: 1px solid rgba(255, 211, 132, 0.32);

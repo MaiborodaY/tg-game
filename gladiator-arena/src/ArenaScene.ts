@@ -1925,6 +1925,7 @@ export class ArenaScene extends Phaser.Scene {
     this.visuals = buildVisuals(this);
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
       syncFighterBodyPreset(this.visuals?.player);
+      syncFighterBodyPreset(this.visuals?.enemy);
       if (this.currentState) {
         renderScene(this, this.currentState);
       }
@@ -4912,7 +4913,8 @@ function createPlayerPaperDollOptions(x: number, y: number, equipment = activePl
 function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState): PaperDollFighterOptions {
   const preset = enemy?.visualPreset ?? DEFAULT_ENEMY_VISUAL_PRESET;
   const equipment = enemy?.equipment ? { ...enemy.equipment } : createDefaultHeroEquipment();
-  const bodyPreset = getPaperDollBodyPreset("classic");
+  const bodyPresetKey = debugTuning.paperDollBodyPreset;
+  const bodyPreset = getPaperDollBodyPreset(bodyPresetKey);
 
   return {
     x,
@@ -4923,7 +4925,7 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
     skinDark: preset.skinDark,
     hair: preset.hair,
     muscle: preset.muscle,
-    bodyPresetKey: "classic",
+    bodyPresetKey,
     headAssetKey: bodyPreset.headAssetKey,
     torsoAssetKey: bodyPreset.torsoAssetKey,
     faceOverlayMode: bodyPreset.faceOverlayMode,

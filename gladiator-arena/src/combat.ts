@@ -959,6 +959,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const playerLowHp = current.player.hp <= 9;
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
   const enemyCanSwitchWeapon = canFighterSwitchWeapon(current.enemy);
+  const enemyInClinch = isFighterInClinchRange(current, "enemy");
 
   if (current.enemy.stamina <= 0 && available.includes("rest")) {
     return "rest";
@@ -971,6 +972,10 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
       } else if (enemyHasRangedWeapon && getBowShotsRemaining(current.enemy) <= 0) {
         weighted.push(id, id, id);
       }
+      continue;
+    }
+
+    if (addEnemyScrollActionWeights(current, id, available, weighted, enemyLowHp, playerLowHp, enemyInClinch)) {
       continue;
     }
 
@@ -1023,6 +1028,66 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   }
 
   return weighted[Math.floor(random() * weighted.length)] ?? "rest";
+}
+
+function addEnemyScrollActionWeights(
+  current: CombatState,
+  actionId: ActionId,
+  available: readonly ActionId[],
+  weighted: ActionId[],
+  enemyLowHp: boolean,
+  playerLowHp: boolean,
+  enemyInClinch: boolean,
+): boolean {
+  if (!isScrollAction(actionId)) {
+    return false;
+  }
+
+  if (actionId === "ward") {
+    weighted.push(actionId, actionId);
+    if (enemyLowHp) {
+      weighted.push(actionId, actionId);
+    }
+    return true;
+  }
+
+  if (actionId === "poison") {
+    weighted.push(actionId, actionId);
+    if (getFighterPoisonTurns(current.player) <= 0) {
+      weighted.push(actionId);
+    }
+    return true;
+  }
+
+  if (actionId === "fireball") {
+    weighted.push(actionId, actionId);
+    if (playerLowHp || current.player.hp <= FIREBALL_SCROLL_DAMAGE) {
+      weighted.push(actionId, actionId);
+    }
+    return true;
+  }
+
+  if (actionId === "scroll") {
+    weighted.push(actionId, actionId);
+    if (current.player.armor > 0) {
+      weighted.push(actionId);
+    }
+    return true;
+  }
+
+  if (actionId === "preciseStrike" || actionId === "doubleStrike") {
+    const canFollowWithAttack = available.some((id) => id === "light" || id === "medium" || id === "heavy" || id === "lunge");
+
+    if (canFollowWithAttack) {
+      weighted.push(actionId);
+      if (enemyInClinch) {
+        weighted.push(actionId);
+      }
+    }
+    return true;
+  }
+
+  return true;
 }
 
 function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, random: () => number): void {
