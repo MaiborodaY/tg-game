@@ -31,6 +31,7 @@ import {
   actionOrder,
   actions,
   canUseAction,
+  doesLungeReachTarget,
   getActionBlockChanceForState,
   getActionStaminaCost,
   isActionHitChanceRestBoosted,
@@ -433,7 +434,7 @@ export function mountActionArc(
 
       if (!buttonLayout) {
         button.hidden = true;
-        button.classList.remove("action-arc__button--exhausted-rest");
+        button.classList.remove("action-arc__button--exhausted-rest", "action-arc__button--lunge-reaches");
         continue;
       }
 
@@ -444,6 +445,7 @@ export function mountActionArc(
       button.hidden = false;
       button.disabled = !editMode && !isActionArcButtonEnabled(state, actionId);
       button.classList.toggle("action-arc__button--exhausted-rest", actionId === "rest" && isPlayerExhausted(state));
+      button.classList.toggle("action-arc__button--lunge-reaches", actionId === "lunge" && !button.disabled && doesLungeReachTarget(state));
       button.style.left = `${(buttonLayout.x / viewport.width) * 100}%`;
       button.style.top = `${(buttonLayout.y / viewport.height) * 100}%`;
       syncActionTokenButton(button, icon, actionId, tuning, buttonLayout.scale, getActionTokenIconUrl(actionId, state));

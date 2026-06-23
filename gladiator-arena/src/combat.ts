@@ -742,6 +742,24 @@ export function isFighterInClinchRange(state: CombatState, actor: TurnOwner): bo
   return state.distance <= getFighterClinchRange(fighter);
 }
 
+export function doesLungeReachTarget(state: CombatState, actor: TurnOwner = "player"): boolean {
+  if (!canUseAction(state, "lunge", actor)) {
+    return false;
+  }
+
+  const attacker = actor === "player" ? state.player : state.enemy;
+  const actionRangeMax = getActionRangeMax(actions.lunge, attacker);
+
+  if (actionRangeMax === undefined) {
+    return false;
+  }
+
+  const distanceDelta = clampActionMoveToContactRange(state, "lunge", attacker, getActionMove("lunge", attacker));
+  const nextDistance = roundCombatDistance(clamp(state.distance + distanceDelta, MIN_DISTANCE, MAX_DISTANCE));
+
+  return nextDistance <= actionRangeMax;
+}
+
 export function shouldAutoRestPlayer(state: CombatState): boolean {
   return isPlayerExhausted(state) && canUseAction(state, "rest", "player");
 }

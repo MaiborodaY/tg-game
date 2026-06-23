@@ -14,6 +14,7 @@ import {
   canUseAction,
   canFighterSwitchWeapon,
   distanceBand,
+  doesLungeReachTarget,
   isActionHitChanceRestBoosted,
   getFighterSpellbookScrollCount,
   getFighterShurikenCount,
@@ -246,6 +247,10 @@ export function mountClassicActionBar(
       button.classList.toggle("classic-action-bar__button--hidden", !isVisible);
       button.classList.toggle("classic-action-bar__button--dimmed", isDimmed);
       button.classList.toggle("action-arc__button--exhausted-rest", isVisible && actionId === "rest" && isPlayerExhausted(state));
+      button.classList.toggle(
+        "action-arc__button--lunge-reaches",
+        isVisible && isInteractiveLayer && actionId === "lunge" && !button.disabled && doesLungeReachTarget(state),
+      );
       chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
 
       const title = isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state) ? getSpellbookButtonTitle() : getActionTitle(actionId, state.player);
