@@ -37,7 +37,7 @@ const smallerAssetRules = [
   {
     maximumAlphaQuality: 70,
     maximumQuality: 46,
-    pattern: /^arena\/layers\/arena-tier-(?:1-variant-2-(?:back|ground)|2-(?:front-trees|ambient-particles)|3-(?:back|ground|front)|4-(?:ambient|back(?:-2)?|ground)|5-(?:back|ground)|6-(?:back|ground)|7-(?:ambient|back|ground)|8-(?:back|ground|mid))\.png$/,
+    pattern: /^arena\/layers\/arena-tier-\d+(?:-(?:variant|scene)-\d+)?-(?:ambient|ambient-particles|back|front|front-trees|ground|mid)(?:-\d+)?\.png$/,
   },
   {
     maximumAlphaQuality: 88,
