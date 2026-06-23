@@ -38,6 +38,17 @@ function setConsistentDistance(state, distance) {
   state.playerPosition = combat.START_DISTANCE - distance;
 }
 
+function setEagleBossEncounter(state) {
+  state.encounter = {
+    id: "boss:arena_boss_4",
+    kind: "boss",
+    tierId: 4,
+    opponentId: "arena_boss_4",
+  };
+  state.enemy.weaponClass = "spear";
+  state.enemy.mainWeaponClass = "spear";
+}
+
 function getPlainPlayerHitResults(state) {
   return JSON.parse(JSON.stringify(state.lastPlayerHitResults.map(({ damage, blocked }) => ({ damage, blocked }))));
 }
@@ -147,7 +158,7 @@ test("swords improve hit chances while axes trade accuracy for strength scaling"
   assert.equal(combat.getActionBlockChance(combat.actions.light, swordFighter), 0.1);
   assert.equal(combat.getActionBlockChance(combat.actions.medium, swordFighter), 0.3);
   assert.equal(combat.getActionBlockChance(combat.actions.heavy, swordFighter), 0.5);
-  assert.equal(combat.getActionBlockChance(combat.actions.light, axeFighter), 0.4);
+  assert.equal(combat.getActionBlockChance(combat.actions.light, axeFighter), 0.5);
   assert.equal(combat.getActionBlockChance(combat.actions.medium, axeFighter), 0.65);
   assert.equal(combat.getActionBlockChance(combat.actions.heavy, axeFighter), 0.9);
 });
@@ -442,6 +453,32 @@ test("double strike keeps separate hit results when one repeat is blocked", () =
   assert.equal(hit.player.doubleStrikeHits, 0);
 });
 
+test("precise strike only guarantees the first double strike hit", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.weaponClass = "axe";
+  state.player.preciseStrikeHits = 1;
+  state.player.doubleStrikeHits = 1;
+  state.player.damageBonus = 2;
+  state.enemy.hp = combat.MAX_HP;
+  state.enemy.armor = 0;
+
+  const hit = combat.resolvePlayerTurn(state, "heavy", () => 0);
+
+  assert.equal(hit.activeTurn, "enemy");
+  assert.equal(hit.lastPlayerBlocked, true);
+  assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
+  assert.equal(hit.lastPlayerDamage, 8);
+  assert.deepEqual(getPlainPlayerHitResults(hit), [
+    { damage: 8, blocked: false },
+    { damage: 0, blocked: true },
+  ]);
+  assert.equal(hit.enemy.hp, combat.MAX_HP - 8);
+  assert.equal(hit.player.preciseStrikeHits, 0);
+  assert.equal(hit.player.doubleStrikeHits, 0);
+});
+
 test("double strike does not repeat when the first strike ends the battle", () => {
   const state = combat.freshState();
 
@@ -705,6 +742,30 @@ test("enemy auto rests at zero stamina instead of acting", () => {
   assert.equal(nextState.lastEnemyDamage, 0);
 });
 
+test("enemy AI cannot rest above half stamina", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.stamina = Math.floor(combat.getFighterMaxStamina(state.enemy) / 2) + 1;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0.86);
+
+  assert.notEqual(nextState.lastEnemyAction, "rest");
+});
+
+test("enemy AI can rest at half stamina", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.stamina = combat.getFighterMaxStamina(state.enemy) / 2;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0.86);
+
+  assert.equal(nextState.lastEnemyAction, "rest");
+});
+
 test("enemy does not taunt while in clinch", () => {
   const state = combat.freshState();
 
@@ -768,6 +829,70 @@ test("fighter movement distance bonus adds to forward back and lunge movement", 
 
   assert.equal(nextState.distance, 2.6);
   assert.equal(nextState.player.stamina, combat.MAX_STAMINA - 2);
+});
+
+test("eagle boss moves forward when lunge cannot reach yet", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  setEagleBossEncounter(state);
+  setConsistentDistance(state, 3);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(nextState.lastEnemyAction, "forward");
+});
+
+test("eagle boss strongly prefers lunge when it can reach", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  setEagleBossEncounter(state);
+  setConsistentDistance(state, 1);
+
+  assert.equal(combat.doesLungeReachTarget(state, "enemy"), true);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(nextState.lastEnemyAction, "lunge");
+});
+
+test("eagle boss backs away from clinch to reopen lunge distance", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  setEagleBossEncounter(state);
+  setConsistentDistance(state, combat.SPEAR_CLINCH_RANGE_BONUS);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(nextState.lastEnemyAction, "back");
+});
+
+test("enemy AI prefers lunge when it is guaranteed to reach", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  setConsistentDistance(state, 0.3);
+
+  assert.equal(combat.doesLungeReachTarget(state, "enemy"), true);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0.2);
+
+  assert.equal(nextState.lastEnemyAction, "lunge");
+});
+
+test("enemy AI does not force guaranteed lunge every time", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  setConsistentDistance(state, 0.3);
+
+  assert.equal(combat.doesLungeReachTarget(state, "enemy"), true);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(nextState.lastEnemyAction, "forward");
 });
 
 test("lunge is available at any open distance", () => {

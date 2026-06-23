@@ -185,7 +185,11 @@ export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
 export const MOVE_DISTANCE_PER_STAMINA = 0.2;
 export const BOW_SHOTS_PER_BATTLE = 5;
 const MIN_MELEE_WEAPON_DAMAGE = 1;
-export const AXE_BLOCK_CHANCE_PENALTY = 0.15;
+export const AXE_BLOCK_CHANCE_PENALTY: Partial<Record<ActionId, number>> = {
+  light: 0.25,
+  medium: 0.15,
+  heavy: 0.15,
+};
 export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 2;
 const AXE_MELEE_DAMAGE_MULTIPLIER: Partial<Record<ActionId, number>> = {
   light: 1.5,
@@ -216,6 +220,7 @@ const PAIRED_ARMOR_SLOT_KEYS: readonly (readonly [HeroEquipmentSlotKey, HeroEqui
   ["backShinguard", "frontShinguard"],
   ["backBoot", "frontBoot"],
 ];
+const EAGLE_BOSS_ID = "arena_boss_4";
 
 export type DistanceBand = "clinch" | "melee" | "near" | "far" | "very-far";
 
@@ -544,7 +549,7 @@ export function isActionHitChanceRestBoosted(state: CombatState, actionId: Actio
 
 function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
   const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
-  const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" && isAttackAction(action.id) ? AXE_BLOCK_CHANCE_PENALTY : 0;
+  const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" ? AXE_BLOCK_CHANCE_PENALTY[action.id] ?? 0 : 0;
   const spearLungeBlockChanceReduction =
     attacker && getFighterWeaponClass(attacker) === "spear" && action.id === "lunge" ? SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION : 0;
 
@@ -1032,7 +1037,7 @@ function cloneFighterState(fighter: FighterState): FighterState {
 }
 
 function chooseEnemyAction(current: CombatState, random = Math.random): ActionId {
-  const available = availableActionIds(current, "enemy");
+  const available = availableEnemyAiActionIds(current);
   const weighted: ActionId[] = [];
   const enemyLowStamina = current.enemy.stamina <= 3;
   const enemyLowHp = current.enemy.hp <= 10;
@@ -1040,9 +1045,16 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
   const enemyCanSwitchWeapon = canFighterSwitchWeapon(current.enemy);
   const enemyInClinch = isFighterInClinchRange(current, "enemy");
+  const enemyLungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy");
 
   if (current.enemy.stamina <= 0 && available.includes("rest")) {
     return "rest";
+  }
+
+  const bossAction = chooseBossSpecificEnemyAction(current, available, random);
+
+  if (bossAction) {
+    return bossAction;
   }
 
   for (const id of available) {
@@ -1083,9 +1095,15 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
           weighted.push(id);
         }
       } else if (id === "forward") {
-        weighted.push(id, id, id);
+        weighted.push(id);
+        if (!enemyLungeReaches) {
+          weighted.push(id, id);
+        }
       } else if (id === "lunge") {
         weighted.push(id, id);
+        if (enemyLungeReaches) {
+          weighted.push(id, id, id, id, id);
+        }
       } else if (id === "rest" && enemyLowStamina) {
         weighted.push(id, id);
       } else if (id === "taunt" && !enemyLowHp) {
@@ -1107,7 +1125,70 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
     }
   }
 
-  return weighted[Math.floor(random() * weighted.length)] ?? "rest";
+  return weighted[Math.floor(random() * weighted.length)] ?? available[0] ?? "rest";
+}
+
+function availableEnemyAiActionIds(state: CombatState): ActionId[] {
+  const canRest = state.enemy.stamina <= getFighterMaxStamina(state.enemy) * 0.5;
+
+  return availableActionIds(state, "enemy").filter((id) => id !== "rest" || canRest);
+}
+
+function chooseBossSpecificEnemyAction(current: CombatState, available: readonly ActionId[], random: () => number): ActionId | undefined {
+  if (current.encounter?.kind !== "boss") {
+    return undefined;
+  }
+
+  if (current.encounter.opponentId === EAGLE_BOSS_ID) {
+    return chooseEagleBossAction(current, available, random);
+  }
+
+  return undefined;
+}
+
+function chooseEagleBossAction(current: CombatState, available: readonly ActionId[], random: () => number): ActionId | undefined {
+  const weighted: ActionId[] = [];
+  const enemyInClinch = isFighterInClinchRange(current, "enemy");
+  const playerLowHp = current.player.hp <= 9;
+  const enemyLowStamina = current.enemy.stamina <= 3;
+  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy");
+
+  if (enemyInClinch) {
+    pushAvailableActions(weighted, available, "back", playerLowHp ? 3 : 7);
+    pushAvailableActions(weighted, available, "medium", playerLowHp ? 4 : 2);
+    pushAvailableActions(weighted, available, "light", playerLowHp ? 2 : 1);
+    pushAvailableActions(weighted, available, "heavy", playerLowHp ? 2 : 1);
+    pushAvailableActions(weighted, available, "rest", enemyLowStamina ? 2 : 0);
+    return pickWeightedAction(weighted, random);
+  }
+
+  if (lungeReaches) {
+    pushAvailableActions(weighted, available, "lunge", 8);
+    pushAvailableActions(weighted, available, "forward", 1);
+    pushAvailableActions(weighted, available, "back", 1);
+    pushAvailableActions(weighted, available, "rest", enemyLowStamina ? 1 : 0);
+    return pickWeightedAction(weighted, random);
+  }
+
+  pushAvailableActions(weighted, available, "forward", 7);
+  pushAvailableActions(weighted, available, "lunge", 1);
+  pushAvailableActions(weighted, available, "back", 1);
+  pushAvailableActions(weighted, available, "rest", enemyLowStamina ? 1 : 0);
+  return pickWeightedAction(weighted, random);
+}
+
+function pushAvailableActions(weighted: ActionId[], available: readonly ActionId[], actionId: ActionId, count: number): void {
+  if (!available.includes(actionId) || count <= 0) {
+    return;
+  }
+
+  for (let index = 0; index < count; index += 1) {
+    weighted.push(actionId);
+  }
+}
+
+function pickWeightedAction(weighted: readonly ActionId[], random: () => number): ActionId | undefined {
+  return weighted[Math.floor(random() * weighted.length)];
 }
 
 function addEnemyScrollActionWeights(
@@ -1289,6 +1370,7 @@ function applyAction(
   const preciseStrikeBoosted = shouldConsumePreciseStrikeForAction(actionId, attacker, damage, inRange);
   const doubleStrikeBoosted = shouldConsumeDoubleStrikeForAction(actionId, attacker, damage, inRange);
   let doubleStrikeRepeat = false;
+  let preciseStrikeConsumed = false;
 
   if (damage > 0 && actionId !== "scroll" && actionId !== "fireball") {
     const firstHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, damage, random, true);
@@ -1297,6 +1379,11 @@ function applyAction(
     blocked = firstHit.blocked;
     appliedDamage = firstHit.appliedDamage;
     hitResults = [createCombatHitResult(firstHit)];
+
+    if (preciseStrikeBoosted) {
+      consumePreciseStrikeHit(attacker);
+      preciseStrikeConsumed = true;
+    }
 
     if (doubleStrikeBoosted && defender.hp > 0 && canResolveDoubleStrikeRepeat(actionId, attacker)) {
       doubleStrikeRepeat = true;
@@ -1312,7 +1399,7 @@ function applyAction(
     clearIncomingAttackModifiers(state, defenderOwner);
   }
 
-  if (preciseStrikeBoosted) {
+  if (preciseStrikeBoosted && !preciseStrikeConsumed) {
     consumePreciseStrikeHit(attacker);
   }
 

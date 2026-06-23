@@ -178,6 +178,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_mercenary_01","name":"Mercenary Back Boot 01","price":23,"itemIds":["generated_equipment_back_boot_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_boot_prisoner_01","name":"Prisoner 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    assetKeys: {"backBootAssetKey":"back-boot-prisoner-01"},
+    equipmentTuning: {"x":-24.252570477033572,"y":-2.2448619289136786,"angle":0,"scaleX":0.87,"scaleY":0.91,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-boot-prisoner-01",
+      sourcePath: "assets/fighters/armor/legs/back-boot-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-boot-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_boot_rust_champion_01","name":"Rust Champion Boots","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backBoot","armorHp":7,"levelRequirement":30},
     assetKeys: {"backBootAssetKey":"back-boot-rust-champion-01"},
     equipmentTuning: {"x":15.254354177700478,"y":-5.4792899429153294,"angle":0,"scaleX":1.92,"scaleY":1.49,"flipX":false,"flipY":false},
@@ -388,6 +399,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_glove_mercenary_01","name":"Mercenary Back Glove 01","price":23,"itemIds":["generated_equipment_back_glove_mercenary_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_back_glove_prisoner_01","name":"Prisoner 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":1},
+    assetKeys: {"backGloveAssetKey":"back-glove-prisoner-01"},
+    equipmentTuning: {"x":-1.9102991579953823,"y":9.684738422017006,"angle":-3,"scaleX":0.7,"scaleY":0.7,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-glove-prisoner-01",
+      sourcePath: "assets/fighters/armor/arms/back-glove-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_glove_rust_champion_01","name":"Rust Back Glove Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backGlove","armorHp":7,"levelRequirement":30},
@@ -602,6 +624,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_mercenary_01","name":"Mercenary Back Greave 01","price":29,"itemIds":["generated_equipment_back_greave_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_greave_prisoner_01","name":"Prisoner 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":1},
+    assetKeys: {"backGreaveAssetKey":"back-greave-prisoner-01"},
+    equipmentTuning: {"x":-4.547356964443736,"y":23.94519390841299,"angle":-15,"scaleX":1.2,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-prisoner-01",
+      sourcePath: "assets/fighters/armor/legs/back-greave-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_greave_rust_champion_01","name":"Rust Back Greave Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backGreave","armorHp":9,"levelRequirement":30},
     assetKeys: {"backGreaveAssetKey":"back-greave-rust-champion-01"},
     equipmentTuning: {"x":-3.3132619515390758,"y":8.875739657491977,"angle":-10,"scaleX":1.1,"scaleY":1.01,"flipX":false,"flipY":false},
@@ -800,6 +833,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_shinguard_mercenary_01","name":"Mercenary Back Shinguard 01","price":29,"itemIds":["generated_equipment_back_shinguard_mercenary_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_back_shinguard_prisoner_01","name":"Prisoner 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":1},
+    assetKeys: {"backShinguardAssetKey":"back-shinguard-prisoner-01"},
+    equipmentTuning: {"x":1.431683387692658,"y":10.159070779080082,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shinguard-prisoner-01",
+      sourcePath: "assets/fighters/armor/legs/back-shinguard-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_rust_champion_01","name":"Rust Back Shinguard Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backShinguard","armorHp":9,"levelRequirement":30},
@@ -1002,6 +1046,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_mercenary_01","name":"Mercenary Back Shoulderguard 01","price":29,"itemIds":["generated_equipment_back_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_back_shoulderguard_prisoner_01","name":"Prisoner 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":1},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-prisoner-01"},
+    equipmentTuning: {"x":2.842098039397328,"y":20.78575942510946,"angle":9,"scaleX":2.02,"scaleY":1.39,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-prisoner-01",
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shoulderguard_rust_champion_01","name":"Rust Back Shoulderguard Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backShoulderguard","armorHp":9,"levelRequirement":30},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-rust-champion-01"},
     equipmentTuning: {"x":17.255479746451044,"y":3.969942342197953,"angle":54,"scaleX":1.45,"scaleY":1.4,"flipX":true,"flipY":false},
@@ -1202,6 +1257,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_mercenary_01","name":"Mercenary Back Wrist 01","price":23,"itemIds":["generated_equipment_back_wrist_mercenary_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_wrist_prisoner_01","name":"Prisoner 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
+    assetKeys: {"backWristAssetKey":"back-wrist-prisoner-01"},
+    equipmentTuning: {"x":2.6259362591901976,"y":20.16099831823078,"angle":-6,"scaleX":2.22,"scaleY":1.2,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-wrist-prisoner-01",
+      sourcePath: "assets/fighters/armor/arms/back-wrist-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_wrist_rust_champion_01","name":"Rust Back Wrist Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"backWrist","armorHp":7,"levelRequirement":30},
     assetKeys: {"backWristAssetKey":"back-wrist-rust-champion-01"},
     equipmentTuning: {"x":0.6679343247925971,"y":1.8511877292656322,"angle":-10,"scaleX":1.87,"scaleY":1.61,"flipX":true,"flipY":false},
@@ -1388,6 +1454,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_breastplate_mercenary_01","name":"Mercenary Breastplate 01","price":65,"itemIds":["generated_equipment_breastplate_mercenary_01"],"categoryId":"chest"},
+  },
+  {
+    item: {"id":"generated_equipment_breastplate_prisoner_01","name":"Prisoner 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":1},
+    assetKeys: {"breastplateAssetKey":"breastplate-prisoner-01"},
+    equipmentTuning: {"x":0,"y":52,"angle":0,"scaleX":1.18,"scaleY":1.61,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-prisoner-01",
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_breastplate_rust_champion_01","name":"Rust Breastplate Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"breastplate","armorHp":20,"levelRequirement":30},
@@ -1588,6 +1665,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_boot_mercenary_01","name":"Mercenary Front Boot 01","price":0,"itemIds":["generated_equipment_front_boot_mercenary_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_boot_prisoner_01","name":"Prisoner 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
+    assetKeys: {"frontBootAssetKey":"front-boot-prisoner-01"},
+    equipmentTuning: {"x":7,"y":-2.2448619289136786,"angle":0,"scaleX":0.87,"scaleY":0.91,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-boot-prisoner-01",
+      sourcePath: "assets/fighters/armor/legs/front-boot-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-boot-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_boot_rust_champion_01","name":"Rust Champion Boots Front","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":30},
@@ -1802,6 +1890,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_glove_mercenary_01","name":"Mercenary Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_mercenary_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_front_glove_prisoner_01","name":"Prisoner 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-prisoner-01"},
+    equipmentTuning: {"x":-1.9102991579953823,"y":9.684738422017006,"angle":-3,"scaleX":0.7,"scaleY":0.7,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-glove-prisoner-01",
+      sourcePath: "assets/fighters/armor/arms/front-glove-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_glove_rust_champion_01","name":"Rust Front Glove Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":30},
     assetKeys: {"frontGloveAssetKey":"front-glove-rust-champion-01"},
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
@@ -2014,6 +2113,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_greave_mercenary_01","name":"Mercenary Front Greave 01","price":0,"itemIds":["generated_equipment_front_greave_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_greave_prisoner_01","name":"Prisoner 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-prisoner-01"},
+    equipmentTuning: {"x":-4.547356964443736,"y":23.94519390841299,"angle":-12,"scaleX":1.2,"scaleY":1,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-greave-prisoner-01",
+      sourcePath: "assets/fighters/armor/legs/front-greave-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_greave_rust_champion_01","name":"Rust Front Greave Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontGreave","armorHp":0,"levelRequirement":30},
     assetKeys: {"frontGreaveAssetKey":"front-greave-rust-champion-01"},
     equipmentTuning: {"x":-3.3132619515390758,"y":8.875739657491977,"angle":-10,"scaleX":1.1,"scaleY":1.01,"flipX":false,"flipY":false},
@@ -2212,6 +2322,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_shinguard_mercenary_01","name":"Mercenary Front Shinguard 01","price":0,"itemIds":["generated_equipment_front_shinguard_mercenary_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_shinguard_prisoner_01","name":"Prisoner 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
+    assetKeys: {"frontShinguardAssetKey":"front-shinguard-prisoner-01"},
+    equipmentTuning: {"x":1.431683387692658,"y":10.159070779080082,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-shinguard-prisoner-01",
+      sourcePath: "assets/fighters/armor/legs/front-shinguard-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_shinguard_rust_champion_01","name":"Rust Front Shinguard Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":30},
@@ -2414,6 +2535,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_mercenary_01","name":"Mercenary Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_front_shoulderguard_prisoner_01","name":"Prisoner 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-prisoner-01"},
+    equipmentTuning: {"x":2.842098039397328,"y":20.78575942510946,"angle":9,"scaleX":2.02,"scaleY":1.39,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-prisoner-01",
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shoulderguard_rust_champion_01","name":"Rust Front Shoulderguard Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontShoulderguard","armorHp":0,"levelRequirement":30},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-rust-champion-01"},
     equipmentTuning: {"x":17.255479746451044,"y":3.969942342197953,"angle":54,"scaleX":1.45,"scaleY":1.4,"flipX":false,"flipY":false},
@@ -2612,6 +2744,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_wrist_mercenary_01","name":"Mercenary Front Wrist 01","price":0,"itemIds":["generated_equipment_front_wrist_mercenary_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_wrist_prisoner_01","name":"Prisoner 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
+    assetKeys: {"frontWristAssetKey":"front-wrist-prisoner-01"},
+    equipmentTuning: {"x":2.6259362591901976,"y":20.16099831823078,"angle":-6,"scaleX":2.22,"scaleY":1.2,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-wrist-prisoner-01",
+      sourcePath: "assets/fighters/armor/arms/front-wrist-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_wrist_rust_champion_01","name":"Rust Front Wrist Champion 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":30},
@@ -2823,6 +2966,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_helmet_mercenary_01","name":"Mercenary Helmet 01","price":39,"itemIds":["generated_equipment_helmet_mercenary_01"],"categoryId":"head"},
+  },
+  {
+    item: {"id":"generated_equipment_helmet_prisoner_01","name":"Prisoner 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"helmet","armorHp":1},
+    assetKeys: {"helmetAssetKey":"helmet-prisoner-01"},
+    equipmentTuning: {"x":0,"y":30,"angle":0,"scaleX":1.15,"scaleY":1.25,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-prisoner-01",
+      sourcePath: "assets/fighters/armor/helmet/helmet-prisoner-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-prisoner-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_helmet_rust_champion_01","name":"Rust Champion Helmet","kind":"armor","rarity":"rare","equipmentSet":{"id":"rust_champion","name":"Rust Champion","rank":4,"grade":"low"},"equipmentSlot":"helmet","armorHp":12,"levelRequirement":30},
@@ -3131,6 +3285,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_axe_norm_axe","name":"Common Axe 01","price":16,"itemIds":["generated_equipment_weapon_axe_norm_axe"],"categoryId":"axes"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_axe_prisoner_axe","name":"Prisoner Axe","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"axe"},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-prisoner-axe"},
+    equipmentTuning: {"x":-30,"y":24,"angle":107,"scaleX":1.83,"scaleY":1.88,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-axe-prisoner-axe",
+      sourcePath: "assets/fighters/weapons/weapon-axe-prisoner-axe.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-prisoner-axe.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_rare_axe_1","name":"Rare Axe 01","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":15,"weaponClass":"axe","levelRequirement":30},

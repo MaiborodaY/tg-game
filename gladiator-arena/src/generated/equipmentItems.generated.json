@@ -535,6 +535,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_prisoner_01",
+    "name": "Prisoner 01 Back Boot",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": -24.252570477033572,
+      "y": -2.2448619289136786,
+      "angle": 0,
+      "scaleX": 0.87,
+      "scaleY": 0.91,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-prisoner-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_rust_champion_01",
     "name": "Rust Champion Boots",
     "kind": "armor",
@@ -1323,6 +1359,42 @@
         "generated_equipment_back_glove_mercenary_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_prisoner_01",
+    "name": "Prisoner 01 Back Glove",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": -1.9102991579953823,
+      "y": 9.684738422017006,
+      "angle": -3,
+      "scaleX": 0.7,
+      "scaleY": 0.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-prisoner-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -2117,6 +2189,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_prisoner_01",
+    "name": "Prisoner 01 Back Greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": -4.547356964443736,
+      "y": 23.94519390841299,
+      "angle": -15,
+      "scaleX": 1.2,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-prisoner-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_rust_champion_01",
     "name": "Rust Back Greave Champion 01",
     "kind": "armor",
@@ -2858,6 +2966,42 @@
         "generated_equipment_back_shinguard_mercenary_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_prisoner_01",
+    "name": "Prisoner 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 1.431683387692658,
+      "y": 10.159070779080082,
+      "angle": 3,
+      "scaleX": 1.1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-prisoner-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -3605,6 +3749,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_shoulderguard_prisoner_01",
+    "name": "Prisoner 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 2.842098039397328,
+      "y": 20.78575942510946,
+      "angle": 9,
+      "scaleX": 2.02,
+      "scaleY": 1.39,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-prisoner-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_shoulderguard_rust_champion_01",
     "name": "Rust Back Shoulderguard Champion 01",
     "kind": "armor",
@@ -4349,6 +4529,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_wrist_prisoner_01",
+    "name": "Prisoner 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 2.6259362591901976,
+      "y": 20.16099831823078,
+      "angle": -6,
+      "scaleX": 2.22,
+      "scaleY": 1.2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-prisoner-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_rust_champion_01",
     "name": "Rust Back Wrist Champion 01",
     "kind": "armor",
@@ -5043,6 +5259,42 @@
         "generated_equipment_breastplate_mercenary_01"
       ],
       "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_prisoner_01",
+    "name": "Prisoner 01 Breastplate",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 52,
+      "angle": 0,
+      "scaleX": 1.18,
+      "scaleY": 1.61,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-prisoner-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -5787,6 +6039,42 @@
         "generated_equipment_front_boot_mercenary_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_prisoner_01",
+    "name": "Prisoner 01 Front Boot",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 7,
+      "y": -2.2448619289136786,
+      "angle": 0,
+      "scaleX": 0.87,
+      "scaleY": 0.91,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-prisoner-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -6581,6 +6869,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_prisoner_01",
+    "name": "Prisoner 01 Front Glove",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": -1.9102991579953823,
+      "y": 9.684738422017006,
+      "angle": -3,
+      "scaleX": 0.7,
+      "scaleY": 0.7,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-prisoner-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_rust_champion_01",
     "name": "Rust Front Glove Champion 01",
     "kind": "armor",
@@ -7372,6 +7696,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_prisoner_01",
+    "name": "Prisoner 01 Front Greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": -4.547356964443736,
+      "y": 23.94519390841299,
+      "angle": -12,
+      "scaleX": 1.2,
+      "scaleY": 1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-prisoner-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_rust_champion_01",
     "name": "Rust Front Greave Champion 01",
     "kind": "armor",
@@ -8113,6 +8473,42 @@
         "generated_equipment_front_shinguard_mercenary_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_prisoner_01",
+    "name": "Prisoner 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 1.431683387692658,
+      "y": 10.159070779080082,
+      "angle": 3,
+      "scaleX": 1.1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-prisoner-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -8860,6 +9256,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_prisoner_01",
+    "name": "Prisoner 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 2.842098039397328,
+      "y": 20.78575942510946,
+      "angle": 9,
+      "scaleX": 2.02,
+      "scaleY": 1.39,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-prisoner-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_rust_champion_01",
     "name": "Rust Front Shoulderguard Champion 01",
     "kind": "armor",
@@ -9601,6 +10033,42 @@
         "generated_equipment_front_wrist_mercenary_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_prisoner_01",
+    "name": "Prisoner 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 2.6259362591901976,
+      "y": 20.16099831823078,
+      "angle": -6,
+      "scaleX": 2.22,
+      "scaleY": 1.2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-prisoner-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -10382,6 +10850,42 @@
         "generated_equipment_helmet_mercenary_01"
       ],
       "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_prisoner_01",
+    "name": "Prisoner 01 Helmet",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "prisoner",
+      "name": "Prisoner",
+      "rank": 18,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-prisoner-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 30,
+      "angle": 0,
+      "scaleX": 1.15,
+      "scaleY": 1.25,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-prisoner-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-prisoner-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-prisoner-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -11425,6 +11929,37 @@
         "generated_equipment_weapon_axe_norm_axe"
       ],
       "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_prisoner_axe",
+    "name": "Prisoner Axe",
+    "kind": "weapon",
+    "rarity": "unique",
+    "damageBonus": 100,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-prisoner-axe"
+    },
+    "equipmentTuning": {
+      "x": -30,
+      "y": 24,
+      "angle": 107,
+      "scaleX": 1.83,
+      "scaleY": 1.88,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-prisoner-axe",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-prisoner-axe.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-prisoner-axe.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {

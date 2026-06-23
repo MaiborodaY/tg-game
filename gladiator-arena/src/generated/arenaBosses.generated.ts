@@ -81,11 +81,20 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_5",
     tierId: 5,
-    name: "Boss5",
-    baseStats: {"strength":15,"agility":50,"vitality":20},
-    equipment: {},
+    name: "Prisoner",
+    baseStats: {"strength":37,"agility":19,"vitality":48},
+    equipment: {"weaponMain":"generated_equipment_weapon_axe_prisoner_axe","helmet":"generated_equipment_helmet_prisoner_01","breastplate":"generated_equipment_breastplate_prisoner_01","backShoulderguard":"generated_equipment_back_shoulderguard_prisoner_01","frontShoulderguard":"generated_equipment_front_shoulderguard_prisoner_01","backWrist":"generated_equipment_back_wrist_prisoner_01","frontWrist":"generated_equipment_front_wrist_prisoner_01","backGlove":"generated_equipment_back_glove_prisoner_01","frontGlove":"generated_equipment_front_glove_prisoner_01","backGreave":"generated_equipment_back_greave_prisoner_01","frontGreave":"generated_equipment_front_greave_prisoner_01","backShinguard":"generated_equipment_back_shinguard_prisoner_01","frontShinguard":"generated_equipment_front_shinguard_prisoner_01","backBoot":"generated_equipment_back_boot_prisoner_01","frontBoot":"generated_equipment_front_boot_prisoner_01"},
     rewards: {"win":{"gold":1264,"xp":1264},"loss":{"gold":1,"xp":2}},
     lootTable: [
+      {"id":"arena_boss_5_generated_equipment_back_boot_prisoner_01_generated_equipment_front_boot_prisoner_01_drop","itemIds":["generated_equipment_back_boot_prisoner_01","generated_equipment_front_boot_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_breastplate_prisoner_01_drop","itemIds":["generated_equipment_breastplate_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_back_glove_prisoner_01_generated_equipment_front_glove_prisoner_01_drop","itemIds":["generated_equipment_back_glove_prisoner_01","generated_equipment_front_glove_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_back_greave_prisoner_01_generated_equipment_front_greave_prisoner_01_drop","itemIds":["generated_equipment_back_greave_prisoner_01","generated_equipment_front_greave_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_helmet_prisoner_01_drop","itemIds":["generated_equipment_helmet_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_back_shinguard_prisoner_01_generated_equipment_front_shinguard_prisoner_01_drop","itemIds":["generated_equipment_back_shinguard_prisoner_01","generated_equipment_front_shinguard_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_back_shoulderguard_prisoner_01_generated_equipment_front_shoulderguard_prisoner_01_drop","itemIds":["generated_equipment_back_shoulderguard_prisoner_01","generated_equipment_front_shoulderguard_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_back_wrist_prisoner_01_generated_equipment_front_wrist_prisoner_01_drop","itemIds":["generated_equipment_back_wrist_prisoner_01","generated_equipment_front_wrist_prisoner_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_5_generated_equipment_weapon_axe_prisoner_axe_drop","itemIds":["generated_equipment_weapon_axe_prisoner_axe"],"chance":1,"quantity":1},
     ],
   },
   {
