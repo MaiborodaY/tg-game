@@ -637,6 +637,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_turtle_boss_01",
+    "name": "Turtle Boss 01 Back Boot",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 3,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 0.86,
+      "scaleY": 0.81,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_viper_01",
     "name": "Viper 01 Back Boot",
     "kind": "armor",
@@ -1353,6 +1389,42 @@
         "generated_equipment_back_glove_stormguard_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_turtle_boss_01",
+    "name": "Turtle Boss 01 Back Glove",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 46,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.24310082112485532,
+      "y": 9.603791897587143,
+      "angle": 3,
+      "scaleX": 0.77,
+      "scaleY": 0.6,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-glove-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -2075,6 +2147,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_turtle_boss_01",
+    "name": "Turtle Boss 01 Back Greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 42,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -2.2474437875625313,
+      "y": 24.40855705445506,
+      "angle": -6,
+      "scaleX": 1.2,
+      "scaleY": 1.11,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_viper_01",
     "name": "Viper 01 Back Greave",
     "kind": "armor",
@@ -2744,6 +2852,42 @@
         "generated_equipment_back_shinguard_stormguard_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shinguard_turtle_boss_01",
+    "name": "Turtle Boss 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 38,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.4260618862114427,
+      "y": 20.813197997012026,
+      "angle": 3,
+      "scaleX": 1.43,
+      "scaleY": 0.89,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -3419,6 +3563,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_shoulderguard_turtle_boss_01",
+    "name": "Turtle Boss 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 47,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.936434849558438,
+      "y": 22.18959775701279,
+      "angle": 6,
+      "scaleX": 1.64,
+      "scaleY": 1.42,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_shoulderguard_viper_01",
     "name": "Viper 01 Back Shoulderguard",
     "kind": "armor",
@@ -4091,6 +4271,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_wrist_turtle_boss_01",
+    "name": "Turtle Boss 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -0.3017933779652111,
+      "y": 20.31776342892522,
+      "angle": -10,
+      "scaleX": 2.03,
+      "scaleY": 0.94,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_viper_01",
     "name": "Viper 01 Back Wrist",
     "kind": "armor",
@@ -4713,6 +4929,42 @@
         "generated_equipment_breastplate_stormguard_01"
       ],
       "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_turtle_boss_01",
+    "name": "Turtle Boss 01 Breastplate",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 58,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 49,
+      "angle": 0,
+      "scaleX": 1.51,
+      "scaleY": 1.68,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -5385,6 +5637,42 @@
         "generated_equipment_front_boot_stormguard_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_boot_turtle_boss_01",
+    "name": "Turtle Boss 01 Front Boot",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 32,
+      "y": 0,
+      "angle": 0,
+      "scaleX": 0.86,
+      "scaleY": 0.81,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -6107,6 +6395,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_glove_turtle_boss_01",
+    "name": "Turtle Boss 01 Front Glove",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.24310082112485532,
+      "y": 9.603791897587143,
+      "angle": 3,
+      "scaleX": 0.77,
+      "scaleY": 0.6,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-glove-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_glove_viper_01",
     "name": "Viper 01 Front Glove",
     "kind": "armor",
@@ -6826,6 +7150,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_turtle_boss_01",
+    "name": "Turtle Boss 01 Front Greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -2.2474437875625313,
+      "y": 24.40855705445506,
+      "angle": -6,
+      "scaleX": 1.2,
+      "scaleY": 1.11,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_viper_01",
     "name": "Viper 01 Front Greave",
     "kind": "armor",
@@ -7495,6 +7855,42 @@
         "generated_equipment_front_shinguard_stormguard_01"
       ],
       "categoryId": "legs"
+    }
+  },
+  {
+    "id": "generated_equipment_front_shinguard_turtle_boss_01",
+    "name": "Turtle Boss 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.4260618862114427,
+      "y": 20.813197997012026,
+      "angle": 3,
+      "scaleX": 1.43,
+      "scaleY": 0.89,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -8170,6 +8566,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_turtle_boss_01",
+    "name": "Turtle Boss 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.936434849558438,
+      "y": 22.18959775701279,
+      "angle": 6,
+      "scaleX": 1.64,
+      "scaleY": 1.42,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_viper_01",
     "name": "Viper 01 Front Shoulderguard",
     "kind": "armor",
@@ -8839,6 +9271,42 @@
         "generated_equipment_front_wrist_stormguard_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_turtle_boss_01",
+    "name": "Turtle Boss 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -0.3017933779652111,
+      "y": 20.31776342892522,
+      "angle": -10,
+      "scaleX": 2.03,
+      "scaleY": 0.94,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -9551,6 +10019,42 @@
     }
   },
   {
+    "id": "generated_equipment_helmet_turtle_boss_01",
+    "name": "Turtle Boss 01 Helmet",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "turtle_boss",
+      "name": "Turtle Boss",
+      "rank": 16,
+      "grade": "boss"
+    },
+    "armorHp": 41,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-turtle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 18,
+      "angle": 0,
+      "scaleX": 1.1,
+      "scaleY": 1.1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-turtle-boss-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-turtle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-turtle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_helmet_viper_01",
     "name": "Viper 01 Helmet",
     "kind": "armor",
@@ -10030,6 +10534,36 @@
         "generated_equipment_shield_rare_02"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_shield_turtle_boss",
+    "name": "Turtle Shield",
+    "kind": "armor",
+    "rarity": "unique",
+    "armorHp": 200,
+    "equipmentSlot": "shield",
+    "assetKeys": {
+      "shieldAssetKey": "shield-turtle-boss"
+    },
+    "equipmentTuning": {
+      "x": 7.443344826689781,
+      "y": 41.82800422204491,
+      "angle": -3,
+      "scaleX": 2,
+      "scaleY": 2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "shield-turtle-boss",
+      "sourcePath": "assets/fighters/armor/arms/shield-turtle-boss.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/shield-turtle-boss.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -11783,6 +12317,37 @@
         "generated_equipment_weapon_mace_stone_mace"
       ],
       "categoryId": "maces"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_mace_turtle_weapon",
+    "name": "Turtle weapon",
+    "kind": "weapon",
+    "rarity": "unique",
+    "damageBonus": 5,
+    "weaponClass": "mace",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-mace-turtle-weapon"
+    },
+    "equipmentTuning": {
+      "x": -18,
+      "y": 15,
+      "angle": 90,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-mace-turtle-weapon",
+      "sourcePath": "assets/fighters/weapons/weapon-mace-turtle-weapon.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-mace-turtle-weapon.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {

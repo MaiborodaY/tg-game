@@ -1420,7 +1420,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <button class="debug-panel__reset debug-effects__reset-slash" type="button">Reset slash</button>
         </details>
         <details class="debug-panel__group debug-effects__group debug-weapon-enchant-glow" open>
-          <summary>Weapon enchant glow</summary>
+          <summary>Weapon sharpening glow</summary>
           <label class="debug-rig-editor__part">
             <span>Weapon</span>
             <select class="debug-weapon-enchant-glow__weapon" data-weapon-enchant-glow-weapon></select>
@@ -1445,8 +1445,8 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           </label>
           <div class="debug-weapon-enchant-glow__controls" data-weapon-enchant-glow-controls></div>
           <div class="debug-rig-editor__actions">
-            <button class="debug-panel__reset" type="button" data-weapon-enchant-glow-reset>Reset water glow</button>
-            <button class="debug-panel__reset" type="button" data-weapon-enchant-glow-save-prod>Save weapon glow as prod</button>
+            <button class="debug-panel__reset" type="button" data-weapon-enchant-glow-reset>Reset sharpening glow</button>
+            <button class="debug-panel__reset" type="button" data-weapon-enchant-glow-save-prod>Save sharpening glow as prod</button>
           </div>
           <p class="debug-panel__status" data-weapon-enchant-glow-status aria-live="polite"></p>
         </details>
@@ -2942,9 +2942,7 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
         ...(context.canEditRarity ? { rarity: getDebugItemRarity(valueRarity.value, context.rarity ?? "common") } : {}),
         ...(context.canEditStat ? { stat: clampNumber(Number(valueStatNumber.value), AUTO_EQUIPMENT_STAT_MIN, getItemEquipmentValueStatMax(context)) } : {}),
         ...(context.canEditPrice ? { price: clampNumber(Number(valuePriceNumber.value), 0, AUTO_EQUIPMENT_PRICE_MAX) } : {}),
-        equipmentTuningByItemId: {
-          [activeEquipmentItemId]: getCurrentEquipmentItemTuning(activeEquipmentItemId, activeEquipmentSlot),
-        },
+        equipmentTuningByItemId: getCurrentEquipmentItemTuningsForSave(context.itemIds, activeEquipmentItemId, activeEquipmentSlot),
       });
     } catch (error) {
       valueStatus.textContent = error instanceof Error ? error.message : "Could not save generated item.";
@@ -7107,8 +7105,15 @@ function isDebugWeaponEnchantGlowPreviewWeaponItemId(itemId: string): itemId is 
       definition.kind === "weapon" &&
       definition.equipmentSlot === "weaponMain" &&
       definition.weaponClass !== "bow" &&
-      definition.weaponClass !== "shuriken",
+      definition.weaponClass !== "shuriken" &&
+      isDebugWeaponEnchantGlowPreviewRarityAllowed(definition),
   );
+}
+
+const DEBUG_WEAPON_ENCHANT_GLOW_PREVIEW_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
+
+function isDebugWeaponEnchantGlowPreviewRarityAllowed(definition: HeroItemDefinition): boolean {
+  return DEBUG_WEAPON_ENCHANT_GLOW_PREVIEW_RARITIES.has(getHeroItemDefinitionRarity(definition));
 }
 
 function compareDebugWeaponEnchantGlowPreviewWeapons(leftItemId: HeroItemId, rightItemId: HeroItemId): number {
@@ -9756,6 +9761,36 @@ function getCurrentEquipmentItemTuning(itemId: HeroItemId, slotKey: EquipmentSlo
       DEFAULT_EQUIPMENT[slotKey]
     ),
   };
+}
+
+function getCurrentEquipmentItemTuningsForSave(
+  itemIds: readonly HeroItemId[],
+  activeItemId: HeroItemId,
+  activeSlotKey: EquipmentSlotKey,
+): Record<string, EquipmentTuning> {
+  const tuningIds = new Set<HeroItemId>(itemIds);
+  const pairItem = getGeneratedEquipmentPairItem(activeItemId);
+
+  tuningIds.add(activeItemId);
+
+  if (pairItem) {
+    tuningIds.add(pairItem.itemId);
+  }
+
+  const tuningByItemId: Record<string, EquipmentTuning> = {};
+
+  tuningIds.forEach((itemId) => {
+    const record = getSelectedGeneratedEquipmentRecord(itemId);
+    const slotKey = itemId === activeItemId ? activeSlotKey : record?.item.equipmentSlot;
+
+    if (!isEquipmentSlotKey(slotKey)) {
+      return;
+    }
+
+    tuningByItemId[itemId] = getCurrentEquipmentItemTuning(itemId, slotKey);
+  });
+
+  return tuningByItemId;
 }
 
 function syncItemEquipmentValueEditor(panel: HTMLElement): void {

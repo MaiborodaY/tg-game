@@ -20,7 +20,7 @@ import type {
   ArenaTierDefinition,
 } from "./arenaOpponents";
 import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatArmorSlotState, type CombatState } from "./combat";
-import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS } from "./generated/equipmentItems.generated";
+import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 
 export {
   ARENA_DIFFICULTY_IDS,
@@ -153,16 +153,20 @@ export type HeroItemId = string;
 export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
 export type HeroEquipmentSetGrade = "starter" | "low" | "mid" | "high" | "boss";
-export type HeroWeaponEnchantmentElement = "water";
 
-export interface HeroWeaponEnchantment {
-  element: HeroWeaponEnchantmentElement;
+export interface HeroWeaponSharpening {
+  level: number;
 }
 
-export type HeroWeaponEnchantments = Partial<Record<HeroItemId, HeroWeaponEnchantment>>;
+export type HeroWeaponSharpenings = Partial<Record<HeroItemId, HeroWeaponSharpening>>;
+export type HeroWeaponEnchantment = HeroWeaponSharpening;
+export type HeroWeaponEnchantments = HeroWeaponSharpenings;
 
 export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
-export const HERO_WATER_WEAPON_ENCHANT_PRICE = 50;
+export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
+export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
+export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
+const HERO_WEAPON_SHARPENING_ALLOWED_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
 
 interface PairedArmorSlotConfig {
   backSlot: HeroEquipmentSlotKey;
@@ -686,13 +690,18 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
 }
 
 export function deriveHeroStats(hero: HeroState): HeroStats {
-  return deriveFighterStats(hero.baseStats, hero.equipment);
+  return deriveFighterStats(hero.baseStats, hero.equipment, undefined, hero.weaponEnchantments);
 }
 
-function deriveFighterStats(baseStats: HeroBaseStats, equipment: HeroEquipment, armorOverride?: number): HeroStats {
+function deriveFighterStats(
+  baseStats: HeroBaseStats,
+  equipment: HeroEquipment,
+  armorOverride?: number,
+  weaponSharpenings?: HeroWeaponSharpenings,
+): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
   const armorBonus = armorOverride ?? getHeroEquipmentArmor(equipment);
-  const mainWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponMain");
+  const mainWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponMain") + getHeroWeaponSharpeningDamageBonus(weaponSharpenings, equipment.weaponMain);
   const bowWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponBow");
   const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength);
   const agilityBonus = getHeroAttributeTotal(baseStats.agility, equipmentBonuses.agility);
@@ -742,51 +751,87 @@ export function areHeroItemsEquipped(hero: HeroState, itemIds: readonly HeroItem
   });
 }
 
-export function getActiveEnchantableHeroWeaponItemId(hero: HeroState): HeroItemId | undefined {
+export function getActiveSharpenableHeroWeaponItemId(hero: HeroState): HeroItemId | undefined {
   const itemId = hero.equipment.weaponMain;
   const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+  const weaponClass = getHeroItemWeaponClass(item);
 
-  if (!item || item.kind !== "weapon" || item.equipmentSlot !== "weaponMain" || item.weaponClass === "shuriken") {
+  if (
+    !item ||
+    item.kind !== "weapon" ||
+    item.equipmentSlot !== "weaponMain" ||
+    weaponClass === "shuriken" ||
+    weaponClass === "bow" ||
+    !HERO_WEAPON_SHARPENING_ALLOWED_RARITIES.has(item.rarity ?? "common")
+  ) {
     return undefined;
   }
 
   return itemId ?? undefined;
 }
 
-export function getHeroWeaponEnchantment(
-  enchantments: HeroWeaponEnchantments | undefined,
+export function getHeroWeaponSharpening(
+  sharpenings: HeroWeaponSharpenings | undefined,
   itemId: HeroItemId | null | undefined,
-): HeroWeaponEnchantment | undefined {
-  return itemId ? enchantments?.[itemId] : undefined;
+): HeroWeaponSharpening | undefined {
+  return itemId ? sharpenings?.[itemId] : undefined;
 }
 
-export function canEnchantHeroActiveWeaponWithWater(hero: HeroState): boolean {
-  const itemId = getActiveEnchantableHeroWeaponItemId(hero);
+export function getHeroWeaponSharpeningLevel(sharpenings: HeroWeaponSharpenings | undefined, itemId: HeroItemId | null | undefined): number {
+  return Math.max(0, Math.min(HERO_WEAPON_SHARPENING_MAX_LEVEL, Math.floor(getHeroWeaponSharpening(sharpenings, itemId)?.level ?? 0)));
+}
 
-  if (!itemId || getHeroWeaponEnchantment(hero.weaponEnchantments, itemId)?.element === "water") {
-    return false;
+export function getHeroWeaponSharpeningDamageBonus(sharpenings: HeroWeaponSharpenings | undefined, itemId: HeroItemId | null | undefined): number {
+  return getHeroWeaponSharpeningLevel(sharpenings, itemId);
+}
+
+export function getHeroActiveWeaponSharpeningPrice(hero: HeroState): number | undefined {
+  const itemId = getActiveSharpenableHeroWeaponItemId(hero);
+  const itemPrice = getHeroWeaponProductPrice(itemId);
+
+  if (itemPrice === undefined) {
+    return undefined;
   }
 
-  return hero.gold >= HERO_WATER_WEAPON_ENCHANT_PRICE;
+  const currentLevel = getHeroWeaponSharpeningLevel(hero.weaponEnchantments, itemId);
+
+  if (currentLevel >= HERO_WEAPON_SHARPENING_MAX_LEVEL) {
+    return undefined;
+  }
+
+  const priceRatio = HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO + HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL * currentLevel;
+
+  return Math.max(0, Math.ceil(itemPrice * priceRatio));
 }
 
-export function enchantHeroActiveWeaponWithWater(hero: HeroState, now = new Date().toISOString()): HeroState {
-  const itemId = getActiveEnchantableHeroWeaponItemId(hero);
+function getHeroWeaponProductPrice(itemId: HeroItemId | null | undefined): number | undefined {
+  const product = itemId ? GENERATED_WEAPON_PRODUCTS.find((candidate) => candidate.itemIds.includes(itemId)) : undefined;
 
-  if (!itemId || getHeroWeaponEnchantment(hero.weaponEnchantments, itemId)?.element === "water") {
+  return product?.price;
+}
+
+export function canSharpenHeroActiveWeapon(hero: HeroState): boolean {
+  const price = getHeroActiveWeaponSharpeningPrice(hero);
+
+  return price !== undefined && hero.gold >= price;
+}
+
+export function sharpenHeroActiveWeapon(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const itemId = getActiveSharpenableHeroWeaponItemId(hero);
+  const price = getHeroActiveWeaponSharpeningPrice(hero);
+
+  if (!itemId || price === undefined || hero.gold < price) {
     return hero;
   }
 
-  if (hero.gold < HERO_WATER_WEAPON_ENCHANT_PRICE) {
-    return hero;
-  }
+  const currentLevel = getHeroWeaponSharpeningLevel(hero.weaponEnchantments, itemId);
 
   return {
     ...hero,
-    gold: hero.gold - HERO_WATER_WEAPON_ENCHANT_PRICE,
+    gold: hero.gold - price,
     weaponEnchantments: {
       ...hero.weaponEnchantments,
-      [itemId]: { element: "water" },
+      [itemId]: { level: Math.min(HERO_WEAPON_SHARPENING_MAX_LEVEL, currentLevel + 1) },
     },
     updatedAt: now,
   };

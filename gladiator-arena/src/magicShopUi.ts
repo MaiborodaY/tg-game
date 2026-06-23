@@ -5,13 +5,14 @@ import {
   HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_SCROLL_MAX_QUANTITY,
+  HERO_WEAPON_SHARPENING_MAX_LEVEL,
   HERO_ITEM_CATALOG,
-  HERO_WATER_WEAPON_ENCHANT_PRICE,
   HERO_WARD_SCROLL_ITEM_ID,
-  canEnchantHeroActiveWeaponWithWater,
-  getActiveEnchantableHeroWeaponItemId,
+  canSharpenHeroActiveWeapon,
+  getActiveSharpenableHeroWeaponItemId,
+  getHeroActiveWeaponSharpeningPrice,
   getHeroScrollQuantity,
-  getHeroWeaponEnchantment,
+  getHeroWeaponSharpeningLevel,
   type HeroItemId,
   type HeroState,
 } from "./hero";
@@ -55,7 +56,7 @@ export interface MagicShopApi {
 interface MagicShopOptions {
   getHero: () => HeroState;
   onBuy: (product: MagicProduct) => void;
-  onEnchantWeapon: () => void;
+  onSharpenWeapon: () => void;
   onOpen?: () => void;
   onClose?: () => void;
   onLayoutChange?: (menuTopY?: number) => void;
@@ -75,7 +76,7 @@ interface MagicProductListItemElements {
   item: HTMLButtonElement;
 }
 
-type MagicShopMode = "home" | "scrolls" | "weaponEnchantment";
+type MagicShopMode = "home" | "scrolls" | "weaponSharpening";
 
 const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
@@ -210,10 +211,10 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     onClick: () => setMode("scrolls"),
   });
   const enchantModeButton = createMagicShopHomeAction({
-    label: "Weapon Enchantment",
-    detail: "Water glow",
+    label: "Weapon Sharpening",
+    detail: "+ flat damage",
     iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
-    onClick: () => setMode("weaponEnchantment"),
+    onClick: () => setMode("weaponSharpening"),
   });
 
   home.append(scrollsModeButton, enchantModeButton);
@@ -420,19 +421,19 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
       return;
     }
 
-    if (mode === "weaponEnchantment") {
-      refreshWeaponEnchantment(hero);
+    if (mode === "weaponSharpening") {
+      refreshWeaponSharpening(hero);
     }
   }
 
   function refreshMode(): void {
     shop.classList.toggle("magic-shop--mode-home", mode === "home");
     shop.classList.toggle("magic-shop--mode-scrolls", mode === "scrolls");
-    shop.classList.toggle("magic-shop--mode-enchantment", mode === "weaponEnchantment");
+    shop.classList.toggle("magic-shop--mode-sharpening", mode === "weaponSharpening");
     preview.hidden = mode === "home";
     home.hidden = mode !== "home";
     productList.hidden = mode !== "scrolls";
-    preview.setAttribute("aria-label", mode === "weaponEnchantment" ? "Weapon enchantment" : "Selected scroll");
+    preview.setAttribute("aria-label", mode === "weaponSharpening" ? "Weapon sharpening" : "Selected scroll");
   }
 
   function refreshWallet(hero: HeroState): void {
@@ -463,28 +464,32 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     setTextContentIfChanged(previewElements.buyButton, actionLabel);
   }
 
-  function refreshWeaponEnchantment(hero: HeroState): void {
+  function refreshWeaponSharpening(hero: HeroState): void {
     const activeWeaponItemId = hero.equipment.weaponMain;
-    const enchantableItemId = getActiveEnchantableHeroWeaponItemId(hero);
-    const displayItemId = enchantableItemId ?? activeWeaponItemId;
+    const sharpenableItemId = getActiveSharpenableHeroWeaponItemId(hero);
+    const displayItemId = sharpenableItemId ?? activeWeaponItemId;
     const displayItem = displayItemId ? HERO_ITEM_CATALOG[displayItemId] : undefined;
-    const enchantment = getHeroWeaponEnchantment(hero.weaponEnchantments, enchantableItemId);
-    const canEnchant = canEnchantHeroActiveWeaponWithWater(hero);
-    const hasWaterEnchantment = enchantment?.element === "water";
-    const hasEnoughGold = hero.gold >= HERO_WATER_WEAPON_ENCHANT_PRICE;
+    const sharpeningLevel = getHeroWeaponSharpeningLevel(hero.weaponEnchantments, sharpenableItemId);
+    const sharpeningPrice = getHeroActiveWeaponSharpeningPrice(hero);
+    const canSharpen = canSharpenHeroActiveWeapon(hero);
+    const isMaxSharpening = sharpeningLevel >= HERO_WEAPON_SHARPENING_MAX_LEVEL;
+    const hasEnoughGold = sharpeningPrice !== undefined && hero.gold >= sharpeningPrice;
     const iconUrl = displayItemId ? getShopProductIconUrl([displayItemId]) : undefined;
     const displayName = displayItem ? getShopProductDisplayName(displayItem.name) : "No Weapon";
-    const status = hasWaterEnchantment ? "Water" : "No Enchantment";
-    const effect = getWeaponEnchantmentEffectText(Boolean(activeWeaponItemId), Boolean(enchantableItemId), hasWaterEnchantment, hasEnoughGold);
+    const status = sharpenableItemId ? `+${sharpeningLevel}/${HERO_WEAPON_SHARPENING_MAX_LEVEL}` : "No Sharpening";
+    const effect = getWeaponSharpeningEffectText(Boolean(activeWeaponItemId), Boolean(sharpenableItemId), isMaxSharpening, sharpeningPrice, hasEnoughGold);
 
-    previewElements.card.className = "magic-shop__preview-card magic-shop__preview-card--water";
-    previewElements.card.classList.toggle("magic-shop__preview-card--max", hasWaterEnchantment);
+    previewElements.card.className = "magic-shop__preview-card magic-shop__preview-card--sharpening";
+    previewElements.card.classList.toggle("magic-shop__preview-card--max", isMaxSharpening);
     setImageSourceIfChanged(previewElements.icon, iconUrl ?? SHOP_CATEGORY_SWORD_ICON_ASSET_URL);
     setTextContentIfChanged(previewElements.name, displayName);
     setTextContentIfChanged(previewElements.rarity, status);
     setTextContentIfChanged(previewElements.effect, effect);
-    previewElements.buyButton.disabled = !canEnchant;
-    setTextContentIfChanged(previewElements.buyButton, getWeaponEnchantmentActionLabel(Boolean(activeWeaponItemId), Boolean(enchantableItemId), hasWaterEnchantment, hasEnoughGold));
+    previewElements.buyButton.disabled = !canSharpen;
+    setTextContentIfChanged(
+      previewElements.buyButton,
+      getWeaponSharpeningActionLabel(Boolean(activeWeaponItemId), Boolean(sharpenableItemId), isMaxSharpening, hasEnoughGold, sharpeningPrice),
+    );
   }
 
   function refreshProductList(hero: HeroState): void {
@@ -542,8 +547,8 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
         return;
       }
 
-      if (mode === "weaponEnchantment") {
-        options.onEnchantWeapon();
+      if (mode === "weaponSharpening") {
+        options.onSharpenWeapon();
       } else {
         options.onBuy(getSelectedMagicProduct());
       }
@@ -645,44 +650,54 @@ function appendPriceContent(priceNode: HTMLElement, price: number): void {
   priceNode.append(icon, amount);
 }
 
-function getWeaponEnchantmentEffectText(hasWeapon: boolean, isEnchantable: boolean, hasWaterEnchantment: boolean, hasEnoughGold: boolean): string {
+function getWeaponSharpeningEffectText(hasWeapon: boolean, isSharpenable: boolean, isMaxSharpening: boolean, sharpeningPrice: number | undefined, hasEnoughGold: boolean): string {
   if (!hasWeapon) {
-    return "Equip a melee weapon to enchant it";
+    return "Equip an epic melee weapon to sharpen it";
   }
 
-  if (!isEnchantable) {
-    return "Only melee weapons can be enchanted";
+  if (!isSharpenable) {
+    return "Only epic+ melee weapons can be sharpened";
   }
 
-  if (hasWaterEnchantment) {
-    return "This weapon carries water magic";
+  if (isMaxSharpening) {
+    return `Sharpening is maxed at +${HERO_WEAPON_SHARPENING_MAX_LEVEL}`;
+  }
+
+  if (sharpeningPrice === undefined) {
+    return "Sharpening unavailable";
   }
 
   if (!hasEnoughGold) {
-    return `Water enchantment costs ${HERO_WATER_WEAPON_ENCHANT_PRICE} gold`;
+    return `Sharpening costs ${sharpeningPrice} gold`;
   }
 
-  return "Adds a blue water glow to this weapon";
+  return "Adds +1 flat damage to this weapon";
 }
 
-function getWeaponEnchantmentActionLabel(hasWeapon: boolean, isEnchantable: boolean, hasWaterEnchantment: boolean, hasEnoughGold: boolean): string {
+function getWeaponSharpeningActionLabel(
+  hasWeapon: boolean,
+  isSharpenable: boolean,
+  isMaxSharpening: boolean,
+  hasEnoughGold: boolean,
+  sharpeningPrice: number | undefined,
+): string {
   if (!hasWeapon) {
     return "No Weapon";
   }
 
-  if (!isEnchantable) {
+  if (!isSharpenable) {
     return "Unavailable";
   }
 
-  if (hasWaterEnchantment) {
-    return "Enchanted";
+  if (isMaxSharpening) {
+    return `Max +${HERO_WEAPON_SHARPENING_MAX_LEVEL}`;
   }
 
-  if (!hasEnoughGold) {
+  if (!hasEnoughGold || sharpeningPrice === undefined) {
     return "No Gold";
   }
 
-  return `Enchant ${HERO_WATER_WEAPON_ENCHANT_PRICE}`;
+  return `Sharpen ${sharpeningPrice}`;
 }
 
 function getMagicProductDisplayName(product: MagicProduct): string {

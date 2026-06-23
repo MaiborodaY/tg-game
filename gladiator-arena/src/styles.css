@@ -7255,12 +7255,12 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: 0;
 }
 
-.magic-shop__preview-card--water {
+.magic-shop__preview-card--sharpening {
   --shop-rarity-light: #b9f4ff;
   --shop-rarity-soft: rgba(88, 216, 255, 0.3);
 }
 
-.magic-shop__preview-card--water .magic-shop__preview-icon {
+.magic-shop__preview-card--sharpening .magic-shop__preview-icon {
   filter:
     drop-shadow(0 3px 0 rgba(8, 2, 1, 0.58))
     drop-shadow(0 0 15px rgba(88, 216, 255, 0.34));
@@ -7597,7 +7597,7 @@ body.debug-active .city-menu__portrait-button:active {
   );
 }
 
-.magic-shop--mode-enchantment .magic-shop__buy {
+.magic-shop--mode-sharpening .magic-shop__buy {
   border-color: rgba(88, 216, 255, 0.62);
   background:
     radial-gradient(circle at 50% 0, rgba(185, 244, 255, 0.2), transparent 54%),

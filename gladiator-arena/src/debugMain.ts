@@ -46,10 +46,10 @@ import {
   createDefaultHero,
   createHeroPreviewEquipment,
   deriveHeroStats,
-  enchantHeroActiveWeaponWithWater,
   grantHeroGold,
   grantHeroLevels,
   getBattleReward,
+  sharpenHeroActiveWeapon,
   unlockAllHeroShopRarities,
   type HeroEquipment,
   type HeroItemId,
@@ -490,8 +490,8 @@ function handleShopBuy(product: DebugShopProduct): void {
   magicShop?.render();
 }
 
-function handleMagicWeaponEnchant(): void {
-  const nextHero = enchantHeroActiveWeaponWithWater(hero);
+function handleMagicWeaponSharpen(): void {
+  const nextHero = sharpenHeroActiveWeapon(hero);
 
   if (nextHero === hero) {
     return;
@@ -861,7 +861,7 @@ function startDebugApp(): void {
     magicShop = mountMagicShop(cityMenu, {
       getHero: () => hero,
       onBuy: handleShopBuy,
-      onEnchantWeapon: handleMagicWeaponEnchant,
+      onSharpenWeapon: handleMagicWeaponSharpen,
     });
   }
   mountDebugPanel(debugPanelHost ?? dom.gameScreen, {

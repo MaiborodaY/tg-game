@@ -41,7 +41,6 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
-  enchantHeroActiveWeaponWithWater,
   createArenaBossEncounter,
   createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
@@ -57,6 +56,7 @@ import {
   getBattleReward,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
+  sharpenHeroActiveWeapon,
   unlockAllArenaBossTiers,
   unlockAllHeroShopRarities,
   updateHeroAppearance,
@@ -1116,8 +1116,8 @@ function handleBowCapacityUpgrade(): void {
   cityHeroEquipmentMenu.render();
 }
 
-function handleMagicWeaponEnchant(): void {
-  const nextHero = enchantHeroActiveWeaponWithWater(hero);
+function handleMagicWeaponSharpen(): void {
+  const nextHero = sharpenHeroActiveWeapon(hero);
 
   if (nextHero === hero) {
     return;
@@ -1464,7 +1464,7 @@ if (cityMenu) {
   magicShop = mountMagicShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
-    onEnchantWeapon: handleMagicWeaponEnchant,
+    onSharpenWeapon: handleMagicWeaponSharpen,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {
       playCityCurtainTransition(() => focusCityShop("magicShop"));

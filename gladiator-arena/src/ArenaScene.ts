@@ -124,7 +124,7 @@ import {
   ALL_HERO_ITEM_IDS,
   getHeroEquipmentBowWeaponClass,
   getHeroEquipmentWeaponClass,
-  getHeroWeaponEnchantment,
+  getHeroWeaponSharpeningLevel,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_ITEM_CATALOG,
   type HeroAppearance,
@@ -132,9 +132,9 @@ import {
   type HeroEquipmentSlotKey,
   type HeroItemDefinition,
   type HeroItemId,
+  type HeroItemRarity,
   type HeroWeaponClass,
   type HeroWeaponEnchantments,
-  type HeroWeaponEnchantmentElement,
 } from "./hero";
 import {
   getHeroAppearanceAsset,
@@ -1748,7 +1748,7 @@ function areHeroWeaponEnchantmentsEqual(left: HeroWeaponEnchantments, right: Her
   const itemIds = new Set([...Object.keys(left), ...Object.keys(right)]);
 
   for (const itemId of itemIds) {
-    if ((left[itemId]?.element ?? "") !== (right[itemId]?.element ?? "")) {
+    if ((left[itemId]?.level ?? 0) !== (right[itemId]?.level ?? 0)) {
       return false;
     }
   }
@@ -3496,7 +3496,7 @@ function createDebugWeaponEnchantGlowPreviewFighterState(equipment: HeroEquipmen
 function createDebugWeaponEnchantGlowPreviewEnchantments(equipment: HeroEquipment | undefined): HeroWeaponEnchantments {
   const itemId = equipment?.weaponMain;
 
-  return itemId ? { [itemId]: { element: "water" } } : {};
+  return itemId ? { [itemId]: { level: 1 } } : {};
 }
 
 function createDebugWeaponEnchantGlowPreviewEquipment(): HeroEquipment {
@@ -3527,7 +3527,20 @@ function isDebugWeaponEnchantGlowPreviewWeaponItemId(itemId: unknown): itemId is
 
   const item = getDebugWeaponEnchantGlowPreviewItemDefinition(itemId);
 
-  return Boolean(item && item.kind === "weapon" && item.equipmentSlot === "weaponMain" && item.weaponClass !== "bow" && item.weaponClass !== "shuriken");
+  return Boolean(
+    item &&
+      item.kind === "weapon" &&
+      item.equipmentSlot === "weaponMain" &&
+      item.weaponClass !== "bow" &&
+      item.weaponClass !== "shuriken" &&
+      isDebugWeaponEnchantGlowPreviewRarityAllowed(item),
+  );
+}
+
+const DEBUG_WEAPON_ENCHANT_GLOW_PREVIEW_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
+
+function isDebugWeaponEnchantGlowPreviewRarityAllowed(item: HeroItemDefinition): boolean {
+  return DEBUG_WEAPON_ENCHANT_GLOW_PREVIEW_RARITIES.has(item.rarity ?? "common");
 }
 
 function getDebugWeaponEnchantGlowPreviewWeaponItemIds(): HeroItemId[] {
@@ -6292,17 +6305,17 @@ function syncPaperDollWeaponSlotGlow(
   }
 
   const itemId = equipment[slotKey];
-  const enchantment = getHeroWeaponEnchantment(enchantments, itemId);
+  const sharpeningLevel = getHeroWeaponSharpeningLevel(enchantments, itemId);
   const image = getPaperDollEquipmentSlotImage(slot);
   const glow = getOrCreatePaperDollWeaponGlowImage(slot, image);
 
-  if (!image || !glow || !enchantment) {
+  if (!image || !glow || sharpeningLevel <= 0) {
     glow?.setVisible(false);
     return;
   }
 
   const textureKey = image.texture.key;
-  const tuning = getWeaponEnchantGlowTuning(enchantment.element);
+  const tuning = getWeaponEnchantGlowTuning();
 
   if (glow.texture.key !== textureKey || glow.frame.name !== image.frame.name) {
     glow.setTexture(textureKey, image.frame.name);
@@ -6322,8 +6335,8 @@ function syncPaperDollWeaponSlotGlow(
   glow.setVisible(true);
 }
 
-function getWeaponEnchantGlowTuning(element: HeroWeaponEnchantmentElement): WeaponEnchantGlowTuning {
-  return debugTuning.weaponEnchantGlow[element];
+function getWeaponEnchantGlowTuning(): WeaponEnchantGlowTuning {
+  return debugTuning.weaponEnchantGlow[debugTuning.selectedWeaponEnchantGlowElement];
 }
 
 function getWeaponEnchantGlowBlendMode(tuning: WeaponEnchantGlowTuning): number {
