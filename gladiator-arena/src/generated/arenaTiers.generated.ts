@@ -226,7 +226,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 9,
-    name: "Dust Arena 9",
+    name: "Cemetery",
     unlockBossId: "arena_boss_8",
     opponents: [
       {

@@ -11427,6 +11427,73 @@ export const defaultDebugTuning: ArenaDebugTuning = {
           }
         }
       }
+    },
+    "9": {
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "scale": 0.52,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": -0.12,
+            "zoom": 0.3,
+            "lookUpY": -44
+          }
+        },
+        "mid": {
+          "layout": {
+            "x": 0,
+            "y": 37,
+            "scale": 0.61,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": 0.1,
+            "zoom": 0.4,
+            "lookUpY": -81,
+            "zoomDarken": 0
+          }
+        },
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": 37,
+            "scale": 0.55,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.2,
+            "followY": 0.15,
+            "zoom": 0.74,
+            "lookUpY": -106
+          }
+        },
+        "ambient": {
+          "layout": {
+            "x": 0,
+            "y": 90,
+            "scale": 0.6,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.37,
+            "followY": 0.16,
+            "zoom": 0.13,
+            "lookUpY": -16,
+            "farAlpha": 1,
+            "nearAlpha": 0.51
+          }
+        }
+      }
     }
   },
   arenaTier1BackFollowX: 0.2,
