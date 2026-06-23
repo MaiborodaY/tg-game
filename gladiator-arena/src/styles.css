@@ -3529,10 +3529,13 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   width: 22px;
   height: 22px;
+  padding: 0;
   border: 1px solid rgba(255, 220, 146, 0.32);
   border-radius: 4px;
   background: rgba(19, 6, 3, 0.36);
   box-shadow: inset 0 1px 0 rgba(255, 220, 146, 0.12);
+  appearance: none;
+  cursor: pointer;
 }
 
 .city-profile__edit-mark::before {
@@ -3546,6 +3549,11 @@ body.debug-active .city-menu__portrait-button:active {
   background: #d9a45d;
   transform: rotate(38deg);
   box-shadow: 0 0 0 1px rgba(22, 7, 3, 0.72);
+}
+
+.city-profile__edit-mark:disabled {
+  cursor: progress;
+  opacity: 0.62;
 }
 
 .city-profile__progress-row {

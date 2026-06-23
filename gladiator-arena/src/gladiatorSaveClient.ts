@@ -29,7 +29,11 @@ export async function saveGladiatorCloudHero(hero: HeroState): Promise<void> {
   await requestGladiatorSave("PUT", { hero });
 }
 
-async function requestGladiatorSave(method: "GET" | "PUT", payload?: unknown): Promise<GladiatorSaveResponse> {
+export async function deleteGladiatorCloudSave(): Promise<void> {
+  await requestGladiatorSave("DELETE");
+}
+
+async function requestGladiatorSave(method: "GET" | "PUT" | "DELETE", payload?: unknown): Promise<GladiatorSaveResponse> {
   const initData = getTelegramInitData();
 
   if (!initData) {

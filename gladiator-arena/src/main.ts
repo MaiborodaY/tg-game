@@ -32,7 +32,7 @@ import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } 
 import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
-import { canUseGladiatorCloudSave, loadGladiatorCloudSave, saveGladiatorCloudHero } from "./gladiatorSaveClient";
+import { canUseGladiatorCloudSave, deleteGladiatorCloudSave, loadGladiatorCloudSave, saveGladiatorCloudHero } from "./gladiatorSaveClient";
 import {
   HERO_ITEM_CATALOG,
   DEFAULT_ARENA_DIFFICULTY_ID,
@@ -438,6 +438,44 @@ function queueHeroCloudSave(reason: string): void {
   void saveGladiatorCloudHero(heroToSave).catch((error) => {
     console.warn(`[gladiator-save] Failed to save cloud hero after ${reason}.`, error);
   });
+}
+
+async function handleHeroProgressReset(): Promise<void> {
+  if (!window.confirm("Reset hero progress? This cannot be undone.")) {
+    return;
+  }
+
+  cityHeroWidgetRefs.profileResetButton?.setAttribute("disabled", "");
+
+  try {
+    if (canUseGladiatorCloudSave()) {
+      await deleteGladiatorCloudSave();
+    }
+
+    resetHeroProgressState();
+  } catch (error) {
+    console.warn("[gladiator-save] Failed to reset hero progress.", error);
+    window.alert("Reset failed. Try again.");
+  } finally {
+    cityHeroWidgetRefs.profileResetButton?.removeAttribute("disabled");
+  }
+}
+
+function resetHeroProgressState(): void {
+  pendingBossEquipmentHintItemIds = [];
+  activeArenaTierId = DEFAULT_ARENA_TIER_ID;
+  activeArenaSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
+  clearShopPreview();
+  cancelShopPreviewPrewarm();
+  cityHeroEquipmentMenu.close();
+  cityHeroAppearanceMenu.close();
+  armoryShop?.close();
+  weaponShop?.close();
+  magicShop?.close();
+  hero = createInitialHero();
+  syncHeroRuntimeState();
+  renderCityArenaMenu();
+  renderPvpRoomList();
 }
 
 function commitState(nextState: CombatState, options: { syncArena?: boolean } = {}): Promise<void> {
@@ -1951,6 +1989,9 @@ cityPvpCreateButton?.addEventListener("click", () => {
 });
 cityPvpJoinButton?.addEventListener("click", () => {
   void refreshPvpRoomList();
+});
+cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
+  void handleHeroProgressReset();
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
