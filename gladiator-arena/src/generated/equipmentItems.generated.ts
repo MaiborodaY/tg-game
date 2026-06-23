@@ -203,7 +203,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_stormguard_01","name":"Stormguard Back Boot 01","price":66,"itemIds":["generated_equipment_back_boot_stormguard_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_turtle_boss_01","name":"Turtle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_turtle_boss_01","name":"Turtle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":16},
     assetKeys: {"backBootAssetKey":"back-boot-turtle-boss-01"},
     equipmentTuning: {"x":3,"y":0,"angle":0,"scaleX":0.86,"scaleY":0.81,"flipX":false,"flipY":false},
     asset: {
@@ -404,7 +404,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_stormguard_01","name":"Stormguard Back Glove 01","price":66,"itemIds":["generated_equipment_back_glove_stormguard_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_turtle_boss_01","name":"Turtle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":46},
+    item: {"id":"generated_equipment_back_glove_turtle_boss_01","name":"Turtle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":16},
     assetKeys: {"backGloveAssetKey":"back-glove-turtle-boss-01"},
     equipmentTuning: {"x":0.24310082112485532,"y":9.603791897587143,"angle":3,"scaleX":0.77,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
@@ -605,7 +605,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_stormguard_01","name":"Stormguard Back Greave 01","price":80,"itemIds":["generated_equipment_back_greave_stormguard_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_turtle_boss_01","name":"Turtle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":42},
+    item: {"id":"generated_equipment_back_greave_turtle_boss_01","name":"Turtle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":20},
     assetKeys: {"backGreaveAssetKey":"back-greave-turtle-boss-01"},
     equipmentTuning: {"x":-2.2474437875625313,"y":24.40855705445506,"angle":-6,"scaleX":1.2,"scaleY":1.11,"flipX":false,"flipY":false},
     asset: {
@@ -794,7 +794,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_stormguard_01","name":"Stormguard Back Shinguard 01","price":80,"itemIds":["generated_equipment_back_shinguard_stormguard_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_turtle_boss_01","name":"Turtle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":38},
+    item: {"id":"generated_equipment_back_shinguard_turtle_boss_01","name":"Turtle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":20},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-turtle-boss-01"},
     equipmentTuning: {"x":0.4260618862114427,"y":20.813197997012026,"angle":3,"scaleX":1.43,"scaleY":0.89,"flipX":false,"flipY":false},
     asset: {
@@ -983,7 +983,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_stormguard_01","name":"Stormguard Back Shoulderguard 01","price":80,"itemIds":["generated_equipment_back_shoulderguard_stormguard_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_turtle_boss_01","name":"Turtle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":47},
+    item: {"id":"generated_equipment_back_shoulderguard_turtle_boss_01","name":"Turtle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":20},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-turtle-boss-01"},
     equipmentTuning: {"x":0.936434849558438,"y":22.18959775701279,"angle":6,"scaleX":1.64,"scaleY":1.42,"flipX":false,"flipY":false},
     asset: {
@@ -1172,7 +1172,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_stormguard_01","name":"Stormguard Back Wrist 01","price":66,"itemIds":["generated_equipment_back_wrist_stormguard_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_turtle_boss_01","name":"Turtle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
+    item: {"id":"generated_equipment_back_wrist_turtle_boss_01","name":"Turtle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":16},
     assetKeys: {"backWristAssetKey":"back-wrist-turtle-boss-01"},
     equipmentTuning: {"x":-0.3017933779652111,"y":20.31776342892522,"angle":-10,"scaleX":2.03,"scaleY":0.94,"flipX":false,"flipY":false},
     asset: {
@@ -1349,9 +1349,9 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_stormguard_01","name":"Stormguard Breastplate 01","price":183,"itemIds":["generated_equipment_breastplate_stormguard_01"],"categoryId":"chest"},
   },
   {
-    item: {"id":"generated_equipment_breastplate_turtle_boss_01","name":"Turtle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":58},
+    item: {"id":"generated_equipment_breastplate_turtle_boss_01","name":"Turtle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":45},
     assetKeys: {"breastplateAssetKey":"breastplate-turtle-boss-01"},
-    equipmentTuning: {"x":0,"y":49,"angle":0,"scaleX":1.51,"scaleY":1.68,"flipX":false,"flipY":false},
+    equipmentTuning: {"x":0,"y":58,"angle":0,"scaleX":1.51,"scaleY":1.68,"flipX":false,"flipY":false},
     asset: {
       key: "breastplate-turtle-boss-01",
       sourcePath: "assets/fighters/armor/breastplate/breastplate-turtle-boss-01.webp",
@@ -2707,7 +2707,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_stormguard_01","name":"Stormguard Helmet 01","price":109,"itemIds":["generated_equipment_helmet_stormguard_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_turtle_boss_01","name":"Turtle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"helmet","armorHp":41},
+    item: {"id":"generated_equipment_helmet_turtle_boss_01","name":"Turtle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"helmet","armorHp":27},
     assetKeys: {"helmetAssetKey":"helmet-turtle-boss-01"},
     equipmentTuning: {"x":0,"y":18,"angle":0,"scaleX":1.1,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
@@ -2741,7 +2741,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_shield_common_03","name":"Common 03 Shield","kind":"armor","rarity":"common","equipmentSlot":"shield","armorHp":18,"levelRequirement":5},
+    item: {"id":"generated_equipment_shield_common_03","name":"Common 03 Shield","kind":"armor","rarity":"common","equipmentSlot":"shield","armorHp":15,"levelRequirement":5},
     assetKeys: {"shieldAssetKey":"shield-common-03"},
     equipmentTuning: {"x":16,"y":63,"angle":0,"scaleX":1.35,"scaleY":1.35,"flipX":false,"flipY":false},
     asset: {
@@ -2750,10 +2750,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-common-03.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_common_03","name":"Common 03 Shield","price":80,"itemIds":["generated_equipment_shield_common_03"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_common_03","name":"Common 03 Shield","price":85,"itemIds":["generated_equipment_shield_common_03"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_common_04","name":"Common 04 Shield","kind":"armor","rarity":"common","equipmentSlot":"shield","armorHp":25,"levelRequirement":10},
+    item: {"id":"generated_equipment_shield_common_04","name":"Common 04 Shield","kind":"armor","rarity":"common","equipmentSlot":"shield","armorHp":20,"levelRequirement":10},
     assetKeys: {"shieldAssetKey":"shield-common-04"},
     equipmentTuning: {"x":0,"y":69,"angle":-2,"scaleX":1.72,"scaleY":1.34,"flipX":false,"flipY":false},
     asset: {
@@ -2765,7 +2765,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_shield_common_04","name":"Common 04 Shield","price":120,"itemIds":["generated_equipment_shield_common_04"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_epic_01","name":"Epic 01 Shield","kind":"armor","rarity":"epic","equipmentSlot":"shield","armorHp":125,"levelRequirement":50},
+    item: {"id":"generated_equipment_shield_epic_01","name":"Epic 01 Shield","kind":"armor","rarity":"epic","equipmentSlot":"shield","armorHp":105,"levelRequirement":50},
     assetKeys: {"shieldAssetKey":"shield-epic-01"},
     equipmentTuning: {"x":13,"y":63,"angle":-5,"scaleX":2.35,"scaleY":2.1,"flipX":false,"flipY":false},
     asset: {
@@ -2774,10 +2774,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-epic-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_epic_01","name":"Epic 01 Shield","price":900,"itemIds":["generated_equipment_shield_epic_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_epic_01","name":"Epic 01 Shield","price":1000,"itemIds":["generated_equipment_shield_epic_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","kind":"armor","rarity":"epic","equipmentSlot":"shield","armorHp":165,"levelRequirement":60},
+    item: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","kind":"armor","rarity":"epic","equipmentSlot":"shield","armorHp":130,"levelRequirement":60},
     assetKeys: {"shieldAssetKey":"shield-epic-02"},
     equipmentTuning: {"x":0,"y":63,"angle":0,"scaleX":2.07,"scaleY":2.43,"flipX":false,"flipY":false},
     asset: {
@@ -2786,10 +2786,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-epic-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","price":1250,"itemIds":["generated_equipment_shield_epic_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","price":1300,"itemIds":["generated_equipment_shield_epic_02"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","kind":"armor","rarity":"legendary","equipmentSlot":"shield","armorHp":220,"levelRequirement":70},
+    item: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","kind":"armor","rarity":"legendary","equipmentSlot":"shield","armorHp":150,"levelRequirement":70},
     assetKeys: {"shieldAssetKey":"shield-legendary-01"},
     equipmentTuning: {"x":0,"y":69,"angle":0,"scaleX":2.39,"scaleY":2.37,"flipX":false,"flipY":false},
     asset: {
@@ -2798,10 +2798,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-legendary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","price":1800,"itemIds":["generated_equipment_shield_legendary_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","price":1450,"itemIds":["generated_equipment_shield_legendary_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","kind":"armor","rarity":"legendary","equipmentSlot":"shield","armorHp":290,"levelRequirement":80},
+    item: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","kind":"armor","rarity":"legendary","equipmentSlot":"shield","armorHp":200,"levelRequirement":80},
     assetKeys: {"shieldAssetKey":"shield-legendary-02"},
     equipmentTuning: {"x":9,"y":66,"angle":0,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -2810,7 +2810,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-legendary-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","price":2500,"itemIds":["generated_equipment_shield_legendary_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","price":2000,"itemIds":["generated_equipment_shield_legendary_02"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_mythical_01","name":"Mythical 01 Shield","kind":"armor","rarity":"mythical","equipmentSlot":"shield","armorHp":380,"levelRequirement":90},
@@ -2837,7 +2837,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_shield_mythical_02","name":"Mythical 02 Shield","price":5000,"itemIds":["generated_equipment_shield_mythical_02"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","kind":"armor","rarity":"rare","equipmentSlot":"shield","armorHp":70,"levelRequirement":30},
+    item: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","kind":"armor","rarity":"rare","equipmentSlot":"shield","armorHp":60,"levelRequirement":30},
     assetKeys: {"shieldAssetKey":"shield-rare-01"},
     equipmentTuning: {"x":13,"y":69,"angle":-5,"scaleX":1.9,"scaleY":1.9,"flipX":false,"flipY":false},
     asset: {
@@ -2846,10 +2846,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-rare-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","price":420,"itemIds":["generated_equipment_shield_rare_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","price":450,"itemIds":["generated_equipment_shield_rare_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","kind":"armor","rarity":"rare","equipmentSlot":"shield","armorHp":95,"levelRequirement":40},
+    item: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","kind":"armor","rarity":"rare","equipmentSlot":"shield","armorHp":85,"levelRequirement":40},
     assetKeys: {"shieldAssetKey":"shield-rare-02"},
     equipmentTuning: {"x":13,"y":76,"angle":0,"scaleX":1.65,"scaleY":1.65,"flipX":false,"flipY":false},
     asset: {
@@ -2858,10 +2858,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-rare-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","price":600,"itemIds":["generated_equipment_shield_rare_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","price":650,"itemIds":["generated_equipment_shield_rare_02"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_turtle_boss","name":"Turtle Shield","kind":"armor","rarity":"unique","equipmentSlot":"shield","armorHp":200},
+    item: {"id":"generated_equipment_shield_turtle_boss","name":"Turtle Shield","kind":"armor","rarity":"unique","equipmentSlot":"shield","armorHp":95},
     assetKeys: {"shieldAssetKey":"shield-turtle-boss"},
     equipmentTuning: {"x":7.443344826689781,"y":41.82800422204491,"angle":-3,"scaleX":2,"scaleY":2,"flipX":false,"flipY":false},
     asset: {
@@ -2872,7 +2872,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_shield_uncommon_01","name":"Uncommon 01 Shield","kind":"armor","rarity":"uncommon","equipmentSlot":"shield","armorHp":35,"levelRequirement":15},
+    item: {"id":"generated_equipment_shield_uncommon_01","name":"Uncommon 01 Shield","kind":"armor","rarity":"uncommon","equipmentSlot":"shield","armorHp":30,"levelRequirement":15},
     assetKeys: {"shieldAssetKey":"shield-uncommon-01"},
     equipmentTuning: {"x":0,"y":63,"angle":0,"scaleX":1.26,"scaleY":1.49,"flipX":false,"flipY":false},
     asset: {
@@ -2881,10 +2881,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-uncommon-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_uncommon_01","name":"Uncommon 01 Shield","price":180,"itemIds":["generated_equipment_shield_uncommon_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_uncommon_01","name":"Uncommon 01 Shield","price":185,"itemIds":["generated_equipment_shield_uncommon_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","kind":"armor","rarity":"uncommon","equipmentSlot":"shield","armorHp":50,"levelRequirement":25},
+    item: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","kind":"armor","rarity":"uncommon","equipmentSlot":"shield","armorHp":40,"levelRequirement":25},
     assetKeys: {"shieldAssetKey":"shield-uncommon-02"},
     equipmentTuning: {"x":0,"y":66,"angle":-5,"scaleX":1.89,"scaleY":1.8,"flipX":false,"flipY":false},
     asset: {
@@ -2893,7 +2893,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-uncommon-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","price":260,"itemIds":["generated_equipment_shield_uncommon_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","price":270,"itemIds":["generated_equipment_shield_uncommon_02"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_01","name":"Epic Axe 05","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":45,"weaponClass":"axe","levelRequirement":60},
@@ -3396,7 +3396,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_mace_stone_mace","name":"Common Mace 03","price":27,"itemIds":["generated_equipment_weapon_mace_stone_mace"],"categoryId":"maces"},
   },
   {
-    item: {"id":"generated_equipment_weapon_mace_turtle_weapon","name":"Turtle weapon","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"mace"},
+    item: {"id":"generated_equipment_weapon_mace_turtle_weapon","name":"Turtle weapon","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"mace"},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-turtle-weapon"},
     equipmentTuning: {"x":-18,"y":15,"angle":90,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {

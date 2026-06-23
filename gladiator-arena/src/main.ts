@@ -1072,12 +1072,12 @@ function updatePendingBossEquipmentHints(keepItemId: (itemId: HeroItemId) => boo
 }
 
 function handleShopBuy(product: CityShopProduct): void {
-  const isSealedArmoryPurchase =
-    isArmoryShopProduct(product) &&
+  const isSealedEquipmentPurchase =
+    isEquipmentShopProduct(product) &&
     !areHeroItemsOwned(hero, product.itemIds) &&
     isShopProductSealed(hero, product.itemIds, product.rarity);
 
-  if (isSealedArmoryPurchase) {
+  if (isSealedEquipmentPurchase) {
     return;
   }
 
@@ -1136,6 +1136,10 @@ function isArmoryShopProduct(product: CityShopProduct): product is ArmoryProduct
 
 function isMagicShopProduct(product: CityShopProduct): product is MagicProduct {
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "scroll");
+}
+
+function isEquipmentShopProduct(product: CityShopProduct): product is ArmoryProduct | WeaponProduct {
+  return !isMagicShopProduct(product);
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {

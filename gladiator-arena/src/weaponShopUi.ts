@@ -32,6 +32,7 @@ import {
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
+  isShopProductSealed,
   type ShopProductRequirementBadge,
   type ShopItemRarity,
   type ShopProductActionState,
@@ -666,11 +667,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.classList.toggle("armory-shop__option--max", cardState === "max");
     button.classList.toggle("armory-shop__option--for-sale", cardState === "buy");
     button.classList.toggle("armory-shop__option--locked", cardState === "locked");
-    button.classList.toggle("armory-shop__option--sealed", cardState === "locked");
+    button.classList.toggle("armory-shop__option--sealed", cardState === "sealed" || cardState === "locked");
     button.classList.toggle("armory-shop__option--consumable", Boolean(consumableInfo));
     button.type = "button";
-    button.disabled = cardState === "locked";
-    button.title = requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
+    button.disabled = cardState === "sealed" || cardState === "locked";
+    button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
       `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(cardState, product.price)}`,
@@ -678,6 +679,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.append(createProductIcon(iconUrl));
     if (consumableInfo) {
       button.append(createConsumableCardBadges(consumableInfo));
+    }
+    if (cardState === "sealed") {
+      button.append(createSealedRibbon());
     }
     if (cardState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
@@ -722,11 +726,12 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   function createPreviewBuyButton(product: WeaponProduct, hero: HeroState): HTMLButtonElement {
     const button = document.createElement("button");
-    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const actionState = getWeaponProductActionState(hero, product);
 
     button.className = "armory-shop__selected-buy";
     button.type = "button";
-    button.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "locked" || actionState === "max";
+    button.disabled =
+      actionState === "equipped" || actionState === "no-gold" || actionState === "sealed" || actionState === "locked" || actionState === "max";
     button.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
     button.addEventListener("click", () => {
       options.onBuy(product);
@@ -911,7 +916,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     if (areHeroItemsConsumable(product.itemIds)) {
       const isMax = product.itemIds.every((itemId) => getHeroItemQuantity(hero, itemId) >= getHeroConsumableMaxQuantity(itemId));
 
-      return isMax ? "max" : "buy";
+      if (isMax) {
+        return "max";
+      }
+
+      return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";
     }
 
     if (areHeroItemsEquipped(hero, product.itemIds)) {
@@ -926,7 +935,17 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       return "equip";
     }
 
-    return "buy";
+    return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";
+  }
+
+  function getWeaponProductActionState(hero: HeroState, product: WeaponProduct): ShopProductActionState {
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+
+    if ((actionState === "buy" || actionState === "no-gold") && isShopProductSealed(hero, product.itemIds, product.rarity)) {
+      return "sealed";
+    }
+
+    return actionState;
   }
 
   function refreshBowCapacityUpgrade(hero: HeroState): void {
@@ -1258,6 +1277,15 @@ function createRequirementRibbon(requirement: ShopProductRequirementBadge): HTML
 
   ribbon.className = "armory-shop__sealed-ribbon armory-shop__requirement-ribbon";
   appendRequirementContent(ribbon, requirement);
+
+  return ribbon;
+}
+
+function createSealedRibbon(): HTMLElement {
+  const ribbon = document.createElement("span");
+
+  ribbon.className = "armory-shop__sealed-ribbon";
+  ribbon.textContent = "SEALED";
 
   return ribbon;
 }

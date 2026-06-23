@@ -395,7 +395,8 @@ test("armory shop seals boss-locked rarity tiers before purchase", () => {
   assert.equal(armoryShopSource.includes('return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";'), true);
   assert.equal(armoryShopSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
 
-  assert.equal(mainSource.includes("isSealedArmoryPurchase"), true);
+  assert.equal(mainSource.includes("isSealedEquipmentPurchase"), true);
+  assert.equal(mainSource.includes("function isEquipmentShopProduct(product: CityShopProduct): product is ArmoryProduct | WeaponProduct"), true);
   assert.equal(mainSource.includes("!areHeroItemsOwned(hero, product.itemIds)"), true);
   assert.equal(mainSource.includes("isShopProductSealed(hero, product.itemIds, product.rarity)"), true);
 });
@@ -602,13 +603,20 @@ test("weapon shop purchase keeps the selected product preview open", () => {
   assert.equal(weaponShopSource.includes("function refreshSelectedProduct"), true);
 });
 
-test("weapon shop locked products are dimmed and show centered stat requirement ribbons", () => {
+test("weapon shop locked and sealed products are dimmed with matching armory ribbons", () => {
   assert.equal(shopPresentationSource.includes("export function getShopProductRequirementBadge"), true);
+  assert.equal(weaponShopSource.includes("isShopProductSealed"), true);
   assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--locked", cardState === "locked");'), true);
-  assert.equal(weaponShopSource.includes('button.classList.toggle("armory-shop__option--sealed", cardState === "locked");'), true);
-  assert.equal(weaponShopSource.includes('button.disabled = cardState === "locked";'), true);
+  assert.equal(
+    weaponShopSource.includes('button.classList.toggle("armory-shop__option--sealed", cardState === "sealed" || cardState === "locked");'),
+    true,
+  );
+  assert.equal(weaponShopSource.includes('button.disabled = cardState === "sealed" || cardState === "locked";'), true);
+  assert.match(weaponShopSource, /if \(cardState === "sealed"\) \{[\s\S]*button\.append\(createSealedRibbon\(\)\);[\s\S]*\}/);
   assert.match(weaponShopSource, /if \(cardState === "locked" && requirementBadge\) \{[\s\S]*button\.append\(createRequirementRibbon\(requirementBadge\)\);[\s\S]*\}/);
   assert.match(weaponShopSource, /if \(cardState === "buy"\) \{[\s\S]*createProductStats\("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product\.price\)/);
+  assert.equal(weaponShopSource.includes('return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";'), true);
+  assert.equal(weaponShopSource.includes("function getWeaponProductActionState"), true);
   assert.equal(weaponShopSource.includes('const requirementKey = requirement.kind === "level" ? "level" : requirement.attribute;'), true);
   assert.equal(weaponShopSource.includes('icon.className = `armory-shop__requirement-icon armory-shop__requirement-icon--${requirementKey}`;'), true);
   assert.equal(weaponShopSource.includes('icon.textContent = requirement.kind === "level" ? "LVL" : "";'), true);
