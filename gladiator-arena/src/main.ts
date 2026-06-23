@@ -32,6 +32,7 @@ import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } 
 import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
+import { canUseGladiatorCloudSave, loadGladiatorCloudSave, saveGladiatorCloudHero } from "./gladiatorSaveClient";
 import {
   HERO_ITEM_CATALOG,
   DEFAULT_ARENA_DIFFICULTY_ID,
@@ -369,6 +370,52 @@ function syncPlayerCityBodyScale(): void {
 function renderCityHero(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero, {
     highlightedEquipmentItemIds: pendingBossEquipmentHintItemIds,
+  });
+}
+
+function syncHeroRuntimeState(): void {
+  state = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
+  displayedStatsState = state;
+  syncPlayerCityBodyScale();
+  setPlayerEquipment(hero.equipment);
+  setPlayerAppearance(hero.appearance);
+  setPlayerWeaponEnchantments(hero.weaponEnchantments);
+  renderCityHero();
+  renderCurrentDom();
+  syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
+  heroPortraitPreview?.setEquipment(hero.equipment);
+  heroPortraitPreview?.setAppearance(hero.appearance);
+}
+
+async function hydrateHeroFromCloudSave(): Promise<void> {
+  if (!canUseGladiatorCloudSave()) {
+    return;
+  }
+
+  try {
+    const savedHero = await loadGladiatorCloudSave();
+
+    if (!savedHero) {
+      return;
+    }
+
+    hero = savedHero;
+    syncHeroRuntimeState();
+  } catch (error) {
+    console.warn("[gladiator-save] Failed to load cloud save.", error);
+  }
+}
+
+function queueHeroCloudSave(reason: string): void {
+  if (!canUseGladiatorCloudSave()) {
+    return;
+  }
+
+  const heroToSave = hero;
+
+  void saveGladiatorCloudHero(heroToSave).catch((error) => {
+    console.warn(`[gladiator-save] Failed to save cloud hero after ${reason}.`, error);
   });
 }
 
@@ -1213,6 +1260,11 @@ async function finishInitialCityEntry(): Promise<void> {
   hideCityReturnTransition();
 }
 
+async function startInitialCityEntry(): Promise<void> {
+  await hydrateHeroFromCloudSave();
+  await finishInitialCityEntry();
+}
+
 function showCityReturnTransition(): void {
   cityReturnTransition.hidden = false;
   cityReturnTransition.classList.remove("city-return-transition--leaving");
@@ -1423,6 +1475,9 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   const { reward, loot, heroBeforeReward, heroAfterReward } = rewardApplication;
 
   hero = heroAfterReward;
+  if (nextState.result === "win") {
+    queueHeroCloudSave("battle-win");
+  }
   rememberBossEquipmentHint(nextState, loot);
   syncPlayerCityBodyScale();
   pendingBattleResultPresentation = {
@@ -1878,10 +1933,12 @@ magicShopButton?.addEventListener("click", () => {
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 syncPlayerCityBodyScale();
+setPlayerEquipment(hero.equipment);
+setPlayerAppearance(hero.appearance);
 setPlayerWeaponEnchantments(hero.weaponEnchantments);
 renderCityHero();
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
-void finishInitialCityEntry();
+void startInitialCityEntry();
 prewarmShopItemIconsWhenIdle();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {

@@ -1,4 +1,5 @@
 interface TelegramWebApp {
+  initData?: string;
   ready: () => void;
   expand: () => void;
   disableVerticalSwipes?: () => void;
@@ -28,4 +29,8 @@ export function bootTelegramWebApp(): void {
   webApp.disableVerticalSwipes?.();
   webApp.setBackgroundColor?.("#35180d");
   webApp.setHeaderColor?.("#35180d");
+}
+
+export function getTelegramInitData(): string {
+  return window.Telegram?.WebApp?.initData ?? "";
 }
