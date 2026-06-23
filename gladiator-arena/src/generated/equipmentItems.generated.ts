@@ -142,6 +142,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_executioner_01","name":"Executioner Back Boot 01","price":31,"itemIds":["generated_equipment_back_boot_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_boot_grave_king_01","name":"Grave King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    assetKeys: {"backBootAssetKey":"back-boot-grave-king-01"},
+    equipmentTuning: {"x":5.244035504312549,"y":-4.437919464446395,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-boot-grave-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-boot-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-boot-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_boot_lazure_01","name":"Lazure 01 Back Boot","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backBoot","armorHp":18,"levelRequirement":45},
     assetKeys: {"backBootAssetKey":"back-boot-lazure-01"},
     equipmentTuning: {"x":17.252567848387486,"y":-5.917159771661318,"angle":0,"scaleX":2.01,"scaleY":1.76,"flipX":false,"flipY":false},
@@ -373,6 +384,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_glove_executioner_01","name":"Executioner Back Glove 01","price":31,"itemIds":["generated_equipment_back_glove_executioner_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_back_glove_grave_king_01","name":"Grave King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    assetKeys: {"backGloveAssetKey":"back-glove-grave-king-01"},
+    equipmentTuning: {"x":-1.742345335550283,"y":3.0084203664906113,"angle":0,"scaleX":0.86,"scaleY":0.8,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-glove-grave-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-glove-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_glove_lazure_01","name":"Lazure 01 Back Glove","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backGlove","armorHp":18,"levelRequirement":45},
@@ -620,6 +642,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_executioner_01","name":"Executioner Back Greave 01","price":37,"itemIds":["generated_equipment_back_greave_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_greave_grave_king_01","name":"Grave King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    assetKeys: {"backGreaveAssetKey":"back-greave-grave-king-01"},
+    equipmentTuning: {"x":-5.244035504312535,"y":11.09479866111593,"angle":-9,"scaleX":1.17,"scaleY":1.35,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-grave-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-greave-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_greave_lazure_01","name":"Lazure 01 Back Greave","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backGreave","armorHp":22,"levelRequirement":45},
     assetKeys: {"backGreaveAssetKey":"back-greave-lazure-01"},
     equipmentTuning: {"x":-2.3027891641856115,"y":0.5088757135584387,"angle":-9,"scaleX":1.8,"scaleY":1.55,"flipX":false,"flipY":false},
@@ -865,6 +898,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_executioner_01","name":"Executioner Back Shinguard 01","price":37,"itemIds":["generated_equipment_back_shinguard_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_shinguard_grave_king_01","name":"Grave King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    assetKeys: {"backShinguardAssetKey":"back-shinguard-grave-king-01"},
+    equipmentTuning: {"x":2,"y":12.29843791698022,"angle":3,"scaleX":1.3,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shinguard-grave-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-shinguard-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shinguard_lazure_01","name":"Lazure 01 Back Shinguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backShinguard","armorHp":22,"levelRequirement":45},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-lazure-01"},
     equipmentTuning: {"x":3.430461129919479,"y":19.323924452565734,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":false,"flipY":false},
@@ -1096,6 +1140,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_executioner_01","name":"Executioner Back Shoulderguard 01","price":37,"itemIds":["generated_equipment_back_shoulderguard_executioner_01"],"categoryId":"shoulders"},
+  },
+  {
+    item: {"id":"generated_equipment_back_shoulderguard_grave_king_01","name":"Grave King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-grave-king-01"},
+    equipmentTuning: {"x":12.75551625917231,"y":28.65258751337086,"angle":27,"scaleX":2.58,"scaleY":1.9,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-grave-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_lazure_01","name":"Lazure 01 Back Shoulderguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backShoulderguard","armorHp":22,"levelRequirement":45},
@@ -1331,6 +1386,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_executioner_01","name":"Executioner Back Wrist 01","price":31,"itemIds":["generated_equipment_back_wrist_executioner_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_wrist_grave_king_01","name":"Grave King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    assetKeys: {"backWristAssetKey":"back-wrist-grave-king-01"},
+    equipmentTuning: {"x":1.2008392957877163,"y":25.870845464177023,"angle":-9,"scaleX":1.58,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-wrist-grave-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-wrist-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_wrist_lazure_01","name":"Lazure 01 Back Wrist","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"backWrist","armorHp":18,"levelRequirement":45},
     assetKeys: {"backWristAssetKey":"back-wrist-lazure-01"},
     equipmentTuning: {"x":3.817218097239561,"y":23.17436814208645,"angle":-12,"scaleX":2.52,"scaleY":1.26,"flipX":false,"flipY":false},
@@ -1550,6 +1616,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_breastplate_executioner_01","name":"Executioner Breastplate 01","price":85,"itemIds":["generated_equipment_breastplate_executioner_01"],"categoryId":"chest"},
+  },
+  {
+    item: {"id":"generated_equipment_breastplate_grave_king_01","name":"Grave King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    assetKeys: {"breastplateAssetKey":"breastplate-grave-king-01"},
+    equipmentTuning: {"x":0,"y":64,"angle":0,"scaleX":1.21,"scaleY":2,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-grave-king-01",
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_breastplate_lazure_01","name":"Lazure 01 Breastplate","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"breastplate","armorHp":51,"levelRequirement":45},
@@ -1785,6 +1862,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_boot_executioner_01","name":"Executioner Front Boot 01","price":0,"itemIds":["generated_equipment_front_boot_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_boot_grave_king_01","name":"Grave King 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
+    assetKeys: {"frontBootAssetKey":"front-boot-grave-king-01"},
+    equipmentTuning: {"x":32,"y":-4.437919464446395,"angle":0,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-boot-grave-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-boot-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-boot-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_boot_lazure_01","name":"Lazure 01 Front Boot","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":45},
     assetKeys: {"frontBootAssetKey":"front-boot-lazure-01"},
     equipmentTuning: {"x":47,"y":-5.917159771661318,"angle":0,"scaleX":2.01,"scaleY":1.76,"flipX":true,"flipY":false},
@@ -2016,6 +2104,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_glove_executioner_01","name":"Executioner Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_executioner_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_glove_grave_king_01","name":"Grave King 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-grave-king-01"},
+    equipmentTuning: {"x":-1.742345335550283,"y":3.0084203664906113,"angle":0,"scaleX":0.86,"scaleY":0.8,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-glove-grave-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-glove-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_glove_lazure_01","name":"Lazure 01 Front Glove","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":45},
@@ -2263,6 +2362,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_greave_executioner_01","name":"Executioner Front Greave 01","price":0,"itemIds":["generated_equipment_front_greave_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_greave_grave_king_01","name":"Grave King 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-grave-king-01"},
+    equipmentTuning: {"x":-5.244035504312535,"y":11.09479866111593,"angle":-9,"scaleX":1.17,"scaleY":1.35,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-greave-grave-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-greave-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_greave_lazure_01","name":"Lazure 01 Front Greave","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontGreave","armorHp":0,"levelRequirement":45},
     assetKeys: {"frontGreaveAssetKey":"front-greave-lazure-01"},
     equipmentTuning: {"x":-2.3027891641856115,"y":0.5088757135584387,"angle":-9,"scaleX":1.8,"scaleY":1.55,"flipX":true,"flipY":false},
@@ -2508,6 +2618,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shinguard_executioner_01","name":"Executioner Front Shinguard 01","price":0,"itemIds":["generated_equipment_front_shinguard_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_shinguard_grave_king_01","name":"Grave King 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
+    assetKeys: {"frontShinguardAssetKey":"front-shinguard-grave-king-01"},
+    equipmentTuning: {"x":1.3080376169125145,"y":12.29843791698022,"angle":3,"scaleX":1.3,"scaleY":1,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shinguard-grave-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-shinguard-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shinguard_lazure_01","name":"Lazure 01 Front Shinguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":45},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-lazure-01"},
     equipmentTuning: {"x":3.430461129919479,"y":19.323924452565734,"angle":6,"scaleX":1.57,"scaleY":0.88,"flipX":true,"flipY":false},
@@ -2741,6 +2862,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_executioner_01","name":"Executioner Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_executioner_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_front_shoulderguard_grave_king_01","name":"Grave King 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-grave-king-01"},
+    equipmentTuning: {"x":12.75551625917231,"y":28.65258751337086,"angle":27,"scaleX":2.58,"scaleY":1.9,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-grave-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shoulderguard_lazure_01","name":"Lazure 01 Front Shoulderguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontShoulderguard","armorHp":0,"levelRequirement":45},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-lazure-01"},
     equipmentTuning: {"x":9.368456043039103,"y":10.13377774758061,"angle":0,"scaleX":3,"scaleY":1.82,"flipX":true,"flipY":false},
@@ -2972,6 +3104,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_wrist_executioner_01","name":"Executioner Front Wrist 01","price":0,"itemIds":["generated_equipment_front_wrist_executioner_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_wrist_grave_king_01","name":"Grave King 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
+    assetKeys: {"frontWristAssetKey":"front-wrist-grave-king-01"},
+    equipmentTuning: {"x":1.2008392957877163,"y":25.870845464177023,"angle":-9,"scaleX":1.58,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-wrist-grave-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-wrist-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_wrist_lazure_01","name":"Lazure 01 Front Wrist","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":45},
@@ -3218,6 +3361,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_executioner_01","name":"Executioner Helmet 01","price":51,"itemIds":["generated_equipment_helmet_executioner_01"],"categoryId":"head"},
   },
   {
+    item: {"id":"generated_equipment_helmet_grave_king_01","name":"Grave King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    assetKeys: {"helmetAssetKey":"helmet-grave-king-01"},
+    equipmentTuning: {"x":0,"y":23,"angle":0,"scaleX":1.5,"scaleY":1.5,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-grave-king-01",
+      sourcePath: "assets/fighters/armor/helmet/helmet-grave-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-grave-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_helmet_lazure_01","name":"Lazure 01 Helmet","kind":"armor","rarity":"epic","equipmentSet":{"id":"lazure","name":"Lazure","rank":7,"grade":"low"},"equipmentSlot":"helmet","armorHp":31,"levelRequirement":45},
     assetKeys: {"helmetAssetKey":"helmet-lazure-01"},
     equipmentTuning: {"x":0,"y":51,"angle":0,"scaleX":1.1,"scaleY":1.49,"flipX":false,"flipY":false},
@@ -3451,6 +3605,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_shield_mythical_02","name":"Mythical 02 Shield","price":5000,"itemIds":["generated_equipment_shield_mythical_02"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_shield_old_warden_01","name":"Old Warden Shield","kind":"armor","rarity":"unique","equipmentSlot":"shield","armorHp":200},
+    assetKeys: {"shieldAssetKey":"shield-Old-Warden-01"},
+    equipmentTuning: {"x":7.277693727739887,"y":30.467786797684937,"angle":-3,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "shield-Old-Warden-01",
+      sourcePath: "assets/fighters/armor/arms/shield-Old-Warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/shield-Old-Warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","kind":"armor","rarity":"rare","equipmentSlot":"shield","armorHp":60,"levelRequirement":30},
@@ -4640,6 +4805,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_3","name":"Uncommon Sword 03","price":63,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_3"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_warden_sword","name":"Warden Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-warden-sword"},
+    equipmentTuning: {"x":-13,"y":10,"angle":107,"scaleX":1.7,"scaleY":2,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-warden-sword",
+      sourcePath: "assets/fighters/weapons/weapon-sword-warden-sword.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-warden-sword.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"leather_back_boot_01","name":"Leather Back Boot 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":3,"levelRequirement":15},

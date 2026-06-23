@@ -102,7 +102,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     tierId: 6,
     name: "Old Kingdom warden",
     baseStats: {"strength":56,"agility":22,"vitality":64},
-    equipment: {"helmet":"generated_equipment_helmet_old_fortress_warden_01","breastplate":"generated_equipment_breastplate_old_fortress_warden_01","backShoulderguard":"generated_equipment_back_shoulderguard_old_fortress_warden_01","frontShoulderguard":"generated_equipment_front_shoulderguard_old_fortress_warden_01","backWrist":"generated_equipment_back_wrist_old_fortress_warden_01","frontWrist":"generated_equipment_front_wrist_old_fortress_warden_01","backGlove":"generated_equipment_back_glove_old_fortress_warden_01","frontGlove":"generated_equipment_front_glove_old_fortress_warden_01","backGreave":"generated_equipment_back_greave_old_fortress_warden_01","frontGreave":"generated_equipment_front_greave_old_fortress_warden_01","backShinguard":"generated_equipment_back_shinguard_old_fortress_warden_01","frontShinguard":"generated_equipment_front_shinguard_old_fortress_warden_01","backBoot":"generated_equipment_back_boot_old_fortress_warden_01","frontBoot":"generated_equipment_front_boot_old_fortress_warden_01"},
+    equipment: {"weaponMain":"generated_equipment_weapon_sword_warden_sword","helmet":"generated_equipment_helmet_old_fortress_warden_01","breastplate":"generated_equipment_breastplate_old_fortress_warden_01","backShoulderguard":"generated_equipment_back_shoulderguard_old_fortress_warden_01","frontShoulderguard":"generated_equipment_front_shoulderguard_old_fortress_warden_01","backWrist":"generated_equipment_back_wrist_old_fortress_warden_01","frontWrist":"generated_equipment_front_wrist_old_fortress_warden_01","backGlove":"generated_equipment_back_glove_old_fortress_warden_01","frontGlove":"generated_equipment_front_glove_old_fortress_warden_01","shield":"generated_equipment_shield_old_warden_01","backGreave":"generated_equipment_back_greave_old_fortress_warden_01","frontGreave":"generated_equipment_front_greave_old_fortress_warden_01","backShinguard":"generated_equipment_back_shinguard_old_fortress_warden_01","frontShinguard":"generated_equipment_front_shinguard_old_fortress_warden_01","backBoot":"generated_equipment_back_boot_old_fortress_warden_01","frontBoot":"generated_equipment_front_boot_old_fortress_warden_01"},
     rewards: {"win":{"gold":2071,"xp":1656},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_6_generated_equipment_back_boot_old_fortress_warden_01_generated_equipment_front_boot_old_fortress_warden_01_drop","itemIds":["generated_equipment_back_boot_old_fortress_warden_01","generated_equipment_front_boot_old_fortress_warden_01"],"chance":1,"quantity":1},
@@ -113,6 +113,8 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
       {"id":"arena_boss_6_generated_equipment_back_shinguard_old_fortress_warden_01_generated_equipment_front_shinguard_old_fortress_warden_01_drop","itemIds":["generated_equipment_back_shinguard_old_fortress_warden_01","generated_equipment_front_shinguard_old_fortress_warden_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_6_generated_equipment_back_shoulderguard_old_fortress_warden_01_generated_equipment_front_shoulderguard_old_fortress_warden_01_drop","itemIds":["generated_equipment_back_shoulderguard_old_fortress_warden_01","generated_equipment_front_shoulderguard_old_fortress_warden_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_6_generated_equipment_back_wrist_old_fortress_warden_01_generated_equipment_front_wrist_old_fortress_warden_01_drop","itemIds":["generated_equipment_back_wrist_old_fortress_warden_01","generated_equipment_front_wrist_old_fortress_warden_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_6_generated_equipment_shield_old_warden_01_drop","itemIds":["generated_equipment_shield_old_warden_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_6_generated_equipment_weapon_sword_warden_sword_drop","itemIds":["generated_equipment_weapon_sword_warden_sword"],"chance":1,"quantity":1},
     ],
   },
   {
@@ -142,6 +144,24 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     equipment: {},
     rewards: {"win":{"gold":190,"xp":15},"loss":{"gold":1,"xp":2}},
     lootTable: [
+    ],
+  },
+  {
+    id: "arena_boss_9",
+    tierId: 9,
+    name: "Grave King",
+    baseStats: {"strength":87,"agility":51,"vitality":104},
+    equipment: {"helmet":"generated_equipment_helmet_grave_king_01","breastplate":"generated_equipment_breastplate_grave_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_grave_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_grave_king_01","backWrist":"generated_equipment_back_wrist_grave_king_01","frontWrist":"generated_equipment_front_wrist_grave_king_01","backGlove":"generated_equipment_back_glove_grave_king_01","frontGlove":"generated_equipment_front_glove_grave_king_01","backGreave":"generated_equipment_back_greave_grave_king_01","frontGreave":"generated_equipment_front_greave_grave_king_01","backShinguard":"generated_equipment_back_shinguard_grave_king_01","frontShinguard":"generated_equipment_front_shinguard_grave_king_01","backBoot":"generated_equipment_back_boot_grave_king_01","frontBoot":"generated_equipment_front_boot_grave_king_01"},
+    rewards: {"win":{"gold":6182,"xp":3086},"loss":{"gold":1,"xp":2}},
+    lootTable: [
+      {"id":"arena_boss_9_generated_equipment_back_boot_grave_king_01_generated_equipment_front_boot_grave_king_01_drop","itemIds":["generated_equipment_back_boot_grave_king_01","generated_equipment_front_boot_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_breastplate_grave_king_01_drop","itemIds":["generated_equipment_breastplate_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_back_glove_grave_king_01_generated_equipment_front_glove_grave_king_01_drop","itemIds":["generated_equipment_back_glove_grave_king_01","generated_equipment_front_glove_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_back_greave_grave_king_01_generated_equipment_front_greave_grave_king_01_drop","itemIds":["generated_equipment_back_greave_grave_king_01","generated_equipment_front_greave_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_helmet_grave_king_01_drop","itemIds":["generated_equipment_helmet_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_back_shinguard_grave_king_01_generated_equipment_front_shinguard_grave_king_01_drop","itemIds":["generated_equipment_back_shinguard_grave_king_01","generated_equipment_front_shinguard_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_back_shoulderguard_grave_king_01_generated_equipment_front_shoulderguard_grave_king_01_drop","itemIds":["generated_equipment_back_shoulderguard_grave_king_01","generated_equipment_front_shoulderguard_grave_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_9_generated_equipment_back_wrist_grave_king_01_generated_equipment_front_wrist_grave_king_01_drop","itemIds":["generated_equipment_back_wrist_grave_king_01","generated_equipment_front_wrist_grave_king_01"],"chance":1,"quantity":1},
     ],
   }
 ];

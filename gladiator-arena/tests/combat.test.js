@@ -337,6 +337,47 @@ test("scroll removes both sides of a paired armor item when one side is rolled",
   assert.equal(nextState.enemy.hp, combat.MAX_HP);
 });
 
+test("upgraded scroll cracks multiple armor groups without rerolling removed pieces", () => {
+  const state = combat.freshState();
+  const randomValues = [0, 0.99];
+
+  state.distance = combat.MAX_DISTANCE;
+  state.player.scrollCount = 1;
+  state.player.scrollItemId = "scroll_crack_armor_01";
+  state.player.crackArmorParts = 2;
+  state.enemy.armor = 17;
+  state.enemy.maxArmor = 17;
+  state.enemy.armorSlots = [
+    { slotKey: "helmet", itemId: "helmet_01", label: "Helmet", armorHp: 5 },
+    { slotKey: "breastplate", itemId: "breastplate_01", label: "Breastplate", armorHp: 8 },
+    { slotKey: "backBoot", itemId: "back_boot_01", label: "Back Boot", armorHp: 4 },
+  ];
+  state.enemy.equipment = {
+    helmet: "helmet_01",
+    breastplate: "breastplate_01",
+    backBoot: "back_boot_01",
+    frontBoot: "front_boot_01",
+  };
+
+  const nextState = combat.resolvePlayerTurn(state, "scroll", () => randomValues.shift() ?? 0);
+
+  assert.equal(nextState.player.scrollCount, 0);
+  assert.equal(nextState.enemy.armor, 8);
+  assert.equal(nextState.enemy.armorSlots[0].armorHp, 0);
+  assert.equal(nextState.enemy.armorSlots[1].armorHp, 8);
+  assert.equal(nextState.enemy.armorSlots[2].armorHp, 0);
+  assert.equal(nextState.enemy.equipment.helmet, null);
+  assert.equal(nextState.enemy.equipment.breastplate, "breastplate_01");
+  assert.equal(nextState.enemy.equipment.backBoot, null);
+  assert.equal(nextState.enemy.equipment.frontBoot, null);
+  assert.equal(nextState.lastPlayerRemovedArmorSlots.length, 3);
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[0].slotKey, "helmet");
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[1].slotKey, "backBoot");
+  assert.equal(nextState.lastPlayerRemovedArmorSlots[2].slotKey, "frontBoot");
+  assert.equal(nextState.lastPlayerDamage, 9);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
+});
+
 test("ward scroll arms a one-hit damage absorb", () => {
   const state = combat.freshState();
 
@@ -356,6 +397,20 @@ test("ward scroll arms a one-hit damage absorb", () => {
   assert.equal(nextState.log[0].text.includes("next hit will be absorbed"), true);
 
   assert.equal(combat.canUseAction({ ...nextState, activeTurn: "player" }, "ward"), false);
+});
+
+test("upgraded ward scroll arms multiple damage absorbs", () => {
+  const state = combat.freshState();
+
+  state.player.wardScrollCount = 1;
+  state.player.wardScrollItemId = "scroll_ward_01";
+  state.player.wardHitCount = 3;
+
+  const nextState = combat.resolvePlayerTurn(state, "ward");
+
+  assert.equal(nextState.player.wardScrollCount, 0);
+  assert.equal(nextState.player.wardHits, 3);
+  assert.equal(nextState.lastPlayerAction, "ward");
 });
 
 test("scroll actions do not spend stamina", () => {

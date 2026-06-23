@@ -13,6 +13,8 @@ import {
   canSharpenHeroActiveWeapon,
   getActiveSharpenableHeroWeaponItemId,
   getHeroActiveWeaponSharpeningPrice,
+  getHeroCrackArmorParts,
+  getHeroCrackArmorPartsForRarity,
   getHeroDoubleStrikeDamageMultiplier,
   getHeroDoubleStrikeDamageMultiplierForRarity,
   getHeroFireballDamage,
@@ -25,6 +27,8 @@ import {
   getHeroScrollUpgradePrice,
   getHeroScrollUpgradeRarityForItem,
   getHeroScrollQuantity,
+  getHeroWardHitCount,
+  getHeroWardHitCountForRarity,
   getHeroWeaponSharpeningLevel,
   isHeroUpgradeableScrollItemId,
   type HeroItemId,
@@ -117,7 +121,7 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     price: 30,
     itemIds: [HERO_CRACK_ARMOR_SCROLL_ITEM_ID],
     rarity: "common",
-    effect: "Breaks one random armor piece in battle",
+    effect: "Breaks armor parts in battle",
   },
   {
     id: "fireball_scroll",
@@ -135,7 +139,7 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     price: 30,
     itemIds: [HERO_WARD_SCROLL_ITEM_ID],
     rarity: "common",
-    effect: "Absorbs the next incoming hit",
+    effect: "Blocks incoming hits",
   },
   {
     id: "precise_strike_scroll",
@@ -504,7 +508,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     setMagicProductPreviewRarity(previewElements.rarity, rarity, upgradePreview);
     setMagicProductPreviewEffect(previewElements.effect, hero, product, upgradePreview);
     previewElements.buyButton.disabled = upgradePreview ? hero.gold < upgradePreview.price : actionState === "no-gold" || actionState === "max";
-    setTextContentIfChanged(previewElements.buyButton, upgradePreview ? "Upgrade" : actionLabel);
+    setMagicProductPreviewAction(previewElements.buyButton, actionLabel, upgradePreview);
   }
 
   function refreshWeaponSharpening(hero: HeroState): void {
@@ -766,26 +770,69 @@ function getMagicProductRarity(hero: HeroState, product: MagicProduct): ShopItem
 
 function getMagicProductEffect(hero: HeroState, product: MagicProduct): string {
   const itemId = getMagicProductPrimaryItemId(product);
-  const upgradePrice = getMagicProductUpgradePrice(hero, product);
-  const upgradeText = upgradePrice === undefined ? "Max rarity." : `Upgrade ${upgradePrice}g.`;
+
+  if (itemId === HERO_CRACK_ARMOR_SCROLL_ITEM_ID) {
+    const parts = getHeroCrackArmorParts(hero);
+
+    return `Breaks ${parts} ${formatPlural(parts, "armor part", "armor parts")}.`;
+  }
+
+  if (itemId === HERO_WARD_SCROLL_ITEM_ID) {
+    const hits = getHeroWardHitCount(hero);
+
+    return `Blocks ${hits} ${formatPlural(hits, "hit", "hits")}.`;
+  }
 
   if (itemId === HERO_PRECISE_STRIKE_SCROLL_ITEM_ID) {
-    return `3 strikes: -${Math.round(getHeroPreciseStrikeBlockChanceReduction(hero) * 100)}% block chance. ${upgradeText}`;
+    return `3 strikes: +${Math.round(getHeroPreciseStrikeBlockChanceReduction(hero) * 100)}% hit chance.`;
   }
 
   if (itemId === HERO_FIREBALL_SCROLL_ITEM_ID) {
-    return `Deals ${getHeroFireballDamage(hero)} damage. ${upgradeText}`;
+    return `Deals ${getHeroFireballDamage(hero)} damage.`;
   }
 
   if (itemId === HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID) {
-    return `Repeat: ${Math.round(getHeroDoubleStrikeDamageMultiplier(hero) * 100)}% damage. ${upgradeText}`;
+    return `Deals second hit with ${Math.round(getHeroDoubleStrikeDamageMultiplier(hero) * 100)}% damage.`;
   }
 
   if (itemId === HERO_POISON_SCROLL_ITEM_ID) {
-    return `${getHeroPoisonDamage(hero)} poison damage for ${POISON_SCROLL_TURNS} turns. ${upgradeText}`;
+    return `${getHeroPoisonDamage(hero)} poison damage for ${POISON_SCROLL_TURNS} turns.`;
   }
 
   return product.effect;
+}
+
+function setMagicProductPreviewAction(
+  button: HTMLButtonElement,
+  actionLabel: string,
+  upgradePreview: MagicProductUpgradePreview | undefined,
+): void {
+  button.classList.toggle("magic-shop__buy--upgrade-confirm", Boolean(upgradePreview));
+
+  if (!upgradePreview) {
+    button.removeAttribute("aria-label");
+    setTextContentIfChanged(button, actionLabel);
+    return;
+  }
+
+  const label = document.createElement("span");
+  const price = document.createElement("span");
+  const icon = document.createElement("img");
+  const amount = document.createElement("span");
+
+  label.className = "magic-shop__buy-label";
+  label.textContent = "Upgrade";
+  price.className = "magic-shop__buy-price";
+  icon.className = "armory-shop__price-icon magic-shop__buy-price-icon";
+  icon.src = SHOP_GOLD_COIN_ICON_ASSET_URL;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  amount.className = "magic-shop__buy-price-amount";
+  amount.textContent = String(upgradePreview.price);
+  price.append(icon, amount);
+  button.setAttribute("aria-label", `Upgrade for ${upgradePreview.price} gold`);
+  button.replaceChildren(label, price);
 }
 
 function setMagicProductPreviewEffect(
@@ -808,7 +855,7 @@ function setMagicProductPreviewEffect(
   effectNode.replaceChildren(
     document.createTextNode(`${upgradePreview.label}${upgradePreview.suffix ? " " : ": "}${upgradePreview.currentValue} > `),
     nextValue,
-    document.createTextNode(`${upgradePreview.suffix ? ` ${upgradePreview.suffix}` : ""}. Upgrade ${upgradePreview.price}g.`),
+    document.createTextNode(`${upgradePreview.suffix ? ` ${upgradePreview.suffix}` : ""}.`),
   );
 }
 
@@ -867,6 +914,15 @@ function getMagicProductUpgradeEffect(
   currentRarity: HeroScrollUpgradeRarity,
   nextRarity: HeroScrollUpgradeRarity,
 ): Pick<MagicProductUpgradePreview, "label" | "currentValue" | "nextValue" | "suffix"> | undefined {
+  if (itemId === HERO_CRACK_ARMOR_SCROLL_ITEM_ID) {
+    return {
+      label: "Breaks",
+      currentValue: String(getHeroCrackArmorPartsForRarity(currentRarity)),
+      nextValue: String(getHeroCrackArmorPartsForRarity(nextRarity)),
+      suffix: "armor parts",
+    };
+  }
+
   if (itemId === HERO_FIREBALL_SCROLL_ITEM_ID) {
     return {
       label: "Deals",
@@ -878,17 +934,18 @@ function getMagicProductUpgradeEffect(
 
   if (itemId === HERO_PRECISE_STRIKE_SCROLL_ITEM_ID) {
     return {
-      label: "Block reduction",
-      currentValue: `-${formatPercent(getHeroPreciseStrikeBlockChanceReductionForRarity(currentRarity))}`,
-      nextValue: `-${formatPercent(getHeroPreciseStrikeBlockChanceReductionForRarity(nextRarity))}`,
+      label: "Hit chance",
+      currentValue: `+${formatPercent(getHeroPreciseStrikeBlockChanceReductionForRarity(currentRarity))}`,
+      nextValue: `+${formatPercent(getHeroPreciseStrikeBlockChanceReductionForRarity(nextRarity))}`,
     };
   }
 
   if (itemId === HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID) {
     return {
-      label: "Repeat damage",
+      label: "Deals second hit with",
       currentValue: formatPercent(getHeroDoubleStrikeDamageMultiplierForRarity(currentRarity)),
       nextValue: formatPercent(getHeroDoubleStrikeDamageMultiplierForRarity(nextRarity)),
+      suffix: "damage",
     };
   }
 
@@ -900,11 +957,24 @@ function getMagicProductUpgradeEffect(
     };
   }
 
+  if (itemId === HERO_WARD_SCROLL_ITEM_ID) {
+    return {
+      label: "Blocks",
+      currentValue: String(getHeroWardHitCountForRarity(currentRarity)),
+      nextValue: String(getHeroWardHitCountForRarity(nextRarity)),
+      suffix: "hits",
+    };
+  }
+
   return undefined;
 }
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatPlural(count: number, singular: string, plural: string): string {
+  return count === 1 ? singular : plural;
 }
 
 function canUpgradeMagicProduct(hero: HeroState, product: MagicProduct): boolean {

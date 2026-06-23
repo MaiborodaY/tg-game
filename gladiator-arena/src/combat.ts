@@ -98,11 +98,13 @@ export interface FighterState {
   shurikenItemId?: HeroItemId;
   scrollCount?: number;
   scrollItemId?: HeroItemId;
+  crackArmorParts?: number;
   fireballScrollCount?: number;
   fireballScrollItemId?: HeroItemId;
   fireballDamage?: number;
   wardScrollCount?: number;
   wardScrollItemId?: HeroItemId;
+  wardHitCount?: number;
   wardHits?: number;
   preciseStrikeScrollCount?: number;
   preciseStrikeScrollItemId?: HeroItemId;
@@ -650,6 +652,10 @@ export function getFighterScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.scrollCount ?? 0));
 }
 
+export function getFighterCrackArmorParts(fighter?: FighterState): number {
+  return Math.max(1, Math.floor(fighter?.crackArmorParts ?? 1));
+}
+
 export function getFighterFireballScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.fireballScrollCount ?? 0));
 }
@@ -660,6 +666,10 @@ export function getFighterFireballDamage(fighter?: FighterState): number {
 
 export function getFighterWardScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.wardScrollCount ?? 0));
+}
+
+export function getFighterWardHitCount(fighter?: FighterState): number {
+  return Math.max(1, Math.floor(fighter?.wardHitCount ?? 1));
 }
 
 export function getFighterPreciseStrikeScrollCount(fighter: FighterState): number {
@@ -1359,7 +1369,7 @@ function applyAction(
 
   if (actionId === "ward" && getFighterWardScrollCount(attacker) > 0) {
     attacker.wardScrollCount = getFighterWardScrollCount(attacker) - 1;
-    attacker.wardHits = 1;
+    attacker.wardHits = getFighterWardHitCount(attacker);
   }
 
   if (actionId === "preciseStrike" && getFighterPreciseStrikeScrollCount(attacker) > 0) {
@@ -1705,15 +1715,14 @@ function consumeWardHit(defender: FighterState): boolean {
   return true;
 }
 
-function applyCrackArmorScroll(_attacker: FighterState, defender: FighterState, random: () => number): DamageApplication {
-  const slot = pickCrackableArmorSlot(defender, random);
+function applyCrackArmorScroll(attacker: FighterState, defender: FighterState, random: () => number): DamageApplication {
+  const removedArmorSlots = pickCrackableArmorSlotGroups(defender, getFighterCrackArmorParts(attacker), random);
 
-  if (!slot) {
+  if (removedArmorSlots.length === 0) {
     return { armorAbsorbed: 0, armorBroken: false };
   }
 
   const currentArmor = Math.max(0, defender.armor ?? 0);
-  const removedArmorSlots = getRemovedArmorSlotsForCrack(defender, slot);
   const armorDamage = Math.min(
     currentArmor,
     removedArmorSlots.reduce((total, removedSlot) => total + Math.max(0, Math.floor(removedSlot.armorHp)), 0),
@@ -1744,6 +1753,34 @@ function applyCrackArmorScroll(_attacker: FighterState, defender: FighterState, 
   };
 }
 
+function pickCrackableArmorSlotGroups(defender: FighterState, count: number, random: () => number): CombatArmorSlotState[] {
+  const removedArmorSlots: CombatArmorSlotState[] = [];
+  const removedSlotKeys = new Set<HeroEquipmentSlotKey>();
+  const groupCount = Math.max(1, Math.floor(count));
+
+  for (let index = 0; index < groupCount; index += 1) {
+    const slots = getCrackableArmorSlots(defender).filter((slot) =>
+      getArmorSlotRemovalKeys(slot.slotKey).every((slotKey) => !removedSlotKeys.has(slotKey)),
+    );
+    const rolledSlot = slots[Math.floor(random() * slots.length)];
+
+    if (!rolledSlot) {
+      break;
+    }
+
+    getRemovedArmorSlotsForCrack(defender, rolledSlot).forEach((removedSlot) => {
+      if (removedSlotKeys.has(removedSlot.slotKey)) {
+        return;
+      }
+
+      removedSlotKeys.add(removedSlot.slotKey);
+      removedArmorSlots.push(removedSlot);
+    });
+  }
+
+  return removedArmorSlots;
+}
+
 function getRemovedArmorSlotsForCrack(defender: FighterState, rolledSlot: CombatArmorSlotState): CombatArmorSlotState[] {
   return getArmorSlotRemovalKeys(rolledSlot.slotKey).flatMap((slotKey) => {
     const armorSlot = defender.armorSlots?.find((candidate) => candidate.slotKey === slotKey);
@@ -1772,12 +1809,6 @@ function getArmorSlotRemovalKeys(slotKey: HeroEquipmentSlotKey): readonly HeroEq
   const pair = PAIRED_ARMOR_SLOT_KEYS.find(([left, right]) => left === slotKey || right === slotKey);
 
   return pair ?? [slotKey];
-}
-
-function pickCrackableArmorSlot(defender: FighterState, random: () => number): CombatArmorSlotState | undefined {
-  const slots = getCrackableArmorSlots(defender);
-
-  return slots[Math.floor(random() * slots.length)];
 }
 
 function hasCrackableArmorSlot(defender: FighterState): boolean {

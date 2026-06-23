@@ -1431,6 +1431,38 @@ test("fireball and poison scroll upgrades change rarity prices and combat effect
   assert.equal(combatState.player.poisonDamage, 6);
 });
 
+test("armor crack and ward scroll upgrades change rarity prices and combat effects", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 1000,
+  };
+  const crackArmorScrollId = hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
+  const wardScrollId = hero.HERO_WARD_SCROLL_ITEM_ID;
+
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(baseHero, crackArmorScrollId), "common");
+  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, crackArmorScrollId), 30);
+  assert.equal(hero.getHeroScrollUpgradePrice(baseHero, crackArmorScrollId), 400);
+  assert.equal(hero.getHeroCrackArmorParts(baseHero), 1);
+  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, wardScrollId), 30);
+  assert.equal(hero.getHeroScrollUpgradePrice(baseHero, wardScrollId), 250);
+  assert.equal(hero.getHeroWardHitCount(baseHero), 1);
+
+  const upgradedCrackArmor = hero.upgradeHeroScroll(baseHero, crackArmorScrollId, "2026-01-01T00:01:00.000Z");
+  const upgradedWard = hero.upgradeHeroScroll(upgradedCrackArmor, wardScrollId, "2026-01-01T00:02:00.000Z");
+  const combatState = hero.createCombatStateFromHero(upgradedWard, 1);
+
+  assert.equal(upgradedCrackArmor.gold, 600);
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(upgradedCrackArmor, crackArmorScrollId), "uncommon");
+  assert.equal(hero.getHeroScrollPurchasePrice(upgradedCrackArmor, crackArmorScrollId), 120);
+  assert.equal(hero.getHeroCrackArmorParts(upgradedCrackArmor), 2);
+  assert.equal(upgradedWard.gold, 350);
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(upgradedWard, wardScrollId), "uncommon");
+  assert.equal(hero.getHeroScrollPurchasePrice(upgradedWard, wardScrollId), 90);
+  assert.equal(hero.getHeroWardHitCount(upgradedWard), 2);
+  assert.equal(combatState.player.crackArmorParts, 2);
+  assert.equal(combatState.player.wardHitCount, 2);
+});
+
 test("combat state exposes shuriken count and rewards persist spent consumables", () => {
   const stockedHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),

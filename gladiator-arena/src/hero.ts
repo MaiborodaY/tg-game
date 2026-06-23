@@ -222,7 +222,7 @@ export interface HeroScrollEffect {
   kind: "crackArmorSlot" | "fireballDamage" | "wardHit" | "preciseStrike" | "doubleStrike" | "poison";
 }
 
-export type HeroUpgradeableScrollKind = "fireball" | "preciseStrike" | "doubleStrike" | "poison";
+export type HeroUpgradeableScrollKind = "crackArmor" | "fireball" | "ward" | "preciseStrike" | "doubleStrike" | "poison";
 export type HeroScrollUpgradeRarity = Extract<HeroItemRarity, "common" | "uncommon" | "rare" | "epic" | "legendary">;
 export type HeroScrollUpgrades = Partial<Record<HeroUpgradeableScrollKind, HeroScrollUpgradeRarity>>;
 
@@ -256,11 +256,13 @@ export interface EnemyLoadout {
   shurikenItemId?: HeroItemId;
   scrollCount?: number;
   scrollItemId?: HeroItemId;
+  crackArmorParts?: number;
   fireballScrollCount?: number;
   fireballScrollItemId?: HeroItemId;
   fireballDamage?: number;
   wardScrollCount?: number;
   wardScrollItemId?: HeroItemId;
+  wardHitCount?: number;
   preciseStrikeScrollCount?: number;
   preciseStrikeScrollItemId?: HeroItemId;
   preciseStrikeBlockChanceReduction?: number;
@@ -438,13 +440,39 @@ interface HeroScrollUpgradeDefinition {
   itemId: HeroItemId;
   purchasePrices: Record<HeroScrollUpgradeRarity, number>;
   upgradePrices: Partial<Record<HeroScrollUpgradeRarity, number>>;
+  crackArmorParts?: Record<HeroScrollUpgradeRarity, number>;
   fireballDamage?: Record<HeroScrollUpgradeRarity, number>;
+  wardHitCount?: Record<HeroScrollUpgradeRarity, number>;
   preciseBlockChanceReduction?: Record<HeroScrollUpgradeRarity, number>;
   doubleStrikeDamageMultiplier?: Record<HeroScrollUpgradeRarity, number>;
   poisonDamage?: Record<HeroScrollUpgradeRarity, number>;
 }
 
 const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScrollUpgradeDefinition> = {
+  crackArmor: {
+    kind: "crackArmor",
+    itemId: HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
+    purchasePrices: {
+      common: 30,
+      uncommon: 120,
+      rare: 300,
+      epic: 700,
+      legendary: 1500,
+    },
+    upgradePrices: {
+      common: 400,
+      uncommon: 1100,
+      rare: 2600,
+      epic: 6000,
+    },
+    crackArmorParts: {
+      common: 1,
+      uncommon: 2,
+      rare: 3,
+      epic: 4,
+      legendary: 5,
+    },
+  },
   fireball: {
     kind: "fireball",
     itemId: HERO_FIREBALL_SCROLL_ITEM_ID,
@@ -467,6 +495,30 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
       rare: 130,
       epic: 210,
       legendary: 300,
+    },
+  },
+  ward: {
+    kind: "ward",
+    itemId: HERO_WARD_SCROLL_ITEM_ID,
+    purchasePrices: {
+      common: 30,
+      uncommon: 90,
+      rare: 220,
+      epic: 500,
+      legendary: 1000,
+    },
+    upgradePrices: {
+      common: 250,
+      uncommon: 700,
+      rare: 1600,
+      epic: 3600,
+    },
+    wardHitCount: {
+      common: 1,
+      uncommon: 2,
+      rare: 3,
+      epic: 4,
+      legendary: 5,
     },
   },
   preciseStrike: {
@@ -1260,6 +1312,10 @@ export function getHeroCrackArmorScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_CRACK_ARMOR_SCROLL_ITEM_ID]!.scrollEffect!;
 }
 
+export function getHeroCrackArmorParts(hero: HeroState): number {
+  return getHeroCrackArmorPartsForRarity(getHeroScrollUpgradeRarity(hero, "crackArmor"));
+}
+
 export function getHeroFireballScrollItemId(): HeroItemId {
   return HERO_FIREBALL_SCROLL_ITEM_ID;
 }
@@ -1286,6 +1342,10 @@ export function getHeroWardScrollCount(hero: HeroState): number {
 
 export function getHeroWardScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_WARD_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
+export function getHeroWardHitCount(hero: HeroState): number {
+  return getHeroWardHitCountForRarity(getHeroScrollUpgradeRarity(hero, "ward"));
 }
 
 export function getHeroPreciseStrikeScrollItemId(): HeroItemId {
@@ -1397,8 +1457,16 @@ export function getHeroPoisonDamage(hero: HeroState): number {
   return getHeroPoisonDamageForRarity(getHeroScrollUpgradeRarity(hero, "poison"));
 }
 
+export function getHeroCrackArmorPartsForRarity(rarity: HeroScrollUpgradeRarity): number {
+  return HERO_SCROLL_UPGRADE_DEFINITIONS.crackArmor.crackArmorParts?.[rarity] ?? 1;
+}
+
 export function getHeroFireballDamageForRarity(rarity: HeroScrollUpgradeRarity): number {
   return HERO_SCROLL_UPGRADE_DEFINITIONS.fireball.fireballDamage?.[rarity] ?? FIREBALL_SCROLL_DAMAGE;
+}
+
+export function getHeroWardHitCountForRarity(rarity: HeroScrollUpgradeRarity): number {
+  return HERO_SCROLL_UPGRADE_DEFINITIONS.ward.wardHitCount?.[rarity] ?? 1;
 }
 
 export function getHeroPreciseStrikeBlockChanceReductionForRarity(rarity: HeroScrollUpgradeRarity): number {
@@ -1552,11 +1620,13 @@ function createCombatFighterStateFromHero(hero: HeroState, base: FighterState): 
     shurikenItemId: getHeroShurikenItemId(hero),
     scrollCount: getHeroCrackArmorScrollCount(hero),
     scrollItemId: getHeroCrackArmorScrollItemId(),
+    crackArmorParts: getHeroCrackArmorParts(hero),
     fireballScrollCount: getHeroFireballScrollCount(hero),
     fireballScrollItemId: getHeroFireballScrollItemId(),
     fireballDamage: getHeroFireballDamage(hero),
     wardScrollCount: getHeroWardScrollCount(hero),
     wardScrollItemId: getHeroWardScrollItemId(),
+    wardHitCount: getHeroWardHitCount(hero),
     wardHits: 0,
     preciseStrikeScrollCount: getHeroPreciseStrikeScrollCount(hero),
     preciseStrikeScrollItemId: getHeroPreciseStrikeScrollItemId(),
@@ -1651,11 +1721,13 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenItemId: playerShurikenItemId,
       scrollCount: getHeroCrackArmorScrollCount(hero),
       scrollItemId: playerScrollItemId,
+      crackArmorParts: getHeroCrackArmorParts(hero),
       fireballScrollCount: getHeroFireballScrollCount(hero),
       fireballScrollItemId: playerFireballScrollItemId,
       fireballDamage: getHeroFireballDamage(hero),
       wardScrollCount: getHeroWardScrollCount(hero),
       wardScrollItemId: playerWardScrollItemId,
+      wardHitCount: getHeroWardHitCount(hero),
       wardHits: 0,
       preciseStrikeScrollCount: getHeroPreciseStrikeScrollCount(hero),
       preciseStrikeScrollItemId: playerPreciseStrikeScrollItemId,
@@ -1701,11 +1773,13 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       shurikenItemId: enemyLoadout.shurikenItemId,
       scrollCount: Math.max(0, Math.floor(enemyLoadout.scrollCount ?? 0)),
       scrollItemId: enemyLoadout.scrollItemId,
+      crackArmorParts: enemyLoadout.crackArmorParts ?? getHeroCrackArmorPartsForRarity("common"),
       fireballScrollCount: Math.max(0, Math.floor(enemyLoadout.fireballScrollCount ?? 0)),
       fireballScrollItemId: enemyLoadout.fireballScrollItemId,
       fireballDamage: enemyLoadout.fireballDamage ?? getHeroFireballDamageForRarity("common"),
       wardScrollCount: Math.max(0, Math.floor(enemyLoadout.wardScrollCount ?? 0)),
       wardScrollItemId: enemyLoadout.wardScrollItemId,
+      wardHitCount: enemyLoadout.wardHitCount ?? getHeroWardHitCountForRarity("common"),
       wardHits: 0,
       preciseStrikeScrollCount: Math.max(0, Math.floor(enemyLoadout.preciseStrikeScrollCount ?? 0)),
       preciseStrikeScrollItemId: enemyLoadout.preciseStrikeScrollItemId,

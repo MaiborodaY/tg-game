@@ -7870,6 +7870,33 @@ body.debug-active .city-menu__portrait-button:active {
   );
 }
 
+.magic-shop__buy--upgrade-confirm {
+  display: inline-grid;
+  grid-auto-flow: row;
+  gap: calc(3px * var(--magic-shop-button-scale));
+  align-content: center;
+  justify-items: center;
+}
+
+.magic-shop__buy-label,
+.magic-shop__buy-price {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.magic-shop__buy-price {
+  gap: calc(4px * var(--magic-shop-button-scale));
+  color: #ffd384;
+  font-size: 0.86em;
+}
+
+.magic-shop__buy-price-icon {
+  width: 1em;
+  height: 1em;
+}
+
 .magic-shop--mode-sharpening .magic-shop__buy {
   border-color: rgba(88, 216, 255, 0.62);
   background:
