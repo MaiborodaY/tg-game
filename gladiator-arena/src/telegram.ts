@@ -56,13 +56,13 @@ export function getTelegramDisplayName(): string | undefined {
     }
 
     const user = JSON.parse(userJson) as TelegramInitUser;
-    const username = normalizeTelegramName(user.username);
+    const personalName = normalizeTelegramName([user.first_name, user.last_name].filter(Boolean).join(" "));
 
-    if (username) {
-      return `@${username.replace(/^@+/, "")}`;
+    if (personalName) {
+      return personalName;
     }
 
-    return normalizeTelegramName([user.first_name, user.last_name].filter(Boolean).join(" "));
+    return normalizeTelegramName(user.username?.replace(/^@+/, ""));
   } catch {
     return undefined;
   }

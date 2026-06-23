@@ -743,13 +743,13 @@ function normalizeHostName(name: string): string {
 }
 
 function getTelegramUserDisplayName(user: TelegramInitUser | undefined): string | undefined {
-  const username = normalizeTelegramDisplayName(user?.username);
+  const personalName = normalizeTelegramDisplayName([user?.first_name, user?.last_name].filter(Boolean).join(" "));
 
-  if (username) {
-    return `@${username.replace(/^@+/, "")}`;
+  if (personalName) {
+    return personalName;
   }
 
-  return normalizeTelegramDisplayName([user?.first_name, user?.last_name].filter(Boolean).join(" "));
+  return normalizeTelegramDisplayName(user?.username?.replace(/^@+/, ""));
 }
 
 function normalizeTelegramDisplayName(name: string | undefined): string | undefined {
