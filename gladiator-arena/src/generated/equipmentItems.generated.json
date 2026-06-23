@@ -315,6 +315,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_boot_eagle_boss_01",
+    "name": "Eagle Boss 01 Back Boot",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backBoot",
+    "assetKeys": {
+      "backBootAssetKey": "back-boot-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -31.46421302587524,
+      "y": -4,
+      "angle": 0,
+      "scaleX": 1.47,
+      "scaleY": 1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-boot-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-boot-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_boot_executioner_01",
     "name": "Executioner Back Boot 01",
     "kind": "armor",
@@ -1020,6 +1056,42 @@
         "generated_equipment_back_glove_druid_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_back_glove_eagle_boss_01",
+    "name": "Eagle Boss 01 Back Glove",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backGlove",
+    "assetKeys": {
+      "backGloveAssetKey": "back-glove-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -2.063492706072111,
+      "y": 8.034377598346794,
+      "angle": 0,
+      "scaleX": 0.82,
+      "scaleY": 0.69,
+      "flipX": true,
+      "flipY": true
+    },
+    "asset": {
+      "key": "back-glove-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/back-glove-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -1778,6 +1850,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_greave_eagle_boss_01",
+    "name": "Eagle Boss 01 Back Greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backGreave",
+    "assetKeys": {
+      "backGreaveAssetKey": "back-greave-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -2.247443787562517,
+      "y": 16.272371369636744,
+      "angle": -6,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-greave-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-greave-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_greave_executioner_01",
     "name": "Executioner Back Greave 01",
     "kind": "armor",
@@ -2533,6 +2641,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_shinguard_eagle_boss_01",
+    "name": "Eagle Boss 01 Back Shinguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backShinguard",
+    "assetKeys": {
+      "backShinguardAssetKey": "back-shinguard-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.6320522444717085,
+      "y": 9.257876444654244,
+      "angle": 3,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shinguard-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/back-shinguard-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_shinguard_executioner_01",
     "name": "Executioner Back Shinguard 01",
     "kind": "armor",
@@ -3238,6 +3382,42 @@
         "generated_equipment_back_shoulderguard_druid_01"
       ],
       "categoryId": "shoulders"
+    }
+  },
+  {
+    "id": "generated_equipment_back_shoulderguard_eagle_boss_01",
+    "name": "Eagle Boss 01 Back Shoulderguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backShoulderguard",
+    "assetKeys": {
+      "backShoulderguardAssetKey": "back-shoulderguard-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 1.8728696991170182,
+      "y": 18.08041298719553,
+      "angle": 6,
+      "scaleX": 1.64,
+      "scaleY": 1.46,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-shoulderguard-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/back-shoulderguard-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -3949,6 +4129,42 @@
     }
   },
   {
+    "id": "generated_equipment_back_wrist_eagle_boss_01",
+    "name": "Eagle Boss 01 Back Wrist",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "backWrist",
+    "assetKeys": {
+      "backWristAssetKey": "back-wrist-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 2.582728356056876,
+      "y": 19.188831480997806,
+      "angle": -6,
+      "scaleX": 1.4,
+      "scaleY": 1.3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "back-wrist-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/back-wrist-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_back_wrist_executioner_01",
     "name": "Executioner Back Wrist 01",
     "kind": "armor",
@@ -4607,6 +4823,42 @@
         "generated_equipment_breastplate_druid_01"
       ],
       "categoryId": "chest"
+    }
+  },
+  {
+    "id": "generated_equipment_breastplate_eagle_boss_01",
+    "name": "Eagle Boss 01 Breastplate",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "breastplate",
+    "assetKeys": {
+      "breastplateAssetKey": "breastplate-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 44,
+      "angle": 0,
+      "scaleX": 1.35,
+      "scaleY": 1.75,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "breastplate-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/breastplate/breastplate-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -5318,6 +5570,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_boot_eagle_boss_01",
+    "name": "Eagle Boss 01 Front Boot",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontBoot",
+    "assetKeys": {
+      "frontBootAssetKey": "front-boot-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -4,
+      "y": -4,
+      "angle": 0,
+      "scaleX": 1.47,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-boot-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-boot-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_boot_executioner_01",
     "name": "Executioner Front Boot 01",
     "kind": "armor",
@@ -6023,6 +6311,42 @@
         "generated_equipment_front_glove_druid_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_glove_eagle_boss_01",
+    "name": "Eagle Boss 01 Front Glove",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGlove",
+    "assetKeys": {
+      "frontGloveAssetKey": "front-glove-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -2.063492706072111,
+      "y": 8.034377598346794,
+      "angle": 0,
+      "scaleX": 0.82,
+      "scaleY": 0.69,
+      "flipX": true,
+      "flipY": true
+    },
+    "asset": {
+      "key": "front-glove-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/front-glove-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -6781,6 +7105,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_greave_eagle_boss_01",
+    "name": "Eagle Boss 01 Front Greave",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontGreave",
+    "assetKeys": {
+      "frontGreaveAssetKey": "front-greave-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": -2.247443787562517,
+      "y": 16.272371369636744,
+      "angle": -9,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-greave-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-greave-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_greave_executioner_01",
     "name": "Executioner Front Greave 01",
     "kind": "armor",
@@ -7536,6 +7896,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_shinguard_eagle_boss_01",
+    "name": "Eagle Boss 01 Front Shinguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShinguard",
+    "assetKeys": {
+      "frontShinguardAssetKey": "front-shinguard-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0.6320522444717085,
+      "y": 9.257876444654244,
+      "angle": 3,
+      "scaleX": 1,
+      "scaleY": 1,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shinguard-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/legs/front-shinguard-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_shinguard_executioner_01",
     "name": "Executioner Front Shinguard 01",
     "kind": "armor",
@@ -8244,6 +8640,42 @@
     }
   },
   {
+    "id": "generated_equipment_front_shoulderguard_eagle_boss_01",
+    "name": "Eagle Boss 01 Front Shoulderguard",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontShoulderguard",
+    "assetKeys": {
+      "frontShoulderguardAssetKey": "front-shoulderguard-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 1.8728696991170182,
+      "y": 18.08041298719553,
+      "angle": 6,
+      "scaleX": 1.64,
+      "scaleY": 1.46,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-shoulderguard-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/front-shoulderguard-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
     "id": "generated_equipment_front_shoulderguard_executioner_01",
     "name": "Executioner Front Shoulderguard 01",
     "kind": "armor",
@@ -8949,6 +9381,42 @@
         "generated_equipment_front_wrist_druid_01"
       ],
       "categoryId": "arms"
+    }
+  },
+  {
+    "id": "generated_equipment_front_wrist_eagle_boss_01",
+    "name": "Eagle Boss 01 Front Wrist",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 0,
+    "equipmentSlot": "frontWrist",
+    "assetKeys": {
+      "frontWristAssetKey": "front-wrist-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 2.582728356056876,
+      "y": 19.188831480997806,
+      "angle": -6,
+      "scaleX": 1.4,
+      "scaleY": 1.3,
+      "flipX": true,
+      "flipY": false
+    },
+    "asset": {
+      "key": "front-wrist-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/arms/front-wrist-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -9694,6 +10162,42 @@
         "generated_equipment_helmet_druid_01"
       ],
       "categoryId": "head"
+    }
+  },
+  {
+    "id": "generated_equipment_helmet_eagle_boss_01",
+    "name": "Eagle Boss 01 Helmet",
+    "kind": "armor",
+    "rarity": "unique",
+    "equipmentSet": {
+      "id": "eagle_boss",
+      "name": "Eagle boss",
+      "rank": 17,
+      "grade": "boss"
+    },
+    "armorHp": 1,
+    "equipmentSlot": "helmet",
+    "assetKeys": {
+      "helmetAssetKey": "helmet-eagle-boss-01"
+    },
+    "equipmentTuning": {
+      "x": 0,
+      "y": 21,
+      "angle": 0,
+      "scaleX": 1.18,
+      "scaleY": 1.15,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "helmet-eagle-boss-01",
+      "sourcePath": "assets/fighters/armor/helmet/helmet-eagle-boss-01.webp",
+      "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-eagle-boss-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
@@ -12993,6 +13497,37 @@
         "generated_equipment_weapon_shuriken_uncommon_shuriken_2"
       ],
       "categoryId": "shurikens"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_spear_eagle_glaive",
+    "name": "Eagle Glaive",
+    "kind": "weapon",
+    "rarity": "unique",
+    "damageBonus": 10,
+    "weaponClass": "spear",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-spear-eagle-glaive"
+    },
+    "equipmentTuning": {
+      "x": -13,
+      "y": -7,
+      "angle": 135,
+      "scaleX": 2.5,
+      "scaleY": 2.5,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-spear-eagle-glaive",
+      "sourcePath": "assets/fighters/weapons/weapon-spear-eagle-glaive.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-spear-eagle-glaive.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
     }
   },
   {
