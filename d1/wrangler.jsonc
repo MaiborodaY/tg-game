@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "account_id": "49cdef49a797b94dda3328ef3c4b2d6e",
+  "name": "gladiator-saves-migrations",
+  "compatibility_date": "2026-06-23",
+  "d1_databases": [
+    {
+      "binding": "GLADIATOR_SAVES_DB",
+      "database_name": "gladiator_saves",
+      "database_id": "98a82779-3a34-4076-9782-2f3e51c623cd",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
