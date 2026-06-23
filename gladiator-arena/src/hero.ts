@@ -19,7 +19,7 @@ import type {
   ArenaRandomOpponentDefinition,
   ArenaTierDefinition,
 } from "./arenaOpponents";
-import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatArmorSlotState, type CombatState } from "./combat";
+import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatArmorSlotState, type CombatState, type FighterState } from "./combat";
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 
 export {
@@ -1262,6 +1262,83 @@ export function getHeroItemWeaponClass(item: HeroItemDefinition | undefined): He
   }
 
   return "sword";
+}
+
+function createCombatFighterStateFromHero(hero: HeroState, base: FighterState): FighterState {
+  const stats = deriveHeroStats(hero);
+  const equipment = hero.equipment;
+  const mainWeaponClass = getHeroEquipmentWeaponClass(equipment);
+  const bowWeaponClass = getHeroEquipmentBowWeaponClass(equipment);
+  const weaponClass = equipment.weaponMain ? mainWeaponClass : bowWeaponClass ?? mainWeaponClass;
+  const bowShotCapacity = getHeroBowShotCapacity(hero);
+
+  return {
+    ...base,
+    name: hero.name,
+    hp: stats.maxHp,
+    maxHp: stats.maxHp,
+    armor: stats.maxArmor,
+    maxArmor: stats.maxArmor,
+    stamina: stats.maxStamina,
+    maxStamina: stats.maxStamina,
+    damageBonus: stats.damageBonus,
+    weaponDamageBonus: stats.weaponDamageBonus,
+    meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
+    spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
+    mainWeaponClass,
+    bowWeaponClass,
+    movementDistanceBonus: stats.movementDistanceBonus,
+    bodyScaleBonus: stats.bodyScaleBonus,
+    clinchRangeBonus: stats.clinchRangeBonus,
+    restHpRestoreBonus: stats.restHpRestoreBonus,
+    restStaminaRestoreBonus: stats.restStaminaRestoreBonus,
+    weaponClass,
+    bowShotsRemaining: bowWeaponClass === "bow" ? bowShotCapacity : 0,
+    bowMaxShots: bowWeaponClass === "bow" ? bowShotCapacity : 0,
+    shurikenCount: getHeroShurikenCount(hero),
+    shurikenDamage: getHeroShurikenDamage(hero),
+    shurikenItemId: getHeroShurikenItemId(hero),
+    scrollCount: getHeroCrackArmorScrollCount(hero),
+    scrollItemId: getHeroCrackArmorScrollItemId(),
+    fireballScrollCount: getHeroFireballScrollCount(hero),
+    fireballScrollItemId: getHeroFireballScrollItemId(),
+    wardScrollCount: getHeroWardScrollCount(hero),
+    wardScrollItemId: getHeroWardScrollItemId(),
+    wardHits: 0,
+    preciseStrikeScrollCount: getHeroPreciseStrikeScrollCount(hero),
+    preciseStrikeScrollItemId: getHeroPreciseStrikeScrollItemId(),
+    preciseStrikeHits: 0,
+    doubleStrikeScrollCount: getHeroDoubleStrikeScrollCount(hero),
+    doubleStrikeScrollItemId: getHeroDoubleStrikeScrollItemId(),
+    doubleStrikeHits: 0,
+    poisonScrollCount: getHeroPoisonScrollCount(hero),
+    poisonScrollItemId: getHeroPoisonScrollItemId(),
+    poisonTurns: 0,
+    equipment: { ...equipment },
+    weaponEnchantments: { ...hero.weaponEnchantments },
+    armorSlots: getHeroEquipmentArmorSlots(equipment),
+    appearance: { ...hero.appearance },
+  };
+}
+
+export function createPvpCombatStateFromHeroes(playerHero: HeroState, enemyHero: HeroState): CombatState {
+  const state = freshState();
+
+  return {
+    ...state,
+    player: createCombatFighterStateFromHero(playerHero, state.player),
+    enemy: createCombatFighterStateFromHero(enemyHero, state.enemy),
+    encounter: {
+      id: "pvp-room",
+      kind: "random",
+      tierId: DEFAULT_ARENA_TIER_ID,
+      opponentId: "pvp-room",
+    },
+    log: [
+      { text: `${playerHero.name} and ${enemyHero.name} enter the sand.`, important: true },
+      { text: "Each gladiator has 20 seconds to act." },
+    ],
+  };
 }
 
 export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: ArenaEncounter | number = DEFAULT_ARENA_TIER_ID): CombatState {

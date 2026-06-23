@@ -74,6 +74,8 @@ import {
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
+import { connectPvpRoom, createPvpRoom, joinPvpRoom, type PvpConnection } from "./pvpClient";
+import type { PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
@@ -102,6 +104,12 @@ const cityArenaHardReward = document.querySelector<HTMLElement>("#cityArenaHardR
 const cityArenaHardButton = document.querySelector<HTMLButtonElement>("#cityArenaHardButton");
 const cityArenaHardName = cityArenaHardButton?.querySelector<HTMLElement>("strong");
 const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
+const cityPvpCreateButton = document.querySelector<HTMLButtonElement>("#cityPvpCreateButton");
+const cityPvpJoinForm = document.querySelector<HTMLFormElement>("#cityPvpJoinForm");
+const cityPvpRoomCodeInput = document.querySelector<HTMLInputElement>("#cityPvpRoomCodeInput");
+const cityPvpJoinButton = document.querySelector<HTMLButtonElement>("#cityPvpJoinButton");
+const cityPvpStatus = document.querySelector<HTMLOutputElement>("#cityPvpStatus");
+const pvpTurnTimer = document.querySelector<HTMLOutputElement>("#pvpTurnTimer");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
@@ -109,6 +117,11 @@ const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
+type GameMode = "pve" | "pvp";
+interface StartGameOptions {
+  mode?: GameMode;
+  initialState?: CombatState;
+}
 let hero: HeroState = createDefaultHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -123,6 +136,14 @@ let isTurnAnimationLocked = false;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
 let turnProbe: TurnProbeApi | undefined;
 let lastActionClick = "none";
+let gameMode: GameMode = "pve";
+let pvpSession: PvpRoomSession | undefined;
+let pvpConnection: PvpConnection | undefined;
+let pvpSnapshot: PvpRoomSnapshot | undefined;
+let pvpActionPending = false;
+let pvpControlsBusy = false;
+let pvpDeadlineLocalTime: number | undefined;
+let pvpTimerInterval: number | undefined;
 let hasStarted = false;
 let isInCity = true;
 let armoryShop: ArmoryShopApi | undefined;
@@ -329,7 +350,7 @@ function playCityCurtainTransition(onCovered?: () => void): void {
 function renderCurrentDom(): void {
   renderDom(dom, state, {
     hero,
-    reward: getBattleReward(state),
+    reward: gameMode === "pvp" ? { gold: 0, xp: 0 } : getBattleReward(state),
     statsState: displayedStatsState,
     resultPresentation: battleResultPresentation,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
@@ -471,6 +492,11 @@ function handleAction(actionId: ActionId): void {
   }
 
   logTurnProbe("player-action", state, enemyTimerStatus, actionId);
+
+  if (gameMode === "pvp") {
+    handlePvpAction(actionId);
+    return;
+  }
 
   const nextState = resolvePlayerTurn(state, actionId);
 
@@ -760,6 +786,226 @@ function createCityArenaRewardItem(iconUrl: string, label: string, value: number
   return item;
 }
 
+function setPvpStatus(message: string): void {
+  if (cityPvpStatus) {
+    cityPvpStatus.textContent = message;
+  }
+}
+
+function setPvpControlsBusy(busy: boolean): void {
+  pvpControlsBusy = busy;
+  syncPvpControls();
+}
+
+function syncPvpControls(): void {
+  const disabled = pvpControlsBusy || Boolean(pvpSession);
+
+  if (cityPvpCreateButton) {
+    cityPvpCreateButton.disabled = disabled;
+  }
+  if (cityPvpJoinButton) {
+    cityPvpJoinButton.disabled = disabled;
+  }
+  if (cityPvpRoomCodeInput) {
+    cityPvpRoomCodeInput.disabled = disabled;
+  }
+}
+
+async function handleCreatePvpRoom(): Promise<void> {
+  if (pvpControlsBusy || pvpSession) {
+    return;
+  }
+
+  setPvpControlsBusy(true);
+  setPvpStatus("Creating room...");
+
+  try {
+    beginPvpRoom(await createPvpRoom(hero));
+  } catch (error) {
+    setPvpStatus(error instanceof Error ? error.message : "PvP room failed.");
+    setPvpControlsBusy(false);
+  }
+}
+
+async function handleJoinPvpRoom(event: Event): Promise<void> {
+  event.preventDefault();
+
+  if (pvpControlsBusy || pvpSession) {
+    return;
+  }
+
+  const roomCode = cityPvpRoomCodeInput?.value.trim() ?? "";
+
+  if (!roomCode) {
+    setPvpStatus("Enter room code.");
+    return;
+  }
+
+  setPvpControlsBusy(true);
+  setPvpStatus("Joining room...");
+
+  try {
+    beginPvpRoom(await joinPvpRoom(roomCode, hero));
+  } catch (error) {
+    setPvpStatus(error instanceof Error ? error.message : "PvP join failed.");
+    setPvpControlsBusy(false);
+  }
+}
+
+function beginPvpRoom(response: PvpRoomResponse): void {
+  leavePvpRoom({ keepStatus: true });
+  pvpSession = {
+    roomCode: response.roomCode,
+    token: response.token,
+    seat: response.seat,
+  };
+  pvpSnapshot = response.snapshot;
+  setPvpControlsBusy(false);
+  syncPvpControls();
+  setPvpStatus(formatPvpRoomStatus(response.snapshot));
+  pvpConnection = connectPvpRoom(pvpSession, {
+    onMessage: handlePvpServerMessage,
+    onClose: handlePvpSocketClose,
+    onError: () => setPvpStatus("PvP socket error."),
+  });
+  handlePvpSnapshot(response.snapshot);
+}
+
+function handlePvpSocketClose(): void {
+  if (!pvpSession) {
+    return;
+  }
+
+  const shouldShowDisconnectResult = gameMode === "pvp" && !isInCity && state.result === "playing";
+
+  pvpConnection = undefined;
+  pvpSession = undefined;
+  pvpSnapshot = undefined;
+  pvpActionPending = false;
+  clearPvpTurnTimer();
+  setTurnAnimationLocked(false);
+  setPvpStatus("PvP disconnected.");
+  syncPvpControls();
+
+  if (shouldShowDisconnectResult) {
+    void commitState({
+      ...state,
+      result: "draw",
+      log: [{ text: "PvP connection lost.", important: true }, ...state.log].slice(0, 7),
+    });
+  }
+}
+
+function handlePvpServerMessage(message: PvpServerMessage): void {
+  if (message.type === "error") {
+    setPvpStatus(message.message);
+    return;
+  }
+
+  handlePvpSnapshot(message.snapshot);
+}
+
+function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
+  pvpSnapshot = snapshot;
+  pvpActionPending = false;
+  setPvpStatus(formatPvpRoomStatus(snapshot));
+  syncPvpTurnTimer(snapshot);
+
+  if (!snapshot.state) {
+    return;
+  }
+
+  if (isInCity) {
+    closeCityArenaMenu();
+    void startGameWithCityTransition({ mode: "pvp", initialState: snapshot.state });
+    return;
+  }
+
+  if (gameMode === "pvp") {
+    setTurnAnimationLocked(false);
+    void commitState(snapshot.state);
+  }
+}
+
+function formatPvpRoomStatus(snapshot: PvpRoomSnapshot): string {
+  if (snapshot.status === "waiting") {
+    return `Room ${snapshot.roomCode}. Waiting.`;
+  }
+
+  if (snapshot.status === "finished") {
+    return `Room ${snapshot.roomCode}. Finished.`;
+  }
+
+  return snapshot.activeSeat === snapshot.seat ? "Your turn." : "Opponent turn.";
+}
+
+function handlePvpAction(actionId: ActionId): void {
+  if (!pvpConnection || !pvpSnapshot || !pvpSession || pvpActionPending) {
+    return;
+  }
+
+  if (pvpSnapshot.activeSeat !== pvpSession.seat || pvpSnapshot.status !== "playing") {
+    return;
+  }
+
+  pvpActionPending = true;
+  setTurnAnimationLocked(true);
+  pvpConnection.sendAction(actionId, pvpSnapshot.turnVersion);
+}
+
+function leavePvpRoom(options: { keepStatus?: boolean } = {}): void {
+  pvpConnection?.close();
+  pvpConnection = undefined;
+  pvpSession = undefined;
+  pvpSnapshot = undefined;
+  pvpActionPending = false;
+  clearPvpTurnTimer();
+  setTurnAnimationLocked(false);
+  syncPvpControls();
+  if (!options.keepStatus) {
+    setPvpStatus("");
+  }
+}
+
+function syncPvpTurnTimer(snapshot = pvpSnapshot): void {
+  if (gameMode !== "pvp" || !snapshot?.deadlineAt || snapshot.status !== "playing") {
+    clearPvpTurnTimer();
+    return;
+  }
+
+  pvpDeadlineLocalTime = Date.now() + Math.max(0, snapshot.deadlineAt - snapshot.serverNow);
+  if (pvpTurnTimer) {
+    pvpTurnTimer.hidden = false;
+  }
+  if (pvpTimerInterval === undefined) {
+    pvpTimerInterval = window.setInterval(updatePvpTurnTimer, 200);
+  }
+  updatePvpTurnTimer();
+}
+
+function updatePvpTurnTimer(): void {
+  if (!pvpTurnTimer || !pvpSnapshot || pvpDeadlineLocalTime === undefined) {
+    return;
+  }
+
+  const remainingSeconds = Math.max(0, Math.ceil((pvpDeadlineLocalTime - Date.now()) / 1000));
+  const turnLabel = pvpSnapshot.activeSeat === pvpSession?.seat ? "YOUR TURN" : "OPPONENT";
+
+  pvpTurnTimer.textContent = `${turnLabel} ${remainingSeconds}s`;
+}
+
+function clearPvpTurnTimer(): void {
+  if (pvpTimerInterval !== undefined) {
+    window.clearInterval(pvpTimerInterval);
+    pvpTimerInterval = undefined;
+  }
+  pvpDeadlineLocalTime = undefined;
+  if (pvpTurnTimer) {
+    pvpTurnTimer.hidden = true;
+    pvpTurnTimer.textContent = "";
+  }
+}
+
 function openCityArenaMenu(): void {
   if (!cityArenaMenu || isArenaTransitionRunning) {
     return;
@@ -780,6 +1026,9 @@ function closeCityArenaMenu(): void {
 }
 
 function startSelectedArena(selection: ArenaMenuSelection): void {
+  leavePvpRoom();
+  gameMode = "pve";
+  dom.restartButton.hidden = false;
   activeArenaSelection = selection;
   closeCityArenaMenu();
   void startGameWithCityTransition();
@@ -921,7 +1170,11 @@ function unmountArenaScene(): void {
   cancelArenaEntryGate();
 }
 
-function startGame(): void {
+function startGame(options: StartGameOptions = {}): void {
+  gameMode = options.mode ?? "pve";
+  const initialState = gameMode === "pvp" ? pvpSnapshot?.state ?? options.initialState : options.initialState;
+  dom.restartButton.hidden = gameMode === "pvp";
+  syncPvpTurnTimer();
   cityHeroProfile?.close();
   closeCityArenaMenu();
   unmountCityScenePreview();
@@ -935,7 +1188,11 @@ function startGame(): void {
     dom.gameScreen.classList.add("battle-screen--arena-entry");
     dom.gameScreen.hidden = false;
     document.body.classList.add("arena-active");
-    restart({ syncArena: false });
+    if (initialState) {
+      void commitState(initialState, { syncArena: false });
+    } else {
+      restart({ syncArena: false });
+    }
     mountArena();
     return;
   }
@@ -950,17 +1207,21 @@ function startGame(): void {
   classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
-  restart({ syncArena: false });
+  if (initialState) {
+    void commitState(initialState, { syncArena: false });
+  } else {
+    restart({ syncArena: false });
+  }
   mountArena();
 }
 
-async function startGameWithCityTransition(): Promise<void> {
+async function startGameWithCityTransition(options: StartGameOptions = {}): Promise<void> {
   if (isArenaTransitionRunning) {
     return;
   }
 
   if (!isInCity) {
-    startGame();
+    startGame(options);
     return;
   }
 
@@ -973,13 +1234,17 @@ async function startGameWithCityTransition(): Promise<void> {
   try {
     await (cityScene?.focusArenaTransition() ?? Promise.resolve());
   } finally {
-    startGame();
+    startGame(options);
     dom.startButton.disabled = false;
     isArenaTransitionRunning = false;
   }
 }
 
 function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
+  if (gameMode === "pvp") {
+    return nextState;
+  }
+
   if (state.result !== "playing" || nextState.result === "playing") {
     return nextState;
   }
@@ -1324,10 +1589,14 @@ async function returnToCity(): Promise<void> {
     return;
   }
 
+  const returningFromPvp = gameMode === "pvp";
   const transitionToken = ++cityReturnTransitionToken;
 
   isCityReturnTransitionRunning = true;
   dom.cityButton.disabled = true;
+  if (returningFromPvp) {
+    leavePvpRoom();
+  }
   showCityReturnTransition();
   await delay(CITY_RETURN_TRANSITION_IN_MS);
 
@@ -1343,8 +1612,10 @@ async function returnToCity(): Promise<void> {
   battleResultPresentationRevealToken += 1;
   isArenaTransitionRunning = false;
   isInCity = true;
+  gameMode = "pve";
   enemyTimerStatus = "idle";
   lastActionClick = "none";
+  dom.restartButton.hidden = false;
   unmountArenaScene();
   dom.gameScreen.hidden = true;
   dom.mainMenu.hidden = false;
@@ -1368,6 +1639,10 @@ async function returnToCity(): Promise<void> {
 }
 
 function restart(options: { syncArena?: boolean } = {}): void {
+  if (gameMode === "pvp") {
+    return;
+  }
+
   cityReturnTransitionToken += 1;
   isCityReturnTransitionRunning = false;
   hideCityReturnTransition();
@@ -1398,6 +1673,12 @@ cityArenaRandomButton?.addEventListener("click", () => {
 });
 cityArenaHardButton?.addEventListener("click", () => {
   startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "hard" });
+});
+cityPvpCreateButton?.addEventListener("click", () => {
+  void handleCreatePvpRoom();
+});
+cityPvpJoinForm?.addEventListener("submit", (event) => {
+  void handleJoinPvpRoom(event);
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "account_id": "49cdef49a797b94dda3328ef3c4b2d6e",
+  "name": "gladiator-pvp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-23",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PVP_ROOM",
+        "class_name": "PvpRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["PvpRoom"]
+    }
+  ]
+}

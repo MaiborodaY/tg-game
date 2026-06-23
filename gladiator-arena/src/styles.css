@@ -1142,6 +1142,30 @@ h1 {
   font-size: 0.8rem;
 }
 
+.pvp-turn-timer {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  z-index: 15;
+  min-width: 108px;
+  padding: 5px 9px;
+  border: 2px solid #160603;
+  border-radius: 8px;
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, rgba(103, 42, 16, 0.92), rgba(27, 8, 3, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.24),
+    0 3px 0 rgba(8, 2, 1, 0.7);
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 2px 0 rgba(22, 7, 3, 0.82);
+  text-transform: uppercase;
+  transform: translateX(-50%);
+}
+
 .result-banner {
   position: absolute;
   left: 50%;
@@ -2347,6 +2371,8 @@ body.debug-active .city-menu__portrait-button:active {
   display: grid;
   gap: 10px;
   width: min(100%, 372px);
+  max-height: calc(100dvh - max(40px, env(safe-area-inset-top)) - calc(34px + env(safe-area-inset-bottom)));
+  overflow: auto;
   padding: 28px 12px 14px;
   border: 3px solid #1a0803;
   border-radius: 10px;
@@ -2730,6 +2756,87 @@ body.debug-active .city-menu__portrait-button:active {
   font-size: 0.66rem;
   font-weight: 900;
   text-align: center;
+}
+
+.city-arena-menu__pvp {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid rgba(255, 211, 132, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(48, 19, 7, 0.32), transparent 52%, rgba(19, 7, 3, 0.26)),
+    rgba(17, 5, 2, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.1),
+    0 2px 0 rgba(8, 2, 1, 0.54);
+}
+
+.city-arena-menu__pvp-title {
+  color: #f4d188;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.city-arena-menu__pvp-actions,
+.city-arena-menu__pvp-join {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 7px;
+  min-width: 0;
+}
+
+.city-arena-menu__pvp-join {
+  grid-template-columns: minmax(0, 1fr) minmax(62px, 0.72fr);
+}
+
+.city-arena-menu__pvp-button,
+.city-arena-menu__pvp-input {
+  min-width: 0;
+  min-height: 34px;
+  border: 2px solid #1a0803;
+  border-radius: 7px;
+  color: #fff0bd;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.city-arena-menu__pvp-button {
+  background: linear-gradient(180deg, #8b501f, #321207);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.2),
+    0 2px 0 rgba(8, 2, 1, 0.72);
+  cursor: pointer;
+}
+
+.city-arena-menu__pvp-button:disabled {
+  cursor: wait;
+  filter: grayscale(0.6) brightness(0.72);
+}
+
+.city-arena-menu__pvp-input {
+  padding: 0 8px;
+  background: rgba(12, 3, 1, 0.74);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.34);
+}
+
+.city-arena-menu__pvp-status {
+  min-height: 16px;
+  overflow: hidden;
+  color: #e0b96f;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .city-profile {

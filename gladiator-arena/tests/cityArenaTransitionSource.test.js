@@ -15,7 +15,7 @@ test("arena button waits for the city zoom transition before starting combat", (
   assert.match(mainSource, /void prewarmArenaAssetsForBrowserCache\(\)/);
   assert.match(mainSource, /cityMenu\?\.classList\.add\("city-menu--arena-transition"\)/);
   assert.match(mainSource, /await \(cityScene\?\.focusArenaTransition\(\) \?\? Promise\.resolve\(\)\)/);
-  assert.match(mainSource, /startGame\(\)/);
+  assert.match(mainSource, /startGame\(options\)/);
   assert.match(mainSource, /cityMenu\?\.classList\.remove\("city-menu--arena-transition"\)/);
 });
 

@@ -63,6 +63,17 @@
                 </button>
                 <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
               </div>
+              <div class="city-arena-menu__pvp" aria-label="PvP room">
+                <div class="city-arena-menu__pvp-title">PVP ROOM</div>
+                <div class="city-arena-menu__pvp-actions">
+                  <button id="cityPvpCreateButton" class="city-arena-menu__pvp-button" type="button">CREATE</button>
+                  <form id="cityPvpJoinForm" class="city-arena-menu__pvp-join">
+                    <input id="cityPvpRoomCodeInput" class="city-arena-menu__pvp-input" type="text" maxlength="6" autocomplete="off" inputmode="text" aria-label="Room code" placeholder="CODE" />
+                    <button id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="submit">JOIN</button>
+                  </form>
+                </div>
+                <output id="cityPvpStatus" class="city-arena-menu__pvp-status" aria-live="polite"></output>
+              </div>
             </div>
           </section>
           <section id="heroProfile" class="city-profile" role="dialog" aria-label="Character profile" hidden>
@@ -245,6 +256,7 @@
           <div id="game" class="game-frame" aria-label="Gladiator arena canvas"></div>
           <div class="battle-ui" aria-label="Battle overlay">
             <button id="restartButton" class="restart stage-restart" type="button">Restart</button>
+            <output id="pvpTurnTimer" class="pvp-turn-timer" aria-live="polite" hidden></output>
             <section class="classic-combat-hud" aria-label="Classic fighter stats">
               <article class="classic-fighter-card classic-fighter-card--player">
                 <strong id="classicPlayerName">Borshemir</strong>

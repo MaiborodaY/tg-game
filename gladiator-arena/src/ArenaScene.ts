@@ -2330,7 +2330,10 @@ export class ArenaScene extends Phaser.Scene {
       return;
     }
 
-    await ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.enemy.equipment]);
+    await Promise.all([
+      ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.enemy.equipment]),
+      ensurePaperDollAppearanceAssetsLoaded(this, [nextState.player.appearance, nextState.enemy.appearance]),
+    ]);
     if (options.animateActions ? syncToken !== this.syncToken : renderOnlyToken !== this.renderOnlyToken) {
       return;
     }
@@ -5198,6 +5201,8 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
   const equipment = enemy?.equipment ? { ...enemy.equipment } : createDefaultHeroEquipment();
   const bodyPresetKey = debugTuning.paperDollBodyPreset;
   const bodyPreset = getPaperDollBodyPreset(bodyPresetKey);
+  const appearance = enemy?.appearance ? { ...enemy.appearance } : undefined;
+  const appearanceAssetKeys = appearance ? createPlayerAppearanceAssetKeys(appearance, bodyPresetKey) : undefined;
 
   return {
     x,
@@ -5213,6 +5218,7 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
     torsoAssetKey: bodyPreset.torsoAssetKey,
     faceOverlayMode: bodyPreset.faceOverlayMode,
     faceAssetKeys: bodyPreset.faceAssetKeys,
+    ...(appearance ? { appearance, appearanceAssetKeys } : {}),
     bodyPartAssetKeys: bodyPreset.bodyPartAssetKeys,
     ...createPlayerEquipmentAssetKeys(equipment),
     equipment,
@@ -8811,6 +8817,7 @@ function getFighterLoadoutKey(fighter: FighterState): string {
   return JSON.stringify({
     name: fighter.name,
     visualPreset: fighter.visualPreset ?? null,
+    appearance: fighter.appearance ?? null,
   });
 }
 

@@ -20,6 +20,8 @@
         "gladiator:test": "node --test gladiator-arena/tests/*.test.js",
         "gladiator:lint": "eslint gladiator-arena/src gladiator-arena/tests",
         "gladiator:typecheck": "tsc --noEmit --project gladiator-arena/tsconfig.json",
+        "gladiator:pvp:dev": "npx wrangler dev --config workers/gladiator-pvp/wrangler.jsonc",
+        "gladiator:pvp:deploy": "npx wrangler deploy --config workers/gladiator-pvp/wrangler.jsonc",
         "farm-paws:dev": "vite farm-paws --open",
         "farm-paws:build": "vite build farm-paws --base=./ --outDir ../public/farm-paws --emptyOutDir",
         "farm-paws:typecheck": "tsc --noEmit --project farm-paws/tsconfig.json",

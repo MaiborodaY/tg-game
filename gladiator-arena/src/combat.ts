@@ -1,4 +1,4 @@
-import type { EnemyVisualPreset, HeroEquipment, HeroEquipmentSlotKey, HeroItemId, HeroWeaponClass, HeroWeaponEnchantments } from "./hero";
+import type { EnemyVisualPreset, HeroAppearance, HeroEquipment, HeroEquipmentSlotKey, HeroItemId, HeroWeaponClass, HeroWeaponEnchantments } from "./hero";
 
 export type ActionId =
   | "forward"
@@ -115,6 +115,7 @@ export interface FighterState {
   equipment?: HeroEquipment;
   weaponEnchantments?: HeroWeaponEnchantments;
   armorSlots?: CombatArmorSlotState[];
+  appearance?: HeroAppearance;
   visualPreset?: EnemyVisualPreset;
 }
 
@@ -727,6 +728,10 @@ function doesActionEndTurn(actionId: ActionId, actor: TurnOwner): boolean {
   return !(actor === "player" && actionId === "shuriken");
 }
 
+function doesPvpActionEndTurn(actionId: ActionId): boolean {
+  return actionId !== "switchWeapon" && actionId !== "preciseStrike" && actionId !== "doubleStrike" && actionId !== "shuriken";
+}
+
 export function getFighterClinchRange(fighter?: FighterState): number {
   return Math.min(MAX_DISTANCE, MELEE_RANGE + Math.max(0, fighter?.clinchRangeBonus ?? 0) + getSpearClinchRangeBonus(fighter));
 }
@@ -825,6 +830,20 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   return true;
 }
 
+export function canUseTurnAction(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
+  if (state.result !== "playing" || state.activeTurn !== actor) {
+    return false;
+  }
+
+  const fighter = actor === "player" ? state.player : state.enemy;
+
+  if (fighter.stamina <= 0 && actionId !== "rest" && !isScrollAction(actionId)) {
+    return false;
+  }
+
+  return canUseAction(state, actionId, actor);
+}
+
 export function distanceBand(distance: number, clinchRange = MELEE_RANGE): DistanceBand {
   if (distance <= Math.max(MELEE_RANGE, clinchRange)) {
     return "clinch";
@@ -881,6 +900,42 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
 
   if (state.result === "playing" && doesActionEndTurn(playerActionId, "player")) {
     state.activeTurn = "enemy";
+  }
+
+  return state;
+}
+
+export function resolvePvpTurn(current: CombatState, actor: TurnOwner, actionId: ActionId, random = Math.random): CombatState {
+  const state = cloneStateForTurn(current);
+
+  if (state.result !== "playing" || state.activeTurn !== actor) {
+    return state;
+  }
+
+  forceClinchWeapons(state);
+  applyPoisonTurnStart(state, actor);
+
+  if (state.result !== "playing") {
+    return state;
+  }
+
+  if (!canUseTurnAction(state, actionId, actor)) {
+    addLog(state, `${getActionTitle(actionId, actor === "player" ? state.player : state.enemy)} is not available right now.`);
+    return state;
+  }
+
+  applyAction(state, actor, actionId, random, {
+    playerActor: state.player.name,
+    playerDefender: state.player.name,
+    enemyActor: state.enemy.name,
+    enemyDefender: state.enemy.name,
+  });
+
+  if (state.result === "playing" && doesPvpActionEndTurn(actionId)) {
+    if (actor === "enemy") {
+      state.round += 1;
+    }
+    state.activeTurn = actor === "player" ? "enemy" : "player";
   }
 
   return state;
@@ -953,6 +1008,7 @@ function cloneFighterState(fighter: FighterState): FighterState {
     equipment: fighter.equipment ? { ...fighter.equipment } : undefined,
     weaponEnchantments: fighter.weaponEnchantments ? { ...fighter.weaponEnchantments } : undefined,
     armorSlots: fighter.armorSlots?.map((slot) => ({ ...slot })),
+    appearance: fighter.appearance ? { ...fighter.appearance } : undefined,
     visualPreset: fighter.visualPreset ? { ...fighter.visualPreset } : undefined,
   };
 }
@@ -1096,13 +1152,33 @@ function addEnemyScrollActionWeights(
   return true;
 }
 
-function applyAction(state: CombatState, actor: TurnOwner, actionId: ActionId, random: () => number): void {
+interface CombatLogLabels {
+  playerActor: string;
+  playerDefender: string;
+  enemyActor: string;
+  enemyDefender: string;
+}
+
+const DEFAULT_COMBAT_LOG_LABELS: CombatLogLabels = {
+  playerActor: "You",
+  playerDefender: "you",
+  enemyActor: "Grumbus",
+  enemyDefender: "Grumbus",
+};
+
+function applyAction(
+  state: CombatState,
+  actor: TurnOwner,
+  actionId: ActionId,
+  random: () => number,
+  labels: CombatLogLabels = DEFAULT_COMBAT_LOG_LABELS,
+): void {
   const action = actions[actionId];
   const attacker = actor === "player" ? state.player : state.enemy;
   const defender = actor === "player" ? state.enemy : state.player;
   let actionMove = getActionMove(actionId, attacker);
-  const actorLabel = actor === "player" ? "You" : "Grumbus";
-  const defenderLabel = actor === "player" ? "Grumbus" : "you";
+  const actorLabel = actor === "player" ? labels.playerActor : labels.enemyActor;
+  const defenderLabel = actor === "player" ? labels.enemyDefender : labels.playerDefender;
   const defenderOwner = actor === "player" ? "enemy" : "player";
   const actionTitle = getActionTitle(actionId, attacker);
   const actionRangeMax = getActionRangeMax(action, attacker);
