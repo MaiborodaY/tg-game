@@ -5,6 +5,8 @@ import {
   getPvpActorForSeat,
   getPvpSeatForActor,
   toViewerPvpSnapshot,
+  type PvpCancelRoomRequest,
+  type PvpCancelRoomResponse,
   type PvpClientMessage,
   type PvpCreateRoomRequest,
   type PvpJoinRoomRequest,
@@ -80,6 +82,26 @@ export class PvpRoom extends DurableObject<Env> {
       seat: "host",
       snapshot: this.createViewerSnapshot(record, "host"),
     };
+  }
+
+  async cancelRoom(token: string): Promise<PvpCancelRoomResponse> {
+    const record = await this.readRoom();
+
+    if (!record?.host) {
+      throw new Error("Room not found.");
+    }
+    if (record.host.token !== token) {
+      throw new Error("Only room host can cancel this room.");
+    }
+    if (record.status !== "waiting") {
+      throw new Error("PvP match already started.");
+    }
+
+    this.closeRoomSockets("Room cancelled.");
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.delete(ROOM_STORAGE_KEY);
+
+    return { ok: true };
   }
 
   async joinRoom(hero: HeroState): Promise<PvpRoomResponse> {
@@ -302,6 +324,13 @@ export class PvpRoom extends DurableObject<Env> {
     sendSocketMessage(ws, { type: "error", message });
   }
 
+  private closeRoomSockets(message: string): void {
+    this.ctx.getWebSockets().forEach((ws) => {
+      this.sendError(ws, message);
+      ws.close(1000, message);
+    });
+  }
+
   private getSocketAttachment(ws: WebSocket): SocketAttachment | undefined {
     const attachment = ws.deserializeAttachment() as Partial<SocketAttachment> | undefined;
 
@@ -360,6 +389,15 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     const body = (await request.json()) as PvpJoinRoomRequest;
     const room = env.PVP_ROOM.getByName(roomCode);
     const response = await room.joinRoom(body.hero);
+
+    return json(response);
+  }
+
+  if (request.method === "POST" && segments.length === 3 && segments[0] === "rooms" && segments[2] === "cancel") {
+    const roomCode = normalizeRoomCode(segments[1] ?? "");
+    const body = (await request.json()) as PvpCancelRoomRequest;
+    const room = env.PVP_ROOM.getByName(roomCode);
+    const response = await room.cancelRoom(body.token);
 
     return json(response);
   }

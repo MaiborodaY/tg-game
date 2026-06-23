@@ -36,6 +36,14 @@ export interface PvpJoinRoomRequest {
   hero: HeroState;
 }
 
+export interface PvpCancelRoomRequest {
+  token: string;
+}
+
+export interface PvpCancelRoomResponse {
+  ok: true;
+}
+
 export interface PvpRoomResponse extends PvpRoomSession {
   snapshot: PvpRoomSnapshot;
 }

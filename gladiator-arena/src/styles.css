@@ -2816,6 +2816,10 @@ body.debug-active .city-menu__portrait-button:active {
   cursor: pointer;
 }
 
+.city-arena-menu__pvp-cancel {
+  width: 100%;
+}
+
 .city-arena-menu__pvp-button:disabled {
   cursor: wait;
   filter: grayscale(0.6) brightness(0.72);

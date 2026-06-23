@@ -1,6 +1,6 @@
 import type { ActionId } from "./combat";
 import type { HeroState } from "./hero";
-import type { PvpClientMessage, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
+import type { PvpCancelRoomResponse, PvpClientMessage, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
 
 export interface PvpConnection {
   close: () => void;
@@ -24,6 +24,10 @@ export async function createPvpRoom(hero: HeroState): Promise<PvpRoomResponse> {
 
 export async function joinPvpRoom(roomCode: string, hero: HeroState): Promise<PvpRoomResponse> {
   return postPvpJson<PvpRoomResponse>(`rooms/${normalizeRoomCode(roomCode)}/join`, { hero });
+}
+
+export async function cancelPvpRoom(session: PvpRoomSession): Promise<PvpCancelRoomResponse> {
+  return postPvpJson<PvpCancelRoomResponse>(`rooms/${normalizeRoomCode(session.roomCode)}/cancel`, { token: session.token });
 }
 
 export function connectPvpRoom(session: PvpRoomSession, handlers: PvpConnectionHandlers): PvpConnection {

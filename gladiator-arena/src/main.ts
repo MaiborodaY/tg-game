@@ -74,7 +74,7 @@ import {
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
-import { connectPvpRoom, createPvpRoom, joinPvpRoom, type PvpConnection } from "./pvpClient";
+import { cancelPvpRoom, connectPvpRoom, createPvpRoom, joinPvpRoom, type PvpConnection } from "./pvpClient";
 import type { PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
@@ -108,6 +108,7 @@ const cityPvpCreateButton = document.querySelector<HTMLButtonElement>("#cityPvpC
 const cityPvpJoinForm = document.querySelector<HTMLFormElement>("#cityPvpJoinForm");
 const cityPvpRoomCodeInput = document.querySelector<HTMLInputElement>("#cityPvpRoomCodeInput");
 const cityPvpJoinButton = document.querySelector<HTMLButtonElement>("#cityPvpJoinButton");
+const cityPvpCancelButton = document.querySelector<HTMLButtonElement>("#cityPvpCancelButton");
 const cityPvpStatus = document.querySelector<HTMLOutputElement>("#cityPvpStatus");
 const pvpTurnTimer = document.querySelector<HTMLOutputElement>("#pvpTurnTimer");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
@@ -683,6 +684,7 @@ function renderCityArenaMenu(): void {
   syncCityArenaReward(cityArenaRandomReward, randomOpponent?.rewards.win ?? { gold: 8, xp: 6 });
   syncCityArenaReward(cityArenaHardReward, hardOpponent?.rewards.win ?? { gold: 15, xp: 10 });
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
+  syncCityArenaBotControls();
 }
 
 function getVisibleCityArenaTiers(): ArenaTierDefinition[] {
@@ -736,6 +738,8 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement
 
   button.className = "city-arena-menu__boss";
   button.type = "button";
+  button.disabled = isPvpRoomBlockingArena();
+  button.title = button.disabled ? "Cancel PvP room before fighting bots." : "";
   name.textContent = "Boss";
   rewardLine.className = "city-arena-menu__boss-reward-line";
   reward.className = "city-arena-menu__reward";
@@ -786,6 +790,31 @@ function createCityArenaRewardItem(iconUrl: string, label: string, value: number
   return item;
 }
 
+function isPvpRoomBlockingArena(): boolean {
+  return Boolean(pvpSession);
+}
+
+function canCancelPvpRoom(): boolean {
+  return Boolean(pvpSession && pvpSession.seat === "host" && pvpSnapshot?.status === "waiting");
+}
+
+function syncCityArenaBotControls(): void {
+  const disabled = isPvpRoomBlockingArena();
+  const title = disabled ? "Cancel PvP room before fighting bots." : "";
+
+  [cityArenaEasyButton, cityArenaRandomButton, cityArenaHardButton].forEach((button) => {
+    if (!button) {
+      return;
+    }
+    button.disabled = disabled;
+    button.title = title;
+  });
+  cityArenaBossList?.querySelectorAll<HTMLButtonElement>(".city-arena-menu__boss").forEach((button) => {
+    button.disabled = disabled;
+    button.title = title;
+  });
+}
+
 function setPvpStatus(message: string): void {
   if (cityPvpStatus) {
     cityPvpStatus.textContent = message;
@@ -799,6 +828,7 @@ function setPvpControlsBusy(busy: boolean): void {
 
 function syncPvpControls(): void {
   const disabled = pvpControlsBusy || Boolean(pvpSession);
+  const canCancel = canCancelPvpRoom();
 
   if (cityPvpCreateButton) {
     cityPvpCreateButton.disabled = disabled;
@@ -809,6 +839,11 @@ function syncPvpControls(): void {
   if (cityPvpRoomCodeInput) {
     cityPvpRoomCodeInput.disabled = disabled;
   }
+  if (cityPvpCancelButton) {
+    cityPvpCancelButton.hidden = !canCancel;
+    cityPvpCancelButton.disabled = pvpControlsBusy || !canCancel;
+  }
+  syncCityArenaBotControls();
 }
 
 async function handleCreatePvpRoom(): Promise<void> {
@@ -848,6 +883,31 @@ async function handleJoinPvpRoom(event: Event): Promise<void> {
     beginPvpRoom(await joinPvpRoom(roomCode, hero));
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP join failed.");
+    setPvpControlsBusy(false);
+  }
+}
+
+async function handleCancelPvpRoom(): Promise<void> {
+  if (pvpControlsBusy || !pvpSession) {
+    return;
+  }
+  if (!canCancelPvpRoom()) {
+    setPvpStatus("PvP match already started.");
+    return;
+  }
+
+  const session = pvpSession;
+
+  setPvpControlsBusy(true);
+  setPvpStatus("Cancelling room...");
+
+  try {
+    await cancelPvpRoom(session);
+    pvpControlsBusy = false;
+    leavePvpRoom({ keepStatus: true });
+    setPvpStatus("Room cancelled.");
+  } catch (error) {
+    setPvpStatus(error instanceof Error ? error.message : "PvP cancel failed.");
     setPvpControlsBusy(false);
   }
 }
@@ -1026,6 +1086,12 @@ function closeCityArenaMenu(): void {
 }
 
 function startSelectedArena(selection: ArenaMenuSelection): void {
+  if (isPvpRoomBlockingArena()) {
+    setPvpStatus("Cancel PvP room before fighting bots.");
+    syncPvpControls();
+    return;
+  }
+
   leavePvpRoom();
   gameMode = "pve";
   dom.restartButton.hidden = false;
@@ -1679,6 +1745,9 @@ cityPvpCreateButton?.addEventListener("click", () => {
 });
 cityPvpJoinForm?.addEventListener("submit", (event) => {
   void handleJoinPvpRoom(event);
+});
+cityPvpCancelButton?.addEventListener("click", () => {
+  void handleCancelPvpRoom();
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);
