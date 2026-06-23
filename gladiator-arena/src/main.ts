@@ -37,6 +37,7 @@ import {
   HERO_ITEM_CATALOG,
   DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
+  DEFAULT_HERO_NAME,
   allocateHeroSkillPoints,
   applyCombatReward,
   areHeroItemsConsumable,
@@ -80,7 +81,7 @@ import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
-import { bootTelegramWebApp } from "./telegram";
+import { bootTelegramWebApp, getTelegramDisplayName } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
@@ -122,7 +123,7 @@ interface StartGameOptions {
   mode?: GameMode;
   initialState?: CombatState;
 }
-let hero: HeroState = createDefaultHero();
+let hero: HeroState = createInitialHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
 let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
@@ -373,6 +374,26 @@ function renderCityHero(): void {
   });
 }
 
+function createInitialHero(): HeroState {
+  return applyTelegramDisplayNameToHero(createDefaultHero());
+}
+
+function applyTelegramDisplayNameToHero(sourceHero: HeroState): HeroState {
+  const displayName = getTelegramDisplayName();
+
+  if (!displayName || sourceHero.name !== DEFAULT_HERO_NAME) {
+    return sourceHero;
+  }
+
+  const now = new Date().toISOString();
+
+  return {
+    ...sourceHero,
+    name: displayName,
+    updatedAt: now,
+  };
+}
+
 function syncHeroRuntimeState(): void {
   state = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
   displayedStatsState = state;
@@ -400,7 +421,7 @@ async function hydrateHeroFromCloudSave(): Promise<void> {
       return;
     }
 
-    hero = savedHero;
+    hero = applyTelegramDisplayNameToHero(savedHero);
     syncHeroRuntimeState();
   } catch (error) {
     console.warn("[gladiator-save] Failed to load cloud save.", error);

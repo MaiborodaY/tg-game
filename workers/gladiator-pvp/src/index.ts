@@ -56,6 +56,8 @@ interface PvpActiveSession {
 interface TelegramInitUser {
   id: number;
   username?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 interface SocketAttachment {
@@ -145,7 +147,7 @@ export class PvpLobby extends DurableObject<Env> {
   private async readLiveRooms(): Promise<PvpRoomListEntry[]> {
     const rooms = await this.readRooms();
     const now = Date.now();
-    const liveRooms = rooms.filter((entry) => !entry.expiresAt || entry.expiresAt > now);
+    const liveRooms = rooms.filter((entry) => Boolean(entry.expiresAt && entry.expiresAt > now));
 
     if (liveRooms.length !== rooms.length) {
       await this.writeRooms(liveRooms);
@@ -525,7 +527,15 @@ export class PvpRoom extends DurableObject<Env> {
   private async readLiveRoom(): Promise<RoomRecord | undefined> {
     const record = await this.readRoom();
 
-    if (!record?.expiresAt || record.expiresAt > Date.now() || record.status === "playing") {
+    if (!record) {
+      return undefined;
+    }
+
+    if (record.status === "playing") {
+      return record;
+    }
+
+    if (record.expiresAt && record.expiresAt > Date.now()) {
       return record;
     }
 
@@ -584,7 +594,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     const telegramUserId = telegramUser ? String(telegramUser.id) : undefined;
     const response = await room.createRoom(roomCode, body.hero, telegramUserId);
 
-    await getPvpLobby(env).addRoom(createRoomListEntry(roomCode, body.hero));
+    await getPvpLobby(env).addRoom(createRoomListEntry(roomCode, body.hero, telegramUser));
     if (telegramUserId) {
       await getPvpLobby(env).setActiveSession(telegramUserId, createActiveSession(response));
     }
@@ -666,6 +676,10 @@ async function getCurrentPvpRoomForUser(env: Env, telegramUserId: string): Promi
     await lobby.removeActiveSession(telegramUserId);
     return undefined;
   }
+  if (response.snapshot.status === "finished") {
+    await lobby.removeActiveSession(telegramUserId);
+    return undefined;
+  }
 
   return response;
 }
@@ -679,12 +693,12 @@ function createActiveSession(response: PvpRoomResponse): PvpActiveSession {
   };
 }
 
-function createRoomListEntry(roomCode: string, hero: HeroState): PvpRoomListEntry {
+function createRoomListEntry(roomCode: string, hero: HeroState, telegramUser?: TelegramInitUser): PvpRoomListEntry {
   const now = Date.now();
 
   return {
     roomCode,
-    hostName: normalizeHostName(hero.name),
+    hostName: normalizeHostName(getTelegramUserDisplayName(telegramUser) ?? hero.name),
     hostLevel: Math.max(1, Math.floor(Number(hero.level) || 1)),
     createdAt: now,
     updatedAt: now,
@@ -726,6 +740,22 @@ function normalizeRoomCode(code: string): string {
 
 function normalizeHostName(name: string): string {
   return name.trim().slice(0, 24) || "Gladiator";
+}
+
+function getTelegramUserDisplayName(user: TelegramInitUser | undefined): string | undefined {
+  const username = normalizeTelegramDisplayName(user?.username);
+
+  if (username) {
+    return `@${username.replace(/^@+/, "")}`;
+  }
+
+  return normalizeTelegramDisplayName([user?.first_name, user?.last_name].filter(Boolean).join(" "));
+}
+
+function normalizeTelegramDisplayName(name: string | undefined): string | undefined {
+  const normalized = name?.trim().replace(/\s+/g, " ").slice(0, 24);
+
+  return normalized || undefined;
 }
 
 function normalizePath(pathname: string): string {
@@ -787,6 +817,8 @@ async function verifyTelegramInitData(initData: string, botToken: string): Promi
       user: {
         id: userId,
         username: typeof user.username === "string" ? user.username : undefined,
+        first_name: typeof user.first_name === "string" ? user.first_name : undefined,
+        last_name: typeof user.last_name === "string" ? user.last_name : undefined,
       },
     };
   } catch {

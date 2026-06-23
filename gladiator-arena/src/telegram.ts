@@ -11,6 +11,12 @@ interface TelegramWindow {
   WebApp?: TelegramWebApp;
 }
 
+interface TelegramInitUser {
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 declare global {
   interface Window {
     Telegram?: TelegramWindow;
@@ -33,4 +39,37 @@ export function bootTelegramWebApp(): void {
 
 export function getTelegramInitData(): string {
   return window.Telegram?.WebApp?.initData ?? "";
+}
+
+export function getTelegramDisplayName(): string | undefined {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    return undefined;
+  }
+
+  try {
+    const userJson = new URLSearchParams(initData).get("user");
+
+    if (!userJson) {
+      return undefined;
+    }
+
+    const user = JSON.parse(userJson) as TelegramInitUser;
+    const username = normalizeTelegramName(user.username);
+
+    if (username) {
+      return `@${username.replace(/^@+/, "")}`;
+    }
+
+    return normalizeTelegramName([user.first_name, user.last_name].filter(Boolean).join(" "));
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeTelegramName(name: string | undefined): string | undefined {
+  const normalized = name?.trim().replace(/\s+/g, " ").slice(0, 24);
+
+  return normalized || undefined;
 }
