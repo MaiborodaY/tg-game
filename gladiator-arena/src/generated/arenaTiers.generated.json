@@ -591,7 +591,7 @@
   },
   {
     "id": 6,
-    "name": "Dust Arena 6",
+    "name": "Old Kingdom",
     "unlockBossId": "arena_boss_5",
     "opponents": [
       {
@@ -615,7 +615,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.03,
             "shieldChance": 0.03,
             "shurikenChance": 0.02,
@@ -653,7 +652,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.07,
             "shieldChance": 0.14,
             "shurikenChance": 0.08,
@@ -681,7 +679,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.1,
             "shieldChance": 0.22,
             "shurikenChance": 0.12,

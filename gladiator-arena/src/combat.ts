@@ -100,17 +100,21 @@ export interface FighterState {
   scrollItemId?: HeroItemId;
   fireballScrollCount?: number;
   fireballScrollItemId?: HeroItemId;
+  fireballDamage?: number;
   wardScrollCount?: number;
   wardScrollItemId?: HeroItemId;
   wardHits?: number;
   preciseStrikeScrollCount?: number;
   preciseStrikeScrollItemId?: HeroItemId;
+  preciseStrikeBlockChanceReduction?: number;
   preciseStrikeHits?: number;
   doubleStrikeScrollCount?: number;
   doubleStrikeScrollItemId?: HeroItemId;
+  doubleStrikeDamageMultiplier?: number;
   doubleStrikeHits?: number;
   poisonScrollCount?: number;
   poisonScrollItemId?: HeroItemId;
+  poisonDamage?: number;
   poisonTurns?: number;
   equipment?: HeroEquipment;
   weaponEnchantments?: HeroWeaponEnchantments;
@@ -176,9 +180,12 @@ export const MIN_DISTANCE = 0;
 export const MAX_DISTANCE = 4;
 export const START_DISTANCE = 3;
 export const MELEE_RANGE = 0;
-export const FIREBALL_SCROLL_DAMAGE = 5;
+export const FIREBALL_SCROLL_DAMAGE = 45;
 export const POISON_SCROLL_DAMAGE = 5;
 export const POISON_SCROLL_TURNS = 2;
+export const PRECISE_STRIKE_HITS = 3;
+export const DEFAULT_PRECISE_STRIKE_BLOCK_CHANCE_REDUCTION = 0.1;
+export const DEFAULT_DOUBLE_STRIKE_DAMAGE_MULTIPLIER = 0.4;
 export const DEFAULT_FORWARD_MOVE_DISTANCE = 0.2;
 export const DEFAULT_BACK_MOVE_DISTANCE = 0.1;
 export const DEFAULT_LUNGE_MOVE_DISTANCE = 0.3;
@@ -312,7 +319,7 @@ export const actions: Record<ActionId, ActionConfig> = {
   fireball: {
     id: "fireball",
     title: "Fireball Scroll",
-    detail: "Deal direct damage",
+    detail: "Deal armor damage",
     cost: 0,
     damage: FIREBALL_SCROLL_DAMAGE,
     rangeMax: MAX_DISTANCE,
@@ -326,13 +333,13 @@ export const actions: Record<ActionId, ActionConfig> = {
   preciseStrike: {
     id: "preciseStrike",
     title: "Precise Strike Scroll",
-    detail: "Next strike always hits",
+    detail: "Focus your next 3 strikes",
     cost: 0,
   },
   doubleStrike: {
     id: "doubleStrike",
     title: "Double Strike Scroll",
-    detail: "Next strike hits twice",
+    detail: "Next strike repeats",
     cost: 0,
   },
   poison: {
@@ -522,10 +529,6 @@ export function getFighterMaxStamina(fighter: FighterState): number {
 export function getActionBlockChance(action: ActionConfig, attacker?: FighterState, defender?: FighterState): number {
   void defender;
 
-  if (isPreciseStrikeBoostedAction(action.id, attacker)) {
-    return 0;
-  }
-
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), 0);
 }
 
@@ -534,17 +537,11 @@ export function getActionBlockChanceForState(state: CombatState, actionId: Actio
   const attacker = actor === "player" ? state.player : state.enemy;
   const defenderOwner = actor === "player" ? "enemy" : "player";
 
-  if (isPreciseStrikeBoostedAction(actionId, attacker)) {
-    return 0;
-  }
-
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestBlockChancePenalty(state, defenderOwner));
 }
 
 export function isActionHitChanceRestBoosted(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
-  const attacker = actor === "player" ? state.player : state.enemy;
-
-  return !isPreciseStrikeBoostedAction(actionId, attacker) && isAttackAction(actionId) && getRestBlockChancePenalty(state, actor === "player" ? "enemy" : "player") > 0;
+  return isAttackAction(actionId) && getRestBlockChancePenalty(state, actor === "player" ? "enemy" : "player") > 0;
 }
 
 function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
@@ -552,8 +549,9 @@ function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterSt
   const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" ? AXE_BLOCK_CHANCE_PENALTY[action.id] ?? 0 : 0;
   const spearLungeBlockChanceReduction =
     attacker && getFighterWeaponClass(attacker) === "spear" && action.id === "lunge" ? SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION : 0;
+  const preciseStrikeBlockChanceReduction = isPreciseStrikeBoostedAction(action.id, attacker) ? getFighterPreciseStrikeBlockChanceReduction(attacker) : 0;
 
-  return axeBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction;
+  return axeBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction - preciseStrikeBlockChanceReduction;
 }
 
 function getAdjustedActionBlockChance(action: ActionConfig, blockChanceModifier: number, defenderBlockChancePenalty: number): number {
@@ -656,6 +654,10 @@ export function getFighterFireballScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.fireballScrollCount ?? 0));
 }
 
+export function getFighterFireballDamage(fighter?: FighterState): number {
+  return Math.max(0, Math.floor(fighter?.fireballDamage ?? FIREBALL_SCROLL_DAMAGE));
+}
+
 export function getFighterWardScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.wardScrollCount ?? 0));
 }
@@ -670,6 +672,10 @@ export function getFighterDoubleStrikeScrollCount(fighter: FighterState): number
 
 export function getFighterPoisonScrollCount(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.poisonScrollCount ?? 0));
+}
+
+export function getFighterPoisonDamage(fighter?: FighterState): number {
+  return Math.max(0, Math.floor(fighter?.poisonDamage ?? POISON_SCROLL_DAMAGE));
 }
 
 export function getFighterPoisonTurns(fighter: FighterState): number {
@@ -697,6 +703,18 @@ export function getFighterPreciseStrikeHits(fighter: FighterState): number {
 
 export function getFighterDoubleStrikeHits(fighter: FighterState): number {
   return Math.max(0, Math.floor(fighter.doubleStrikeHits ?? 0));
+}
+
+export function getFighterPreciseStrikeBlockChanceReduction(fighter?: FighterState): number {
+  const reduction = fighter?.preciseStrikeBlockChanceReduction ?? DEFAULT_PRECISE_STRIKE_BLOCK_CHANCE_REDUCTION;
+
+  return clamp(reduction, 0, 0.95);
+}
+
+export function getFighterDoubleStrikeDamageMultiplier(fighter?: FighterState): number {
+  const multiplier = fighter?.doubleStrikeDamageMultiplier ?? DEFAULT_DOUBLE_STRIKE_DAMAGE_MULTIPLIER;
+
+  return clamp(multiplier, 0, 1);
 }
 
 export function getActionTitle(actionId: ActionId, actor?: FighterState): string {
@@ -1222,7 +1240,7 @@ function addEnemyScrollActionWeights(
 
   if (actionId === "fireball") {
     weighted.push(actionId, actionId);
-    if (playerLowHp || current.player.hp <= FIREBALL_SCROLL_DAMAGE) {
+    if (playerLowHp || current.player.hp <= getFighterFireballDamage(current.enemy)) {
       weighted.push(actionId, actionId);
     }
     return true;
@@ -1330,12 +1348,12 @@ function applyAction(
 
   if (actionId === "fireball" && getFighterFireballScrollCount(attacker) > 0) {
     attacker.fireballScrollCount = getFighterFireballScrollCount(attacker) - 1;
-    damage = FIREBALL_SCROLL_DAMAGE;
+    damage = getFighterFireballDamage(attacker);
     if (consumeWardHit(defender)) {
       damage = 0;
       appliedDamage = { armorAbsorbed: 0, armorBroken: false, wardAbsorbed: true };
     } else {
-      appliedDamage = applyDirectDamageToFighter(defender, damage);
+      appliedDamage = applyDamageToFighter(defender, damage);
     }
   }
 
@@ -1346,7 +1364,7 @@ function applyAction(
 
   if (actionId === "preciseStrike" && getFighterPreciseStrikeScrollCount(attacker) > 0) {
     attacker.preciseStrikeScrollCount = getFighterPreciseStrikeScrollCount(attacker) - 1;
-    attacker.preciseStrikeHits = 1;
+    attacker.preciseStrikeHits = PRECISE_STRIKE_HITS;
   }
 
   if (actionId === "doubleStrike" && getFighterDoubleStrikeScrollCount(attacker) > 0) {
@@ -1356,6 +1374,8 @@ function applyAction(
 
   if (actionId === "poison" && getFighterPoisonScrollCount(attacker) > 0) {
     attacker.poisonScrollCount = getFighterPoisonScrollCount(attacker) - 1;
+    const currentPoisonDamage = getFighterPoisonTurns(defender) > 0 ? getFighterPoisonDamage(defender) : 0;
+    defender.poisonDamage = Math.max(currentPoisonDamage, getFighterPoisonDamage(attacker));
     defender.poisonTurns = getFighterPoisonTurns(defender) + POISON_SCROLL_TURNS;
   }
 
@@ -1367,7 +1387,7 @@ function applyAction(
     damage = 0;
   }
 
-  const preciseStrikeBoosted = shouldConsumePreciseStrikeForAction(actionId, attacker, damage, inRange);
+  const preciseStrikeBoosted = shouldConsumePreciseStrikeForAction(actionId, attacker);
   const doubleStrikeBoosted = shouldConsumeDoubleStrikeForAction(actionId, attacker, damage, inRange);
   let doubleStrikeRepeat = false;
   let preciseStrikeConsumed = false;
@@ -1386,14 +1406,21 @@ function applyAction(
     }
 
     if (doubleStrikeBoosted && defender.hp > 0 && canResolveDoubleStrikeRepeat(actionId, attacker)) {
+      const repeatBaseDamage = getDoubleStrikeRepeatDamage(getActionDamage(actionId, attacker), attacker);
+      const preciseStrikeRepeatBoosted = shouldConsumePreciseStrikeForAction(actionId, attacker);
+
       doubleStrikeRepeat = true;
       consumeDoubleStrikeRepeatCost(actionId, attacker);
-      const secondHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, getActionDamage(actionId, attacker), random, false);
+      const secondHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, repeatBaseDamage, random, false);
 
       damage += secondHit.damage;
       blocked ||= secondHit.blocked;
       appliedDamage = mergeDamageApplications(appliedDamage, secondHit.appliedDamage);
       hitResults.push(createCombatHitResult(secondHit));
+
+      if (preciseStrikeRepeatBoosted) {
+        consumePreciseStrikeHit(attacker);
+      }
     }
   } else if (doesActionEndTurn(actionId, actor)) {
     clearIncomingAttackModifiers(state, defenderOwner);
@@ -1450,10 +1477,6 @@ function isActionBlocked(
   random: () => number,
 ): boolean {
   void defender;
-
-  if (isPreciseStrikeBoostedAction(action.id, attacker)) {
-    return false;
-  }
 
   const blockChance = getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestBlockChancePenalty(state, defenderOwner));
 
@@ -1650,16 +1673,21 @@ function applyPoisonTurnStart(state: CombatState, owner: TurnOwner): void {
     return;
   }
 
+  const poisonDamage = getFighterPoisonDamage(fighter);
   fighter.poisonTurns = poisonTurns - 1;
-  applyDirectDamageToFighter(fighter, POISON_SCROLL_DAMAGE);
+  applyDirectDamageToFighter(fighter, poisonDamage);
 
-  if (owner === "enemy") {
-    state.lastPlayerPoisonDamage = POISON_SCROLL_DAMAGE;
-  } else {
-    state.lastEnemyPoisonDamage = POISON_SCROLL_DAMAGE;
+  if (fighter.poisonTurns <= 0) {
+    fighter.poisonDamage = 0;
   }
 
-  addLog(state, `${fighter.name} suffers ${POISON_SCROLL_DAMAGE} poison damage.`, true);
+  if (owner === "enemy") {
+    state.lastPlayerPoisonDamage = poisonDamage;
+  } else {
+    state.lastEnemyPoisonDamage = poisonDamage;
+  }
+
+  addLog(state, `${fighter.name} suffers ${poisonDamage} poison damage.`, true);
 
   if (fighter.hp <= 0) {
     finishBattle(state);
@@ -1796,7 +1824,7 @@ function addActionLog(
   }
 
   if (action.id === "preciseStrike") {
-    addLog(state, `${actorLabel} used ${actionTitle}. The next strike will land.`, true);
+    addLog(state, `${actorLabel} used ${actionTitle}. The next ${PRECISE_STRIKE_HITS} strikes are focused.`, true);
     return;
   }
 
@@ -1904,8 +1932,8 @@ function isPreciseStrikeBoostedAction(actionId: ActionId, attacker?: FighterStat
   return Boolean(attacker && isPreciseStrikeAction(actionId) && getFighterPreciseStrikeHits(attacker) > 0);
 }
 
-function shouldConsumePreciseStrikeForAction(actionId: ActionId, attacker: FighterState, damage: number, inRange: boolean): boolean {
-  return isPreciseStrikeBoostedAction(actionId, attacker) && damage > 0 && inRange;
+function shouldConsumePreciseStrikeForAction(actionId: ActionId, attacker: FighterState): boolean {
+  return isPreciseStrikeBoostedAction(actionId, attacker);
 }
 
 function consumePreciseStrikeHit(fighter: FighterState): void {
@@ -1932,6 +1960,16 @@ function consumeDoubleStrikeRepeatCost(actionId: ActionId, attacker: FighterStat
   if (isAttackAction(actionId) && isBowFighter(attacker)) {
     attacker.bowShotsRemaining = Math.max(0, getBowShotsRemaining(attacker) - 1);
   }
+}
+
+function getDoubleStrikeRepeatDamage(baseDamage: number, attacker: FighterState): number {
+  const damage = Math.max(0, Math.floor(baseDamage));
+
+  if (damage <= 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(damage * getFighterDoubleStrikeDamageMultiplier(attacker)));
 }
 
 function consumeDoubleStrikeHit(fighter: FighterState): void {

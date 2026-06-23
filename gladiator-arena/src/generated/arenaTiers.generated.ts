@@ -142,28 +142,28 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 6,
-    name: "Dust Arena 6",
+    name: "Old Kingdom",
     unlockBossId: "arena_boss_5",
     opponents: [
       {
         id: "dust_arena_6_easy",
         difficultyId: "easy",
         randomBaseStatPoints: 39,
-        equipmentPools: [{"itemRarities":["legendary"],"rollChance":0.95,"weaponChance":0.7,"bowChance":0.05,"shieldChance":0.05,"shurikenChance":0.08,"scrollChance":0.02},{"itemRarities":["mythical"],"rollChance":1,"weaponChance":1,"bowChance":0.03,"shieldChance":0.03,"shurikenChance":0.02,"scrollChance":0.03}],
+        equipmentPools: [{"itemRarities":["legendary"],"rollChance":0.95,"weaponChance":0.7,"bowChance":0.05,"shieldChance":0.05,"shurikenChance":0.08,"scrollChance":0.02},{"itemRarities":["mythical"],"rollChance":1,"bowChance":0.03,"shieldChance":0.03,"shurikenChance":0.02,"scrollChance":0.03}],
         rewards: {"win":{"gold":85,"xp":40},"loss":{"gold":1,"xp":1}},
       },
       {
         id: "dust_arena_6_medium",
         difficultyId: "medium",
         randomBaseStatPoints: 40,
-        equipmentPools: [{"itemRarities":["legendary"],"rollChance":0.35,"weaponChance":0,"bowChance":0,"shieldChance":0,"shurikenChance":0},{"itemRarities":["mythical"],"rollChance":1,"weaponChance":1,"bowChance":0.07,"shieldChance":0.14,"shurikenChance":0.08,"scrollChance":0.05}],
+        equipmentPools: [{"itemRarities":["legendary"],"rollChance":0.35,"weaponChance":0,"bowChance":0,"shieldChance":0,"shurikenChance":0},{"itemRarities":["mythical"],"rollChance":1,"bowChance":0.07,"shieldChance":0.14,"shurikenChance":0.08,"scrollChance":0.05}],
         rewards: {"win":{"gold":91,"xp":44},"loss":{"gold":1,"xp":1}},
       },
       {
         id: "dust_arena_6_hard",
         difficultyId: "hard",
         randomBaseStatPoints: 29,
-        equipmentPools: [{"itemRarities":["mythical"],"rollChance":1,"weaponChance":1,"bowChance":0.1,"shieldChance":0.22,"shurikenChance":0.12,"scrollChance":0.1}],
+        equipmentPools: [{"itemRarities":["mythical"],"rollChance":1,"bowChance":0.1,"shieldChance":0.22,"shurikenChance":0.12,"scrollChance":0.1}],
         rewards: {"win":{"gold":99,"xp":48},"loss":{"gold":1,"xp":1}},
       },
     ],

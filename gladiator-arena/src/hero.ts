@@ -19,7 +19,17 @@ import type {
   ArenaRandomOpponentDefinition,
   ArenaTierDefinition,
 } from "./arenaOpponents";
-import { BOW_SHOTS_PER_BATTLE, freshState, MAX_HP, MAX_STAMINA, type CombatArmorSlotState, type CombatState, type FighterState } from "./combat";
+import {
+  BOW_SHOTS_PER_BATTLE,
+  FIREBALL_SCROLL_DAMAGE,
+  POISON_SCROLL_DAMAGE,
+  freshState,
+  MAX_HP,
+  MAX_STAMINA,
+  type CombatArmorSlotState,
+  type CombatState,
+  type FighterState,
+} from "./combat";
 import { GENERATED_EQUIPMENT_ITEM_CATALOG, GENERATED_EQUIPMENT_ITEM_IDS, GENERATED_EQUIPMENT_ITEM_RECORDS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 
 export {
@@ -70,6 +80,7 @@ export interface HeroState {
   appearance: HeroAppearance;
   equipment: HeroEquipment;
   weaponEnchantments: HeroWeaponEnchantments;
+  scrollUpgrades?: HeroScrollUpgrades;
   inventory: HeroInventoryEntry[];
   unlockedShopRarities: HeroItemRarity[];
   defeatedArenaBossIds: string[];
@@ -211,6 +222,10 @@ export interface HeroScrollEffect {
   kind: "crackArmorSlot" | "fireballDamage" | "wardHit" | "preciseStrike" | "doubleStrike" | "poison";
 }
 
+export type HeroUpgradeableScrollKind = "fireball" | "preciseStrike" | "doubleStrike" | "poison";
+export type HeroScrollUpgradeRarity = Extract<HeroItemRarity, "common" | "uncommon" | "rare" | "epic" | "legendary">;
+export type HeroScrollUpgrades = Partial<Record<HeroUpgradeableScrollKind, HeroScrollUpgradeRarity>>;
+
 export interface HeroInventoryEntry {
   itemId: HeroItemId;
   quantity: number;
@@ -243,14 +258,18 @@ export interface EnemyLoadout {
   scrollItemId?: HeroItemId;
   fireballScrollCount?: number;
   fireballScrollItemId?: HeroItemId;
+  fireballDamage?: number;
   wardScrollCount?: number;
   wardScrollItemId?: HeroItemId;
   preciseStrikeScrollCount?: number;
   preciseStrikeScrollItemId?: HeroItemId;
+  preciseStrikeBlockChanceReduction?: number;
   doubleStrikeScrollCount?: number;
   doubleStrikeScrollItemId?: HeroItemId;
+  doubleStrikeDamageMultiplier?: number;
   poisonScrollCount?: number;
   poisonScrollItemId?: HeroItemId;
+  poisonDamage?: number;
   visualPreset: EnemyVisualPreset;
 }
 
@@ -404,6 +423,7 @@ export const HERO_WARD_SCROLL_ITEM_ID = "scroll_ward_01";
 export const HERO_PRECISE_STRIKE_SCROLL_ITEM_ID = "scroll_precise_strike_01";
 export const HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID = "scroll_double_strike_01";
 export const HERO_POISON_SCROLL_ITEM_ID = "scroll_poison_01";
+export const HERO_PRECISE_STRIKE_HIT_COUNT = 3;
 export const HERO_STARTING_SKILL_POINTS = 1;
 export const ENEMY_SHURIKEN_ROLL_CHANCE = 0.25;
 export const ENEMY_SHURIKEN_QUANTITY = 1;
@@ -411,6 +431,122 @@ export const ENEMY_SCROLL_QUANTITY = 1;
 export const HERO_BOW_SHOT_CAPACITY_BASE = BOW_SHOTS_PER_BATTLE;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX = 10;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE = 500;
+export const HERO_SCROLL_UPGRADE_RARITIES: readonly HeroScrollUpgradeRarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+
+interface HeroScrollUpgradeDefinition {
+  kind: HeroUpgradeableScrollKind;
+  itemId: HeroItemId;
+  purchasePrices: Record<HeroScrollUpgradeRarity, number>;
+  upgradePrices: Partial<Record<HeroScrollUpgradeRarity, number>>;
+  fireballDamage?: Record<HeroScrollUpgradeRarity, number>;
+  preciseBlockChanceReduction?: Record<HeroScrollUpgradeRarity, number>;
+  doubleStrikeDamageMultiplier?: Record<HeroScrollUpgradeRarity, number>;
+  poisonDamage?: Record<HeroScrollUpgradeRarity, number>;
+}
+
+const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScrollUpgradeDefinition> = {
+  fireball: {
+    kind: "fireball",
+    itemId: HERO_FIREBALL_SCROLL_ITEM_ID,
+    purchasePrices: {
+      common: 40,
+      uncommon: 90,
+      rare: 200,
+      epic: 425,
+      legendary: 800,
+    },
+    upgradePrices: {
+      common: 250,
+      uncommon: 650,
+      rare: 1400,
+      epic: 3000,
+    },
+    fireballDamage: {
+      common: FIREBALL_SCROLL_DAMAGE,
+      uncommon: 80,
+      rare: 130,
+      epic: 210,
+      legendary: 300,
+    },
+  },
+  preciseStrike: {
+    kind: "preciseStrike",
+    itemId: HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
+    purchasePrices: {
+      common: 30,
+      uncommon: 60,
+      rare: 120,
+      epic: 250,
+      legendary: 500,
+    },
+    upgradePrices: {
+      common: 150,
+      uncommon: 350,
+      rare: 800,
+      epic: 1600,
+    },
+    preciseBlockChanceReduction: {
+      common: 0.1,
+      uncommon: 0.15,
+      rare: 0.2,
+      epic: 0.25,
+      legendary: 0.3,
+    },
+  },
+  doubleStrike: {
+    kind: "doubleStrike",
+    itemId: HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
+    purchasePrices: {
+      common: 30,
+      uncommon: 75,
+      rare: 160,
+      epic: 350,
+      legendary: 700,
+    },
+    upgradePrices: {
+      common: 200,
+      uncommon: 500,
+      rare: 1100,
+      epic: 2200,
+    },
+    doubleStrikeDamageMultiplier: {
+      common: 0.4,
+      uncommon: 0.55,
+      rare: 0.7,
+      epic: 0.85,
+      legendary: 1,
+    },
+  },
+  poison: {
+    kind: "poison",
+    itemId: HERO_POISON_SCROLL_ITEM_ID,
+    purchasePrices: {
+      common: 35,
+      uncommon: 75,
+      rare: 160,
+      epic: 325,
+      legendary: 650,
+    },
+    upgradePrices: {
+      common: 200,
+      uncommon: 500,
+      rare: 1100,
+      epic: 2300,
+    },
+    poisonDamage: {
+      common: POISON_SCROLL_DAMAGE,
+      uncommon: 6,
+      rare: 7,
+      epic: 8,
+      legendary: 10,
+    },
+  },
+};
+
+const HERO_SCROLL_UPGRADE_KIND_BY_ITEM_ID: Partial<Record<HeroItemId, HeroUpgradeableScrollKind>> = Object.fromEntries(
+  Object.values(HERO_SCROLL_UPGRADE_DEFINITIONS).map((definition) => [definition.itemId, definition.kind]),
+) as Partial<Record<HeroItemId, HeroUpgradeableScrollKind>>;
+
 const HERO_SCROLL_ITEMS: Record<HeroItemId, HeroItemDefinition> = {
   [HERO_CRACK_ARMOR_SCROLL_ITEM_ID]: {
     id: HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
@@ -681,6 +817,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     appearance: createDefaultHeroAppearance(),
     equipment: createDefaultHeroEquipment(),
     weaponEnchantments: {},
+    scrollUpgrades: {},
     inventory: createDefaultHeroInventory(),
     unlockedShopRarities: [],
     defeatedArenaBossIds: [],
@@ -1135,6 +1272,10 @@ export function getHeroFireballScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_FIREBALL_SCROLL_ITEM_ID]!.scrollEffect!;
 }
 
+export function getHeroFireballDamage(hero: HeroState): number {
+  return getHeroFireballDamageForRarity(getHeroScrollUpgradeRarity(hero, "fireball"));
+}
+
 export function getHeroWardScrollItemId(): HeroItemId {
   return HERO_WARD_SCROLL_ITEM_ID;
 }
@@ -1171,6 +1312,107 @@ export function getHeroDoubleStrikeScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]!.scrollEffect!;
 }
 
+export function getHeroUpgradeableScrollKind(itemId: HeroItemId | undefined): HeroUpgradeableScrollKind | undefined {
+  return itemId ? HERO_SCROLL_UPGRADE_KIND_BY_ITEM_ID[itemId] : undefined;
+}
+
+export function isHeroUpgradeableScrollItemId(itemId: HeroItemId | undefined): boolean {
+  return Boolean(getHeroUpgradeableScrollKind(itemId));
+}
+
+export function getHeroScrollUpgradeRarity(hero: HeroState, kind: HeroUpgradeableScrollKind): HeroScrollUpgradeRarity {
+  return normalizeHeroScrollUpgradeRarity(hero.scrollUpgrades?.[kind]);
+}
+
+export function getHeroScrollUpgradeRarityForItem(hero: HeroState, itemId: HeroItemId | undefined): HeroScrollUpgradeRarity | undefined {
+  const kind = getHeroUpgradeableScrollKind(itemId);
+
+  return kind ? getHeroScrollUpgradeRarity(hero, kind) : undefined;
+}
+
+export function getHeroScrollPurchasePrice(hero: HeroState, itemId: HeroItemId | undefined, fallbackPrice = 30): number {
+  const kind = getHeroUpgradeableScrollKind(itemId);
+
+  if (!kind) {
+    return fallbackPrice;
+  }
+
+  const rarity = getHeroScrollUpgradeRarity(hero, kind);
+
+  return HERO_SCROLL_UPGRADE_DEFINITIONS[kind].purchasePrices[rarity];
+}
+
+export function getHeroScrollUpgradePrice(hero: HeroState, itemId: HeroItemId | undefined): number | undefined {
+  const kind = getHeroUpgradeableScrollKind(itemId);
+
+  if (!kind) {
+    return undefined;
+  }
+
+  const rarity = getHeroScrollUpgradeRarity(hero, kind);
+
+  return HERO_SCROLL_UPGRADE_DEFINITIONS[kind].upgradePrices[rarity];
+}
+
+export function canUpgradeHeroScroll(hero: HeroState, itemId: HeroItemId | undefined): boolean {
+  const price = getHeroScrollUpgradePrice(hero, itemId);
+
+  return price !== undefined && hero.gold >= price;
+}
+
+export function upgradeHeroScroll(hero: HeroState, itemId: HeroItemId | undefined, now = new Date().toISOString()): HeroState {
+  const kind = getHeroUpgradeableScrollKind(itemId);
+  const price = getHeroScrollUpgradePrice(hero, itemId);
+
+  if (!kind || price === undefined || hero.gold < price) {
+    return hero;
+  }
+
+  const nextRarity = getNextHeroScrollUpgradeRarity(getHeroScrollUpgradeRarity(hero, kind));
+
+  if (!nextRarity) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold - price,
+    scrollUpgrades: {
+      ...(hero.scrollUpgrades ?? {}),
+      [kind]: nextRarity,
+    },
+    updatedAt: now,
+  };
+}
+
+export function getHeroPreciseStrikeBlockChanceReduction(hero: HeroState): number {
+  return getHeroPreciseStrikeBlockChanceReductionForRarity(getHeroScrollUpgradeRarity(hero, "preciseStrike"));
+}
+
+export function getHeroDoubleStrikeDamageMultiplier(hero: HeroState): number {
+  return getHeroDoubleStrikeDamageMultiplierForRarity(getHeroScrollUpgradeRarity(hero, "doubleStrike"));
+}
+
+export function getHeroPoisonDamage(hero: HeroState): number {
+  return getHeroPoisonDamageForRarity(getHeroScrollUpgradeRarity(hero, "poison"));
+}
+
+export function getHeroFireballDamageForRarity(rarity: HeroScrollUpgradeRarity): number {
+  return HERO_SCROLL_UPGRADE_DEFINITIONS.fireball.fireballDamage?.[rarity] ?? FIREBALL_SCROLL_DAMAGE;
+}
+
+export function getHeroPreciseStrikeBlockChanceReductionForRarity(rarity: HeroScrollUpgradeRarity): number {
+  return HERO_SCROLL_UPGRADE_DEFINITIONS.preciseStrike.preciseBlockChanceReduction?.[rarity] ?? 0;
+}
+
+export function getHeroDoubleStrikeDamageMultiplierForRarity(rarity: HeroScrollUpgradeRarity): number {
+  return HERO_SCROLL_UPGRADE_DEFINITIONS.doubleStrike.doubleStrikeDamageMultiplier?.[rarity] ?? 1;
+}
+
+export function getHeroPoisonDamageForRarity(rarity: HeroScrollUpgradeRarity): number {
+  return HERO_SCROLL_UPGRADE_DEFINITIONS.poison.poisonDamage?.[rarity] ?? POISON_SCROLL_DAMAGE;
+}
+
 export function getHeroPoisonScrollItemId(): HeroItemId {
   return HERO_POISON_SCROLL_ITEM_ID;
 }
@@ -1181,6 +1423,16 @@ export function getHeroPoisonScrollCount(hero: HeroState): number {
 
 export function getHeroPoisonScrollEffect(): HeroScrollEffect {
   return HERO_SCROLL_ITEMS[HERO_POISON_SCROLL_ITEM_ID]!.scrollEffect!;
+}
+
+function normalizeHeroScrollUpgradeRarity(rarity: HeroScrollUpgradeRarity | undefined): HeroScrollUpgradeRarity {
+  return rarity && HERO_SCROLL_UPGRADE_RARITIES.includes(rarity) ? rarity : "common";
+}
+
+function getNextHeroScrollUpgradeRarity(rarity: HeroScrollUpgradeRarity): HeroScrollUpgradeRarity | undefined {
+  const currentIndex = HERO_SCROLL_UPGRADE_RARITIES.indexOf(rarity);
+
+  return HERO_SCROLL_UPGRADE_RARITIES[currentIndex + 1];
 }
 
 function getShurikenItemDamage(itemId: HeroItemId | undefined): number {
@@ -1302,17 +1554,21 @@ function createCombatFighterStateFromHero(hero: HeroState, base: FighterState): 
     scrollItemId: getHeroCrackArmorScrollItemId(),
     fireballScrollCount: getHeroFireballScrollCount(hero),
     fireballScrollItemId: getHeroFireballScrollItemId(),
+    fireballDamage: getHeroFireballDamage(hero),
     wardScrollCount: getHeroWardScrollCount(hero),
     wardScrollItemId: getHeroWardScrollItemId(),
     wardHits: 0,
     preciseStrikeScrollCount: getHeroPreciseStrikeScrollCount(hero),
     preciseStrikeScrollItemId: getHeroPreciseStrikeScrollItemId(),
+    preciseStrikeBlockChanceReduction: getHeroPreciseStrikeBlockChanceReduction(hero),
     preciseStrikeHits: 0,
     doubleStrikeScrollCount: getHeroDoubleStrikeScrollCount(hero),
     doubleStrikeScrollItemId: getHeroDoubleStrikeScrollItemId(),
+    doubleStrikeDamageMultiplier: getHeroDoubleStrikeDamageMultiplier(hero),
     doubleStrikeHits: 0,
     poisonScrollCount: getHeroPoisonScrollCount(hero),
     poisonScrollItemId: getHeroPoisonScrollItemId(),
+    poisonDamage: getHeroPoisonDamage(hero),
     poisonTurns: 0,
     equipment: { ...equipment },
     weaponEnchantments: { ...hero.weaponEnchantments },
@@ -1397,17 +1653,21 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       scrollItemId: playerScrollItemId,
       fireballScrollCount: getHeroFireballScrollCount(hero),
       fireballScrollItemId: playerFireballScrollItemId,
+      fireballDamage: getHeroFireballDamage(hero),
       wardScrollCount: getHeroWardScrollCount(hero),
       wardScrollItemId: playerWardScrollItemId,
       wardHits: 0,
       preciseStrikeScrollCount: getHeroPreciseStrikeScrollCount(hero),
       preciseStrikeScrollItemId: playerPreciseStrikeScrollItemId,
+      preciseStrikeBlockChanceReduction: getHeroPreciseStrikeBlockChanceReduction(hero),
       preciseStrikeHits: 0,
       doubleStrikeScrollCount: getHeroDoubleStrikeScrollCount(hero),
       doubleStrikeScrollItemId: playerDoubleStrikeScrollItemId,
+      doubleStrikeDamageMultiplier: getHeroDoubleStrikeDamageMultiplier(hero),
       doubleStrikeHits: 0,
       poisonScrollCount: getHeroPoisonScrollCount(hero),
       poisonScrollItemId: playerPoisonScrollItemId,
+      poisonDamage: getHeroPoisonDamage(hero),
       poisonTurns: 0,
       equipment: { ...heroEquipment },
       weaponEnchantments: { ...hero.weaponEnchantments },
@@ -1443,17 +1703,21 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       scrollItemId: enemyLoadout.scrollItemId,
       fireballScrollCount: Math.max(0, Math.floor(enemyLoadout.fireballScrollCount ?? 0)),
       fireballScrollItemId: enemyLoadout.fireballScrollItemId,
+      fireballDamage: enemyLoadout.fireballDamage ?? getHeroFireballDamageForRarity("common"),
       wardScrollCount: Math.max(0, Math.floor(enemyLoadout.wardScrollCount ?? 0)),
       wardScrollItemId: enemyLoadout.wardScrollItemId,
       wardHits: 0,
       preciseStrikeScrollCount: Math.max(0, Math.floor(enemyLoadout.preciseStrikeScrollCount ?? 0)),
       preciseStrikeScrollItemId: enemyLoadout.preciseStrikeScrollItemId,
+      preciseStrikeBlockChanceReduction: enemyLoadout.preciseStrikeBlockChanceReduction ?? getHeroPreciseStrikeBlockChanceReductionForRarity("common"),
       preciseStrikeHits: 0,
       doubleStrikeScrollCount: Math.max(0, Math.floor(enemyLoadout.doubleStrikeScrollCount ?? 0)),
       doubleStrikeScrollItemId: enemyLoadout.doubleStrikeScrollItemId,
+      doubleStrikeDamageMultiplier: enemyLoadout.doubleStrikeDamageMultiplier ?? getHeroDoubleStrikeDamageMultiplierForRarity("common"),
       doubleStrikeHits: 0,
       poisonScrollCount: Math.max(0, Math.floor(enemyLoadout.poisonScrollCount ?? 0)),
       poisonScrollItemId: enemyLoadout.poisonScrollItemId,
+      poisonDamage: enemyLoadout.poisonDamage ?? getHeroPoisonDamageForRarity("common"),
       poisonTurns: 0,
       equipment: { ...enemyEquipment },
       armorSlots: enemyArmorSlots,

@@ -367,7 +367,7 @@ test("scroll actions do not spend stamina", () => {
   assert.equal(combat.getActionStaminaCost("poison"), 0);
 });
 
-test("precise strike scroll arms a guaranteed next strike without ending the turn", () => {
+test("precise strike scroll arms three focused strikes without ending the turn", () => {
   const state = combat.freshState();
 
   state.distance = combat.MELEE_RANGE;
@@ -381,17 +381,17 @@ test("precise strike scroll arms a guaranteed next strike without ending the tur
 
   assert.equal(armed.activeTurn, "player");
   assert.equal(armed.player.preciseStrikeScrollCount, 0);
-  assert.equal(armed.player.preciseStrikeHits, 1);
+  assert.equal(armed.player.preciseStrikeHits, combat.PRECISE_STRIKE_HITS);
   assert.equal(armed.player.stamina, combat.MAX_STAMINA - combat.actions.preciseStrike.cost);
   assert.equal(armed.lastPlayerAction, "preciseStrike");
-  assert.equal(combat.getActionBlockChanceForState(armed, "medium", "player"), 0);
+  assert.equal(Math.round(combat.getActionBlockChanceForState(armed, "medium", "player") * 100) / 100, 0.2);
 
-  const hit = combat.resolvePlayerTurn(armed, "medium", () => 0);
+  const hit = combat.resolvePlayerTurn(armed, "medium", () => 0.99);
 
   assert.equal(hit.activeTurn, "enemy");
   assert.equal(hit.lastPlayerBlocked, false);
   assert.equal(hit.lastPlayerDamage > 0, true);
-  assert.equal(hit.player.preciseStrikeHits, 0);
+  assert.equal(hit.player.preciseStrikeHits, combat.PRECISE_STRIKE_HITS - 1);
 });
 
 test("double strike scroll repeats the next strike without ending the scroll turn", () => {
@@ -419,12 +419,12 @@ test("double strike scroll repeats the next strike without ending the scroll tur
   assert.equal(hit.activeTurn, "enemy");
   assert.equal(hit.lastPlayerBlocked, false);
   assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
-  assert.equal(hit.lastPlayerDamage, 8);
+  assert.equal(hit.lastPlayerDamage, 6);
   assert.deepEqual(getPlainPlayerHitResults(hit), [
     { damage: 4, blocked: false },
-    { damage: 4, blocked: false },
+    { damage: 2, blocked: false },
   ]);
-  assert.equal(hit.enemy.hp, combat.MAX_HP - 8);
+  assert.equal(hit.enemy.hp, combat.MAX_HP - 6);
   assert.equal(hit.player.doubleStrikeHits, 0);
   assert.equal(hit.player.stamina, combat.MAX_STAMINA - combat.actions.medium.cost);
 });
@@ -444,37 +444,39 @@ test("double strike keeps separate hit results when one repeat is blocked", () =
   assert.equal(hit.activeTurn, "enemy");
   assert.equal(hit.lastPlayerBlocked, true);
   assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
-  assert.equal(hit.lastPlayerDamage, 4);
+  assert.equal(hit.lastPlayerDamage, 2);
   assert.deepEqual(getPlainPlayerHitResults(hit), [
     { damage: 0, blocked: true },
-    { damage: 4, blocked: false },
+    { damage: 2, blocked: false },
   ]);
-  assert.equal(hit.enemy.hp, combat.MAX_HP - 4);
+  assert.equal(hit.enemy.hp, combat.MAX_HP - 2);
   assert.equal(hit.player.doubleStrikeHits, 0);
 });
 
-test("precise strike only guarantees the first double strike hit", () => {
+test("double strike spends one precise strike charge per swing", () => {
   const state = combat.freshState();
 
   setConsistentDistance(state, combat.MELEE_RANGE);
   state.player.weaponClass = "axe";
-  state.player.preciseStrikeHits = 1;
+  state.player.preciseStrikeHits = 2;
+  state.player.preciseStrikeBlockChanceReduction = 0.3;
   state.player.doubleStrikeHits = 1;
   state.player.damageBonus = 2;
-  state.enemy.hp = combat.MAX_HP;
+  state.enemy.hp = 20;
+  state.enemy.maxHp = 20;
   state.enemy.armor = 0;
 
-  const hit = combat.resolvePlayerTurn(state, "heavy", () => 0);
+  const hit = combat.resolvePlayerTurn(state, "heavy", () => 0.99);
 
   assert.equal(hit.activeTurn, "enemy");
-  assert.equal(hit.lastPlayerBlocked, true);
+  assert.equal(hit.lastPlayerBlocked, false);
   assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
-  assert.equal(hit.lastPlayerDamage, 8);
+  assert.equal(hit.lastPlayerDamage, 12);
   assert.deepEqual(getPlainPlayerHitResults(hit), [
     { damage: 8, blocked: false },
-    { damage: 0, blocked: true },
+    { damage: 4, blocked: false },
   ]);
-  assert.equal(hit.enemy.hp, combat.MAX_HP - 8);
+  assert.equal(hit.enemy.hp, 8);
   assert.equal(hit.player.preciseStrikeHits, 0);
   assert.equal(hit.player.doubleStrikeHits, 0);
 });
@@ -513,9 +515,30 @@ test("poison scroll stacks duration and passes the turn", () => {
   assert.equal(poisoned.player.poisonScrollCount, 0);
   assert.equal(poisoned.player.stamina, combat.MAX_STAMINA);
   assert.equal(poisoned.enemy.poisonTurns, 4);
+  assert.equal(poisoned.enemy.poisonDamage, combat.POISON_SCROLL_DAMAGE);
   assert.equal(poisoned.enemy.hp, combat.MAX_HP);
   assert.equal(poisoned.lastPlayerAction, "poison");
   assert.equal(poisoned.lastPlayerPoisonDamage, 0);
+});
+
+test("upgraded poison stores stronger tick damage on the target", () => {
+  const state = combat.freshState();
+
+  state.player.poisonScrollCount = 1;
+  state.player.poisonScrollItemId = "scroll_poison_01";
+  state.player.poisonDamage = 10;
+
+  const poisoned = combat.resolvePlayerTurn(state, "poison", () => 0);
+  const ticking = {
+    ...poisoned,
+    activeTurn: "enemy",
+  };
+  const ticked = combat.resolveEnemyTurn(ticking, () => 0);
+
+  assert.equal(poisoned.enemy.poisonDamage, 10);
+  assert.equal(ticked.enemy.hp, combat.MAX_HP - 10);
+  assert.equal(ticked.enemy.poisonTurns, 1);
+  assert.equal(ticked.lastPlayerPoisonDamage, 10);
 });
 
 test("poison ticks at enemy turn start and ignores ward armor and block", () => {
@@ -589,7 +612,7 @@ test("active ward absorbs exactly one incoming damaging hit", () => {
   assert.equal(damaged.lastPlayerWardAbsorbed, false);
 });
 
-test("fireball scroll deals fixed direct damage and spends one scroll", () => {
+test("fireball scroll deals fixed armor damage and spends one scroll", () => {
   const state = combat.freshState();
 
   state.player.fireballScrollCount = 1;
@@ -597,8 +620,8 @@ test("fireball scroll deals fixed direct damage and spends one scroll", () => {
   state.player.damageBonus = 99;
   state.player.meleeDamagePercentBonus = 1;
   state.enemy.hp = combat.MAX_HP;
-  state.enemy.armor = 20;
-  state.enemy.maxArmor = 20;
+  state.enemy.armor = 60;
+  state.enemy.maxArmor = 60;
 
   assert.equal(combat.canUseAction(state, "fireball"), true);
 
@@ -606,14 +629,33 @@ test("fireball scroll deals fixed direct damage and spends one scroll", () => {
 
   assert.equal(nextState.player.fireballScrollCount, 0);
   assert.equal(nextState.player.stamina, combat.MAX_STAMINA - combat.actions.fireball.cost);
-  assert.equal(nextState.enemy.hp, combat.MAX_HP - combat.FIREBALL_SCROLL_DAMAGE);
-  assert.equal(nextState.enemy.armor, 20);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
+  assert.equal(nextState.enemy.armor, 60 - combat.FIREBALL_SCROLL_DAMAGE);
   assert.equal(nextState.lastPlayerAction, "fireball");
   assert.equal(nextState.lastPlayerDamage, combat.FIREBALL_SCROLL_DAMAGE);
-  assert.equal(nextState.lastPlayerArmorAbsorbed, 0);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, combat.FIREBALL_SCROLL_DAMAGE);
   assert.equal(nextState.lastPlayerBlocked, false);
   assert.equal(nextState.activeTurn, "enemy");
   assert.equal(nextState.log[0].text.includes(`hit Grumbus for ${combat.FIREBALL_SCROLL_DAMAGE}`), true);
+});
+
+test("upgraded fireball damage can overflow armor into hp", () => {
+  const state = combat.freshState();
+
+  state.player.fireballScrollCount = 1;
+  state.player.fireballScrollItemId = "scroll_fireball_01";
+  state.player.fireballDamage = 80;
+  state.enemy.hp = combat.MAX_HP;
+  state.enemy.armor = 70;
+  state.enemy.maxArmor = 70;
+
+  const nextState = combat.resolvePlayerTurn(state, "fireball", () => 0);
+
+  assert.equal(nextState.enemy.armor, 0);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP - 10);
+  assert.equal(nextState.lastPlayerDamage, 80);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, 70);
+  assert.equal(nextState.lastPlayerArmorBroken, true);
 });
 
 test("active ward absorbs fireball damage", () => {
@@ -640,6 +682,8 @@ test("enemy fighters can choose and cast fireball scrolls", () => {
   state.activeTurn = "enemy";
   state.enemy.fireballScrollCount = 1;
   state.enemy.fireballScrollItemId = "scroll_fireball_01";
+  state.player.armor = 60;
+  state.player.maxArmor = 60;
   setConsistentDistance(state, combat.MAX_DISTANCE);
 
   assert.equal(combat.canUseAction(state, "fireball", "enemy"), true);
@@ -648,9 +692,11 @@ test("enemy fighters can choose and cast fireball scrolls", () => {
 
   assert.equal(nextState.activeTurn, "player");
   assert.equal(nextState.enemy.fireballScrollCount, 0);
-  assert.equal(nextState.player.hp, combat.MAX_HP - combat.FIREBALL_SCROLL_DAMAGE);
+  assert.equal(nextState.player.hp, combat.MAX_HP);
+  assert.equal(nextState.player.armor, 60 - combat.FIREBALL_SCROLL_DAMAGE);
   assert.equal(nextState.lastEnemyAction, "fireball");
   assert.equal(nextState.lastEnemyDamage, combat.FIREBALL_SCROLL_DAMAGE);
+  assert.equal(nextState.lastEnemyArmorAbsorbed, combat.FIREBALL_SCROLL_DAMAGE);
   assert.equal(nextState.lastEnemyBlocked, false);
 });
 
@@ -722,7 +768,7 @@ test("rest hit chance penalty survives non-turn scroll buffs", () => {
     assert.equal(rested.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
     assert.equal(buffed.activeTurn, "player");
     assert.equal(buffed.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
-    assert.equal(combat.isActionHitChanceRestBoosted(buffed, "medium", "player"), actionId !== "preciseStrike");
+    assert.equal(combat.isActionHitChanceRestBoosted(buffed, "medium", "player"), true);
     assert.equal(hit.enemyRestBlockChancePenalty, 0);
     assert.equal(hit.lastPlayerBlocked, false);
   }

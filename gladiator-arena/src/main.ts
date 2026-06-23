@@ -63,6 +63,7 @@ import {
   unlockAllHeroShopRarities,
   updateHeroAppearance,
   upgradeHeroBowShotCapacity,
+  upgradeHeroScroll,
   type ArenaBossDefinition,
   type ArenaBossId,
   type ArenaDifficultyId,
@@ -1705,6 +1706,19 @@ function handleMagicWeaponSharpen(): void {
   cityHeroEquipmentMenu.render();
 }
 
+function handleMagicScrollUpgrade(product: MagicProduct): void {
+  const nextHero = upgradeHeroScroll(hero, product.itemIds[0]);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  renderCityHero();
+  magicShop?.syncHeroState();
+  cityHeroEquipmentMenu.render();
+}
+
 function isArmoryShopProduct(product: CityShopProduct): product is ArmoryProduct {
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor");
 }
@@ -2064,6 +2078,7 @@ if (cityMenu) {
   magicShop = mountMagicShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
+    onUpgradeScroll: handleMagicScrollUpgrade,
     onSharpenWeapon: handleMagicWeaponSharpen,
     transitionDelayMs: CITY_CURTAIN_SWITCH_MS,
     onOpen: () => {

@@ -17,6 +17,8 @@ import { getCameraTarget, projectWorldToScreen } from "./arenaCamera";
 import {
   MAX_STAMINA,
   canFighterSwitchWeapon,
+  getFighterFireballDamage,
+  getFighterPoisonDamage,
   getFighterSpellbookScrollCount,
   getFighterShurikenCount,
   isBowFighter,
@@ -108,7 +110,7 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   switchWeapon: { label: "SWAP", detail: "Weapon" },
   shuriken: { label: "STAR", detail: "Throw" },
   scroll: { label: "SPELL", detail: "Book" },
-  fireball: { label: "FIRE", detail: "5 dmg" },
+  fireball: { label: "FIRE", detail: "45 dmg" },
   ward: { label: "WARD", detail: "Absorb" },
   preciseStrike: { label: "TRUE", detail: "Strike" },
   doubleStrike: { label: "2X", detail: "Strike" },
@@ -295,6 +297,14 @@ function getRawActionArcButtons(
 function getActionLabel(actionId: ActionId, state: CombatState): { label: string; detail: string } {
   if (actionId === "switchWeapon") {
     return isBowFighter(state.player) ? { label: "MELEE", detail: "Main" } : { label: "BOW", detail: "Range" };
+  }
+
+  if (actionId === "fireball") {
+    return { label: "FIRE", detail: `${getFighterFireballDamage(state.player)} dmg` };
+  }
+
+  if (actionId === "poison") {
+    return { label: "TOXIN", detail: `${getFighterPoisonDamage(state.player)}x2` };
   }
 
   if (isRangedFighter(state.player) && !isFighterInClinchRange(state, "player")) {

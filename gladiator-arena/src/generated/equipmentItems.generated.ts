@@ -178,6 +178,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_mercenary_01","name":"Mercenary Back Boot 01","price":23,"itemIds":["generated_equipment_back_boot_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_boot_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    assetKeys: {"backBootAssetKey":"back-boot-old-fortress-warden-01"},
+    equipmentTuning: {"x":-23.494677649626297,"y":0.7482873096379308,"angle":0,"scaleX":0.67,"scaleY":0.86,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-boot-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/legs/back-boot-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-boot-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_boot_prisoner_01","name":"Prisoner 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
     assetKeys: {"backBootAssetKey":"back-boot-prisoner-01"},
     equipmentTuning: {"x":-24.252570477033572,"y":-2.2448619289136786,"angle":0,"scaleX":0.87,"scaleY":0.91,"flipX":true,"flipY":false},
@@ -223,6 +234,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_boot_stormguard_01","name":"Stormguard Back Boot 01","price":66,"itemIds":["generated_equipment_back_boot_stormguard_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_back_boot_swamp_boss_01","name":"Swamp Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    assetKeys: {"backBootAssetKey":"back-boot-swamp-boss-01"},
+    equipmentTuning: {"x":-26.526248959255483,"y":-3.741436548189654,"angle":0,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-boot-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/legs/back-boot-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-boot-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_boot_turtle_boss_01","name":"Turtle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":16},
@@ -401,6 +423,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_mercenary_01","name":"Mercenary Back Glove 01","price":23,"itemIds":["generated_equipment_back_glove_mercenary_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_glove_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    assetKeys: {"backGloveAssetKey":"back-glove-old-fortress-warden-01"},
+    equipmentTuning: {"x":-1.053559694109424,"y":9.269836126356324,"angle":0,"scaleX":0.86,"scaleY":0.81,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-glove-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/arms/back-glove-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_glove_prisoner_01","name":"Prisoner 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":1},
     assetKeys: {"backGloveAssetKey":"back-glove-prisoner-01"},
     equipmentTuning: {"x":-1.9102991579953823,"y":9.684738422017006,"angle":-3,"scaleX":0.7,"scaleY":0.7,"flipX":false,"flipY":false},
@@ -446,6 +479,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_glove_stormguard_01","name":"Stormguard Back Glove 01","price":66,"itemIds":["generated_equipment_back_glove_stormguard_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_back_glove_swamp_boss_01","name":"Swamp Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":1},
+    assetKeys: {"backGloveAssetKey":"back-glove-swamp-boss-01"},
+    equipmentTuning: {"x":-2.0875802307999436,"y":8.128163902676533,"angle":0,"scaleX":0.85,"scaleY":0.7,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-glove-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/arms/back-glove-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_glove_turtle_boss_01","name":"Turtle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":16},
@@ -624,6 +668,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_mercenary_01","name":"Mercenary Back Greave 01","price":29,"itemIds":["generated_equipment_back_greave_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_greave_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    assetKeys: {"backGreaveAssetKey":"back-greave-old-fortress-warden-01"},
+    equipmentTuning: {"x":-5.3052497918510255,"y":5.238011167465345,"angle":-9,"scaleX":1.47,"scaleY":1.28,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/legs/back-greave-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_greave_prisoner_01","name":"Prisoner 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":1},
     assetKeys: {"backGreaveAssetKey":"back-greave-prisoner-01"},
     equipmentTuning: {"x":-4.547356964443736,"y":23.94519390841299,"angle":-15,"scaleX":1.2,"scaleY":1,"flipX":false,"flipY":false},
@@ -669,6 +724,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_greave_stormguard_01","name":"Stormguard Back Greave 01","price":80,"itemIds":["generated_equipment_back_greave_stormguard_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_back_greave_swamp_boss_01","name":"Swamp Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":1},
+    assetKeys: {"backGreaveAssetKey":"back-greave-swamp-boss-01"},
+    equipmentTuning: {"x":-5.305249791851082,"y":20.203757360223506,"angle":-12,"scaleX":1.2,"scaleY":1.2,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/legs/back-greave-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_greave_turtle_boss_01","name":"Turtle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":20},
@@ -835,6 +901,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_mercenary_01","name":"Mercenary Back Shinguard 01","price":29,"itemIds":["generated_equipment_back_shinguard_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_shinguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    assetKeys: {"backShinguardAssetKey":"back-shinguard-old-fortress-warden-01"},
+    equipmentTuning: {"x":-0.09725095968886421,"y":5.455430839628093,"angle":0,"scaleX":1.11,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shinguard-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/legs/back-shinguard-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shinguard_prisoner_01","name":"Prisoner 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":1},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-prisoner-01"},
     equipmentTuning: {"x":1.431683387692658,"y":10.159070779080082,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
@@ -880,6 +957,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_shinguard_stormguard_01","name":"Stormguard Back Shinguard 01","price":80,"itemIds":["generated_equipment_back_shinguard_stormguard_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_back_shinguard_swamp_boss_01","name":"Swamp Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":1},
+    assetKeys: {"backShinguardAssetKey":"back-shinguard-swamp-boss-01"},
+    equipmentTuning: {"x":3.766763891488864,"y":14.876488899846095,"angle":9,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shinguard-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/legs/back-shinguard-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_turtle_boss_01","name":"Turtle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":20},
@@ -1046,6 +1134,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_mercenary_01","name":"Mercenary Back Shoulderguard 01","price":29,"itemIds":["generated_equipment_back_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_back_shoulderguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-old-fortress-warden-01"},
+    equipmentTuning: {"x":3.7894640525297802,"y":22.44862017911811,"angle":9,"scaleX":2.14,"scaleY":1.44,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shoulderguard_prisoner_01","name":"Prisoner 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":1},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-prisoner-01"},
     equipmentTuning: {"x":2.842098039397328,"y":20.78575942510946,"angle":9,"scaleX":2.02,"scaleY":1.39,"flipX":false,"flipY":false},
@@ -1091,6 +1190,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_stormguard_01","name":"Stormguard Back Shoulderguard 01","price":80,"itemIds":["generated_equipment_back_shoulderguard_stormguard_01"],"categoryId":"shoulders"},
+  },
+  {
+    item: {"id":"generated_equipment_back_shoulderguard_swamp_boss_01","name":"Swamp Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":1},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-swamp-boss-01"},
+    equipmentTuning: {"x":3.789464052529752,"y":19.95432904810508,"angle":9,"scaleX":1.67,"scaleY":1.6,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_turtle_boss_01","name":"Turtle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":20},
@@ -1257,6 +1367,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_mercenary_01","name":"Mercenary Back Wrist 01","price":23,"itemIds":["generated_equipment_back_wrist_mercenary_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_wrist_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    assetKeys: {"backWristAssetKey":"back-wrist-old-fortress-warden-01"},
+    equipmentTuning: {"x":4.141490995909962,"y":20.134544213229333,"angle":-3,"scaleX":2.21,"scaleY":1.06,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-wrist-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/arms/back-wrist-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_wrist_prisoner_01","name":"Prisoner 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
     assetKeys: {"backWristAssetKey":"back-wrist-prisoner-01"},
     equipmentTuning: {"x":2.6259362591901976,"y":20.16099831823078,"angle":-6,"scaleX":2.22,"scaleY":1.2,"flipX":false,"flipY":false},
@@ -1302,6 +1423,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_wrist_stormguard_01","name":"Stormguard Back Wrist 01","price":66,"itemIds":["generated_equipment_back_wrist_stormguard_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_back_wrist_swamp_boss_01","name":"Swamp Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
+    assetKeys: {"backWristAssetKey":"back-wrist-swamp-boss-01"},
+    equipmentTuning: {"x":1.2540350667376856,"y":28.417358876308356,"angle":-9,"scaleX":1.2,"scaleY":1.05,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-wrist-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/arms/back-wrist-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_wrist_turtle_boss_01","name":"Turtle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":16},
@@ -1456,6 +1588,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_mercenary_01","name":"Mercenary Breastplate 01","price":65,"itemIds":["generated_equipment_breastplate_mercenary_01"],"categoryId":"chest"},
   },
   {
+    item: {"id":"generated_equipment_breastplate_old_fortress_warden_01","name":"Old Fortress Warden 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    assetKeys: {"breastplateAssetKey":"breastplate-old-fortress-warden-01"},
+    equipmentTuning: {"x":0,"y":49,"angle":0,"scaleX":1.5,"scaleY":1.46,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_breastplate_prisoner_01","name":"Prisoner 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":1},
     assetKeys: {"breastplateAssetKey":"breastplate-prisoner-01"},
     equipmentTuning: {"x":0,"y":52,"angle":0,"scaleX":1.18,"scaleY":1.61,"flipX":false,"flipY":false},
@@ -1501,6 +1644,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_breastplate_stormguard_01","name":"Stormguard Breastplate 01","price":183,"itemIds":["generated_equipment_breastplate_stormguard_01"],"categoryId":"chest"},
+  },
+  {
+    item: {"id":"generated_equipment_breastplate_swamp_boss_01","name":"Swamp Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":1},
+    assetKeys: {"breastplateAssetKey":"breastplate-swamp-boss-01"},
+    equipmentTuning: {"x":0,"y":69,"angle":0,"scaleX":1.3,"scaleY":1.71,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_breastplate_turtle_boss_01","name":"Turtle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":45},
@@ -1667,6 +1821,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_boot_mercenary_01","name":"Mercenary Front Boot 01","price":0,"itemIds":["generated_equipment_front_boot_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_boot_old_fortress_warden_01","name":"Old Fortress Warden 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
+    assetKeys: {"frontBootAssetKey":"front-boot-old-fortress-warden-01"},
+    equipmentTuning: {"x":4,"y":0.7482873096379308,"angle":0,"scaleX":0.67,"scaleY":0.86,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-boot-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/legs/front-boot-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-boot-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_boot_prisoner_01","name":"Prisoner 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
     assetKeys: {"frontBootAssetKey":"front-boot-prisoner-01"},
     equipmentTuning: {"x":7,"y":-2.2448619289136786,"angle":0,"scaleX":0.87,"scaleY":0.91,"flipX":false,"flipY":false},
@@ -1712,6 +1877,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_boot_stormguard_01","name":"Stormguard Front Boot 01","price":0,"itemIds":["generated_equipment_front_boot_stormguard_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_boot_swamp_boss_01","name":"Swamp Boss 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
+    assetKeys: {"frontBootAssetKey":"front-boot-swamp-boss-01"},
+    equipmentTuning: {"x":1,"y":-3.741436548189654,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-boot-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/legs/front-boot-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-boot-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_boot_turtle_boss_01","name":"Turtle Boss 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
@@ -1890,6 +2066,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_glove_mercenary_01","name":"Mercenary Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_mercenary_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_front_glove_old_fortress_warden_01","name":"Old Fortress Warden 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-old-fortress-warden-01"},
+    equipmentTuning: {"x":-1.053559694109424,"y":9.269836126356324,"angle":0,"scaleX":0.86,"scaleY":0.81,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-glove-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/arms/front-glove-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_glove_prisoner_01","name":"Prisoner 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
     assetKeys: {"frontGloveAssetKey":"front-glove-prisoner-01"},
     equipmentTuning: {"x":-1.9102991579953823,"y":9.684738422017006,"angle":-3,"scaleX":0.7,"scaleY":0.7,"flipX":false,"flipY":false},
@@ -1935,6 +2122,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_glove_stormguard_01","name":"Stormguard Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_stormguard_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_glove_swamp_boss_01","name":"Swamp Boss 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-swamp-boss-01"},
+    equipmentTuning: {"x":-2.0875802307999436,"y":8.128163902676533,"angle":0,"scaleX":0.85,"scaleY":0.7,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-glove-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/arms/front-glove-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_glove_turtle_boss_01","name":"Turtle Boss 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
@@ -2113,6 +2311,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_greave_mercenary_01","name":"Mercenary Front Greave 01","price":0,"itemIds":["generated_equipment_front_greave_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_greave_old_fortress_warden_01","name":"Old Fortress Warden 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-old-fortress-warden-01"},
+    equipmentTuning: {"x":-5.3052497918510255,"y":5.238011167465345,"angle":-9,"scaleX":1.47,"scaleY":1.28,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-greave-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/legs/front-greave-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_greave_prisoner_01","name":"Prisoner 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
     assetKeys: {"frontGreaveAssetKey":"front-greave-prisoner-01"},
     equipmentTuning: {"x":-4.547356964443736,"y":23.94519390841299,"angle":-12,"scaleX":1.2,"scaleY":1,"flipX":true,"flipY":false},
@@ -2158,6 +2367,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_greave_stormguard_01","name":"Stormguard Front Greave 01","price":0,"itemIds":["generated_equipment_front_greave_stormguard_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_greave_swamp_boss_01","name":"Swamp Boss 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-swamp-boss-01"},
+    equipmentTuning: {"x":-5.305249791851082,"y":20.203757360223506,"angle":-12,"scaleX":1.2,"scaleY":1.2,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-greave-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/legs/front-greave-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_greave_turtle_boss_01","name":"Turtle Boss 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
@@ -2324,6 +2544,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shinguard_mercenary_01","name":"Mercenary Front Shinguard 01","price":0,"itemIds":["generated_equipment_front_shinguard_mercenary_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_shinguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
+    assetKeys: {"frontShinguardAssetKey":"front-shinguard-old-fortress-warden-01"},
+    equipmentTuning: {"x":-0.09725095968886421,"y":5.455430839628093,"angle":0,"scaleX":1.11,"scaleY":1,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shinguard-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/legs/front-shinguard-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shinguard_prisoner_01","name":"Prisoner 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-prisoner-01"},
     equipmentTuning: {"x":1.431683387692658,"y":10.159070779080082,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
@@ -2369,6 +2600,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_shinguard_stormguard_01","name":"Stormguard Front Shinguard 01","price":0,"itemIds":["generated_equipment_front_shinguard_stormguard_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_shinguard_swamp_boss_01","name":"Swamp Boss 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
+    assetKeys: {"frontShinguardAssetKey":"front-shinguard-swamp-boss-01"},
+    equipmentTuning: {"x":3.766763891488864,"y":14.876488899846095,"angle":9,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shinguard-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/legs/front-shinguard-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_shinguard_turtle_boss_01","name":"Turtle Boss 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
@@ -2535,6 +2777,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_mercenary_01","name":"Mercenary Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_front_shoulderguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-old-fortress-warden-01"},
+    equipmentTuning: {"x":3.7894640525297802,"y":22.44862017911811,"angle":9,"scaleX":2.14,"scaleY":1.44,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shoulderguard_prisoner_01","name":"Prisoner 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-prisoner-01"},
     equipmentTuning: {"x":2.842098039397328,"y":20.78575942510946,"angle":9,"scaleX":2.02,"scaleY":1.39,"flipX":true,"flipY":false},
@@ -2580,6 +2833,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_stormguard_01","name":"Stormguard Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_stormguard_01"],"categoryId":"shoulders"},
+  },
+  {
+    item: {"id":"generated_equipment_front_shoulderguard_swamp_boss_01","name":"Swamp Boss 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-swamp-boss-01"},
+    equipmentTuning: {"x":3.789464052529752,"y":19.95432904810508,"angle":9,"scaleX":1.67,"scaleY":1.6,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_shoulderguard_turtle_boss_01","name":"Turtle Boss 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
@@ -2746,6 +3010,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_wrist_mercenary_01","name":"Mercenary Front Wrist 01","price":0,"itemIds":["generated_equipment_front_wrist_mercenary_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_front_wrist_old_fortress_warden_01","name":"Old Fortress Warden 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
+    assetKeys: {"frontWristAssetKey":"front-wrist-old-fortress-warden-01"},
+    equipmentTuning: {"x":4.141490995909962,"y":20.134544213229333,"angle":-3,"scaleX":2.21,"scaleY":1.06,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-wrist-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/arms/front-wrist-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_wrist_prisoner_01","name":"Prisoner 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
     assetKeys: {"frontWristAssetKey":"front-wrist-prisoner-01"},
     equipmentTuning: {"x":2.6259362591901976,"y":20.16099831823078,"angle":-6,"scaleX":2.22,"scaleY":1.2,"flipX":false,"flipY":false},
@@ -2791,6 +3066,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_wrist_stormguard_01","name":"Stormguard Front Wrist 01","price":0,"itemIds":["generated_equipment_front_wrist_stormguard_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_wrist_swamp_boss_01","name":"Swamp Boss 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
+    assetKeys: {"frontWristAssetKey":"front-wrist-swamp-boss-01"},
+    equipmentTuning: {"x":1.2540350667376856,"y":28.417358876308356,"angle":-9,"scaleX":1.2,"scaleY":1.05,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-wrist-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/arms/front-wrist-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_wrist_turtle_boss_01","name":"Turtle Boss 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
@@ -2968,6 +3254,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_mercenary_01","name":"Mercenary Helmet 01","price":39,"itemIds":["generated_equipment_helmet_mercenary_01"],"categoryId":"head"},
   },
   {
+    item: {"id":"generated_equipment_helmet_old_fortress_warden_01","name":"Old Fortress Warden 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    assetKeys: {"helmetAssetKey":"helmet-old-fortress-warden-01"},
+    equipmentTuning: {"x":-2.842170943040401e-14,"y":28.378286506234787,"angle":0,"scaleX":1.13,"scaleY":1.08,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-old-fortress-warden-01",
+      sourcePath: "assets/fighters/armor/helmet/helmet-old-fortress-warden-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-old-fortress-warden-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_helmet_prisoner_01","name":"Prisoner 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"helmet","armorHp":1},
     assetKeys: {"helmetAssetKey":"helmet-prisoner-01"},
     equipmentTuning: {"x":0,"y":30,"angle":0,"scaleX":1.15,"scaleY":1.25,"flipX":false,"flipY":false},
@@ -3013,6 +3310,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_helmet_stormguard_01","name":"Stormguard Helmet 01","price":109,"itemIds":["generated_equipment_helmet_stormguard_01"],"categoryId":"head"},
+  },
+  {
+    item: {"id":"generated_equipment_helmet_swamp_boss_01","name":"Swamp Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"helmet","armorHp":1},
+    assetKeys: {"helmetAssetKey":"helmet-swamp-boss-01"},
+    equipmentTuning: {"x":0,"y":35,"angle":0,"scaleX":1.15,"scaleY":1.2,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-swamp-boss-01",
+      sourcePath: "assets/fighters/armor/helmet/helmet-swamp-boss-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-swamp-boss-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_helmet_turtle_boss_01","name":"Turtle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"helmet","armorHp":27},
@@ -4273,6 +4581,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"Common Sword 01","price":7,"itemIds":["generated_equipment_weapon_sword_rusty_sword"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_swamp_sword","name":"Swamp sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":50,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-swamp-sword"},
+    equipmentTuning: {"x":-13,"y":13,"angle":103,"scaleX":2,"scaleY":2,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-swamp-sword",
+      sourcePath: "assets/fighters/weapons/weapon-sword-swamp-sword.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-swamp-sword.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_sword_sharp","name":"Common Sword 04","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"sword","levelRequirement":10},

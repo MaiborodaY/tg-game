@@ -596,46 +596,227 @@
   {
     "id": "arena_boss_6",
     "tierId": 6,
-    "name": "Arena Boss 6",
+    "name": "Old Kingdom warden",
     "baseStats": {
-      "strength": 25,
-      "agility": 33,
-      "vitality": 33
+      "strength": 56,
+      "agility": 22,
+      "vitality": 64
     },
-    "equipment": {},
+    "equipment": {
+      "helmet": "generated_equipment_helmet_old_fortress_warden_01",
+      "breastplate": "generated_equipment_breastplate_old_fortress_warden_01",
+      "backShoulderguard": "generated_equipment_back_shoulderguard_old_fortress_warden_01",
+      "frontShoulderguard": "generated_equipment_front_shoulderguard_old_fortress_warden_01",
+      "backWrist": "generated_equipment_back_wrist_old_fortress_warden_01",
+      "frontWrist": "generated_equipment_front_wrist_old_fortress_warden_01",
+      "backGlove": "generated_equipment_back_glove_old_fortress_warden_01",
+      "frontGlove": "generated_equipment_front_glove_old_fortress_warden_01",
+      "backGreave": "generated_equipment_back_greave_old_fortress_warden_01",
+      "frontGreave": "generated_equipment_front_greave_old_fortress_warden_01",
+      "backShinguard": "generated_equipment_back_shinguard_old_fortress_warden_01",
+      "frontShinguard": "generated_equipment_front_shinguard_old_fortress_warden_01",
+      "backBoot": "generated_equipment_back_boot_old_fortress_warden_01",
+      "frontBoot": "generated_equipment_front_boot_old_fortress_warden_01"
+    },
     "rewards": {
       "win": {
-        "gold": 115,
-        "xp": 15
+        "gold": 2071,
+        "xp": 1656
       },
       "loss": {
         "gold": 1,
         "xp": 2
       }
     },
-    "lootTable": []
+    "lootTable": [
+      {
+        "id": "arena_boss_6_generated_equipment_back_boot_old_fortress_warden_01_generated_equipment_front_boot_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_back_boot_old_fortress_warden_01",
+          "generated_equipment_front_boot_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_breastplate_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_breastplate_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_back_glove_old_fortress_warden_01_generated_equipment_front_glove_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_back_glove_old_fortress_warden_01",
+          "generated_equipment_front_glove_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_back_greave_old_fortress_warden_01_generated_equipment_front_greave_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_back_greave_old_fortress_warden_01",
+          "generated_equipment_front_greave_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_helmet_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_helmet_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_back_shinguard_old_fortress_warden_01_generated_equipment_front_shinguard_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_back_shinguard_old_fortress_warden_01",
+          "generated_equipment_front_shinguard_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_back_shoulderguard_old_fortress_warden_01_generated_equipment_front_shoulderguard_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_back_shoulderguard_old_fortress_warden_01",
+          "generated_equipment_front_shoulderguard_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_6_generated_equipment_back_wrist_old_fortress_warden_01_generated_equipment_front_wrist_old_fortress_warden_01_drop",
+        "itemIds": [
+          "generated_equipment_back_wrist_old_fortress_warden_01",
+          "generated_equipment_front_wrist_old_fortress_warden_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      }
+    ]
   },
   {
     "id": "arena_boss_7",
     "tierId": 7,
-    "name": "Arena Boss 7",
+    "name": "Swamp Knight",
     "baseStats": {
-      "strength": 0,
-      "agility": 0,
-      "vitality": 0
+      "strength": 53,
+      "agility": 38,
+      "vitality": 83
     },
-    "equipment": {},
+    "equipment": {
+      "weaponMain": "generated_equipment_weapon_sword_swamp_sword",
+      "helmet": "generated_equipment_helmet_swamp_boss_01",
+      "breastplate": "generated_equipment_breastplate_swamp_boss_01",
+      "backShoulderguard": "generated_equipment_back_shoulderguard_swamp_boss_01",
+      "frontShoulderguard": "generated_equipment_front_shoulderguard_swamp_boss_01",
+      "backWrist": "generated_equipment_back_wrist_swamp_boss_01",
+      "frontWrist": "generated_equipment_front_wrist_swamp_boss_01",
+      "backGlove": "generated_equipment_back_glove_swamp_boss_01",
+      "frontGlove": "generated_equipment_front_glove_swamp_boss_01",
+      "backGreave": "generated_equipment_back_greave_swamp_boss_01",
+      "frontGreave": "generated_equipment_front_greave_swamp_boss_01",
+      "backShinguard": "generated_equipment_back_shinguard_swamp_boss_01",
+      "frontShinguard": "generated_equipment_front_shinguard_swamp_boss_01",
+      "backBoot": "generated_equipment_back_boot_swamp_boss_01",
+      "frontBoot": "generated_equipment_front_boot_swamp_boss_01"
+    },
     "rewards": {
       "win": {
-        "gold": 150,
-        "xp": 15
+        "gold": 5717,
+        "xp": 4572
       },
       "loss": {
         "gold": 1,
         "xp": 2
       }
     },
-    "lootTable": []
+    "lootTable": [
+      {
+        "id": "arena_boss_7_generated_equipment_back_boot_swamp_boss_01_generated_equipment_front_boot_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_boot_swamp_boss_01",
+          "generated_equipment_front_boot_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_breastplate_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_breastplate_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_back_glove_swamp_boss_01_generated_equipment_front_glove_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_glove_swamp_boss_01",
+          "generated_equipment_front_glove_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_back_greave_swamp_boss_01_generated_equipment_front_greave_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_greave_swamp_boss_01",
+          "generated_equipment_front_greave_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_helmet_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_helmet_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_back_shinguard_swamp_boss_01_generated_equipment_front_shinguard_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_shinguard_swamp_boss_01",
+          "generated_equipment_front_shinguard_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_back_shoulderguard_swamp_boss_01_generated_equipment_front_shoulderguard_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_shoulderguard_swamp_boss_01",
+          "generated_equipment_front_shoulderguard_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_back_wrist_swamp_boss_01_generated_equipment_front_wrist_swamp_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_wrist_swamp_boss_01",
+          "generated_equipment_front_wrist_swamp_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_7_generated_equipment_weapon_sword_swamp_sword_drop",
+        "itemIds": [
+          "generated_equipment_weapon_sword_swamp_sword"
+        ],
+        "chance": 1,
+        "quantity": 1
+      }
+    ]
   },
   {
     "id": "arena_boss_8",

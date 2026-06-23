@@ -7383,6 +7383,21 @@ body.debug-active .city-menu__portrait-button:active {
   text-transform: uppercase;
 }
 
+.magic-shop__preview-rarity--upgrade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.magic-shop__rarity-token {
+  color: var(--shop-rarity-light, #fff0bd);
+}
+
+.magic-shop__rarity-separator {
+  color: #fff0bd;
+}
+
 .magic-shop__preview-effect {
   position: relative;
   grid-area: effect;
@@ -7398,6 +7413,17 @@ body.debug-active .city-menu__portrait-button:active {
   text-align: center;
   text-shadow: 0 1px 0 rgba(8, 2, 1, 0.86);
   transform: translateY(var(--magic-shop-preview-effect-offset-y));
+}
+
+.magic-shop__preview-effect--upgrade {
+  color: #ffe7ad;
+}
+
+.magic-shop__effect-diff {
+  color: #9dff83;
+  text-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.92),
+    0 0 8px rgba(94, 255, 125, 0.38);
 }
 
 .magic-shop__preview-footer {
@@ -7579,7 +7605,10 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__list-item {
   position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale)), auto)
+    minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
   gap: 9px;
   align-items: center;
   min-width: 0;
@@ -7589,12 +7618,29 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 0;
   color: #fff0bd;
   background:
-    linear-gradient(90deg, rgba(255, 226, 142, 0.04), transparent 48%),
+    linear-gradient(90deg, var(--shop-rarity-soft, rgba(255, 226, 142, 0.09)), rgba(22, 9, 5, 0.24) 48%, transparent 100%),
     rgba(22, 9, 5, 0.26);
-  box-shadow: none;
-  cursor: pointer;
+  box-shadow:
+    inset 2px 0 0 var(--shop-rarity, rgba(255, 211, 132, 0.36)),
+    inset 0 0 0 1px rgba(255, 211, 132, 0.04);
   font-family: Georgia, "Times New Roman", serif;
   text-align: left;
+}
+
+.magic-shop__list-select {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+  min-height: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
 }
 
 .magic-shop__list-item::after {
@@ -7615,7 +7661,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop__list-item:hover:not(:disabled) {
   background:
-    linear-gradient(90deg, rgba(255, 226, 142, 0.08), transparent 54%),
+    linear-gradient(90deg, var(--shop-rarity-soft, rgba(255, 226, 142, 0.14)), rgba(32, 13, 7, 0.3) 56%, transparent 100%),
     rgba(32, 13, 7, 0.34);
 }
 
@@ -7629,6 +7675,14 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 0 0 1px rgba(255, 226, 142, 0.18),
     0 0 12px rgba(255, 179, 55, 0.36),
     0 0 18px var(--shop-rarity-soft, rgba(188, 96, 255, 0.22));
+}
+
+.magic-shop__list-item--upgrade-pending {
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px var(--shop-rarity, rgba(255, 211, 132, 0.36)),
+    inset 2px 0 0 var(--shop-rarity-light, rgba(255, 211, 132, 0.5)),
+    0 0 10px var(--shop-rarity-soft, rgba(255, 211, 132, 0.18));
 }
 
 .magic-shop__list-item--selected::before {
@@ -7674,7 +7728,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .magic-shop__list-name {
   overflow: hidden;
-  color: #fff0bd;
+  color: var(--shop-rarity-light, #fff0bd);
   font-size: clamp(0.75rem, 2.7vw, 0.86rem);
   font-weight: 900;
   line-height: 1;
@@ -7689,7 +7743,69 @@ body.debug-active .city-menu__portrait-button:active {
   min-width: calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale));
   min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
   padding-inline: calc(7px * var(--magic-shop-button-scale));
+  border-color: var(--shop-rarity, rgba(255, 211, 132, 0.28));
   font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.12),
+    0 0 7px var(--shop-rarity-soft, rgba(255, 211, 132, 0.08));
+}
+
+.magic-shop__list-upgrade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  box-sizing: border-box;
+  min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale));
+  min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
+  padding: calc(4px * var(--magic-shop-button-scale)) calc(5px * var(--magic-shop-button-scale)) calc(5px * var(--magic-shop-button-scale));
+  border: 1px solid var(--shop-rarity, rgba(255, 211, 132, 0.28));
+  border-radius: 999px;
+  color: transparent;
+  background:
+    url("./assets/ui/shop/upgrade-arrow.webp") center / calc(16px * var(--magic-shop-button-scale)) calc(16px * var(--magic-shop-button-scale)) no-repeat,
+    linear-gradient(180deg, rgba(255, 226, 142, 0.1), rgba(8, 2, 1, 0.34)),
+    rgba(22, 7, 3, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.12),
+    0 0 7px var(--shop-rarity-soft, rgba(255, 211, 132, 0.08));
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 #160703;
+  cursor: pointer;
+}
+
+.magic-shop__list-upgrade:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.magic-shop__list-upgrade:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.magic-shop__list-upgrade:disabled {
+  cursor: default;
+  filter: grayscale(0.32) brightness(0.72);
+  opacity: 0.72;
+}
+
+.magic-shop__list-item--upgrade-ready .magic-shop__list-upgrade {
+  border-color: rgba(188, 255, 153, 0.52);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.12),
+    0 0 8px rgba(94, 255, 125, 0.18);
+}
+
+.magic-shop__list-item--upgrade-max .magic-shop__list-upgrade {
+  min-width: calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale));
+  padding-inline: calc(7px * var(--magic-shop-button-scale));
+  color: #ffe6a0;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.1), rgba(8, 2, 1, 0.34)),
+    rgba(22, 7, 3, 0.58);
+  font-size: calc(0.46rem * var(--magic-shop-button-scale));
 }
 
 .magic-shop__list-price .armory-shop__price-icon {
@@ -8384,15 +8500,30 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__list-item {
-    grid-template-columns: 34px minmax(0, 1fr) minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale)), auto)
+      minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
     gap: 7px;
     min-height: 38px;
     padding: 3px 5px 3px 2px;
   }
 
+  .magic-shop__list-select {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 7px;
+  }
+
   .magic-shop__list-icon {
     width: 34px;
     height: 34px;
+  }
+
+  .magic-shop__list-upgrade {
+    min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale));
+    min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
+    padding-inline: calc(5px * var(--magic-shop-button-scale));
+    font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
   }
 
   .magic-shop__list-name {
@@ -8561,15 +8692,30 @@ body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="c
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-item {
-  grid-template-columns: 34px minmax(0, 1fr) minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale)), auto)
+    minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
   gap: 7px;
   min-height: 38px;
   padding: 3px 5px 3px 2px;
 }
 
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-select {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 7px;
+}
+
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-icon {
   width: 34px;
   height: 34px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-upgrade {
+  min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale));
+  min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
+  padding-inline: calc(5px * var(--magic-shop-button-scale));
+  font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-name {

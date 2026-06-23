@@ -261,6 +261,7 @@ test("hero starts with empty equipment including gloves wrists and shield", () =
   assert.equal(hero.createDefaultHeroEquipment().weaponBow, null);
   assert.deepEqual([...hero.createDefaultHero().defeatedArenaBossIds], []);
   assert.deepEqual([...hero.createDefaultHero().unlockedShopRarities], []);
+  assert.equal(Object.keys(hero.createDefaultHero().scrollUpgrades ?? {}).length, 0);
 });
 
 test("preview equipment shows bows without mutating equipped melee weapons", () => {
@@ -1368,6 +1369,68 @@ test("scrolls share one capped consumable inventory pool without equipping", () 
   assert.equal(blockedPurchase, thirdPurchase);
 });
 
+test("precise and double strike scroll upgrades change rarity prices and combat effects", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 1000,
+  };
+  const preciseStrikeScrollId = hero.HERO_PRECISE_STRIKE_SCROLL_ITEM_ID;
+  const doubleStrikeScrollId = hero.HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID;
+
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(baseHero, preciseStrikeScrollId), "common");
+  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, preciseStrikeScrollId), 30);
+  assert.equal(hero.getHeroScrollUpgradePrice(baseHero, preciseStrikeScrollId), 150);
+  assert.equal(hero.getHeroPreciseStrikeBlockChanceReduction(baseHero), 0.1);
+  assert.equal(hero.getHeroDoubleStrikeDamageMultiplier(baseHero), 0.4);
+
+  const upgradedPrecise = hero.upgradeHeroScroll(baseHero, preciseStrikeScrollId, "2026-01-01T00:01:00.000Z");
+  const upgradedDouble = hero.upgradeHeroScroll(upgradedPrecise, doubleStrikeScrollId, "2026-01-01T00:02:00.000Z");
+  const combatState = hero.createCombatStateFromHero(upgradedDouble, 1);
+
+  assert.equal(upgradedPrecise.gold, 850);
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(upgradedPrecise, preciseStrikeScrollId), "uncommon");
+  assert.equal(hero.getHeroScrollPurchasePrice(upgradedPrecise, preciseStrikeScrollId), 60);
+  assert.equal(hero.getHeroPreciseStrikeBlockChanceReduction(upgradedPrecise), 0.15);
+  assert.equal(upgradedDouble.gold, 650);
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(upgradedDouble, doubleStrikeScrollId), "uncommon");
+  assert.equal(hero.getHeroScrollPurchasePrice(upgradedDouble, doubleStrikeScrollId), 75);
+  assert.equal(hero.getHeroDoubleStrikeDamageMultiplier(upgradedDouble), 0.55);
+  assert.equal(combatState.player.preciseStrikeBlockChanceReduction, 0.15);
+  assert.equal(combatState.player.doubleStrikeDamageMultiplier, 0.55);
+});
+
+test("fireball and poison scroll upgrades change rarity prices and combat effects", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 1000,
+  };
+  const fireballScrollId = hero.HERO_FIREBALL_SCROLL_ITEM_ID;
+  const poisonScrollId = hero.HERO_POISON_SCROLL_ITEM_ID;
+
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(baseHero, fireballScrollId), "common");
+  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, fireballScrollId), 40);
+  assert.equal(hero.getHeroScrollUpgradePrice(baseHero, fireballScrollId), 250);
+  assert.equal(hero.getHeroFireballDamage(baseHero), 45);
+  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, poisonScrollId), 35);
+  assert.equal(hero.getHeroScrollUpgradePrice(baseHero, poisonScrollId), 200);
+  assert.equal(hero.getHeroPoisonDamage(baseHero), 5);
+
+  const upgradedFireball = hero.upgradeHeroScroll(baseHero, fireballScrollId, "2026-01-01T00:01:00.000Z");
+  const upgradedPoison = hero.upgradeHeroScroll(upgradedFireball, poisonScrollId, "2026-01-01T00:02:00.000Z");
+  const combatState = hero.createCombatStateFromHero(upgradedPoison, 1);
+
+  assert.equal(upgradedFireball.gold, 750);
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(upgradedFireball, fireballScrollId), "uncommon");
+  assert.equal(hero.getHeroScrollPurchasePrice(upgradedFireball, fireballScrollId), 90);
+  assert.equal(hero.getHeroFireballDamage(upgradedFireball), 80);
+  assert.equal(upgradedPoison.gold, 550);
+  assert.equal(hero.getHeroScrollUpgradeRarityForItem(upgradedPoison, poisonScrollId), "uncommon");
+  assert.equal(hero.getHeroScrollPurchasePrice(upgradedPoison, poisonScrollId), 75);
+  assert.equal(hero.getHeroPoisonDamage(upgradedPoison), 6);
+  assert.equal(combatState.player.fireballDamage, 80);
+  assert.equal(combatState.player.poisonDamage, 6);
+});
+
 test("combat state exposes shuriken count and rewards persist spent consumables", () => {
   const stockedHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
@@ -1454,6 +1517,7 @@ test("combat state exposes fireball scroll count and rewards persist spent fireb
 
   assert.equal(combatState.player.fireballScrollCount, 2);
   assert.equal(combatState.player.fireballScrollItemId, scrollItemId);
+  assert.equal(combatState.player.fireballDamage, 45);
 
   const spentCombatState = {
     ...combatState,
@@ -1556,6 +1620,7 @@ test("combat state exposes poison scroll count and rewards persist spent poison 
 
   assert.equal(combatState.player.poisonScrollCount, 2);
   assert.equal(combatState.player.poisonScrollItemId, scrollItemId);
+  assert.equal(combatState.player.poisonDamage, 5);
   assert.equal(combatState.player.poisonTurns, 0);
 
   const spentCombatState = {

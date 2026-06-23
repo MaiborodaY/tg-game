@@ -5,17 +5,33 @@ import {
   HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_SCROLL_MAX_QUANTITY,
+  HERO_SCROLL_UPGRADE_RARITIES,
   HERO_WEAPON_SHARPENING_MAX_LEVEL,
   HERO_ITEM_CATALOG,
   HERO_WARD_SCROLL_ITEM_ID,
+  canUpgradeHeroScroll,
   canSharpenHeroActiveWeapon,
   getActiveSharpenableHeroWeaponItemId,
   getHeroActiveWeaponSharpeningPrice,
+  getHeroDoubleStrikeDamageMultiplier,
+  getHeroDoubleStrikeDamageMultiplierForRarity,
+  getHeroFireballDamage,
+  getHeroFireballDamageForRarity,
+  getHeroPoisonDamage,
+  getHeroPoisonDamageForRarity,
+  getHeroPreciseStrikeBlockChanceReduction,
+  getHeroPreciseStrikeBlockChanceReductionForRarity,
+  getHeroScrollPurchasePrice,
+  getHeroScrollUpgradePrice,
+  getHeroScrollUpgradeRarityForItem,
   getHeroScrollQuantity,
   getHeroWeaponSharpeningLevel,
+  isHeroUpgradeableScrollItemId,
   type HeroItemId,
+  type HeroScrollUpgradeRarity,
   type HeroState,
 } from "./hero";
+import { POISON_SCROLL_TURNS } from "./combat";
 import {
   CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
   MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL,
@@ -56,6 +72,7 @@ export interface MagicShopApi {
 interface MagicShopOptions {
   getHero: () => HeroState;
   onBuy: (product: MagicProduct) => void;
+  onUpgradeScroll: (product: MagicProduct) => void;
   onSharpenWeapon: () => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -73,7 +90,21 @@ interface MagicProductPreviewElements {
 }
 
 interface MagicProductListItemElements {
-  item: HTMLButtonElement;
+  item: HTMLElement;
+  selectButton: HTMLButtonElement;
+  upgradeButton: HTMLButtonElement;
+  price: HTMLElement;
+  priceAmount: HTMLElement;
+}
+
+interface MagicProductUpgradePreview {
+  price: number;
+  currentRarity: HeroScrollUpgradeRarity;
+  nextRarity: HeroScrollUpgradeRarity;
+  label: string;
+  currentValue: string;
+  nextValue: string;
+  suffix?: string;
 }
 
 type MagicShopMode = "home" | "scrolls" | "weaponSharpening";
@@ -92,10 +123,10 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     id: "fireball_scroll",
     name: "Fireball Scroll",
     displayName: "Fireball",
-    price: 30,
+    price: 40,
     itemIds: [HERO_FIREBALL_SCROLL_ITEM_ID],
     rarity: "common",
-    effect: "Deals 5 direct damage in battle",
+    effect: "Deals damage in battle",
   },
   {
     id: "ward_scroll",
@@ -113,7 +144,7 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     price: 30,
     itemIds: [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID],
     rarity: "common",
-    effect: "Makes your next strike guaranteed",
+    effect: "Focuses your next 3 strikes",
   },
   {
     id: "double_strike_scroll",
@@ -122,13 +153,13 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     price: 30,
     itemIds: [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID],
     rarity: "common",
-    effect: "Makes your next strike hit twice",
+    effect: "Repeats your next strike",
   },
   {
     id: "poison_scroll",
     name: "Poison Scroll",
     displayName: "Poison",
-    price: 30,
+    price: 35,
     itemIds: [HERO_POISON_SCROLL_ITEM_ID],
     rarity: "common",
     effect: "Poisons the enemy for 2 turns",
@@ -143,6 +174,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   let layoutSettleTimers: number[] = [];
   let mode: MagicShopMode = "home";
   let selectedProductId = MAGIC_PRODUCTS[0]?.id ?? "";
+  let pendingUpgradeProductId: string | undefined;
 
   const shop = document.createElement("section");
   shop.className = "armory-shop weapon-shop magic-shop armory-shop--city-mode";
@@ -268,6 +300,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     options.onOpen?.();
     scheduleShopTransition(() => {
       mode = "home";
+      pendingUpgradeProductId = undefined;
       root.classList.add("city-menu--armory-open");
       root.classList.add("city-menu--magic-shop-open");
       shop.hidden = false;
@@ -282,6 +315,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     }
 
     clearTransitionTimer();
+    pendingUpgradeProductId = undefined;
     options.onClose?.();
     scheduleShopTransition(() => {
       root.classList.remove("city-menu--armory-open");
@@ -408,6 +442,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     }
 
     mode = nextMode;
+    pendingUpgradeProductId = undefined;
     refreshHeroState(options.getHero());
     scheduleLayoutSync();
   }
@@ -448,20 +483,28 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
   function refreshSelectedProduct(hero: HeroState): void {
     const product = getSelectedMagicProduct();
-    const rarity = getShopProductRarity(product.itemIds, product.rarity);
-    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const price = getMagicProductPurchasePrice(hero, product);
+    const rarity = getMagicProductRarity(hero, product);
+    const actionState = getShopProductActionState(hero, product.itemIds, price);
+    const upgradePreview = pendingUpgradeProductId === product.id ? getMagicProductUpgradePreview(hero, product) : undefined;
+    const previewRarity = upgradePreview?.nextRarity ?? rarity;
     const displayName = getMagicProductDisplayName(product);
     const iconUrl = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
-    const actionLabel = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
+    const actionLabel = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, price);
 
-    previewElements.card.className = `magic-shop__preview-card armory-shop__selected-card--rarity-${rarity}`;
+    if (pendingUpgradeProductId === product.id && !upgradePreview) {
+      pendingUpgradeProductId = undefined;
+    }
+
+    previewElements.card.className = `magic-shop__preview-card armory-shop__selected-card--rarity-${previewRarity}`;
     previewElements.card.classList.toggle("magic-shop__preview-card--max", actionState === "max");
+    previewElements.card.classList.toggle("magic-shop__preview-card--upgrade", Boolean(upgradePreview));
     setImageSourceIfChanged(previewElements.icon, iconUrl);
     setTextContentIfChanged(previewElements.name, displayName);
-    setTextContentIfChanged(previewElements.rarity, getShopRarityLabel(rarity));
-    setTextContentIfChanged(previewElements.effect, product.effect);
-    previewElements.buyButton.disabled = actionState === "no-gold" || actionState === "max";
-    setTextContentIfChanged(previewElements.buyButton, actionLabel);
+    setMagicProductPreviewRarity(previewElements.rarity, rarity, upgradePreview);
+    setMagicProductPreviewEffect(previewElements.effect, hero, product, upgradePreview);
+    previewElements.buyButton.disabled = upgradePreview ? hero.gold < upgradePreview.price : actionState === "no-gold" || actionState === "max";
+    setTextContentIfChanged(previewElements.buyButton, upgradePreview ? "Upgrade" : actionLabel);
   }
 
   function refreshWeaponSharpening(hero: HeroState): void {
@@ -500,21 +543,40 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
         return;
       }
 
-      const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+      const price = getMagicProductPurchasePrice(hero, product);
+      const rarity = getMagicProductRarity(hero, product);
+      const actionState = getShopProductActionState(hero, product.itemIds, price);
+      const upgradePrice = getMagicProductUpgradePrice(hero, product);
+      const canUpgrade = canUpgradeMagicProduct(hero, product);
+      const canEventuallyUpgrade = upgradePrice !== undefined;
 
+      elements.item.className = `magic-shop__list-item armory-shop__option--rarity-${rarity}`;
       elements.item.classList.toggle("magic-shop__list-item--selected", product.id === selectedProductId);
       elements.item.classList.toggle("magic-shop__list-item--max", actionState === "max");
       elements.item.classList.toggle("magic-shop__list-item--no-gold", actionState === "no-gold");
-      elements.item.setAttribute("aria-pressed", product.id === selectedProductId ? "true" : "false");
+      elements.item.classList.toggle("magic-shop__list-item--upgrade-ready", canUpgrade);
+      elements.item.classList.toggle("magic-shop__list-item--upgrade-max", isMagicProductUpgradeMax(hero, product));
+      elements.item.classList.toggle("magic-shop__list-item--upgrade-pending", product.id === pendingUpgradeProductId);
+      elements.selectButton.setAttribute("aria-pressed", product.id === selectedProductId ? "true" : "false");
+      setPriceAmount(elements.price, elements.priceAmount, price);
+      refreshMagicProductUpgradeButton(elements.upgradeButton, product, upgradePrice, canUpgrade, canEventuallyUpgrade);
     });
   }
 
   function selectMagicProduct(productId: string): void {
-    if (selectedProductId === productId) {
+    if (selectedProductId === productId && pendingUpgradeProductId !== productId) {
       return;
     }
 
     selectedProductId = productId;
+    pendingUpgradeProductId = undefined;
+    refreshHeroState(options.getHero());
+    scheduleLayoutSync();
+  }
+
+  function selectMagicProductUpgrade(product: MagicProduct): void {
+    selectedProductId = product.id;
+    pendingUpgradeProductId = product.id;
     refreshHeroState(options.getHero());
     scheduleLayoutSync();
   }
@@ -549,8 +611,13 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
       if (mode === "weaponSharpening") {
         options.onSharpenWeapon();
+      } else if (pendingUpgradeProductId === getSelectedMagicProduct().id) {
+        const product = getSelectedMagicProduct();
+
+        pendingUpgradeProductId = undefined;
+        options.onUpgradeScroll(product);
       } else {
-        options.onBuy(getSelectedMagicProduct());
+        options.onBuy(getMagicProductPurchase(getSelectedMagicProduct(), options.getHero()));
       }
     });
     footer.append(buyButton);
@@ -560,18 +627,22 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   }
 
   function createMagicProductListItem(product: MagicProduct): MagicProductListItemElements {
-    const item = document.createElement("button");
+    const item = document.createElement("div");
+    const selectButton = document.createElement("button");
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const displayName = getMagicProductDisplayName(product);
     const icon = document.createElement("img");
     const text = document.createElement("span");
     const name = document.createElement("span");
+    const upgradeButton = document.createElement("button");
     const price = document.createElement("span");
+    const priceAmount = appendPriceContent(price, product.price);
 
     item.className = `magic-shop__list-item armory-shop__option--rarity-${rarity}`;
-    item.type = "button";
     item.title = displayName;
-    item.addEventListener("click", () => {
+    selectButton.className = "magic-shop__list-select";
+    selectButton.type = "button";
+    selectButton.addEventListener("click", () => {
       selectMagicProduct(product.id);
     });
     icon.className = "magic-shop__list-icon";
@@ -583,11 +654,23 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     name.className = "magic-shop__list-name";
     name.textContent = displayName;
     text.append(name);
-    price.className = "magic-shop__list-price";
-    appendPriceContent(price, product.price);
-    item.append(icon, text, price);
+    selectButton.append(icon, text);
+    upgradeButton.className = "magic-shop__list-upgrade";
+    upgradeButton.type = "button";
+    upgradeButton.textContent = "+";
+    upgradeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
 
-    return { item };
+      if (upgradeButton.disabled) {
+        return;
+      }
+
+      selectMagicProductUpgrade(product);
+    });
+    price.className = "magic-shop__list-price";
+    item.append(selectButton, upgradeButton, price);
+
+    return { item, selectButton, upgradeButton, price, priceAmount };
   }
 
   return { open, close, render, syncHeroState };
@@ -635,7 +718,7 @@ function setImageSourceIfChanged(image: HTMLImageElement, src: string): void {
   image.src = src;
 }
 
-function appendPriceContent(priceNode: HTMLElement, price: number): void {
+function appendPriceContent(priceNode: HTMLElement, price: number): HTMLElement {
   const icon = document.createElement("img");
   const amount = document.createElement("span");
 
@@ -648,6 +731,224 @@ function appendPriceContent(priceNode: HTMLElement, price: number): void {
   amount.className = "armory-shop__price-amount";
   amount.textContent = String(price);
   priceNode.append(icon, amount);
+  return amount;
+}
+
+function setPriceAmount(priceNode: HTMLElement, amountNode: HTMLElement, price: number): void {
+  priceNode.setAttribute("aria-label", `${price} gold`);
+  setTextContentIfChanged(amountNode, String(price));
+}
+
+function getMagicProductPrimaryItemId(product: MagicProduct): HeroItemId | undefined {
+  return product.itemIds[0];
+}
+
+function getMagicProductPurchase(product: MagicProduct, hero: HeroState): MagicProduct {
+  return {
+    ...product,
+    price: getMagicProductPurchasePrice(hero, product),
+    rarity: getMagicProductRarity(hero, product),
+    effect: getMagicProductEffect(hero, product),
+  };
+}
+
+function getMagicProductPurchasePrice(hero: HeroState, product: MagicProduct): number {
+  return getHeroScrollPurchasePrice(hero, getMagicProductPrimaryItemId(product), product.price);
+}
+
+function getMagicProductUpgradePrice(hero: HeroState, product: MagicProduct): number | undefined {
+  return getHeroScrollUpgradePrice(hero, getMagicProductPrimaryItemId(product));
+}
+
+function getMagicProductRarity(hero: HeroState, product: MagicProduct): ShopItemRarity {
+  return getHeroScrollUpgradeRarityForItem(hero, getMagicProductPrimaryItemId(product)) ?? getShopProductRarity(product.itemIds, product.rarity);
+}
+
+function getMagicProductEffect(hero: HeroState, product: MagicProduct): string {
+  const itemId = getMagicProductPrimaryItemId(product);
+  const upgradePrice = getMagicProductUpgradePrice(hero, product);
+  const upgradeText = upgradePrice === undefined ? "Max rarity." : `Upgrade ${upgradePrice}g.`;
+
+  if (itemId === HERO_PRECISE_STRIKE_SCROLL_ITEM_ID) {
+    return `3 strikes: -${Math.round(getHeroPreciseStrikeBlockChanceReduction(hero) * 100)}% block chance. ${upgradeText}`;
+  }
+
+  if (itemId === HERO_FIREBALL_SCROLL_ITEM_ID) {
+    return `Deals ${getHeroFireballDamage(hero)} damage. ${upgradeText}`;
+  }
+
+  if (itemId === HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID) {
+    return `Repeat: ${Math.round(getHeroDoubleStrikeDamageMultiplier(hero) * 100)}% damage. ${upgradeText}`;
+  }
+
+  if (itemId === HERO_POISON_SCROLL_ITEM_ID) {
+    return `${getHeroPoisonDamage(hero)} poison damage for ${POISON_SCROLL_TURNS} turns. ${upgradeText}`;
+  }
+
+  return product.effect;
+}
+
+function setMagicProductPreviewEffect(
+  effectNode: HTMLParagraphElement,
+  hero: HeroState,
+  product: MagicProduct,
+  upgradePreview: MagicProductUpgradePreview | undefined,
+): void {
+  if (!upgradePreview) {
+    effectNode.classList.remove("magic-shop__preview-effect--upgrade");
+    setTextContentIfChanged(effectNode, getMagicProductEffect(hero, product));
+    return;
+  }
+
+  const nextValue = document.createElement("span");
+
+  nextValue.className = "magic-shop__effect-diff";
+  nextValue.textContent = upgradePreview.nextValue;
+  effectNode.classList.add("magic-shop__preview-effect--upgrade");
+  effectNode.replaceChildren(
+    document.createTextNode(`${upgradePreview.label}${upgradePreview.suffix ? " " : ": "}${upgradePreview.currentValue} > `),
+    nextValue,
+    document.createTextNode(`${upgradePreview.suffix ? ` ${upgradePreview.suffix}` : ""}. Upgrade ${upgradePreview.price}g.`),
+  );
+}
+
+function setMagicProductPreviewRarity(
+  rarityNode: HTMLElement,
+  rarity: ShopItemRarity,
+  upgradePreview: MagicProductUpgradePreview | undefined,
+): void {
+  rarityNode.classList.toggle("magic-shop__preview-rarity--upgrade", Boolean(upgradePreview));
+
+  if (!upgradePreview) {
+    setTextContentIfChanged(rarityNode, getShopRarityLabel(rarity));
+    return;
+  }
+
+  const currentRarity = document.createElement("span");
+  const separator = document.createElement("span");
+  const nextRarity = document.createElement("span");
+
+  currentRarity.className = `magic-shop__rarity-token armory-shop__option--rarity-${upgradePreview.currentRarity}`;
+  currentRarity.textContent = getShopRarityLabel(upgradePreview.currentRarity);
+  separator.className = "magic-shop__rarity-separator";
+  separator.textContent = ">";
+  nextRarity.className = `magic-shop__rarity-token armory-shop__option--rarity-${upgradePreview.nextRarity}`;
+  nextRarity.textContent = getShopRarityLabel(upgradePreview.nextRarity);
+  rarityNode.replaceChildren(currentRarity, separator, nextRarity);
+}
+
+function getMagicProductUpgradePreview(hero: HeroState, product: MagicProduct): MagicProductUpgradePreview | undefined {
+  const itemId = getMagicProductPrimaryItemId(product);
+  const price = getMagicProductUpgradePrice(hero, product);
+  const currentRarity = getHeroScrollUpgradeRarityForItem(hero, itemId);
+  const nextRarity = currentRarity ? getNextMagicProductUpgradeRarity(currentRarity) : undefined;
+  const effect = itemId && currentRarity && nextRarity ? getMagicProductUpgradeEffect(itemId, currentRarity, nextRarity) : undefined;
+
+  if (!effect || price === undefined || !currentRarity || !nextRarity) {
+    return undefined;
+  }
+
+  return {
+    price,
+    currentRarity,
+    nextRarity,
+    ...effect,
+  };
+}
+
+function getNextMagicProductUpgradeRarity(rarity: HeroScrollUpgradeRarity): HeroScrollUpgradeRarity | undefined {
+  const currentIndex = HERO_SCROLL_UPGRADE_RARITIES.indexOf(rarity);
+
+  return HERO_SCROLL_UPGRADE_RARITIES[currentIndex + 1];
+}
+
+function getMagicProductUpgradeEffect(
+  itemId: HeroItemId,
+  currentRarity: HeroScrollUpgradeRarity,
+  nextRarity: HeroScrollUpgradeRarity,
+): Pick<MagicProductUpgradePreview, "label" | "currentValue" | "nextValue" | "suffix"> | undefined {
+  if (itemId === HERO_FIREBALL_SCROLL_ITEM_ID) {
+    return {
+      label: "Deals",
+      currentValue: String(getHeroFireballDamageForRarity(currentRarity)),
+      nextValue: String(getHeroFireballDamageForRarity(nextRarity)),
+      suffix: "damage",
+    };
+  }
+
+  if (itemId === HERO_PRECISE_STRIKE_SCROLL_ITEM_ID) {
+    return {
+      label: "Block reduction",
+      currentValue: `-${formatPercent(getHeroPreciseStrikeBlockChanceReductionForRarity(currentRarity))}`,
+      nextValue: `-${formatPercent(getHeroPreciseStrikeBlockChanceReductionForRarity(nextRarity))}`,
+    };
+  }
+
+  if (itemId === HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID) {
+    return {
+      label: "Repeat damage",
+      currentValue: formatPercent(getHeroDoubleStrikeDamageMultiplierForRarity(currentRarity)),
+      nextValue: formatPercent(getHeroDoubleStrikeDamageMultiplierForRarity(nextRarity)),
+    };
+  }
+
+  if (itemId === HERO_POISON_SCROLL_ITEM_ID) {
+    return {
+      label: "Poison damage",
+      currentValue: String(getHeroPoisonDamageForRarity(currentRarity)),
+      nextValue: String(getHeroPoisonDamageForRarity(nextRarity)),
+    };
+  }
+
+  return undefined;
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function canUpgradeMagicProduct(hero: HeroState, product: MagicProduct): boolean {
+  return canUpgradeHeroScroll(hero, getMagicProductPrimaryItemId(product));
+}
+
+function isMagicProductUpgradeMax(hero: HeroState, product: MagicProduct): boolean {
+  const itemId = getMagicProductPrimaryItemId(product);
+
+  return isHeroUpgradeableScrollItemId(itemId) && getHeroScrollUpgradePrice(hero, itemId) === undefined;
+}
+
+function refreshMagicProductUpgradeButton(
+  button: HTMLButtonElement,
+  product: MagicProduct,
+  upgradePrice: number | undefined,
+  canUpgrade: boolean,
+  canEventuallyUpgrade: boolean,
+): void {
+  const itemId = getMagicProductPrimaryItemId(product);
+  const isUpgradeable = isHeroUpgradeableScrollItemId(itemId);
+
+  button.hidden = !isUpgradeable;
+
+  if (!isUpgradeable) {
+    button.disabled = true;
+    button.removeAttribute("aria-label");
+    button.title = "";
+    setTextContentIfChanged(button, "");
+    return;
+  }
+
+  if (!canEventuallyUpgrade) {
+    button.disabled = true;
+    button.setAttribute("aria-label", "Max scroll rarity");
+    button.title = "Max rarity";
+    setTextContentIfChanged(button, "MAX");
+    return;
+  }
+
+  button.disabled = !canUpgrade;
+  button.setAttribute("aria-label", `Upgrade ${getMagicProductDisplayName(product)} for ${upgradePrice} gold`);
+  button.title = `Upgrade ${upgradePrice}`;
+  setTextContentIfChanged(button, "+");
 }
 
 function getWeaponSharpeningEffectText(hasWeapon: boolean, isSharpenable: boolean, isMaxSharpening: boolean, sharpeningPrice: number | undefined, hasEnoughGold: boolean): string {

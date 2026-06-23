@@ -402,6 +402,13 @@ interface DebugItemEquipmentValueContext {
   canSave: boolean;
 }
 
+interface DebugItemEquipmentSetSaveContext {
+  itemIds: HeroItemId[];
+  setName: string;
+  statusText: string;
+  canSave: boolean;
+}
+
 interface DebugRemovableGeneratedEquipmentItem {
   id: string;
   name: string;
@@ -1188,6 +1195,7 @@ export function mountDebugPanel(root: HTMLElement, options: DebugPanelOptions = 
           <p class="debug-item-equipment__value-ids"></p>
           <div class="debug-rig-editor__actions">
             <button class="debug-panel__reset debug-item-equipment__save" type="button">Save item</button>
+            <button class="debug-panel__reset debug-item-equipment__save-set" type="button">Save set</button>
           </div>
           <p class="debug-item-equipment__value-status" aria-live="polite"></p>
         </fieldset>
@@ -2837,6 +2845,7 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
   const valuePriceRange = editor.querySelector<HTMLInputElement>("input[data-item-equipment-price]");
   const valuePriceNumber = editor.querySelector<HTMLInputElement>("input[data-item-equipment-price-number]");
   const save = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__save");
+  const saveSet = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__save-set");
   const valueStatus = editor.querySelector<HTMLElement>(".debug-item-equipment__value-status");
   const reset = editor.querySelector<HTMLButtonElement>(".debug-item-equipment__reset");
 
@@ -2852,6 +2861,7 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
     !valuePriceRange ||
     !valuePriceNumber ||
     !save ||
+    !saveSet ||
     !valueStatus ||
     !reset
   ) {
@@ -2948,6 +2958,35 @@ function mountItemEquipmentEditor(editor: HTMLElement): void {
       valueStatus.textContent = error instanceof Error ? error.message : "Could not save generated item.";
     } finally {
       save.disabled = !getActiveItemEquipmentValueContext().canSave;
+    }
+  });
+
+  saveSet.addEventListener("click", async () => {
+    const context = getActiveItemEquipmentSetSaveContext();
+
+    if (!context.canSave) {
+      valueStatus.textContent = context.statusText;
+      return;
+    }
+
+    save.disabled = true;
+    saveSet.disabled = true;
+    valueStatus.textContent = `Saving ${context.setName} set positions...`;
+
+    try {
+      valueStatus.textContent = await saveGeneratedEquipmentItem({
+        itemIds: context.itemIds,
+        equipmentTuningByItemId: getCurrentEquipmentSetTuningsForSave(context.itemIds),
+      });
+    } catch (error) {
+      valueStatus.textContent = error instanceof Error ? error.message : "Could not save generated equipment set.";
+    } finally {
+      const nextSetContext = getActiveItemEquipmentSetSaveContext();
+
+      save.disabled = !getActiveItemEquipmentValueContext().canSave;
+      saveSet.disabled = !nextSetContext.canSave;
+      saveSet.title = nextSetContext.statusText;
+      saveSet.setAttribute("aria-label", nextSetContext.statusText);
     }
   });
 }
@@ -9793,6 +9832,23 @@ function getCurrentEquipmentItemTuningsForSave(
   return tuningByItemId;
 }
 
+function getCurrentEquipmentSetTuningsForSave(itemIds: readonly HeroItemId[]): Record<string, EquipmentTuning> {
+  const tuningByItemId: Record<string, EquipmentTuning> = {};
+
+  itemIds.forEach((itemId) => {
+    const record = getSelectedGeneratedEquipmentRecord(itemId);
+    const slotKey = record?.item.equipmentSlot;
+
+    if (!isEquipmentSlotKey(slotKey)) {
+      return;
+    }
+
+    tuningByItemId[itemId] = getCurrentEquipmentItemTuning(itemId, slotKey);
+  });
+
+  return tuningByItemId;
+}
+
 function syncItemEquipmentValueEditor(panel: HTMLElement): void {
   const valueRarityRow = panel.querySelector<HTMLElement>(".debug-item-equipment__value-rarity-row");
   const valueRarity = panel.querySelector<HTMLSelectElement>(".debug-item-equipment__value-rarity");
@@ -9805,8 +9861,10 @@ function syncItemEquipmentValueEditor(panel: HTMLElement): void {
   const priceNumber = panel.querySelector<HTMLInputElement>("input[data-item-equipment-price-number]");
   const ids = panel.querySelector<HTMLElement>(".debug-item-equipment__value-ids");
   const save = panel.querySelector<HTMLButtonElement>(".debug-item-equipment__save");
+  const saveSet = panel.querySelector<HTMLButtonElement>(".debug-item-equipment__save-set");
   const status = panel.querySelector<HTMLElement>(".debug-item-equipment__value-status");
   const context = getActiveItemEquipmentValueContext();
+  const setSaveContext = getActiveItemEquipmentSetSaveContext();
 
   if (valueRarityRow) {
     valueRarityRow.hidden = !context.canEditRarity;
@@ -9856,6 +9914,12 @@ function syncItemEquipmentValueEditor(panel: HTMLElement): void {
 
   if (save) {
     save.disabled = !context.canSave;
+  }
+
+  if (saveSet) {
+    saveSet.disabled = !setSaveContext.canSave;
+    saveSet.title = setSaveContext.statusText;
+    saveSet.setAttribute("aria-label", setSaveContext.statusText);
   }
 
   if (status) {
@@ -9952,6 +10016,41 @@ function createEmptyItemEquipmentValueContext(statusText: string): DebugItemEqui
     canEditPrice: false,
     canSave: false,
   };
+}
+
+function getActiveItemEquipmentSetSaveContext(): DebugItemEquipmentSetSaveContext {
+  const record = getSelectedGeneratedEquipmentRecord(activeEquipmentItemId);
+  const equipmentSet = record?.item.equipmentSet;
+
+  if (!record || !equipmentSet) {
+    return createEmptyItemEquipmentSetSaveContext("Select a generated set item to save set positions.");
+  }
+
+  const records = getGeneratedEquipmentSetRecords(equipmentSet.id);
+
+  if (records.length < 2) {
+    return createEmptyItemEquipmentSetSaveContext(`${equipmentSet.name} has no linked generated set items.`);
+  }
+
+  return {
+    itemIds: records.map((setRecord) => setRecord.item.id),
+    setName: equipmentSet.name,
+    statusText: `Save ${records.length} ${equipmentSet.name} item positions.`,
+    canSave: true,
+  };
+}
+
+function createEmptyItemEquipmentSetSaveContext(statusText: string): DebugItemEquipmentSetSaveContext {
+  return {
+    itemIds: [],
+    setName: "",
+    statusText,
+    canSave: false,
+  };
+}
+
+function getGeneratedEquipmentSetRecords(setId: string): DebugGeneratedShopItemRecord[] {
+  return GENERATED_EQUIPMENT_ITEM_RECORDS.filter((record) => record.item.equipmentSet?.id === setId && isEquipmentSlotKey(record.item.equipmentSlot));
 }
 
 function getGeneratedShopProductForItem(itemId: HeroItemId): DebugGeneratedShopProduct | undefined {
