@@ -44,6 +44,19 @@ export interface PvpCancelRoomResponse {
   ok: true;
 }
 
+export interface PvpRoomListEntry {
+  roomCode: string;
+  hostName: string;
+  hostLevel: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PvpListRoomsResponse {
+  rooms: PvpRoomListEntry[];
+  serverNow: number;
+}
+
 export interface PvpRoomResponse extends PvpRoomSession {
   snapshot: PvpRoomSnapshot;
 }

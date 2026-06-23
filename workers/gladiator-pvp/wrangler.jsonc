@@ -9,6 +9,10 @@
       {
         "name": "PVP_ROOM",
         "class_name": "PvpRoom"
+      },
+      {
+        "name": "PVP_LOBBY",
+        "class_name": "PvpLobby"
       }
     ]
   },
@@ -16,6 +20,10 @@
     {
       "tag": "v1",
       "new_sqlite_classes": ["PvpRoom"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["PvpLobby"]
     }
   ]
 }

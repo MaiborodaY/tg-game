@@ -74,8 +74,8 @@ import {
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
-import { cancelPvpRoom, connectPvpRoom, createPvpRoom, joinPvpRoom, type PvpConnection } from "./pvpClient";
-import type { PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
+import { cancelPvpRoom, connectPvpRoom, createPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
+import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
@@ -105,10 +105,8 @@ const cityArenaHardButton = document.querySelector<HTMLButtonElement>("#cityAren
 const cityArenaHardName = cityArenaHardButton?.querySelector<HTMLElement>("strong");
 const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
 const cityPvpCreateButton = document.querySelector<HTMLButtonElement>("#cityPvpCreateButton");
-const cityPvpJoinForm = document.querySelector<HTMLFormElement>("#cityPvpJoinForm");
-const cityPvpRoomCodeInput = document.querySelector<HTMLInputElement>("#cityPvpRoomCodeInput");
 const cityPvpJoinButton = document.querySelector<HTMLButtonElement>("#cityPvpJoinButton");
-const cityPvpCancelButton = document.querySelector<HTMLButtonElement>("#cityPvpCancelButton");
+const cityPvpRoomList = document.querySelector<HTMLElement>("#cityPvpRoomList");
 const cityPvpStatus = document.querySelector<HTMLOutputElement>("#cityPvpStatus");
 const pvpTurnTimer = document.querySelector<HTMLOutputElement>("#pvpTurnTimer");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
@@ -143,6 +141,8 @@ let pvpConnection: PvpConnection | undefined;
 let pvpSnapshot: PvpRoomSnapshot | undefined;
 let pvpActionPending = false;
 let pvpControlsBusy = false;
+let pvpRoomsVisible = false;
+let pvpRoomList: PvpRoomListEntry[] = [];
 let pvpDeadlineLocalTime: number | undefined;
 let pvpTimerInterval: number | undefined;
 let hasStarted = false;
@@ -828,7 +828,6 @@ function setPvpControlsBusy(busy: boolean): void {
 
 function syncPvpControls(): void {
   const disabled = pvpControlsBusy || Boolean(pvpSession);
-  const canCancel = canCancelPvpRoom();
 
   if (cityPvpCreateButton) {
     cityPvpCreateButton.disabled = disabled;
@@ -836,14 +835,118 @@ function syncPvpControls(): void {
   if (cityPvpJoinButton) {
     cityPvpJoinButton.disabled = disabled;
   }
-  if (cityPvpRoomCodeInput) {
-    cityPvpRoomCodeInput.disabled = disabled;
-  }
-  if (cityPvpCancelButton) {
-    cityPvpCancelButton.hidden = !canCancel;
-    cityPvpCancelButton.disabled = pvpControlsBusy || !canCancel;
-  }
   syncCityArenaBotControls();
+  renderPvpRoomList();
+}
+
+function renderPvpRoomList(): void {
+  if (!cityPvpRoomList) {
+    return;
+  }
+
+  const entries = getVisiblePvpRoomEntries();
+  const shouldShow = pvpRoomsVisible || entries.length > 0;
+
+  cityPvpRoomList.hidden = !shouldShow;
+  if (!shouldShow) {
+    cityPvpRoomList.replaceChildren();
+    return;
+  }
+
+  if (pvpControlsBusy && entries.length === 0) {
+    cityPvpRoomList.replaceChildren(createPvpRoomListMessage("Loading rooms..."));
+    return;
+  }
+
+  cityPvpRoomList.replaceChildren(...(entries.length > 0 ? entries.map(createPvpRoomListItem) : [createPvpRoomListMessage("No open rooms.")]));
+}
+
+function getVisiblePvpRoomEntries(): PvpRoomListEntry[] {
+  const entries = [...pvpRoomList];
+  const currentEntry = getCurrentPvpRoomListEntry();
+
+  if (currentEntry && !entries.some((entry) => entry.roomCode === currentEntry.roomCode)) {
+    entries.unshift(currentEntry);
+  }
+
+  return entries;
+}
+
+function getCurrentPvpRoomListEntry(): PvpRoomListEntry | undefined {
+  if (!pvpSession || pvpSession.seat !== "host" || pvpSnapshot?.status !== "waiting") {
+    return undefined;
+  }
+
+  const now = Date.now();
+
+  return {
+    roomCode: pvpSession.roomCode,
+    hostName: hero.name,
+    hostLevel: hero.level,
+    createdAt: pvpSnapshot.serverNow || now,
+    updatedAt: pvpSnapshot.serverNow || now,
+  };
+}
+
+function createPvpRoomListItem(room: PvpRoomListEntry): HTMLElement {
+  const item = document.createElement("div");
+  const copy = document.createElement("div");
+  const name = document.createElement("strong");
+  const meta = document.createElement("span");
+  const button = document.createElement("button");
+  const isOwnRoom = pvpSession?.roomCode === room.roomCode && pvpSession.seat === "host" && pvpSnapshot?.status === "waiting";
+
+  item.className = "city-arena-menu__pvp-room";
+  copy.className = "city-arena-menu__pvp-room-copy";
+  name.className = "city-arena-menu__pvp-room-name";
+  name.textContent = isOwnRoom ? `${room.hostName} (YOU)` : room.hostName;
+  meta.className = "city-arena-menu__pvp-room-meta";
+  meta.textContent = `LV ${room.hostLevel} - WAITING`;
+  button.className = "city-arena-menu__pvp-button city-arena-menu__pvp-room-button";
+  button.type = "button";
+  button.textContent = isOwnRoom ? "CANCEL" : "JOIN";
+  button.disabled = pvpControlsBusy || (!isOwnRoom && Boolean(pvpSession));
+  button.addEventListener("click", () => {
+    if (isOwnRoom) {
+      void handleCancelPvpRoom();
+      return;
+    }
+
+    void handleJoinListedPvpRoom(room.roomCode);
+  });
+
+  copy.append(name, meta);
+  item.append(copy, button);
+  return item;
+}
+
+function createPvpRoomListMessage(message: string): HTMLElement {
+  const item = document.createElement("div");
+
+  item.className = "city-arena-menu__pvp-room-empty";
+  item.textContent = message;
+  return item;
+}
+
+async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<void> {
+  pvpRoomsVisible = true;
+  setPvpControlsBusy(true);
+  if (!options.silent) {
+    setPvpStatus("Loading rooms...");
+  }
+
+  try {
+    const response = await listPvpRooms();
+
+    pvpRoomList = response.rooms;
+    setPvpControlsBusy(false);
+    if (!options.silent) {
+      setPvpStatus(response.rooms.length > 0 ? "Choose a room." : "No open rooms.");
+    }
+  } catch (error) {
+    setPvpStatus(error instanceof Error ? error.message : "PvP rooms failed.");
+    setPvpControlsBusy(false);
+  }
 }
 
 async function handleCreatePvpRoom(): Promise<void> {
@@ -856,23 +959,15 @@ async function handleCreatePvpRoom(): Promise<void> {
 
   try {
     beginPvpRoom(await createPvpRoom(hero));
+    await refreshPvpRoomList({ silent: true });
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP room failed.");
     setPvpControlsBusy(false);
   }
 }
 
-async function handleJoinPvpRoom(event: Event): Promise<void> {
-  event.preventDefault();
-
+async function handleJoinListedPvpRoom(roomCode: string): Promise<void> {
   if (pvpControlsBusy || pvpSession) {
-    return;
-  }
-
-  const roomCode = cityPvpRoomCodeInput?.value.trim() ?? "";
-
-  if (!roomCode) {
-    setPvpStatus("Enter room code.");
     return;
   }
 
@@ -903,8 +998,11 @@ async function handleCancelPvpRoom(): Promise<void> {
 
   try {
     await cancelPvpRoom(session);
+    pvpRoomList = pvpRoomList.filter((room) => room.roomCode !== session.roomCode);
     pvpControlsBusy = false;
     leavePvpRoom({ keepStatus: true });
+    pvpRoomsVisible = true;
+    renderPvpRoomList();
     setPvpStatus("Room cancelled.");
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP cancel failed.");
@@ -920,6 +1018,7 @@ function beginPvpRoom(response: PvpRoomResponse): void {
     seat: response.seat,
   };
   pvpSnapshot = response.snapshot;
+  pvpRoomsVisible = true;
   setPvpControlsBusy(false);
   syncPvpControls();
   setPvpStatus(formatPvpRoomStatus(response.snapshot));
@@ -989,11 +1088,11 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
 
 function formatPvpRoomStatus(snapshot: PvpRoomSnapshot): string {
   if (snapshot.status === "waiting") {
-    return `Room ${snapshot.roomCode}. Waiting.`;
+    return "Waiting for opponent.";
   }
 
   if (snapshot.status === "finished") {
-    return `Room ${snapshot.roomCode}. Finished.`;
+    return "PvP match finished.";
   }
 
   return snapshot.activeSeat === snapshot.seat ? "Your turn." : "Opponent turn.";
@@ -1076,6 +1175,10 @@ function openCityArenaMenu(): void {
   armoryShop?.close();
   clearShopPreview();
   renderCityArenaMenu();
+  if (pvpSession) {
+    pvpRoomsVisible = true;
+  }
+  syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
 }
@@ -1743,11 +1846,8 @@ cityArenaHardButton?.addEventListener("click", () => {
 cityPvpCreateButton?.addEventListener("click", () => {
   void handleCreatePvpRoom();
 });
-cityPvpJoinForm?.addEventListener("submit", (event) => {
-  void handleJoinPvpRoom(event);
-});
-cityPvpCancelButton?.addEventListener("click", () => {
-  void handleCancelPvpRoom();
+cityPvpJoinButton?.addEventListener("click", () => {
+  void refreshPvpRoomList();
 });
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", returnToCity);

@@ -1,6 +1,6 @@
 import type { ActionId } from "./combat";
 import type { HeroState } from "./hero";
-import type { PvpCancelRoomResponse, PvpClientMessage, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
+import type { PvpCancelRoomResponse, PvpClientMessage, PvpListRoomsResponse, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
 
 export interface PvpConnection {
   close: () => void;
@@ -20,6 +20,10 @@ const DEFAULT_LOCAL_PVP_API_BASE_URL = "http://localhost:8787/api/pvp";
 
 export async function createPvpRoom(hero: HeroState): Promise<PvpRoomResponse> {
   return postPvpJson<PvpRoomResponse>("rooms", { hero });
+}
+
+export async function listPvpRooms(): Promise<PvpListRoomsResponse> {
+  return getPvpJson<PvpListRoomsResponse>("rooms");
 }
 
 export async function joinPvpRoom(roomCode: string, hero: HeroState): Promise<PvpRoomResponse> {
@@ -83,6 +87,17 @@ async function postPvpJson<T>(path: string, payload: unknown): Promise<T> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
   });
+
+  return readPvpJsonResponse<T>(response);
+}
+
+async function getPvpJson<T>(path: string): Promise<T> {
+  const response = await fetch(getPvpHttpUrl(path));
+
+  return readPvpJsonResponse<T>(response);
+}
+
+async function readPvpJsonResponse<T>(response: Response): Promise<T> {
   const data = await response.json() as T & { error?: string };
 
   if (!response.ok) {

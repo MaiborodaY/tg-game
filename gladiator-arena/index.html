@@ -67,12 +67,9 @@
                 <div class="city-arena-menu__pvp-title">PVP ROOM</div>
                 <div class="city-arena-menu__pvp-actions">
                   <button id="cityPvpCreateButton" class="city-arena-menu__pvp-button" type="button">CREATE</button>
-                  <form id="cityPvpJoinForm" class="city-arena-menu__pvp-join">
-                    <input id="cityPvpRoomCodeInput" class="city-arena-menu__pvp-input" type="text" maxlength="6" autocomplete="off" inputmode="text" aria-label="Room code" placeholder="CODE" />
-                    <button id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="submit">JOIN</button>
-                  </form>
+                  <button id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="button">JOIN</button>
                 </div>
-                <button id="cityPvpCancelButton" class="city-arena-menu__pvp-button city-arena-menu__pvp-cancel" type="button" hidden>CANCEL</button>
+                <div id="cityPvpRoomList" class="city-arena-menu__pvp-room-list" hidden></div>
                 <output id="cityPvpStatus" class="city-arena-menu__pvp-status" aria-live="polite"></output>
               </div>
             </div>

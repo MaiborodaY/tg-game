@@ -10,6 +10,8 @@ import {
   type PvpClientMessage,
   type PvpCreateRoomRequest,
   type PvpJoinRoomRequest,
+  type PvpListRoomsResponse,
+  type PvpRoomListEntry,
   type PvpRoomResponse,
   type PvpRoomSnapshot,
   type PvpRoomStatus,
@@ -19,6 +21,7 @@ import {
 
 export interface Env {
   PVP_ROOM: DurableObjectNamespace<PvpRoom>;
+  PVP_LOBBY: DurableObjectNamespace<PvpLobby>;
 }
 
 interface RoomPlayer {
@@ -45,11 +48,49 @@ interface SocketAttachment {
 }
 
 const ROOM_STORAGE_KEY = "room";
+const LOBBY_STORAGE_KEY = "rooms";
+const PVP_LOBBY_NAME = "global";
 const TURN_DURATION_MS = 20_000;
 const ROOM_CODE_LENGTH = 6;
+const MAX_LOBBY_ROOMS = 50;
 const API_PREFIX = "/api/pvp";
 const REST_ACTION_ID: ActionId = "rest";
 const ACTION_IDS = new Set<ActionId>(actionOrder);
+
+export class PvpLobby extends DurableObject<Env> {
+  async listRooms(): Promise<PvpListRoomsResponse> {
+    const rooms = await this.readRooms();
+
+    return {
+      rooms: [...rooms].sort((left, right) => right.createdAt - left.createdAt),
+      serverNow: Date.now(),
+    };
+  }
+
+  async addRoom(room: PvpRoomListEntry): Promise<void> {
+    const rooms = (await this.readRooms()).filter((entry) => entry.roomCode !== room.roomCode);
+
+    rooms.unshift(room);
+    await this.writeRooms(rooms.slice(0, MAX_LOBBY_ROOMS));
+  }
+
+  async removeRoom(roomCode: string): Promise<void> {
+    const rooms = await this.readRooms();
+    const nextRooms = rooms.filter((entry) => entry.roomCode !== roomCode);
+
+    if (nextRooms.length !== rooms.length) {
+      await this.writeRooms(nextRooms);
+    }
+  }
+
+  private async readRooms(): Promise<PvpRoomListEntry[]> {
+    return (await this.ctx.storage.get<PvpRoomListEntry[]>(LOBBY_STORAGE_KEY)) ?? [];
+  }
+
+  private writeRooms(rooms: PvpRoomListEntry[]): Promise<void> {
+    return this.ctx.storage.put(LOBBY_STORAGE_KEY, rooms);
+  }
+}
 
 export class PvpRoom extends DurableObject<Env> {
   async hasRoom(): Promise<boolean> {
@@ -375,11 +416,17 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   const path = normalizePath(url.pathname);
   const segments = path.split("/").filter(Boolean);
 
+  if (request.method === "GET" && segments.length === 1 && segments[0] === "rooms") {
+    return json(await getPvpLobby(env).listRooms());
+  }
+
   if (request.method === "POST" && segments.length === 1 && segments[0] === "rooms") {
     const body = (await request.json()) as PvpCreateRoomRequest;
     const roomCode = await createUniqueRoomCode(env);
     const room = env.PVP_ROOM.getByName(roomCode);
     const response = await room.createRoom(roomCode, body.hero);
+
+    await getPvpLobby(env).addRoom(createRoomListEntry(roomCode, body.hero));
 
     return json(response);
   }
@@ -390,6 +437,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     const room = env.PVP_ROOM.getByName(roomCode);
     const response = await room.joinRoom(body.hero);
 
+    await getPvpLobby(env).removeRoom(roomCode);
+
     return json(response);
   }
 
@@ -398,6 +447,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     const body = (await request.json()) as PvpCancelRoomRequest;
     const room = env.PVP_ROOM.getByName(roomCode);
     const response = await room.cancelRoom(body.token);
+
+    await getPvpLobby(env).removeRoom(roomCode);
 
     return json(response);
   }
@@ -410,6 +461,22 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   }
 
   return json({ ok: false, error: "Not found." }, 404);
+}
+
+function getPvpLobby(env: Env): DurableObjectStub<PvpLobby> {
+  return env.PVP_LOBBY.getByName(PVP_LOBBY_NAME);
+}
+
+function createRoomListEntry(roomCode: string, hero: HeroState): PvpRoomListEntry {
+  const now = Date.now();
+
+  return {
+    roomCode,
+    hostName: normalizeHostName(hero.name),
+    hostLevel: Math.max(1, Math.floor(Number(hero.level) || 1)),
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 async function createUniqueRoomCode(env: Env): Promise<string> {
@@ -438,6 +505,10 @@ function createRoomCode(): string {
 
 function normalizeRoomCode(code: string): string {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, ROOM_CODE_LENGTH);
+}
+
+function normalizeHostName(name: string): string {
+  return name.trim().slice(0, 24) || "Gladiator";
 }
 
 function normalizePath(pathname: string): string {

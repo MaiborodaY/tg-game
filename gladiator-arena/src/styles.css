@@ -2782,20 +2782,14 @@ body.debug-active .city-menu__portrait-button:active {
   text-align: center;
 }
 
-.city-arena-menu__pvp-actions,
-.city-arena-menu__pvp-join {
+.city-arena-menu__pvp-actions {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
   min-width: 0;
 }
 
-.city-arena-menu__pvp-join {
-  grid-template-columns: minmax(0, 1fr) minmax(62px, 0.72fr);
-}
-
-.city-arena-menu__pvp-button,
-.city-arena-menu__pvp-input {
+.city-arena-menu__pvp-button {
   min-width: 0;
   min-height: 34px;
   border: 2px solid #1a0803;
@@ -2816,19 +2810,63 @@ body.debug-active .city-menu__portrait-button:active {
   cursor: pointer;
 }
 
-.city-arena-menu__pvp-cancel {
-  width: 100%;
-}
-
 .city-arena-menu__pvp-button:disabled {
   cursor: wait;
   filter: grayscale(0.6) brightness(0.72);
 }
 
-.city-arena-menu__pvp-input {
+.city-arena-menu__pvp-room-list {
+  display: grid;
+  gap: 6px;
+  max-height: 118px;
+  overflow: auto;
+  padding-right: 1px;
+}
+
+.city-arena-menu__pvp-room {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(58px, auto);
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 7px;
+  background: rgba(12, 3, 1, 0.5);
+}
+
+.city-arena-menu__pvp-room-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.city-arena-menu__pvp-room-name,
+.city-arena-menu__pvp-room-meta,
+.city-arena-menu__pvp-room-empty {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-arena-menu__pvp-room-name {
+  color: #fff0bd;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.city-arena-menu__pvp-room-meta,
+.city-arena-menu__pvp-room-empty {
+  color: #c89651;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.city-arena-menu__pvp-room-button {
+  min-height: 28px;
   padding: 0 8px;
-  background: rgba(12, 3, 1, 0.74);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.34);
+  font-size: 0.62rem;
 }
 
 .city-arena-menu__pvp-status {
