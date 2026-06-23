@@ -75,7 +75,7 @@ import {
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
-import { cancelPvpRoom, connectPvpRoom, createPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
+import { cancelPvpRoom, connectPvpRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
 import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
@@ -996,6 +996,31 @@ async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<v
   }
 }
 
+async function restoreCurrentPvpRoom(options: { silent?: boolean } = {}): Promise<boolean> {
+  if (pvpControlsBusy || pvpSession) {
+    return false;
+  }
+
+  try {
+    const response = await getCurrentPvpRoom();
+
+    if (!response) {
+      return false;
+    }
+
+    beginPvpRoom(response);
+    if (!options.silent) {
+      setPvpStatus(formatPvpRoomStatus(response.snapshot));
+    }
+    return true;
+  } catch (error) {
+    if (!options.silent) {
+      setPvpStatus(error instanceof Error ? error.message : "PvP restore failed.");
+    }
+    return false;
+  }
+}
+
 async function handleCreatePvpRoom(): Promise<void> {
   if (pvpControlsBusy || pvpSession) {
     return;
@@ -1228,6 +1253,7 @@ function openCityArenaMenu(): void {
   syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
+  void restoreCurrentPvpRoom({ silent: true });
 }
 
 function closeCityArenaMenu(): void {
@@ -1263,6 +1289,7 @@ async function finishInitialCityEntry(): Promise<void> {
 async function startInitialCityEntry(): Promise<void> {
   await hydrateHeroFromCloudSave();
   await finishInitialCityEntry();
+  void restoreCurrentPvpRoom({ silent: true });
 }
 
 function showCityReturnTransition(): void {

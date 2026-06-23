@@ -9,6 +9,7 @@ import {
   type PvpCancelRoomResponse,
   type PvpClientMessage,
   type PvpCreateRoomRequest,
+  type PvpCurrentRoomResponse,
   type PvpJoinRoomRequest,
   type PvpListRoomsResponse,
   type PvpRoomListEntry,
@@ -22,11 +23,13 @@ import {
 export interface Env {
   PVP_ROOM: DurableObjectNamespace<PvpRoom>;
   PVP_LOBBY: DurableObjectNamespace<PvpLobby>;
+  BOT_TOKEN?: string;
 }
 
 interface RoomPlayer {
   token: string;
   hero: HeroState;
+  telegramUserId?: string;
 }
 
 interface RoomRecord {
@@ -38,8 +41,21 @@ interface RoomRecord {
   activeSeat?: PvpSeat;
   turnVersion: number;
   deadlineAt?: number;
+  expiresAt?: number;
   createdAt: number;
   updatedAt: number;
+}
+
+interface PvpActiveSession {
+  roomCode: string;
+  seat: PvpSeat;
+  token: string;
+  updatedAt: number;
+}
+
+interface TelegramInitUser {
+  id: number;
+  username?: string;
 }
 
 interface SocketAttachment {
@@ -49,8 +65,11 @@ interface SocketAttachment {
 
 const ROOM_STORAGE_KEY = "room";
 const LOBBY_STORAGE_KEY = "rooms";
+const ACTIVE_SESSIONS_STORAGE_KEY = "activeSessions";
 const PVP_LOBBY_NAME = "global";
 const TURN_DURATION_MS = 20_000;
+const WAITING_ROOM_TTL_MS = 5 * 60_000;
+const FINISHED_ROOM_TTL_MS = 5 * 60_000;
 const ROOM_CODE_LENGTH = 6;
 const MAX_LOBBY_ROOMS = 50;
 const API_PREFIX = "/api/pvp";
@@ -59,7 +78,7 @@ const ACTION_IDS = new Set<ActionId>(actionOrder);
 
 export class PvpLobby extends DurableObject<Env> {
   async listRooms(): Promise<PvpListRoomsResponse> {
-    const rooms = await this.readRooms();
+    const rooms = await this.readLiveRooms();
 
     return {
       rooms: [...rooms].sort((left, right) => right.createdAt - left.createdAt),
@@ -83,6 +102,58 @@ export class PvpLobby extends DurableObject<Env> {
     }
   }
 
+  async getActiveSession(telegramUserId: string): Promise<PvpActiveSession | undefined> {
+    const sessions = await this.readActiveSessions();
+
+    return sessions[telegramUserId];
+  }
+
+  async setActiveSession(telegramUserId: string, session: PvpActiveSession): Promise<void> {
+    const sessions = await this.readActiveSessions();
+
+    sessions[telegramUserId] = session;
+    await this.writeActiveSessions(sessions);
+  }
+
+  async removeActiveSession(telegramUserId: string): Promise<void> {
+    const sessions = await this.readActiveSessions();
+
+    if (!sessions[telegramUserId]) {
+      return;
+    }
+
+    delete sessions[telegramUserId];
+    await this.writeActiveSessions(sessions);
+  }
+
+  async removeActiveSessions(telegramUserIds: readonly string[]): Promise<void> {
+    const sessions = await this.readActiveSessions();
+    let changed = false;
+
+    telegramUserIds.forEach((telegramUserId) => {
+      if (sessions[telegramUserId]) {
+        delete sessions[telegramUserId];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      await this.writeActiveSessions(sessions);
+    }
+  }
+
+  private async readLiveRooms(): Promise<PvpRoomListEntry[]> {
+    const rooms = await this.readRooms();
+    const now = Date.now();
+    const liveRooms = rooms.filter((entry) => !entry.expiresAt || entry.expiresAt > now);
+
+    if (liveRooms.length !== rooms.length) {
+      await this.writeRooms(liveRooms);
+    }
+
+    return liveRooms;
+  }
+
   private async readRooms(): Promise<PvpRoomListEntry[]> {
     return (await this.ctx.storage.get<PvpRoomListEntry[]>(LOBBY_STORAGE_KEY)) ?? [];
   }
@@ -90,15 +161,23 @@ export class PvpLobby extends DurableObject<Env> {
   private writeRooms(rooms: PvpRoomListEntry[]): Promise<void> {
     return this.ctx.storage.put(LOBBY_STORAGE_KEY, rooms);
   }
+
+  private async readActiveSessions(): Promise<Record<string, PvpActiveSession>> {
+    return (await this.ctx.storage.get<Record<string, PvpActiveSession>>(ACTIVE_SESSIONS_STORAGE_KEY)) ?? {};
+  }
+
+  private writeActiveSessions(sessions: Record<string, PvpActiveSession>): Promise<void> {
+    return this.ctx.storage.put(ACTIVE_SESSIONS_STORAGE_KEY, sessions);
+  }
 }
 
 export class PvpRoom extends DurableObject<Env> {
   async hasRoom(): Promise<boolean> {
-    return Boolean(await this.readRoom());
+    return Boolean(await this.readLiveRoom());
   }
 
-  async createRoom(roomCode: string, hero: HeroState): Promise<PvpRoomResponse> {
-    const existing = await this.readRoom();
+  async createRoom(roomCode: string, hero: HeroState, telegramUserId?: string): Promise<PvpRoomResponse> {
+    const existing = await this.readLiveRoom();
 
     if (existing) {
       throw new Error("Room already exists.");
@@ -106,16 +185,19 @@ export class PvpRoom extends DurableObject<Env> {
 
     const token = crypto.randomUUID();
     const now = Date.now();
+    const expiresAt = now + WAITING_ROOM_TTL_MS;
     const record: RoomRecord = {
       roomCode,
       status: "waiting",
-      host: { token, hero },
+      host: { token, hero, telegramUserId },
       turnVersion: 0,
+      expiresAt,
       createdAt: now,
       updatedAt: now,
     };
 
     await this.writeRoom(record);
+    await this.scheduleRoomAlarm(record);
 
     return {
       roomCode,
@@ -125,13 +207,16 @@ export class PvpRoom extends DurableObject<Env> {
     };
   }
 
-  async cancelRoom(token: string): Promise<PvpCancelRoomResponse> {
-    const record = await this.readRoom();
+  async cancelRoom(token: string, telegramUserId?: string): Promise<{ response: PvpCancelRoomResponse; telegramUserIds: string[] }> {
+    const record = await this.readLiveRoom();
 
     if (!record?.host) {
       throw new Error("Room not found.");
     }
-    if (record.host.token !== token) {
+    const canCancelByToken = Boolean(token && record.host.token === token);
+    const canCancelByTelegramUser = Boolean(telegramUserId && record.host.telegramUserId === telegramUserId);
+
+    if (!canCancelByToken && !canCancelByTelegramUser) {
       throw new Error("Only room host can cancel this room.");
     }
     if (record.status !== "waiting") {
@@ -142,11 +227,14 @@ export class PvpRoom extends DurableObject<Env> {
     await this.ctx.storage.deleteAlarm();
     await this.ctx.storage.delete(ROOM_STORAGE_KEY);
 
-    return { ok: true };
+    return {
+      response: { ok: true },
+      telegramUserIds: getRoomTelegramUserIds(record),
+    };
   }
 
-  async joinRoom(hero: HeroState): Promise<PvpRoomResponse> {
-    const record = await this.readRoom();
+  async joinRoom(hero: HeroState, telegramUserId?: string): Promise<PvpRoomResponse> {
+    const record = await this.readLiveRoom();
 
     if (!record?.host) {
       throw new Error("Room not found.");
@@ -158,13 +246,13 @@ export class PvpRoom extends DurableObject<Env> {
     const token = crypto.randomUUID();
     const nextRecord = this.startMatch({
       ...record,
-      guest: { token, hero },
+      guest: { token, hero, telegramUserId },
       status: "playing",
       updatedAt: Date.now(),
     });
 
     await this.writeRoom(nextRecord);
-    await this.scheduleTurnAlarm(nextRecord);
+    await this.scheduleRoomAlarm(nextRecord);
     this.broadcastSnapshots(nextRecord);
 
     return {
@@ -175,12 +263,28 @@ export class PvpRoom extends DurableObject<Env> {
     };
   }
 
+  async reconnectRoom(token: string): Promise<PvpRoomResponse | undefined> {
+    const record = await this.readLiveRoom();
+    const seat = record ? this.getSeatForToken(record, token) : undefined;
+
+    if (!record || !seat) {
+      return undefined;
+    }
+
+    return {
+      roomCode: record.roomCode,
+      token,
+      seat,
+      snapshot: this.createViewerSnapshot(record, seat),
+    };
+  }
+
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
       return json({ ok: false, error: "Expected WebSocket upgrade." }, 426);
     }
 
-    const record = await this.readRoom();
+    const record = await this.readLiveRoom();
     const url = new URL(request.url);
     const token = url.searchParams.get("token") ?? "";
     const seat = record ? this.getSeatForToken(record, token) : undefined;
@@ -228,23 +332,44 @@ export class PvpRoom extends DurableObject<Env> {
   async alarm(): Promise<void> {
     const record = await this.readRoom();
 
+    if (record?.status === "waiting" && record.expiresAt) {
+      if (Date.now() < record.expiresAt) {
+        await this.scheduleRoomAlarm(record);
+        return;
+      }
+
+      this.closeRoomSockets("Room expired.");
+      await this.ctx.storage.delete(ROOM_STORAGE_KEY);
+      return;
+    }
+
+    if (record?.status === "finished" && record.expiresAt) {
+      if (Date.now() < record.expiresAt) {
+        await this.scheduleRoomAlarm(record);
+        return;
+      }
+
+      await this.ctx.storage.delete(ROOM_STORAGE_KEY);
+      return;
+    }
+
     if (!record || record.status !== "playing" || !record.state || !record.activeSeat || !record.deadlineAt) {
       return;
     }
 
     if (Date.now() < record.deadlineAt) {
-      await this.scheduleTurnAlarm(record);
+      await this.scheduleRoomAlarm(record);
       return;
     }
 
     const nextRecord = this.applyAction(record, record.activeSeat, REST_ACTION_ID);
     await this.writeRoom(nextRecord);
-    await this.scheduleTurnAlarm(nextRecord);
+    await this.scheduleRoomAlarm(nextRecord);
     this.broadcastSnapshots(nextRecord);
   }
 
   private async handleAction(seat: PvpSeat, actionId: ActionId, turnVersion: number): Promise<void> {
-    const record = await this.resolveExpiredTurnIfNeeded(await this.readRoom());
+    const record = await this.resolveExpiredTurnIfNeeded(await this.readLiveRoom());
 
     if (!record || record.status !== "playing" || !record.state || !record.activeSeat) {
       return;
@@ -257,7 +382,7 @@ export class PvpRoom extends DurableObject<Env> {
 
     const nextRecord = this.applyAction(record, seat, actionId);
     await this.writeRoom(nextRecord);
-    await this.scheduleTurnAlarm(nextRecord);
+    await this.scheduleRoomAlarm(nextRecord);
     this.broadcastSnapshots(nextRecord);
   }
 
@@ -272,7 +397,7 @@ export class PvpRoom extends DurableObject<Env> {
 
     const nextRecord = this.applyAction(record, record.activeSeat, REST_ACTION_ID);
     await this.writeRoom(nextRecord);
-    await this.scheduleTurnAlarm(nextRecord);
+    await this.scheduleRoomAlarm(nextRecord);
     this.broadcastSnapshots(nextRecord);
     return nextRecord;
   }
@@ -292,6 +417,7 @@ export class PvpRoom extends DurableObject<Env> {
       activeSeat: "host",
       turnVersion: 1,
       deadlineAt: now + TURN_DURATION_MS,
+      expiresAt: undefined,
       updatedAt: now,
     };
   }
@@ -311,6 +437,8 @@ export class PvpRoom extends DurableObject<Env> {
     const state = resolvePvpTurn(record.state, actor, actionId);
     const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
     const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn) : undefined;
+    const deadlineAt = activeSeat ? now + TURN_DURATION_MS : undefined;
+    const expiresAt = status === "finished" ? now + FINISHED_ROOM_TTL_MS : undefined;
 
     return {
       ...record,
@@ -318,14 +446,20 @@ export class PvpRoom extends DurableObject<Env> {
       state,
       activeSeat,
       turnVersion: record.turnVersion + 1,
-      deadlineAt: activeSeat ? now + TURN_DURATION_MS : undefined,
+      deadlineAt,
+      expiresAt,
       updatedAt: now,
     };
   }
 
-  private async scheduleTurnAlarm(record: RoomRecord): Promise<void> {
+  private async scheduleRoomAlarm(record: RoomRecord): Promise<void> {
     if (record.status === "playing" && record.deadlineAt) {
       await this.ctx.storage.setAlarm(record.deadlineAt);
+      return;
+    }
+
+    if ((record.status === "waiting" || record.status === "finished") && record.expiresAt) {
+      await this.ctx.storage.setAlarm(record.expiresAt);
       return;
     }
 
@@ -388,6 +522,18 @@ export class PvpRoom extends DurableObject<Env> {
     return undefined;
   }
 
+  private async readLiveRoom(): Promise<RoomRecord | undefined> {
+    const record = await this.readRoom();
+
+    if (!record?.expiresAt || record.expiresAt > Date.now() || record.status === "playing") {
+      return record;
+    }
+
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.delete(ROOM_STORAGE_KEY);
+    return undefined;
+  }
+
   private readRoom(): Promise<RoomRecord | undefined> {
     return this.ctx.storage.get<RoomRecord>(ROOM_STORAGE_KEY);
   }
@@ -420,13 +566,28 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     return json(await getPvpLobby(env).listRooms());
   }
 
+  if (request.method === "GET" && segments.length === 2 && segments[0] === "rooms" && segments[1] === "current") {
+    return json(await getCurrentPvpRoom(request, env));
+  }
+
   if (request.method === "POST" && segments.length === 1 && segments[0] === "rooms") {
     const body = (await request.json()) as PvpCreateRoomRequest;
+    const telegramUser = await readOptionalTelegramUser(request, env);
+    const currentRoom = telegramUser ? await getCurrentPvpRoomForUser(env, String(telegramUser.id)) : undefined;
+
+    if (currentRoom) {
+      return json(currentRoom);
+    }
+
     const roomCode = await createUniqueRoomCode(env);
     const room = env.PVP_ROOM.getByName(roomCode);
-    const response = await room.createRoom(roomCode, body.hero);
+    const telegramUserId = telegramUser ? String(telegramUser.id) : undefined;
+    const response = await room.createRoom(roomCode, body.hero, telegramUserId);
 
     await getPvpLobby(env).addRoom(createRoomListEntry(roomCode, body.hero));
+    if (telegramUserId) {
+      await getPvpLobby(env).setActiveSession(telegramUserId, createActiveSession(response));
+    }
 
     return json(response);
   }
@@ -434,10 +595,21 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   if (request.method === "POST" && segments.length === 3 && segments[0] === "rooms" && segments[2] === "join") {
     const roomCode = normalizeRoomCode(segments[1] ?? "");
     const body = (await request.json()) as PvpJoinRoomRequest;
+    const telegramUser = await readOptionalTelegramUser(request, env);
+    const currentRoom = telegramUser ? await getCurrentPvpRoomForUser(env, String(telegramUser.id)) : undefined;
+
+    if (currentRoom) {
+      return json(currentRoom);
+    }
+
     const room = env.PVP_ROOM.getByName(roomCode);
-    const response = await room.joinRoom(body.hero);
+    const telegramUserId = telegramUser ? String(telegramUser.id) : undefined;
+    const response = await room.joinRoom(body.hero, telegramUserId);
 
     await getPvpLobby(env).removeRoom(roomCode);
+    if (telegramUserId) {
+      await getPvpLobby(env).setActiveSession(telegramUserId, createActiveSession(response));
+    }
 
     return json(response);
   }
@@ -445,10 +617,12 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   if (request.method === "POST" && segments.length === 3 && segments[0] === "rooms" && segments[2] === "cancel") {
     const roomCode = normalizeRoomCode(segments[1] ?? "");
     const body = (await request.json()) as PvpCancelRoomRequest;
+    const telegramUser = await readOptionalTelegramUser(request, env);
     const room = env.PVP_ROOM.getByName(roomCode);
-    const response = await room.cancelRoom(body.token);
+    const { response, telegramUserIds } = await room.cancelRoom(body.token, telegramUser ? String(telegramUser.id) : undefined);
 
     await getPvpLobby(env).removeRoom(roomCode);
+    await getPvpLobby(env).removeActiveSessions(telegramUserIds);
 
     return json(response);
   }
@@ -467,6 +641,44 @@ function getPvpLobby(env: Env): DurableObjectStub<PvpLobby> {
   return env.PVP_LOBBY.getByName(PVP_LOBBY_NAME);
 }
 
+async function getCurrentPvpRoom(request: Request, env: Env): Promise<PvpCurrentRoomResponse> {
+  const telegramUser = await readOptionalTelegramUser(request, env);
+  const room = telegramUser ? await getCurrentPvpRoomForUser(env, String(telegramUser.id)) : undefined;
+
+  return {
+    room: room ?? null,
+    serverNow: Date.now(),
+  };
+}
+
+async function getCurrentPvpRoomForUser(env: Env, telegramUserId: string): Promise<PvpRoomResponse | undefined> {
+  const lobby = getPvpLobby(env);
+  const session = await lobby.getActiveSession(telegramUserId);
+
+  if (!session) {
+    return undefined;
+  }
+
+  const room = env.PVP_ROOM.getByName(session.roomCode);
+  const response = await room.reconnectRoom(session.token);
+
+  if (!response) {
+    await lobby.removeActiveSession(telegramUserId);
+    return undefined;
+  }
+
+  return response;
+}
+
+function createActiveSession(response: PvpRoomResponse): PvpActiveSession {
+  return {
+    roomCode: response.roomCode,
+    seat: response.seat,
+    token: response.token,
+    updatedAt: Date.now(),
+  };
+}
+
 function createRoomListEntry(roomCode: string, hero: HeroState): PvpRoomListEntry {
   const now = Date.now();
 
@@ -476,7 +688,12 @@ function createRoomListEntry(roomCode: string, hero: HeroState): PvpRoomListEntr
     hostLevel: Math.max(1, Math.floor(Number(hero.level) || 1)),
     createdAt: now,
     updatedAt: now,
+    expiresAt: now + WAITING_ROOM_TTL_MS,
   };
+}
+
+function getRoomTelegramUserIds(record: RoomRecord): string[] {
+  return [record.host?.telegramUserId, record.guest?.telegramUserId].filter((id): id is string => Boolean(id));
 }
 
 async function createUniqueRoomCode(env: Env): Promise<string> {
@@ -521,6 +738,84 @@ function isActionId(actionId: unknown): actionId is ActionId {
 
 function isPvpSeat(seat: unknown): seat is PvpSeat {
   return seat === "host" || seat === "guest";
+}
+
+async function readOptionalTelegramUser(request: Request, env: Env): Promise<TelegramInitUser | undefined> {
+  const initData = request.headers.get("x-telegram-init-data") ?? "";
+
+  if (!initData || !env.BOT_TOKEN) {
+    return undefined;
+  }
+
+  const auth = await verifyTelegramInitData(initData, env.BOT_TOKEN);
+
+  if (!auth.ok) {
+    throw new Error(auth.error);
+  }
+
+  return auth.user;
+}
+
+async function verifyTelegramInitData(initData: string, botToken: string): Promise<{ ok: true; user: TelegramInitUser } | { ok: false; error: string }> {
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash") ?? "";
+  const userJson = params.get("user") ?? "";
+
+  params.delete("hash");
+  const dataCheckString = [...params.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+
+  const secretKey = await hmacSha256(new TextEncoder().encode("WebAppData"), botToken);
+  const digest = await hmacSha256(secretKey, dataCheckString);
+
+  if (!timingSafeEqualHex(hash, bytesToHex(digest))) {
+    return { ok: false, error: "bad_init_data_signature" };
+  }
+
+  try {
+    const user = JSON.parse(userJson) as Partial<TelegramInitUser>;
+    const userId = typeof user.id === "number" && Number.isFinite(user.id) ? Math.floor(user.id) : undefined;
+
+    if (userId === undefined) {
+      return { ok: false, error: "missing_telegram_user" };
+    }
+
+    return {
+      ok: true,
+      user: {
+        id: userId,
+        username: typeof user.username === "string" ? user.username : undefined,
+      },
+    };
+  } catch {
+    return { ok: false, error: "bad_telegram_user" };
+  }
+}
+
+async function hmacSha256(key: BufferSource, data: string): Promise<ArrayBuffer> {
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+
+  return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data));
+}
+
+function bytesToHex(bytes: ArrayBuffer): string {
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function timingSafeEqualHex(left: string, right: string): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  let mismatch = 0;
+
+  for (let index = 0; index < left.length; index += 1) {
+    mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+
+  return mismatch === 0;
 }
 
 function sendSocketMessage(ws: WebSocket, message: PvpServerMessage): void {

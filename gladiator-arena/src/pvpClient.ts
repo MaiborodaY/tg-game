@@ -1,6 +1,7 @@
 import type { ActionId } from "./combat";
+import { getTelegramInitData } from "./telegram";
 import type { HeroState } from "./hero";
-import type { PvpCancelRoomResponse, PvpClientMessage, PvpListRoomsResponse, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
+import type { PvpCancelRoomResponse, PvpClientMessage, PvpCurrentRoomResponse, PvpListRoomsResponse, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
 
 export interface PvpConnection {
   close: () => void;
@@ -24,6 +25,12 @@ export async function createPvpRoom(hero: HeroState): Promise<PvpRoomResponse> {
 
 export async function listPvpRooms(): Promise<PvpListRoomsResponse> {
   return getPvpJson<PvpListRoomsResponse>("rooms");
+}
+
+export async function getCurrentPvpRoom(): Promise<PvpRoomResponse | undefined> {
+  const response = await getPvpJson<PvpCurrentRoomResponse>("rooms/current");
+
+  return response.room ?? undefined;
 }
 
 export async function joinPvpRoom(roomCode: string, hero: HeroState): Promise<PvpRoomResponse> {
@@ -84,7 +91,7 @@ export function getPvpApiBaseUrl(): string {
 async function postPvpJson<T>(path: string, payload: unknown): Promise<T> {
   const response = await fetch(getPvpHttpUrl(path), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: getPvpRequestHeaders(true),
     body: JSON.stringify(payload),
   });
 
@@ -92,9 +99,25 @@ async function postPvpJson<T>(path: string, payload: unknown): Promise<T> {
 }
 
 async function getPvpJson<T>(path: string): Promise<T> {
-  const response = await fetch(getPvpHttpUrl(path));
+  const response = await fetch(getPvpHttpUrl(path), {
+    headers: getPvpRequestHeaders(false),
+  });
 
   return readPvpJsonResponse<T>(response);
+}
+
+function getPvpRequestHeaders(hasJsonBody: boolean): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const initData = getTelegramInitData();
+
+  if (hasJsonBody) {
+    headers["content-type"] = "application/json";
+  }
+  if (initData) {
+    headers["x-telegram-init-data"] = initData;
+  }
+
+  return headers;
 }
 
 async function readPvpJsonResponse<T>(response: Response): Promise<T> {

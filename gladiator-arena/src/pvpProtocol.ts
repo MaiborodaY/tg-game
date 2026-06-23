@@ -50,6 +50,7 @@ export interface PvpRoomListEntry {
   hostLevel: number;
   createdAt: number;
   updatedAt: number;
+  expiresAt?: number;
 }
 
 export interface PvpListRoomsResponse {
@@ -59,6 +60,11 @@ export interface PvpListRoomsResponse {
 
 export interface PvpRoomResponse extends PvpRoomSession {
   snapshot: PvpRoomSnapshot;
+}
+
+export interface PvpCurrentRoomResponse {
+  room: PvpRoomResponse | null;
+  serverNow: number;
 }
 
 export function getPvpActorForSeat(seat: PvpSeat): TurnOwner {
