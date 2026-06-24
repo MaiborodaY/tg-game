@@ -251,5 +251,33 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
         rewards: {"win":{"gold":105,"xp":66},"loss":{"gold":1,"xp":1}},
       },
     ],
+  },
+  {
+    id: 10,
+    name: "Obsidian Temple",
+    unlockBossId: "arena_boss_9",
+    opponents: [
+      {
+        id: "dust_arena_10_easy",
+        difficultyId: "easy",
+        randomBaseStatPoints: 27,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":1,"bowChance":0},{"itemRarities":["uncommon"],"rollChance":1,"bowChance":0}],
+        rewards: {"win":{"gold":105,"xp":64},"loss":{"gold":1,"xp":1}},
+      },
+      {
+        id: "dust_arena_10_medium",
+        difficultyId: "medium",
+        randomBaseStatPoints: 30,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":1,"bowChance":0},{"itemRarities":["uncommon"],"rollChance":1,"bowChance":0}],
+        rewards: {"win":{"gold":110,"xp":68},"loss":{"gold":1,"xp":1}},
+      },
+      {
+        id: "dust_arena_10_hard",
+        difficultyId: "hard",
+        randomBaseStatPoints: 33,
+        equipmentPools: [{"itemRarities":["common"],"rollChance":1,"bowChance":0},{"itemRarities":["uncommon"],"rollChance":1,"bowChance":0}],
+        rewards: {"win":{"gold":115,"xp":72},"loss":{"gold":1,"xp":1}},
+      },
+    ],
   }
 ];

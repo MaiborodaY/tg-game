@@ -281,6 +281,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_viper_01","name":"Viper 01 Back Boot","price":76,"itemIds":["generated_equipment_back_boot_viper_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_boot_void_king_01","name":"Void King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    assetKeys: {"backBootAssetKey":"back-boot-void-king-01"},
+    equipmentTuning: {"x":-20.97614201725014,"y":-2.958612976297559,"angle":0,"scaleX":0.81,"scaleY":1.17,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-boot-void-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-boot-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-boot-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_boot_wood_boss_01","name":"Wood Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":4},
     assetKeys: {"backBootAssetKey":"back-boot-wood-boss-01"},
     equipmentTuning: {"x":6,"y":-4,"angle":0,"scaleX":1.31,"scaleY":1.38,"flipX":false,"flipY":false},
@@ -535,6 +546,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_glove_viper_01","name":"Viper 01 Back Glove","price":76,"itemIds":["generated_equipment_back_glove_viper_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_back_glove_void_king_01","name":"Void King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    assetKeys: {"backGloveAssetKey":"back-glove-void-king-01"},
+    equipmentTuning: {"x":-2.7837484562774932,"y":12.171297091456836,"angle":-3,"scaleX":0.69,"scaleY":0.72,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-glove-void-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-glove-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_glove_wood_boss_01","name":"Wood Back Glove Boss 01","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":5},
@@ -793,6 +815,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_viper_01","name":"Viper 01 Back Greave","price":92,"itemIds":["generated_equipment_back_greave_viper_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_greave_void_king_01","name":"Void King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    assetKeys: {"backGreaveAssetKey":"back-greave-void-king-01"},
+    equipmentTuning: {"x":-4,"y":17.75167785778558,"angle":-12,"scaleX":1.73,"scaleY":1.18,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-void-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-greave-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_greave_wood_boss_01","name":"Wooden greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":5},
     assetKeys: {"backGreaveAssetKey":"back-greave-wood-boss-01"},
     equipmentTuning: {"x":-3,"y":4,"angle":-2,"scaleX":1.53,"scaleY":1.27,"flipX":false,"flipY":false},
@@ -1035,6 +1068,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_shinguard_viper_01","name":"Viper 01 Back Shinguard","price":92,"itemIds":["generated_equipment_back_shinguard_viper_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_back_shinguard_void_king_01","name":"Void King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    assetKeys: {"backShinguardAssetKey":"back-shinguard-void-king-01"},
+    equipmentTuning: {"x":-1.0303002704416997,"y":13.082411889904847,"angle":3,"scaleX":1.49,"scaleY":0.98,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shinguard-void-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-shinguard-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_wood_boss_01","name":"Wood Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":5},
@@ -1281,6 +1325,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_viper_01","name":"Viper 01 Back Shoulderguard","price":92,"itemIds":["generated_equipment_back_shoulderguard_viper_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_back_shoulderguard_void_king_01","name":"Void King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-void-king-01"},
+    equipmentTuning: {"x":1.8728696991169755,"y":9.86204344756112,"angle":6,"scaleX":2.6,"scaleY":1.64,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-void-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shoulderguard_wood_boss_01","name":"Wood Shoulders","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":5},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-wood-boss-01"},
     equipmentTuning: {"x":6,"y":12,"angle":41,"scaleX":1.6,"scaleY":1.3,"flipX":true,"flipY":false},
@@ -1525,6 +1580,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_viper_01","name":"Viper 01 Back Wrist","price":76,"itemIds":["generated_equipment_back_wrist_viper_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_wrist_void_king_01","name":"Void King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    assetKeys: {"backWristAssetKey":"back-wrist-void-king-01"},
+    equipmentTuning: {"x":1.097553742737034,"y":18.47453878644933,"angle":-6,"scaleX":2.1,"scaleY":1.27,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-wrist-void-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-wrist-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_wrist_wood_boss_01","name":"Wood Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":5},
     assetKeys: {"backWristAssetKey":"back-wrist-wood-boss-01"},
     equipmentTuning: {"x":1,"y":11,"angle":-3,"scaleX":1.53,"scaleY":1.31,"flipX":true,"flipY":false},
@@ -1755,6 +1821,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_breastplate_viper_01","name":"Viper 01 Breastplate","price":210,"itemIds":["generated_equipment_breastplate_viper_01"],"categoryId":"chest"},
+  },
+  {
+    item: {"id":"generated_equipment_breastplate_void_king_01","name":"Void King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    assetKeys: {"breastplateAssetKey":"breastplate-void-king-01"},
+    equipmentTuning: {"x":0,"y":58,"angle":0,"scaleX":1.63,"scaleY":1.83,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-void-king-01",
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_breastplate_wood_boss_01","name":"Wood Breastplate Boss 01","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":10},
@@ -1999,6 +2076,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_boot_viper_01","name":"Viper 01 Front Boot","price":0,"itemIds":["generated_equipment_front_boot_viper_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_boot_void_king_01","name":"Void King 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
+    assetKeys: {"frontBootAssetKey":"front-boot-void-king-01"},
+    equipmentTuning: {"x":10,"y":-2.958612976297559,"angle":0,"scaleX":0.81,"scaleY":1.17,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-boot-void-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-boot-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-boot-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_boot_wood_boss_01","name":"Wood Boot Front","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
@@ -2257,6 +2345,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_glove_viper_01","name":"Viper 01 Front Glove","price":0,"itemIds":["generated_equipment_front_glove_viper_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_front_glove_void_king_01","name":"Void King 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-void-king-01"},
+    equipmentTuning: {"x":-2.7837484562774932,"y":12.171297091456836,"angle":-3,"scaleX":0.69,"scaleY":0.72,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-glove-void-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-glove-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_glove_wood_boss_01","name":"Wood Front Glove Boss 01","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
     assetKeys: {"frontGloveAssetKey":"front-glove-wood-boss-01"},
     equipmentTuning: {"x":0,"y":11,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
@@ -2513,6 +2612,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_greave_viper_01","name":"Viper 01 Front Greave","price":0,"itemIds":["generated_equipment_front_greave_viper_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_greave_void_king_01","name":"Void King 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-void-king-01"},
+    equipmentTuning: {"x":-4,"y":17.75167785778558,"angle":-12,"scaleX":1.73,"scaleY":1.18,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-greave-void-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-greave-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_greave_wood_boss_01","name":"Wooden greave Front","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
     assetKeys: {"frontGreaveAssetKey":"front-greave-wood-boss-01"},
     equipmentTuning: {"x":-1,"y":4,"angle":2,"scaleX":1.53,"scaleY":1.27,"flipX":false,"flipY":false},
@@ -2755,6 +2865,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_shinguard_viper_01","name":"Viper 01 Front Shinguard","price":0,"itemIds":["generated_equipment_front_shinguard_viper_01"],"categoryId":"legs"},
+  },
+  {
+    item: {"id":"generated_equipment_front_shinguard_void_king_01","name":"Void King 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
+    assetKeys: {"frontShinguardAssetKey":"front-shinguard-void-king-01"},
+    equipmentTuning: {"x":-0.23345573936168762,"y":13.096031092672433,"angle":3,"scaleX":1.49,"scaleY":0.98,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shinguard-void-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-shinguard-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_shinguard_wood_boss_01","name":"Wood Shinguard Front","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
@@ -3001,6 +3122,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_viper_01","name":"Viper 01 Front Shoulderguard","price":0,"itemIds":["generated_equipment_front_shoulderguard_viper_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_front_shoulderguard_void_king_01","name":"Void King 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-void-king-01"},
+    equipmentTuning: {"x":1.8728696991169755,"y":9.86204344756112,"angle":6,"scaleX":2.6,"scaleY":1.64,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-void-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shoulderguard_wood_boss_01","name":"Wood Shoulders Front","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-wood-boss-01"},
     equipmentTuning: {"x":6,"y":12,"angle":-136,"scaleX":1.6,"scaleY":1.3,"flipX":true,"flipY":true},
@@ -3243,6 +3375,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_wrist_viper_01","name":"Viper 01 Front Wrist","price":0,"itemIds":["generated_equipment_front_wrist_viper_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_wrist_void_king_01","name":"Void King 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
+    assetKeys: {"frontWristAssetKey":"front-wrist-void-king-01"},
+    equipmentTuning: {"x":1.097553742737034,"y":18.47453878644933,"angle":-6,"scaleX":2.1,"scaleY":1.27,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-wrist-void-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-wrist-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_wrist_wood_boss_01","name":"Wood Wrist Front","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
@@ -3498,6 +3641,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_helmet_viper_01","name":"Viper 01 Helmet","price":126,"itemIds":["generated_equipment_helmet_viper_01"],"categoryId":"head"},
+  },
+  {
+    item: {"id":"generated_equipment_helmet_void_king_01","name":"Void King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    assetKeys: {"helmetAssetKey":"helmet-void-king-01"},
+    equipmentTuning: {"x":0,"y":32,"angle":0,"scaleX":1.35,"scaleY":1.3,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-void-king-01",
+      sourcePath: "assets/fighters/armor/helmet/helmet-void-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-void-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_helmet_wood_boss_01","name":"Wood Helmet Boss 01","kind":"armor","rarity":"unique","equipmentSet":{"id":"wood_boss","name":"Wood Boss","rank":14,"grade":"boss"},"equipmentSlot":"helmet","armorHp":7},
@@ -4805,6 +4959,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_3","name":"Uncommon Sword 03","price":63,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_3"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_void_sword","name":"Void Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-void-sword"},
+    equipmentTuning: {"x":-16,"y":10,"angle":109,"scaleX":2.5,"scaleY":2.5,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-void-sword",
+      sourcePath: "assets/fighters/weapons/weapon-sword-void-sword.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-void-sword.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_warden_sword","name":"Warden Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},

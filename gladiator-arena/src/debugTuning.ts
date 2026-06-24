@@ -11494,6 +11494,40 @@ export const defaultDebugTuning: ArenaDebugTuning = {
           }
         }
       }
+    },
+    "10": {
+      "layers": {
+        "back": {
+          "layout": {
+            "x": 0,
+            "y": -122,
+            "scale": 0.52,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.05,
+            "followY": -0.1,
+            "zoom": 0.7,
+            "lookUpY": 27
+          }
+        },
+        "ground": {
+          "layout": {
+            "x": 0,
+            "y": -27,
+            "scale": 0.65,
+            "alpha": 1,
+            "visible": true
+          },
+          "parallax": {
+            "followX": 0.15,
+            "followY": 0.01,
+            "zoom": 0.4,
+            "lookUpY": 4
+          }
+        }
+      }
     }
   },
   arenaTier1BackFollowX: 0.2,

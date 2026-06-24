@@ -163,5 +163,24 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
       {"id":"arena_boss_9_generated_equipment_back_shoulderguard_grave_king_01_generated_equipment_front_shoulderguard_grave_king_01_drop","itemIds":["generated_equipment_back_shoulderguard_grave_king_01","generated_equipment_front_shoulderguard_grave_king_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_9_generated_equipment_back_wrist_grave_king_01_generated_equipment_front_wrist_grave_king_01_drop","itemIds":["generated_equipment_back_wrist_grave_king_01","generated_equipment_front_wrist_grave_king_01"],"chance":1,"quantity":1},
     ],
+  },
+  {
+    id: "arena_boss_10",
+    tierId: 10,
+    name: "Void King",
+    baseStats: {"strength":200,"agility":100,"vitality":200},
+    equipment: {"weaponMain":"generated_equipment_weapon_sword_void_sword","helmet":"generated_equipment_helmet_void_king_01","breastplate":"generated_equipment_breastplate_void_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_void_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_void_king_01","backWrist":"generated_equipment_back_wrist_void_king_01","frontWrist":"generated_equipment_front_wrist_void_king_01","backGlove":"generated_equipment_back_glove_void_king_01","frontGlove":"generated_equipment_front_glove_void_king_01","backGreave":"generated_equipment_back_greave_void_king_01","frontGreave":"generated_equipment_front_greave_void_king_01","backShinguard":"generated_equipment_back_shinguard_void_king_01","frontShinguard":"generated_equipment_front_shinguard_void_king_01","backBoot":"generated_equipment_back_boot_void_king_01","frontBoot":"generated_equipment_front_boot_void_king_01"},
+    rewards: {"win":{"gold":20358,"xp":10179},"loss":{"gold":1,"xp":2}},
+    lootTable: [
+      {"id":"arena_boss_10_generated_equipment_back_boot_void_king_01_generated_equipment_front_boot_void_king_01_drop","itemIds":["generated_equipment_back_boot_void_king_01","generated_equipment_front_boot_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_breastplate_void_king_01_drop","itemIds":["generated_equipment_breastplate_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_back_glove_void_king_01_generated_equipment_front_glove_void_king_01_drop","itemIds":["generated_equipment_back_glove_void_king_01","generated_equipment_front_glove_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_back_greave_void_king_01_generated_equipment_front_greave_void_king_01_drop","itemIds":["generated_equipment_back_greave_void_king_01","generated_equipment_front_greave_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_helmet_void_king_01_drop","itemIds":["generated_equipment_helmet_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_back_shinguard_void_king_01_generated_equipment_front_shinguard_void_king_01_drop","itemIds":["generated_equipment_back_shinguard_void_king_01","generated_equipment_front_shinguard_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_back_shoulderguard_void_king_01_generated_equipment_front_shoulderguard_void_king_01_drop","itemIds":["generated_equipment_back_shoulderguard_void_king_01","generated_equipment_front_shoulderguard_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_back_wrist_void_king_01_generated_equipment_front_wrist_void_king_01_drop","itemIds":["generated_equipment_back_wrist_void_king_01","generated_equipment_front_wrist_void_king_01"],"chance":1,"quantity":1},
+      {"id":"arena_boss_10_generated_equipment_weapon_sword_void_sword_drop","itemIds":["generated_equipment_weapon_sword_void_sword"],"chance":1,"quantity":1},
+    ],
   }
 ];
