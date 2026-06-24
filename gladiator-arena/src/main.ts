@@ -113,6 +113,10 @@ const cityPvpJoinButton = document.querySelector<HTMLButtonElement>("#cityPvpJoi
 const cityPvpRoomList = document.querySelector<HTMLElement>("#cityPvpRoomList");
 const cityPvpStatus = document.querySelector<HTMLOutputElement>("#cityPvpStatus");
 const pvpTurnTimer = document.querySelector<HTMLOutputElement>("#pvpTurnTimer");
+const arenaMenu = document.querySelector<HTMLElement>("[data-arena-menu]");
+const arenaMenuButton = document.querySelector<HTMLButtonElement>("[data-arena-menu-button]");
+const arenaMenuPanel = document.querySelector<HTMLElement>("[data-arena-menu-panel]");
+const arenaLeaveButton = document.querySelector<HTMLButtonElement>("[data-arena-leave-button]");
 const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopButton");
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
@@ -124,6 +128,9 @@ type GameMode = "pve" | "pvp";
 interface StartGameOptions {
   mode?: GameMode;
   initialState?: CombatState;
+}
+interface ReturnToCityOptions {
+  requireResultGate?: boolean;
 }
 let hero: HeroState = createInitialHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
@@ -214,7 +221,67 @@ cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) 
 
 syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
+mountArenaMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
+
+function mountArenaMenu(): void {
+  if (!arenaMenu || !arenaMenuButton || !arenaMenuPanel) {
+    return;
+  }
+
+  arenaMenu.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  arenaMenuButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setArenaMenuOpen(arenaMenuPanel.hidden !== false);
+  });
+
+  arenaLeaveButton?.addEventListener("click", () => {
+    setArenaMenuOpen(false);
+    void returnToCity({ requireResultGate: false });
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (arenaMenuPanel.hidden || !(event.target instanceof Node) || arenaMenu.contains(event.target)) {
+      return;
+    }
+
+    setArenaMenuOpen(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setArenaMenuOpen(false);
+    }
+  });
+}
+
+function setArenaMenuOpen(open: boolean): void {
+  if (!arenaMenuButton || !arenaMenuPanel) {
+    return;
+  }
+
+  arenaMenuPanel.hidden = !open;
+  arenaMenuButton.setAttribute("aria-expanded", String(open));
+
+  if (!open) {
+    closeArenaSettingsPanel();
+  }
+}
+
+function closeArenaSettingsPanel(): void {
+  const settingsPanel = arenaMenu?.querySelector<HTMLElement>("[data-settings-panel]");
+  const settingsButton = arenaMenu?.querySelector<HTMLButtonElement>("[data-settings-button]");
+
+  if (settingsPanel) {
+    settingsPanel.hidden = true;
+  }
+
+  settingsButton?.setAttribute("aria-expanded", "false");
+}
 
 function createCityReturnTransition(): HTMLElement {
   const element = document.createElement("div");
@@ -1922,10 +1989,14 @@ function hasHeroEquipmentPreviewItems(itemIds: readonly HeroItemId[]): boolean {
   return itemIds.some((itemId) => isHeroEquipmentPreviewItem(HERO_ITEM_CATALOG[itemId]));
 }
 
-async function returnToCity(): Promise<void> {
-  if (!battleResultReturnReady || isCityReturnTransitionRunning) {
+async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
+  const requireResultGate = options.requireResultGate ?? true;
+
+  if ((requireResultGate && !battleResultReturnReady) || isCityReturnTransitionRunning) {
     return;
   }
+
+  setArenaMenuOpen(false);
 
   const returningFromPvp = gameMode === "pvp";
   const transitionToken = ++cityReturnTransitionToken;
@@ -2022,7 +2093,9 @@ cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
   void handleHeroProgressReset();
 });
 dom.restartButton.addEventListener("click", () => restart());
-dom.cityButton.addEventListener("click", returnToCity);
+dom.cityButton.addEventListener("click", () => {
+  void returnToCity();
+});
 weaponShopButton?.addEventListener("click", () => {
   cityHeroProfile?.close();
   closeCityArenaMenu();

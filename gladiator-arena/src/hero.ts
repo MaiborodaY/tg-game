@@ -447,6 +447,25 @@ export const HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX = 10;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE = 500;
 export const HERO_SCROLL_UPGRADE_RARITIES: readonly HeroScrollUpgradeRarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 
+const ENEMY_SCROLL_ROLLS_BY_TIER: Readonly<Record<number, { chance: number; rarity: HeroScrollUpgradeRarity }>> = {
+  1: { chance: 0.1, rarity: "common" },
+  2: { chance: 0.2, rarity: "common" },
+  3: { chance: 0.3, rarity: "uncommon" },
+  4: { chance: 0.4, rarity: "uncommon" },
+  5: { chance: 0.5, rarity: "rare" },
+  6: { chance: 0.6, rarity: "rare" },
+  7: { chance: 0.7, rarity: "epic" },
+  8: { chance: 0.8, rarity: "epic" },
+  9: { chance: 0.9, rarity: "legendary" },
+  10: { chance: 1, rarity: "legendary" },
+};
+
+const ENEMY_SCROLL_DIFFICULTY_CHANCE_MODIFIERS: Readonly<Record<ArenaDifficultyId, number>> = {
+  easy: -0.1,
+  medium: 0,
+  hard: 0.1,
+};
+
 interface HeroScrollUpgradeDefinition {
   kind: HeroUpgradeableScrollKind;
   itemId: HeroItemId;
@@ -689,10 +708,14 @@ export const DEFAULT_ENEMY_VISUAL_PRESET: EnemyVisualPreset = {
 
 export const ENEMY_VISUAL_PRESETS: EnemyVisualPreset[] = [DEFAULT_ENEMY_VISUAL_PRESET];
 
-export function createRandomEnemyLoadout(random = Math.random, tierId = DEFAULT_ARENA_TIER_ID): EnemyLoadout {
+export function createRandomEnemyLoadout(
+  random = Math.random,
+  tierId = DEFAULT_ARENA_TIER_ID,
+  difficultyId: ArenaDifficultyId = DEFAULT_ARENA_DIFFICULTY_ID,
+): EnemyLoadout {
   const tier = resolveArenaTierDefinition(tierId);
 
-  return createRandomEnemyLoadoutFromPools(tier.enemyEquipmentPools, random);
+  return createRandomEnemyLoadoutFromPools(tier.enemyEquipmentPools, random, tier.id, difficultyId);
 }
 
 export function createArenaRandomEnemyEncounter(
@@ -740,7 +763,12 @@ export function createArenaBossEncounter(bossId: string): ArenaEncounter {
   };
 }
 
-function createRandomEnemyLoadoutFromPools(equipmentPools: readonly ArenaGeneratedEquipmentPool[], random = Math.random): EnemyLoadout {
+function createRandomEnemyLoadoutFromPools(
+  equipmentPools: readonly ArenaGeneratedEquipmentPool[],
+  random = Math.random,
+  tierId = DEFAULT_ARENA_TIER_ID,
+  difficultyId: ArenaDifficultyId = DEFAULT_ARENA_DIFFICULTY_ID,
+): EnemyLoadout {
   const equipment = createDefaultHeroEquipment();
   const shurikenItemId = rollEnemyShurikenItemIdFromPools(equipmentPools, random);
 
@@ -761,7 +789,7 @@ function createRandomEnemyLoadoutFromPools(equipmentPools: readonly ArenaGenerat
     });
   });
 
-  const scrollItemId = rollEnemyScrollItemIdFromPools(equipmentPools, random);
+  const scrollRoll = rollEnemyScrollFromTier(tierId, difficultyId, random);
 
   return {
     equipment,
@@ -772,7 +800,7 @@ function createRandomEnemyLoadoutFromPools(equipmentPools: readonly ArenaGenerat
           shurikenItemId,
         }
       : {}),
-    ...createEnemyScrollLoadout(scrollItemId),
+    ...createEnemyScrollLoadout(scrollRoll?.itemId, scrollRoll?.rarity),
     visualPreset: pickRandom(ENEMY_VISUAL_PRESETS, random),
   };
 }
@@ -781,7 +809,7 @@ function createRandomEnemyLoadoutForOpponent(opponent: ArenaRandomOpponentDefini
   const baseStats = createRandomOpponentBaseStats(opponent, random);
 
   return {
-    ...createRandomEnemyLoadoutFromPools(opponent.equipmentPools, random),
+    ...createRandomEnemyLoadoutFromPools(opponent.equipmentPools, random, opponent.tierId, opponent.difficultyId),
     ...(baseStats ? { baseStats } : {}),
   };
 }
@@ -2464,19 +2492,28 @@ function rollEnemyShurikenItemIdFromPools(equipmentPools: readonly ArenaGenerate
   return undefined;
 }
 
-function rollEnemyScrollItemIdFromPools(equipmentPools: readonly ArenaGeneratedEquipmentPool[], random: () => number): HeroItemId | undefined {
-  for (const equipmentPool of equipmentPools) {
-    const itemIds = getEnemyScrollItemIds(equipmentPool.itemRarities);
-    const rollChance = getEnemyRollChanceOrFallback(equipmentPool.scrollChance, 0);
+function rollEnemyScrollFromTier(
+  tierId: number,
+  difficultyId: ArenaDifficultyId,
+  random: () => number,
+): { itemId: HeroItemId; rarity: HeroScrollUpgradeRarity } | undefined {
+  const config = ENEMY_SCROLL_ROLLS_BY_TIER[tierId];
+  const itemIds = getEnemyScrollItemIds();
 
-    if (itemIds.length === 0 || random() >= rollChance) {
-      continue;
-    }
-
-    return pickRandom(itemIds, random);
+  if (!config || itemIds.length === 0) {
+    return undefined;
   }
 
-  return undefined;
+  const rollChance = clampEnemyRollChance(config.chance + ENEMY_SCROLL_DIFFICULTY_CHANCE_MODIFIERS[difficultyId]);
+
+  if (rollChance <= 0 || random() >= rollChance) {
+    return undefined;
+  }
+
+  return {
+    itemId: pickRandom(itemIds, random),
+    rarity: config.rarity,
+  };
 }
 
 function rollEnemyShurikenItemId(itemRarities: readonly HeroItemRarity[], rollChance: number, random: () => number): HeroItemId | undefined {
@@ -2489,7 +2526,7 @@ function rollEnemyShurikenItemId(itemRarities: readonly HeroItemRarity[], rollCh
   return pickRandom(itemIds, random);
 }
 
-function createEnemyScrollLoadout(itemId: HeroItemId | undefined): Partial<EnemyLoadout> {
+function createEnemyScrollLoadout(itemId: HeroItemId | undefined, rarity: HeroScrollUpgradeRarity = "common"): Partial<EnemyLoadout> {
   const scrollEffect = itemId ? HERO_ITEM_CATALOG[itemId]?.scrollEffect : undefined;
 
   if (!itemId || !scrollEffect) {
@@ -2498,17 +2535,41 @@ function createEnemyScrollLoadout(itemId: HeroItemId | undefined): Partial<Enemy
 
   switch (scrollEffect.kind) {
     case "crackArmorSlot":
-      return { scrollCount: ENEMY_SCROLL_QUANTITY, scrollItemId: itemId };
+      return {
+        scrollCount: ENEMY_SCROLL_QUANTITY,
+        scrollItemId: itemId,
+        crackArmorParts: getHeroCrackArmorPartsForRarity(rarity),
+      };
     case "fireballDamage":
-      return { fireballScrollCount: ENEMY_SCROLL_QUANTITY, fireballScrollItemId: itemId };
+      return {
+        fireballScrollCount: ENEMY_SCROLL_QUANTITY,
+        fireballScrollItemId: itemId,
+        fireballDamage: getHeroFireballDamageForRarity(rarity),
+      };
     case "wardHit":
-      return { wardScrollCount: ENEMY_SCROLL_QUANTITY, wardScrollItemId: itemId };
+      return {
+        wardScrollCount: ENEMY_SCROLL_QUANTITY,
+        wardScrollItemId: itemId,
+        wardHitCount: getHeroWardHitCountForRarity(rarity),
+      };
     case "preciseStrike":
-      return { preciseStrikeScrollCount: ENEMY_SCROLL_QUANTITY, preciseStrikeScrollItemId: itemId };
+      return {
+        preciseStrikeScrollCount: ENEMY_SCROLL_QUANTITY,
+        preciseStrikeScrollItemId: itemId,
+        preciseStrikeBlockChanceReduction: getHeroPreciseStrikeBlockChanceReductionForRarity(rarity),
+      };
     case "doubleStrike":
-      return { doubleStrikeScrollCount: ENEMY_SCROLL_QUANTITY, doubleStrikeScrollItemId: itemId };
+      return {
+        doubleStrikeScrollCount: ENEMY_SCROLL_QUANTITY,
+        doubleStrikeScrollItemId: itemId,
+        doubleStrikeDamageMultiplier: getHeroDoubleStrikeDamageMultiplierForRarity(rarity),
+      };
     case "poison":
-      return { poisonScrollCount: ENEMY_SCROLL_QUANTITY, poisonScrollItemId: itemId };
+      return {
+        poisonScrollCount: ENEMY_SCROLL_QUANTITY,
+        poisonScrollItemId: itemId,
+        poisonDamage: getHeroPoisonDamageForRarity(rarity),
+      };
   }
 
   return {};
@@ -2535,10 +2596,8 @@ function getEnemyShurikenItemIds(itemRarities: readonly HeroItemRarity[]): HeroI
   ).map((record) => record.item.id);
 }
 
-function getEnemyScrollItemIds(itemRarities: readonly HeroItemRarity[]): HeroItemId[] {
-  return Object.values(HERO_SCROLL_ITEMS)
-    .filter((item) => itemRarities.includes(getHeroItemRarity(item)))
-    .map((item) => item.id);
+function getEnemyScrollItemIds(): HeroItemId[] {
+  return Object.values(HERO_SCROLL_ITEMS).map((item) => item.id);
 }
 
 function canRollGeneratedEquipmentForEnemy(record: (typeof GENERATED_EQUIPMENT_ITEM_RECORDS)[number]): boolean {

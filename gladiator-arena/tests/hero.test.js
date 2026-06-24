@@ -623,35 +623,37 @@ test("enemy equipment generation keeps the first rolled item for each slot", () 
   assert.equal(loadout.equipment.weaponMain, "weapon_sword_01");
 });
 
-test("enemy scroll generation keeps the first rolled scroll rarity", () => {
-  const testTier = {
-    id: 100,
-    name: "Scroll Test Tier",
-    enemyEquipmentPools: [
-      { itemRarities: ["common"], rollChance: 0, shurikenChance: 0, scrollChance: 1 },
-      { itemRarities: ["uncommon"], rollChance: 0, shurikenChance: 0, scrollChance: 1 },
-    ],
+test("enemy scroll generation uses the tier roll table and difficulty modifier", () => {
+  const testTiers = [1, 3, 10].map((id) => ({
+    id,
+    name: `Scroll Test Tier ${id}`,
+    enemyEquipmentPools: [],
     randomOpponentIds: [],
     bossIds: [],
+  }));
+  const rollSequence = (...values) => {
+    const queue = [...values];
+
+    return () => queue.shift() ?? 0;
   };
   const isolatedArenaOpponents = {
     ARENA_BOSSES: [],
     ARENA_DIFFICULTY_IDS: ["easy", "medium", "hard"],
     ARENA_RANDOM_OPPONENTS: [],
     ARENA_TIER_CONFIGS: [],
-    ARENA_TIERS: [testTier],
+    ARENA_TIERS: testTiers,
     BATTLE_LOSS_REWARD: { gold: 1, xp: 1 },
     BATTLE_WIN_REWARD: { gold: 10, xp: 10 },
     DEFAULT_ARENA_DIFFICULTY_ID: "medium",
-    DEFAULT_ARENA_TIER_ID: testTier.id,
+    DEFAULT_ARENA_TIER_ID: 1,
     getArenaBossDefinition: () => undefined,
     getArenaBossesForTier: () => [],
     getArenaRandomOpponentDefinition: () => undefined,
     getArenaRandomOpponentsForTier: () => [],
     getArenaRandomOpponentsForTierAndDifficulty: () => [],
     getArenaTierConfig: () => undefined,
-    getArenaTierDefinition: () => testTier,
-    getArenaTierDefinitions: () => [testTier],
+    getArenaTierDefinition: (tierId = 1) => testTiers.find((tier) => tier.id === tierId) ?? testTiers[0],
+    getArenaTierDefinitions: () => testTiers,
   };
   const isolatedHero = loadTypeScriptModule("../src/hero.ts", {
     require: (id) => {
@@ -679,11 +681,23 @@ test("enemy scroll generation keeps the first rolled scroll rarity", () => {
     },
   });
 
-  const loadout = isolatedHero.createRandomEnemyLoadout(() => 0, testTier.id);
+  const tierOneEasyLoadout = isolatedHero.createRandomEnemyLoadout(() => 0, 1, "easy");
+  const tierOneMediumMiss = isolatedHero.createRandomEnemyLoadout(() => 0.1, 1, "medium");
+  const tierOneMediumHit = isolatedHero.createRandomEnemyLoadout(rollSequence(0.09, 0, 0), 1, "medium");
+  const tierThreeFireball = isolatedHero.createRandomEnemyLoadout(rollSequence(0, 0.2, 0), 3, "medium");
+  const tierTenPoison = isolatedHero.createRandomEnemyLoadout(rollSequence(0.99, 0.99, 0), 10, "hard");
 
-  assert.equal(loadout.scrollItemId, hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID);
-  assert.equal(loadout.scrollCount, 1);
-  assert.equal(loadout.fireballScrollCount, undefined);
+  assert.equal(tierOneEasyLoadout.scrollItemId, undefined);
+  assert.equal(tierOneMediumMiss.scrollItemId, undefined);
+  assert.equal(tierOneMediumHit.scrollItemId, hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID);
+  assert.equal(tierOneMediumHit.scrollCount, 1);
+  assert.equal(tierOneMediumHit.crackArmorParts, 1);
+  assert.equal(tierThreeFireball.fireballScrollItemId, hero.HERO_FIREBALL_SCROLL_ITEM_ID);
+  assert.equal(tierThreeFireball.fireballScrollCount, 1);
+  assert.equal(tierThreeFireball.fireballDamage, 80);
+  assert.equal(tierTenPoison.poisonScrollItemId, hero.HERO_POISON_SCROLL_ITEM_ID);
+  assert.equal(tierTenPoison.poisonScrollCount, 1);
+  assert.equal(tierTenPoison.poisonDamage, 10);
 });
 
 test("arena opponent model defines random opponents and boss hooks", () => {

@@ -240,6 +240,15 @@ h1 {
   pointer-events: auto;
 }
 
+.arena-menu {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 8;
+  font-family: Georgia, "Times New Roman", serif;
+  pointer-events: auto;
+}
+
 .settings-menu__button {
   display: grid;
   width: 36px;
@@ -258,12 +267,101 @@ h1 {
   line-height: 1;
 }
 
+.arena-menu__button {
+  display: grid;
+  min-width: 58px;
+  height: 36px;
+  place-items: center;
+  padding: 0 10px;
+  border: 3px solid #35180d;
+  border-radius: 11px;
+  color: #35180d;
+  background: linear-gradient(180deg, #ffe6a8 0%, #f2b548 58%, #bb5b18 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.58),
+    inset 0 -5px 0 rgba(80, 24, 6, 0.3),
+    0 4px 0 rgba(53, 24, 13, 0.55);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .settings-menu__button:active {
   transform: translateY(2px);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.5),
     inset 0 -3px 0 rgba(80, 24, 6, 0.28),
     0 2px 0 rgba(53, 24, 13, 0.55);
+}
+
+.arena-menu__button:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -3px 0 rgba(80, 24, 6, 0.28),
+    0 2px 0 rgba(53, 24, 13, 0.55);
+}
+
+.arena-menu__panel {
+  position: absolute;
+  left: 0;
+  top: 48px;
+  width: 142px;
+  padding: 8px;
+  border: 3px solid #35180d;
+  border-radius: 8px;
+  color: #35180d;
+  background: linear-gradient(180deg, #ffe8b2 0%, #e9b45d 100%);
+  box-shadow: 0 5px 0 rgba(53, 24, 13, 0.45);
+}
+
+.arena-menu__item {
+  display: grid;
+  width: 100%;
+  min-height: 34px;
+  place-items: center;
+  padding: 6px 9px 7px;
+  border: 2px solid #35180d;
+  border-radius: 7px;
+  color: #35180d;
+  background:
+    linear-gradient(180deg, rgba(255, 242, 190, 0.92), rgba(221, 141, 45, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 3px 0 rgba(83, 34, 10, 0.5);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.arena-menu .settings-menu + .arena-menu__item,
+.arena-menu__item + .arena-menu__item {
+  margin-top: 7px;
+}
+
+.arena-menu__item:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 1px 0 rgba(83, 34, 10, 0.5);
+}
+
+.arena-menu__item--danger {
+  color: #ffe8b2;
+  background:
+    linear-gradient(180deg, #b2462f, #70200f);
+  text-shadow: 1px 1px 0 #35180d;
+}
+
+.arena-menu .settings-menu {
+  position: relative;
+  left: auto;
+  top: auto;
+  z-index: auto;
 }
 
 .settings-menu__panel {
@@ -278,6 +376,11 @@ h1 {
   background: linear-gradient(180deg, #ffe8b2 0%, #e9b45d 100%);
   box-shadow: 0 5px 0 rgba(53, 24, 13, 0.45);
   font-family: Georgia, "Times New Roman", serif;
+}
+
+.arena-menu .settings-menu__panel {
+  left: calc(100% + 8px);
+  top: 0;
 }
 
 .settings-menu__panel h2 {
@@ -1893,7 +1996,7 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 .classic-combat-hud,
 .battle-screen .status-strip,
 .battle-screen .stage-restart,
-.battle-screen .settings-menu,
+.battle-screen .arena-menu,
 .classic-action-bar,
 .action-arc,
 .battle-ui .arena-fighters-strip {
@@ -1937,7 +2040,7 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 }
 
 .battle-screen--finished .stage-restart,
-.battle-screen--finished .settings-menu {
+.battle-screen--finished .arena-menu {
   opacity: 0;
   filter: saturate(0.45) brightness(0.65);
   pointer-events: none;
@@ -9481,7 +9584,7 @@ body.arena-active .shell {
   margin-bottom: 8px;
 }
 
-.battle-screen .settings-menu {
+.battle-screen .arena-menu {
   top: max(10px, env(safe-area-inset-top));
 }
 
@@ -9584,21 +9687,27 @@ body.arena-hud-classic .battle-screen .fps-counter {
   background: rgba(35, 10, 4, 0.68);
 }
 
-body.arena-hud-classic .battle-screen .settings-menu {
-  left: 10px;
-  top: max(105px, calc(env(safe-area-inset-top) + 96px));
+body.arena-hud-classic .battle-screen .arena-menu {
+  left: max(8px, calc(env(safe-area-inset-left) + 8px));
+  top: max(119px, calc(env(safe-area-inset-top) + 110px));
 }
 
-body.arena-hud-classic .battle-screen .settings-menu__button {
-  width: 30px;
-  height: 30px;
-  border-width: 2px;
-  font-size: 0.92rem;
+body.arena-hud-classic .battle-screen .arena-menu__button {
+  min-width: 40px;
+  height: 18px;
+  padding: 0 5px;
+  border-width: 1px;
+  border-radius: 5px;
+  font-size: 0.46rem;
   opacity: 0.92;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -4px 0 rgba(80, 24, 6, 0.24),
-    0 3px 0 rgba(53, 24, 13, 0.48);
+    inset 0 -2px 0 rgba(80, 24, 6, 0.24),
+    0 1px 0 rgba(53, 24, 13, 0.48);
+}
+
+body.arena-hud-classic .battle-screen .arena-menu__panel {
+  top: 27px;
 }
 
 .battle-screen.classic-hud-editing .classic-action-bar {

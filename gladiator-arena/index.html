@@ -183,73 +183,89 @@
           </div>
         </section>
 
-        <div class="settings-menu" data-settings-menu>
+        <div class="arena-menu" data-arena-menu>
           <button
-            id="arenaSettingsButton"
-            class="settings-menu__button"
+            id="arenaMenuButton"
+            class="arena-menu__button"
             type="button"
-            aria-label="Settings"
+            aria-label="Arena menu"
             aria-expanded="false"
-            aria-controls="arenaSettingsPanel"
-            data-settings-button
+            aria-controls="arenaMenuPanel"
+            data-arena-menu-button
           >
-            <span aria-hidden="true">&#9881;</span>
+            Menu
           </button>
-          <section id="arenaSettingsPanel" class="settings-menu__panel" aria-label="Settings" hidden data-settings-panel>
-            <h2>Settings</h2>
-            <fieldset class="settings-menu__group">
-              <legend>FPS</legend>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaRenderFps" value="30" data-setting-render-fps />
-                <span>30 FPS</span>
-              </label>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaRenderFps" value="60" data-setting-render-fps />
-                <span>60 FPS</span>
-              </label>
-            </fieldset>
-            <label class="settings-menu__toggle">
-              <input type="checkbox" data-setting-vfx />
-              <span>VFX</span>
-            </label>
-            <fieldset class="settings-menu__group">
-              <legend>Shadows</legend>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaShadows" value="high" data-setting-shadow-mode />
-                <span>High</span>
-              </label>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaShadows" value="low" data-setting-shadow-mode />
-                <span>Low</span>
-              </label>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaShadows" value="off" data-setting-shadow-mode />
-                <span>Off</span>
-              </label>
-            </fieldset>
-            <fieldset class="settings-menu__group">
-              <legend>HUD</legend>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaHudMode" value="immersive" data-setting-hud-mode />
-                <span>Immersive</span>
-              </label>
-              <label class="settings-menu__option">
-                <input type="radio" name="arenaHudMode" value="classic" data-setting-hud-mode />
-                <span>Classic</span>
-              </label>
-            </fieldset>
-            <label class="settings-menu__toggle">
-              <input type="checkbox" data-setting-low-effects />
-              <span>Low effects</span>
-            </label>
-            <label class="settings-menu__toggle">
-              <input type="checkbox" data-setting-stat-bar-animations />
-              <span>Bar animations</span>
-            </label>
-            <label class="settings-menu__toggle">
-              <input type="checkbox" data-setting-fps />
-              <span>Show FPS</span>
-            </label>
+          <section id="arenaMenuPanel" class="arena-menu__panel" aria-label="Arena menu" hidden data-arena-menu-panel>
+            <div class="settings-menu" data-settings-menu>
+              <button
+                id="arenaSettingsButton"
+                class="arena-menu__item"
+                type="button"
+                aria-label="Settings"
+                aria-expanded="false"
+                aria-controls="arenaSettingsPanel"
+                data-settings-button
+              >
+                Settings
+              </button>
+              <section id="arenaSettingsPanel" class="settings-menu__panel" aria-label="Settings" hidden data-settings-panel>
+                <h2>Settings</h2>
+                <fieldset class="settings-menu__group">
+                  <legend>FPS</legend>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaRenderFps" value="30" data-setting-render-fps />
+                    <span>30 FPS</span>
+                  </label>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaRenderFps" value="60" data-setting-render-fps />
+                    <span>60 FPS</span>
+                  </label>
+                </fieldset>
+                <label class="settings-menu__toggle">
+                  <input type="checkbox" data-setting-vfx />
+                  <span>VFX</span>
+                </label>
+                <fieldset class="settings-menu__group">
+                  <legend>Shadows</legend>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaShadows" value="high" data-setting-shadow-mode />
+                    <span>High</span>
+                  </label>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaShadows" value="low" data-setting-shadow-mode />
+                    <span>Low</span>
+                  </label>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaShadows" value="off" data-setting-shadow-mode />
+                    <span>Off</span>
+                  </label>
+                </fieldset>
+                <fieldset class="settings-menu__group">
+                  <legend>HUD</legend>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaHudMode" value="immersive" data-setting-hud-mode />
+                    <span>Immersive</span>
+                  </label>
+                  <label class="settings-menu__option">
+                    <input type="radio" name="arenaHudMode" value="classic" data-setting-hud-mode />
+                    <span>Classic</span>
+                  </label>
+                </fieldset>
+                <label class="settings-menu__toggle">
+                  <input type="checkbox" data-setting-low-effects />
+                  <span>Low effects</span>
+                </label>
+                <label class="settings-menu__toggle">
+                  <input type="checkbox" data-setting-stat-bar-animations />
+                  <span>Bar animations</span>
+                </label>
+                <label class="settings-menu__toggle">
+                  <input type="checkbox" data-setting-fps />
+                  <span>Show FPS</span>
+                </label>
+              </section>
+            </div>
+            <button id="arenaLeaveButton" class="arena-menu__item arena-menu__item--danger" type="button" data-arena-leave-button>Exit</button>
           </section>
         </div>
         <output class="fps-counter" aria-label="FPS" hidden data-fps-counter>FPS --</output>

@@ -77,6 +77,21 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(mainSource.includes("loot,"), true);
 });
 
+test("arena menu nests settings and can leave an active battle", () => {
+  assert.equal(html.includes('data-arena-menu'), true);
+  assert.equal(html.includes('data-arena-menu-button'), true);
+  assert.equal(html.includes('data-arena-menu-panel'), true);
+  assert.equal(html.includes('data-arena-leave-button'), true);
+  assert.equal(html.includes('id="arenaSettingsPanel"'), true);
+  assert.ok(html.indexOf('data-settings-menu') > html.indexOf('data-arena-menu-panel'), "settings menu should live inside the arena menu panel");
+  assert.equal(mainSource.includes("function mountArenaMenu()"), true);
+  assert.equal(mainSource.includes("void returnToCity({ requireResultGate: false });"), true);
+  assert.equal(mainSource.includes("interface ReturnToCityOptions"), true);
+  assert.equal(stylesSource.includes(".arena-menu__panel"), true);
+  assert.equal(stylesSource.includes(".arena-menu__item--danger"), true);
+  assert.equal(stylesSource.includes(".battle-screen--finished .arena-menu"), true);
+});
+
 test("battle hud exposes combat buff and debuff status trays with scroll icons", () => {
   assert.equal(html.includes('class="combat-status-line"'), true);
   assert.equal(html.includes('class="combat-buff-tray"'), true);
