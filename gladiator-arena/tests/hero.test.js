@@ -1115,31 +1115,31 @@ test("hero can unlock all shop rarity tiers", () => {
   assert.equal(hero.unlockAllHeroShopRarities(unlockedHero, "2026-01-01T00:02:00.000Z"), unlockedHero);
 });
 
-test("hero level progression uses five thousand total xp across one hundred levels", () => {
+test("hero level progression uses 9999 total xp across one hundred levels", () => {
   assert.equal(hero.HERO_MAX_LEVEL, 100);
-  assert.equal(hero.HERO_TOTAL_XP_TO_MAX_LEVEL, 5000);
+  assert.equal(hero.HERO_TOTAL_XP_TO_MAX_LEVEL, 9999);
   assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length, 99);
   assert.equal(
     hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.reduce((total, xp) => total + xp, 0),
-    5000,
+    9999,
   );
 
-  assert.equal(hero.getHeroXpToNextLevel(1), 10);
-  assert.equal(hero.getHeroXpToNextLevel(5), 15);
-  assert.equal(hero.getHeroXpToNextLevel(15), 20);
-  assert.equal(hero.getHeroXpToNextLevel(33), 25);
-  assert.equal(hero.getHeroXpToNextLevel(45), 40);
-  assert.equal(hero.getHeroXpToNextLevel(60), 55);
-  assert.equal(hero.getHeroXpToNextLevel(80), 85);
-  assert.equal(hero.getHeroXpToNextLevel(95), 110);
-  assert.equal(hero.getHeroXpToNextLevel(100), 115);
-  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.slice(0, 9).reduce((total, xp) => total + xp, 0), 115);
+  assert.equal(hero.getHeroXpToNextLevel(1), 20);
+  assert.equal(hero.getHeroXpToNextLevel(5), 30);
+  assert.equal(hero.getHeroXpToNextLevel(15), 40);
+  assert.equal(hero.getHeroXpToNextLevel(33), 50);
+  assert.equal(hero.getHeroXpToNextLevel(45), 80);
+  assert.equal(hero.getHeroXpToNextLevel(60), 110);
+  assert.equal(hero.getHeroXpToNextLevel(80), 170);
+  assert.equal(hero.getHeroXpToNextLevel(95), 220);
+  assert.equal(hero.getHeroXpToNextLevel(100), 229);
+  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.slice(0, 9).reduce((total, xp) => total + xp, 0), 230);
 });
 
 test("battle xp follows the level table and respects boss level gates", () => {
   const staleHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
-    xp: 9,
+    xp: 19,
     xpToNextLevel: 100,
   };
 
@@ -1147,10 +1147,10 @@ test("battle xp follows the level table and respects boss level gates", () => {
 
   assert.equal(levelTwoHero.level, 2);
   assert.equal(levelTwoHero.xp, 0);
-  assert.equal(levelTwoHero.xpToNextLevel, 10);
+  assert.equal(levelTwoHero.xpToNextLevel, 20);
   assert.equal(levelTwoHero.skillPoints, 2);
 
-  const cappedHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 5000 });
+  const cappedHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 9999 });
 
   assert.equal(cappedHero.level, 10);
   assert.equal(cappedHero.xp, hero.getHeroXpToNextLevel(10));
@@ -1171,11 +1171,11 @@ test("battle xp follows the level table and respects boss level gates", () => {
   assert.equal(stillCappedHero.skillPoints, 10);
 
   const fullyUnlockedHero = hero.unlockAllArenaBossTiers(hero.createDefaultHero("2026-01-01T00:00:00.000Z"));
-  const maxHero = hero.applyBattleReward(fullyUnlockedHero, { gold: 0, xp: 5000 });
+  const maxHero = hero.applyBattleReward(fullyUnlockedHero, { gold: 0, xp: 9999 });
 
   assert.equal(maxHero.level, 100);
   assert.equal(maxHero.xp, 0);
-  assert.equal(maxHero.xpToNextLevel, 115);
+  assert.equal(maxHero.xpToNextLevel, 229);
   assert.equal(maxHero.skillPoints, 100);
 });
 
