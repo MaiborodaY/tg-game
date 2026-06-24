@@ -39,6 +39,7 @@ interface RoomRecord {
   guest?: RoomPlayer;
   state?: CombatState;
   activeSeat?: PvpSeat;
+  timeoutStreaks?: Partial<Record<PvpSeat, number>>;
   turnVersion: number;
   deadlineAt?: number;
   expiresAt?: number;
@@ -70,6 +71,7 @@ const LOBBY_STORAGE_KEY = "rooms";
 const ACTIVE_SESSIONS_STORAGE_KEY = "activeSessions";
 const PVP_LOBBY_NAME = "global";
 const TURN_DURATION_MS = 20_000;
+const MAX_CONSECUTIVE_TURN_TIMEOUTS = 3;
 const WAITING_ROOM_TTL_MS = 5 * 60_000;
 const FINISHED_ROOM_TTL_MS = 5 * 60_000;
 const ROOM_CODE_LENGTH = 6;
@@ -77,6 +79,57 @@ const MAX_LOBBY_ROOMS = 50;
 const API_PREFIX = "/api/pvp";
 const REST_ACTION_ID: ActionId = "rest";
 const ACTION_IDS = new Set<ActionId>(actionOrder);
+
+function getSeatTimeoutStreak(record: Pick<RoomRecord, "timeoutStreaks">, seat: PvpSeat): number {
+  return Math.max(0, Math.floor(record.timeoutStreaks?.[seat] ?? 0));
+}
+
+function getTurnDurationMs(record: Pick<RoomRecord, "timeoutStreaks">, seat: PvpSeat): number {
+  const timeoutPenalty = Math.min(getSeatTimeoutStreak(record, seat), MAX_CONSECUTIVE_TURN_TIMEOUTS - 1);
+
+  return TURN_DURATION_MS / 2 ** timeoutPenalty;
+}
+
+function getNextTimeoutStreaks(
+  current: RoomRecord["timeoutStreaks"],
+  seat: PvpSeat,
+  streak: number,
+): RoomRecord["timeoutStreaks"] {
+  const nextStreaks: Partial<Record<PvpSeat, number>> = { ...(current ?? {}) };
+  const normalizedStreak = Math.max(0, Math.floor(streak));
+
+  if (normalizedStreak > 0) {
+    nextStreaks[seat] = normalizedStreak;
+  } else {
+    delete nextStreaks[seat];
+  }
+
+  return nextStreaks.host || nextStreaks.guest ? nextStreaks : undefined;
+}
+
+function createTimeoutLossState(state: CombatState, seat: PvpSeat): CombatState {
+  const timedOutActor = getPvpActorForSeat(seat);
+  const timedOutFighter = timedOutActor === "player" ? state.player : state.enemy;
+  const nextState: CombatState = {
+    ...state,
+    player: { ...state.player },
+    enemy: { ...state.enemy },
+    result: timedOutActor === "player" ? "lose" : "win",
+    activeTurn: timedOutActor,
+    log: [
+      { text: `${timedOutFighter.name} collapses after missing too many turns.`, important: true },
+      ...state.log,
+    ].slice(0, 7),
+  };
+
+  if (timedOutActor === "player") {
+    nextState.player.hp = 0;
+  } else {
+    nextState.enemy.hp = 0;
+  }
+
+  return nextState;
+}
 
 export class PvpLobby extends DurableObject<Env> {
   async listRooms(): Promise<PvpListRoomsResponse> {
@@ -364,7 +417,7 @@ export class PvpRoom extends DurableObject<Env> {
       return;
     }
 
-    const nextRecord = this.applyAction(record, record.activeSeat, REST_ACTION_ID);
+    const nextRecord = this.applyTimedOutTurn(record, record.activeSeat);
     await this.writeRoom(nextRecord);
     await this.scheduleRoomAlarm(nextRecord);
     this.broadcastSnapshots(nextRecord);
@@ -397,7 +450,7 @@ export class PvpRoom extends DurableObject<Env> {
       return record;
     }
 
-    const nextRecord = this.applyAction(record, record.activeSeat, REST_ACTION_ID);
+    const nextRecord = this.applyTimedOutTurn(record, record.activeSeat);
     await this.writeRoom(nextRecord);
     await this.scheduleRoomAlarm(nextRecord);
     this.broadcastSnapshots(nextRecord);
@@ -418,13 +471,45 @@ export class PvpRoom extends DurableObject<Env> {
       state,
       activeSeat: "host",
       turnVersion: 1,
-      deadlineAt: now + TURN_DURATION_MS,
+      timeoutStreaks: undefined,
+      deadlineAt: now + getTurnDurationMs({ timeoutStreaks: undefined }, "host"),
       expiresAt: undefined,
       updatedAt: now,
     };
   }
 
-  private applyAction(record: RoomRecord, seat: PvpSeat, actionId: ActionId): RoomRecord {
+  private applyTimedOutTurn(record: RoomRecord, seat: PvpSeat): RoomRecord {
+    if (!record.state) {
+      return record;
+    }
+
+    const now = Date.now();
+    const timeoutStreak = getSeatTimeoutStreak(record, seat) + 1;
+    const timeoutStreaks = getNextTimeoutStreaks(record.timeoutStreaks, seat, timeoutStreak);
+
+    if (timeoutStreak >= MAX_CONSECUTIVE_TURN_TIMEOUTS) {
+      return {
+        ...record,
+        status: "finished",
+        state: createTimeoutLossState(record.state, seat),
+        activeSeat: undefined,
+        timeoutStreaks,
+        turnVersion: record.turnVersion + 1,
+        deadlineAt: undefined,
+        expiresAt: now + FINISHED_ROOM_TTL_MS,
+        updatedAt: now,
+      };
+    }
+
+    return this.applyAction({ ...record, timeoutStreaks }, seat, REST_ACTION_ID, { resetTimeoutStreak: false });
+  }
+
+  private applyAction(
+    record: RoomRecord,
+    seat: PvpSeat,
+    actionId: ActionId,
+    options: { resetTimeoutStreak?: boolean } = {},
+  ): RoomRecord {
     if (!record.state) {
       return record;
     }
@@ -439,7 +524,10 @@ export class PvpRoom extends DurableObject<Env> {
     const state = resolvePvpTurn(record.state, actor, actionId);
     const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
     const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn) : undefined;
-    const deadlineAt = activeSeat ? now + TURN_DURATION_MS : undefined;
+    const timeoutStreaks = options.resetTimeoutStreak === false
+      ? record.timeoutStreaks
+      : getNextTimeoutStreaks(record.timeoutStreaks, seat, 0);
+    const deadlineAt = activeSeat ? now + getTurnDurationMs({ timeoutStreaks }, activeSeat) : undefined;
     const expiresAt = status === "finished" ? now + FINISHED_ROOM_TTL_MS : undefined;
 
     return {
@@ -447,6 +535,7 @@ export class PvpRoom extends DurableObject<Env> {
       status,
       state,
       activeSeat,
+      timeoutStreaks,
       turnVersion: record.turnVersion + 1,
       deadlineAt,
       expiresAt,
