@@ -13358,3 +13358,65 @@ body.debug-active .action-arc__center {
     0 1px 0 #170804,
     0 0 0 2px rgba(255, 199, 107, 0.08);
 }
+
+body.arena-low-effects .classic-action-bar__wheel {
+  will-change: auto;
+}
+
+body.arena-low-effects .classic-action-bar__wheel::before,
+body.arena-low-effects .classic-action-bar__wheel::after {
+  box-shadow: none;
+  transition: none;
+}
+
+body.arena-low-effects .classic-action-bar .action-arc__button {
+  --token-ring-echo: rgba(0, 0, 0, 0);
+  --token-outer-shine-opacity: 0;
+  --token-face-shine-opacity: 0.12;
+  --token-inner-shine-opacity: 0.12;
+  --token-stripe-shine-opacity: 0;
+  box-shadow:
+    inset 0 -5px 0 rgba(8, 2, 1, 0.52),
+    0 3px 0 #0e0503;
+  will-change: auto;
+}
+
+body.arena-low-effects .classic-action-bar .action-arc__button::after,
+body.arena-low-effects .classic-action-bar .action-arc__button[data-action]::after {
+  mix-blend-mode: normal;
+  opacity: 0.48;
+}
+
+body.arena-low-effects .classic-action-bar .action-arc__image-icon,
+body.arena-low-effects .classic-action-bar .action-arc__attack-icon,
+body.arena-low-effects .classic-action-bar .action-arc__cost-icon {
+  filter: none;
+}
+
+body.arena-low-effects .classic-action-bar .action-arc__button:hover:not(:disabled),
+body.arena-low-effects .classic-action-bar .action-arc__button:active:not(:disabled),
+body.arena-low-effects .classic-action-bar .action-arc__button.action-arc__button--pressed,
+body.arena-low-effects .classic-action-bar .action-arc__button:disabled,
+body.arena-low-effects .classic-action-bar .action-arc__button.classic-action-bar__button--dimmed,
+body.arena-low-effects .classic-action-bar .classic-action-bar__cost--dimmed,
+body.arena-low-effects .classic-action-bar .action-arc__button:disabled .action-arc__cost,
+body.arena-low-effects .classic-action-bar .action-arc__button:disabled .action-arc__chance,
+body.arena-low-effects .classic-action-bar .classic-action-bar__chance--rest-boosted {
+  filter: none;
+}
+
+body.arena-low-effects .classic-action-bar .action-arc__button.action-arc__button--exhausted-rest:not(:disabled),
+body.arena-low-effects .classic-action-bar .action-arc__button[data-action="lunge"].action-arc__button--lunge-reaches:not(:disabled) {
+  --token-ring-echo: rgba(0, 0, 0, 0);
+  box-shadow:
+    inset 0 -5px 0 rgba(8, 2, 1, 0.48),
+    0 3px 0 #0e0503,
+    0 0 0 2px var(--token-ring);
+}
+
+body.arena-low-effects .classic-action-bar .action-arc__cost--exhausts {
+  box-shadow:
+    inset 0 1px 0 rgba(186, 255, 252, 0.18),
+    0 2px 0 rgba(14, 5, 2, 0.88),
+    0 0 0 1px rgba(24, 93, 95, 0.6);
+}

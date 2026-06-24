@@ -359,6 +359,14 @@ test("stat bar animations are a separate opt-in setting", () => {
   assert.equal(stylesSource.includes("body.arena-low-effects .classic-stat__fill::before"), false);
 });
 
+test("low effects simplify classic action bar compositing", () => {
+  assert.equal(stylesSource.includes("body.arena-low-effects .classic-action-bar .action-arc__button::after"), true);
+  assert.equal(stylesSource.includes("mix-blend-mode: normal;"), true);
+  assert.equal(stylesSource.includes("body.arena-low-effects .classic-action-bar .action-arc__image-icon"), true);
+  assert.equal(stylesSource.includes("body.arena-low-effects .classic-action-bar__wheel"), true);
+  assert.equal(stylesSource.includes("will-change: auto;"), true);
+});
+
 test("arena turn flow waits for action animations and adds readable turn pacing", () => {
   assert.equal(mainSource.includes("const actionAnimation = commitState(nextState);"), true);
   assert.equal(mainSource.includes("void scheduleEnemyTurn(nextState, actionAnimation);"), true);
