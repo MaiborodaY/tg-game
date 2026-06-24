@@ -1,4 +1,5 @@
 import type { EnemyVisualPreset, HeroAppearance, HeroEquipment, HeroEquipmentSlotKey, HeroItemId, HeroWeaponClass, HeroWeaponEnchantments } from "./hero";
+import type { ArenaDifficultyId } from "./arenaOpponents";
 
 export type ActionId =
   | "forward"
@@ -135,6 +136,7 @@ export interface CombatEncounterState {
   kind: "random" | "boss";
   tierId: number;
   opponentId: string;
+  difficultyId?: ArenaDifficultyId;
   backgroundVariantId?: string;
 }
 

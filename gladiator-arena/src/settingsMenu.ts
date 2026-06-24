@@ -5,6 +5,7 @@ export const DEFAULT_PLAYER_HUD_MODE: PlayerHudMode = "classic";
 
 export interface PlayerSettings {
   lowEffects: boolean;
+  statBarAnimations: boolean;
   renderFps: PlayerRenderFps;
   vfxEnabled: boolean;
   shadowMode: PlayerShadowMode;
@@ -18,6 +19,7 @@ const fpsUpdateIntervalMs = 500;
 const hudModeDefaultVersion = 2;
 const defaultSettings: PlayerSettings = {
   lowEffects: false,
+  statBarAnimations: false,
   renderFps: 30,
   vfxEnabled: true,
   shadowMode: "low",
@@ -35,6 +37,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
   const button = root.querySelector<HTMLButtonElement>("[data-settings-button]");
   const panel = root.querySelector<HTMLElement>("[data-settings-panel]");
   const lowEffects = root.querySelector<HTMLInputElement>("[data-setting-low-effects]");
+  const statBarAnimations = root.querySelector<HTMLInputElement>("[data-setting-stat-bar-animations]");
   const vfx = root.querySelector<HTMLInputElement>("[data-setting-vfx]");
   const fps = root.querySelector<HTMLInputElement>("[data-setting-fps]");
   const fpsCounter = root.querySelector<HTMLElement>("[data-fps-counter]");
@@ -47,6 +50,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
     !button ||
     !panel ||
     !lowEffects ||
+    !statBarAnimations ||
     !vfx ||
     !fps ||
     !fpsCounter ||
@@ -59,6 +63,7 @@ export function mountSettingsMenu(root: ParentNode = document): void {
 
   const settings = getPlayerSettings();
   lowEffects.checked = settings.lowEffects;
+  statBarAnimations.checked = settings.statBarAnimations;
   vfx.checked = settings.vfxEnabled;
   fps.checked = settings.showFps;
   syncRenderFpsInputs(renderFpsInputs, settings.renderFps);
@@ -79,6 +84,10 @@ export function mountSettingsMenu(root: ParentNode = document): void {
 
   lowEffects.addEventListener("change", () => {
     updateSettings({ lowEffects: lowEffects.checked });
+  });
+
+  statBarAnimations.addEventListener("change", () => {
+    updateSettings({ statBarAnimations: statBarAnimations.checked });
   });
 
   vfx.addEventListener("change", () => {
@@ -168,6 +177,7 @@ function setMenuOpen(button: HTMLButtonElement, panel: HTMLElement, open: boolea
 
 function applySettings(settings: PlayerSettings): void {
   document.body.classList.toggle("arena-low-effects", settings.lowEffects);
+  document.body.classList.toggle("arena-stat-bars-animated", settings.statBarAnimations);
   document.body.classList.toggle("arena-hud-classic", settings.hudMode === "classic");
   document.body.classList.toggle("arena-hud-immersive", settings.hudMode === "immersive");
 }
@@ -211,6 +221,7 @@ function saveSettings(settings: PlayerSettings): void {
 function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
   return {
     lowEffects: typeof input.lowEffects === "boolean" ? input.lowEffects : defaultSettings.lowEffects,
+    statBarAnimations: typeof input.statBarAnimations === "boolean" ? input.statBarAnimations : defaultSettings.statBarAnimations,
     renderFps: normalizeRenderFps(input.renderFps),
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
     shadowMode: normalizeShadowMode(input),

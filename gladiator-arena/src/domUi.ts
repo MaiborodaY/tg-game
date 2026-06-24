@@ -22,6 +22,7 @@ import {
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_WARD_SCROLL_ITEM_ID,
   getHeroXpToNextLevel,
+  type ArenaDifficultyId,
   type ArenaLootDrop,
   type BattleReward,
   type HeroState,
@@ -47,6 +48,7 @@ export interface DomRefs {
   distanceText: HTMLElement;
   classicDistanceBadge: HTMLElement;
   classicDistanceText: HTMLElement;
+  classicEncounterBanner: HTMLElement;
   classicPlayerName: HTMLElement;
   classicEnemyName: HTMLElement;
   playerHpFill: HTMLElement;
@@ -104,6 +106,7 @@ export function getDomRefs(): DomRefs {
     distanceText: document.querySelector<HTMLElement>("#distanceText"),
     classicDistanceBadge: document.querySelector<HTMLElement>(".classic-distance-badge"),
     classicDistanceText: document.querySelector<HTMLElement>("#classicDistanceText"),
+    classicEncounterBanner: document.querySelector<HTMLElement>("[data-classic-encounter-banner]"),
     classicPlayerName: document.querySelector<HTMLElement>("#classicPlayerName"),
     classicEnemyName: document.querySelector<HTMLElement>("#classicEnemyName"),
     playerHpFill: document.querySelector<HTMLElement>("#playerHpFill"),
@@ -175,6 +178,14 @@ const WARD_STATUS_ICON_URL = getShopProductIconUrl([HERO_WARD_SCROLL_ITEM_ID]);
 const PRECISE_STRIKE_STATUS_ICON_URL = getShopProductIconUrl([HERO_PRECISE_STRIKE_SCROLL_ITEM_ID]);
 const DOUBLE_STRIKE_STATUS_ICON_URL = getShopProductIconUrl([HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID]);
 const POISON_STATUS_ICON_URL = getShopProductIconUrl([HERO_POISON_SCROLL_ITEM_ID]);
+type ClassicEncounterDifficulty = ArenaDifficultyId | "boss";
+const CLASSIC_ENCOUNTER_DIFFICULTIES: ClassicEncounterDifficulty[] = ["easy", "medium", "hard", "boss"];
+const CLASSIC_ENCOUNTER_DIFFICULTY_LABELS: Record<ClassicEncounterDifficulty, string> = {
+  easy: "Easy battle",
+  medium: "Medium battle",
+  hard: "Hard battle",
+  boss: "Boss battle",
+};
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
   const playerClinchRange = getFighterClinchRange(state.player);
@@ -184,6 +195,7 @@ export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderCo
   setText(dom.distanceText, distance);
   setText(dom.classicDistanceText, distance);
   syncClassicDistanceBadge(dom.classicDistanceBadge, band);
+  syncClassicEncounterBanner(dom.classicEncounterBanner, getClassicEncounterDifficulty(state));
   renderStats(dom, context.statsState ?? state);
   renderLog(dom, state);
   renderResult(dom, state, context);
@@ -200,6 +212,27 @@ function syncClassicDistanceBadge(element: HTMLElement, band: DistanceBand): voi
 
   CLASSIC_DISTANCE_BADGE_BANDS.forEach((currentBand) => {
     element.classList.toggle(`classic-distance-badge--${currentBand}`, currentBand === band);
+  });
+}
+
+function getClassicEncounterDifficulty(state: CombatState): ClassicEncounterDifficulty {
+  if (state.encounter?.kind === "boss") {
+    return "boss";
+  }
+
+  return state.encounter?.difficultyId ?? "medium";
+}
+
+function syncClassicEncounterBanner(element: HTMLElement, difficulty: ClassicEncounterDifficulty): void {
+  if (element.dataset.encounterDifficulty === difficulty) {
+    return;
+  }
+
+  element.dataset.encounterDifficulty = difficulty;
+  element.setAttribute("aria-label", CLASSIC_ENCOUNTER_DIFFICULTY_LABELS[difficulty]);
+
+  CLASSIC_ENCOUNTER_DIFFICULTIES.forEach((currentDifficulty) => {
+    element.classList.toggle(`classic-encounter-banner--${currentDifficulty}`, currentDifficulty === difficulty);
   });
 }
 

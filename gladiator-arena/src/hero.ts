@@ -281,6 +281,7 @@ export interface ArenaEncounter {
   kind: "random" | "boss";
   tierId: number;
   opponentId: string;
+  difficultyId?: ArenaDifficultyId;
   backgroundVariantId?: string;
   name: string;
   enemyLoadout: EnemyLoadout;
@@ -712,6 +713,7 @@ export function createArenaRandomEnemyEncounter(
     kind: "random",
     tierId: opponent.tierId,
     opponentId: opponent.id,
+    difficultyId: opponent.difficultyId,
     name: pickRandomArenaOpponentName(encounterRandom),
     enemyLoadout,
     rewards: opponent.rewards,
@@ -1877,6 +1879,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       kind: encounter.kind,
       tierId: encounter.tierId,
       opponentId: encounter.opponentId,
+      difficultyId: encounter.difficultyId,
       backgroundVariantId: encounter.backgroundVariantId,
     },
     log: [

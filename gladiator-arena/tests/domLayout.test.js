@@ -348,6 +348,8 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("createArenaEncounterForSelection"), true);
   assert.equal(mainSource.includes("createArenaBossEncounter(selection.bossId)"), true);
   assert.equal(mainSource.includes("createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId)"), true);
+  assert.equal(domUiSource.includes("getClassicEncounterDifficulty"), true);
+  assert.equal(domUiSource.includes('return "boss";'), true);
   assert.equal(mainSource.includes("pickArenaBackgroundVariantIdForTier(encounter.tierId)"), true);
   assert.equal(mainSource.includes("backgroundVariantId:"), true);
   assert.equal(mainSource.includes("getArenaTierDefinitions"), true);
@@ -411,6 +413,7 @@ test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(html.includes('class="classic-stat__icon classic-stat__icon--hp"'), true);
   assert.equal(html.includes('class="classic-stat__icon classic-stat__icon--armor"'), true);
   assert.equal(html.includes('class="classic-stat__icon classic-stat__icon--stamina"'), true);
+  assert.equal(html.includes("data-classic-encounter-banner"), true);
   assert.equal(html.includes('id="classicPlayerHpText" class="classic-stat__value"'), true);
   assert.equal(stylesSource.includes(".classic-stat__icon--hp"), true);
   assert.equal(stylesSource.includes('background-image: url("./assets/ui/profile/stat-health.webp")'), true);
@@ -418,8 +421,10 @@ test("fighter resources use flask HUD while preserving stat ids", () => {
   assert.equal(stylesSource.includes('background-image: url("./assets/ui/profile/stat-stamina.webp")'), true);
   assert.equal(stylesSource.includes(".classic-stat__value"), true);
   assert.equal(stylesSource.includes("place-items: center;"), true);
-  assert.equal(stylesSource.includes("grid-template-columns: 20px minmax(64px, 1fr);"), true);
-  assert.equal(stylesSource.includes("min-height: 21px;"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: minmax(0, 1fr);"), true);
+  assert.equal(stylesSource.includes(".classic-encounter-banner--boss"), true);
+  assert.equal(stylesSource.includes("./assets/ui/arena-difficulty/difficulty-boss.webp"), true);
+  assert.equal(stylesSource.includes("min-height: 22px;"), true);
   assert.equal(stylesSource.includes("font-size: 0.72rem;"), true);
 
   for (const id of [

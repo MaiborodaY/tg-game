@@ -243,6 +243,10 @@
               <span>Low effects</span>
             </label>
             <label class="settings-menu__toggle">
+              <input type="checkbox" data-setting-stat-bar-animations />
+              <span>Bar animations</span>
+            </label>
+            <label class="settings-menu__toggle">
               <input type="checkbox" data-setting-fps />
               <span>Show FPS</span>
             </label>
@@ -259,27 +263,28 @@
               <article class="classic-fighter-card classic-fighter-card--player">
                 <strong id="classicPlayerName">Borshemir</strong>
                 <div class="classic-stat classic-stat--hp">
-                  <span class="classic-stat__icon classic-stat__icon--hp" role="img" aria-label="Health"></span>
                   <div class="classic-stat__track">
                     <div id="classicPlayerHpFill" class="classic-stat__fill hp-fill"></div>
                     <em id="classicPlayerHpText" class="classic-stat__value">10/10</em>
                   </div>
+                  <span class="classic-stat__icon classic-stat__icon--hp" role="img" aria-label="Health"></span>
                 </div>
                 <div class="classic-stat classic-stat--armor">
-                  <span class="classic-stat__icon classic-stat__icon--armor" role="img" aria-label="Armor"></span>
                   <div class="classic-stat__track">
                     <div id="classicPlayerArmorFill" class="classic-stat__fill armor-fill"></div>
                     <em id="classicPlayerArmorText" class="classic-stat__value">0/0</em>
                   </div>
+                  <span class="classic-stat__icon classic-stat__icon--armor" role="img" aria-label="Armor"></span>
                 </div>
                 <div class="classic-stat classic-stat--stamina">
-                  <span class="classic-stat__icon classic-stat__icon--stamina" role="img" aria-label="Stamina"></span>
                   <div class="classic-stat__track">
                     <div id="classicPlayerStaFill" class="classic-stat__fill stamina-fill"></div>
                     <em id="classicPlayerStaText" class="classic-stat__value">10/10</em>
                   </div>
+                  <span class="classic-stat__icon classic-stat__icon--stamina" role="img" aria-label="Stamina"></span>
                 </div>
               </article>
+              <div class="classic-encounter-banner classic-encounter-banner--medium" role="img" aria-label="Medium battle" data-classic-encounter-banner data-encounter-difficulty="medium"></div>
               <div class="classic-distance-badge" aria-label="Arena range">
                 <span>Distance</span>
                 <strong id="classicDistanceText">Far</strong>
@@ -287,25 +292,25 @@
               <article class="classic-fighter-card classic-fighter-card--enemy">
                 <strong id="classicEnemyName">Grumbus</strong>
                 <div class="classic-stat classic-stat--hp">
-                  <span class="classic-stat__icon classic-stat__icon--hp" role="img" aria-label="Health"></span>
                   <div class="classic-stat__track">
                     <div id="classicEnemyHpFill" class="classic-stat__fill hp-fill"></div>
                     <em id="classicEnemyHpText" class="classic-stat__value">10/10</em>
                   </div>
+                  <span class="classic-stat__icon classic-stat__icon--hp" role="img" aria-label="Health"></span>
                 </div>
                 <div class="classic-stat classic-stat--armor">
-                  <span class="classic-stat__icon classic-stat__icon--armor" role="img" aria-label="Armor"></span>
                   <div class="classic-stat__track">
                     <div id="classicEnemyArmorFill" class="classic-stat__fill armor-fill"></div>
                     <em id="classicEnemyArmorText" class="classic-stat__value">0/0</em>
                   </div>
+                  <span class="classic-stat__icon classic-stat__icon--armor" role="img" aria-label="Armor"></span>
                 </div>
                 <div class="classic-stat classic-stat--stamina">
-                  <span class="classic-stat__icon classic-stat__icon--stamina" role="img" aria-label="Stamina"></span>
                   <div class="classic-stat__track">
                     <div id="classicEnemyStaFill" class="classic-stat__fill stamina-fill"></div>
                     <em id="classicEnemyStaText" class="classic-stat__value">10/10</em>
                   </div>
+                  <span class="classic-stat__icon classic-stat__icon--stamina" role="img" aria-label="Stamina"></span>
                 </div>
               </article>
               <div class="combat-status-line" aria-label="Active combat effects">

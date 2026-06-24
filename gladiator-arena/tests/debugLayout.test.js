@@ -314,8 +314,11 @@ test("regular arena exposes switchable classic HUD markup", () => {
   assert.equal(indexHtml.includes('id="classicEnemyStaText"'), true);
   assert.equal(indexHtml.includes('class="classic-stat__icon classic-stat__icon--hp"'), true);
   assert.equal(indexHtml.includes('class="classic-stat__value"'), true);
+  assert.equal(indexHtml.includes("data-classic-encounter-banner"), true);
   assert.equal(debugHtml.includes('class="classic-stat__icon classic-stat__icon--armor"'), true);
   assert.equal(debugHtml.includes('class="classic-stat__value"'), true);
+  assert.equal(debugHtml.includes("data-classic-encounter-banner"), true);
+  assert.equal(stylesSource.includes(".classic-encounter-banner--boss"), true);
   assert.equal(mainSource.includes("mountClassicActionBar"), true);
 });
 
@@ -345,6 +348,15 @@ test("settings replace animation mode with a reload-gated render fps choice", ()
 test("new players start with low arena shadows by default", () => {
   assert.equal(settingsMenuSource.includes('shadowMode: "low"'), true);
   assert.equal(settingsMenuSource.includes('shadowMode: "high"'), false);
+});
+
+test("stat bar animations are a separate opt-in setting", () => {
+  assert.equal(indexHtml.includes("data-setting-stat-bar-animations"), true);
+  assert.equal(settingsMenuSource.includes("statBarAnimations: false"), true);
+  assert.equal(settingsMenuSource.includes("arena-stat-bars-animated"), true);
+  assert.equal(stylesSource.includes("body.arena-stat-bars-animated .classic-stat__fill::before"), true);
+  assert.equal(stylesSource.includes("body.arena-stat-bars-animated .classic-stat__fill::after"), true);
+  assert.equal(stylesSource.includes("body.arena-low-effects .classic-stat__fill::before"), false);
 });
 
 test("arena turn flow waits for action animations and adds readable turn pacing", () => {
