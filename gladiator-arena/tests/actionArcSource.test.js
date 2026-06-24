@@ -8,6 +8,8 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const actionArcSource = readFileSync(resolve(currentDir, "../src/actionArc.ts"), "utf8");
 const classicActionBarSource = readFileSync(resolve(currentDir, "../src/classicActionBar.ts"), "utf8");
 const debugTuningSource = readFileSync(resolve(currentDir, "../src/debugTuning.ts"), "utf8");
+const spellbookMenuSource = readFileSync(resolve(currentDir, "../src/spellbookMenu.ts"), "utf8");
+const scrollEffectTextSource = readFileSync(resolve(currentDir, "../src/scrollEffectText.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
 test("action arc listens to debug tuning changes directly", () => {
@@ -51,6 +53,27 @@ test("action arc buttons keep icon-first content with compact badges", () => {
   assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__chance:not([hidden])"), true);
   assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__cost:not([hidden])"), true);
 });
+
+test("spellbook opens as a centered framed scroll menu with live scroll details", () => {
+  assert.equal(spellbookMenuSource.includes("MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL"), false);
+  assert.equal(spellbookMenuSource.includes("getShopProductIconUrl([itemId])"), true);
+  assert.equal(spellbookMenuSource.includes("getFighterSpellbookScrollEffectText(state.player, actionId, actions[actionId].detail)"), true);
+  assert.equal(spellbookMenuSource.includes('iconFrame.className = "spellbook-menu__icon-frame";'), true);
+  assert.equal(spellbookMenuSource.includes('icon.className = "spellbook-menu__icon";'), true);
+  assert.equal(spellbookMenuSource.includes("hostWidth / 2 - menuWidth / 2"), true);
+  assert.equal(spellbookMenuSource.includes("anchorRect"), false);
+  assert.equal(scrollEffectTextSource.includes("getHeroScrollEffectText"), true);
+  assert.equal(scrollEffectTextSource.includes("getFighterSpellbookScrollEffectText"), true);
+  assert.equal(scrollEffectTextSource.includes("getFighterFireballDamage(fighter)"), true);
+  assert.equal(scrollEffectTextSource.includes("getFighterPoisonDamage(fighter)"), true);
+  assert.equal(stylesSource.includes("--spellbook-menu-frame-image"), false);
+  assert.match(stylesSource, /\.spellbook-menu\s*\{[\s\S]*width: min\(286px, calc\(100% - 52px\)\);[\s\S]*max-height: min\(66vh, 430px\);/);
+  assert.match(stylesSource, /\.spellbook-menu::before\s*\{[\s\S]*border: 1px solid rgba\(153, 77, 255, 0\.42\);/);
+  assert.match(stylesSource, /\.spellbook-menu__item\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\) auto;/);
+  assert.equal(stylesSource.includes(".spellbook-menu__icon-frame"), true);
+  assert.equal(stylesSource.includes(".spellbook-menu__icon"), true);
+});
+
 test("lunge icon uses a supplied image and button gradients avoid the old glare spot", () => {
   assert.equal(actionArcSource.includes("renderActionIcon"), true);
   assert.equal(actionArcSource.includes("./assets/ui/action-icons/lunge.webp"), true);

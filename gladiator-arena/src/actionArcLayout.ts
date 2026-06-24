@@ -110,7 +110,7 @@ const ACTION_LABELS: Record<ActionId, { label: string; detail: string }> = {
   switchWeapon: { label: "SWAP", detail: "Weapon" },
   shuriken: { label: "STAR", detail: "Throw" },
   scroll: { label: "SPELL", detail: "Book" },
-  fireball: { label: "FIRE", detail: "45 dmg" },
+  fireball: { label: "FIRE", detail: "30 dmg" },
   ward: { label: "WARD", detail: "Absorb" },
   preciseStrike: { label: "TRUE", detail: "Strike" },
   doubleStrike: { label: "2X", detail: "Strike" },

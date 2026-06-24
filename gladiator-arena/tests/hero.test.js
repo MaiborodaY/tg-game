@@ -1447,7 +1447,7 @@ test("shuriken consumables share one inventory cap across item types", () => {
 test("scrolls share one capped consumable inventory pool without equipping", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
-    gold: 120,
+    gold: 750,
   };
   const crackScrollId = hero.HERO_CRACK_ARMOR_SCROLL_ITEM_ID;
   const fireballScrollId = hero.HERO_FIREBALL_SCROLL_ITEM_ID;
@@ -1456,8 +1456,11 @@ test("scrolls share one capped consumable inventory pool without equipping", () 
   const doubleStrikeScrollId = hero.HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID;
   const poisonScrollId = hero.HERO_POISON_SCROLL_ITEM_ID;
   const firstPurchase = hero.buyAndEquipHeroItems(baseHero, { itemIds: [crackScrollId], price: 30 }, "2026-01-01T00:01:00.000Z");
-  const secondPurchase = hero.buyAndEquipHeroItems(firstPurchase, { itemIds: [fireballScrollId], price: 30 }, "2026-01-01T00:02:00.000Z");
-  const thirdPurchase = hero.buyAndEquipHeroItems(secondPurchase, { itemIds: [doubleStrikeScrollId], price: 30 }, "2026-01-01T00:03:00.000Z");
+  const blockedAtBaseCapacity = hero.buyAndEquipHeroItems(firstPurchase, { itemIds: [fireballScrollId], price: 50 }, "2026-01-01T00:02:00.000Z");
+  const firstCapacityUpgrade = hero.upgradeHeroScrollCapacity(firstPurchase, "2026-01-01T00:03:00.000Z");
+  const secondPurchase = hero.buyAndEquipHeroItems(firstCapacityUpgrade, { itemIds: [fireballScrollId], price: 50 }, "2026-01-01T00:04:00.000Z");
+  const secondCapacityUpgrade = hero.upgradeHeroScrollCapacity(secondPurchase, "2026-01-01T00:05:00.000Z");
+  const thirdPurchase = hero.buyAndEquipHeroItems(secondCapacityUpgrade, { itemIds: [doubleStrikeScrollId], price: 30 }, "2026-01-01T00:06:00.000Z");
   const blockedPurchase = hero.buyAndEquipHeroItems(thirdPurchase, { itemIds: [wardScrollId], price: 30 }, "2026-01-01T00:04:00.000Z");
 
   for (const scrollItemId of [crackScrollId, fireballScrollId, doubleStrikeScrollId]) {
@@ -1472,11 +1475,45 @@ test("scrolls share one capped consumable inventory pool without equipping", () 
   assert.equal(hero.HERO_ITEM_CATALOG[poisonScrollId]?.kind, "scroll");
   assert.equal(hero.getHeroItemQuantity(thirdPurchase, wardScrollId), 0);
   assert.equal(hero.getHeroItemQuantity(thirdPurchase, poisonScrollId), 0);
-  assert.equal(thirdPurchase.gold, 30);
+  assert.equal(hero.getHeroScrollCapacity(baseHero), 1);
+  assert.equal(hero.getHeroScrollCapacity(firstPurchase), 1);
+  assert.equal(blockedAtBaseCapacity, firstPurchase);
+  assert.equal(hero.getHeroScrollCapacity(firstCapacityUpgrade), 2);
+  assert.equal(hero.getHeroScrollCapacity(secondCapacityUpgrade), 3);
+  assert.equal(thirdPurchase.gold, 40);
   assert.equal(thirdPurchase.equipment.weaponMain, null);
-  assert.equal(hero.getHeroScrollQuantity(thirdPurchase), hero.HERO_SCROLL_MAX_QUANTITY);
+  assert.equal(hero.getHeroScrollQuantity(thirdPurchase), 3);
   assert.equal(hero.getHeroRemainingScrollCapacity(thirdPurchase), 0);
   assert.equal(blockedPurchase, thirdPurchase);
+});
+
+test("scroll capacity upgrades from one to five with rising prices", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 5000,
+  };
+  const upgradedToTwo = hero.upgradeHeroScrollCapacity(baseHero, "2026-01-01T00:01:00.000Z");
+  const upgradedToThree = hero.upgradeHeroScrollCapacity(upgradedToTwo, "2026-01-01T00:02:00.000Z");
+  const upgradedToFour = hero.upgradeHeroScrollCapacity(upgradedToThree, "2026-01-01T00:03:00.000Z");
+  const upgradedToFive = hero.upgradeHeroScrollCapacity(upgradedToFour, "2026-01-01T00:04:00.000Z");
+  const blockedAtMax = hero.upgradeHeroScrollCapacity(upgradedToFive, "2026-01-01T00:05:00.000Z");
+
+  assert.equal(hero.getHeroScrollCapacity(baseHero), hero.HERO_SCROLL_CAPACITY_BASE);
+  assert.equal(hero.getHeroScrollCapacityUpgradePrice(baseHero), 100);
+  assert.equal(hero.getHeroScrollCapacity(upgradedToTwo), 2);
+  assert.equal(upgradedToTwo.gold, 4900);
+  assert.equal(hero.getHeroScrollCapacityUpgradePrice(upgradedToTwo), 500);
+  assert.equal(hero.getHeroScrollCapacity(upgradedToThree), 3);
+  assert.equal(upgradedToThree.gold, 4400);
+  assert.equal(hero.getHeroScrollCapacityUpgradePrice(upgradedToThree), 1000);
+  assert.equal(hero.getHeroScrollCapacity(upgradedToFour), 4);
+  assert.equal(upgradedToFour.gold, 3400);
+  assert.equal(hero.getHeroScrollCapacityUpgradePrice(upgradedToFour), 2000);
+  assert.equal(hero.getHeroScrollCapacity(upgradedToFive), hero.HERO_SCROLL_CAPACITY_MAX);
+  assert.equal(upgradedToFive.gold, 1400);
+  assert.equal(hero.getHeroScrollCapacityUpgradePrice(upgradedToFive), undefined);
+  assert.equal(blockedAtMax, upgradedToFive);
+  assert.equal(hero.canUpgradeHeroScrollCapacity({ ...baseHero, gold: 99 }), false);
 });
 
 test("precise and double strike scroll upgrades change rarity prices and combat effects", () => {
@@ -1518,9 +1555,9 @@ test("fireball and poison scroll upgrades change rarity prices and combat effect
   const poisonScrollId = hero.HERO_POISON_SCROLL_ITEM_ID;
 
   assert.equal(hero.getHeroScrollUpgradeRarityForItem(baseHero, fireballScrollId), "common");
-  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, fireballScrollId), 40);
+  assert.equal(hero.getHeroScrollPurchasePrice(baseHero, fireballScrollId), 50);
   assert.equal(hero.getHeroScrollUpgradePrice(baseHero, fireballScrollId), 250);
-  assert.equal(hero.getHeroFireballDamage(baseHero), 45);
+  assert.equal(hero.getHeroFireballDamage(baseHero), 30);
   assert.equal(hero.getHeroScrollPurchasePrice(baseHero, poisonScrollId), 35);
   assert.equal(hero.getHeroScrollUpgradePrice(baseHero, poisonScrollId), 200);
   assert.equal(hero.getHeroPoisonDamage(baseHero), 5);
@@ -1659,7 +1696,7 @@ test("combat state exposes fireball scroll count and rewards persist spent fireb
 
   assert.equal(combatState.player.fireballScrollCount, 2);
   assert.equal(combatState.player.fireballScrollItemId, scrollItemId);
-  assert.equal(combatState.player.fireballDamage, 45);
+  assert.equal(combatState.player.fireballDamage, 30);
 
   const spentCombatState = {
     ...combatState,

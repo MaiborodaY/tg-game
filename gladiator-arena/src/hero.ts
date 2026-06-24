@@ -76,6 +76,7 @@ export interface HeroState {
   skillPoints: number;
   gold: number;
   bowShotCapacity?: number;
+  scrollCapacity?: number;
   baseStats: HeroBaseStats;
   appearance: HeroAppearance;
   equipment: HeroEquipment;
@@ -420,7 +421,15 @@ export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
-export const HERO_SCROLL_MAX_QUANTITY = 3;
+export const HERO_SCROLL_CAPACITY_BASE = 1;
+export const HERO_SCROLL_CAPACITY_MAX = 5;
+export const HERO_SCROLL_CAPACITY_UPGRADE_PRICES: Readonly<Record<number, number>> = {
+  2: 100,
+  3: 500,
+  4: 1000,
+  5: 2000,
+};
+export const HERO_SCROLL_MAX_QUANTITY = HERO_SCROLL_CAPACITY_MAX;
 export const HERO_CRACK_ARMOR_SCROLL_ITEM_ID = "scroll_crack_armor_01";
 export const HERO_FIREBALL_SCROLL_ITEM_ID = "scroll_fireball_01";
 export const HERO_WARD_SCROLL_ITEM_ID = "scroll_ward_01";
@@ -479,7 +488,7 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "fireball",
     itemId: HERO_FIREBALL_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 40,
+      common: 50,
       uncommon: 90,
       rare: 200,
       epic: 425,
@@ -863,6 +872,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     skillPoints: HERO_STARTING_SKILL_POINTS,
     gold: 0,
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
+    scrollCapacity: HERO_SCROLL_CAPACITY_BASE,
     baseStats: {
       strength: 0,
       agility: 0,
@@ -1267,6 +1277,17 @@ export function getHeroConsumableMaxQuantity(itemId: HeroItemId): number {
   return isHeroConsumableItemId(itemId) ? HERO_SHURIKEN_MAX_QUANTITY : 0;
 }
 
+export function getHeroScrollCapacity(hero: HeroState): number {
+  const capacity = hero.scrollCapacity;
+  const inventoryCapacityFloor = Math.max(HERO_SCROLL_CAPACITY_BASE, Math.min(HERO_SCROLL_CAPACITY_MAX, getHeroScrollQuantity(hero)));
+
+  if (typeof capacity !== "number" || !Number.isFinite(capacity)) {
+    return inventoryCapacityFloor;
+  }
+
+  return Math.max(inventoryCapacityFloor, Math.min(HERO_SCROLL_CAPACITY_MAX, Math.floor(capacity)));
+}
+
 function isHeroShurikenItemId(itemId: HeroItemId): boolean {
   return getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) === "shuriken";
 }
@@ -1319,7 +1340,7 @@ export function getHeroScrollQuantity(hero: HeroState): number {
 }
 
 export function getHeroRemainingScrollCapacity(hero: HeroState): number {
-  return Math.max(0, HERO_SCROLL_MAX_QUANTITY - getHeroScrollQuantity(hero));
+  return Math.max(0, getHeroScrollCapacity(hero) - getHeroScrollQuantity(hero));
 }
 
 export function getHeroShurikenDamage(hero?: HeroState): number {
@@ -1558,6 +1579,34 @@ export function upgradeHeroBowShotCapacity(hero: HeroState, now = new Date().toI
     ...hero,
     gold: hero.gold - HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE,
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX,
+    updatedAt: now,
+  };
+}
+
+export function getHeroScrollCapacityUpgradePrice(hero: HeroState): number | undefined {
+  const nextCapacity = getHeroScrollCapacity(hero) + 1;
+
+  return nextCapacity <= HERO_SCROLL_CAPACITY_MAX ? HERO_SCROLL_CAPACITY_UPGRADE_PRICES[nextCapacity] : undefined;
+}
+
+export function canUpgradeHeroScrollCapacity(hero: HeroState): boolean {
+  const price = getHeroScrollCapacityUpgradePrice(hero);
+
+  return price !== undefined && hero.gold >= price;
+}
+
+export function upgradeHeroScrollCapacity(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const currentCapacity = getHeroScrollCapacity(hero);
+  const price = getHeroScrollCapacityUpgradePrice(hero);
+
+  if (price === undefined || hero.gold < price) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold - price,
+    scrollCapacity: Math.min(HERO_SCROLL_CAPACITY_MAX, currentCapacity + 1),
     updatedAt: now,
   };
 }
@@ -2289,6 +2338,7 @@ function buyHeroConsumableItems(hero: HeroState, purchase: HeroItemPurchase, now
 
   for (const itemId of purchase.itemIds) {
     const maxQuantity = getHeroConsumableMaxQuantity(itemId);
+    const maxScrollQuantity = getHeroScrollCapacity(hero);
     const existingEntry = inventory.find((entry) => entry.itemId === itemId);
     const currentQuantity = Math.max(0, Math.floor(existingEntry?.quantity ?? 0));
     const isScroll = isHeroScrollItemId(itemId);
@@ -2301,7 +2351,7 @@ function buyHeroConsumableItems(hero: HeroState, purchase: HeroItemPurchase, now
     if (
       maxQuantity <= 0 ||
       currentQuantity >= maxQuantity ||
-      (isScroll && totalScrollQuantity >= HERO_SCROLL_MAX_QUANTITY) ||
+      (isScroll && totalScrollQuantity >= maxScrollQuantity) ||
       (isShuriken && totalShurikenQuantity >= HERO_SHURIKEN_MAX_QUANTITY)
     ) {
       return hero;

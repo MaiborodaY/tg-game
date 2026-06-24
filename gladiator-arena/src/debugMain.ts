@@ -52,6 +52,7 @@ import {
   sharpenHeroActiveWeapon,
   unlockAllHeroShopRarities,
   upgradeHeroScroll,
+  upgradeHeroScrollCapacity,
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
@@ -516,6 +517,18 @@ function handleMagicScrollUpgrade(product: MagicProduct): void {
   magicShop?.render();
 }
 
+function handleMagicScrollCapacityUpgrade(): void {
+  const nextHero = upgradeHeroScrollCapacity(hero);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  renderCityHeroInfo(cityHeroWidgetRefs, hero);
+  magicShop?.render();
+}
+
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
   const nextHero = allocateHeroSkillPoints(hero, attribute, amount);
 
@@ -875,6 +888,7 @@ function startDebugApp(): void {
       getHero: () => hero,
       onBuy: handleShopBuy,
       onUpgradeScroll: handleMagicScrollUpgrade,
+      onScrollCapacityUpgrade: handleMagicScrollCapacityUpgrade,
       onSharpenWeapon: handleMagicWeaponSharpen,
     });
   }

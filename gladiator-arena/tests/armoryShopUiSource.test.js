@@ -12,6 +12,7 @@ const assetsSource = readFileSync(resolve(currentDir, "../src/assets.ts"), "utf8
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const shopItemIconsSource = readFileSync(resolve(currentDir, "../src/shopItemIcons.ts"), "utf8");
 const shopPresentationSource = readFileSync(resolve(currentDir, "../src/shopPresentation.ts"), "utf8");
+const scrollEffectTextSource = readFileSync(resolve(currentDir, "../src/scrollEffectText.ts"), "utf8");
 const uiLayoutTuningSource = readFileSync(resolve(currentDir, "../src/uiLayoutTuning.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -193,25 +194,30 @@ test("magic shop exposes scroll icons as compressed runtime webp assets", () => 
   [
     "magic-shop-title-frame",
     "magic-shop-selected-card-frame",
+    "scroll-capacity-upgrade",
   ].forEach((assetKey) => {
     assert.equal(existsSync(resolve(currentDir, `../src/assets/ui/magic-shop/${assetKey}.webp`)), true);
     assert.equal(existsSync(resolve(currentDir, `../art-source/png/assets/ui/magic-shop/${assetKey}.png`)), true);
   });
 });
 
-test("magic shop starts from a home menu and keeps scroll preview plus weapon enchantment modes", () => {
-  assert.equal(magicShopSource.includes('type MagicShopMode = "home" | "scrolls" | "weaponEnchantment";'), true);
+test("magic shop starts from a home menu and keeps scroll preview plus weapon sharpening modes", () => {
+  assert.equal(magicShopSource.includes('type MagicShopMode = "home" | "scrolls" | "weaponSharpening";'), true);
   assert.equal(magicShopSource.includes('let mode: MagicShopMode = "home";'), true);
   assert.equal(magicShopSource.includes("let selectedProductId = MAGIC_PRODUCTS[0]?.id ?? \"\";"), true);
   assert.equal(magicShopSource.includes('preview.className = "magic-shop__preview";'), true);
   assert.equal(magicShopSource.includes('home.className = "magic-shop__home";'), true);
   assert.equal(magicShopSource.includes('label: "Scrolls"'), true);
-  assert.equal(magicShopSource.includes('label: "Weapon Enchantment"'), true);
+  assert.equal(magicShopSource.includes('label: "Weapon Sharpening"'), true);
   assert.equal(magicShopSource.includes('productList.className = "magic-shop__list";'), true);
   assert.equal(magicShopSource.includes('wallet.className = "magic-shop__wallet";'), true);
   assert.equal(magicShopSource.includes("CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL"), true);
   assert.equal(magicShopSource.includes("MAGIC_SHOP_TITLE_FRAME_ASSET_URL"), true);
   assert.equal(magicShopSource.includes("MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL"), true);
+  assert.equal(assetsSource.includes('MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL = new URL("./assets/ui/magic-shop/scroll-capacity-upgrade.webp", import.meta.url).href'), true);
+  assert.equal(magicShopSource.includes("MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL"), true);
+  assert.equal(magicShopSource.includes("getHeroScrollEffectText(hero, getMagicProductPrimaryItemId(product), product.effect)"), true);
+  assert.equal(scrollEffectTextSource.includes("export function getHeroScrollEffectText"), true);
   assert.equal(magicShopSource.includes("applyUiLayoutTuning"), true);
   assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-background-image"'), true);
   assert.equal(magicShopSource.includes('shop.style.setProperty("--magic-shop-title-frame-image"'), true);
@@ -226,14 +232,16 @@ test("magic shop starts from a home menu and keeps scroll preview plus weapon en
   assert.equal(magicShopSource.includes("wallet.append(scrollCapacity, gold);"), true);
   assert.equal(magicShopSource.includes("content.append(home, productList, wallet);"), true);
   assert.equal(magicShopSource.includes("content.append(productList, wallet);"), false);
-  assert.equal(magicShopSource.includes("panel.append(preview, menu, back);"), true);
+  assert.equal(magicShopSource.includes("panel.append(preview, menu, scrollUpgradeElements.root, back);"), true);
   assert.equal(magicShopSource.includes("content.append(preview, productList, wallet);"), false);
   assert.equal(magicShopSource.includes('root.classList.add("city-menu--magic-shop-open");'), true);
   assert.equal(magicShopSource.includes('root.classList.remove("city-menu--magic-shop-open");'), true);
   assert.equal(magicShopSource.includes('scrollCapacity.className = "magic-shop__scroll-capacity";'), true);
-  assert.equal(magicShopSource.includes("Math.min(getHeroScrollQuantity(hero), HERO_SCROLL_MAX_QUANTITY)"), true);
-  assert.equal(magicShopSource.includes("setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`);"), true);
+  assert.equal(magicShopSource.includes("const scrollCapacityValue = getHeroScrollCapacity(hero);"), true);
+  assert.equal(magicShopSource.includes("setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${scrollCapacityValue}`);"), true);
   assert.equal(magicShopSource.includes('scrollCapacity.hidden = mode !== "scrolls";'), true);
+  assert.equal(magicShopSource.includes('scrollUpgradeElements.root.hidden = mode !== "scrolls";'), true);
+  assert.equal(magicShopSource.includes("const scrollUpgradeElements = createMagicScrollCapacityUpgrade();"), true);
   assert.equal(magicShopSource.includes("const previewElements = createMagicProductPreview();"), true);
   assert.equal(magicShopSource.includes("const productListItems = MAGIC_PRODUCTS.map((product) => [product.id, createMagicProductListItem(product)] as const);"), true);
   assert.equal(magicShopSource.includes("preview.append(previewElements.card);"), true);
@@ -248,16 +256,26 @@ test("magic shop starts from a home menu and keeps scroll preview plus weapon en
   assert.equal(magicShopSource.includes("card.append(title, icon, effect, footer);"), true);
   assert.equal(magicShopSource.includes("function refreshHeroState(hero: HeroState): void"), true);
   assert.equal(magicShopSource.includes("function refreshSelectedProduct(hero: HeroState): void"), true);
-  assert.equal(magicShopSource.includes("function refreshWeaponEnchantment(hero: HeroState): void"), true);
+  assert.equal(magicShopSource.includes("function refreshScrollCapacityUpgrade(hero: HeroState): void"), true);
+  assert.equal(magicShopSource.includes("getHeroScrollCapacityUpgradePrice(hero)"), true);
+  assert.equal(magicShopSource.includes("canUpgradeHeroScrollCapacity(hero)"), true);
+  assert.equal(magicShopSource.includes("options.onScrollCapacityUpgrade();"), true);
+  assert.equal(mainSource.includes("function handleMagicScrollCapacityUpgrade(): void"), true);
+  assert.equal(mainSource.includes("upgradeHeroScrollCapacity(hero)"), true);
+  assert.equal(mainSource.includes("onScrollCapacityUpgrade: handleMagicScrollCapacityUpgrade"), true);
+  assert.equal(stylesSource.includes(".magic-shop.armory-shop--city-mode .magic-shop__scroll-upgrade"), true);
+  assert.equal(stylesSource.includes(".magic-shop__scroll-upgrade-card"), true);
+  assert.match(stylesSource, /\.magic-shop__scroll-upgrade-card\s*\{[\s\S]*grid-template-rows: 26px auto 22px;[\s\S]*width: 58px;/);
+  assert.equal(magicShopSource.includes("function refreshWeaponSharpening(hero: HeroState): void"), true);
   assert.equal(magicShopSource.includes("function refreshProductList(hero: HeroState): void"), true);
   assert.equal(magicShopSource.includes("function selectMagicProduct(productId: string): void"), true);
   assert.equal(magicShopSource.includes("function createMagicShopHomeAction"), true);
-  assert.equal(magicShopSource.includes("options.onEnchantWeapon();"), true);
-  assert.equal(magicShopSource.includes("HERO_WATER_WEAPON_ENCHANT_PRICE"), true);
-  assert.equal(magicShopSource.includes("getActiveEnchantableHeroWeaponItemId(hero)"), true);
-  assert.equal(magicShopSource.includes("canEnchantHeroActiveWeaponWithWater(hero)"), true);
-  assert.equal(mainSource.includes("onEnchantWeapon: handleMagicWeaponEnchant"), true);
-  assert.equal(mainSource.includes("enchantHeroActiveWeaponWithWater(hero)"), true);
+  assert.equal(magicShopSource.includes("options.onSharpenWeapon();"), true);
+  assert.equal(magicShopSource.includes("HERO_WEAPON_SHARPENING_MAX_LEVEL"), true);
+  assert.equal(magicShopSource.includes("getActiveSharpenableHeroWeaponItemId(hero)"), true);
+  assert.equal(magicShopSource.includes("canSharpenHeroActiveWeapon(hero)"), true);
+  assert.equal(mainSource.includes("onSharpenWeapon: handleMagicWeaponSharpen"), true);
+  assert.equal(mainSource.includes("sharpenHeroActiveWeapon(hero)"), true);
   assert.equal(mainSource.includes("setPlayerWeaponEnchantments(hero.weaponEnchantments)"), true);
 
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*content: "MAGIC SHOP";[\s\S]*\}/);
@@ -300,7 +318,8 @@ test("magic shop starts from a home menu and keeps scroll preview plus weapon en
   assert.match(stylesSource, /body\.debug-mode-ui \.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\s*\{[\s\S]*--magic-shop-title-text-font-size: var\(--ui-magic-shop-compact-title-text-font-size, 14\.5px\);/);
   assert.match(stylesSource, /body\.debug-mode-ui \.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]::after\s*\{[\s\S]*top: var\(--magic-shop-title-top\);[\s\S]*right: calc\(var\(--shop-frame-side-width\) \+ 50px\);[\s\S]*left: calc\(var\(--shop-frame-side-width\) \+ 50px\);/);
   assert.match(stylesSource, /body\.debug-mode-ui \.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\] \.magic-shop__preview\s*\{[\s\S]*right: 14px;[\s\S]*left: 14px;/);
-  assert.match(stylesSource, /body\.debug-mode-ui \.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\] \.magic-shop__list-item\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\) minmax\(calc\(var\(--magic-shop-list-price-min-width\) \* var\(--magic-shop-button-scale\)\), auto\);/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\] \.magic-shop__list-item\s*\{[\s\S]*grid-template-columns:[\s\S]*minmax\(0, 1fr\)[\s\S]*minmax\(calc\(var\(--magic-shop-list-price-coin-size\) \* var\(--magic-shop-button-scale\) \+ 18px \* var\(--magic-shop-button-scale\)\), auto\)[\s\S]*minmax\(calc\(var\(--magic-shop-list-price-min-width\) \* var\(--magic-shop-button-scale\)\), auto\);/);
+  assert.match(stylesSource, /body\.debug-mode-ui \.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\] \.magic-shop__list-select\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\);/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode::after\s*\{[\s\S]*top: var\(--magic-shop-title-top\);[\s\S]*right: calc\(var\(--shop-frame-side-width\) \+ 50px\);[\s\S]*left: calc\(var\(--shop-frame-side-width\) \+ 50px\);[\s\S]*min-width: 0;[\s\S]*transform: none;/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-list-row-height: var\(--ui-magic-shop-compact-list-row-height, 38px\);/);
   assert.match(stylesSource, /@media \(max-width: 460px\), \(max-height: 760px\)\s*\{[\s\S]*\.magic-shop\.armory-shop--city-mode\s*\{[\s\S]*--magic-shop-preview-width: min\(var\(--ui-magic-shop-compact-preview-width, 210px\), calc\(100% - 36px\)\);/);
@@ -380,7 +399,7 @@ test("magic shop starts from a home menu and keeps scroll preview plus weapon en
   assert.equal(uiLayoutTuningSource.includes("target.style.setProperty("), true);
   assert.equal(uiLayoutTuningSource.includes("control.runtimeCssVar"), true);
   assert.equal(uiLayoutTuningSource.includes("target.style.removeProperty(control.runtimeCssVar)"), true);
-  assert.equal(uiLayoutTuningSource.includes("document.body.classList.contains(\"debug-mode-ui\")"), false);
+  assert.equal(uiLayoutTuningSource.includes("document.body.classList.contains(\"debug-mode-ui\")"), true);
 });
 
 test("shop product display names hide technical variants and rename shoulder guards", () => {

@@ -142,6 +142,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_executioner_01","name":"Executioner Back Boot 01","price":31,"itemIds":["generated_equipment_back_boot_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_boot_frost_king_01","name":"Frost King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    assetKeys: {"backBootAssetKey":"back-boot-frost-king-01"},
+    equipmentTuning: {"x":8.431967963338593,"y":-2.49753041356405,"angle":0,"scaleX":0.96,"scaleY":0.96,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-boot-frost-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-boot-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-boot-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_boot_grave_king_01","name":"Grave King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
     assetKeys: {"backBootAssetKey":"back-boot-grave-king-01"},
     equipmentTuning: {"x":5.244035504312549,"y":-4.437919464446395,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
@@ -395,6 +406,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_glove_executioner_01","name":"Executioner Back Glove 01","price":31,"itemIds":["generated_equipment_back_glove_executioner_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_back_glove_frost_king_01","name":"Frost King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    assetKeys: {"backGloveAssetKey":"back-glove-frost-king-01"},
+    equipmentTuning: {"x":2.498042538374463,"y":4.272117770485977,"angle":-3,"scaleX":1,"scaleY":0.89,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-glove-frost-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-glove-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-glove-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_glove_grave_king_01","name":"Grave King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
@@ -664,6 +686,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_executioner_01","name":"Executioner Back Greave 01","price":37,"itemIds":["generated_equipment_back_greave_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_greave_frost_king_01","name":"Frost King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    assetKeys: {"backGreaveAssetKey":"back-greave-frost-king-01"},
+    equipmentTuning: {"x":-0.8431967963339275,"y":22.477773722077927,"angle":-6,"scaleX":1.5,"scaleY":1.18,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-greave-frost-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-greave-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-greave-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_greave_grave_king_01","name":"Grave King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
     assetKeys: {"backGreaveAssetKey":"back-greave-grave-king-01"},
     equipmentTuning: {"x":-5.244035504312535,"y":11.09479866111593,"angle":-9,"scaleX":1.17,"scaleY":1.35,"flipX":false,"flipY":false},
@@ -931,6 +964,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_executioner_01","name":"Executioner Back Shinguard 01","price":37,"itemIds":["generated_equipment_back_shinguard_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_back_shinguard_frost_king_01","name":"Frost King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    assetKeys: {"backShinguardAssetKey":"back-shinguard-frost-king-01"},
+    equipmentTuning: {"x":0.6650306119256015,"y":13.021318515231997,"angle":3,"scaleX":1.3,"scaleY":1.03,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shinguard-frost-king-01",
+      sourcePath: "assets/fighters/armor/legs/back-shinguard-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_shinguard_grave_king_01","name":"Grave King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-grave-king-01"},
     equipmentTuning: {"x":2,"y":12.29843791698022,"angle":3,"scaleX":1.3,"scaleY":1,"flipX":false,"flipY":false},
@@ -1184,6 +1228,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_executioner_01","name":"Executioner Back Shoulderguard 01","price":37,"itemIds":["generated_equipment_back_shoulderguard_executioner_01"],"categoryId":"shoulders"},
+  },
+  {
+    item: {"id":"generated_equipment_back_shoulderguard_frost_king_01","name":"Frost King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-frost-king-01"},
+    equipmentTuning: {"x":2.1079919385344112,"y":19.425237406742042,"angle":0,"scaleX":2.45,"scaleY":1.64,"flipX":false,"flipY":false},
+    asset: {
+      key: "back-shoulderguard-frost-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-shoulderguard-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_grave_king_01","name":"Grave King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
@@ -1441,6 +1496,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_executioner_01","name":"Executioner Back Wrist 01","price":31,"itemIds":["generated_equipment_back_wrist_executioner_01"],"categoryId":"arms"},
   },
   {
+    item: {"id":"generated_equipment_back_wrist_frost_king_01","name":"Frost King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    assetKeys: {"backWristAssetKey":"back-wrist-frost-king-01"},
+    equipmentTuning: {"x":0.31964473815243366,"y":18.312434109737524,"angle":-9,"scaleX":1.99,"scaleY":1.1,"flipX":true,"flipY":false},
+    asset: {
+      key: "back-wrist-frost-king-01",
+      sourcePath: "assets/fighters/armor/arms/back-wrist-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_back_wrist_grave_king_01","name":"Grave King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
     assetKeys: {"backWristAssetKey":"back-wrist-grave-king-01"},
     equipmentTuning: {"x":1.2008392957877163,"y":25.870845464177023,"angle":-9,"scaleX":1.58,"scaleY":1,"flipX":false,"flipY":false},
@@ -1682,6 +1748,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_breastplate_executioner_01","name":"Executioner Breastplate 01","price":85,"itemIds":["generated_equipment_breastplate_executioner_01"],"categoryId":"chest"},
+  },
+  {
+    item: {"id":"generated_equipment_breastplate_frost_king_01","name":"Frost King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    assetKeys: {"breastplateAssetKey":"breastplate-frost-king-01"},
+    equipmentTuning: {"x":0,"y":55,"angle":0,"scaleX":1.37,"scaleY":1.69,"flipX":false,"flipY":false},
+    asset: {
+      key: "breastplate-frost-king-01",
+      sourcePath: "assets/fighters/armor/breastplate/breastplate-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_breastplate_grave_king_01","name":"Grave King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
@@ -1939,6 +2016,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_boot_executioner_01","name":"Executioner Front Boot 01","price":0,"itemIds":["generated_equipment_front_boot_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_boot_frost_king_01","name":"Frost King 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
+    assetKeys: {"frontBootAssetKey":"front-boot-frost-king-01"},
+    equipmentTuning: {"x":38,"y":-2.49753041356405,"angle":0,"scaleX":0.96,"scaleY":0.96,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-boot-frost-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-boot-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-boot-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_boot_grave_king_01","name":"Grave King 01 Front Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontBoot","armorHp":0},
     assetKeys: {"frontBootAssetKey":"front-boot-grave-king-01"},
     equipmentTuning: {"x":32,"y":-4.437919464446395,"angle":0,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
@@ -2192,6 +2280,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_glove_executioner_01","name":"Executioner Front Glove 01","price":0,"itemIds":["generated_equipment_front_glove_executioner_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_glove_frost_king_01","name":"Frost King 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
+    assetKeys: {"frontGloveAssetKey":"front-glove-frost-king-01"},
+    equipmentTuning: {"x":2.498042538374463,"y":4.272117770485977,"angle":-3,"scaleX":1,"scaleY":0.89,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-glove-frost-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-glove-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-glove-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_glove_grave_king_01","name":"Grave King 01 Front Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontGlove","armorHp":0},
@@ -2461,6 +2560,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_greave_executioner_01","name":"Executioner Front Greave 01","price":0,"itemIds":["generated_equipment_front_greave_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_greave_frost_king_01","name":"Frost King 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
+    assetKeys: {"frontGreaveAssetKey":"front-greave-frost-king-01"},
+    equipmentTuning: {"x":-0.8431967963339275,"y":22.477773722077927,"angle":-6,"scaleX":1.5,"scaleY":1.18,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-greave-frost-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-greave-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-greave-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_greave_grave_king_01","name":"Grave King 01 Front Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontGreave","armorHp":0},
     assetKeys: {"frontGreaveAssetKey":"front-greave-grave-king-01"},
     equipmentTuning: {"x":-5.244035504312535,"y":11.09479866111593,"angle":-9,"scaleX":1.17,"scaleY":1.35,"flipX":false,"flipY":false},
@@ -2728,6 +2838,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shinguard_executioner_01","name":"Executioner Front Shinguard 01","price":0,"itemIds":["generated_equipment_front_shinguard_executioner_01"],"categoryId":"legs"},
   },
   {
+    item: {"id":"generated_equipment_front_shinguard_frost_king_01","name":"Frost King 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
+    assetKeys: {"frontShinguardAssetKey":"front-shinguard-frost-king-01"},
+    equipmentTuning: {"x":0.6650306119256015,"y":13.021318515231997,"angle":3,"scaleX":1.3,"scaleY":1.03,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shinguard-frost-king-01",
+      sourcePath: "assets/fighters/armor/legs/front-shinguard-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/legs/front-shinguard-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shinguard_grave_king_01","name":"Grave King 01 Front Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontShinguard","armorHp":0},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-grave-king-01"},
     equipmentTuning: {"x":1.3080376169125145,"y":12.29843791698022,"angle":3,"scaleX":1.3,"scaleY":1,"flipX":true,"flipY":false},
@@ -2983,6 +3104,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_executioner_01","name":"Executioner Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_executioner_01"],"categoryId":"shoulders"},
   },
   {
+    item: {"id":"generated_equipment_front_shoulderguard_frost_king_01","name":"Frost King 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
+    assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-frost-king-01"},
+    equipmentTuning: {"x":2.1079919385344112,"y":19.425237406742042,"angle":0,"scaleX":2.45,"scaleY":1.64,"flipX":true,"flipY":false},
+    asset: {
+      key: "front-shoulderguard-frost-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-shoulderguard-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-shoulderguard-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
     item: {"id":"generated_equipment_front_shoulderguard_grave_king_01","name":"Grave King 01 Front Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontShoulderguard","armorHp":0},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-grave-king-01"},
     equipmentTuning: {"x":12.75551625917231,"y":28.65258751337086,"angle":27,"scaleX":2.58,"scaleY":1.9,"flipX":false,"flipY":false},
@@ -3236,6 +3368,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_front_wrist_executioner_01","name":"Executioner Front Wrist 01","price":0,"itemIds":["generated_equipment_front_wrist_executioner_01"],"categoryId":"arms"},
+  },
+  {
+    item: {"id":"generated_equipment_front_wrist_frost_king_01","name":"Frost King 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
+    assetKeys: {"frontWristAssetKey":"front-wrist-frost-king-01"},
+    equipmentTuning: {"x":0.31964473815243366,"y":18.312434109737524,"angle":-9,"scaleX":1.99,"scaleY":1.1,"flipX":false,"flipY":false},
+    asset: {
+      key: "front-wrist-frost-king-01",
+      sourcePath: "assets/fighters/armor/arms/front-wrist-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/arms/front-wrist-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_front_wrist_grave_king_01","name":"Grave King 01 Front Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"frontWrist","armorHp":0},
@@ -3502,6 +3645,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     armoryProduct: {"id":"generated_equipment_helmet_executioner_01","name":"Executioner Helmet 01","price":51,"itemIds":["generated_equipment_helmet_executioner_01"],"categoryId":"head"},
+  },
+  {
+    item: {"id":"generated_equipment_helmet_frost_king_01","name":"Frost King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    assetKeys: {"helmetAssetKey":"helmet-frost-king-01"},
+    equipmentTuning: {"x":0,"y":21,"angle":0,"scaleX":1.37,"scaleY":1.42,"flipX":false,"flipY":false},
+    asset: {
+      key: "helmet-frost-king-01",
+      sourcePath: "assets/fighters/armor/helmet/helmet-frost-king-01.webp",
+      lowSourcePath: "assets-low/fighters/armor/helmet/helmet-frost-king-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_helmet_grave_king_01","name":"Grave King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
@@ -4773,6 +4927,17 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_9","name":"Epic Sword 08","price":288,"itemIds":["generated_equipment_weapon_sword_epic_sword_9"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_frost_king_sword","name":"Frost King Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-frost-king-sword"},
+    equipmentTuning: {"x":210,"y":30,"angle":60,"scaleX":1.9,"scaleY":1.9,"flipX":true,"flipY":true},
+    asset: {
+      key: "weapon-sword-frost-king-sword",
+      sourcePath: "assets/fighters/weapons/weapon-sword-frost-king-sword.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-frost-king-sword.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_kortik","name":"Common Sword 03","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"sword"},

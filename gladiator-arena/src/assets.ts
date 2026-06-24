@@ -281,6 +281,7 @@ export const CITY_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-shop.w
 export const CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/magic-shop.webp", import.meta.url).href;
 export const MAGIC_SHOP_TITLE_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-title-frame.webp", import.meta.url).href;
 export const MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-selected-card-frame.webp", import.meta.url).href;
+export const MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL = new URL("./assets/ui/magic-shop/scroll-capacity-upgrade.webp", import.meta.url).href;
 export const CITY_ARMORY_BACKGROUND_ASSET_KEY = CITY_SHOP_BACKGROUND_ASSET_KEY;
 export const CITY_ARMORY_BACKGROUND_ASSET_URL = CITY_SHOP_BACKGROUND_ASSET_URL;
 export const CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY = CITY_SHOP_BACKGROUND_ASSET_KEY;

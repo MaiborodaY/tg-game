@@ -6657,6 +6657,112 @@ body.debug-active .city-menu__portrait-button:active {
   object-fit: contain;
 }
 
+.magic-shop__scroll-upgrade[hidden] {
+  display: none;
+}
+
+.magic-shop.armory-shop--city-mode .magic-shop__scroll-upgrade {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
+  z-index: 8;
+  display: grid;
+  justify-items: end;
+  pointer-events: auto;
+  transform: translateY(-50%);
+}
+
+.magic-shop__scroll-upgrade-card {
+  display: grid;
+  grid-template-rows: 26px auto 22px;
+  gap: 3px;
+  place-items: center;
+  width: 58px;
+  min-height: 78px;
+  padding: 5px 5px 6px;
+  border: 1px solid rgba(255, 211, 132, 0.34);
+  border-radius: 7px;
+  color: #f7d792;
+  background:
+    linear-gradient(135deg, rgba(255, 240, 189, 0.13), transparent 40%),
+    linear-gradient(180deg, rgba(74, 28, 11, 0.88), rgba(22, 7, 3, 0.88)),
+    var(--ui-panel-wood-texture) center / 220px 220px repeat;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.18),
+    inset 0 -2px 0 rgba(8, 2, 1, 0.22),
+    0 2px 0 rgba(8, 2, 1, 0.62),
+    0 0 0 1px rgba(8, 2, 1, 0.62);
+  cursor: pointer;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.magic-shop__scroll-upgrade-card--max,
+.magic-shop__scroll-upgrade-card--no-gold {
+  filter: saturate(0.78) brightness(0.86);
+}
+
+.magic-shop__scroll-upgrade-card:disabled {
+  cursor: default;
+}
+
+.magic-shop__scroll-upgrade-icon {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.82))
+    drop-shadow(0 0 4px rgba(255, 211, 132, 0.16));
+}
+
+.magic-shop__scroll-upgrade-capacity {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 3px;
+  align-items: baseline;
+  color: #f0d08a;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 #160703;
+}
+
+.magic-shop__scroll-upgrade-capacity-next {
+  color: #8ff06c;
+  text-shadow:
+    0 1px 0 #160703,
+    0 0 5px rgba(104, 215, 74, 0.34);
+}
+
+.magic-shop__scroll-upgrade-price {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 20px;
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 211, 132, 0.28);
+  border-radius: 5px;
+  color: #ffe6a0;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.12), rgba(8, 2, 1, 0.36)),
+    rgba(8, 2, 1, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.12),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.48);
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 #160703;
+}
+
+.magic-shop__scroll-upgrade-price .armory-shop__price-icon {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
 .armory-shop__subcategories {
   display: grid;
   grid-auto-flow: column;
@@ -12896,19 +13002,38 @@ body.debug-active .action-arc__center {
 .spellbook-menu {
   position: absolute;
   z-index: 95;
-  width: min(210px, calc(100% - 16px));
-  padding: 8px;
-  border: 2px solid rgba(231, 170, 80, 0.92);
-  border-radius: 8px;
+  width: min(286px, calc(100% - 52px));
+  max-height: min(66vh, 430px);
+  padding: 11px;
+  border: 2px solid rgba(230, 169, 80, 0.9);
+  border-radius: 9px;
   color: #fff0bd;
   background:
-    linear-gradient(180deg, rgba(96, 42, 14, 0.98), rgba(42, 13, 4, 0.98));
+    radial-gradient(circle at 50% 0%, rgba(170, 82, 255, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(255, 222, 141, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(86, 35, 13, 0.97), rgba(32, 9, 3, 0.98));
   box-shadow:
-    inset 0 1px 0 rgba(255, 220, 144, 0.28),
-    0 4px 0 rgba(24, 8, 2, 0.82),
-    0 8px 18px rgba(13, 4, 1, 0.46);
+    inset 0 1px 0 rgba(255, 236, 178, 0.22),
+    inset 0 0 0 1px rgba(75, 22, 7, 0.82),
+    inset 0 -7px 16px rgba(12, 3, 1, 0.34),
+    0 4px 0 rgba(18, 5, 1, 0.78),
+    0 10px 22px rgba(8, 2, 1, 0.42);
   font-family: Georgia, "Times New Roman", serif;
+  overflow: hidden;
   pointer-events: auto;
+}
+
+.spellbook-menu::before {
+  position: absolute;
+  inset: 5px;
+  z-index: 0;
+  content: "";
+  border: 1px solid rgba(153, 77, 255, 0.42);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 206, 112, 0.08),
+    inset 0 0 12px rgba(119, 54, 206, 0.2);
+  pointer-events: none;
 }
 
 .spellbook-menu[hidden] {
@@ -12916,36 +13041,49 @@ body.debug-active .action-arc__center {
 }
 
 .spellbook-menu__title {
-  margin: 0 0 6px;
+  position: relative;
+  z-index: 1;
+  margin: 1px 0 8px;
   color: #ffe1a0;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 900;
   line-height: 1;
   text-align: center;
-  text-shadow: 0 1px 0 rgba(14, 4, 1, 0.95);
+  text-shadow:
+    0 1px 0 rgba(14, 4, 1, 0.95),
+    0 0 8px rgba(255, 195, 96, 0.25);
   text-transform: uppercase;
 }
 
 .spellbook-menu__list {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 5px;
+  max-height: min(52vh, 348px);
+  gap: 6px;
+  overflow-y: auto;
+  padding: 1px;
+  scrollbar-width: thin;
 }
 
 .spellbook-menu__item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 5px 7px;
+  min-height: 48px;
+  padding: 5px 7px 5px 5px;
   border: 1px solid rgba(221, 158, 70, 0.8);
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fff4c8;
   background:
-    linear-gradient(180deg, rgba(77, 31, 10, 0.96), rgba(29, 8, 3, 0.98));
+    linear-gradient(135deg, rgba(255, 222, 141, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(79, 31, 10, 0.96), rgba(24, 7, 3, 0.98));
   box-shadow:
     inset 0 1px 0 rgba(255, 219, 140, 0.2),
-    0 2px 0 rgba(17, 5, 1, 0.72);
+    inset 0 -1px 0 rgba(7, 1, 0, 0.36),
+    0 2px 0 rgba(17, 5, 1, 0.72),
+    0 0 0 1px rgba(8, 2, 1, 0.34);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
@@ -12962,6 +13100,30 @@ body.debug-active .action-arc__center {
   opacity: 0.64;
 }
 
+.spellbook-menu__icon-frame {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid rgba(235, 178, 88, 0.68);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 222, 145, 0.16), transparent 56%),
+    linear-gradient(180deg, rgba(57, 21, 8, 0.9), rgba(12, 3, 1, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 237, 185, 0.16),
+    0 1px 0 rgba(8, 2, 1, 0.76);
+}
+
+.spellbook-menu__icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.82))
+    drop-shadow(0 0 6px rgba(255, 210, 124, 0.18));
+}
+
 .spellbook-menu__copy {
   display: grid;
   min-width: 0;
@@ -12970,7 +13132,7 @@ body.debug-active .action-arc__center {
 
 .spellbook-menu__item-title {
   overflow: hidden;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 900;
   line-height: 1.05;
   text-overflow: ellipsis;
@@ -12989,7 +13151,7 @@ body.debug-active .action-arc__center {
 
 .spellbook-menu__item-meta {
   display: inline-flex;
-  min-width: 44px;
+  min-width: 40px;
   height: 22px;
   align-items: center;
   justify-content: center;
@@ -12998,7 +13160,7 @@ body.debug-active .action-arc__center {
   color: #bafcff;
   background:
     linear-gradient(180deg, rgba(36, 93, 96, 0.94), rgba(10, 31, 34, 0.96));
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 900;
   line-height: 1;
 }

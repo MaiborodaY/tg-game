@@ -4,30 +4,27 @@ import {
   HERO_FIREBALL_SCROLL_ITEM_ID,
   HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
-  HERO_SCROLL_MAX_QUANTITY,
+  HERO_SCROLL_CAPACITY_MAX,
   HERO_SCROLL_UPGRADE_RARITIES,
   HERO_WEAPON_SHARPENING_MAX_LEVEL,
   HERO_ITEM_CATALOG,
   HERO_WARD_SCROLL_ITEM_ID,
   canUpgradeHeroScroll,
+  canUpgradeHeroScrollCapacity,
   canSharpenHeroActiveWeapon,
   getActiveSharpenableHeroWeaponItemId,
   getHeroActiveWeaponSharpeningPrice,
-  getHeroCrackArmorParts,
   getHeroCrackArmorPartsForRarity,
-  getHeroDoubleStrikeDamageMultiplier,
   getHeroDoubleStrikeDamageMultiplierForRarity,
-  getHeroFireballDamage,
   getHeroFireballDamageForRarity,
-  getHeroPoisonDamage,
   getHeroPoisonDamageForRarity,
-  getHeroPreciseStrikeBlockChanceReduction,
   getHeroPreciseStrikeBlockChanceReductionForRarity,
+  getHeroScrollCapacity,
+  getHeroScrollCapacityUpgradePrice,
   getHeroScrollPurchasePrice,
   getHeroScrollUpgradePrice,
   getHeroScrollUpgradeRarityForItem,
   getHeroScrollQuantity,
-  getHeroWardHitCount,
   getHeroWardHitCountForRarity,
   getHeroWeaponSharpeningLevel,
   isHeroUpgradeableScrollItemId,
@@ -35,9 +32,9 @@ import {
   type HeroScrollUpgradeRarity,
   type HeroState,
 } from "./hero";
-import { POISON_SCROLL_TURNS } from "./combat";
 import {
   CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
+  MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL,
   MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL,
   MAGIC_SHOP_TITLE_FRAME_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
@@ -55,6 +52,7 @@ import {
   type ShopItemRarity,
 } from "./shopPresentation";
 import { getShopProductIconUrl } from "./shopItemIcons";
+import { getHeroScrollEffectText } from "./scrollEffectText";
 
 export interface MagicProduct {
   id: string;
@@ -77,6 +75,7 @@ interface MagicShopOptions {
   getHero: () => HeroState;
   onBuy: (product: MagicProduct) => void;
   onUpgradeScroll: (product: MagicProduct) => void;
+  onScrollCapacityUpgrade: () => void;
   onSharpenWeapon: () => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -111,6 +110,15 @@ interface MagicProductUpgradePreview {
   suffix?: string;
 }
 
+interface MagicScrollCapacityUpgradeElements {
+  root: HTMLElement;
+  card: HTMLButtonElement;
+  current: HTMLElement;
+  arrow: HTMLElement;
+  next: HTMLElement;
+  price: HTMLElement;
+}
+
 type MagicShopMode = "home" | "scrolls" | "weaponSharpening";
 
 const MAGIC_PRODUCTS: readonly MagicProduct[] = [
@@ -127,7 +135,7 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
     id: "fireball_scroll",
     name: "Fireball Scroll",
     displayName: "Fireball",
-    price: 40,
+    price: 50,
     itemIds: [HERO_FIREBALL_SCROLL_ITEM_ID],
     rarity: "common",
     effect: "Deals damage in battle",
@@ -277,6 +285,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   back.addEventListener("click", handleBack);
 
   const previewElements = createMagicProductPreview();
+  const scrollUpgradeElements = createMagicScrollCapacityUpgrade();
   const productListItems = MAGIC_PRODUCTS.map((product) => [product.id, createMagicProductListItem(product)] as const);
   const productListItemsById = new Map(productListItems);
 
@@ -286,7 +295,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   header.append(title);
   tray.append(header, content);
   menu.append(tray);
-  panel.append(preview, menu, back);
+  panel.append(preview, menu, scrollUpgradeElements.root, back);
   shop.append(panel);
   root.append(shop);
 
@@ -454,6 +463,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   function refreshHeroState(hero: HeroState): void {
     refreshMode();
     refreshWallet(hero);
+    refreshScrollCapacityUpgrade(hero);
     if (mode === "scrolls") {
       refreshSelectedProduct(hero);
       refreshProductList(hero);
@@ -472,17 +482,46 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     preview.hidden = mode === "home";
     home.hidden = mode !== "home";
     productList.hidden = mode !== "scrolls";
+    scrollUpgradeElements.root.hidden = mode !== "scrolls";
     preview.setAttribute("aria-label", mode === "weaponSharpening" ? "Weapon sharpening" : "Selected scroll");
   }
 
   function refreshWallet(hero: HeroState): void {
-    const scrollCount = Math.min(getHeroScrollQuantity(hero), HERO_SCROLL_MAX_QUANTITY);
+    const scrollCapacityValue = getHeroScrollCapacity(hero);
+    const scrollCount = Math.min(getHeroScrollQuantity(hero), scrollCapacityValue);
 
     setTextContentIfChanged(goldAmount, String(hero.gold));
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
     scrollCapacity.hidden = mode !== "scrolls";
-    setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${HERO_SCROLL_MAX_QUANTITY}`);
-    scrollCapacity.setAttribute("aria-label", `Scrolls ${scrollCount} of ${HERO_SCROLL_MAX_QUANTITY}`);
+    setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${scrollCapacityValue}`);
+    scrollCapacity.setAttribute("aria-label", `Scrolls ${scrollCount} of ${scrollCapacityValue}`);
+  }
+
+  function refreshScrollCapacityUpgrade(hero: HeroState): void {
+    const currentCapacity = getHeroScrollCapacity(hero);
+    const price = getHeroScrollCapacityUpgradePrice(hero);
+    const isMaxed = currentCapacity >= HERO_SCROLL_CAPACITY_MAX || price === undefined;
+    const canBuy = canUpgradeHeroScrollCapacity(hero);
+    const nextCapacity = Math.min(HERO_SCROLL_CAPACITY_MAX, currentCapacity + 1);
+
+    scrollUpgradeElements.card.disabled = isMaxed || !canBuy;
+    scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--max", isMaxed);
+    scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--no-gold", !isMaxed && !canBuy);
+    scrollUpgradeElements.card.setAttribute(
+      "aria-label",
+      isMaxed
+        ? `Scroll capacity ${currentCapacity} of ${HERO_SCROLL_CAPACITY_MAX}, max`
+        : `Upgrade scroll capacity from ${currentCapacity} to ${nextCapacity} for ${price} gold`,
+    );
+    setTextContentIfChanged(scrollUpgradeElements.current, String(currentCapacity));
+    setTextContentIfChanged(scrollUpgradeElements.arrow, isMaxed ? "/" : ">");
+    setTextContentIfChanged(scrollUpgradeElements.next, String(isMaxed ? HERO_SCROLL_CAPACITY_MAX : nextCapacity));
+    scrollUpgradeElements.price.replaceChildren();
+    if (isMaxed) {
+      scrollUpgradeElements.price.textContent = "Max";
+    } else {
+      appendPriceContent(scrollUpgradeElements.price, price ?? 0);
+    }
   }
 
   function refreshSelectedProduct(hero: HeroState): void {
@@ -676,6 +715,43 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     return { item, selectButton, upgradeButton, price, priceAmount };
   }
 
+  function createMagicScrollCapacityUpgrade(): MagicScrollCapacityUpgradeElements {
+    const root = document.createElement("div");
+    const card = document.createElement("button");
+    const icon = document.createElement("img");
+    const capacity = document.createElement("span");
+    const current = document.createElement("span");
+    const arrow = document.createElement("span");
+    const next = document.createElement("span");
+    const price = document.createElement("span");
+
+    root.className = "magic-shop__scroll-upgrade";
+    card.className = "magic-shop__scroll-upgrade-card";
+    card.type = "button";
+    icon.className = "magic-shop__scroll-upgrade-icon";
+    icon.src = MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL;
+    icon.alt = "";
+    icon.decoding = "async";
+    icon.draggable = false;
+    capacity.className = "magic-shop__scroll-upgrade-capacity";
+    current.className = "magic-shop__scroll-upgrade-capacity-current";
+    arrow.className = "magic-shop__scroll-upgrade-capacity-arrow";
+    next.className = "magic-shop__scroll-upgrade-capacity-next";
+    price.className = "magic-shop__scroll-upgrade-price";
+    card.addEventListener("click", () => {
+      if (card.disabled) {
+        return;
+      }
+
+      options.onScrollCapacityUpgrade();
+    });
+    capacity.append(current, arrow, next);
+    card.append(icon, capacity, price);
+    root.append(card);
+
+    return { root, card, current, arrow, next, price };
+  }
+
   return { open, close, render, syncHeroState };
 }
 
@@ -768,37 +844,7 @@ function getMagicProductRarity(hero: HeroState, product: MagicProduct): ShopItem
 }
 
 function getMagicProductEffect(hero: HeroState, product: MagicProduct): string {
-  const itemId = getMagicProductPrimaryItemId(product);
-
-  if (itemId === HERO_CRACK_ARMOR_SCROLL_ITEM_ID) {
-    const parts = getHeroCrackArmorParts(hero);
-
-    return `Breaks ${parts} ${formatPlural(parts, "armor part", "armor parts")}.`;
-  }
-
-  if (itemId === HERO_WARD_SCROLL_ITEM_ID) {
-    const hits = getHeroWardHitCount(hero);
-
-    return `Blocks ${hits} ${formatPlural(hits, "hit", "hits")}.`;
-  }
-
-  if (itemId === HERO_PRECISE_STRIKE_SCROLL_ITEM_ID) {
-    return `3 strikes: +${Math.round(getHeroPreciseStrikeBlockChanceReduction(hero) * 100)}% hit chance.`;
-  }
-
-  if (itemId === HERO_FIREBALL_SCROLL_ITEM_ID) {
-    return `Deals ${getHeroFireballDamage(hero)} damage.`;
-  }
-
-  if (itemId === HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID) {
-    return `Deals second hit with ${Math.round(getHeroDoubleStrikeDamageMultiplier(hero) * 100)}% damage.`;
-  }
-
-  if (itemId === HERO_POISON_SCROLL_ITEM_ID) {
-    return `${getHeroPoisonDamage(hero)} poison damage for ${POISON_SCROLL_TURNS} turns.`;
-  }
-
-  return product.effect;
+  return getHeroScrollEffectText(hero, getMagicProductPrimaryItemId(product), product.effect);
 }
 
 function setMagicProductPreviewAction(
@@ -970,10 +1016,6 @@ function getMagicProductUpgradeEffect(
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
-}
-
-function formatPlural(count: number, singular: string, plural: string): string {
-  return count === 1 ? singular : plural;
 }
 
 function canUpgradeMagicProduct(hero: HeroState, product: MagicProduct): boolean {

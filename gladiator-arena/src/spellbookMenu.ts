@@ -15,7 +15,12 @@ import {
   getFighterWardScrollCount,
   type ActionId,
   type CombatState,
+  type FighterState,
 } from "./combat";
+import { SHOP_CATEGORY_SCROLL_ICON_ASSET_URL } from "./assets";
+import { getShopProductIconUrl } from "./shopItemIcons";
+import { getFighterSpellbookScrollEffectText } from "./scrollEffectText";
+import type { HeroItemId } from "./hero";
 
 export const SPELLBOOK_BUTTON_ACTION_ID: ActionId = "scroll";
 export const SPELLBOOK_ACTION_IDS = ["scroll", "fireball", "ward", "preciseStrike", "doubleStrike", "poison"] as const;
@@ -27,7 +32,7 @@ export interface SpellbookEntry {
   title: string;
   detail: string;
   count: number;
-  cost: number;
+  iconUrl: string;
   disabled: boolean;
   disabledReason?: string;
 }
@@ -71,9 +76,9 @@ export function getSpellbookEntries(state: CombatState): SpellbookEntry[] {
     return {
       actionId,
       title: getActionTitle(actionId, state.player),
-      detail: actions[actionId].detail,
+      detail: getFighterSpellbookScrollEffectText(state.player, actionId, actions[actionId].detail),
       count: getSpellbookActionCount(state, actionId),
-      cost,
+      iconUrl: getSpellbookActionIconUrl(state.player, actionId),
       disabled,
       disabledReason: disabled ? getSpellbookDisabledReason(state, actionId, cost) : undefined,
     };
@@ -171,11 +176,14 @@ export function createSpellbookMenu(
     const entries = getSpellbookEntries(state);
 
     list.replaceChildren(...entries.map((entry) => createEntryButton(entry)));
+    root.setAttribute("aria-label", entries.length > 0 ? `Spellbook, ${entries.length} scrolls available` : "Spellbook");
     root.classList.toggle("spellbook-menu--empty", entries.length <= 0);
   }
 
   function createEntryButton(entry: SpellbookEntry): HTMLButtonElement {
     const button = document.createElement("button");
+    const iconFrame = document.createElement("span");
+    const icon = document.createElement("img");
     const copy = document.createElement("span");
     const title = document.createElement("span");
     const detail = document.createElement("span");
@@ -185,15 +193,23 @@ export function createSpellbookMenu(
     button.className = "spellbook-menu__item";
     button.disabled = entry.disabled;
     button.dataset.action = entry.actionId;
+    button.setAttribute("aria-label", `${entry.title}. ${entry.disabledReason ?? entry.detail}. ${entry.count} available.`);
+    iconFrame.className = "spellbook-menu__icon-frame";
+    icon.className = "spellbook-menu__icon";
+    icon.src = entry.iconUrl;
+    icon.alt = "";
+    icon.decoding = "async";
+    icon.draggable = false;
     copy.className = "spellbook-menu__copy";
     title.className = "spellbook-menu__item-title";
     title.textContent = entry.title;
     detail.className = "spellbook-menu__item-detail";
     detail.textContent = entry.disabledReason ?? entry.detail;
     meta.className = "spellbook-menu__item-meta";
-    meta.textContent = entry.cost > 0 ? `x${entry.count} / ${entry.cost}` : `x${entry.count}`;
+    meta.textContent = `x${entry.count}`;
+    iconFrame.append(icon);
     copy.append(title, detail);
-    button.append(copy, meta);
+    button.append(iconFrame, copy, meta);
     button.addEventListener("click", () => {
       const state = getState();
       const freshEntry = state ? getSpellbookEntries(state).find((candidate) => candidate.actionId === entry.actionId) : undefined;
@@ -211,21 +227,15 @@ export function createSpellbookMenu(
     return button;
   }
 
-  function placeMenu(anchor: HTMLElement): void {
+  function placeMenu(_anchor: HTMLElement): void {
     const hostRect = host.getBoundingClientRect();
-    const anchorRect = anchor.getBoundingClientRect();
     const menuRect = root.getBoundingClientRect();
     const hostWidth = getPositiveDimension(hostRect.width, window.innerWidth);
     const hostHeight = getPositiveDimension(hostRect.height, window.innerHeight);
-    const menuWidth = getPositiveDimension(menuRect.width, 190);
-    const menuHeight = getPositiveDimension(menuRect.height, 150);
-    const anchorCenterX = anchorRect.left - hostRect.left + anchorRect.width / 2;
-    const anchorTop = anchorRect.top - hostRect.top;
-    const anchorBottom = anchorRect.bottom - hostRect.top;
-    const left = clamp(anchorCenterX - menuWidth / 2, 8, Math.max(8, hostWidth - menuWidth - 8));
-    const topAbove = anchorTop - menuHeight - 14;
-    const topBelow = anchorBottom + 14;
-    const top = topAbove >= 8 ? topAbove : clamp(topBelow, 8, Math.max(8, hostHeight - menuHeight - 8));
+    const menuWidth = getPositiveDimension(menuRect.width, 286);
+    const menuHeight = getPositiveDimension(menuRect.height, 300);
+    const left = clamp(hostWidth / 2 - menuWidth / 2, 8, Math.max(8, hostWidth - menuWidth - 8));
+    const top = clamp(hostHeight / 2 - menuHeight / 2, 8, Math.max(8, hostHeight - menuHeight - 8));
 
     root.style.left = `${left}px`;
     root.style.top = `${top}px`;
@@ -238,6 +248,36 @@ export function createSpellbookMenu(
     sync,
     toggle,
   };
+}
+
+function getSpellbookActionIconUrl(fighter: FighterState, actionId: SpellbookActionId): string {
+  const itemId = getSpellbookActionItemId(fighter, actionId);
+
+  return (itemId ? getShopProductIconUrl([itemId]) : undefined) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+}
+
+function getSpellbookActionItemId(fighter: FighterState, actionId: SpellbookActionId): HeroItemId | undefined {
+  if (actionId === "scroll") {
+    return fighter.scrollItemId;
+  }
+
+  if (actionId === "fireball") {
+    return fighter.fireballScrollItemId;
+  }
+
+  if (actionId === "preciseStrike") {
+    return fighter.preciseStrikeScrollItemId;
+  }
+
+  if (actionId === "doubleStrike") {
+    return fighter.doubleStrikeScrollItemId;
+  }
+
+  if (actionId === "poison") {
+    return fighter.poisonScrollItemId;
+  }
+
+  return fighter.wardScrollItemId;
 }
 
 function getSpellbookActionCount(state: CombatState, actionId: SpellbookActionId): number {
