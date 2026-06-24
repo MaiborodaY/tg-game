@@ -330,7 +330,9 @@ test("magic shop starts from a home menu and keeps scroll preview plus weapon en
   assert.match(stylesSource, /\.magic-shop\.armory-shop--city-mode \.armory-shop__content--products\s*\{[\s\S]*grid-template-rows: minmax\(0, 1fr\) auto;/);
   assert.equal(uiLayoutTuningSource.includes('UI_LAYOUT_TUNING_STORAGE_KEY = "dust-arena-ui-layout-tuning"'), true);
   assert.equal(uiLayoutTuningSource.includes('id: "magicShop"'), true);
+  assert.equal(uiLayoutTuningSource.includes('id: "battleResult"'), true);
   assert.equal(uiLayoutTuningSource.includes('rootSelector: ".magic-shop.armory-shop--city-mode"'), true);
+  assert.equal(uiLayoutTuningSource.includes('rootSelector: ".battle-screen"'), true);
   assert.equal(uiLayoutTuningSource.includes('id: "preview"'), true);
   assert.equal(uiLayoutTuningSource.includes('id: "list"'), true);
   assert.equal(uiLayoutTuningSource.includes('id: "previewTitle"'), true);
@@ -369,6 +371,10 @@ test("magic shop starts from a home menu and keeps scroll preview plus weapon en
   assert.equal(uiLayoutTuningSource.includes('"magicShop.buttons.previewPriceWidth.compact"'), false);
   assert.equal(uiLayoutTuningSource.includes('"magicShop.buttons.listCoinSize.compact"'), true);
   assert.equal(uiLayoutTuningSource.includes('"magicShop.wallet.height.compact"'), true);
+  assert.equal(uiLayoutTuningSource.includes('"battleResult.title.top.compact"'), true);
+  assert.equal(uiLayoutTuningSource.includes('"battleResult.rewards.top.compact"'), true);
+  assert.equal(uiLayoutTuningSource.includes('"battleResult.xp.top.compact"'), true);
+  assert.equal(uiLayoutTuningSource.includes('"battleResult.button.top.compact"'), true);
   assert.equal(uiLayoutTuningSource.includes('"magicShop.preview.top.compact"'), false);
   assert.equal(uiLayoutTuningSource.includes("target.style.setProperty(control.cssVars[viewport]"), true);
   assert.equal(uiLayoutTuningSource.includes("target.style.setProperty("), true);

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,8 @@ const domUiSource = readFileSync(resolve(currentDir, "../src/domUi.ts"), "utf8")
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"), "utf8");
 const arenaTiersSource = readFileSync(resolve(currentDir, "../src/generated/arenaTiers.generated.ts"), "utf8");
+const battleResultFrameAssetPath = resolve(currentDir, "../src/assets/ui/battle-result/battle-result-card-frame.webp");
+const battleResultLevelBadgeAssetPath = resolve(currentDir, "../src/assets/ui/battle-result/battle-result-level-badge.webp");
 
 test("fighter stats are mounted inside the battle overlay", () => {
   const statusStripIndex = html.indexOf('<section class="status-strip"');
@@ -40,11 +42,37 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(html.includes('id="resultTitle"'), true);
   assert.equal(html.includes('id="resultGoldReward"'), true);
   assert.equal(html.includes('id="resultXpReward"'), true);
+  assert.equal(html.includes('aria-label="Gold reward"'), true);
+  assert.equal(html.includes('aria-label="XP reward"'), true);
+  assert.equal(html.includes("<span>Gold</span>"), false);
+  assert.equal(html.includes("<span>XP</span>"), false);
   assert.equal(html.includes('id="resultLoot"'), true);
+  assert.equal(html.includes('id="resultXpLevel"'), true);
+  assert.equal(html.includes('data-level-digits="1"'), true);
   assert.equal(html.includes('id="resultXpProgressFill"'), true);
+  assert.equal(html.includes('class="battle-result__level-badge"'), true);
+  assert.equal(html.includes('class="battle-result__level-label"'), false);
+  assert.equal(html.includes('class="battle-result__xp-progress-icon"'), true);
   assert.equal(html.includes('id="cityButton"'), true);
+  assert.equal(existsSync(battleResultFrameAssetPath), true);
+  assert.equal(existsSync(battleResultLevelBadgeAssetPath), true);
+  assert.equal(stylesSource.includes("battle-result-card-frame.webp"), true);
+  assert.equal(stylesSource.includes("battle-result-level-badge.webp"), true);
+  assert.match(stylesSource, /\.battle-result__reward\s*\{[\s\S]*display: flex;[\s\S]*flex-direction: column;[\s\S]*justify-content: center;/);
+  assert.equal(stylesSource.includes(".battle-result__reward span:last-child"), false);
+  assert.equal(stylesSource.includes('.battle-result__level-value[data-level-digits="1"]'), true);
+  assert.equal(stylesSource.includes('.battle-result__level-value[data-level-digits="2"]'), true);
+  assert.equal(stylesSource.includes('.battle-result__level-value[data-level-digits="3"]'), true);
+  assert.equal(stylesSource.includes("--battle-result-level-value-scale"), true);
+  assert.equal(stylesSource.includes(".battle-result__xp-progress-icon"), true);
+  assert.equal(stylesSource.includes("./assets/ui/shop/xp-icon.webp"), true);
   assert.equal(domUiSource.includes("loot?: readonly ArenaLootDrop[]"), true);
   assert.equal(domUiSource.includes("renderResultLoot"), true);
+  assert.equal(domUiSource.includes("renderResultXpLabel"), true);
+  assert.equal(domUiSource.includes("battle-result__xp-progress-icon"), true);
+  assert.equal(domUiSource.includes('dom.resultXpLevel.dataset.levelDigits = String(levelDigitCount)'), true);
+  assert.equal(domUiSource.includes('dom.resultXpLevel.removeAttribute("data-level-digits")'), true);
+  assert.equal(domUiSource.includes("progressText.slice(0, -xpSuffix.length)"), true);
   assert.equal(mainSource.includes("applyCombatReward(hero, nextState, rewardTimestamp)"), true);
   assert.equal(mainSource.includes("loot,"), true);
 });

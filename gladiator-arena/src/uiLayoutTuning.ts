@@ -10,7 +10,7 @@ export interface UiLayoutControlConfig {
   min: number;
   max: number;
   step: number;
-  unit: "px" | "number";
+  unit: "px" | "%" | "number";
   runtimeCssVar: string;
   cssVars: Record<UiLayoutViewport, string>;
   defaultValues: Record<UiLayoutViewport, number>;
@@ -146,6 +146,80 @@ export const UI_LAYOUT_SCREENS: readonly UiLayoutScreenConfig[] = [
       },
     ],
   },
+  {
+    id: "battleResult",
+    label: "Battle result",
+    rootSelector: ".battle-screen",
+    blocks: [
+      {
+        id: "card",
+        label: "Card",
+        targetSelector: ".battle-result",
+        controls: [
+          createControl("top", "Top", 35, 75, 0.1, "%", 57, 57, "--battle-result-card-top", "--ui-battle-result-card-top", "--ui-battle-result-compact-card-top"),
+          createControl("width", "Width", 280, 430, 1, "px", 392, 392, "--battle-result-card-width", "--ui-battle-result-card-width", "--ui-battle-result-compact-card-width"),
+        ],
+      },
+      {
+        id: "plaque",
+        label: "Plaque text",
+        targetSelector: ".battle-result__eyebrow",
+        controls: [
+          createControl("top", "Top", 4, 16, 0.1, "%", 8.7, 8.7, "--battle-result-plaque-top", "--ui-battle-result-plaque-top", "--ui-battle-result-compact-plaque-top"),
+          createControl("width", "Width", 24, 70, 0.1, "%", 42, 42, "--battle-result-plaque-width", "--ui-battle-result-plaque-width", "--ui-battle-result-compact-plaque-width"),
+          createControl("font", "Font", 8, 18, 0.5, "px", 13.5, 13.5, "--battle-result-plaque-font-size", "--ui-battle-result-plaque-font-size", "--ui-battle-result-compact-plaque-font-size"),
+        ],
+      },
+      {
+        id: "title",
+        label: "Winner title",
+        targetSelector: ".battle-result__title",
+        controls: [
+          createControl("left", "Left", 0, 24, 0.1, "%", 8, 8, "--battle-result-title-left", "--ui-battle-result-title-left", "--ui-battle-result-compact-title-left"),
+          createControl("top", "Top", 14, 36, 0.1, "%", 21.2, 21.2, "--battle-result-title-top", "--ui-battle-result-title-top", "--ui-battle-result-compact-title-top"),
+          createControl("width", "Width", 56, 100, 0.1, "%", 84, 84, "--battle-result-title-width", "--ui-battle-result-title-width", "--ui-battle-result-compact-title-width"),
+          createControl("font", "Font", 14, 34, 0.5, "px", 30.5, 30.5, "--battle-result-title-font-size", "--ui-battle-result-title-font-size", "--ui-battle-result-compact-title-font-size"),
+        ],
+      },
+      {
+        id: "rewards",
+        label: "Rewards",
+        targetSelector: ".battle-result__rewards",
+        controls: [
+          createControl("left", "Left", 0, 24, 0.1, "%", 10.4, 10.4, "--battle-result-rewards-left", "--ui-battle-result-rewards-left", "--ui-battle-result-compact-rewards-left"),
+          createControl("top", "Top", 26, 52, 0.1, "%", 34.2, 34.2, "--battle-result-rewards-top", "--ui-battle-result-rewards-top", "--ui-battle-result-compact-rewards-top"),
+          createControl("width", "Width", 56, 92, 0.1, "%", 79.2, 79.2, "--battle-result-rewards-width", "--ui-battle-result-rewards-width", "--ui-battle-result-compact-rewards-width"),
+          createControl("gap", "Gap", 0, 14, 0.1, "%", 5.8, 5.8, "--battle-result-rewards-gap", "--ui-battle-result-rewards-gap", "--ui-battle-result-compact-rewards-gap"),
+          createControl("icon", "Icon", 20, 54, 1, "px", 42, 42, "--battle-result-reward-icon-size", "--ui-battle-result-reward-icon-size", "--ui-battle-result-compact-reward-icon-size"),
+          createControl("font", "Font", 12, 28, 0.5, "px", 22, 22, "--battle-result-reward-font-size", "--ui-battle-result-reward-font-size", "--ui-battle-result-compact-reward-font-size"),
+        ],
+      },
+      {
+        id: "xp",
+        label: "XP row",
+        targetSelector: ".battle-result__xp",
+        controls: [
+          createControl("left", "Left", 0, 24, 0.1, "%", 11, 11, "--battle-result-xp-left", "--ui-battle-result-xp-left", "--ui-battle-result-compact-xp-left"),
+          createControl("top", "Top", 50, 74, 0.1, "%", 61.6, 61.6, "--battle-result-xp-top", "--ui-battle-result-xp-top", "--ui-battle-result-compact-xp-top"),
+          createControl("width", "Width", 54, 92, 0.1, "%", 78, 78, "--battle-result-xp-width", "--ui-battle-result-xp-width", "--ui-battle-result-compact-xp-width"),
+          createControl("badge", "Badge", 34, 72, 1, "px", 62, 62, "--battle-result-level-badge-size", "--ui-battle-result-level-badge-size", "--ui-battle-result-compact-level-badge-size"),
+          createControl("font", "Font", 9, 20, 0.5, "px", 15, 15, "--battle-result-xp-font-size", "--ui-battle-result-xp-font-size", "--ui-battle-result-compact-xp-font-size"),
+          createControl("track", "Track H", 8, 24, 1, "px", 17, 17, "--battle-result-xp-track-height", "--ui-battle-result-xp-track-height", "--ui-battle-result-compact-xp-track-height"),
+        ],
+      },
+      {
+        id: "button",
+        label: "Return button",
+        targetSelector: ".battle-result__button",
+        controls: [
+          createControl("top", "Top", 62, 84, 0.1, "%", 70.8, 70.8, "--battle-result-button-top", "--ui-battle-result-button-top", "--ui-battle-result-compact-button-top"),
+          createControl("width", "Width", 46, 88, 0.1, "%", 74, 74, "--battle-result-button-width", "--ui-battle-result-button-width", "--ui-battle-result-compact-button-width"),
+          createControl("height", "Height", 32, 68, 1, "px", 52, 52, "--battle-result-button-height", "--ui-battle-result-button-height", "--ui-battle-result-compact-button-height"),
+          createControl("font", "Font", 10, 20, 0.5, "px", 13.8, 13.8, "--battle-result-button-font-size", "--ui-battle-result-button-font-size", "--ui-battle-result-compact-button-font-size"),
+        ],
+      },
+    ],
+  },
 ] as const;
 
 export const DEFAULT_UI_LAYOUT_TUNING: UiLayoutTuningState = {
@@ -154,6 +228,56 @@ export const DEFAULT_UI_LAYOUT_TUNING: UiLayoutTuningState = {
   selectedBlockId: "preview",
   selectedViewport: "compact",
   values: {
+    "battleResult.button.font.compact": 13.8,
+    "battleResult.button.font.desktop": 13.8,
+    "battleResult.button.height.compact": 52,
+    "battleResult.button.height.desktop": 52,
+    "battleResult.button.top.compact": 82,
+    "battleResult.button.top.desktop": 70.8,
+    "battleResult.button.width.compact": 74,
+    "battleResult.button.width.desktop": 74,
+    "battleResult.card.top.compact": 57,
+    "battleResult.card.top.desktop": 57,
+    "battleResult.card.width.compact": 385,
+    "battleResult.card.width.desktop": 392,
+    "battleResult.plaque.font.compact": 18,
+    "battleResult.plaque.font.desktop": 13.5,
+    "battleResult.plaque.top.compact": 8.7,
+    "battleResult.plaque.top.desktop": 8.7,
+    "battleResult.plaque.width.compact": 35,
+    "battleResult.plaque.width.desktop": 42,
+    "battleResult.rewards.font.compact": 20,
+    "battleResult.rewards.font.desktop": 22,
+    "battleResult.rewards.gap.compact": 7,
+    "battleResult.rewards.gap.desktop": 5.8,
+    "battleResult.rewards.icon.compact": 40,
+    "battleResult.rewards.icon.desktop": 42,
+    "battleResult.rewards.left.compact": 9.5,
+    "battleResult.rewards.left.desktop": 10.4,
+    "battleResult.rewards.top.compact": 43.3,
+    "battleResult.rewards.top.desktop": 34.2,
+    "battleResult.rewards.width.compact": 80,
+    "battleResult.rewards.width.desktop": 79.2,
+    "battleResult.title.font.compact": 20,
+    "battleResult.title.font.desktop": 30.5,
+    "battleResult.title.left.compact": 15.5,
+    "battleResult.title.left.desktop": 8,
+    "battleResult.title.top.compact": 17.5,
+    "battleResult.title.top.desktop": 21.2,
+    "battleResult.title.width.compact": 69.3,
+    "battleResult.title.width.desktop": 84,
+    "battleResult.xp.badge.compact": 60,
+    "battleResult.xp.badge.desktop": 62,
+    "battleResult.xp.font.compact": 15,
+    "battleResult.xp.font.desktop": 15,
+    "battleResult.xp.left.compact": 12,
+    "battleResult.xp.left.desktop": 11,
+    "battleResult.xp.top.compact": 68,
+    "battleResult.xp.top.desktop": 61.6,
+    "battleResult.xp.track.compact": 20,
+    "battleResult.xp.track.desktop": 17,
+    "battleResult.xp.width.compact": 75.2,
+    "battleResult.xp.width.desktop": 78,
     "magicShop.buttons.buyFont.compact": 10.5,
     "magicShop.buttons.buyFont.desktop": 13,
     "magicShop.buttons.buyHeight.compact": 30,
@@ -336,7 +460,9 @@ export function applyUiLayoutTuning(root: ParentNode = document): void {
     }
   }
 
-  syncUiLayoutTargetHighlight(root);
+  if (shouldSyncUiLayoutTargetHighlight()) {
+    syncUiLayoutTargetHighlight(root);
+  }
 }
 
 export function syncUiLayoutTargetHighlight(root: ParentNode = document): void {
@@ -485,7 +611,15 @@ function clampUiLayoutValue(value: unknown, control: UiLayoutControlConfig, view
 }
 
 function formatUiLayoutCssValue(value: number, control: UiLayoutControlConfig): string {
-  return control.unit === "px" ? `${value}px` : `${value}`;
+  if (control.unit === "px") {
+    return `${value}px`;
+  }
+
+  if (control.unit === "%") {
+    return `${value}%`;
+  }
+
+  return `${value}`;
 }
 
 function getUiLayoutTargets(root: ParentNode, selector: string): HTMLElement[] {
@@ -498,4 +632,8 @@ function getUiLayoutTargets(root: ParentNode, selector: string): HTMLElement[] {
   root.querySelectorAll<HTMLElement>(selector).forEach((target) => targets.push(target));
 
   return targets;
+}
+
+function shouldSyncUiLayoutTargetHighlight(): boolean {
+  return typeof document !== "undefined" && document.body.classList.contains("debug-mode-ui");
 }

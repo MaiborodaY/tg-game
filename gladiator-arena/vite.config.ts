@@ -3782,11 +3782,11 @@ function readUiLayoutScreenId(payload: unknown): string {
 
   const screenId = (payload as { screenId?: unknown }).screenId;
 
-  if (screenId === "magicShop") {
+  if (screenId === "magicShop" || screenId === "battleResult") {
     return screenId;
   }
 
-  throw new Error("Only magicShop UI layout defaults can be saved right now.");
+  throw new Error("Only magicShop and battleResult UI layout defaults can be saved right now.");
 }
 
 function readUiLayoutValues(payload: unknown): Record<string, number> {

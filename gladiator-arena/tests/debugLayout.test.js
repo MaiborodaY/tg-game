@@ -30,6 +30,15 @@ test("debug app mounts the same arena with a separate tuning host", () => {
   assert.equal(debugHtml.includes('/src/debugMain.ts'), true);
   assert.equal(debugHtml.includes('id="gameScreen" class="game-screen battle-screen"'), true);
   assert.equal(debugHtml.includes('id="resultLoot"'), true);
+  assert.equal(debugHtml.includes('aria-label="Gold reward"'), true);
+  assert.equal(debugHtml.includes('aria-label="XP reward"'), true);
+  assert.equal(debugHtml.includes("<span>Gold</span>"), false);
+  assert.equal(debugHtml.includes("<span>XP</span>"), false);
+  assert.equal(debugHtml.includes('id="resultXpLevel"'), true);
+  assert.equal(debugHtml.includes('data-level-digits="1"'), true);
+  assert.equal(debugHtml.includes('class="battle-result__level-badge"'), true);
+  assert.equal(debugHtml.includes('class="battle-result__level-label"'), false);
+  assert.equal(debugHtml.includes('class="battle-result__xp-progress-icon"'), true);
   assert.equal(debugHtml.includes('class="combat-status-line"'), true);
   assert.equal(debugHtml.includes('class="combat-buff-tray"'), true);
   assert.equal(debugHtml.includes('class="combat-debuff-tray"'), true);
@@ -370,6 +379,10 @@ test("battle result transition moves combat UI away from the final panel", () =>
   assert.equal(stylesSource.includes(".battle-screen--finished .action-arc"), true);
   assert.equal(stylesSource.includes("translateY(calc(100% + 130px))"), true);
   assert.equal(stylesSource.includes(".battle-result--animating .battle-result__frame"), true);
+  assert.equal(stylesSource.includes("battle-result-card-frame.webp"), true);
+  assert.equal(stylesSource.includes("battle-result-level-badge.webp"), true);
+  assert.match(stylesSource, /\.battle-result--lose \.battle-result__frame\s*\{\s*filter:/);
+  assert.doesNotMatch(stylesSource, /\.battle-result--lose \.battle-result__frame\s*\{\s*background:/);
   assert.equal(stylesSource.includes("@keyframes battle-result-xp-glow"), true);
   assert.equal(mainSource.includes("heroBeforeReward"), true);
   assert.equal(mainSource.includes("heroAfterReward"), true);
@@ -580,9 +593,30 @@ test("debug panel keeps long tuning sections scrollable", () => {
 });
 
 test("debug UI compact mode emulates the mobile city viewport size", () => {
-  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-app\s*\{[^}]*grid-template-columns: minmax\(0, 393px\) minmax\(360px, 480px\);/s);
-  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell\.shell\s*\{[^}]*width: min\(393px, 100%\);[^}]*height: 720px;/s);
-  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell \.main-menu,[\s\S]*\.debug-game-shell \.city-menu\s*\{[^}]*height: 720px;/s);
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-app,[\s\S]*body\.debug-mode-ui:has\(\.battle-screen\[data-ui-layout-viewport="compact"\]\) \.debug-app\s*\{[^}]*grid-template-columns: minmax\(0, 393px\) minmax\(360px, 480px\);/s);
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell\.shell,[\s\S]*body\.debug-mode-ui:has\(\.battle-screen\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell\.shell\s*\{[^}]*width: min\(393px, 100%\);[^}]*height: 720px;/s);
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell \.main-menu,[\s\S]*body\.debug-mode-ui:has\(\.magic-shop\.armory-shop--city-mode\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell \.city-menu,[\s\S]*body\.debug-mode-ui:has\(\.battle-screen\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell \.battle-screen\s*\{[^}]*height: 720px;/s);
+  assert.match(stylesSource, /body\.debug-mode-ui:has\(\.battle-screen\[data-ui-layout-viewport="compact"\]\) \.debug-game-shell \.battle-screen\s*\{[^}]*height: 720px;/s);
+});
+
+test("debug UI layout tuner can preview the battle result screen", () => {
+  const uiLayoutTuningSource = readFileSync(resolve(currentDir, "../src/uiLayoutTuning.ts"), "utf8");
+  const domUiSource = readFileSync(resolve(currentDir, "../src/domUi.ts"), "utf8");
+
+  assert.equal(uiLayoutTuningSource.includes('id: "battleResult"'), true);
+  assert.equal(uiLayoutTuningSource.includes('label: "Battle result"'), true);
+  assert.equal(uiLayoutTuningSource.includes('rootSelector: ".battle-screen"'), true);
+  assert.equal(uiLayoutTuningSource.includes('targetSelector: ".battle-result__title"'), true);
+  assert.equal(uiLayoutTuningSource.includes('targetSelector: ".battle-result__xp"'), true);
+  assert.equal(uiLayoutTuningSource.includes('targetSelector: ".battle-result__button"'), true);
+  assert.equal(uiLayoutTuningSource.includes('unit: "px" | "%" | "number"'), true);
+  assert.equal(stylesSource.includes("body.debug-mode-ui:has(.battle-screen[data-ui-layout-viewport]) #resultBanner[hidden]"), true);
+  assert.equal(stylesSource.includes("--battle-result-title-top: var(--ui-battle-result-title-top"), true);
+  assert.match(stylesSource, /body\.debug-mode-ui \.battle-screen\[data-ui-layout-viewport="compact"\]\s*\{[\s\S]*--battle-result-title-top: var\(--ui-battle-result-compact-title-top/s);
+  assert.match(stylesSource, /body\.debug-mode-ui \.battle-screen\[data-ui-layout-viewport="compact"\]\s*\{[\s\S]*--battle-result-plaque-top: var\(--ui-battle-result-compact-plaque-top/s);
+  assert.match(stylesSource, /body\.debug-mode-ui \.battle-screen\[data-ui-layout-viewport="compact"\]\s*\{[\s\S]*--battle-result-button-top: var\(--ui-battle-result-compact-button-top/s);
+  assert.equal(stylesSource.includes("--battle-result-button-top: var(--ui-battle-result-button-top"), true);
+  assert.equal(domUiSource.includes("applyUiLayoutTuning(dom.gameScreen)"), true);
 });
 
 test("debug panel exposes item equipment tuning separately", () => {

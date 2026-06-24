@@ -13,6 +13,7 @@ import {
   type DistanceBand,
 } from "./combat";
 import { getShopProductIconUrl } from "./shopItemIcons";
+import { applyUiLayoutTuning } from "./uiLayoutTuning";
 import {
   HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
   HERO_ITEM_CATALOG,
@@ -38,6 +39,7 @@ export interface DomRefs {
   resultXpReward: HTMLElement;
   resultLoot: HTMLElement;
   resultXpProgress: HTMLElement;
+  resultXpLevel: HTMLElement;
   resultXpProgressText: HTMLElement;
   resultXpProgressFill: HTMLElement;
   restartButton: HTMLButtonElement;
@@ -94,6 +96,7 @@ export function getDomRefs(): DomRefs {
     resultXpReward: document.querySelector<HTMLElement>("#resultXpReward"),
     resultLoot: document.querySelector<HTMLElement>("#resultLoot"),
     resultXpProgress: document.querySelector<HTMLElement>("#resultXpProgress"),
+    resultXpLevel: document.querySelector<HTMLElement>("#resultXpLevel"),
     resultXpProgressText: document.querySelector<HTMLElement>("#resultXpProgressText"),
     resultXpProgressFill: document.querySelector<HTMLElement>("#resultXpProgressFill"),
     restartButton: document.querySelector<HTMLButtonElement>("#restartButton"),
@@ -368,6 +371,7 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
 
   dom.resultBanner.hidden = false;
   dom.cityButton.hidden = false;
+  applyUiLayoutTuning(dom.gameScreen);
   syncResultReturnButton(dom.cityButton, context.resultReturn);
   syncResultVariant(dom.resultBanner, state.result);
   dom.resultEyebrow.textContent = resultEyebrowText(state);
@@ -444,7 +448,10 @@ function renderResultXpProgress(dom: DomRefs, hero: HeroState | undefined): void
   if (!hero) {
     dom.resultXpProgress.hidden = true;
     dom.resultXpProgressFill.style.width = "0%";
+    dom.resultXpLevel.textContent = "";
+    dom.resultXpLevel.removeAttribute("data-level-digits");
     dom.resultXpProgressText.textContent = "";
+    dom.resultXpProgress.removeAttribute("aria-label");
     return;
   }
 
@@ -452,7 +459,7 @@ function renderResultXpProgress(dom: DomRefs, hero: HeroState | undefined): void
 
   if (hero.level >= HERO_MAX_LEVEL) {
     dom.resultXpProgressFill.style.width = "100%";
-    dom.resultXpProgressText.textContent = `LVL ${hero.level} MAX`;
+    renderResultXpLabel(dom, hero.level, "MAX");
     return;
   }
 
@@ -460,7 +467,29 @@ function renderResultXpProgress(dom: DomRefs, hero: HeroState | undefined): void
   const progressRatio = Math.max(0, Math.min(1, hero.xp / xpToNextLevel));
 
   dom.resultXpProgressFill.style.width = `${progressRatio * 100}%`;
-  dom.resultXpProgressText.textContent = `LVL ${hero.level} ${hero.xp} / ${xpToNextLevel} XP`;
+  renderResultXpLabel(dom, hero.level, `${hero.xp} / ${xpToNextLevel} XP`);
+}
+
+function renderResultXpLabel(dom: DomRefs, level: number, progressText: string): void {
+  const xpSuffix = " XP";
+  const usesXpIcon = progressText.endsWith(xpSuffix);
+  const visibleProgressText = usesXpIcon ? progressText.slice(0, -xpSuffix.length) : progressText;
+  const levelText = String(level);
+  const levelDigitCount = Math.min(3, Math.max(1, levelText.length));
+
+  dom.resultXpLevel.textContent = levelText;
+  dom.resultXpLevel.dataset.levelDigits = String(levelDigitCount);
+  dom.resultXpProgressText.replaceChildren(document.createTextNode(visibleProgressText));
+
+  if (usesXpIcon) {
+    const icon = document.createElement("span");
+
+    icon.className = "battle-result__xp-progress-icon";
+    icon.setAttribute("aria-hidden", "true");
+    dom.resultXpProgressText.append(" ", icon);
+  }
+
+  dom.resultXpProgress.setAttribute("aria-label", `LVL ${level} ${progressText}`);
 }
 
 function animateResultPresentation(dom: DomRefs, presentation: BattleResultPresentation): void {
@@ -617,7 +646,7 @@ function animateXpStage(dom: DomRefs, stages: readonly XpAnimationStage[], stage
 function renderXpStage(dom: DomRefs, stage: XpAnimationStage, xpValue: number): void {
   if (stage.level >= HERO_MAX_LEVEL) {
     dom.resultXpProgressFill.style.width = "100%";
-    dom.resultXpProgressText.textContent = `LVL ${HERO_MAX_LEVEL} MAX`;
+    renderResultXpLabel(dom, HERO_MAX_LEVEL, "MAX");
     return;
   }
 
@@ -625,7 +654,7 @@ function renderXpStage(dom: DomRefs, stage: XpAnimationStage, xpValue: number): 
   const progressRatio = Math.max(0, Math.min(1, xpValue / stage.xpToNextLevel));
 
   dom.resultXpProgressFill.style.width = `${progressRatio * 100}%`;
-  dom.resultXpProgressText.textContent = `LVL ${stage.level} ${xp} / ${stage.xpToNextLevel} XP`;
+  renderResultXpLabel(dom, stage.level, `${xp} / ${stage.xpToNextLevel} XP`);
 }
 
 interface ValueAnimationOptions {

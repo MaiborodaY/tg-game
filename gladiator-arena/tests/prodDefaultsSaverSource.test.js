@@ -85,6 +85,11 @@ test("client saver posts scoped UI layout tuning to the local dev endpoint", () 
   assert.match(uiLayoutSource, /"magicShop\.buttons\.buyHeight\.compact": \d+/);
   assert.match(uiLayoutSource, /"magicShop\.buttons\.listCoinSize\.compact": \d+/);
   assert.match(uiLayoutSource, /"magicShop\.wallet\.height\.compact": \d+/);
+  assert.match(uiLayoutSource, /id: "battleResult"/);
+  assert.match(uiLayoutSource, /rootSelector: "\.battle-screen"/);
+  assert.match(uiLayoutSource, /"battleResult\.title\.top\.compact": \d+(?:\.\d+)?/);
+  assert.match(uiLayoutSource, /"battleResult\.xp\.top\.compact": \d+(?:\.\d+)?/);
+  assert.match(uiLayoutSource, /"battleResult\.button\.top\.compact": \d+(?:\.\d+)?/);
 });
 
 test("client saver can promote auto equipment through the local dev endpoint", () => {
@@ -421,7 +426,8 @@ test("vite dev middleware saves scoped UI layout defaults", () => {
   assert.match(source, /save-ui-layout-defaults/);
   assert.match(source, /const uiLayoutTuningUrl = new URL\("\.\/src\/uiLayoutTuning\.ts"/);
   assert.match(source, /applyUiLayoutDefaultUpdates\(source, payload\)/);
-  assert.match(source, /Only magicShop UI layout defaults can be saved right now/);
+  assert.match(source, /screenId === "magicShop" \|\| screenId === "battleResult"/);
+  assert.match(source, /Only magicShop and battleResult UI layout defaults can be saved right now/);
   assert.match(source, /key\.startsWith\(`\$\{screenId\}\.`\)/);
   assert.match(source, /replaceUiLayoutDefaultValues/);
   assert.match(debugPanelSource, /data-debug-mode="ui"/);

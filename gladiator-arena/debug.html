@@ -494,20 +494,25 @@
                 <div id="resultEyebrow" class="battle-result__eyebrow">Victory</div>
                 <h2 id="resultTitle" class="battle-result__title">Borshemir wins!</h2>
                 <div class="battle-result__rewards" aria-label="Battle rewards">
-                  <div class="battle-result__reward">
+                  <div class="battle-result__reward" aria-label="Gold reward">
                     <span class="battle-result__icon battle-result__icon--gold" aria-hidden="true"></span>
                     <strong id="resultGoldReward">+0</strong>
-                    <span>Gold</span>
                   </div>
-                  <div class="battle-result__reward">
+                  <div class="battle-result__reward" aria-label="XP reward">
                     <span class="battle-result__icon battle-result__icon--xp" aria-hidden="true"></span>
                     <strong id="resultXpReward">+0</strong>
-                    <span>XP</span>
                   </div>
                 </div>
                 <div id="resultLoot" class="battle-result__loot" aria-label="Loot drops" hidden></div>
                 <div id="resultXpProgress" class="battle-result__xp">
-                  <div id="resultXpProgressText" class="battle-result__xp-text">LVL 1 0 / 10 XP</div>
+                  <div class="battle-result__xp-header">
+                    <div class="battle-result__level-badge" aria-hidden="true">
+                      <strong id="resultXpLevel" class="battle-result__level-value" data-level-digits="1">1</strong>
+                    </div>
+                    <div id="resultXpProgressText" class="battle-result__xp-text">
+                      0 / 10 <span class="battle-result__xp-progress-icon" aria-hidden="true"></span>
+                    </div>
+                  </div>
                   <div class="battle-result__xp-track" aria-hidden="true">
                     <div id="resultXpProgressFill" class="battle-result__xp-fill"></div>
                   </div>
