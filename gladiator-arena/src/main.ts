@@ -778,8 +778,12 @@ function mountCityPreviews(): Promise<void> {
   }
 
   if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
+    const portraitMirrorParents = [cityHeroWidgetRefs.profilePortrait, cityHeroEquipmentMenu.getPortraitMirrorHost()].filter(
+      (parent): parent is HTMLElement => Boolean(parent),
+    );
+
     heroPortraitPreview = mountHeroPortraitPreview(cityHeroWidgetRefs.portrait, hero.equipment, hero.appearance, {
-      mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : [],
+      mirrorParents: portraitMirrorParents,
     });
   } else {
     heroPortraitPreview?.setEquipment(hero.equipment);

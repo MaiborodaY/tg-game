@@ -33,7 +33,15 @@ import {
   type HeroState,
 } from "./hero";
 import { getShopProductIconUrl } from "./shopItemIcons";
-import { getShopProductDisplayName, getShopProductDisplayStat, getShopProductRarity, getShopProductStat, getShopRarityLabel, type ShopItemRarity } from "./shopPresentation";
+import {
+  getEquippedShopProductStat,
+  getShopProductDisplayName,
+  getShopProductDisplayStat,
+  getShopProductRarity,
+  getShopProductStat,
+  getShopRarityLabel,
+  type ShopItemRarity,
+} from "./shopPresentation";
 
 const HERO_ATTRIBUTE_KEYS: readonly HeroAttributeKey[] = ["strength", "agility", "vitality"];
 const ATTRIBUTE_CTRL_ALLOCATE_AMOUNT = 10;
@@ -93,11 +101,15 @@ export interface CityHeroInfoRenderOptions {
 interface CityEquipmentMenuElements {
   root: HTMLElement;
   closeButton: HTMLButtonElement | null;
-  selectedOrb: HTMLElement | null;
-  selectedIcon: HTMLElement | null;
-  selectedName: HTMLElement | null;
-  selectedRarity: HTMLElement | null;
-  selectedStat: HTMLElement | null;
+  heroPreview: HTMLElement | null;
+  equippedSlots: HTMLElement | null;
+  details: HTMLElement | null;
+  detailsCloseButton: HTMLButtonElement | null;
+  detailsIcon: HTMLElement | null;
+  detailsName: HTMLElement | null;
+  detailsRarity: HTMLElement | null;
+  detailsStat: HTMLElement | null;
+  detailsEquipButton: HTMLButtonElement | null;
   weaponCategories: HTMLElement | null;
   armorCategories: HTMLElement | null;
   productGrid: HTMLElement | null;
@@ -456,6 +468,7 @@ export interface CityHeroEquipmentMenuApi {
   close: () => void;
   render: () => void;
   isOpen: () => boolean;
+  getPortraitMirrorHost: () => HTMLElement | null;
   destroy: () => void;
 }
 
@@ -482,13 +495,13 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   const { profile, profileEquipment } = refs;
   const menu = createCityEquipmentMenuElements();
   let isOpen = false;
-  let activeCategoryId: CityEquipmentCategoryId = "head";
+  let activeCategoryIds = new Set<CityEquipmentCategoryId>();
   let selectedProductId: string | undefined;
 
   profile?.append(menu.root);
 
-  const setOpen = (nextOpen: boolean, categoryId = activeCategoryId) => {
-    activeCategoryId = normalizeCityEquipmentCategoryId(categoryId);
+  const setOpen = (nextOpen: boolean, categoryId?: CityEquipmentCategoryId) => {
+    activeCategoryIds = categoryId ? new Set([normalizeCityEquipmentCategoryId(categoryId)]) : new Set();
     isOpen = nextOpen;
     menu.root.hidden = !nextOpen;
     profile?.classList.toggle("city-profile--equipment-menu-open", nextOpen);
@@ -499,7 +512,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     }
   };
 
-  const open = (categoryId?: CityEquipmentCategoryId) => setOpen(true, categoryId ?? activeCategoryId);
+  const open = (categoryId?: CityEquipmentCategoryId) => setOpen(true, categoryId);
   const close = () => setOpen(false);
   const handleProfileEquipmentClick = (event: MouseEvent) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -524,8 +537,17 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     }
 
     event.preventDefault();
-    activeCategoryId = normalizeCityEquipmentCategoryId(button.dataset.cityEquipmentCategory);
-    options.onCategoryOpen?.(activeCategoryId);
+    const categoryId = normalizeCityEquipmentCategoryId(button.dataset.cityEquipmentCategory);
+    const nextCategoryIds = new Set(activeCategoryIds);
+
+    if (nextCategoryIds.has(categoryId)) {
+      nextCategoryIds.delete(categoryId);
+    } else {
+      nextCategoryIds.add(categoryId);
+      options.onCategoryOpen?.(categoryId);
+    }
+
+    activeCategoryIds = nextCategoryIds;
     selectedProductId = undefined;
     render();
   };
@@ -539,7 +561,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
 
     event.preventDefault();
 
-    const product = getOwnedCityEquipmentProducts(options.getHero(), getCityEquipmentCategory(activeCategoryId)).find(
+    const product = getOwnedCityEquipmentProductsForCategories(options.getHero(), getSelectedCityEquipmentCategories(activeCategoryIds)).find(
       (candidate) => candidate.id === button.dataset.cityEquipmentProduct,
     );
 
@@ -548,6 +570,26 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     }
 
     selectedProductId = product.id;
+    render();
+  };
+  const handleDetailsCloseClick = (event: MouseEvent) => {
+    event.preventDefault();
+    selectedProductId = undefined;
+    render();
+  };
+  const handleEquipClick = (event: MouseEvent) => {
+    event.preventDefault();
+
+    const product = selectedProductId
+      ? getOwnedCityEquipmentProductsForCategories(options.getHero(), getSelectedCityEquipmentCategories(activeCategoryIds)).find(
+        (candidate) => candidate.id === selectedProductId,
+      )
+      : undefined;
+
+    if (!product) {
+      return;
+    }
+
     options.onEquip(product.itemIds);
     render();
   };
@@ -561,6 +603,12 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   const handleKeyDown = (event: KeyboardEvent) => {
     if (isOpen && event.key === "Escape") {
       event.preventDefault();
+      if (selectedProductId) {
+        selectedProductId = undefined;
+        render();
+        return;
+      }
+
       close();
     }
   };
@@ -568,6 +616,8 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   profileEquipment?.addEventListener("click", handleProfileEquipmentClick);
   menu.root.addEventListener("click", handleCategoryClick);
   menu.productGrid?.addEventListener("click", handleProductClick);
+  menu.detailsCloseButton?.addEventListener("click", handleDetailsCloseClick);
+  menu.detailsEquipButton?.addEventListener("click", handleEquipClick);
   menu.closeButton?.addEventListener("click", close);
   profile?.addEventListener("city-profile-visibility", handleProfileVisibility);
   document.addEventListener("keydown", handleKeyDown);
@@ -578,15 +628,16 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     }
 
     const hero = options.getHero();
-    const category = getCityEquipmentCategory(activeCategoryId);
-    const products = getOwnedCityEquipmentProducts(hero, category);
-    const selectedProduct = getSelectedCityEquipmentProduct(hero, products, selectedProductId);
+    const selectedCategories = getSelectedCityEquipmentCategories(activeCategoryIds);
+    const products = getOwnedCityEquipmentProductsForCategories(hero, selectedCategories);
+    const selectedProduct = selectedProductId ? products.find((product) => product.id === selectedProductId) : undefined;
 
     selectedProductId = selectedProduct?.id;
-    renderCityEquipmentSelected(menu, category, selectedProduct, hero);
-    renderCityEquipmentCategories(menu.weaponCategories, CITY_EQUIPMENT_WEAPON_CATEGORIES, activeCategoryId);
-    renderCityEquipmentCategories(menu.armorCategories, CITY_EQUIPMENT_ARMOR_CATEGORIES, activeCategoryId);
-    renderCityEquipmentProducts(menu.productGrid, category, products, selectedProduct, hero);
+    renderCityEquipmentPaperDoll(menu, hero);
+    renderCityEquipmentDetails(menu, selectedProduct, hero);
+    renderCityEquipmentCategories(menu.weaponCategories, CITY_EQUIPMENT_WEAPON_CATEGORIES, activeCategoryIds);
+    renderCityEquipmentCategories(menu.armorCategories, CITY_EQUIPMENT_ARMOR_CATEGORIES, activeCategoryIds);
+    renderCityEquipmentProducts(menu.productGrid, selectedCategories, products, selectedProduct, hero);
   }
 
   return {
@@ -594,11 +645,14 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     close,
     render,
     isOpen: () => isOpen,
+    getPortraitMirrorHost: () => menu.heroPreview,
     destroy: () => {
       close();
       profileEquipment?.removeEventListener("click", handleProfileEquipmentClick);
       menu.root.removeEventListener("click", handleCategoryClick);
       menu.productGrid?.removeEventListener("click", handleProductClick);
+      menu.detailsCloseButton?.removeEventListener("click", handleDetailsCloseClick);
+      menu.detailsEquipButton?.removeEventListener("click", handleEquipClick);
       menu.closeButton?.removeEventListener("click", close);
       profile?.removeEventListener("city-profile-visibility", handleProfileVisibility);
       document.removeEventListener("keydown", handleKeyDown);
@@ -924,22 +978,24 @@ function createCityEquipmentMenuElements(): CityEquipmentMenuElements {
     <div class="city-equipment-menu__panel">
       <button class="city-equipment-menu__close" type="button" aria-label="Close equipment">x</button>
       <div class="city-equipment-menu__title">EQUIPMENT</div>
-      <div class="city-equipment-menu__selected">
-        <div class="city-equipment-menu__selected-copy">
-          <strong class="city-equipment-menu__selected-name"></strong>
-          <span class="city-equipment-menu__selected-stat"></span>
-        </div>
-        <div class="city-equipment-menu__selected-showcase">
-          <div class="city-equipment-menu__selected-orb" aria-hidden="true">
-            <span class="city-equipment-menu__selected-icon"></span>
-          </div>
-          <span class="city-equipment-menu__selected-rarity"></span>
+      <div class="city-equipment-menu__stage">
+        <div class="city-equipment-menu__hero-preview" aria-hidden="true"></div>
+        <div class="city-equipment-menu__equipped-slots" aria-label="Equipped armor"></div>
+        <div class="city-equipment-menu__details" hidden>
+          <button class="city-equipment-menu__details-close" type="button" aria-label="Close item details">x</button>
+          <span class="city-equipment-menu__details-icon" aria-hidden="true"></span>
+          <strong class="city-equipment-menu__details-name"></strong>
+          <span class="city-equipment-menu__details-rarity"></span>
+          <span class="city-equipment-menu__details-stat"></span>
+          <button class="city-equipment-menu__details-equip" type="button">EQUIP</button>
         </div>
       </div>
-      <div class="city-equipment-menu__tray">
-        <div class="city-equipment-menu__categories city-equipment-menu__categories--weapon" aria-label="Weapon categories"></div>
+      <div class="city-equipment-menu__inventory">
+        <div class="city-equipment-menu__filters">
+          <div class="city-equipment-menu__categories city-equipment-menu__categories--weapon" aria-label="Weapon filters"></div>
+          <div class="city-equipment-menu__categories city-equipment-menu__categories--armor" aria-label="Armor filters"></div>
+        </div>
         <div class="city-equipment-menu__products" aria-label="Owned equipment"></div>
-        <div class="city-equipment-menu__categories city-equipment-menu__categories--armor" aria-label="Armor categories"></div>
       </div>
     </div>
   `;
@@ -947,11 +1003,15 @@ function createCityEquipmentMenuElements(): CityEquipmentMenuElements {
   return {
     root,
     closeButton: root.querySelector<HTMLButtonElement>(".city-equipment-menu__close"),
-    selectedOrb: root.querySelector<HTMLElement>(".city-equipment-menu__selected-orb"),
-    selectedIcon: root.querySelector<HTMLElement>(".city-equipment-menu__selected-icon"),
-    selectedName: root.querySelector<HTMLElement>(".city-equipment-menu__selected-name"),
-    selectedRarity: root.querySelector<HTMLElement>(".city-equipment-menu__selected-rarity"),
-    selectedStat: root.querySelector<HTMLElement>(".city-equipment-menu__selected-stat"),
+    heroPreview: root.querySelector<HTMLElement>(".city-equipment-menu__hero-preview"),
+    equippedSlots: root.querySelector<HTMLElement>(".city-equipment-menu__equipped-slots"),
+    details: root.querySelector<HTMLElement>(".city-equipment-menu__details"),
+    detailsCloseButton: root.querySelector<HTMLButtonElement>(".city-equipment-menu__details-close"),
+    detailsIcon: root.querySelector<HTMLElement>(".city-equipment-menu__details-icon"),
+    detailsName: root.querySelector<HTMLElement>(".city-equipment-menu__details-name"),
+    detailsRarity: root.querySelector<HTMLElement>(".city-equipment-menu__details-rarity"),
+    detailsStat: root.querySelector<HTMLElement>(".city-equipment-menu__details-stat"),
+    detailsEquipButton: root.querySelector<HTMLButtonElement>(".city-equipment-menu__details-equip"),
     weaponCategories: root.querySelector<HTMLElement>(".city-equipment-menu__categories--weapon"),
     armorCategories: root.querySelector<HTMLElement>(".city-equipment-menu__categories--armor"),
     productGrid: root.querySelector<HTMLElement>(".city-equipment-menu__products"),
@@ -1060,51 +1120,119 @@ function createHeroAppearancePatch(slot: HeroAppearanceSlotKey, id: string | nul
   return slot === "hair" ? { hairId: id } : { beardId: id };
 }
 
-function renderCityEquipmentSelected(
-  menu: CityEquipmentMenuElements,
-  category: CityEquipmentCategory,
-  product: CityEquipmentProduct | undefined,
-  hero: HeroState,
-): void {
-  const rarity = product ? getShopProductRarity(product.itemIds) : undefined;
-  const iconUrl = product ? getShopProductIconUrl(product.itemIds) : getCityEquipmentCategoryIconUrl(category);
-  const statKind = category.side === "weapon" ? "damage" : "armor";
-  const statLabel = category.side === "weapon" ? "DAMAGE" : "ARMOR";
-  const statValue = product ? getShopProductDisplayStat(hero, product.itemIds, statKind) : 0;
+function renderCityEquipmentPaperDoll(menu: CityEquipmentMenuElements, hero: HeroState): void {
+  const host = menu.equippedSlots;
 
-  if (menu.selectedOrb) {
-    menu.selectedOrb.className = [
-      "city-equipment-menu__selected-orb",
-      rarity ? `armory-shop__option--rarity-${rarity}` : "city-equipment-menu__selected-orb--empty",
-    ].join(" ");
+  if (!host) {
+    return;
   }
 
-  if (menu.selectedIcon) {
-    menu.selectedIcon.style.backgroundImage = iconUrl ? `url("${iconUrl}")` : "";
-    menu.selectedIcon.textContent = iconUrl ? "" : category.label.slice(0, 1);
+  const groups = getCityEquipmentPaperDollGroups();
+  const renderKey = groups.flatMap((group) => group.slots.map((slotKey) => `${slotKey}:${hero.equipment[slotKey] ?? ""}`)).join("|");
+
+  if (host.dataset.cityEquipmentPaperDollRenderKey === renderKey) {
+    return;
   }
 
-  setText(menu.selectedName, product ? getShopProductDisplayName(product.name).toUpperCase() : category.label.toUpperCase());
-  if (menu.selectedRarity) {
-    menu.selectedRarity.className = [
-      "city-equipment-menu__selected-rarity",
-      rarity ? `armory-shop__option--rarity-${rarity}` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
+  host.dataset.cityEquipmentPaperDollRenderKey = renderKey;
+  host.replaceChildren(...groups.map((group) => createCityEquipmentPaperDollSlot(group, hero)));
+}
+
+function getCityEquipmentPaperDollGroups(): (typeof HERO_PROFILE_EQUIPMENT_GROUPS)[number][] {
+  return HERO_PROFILE_EQUIPMENT_GROUPS.filter((group) => group.categoryId !== "swords" && group.categoryId !== "bows");
+}
+
+function createCityEquipmentPaperDollSlot(group: (typeof HERO_PROFILE_EQUIPMENT_GROUPS)[number], hero: HeroState): HTMLElement {
+  const itemIds = group.slots.flatMap((slotKey): HeroItemId[] => {
+    const itemId = hero.equipment[slotKey];
+
+    return itemId ? [itemId] : [];
+  });
+  const items = itemIds.flatMap((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    return item ? [item] : [];
+  });
+  const iconUrl = getShopProductIconUrl(itemIds);
+  const rarity = itemIds.length > 0 ? getShopProductRarity(itemIds) : "empty";
+  const slot = document.createElement("div");
+  const icon = document.createElement("span");
+  const label = items.length > 0
+    ? `${group.label}: ${items.map((item) => getShopProductDisplayName(item.name)).join(", ")}`
+    : `${group.label}: empty`;
+
+  slot.className = [
+    "city-equipment-menu__slot",
+    `city-equipment-menu__slot--${group.modifier}`,
+    `city-equipment-menu__slot--${rarity}`,
+    rarity !== "empty" ? `armory-shop__option--rarity-${rarity}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  slot.setAttribute("aria-label", label);
+  slot.title = label;
+  icon.className = "city-equipment-menu__slot-icon";
+
+  if (iconUrl) {
+    icon.style.backgroundImage = `url("${iconUrl}")`;
+  } else {
+    icon.textContent = group.icon;
   }
-  setText(menu.selectedRarity, rarity ? getShopRarityLabel(rarity).toUpperCase() : "NO OWNED ITEMS");
-  if (menu.selectedStat) {
-    menu.selectedStat.classList.toggle("city-equipment-menu__selected-stat--armor", product !== undefined && statKind === "armor");
-    menu.selectedStat.style.setProperty("--city-equipment-stat-icon", statKind === "armor" ? `url("${DAMAGE_BLOCK_ICON_ASSET_URL}")` : "");
-    menu.selectedStat.textContent = product ? `${statLabel} ${statValue}` : "EMPTY";
+
+  slot.append(icon);
+
+  return slot;
+}
+
+function renderCityEquipmentDetails(menu: CityEquipmentMenuElements, product: CityEquipmentProduct | undefined, hero: HeroState): void {
+  if (!menu.details) {
+    return;
+  }
+
+  menu.details.hidden = !product;
+
+  if (!product) {
+    return;
+  }
+
+  const iconUrl = getShopProductIconUrl(product.itemIds);
+  const rarity = getShopProductRarity(product.itemIds);
+  const statKind = getCityEquipmentProductStatKind(product);
+  const statLabel = statKind === "armor" ? "ARMOR" : "DAMAGE";
+  const statValue = getShopProductDisplayStat(hero, product.itemIds, statKind);
+  const currentStat = getEquippedShopProductStat(hero, product.itemIds, statKind);
+  const isEquipped = areHeroItemsEquipped(hero, product.itemIds);
+
+  menu.details.className = [
+    "city-equipment-menu__details",
+    `city-equipment-menu__details--${rarity}`,
+    `armory-shop__option--rarity-${rarity}`,
+  ].join(" ");
+
+  if (menu.detailsIcon) {
+    menu.detailsIcon.style.backgroundImage = iconUrl ? `url("${iconUrl}")` : "";
+    menu.detailsIcon.textContent = iconUrl ? "" : "?";
+  }
+
+  setText(menu.detailsName, getShopProductDisplayName(product.name).toUpperCase());
+  setText(menu.detailsRarity, getShopRarityLabel(rarity).toUpperCase());
+
+  if (menu.detailsStat) {
+    menu.detailsStat.classList.toggle("city-equipment-menu__details-stat--armor", statKind === "armor");
+    menu.detailsStat.style.setProperty("--city-equipment-stat-icon", statKind === "armor" ? `url("${DAMAGE_BLOCK_ICON_ASSET_URL}")` : "");
+    menu.detailsStat.textContent = currentStat === statValue ? `${statLabel} ${statValue}` : `${statLabel} ${currentStat} > ${statValue}`;
+  }
+
+  if (menu.detailsEquipButton) {
+    menu.detailsEquipButton.disabled = isEquipped;
+    menu.detailsEquipButton.textContent = isEquipped ? "EQUIPPED" : "EQUIP";
   }
 }
 
 function renderCityEquipmentCategories(
   host: HTMLElement | null,
   categories: readonly CityEquipmentCategory[],
-  activeCategoryId: CityEquipmentCategoryId,
+  activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>,
 ): void {
   if (!host) {
     return;
@@ -1118,9 +1246,10 @@ function renderCityEquipmentCategories(
 
       button.type = "button";
       button.className = "city-equipment-menu__category";
-      button.classList.toggle("city-equipment-menu__category--active", category.id === activeCategoryId);
+      button.classList.toggle("city-equipment-menu__category--active", activeCategoryIds.has(category.id));
       button.dataset.cityEquipmentCategory = category.id;
       button.setAttribute("aria-label", category.label);
+      button.setAttribute("aria-pressed", String(activeCategoryIds.has(category.id)));
       icon.className = "city-equipment-menu__category-icon";
 
       if (iconUrl) {
@@ -1138,12 +1267,21 @@ function renderCityEquipmentCategories(
 
 function renderCityEquipmentProducts(
   host: HTMLElement | null,
-  category: CityEquipmentCategory,
+  selectedCategories: readonly CityEquipmentCategory[],
   products: readonly CityEquipmentProduct[],
   selectedProduct: CityEquipmentProduct | undefined,
   hero: HeroState,
 ): void {
   if (!host) {
+    return;
+  }
+
+  if (selectedCategories.length <= 0) {
+    const empty = document.createElement("span");
+
+    empty.className = "city-equipment-menu__empty";
+    empty.textContent = "SELECT CATEGORY";
+    host.replaceChildren(empty);
     return;
   }
 
@@ -1160,13 +1298,14 @@ function renderCityEquipmentProducts(
     ...products.map((product) => {
       const rarity = getShopProductRarity(product.itemIds);
       const iconUrl = getShopProductIconUrl(product.itemIds);
+      const side = getCityEquipmentProductSide(product);
       const button = document.createElement("button");
       const icon = document.createElement("span");
 
       button.type = "button";
       button.className = [
         "city-equipment-menu__item",
-        `city-equipment-menu__item--${category.side}`,
+        `city-equipment-menu__item--${side}`,
         `armory-shop__option--rarity-${rarity}`,
         selectedProduct?.id === product.id ? "city-equipment-menu__item--selected" : "",
         areHeroItemsEquipped(hero, product.itemIds) ? "city-equipment-menu__item--equipped" : "",
@@ -1205,6 +1344,22 @@ function getOwnedCityEquipmentProducts(hero: HeroState, category: CityEquipmentC
   const products = [...equipmentShopProducts, ...inventoryProducts];
 
   return products.filter((product) => areHeroItemsOwned(hero, product.itemIds)).sort(compareCityEquipmentProducts);
+}
+
+function getSelectedCityEquipmentCategories(categoryIds: ReadonlySet<CityEquipmentCategoryId>): CityEquipmentCategory[] {
+  return CITY_EQUIPMENT_CATEGORIES.filter((category) => categoryIds.has(category.id));
+}
+
+function getOwnedCityEquipmentProductsForCategories(hero: HeroState, categories: readonly CityEquipmentCategory[]): CityEquipmentProduct[] {
+  const productsByKey = new Map<string, CityEquipmentProduct>();
+
+  categories.forEach((category) => {
+    getOwnedCityEquipmentProducts(hero, category).forEach((product) => {
+      productsByKey.set(getCityEquipmentProductKey(product), product);
+    });
+  });
+
+  return [...productsByKey.values()].sort(compareCityEquipmentProducts);
 }
 
 function getInventoryCityEquipmentProducts(
@@ -1293,6 +1448,14 @@ function getCityEquipmentProductKey(product: CityEquipmentProduct): string {
   return product.itemIds.slice().sort().join("|");
 }
 
+function getCityEquipmentProductSide(product: CityEquipmentProduct): CityEquipmentCategorySide {
+  return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "armor") ? "armor" : "weapon";
+}
+
+function getCityEquipmentProductStatKind(product: CityEquipmentProduct): "armor" | "damage" {
+  return getCityEquipmentProductSide(product) === "armor" ? "armor" : "damage";
+}
+
 function toCityEquipmentProduct(product: ArmoryProduct | { id: string; name: string; itemIds: HeroItemId[] }): CityEquipmentProduct {
   return {
     id: product.id,
@@ -1323,18 +1486,6 @@ function compareCityEquipmentProducts(left: CityEquipmentProduct, right: CityEqu
   }
 
   return left.name.localeCompare(right.name);
-}
-
-function getSelectedCityEquipmentProduct(
-  hero: HeroState,
-  products: readonly CityEquipmentProduct[],
-  preferredProductId: string | undefined,
-): CityEquipmentProduct | undefined {
-  return (
-    products.find((product) => product.id === preferredProductId) ??
-    products.find((product) => areHeroItemsEquipped(hero, product.itemIds)) ??
-    products[0]
-  );
 }
 
 function getProfileEquipmentCategoryId(

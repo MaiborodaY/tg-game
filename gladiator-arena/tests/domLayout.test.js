@@ -233,10 +233,11 @@ test("city hero profile exposes attributes combat stats and equipment", () => {
   assert.equal(mainSource.includes("mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);
   assert.equal(mainSource.includes("const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMenu(cityHeroWidgetRefs"), true);
   assert.equal((mainSource.match(/cityHeroEquipmentMenu\.render\(\);/g) ?? []).length >= 4, true);
-  assert.equal(mainSource.includes("mirrorParents: cityHeroWidgetRefs.profilePortrait ? [cityHeroWidgetRefs.profilePortrait] : []"), true);
+  assert.equal(mainSource.includes("const portraitMirrorParents = [cityHeroWidgetRefs.profilePortrait, cityHeroEquipmentMenu.getPortraitMirrorHost()].filter("), true);
   assert.equal(mainSource.includes("heroProfilePortraitPreview"), false);
   assert.equal(stylesSource.includes(".city-profile__panel"), true);
-  assert.equal(stylesSource.includes(".city-equipment-menu__tray"), true);
+  assert.equal(stylesSource.includes(".city-equipment-menu__stage"), true);
+  assert.equal(stylesSource.includes(".city-equipment-menu__inventory"), true);
   assert.equal(stylesSource.includes("@keyframes city-profile-panel-in"), true);
   assert.equal(stylesSource.includes("grid-template-rows: auto auto;"), true);
   assert.equal(stylesSource.includes("grid-row: 1 / span 2;"), true);
@@ -280,38 +281,56 @@ test("city hero attribute buttons support bulk and hold allocation", () => {
 
 test("city equipment inventory cards share the textured rarity standard", () => {
   const inventoryItemRule = stylesSource.match(/\.city-equipment-menu__item\s*\{[\s\S]*?\}/)?.[0] ?? "";
-  const selectedOrbRule = stylesSource.match(/\.city-equipment-menu__selected-orb\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const detailsRule = stylesSource.match(/\.city-equipment-menu__details\s*\{[\s\S]*?\}/)?.[0] ?? "";
 
   assert.match(inventoryItemRule, /var\(--ui-profile-backdrop-texture\) center \/ var\(--ui-profile-backdrop-size\) repeat/);
   assert.match(inventoryItemRule, /background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;/);
   assert.match(inventoryItemRule, /var\(--shop-rarity-light, #d4c49c\) 0%, var\(--shop-rarity, #9d8d74\) 48%/);
   assert.match(inventoryItemRule, /inset 0 -6px 10px rgba\(8, 2, 1, 0\.26\)/);
-  assert.match(selectedOrbRule, /var\(--ui-profile-backdrop-texture\) center \/ var\(--ui-profile-backdrop-size\) repeat/);
-  assert.match(selectedOrbRule, /background-blend-mode: screen, screen, multiply, multiply, soft-light, normal;/);
-  assert.match(selectedOrbRule, /var\(--shop-rarity-light, #75401d\) 0%, var\(--shop-rarity, #3a1508\) 52%/);
+  assert.match(detailsRule, /var\(--ui-panel-wood-texture\) center \/ 220px 220px repeat/);
+  assert.match(detailsRule, /border: 2px solid var\(--shop-rarity-light, rgba\(255, 220, 146, 0\.42\)\);/);
+  assert.match(detailsRule, /linear-gradient\(180deg, rgba\(26, 9, 4, 0\.88\), rgba\(8, 2, 1, 0\.78\)\)/);
 });
 
 test("city equipment inventory keeps long item lists scrollable", () => {
   const panelRule = stylesSource.match(/\.city-equipment-menu__panel\s*\{[\s\S]*?\}/)?.[0] ?? "";
-  const trayRule = stylesSource.match(/\.city-equipment-menu__tray\s*\{[\s\S]*?\}/)?.[0] ?? "";
+  const inventoryRule = stylesSource.match(/\.city-equipment-menu__inventory\s*\{[\s\S]*?\}/)?.[0] ?? "";
   const productsRule = stylesSource.match(/\.city-equipment-menu__products\s*\{[\s\S]*?\}/)?.[0] ?? "";
 
   assert.match(panelRule, /min-height: 0;/);
   assert.match(panelRule, /overflow: hidden;/);
-  assert.match(trayRule, /overflow: hidden;/);
-  assert.match(productsRule, /grid-auto-rows: 76px;/);
+  assert.match(inventoryRule, /overflow: hidden;/);
   assert.match(productsRule, /overflow-y: auto;/);
   assert.match(productsRule, /overscroll-behavior: contain;/);
   assert.equal(stylesSource.includes("@media (max-width: 460px), (max-height: 760px)"), true);
-  assert.equal(stylesSource.includes("width: min(178px, 48vw, 28vh);"), true);
+  assert.equal(stylesSource.includes("@media (max-width: 390px), (max-height: 700px)"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: repeat(4, minmax(0, 1fr));"), true);
+  assert.equal(stylesSource.includes("grid-auto-rows: 62px;"), true);
 });
 
 test("city equipment inventory uses display names instead of raw item names", () => {
   assert.equal(cityHeroUiSource.includes("getShopProductDisplayName"), true);
   assert.equal(cityHeroUiSource.includes("getShopProductDisplayStat(hero, product.itemIds, statKind)"), true);
   assert.equal(cityHeroUiSource.includes("items.map((item) => getShopProductDisplayName(item.name))"), true);
-  assert.equal(cityHeroUiSource.includes("product ? getShopProductDisplayName(product.name).toUpperCase()"), true);
+  assert.equal(cityHeroUiSource.includes("setText(menu.detailsName, getShopProductDisplayName(product.name).toUpperCase())"), true);
   assert.equal(cityHeroUiSource.includes('button.setAttribute("aria-label", getShopProductDisplayName(product.name));'), true);
+});
+
+test("city equipment inventory uses paper doll filters and details overlay", () => {
+  assert.equal(cityHeroUiSource.includes("activeCategoryIds = new Set<CityEquipmentCategoryId>();"), true);
+  assert.equal(cityHeroUiSource.includes("getSelectedCityEquipmentCategories(activeCategoryIds)"), true);
+  assert.equal(cityHeroUiSource.includes('empty.textContent = "SELECT CATEGORY";'), true);
+  assert.equal(cityHeroUiSource.includes("selectedProductId = product.id;"), true);
+  assert.equal(cityHeroUiSource.includes("options.onEquip(product.itemIds);"), true);
+  assert.equal(cityHeroUiSource.includes('class="city-equipment-menu__stage"'), true);
+  assert.equal(cityHeroUiSource.includes('class="city-equipment-menu__equipped-slots"'), true);
+  assert.equal(cityHeroUiSource.includes('class="city-equipment-menu__details" hidden'), true);
+  assert.equal(cityHeroUiSource.includes('class="city-equipment-menu__details-equip"'), true);
+  assert.equal(stylesSource.includes("grid-template-areas:"), true);
+  assert.equal(stylesSource.includes('"body hero shield"'), true);
+  assert.equal(stylesSource.includes(".city-equipment-menu__details[hidden]"), true);
+  assert.equal(stylesSource.includes(".city-equipment-menu__categories--weapon"), true);
+  assert.equal(stylesSource.includes(".city-equipment-menu__categories--armor"), true);
 });
 
 test("city equipment inventory exposes generated weapon categories", () => {
