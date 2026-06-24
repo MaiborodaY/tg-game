@@ -6,6 +6,7 @@ export const DEFAULT_PLAYER_HUD_MODE: PlayerHudMode = "classic";
 export interface PlayerSettings {
   lowEffects: boolean;
   statBarAnimations: boolean;
+  smoothRendering: boolean;
   renderFps: PlayerRenderFps;
   vfxEnabled: boolean;
   shadowMode: PlayerShadowMode;
@@ -20,6 +21,7 @@ const hudModeDefaultVersion = 2;
 const defaultSettings: PlayerSettings = {
   lowEffects: false,
   statBarAnimations: false,
+  smoothRendering: true,
   renderFps: 30,
   vfxEnabled: true,
   shadowMode: "low",
@@ -33,127 +35,134 @@ let fpsFrameCount = 0;
 let fpsLastTime = 0;
 
 export function mountSettingsMenu(root: ParentNode = document): void {
-  const menu = root.querySelector<HTMLElement>("[data-settings-menu]");
-  const button = root.querySelector<HTMLButtonElement>("[data-settings-button]");
-  const panel = root.querySelector<HTMLElement>("[data-settings-panel]");
-  const lowEffects = root.querySelector<HTMLInputElement>("[data-setting-low-effects]");
-  const statBarAnimations = root.querySelector<HTMLInputElement>("[data-setting-stat-bar-animations]");
-  const vfx = root.querySelector<HTMLInputElement>("[data-setting-vfx]");
-  const fps = root.querySelector<HTMLInputElement>("[data-setting-fps]");
   const fpsCounter = root.querySelector<HTMLElement>("[data-fps-counter]");
-  const renderFpsInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-render-fps]"));
-  const shadowModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-shadow-mode]"));
-  const hudModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-hud-mode]"));
+  const menus = Array.from(root.querySelectorAll<HTMLElement>("[data-settings-menu]")).flatMap(createSettingsMenuRefs);
 
-  if (
-    !menu ||
-    !button ||
-    !panel ||
-    !lowEffects ||
-    !statBarAnimations ||
-    !vfx ||
-    !fps ||
-    !fpsCounter ||
-    renderFpsInputs.length === 0 ||
-    shadowModeInputs.length === 0 ||
-    hudModeInputs.length === 0
-  ) {
+  if (!fpsCounter || menus.length <= 0) {
     return;
   }
 
-  const settings = getPlayerSettings();
-  lowEffects.checked = settings.lowEffects;
-  statBarAnimations.checked = settings.statBarAnimations;
-  vfx.checked = settings.vfxEnabled;
-  fps.checked = settings.showFps;
-  syncRenderFpsInputs(renderFpsInputs, settings.renderFps);
-  syncShadowModeInputs(shadowModeInputs, settings.shadowMode);
-  syncHudModeInputs(hudModeInputs, settings.hudMode);
-  applySettings(settings);
-  syncFpsCounter(fpsCounter, settings.showFps);
+  const syncControls = () => {
+    const settings = getPlayerSettings();
 
-  menu.addEventListener("pointerdown", (event) => {
-    event.stopPropagation();
-  });
+    menus.forEach((menu) => syncSettingsMenuControls(menu, settings));
+    syncFpsCounter(fpsCounter, settings.showFps);
+  };
 
-  button.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setMenuOpen(button, panel, panel.hidden !== false);
-  });
+  applySettings(getPlayerSettings());
+  syncControls();
 
-  lowEffects.addEventListener("change", () => {
-    updateSettings({ lowEffects: lowEffects.checked });
-  });
+  menus.forEach((menu) => {
+    menu.root.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
 
-  statBarAnimations.addEventListener("change", () => {
-    updateSettings({ statBarAnimations: statBarAnimations.checked });
-  });
+    menu.button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeSettingsMenus(menus, menu);
+      setMenuOpen(menu.button, menu.panel, menu.panel.hidden !== false);
+    });
 
-  vfx.addEventListener("change", () => {
-    updateSettings({ vfxEnabled: vfx.checked });
-  });
+    menu.lowEffects.addEventListener("change", () => {
+      updateSettings({ lowEffects: menu.lowEffects.checked });
+      syncControls();
+    });
 
-  fps.addEventListener("change", () => {
-    updateSettings({ showFps: fps.checked });
-    syncFpsCounter(fpsCounter, fps.checked);
-  });
+    menu.statBarAnimations.addEventListener("change", () => {
+      updateSettings({ statBarAnimations: menu.statBarAnimations.checked });
+      syncControls();
+    });
 
-  renderFpsInputs.forEach((input) => {
-    input.addEventListener("change", () => {
-      const nextRenderFps = parsePlayerRenderFps(input.value);
-
-      if (!input.checked || !nextRenderFps) {
-        return;
-      }
-
+    menu.smoothRendering.addEventListener("change", () => {
       const currentSettings = getPlayerSettings();
+      const nextSmoothRendering = menu.smoothRendering.checked;
 
-      if (currentSettings.renderFps === nextRenderFps) {
+      if (currentSettings.smoothRendering === nextSmoothRendering) {
         return;
       }
 
-      if (!confirmRenderFpsReload(nextRenderFps)) {
-        syncRenderFpsInputs(renderFpsInputs, currentSettings.renderFps);
+      if (!confirmSmoothRenderingReload(nextSmoothRendering)) {
+        syncControls();
         return;
       }
 
-      updateSettings({ renderFps: nextRenderFps });
+      updateSettings({ smoothRendering: nextSmoothRendering });
       window.location.reload();
     });
-  });
 
-  shadowModeInputs.forEach((input) => {
-    input.addEventListener("change", () => {
-      if (!input.checked || !isPlayerShadowMode(input.value)) {
-        return;
-      }
-
-      updateSettings({ shadowMode: input.value });
+    menu.vfx.addEventListener("change", () => {
+      updateSettings({ vfxEnabled: menu.vfx.checked });
+      syncControls();
     });
-  });
 
-  hudModeInputs.forEach((input) => {
-    input.addEventListener("change", () => {
-      if (!input.checked || !isPlayerHudMode(input.value)) {
-        return;
-      }
+    menu.fps.addEventListener("change", () => {
+      updateSettings({ showFps: menu.fps.checked });
+      syncControls();
+    });
 
-      updateSettings({ hudMode: input.value });
+    menu.renderFpsInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        const nextRenderFps = parsePlayerRenderFps(input.value);
+
+        if (!input.checked || !nextRenderFps) {
+          return;
+        }
+
+        const currentSettings = getPlayerSettings();
+
+        if (currentSettings.renderFps === nextRenderFps) {
+          return;
+        }
+
+        if (!confirmRenderFpsReload(nextRenderFps)) {
+          syncControls();
+          return;
+        }
+
+        updateSettings({ renderFps: nextRenderFps });
+        window.location.reload();
+      });
+    });
+
+    menu.shadowModeInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        if (!input.checked || !isPlayerShadowMode(input.value)) {
+          return;
+        }
+
+        updateSettings({ shadowMode: input.value });
+        syncControls();
+      });
+    });
+
+    menu.hudModeInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        if (!input.checked || !isPlayerHudMode(input.value)) {
+          return;
+        }
+
+        updateSettings({ hudMode: input.value });
+        syncControls();
+      });
     });
   });
 
   document.addEventListener("pointerdown", (event) => {
-    if (panel.hidden || !(event.target instanceof Node) || menu.contains(event.target)) {
+    if (!(event.target instanceof Node)) {
       return;
     }
 
-    setMenuOpen(button, panel, false);
+    menus.forEach((menu) => {
+      if (!menu.panel.hidden && !menu.root.contains(event.target as Node)) {
+        setMenuOpen(menu.button, menu.panel, false);
+      }
+    });
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      setMenuOpen(button, panel, false);
+      closeSettingsMenus(menus);
     }
   });
 }
@@ -175,8 +184,72 @@ function setMenuOpen(button: HTMLButtonElement, panel: HTMLElement, open: boolea
   button.setAttribute("aria-expanded", String(open));
 }
 
+interface SettingsMenuRefs {
+  root: HTMLElement;
+  button: HTMLButtonElement;
+  panel: HTMLElement;
+  lowEffects: HTMLInputElement;
+  statBarAnimations: HTMLInputElement;
+  smoothRendering: HTMLInputElement;
+  vfx: HTMLInputElement;
+  fps: HTMLInputElement;
+  renderFpsInputs: HTMLInputElement[];
+  shadowModeInputs: HTMLInputElement[];
+  hudModeInputs: HTMLInputElement[];
+}
+
+function createSettingsMenuRefs(root: HTMLElement): SettingsMenuRefs[] {
+  const button = root.querySelector<HTMLButtonElement>("[data-settings-button]");
+  const panel = root.querySelector<HTMLElement>("[data-settings-panel]");
+  const lowEffects = root.querySelector<HTMLInputElement>("[data-setting-low-effects]");
+  const statBarAnimations = root.querySelector<HTMLInputElement>("[data-setting-stat-bar-animations]");
+  const smoothRendering = root.querySelector<HTMLInputElement>("[data-setting-smooth-rendering]");
+  const vfx = root.querySelector<HTMLInputElement>("[data-setting-vfx]");
+  const fps = root.querySelector<HTMLInputElement>("[data-setting-fps]");
+  const renderFpsInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-render-fps]"));
+  const shadowModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-shadow-mode]"));
+  const hudModeInputs = Array.from(root.querySelectorAll<HTMLInputElement>("[data-setting-hud-mode]"));
+
+  if (
+    !button ||
+    !panel ||
+    !lowEffects ||
+    !statBarAnimations ||
+    !smoothRendering ||
+    !vfx ||
+    !fps ||
+    renderFpsInputs.length === 0 ||
+    shadowModeInputs.length === 0 ||
+    hudModeInputs.length === 0
+  ) {
+    return [];
+  }
+
+  return [{ root, button, panel, lowEffects, statBarAnimations, smoothRendering, vfx, fps, renderFpsInputs, shadowModeInputs, hudModeInputs }];
+}
+
+function syncSettingsMenuControls(menu: SettingsMenuRefs, settings: PlayerSettings): void {
+  menu.lowEffects.checked = settings.lowEffects;
+  menu.statBarAnimations.checked = settings.statBarAnimations;
+  menu.smoothRendering.checked = settings.smoothRendering;
+  menu.vfx.checked = settings.vfxEnabled;
+  menu.fps.checked = settings.showFps;
+  syncRenderFpsInputs(menu.renderFpsInputs, settings.renderFps);
+  syncShadowModeInputs(menu.shadowModeInputs, settings.shadowMode);
+  syncHudModeInputs(menu.hudModeInputs, settings.hudMode);
+}
+
+function closeSettingsMenus(menus: readonly SettingsMenuRefs[], except?: SettingsMenuRefs): void {
+  menus.forEach((menu) => {
+    if (menu !== except) {
+      setMenuOpen(menu.button, menu.panel, false);
+    }
+  });
+}
+
 function applySettings(settings: PlayerSettings): void {
   document.body.classList.toggle("arena-low-effects", settings.lowEffects);
+  document.body.classList.toggle("arena-sharp-rendering", !settings.smoothRendering);
   document.body.classList.toggle("arena-stat-bars-animated", settings.statBarAnimations);
   document.body.classList.toggle("arena-hud-classic", settings.hudMode === "classic");
   document.body.classList.toggle("arena-hud-immersive", settings.hudMode === "immersive");
@@ -222,6 +295,7 @@ function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
   return {
     lowEffects: typeof input.lowEffects === "boolean" ? input.lowEffects : defaultSettings.lowEffects,
     statBarAnimations: typeof input.statBarAnimations === "boolean" ? input.statBarAnimations : defaultSettings.statBarAnimations,
+    smoothRendering: typeof input.smoothRendering === "boolean" ? input.smoothRendering : defaultSettings.smoothRendering,
     renderFps: normalizeRenderFps(input.renderFps),
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
     shadowMode: normalizeShadowMode(input),
@@ -270,6 +344,10 @@ function normalizeRenderFps(value: unknown): PlayerRenderFps {
 
 function confirmRenderFpsReload(renderFps: PlayerRenderFps): boolean {
   return window.confirm(`Changing FPS to ${renderFps} requires restarting the game. Apply and reload now?`);
+}
+
+function confirmSmoothRenderingReload(smoothRendering: boolean): boolean {
+  return window.confirm(`Changing smooth rendering ${smoothRendering ? "on" : "off"} requires restarting the game. Apply and reload now?`);
 }
 
 function isPlayerShadowMode(value: unknown): value is PlayerShadowMode {

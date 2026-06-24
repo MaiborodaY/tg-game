@@ -1295,7 +1295,13 @@ const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();
 const paperDollAssetLoadPromisesByScene = new WeakMap<Phaser.Scene, Map<string, Promise<void>>>();
 
 const PAPER_DOLL_ASSETS_BY_KEY = createPaperDollAssetsByKey();
-const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
+const PHASER_SMOOTH_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
+  antialias: true,
+  antialiasGL: true,
+  powerPreference: "low-power",
+  roundPixels: true,
+};
+const PHASER_SHARP_RENDER_CONFIG: Phaser.Types.Core.RenderConfig = {
   antialias: false,
   antialiasGL: false,
   powerPreference: "low-power",
@@ -1310,6 +1316,10 @@ const PHASER_SIXTY_FPS_CONFIG: Phaser.Types.Core.FPSConfig = {
 
 function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig {
   return getPlayerSettings().renderFps === 60 ? PHASER_SIXTY_FPS_CONFIG : PHASER_THIRTY_FPS_CONFIG;
+}
+
+function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
+  return getPlayerSettings().smoothRendering ? PHASER_SMOOTH_RENDER_CONFIG : PHASER_SHARP_RENDER_CONFIG;
 }
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
@@ -2428,7 +2438,7 @@ export function launchArena(
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
-    render: PHASER_LOW_POWER_RENDER_CONFIG,
+    render: getPlayerPhaserRenderConfig(),
     scale: {
       mode: Phaser.Scale.RESIZE,
     },
@@ -3278,7 +3288,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
-    render: PHASER_LOW_POWER_RENDER_CONFIG,
+    render: getPlayerPhaserRenderConfig(),
     scale: {
       mode: Phaser.Scale.RESIZE,
     },
@@ -3707,7 +3717,7 @@ export function mountHeroPortraitPreview(
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
-    render: PHASER_LOW_POWER_RENDER_CONFIG,
+    render: getPlayerPhaserRenderConfig(),
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -4729,7 +4739,7 @@ export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?:
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
-    render: PHASER_LOW_POWER_RENDER_CONFIG,
+    render: getPlayerPhaserRenderConfig(),
     scale: {
       mode: isResponsiveMode ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,
       autoCenter: isResponsiveMode ? Phaser.Scale.NO_CENTER : Phaser.Scale.CENTER_BOTH,

@@ -345,6 +345,19 @@ test("settings replace animation mode with a reload-gated render fps choice", ()
   assert.equal(settingsMenuSource.includes("animationMode"), false);
 });
 
+test("settings expose reload-gated smooth rendering from city and arena", () => {
+  assert.equal(indexHtml.includes('id="citySettingsButton"'), true);
+  assert.equal(indexHtml.includes('id="citySettingsPanel"'), true);
+  assert.equal(indexHtml.includes('data-setting-smooth-rendering'), true);
+  assert.equal((indexHtml.match(/data-setting-smooth-rendering/g) ?? []).length, 2);
+  assert.equal(settingsMenuSource.includes("smoothRendering: true"), true);
+  assert.equal(settingsMenuSource.includes("confirmSmoothRenderingReload"), true);
+  assert.equal(settingsMenuSource.includes("arena-sharp-rendering"), true);
+  assert.equal(settingsMenuSource.includes('root.querySelectorAll<HTMLElement>("[data-settings-menu]")'), true);
+  assert.equal(stylesSource.includes("body.arena-sharp-rendering .game-frame canvas"), true);
+  assert.equal(stylesSource.includes("image-rendering: pixelated;"), true);
+});
+
 test("new players start with low arena shadows by default", () => {
   assert.equal(settingsMenuSource.includes('shadowMode: "low"'), true);
   assert.equal(settingsMenuSource.includes('shadowMode: "high"'), false);

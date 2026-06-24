@@ -221,6 +221,15 @@ h1 {
   display: block;
   width: 100%;
   height: auto;
+}
+
+body.arena-sharp-rendering .game-frame canvas,
+body.arena-sharp-rendering .city-menu__hero canvas,
+body.arena-sharp-rendering .city-menu__portrait canvas,
+body.arena-sharp-rendering .city-menu__portrait--static canvas,
+body.arena-sharp-rendering .city-profile__portrait canvas,
+body.arena-sharp-rendering .armory-shop__preview canvas,
+body.arena-sharp-rendering .debug-character-viewer canvas {
   image-rendering: crisp-edges;
   image-rendering: pixelated;
 }
@@ -238,6 +247,22 @@ h1 {
   top: 10px;
   z-index: 8;
   pointer-events: auto;
+}
+
+.settings-menu--city {
+  left: 12px;
+  top: max(10px, env(safe-area-inset-top));
+  z-index: 6;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.city-menu--armory-open .settings-menu--city,
+.city-menu--magic-shop-open .settings-menu--city,
+.city-menu--profile-open .settings-menu--city,
+.city-menu--arena-select-open .settings-menu--city {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
 }
 
 .arena-menu {
@@ -265,6 +290,15 @@ h1 {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.12rem;
   line-height: 1;
+}
+
+.city-menu__settings-button {
+  width: 39px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .arena-menu__button {
@@ -2385,8 +2419,6 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
 }
 
 .city-menu__hero-widget {
@@ -2655,8 +2687,6 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
   transform: scale(1.08);
   transform-origin: 50% 43%;
 }
@@ -2675,8 +2705,6 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-menu__portrait--static canvas {
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
   visibility: hidden;
 }
 
@@ -3348,8 +3376,6 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
   transform: scale(1.34);
   transform-origin: 50% 39%;
 }
@@ -6171,8 +6197,6 @@ body.debug-active .city-menu__portrait-button:active {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
 }
 
 .armory-shop__menu {
@@ -10368,8 +10392,6 @@ body.debug-mode-ui .ui-layout-tuner__target--selected {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
 }
 
 .debug-character-viewer__armor-toggle {

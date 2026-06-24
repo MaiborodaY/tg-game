@@ -731,9 +731,14 @@ test("arena reuses player settings snapshots during frame work", () => {
 });
 
 test("phaser games request a low power webgl context", () => {
-  assert.equal(arenaSceneSource.includes("const PHASER_LOW_POWER_RENDER_CONFIG: Phaser.Types.Core.RenderConfig"), true);
+  assert.equal(arenaSceneSource.includes("const PHASER_SMOOTH_RENDER_CONFIG: Phaser.Types.Core.RenderConfig"), true);
+  assert.equal(arenaSceneSource.includes("const PHASER_SHARP_RENDER_CONFIG: Phaser.Types.Core.RenderConfig"), true);
   assert.equal(arenaSceneSource.includes('powerPreference: "low-power"'), true);
-  assert.equal((arenaSceneSource.match(/render: PHASER_LOW_POWER_RENDER_CONFIG/g) ?? []).length, 4);
+  assert.equal(arenaSceneSource.includes("function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig"), true);
+  assert.equal(arenaSceneSource.includes("getPlayerSettings().smoothRendering ? PHASER_SMOOTH_RENDER_CONFIG : PHASER_SHARP_RENDER_CONFIG"), true);
+  assert.match(arenaSceneSource, /PHASER_SMOOTH_RENDER_CONFIG[\s\S]*antialias:\s*true,[\s\S]*antialiasGL:\s*true,/);
+  assert.match(arenaSceneSource, /PHASER_SHARP_RENDER_CONFIG[\s\S]*antialias:\s*false,[\s\S]*antialiasGL:\s*false,/);
+  assert.equal((arenaSceneSource.match(/render: getPlayerPhaserRenderConfig\(\)/g) ?? []).length, 4);
 });
 
 test("phaser games use the selected render fps setting", () => {

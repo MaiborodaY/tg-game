@@ -40,6 +40,79 @@
               <span class="city-menu__time-toggle-thumb"></span>
             </span>
           </button>
+          <div class="settings-menu settings-menu--city" data-settings-menu>
+            <button
+              id="citySettingsButton"
+              class="settings-menu__button city-menu__settings-button"
+              type="button"
+              aria-label="Settings"
+              aria-expanded="false"
+              aria-controls="citySettingsPanel"
+              data-settings-button
+            >
+              S
+            </button>
+            <section id="citySettingsPanel" class="settings-menu__panel" aria-label="Settings" hidden data-settings-panel>
+              <h2>Settings</h2>
+              <fieldset class="settings-menu__group">
+                <legend>FPS</legend>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityRenderFps" value="30" data-setting-render-fps />
+                  <span>30 FPS</span>
+                </label>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityRenderFps" value="60" data-setting-render-fps />
+                  <span>60 FPS</span>
+                </label>
+              </fieldset>
+              <label class="settings-menu__toggle">
+                <input type="checkbox" data-setting-vfx />
+                <span>VFX</span>
+              </label>
+              <fieldset class="settings-menu__group">
+                <legend>Shadows</legend>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityShadows" value="high" data-setting-shadow-mode />
+                  <span>High</span>
+                </label>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityShadows" value="low" data-setting-shadow-mode />
+                  <span>Low</span>
+                </label>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityShadows" value="off" data-setting-shadow-mode />
+                  <span>Off</span>
+                </label>
+              </fieldset>
+              <fieldset class="settings-menu__group">
+                <legend>HUD</legend>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityHudMode" value="immersive" data-setting-hud-mode />
+                  <span>Immersive</span>
+                </label>
+                <label class="settings-menu__option">
+                  <input type="radio" name="cityHudMode" value="classic" data-setting-hud-mode />
+                  <span>Classic</span>
+                </label>
+              </fieldset>
+              <label class="settings-menu__toggle">
+                <input type="checkbox" data-setting-low-effects />
+                <span>Low effects</span>
+              </label>
+              <label class="settings-menu__toggle">
+                <input type="checkbox" data-setting-smooth-rendering />
+                <span>Smooth render</span>
+              </label>
+              <label class="settings-menu__toggle">
+                <input type="checkbox" data-setting-stat-bar-animations />
+                <span>Bar animations</span>
+              </label>
+              <label class="settings-menu__toggle">
+                <input type="checkbox" data-setting-fps />
+                <span>Show FPS</span>
+              </label>
+            </section>
+          </div>
           <section id="cityArenaMenu" class="city-arena-menu" role="dialog" aria-label="Arena menu" hidden>
             <div class="city-arena-menu__panel">
               <div class="city-arena-menu__title">ARENA</div>
@@ -254,6 +327,10 @@
                 <label class="settings-menu__toggle">
                   <input type="checkbox" data-setting-low-effects />
                   <span>Low effects</span>
+                </label>
+                <label class="settings-menu__toggle">
+                  <input type="checkbox" data-setting-smooth-rendering />
+                  <span>Smooth render</span>
                 </label>
                 <label class="settings-menu__toggle">
                   <input type="checkbox" data-setting-stat-bar-animations />
