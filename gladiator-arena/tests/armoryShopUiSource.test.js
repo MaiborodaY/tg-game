@@ -137,6 +137,32 @@ test("armory shop header exposes set and parts filters in one catalog toolbar", 
   assert.match(cityArmoryTitleRule, /display: none;/);
 });
 
+test("armory shop shows nine equipped armor slots around the city hero", () => {
+  assert.equal(armoryShopSource.includes("interface ArmoryEquippedSlotGroup"), true);
+  assert.equal(armoryShopSource.includes("const ARMORY_EQUIPPED_SLOT_GROUPS"), true);
+  assertInOrder(
+    armoryShopSource,
+    'id: "helmet", label: "Helmet"',
+    'id: "breastplate", label: "Breastplate"',
+    'id: "shoulders", label: "Shoulders"',
+    'id: "wrists", label: "Wrists"',
+    'id: "gloves", label: "Gloves"',
+    'id: "shield", label: "Shield"',
+    'id: "greaves", label: "Greaves"',
+    'id: "shinguards", label: "Shinguards"',
+    'id: "boots", label: "Boots"',
+  );
+  assert.equal(armoryShopSource.includes('slots: ["weaponMain"]'), false);
+  assert.equal(armoryShopSource.includes('slots: ["weaponBow"]'), false);
+  assert.equal(armoryShopSource.includes("renderEquippedSlots(hero);"), true);
+  assert.equal(armoryShopSource.includes('equipment.className = "armory-shop__equipment";'), true);
+  assert.equal(stylesSource.includes(".armory-shop--city-mode .armory-shop__equipment"), true);
+  assert.equal(stylesSource.includes(".armory-shop__equipped-slot--area-helmet"), true);
+  assert.equal(stylesSource.includes(".armory-shop__equipped-slot--area-boots"), true);
+  assert.equal(stylesSource.includes('background-image: url("./assets/ui/shop/category-shoulders.webp")'), true);
+  assert.equal(stylesSource.includes('background-image: url("./assets/ui/shop/category-shinguards.webp")'), true);
+});
+
 test("weapon shop sorts available products first, then by rarity, melee group, damage, price, and name", () => {
   const rarityOrderIndex = weaponShopSource.indexOf("const WEAPON_RARITY_SORT_ORDER");
   const categoriesIndex = weaponShopSource.indexOf("const WEAPON_CATEGORIES");

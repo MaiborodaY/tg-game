@@ -117,6 +117,14 @@ interface ArmoryEquipmentSetOption {
   rarity: ShopItemRarity;
 }
 
+interface ArmoryEquippedSlotGroup {
+  id: string;
+  label: string;
+  modifier: string;
+  area: string;
+  slots: readonly HeroEquipmentSlotKey[];
+}
+
 const ALL_ARMORY_EQUIPMENT_SETS_FILTER_VALUE = "";
 
 const PAIRED_ARMORY_SLOT_CONFIGS: PairedArmorySlotConfig[] = [
@@ -189,6 +197,18 @@ const ARMORY_PART_FILTER_BY_SLOT: Partial<Record<HeroEquipmentSlotKey, string>> 
   backBoot: "legs",
   frontBoot: "legs",
 };
+
+const ARMORY_EQUIPPED_SLOT_GROUPS: readonly ArmoryEquippedSlotGroup[] = [
+  { id: "helmet", label: "Helmet", modifier: "head", area: "helmet", slots: ["helmet"] },
+  { id: "breastplate", label: "Breastplate", modifier: "body", area: "body", slots: ["breastplate"] },
+  { id: "shoulders", label: "Shoulders", modifier: "shoulders", area: "shoulders", slots: ["backShoulderguard", "frontShoulderguard"] },
+  { id: "wrists", label: "Wrists", modifier: "wrists", area: "wrists", slots: ["backWrist", "frontWrist"] },
+  { id: "gloves", label: "Gloves", modifier: "gloves", area: "gloves", slots: ["backGlove", "frontGlove"] },
+  { id: "shield", label: "Shield", modifier: "shield", area: "shield", slots: ["shield"] },
+  { id: "greaves", label: "Greaves", modifier: "greaves", area: "greaves", slots: ["backGreave", "frontGreave"] },
+  { id: "shinguards", label: "Shinguards", modifier: "shinguards", area: "shinguards", slots: ["backShinguard", "frontShinguard"] },
+  { id: "boots", label: "Boots", modifier: "boots", area: "boots", slots: ["backBoot", "frontBoot"] },
+];
 
 const ARMORY_CATEGORIES: ArmoryCategory[] = [
   {
@@ -614,6 +634,10 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   preview.className = "armory-shop__preview";
   previewShell.append(preview);
 
+  const equipment = document.createElement("div");
+  equipment.className = "armory-shop__equipment";
+  equipment.setAttribute("aria-label", "Equipped armor");
+
   const menu = document.createElement("div");
   menu.className = "armory-shop__menu";
 
@@ -763,6 +787,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   if (options.mountPreview) {
     panel.append(previewShell);
   }
+  if (usesCityHeroPreview) {
+    panel.append(equipment);
+  }
   panel.append(menu);
   if (usesCityHeroPreview) {
     panel.append(back);
@@ -844,6 +871,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
     levelValue.textContent = String(hero.level);
     level.setAttribute("aria-label", `Level ${hero.level}`);
+    renderEquippedSlots(hero);
     subcategories.replaceChildren();
     content.replaceChildren();
     productButtons = new Map();
@@ -1057,6 +1085,74 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     return button;
   }
 
+  function renderEquippedSlots(hero: HeroState): void {
+    if (!usesCityHeroPreview) {
+      return;
+    }
+
+    const renderKey = getArmoryEquippedSlotsRenderKey(hero);
+
+    if (equipment.dataset.armoryEquippedSlotsRenderKey === renderKey) {
+      return;
+    }
+
+    equipment.dataset.armoryEquippedSlotsRenderKey = renderKey;
+    equipment.replaceChildren(...ARMORY_EQUIPPED_SLOT_GROUPS.map((group) => createEquippedSlot(group, hero)));
+  }
+
+  function createEquippedSlot(group: ArmoryEquippedSlotGroup, hero: HeroState): HTMLElement {
+    const itemIds = getEquippedSlotItemIds(group, hero);
+    const items = itemIds.flatMap((itemId) => {
+      const item = HERO_ITEM_CATALOG[itemId];
+
+      return item ? [item] : [];
+    });
+    const iconUrl = getShopProductIconUrl(itemIds);
+    const rarity = itemIds.length > 0 ? getShopProductRarity(itemIds) : "empty";
+    const slot = document.createElement("div");
+    const icon = document.createElement("span");
+    const label = items.length > 0
+      ? `${group.label}: ${items.map((item) => getShopProductDisplayName(item.name)).join(", ")}`
+      : `${group.label}: empty`;
+
+    slot.className = [
+      "armory-shop__equipped-slot",
+      `armory-shop__equipped-slot--${group.modifier}`,
+      `armory-shop__equipped-slot--area-${group.area}`,
+      `armory-shop__equipped-slot--${rarity}`,
+      rarity !== "empty" ? `armory-shop__option--rarity-${rarity}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    slot.setAttribute("aria-label", label);
+    slot.title = label;
+    icon.className = "armory-shop__equipped-icon";
+
+    if (iconUrl) {
+      icon.style.backgroundImage = `url("${iconUrl}")`;
+    } else {
+      icon.textContent = group.label.slice(0, 1);
+    }
+
+    slot.append(icon);
+
+    return slot;
+  }
+
+  function getEquippedSlotItemIds(group: ArmoryEquippedSlotGroup, hero: HeroState): HeroItemId[] {
+    return group.slots.flatMap((slotKey): HeroItemId[] => {
+      const itemId = hero.equipment[slotKey];
+
+      return itemId ? [itemId] : [];
+    });
+  }
+
+  function getArmoryEquippedSlotsRenderKey(hero: HeroState): string {
+    return ARMORY_EQUIPPED_SLOT_GROUPS.flatMap((group) =>
+      group.slots.map((slotKey) => `${slotKey}:${hero.equipment[slotKey] ?? ""}`),
+    ).join("|");
+  }
+
   function syncHeroState(syncOptions: ArmoryShopHeroSyncOptions = {}): void {
     if (shop.hidden) {
       return;
@@ -1065,6 +1161,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const hero = options.getHero();
 
     updateShopHeroMeta(hero);
+    renderEquippedSlots(hero);
     refreshChangedProductButtons(hero, syncOptions);
     renderSelectedProduct(hero);
     scheduleLayoutSync();

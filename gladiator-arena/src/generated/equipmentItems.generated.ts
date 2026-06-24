@@ -4530,7 +4530,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_mace_mace1","name":"Uncommon Mace 02","price":45,"itemIds":["generated_equipment_weapon_mace_mace1"],"categoryId":"maces"},
   },
   {
-    item: {"id":"generated_equipment_weapon_mace_mythical_mace_01","name":"Mythical Mace 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":42,"weaponClass":"mace","levelRequirement":90},
+    item: {"id":"generated_equipment_weapon_mace_mythical_mace_01","name":"Mythical Mace 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":42,"weaponClass":"mace"},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-mythical-mace-01"},
     equipmentTuning: {"x":-18,"y":78,"angle":75,"scaleX":1.9,"scaleY":1.9,"flipX":true,"flipY":false},
     asset: {
@@ -4541,7 +4541,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_mace_mythical_mace_02","name":"Mythical Mace 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":46,"weaponClass":"mace","levelRequirement":100},
+    item: {"id":"generated_equipment_weapon_mace_mythical_mace_02","name":"Mythical Mace 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":46,"weaponClass":"mace"},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-mythical-mace-02"},
     equipmentTuning: {"x":-37,"y":66,"angle":73,"scaleX":1.8,"scaleY":1.8,"flipX":true,"flipY":false},
     asset: {
@@ -4739,7 +4739,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","price":260,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken","levelRequirement":90},
+    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken"},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-mythical-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.6,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
@@ -4750,7 +4750,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":30,"weaponClass":"shuriken","levelRequirement":100},
+    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":30,"weaponClass":"shuriken"},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-mythical-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.65,"scaleY":0.65,"flipX":false,"flipY":false},
     asset: {
@@ -4927,7 +4927,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","price":247,"itemIds":["generated_equipment_weapon_spear_lg_spear_1"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_mythical_spear_01","name":"Mythical Spear 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":23,"weaponClass":"spear","levelRequirement":90},
+    item: {"id":"generated_equipment_weapon_spear_mythical_spear_01","name":"Mythical Spear 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":23,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-mythical-spear-01"},
     equipmentTuning: {"x":0,"y":13,"angle":126,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -4938,7 +4938,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_mythical_spear_02","name":"Mythical Spear 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":25,"weaponClass":"spear","levelRequirement":100},
+    item: {"id":"generated_equipment_weapon_spear_mythical_spear_02","name":"Mythical Spear 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":25,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-mythical-spear-02"},
     equipmentTuning: {"x":-30,"y":55,"angle":111,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -5135,7 +5135,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_sword_lg_sword_2","name":"Legendary Sword 02","price":490,"itemIds":["generated_equipment_weapon_sword_lg_sword_2"],"categoryId":"swords"},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_mythical_sword_01","name":"Mythical Sword 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":56,"weaponClass":"sword","levelRequirement":90},
+    item: {"id":"generated_equipment_weapon_sword_mythical_sword_01","name":"Mythical Sword 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":56,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-mythical-sword-01"},
     equipmentTuning: {"x":-33,"y":55,"angle":84,"scaleX":1.5,"scaleY":1.5,"flipX":false,"flipY":false},
     asset: {
@@ -5146,7 +5146,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_mythical_sword_02","name":"Mythical Sword 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":62,"weaponClass":"sword","levelRequirement":100},
+    item: {"id":"generated_equipment_weapon_sword_mythical_sword_02","name":"Mythical Sword 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":62,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-mythical-sword-02"},
     equipmentTuning: {"x":-4,"y":75,"angle":71,"scaleX":1.9,"scaleY":1.9,"flipX":false,"flipY":false},
     asset: {

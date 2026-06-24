@@ -41,9 +41,29 @@ const ATTRIBUTE_HOLD_REPEAT_DELAY_MS = 360;
 const ATTRIBUTE_HOLD_REPEAT_INTERVAL_MS = 95;
 const HERO_PROFILE_BASE_REST_HP = actions.rest.heal ?? 0;
 const HERO_PROFILE_BASE_REST_STAMINA = actions.rest.restore ?? 0;
+const CITY_CATEGORY_SHOULDERS_ICON_URL = new URL("./assets/ui/shop/category-shoulders.webp", import.meta.url).href;
+const CITY_CATEGORY_WRISTS_ICON_URL = new URL("./assets/ui/shop/category-wrists.webp", import.meta.url).href;
+const CITY_CATEGORY_SHIELD_ICON_URL = new URL("./assets/shop-icons/shield-common-03.webp", import.meta.url).href;
+const CITY_CATEGORY_GREAVES_ICON_URL = new URL("./assets/ui/shop/category-greaves.webp", import.meta.url).href;
+const CITY_CATEGORY_SHINGUARDS_ICON_URL = new URL("./assets/ui/shop/category-shinguards.webp", import.meta.url).href;
 
 type CityHeroProfileStatKey = "damage" | "hp" | "stamina" | "movement" | "recovery";
-export type CityEquipmentCategoryId = "swords" | "bows" | "shurikens" | "axes" | "maces" | "spears" | "head" | "body" | "arms" | "legs";
+export type CityEquipmentCategoryId =
+  | "swords"
+  | "bows"
+  | "shurikens"
+  | "axes"
+  | "maces"
+  | "spears"
+  | "head"
+  | "body"
+  | "shoulders"
+  | "wrists"
+  | "gloves"
+  | "shield"
+  | "greaves"
+  | "shinguards"
+  | "boots";
 type CityEquipmentCategorySide = "weapon" | "armor";
 
 interface CityEquipmentCategory {
@@ -113,19 +133,36 @@ const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
   { id: "head", label: "Head", side: "armor", iconUrl: SHOP_CATEGORY_HEAD_ICON_ASSET_URL, slots: ["helmet"] },
   { id: "body", label: "Body", side: "armor", iconUrl: SHOP_CATEGORY_BODY_ICON_ASSET_URL, slots: ["breastplate"] },
   {
-    id: "arms",
-    label: "Arms",
+    id: "shoulders",
+    label: "Shoulders",
     side: "armor",
-    iconUrl: SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
-    slots: ["backShoulderguard", "frontShoulderguard", "backWrist", "frontWrist", "backGlove", "frontGlove", "shield"],
+    iconUrl: CITY_CATEGORY_SHOULDERS_ICON_URL,
+    slots: ["backShoulderguard", "frontShoulderguard"],
   },
   {
-    id: "legs",
-    label: "Legs",
+    id: "wrists",
+    label: "Wrists",
     side: "armor",
-    iconUrl: SHOP_CATEGORY_LEGS_ICON_ASSET_URL,
-    slots: ["backGreave", "frontGreave", "backShinguard", "frontShinguard", "backBoot", "frontBoot"],
+    iconUrl: CITY_CATEGORY_WRISTS_ICON_URL,
+    slots: ["backWrist", "frontWrist"],
   },
+  { id: "gloves", label: "Gloves", side: "armor", iconUrl: SHOP_CATEGORY_ARMS_ICON_ASSET_URL, slots: ["backGlove", "frontGlove"] },
+  { id: "shield", label: "Shield", side: "armor", iconUrl: CITY_CATEGORY_SHIELD_ICON_URL, slots: ["shield"] },
+  {
+    id: "greaves",
+    label: "Greaves",
+    side: "armor",
+    iconUrl: CITY_CATEGORY_GREAVES_ICON_URL,
+    slots: ["backGreave", "frontGreave"],
+  },
+  {
+    id: "shinguards",
+    label: "Shinguards",
+    side: "armor",
+    iconUrl: CITY_CATEGORY_SHINGUARDS_ICON_URL,
+    slots: ["backShinguard", "frontShinguard"],
+  },
+  { id: "boots", label: "Boots", side: "armor", iconUrl: SHOP_CATEGORY_LEGS_ICON_ASSET_URL, slots: ["backBoot", "frontBoot"] },
 ];
 
 const CITY_EQUIPMENT_CATEGORIES: readonly CityEquipmentCategory[] = [...CITY_EQUIPMENT_WEAPON_CATEGORIES, ...CITY_EQUIPMENT_ARMOR_CATEGORIES];
@@ -155,19 +192,24 @@ const HERO_PROFILE_EQUIPMENT_GROUPS: readonly {
   { label: "Head", icon: "H", modifier: "head", categoryId: "head", slots: ["helmet"] },
   { label: "Body", icon: "B", modifier: "body", categoryId: "body", slots: ["breastplate"] },
   {
-    label: "Arms",
-    icon: "A",
-    modifier: "arms",
-    categoryId: "arms",
-    slots: ["backShoulderguard", "frontShoulderguard", "backWrist", "frontWrist", "backGlove", "frontGlove", "shield"],
+    label: "Shoulders",
+    icon: "S",
+    modifier: "shoulders",
+    categoryId: "shoulders",
+    slots: ["backShoulderguard", "frontShoulderguard"],
   },
   {
-    label: "Legs",
-    icon: "L",
-    modifier: "legs",
-    categoryId: "legs",
-    slots: ["backGreave", "frontGreave", "backShinguard", "frontShinguard", "backBoot", "frontBoot"],
+    label: "Wrists",
+    icon: "W",
+    modifier: "wrists",
+    categoryId: "wrists",
+    slots: ["backWrist", "frontWrist"],
   },
+  { label: "Gloves", icon: "G", modifier: "gloves", categoryId: "gloves", slots: ["backGlove", "frontGlove"] },
+  { label: "Shield", icon: "S", modifier: "shield", categoryId: "shield", slots: ["shield"] },
+  { label: "Greaves", icon: "G", modifier: "greaves", categoryId: "greaves", slots: ["backGreave", "frontGreave"] },
+  { label: "Shinguards", icon: "S", modifier: "shinguards", categoryId: "shinguards", slots: ["backShinguard", "frontShinguard"] },
+  { label: "Boots", icon: "B", modifier: "boots", categoryId: "boots", slots: ["backBoot", "frontBoot"] },
   { label: "Weapon", icon: "W", modifier: "weapon", categoryId: "swords", slots: ["weaponMain"] },
   { label: "Bow", icon: "B", modifier: "bow", categoryId: "bows", slots: ["weaponBow"] },
 ];

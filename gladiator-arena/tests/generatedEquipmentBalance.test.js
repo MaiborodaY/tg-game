@@ -402,6 +402,7 @@ test("generated mythical weapons stay enemy-only", () => {
 
   mythicalWeapons.forEach((item) => {
     assert.equal(item.weaponProduct, undefined, `${item.name} weapon product`);
+    assert.equal(item.levelRequirement, undefined, `${item.name} level requirement`);
     assert.equal(item.availability?.shop ?? true, false, `${item.name} shop availability`);
     assert.equal(item.availability?.enemyPool ?? false, true, `${item.name} enemy availability`);
   });

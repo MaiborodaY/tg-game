@@ -4297,16 +4297,40 @@ body.debug-active .city-menu__portrait-button:active {
   background-image: url("./assets/ui/shop/category-body.webp");
 }
 
-.city-profile__equipment-card--arms .city-profile__equipment-icon {
+.city-profile__equipment-card--shoulders .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-shoulders.webp");
+}
+
+.city-profile__equipment-card--wrists .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-wrists.webp");
+}
+
+.city-profile__equipment-card--gloves .city-profile__equipment-icon {
   background-image: url("./assets/ui/shop/category-arms.webp");
 }
 
-.city-profile__equipment-card--legs .city-profile__equipment-icon {
+.city-profile__equipment-card--shield .city-profile__equipment-icon {
+  background-image: url("./assets/shop-icons/shield-common-03.webp");
+}
+
+.city-profile__equipment-card--greaves .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-greaves.webp");
+}
+
+.city-profile__equipment-card--shinguards .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-shinguards.webp");
+}
+
+.city-profile__equipment-card--boots .city-profile__equipment-icon {
   background-image: url("./assets/ui/shop/category-legs.webp");
 }
 
 .city-profile__equipment-card--weapon .city-profile__equipment-icon {
   background-image: url("./assets/shop-icons/weapon-sword-01.webp");
+}
+
+.city-profile__equipment-card--bow .city-profile__equipment-icon {
+  background-image: url("./assets/ui/shop/category-bow.webp");
 }
 
 .city-profile__equipment-card--empty {
@@ -5730,6 +5754,169 @@ body.debug-active .city-menu__portrait-button:active {
 
 .armory-shop--city-mode .armory-shop__preview-shell {
   display: none;
+}
+
+.armory-shop__equipment {
+  display: none;
+}
+
+.armory-shop--city-mode .armory-shop__equipment {
+  --armory-equipped-slot-size: clamp(48px, 13vw, 62px);
+
+  position: absolute;
+  top: max(36px, calc(env(safe-area-inset-top) + 6px));
+  right: 10px;
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-bottom) + 72px);
+  left: 10px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(56px, 72px) minmax(0, 1fr) minmax(56px, 72px);
+  grid-template-rows: 58px repeat(4, minmax(46px, 1fr));
+  grid-template-areas:
+    ". helmet ."
+    "body hero shield"
+    "shoulders hero greaves"
+    "wrists hero shinguards"
+    "gloves hero boots";
+  gap: 6px 7px;
+  align-items: center;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.armory-shop__equipped-slot {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--armory-equipped-slot-size);
+  height: var(--armory-equipped-slot-size);
+  padding: 5px;
+  border: 2px solid var(--shop-rarity, #1c0c06);
+  border-radius: 7px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 22% 24%, rgba(255, 246, 210, 0.2), transparent 19%),
+    radial-gradient(ellipse at 48% 18%, rgba(255, 246, 210, 0.15), transparent 50%),
+    repeating-linear-gradient(115deg, rgba(255, 246, 210, 0.03) 0 1px, transparent 1px 5px),
+    linear-gradient(135deg, rgba(255, 240, 189, 0.12), rgba(255, 240, 189, 0.03) 35%, transparent 36%),
+    linear-gradient(180deg, var(--shop-rarity-light, #4f2310) 0%, var(--shop-rarity, #341307) 48%, var(--shop-rarity-dark, #120502) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 210, 0.18),
+    inset 0 3px 0 rgba(255, 246, 210, 0.14),
+    inset 0 -4px 0 rgba(8, 2, 1, 0.24),
+    0 2px 0 rgba(8, 2, 1, 0.72),
+    0 5px 10px rgba(8, 2, 1, 0.24);
+}
+
+.armory-shop__equipped-slot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 2px rgba(8, 2, 1, 0.34),
+    inset 0 0 0 4px rgba(255, 246, 210, 0.08),
+    inset 0 0 14px rgba(8, 2, 1, 0.2);
+  pointer-events: none;
+}
+
+.armory-shop__equipped-slot--empty {
+  opacity: 0.74;
+  border-color: #1c0c06;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255, 220, 146, 0.1), transparent 38%),
+    linear-gradient(180deg, rgba(75, 31, 13, 0.62), rgba(22, 7, 3, 0.78));
+}
+
+.armory-shop__equipped-icon {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #fff0bd;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  font-size: 0;
+  font-weight: 900;
+  filter: drop-shadow(0 2px 2px rgba(8, 2, 1, 0.6));
+}
+
+.armory-shop__equipped-slot--area-helmet {
+  grid-area: helmet;
+}
+
+.armory-shop__equipped-slot--area-body {
+  grid-area: body;
+}
+
+.armory-shop__equipped-slot--area-shoulders {
+  grid-area: shoulders;
+}
+
+.armory-shop__equipped-slot--area-wrists {
+  grid-area: wrists;
+}
+
+.armory-shop__equipped-slot--area-gloves {
+  grid-area: gloves;
+}
+
+.armory-shop__equipped-slot--area-shield {
+  grid-area: shield;
+}
+
+.armory-shop__equipped-slot--area-greaves {
+  grid-area: greaves;
+}
+
+.armory-shop__equipped-slot--area-shinguards {
+  grid-area: shinguards;
+}
+
+.armory-shop__equipped-slot--area-boots {
+  grid-area: boots;
+}
+
+.armory-shop__equipped-slot--head .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-head.webp");
+}
+
+.armory-shop__equipped-slot--body .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-body.webp");
+}
+
+.armory-shop__equipped-slot--shoulders .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-shoulders.webp");
+}
+
+.armory-shop__equipped-slot--wrists .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-wrists.webp");
+}
+
+.armory-shop__equipped-slot--gloves .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-arms.webp");
+}
+
+.armory-shop__equipped-slot--shield .armory-shop__equipped-icon {
+  background-image: url("./assets/shop-icons/shield-common-03.webp");
+}
+
+.armory-shop__equipped-slot--greaves .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-greaves.webp");
+}
+
+.armory-shop__equipped-slot--shinguards .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-shinguards.webp");
+}
+
+.armory-shop__equipped-slot--boots .armory-shop__equipped-icon {
+  background-image: url("./assets/ui/shop/category-legs.webp");
 }
 
 .armory-shop__preview {

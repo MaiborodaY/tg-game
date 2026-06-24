@@ -16075,8 +16075,7 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "levelRequirement": 90
+    }
   },
   {
     "id": "generated_equipment_weapon_mace_mythical_mace_02",
@@ -16107,8 +16106,7 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "levelRequirement": 100
+    }
   },
   {
     "id": "generated_equipment_weapon_mace_rare_mace_1",
@@ -16723,7 +16721,6 @@
     "rarity": "mythical",
     "damageBonus": 22,
     "weaponClass": "shuriken",
-    "levelRequirement": 90,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-mythical-shuriken-1"
@@ -16755,7 +16752,6 @@
     "rarity": "mythical",
     "damageBonus": 30,
     "weaponClass": "shuriken",
-    "levelRequirement": 100,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-mythical-shuriken-2"
@@ -17363,8 +17359,7 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "levelRequirement": 90
+    }
   },
   {
     "id": "generated_equipment_weapon_spear_mythical_spear_02",
@@ -17395,8 +17390,7 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "levelRequirement": 100
+    }
   },
   {
     "id": "generated_equipment_weapon_spear_rare_spear",
@@ -18023,8 +18017,7 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "levelRequirement": 90
+    }
   },
   {
     "id": "generated_equipment_weapon_sword_mythical_sword_02",
@@ -18055,8 +18048,7 @@
       "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "levelRequirement": 100
+    }
   },
   {
     "id": "generated_equipment_weapon_sword_rare_sword_1",
