@@ -453,6 +453,19 @@ const expectedArenaGoldRewards = new Map([
   [8, { easy: 150, medium: 158, hard: 168, boss: 190 }],
 ]);
 
+const expectedArenaRandomBaseStatPoints = new Map([
+  [1, { easy: 0, medium: 2, hard: 5 }],
+  [2, { easy: 5, medium: 10, hard: 15 }],
+  [3, { easy: 15, medium: 21, hard: 27 }],
+  [4, { easy: 27, medium: 34, hard: 41 }],
+  [5, { easy: 41, medium: 49, hard: 57 }],
+  [6, { easy: 57, medium: 66, hard: 75 }],
+  [7, { easy: 75, medium: 85, hard: 95 }],
+  [8, { easy: 95, medium: 106, hard: 117 }],
+  [9, { easy: 117, medium: 129, hard: 141 }],
+  [10, { easy: 141, medium: 154, hard: 167 }],
+]);
+
 function createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChance, shieldChance, shurikenChance, scrollChance) {
   return {
     itemRarities: [rarity],
@@ -540,6 +553,29 @@ test("arena tier equipment pools follow the difficulty matrix from tier two onwa
     for (const opponent of tier.opponents) {
       assert.deepEqual(JSON.parse(JSON.stringify(opponent.equipmentPools)), getExpectedArenaMatrixEquipmentPools(tier.id, opponent.difficultyId));
     }
+  }
+});
+
+test("arena random enemy stat points follow the hard tier ladder", () => {
+  for (const tier of hero.ARENA_TIER_CONFIGS) {
+    const expectedTierPoints = expectedArenaRandomBaseStatPoints.get(tier.id);
+
+    assert.ok(expectedTierPoints, `Missing expected stat points for arena tier ${tier.id}`);
+
+    for (const opponent of tier.opponents) {
+      const actualPoints =
+        opponent.randomBaseStatPoints ??
+        Object.values(opponent.baseStats ?? {}).reduce((total, value) => total + value, 0);
+
+      assert.equal(actualPoints, expectedTierPoints[opponent.difficultyId], `tier ${tier.id} ${opponent.difficultyId}`);
+    }
+  }
+
+  for (let tierId = 1; tierId < 10; tierId += 1) {
+    const currentTierPoints = expectedArenaRandomBaseStatPoints.get(tierId);
+    const nextTierPoints = expectedArenaRandomBaseStatPoints.get(tierId + 1);
+
+    assert.equal(nextTierPoints.easy, currentTierPoints.hard, `tier ${tierId + 1} easy matches tier ${tierId} hard`);
   }
 });
 
@@ -746,7 +782,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].id, "dust_arena_veteran");
   assert.equal(hardOpponents[0].baseStats, undefined);
   assert.equal("name" in hardOpponents[0], false);
-  assert.equal(hardOpponents[0].randomBaseStatPoints, 3);
+  assert.equal(hardOpponents[0].randomBaseStatPoints, 5);
   assert.equal(hardOpponents[0].equipmentPools.length, 2);
   assert.equal(hardOpponents[0].equipmentPools[0].itemRarities[0], "common");
   assert.equal(hardOpponents[0].equipmentPools[0].rollChance, 0.95);
@@ -803,7 +839,7 @@ test("arena encounters can create combat states from random opponents and bosses
   const easyState = hero.createCombatStateFromHero(baseHero, easyEncounter);
   const hardEncounter = hero.createArenaRandomEnemyEncounter(1, "hard", () => 0);
   const hardState = hero.createCombatStateFromHero(baseHero, hardEncounter);
-  const hardStatRolls = [0, 0, 0.4, 0.8, 0.99];
+  const hardStatRolls = [0, 0, 0.34, 0.67, 0, 0.34, 0.99];
   const hardSplitStatsEncounter = hero.createArenaRandomEnemyEncounter(1, "hard", () => hardStatRolls.shift() ?? 0.99);
   const hardSplitStatsState = hero.createCombatStateFromHero(baseHero, hardSplitStatsEncounter);
   const variantEncounter = { ...randomEncounter, backgroundVariantId: "variant-2" };
@@ -846,8 +882,8 @@ test("arena encounters can create combat states from random opponents and bosses
   );
   assert.equal(hardSplitStatsState.enemy.maxHp, 11);
   assert.equal(hardSplitStatsState.enemy.maxStamina, 11);
-  assert.equal(hardSplitStatsState.enemy.meleeDamagePercentBonus, 0.05);
-  assert.equal(hardSplitStatsState.enemy.movementDistanceBonus, 0.015);
+  assert.equal(hardSplitStatsState.enemy.meleeDamagePercentBonus, 0.1);
+  assert.equal(hardSplitStatsState.enemy.movementDistanceBonus, 0.03);
   assert.equal(hero.HERO_ITEM_CATALOG[hardSplitStatsState.enemy.equipment?.weaponMain]?.rarity, "uncommon");
   hardState.result = "win";
   assert.equal(hero.getBattleReward(hardState).gold, 9);

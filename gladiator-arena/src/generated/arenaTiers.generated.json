@@ -26,7 +26,7 @@
       {
         "id": "dust_arena_brawler",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 1,
+        "randomBaseStatPoints": 2,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -63,7 +63,7 @@
       {
         "id": "dust_arena_veteran",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 3,
+        "randomBaseStatPoints": 5,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -267,7 +267,7 @@
       {
         "id": "arena_3_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 9,
+        "randomBaseStatPoints": 21,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -305,7 +305,7 @@
       {
         "id": "arena_3_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 26,
+        "randomBaseStatPoints": 27,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -351,7 +351,7 @@
       {
         "id": "dust_arena_4_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 21,
+        "randomBaseStatPoints": 27,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -390,7 +390,7 @@
       {
         "id": "dust_arena_4_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 21,
+        "randomBaseStatPoints": 34,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -428,7 +428,7 @@
       {
         "id": "dust_arena_4_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 26,
+        "randomBaseStatPoints": 41,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -474,7 +474,7 @@
       {
         "id": "dust_arena_5_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 31,
+        "randomBaseStatPoints": 41,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -513,7 +513,7 @@
       {
         "id": "dust_arena_5_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 38,
+        "randomBaseStatPoints": 49,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -551,7 +551,7 @@
       {
         "id": "dust_arena_5_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 41,
+        "randomBaseStatPoints": 57,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -597,7 +597,7 @@
       {
         "id": "dust_arena_6_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 39,
+        "randomBaseStatPoints": 57,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -635,7 +635,7 @@
       {
         "id": "dust_arena_6_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 40,
+        "randomBaseStatPoints": 66,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -672,7 +672,7 @@
       {
         "id": "dust_arena_6_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 29,
+        "randomBaseStatPoints": 75,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -706,7 +706,7 @@
       {
         "id": "dust_arena_7_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 18,
+        "randomBaseStatPoints": 75,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -745,7 +745,7 @@
       {
         "id": "dust_arena_7_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 21,
+        "randomBaseStatPoints": 85,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -783,7 +783,7 @@
       {
         "id": "dust_arena_7_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 24,
+        "randomBaseStatPoints": 95,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -818,7 +818,7 @@
       {
         "id": "dust_arena_8_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 21,
+        "randomBaseStatPoints": 95,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -856,7 +856,7 @@
       {
         "id": "dust_arena_8_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 24,
+        "randomBaseStatPoints": 106,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -893,7 +893,7 @@
       {
         "id": "dust_arena_8_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 27,
+        "randomBaseStatPoints": 117,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -927,7 +927,7 @@
       {
         "id": "dust_arena_9_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 24,
+        "randomBaseStatPoints": 117,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -956,7 +956,7 @@
       {
         "id": "dust_arena_9_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 27,
+        "randomBaseStatPoints": 129,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -985,7 +985,7 @@
       {
         "id": "dust_arena_9_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 30,
+        "randomBaseStatPoints": 141,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -1021,7 +1021,7 @@
       {
         "id": "dust_arena_10_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 27,
+        "randomBaseStatPoints": 141,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -1052,7 +1052,7 @@
       {
         "id": "dust_arena_10_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 30,
+        "randomBaseStatPoints": 154,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -1083,7 +1083,7 @@
       {
         "id": "dust_arena_10_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 33,
+        "randomBaseStatPoints": 167,
         "equipmentPools": [
           {
             "itemRarities": [

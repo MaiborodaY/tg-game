@@ -514,7 +514,9 @@ test("weapon shop uses checkbox rarity filters and category toggle buttons", () 
   assert.equal(weaponShopSource.includes("selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();"), true);
   assert.equal(weaponShopSource.includes("const selectedCategories = getSelectedWeaponCategories(selectedWeaponTypeIds);"), true);
   assert.equal(weaponShopSource.includes("const typeFilteredProducts = getWeaponProductsForCategories(selectedCategories);"), true);
+  assert.equal(weaponShopSource.includes('const WEAPON_RARITY_FILTERS = WEAPON_RARITIES.filter((rarity) => rarity !== "mythical");'), true);
   assert.equal(weaponShopSource.includes("getAvailableWeaponRarities(hero, typeFilteredProducts)"), true);
+  assert.equal(weaponShopSource.includes("return WEAPON_RARITY_FILTERS.filter((rarity) => rarities.has(rarity) && !isShopRaritySealed(hero, rarity));"), true);
   assert.equal(weaponShopSource.includes("!isShopRaritySealed(hero, rarity)"), true);
   assert.equal(weaponShopSource.includes("normalizeSelectedWeaponRarityIds(availableRarities)"), true);
   assert.equal(weaponShopSource.includes("filterWeaponProductsByRarities(typeFilteredProducts, selectedRarityIds)"), true);

@@ -112,7 +112,8 @@ const WEAPON_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
 
 const DEFAULT_WEAPON_RARITY_FILTER: ShopItemRarity = "common";
 const WEAPON_RARITIES = Object.keys(WEAPON_RARITY_SORT_ORDER) as ShopItemRarity[];
-const WEAPON_RARITY_FILTER_CLASS_NAMES = WEAPON_RARITIES.map((rarity) => `armory-shop__set-filter--rarity-${rarity}`);
+const WEAPON_RARITY_FILTERS = WEAPON_RARITIES.filter((rarity) => rarity !== "mythical");
+const WEAPON_RARITY_FILTER_CLASS_NAMES = WEAPON_RARITY_FILTERS.map((rarity) => `armory-shop__set-filter--rarity-${rarity}`);
 const WEAPON_RANGED_CATEGORY_IDS = new Set(["bows", "shurikens"]);
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
@@ -223,7 +224,7 @@ function filterWeaponProductsByRarities(products: readonly WeaponProduct[], rari
 function getAvailableWeaponRarities(hero: HeroState, products: readonly WeaponProduct[]): ShopItemRarity[] {
   const rarities = new Set(products.map((product) => getShopProductRarity(product.itemIds, product.rarity)));
 
-  return WEAPON_RARITIES.filter((rarity) => rarities.has(rarity) && !isShopRaritySealed(hero, rarity));
+  return WEAPON_RARITY_FILTERS.filter((rarity) => rarities.has(rarity) && !isShopRaritySealed(hero, rarity));
 }
 
 function getDefaultWeaponRarityFilterIds(): Set<ShopItemRarity> {

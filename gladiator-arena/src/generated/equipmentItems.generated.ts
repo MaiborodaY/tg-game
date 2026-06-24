@@ -4045,6 +4045,30 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_5","name":"Epic Axe 03","price":330,"itemIds":["generated_equipment_weapon_axe_epic_axe_5"],"categoryId":"axes"},
   },
   {
+    item: {"id":"generated_equipment_weapon_axe_epic_axe_6","name":"Epic Axe 06","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":37,"weaponClass":"axe","levelRequirement":57},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-epic-axe-6"},
+    equipmentTuning: {"x":15,"y":-47,"angle":137,"scaleX":1.9,"scaleY":1.9,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-axe-epic-axe-6",
+      sourcePath: "assets/fighters/weapons/weapon-axe-epic-axe-6.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-6.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_6","name":"Epic Axe 06","price":370,"itemIds":["generated_equipment_weapon_axe_epic_axe_6"],"categoryId":"axes"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_axe_epic_axe_7","name":"Epic Axe 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":41,"weaponClass":"axe","levelRequirement":58},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-epic-axe-7"},
+    equipmentTuning: {"x":-4,"y":80,"angle":67,"scaleX":1.7,"scaleY":1.7,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-axe-epic-axe-7",
+      sourcePath: "assets/fighters/weapons/weapon-axe-epic-axe-7.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-7.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_7","name":"Epic Axe 07","price":410,"itemIds":["generated_equipment_weapon_axe_epic_axe_7"],"categoryId":"axes"},
+  },
+  {
     item: {"id":"generated_equipment_weapon_axe_epic_zxe","name":"Epic Axe 04","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":40,"weaponClass":"axe"},
     assetKeys: {"weaponMainAssetKey":"weapon-axe-epic-zxe"},
     equipmentTuning: {"x":-13,"y":69,"angle":81,"scaleX":1.5,"scaleY":1.4,"flipX":false,"flipY":false},
@@ -4054,6 +4078,30 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-zxe.webp",
     },
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_axe_legendary_axe_01","name":"Legendary Axe 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":50,"weaponClass":"axe","levelRequirement":70},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-legendary-axe-01"},
+    equipmentTuning: {"x":-30,"y":3,"angle":117,"scaleX":2,"scaleY":2,"flipX":true,"flipY":false},
+    asset: {
+      key: "weapon-axe-legendary-axe-01",
+      sourcePath: "assets/fighters/weapons/weapon-axe-legendary-axe-01.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-legendary-axe-01.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_legendary_axe_01","name":"Legendary Axe 01","price":550,"itemIds":["generated_equipment_weapon_axe_legendary_axe_01"],"categoryId":"axes"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_axe_legendary_axe_02","name":"Legendary Axe 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":55,"weaponClass":"axe","levelRequirement":80},
+    assetKeys: {"weaponMainAssetKey":"weapon-axe-legendary-axe-02"},
+    equipmentTuning: {"x":-27,"y":106,"angle":80,"scaleX":1.9,"scaleY":1.9,"flipX":true,"flipY":false},
+    asset: {
+      key: "weapon-axe-legendary-axe-02",
+      sourcePath: "assets/fighters/weapons/weapon-axe-legendary-axe-02.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-axe-legendary-axe-02.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_legendary_axe_02","name":"Legendary Axe 02","price":605,"itemIds":["generated_equipment_weapon_axe_legendary_axe_02"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_norm_axe","name":"Common Axe 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"axe","levelRequirement":1},
@@ -4254,8 +4302,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       sourcePath: "assets/fighters/weapons/weapon-bow-mythic-bow-1.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-mythic-bow-1.webp",
     },
-    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","price":1139,"itemIds":["generated_equipment_weapon_bow_mythic_bow_1"],"categoryId":"bows"},
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":12,"requirements":{"agility":60},"weaponClass":"bow"},
@@ -4266,8 +4313,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       sourcePath: "assets/fighters/weapons/weapon-bow-mythic-bow-2.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-mythic-bow-2.webp",
     },
-    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","price":1033,"itemIds":["generated_equipment_weapon_bow_mythic_bow_2"],"categoryId":"bows"},
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":5,"requirements":{"agility":25},"weaponClass":"bow"},
@@ -4412,7 +4458,43 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_4","name":"Epic Mace 05","price":297,"itemIds":["generated_equipment_weapon_mace_epic_mace_4"],"categoryId":"maces"},
   },
   {
-    item: {"id":"generated_equipment_weapon_mace_lg_mace_1","name":"Legendary Mace 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":34,"weaponClass":"mace","levelRequirement":80},
+    item: {"id":"generated_equipment_weapon_mace_epic_mace_5","name":"Epic Mace 06","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":29,"weaponClass":"mace","levelRequirement":65},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-epic-mace-5"},
+    equipmentTuning: {"x":-24,"y":-7,"angle":113,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
+    asset: {
+      key: "weapon-mace-epic-mace-5",
+      sourcePath: "assets/fighters/weapons/weapon-mace-epic-mace-5.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-5.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_5","name":"Epic Mace 06","price":319,"itemIds":["generated_equipment_weapon_mace_epic_mace_5"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_epic_mace_6","name":"Epic Mace 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":31,"weaponClass":"mace","levelRequirement":70},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-epic-mace-6"},
+    equipmentTuning: {"x":-27,"y":1,"angle":111,"scaleX":1.7,"scaleY":1.7,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-epic-mace-6",
+      sourcePath: "assets/fighters/weapons/weapon-mace-epic-mace-6.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-6.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_6","name":"Epic Mace 07","price":341,"itemIds":["generated_equipment_weapon_mace_epic_mace_6"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_legendary_mace_02","name":"Legendary Mace 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":38,"weaponClass":"mace","levelRequirement":80},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-legendary-mace-02"},
+    equipmentTuning: {"x":-44,"y":-6,"angle":114,"scaleX":2,"scaleY":2,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-mace-legendary-mace-02",
+      sourcePath: "assets/fighters/weapons/weapon-mace-legendary-mace-02.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-legendary-mace-02.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_legendary_mace_02","name":"Legendary Mace 02","price":456,"itemIds":["generated_equipment_weapon_mace_legendary_mace_02"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_lg_mace_1","name":"Legendary Mace 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":34,"weaponClass":"mace","levelRequirement":70},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-lg-mace-1"},
     equipmentTuning: {"x":-38,"y":-6,"angle":111,"scaleX":1.7,"scaleY":1.7,"flipX":false,"flipY":false},
     asset: {
@@ -4446,6 +4528,28 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_mace_mace1","name":"Uncommon Mace 02","price":45,"itemIds":["generated_equipment_weapon_mace_mace1"],"categoryId":"maces"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_mythical_mace_01","name":"Mythical Mace 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":42,"weaponClass":"mace","levelRequirement":90},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-mythical-mace-01"},
+    equipmentTuning: {"x":-18,"y":78,"angle":75,"scaleX":1.9,"scaleY":1.9,"flipX":true,"flipY":false},
+    asset: {
+      key: "weapon-mace-mythical-mace-01",
+      sourcePath: "assets/fighters/weapons/weapon-mace-mythical-mace-01.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-mythical-mace-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_mace_mythical_mace_02","name":"Mythical Mace 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":46,"weaponClass":"mace","levelRequirement":100},
+    assetKeys: {"weaponMainAssetKey":"weapon-mace-mythical-mace-02"},
+    equipmentTuning: {"x":-37,"y":66,"angle":73,"scaleX":1.8,"scaleY":1.8,"flipX":true,"flipY":false},
+    asset: {
+      key: "weapon-mace-mythical-mace-02",
+      sourcePath: "assets/fighters/weapons/weapon-mace-mythical-mace-02.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-mace-mythical-mace-02.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_rare_mace_1","name":"Rare Mace 01","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":11,"weaponClass":"mace","levelRequirement":30},
@@ -4643,8 +4747,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       sourcePath: "assets/fighters/weapons/weapon-shuriken-mythical-shuriken-1.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-mythical-shuriken-1.webp",
     },
-    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","price":300,"itemIds":["generated_equipment_weapon_shuriken_mythical_shuriken_1"],"categoryId":"shurikens"},
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":30,"weaponClass":"shuriken","levelRequirement":100},
@@ -4655,8 +4758,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       sourcePath: "assets/fighters/weapons/weapon-shuriken-mythical-shuriken-2.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-mythical-shuriken-2.webp",
     },
-    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","price":400,"itemIds":["generated_equipment_weapon_shuriken_mythical_shuriken_2"],"categoryId":"shurikens"},
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"shuriken","levelRequirement":30},
@@ -4777,7 +4879,43 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_5","name":"Epic Spear 05","price":180,"itemIds":["generated_equipment_weapon_spear_epic_spear_5"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear","levelRequirement":80},
+    item: {"id":"generated_equipment_weapon_spear_epic_spear_6","name":"Epic Spear 06","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":17,"weaponClass":"spear","levelRequirement":65},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear-6"},
+    equipmentTuning: {"x":-18,"y":10,"angle":130,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-epic-spear-6",
+      sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear-6.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-6.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_6","name":"Epic Spear 06","price":204,"itemIds":["generated_equipment_weapon_spear_epic_spear_6"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"spear","levelRequirement":70},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-epic-spear-7"},
+    equipmentTuning: {"x":-18,"y":-2,"angle":130,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-epic-spear-7",
+      sourcePath: "assets/fighters/weapons/weapon-spear-epic-spear-7.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-7.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","price":216,"itemIds":["generated_equipment_weapon_spear_epic_spear_7"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"spear","levelRequirement":80},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-legendary-spear-02"},
+    equipmentTuning: {"x":-2,"y":16,"angle":124,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-legendary-spear-02",
+      sourcePath: "assets/fighters/weapons/weapon-spear-legendary-spear-02.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-legendary-spear-02.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","price":273,"itemIds":["generated_equipment_weapon_spear_legendary_spear_02"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear","levelRequirement":70},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-lg-spear-1"},
     equipmentTuning: {"x":-35,"y":-6,"angle":118,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -4787,6 +4925,28 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","price":247,"itemIds":["generated_equipment_weapon_spear_lg_spear_1"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_mythical_spear_01","name":"Mythical Spear 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":23,"weaponClass":"spear","levelRequirement":90},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-mythical-spear-01"},
+    equipmentTuning: {"x":0,"y":13,"angle":126,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-mythical-spear-01",
+      sourcePath: "assets/fighters/weapons/weapon-spear-mythical-spear-01.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-mythical-spear-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_mythical_spear_02","name":"Mythical Spear 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":25,"weaponClass":"spear","levelRequirement":100},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-mythical-spear-02"},
+    equipmentTuning: {"x":-30,"y":55,"angle":111,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-mythical-spear-02",
+      sourcePath: "assets/fighters/weapons/weapon-spear-mythical-spear-02.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-mythical-spear-02.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_rare_spear","name":"Rare Spear 01","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":7,"weaponClass":"spear","levelRequirement":30},
@@ -4973,6 +5133,28 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_sword_lg_sword_2","name":"Legendary Sword 02","price":490,"itemIds":["generated_equipment_weapon_sword_lg_sword_2"],"categoryId":"swords"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_mythical_sword_01","name":"Mythical Sword 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":56,"weaponClass":"sword","levelRequirement":90},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-mythical-sword-01"},
+    equipmentTuning: {"x":-33,"y":55,"angle":84,"scaleX":1.5,"scaleY":1.5,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-mythical-sword-01",
+      sourcePath: "assets/fighters/weapons/weapon-sword-mythical-sword-01.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-mythical-sword-01.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_mythical_sword_02","name":"Mythical Sword 02","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":62,"weaponClass":"sword","levelRequirement":100},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-mythical-sword-02"},
+    equipmentTuning: {"x":-4,"y":75,"angle":71,"scaleX":1.9,"scaleY":1.9,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-mythical-sword-02",
+      sourcePath: "assets/fighters/weapons/weapon-sword-mythical-sword-02.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-mythical-sword-02.webp",
+    },
+    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_rare_sword_1","name":"Rare Sword 01","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"sword","levelRequirement":30},
@@ -5278,7 +5460,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"weapon_sword_01","name":"Common Sword 02","price":14,"itemIds":["weapon_sword_01"],"categoryId":"swords"},
-  }
+  },
 ];
 
 export const GENERATED_EQUIPMENT_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);

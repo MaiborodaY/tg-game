@@ -96,19 +96,29 @@ const WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS = new Map([
   ["Epic Axe 01", 45],
   ["Epic Axe 02", 50],
   ["Epic Axe 03", 55],
+  ["Epic Axe 06", 57],
+  ["Epic Axe 07", 58],
   ["Epic Axe 05", 60],
   ["Epic Mace 02", 45],
   ["Epic Mace 03", 50],
   ["Epic Mace 04", 55],
   ["Epic Mace 05", 60],
+  ["Epic Mace 06", 65],
+  ["Epic Mace 07", 70],
   ["Epic Spear 01", 45],
   ["Epic Spear 02", 50],
   ["Epic Spear 04", 55],
   ["Epic Spear 05", 60],
+  ["Epic Spear 06", 65],
+  ["Epic Spear 07", 70],
+  ["Legendary Axe 01", 70],
+  ["Legendary Axe 02", 80],
   ["Legendary Sword 01", 70],
   ["Legendary Sword 02", 80],
-  ["Legendary Mace 01", 80],
-  ["Legendary Spear 01", 80],
+  ["Legendary Mace 01", 70],
+  ["Legendary Mace 02", 80],
+  ["Legendary Spear 01", 70],
+  ["Legendary Spear 02", 80],
   ["Rusty Shuriken", 5],
   ["common shuriken 2", 10],
   ["uncommon shuriken 1", 15],
@@ -119,8 +129,6 @@ const WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS = new Map([
   ["epic shuriken 2", 60],
   ["Legendary shuriken 1", 70],
   ["Legendary shuriken 2", 80],
-  ["Mythical shuriken 1", 90],
-  ["Mythical shuriken 2", 100],
 ]);
 
 const BOW_AGILITY_REQUIREMENT_EXPECTATIONS = new Map([
@@ -134,8 +142,6 @@ const BOW_AGILITY_REQUIREMENT_EXPECTATIONS = new Map([
   ["Epic bow 2", 40],
   ["Legendary bow 1", 45],
   ["Legendary bow 2", 50],
-  ["Mythic bow 1", 55],
-  ["Mythic bow 2", 60],
 ]);
 
 test("generated shop armor sets occupy their intended progression", () => {
@@ -310,6 +316,10 @@ test("generated axes follow the strength-scaling damage curve", () => {
   assertGeneratedAxe("Epic Axe 03", { damage: 33, shop: true, enemy: true });
   assertGeneratedAxe("Epic Axe 04", { damage: 40, shop: false, enemy: true });
   assertGeneratedAxe("Epic Axe 05", { damage: 45, shop: true, enemy: true });
+  assertGeneratedAxe("Epic Axe 06", { damage: 37, shop: true, enemy: true });
+  assertGeneratedAxe("Epic Axe 07", { damage: 41, shop: true, enemy: true });
+  assertGeneratedAxe("Legendary Axe 01", { damage: 50, shop: true, enemy: true });
+  assertGeneratedAxe("Legendary Axe 02", { damage: 55, shop: true, enemy: true });
 });
 
 test("generated swords follow the accuracy-focused damage curve", () => {
@@ -339,6 +349,8 @@ test("generated swords follow the accuracy-focused damage curve", () => {
   assertGeneratedSword("Epic Sword 10", { damage: 44, shop: false, enemy: true });
   assertGeneratedSword("Legendary Sword 01", { damage: 44, shop: true, enemy: true });
   assertGeneratedSword("Legendary Sword 02", { damage: 49, shop: true, enemy: true });
+  assertGeneratedSword("Mythical Sword 01", { damage: 56, shop: false, enemy: true });
+  assertGeneratedSword("Mythical Sword 02", { damage: 62, shop: false, enemy: true });
 });
 
 test("generated maces follow the armored-target damage curve", () => {
@@ -359,7 +371,12 @@ test("generated maces follow the armored-target damage curve", () => {
   assertGeneratedMace("Epic Mace 03", { damage: 22, shop: true, enemy: true });
   assertGeneratedMace("Epic Mace 04", { damage: 24, shop: true, enemy: true });
   assertGeneratedMace("Epic Mace 05", { damage: 27, shop: true, enemy: true });
+  assertGeneratedMace("Epic Mace 06", { damage: 29, shop: true, enemy: true });
+  assertGeneratedMace("Epic Mace 07", { damage: 31, shop: true, enemy: true });
   assertGeneratedMace("Legendary Mace 01", { damage: 34, shop: true, enemy: true });
+  assertGeneratedMace("Legendary Mace 02", { damage: 38, shop: true, enemy: true });
+  assertGeneratedMace("Mythical Mace 01", { damage: 42, shop: false, enemy: true });
+  assertGeneratedMace("Mythical Mace 02", { damage: 46, shop: false, enemy: true });
 });
 
 test("generated spears follow the reach-focused damage curve", () => {
@@ -370,7 +387,24 @@ test("generated spears follow the reach-focused damage curve", () => {
   assertGeneratedSpear("Epic Spear 03", { damage: 16, shop: false, enemy: true });
   assertGeneratedSpear("Epic Spear 04", { damage: 13, shop: true, enemy: true });
   assertGeneratedSpear("Epic Spear 05", { damage: 15, shop: true, enemy: true });
+  assertGeneratedSpear("Epic Spear 06", { damage: 17, shop: true, enemy: true });
+  assertGeneratedSpear("Epic Spear 07", { damage: 18, shop: true, enemy: true });
   assertGeneratedSpear("Legendary Spear 01", { damage: 19, shop: true, enemy: true });
+  assertGeneratedSpear("Legendary Spear 02", { damage: 21, shop: true, enemy: true });
+  assertGeneratedSpear("Mythical Spear 01", { damage: 23, shop: false, enemy: true });
+  assertGeneratedSpear("Mythical Spear 02", { damage: 25, shop: false, enemy: true });
+});
+
+test("generated mythical weapons stay enemy-only", () => {
+  const mythicalWeapons = generatedItems.filter((item) => item.kind === "weapon" && item.rarity === "mythical");
+
+  assert.equal(mythicalWeapons.length, 10);
+
+  mythicalWeapons.forEach((item) => {
+    assert.equal(item.weaponProduct, undefined, `${item.name} weapon product`);
+    assert.equal(item.availability?.shop ?? true, false, `${item.name} shop availability`);
+    assert.equal(item.availability?.enemyPool ?? false, true, `${item.name} enemy availability`);
+  });
 });
 
 test("generated melee weapon prices follow class and rarity multipliers", () => {
