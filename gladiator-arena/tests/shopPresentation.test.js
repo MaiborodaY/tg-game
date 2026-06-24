@@ -107,11 +107,15 @@ const shopPresentation = loadTypeScriptModule("../src/shopPresentation.ts", {
         areHeroItemsOwned: () => false,
         areHeroItemsConsumable: (itemIds) =>
           itemIds.every((itemId) => generatedItems[itemId]?.weaponClass === "shuriken" || generatedItems[itemId]?.kind === "scroll"),
-        canHeroEquipItems: () => true,
+        canHeroEquipItems: (hero) => hero.canEquip !== false,
+        canHeroUseItems: (hero) => hero.canUse !== false,
         deriveHeroStats: (hero) => ({ meleeDamagePercentBonus: hero.meleeDamagePercentBonus ?? 0 }),
-        getHeroConsumableMaxQuantity: () => 0,
+        getAgilityBowDamageMultiplier: (agility) => 1 + Math.max(0, Math.floor(agility)) * 0.05,
+        getHeroAttributeTotals: (hero) => ({ strength: 0, agility: hero.agility ?? 0, vitality: 0 }),
+        getHeroConsumableMaxQuantity: (itemId) => (generatedItems[itemId]?.weaponClass === "shuriken" ? 2 : 0),
         getHeroItemQuantity: () => 0,
         getHeroRemainingScrollCapacity: (hero) => hero.scrollCapacity ?? 0,
+        getHeroShurikenQuantity: (hero) => hero.shurikenQuantity ?? 0,
         getHeroItemRequirementChecks: () => [],
         getHeroItemWeaponClass: (item) => item?.weaponClass ?? "sword",
         isHeroScrollItemId: (itemId) => generatedItems[itemId]?.kind === "scroll",
@@ -122,9 +126,10 @@ const shopPresentation = loadTypeScriptModule("../src/shopPresentation.ts", {
   },
 });
 
-test("shop display damage scales melee weapons by strength while leaving ranged and consumables raw", () => {
+test("shop display damage scales melee by strength and bows by agility while leaving consumables raw", () => {
   const hero = {
     meleeDamagePercentBonus: 0.5,
+    agility: 10,
     equipment: {
       weaponMain: "weapon_sword_01",
       weaponBow: "weapon_bow_01",
@@ -135,14 +140,23 @@ test("shop display damage scales melee weapons by strength while leaving ranged 
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_sword_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 20);
   assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, meleeDamagePercentBonus: 0.2 }, ["weapon_axe_02"], "damage"), 25);
-  assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 5);
+  assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 8);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_shuriken_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["cloth_breastplate_01"], "armor"), 3);
   assert.equal(shopPresentation.getEquippedShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 2);
-  assert.equal(shopPresentation.getEquippedShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 5);
+  assert.equal(shopPresentation.getEquippedShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 8);
 });
 
 test("scroll shop products use the shared scroll inventory cap", () => {
   assert.equal(shopPresentation.getShopProductActionState({ gold: 100, scrollCapacity: 1 }, ["scroll_crack_armor_01"], 30), "buy");
   assert.equal(shopPresentation.getShopProductActionState({ gold: 100, scrollCapacity: 0 }, ["scroll_crack_armor_01"], 30), "max");
+});
+
+test("consumable shop products respect item requirements before purchase state", () => {
+  assert.equal(shopPresentation.getShopProductActionState({ gold: 100, canUse: false }, ["weapon_shuriken_01"], 5), "locked");
+});
+
+test("shuriken shop products use the shared shuriken inventory cap", () => {
+  assert.equal(shopPresentation.getShopProductActionState({ gold: 100, shurikenQuantity: 1 }, ["weapon_shuriken_01"], 5), "buy");
+  assert.equal(shopPresentation.getShopProductActionState({ gold: 100, shurikenQuantity: 2 }, ["weapon_shuriken_01"], 5), "max");
 });

@@ -6,9 +6,11 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   canHeroEquipItems,
+  canHeroUseItems,
   getHeroBowShotCapacity,
   getHeroConsumableMaxQuantity,
   getHeroItemQuantity,
+  getHeroShurikenQuantity,
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
@@ -17,6 +19,12 @@ import {
   ARROW_ICON_ASSET_URL,
   DAMAGE_HIT_ICON_ASSET_URL,
   SHOP_BACK_ICON_ASSET_URL,
+  SHOP_CATEGORY_AXE_ICON_ASSET_URL,
+  SHOP_CATEGORY_BOW_ICON_ASSET_URL,
+  SHOP_CATEGORY_MACE_ICON_ASSET_URL,
+  SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
+  SHOP_CATEGORY_SPEAR_ICON_ASSET_URL,
+  SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
@@ -33,6 +41,7 @@ import {
   getShopProductStat,
   getShopRarityLabel,
   isShopProductSealed,
+  isShopRaritySealed,
   type ShopProductRequirementBadge,
   type ShopItemRarity,
   type ShopProductActionState,
@@ -40,6 +49,7 @@ import {
 
 export interface WeaponProduct {
   id: string;
+  categoryId: string;
   name: string;
   price: number;
   itemIds: HeroItemId[];
@@ -61,6 +71,7 @@ export interface WeaponShopHeroSyncOptions {
 interface WeaponCategory {
   id: string;
   name: string;
+  iconUrl: string;
   products: WeaponProduct[];
   emptyText?: string;
 }
@@ -99,44 +110,50 @@ const WEAPON_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
   unique: 6,
 };
 
-const ALL_WEAPON_RARITY_FILTER_VALUE = "";
-const ALL_WEAPON_TYPE_FILTER_VALUE = "all";
+const DEFAULT_WEAPON_RARITY_FILTER: ShopItemRarity = "common";
 const WEAPON_RARITIES = Object.keys(WEAPON_RARITY_SORT_ORDER) as ShopItemRarity[];
 const WEAPON_RARITY_FILTER_CLASS_NAMES = WEAPON_RARITIES.map((rarity) => `armory-shop__set-filter--rarity-${rarity}`);
+const WEAPON_RANGED_CATEGORY_IDS = new Set(["bows", "shurikens"]);
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
   {
     id: "swords",
     name: "Swords",
+    iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("swords"),
   },
   {
     id: "axes",
     name: "Axes",
+    iconUrl: SHOP_CATEGORY_AXE_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("axes"),
     emptyText: "Axes soon",
   },
   {
     id: "maces",
     name: "Maces",
+    iconUrl: SHOP_CATEGORY_MACE_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("maces"),
     emptyText: "Maces soon",
   },
   {
     id: "spears",
     name: "Spears",
+    iconUrl: SHOP_CATEGORY_SPEAR_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("spears"),
     emptyText: "Spears soon",
   },
   {
     id: "bows",
     name: "Bows",
+    iconUrl: SHOP_CATEGORY_BOW_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("bows"),
     emptyText: "Bows soon",
   },
   {
     id: "shurikens",
     name: "Shurikens",
+    iconUrl: SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL,
     products: getGeneratedWeaponProducts("shurikens"),
     emptyText: "Shurikens soon",
   },
@@ -151,6 +168,7 @@ function getGeneratedWeaponProducts(categoryId: string): WeaponProduct[] {
   return GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === categoryId)
     .map((product) => ({
       id: product.id,
+      categoryId: product.categoryId,
       name: product.name,
       price: product.price,
       itemIds: [...product.itemIds],
@@ -163,6 +181,12 @@ function compareWeaponProducts(left: WeaponProduct, right: WeaponProduct): numbe
 
   if (rarityDifference !== 0) {
     return rarityDifference;
+  }
+
+  const categoryGroupDifference = getWeaponProductCategoryGroupOrder(left) - getWeaponProductCategoryGroupOrder(right);
+
+  if (categoryGroupDifference !== 0) {
+    return categoryGroupDifference;
   }
 
   const damageDifference = getShopProductStat(left.itemIds, "damage") - getShopProductStat(right.itemIds, "damage");
@@ -184,18 +208,26 @@ function getWeaponProductRarityOrder(product: WeaponProduct): number {
   return WEAPON_RARITY_SORT_ORDER[getShopProductRarity(product.itemIds, product.rarity)];
 }
 
-function filterWeaponProductsByRarity(products: readonly WeaponProduct[], rarity: ShopItemRarity | undefined): WeaponProduct[] {
-  if (!rarity) {
-    return [...products];
-  }
-
-  return products.filter((product) => getShopProductRarity(product.itemIds, product.rarity) === rarity);
+function getWeaponProductCategoryGroupOrder(product: WeaponProduct): number {
+  return WEAPON_RANGED_CATEGORY_IDS.has(product.categoryId) ? 1 : 0;
 }
 
-function getAvailableWeaponRarities(products: readonly WeaponProduct[]): ShopItemRarity[] {
+function filterWeaponProductsByRarities(products: readonly WeaponProduct[], rarities: ReadonlySet<ShopItemRarity>): WeaponProduct[] {
+  if (rarities.size === 0) {
+    return [];
+  }
+
+  return products.filter((product) => rarities.has(getShopProductRarity(product.itemIds, product.rarity)));
+}
+
+function getAvailableWeaponRarities(hero: HeroState, products: readonly WeaponProduct[]): ShopItemRarity[] {
   const rarities = new Set(products.map((product) => getShopProductRarity(product.itemIds, product.rarity)));
 
-  return WEAPON_RARITIES.filter((rarity) => rarities.has(rarity));
+  return WEAPON_RARITIES.filter((rarity) => rarities.has(rarity) && !isShopRaritySealed(hero, rarity));
+}
+
+function getDefaultWeaponRarityFilterIds(): Set<ShopItemRarity> {
+  return new Set([DEFAULT_WEAPON_RARITY_FILTER]);
 }
 
 function getDefaultWeaponTypeFilterIds(): Set<string> {
@@ -216,7 +248,7 @@ function getWeaponProductsForCategories(categories: readonly WeaponCategory[]): 
 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {
   let selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();
-  let selectedRarity: ShopItemRarity | undefined;
+  let selectedRarityIds = getDefaultWeaponRarityFilterIds();
   let previewProduct: WeaponProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -264,7 +296,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   const rarityFilterSummary = document.createElement("summary");
   const rarityFilterSummaryText = document.createElement("span");
   const rarityFilterPanel = document.createElement("div");
-  const rarityFilterInputs = new Map<string, HTMLInputElement>();
+  const rarityFilterInputs = new Map<ShopItemRarity, HTMLInputElement>();
 
   rarityFilter.className = "armory-shop__parts-filter weapon-shop__rarity-filter";
   rarityFilter.setAttribute("aria-label", "Weapon rarity");
@@ -274,21 +306,12 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   rarityFilterPanel.className = "armory-shop__parts-panel weapon-shop__rarity-panel";
   rarityFilter.append(rarityFilterSummary, rarityFilterPanel);
 
-  const typeFilter = document.createElement("details");
-  const typeFilterSummary = document.createElement("summary");
-  const typeFilterSummaryText = document.createElement("span");
-  const typeFilterPanel = document.createElement("div");
-  const typeFilterInputs = new Map<string, HTMLInputElement>();
+  const categoryFilter = document.createElement("div");
+  const weaponCategoryButtons = new Map<string, HTMLButtonElement>();
 
-  typeFilter.className = "armory-shop__parts-filter weapon-shop__type-filter";
-  typeFilter.setAttribute("aria-label", "Weapon types");
-  typeFilterSummary.className = "armory-shop__parts-summary weapon-shop__type-summary";
-  typeFilterSummaryText.className = "armory-shop__parts-summary-text";
-  typeFilterSummary.append(typeFilterSummaryText);
-  typeFilterPanel.className = "armory-shop__parts-panel weapon-shop__type-panel";
-  typeFilterPanel.append(createWeaponTypeFilterOption());
-  WEAPON_CATEGORIES.forEach((category) => typeFilterPanel.append(createWeaponTypeFilterOption(category)));
-  typeFilter.append(typeFilterSummary, typeFilterPanel);
+  categoryFilter.className = "weapon-shop__category-filter";
+  categoryFilter.setAttribute("aria-label", "Weapon types");
+  WEAPON_CATEGORIES.forEach((category) => categoryFilter.append(createWeaponCategoryButton(category)));
 
   const gold = document.createElement("span");
   gold.className = "armory-shop__gold";
@@ -354,18 +377,22 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   });
 
   if (usesCityHeroPreview) {
-    header.append(title, rarityFilter, typeFilter, selected, headerMeta);
+    header.append(title, rarityFilter, categoryFilter);
     tray.append(header, content, scrollIndicator);
     menu.append(tray);
   } else {
-    header.append(back, title, rarityFilter, typeFilter, headerMeta);
+    header.append(back, title, rarityFilter, categoryFilter, headerMeta);
     tray.append(header, selected, content, scrollIndicator);
     menu.append(tray);
   }
   if (options.mountPreview) {
     panel.append(previewShell);
   } else {
+    panel.append(headerMeta);
     panel.append(bowUpgrade);
+    if (usesCityHeroPreview) {
+      panel.append(selected);
+    }
   }
   panel.append(menu);
   if (usesCityHeroPreview) {
@@ -385,7 +412,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function open(): void {
     clearTransitionTimer();
     selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();
-    selectedRarity = undefined;
+    selectedRarityIds = getDefaultWeaponRarityFilterIds();
     clearProductPreview();
     window.addEventListener("pointerdown", dismissPreviewFromPointerDown, true);
     options.onOpen?.();
@@ -427,18 +454,17 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const hero = options.getHero();
     const selectedCategories = getSelectedWeaponCategories(selectedWeaponTypeIds);
     const typeFilteredProducts = getWeaponProductsForCategories(selectedCategories);
-    const availableRarities = getAvailableWeaponRarities(typeFilteredProducts);
+    const availableRarities = getAvailableWeaponRarities(hero, typeFilteredProducts);
 
-    if (selectedRarity && !availableRarities.includes(selectedRarity)) {
-      selectedRarity = undefined;
+    if (normalizeSelectedWeaponRarityIds(availableRarities)) {
       clearProductPreview();
     }
 
-    const selectedProducts = filterWeaponProductsByRarity(typeFilteredProducts, selectedRarity);
+    const selectedProducts = sortWeaponProductsForHero(hero, filterWeaponProductsByRarities(typeFilteredProducts, selectedRarityIds));
 
     title.textContent = "Weapons";
     renderRarityFilterOptions(availableRarities);
-    updateWeaponTypeFilterControls();
+    updateWeaponCategoryButtons();
     goldAmount.textContent = String(hero.gold);
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
     levelValue.textContent = String(hero.level);
@@ -487,8 +513,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       return;
     }
 
-    const selectedTypeId = getSingleSelectedWeaponTypeId();
-    const bowCategory = selectedTypeId === BOW_CATEGORY_ID ? WEAPON_CATEGORIES.find((category) => category.id === BOW_CATEGORY_ID) : undefined;
+    const bowCategory = selectedWeaponTypeIds.has(BOW_CATEGORY_ID) ? WEAPON_CATEGORIES.find((category) => category.id === BOW_CATEGORY_ID) : undefined;
     const isVisible = Boolean(bowCategory && isBowCategoryAvailable(hero, bowCategory));
 
     bowUpgrade.hidden = !isVisible;
@@ -504,6 +529,26 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     return category.products.some((product) => getWeaponProductCardState(hero, product) !== "locked");
   }
 
+  function sortWeaponProductsForHero(hero: HeroState, products: readonly WeaponProduct[]): WeaponProduct[] {
+    return [...products].sort((left, right) => compareWeaponProductsForHero(hero, left, right));
+  }
+
+  function compareWeaponProductsForHero(hero: HeroState, left: WeaponProduct, right: WeaponProduct): number {
+    const availabilityDifference = getWeaponProductAvailabilityOrder(hero, left) - getWeaponProductAvailabilityOrder(hero, right);
+
+    if (availabilityDifference !== 0) {
+      return availabilityDifference;
+    }
+
+    return compareWeaponProducts(left, right);
+  }
+
+  function getWeaponProductAvailabilityOrder(hero: HeroState, product: WeaponProduct): number {
+    const actionState = getWeaponProductCardState(hero, product);
+
+    return actionState === "locked" || actionState === "sealed" ? 1 : 0;
+  }
+
   function ensurePreviewMounted(): void {
     if (unmountPreview || !options.mountPreview) {
       return;
@@ -514,120 +559,107 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   function renderRarityFilterOptions(availableRarities: readonly ShopItemRarity[]): void {
     rarityFilterInputs.clear();
-    rarityFilterPanel.replaceChildren(createRarityFilterOption(), ...availableRarities.map(createRarityFilterOption));
-    updateRarityFilterVisual(selectedRarity);
+    rarityFilterPanel.replaceChildren(...availableRarities.map(createRarityFilterOption));
+    updateRarityFilterVisual();
   }
 
-  function updateRarityFilterVisual(rarity?: ShopItemRarity): void {
+  function updateRarityFilterVisual(): void {
     rarityFilter.classList.remove(...WEAPON_RARITY_FILTER_CLASS_NAMES);
     rarityFilterInputs.forEach((input) => {
-      input.checked = input.value === (rarity ?? ALL_WEAPON_RARITY_FILTER_VALUE);
+      input.checked = selectedRarityIds.has(input.value as ShopItemRarity);
     });
-    rarityFilterSummaryText.textContent = rarity ? getShopRarityLabel(rarity) : "All rarity";
+    rarityFilterSummaryText.textContent = "Rarity";
 
-    if (rarity) {
-      rarityFilter.classList.add(`armory-shop__set-filter--rarity-${rarity}`);
+    if (selectedRarityIds.size === 1) {
+      const [rarity] = selectedRarityIds;
+
+      if (rarity) {
+        rarityFilter.classList.add(`armory-shop__set-filter--rarity-${rarity}`);
+      }
     }
   }
 
-  function createRarityFilterOption(rarity?: ShopItemRarity): HTMLLabelElement {
+  function createRarityFilterOption(rarity: ShopItemRarity): HTMLLabelElement {
     const label = document.createElement("label");
     const input = document.createElement("input");
     const text = document.createElement("span");
-    const optionId = rarity ?? ALL_WEAPON_RARITY_FILTER_VALUE;
 
-    label.className = "armory-shop__parts-option";
-    input.className = "armory-shop__parts-checkbox";
-    input.type = "radio";
+    label.className = `armory-shop__parts-option weapon-shop__rarity-option armory-shop__set-filter-option--rarity-${rarity}`;
+    input.className = "armory-shop__parts-checkbox weapon-shop__rarity-checkbox";
+    input.type = "checkbox";
     input.name = "weapon-shop-rarity-filter";
-    input.value = optionId;
-    text.className = "armory-shop__parts-option-text";
-    text.textContent = rarity ? getShopRarityLabel(rarity) : "All rarity";
+    input.value = rarity;
+    text.className = "armory-shop__parts-option-text weapon-shop__rarity-option-text";
+    text.textContent = getShopRarityLabel(rarity);
     input.addEventListener("change", () => {
-      if (!input.checked) {
+      if (!input.checked && selectedRarityIds.size <= 1 && selectedRarityIds.has(rarity)) {
+        input.checked = true;
         return;
       }
 
-      selectedRarity = rarity;
-      rarityFilter.open = false;
+      if (input.checked) {
+        selectedRarityIds.add(rarity);
+      } else {
+        selectedRarityIds.delete(rarity);
+      }
+
       clearProductPreview();
-      updateRarityFilterVisual(selectedRarity);
+      updateRarityFilterVisual();
       render();
     });
 
-    if (rarity) {
-      label.classList.add(`armory-shop__set-filter-option--rarity-${rarity}`);
-    }
-
-    rarityFilterInputs.set(optionId, input);
+    rarityFilterInputs.set(rarity, input);
     label.append(input, text);
 
     return label;
   }
 
-  function createWeaponTypeFilterOption(category?: WeaponCategory): HTMLLabelElement {
-    const label = document.createElement("label");
-    const input = document.createElement("input");
-    const text = document.createElement("span");
-    const optionId = category?.id ?? ALL_WEAPON_TYPE_FILTER_VALUE;
+  function createWeaponCategoryButton(category: WeaponCategory): HTMLButtonElement {
+    const button = document.createElement("button");
+    const icon = document.createElement("img");
 
-    label.className = "armory-shop__parts-option";
-    input.className = "armory-shop__parts-checkbox";
-    input.type = "checkbox";
-    input.value = optionId;
-    text.className = "armory-shop__parts-option-text";
-    text.textContent = category?.name ?? "All weapons";
-    input.addEventListener("change", () => {
-      if (!category) {
-        selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();
-      } else if (input.checked) {
-        selectedWeaponTypeIds.add(category.id);
-      } else {
+    button.className = "weapon-shop__category-button";
+    button.type = "button";
+    button.title = category.name;
+    button.setAttribute("aria-label", category.name);
+    button.setAttribute("aria-pressed", "false");
+    icon.className = "weapon-shop__category-icon";
+    icon.src = category.iconUrl;
+    icon.alt = "";
+    icon.decoding = "async";
+    icon.draggable = false;
+    button.addEventListener("click", () => {
+      closeRarityFilter();
+
+      if (selectedWeaponTypeIds.has(category.id)) {
         selectedWeaponTypeIds.delete(category.id);
+      } else {
+        selectedWeaponTypeIds.add(category.id);
       }
 
       normalizeSelectedWeaponTypeIds();
       clearProductPreview();
-      updateWeaponTypeFilterControls();
+      updateWeaponCategoryButtons();
       render();
     });
 
-    typeFilterInputs.set(optionId, input);
-    label.append(input, text);
+    weaponCategoryButtons.set(category.id, button);
+    button.append(icon);
 
-    return label;
+    return button;
   }
 
-  function updateWeaponTypeFilterControls(): void {
-    const isAllSelected = selectedWeaponTypeIds.size === 0;
-    const allInput = typeFilterInputs.get(ALL_WEAPON_TYPE_FILTER_VALUE);
-
-    if (allInput) {
-      allInput.checked = isAllSelected;
-    }
-
+  function updateWeaponCategoryButtons(): void {
     WEAPON_CATEGORIES.forEach((category) => {
-      const input = typeFilterInputs.get(category.id);
+      const button = weaponCategoryButtons.get(category.id);
 
-      if (input) {
-        input.checked = !isAllSelected && selectedWeaponTypeIds.has(category.id);
+      if (button) {
+        const isActive = selectedWeaponTypeIds.has(category.id);
+
+        button.classList.toggle("weapon-shop__category-button--active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
       }
     });
-    typeFilterSummaryText.textContent = getWeaponTypeFilterSummaryText();
-  }
-
-  function getWeaponTypeFilterSummaryText(): string {
-    if (selectedWeaponTypeIds.size === 0) {
-      return "All weapons";
-    }
-
-    if (selectedWeaponTypeIds.size === 1) {
-      const selectedCategory = WEAPON_CATEGORIES.find((category) => selectedWeaponTypeIds.has(category.id));
-
-      return selectedCategory?.name ?? "Weapons";
-    }
-
-    return `${selectedWeaponTypeIds.size} types`;
   }
 
   function normalizeSelectedWeaponTypeIds(): void {
@@ -641,12 +673,30 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     );
   }
 
-  function getSingleSelectedWeaponTypeId(): string | undefined {
-    if (selectedWeaponTypeIds.size !== 1) {
-      return undefined;
+  function normalizeSelectedWeaponRarityIds(availableRarities: readonly ShopItemRarity[]): boolean {
+    const availableRarityIds = new Set(availableRarities);
+    const nextRarityIds = new Set([...selectedRarityIds].filter((rarity) => availableRarityIds.has(rarity)));
+    const fallbackRarity = availableRarityIds.has(DEFAULT_WEAPON_RARITY_FILTER) ? DEFAULT_WEAPON_RARITY_FILTER : availableRarities[0];
+
+    if (nextRarityIds.size === 0 && fallbackRarity) {
+      nextRarityIds.add(fallbackRarity);
     }
 
-    return Array.from(selectedWeaponTypeIds)[0];
+    if (areRarityFiltersEqual(selectedRarityIds, nextRarityIds)) {
+      return false;
+    }
+
+    selectedRarityIds = nextRarityIds;
+
+    return true;
+  }
+
+  function areRarityFiltersEqual(left: ReadonlySet<ShopItemRarity>, right: ReadonlySet<ShopItemRarity>): boolean {
+    if (left.size !== right.size) {
+      return false;
+    }
+
+    return [...left].every((rarity) => right.has(rarity));
   }
 
   function createProductButton(product: WeaponProduct, hero: HeroState, isSelected: boolean): HTMLButtonElement {
@@ -694,6 +744,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
         return;
       }
 
+      closeRarityFilter();
       previewProduct = product;
       options.onPreview?.(product);
       render();
@@ -714,7 +765,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     strip.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
     strip.append(
       createProductIcon(iconUrl, "armory-shop__selected-icon"),
-      createSelectedMeta(displayName, rarity, "damage", DAMAGE_HIT_ICON_ASSET_URL, damage, currentDamage, product.price, {
+      createSelectedMeta(displayName, rarity, "damage", DAMAGE_HIT_ICON_ASSET_URL, damage, currentDamage, {
         compareStat: !isConsumable,
         unitLabel: isConsumable ? "x1" : undefined,
       }),
@@ -732,8 +783,14 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.type = "button";
     button.disabled =
       actionState === "equipped" || actionState === "no-gold" || actionState === "sealed" || actionState === "locked" || actionState === "max";
-    button.textContent = actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
+    if (actionState === "buy" || actionState === "no-gold") {
+      button.classList.add("armory-shop__selected-buy--price");
+      appendPriceContent(button, product.price);
+    } else {
+      button.textContent = getShopProductActionLabel(actionState, product.price);
+    }
     button.addEventListener("click", () => {
+      closeRarityFilter();
       options.onBuy(product);
     });
 
@@ -744,38 +801,49 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const currentCapacity = getHeroBowShotCapacity(hero);
     const isMaxed = currentCapacity >= HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX;
     const canBuy = !isMaxed && hero.gold >= HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE;
-    const card = document.createElement("div");
+    const card = document.createElement("button");
     const icon = document.createElement("img");
-    const meta = document.createElement("div");
-    const name = document.createElement("span");
     const capacity = document.createElement("span");
+    const currentCapacityNode = document.createElement("span");
+    const arrowNode = document.createElement("span");
+    const nextCapacityNode = document.createElement("span");
     const price = document.createElement("span");
-    const button = document.createElement("button");
 
     card.className = "weapon-shop__bow-upgrade-card";
+    card.type = "button";
+    card.disabled = isMaxed || !canBuy || !options.onBowCapacityUpgrade;
     card.classList.toggle("weapon-shop__bow-upgrade-card--max", isMaxed);
     card.classList.toggle("weapon-shop__bow-upgrade-card--no-gold", !isMaxed && !canBuy);
+    card.setAttribute(
+      "aria-label",
+      isMaxed
+        ? `Arrows capacity ${currentCapacity} of ${HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX}, max`
+        : `Upgrade arrows capacity from ${currentCapacity} to ${HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX} for ${HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE} gold`,
+    );
     icon.className = "weapon-shop__bow-upgrade-icon";
     icon.src = ARROW_ICON_ASSET_URL;
     icon.alt = "";
     icon.decoding = "async";
     icon.draggable = false;
-    meta.className = "weapon-shop__bow-upgrade-meta";
-    name.className = "weapon-shop__bow-upgrade-name";
-    name.textContent = "Arrows";
     capacity.className = "weapon-shop__bow-upgrade-capacity";
-    capacity.textContent = isMaxed ? `${currentCapacity} / ${HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX}` : `${currentCapacity} > ${HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX}`;
+    currentCapacityNode.className = "weapon-shop__bow-upgrade-capacity-current";
+    currentCapacityNode.textContent = String(currentCapacity);
+    arrowNode.className = "weapon-shop__bow-upgrade-capacity-arrow";
+    arrowNode.textContent = isMaxed ? "/" : ">";
+    nextCapacityNode.className = "weapon-shop__bow-upgrade-capacity-next";
+    nextCapacityNode.textContent = String(HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX);
     price.className = "weapon-shop__bow-upgrade-price";
-    appendPriceContent(price, HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE);
-    button.className = "weapon-shop__bow-upgrade-button";
-    button.type = "button";
-    button.disabled = isMaxed || !canBuy || !options.onBowCapacityUpgrade;
-    button.textContent = isMaxed ? "Max" : canBuy ? "Buy" : "No gold";
-    button.addEventListener("click", () => {
+    if (isMaxed) {
+      price.textContent = "Max";
+    } else {
+      appendPriceContent(price, HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE);
+    }
+    card.addEventListener("click", () => {
+      closeRarityFilter();
       options.onBowCapacityUpgrade?.();
     });
-    meta.append(name, capacity, price);
-    card.append(icon, meta, button);
+    capacity.append(currentCapacityNode, arrowNode, nextCapacityNode);
+    card.append(icon, capacity, price);
 
     return card;
   }
@@ -914,7 +982,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   function getWeaponProductCardState(hero: HeroState, product: WeaponProduct): ShopProductActionState {
     if (areHeroItemsConsumable(product.itemIds)) {
-      const isMax = product.itemIds.every((itemId) => getHeroItemQuantity(hero, itemId) >= getHeroConsumableMaxQuantity(itemId));
+      const isMax = product.itemIds.every((itemId) => getConsumableQuantity(hero, itemId) >= getHeroConsumableMaxQuantity(itemId));
+
+      if (!canHeroUseItems(hero, product.itemIds)) {
+        return "locked";
+      }
 
       if (isMax) {
         return "max";
@@ -962,6 +1034,10 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     options.onPreviewClear?.();
   }
 
+  function closeRarityFilter(): void {
+    rarityFilter.open = false;
+  }
+
   function dismissPreviewFromPointerDown(event: PointerEvent): void {
     if (!previewProduct || shop.hidden) {
       return;
@@ -978,7 +1054,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
 
     const targetElement = target instanceof Element ? target : target.parentElement;
-    const shopAction = targetElement?.closest(".armory-shop__option--product, .weapon-shop__rarity-filter, .weapon-shop__type-filter, .armory-shop__back");
+    const shopAction = targetElement?.closest(".armory-shop__option--product, .weapon-shop__rarity-filter, .weapon-shop__category-filter, .armory-shop__back");
 
     if (shopAction && shop.contains(shopAction)) {
       return;
@@ -1230,9 +1306,13 @@ function getConsumableCardInfo(hero: HeroState, itemIds: readonly HeroItemId[]):
   }
 
   return {
-    quantity: Math.min(getHeroItemQuantity(hero, itemId), maxQuantity),
+    quantity: Math.min(getConsumableQuantity(hero, itemId), maxQuantity),
     maxQuantity,
   };
+}
+
+function getConsumableQuantity(hero: HeroState, itemId: HeroItemId): number {
+  return HERO_ITEM_CATALOG[itemId]?.kind === "scroll" ? getHeroItemQuantity(hero, itemId) : getHeroShurikenQuantity(hero);
 }
 
 function createConsumableCardBadges(info: ConsumableCardInfo): HTMLElement {
@@ -1311,7 +1391,6 @@ function createSelectedMeta(
   statIconUrl: string,
   stat: number,
   currentStat: number,
-  price: number,
   options: SelectedMetaOptions = {},
 ): HTMLElement {
   const meta = document.createElement("div");
@@ -1322,14 +1401,15 @@ function createSelectedMeta(
   const statIcon = document.createElement("img");
   const currentStatNode = document.createElement("span");
   const nextStatNode = document.createElement("span");
-  const priceNode = document.createElement("span");
   const comparesStat = options.compareStat ?? true;
 
   meta.className = "armory-shop__selected-meta";
   nameNode.className = "armory-shop__selected-name";
   nameText.className = "armory-shop__selected-name-text";
   nameText.textContent = productName;
-  nameNode.append(nameText);
+  rarityNode.className = "armory-shop__selected-rarity";
+  rarityNode.textContent = getShopRarityLabel(rarity);
+  nameNode.append(nameText, rarityNode);
   if (options.unitLabel) {
     const unitNode = document.createElement("span");
 
@@ -1337,8 +1417,6 @@ function createSelectedMeta(
     unitNode.textContent = options.unitLabel;
     nameNode.append(unitNode);
   }
-  rarityNode.className = "armory-shop__selected-rarity";
-  rarityNode.textContent = getShopRarityLabel(rarity);
   statNode.className = "armory-shop__selected-stat";
   statNode.setAttribute("aria-label", !comparesStat || currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
   statIcon.className = "armory-shop__selected-stat-icon";
@@ -1360,9 +1438,7 @@ function createSelectedMeta(
     arrowNode.textContent = ">";
     statNode.append(arrowNode, nextStatNode);
   }
-  priceNode.className = "armory-shop__selected-price";
-  appendPriceContent(priceNode, price);
-  meta.append(nameNode, rarityNode, statNode, priceNode);
+  meta.append(nameNode, statNode);
 
   return meta;
 }

@@ -5,11 +5,14 @@ import {
   areHeroItemsOwned,
   areHeroItemsConsumable,
   canHeroEquipItems,
+  canHeroUseItems,
   getHeroConsumableMaxQuantity,
-  getHeroItemQuantity,
   getHeroRemainingScrollCapacity,
+  getHeroShurikenQuantity,
   getHeroItemRequirementChecks,
   deriveHeroStats,
+  getHeroAttributeTotals,
+  getAgilityBowDamageMultiplier,
   getHeroItemWeaponClass,
   hasHeroUnlockedShopRarity,
   isHeroScrollItemId,
@@ -117,6 +120,10 @@ export function getEquippedShopProductDisplayStat(hero: HeroState, itemIds: Hero
 
 export function getShopProductActionState(hero: HeroState, itemIds: HeroItemId[], price: number): ShopProductActionState {
   if (areHeroItemsConsumable(itemIds)) {
+    if (!canHeroUseItems(hero, itemIds)) {
+      return "locked";
+    }
+
     return isShopConsumableAtMax(hero, itemIds) ? "max" : hero.gold >= price ? "buy" : "no-gold";
   }
 
@@ -295,17 +302,33 @@ function getShopItemStat(item: HeroItemDefinition | undefined, statKind: ShopPro
 function getShopItemDisplayStat(hero: HeroState, item: HeroItemDefinition | undefined, statKind: ShopProductStatKind): number {
   const stat = getShopItemStat(item, statKind);
 
-  if (statKind !== "damage" || !isMeleeWeaponShopItem(item)) {
+  if (statKind !== "damage") {
+    return stat;
+  }
+
+  if (isBowWeaponShopItem(item)) {
+    return Math.round(stat * getHeroBowDamageDisplayMultiplier(hero));
+  }
+
+  if (!isMeleeWeaponShopItem(item)) {
     return stat;
   }
 
   return Math.round(stat * getHeroMeleeDamageDisplayMultiplier(hero, item));
 }
 
+function getHeroBowDamageDisplayMultiplier(hero: HeroState): number {
+  return getAgilityBowDamageMultiplier(getHeroAttributeTotals(hero).agility);
+}
+
 function getHeroMeleeDamageDisplayMultiplier(hero: HeroState, item: HeroItemDefinition): number {
   const weaponMultiplier = getHeroItemWeaponClass(item) === "axe" ? 2 : 1;
 
   return 1 + Math.max(0, deriveHeroStats(hero).meleeDamagePercentBonus) * weaponMultiplier;
+}
+
+function isBowWeaponShopItem(item: HeroItemDefinition | undefined): item is HeroItemDefinition {
+  return Boolean(item && item.kind === "weapon" && getHeroItemWeaponClass(item) === "bow");
 }
 
 function isMeleeWeaponShopItem(item: HeroItemDefinition | undefined): item is HeroItemDefinition {
@@ -323,11 +346,10 @@ function isShopConsumableAtMax(hero: HeroState, itemIds: readonly HeroItemId[]):
     return getHeroRemainingScrollCapacity(hero) <= 0;
   }
 
-  return itemIds.every((itemId) => {
-    const maxQuantity = getHeroConsumableMaxQuantity(itemId);
+  const itemId = itemIds[0];
+  const maxQuantity = itemId ? getHeroConsumableMaxQuantity(itemId) : 0;
 
-    return maxQuantity > 0 && getHeroItemQuantity(hero, itemId) >= maxQuantity;
-  });
+  return maxQuantity > 0 && getHeroShurikenQuantity(hero) >= maxQuantity;
 }
 
 function getHighestShopRarity(rarities: ShopItemRarity[]): ShopItemRarity | undefined {

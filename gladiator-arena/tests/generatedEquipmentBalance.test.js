@@ -109,6 +109,33 @@ const WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS = new Map([
   ["Legendary Sword 02", 80],
   ["Legendary Mace 01", 80],
   ["Legendary Spear 01", 80],
+  ["Rusty Shuriken", 5],
+  ["common shuriken 2", 10],
+  ["uncommon shuriken 1", 15],
+  ["uncommon shuriken 2", 25],
+  ["rare shuriken 1", 30],
+  ["rare shuriken 2", 40],
+  ["epic shuriken 1", 50],
+  ["epic shuriken 2", 60],
+  ["Legendary shuriken 1", 70],
+  ["Legendary shuriken 2", 80],
+  ["Mythical shuriken 1", 90],
+  ["Mythical shuriken 2", 100],
+]);
+
+const BOW_AGILITY_REQUIREMENT_EXPECTATIONS = new Map([
+  ["Bow 01", 5],
+  ["Common bow 02", 10],
+  ["Uncommon bow 1", 15],
+  ["Uncommon bow 2", 20],
+  ["Rare bow 1", 25],
+  ["Rare bow 2", 30],
+  ["Epic bow 1", 35],
+  ["Epic bow 2", 40],
+  ["Legendary bow 1", 45],
+  ["Legendary bow 2", 50],
+  ["Mythic bow 1", 55],
+  ["Mythic bow 2", 60],
 ]);
 
 test("generated shop armor sets occupy their intended progression", () => {
@@ -368,6 +395,19 @@ test("generated shop weapons follow the level one hundred progression gates", ()
 
     assert.ok(item, `missing ${name}`);
     assert.equal(item.levelRequirement, expectedLevel, `${name} level requirement`);
+  });
+});
+
+test("generated shop bows follow agility progression gates", () => {
+  const shopBows = generatedItems.filter((item) => item.kind === "weapon" && item.weaponClass === "bow" && item.weaponProduct);
+
+  assert.equal(shopBows.length, BOW_AGILITY_REQUIREMENT_EXPECTATIONS.size);
+
+  BOW_AGILITY_REQUIREMENT_EXPECTATIONS.forEach((expectedAgility, name) => {
+    const item = shopBows.find((candidate) => candidate.name === name);
+
+    assert.ok(item, `missing ${name}`);
+    assert.equal(item.requirements?.agility, expectedAgility, `${name} agility requirement`);
   });
 });
 

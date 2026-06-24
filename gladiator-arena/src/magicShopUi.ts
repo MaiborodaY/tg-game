@@ -661,7 +661,6 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     selectButton.append(icon, text);
     upgradeButton.className = "magic-shop__list-upgrade";
     upgradeButton.type = "button";
-    upgradeButton.textContent = "+";
     upgradeButton.addEventListener("click", (event) => {
       event.stopPropagation();
 
@@ -1018,7 +1017,7 @@ function refreshMagicProductUpgradeButton(
   button.disabled = !canUpgrade;
   button.setAttribute("aria-label", `Upgrade ${getMagicProductDisplayName(product)} for ${upgradePrice} gold`);
   button.title = `Upgrade ${upgradePrice}`;
-  setTextContentIfChanged(button, "+");
+  setTextContentIfChanged(button, "");
 }
 
 function getWeaponSharpeningEffectText(hasWeapon: boolean, isSharpenable: boolean, isMaxSharpening: boolean, sharpeningPrice: number | undefined, hasEnoughGold: boolean): string {

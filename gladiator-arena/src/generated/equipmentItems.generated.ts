@@ -4020,7 +4020,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"requirements":{"agility":10},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"requirements":{"agility":5},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-01"},
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
@@ -4032,7 +4032,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":50,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":2,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":2,"requirements":{"agility":10},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-common-bow-02"},
     equipmentTuning: {"x":-70,"y":7,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
@@ -4044,7 +4044,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","price":100,"itemIds":["generated_equipment_weapon_bow_common_bow_02"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":7,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":7,"requirements":{"agility":35},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-epic-bow-1"},
     equipmentTuning: {"x":-75,"y":4,"angle":90,"scaleX":1.6,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
@@ -4056,7 +4056,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_epic_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":8,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":8,"requirements":{"agility":40},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-epic-bow-2"},
     equipmentTuning: {"x":-92,"y":7,"angle":90,"scaleX":2.12,"scaleY":1.69,"flipX":true,"flipY":false},
     asset: {
@@ -4068,7 +4068,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","price":0,"itemIds":["generated_equipment_weapon_bow_epic_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":9,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":9,"requirements":{"agility":45},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-legendary-bow-1"},
     equipmentTuning: {"x":-100,"y":1,"angle":90,"scaleX":2.07,"scaleY":1.9,"flipX":true,"flipY":false},
     asset: {
@@ -4080,7 +4080,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_legendary_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":10,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":10,"requirements":{"agility":50},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-legendary-bow-2"},
     equipmentTuning: {"x":-109,"y":10,"angle":90,"scaleX":1.37,"scaleY":2.02,"flipX":true,"flipY":false},
     asset: {
@@ -4092,7 +4092,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","price":0,"itemIds":["generated_equipment_weapon_bow_legendary_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":11,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":11,"requirements":{"agility":55},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-mythic-bow-1"},
     equipmentTuning: {"x":-108,"y":-7,"angle":90,"scaleX":1.8,"scaleY":1.99,"flipX":false,"flipY":false},
     asset: {
@@ -4104,7 +4104,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","price":1139,"itemIds":["generated_equipment_weapon_bow_mythic_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":12,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":12,"requirements":{"agility":60},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-mythic-bow-2"},
     equipmentTuning: {"x":-112,"y":4,"angle":90,"scaleX":1.3,"scaleY":2.02,"flipX":false,"flipY":false},
     asset: {
@@ -4116,7 +4116,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","price":1033,"itemIds":["generated_equipment_weapon_bow_mythic_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":5,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":5,"requirements":{"agility":25},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-rare-bow-1"},
     equipmentTuning: {"x":-74,"y":1,"angle":90,"scaleX":1.35,"scaleY":1.35,"flipX":true,"flipY":false},
     asset: {
@@ -4128,7 +4128,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_rare_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":6,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":6,"requirements":{"agility":30},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-rare-bow-2"},
     equipmentTuning: {"x":-75,"y":13,"angle":90,"scaleX":1.64,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
@@ -4140,7 +4140,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","price":0,"itemIds":["generated_equipment_weapon_bow_rare_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":3,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":3,"requirements":{"agility":15},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-uncommon-bow-1"},
     equipmentTuning: {"x":-68,"y":5,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
@@ -4152,7 +4152,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":4,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":4,"requirements":{"agility":20},"weaponClass":"bow"},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-uncommon-bow-2"},
     equipmentTuning: {"x":-69,"y":6,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
@@ -4409,7 +4409,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"shuriken","levelRequirement":5},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-01"},
     equipmentTuning: {"x":-11,"y":29,"angle":91,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {
@@ -4421,7 +4421,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","price":5,"itemIds":["generated_equipment_weapon_shuriken_01"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"shuriken","levelRequirement":10},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-common-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.3,"scaleY":0.3,"flipX":false,"flipY":false},
     asset: {
@@ -4433,7 +4433,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","price":20,"itemIds":["generated_equipment_weapon_shuriken_common_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"shuriken","levelRequirement":50},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-epic-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.45,"scaleY":0.45,"flipX":false,"flipY":false},
     asset: {
@@ -4445,7 +4445,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","price":170,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"shuriken","levelRequirement":60},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-epic-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.45,"scaleY":0.45,"flipX":false,"flipY":false},
     asset: {
@@ -4457,7 +4457,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","price":200,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"shuriken","levelRequirement":70},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-legendary-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.5,"scaleY":0.5,"flipX":false,"flipY":false},
     asset: {
@@ -4469,7 +4469,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","price":230,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"shuriken","levelRequirement":80},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-legendary-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.5,"scaleY":0.5,"flipX":false,"flipY":false},
     asset: {
@@ -4481,7 +4481,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","price":260,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken","levelRequirement":90},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-mythical-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.6,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
@@ -4493,7 +4493,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","price":300,"itemIds":["generated_equipment_weapon_shuriken_mythical_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":30,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":30,"weaponClass":"shuriken","levelRequirement":100},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-mythical-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.65,"scaleY":0.65,"flipX":false,"flipY":false},
     asset: {
@@ -4505,7 +4505,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_2","name":"Mythical shuriken 2","price":400,"itemIds":["generated_equipment_weapon_shuriken_mythical_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"shuriken","levelRequirement":30},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-rare-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.4,"scaleY":0.4,"flipX":false,"flipY":false},
     asset: {
@@ -4517,7 +4517,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","price":110,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"shuriken","levelRequirement":40},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-rare-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.4,"scaleY":0.4,"flipX":false,"flipY":false},
     asset: {
@@ -4529,7 +4529,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","price":140,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"shuriken","levelRequirement":15},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-uncommon-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {
@@ -4541,7 +4541,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","price":50,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":8,"weaponClass":"shuriken"},
+    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":8,"weaponClass":"shuriken","levelRequirement":25},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-uncommon-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {

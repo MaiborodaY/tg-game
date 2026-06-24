@@ -14333,7 +14333,7 @@
     "rarity": "common",
     "damageBonus": 1,
     "requirements": {
-      "agility": 10
+      "agility": 5
     },
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
@@ -14377,6 +14377,9 @@
     "damageBonus": 2,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 10
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-common-bow-02"
     },
@@ -14417,6 +14420,9 @@
     "damageBonus": 7,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 35
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-epic-bow-1"
     },
@@ -14457,6 +14463,9 @@
     "damageBonus": 8,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 40
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-epic-bow-2"
     },
@@ -14497,6 +14506,9 @@
     "damageBonus": 9,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 45
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-legendary-bow-1"
     },
@@ -14537,6 +14549,9 @@
     "damageBonus": 10,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 50
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-legendary-bow-2"
     },
@@ -14577,6 +14592,9 @@
     "damageBonus": 11,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 55
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-mythic-bow-1"
     },
@@ -14617,6 +14635,9 @@
     "damageBonus": 12,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 60
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-mythic-bow-2"
     },
@@ -14657,6 +14678,9 @@
     "damageBonus": 5,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 25
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-rare-bow-1"
     },
@@ -14697,6 +14721,9 @@
     "damageBonus": 6,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 30
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-rare-bow-2"
     },
@@ -14737,6 +14764,9 @@
     "damageBonus": 3,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 15
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-uncommon-bow-1"
     },
@@ -14777,6 +14807,9 @@
     "damageBonus": 4,
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
+    "requirements": {
+      "agility": 20
+    },
     "assetKeys": {
       "weaponBowAssetKey": "weapon-bow-uncommon-bow-2"
     },
@@ -15608,6 +15641,7 @@
     "damageBonus": 2,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 5,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-01"
     },
@@ -15648,6 +15682,7 @@
     "damageBonus": 4,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 10,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-common-shuriken-2"
     },
@@ -15688,6 +15723,7 @@
     "damageBonus": 14,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 50,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-epic-shuriken-1"
     },
@@ -15728,6 +15764,7 @@
     "damageBonus": 16,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 60,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-epic-shuriken-2"
     },
@@ -15768,6 +15805,7 @@
     "damageBonus": 18,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 70,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-legendary-shuriken-1"
     },
@@ -15808,6 +15846,7 @@
     "damageBonus": 20,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 80,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-legendary-shuriken-2"
     },
@@ -15848,6 +15887,7 @@
     "damageBonus": 22,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 90,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-mythical-shuriken-1"
     },
@@ -15888,6 +15928,7 @@
     "damageBonus": 30,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 100,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-mythical-shuriken-2"
     },
@@ -15928,6 +15969,7 @@
     "damageBonus": 10,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 30,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-rare-shuriken-1"
     },
@@ -15968,6 +16010,7 @@
     "damageBonus": 12,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 40,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-rare-shuriken-2"
     },
@@ -16008,6 +16051,7 @@
     "damageBonus": 6,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 15,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-uncommon-shuriken-1"
     },
@@ -16048,6 +16092,7 @@
     "damageBonus": 8,
     "weaponClass": "shuriken",
     "equipmentSlot": "weaponMain",
+    "levelRequirement": 25,
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-uncommon-shuriken-2"
     },

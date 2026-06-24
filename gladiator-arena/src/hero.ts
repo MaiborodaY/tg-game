@@ -304,6 +304,7 @@ export interface CombatRewardApplication {
 export const DEFAULT_HERO_ID = "local-hero";
 export const DEFAULT_HERO_NAME = "Borshemir";
 export const HERO_MAX_LEVEL = 100;
+export const HERO_LEVELS_PER_BOSS_TIER = 10;
 export const HERO_TOTAL_XP_TO_MAX_LEVEL = 5000;
 export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   10,
@@ -413,6 +414,7 @@ export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.005;
 export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
 export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.015;
 export const HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS = 0.05;
+export const HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS = 0.05;
 export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
@@ -891,10 +893,12 @@ function deriveFighterStats(
   const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
   const armorBonus = armorOverride ?? getHeroEquipmentArmor(equipment);
   const mainWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponMain") + getHeroWeaponSharpeningDamageBonus(weaponSharpenings, equipment.weaponMain);
-  const bowWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponBow");
   const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength);
   const agilityBonus = getHeroAttributeTotal(baseStats.agility, equipmentBonuses.agility);
   const vitalityBonus = getHeroAttributeTotal(baseStats.vitality, equipmentBonuses.vitality);
+  const bowWeaponDamageBonus = Math.round(
+    getHeroEquipmentSlotDamageBonus(equipment, "weaponBow") * getAgilityBowDamageMultiplier(agilityBonus),
+  );
 
   return {
     maxHp: MAX_HP + vitalityBonus * HERO_VITALITY_HP_BONUS,
@@ -910,6 +914,10 @@ function deriveFighterStats(
     restHpRestoreBonus: vitalityBonus * HERO_VITALITY_REST_HP_BONUS,
     restStaminaRestoreBonus: vitalityBonus * HERO_VITALITY_REST_STAMINA_BONUS,
   };
+}
+
+export function getAgilityBowDamageMultiplier(agility: number): number {
+  return 1 + Math.max(0, Math.floor(agility)) * HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS;
 }
 
 export function getEquippedHeroItems(equipment: HeroEquipment): HeroItemDefinition[] {
@@ -1207,12 +1215,16 @@ export function getHeroItemRequirementChecks(hero: HeroState, itemIds: readonly 
   return [...levelChecks, ...attributeChecks];
 }
 
-export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+export function canHeroUseItems(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
   if (itemIds.some((itemId) => !HERO_ITEM_CATALOG[itemId])) {
     return false;
   }
 
   return getHeroItemRequirementChecks(hero, itemIds).every((requirement) => requirement.current >= requirement.required);
+}
+
+export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
+  return !areHeroItemsConsumable(itemIds) && canHeroUseItems(hero, itemIds);
 }
 
 export function isHeroConsumableItem(item: HeroItemDefinition | undefined): boolean {
@@ -1257,6 +1269,20 @@ export function getHeroConsumableMaxQuantity(itemId: HeroItemId): number {
 
 function isHeroShurikenItemId(itemId: HeroItemId): boolean {
   return getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) === "shuriken";
+}
+
+export function getHeroShurikenQuantity(hero: HeroState): number {
+  return getInventoryShurikenQuantity(hero.inventory);
+}
+
+function getInventoryShurikenQuantity(inventory: readonly HeroInventoryEntry[]): number {
+  return inventory.reduce((total, entry) => {
+    if (!isHeroShurikenItemId(entry.itemId)) {
+      return total;
+    }
+
+    return total + Math.max(0, Math.floor(entry.quantity ?? 0));
+  }, 0);
 }
 
 export function getHeroShurikenItemId(hero?: HeroState): HeroItemId | undefined {
@@ -1840,9 +1866,11 @@ export function applyCombatReward(
   const reward = getBattleReward(combat);
   const heroAfterConsumables = applyCombatConsumableUsage(hero, combat, now);
   const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterConsumables, combat, random) : [];
-  const heroWithReward = applyBattleReward(heroAfterConsumables, reward, now);
-  const heroWithBossProgress = combat.result === "win" && combat.encounter?.kind === "boss" ? recordArenaBossDefeat(heroWithReward, combat.encounter.opponentId, now) : heroWithReward;
-  const lootApplication = applyArenaLootWithAppliedDrops(heroWithBossProgress, rolledLoot, now);
+  const heroBeforeReward = combat.result === "win" && combat.encounter?.kind === "boss"
+    ? recordArenaBossDefeat(heroAfterConsumables, combat.encounter.opponentId, now)
+    : heroAfterConsumables;
+  const heroWithReward = applyBattleReward(heroBeforeReward, reward, now);
+  const lootApplication = applyArenaLootWithAppliedDrops(heroWithReward, rolledLoot, now);
 
   return {
     reward,
@@ -1860,6 +1888,13 @@ export function hasHeroDefeatedArenaBoss(hero: HeroState, bossId: string): boole
   return (hero.defeatedArenaBossIds ?? []).includes(bossId);
 }
 
+export function getHeroLevelCap(hero: HeroState): number {
+  const defeatedBossIds = new Set((hero.defeatedArenaBossIds ?? []).filter((bossId): bossId is string => Boolean(bossId)));
+  const defeatedGateBossCount = getArenaLevelGateBossIds().filter((bossId) => defeatedBossIds.has(bossId)).length;
+
+  return Math.min(HERO_MAX_LEVEL, HERO_LEVELS_PER_BOSS_TIER * (defeatedGateBossCount + 1));
+}
+
 export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new Date().toISOString()): HeroState {
   if (!bossId || hasHeroDefeatedArenaBoss(hero, bossId)) {
     return hero;
@@ -1874,13 +1909,7 @@ export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new
 
 export function unlockAllArenaBossTiers(hero: HeroState, now = new Date().toISOString()): HeroState {
   const defeatedArenaBossIds = hero.defeatedArenaBossIds ?? [];
-  const missingUnlockBossIds = [
-    ...new Set(
-      resolveArenaTierDefinitions()
-        .map((tier) => tier.unlockBossId)
-        .filter((bossId): bossId is string => Boolean(bossId)),
-    ),
-  ].filter((bossId) => !defeatedArenaBossIds.includes(bossId));
+  const missingUnlockBossIds = getArenaLevelGateBossIds().filter((bossId) => !defeatedArenaBossIds.includes(bossId));
 
   if (missingUnlockBossIds.length <= 0) {
     return hero;
@@ -1891,6 +1920,16 @@ export function unlockAllArenaBossTiers(hero: HeroState, now = new Date().toISOS
     defeatedArenaBossIds: [...defeatedArenaBossIds, ...missingUnlockBossIds],
     updatedAt: now,
   };
+}
+
+function getArenaLevelGateBossIds(): string[] {
+  return [
+    ...new Set(
+      resolveArenaTierDefinitions()
+        .map((tier) => tier.unlockBossId)
+        .filter((bossId): bossId is string => Boolean(bossId)),
+    ),
+  ];
 }
 
 export function hasHeroUnlockedShopRarity(hero: HeroState, rarity: HeroItemRarity): boolean {
@@ -2093,7 +2132,7 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
     return hero;
   }
 
-  const progress = applyHeroXp(hero.level, hero.xp + reward.xp);
+  const progress = applyHeroXp(hero.level, hero.xp + reward.xp, getHeroLevelCap(hero));
   const earnedSkillPoints = Math.max(0, progress.level - hero.level);
 
   return {
@@ -2198,6 +2237,10 @@ export function updateHeroAppearance(hero: HeroState, appearance: Partial<HeroAp
 
 export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase, now = new Date().toISOString()): HeroState {
   if (areHeroItemsConsumable(purchase.itemIds)) {
+    if (!canHeroUseItems(hero, purchase.itemIds)) {
+      return hero;
+    }
+
     return buyHeroConsumableItems(hero, purchase, now);
   }
 
@@ -2249,11 +2292,18 @@ function buyHeroConsumableItems(hero: HeroState, purchase: HeroItemPurchase, now
     const existingEntry = inventory.find((entry) => entry.itemId === itemId);
     const currentQuantity = Math.max(0, Math.floor(existingEntry?.quantity ?? 0));
     const isScroll = isHeroScrollItemId(itemId);
+    const isShuriken = isHeroShurikenItemId(itemId);
     const totalScrollQuantity = isScroll
       ? inventory.reduce((total, entry) => (isHeroScrollItemId(entry.itemId) ? total + Math.max(0, Math.floor(entry.quantity ?? 0)) : total), 0)
       : 0;
+    const totalShurikenQuantity = isShuriken ? getInventoryShurikenQuantity(inventory) : 0;
 
-    if (maxQuantity <= 0 || currentQuantity >= maxQuantity || (isScroll && totalScrollQuantity >= HERO_SCROLL_MAX_QUANTITY)) {
+    if (
+      maxQuantity <= 0 ||
+      currentQuantity >= maxQuantity ||
+      (isScroll && totalScrollQuantity >= HERO_SCROLL_MAX_QUANTITY) ||
+      (isShuriken && totalShurikenQuantity >= HERO_SHURIKEN_MAX_QUANTITY)
+    ) {
       return hero;
     }
 
@@ -2284,12 +2334,13 @@ export function getHeroXpToNextLevel(level: number): number {
   return HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[normalizedLevel - 1] ?? HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length - 1]!;
 }
 
-function applyHeroXp(level: number, xp: number): Pick<HeroState, "level" | "xp" | "xpToNextLevel"> {
+function applyHeroXp(level: number, xp: number, levelCap = HERO_MAX_LEVEL): Pick<HeroState, "level" | "xp" | "xpToNextLevel"> {
   let nextLevel = Math.max(1, Math.min(HERO_MAX_LEVEL, Math.floor(level)));
   let nextXp = nextLevel >= HERO_MAX_LEVEL ? 0 : Math.max(0, Math.floor(xp));
   let nextXpToNextLevel = getHeroXpToNextLevel(nextLevel);
+  const normalizedLevelCap = Math.max(HERO_LEVELS_PER_BOSS_TIER, Math.min(HERO_MAX_LEVEL, Math.floor(levelCap)));
 
-  while (nextLevel < HERO_MAX_LEVEL && nextXp >= nextXpToNextLevel) {
+  while (nextLevel < HERO_MAX_LEVEL && nextLevel < normalizedLevelCap && nextXp >= nextXpToNextLevel) {
     nextXp -= nextXpToNextLevel;
     nextLevel += 1;
     nextXpToNextLevel = getHeroXpToNextLevel(nextLevel);
@@ -2297,6 +2348,8 @@ function applyHeroXp(level: number, xp: number): Pick<HeroState, "level" | "xp" 
 
   if (nextLevel >= HERO_MAX_LEVEL) {
     nextXp = 0;
+  } else if (nextLevel >= normalizedLevelCap) {
+    nextXp = Math.min(nextXp, nextXpToNextLevel);
   }
 
   return {

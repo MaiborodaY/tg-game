@@ -85,7 +85,7 @@ const generatedItems = {
     weaponClass: "bow",
     equipmentSlot: "weaponBow",
     damageBonus: 5,
-    requirements: { agility: 10 },
+    requirements: { agility: 5 },
   },
   generated_equipment_weapon_shuriken_01: {
     id: "generated_equipment_weapon_shuriken_01",
@@ -95,6 +95,7 @@ const generatedItems = {
     weaponClass: "shuriken",
     equipmentSlot: "weaponMain",
     damageBonus: 2,
+    levelRequirement: 5,
   },
   generated_equipment_weapon_shuriken_rare: {
     id: "generated_equipment_weapon_shuriken_rare",
@@ -104,6 +105,7 @@ const generatedItems = {
     weaponClass: "shuriken",
     equipmentSlot: "weaponMain",
     damageBonus: 7,
+    levelRequirement: 30,
   },
   cloth_breastplate_01: {
     id: "cloth_breastplate_01",
@@ -1030,6 +1032,30 @@ test("combat reward application grants one random missing boss loot once", () =>
   assert.equal(randomCalls, 0);
 });
 
+test("boss victory unlocks the next level cap before applying boss xp", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    level: 10,
+    xp: hero.getHeroXpToNextLevel(10),
+    xpToNextLevel: hero.getHeroXpToNextLevel(10),
+    skillPoints: 10,
+  };
+  const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
+  const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);
+
+  bossState.result = "win";
+
+  const rewardApplication = hero.applyCombatReward(baseHero, bossState, "2026-01-01T00:01:00.000Z", () => 0.999);
+
+  assert.equal(rewardApplication.reward.xp, 12);
+  assert.equal(rewardApplication.heroAfterReward.defeatedArenaBossIds.includes("dust_arena_champion"), true);
+  assert.equal(hero.getHeroLevelCap(rewardApplication.heroAfterReward), 20);
+  assert.equal(rewardApplication.heroAfterReward.level, 11);
+  assert.equal(rewardApplication.heroAfterReward.xp, 12);
+  assert.equal(rewardApplication.heroAfterReward.xpToNextLevel, hero.getHeroXpToNextLevel(11));
+  assert.equal(rewardApplication.heroAfterReward.skillPoints, 11);
+});
+
 test("boss victories are recorded once in hero progression", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
   const firstRecord = hero.recordArenaBossDefeat(baseHero, "dust_arena_champion", "2026-01-01T00:01:00.000Z");
@@ -1038,6 +1064,19 @@ test("boss victories are recorded once in hero progression", () => {
   assert.deepEqual([...firstRecord.defeatedArenaBossIds], ["dust_arena_champion"]);
   assert.equal(firstRecord.updatedAt, "2026-01-01T00:01:00.000Z");
   assert.equal(secondRecord, firstRecord);
+});
+
+test("hero level cap grows by ten levels for each defeated arena boss", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const tierTwoHero = hero.recordArenaBossDefeat(baseHero, "dust_arena_champion", "2026-01-01T00:01:00.000Z");
+  const tierThreeHero = hero.recordArenaBossDefeat(tierTwoHero, "arena_boss_2", "2026-01-01T00:02:00.000Z");
+  const fullyUnlockedHero = hero.unlockAllArenaBossTiers(baseHero, "2026-01-01T00:03:00.000Z");
+
+  assert.equal(hero.HERO_LEVELS_PER_BOSS_TIER, 10);
+  assert.equal(hero.getHeroLevelCap(baseHero), 10);
+  assert.equal(hero.getHeroLevelCap(tierTwoHero), 20);
+  assert.equal(hero.getHeroLevelCap(tierThreeHero), 30);
+  assert.equal(hero.getHeroLevelCap(fullyUnlockedHero), hero.HERO_MAX_LEVEL);
 });
 
 test("hero can unlock all arena boss tiers", () => {
@@ -1083,7 +1122,7 @@ test("hero level progression uses five thousand total xp across one hundred leve
   assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.slice(0, 9).reduce((total, xp) => total + xp, 0), 115);
 });
 
-test("battle xp follows the level table and caps at level one hundred", () => {
+test("battle xp follows the level table and respects boss level gates", () => {
   const staleHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
     xp: 9,
@@ -1097,7 +1136,28 @@ test("battle xp follows the level table and caps at level one hundred", () => {
   assert.equal(levelTwoHero.xpToNextLevel, 10);
   assert.equal(levelTwoHero.skillPoints, 2);
 
-  const maxHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 5000 });
+  const cappedHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 5000 });
+
+  assert.equal(cappedHero.level, 10);
+  assert.equal(cappedHero.xp, hero.getHeroXpToNextLevel(10));
+  assert.equal(cappedHero.xpToNextLevel, hero.getHeroXpToNextLevel(10));
+  assert.equal(cappedHero.skillPoints, 10);
+
+  const heroAtCap = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    level: 10,
+    xp: hero.getHeroXpToNextLevel(10) - 1,
+    xpToNextLevel: hero.getHeroXpToNextLevel(10),
+    skillPoints: 10,
+  };
+  const stillCappedHero = hero.applyBattleReward(heroAtCap, { gold: 0, xp: 50 }, "2026-01-01T00:02:00.000Z");
+
+  assert.equal(stillCappedHero.level, 10);
+  assert.equal(stillCappedHero.xp, hero.getHeroXpToNextLevel(10));
+  assert.equal(stillCappedHero.skillPoints, 10);
+
+  const fullyUnlockedHero = hero.unlockAllArenaBossTiers(hero.createDefaultHero("2026-01-01T00:00:00.000Z"));
+  const maxHero = hero.applyBattleReward(fullyUnlockedHero, { gold: 0, xp: 5000 });
 
   assert.equal(maxHero.level, 100);
   assert.equal(maxHero.xp, 0);
@@ -1249,7 +1309,7 @@ test("weapon requirements block bow purchases until agility is high enough", () 
   assert.equal(requirementChecks.length, 1);
   assert.equal(requirementChecks[0].kind, "attribute");
   assert.equal(requirementChecks[0].attribute, "agility");
-  assert.equal(requirementChecks[0].required, 10);
+  assert.equal(requirementChecks[0].required, 5);
   assert.equal(requirementChecks[0].current, 0);
   assert.equal(
     hero.buyAndEquipHeroItems(baseHero, { itemIds: ["generated_equipment_weapon_bow_01"], price: 100 }, "2026-01-01T00:01:00.000Z"),
@@ -1260,7 +1320,7 @@ test("weapon requirements block bow purchases until agility is high enough", () 
     ...baseHero,
     baseStats: {
       ...baseHero.baseStats,
-      agility: 10,
+      agility: 5,
     },
   };
   const nextHero = hero.buyAndEquipHeroItems(
@@ -1273,7 +1333,10 @@ test("weapon requirements block bow purchases until agility is high enough", () 
   assert.equal(nextHero.gold, 50);
   assert.equal(nextHero.equipment.weaponMain, null);
   assert.equal(nextHero.equipment.weaponBow, "generated_equipment_weapon_bow_01");
-  assert.equal(hero.deriveHeroStats(nextHero).weaponDamageBonus, 5);
+  assert.equal(hero.HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS, 0.05);
+  assert.equal(hero.getAgilityBowDamageMultiplier(5), 1.25);
+  assert.equal(hero.deriveHeroStats(nextHero).weaponDamageBonus, 6);
+  assert.equal(hero.createCombatStateFromHero(nextHero).player.weaponDamageBonus, 6);
 });
 
 test("weapon level requirements block purchases until hero reaches the required level", () => {
@@ -1308,6 +1371,7 @@ test("weapon level requirements block purchases until hero reaches the required 
 test("shurikens buy as capped consumables without equipping", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    level: 5,
     gold: 20,
   };
   const firstPurchase = hero.buyAndEquipHeroItems(
@@ -1332,6 +1396,52 @@ test("shurikens buy as capped consumables without equipping", () => {
   assert.equal(secondPurchase.equipment.weaponMain, null);
   assert.equal(hero.getHeroItemQuantity(secondPurchase, "generated_equipment_weapon_shuriken_01"), 2);
   assert.equal(blockedPurchase, secondPurchase);
+});
+
+test("shuriken consumables respect level requirements before purchase", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    gold: 20,
+  };
+
+  const blockedPurchase = hero.buyAndEquipHeroItems(
+    baseHero,
+    { itemIds: ["generated_equipment_weapon_shuriken_01"], price: 5 },
+    "2026-01-01T00:01:00.000Z",
+  );
+
+  assert.equal(hero.canHeroUseItems(baseHero, ["generated_equipment_weapon_shuriken_01"]), false);
+  assert.equal(hero.canHeroEquipItems(baseHero, ["generated_equipment_weapon_shuriken_01"]), false);
+  assert.equal(blockedPurchase, baseHero);
+});
+
+test("shuriken consumables share one inventory cap across item types", () => {
+  const baseHero = {
+    ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
+    level: 30,
+    gold: 40,
+  };
+
+  const commonPurchase = hero.buyAndEquipHeroItems(
+    baseHero,
+    { itemIds: ["generated_equipment_weapon_shuriken_01"], price: 5 },
+    "2026-01-01T00:01:00.000Z",
+  );
+  const rarePurchase = hero.buyAndEquipHeroItems(
+    commonPurchase,
+    { itemIds: ["generated_equipment_weapon_shuriken_rare"], price: 10 },
+    "2026-01-01T00:02:00.000Z",
+  );
+  const blockedPurchase = hero.buyAndEquipHeroItems(
+    rarePurchase,
+    { itemIds: ["generated_equipment_weapon_shuriken_01"], price: 5 },
+    "2026-01-01T00:03:00.000Z",
+  );
+
+  assert.equal(hero.getHeroShurikenQuantity(rarePurchase), hero.HERO_SHURIKEN_MAX_QUANTITY);
+  assert.equal(hero.getHeroItemQuantity(rarePurchase, "generated_equipment_weapon_shuriken_01"), 1);
+  assert.equal(hero.getHeroItemQuantity(rarePurchase, "generated_equipment_weapon_shuriken_rare"), 1);
+  assert.equal(blockedPurchase, rarePurchase);
 });
 
 test("scrolls share one capped consumable inventory pool without equipping", () => {

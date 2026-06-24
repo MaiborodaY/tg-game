@@ -5229,8 +5229,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop.armory-shop--city-mode::after {
-  content: "WEAPONSMITH";
-  min-width: 166px;
+  content: none;
 }
 
 .magic-shop.armory-shop--city-mode::after {
@@ -5276,6 +5275,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop.armory-shop--city-mode {
+  --shop-city-header-height: 48px;
   --shop-city-product-columns: 4;
 }
 
@@ -5674,7 +5674,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop:not(.armory-shop--city-mode) .armory-shop__header {
-  grid-template-columns: 34px minmax(72px, 0.48fr) minmax(0, 1fr) minmax(92px, 0.82fr) minmax(58px, auto);
+  grid-template-columns: 34px minmax(72px, 0.4fr) minmax(86px, 0.42fr) minmax(0, 1.35fr) minmax(58px, auto);
 }
 
 .armory-shop--city-mode .armory-shop__header {
@@ -5714,15 +5714,15 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__header {
-  grid-template-columns: minmax(0, 1fr) minmax(82px, 0.78fr) minmax(58px, auto);
+  grid-template-columns: minmax(76px, 0.34fr) minmax(0, 1fr);
   gap: 5px;
   align-items: center;
   z-index: 8;
 }
 
 .weapon-shop.armory-shop--city-mode.armory-shop--has-selection .armory-shop__header {
-  grid-template-columns: minmax(0, 1fr) clamp(66px, 17vw, 78px);
-  gap: 7px;
+  grid-template-columns: minmax(76px, 0.34fr) minmax(0, 1fr);
+  gap: 5px;
 }
 
 .armory-shop--city-mode .armory-shop__header::before {
@@ -5739,6 +5739,10 @@ body.debug-active .city-menu__portrait-button:active {
 
 .weapon-shop.armory-shop--city-mode .armory-shop__menu {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__menu:has(.weapon-shop__rarity-filter[open]) {
+  z-index: 60;
 }
 
 .magic-shop.armory-shop--city-mode .armory-shop__menu {
@@ -5899,6 +5903,86 @@ body.debug-active .city-menu__portrait-button:active {
     0 0 8px var(--shop-rarity-soft, rgba(255, 211, 132, 0));
 }
 
+.weapon-shop__category-filter {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(34px, 1fr);
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 1px;
+  scrollbar-width: none;
+}
+
+.weapon-shop__category-filter::-webkit-scrollbar {
+  display: none;
+}
+
+.weapon-shop__category-button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 30px;
+  padding: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 211, 132, 0.28);
+  border-radius: 7px;
+  color: #d9ad67;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(8, 2, 1, 0.34)),
+    rgba(24, 8, 3, 0.46);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.1),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.64),
+    0 1px 0 rgba(255, 211, 132, 0.07);
+  cursor: pointer;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.weapon-shop__category-button--active {
+  border-color: rgba(127, 220, 102, 0.68);
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, rgba(160, 234, 103, 0.22), rgba(34, 82, 30, 0.18) 48%, rgba(8, 2, 1, 0.42)),
+    rgba(24, 8, 3, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.18),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.62),
+    0 0 0 1px rgba(101, 198, 77, 0.28),
+    0 0 9px rgba(101, 198, 77, 0.22);
+}
+
+.weapon-shop__category-button:active {
+  transform: translateY(1px);
+}
+
+.weapon-shop__category-icon {
+  display: block;
+  max-width: 24px;
+  max-height: 23px;
+  object-fit: contain;
+  pointer-events: none;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.82))
+    drop-shadow(0 0 3px rgba(255, 211, 132, 0.18));
+}
+
+.weapon-shop.armory-shop--city-mode .weapon-shop__category-filter {
+  grid-auto-columns: minmax(34px, 1fr);
+  overflow: hidden;
+}
+
+.weapon-shop.armory-shop--city-mode .weapon-shop__category-button {
+  padding: 4px;
+}
+
+.weapon-shop.armory-shop--city-mode .weapon-shop__category-icon {
+  max-width: 25px;
+  max-height: 24px;
+}
+
 .armory-shop__parts-filter {
   position: relative;
   z-index: 4;
@@ -5965,19 +6049,48 @@ body.debug-active .city-menu__portrait-button:active {
   bottom: calc(100% + 5px);
 }
 
-.weapon-shop .weapon-shop__rarity-panel,
-.weapon-shop .weapon-shop__type-panel {
+.weapon-shop .weapon-shop__rarity-panel {
   top: auto;
   bottom: calc(100% + 5px);
-  z-index: 40;
+  z-index: 80;
 }
 
 .weapon-shop .weapon-shop__rarity-panel {
-  min-width: 126px;
+  gap: 7px;
+  min-width: 164px;
+  padding: 10px 9px;
+  border-radius: 8px;
 }
 
-.weapon-shop .weapon-shop__type-panel {
-  min-width: 132px;
+.weapon-shop.armory-shop--city-mode .weapon-shop__rarity-panel {
+  right: auto;
+  left: 0;
+}
+
+.weapon-shop .weapon-shop__rarity-option {
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 22px;
+  color: var(--shop-rarity-light, #f0c57a);
+  font-size: 0.86rem;
+  text-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.95),
+    0 0 5px var(--shop-rarity-soft, rgba(255, 211, 132, 0.18));
+}
+
+.weapon-shop .weapon-shop__rarity-option:hover {
+  color: #fff0bd;
+  background: linear-gradient(90deg, var(--shop-rarity-soft, rgba(255, 211, 132, 0.14)), transparent);
+}
+
+.weapon-shop .weapon-shop__rarity-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--shop-rarity, #d59a3c);
+}
+
+.weapon-shop .weapon-shop__rarity-option-text {
+  color: var(--shop-rarity-light, #f0c57a);
 }
 
 .armory-shop__parts-option {
@@ -6026,16 +6139,14 @@ body.debug-active .city-menu__portrait-button:active {
 .armory-shop--city-mode:not(.magic-shop) .armory-shop__set-filter,
 .weapon-shop.armory-shop--city-mode .weapon-shop__rarity-summary,
 .armory-shop--city-mode:not(.weapon-shop) .armory-shop__parts-summary,
-.weapon-shop.armory-shop--city-mode .weapon-shop__type-summary,
+.weapon-shop.armory-shop--city-mode .weapon-shop__category-button,
 .armory-shop--city-mode:not(.weapon-shop) .armory-shop__toolbar-button {
   height: 34px;
 }
 
 .armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__set-filter,
 .armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__parts-filter,
-.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__toolbar-button,
-.weapon-shop.armory-shop--city-mode.armory-shop--has-selection .weapon-shop__rarity-filter,
-.weapon-shop.armory-shop--city-mode.armory-shop--has-selection .weapon-shop__type-filter {
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__toolbar-button {
   display: none;
 }
 
@@ -6120,8 +6231,7 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 7px;
 }
 
-.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__header-meta,
-.weapon-shop.armory-shop--city-mode.armory-shop--has-selection .armory-shop__header-meta {
+.armory-shop--city-mode:not(.weapon-shop).armory-shop--has-selection .armory-shop__header-meta {
   grid-column: 2;
   grid-row: 1;
   width: 100%;
@@ -6129,16 +6239,27 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__header-meta {
-  position: relative;
-  top: auto;
+  position: absolute;
+  top: 8px;
+  left: 8px;
   right: auto;
   bottom: auto;
-  z-index: 2;
-  width: 100%;
-  min-width: 0;
-  align-self: stretch;
-  padding: 5px 6px;
+  z-index: 4;
+  grid-template-rows: auto 1px auto;
+  width: auto;
+  min-width: 70px;
+  max-width: 96px;
+  align-self: auto;
+  padding: 5px 7px;
+  border-color: rgba(255, 211, 132, 0.26);
   border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.08), rgba(8, 2, 1, 0.42)),
+    rgba(16, 5, 2, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.1),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.62),
+    0 2px 5px rgba(8, 2, 1, 0.34);
 }
 
 .armory-shop--city-mode:not(.weapon-shop) .armory-shop__header-meta::before,
@@ -6258,13 +6379,29 @@ body.debug-active .city-menu__portrait-button:active {
   animation: none;
 }
 
-.armory-shop--city-mode:not(.weapon-shop) .armory-shop__selected,
-.weapon-shop.armory-shop--city-mode .armory-shop__selected {
+.armory-shop--city-mode:not(.weapon-shop) .armory-shop__selected {
   grid-column: 1;
   grid-row: 1;
 }
 
+.weapon-shop.armory-shop--city-mode .armory-shop__selected {
+  position: absolute;
+  left: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
+  right: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + 6px);
+  z-index: 5;
+  grid-column: auto;
+  grid-row: auto;
+  width: auto;
+  height: 66px;
+  align-self: auto;
+}
+
 .armory-shop--city-mode .armory-shop__selected[hidden] {
+  display: none;
+}
+
+.weapon-shop.armory-shop--city-mode.armory-shop--has-selection .weapon-shop__bow-upgrade {
   display: none;
 }
 
@@ -6274,130 +6411,104 @@ body.debug-active .city-menu__portrait-button:active {
 
 .weapon-shop.armory-shop--city-mode .weapon-shop__bow-upgrade {
   position: absolute;
-  right: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
-  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-bottom) + 8px);
   left: calc(var(--shop-frame-side-width) + var(--shop-city-panel-pad-x) + 6px);
-  z-index: 3;
+  right: auto;
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-bottom) + 7px);
+  z-index: 4;
   display: grid;
-  justify-items: center;
+  justify-items: start;
   pointer-events: auto;
 }
 
 .weapon-shop__bow-upgrade-card {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) minmax(72px, auto);
-  gap: 8px;
-  align-items: center;
-  width: min(100%, 390px);
-  min-height: 66px;
-  padding: 7px 8px;
-  border: 2px solid rgba(255, 211, 132, 0.34);
-  border-radius: 8px;
+  grid-template-rows: 26px auto 22px;
+  gap: 3px;
+  place-items: center;
+  width: 58px;
+  min-height: 78px;
+  padding: 5px 5px 6px;
+  border: 1px solid rgba(255, 211, 132, 0.34);
+  border-radius: 7px;
   color: #f7d792;
   background:
-    linear-gradient(135deg, rgba(255, 240, 189, 0.18), transparent 42%),
-    linear-gradient(180deg, rgba(74, 28, 11, 0.92), rgba(22, 7, 3, 0.9)),
+    linear-gradient(135deg, rgba(255, 240, 189, 0.13), transparent 40%),
+    linear-gradient(180deg, rgba(74, 28, 11, 0.88), rgba(22, 7, 3, 0.88)),
     var(--ui-panel-wood-texture) center / 220px 220px repeat;
   box-shadow:
-    inset 0 1px 0 rgba(255, 246, 210, 0.22),
-    inset 0 -4px 0 rgba(8, 2, 1, 0.24),
-    0 2px 0 rgba(8, 2, 1, 0.7),
-    0 0 0 1px rgba(8, 2, 1, 0.7);
+    inset 0 1px 0 rgba(255, 246, 210, 0.18),
+    inset 0 -2px 0 rgba(8, 2, 1, 0.22),
+    0 2px 0 rgba(8, 2, 1, 0.62),
+    0 0 0 1px rgba(8, 2, 1, 0.62);
+  cursor: pointer;
   font-family: Georgia, "Times New Roman", serif;
 }
 
+.weapon-shop__bow-upgrade-card--max,
+.weapon-shop__bow-upgrade-card--no-gold {
+  filter: saturate(0.78) brightness(0.86);
+}
+
+.weapon-shop__bow-upgrade-card:disabled {
+  cursor: default;
+}
+
 .weapon-shop__bow-upgrade-icon {
-  width: 42px;
-  height: 42px;
-  padding: 4px;
-  border: 1px solid rgba(255, 211, 132, 0.26);
-  border-radius: 7px;
-  background:
-    radial-gradient(circle at 42% 28%, rgba(255, 246, 210, 0.16), transparent 55%),
-    rgba(8, 2, 1, 0.38);
+  width: 25px;
+  height: 25px;
   object-fit: contain;
-}
-
-.weapon-shop__bow-upgrade-meta {
-  display: grid;
-  grid-template-areas:
-    "name price"
-    "capacity price";
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 8px;
-  min-width: 0;
-  align-items: center;
-}
-
-.weapon-shop__bow-upgrade-name {
-  grid-area: name;
-  overflow: hidden;
-  color: #ffe6a0;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-overflow: ellipsis;
-  text-shadow: 0 1px 0 #160703;
-  text-transform: uppercase;
-  white-space: nowrap;
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.82))
+    drop-shadow(0 0 4px rgba(255, 211, 132, 0.16));
 }
 
 .weapon-shop__bow-upgrade-capacity {
-  grid-area: capacity;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 3px;
+  align-items: baseline;
   color: #f0d08a;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 0 #160703;
 }
 
+.weapon-shop__bow-upgrade-capacity-next {
+  color: #8ff06c;
+  text-shadow:
+    0 1px 0 #160703,
+    0 0 5px rgba(104, 215, 74, 0.34);
+}
+
 .weapon-shop__bow-upgrade-price {
-  grid-area: price;
   display: grid;
   grid-auto-flow: column;
   gap: 3px;
   align-items: center;
-  color: #ffd384;
-  font-size: 0.72rem;
+  justify-content: center;
+  width: 100%;
+  min-height: 20px;
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 211, 132, 0.28);
+  border-radius: 5px;
+  color: #ffe6a0;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.12), rgba(8, 2, 1, 0.36)),
+    rgba(8, 2, 1, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.12),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.48);
+  font-size: 0.58rem;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 0 #160703;
 }
 
 .weapon-shop__bow-upgrade-price .armory-shop__price-icon {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   object-fit: contain;
-}
-
-.weapon-shop__bow-upgrade-button {
-  min-width: 0;
-  min-height: 44px;
-  padding: 5px 10px;
-  border: 2px solid #2a1208;
-  border-radius: 7px;
-  color: #35180d;
-  background:
-    linear-gradient(135deg, rgba(255, 246, 203, 0.8), rgba(255, 246, 203, 0.12) 48%, transparent 50%),
-    linear-gradient(180deg, #fff0bd 0%, #e99c33 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(255, 246, 210, 0.58),
-    0 2px 0 rgba(8, 2, 1, 0.7);
-  cursor: pointer;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.72rem;
-  font-weight: 900;
-  line-height: 1;
-  text-align: center;
-  text-shadow: 1px 1px 0 rgba(255, 246, 210, 0.84);
-  text-transform: uppercase;
-}
-
-.weapon-shop__bow-upgrade-button:disabled {
-  cursor: default;
-  filter: grayscale(0.35) brightness(0.82);
-  opacity: 0.82;
 }
 
 .armory-shop__subcategories {
@@ -6550,6 +6661,14 @@ body.debug-active .city-menu__portrait-button:active {
   padding: 7px 8px;
 }
 
+.weapon-shop.armory-shop--city-mode.armory-shop--has-selection .armory-shop__selected-card {
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "name name buy"
+    "icon stat buy";
+  align-items: center;
+}
+
 .armory-shop__selected-card--rarity-common,
 .armory-shop__option--rarity-common,
 .armory-shop__set-filter--rarity-common,
@@ -6646,6 +6765,10 @@ body.debug-active .city-menu__portrait-button:active {
   background: rgba(22, 7, 3, 0.42);
   box-shadow: none;
   filter: none;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__selected-icon {
+  grid-area: icon;
 }
 
 .armory-shop--city-mode .armory-shop__selected-name {
@@ -6898,6 +7021,22 @@ body.debug-active .city-menu__portrait-button:active {
   line-height: 0.92;
   overflow-wrap: normal;
   white-space: normal;
+}
+
+.armory-shop__selected-buy--price {
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  place-content: center;
+  gap: 6px;
+  font-size: clamp(0.82rem, 2.75vw, 1rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.armory-shop__selected-buy--price .armory-shop__price-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .armory-shop__selected-buy:active:not(:disabled) {
@@ -7383,6 +7522,47 @@ body.debug-active .city-menu__portrait-button:active {
   text-transform: uppercase;
 }
 
+.weapon-shop .armory-shop__selected-meta {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "name"
+    "stat";
+  justify-content: start;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__selected-meta {
+  display: contents;
+}
+
+.weapon-shop .armory-shop__selected-name {
+  gap: 4px;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__selected-name {
+  align-self: end;
+  justify-self: start;
+  max-width: 100%;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__selected-rarity {
+  flex: 0 0 auto;
+  min-width: max-content;
+  max-width: none;
+}
+
+.weapon-shop .armory-shop__selected-stat {
+  justify-self: start;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__selected-stat {
+  align-self: start;
+}
+
+.weapon-shop.armory-shop--city-mode .armory-shop__selected-buy {
+  grid-area: buy;
+  align-self: stretch;
+}
+
 .magic-shop__preview-rarity--upgrade {
   display: inline-flex;
   align-items: center;
@@ -7607,7 +7787,7 @@ body.debug-active .city-menu__portrait-button:active {
   display: grid;
   grid-template-columns:
     minmax(0, 1fr)
-    minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale)), auto)
+    minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 18px * var(--magic-shop-button-scale)), auto)
     minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
   gap: 9px;
   align-items: center;
@@ -7756,9 +7936,9 @@ body.debug-active .city-menu__portrait-button:active {
   justify-content: center;
   justify-self: end;
   box-sizing: border-box;
-  min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale));
+  min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 18px * var(--magic-shop-button-scale));
   min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
-  padding: calc(4px * var(--magic-shop-button-scale)) calc(5px * var(--magic-shop-button-scale)) calc(5px * var(--magic-shop-button-scale));
+  padding: calc(4px * var(--magic-shop-button-scale)) calc(8px * var(--magic-shop-button-scale)) calc(5px * var(--magic-shop-button-scale));
   border: 1px solid var(--shop-rarity, rgba(255, 211, 132, 0.28));
   border-radius: 999px;
   color: transparent;
@@ -8332,6 +8512,10 @@ body.debug-active .city-menu__portrait-button:active {
   left: auto;
 }
 
+.weapon-shop.armory-shop--city-mode .armory-shop__back {
+  bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + 80px);
+}
+
 .magic-shop.armory-shop--city-mode .armory-shop__back {
   top: calc(var(--shop-frame-top-height) + 8px);
   left: calc(var(--shop-frame-side-width) + 8px);
@@ -8529,7 +8713,7 @@ body.debug-active .city-menu__portrait-button:active {
   .magic-shop__list-item {
     grid-template-columns:
       minmax(0, 1fr)
-      minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale)), auto)
+      minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 18px * var(--magic-shop-button-scale)), auto)
       minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
     gap: 7px;
     min-height: 38px;
@@ -8547,9 +8731,9 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .magic-shop__list-upgrade {
-    min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale));
+    min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 18px * var(--magic-shop-button-scale));
     min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
-    padding-inline: calc(5px * var(--magic-shop-button-scale));
+    padding-inline: calc(8px * var(--magic-shop-button-scale));
     font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
   }
 
@@ -8721,7 +8905,7 @@ body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="c
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-item {
   grid-template-columns:
     minmax(0, 1fr)
-    minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale)), auto)
+    minmax(calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 18px * var(--magic-shop-button-scale)), auto)
     minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
   gap: 7px;
   min-height: 38px;
@@ -8739,9 +8923,9 @@ body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="c
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__list-upgrade {
-  min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 10px * var(--magic-shop-button-scale));
+  min-width: calc(var(--magic-shop-list-price-coin-size) * var(--magic-shop-button-scale) + 18px * var(--magic-shop-button-scale));
   min-height: calc(var(--magic-shop-list-price-height) * var(--magic-shop-button-scale));
-  padding-inline: calc(5px * var(--magic-shop-button-scale));
+  padding-inline: calc(8px * var(--magic-shop-button-scale));
   font-size: calc(var(--magic-shop-list-price-font-size) * var(--magic-shop-button-scale));
 }
 
