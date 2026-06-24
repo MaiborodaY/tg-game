@@ -5344,6 +5344,7 @@ function createPaperDollFighter(target: Phaser.Scene, options: PaperDollFighterO
     addPaperDollEquipmentLayersAfterPart(rootContainer, key, equipmentLayers);
     parts[key] = part(partContainer);
   });
+  ensurePaperDollEquipmentSlots(target, parts, equipmentLayers, equipmentAnchors, equipment);
 
   const castProp = part(target.add.image(0, 0, DEFAULT_SCROLL_CAST_PROP_ASSET_KEY).setOrigin(0.5).setVisible(false));
 
@@ -5450,6 +5451,7 @@ function createPaperDollShadowRig(
     addPaperDollEquipmentLayersAfterPart(shadowRootContainer, key, equipmentLayers);
     parts[key] = part(partContainer);
   });
+  ensurePaperDollEquipmentSlots(target, parts, equipmentLayers, equipmentAnchors, equipment);
 
   tintPaperDollEquipmentLayers(equipmentLayers);
   shadowRoot.scaleX = PAPER_DOLL_BASE_SCALE * appearance.facing * debugTuning.shadowScaleX;
@@ -8366,6 +8368,44 @@ function addPaperDollLegArmorVisual(
   }
 }
 
+function ensurePaperDollEquipmentSlots(
+  target: Phaser.Scene,
+  parts: Record<PaperDollPartKey, FighterPart>,
+  equipmentLayers: PaperDollEquipmentLayers,
+  equipmentAnchors: PaperDollEquipmentAnchors,
+  equipment: PaperDollEquipment,
+): void {
+  PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    if (equipment[slotKey]) {
+      return;
+    }
+
+    const anchorPartKey = PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey];
+    const anchorPart = parts[anchorPartKey];
+
+    if (!(anchorPart instanceof Phaser.GameObjects.Container)) {
+      return;
+    }
+
+    if (slotKey === "weaponMain" || slotKey === "weaponBow") {
+      addPaperDollWeaponVisual(target, anchorPart, equipmentLayers, equipmentAnchors, slotKey, undefined, equipment);
+      return;
+    }
+
+    if (slotKey === "helmet") {
+      addPaperDollHelmetVisual(target, anchorPart, equipmentLayers, equipmentAnchors, undefined, equipment);
+      return;
+    }
+
+    if (slotKey === "breastplate") {
+      addPaperDollBreastplateVisual(target, anchorPart, equipmentLayers, equipmentAnchors, undefined, equipment);
+      return;
+    }
+
+    addPaperDollEquipmentImageVisual(target, anchorPart, equipmentLayers, equipmentAnchors, undefined, slotKey, equipment);
+  });
+}
+
 function addPaperDollEquipmentImageVisual(
   target: Phaser.Scene,
   partContainer: Phaser.GameObjects.Container,
@@ -8709,6 +8749,8 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   const shadowMode = getEffectiveArenaShadowMode(playerSettings);
   syncFighterCombatEquipment(target.visuals.player, current.player);
   syncFighterCombatEquipment(target.visuals.enemy, current.enemy);
+  syncFighterCombatAppearance(target.visuals.player, current.player);
+  syncFighterCombatAppearance(target.visuals.enemy, current.enemy);
   updateCamera(target, current);
   applyFighterArrowCountersSceneScale(target);
   setArenaHudForState(target, hudState);
@@ -8771,6 +8813,16 @@ function syncFighterCombatEquipment(
   }
 }
 
+function syncFighterCombatAppearance(fighter: FighterVisual, state: FighterState): void {
+  const rig = fighter.paperDollRig;
+
+  if (!rig || !state.appearance) {
+    return;
+  }
+
+  syncPaperDollAppearanceState(rig, state.appearance);
+}
+
 function syncFighterCombatWeaponVisibility(rig: Pick<PaperDollRig, "equipment"> | Pick<PaperDollShadowRig, "equipment">, state: FighterState): void {
   const equipment = state.equipment;
 
@@ -8828,6 +8880,7 @@ function getFighterLoadoutKey(fighter: FighterState): string {
     name: fighter.name,
     visualPreset: fighter.visualPreset ?? null,
     appearance: fighter.appearance ?? null,
+    equipment: fighter.equipment ?? null,
   });
 }
 

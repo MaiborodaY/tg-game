@@ -32,15 +32,45 @@ test("equipment texture swaps reapply slot image sizing", () => {
   assert.match(arenaSceneSource, /if \(image && previousState && image\.texture\.key === textureKey && arePaperDollEquipmentSlotImageStatesEqual\(previousState, nextState\)\) \{[\s\S]*return image;[\s\S]*\}/);
 });
 
-test("enemy visual recreation key ignores equipment changes", () => {
+test("enemy visual recreation key tracks equipment changes", () => {
   const loadoutKeySource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("function getFighterLoadoutKey"),
     arenaSceneSource.indexOf("function destroyFighterVisual"),
   );
 
-  assert.equal(loadoutKeySource.includes("equipment:"), false);
+  assert.equal(loadoutKeySource.includes("equipment: fighter.equipment ?? null"), true);
   assert.equal(loadoutKeySource.includes("name: fighter.name"), true);
   assert.equal(loadoutKeySource.includes("visualPreset: fighter.visualPreset"), true);
+});
+
+test("combat render syncs fighter equipment and appearance from state", () => {
+  const renderSceneSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function renderScene"),
+    arenaSceneSource.indexOf("function setArenaHudForState"),
+  );
+  const appearanceSyncSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function syncFighterCombatAppearance"),
+    arenaSceneSource.indexOf("function syncFighterCombatWeaponVisibility"),
+  );
+
+  assert.equal(renderSceneSource.includes("syncFighterCombatEquipment(target.visuals.player, current.player);"), true);
+  assert.equal(renderSceneSource.includes("syncFighterCombatEquipment(target.visuals.enemy, current.enemy);"), true);
+  assert.equal(renderSceneSource.includes("syncFighterCombatAppearance(target.visuals.player, current.player);"), true);
+  assert.equal(renderSceneSource.includes("syncFighterCombatAppearance(target.visuals.enemy, current.enemy);"), true);
+  assert.equal(appearanceSyncSource.includes("syncPaperDollAppearanceState(rig, state.appearance);"), true);
+});
+
+test("paper doll rigs ensure empty equipment slots for late state sync", () => {
+  const ensureSlotsSource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function ensurePaperDollEquipmentSlots"),
+    arenaSceneSource.indexOf("function addPaperDollEquipmentImageVisual"),
+  );
+
+  assert.equal(arenaSceneSource.includes("ensurePaperDollEquipmentSlots(target, parts, equipmentLayers, equipmentAnchors, equipment);"), true);
+  assert.equal(ensureSlotsSource.includes("PAPER_DOLL_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {"), true);
+  assert.equal(ensureSlotsSource.includes("if (equipment[slotKey])"), true);
+  assert.equal(ensureSlotsSource.includes("addPaperDollWeaponVisual(target, anchorPart, equipmentLayers, equipmentAnchors, slotKey, undefined, equipment);"), true);
+  assert.equal(ensureSlotsSource.includes("addPaperDollEquipmentImageVisual(target, anchorPart, equipmentLayers, equipmentAnchors, undefined, slotKey, equipment);"), true);
 });
 
 test("paper doll parents wrist equipment to forearms glove equipment to hands and shield to front forearm", () => {
