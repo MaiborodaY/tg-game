@@ -1159,7 +1159,17 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
 function availableEnemyAiActionIds(state: CombatState): ActionId[] {
   const canRest = state.enemy.stamina <= getFighterMaxStamina(state.enemy) * 0.5;
 
-  return availableActionIds(state, "enemy").filter((id) => id !== "rest" || canRest);
+  return availableActionIds(state, "enemy").filter((id) => {
+    if (id === "rest") {
+      return canRest;
+    }
+
+    if (id === "taunt" && state.encounter?.kind === "boss") {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function chooseBossSpecificEnemyAction(current: CombatState, available: readonly ActionId[], random: () => number): ActionId | undefined {

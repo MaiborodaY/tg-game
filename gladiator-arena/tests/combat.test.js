@@ -879,6 +879,29 @@ test("enemy does not taunt while in clinch", () => {
   assert.equal(nextState.enemyIncomingBonus, 0);
 });
 
+test("boss enemy AI cannot use taunt", () => {
+  const normalState = combat.freshState();
+  const bossState = combat.freshState();
+
+  normalState.activeTurn = "enemy";
+  bossState.activeTurn = "enemy";
+  normalState.enemy.hp = 20;
+  normalState.enemy.maxHp = 20;
+  bossState.enemy.hp = 20;
+  bossState.enemy.maxHp = 20;
+  bossState.encounter = {
+    id: "boss:arena_boss_test",
+    kind: "boss",
+    tierId: 1,
+    opponentId: "arena_boss_test",
+  };
+  setConsistentDistance(normalState, combat.MAX_DISTANCE);
+  setConsistentDistance(bossState, combat.MAX_DISTANCE);
+
+  assert.equal(combat.resolveEnemyTurn(normalState, () => 0.99).lastEnemyAction, "taunt");
+  assert.notEqual(combat.resolveEnemyTurn(bossState, () => 0.99).lastEnemyAction, "taunt");
+});
+
 test("rest restore bonuses increase stamina and hp recovery", () => {
   const state = combat.freshState();
 
