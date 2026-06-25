@@ -8397,12 +8397,23 @@ function createDefaultArenaTierOpponentDraft(tierId: number, difficultyId: Arena
   };
 }
 
+function getDefaultArenaTierWinXpReward(tierId: number, difficultyId: ArenaDifficultyId): number {
+  const tierBaseXp = 1 + (Math.max(1, tierId) - 1) * 4;
+  const difficultyBonus = difficultyId === "easy" ? 0 : difficultyId === "medium" ? 1 : 2;
+
+  return tierBaseXp + difficultyBonus;
+}
+
+function getDefaultArenaBossWinXpReward(tierId: number): number {
+  return getDefaultArenaTierWinXpReward(tierId, "easy") + 4;
+}
+
 function getDefaultArenaTierDifficultyDefaults(tierId: number, difficultyId: ArenaDifficultyId): DebugArenaTierDifficultyDefaults {
   if (tierId === 2) {
     if (difficultyId === "easy") {
       return {
         gold: 25,
-        xp: 15,
+        xp: getDefaultArenaTierWinXpReward(tierId, difficultyId),
         randomBaseStatPoints: 3,
         equipmentPools: [{ itemRarities: ["common"], rollChance: 0.75 }, { itemRarities: ["uncommon"], rollChance: 0.1 }],
       };
@@ -8411,7 +8422,7 @@ function getDefaultArenaTierDifficultyDefaults(tierId: number, difficultyId: Are
     if (difficultyId === "medium") {
       return {
         gold: 35,
-        xp: 22,
+        xp: getDefaultArenaTierWinXpReward(tierId, difficultyId),
         randomBaseStatPoints: 6,
         equipmentPools: [{ itemRarities: ["common"], rollChance: 0.85 }, { itemRarities: ["uncommon"], rollChance: 0.35 }],
       };
@@ -8419,7 +8430,7 @@ function getDefaultArenaTierDifficultyDefaults(tierId: number, difficultyId: Are
 
     return {
       gold: 50,
-      xp: 32,
+      xp: getDefaultArenaTierWinXpReward(tierId, difficultyId),
       randomBaseStatPoints: 9,
       equipmentPools: [{ itemRarities: ["common"], rollChance: 0.95 }, { itemRarities: ["uncommon"], rollChance: 0.65 }],
     };
@@ -8434,7 +8445,7 @@ function getDefaultArenaTierDifficultyDefaults(tierId: number, difficultyId: Are
 
   return {
     gold: 10 * tierScale + 5 * difficultyScale,
-    xp: 6 * tierScale + 4 * difficultyScale,
+    xp: getDefaultArenaTierWinXpReward(tierId, difficultyId),
     randomBaseStatPoints: Math.max(0, (tierScale - 1) * 3 + (difficultyScale - 1) * 3),
     equipmentPools,
   };
@@ -8671,10 +8682,11 @@ function getSelectedArenaBoss(bossId: string | undefined): ArenaBossDefinition |
 
 function createDefaultArenaBossDraft(): ArenaBossDefinition {
   const nextIndex = debugArenaBosses.length + 1;
+  const defaultTierId = 1;
 
   return {
     id: `arena_boss_${nextIndex}`,
-    tierId: 1,
+    tierId: defaultTierId,
     name: `Arena Boss ${nextIndex}`,
     baseStats: {
       strength: 0,
@@ -8683,7 +8695,7 @@ function createDefaultArenaBossDraft(): ArenaBossDefinition {
     },
     equipment: {},
     rewards: {
-      win: { gold: 15, xp: 15 },
+      win: { gold: 15, xp: getDefaultArenaBossWinXpReward(defaultTierId) },
       loss: { gold: 1, xp: 2 },
     },
     lootTable: [],

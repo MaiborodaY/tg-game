@@ -443,16 +443,28 @@ test("cloth and sword stay common while leather catalog items are uncommon", () 
 
 const arenaMatrixRarities = ["common", "uncommon", "rare", "epic", "legendary", "mythical"];
 const expectedArenaGoldRewards = new Map([
-  [1, { easy: 5, medium: 7, hard: 10, boss: 15 }],
-  [2, { easy: 15, medium: 17, hard: 21, boss: 27 }],
-  [3, { easy: 27, medium: 30, hard: 34, boss: 41 }],
-  [4, { easy: 41, medium: 44, hard: 50, boss: 58 }],
-  [5, { easy: 58, medium: 62, hard: 69, boss: 79 }],
-  [6, { easy: 79, medium: 84, hard: 92, boss: 104 }],
-  [7, { easy: 104, medium: 110, hard: 119, boss: 134 }],
-  [8, { easy: 134, medium: 141, hard: 152, boss: 170 }],
-  [9, { easy: 170, medium: 179, hard: 192, boss: 213 }],
-  [10, { easy: 213, medium: 223, hard: 239, boss: 265 }],
+  [1, { easy: 5, medium: 7, hard: 11, boss: 18 }],
+  [2, { easy: 15, medium: 17, hard: 23, boss: 32 }],
+  [3, { easy: 27, medium: 30, hard: 37, boss: 49 }],
+  [4, { easy: 41, medium: 44, hard: 55, boss: 70 }],
+  [5, { easy: 58, medium: 62, hard: 76, boss: 95 }],
+  [6, { easy: 79, medium: 84, hard: 101, boss: 125 }],
+  [7, { easy: 104, medium: 110, hard: 131, boss: 161 }],
+  [8, { easy: 134, medium: 141, hard: 167, boss: 204 }],
+  [9, { easy: 170, medium: 179, hard: 211, boss: 256 }],
+  [10, { easy: 213, medium: 223, hard: 263, boss: 318 }],
+]);
+const expectedArenaXpRewards = new Map([
+  [1, { easy: 1, medium: 2, hard: 3, boss: 5 }],
+  [2, { easy: 5, medium: 6, hard: 7, boss: 9 }],
+  [3, { easy: 9, medium: 10, hard: 11, boss: 13 }],
+  [4, { easy: 13, medium: 14, hard: 15, boss: 17 }],
+  [5, { easy: 17, medium: 18, hard: 19, boss: 21 }],
+  [6, { easy: 21, medium: 22, hard: 23, boss: 25 }],
+  [7, { easy: 25, medium: 26, hard: 27, boss: 29 }],
+  [8, { easy: 29, medium: 30, hard: 31, boss: 33 }],
+  [9, { easy: 33, medium: 34, hard: 35, boss: 37 }],
+  [10, { easy: 37, medium: 38, hard: 39, boss: 41 }],
 ]);
 
 const expectedArenaRandomBaseStatPoints = new Map([
@@ -684,6 +696,32 @@ test("arena win gold rewards follow the permanent equipment economy curve", () =
   }
 });
 
+test("arena win xp rewards follow the boss-to-next-tier chain", () => {
+  for (const tier of hero.ARENA_TIER_CONFIGS) {
+    const expectedTierRewards = expectedArenaXpRewards.get(tier.id);
+
+    assert.ok(expectedTierRewards, `Missing expected xp reward curve for arena tier ${tier.id}`);
+
+    for (const opponent of tier.opponents) {
+      assert.equal(opponent.rewards.win.xp, expectedTierRewards[opponent.difficultyId]);
+    }
+  }
+
+  for (const boss of hero.ARENA_BOSSES) {
+    const expectedTierRewards = expectedArenaXpRewards.get(boss.tierId);
+
+    assert.ok(expectedTierRewards, `Missing expected boss xp reward curve for arena tier ${boss.tierId}`);
+    assert.equal(boss.rewards.win.xp, expectedTierRewards.boss);
+  }
+
+  for (let tierId = 1; tierId < 10; tierId += 1) {
+    const currentTierRewards = expectedArenaXpRewards.get(tierId);
+    const nextTierRewards = expectedArenaXpRewards.get(tierId + 1);
+
+    assert.equal(nextTierRewards.easy, currentTierRewards.boss, `tier ${tierId + 1} easy matches tier ${tierId} boss`);
+  }
+});
+
 test("enemy equipment generation keeps the first rolled item for each slot", () => {
   const testTier = {
     id: 99,
@@ -848,7 +886,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal("name" in easyOpponents[0], false);
   assert.equal(easyOpponents[0].equipmentPools.length, 0);
   assert.equal(easyOpponents[0].rewards.win.gold, 5);
-  assert.equal(easyOpponents[0].rewards.win.xp, 5);
+  assert.equal(easyOpponents[0].rewards.win.xp, 1);
   assert.equal(easyOpponents[0].rewards.loss.gold, 1);
   assert.equal(easyOpponents[0].rewards.loss.xp, 1);
   assert.equal(mediumOpponents.length, 1);
@@ -861,7 +899,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(mediumOpponents[0].equipmentPools[1].itemRarities[0], "uncommon");
   assert.equal(mediumOpponents[0].equipmentPools[1].rollChance, 0.01);
   assert.equal(mediumOpponents[0].rewards.win.gold, 7);
-  assert.equal(mediumOpponents[0].rewards.win.xp, 7);
+  assert.equal(mediumOpponents[0].rewards.win.xp, 2);
   assert.equal(mediumOpponents[0].rewards.loss.gold, 1);
   assert.equal(mediumOpponents[0].rewards.loss.xp, 1);
   assert.equal(hardOpponents.length, 1);
@@ -879,15 +917,15 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].equipmentPools[1].bowChance, 0);
   assert.equal(hardOpponents[0].equipmentPools[1].shieldChance, 0);
   assert.equal(hardOpponents[0].equipmentPools[1].shurikenChance, 0);
-  assert.equal(hardOpponents[0].rewards.win.gold, 10);
-  assert.equal(hardOpponents[0].rewards.win.xp, 10);
+  assert.equal(hardOpponents[0].rewards.win.gold, 11);
+  assert.equal(hardOpponents[0].rewards.win.xp, 3);
   assert.equal(hardOpponents[0].rewards.loss.gold, 1);
   assert.equal(hardOpponents[0].rewards.loss.xp, 1);
   assert.equal(tierTwo.name, "Blackwood Road");
   assert.equal(tierTwo.unlockBossId, "dust_arena_champion");
   assert.equal(tierTwo.randomOpponentIds.length, 3);
   assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 15);
-  assert.equal(tierTwoEasyOpponents[0].rewards.win.xp, 15);
+  assert.equal(tierTwoEasyOpponents[0].rewards.win.xp, 5);
 
   assert.equal(tier.bossIds.length, 1);
   assert.equal(boss?.id, "dust_arena_champion");
@@ -1237,31 +1275,31 @@ test("hero can unlock all shop rarity tiers", () => {
   assert.equal(hero.unlockAllHeroShopRarities(unlockedHero, "2026-01-01T00:02:00.000Z"), unlockedHero);
 });
 
-test("hero level progression uses 9999 total xp across one hundred levels", () => {
+test("hero level progression uses a late-heavy 9999 xp curve across one hundred levels", () => {
   assert.equal(hero.HERO_MAX_LEVEL, 100);
   assert.equal(hero.HERO_TOTAL_XP_TO_MAX_LEVEL, 9999);
   assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.length, 99);
   assert.equal(
     hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.reduce((total, xp) => total + xp, 0),
-    9999,
+    hero.HERO_TOTAL_XP_TO_MAX_LEVEL,
   );
 
-  assert.equal(hero.getHeroXpToNextLevel(1), 20);
-  assert.equal(hero.getHeroXpToNextLevel(5), 30);
-  assert.equal(hero.getHeroXpToNextLevel(15), 40);
-  assert.equal(hero.getHeroXpToNextLevel(33), 50);
-  assert.equal(hero.getHeroXpToNextLevel(45), 80);
-  assert.equal(hero.getHeroXpToNextLevel(60), 110);
-  assert.equal(hero.getHeroXpToNextLevel(80), 170);
-  assert.equal(hero.getHeroXpToNextLevel(95), 220);
-  assert.equal(hero.getHeroXpToNextLevel(100), 229);
-  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.slice(0, 9).reduce((total, xp) => total + xp, 0), 230);
+  assert.equal(hero.getHeroXpToNextLevel(1), 1);
+  assert.equal(hero.getHeroXpToNextLevel(5), 5);
+  assert.equal(hero.getHeroXpToNextLevel(10), 10);
+  assert.equal(hero.getHeroXpToNextLevel(20), 20);
+  assert.equal(hero.getHeroXpToNextLevel(40), 55);
+  assert.equal(hero.getHeroXpToNextLevel(60), 115);
+  assert.equal(hero.getHeroXpToNextLevel(80), 215);
+  assert.equal(hero.getHeroXpToNextLevel(95), 263);
+  assert.equal(hero.getHeroXpToNextLevel(100), 268);
+  assert.equal(hero.HERO_XP_TO_NEXT_LEVEL_BY_LEVEL.slice(0, 9).reduce((total, xp) => total + xp, 0), 45);
 });
 
 test("battle xp follows the level table and respects boss level gates", () => {
   const staleHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),
-    xp: 19,
+    xp: hero.getHeroXpToNextLevel(1) - 1,
     xpToNextLevel: 100,
   };
 
@@ -1269,10 +1307,10 @@ test("battle xp follows the level table and respects boss level gates", () => {
 
   assert.equal(levelTwoHero.level, 2);
   assert.equal(levelTwoHero.xp, 0);
-  assert.equal(levelTwoHero.xpToNextLevel, 20);
+  assert.equal(levelTwoHero.xpToNextLevel, hero.getHeroXpToNextLevel(2));
   assert.equal(levelTwoHero.skillPoints, 2);
 
-  const cappedHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: 9999 });
+  const cappedHero = hero.applyBattleReward(hero.createDefaultHero("2026-01-01T00:00:00.000Z"), { gold: 0, xp: hero.HERO_TOTAL_XP_TO_MAX_LEVEL });
 
   assert.equal(cappedHero.level, 10);
   assert.equal(cappedHero.xp, hero.getHeroXpToNextLevel(10));
@@ -1293,11 +1331,11 @@ test("battle xp follows the level table and respects boss level gates", () => {
   assert.equal(stillCappedHero.skillPoints, 10);
 
   const fullyUnlockedHero = hero.unlockAllArenaBossTiers(hero.createDefaultHero("2026-01-01T00:00:00.000Z"));
-  const maxHero = hero.applyBattleReward(fullyUnlockedHero, { gold: 0, xp: 9999 });
+  const maxHero = hero.applyBattleReward(fullyUnlockedHero, { gold: 0, xp: hero.HERO_TOTAL_XP_TO_MAX_LEVEL });
 
   assert.equal(maxHero.level, 100);
   assert.equal(maxHero.xp, 0);
-  assert.equal(maxHero.xpToNextLevel, 229);
+  assert.equal(maxHero.xpToNextLevel, hero.getHeroXpToNextLevel(100));
   assert.equal(maxHero.skillPoints, 100);
 });
 

@@ -9,11 +9,13 @@ import {
   canHeroUseItems,
   getHeroBowShotCapacity,
   getHeroConsumableMaxQuantity,
+  getHeroItemWeaponClass,
   getHeroItemQuantity,
   getHeroShurikenQuantity,
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
+  type HeroWeaponClass,
 } from "./hero";
 import {
   ARROW_ICON_ASSET_URL,
@@ -98,6 +100,13 @@ interface ConsumableCardInfo {
 interface SelectedMetaOptions {
   compareStat?: boolean;
   unitLabel?: string;
+  weaponClass?: HeroWeaponClass;
+}
+
+interface WeaponPerkDefinition {
+  chipLabel: string;
+  title: string;
+  lines: readonly string[];
 }
 
 const WEAPON_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
@@ -115,6 +124,38 @@ const WEAPON_RARITIES = Object.keys(WEAPON_RARITY_SORT_ORDER) as ShopItemRarity[
 const WEAPON_RARITY_FILTERS = WEAPON_RARITIES.filter((rarity) => rarity !== "mythical");
 const WEAPON_RARITY_FILTER_CLASS_NAMES = WEAPON_RARITY_FILTERS.map((rarity) => `armory-shop__set-filter--rarity-${rarity}`);
 const WEAPON_RANGED_CATEGORY_IDS = new Set(["bows", "shurikens"]);
+const WEAPON_PERK_DEFINITIONS: Record<HeroWeaponClass, WeaponPerkDefinition> = {
+  sword: {
+    chipLabel: "Precise",
+    title: "Sword / Precise",
+    lines: ["Higher hit chance.", "Light: hit chance +15%", "Medium: hit chance +20%", "Heavy: hit chance +25%"],
+  },
+  mace: {
+    chipLabel: "Armorbreaker",
+    title: "Mace / Armorbreaker",
+    lines: ["Deals more damage while target has armor.", "Damage +25% against armored targets."],
+  },
+  axe: {
+    chipLabel: "Brutal",
+    title: "Axe / Brutal",
+    lines: ["High damage weapon.", "Strength damage x2.", "Light: hit chance -25%", "Medium: hit chance -15%", "Heavy: hit chance -15%"],
+  },
+  spear: {
+    chipLabel: "Reach",
+    title: "Spear / Reach",
+    lines: ["Longer range.", "Lunge: higher damage, agility scaling, increased hit chance."],
+  },
+  bow: {
+    chipLabel: "Ranged",
+    title: "Bow / Ranged",
+    lines: ["Ranged weapon.", "Damage scales with agility.", "Limited shots per battle."],
+  },
+  shuriken: {
+    chipLabel: "Throwing",
+    title: "Shuriken / Throwing",
+    lines: ["Thrown consumable weapon.", "Uses carried shuriken charges."],
+  },
+};
 
 const WEAPON_CATEGORIES: WeaponCategory[] = [
   {
@@ -762,6 +803,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const currentDamage = getEquippedShopProductDisplayStat(hero, product.itemIds, "damage");
     const displayName = getShopProductDisplayName(product.name);
     const isConsumable = areHeroItemsConsumable(product.itemIds);
+    const weaponClass = getWeaponProductClass(product);
 
     strip.className = `armory-shop__selected-card armory-shop__selected-card--rarity-${rarity}`;
     strip.append(
@@ -769,6 +811,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       createSelectedMeta(displayName, rarity, "damage", DAMAGE_HIT_ICON_ASSET_URL, damage, currentDamage, {
         compareStat: !isConsumable,
         unitLabel: isConsumable ? "x1" : undefined,
+        weaponClass,
       }),
       createPreviewBuyButton(product, hero),
     );
@@ -1385,6 +1428,12 @@ function appendRequirementContent(requirementNode: HTMLElement, requirement: Sho
   requirementNode.append(icon, amount);
 }
 
+function getWeaponProductClass(product: WeaponProduct): HeroWeaponClass | undefined {
+  const itemId = product.itemIds[0];
+
+  return itemId ? getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) : undefined;
+}
+
 function createSelectedMeta(
   productName: string,
   rarity: ShopItemRarity,
@@ -1399,10 +1448,12 @@ function createSelectedMeta(
   const nameText = document.createElement("span");
   const rarityNode = document.createElement("span");
   const statNode = document.createElement("span");
+  const statRow = document.createElement("span");
   const statIcon = document.createElement("img");
   const currentStatNode = document.createElement("span");
   const nextStatNode = document.createElement("span");
   const comparesStat = options.compareStat ?? true;
+  const perkDefinition = options.weaponClass ? WEAPON_PERK_DEFINITIONS[options.weaponClass] : undefined;
 
   meta.className = "armory-shop__selected-meta";
   nameNode.className = "armory-shop__selected-name";
@@ -1418,6 +1469,7 @@ function createSelectedMeta(
     unitNode.textContent = options.unitLabel;
     nameNode.append(unitNode);
   }
+  statRow.className = "weapon-shop__selected-stat-row";
   statNode.className = "armory-shop__selected-stat";
   statNode.setAttribute("aria-label", !comparesStat || currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
   statIcon.className = "armory-shop__selected-stat-icon";
@@ -1439,9 +1491,76 @@ function createSelectedMeta(
     arrowNode.textContent = ">";
     statNode.append(arrowNode, nextStatNode);
   }
-  meta.append(nameNode, statNode);
+  statRow.append(statNode);
+  if (perkDefinition) {
+    statRow.append(createWeaponPerkButton(perkDefinition));
+  }
+  meta.append(nameNode, statRow);
 
   return meta;
+}
+
+function createWeaponPerkButton(definition: WeaponPerkDefinition): HTMLElement {
+  const wrapper = document.createElement("span");
+  const button = document.createElement("button");
+  const popover = document.createElement("span");
+  const title = document.createElement("strong");
+  const body = document.createElement("span");
+  const popoverId = `weapon-shop-perk-${definition.chipLabel.toLowerCase()}`;
+
+  wrapper.className = "weapon-shop__selected-perk-wrap";
+  button.className = "weapon-shop__selected-perk";
+  button.type = "button";
+  button.textContent = definition.chipLabel;
+  button.setAttribute("aria-label", `Show ${definition.chipLabel} weapon bonus`);
+  button.setAttribute("aria-controls", popoverId);
+  button.setAttribute("aria-expanded", "false");
+  popover.id = popoverId;
+  popover.className = "weapon-shop__selected-perk-popover";
+  popover.setAttribute("role", "tooltip");
+  popover.hidden = true;
+  title.className = "weapon-shop__selected-perk-title";
+  title.textContent = definition.title;
+  body.className = "weapon-shop__selected-perk-body";
+  definition.lines.forEach((line) => {
+    const lineNode = document.createElement("span");
+
+    lineNode.className = "weapon-shop__selected-perk-line";
+    lineNode.textContent = line;
+    body.append(lineNode);
+  });
+  popover.append(title, body);
+
+  const closePopover = () => {
+    popover.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+  };
+
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const shouldOpen = popover.hidden;
+
+    popover.hidden = !shouldOpen;
+    button.setAttribute("aria-expanded", String(shouldOpen));
+  });
+  button.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || popover.hidden) {
+      return;
+    }
+
+    event.stopPropagation();
+    closePopover();
+  });
+  wrapper.addEventListener("focusout", () => {
+    window.setTimeout(() => {
+      if (!wrapper.contains(document.activeElement)) {
+        closePopover();
+      }
+    }, 0);
+  });
+  wrapper.append(button, popover);
+
+  return wrapper;
 }
 
 function appendPriceContent(priceNode: HTMLElement, price: number): void {

@@ -7889,6 +7889,122 @@ body.debug-active .city-menu__portrait-button:active {
   text-shadow: 1px 1px 0 #160703;
 }
 
+.weapon-shop__selected-stat-row {
+  grid-area: stat;
+  position: relative;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.weapon-shop__selected-perk-wrap {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.weapon-shop__selected-perk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 128px;
+  min-height: 22px;
+  padding: 3px 10px 4px;
+  border: 1px solid rgba(255, 211, 132, 0.52);
+  border-radius: 5px;
+  color: #ffe8ad;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 142, 0.18), rgba(8, 2, 1, 0.16)),
+    rgba(68, 28, 10, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.2),
+    inset 0 -1px 0 rgba(8, 2, 1, 0.3),
+    0 1px 0 rgba(8, 2, 1, 0.58);
+  cursor: pointer;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.54rem, 2vw, 0.64rem);
+  font-weight: 900;
+  line-height: 1;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 0 #160703;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.weapon-shop__selected-perk:hover,
+.weapon-shop__selected-perk[aria-expanded="true"] {
+  border-color: rgba(255, 232, 173, 0.72);
+  color: #fff4ca;
+  background:
+    linear-gradient(180deg, rgba(255, 232, 173, 0.26), rgba(8, 2, 1, 0.1)),
+    rgba(86, 37, 13, 0.86);
+}
+
+.weapon-shop__selected-perk:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 246, 210, 0.24),
+    0 0 0 rgba(8, 2, 1, 0);
+}
+
+.weapon-shop__selected-perk:focus-visible {
+  outline: 2px solid rgba(255, 232, 173, 0.78);
+  outline-offset: 2px;
+}
+
+.weapon-shop__selected-perk-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  display: grid;
+  gap: 5px;
+  width: max-content;
+  min-width: 192px;
+  max-width: min(252px, calc(100vw - 32px));
+  padding: 8px 10px 9px;
+  border: 1px solid rgba(255, 211, 132, 0.5);
+  border-radius: 7px;
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, rgba(118, 67, 28, 0.98), rgba(43, 18, 8, 0.98)),
+    rgba(43, 18, 8, 0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.18),
+    0 3px 0 rgba(8, 2, 1, 0.64),
+    0 8px 18px rgba(8, 2, 1, 0.45);
+  font-size: 0.68rem;
+  line-height: 1.18;
+  text-shadow: 1px 1px 0 #160703;
+  text-transform: none;
+  white-space: normal;
+}
+
+.weapon-shop__selected-perk-popover[hidden] {
+  display: none;
+}
+
+.weapon-shop__selected-perk-title {
+  color: #ffe8ad;
+  font-size: 0.72rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.weapon-shop__selected-perk-body {
+  display: grid;
+  gap: 3px;
+}
+
+.weapon-shop__selected-perk-line {
+  display: block;
+}
+
 .armory-shop__selected-stat-icon {
   display: block;
   width: 16px;
@@ -8496,6 +8612,10 @@ body.debug-active .city-menu__portrait-button:active {
   justify-content: start;
 }
 
+.weapon-shop .armory-shop__selected-card {
+  overflow: visible;
+}
+
 .weapon-shop.armory-shop--city-mode .armory-shop__selected-meta {
   display: contents;
 }
@@ -8520,8 +8640,27 @@ body.debug-active .city-menu__portrait-button:active {
   justify-self: start;
 }
 
+.weapon-shop.armory-shop--city-mode .weapon-shop__selected-stat-row {
+  align-self: start;
+  gap: clamp(3px, 1vw, 5px);
+}
+
 .weapon-shop.armory-shop--city-mode .armory-shop__selected-stat {
   align-self: start;
+}
+
+.weapon-shop.armory-shop--city-mode .weapon-shop__selected-perk {
+  max-width: clamp(88px, 27vw, 118px);
+  min-height: 22px;
+  padding: 3px clamp(7px, 2vw, 10px) 4px;
+  font-size: clamp(0.48rem, 1.55vw, 0.58rem);
+}
+
+.weapon-shop.armory-shop--city-mode .weapon-shop__selected-perk-popover {
+  top: calc(100% + 5px);
+  min-width: 176px;
+  max-width: min(228px, calc(100vw - 28px));
+  font-size: 0.64rem;
 }
 
 .weapon-shop.armory-shop--city-mode .armory-shop__selected-buy {
