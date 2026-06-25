@@ -16,6 +16,12 @@ interface PlayerSaveRow {
   updated_at: string;
 }
 
+interface PlayerDailyResourceRow {
+  current: number;
+  max: number;
+  day_key: string;
+}
+
 export interface PlayerSave {
   hero: unknown;
   schemaVersion: number;
@@ -24,8 +30,16 @@ export interface PlayerSave {
   updatedAt: string;
 }
 
+export interface HeroArenaEnergy {
+  current: number;
+  max: number;
+  dayKey: string;
+}
+
 const SAVE_SCHEMA_VERSION = 1;
 const MAX_HERO_JSON_BYTES = 100_000;
+export const ARENA_ENERGY_RESOURCE_KEY = "arena_energy";
+export const HERO_ARENA_ENERGY_MAX = 10;
 
 export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -41,8 +55,10 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
       return json({ ok: false, error: auth.error }, 401);
     }
 
+    const telegramUserId = String(auth.user.id);
+
     if (request.method === "GET") {
-      return json({ ok: true, save: await readPlayerSave(env.GLADIATOR_SAVES_DB, String(auth.user.id)) });
+      return json({ ok: true, save: await readPlayerSaveWithDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId) });
     }
 
     if (request.method === "PUT") {
@@ -54,18 +70,23 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
       }
 
       await upsertPlayerSave(env.GLADIATOR_SAVES_DB, {
-        telegramUserId: String(auth.user.id),
+        telegramUserId,
         telegramUsername: auth.user.username,
         heroJson,
       });
+      await syncDailyArenaEnergyFromHero(env.GLADIATOR_SAVES_DB, telegramUserId, body.hero);
 
-      return json({ ok: true, save: await readPlayerSave(env.GLADIATOR_SAVES_DB, String(auth.user.id)) });
+      return json({ ok: true, save: await readPlayerSaveWithDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId) });
     }
 
     if (request.method === "DELETE") {
       await env.GLADIATOR_SAVES_DB
+        .prepare("DELETE FROM player_daily_resources WHERE telegram_user_id = ?")
+        .bind(telegramUserId)
+        .run();
+      await env.GLADIATOR_SAVES_DB
         .prepare("DELETE FROM player_saves WHERE telegram_user_id = ?")
-        .bind(String(auth.user.id))
+        .bind(telegramUserId)
         .run();
 
       return json({ ok: true });
@@ -148,6 +169,25 @@ export async function readPlayerSave(db: D1Database, telegramUserId: string): Pr
   };
 }
 
+export async function readPlayerSaveWithDailyArenaEnergy(db: D1Database, telegramUserId: string): Promise<PlayerSave | null> {
+  const save = await readPlayerSave(db, telegramUserId);
+
+  if (!save) {
+    return null;
+  }
+
+  const dailyArenaEnergy = await readPlayerDailyArenaEnergy(db, telegramUserId);
+
+  if (!dailyArenaEnergy) {
+    return save;
+  }
+
+  return {
+    ...save,
+    hero: withArenaEnergy(save.hero, dailyArenaEnergy),
+  };
+}
+
 export function upsertPlayerSave(
   db: D1Database,
   save: { telegramUserId: string; telegramUsername?: string; heroJson: string },
@@ -191,6 +231,125 @@ export function updatePlayerSaveIfRevision(
     `)
     .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.telegramUserId, save.revision)
     .run();
+}
+
+export async function readPlayerDailyArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  dayKey = getUtcDayKey(),
+): Promise<HeroArenaEnergy | null> {
+  const row = await db
+    .prepare(
+      `
+        SELECT current, max, day_key
+        FROM player_daily_resources
+        WHERE telegram_user_id = ? AND resource_key = ? AND day_key = ?
+      `,
+    )
+    .bind(telegramUserId, ARENA_ENERGY_RESOURCE_KEY, dayKey)
+    .first<PlayerDailyResourceRow>();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    current: clampArenaEnergyValue(row.current),
+    max: HERO_ARENA_ENERGY_MAX,
+    dayKey: row.day_key,
+  };
+}
+
+export function upsertPlayerDailyArenaEnergy(
+  db: D1Database,
+  save: { telegramUserId: string; arenaEnergy: HeroArenaEnergy; updatedAt?: string },
+): Promise<D1Result> {
+  return db
+    .prepare(
+      `
+        INSERT INTO player_daily_resources (
+          telegram_user_id,
+          resource_key,
+          day_key,
+          current,
+          max,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(telegram_user_id, resource_key, day_key) DO UPDATE SET
+          current = excluded.current,
+          max = excluded.max,
+          updated_at = excluded.updated_at
+      `,
+    )
+    .bind(
+      save.telegramUserId,
+      ARENA_ENERGY_RESOURCE_KEY,
+      save.arenaEnergy.dayKey,
+      clampArenaEnergyValue(save.arenaEnergy.current),
+      HERO_ARENA_ENERGY_MAX,
+      save.updatedAt ?? new Date().toISOString(),
+    )
+    .run();
+}
+
+export function getHeroArenaEnergyFromUnknownHero(hero: unknown, dayKey = getUtcDayKey()): HeroArenaEnergy | null {
+  if (!isRecord(hero) || !isRecord(hero.arenaEnergy) || hero.arenaEnergy.dayKey !== dayKey) {
+    return null;
+  }
+
+  return {
+    current: clampArenaEnergyValue(hero.arenaEnergy.current),
+    max: HERO_ARENA_ENERGY_MAX,
+    dayKey,
+  };
+}
+
+export function createFullHeroArenaEnergy(dayKey = getUtcDayKey()): HeroArenaEnergy {
+  return {
+    current: HERO_ARENA_ENERGY_MAX,
+    max: HERO_ARENA_ENERGY_MAX,
+    dayKey,
+  };
+}
+
+export function getUtcDayKey(now: string | Date = new Date()): string {
+  const date = typeof now === "string" ? new Date(now) : now;
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function syncDailyArenaEnergyFromHero(db: D1Database, telegramUserId: string, hero: unknown): Promise<D1Result | undefined> {
+  const arenaEnergy = getHeroArenaEnergyFromUnknownHero(hero);
+
+  if (!arenaEnergy) {
+    return Promise.resolve(undefined);
+  }
+
+  return upsertPlayerDailyArenaEnergy(db, { telegramUserId, arenaEnergy });
+}
+
+function withArenaEnergy(hero: unknown, arenaEnergy: HeroArenaEnergy): unknown {
+  if (!isRecord(hero)) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    arenaEnergy,
+  };
+}
+
+function clampArenaEnergyValue(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return HERO_ARENA_ENERGY_MAX;
+  }
+
+  return Math.max(0, Math.min(HERO_ARENA_ENERGY_MAX, Math.floor(value)));
 }
 
 function bytesToHex(bytes: ArrayBuffer): string {

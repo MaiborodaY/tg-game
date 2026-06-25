@@ -1,30 +1,25 @@
 import {
+  ARENA_ENERGY_RESOURCE_KEY,
+  createFullHeroArenaEnergy,
+  getHeroArenaEnergyFromUnknownHero,
+  getUtcDayKey,
+  HERO_ARENA_ENERGY_MAX,
   json,
+  readPlayerDailyArenaEnergy,
   readPlayerSave,
   readTelegramInitData,
-  updatePlayerSaveIfRevision,
-  upsertPlayerSave,
   verifyTelegramInitData,
   type Env,
+  type HeroArenaEnergy,
 } from "../gladiator-save";
 
 interface SpendArenaEnergyRequest {
   hero?: unknown;
 }
 
-interface HeroArenaEnergy {
-  current: number;
-  max: number;
-  dayKey: string;
-}
-
 type SpendArenaEnergyResult =
-  | { ok: true; hero: Record<string, unknown>; arenaEnergy: HeroArenaEnergy }
-  | { ok: false; error: "invalid_hero_payload" | "not_enough_arena_energy"; hero?: Record<string, unknown>; arenaEnergy?: HeroArenaEnergy };
-
-const HERO_ARENA_ENERGY_MAX = 10;
-const MAX_HERO_JSON_BYTES = 100_000;
-const MAX_SPEND_RETRIES = 2;
+  | { ok: true; arenaEnergy: HeroArenaEnergy }
+  | { ok: false; error: "not_enough_arena_energy"; arenaEnergy: HeroArenaEnergy };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
@@ -42,71 +37,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
     const requestBody = await readSpendArenaEnergyRequest(request);
     const telegramUserId = String(auth.user.id);
+    const nowIso = new Date().toISOString();
+    const initialArenaEnergy = await resolveInitialArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId, requestBody.hero, nowIso);
+    const spend = await spendPlayerDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId, initialArenaEnergy, nowIso);
 
-    for (let attempt = 0; attempt <= MAX_SPEND_RETRIES; attempt += 1) {
-      const save = await readPlayerSave(env.GLADIATOR_SAVES_DB, telegramUserId);
-
-      if (!save) {
-        return spendAndCreatePlayerSave(env.GLADIATOR_SAVES_DB, {
-          telegramUserId,
-          telegramUsername: auth.user.username,
-          seedHero: requestBody.hero,
-        });
-      }
-
-      const spend = spendArenaEnergy(save.hero, new Date().toISOString());
-
-      if (!spend.ok) {
-        return json({ ok: false, error: spend.error, hero: spend.hero, arenaEnergy: spend.arenaEnergy }, spend.error === "not_enough_arena_energy" ? 409 : 400);
-      }
-
-      const heroJson = JSON.stringify(spend.hero);
-      if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
-        return json({ ok: false, error: "invalid_hero_payload" }, 400);
-      }
-
-      const updateResult = await updatePlayerSaveIfRevision(env.GLADIATOR_SAVES_DB, {
-        telegramUserId,
-        telegramUsername: auth.user.username,
-        heroJson,
-        revision: save.revision,
-      });
-
-      if (updateResult.meta.changes > 0) {
-        return json({ ok: true, hero: spend.hero, arenaEnergy: spend.arenaEnergy });
-      }
-    }
-
-    return json({ ok: false, error: "save_revision_conflict" }, 409);
+    return spend.ok
+      ? json({ ok: true, arenaEnergy: spend.arenaEnergy })
+      : json({ ok: false, error: spend.error, arenaEnergy: spend.arenaEnergy }, 409);
   } catch (error) {
     return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400);
   }
 };
-
-async function spendAndCreatePlayerSave(
-  db: D1Database,
-  save: { telegramUserId: string; telegramUsername?: string; seedHero: unknown },
-): Promise<Response> {
-  const spend = spendArenaEnergy(save.seedHero, new Date().toISOString());
-
-  if (!spend.ok) {
-    return json({ ok: false, error: spend.error, hero: spend.hero, arenaEnergy: spend.arenaEnergy }, spend.error === "not_enough_arena_energy" ? 409 : 400);
-  }
-
-  const heroJson = JSON.stringify(spend.hero);
-
-  if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
-    return json({ ok: false, error: "invalid_hero_payload" }, 400);
-  }
-
-  await upsertPlayerSave(db, {
-    telegramUserId: save.telegramUserId,
-    telegramUsername: save.telegramUsername,
-    heroJson,
-  });
-
-  return json({ ok: true, hero: spend.hero, arenaEnergy: spend.arenaEnergy });
-}
 
 async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArenaEnergyRequest> {
   try {
@@ -118,93 +59,88 @@ async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArena
   }
 }
 
-function spendArenaEnergy(hero: unknown, nowIso: string): SpendArenaEnergyResult {
-  if (!isHeroStateLike(hero)) {
-    return { ok: false, error: "invalid_hero_payload" };
-  }
-
+async function resolveInitialArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  requestHero: unknown,
+  nowIso: string,
+): Promise<HeroArenaEnergy> {
   const dayKey = getUtcDayKey(nowIso);
-  const currentEnergy = getCurrentArenaEnergy(hero.arenaEnergy, dayKey);
-  const normalizedEnergy: HeroArenaEnergy = {
-    current: currentEnergy,
-    max: HERO_ARENA_ENERGY_MAX,
-    dayKey,
-  };
+  const storedDailyArenaEnergy = await readPlayerDailyArenaEnergy(db, telegramUserId, dayKey);
 
-  if (currentEnergy <= 0) {
-    return {
-      ok: false,
-      error: "not_enough_arena_energy",
-      hero: {
-        ...hero,
-        arenaEnergy: normalizedEnergy,
-      },
-      arenaEnergy: normalizedEnergy,
-    };
+  if (storedDailyArenaEnergy) {
+    return storedDailyArenaEnergy;
   }
 
-  const arenaEnergy: HeroArenaEnergy = {
-    ...normalizedEnergy,
-    current: currentEnergy - 1,
-  };
-
-  return {
-    ok: true,
-    hero: {
-      ...hero,
-      arenaEnergy,
-      updatedAt: nowIso,
-    },
-    arenaEnergy,
-  };
-}
-
-function getCurrentArenaEnergy(source: unknown, dayKey: string): number {
-  if (!isRecord(source) || source.dayKey !== dayKey) {
-    return HERO_ARENA_ENERGY_MAX;
+  const savedHero = await readPlayerSave(db, telegramUserId);
+  const savedArenaEnergy = getHeroArenaEnergyFromUnknownHero(savedHero?.hero, dayKey);
+  if (savedArenaEnergy) {
+    return savedArenaEnergy;
   }
 
-  return clampArenaEnergyValue(source.current);
-}
-
-function clampArenaEnergyValue(value: unknown): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return HERO_ARENA_ENERGY_MAX;
+  const requestArenaEnergy = getHeroArenaEnergyFromUnknownHero(requestHero, dayKey);
+  if (requestArenaEnergy) {
+    return requestArenaEnergy;
   }
 
-  return Math.max(0, Math.min(HERO_ARENA_ENERGY_MAX, Math.floor(value)));
+  return createFullHeroArenaEnergy(dayKey);
 }
 
-function getUtcDayKey(nowIso: string): string {
-  const date = new Date(nowIso);
+async function spendPlayerDailyArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  initialArenaEnergy: HeroArenaEnergy,
+  nowIso: string,
+): Promise<SpendArenaEnergyResult> {
+  await initializePlayerDailyArenaEnergy(db, telegramUserId, initialArenaEnergy, nowIso);
 
-  if (Number.isNaN(date.getTime())) {
-    return new Date().toISOString().slice(0, 10);
+  const updateResult = await db
+    .prepare(
+      `
+        UPDATE player_daily_resources SET
+          current = current - 1,
+          max = ?,
+          updated_at = ?
+        WHERE telegram_user_id = ?
+          AND resource_key = ?
+          AND day_key = ?
+          AND current > 0
+      `,
+    )
+    .bind(HERO_ARENA_ENERGY_MAX, nowIso, telegramUserId, ARENA_ENERGY_RESOURCE_KEY, initialArenaEnergy.dayKey)
+    .run();
+  const arenaEnergy = (await readPlayerDailyArenaEnergy(db, telegramUserId, initialArenaEnergy.dayKey)) ?? initialArenaEnergy;
+
+  if (updateResult.meta.changes <= 0) {
+    return { ok: false, error: "not_enough_arena_energy", arenaEnergy };
   }
 
-  return date.toISOString().slice(0, 10);
+  return { ok: true, arenaEnergy };
 }
 
-function isHeroStateLike(value: unknown): value is Record<string, unknown> {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.name === "string" &&
-    typeof value.level === "number" &&
-    typeof value.xp === "number" &&
-    typeof value.xpToNextLevel === "number" &&
-    typeof value.skillPoints === "number" &&
-    typeof value.gold === "number" &&
-    isRecord(value.baseStats) &&
-    isRecord(value.appearance) &&
-    isRecord(value.equipment) &&
-    isRecord(value.weaponEnchantments) &&
-    Array.isArray(value.inventory) &&
-    Array.isArray(value.unlockedShopRarities) &&
-    Array.isArray(value.defeatedArenaBossIds) &&
-    typeof value.createdAt === "string" &&
-    typeof value.updatedAt === "string"
-  );
+function initializePlayerDailyArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  arenaEnergy: HeroArenaEnergy,
+  nowIso: string,
+): Promise<D1Result> {
+  return db
+    .prepare(
+      `
+        INSERT INTO player_daily_resources (
+          telegram_user_id,
+          resource_key,
+          day_key,
+          current,
+          max,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(telegram_user_id, resource_key, day_key) DO NOTHING
+      `,
+    )
+    .bind(telegramUserId, ARENA_ENERGY_RESOURCE_KEY, arenaEnergy.dayKey, arenaEnergy.current, HERO_ARENA_ENERGY_MAX, nowIso)
+    .run();
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,4 +1,4 @@
-import type { HeroState } from "./hero";
+import type { HeroArenaEnergy, HeroState } from "./hero";
 import { getTelegramInitData } from "./telegram";
 
 interface GladiatorSaveResponse {
@@ -15,6 +15,7 @@ interface GladiatorSaveResponse {
 
 interface GladiatorArenaEnergySpendResponse {
   ok: boolean;
+  arenaEnergy?: HeroArenaEnergy;
   hero?: HeroState;
   error?: string;
 }
@@ -25,12 +26,14 @@ const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
 export class GladiatorSaveError extends Error {
   readonly code: string;
   readonly hero?: HeroState;
+  readonly arenaEnergy?: HeroArenaEnergy;
 
-  constructor(code: string, message = code, hero?: HeroState) {
+  constructor(code: string, message = code, hero?: HeroState, arenaEnergy?: HeroArenaEnergy) {
     super(message);
     this.name = "GladiatorSaveError";
     this.code = code;
     this.hero = hero;
+    this.arenaEnergy = arenaEnergy;
   }
 }
 
@@ -52,7 +55,7 @@ export async function deleteGladiatorCloudSave(): Promise<void> {
   await requestGladiatorSave("DELETE");
 }
 
-export async function spendGladiatorArenaEnergy(hero: HeroState): Promise<HeroState> {
+export async function spendGladiatorArenaEnergy(hero: HeroState): Promise<HeroArenaEnergy> {
   const initData = getTelegramInitData();
 
   if (!initData) {
@@ -70,14 +73,14 @@ export async function spendGladiatorArenaEnergy(hero: HeroState): Promise<HeroSt
   const data = (await response.json()) as GladiatorArenaEnergySpendResponse;
 
   if (!response.ok || !data.ok) {
-    throw new GladiatorSaveError(data.error || `Gladiator arena energy request failed: ${response.status}`, data.error, data.hero);
+    throw new GladiatorSaveError(data.error || `Gladiator arena energy request failed: ${response.status}`, data.error, data.hero, data.arenaEnergy);
   }
 
-  if (!data.hero) {
-    throw new GladiatorSaveError("missing_hero_payload", "Arena energy response did not include hero.");
+  if (!data.arenaEnergy) {
+    throw new GladiatorSaveError("missing_arena_energy_payload", "Arena energy response did not include arenaEnergy.");
   }
 
-  return data.hero;
+  return data.arenaEnergy;
 }
 
 async function requestGladiatorSave(method: "GET" | "PUT" | "DELETE", payload?: unknown): Promise<GladiatorSaveResponse> {

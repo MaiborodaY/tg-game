@@ -109,21 +109,31 @@
             "itemRarities": [
               "common"
             ],
-            "rollChance": 0.95,
+            "rollChance": 0.7,
             "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "bowChance": 0.055,
+            "shieldChance": 0.055,
+            "shurikenChance": 0.0689
           },
           {
             "itemRarities": [
               "uncommon"
             ],
+            "rollChance": 0.8333,
+            "weaponChance": 0.8333,
+            "bowChance": 0.0208,
+            "shieldChance": 0.0208,
+            "shurikenChance": 0.0264
+          },
+          {
+            "itemRarities": [
+              "rare"
+            ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0042,
+            "shieldChance": 0.0042,
+            "shurikenChance": 0.0054
           }
         ],
         "rewards": {
@@ -146,21 +156,31 @@
             "itemRarities": [
               "common"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.4,
+            "weaponChance": 0.4,
+            "bowChance": 0.028,
+            "shieldChance": 0.056,
+            "shurikenChance": 0.032
           },
           {
             "itemRarities": [
               "uncommon"
             ],
+            "rollChance": 0.9167,
+            "weaponChance": 0.9167,
+            "bowChance": 0.0396,
+            "shieldChance": 0.0816,
+            "shurikenChance": 0.0455
+          },
+          {
+            "itemRarities": [
+              "rare"
+            ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0037,
+            "shieldChance": 0.0081,
+            "shurikenChance": 0.0043
           }
         ],
         "rewards": {
@@ -181,13 +201,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "common"
+            ],
+            "rollChance": 0.1,
+            "weaponChance": 0.1,
+            "bowChance": 0.0136,
+            "shieldChance": 0.0282,
+            "shurikenChance": 0.0155
+          },
+          {
+            "itemRarities": [
               "uncommon"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.95,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "rollChance": 0.9444,
+            "weaponChance": 0.9444,
+            "bowChance": 0.1172,
+            "shieldChance": 0.247,
+            "shurikenChance": 0.134
           },
           {
             "itemRarities": [
@@ -195,9 +225,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.04,
-            "shieldChance": 0.08,
-            "shurikenChance": 0.04
+            "bowChance": 0.0078,
+            "shieldChance": 0.0193,
+            "shurikenChance": 0.0091
           }
         ],
         "rewards": {
@@ -225,13 +255,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "common"
+            ],
+            "rollChance": 0.1,
+            "weaponChance": 0.1,
+            "bowChance": 0.0079,
+            "shieldChance": 0.0079,
+            "shurikenChance": 0.0098
+          },
+          {
+            "itemRarities": [
               "uncommon"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "rollChance": 0.9444,
+            "weaponChance": 0.9444,
+            "bowChance": 0.0673,
+            "shieldChance": 0.0673,
+            "shurikenChance": 0.0845
           },
           {
             "itemRarities": [
@@ -239,9 +279,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0042,
+            "shieldChance": 0.0042,
+            "shurikenChance": 0.0054
           }
         ],
         "rewards": {
@@ -264,21 +304,31 @@
             "itemRarities": [
               "uncommon"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.4,
+            "weaponChance": 0.4,
+            "bowChance": 0.028,
+            "shieldChance": 0.056,
+            "shurikenChance": 0.032
           },
           {
             "itemRarities": [
               "rare"
             ],
+            "rollChance": 0.9167,
+            "weaponChance": 0.9167,
+            "bowChance": 0.0396,
+            "shieldChance": 0.0816,
+            "shurikenChance": 0.0455
+          },
+          {
+            "itemRarities": [
+              "epic"
+            ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0037,
+            "shieldChance": 0.0081,
+            "shurikenChance": 0.0043
           }
         ],
         "rewards": {
@@ -299,13 +349,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.1,
+            "weaponChance": 0.1,
+            "bowChance": 0.0136,
+            "shieldChance": 0.0282,
+            "shurikenChance": 0.0155
+          },
+          {
+            "itemRarities": [
               "rare"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.95,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "rollChance": 0.9444,
+            "weaponChance": 0.9444,
+            "bowChance": 0.1172,
+            "shieldChance": 0.247,
+            "shurikenChance": 0.134
           },
           {
             "itemRarities": [
@@ -313,9 +373,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.04,
-            "shieldChance": 0.08,
-            "shurikenChance": 0.04
+            "bowChance": 0.0078,
+            "shieldChance": 0.0193,
+            "shurikenChance": 0.0091
           }
         ],
         "rewards": {
@@ -343,13 +403,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.1,
+            "weaponChance": 0.1,
+            "bowChance": 0.0079,
+            "shieldChance": 0.0079,
+            "shurikenChance": 0.0098
+          },
+          {
+            "itemRarities": [
               "rare"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "rollChance": 0.9444,
+            "weaponChance": 0.9444,
+            "bowChance": 0.0673,
+            "shieldChance": 0.0673,
+            "shurikenChance": 0.0845
           },
           {
             "itemRarities": [
@@ -357,9 +427,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0042,
+            "shieldChance": 0.0042,
+            "shurikenChance": 0.0054
           }
         ],
         "rewards": {
@@ -380,13 +450,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "uncommon"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0035,
+            "shieldChance": 0.007,
+            "shurikenChance": 0.004
+          },
+          {
+            "itemRarities": [
               "rare"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.8421,
+            "weaponChance": 0.8421,
+            "bowChance": 0.0562,
+            "shieldChance": 0.1128,
+            "shurikenChance": 0.0643
           },
           {
             "itemRarities": [
@@ -394,9 +474,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0112,
+            "shieldChance": 0.0238,
+            "shurikenChance": 0.0129
           }
         ],
         "rewards": {
@@ -417,23 +497,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "epic"
+              "uncommon"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.95,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0068,
+            "shieldChance": 0.0141,
+            "shurikenChance": 0.0078
           },
           {
             "itemRarities": [
-              "legendary"
+              "rare"
+            ],
+            "rollChance": 0.7368,
+            "weaponChance": 0.7368,
+            "bowChance": 0.0959,
+            "shieldChance": 0.2005,
+            "shurikenChance": 0.1095
+          },
+          {
+            "itemRarities": [
+              "epic"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.04,
-            "shieldChance": 0.08,
-            "shurikenChance": 0.04
+            "bowChance": 0.0379,
+            "shieldChance": 0.0896,
+            "shurikenChance": 0.0439
           }
         ],
         "rewards": {
@@ -461,23 +551,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "epic"
+              "uncommon"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0039,
+            "shieldChance": 0.0039,
+            "shurikenChance": 0.0049
           },
           {
             "itemRarities": [
-              "legendary"
+              "rare"
+            ],
+            "rollChance": 0.7368,
+            "weaponChance": 0.7368,
+            "bowChance": 0.0552,
+            "shieldChance": 0.0552,
+            "shurikenChance": 0.0692
+          },
+          {
+            "itemRarities": [
+              "epic"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0209,
+            "shieldChance": 0.0209,
+            "shurikenChance": 0.0266
           }
         ],
         "rewards": {
@@ -498,23 +598,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "epic"
+              "uncommon"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0035,
+            "shieldChance": 0.007,
+            "shurikenChance": 0.004
           },
           {
             "itemRarities": [
-              "legendary"
+              "rare"
+            ],
+            "rollChance": 0.1579,
+            "weaponChance": 0.1579,
+            "bowChance": 0.0105,
+            "shieldChance": 0.0211,
+            "shurikenChance": 0.012
+          },
+          {
+            "itemRarities": [
+              "epic"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0568,
+            "shieldChance": 0.1152,
+            "shurikenChance": 0.065
           }
         ],
         "rewards": {
@@ -535,23 +645,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "legendary"
+              "rare"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.95,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0068,
+            "shieldChance": 0.0141,
+            "shurikenChance": 0.0078
           },
           {
             "itemRarities": [
-              "mythical"
+              "epic"
+            ],
+            "rollChance": 0.9895,
+            "weaponChance": 0.9895,
+            "bowChance": 0.1287,
+            "shieldChance": 0.2693,
+            "shurikenChance": 0.147
+          },
+          {
+            "itemRarities": [
+              "legendary"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.04,
-            "shieldChance": 0.08,
-            "shurikenChance": 0.04
+            "bowChance": 0.0016,
+            "shieldChance": 0.0039,
+            "shurikenChance": 0.0018
           }
         ],
         "rewards": {
@@ -579,23 +699,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "legendary"
+              "rare"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0039,
+            "shieldChance": 0.0039,
+            "shurikenChance": 0.0049
           },
           {
             "itemRarities": [
-              "mythical"
+              "epic"
+            ],
+            "rollChance": 0.9895,
+            "weaponChance": 0.9895,
+            "bowChance": 0.0741,
+            "shieldChance": 0.0741,
+            "shurikenChance": 0.093
+          },
+          {
+            "itemRarities": [
+              "legendary"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0009,
+            "shieldChance": 0.0009,
+            "shurikenChance": 0.0011
           }
         ],
         "rewards": {
@@ -616,23 +746,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "legendary"
+              "rare"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0035,
+            "shieldChance": 0.007,
+            "shurikenChance": 0.004
           },
           {
             "itemRarities": [
-              "mythical"
+              "epic"
+            ],
+            "rollChance": 0.8947,
+            "weaponChance": 0.8947,
+            "bowChance": 0.0597,
+            "shieldChance": 0.1198,
+            "shurikenChance": 0.0683
+          },
+          {
+            "itemRarities": [
+              "legendary"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0075,
+            "shieldChance": 0.016,
+            "shurikenChance": 0.0086
           }
         ],
         "rewards": {
@@ -653,13 +793,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "mythical"
+              "rare"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.005,
+            "shieldChance": 0.011,
+            "shurikenChance": 0.006
+          },
+          {
+            "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.7895,
+            "weaponChance": 0.7895,
+            "bowChance": 0.0754,
+            "shieldChance": 0.1668,
+            "shurikenChance": 0.0905
+          },
+          {
+            "itemRarities": [
+              "legendary"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "bowChance": 0.0217,
+            "shieldChance": 0.0534,
+            "shurikenChance": 0.0265
           }
         ],
         "rewards": {
@@ -687,23 +847,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
-              "legendary"
+              "rare"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0039,
+            "shieldChance": 0.0039,
+            "shurikenChance": 0.0049
           },
           {
             "itemRarities": [
-              "mythical"
+              "epic"
+            ],
+            "rollChance": 0.7895,
+            "weaponChance": 0.7895,
+            "bowChance": 0.0591,
+            "shieldChance": 0.0591,
+            "shurikenChance": 0.0742
+          },
+          {
+            "itemRarities": [
+              "legendary"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0168,
+            "shieldChance": 0.0168,
+            "shurikenChance": 0.0214
           }
         ],
         "rewards": {
@@ -724,13 +894,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.1,
+            "weaponChance": 0.1,
+            "bowChance": 0.007,
+            "shieldChance": 0.014,
+            "shurikenChance": 0.008
+          },
+          {
+            "itemRarities": [
               "legendary"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.9667,
+            "weaponChance": 0.9667,
+            "bowChance": 0.0613,
+            "shieldChance": 0.1235,
+            "shurikenChance": 0.0702
           },
           {
             "itemRarities": [
@@ -738,9 +918,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0023,
+            "shieldChance": 0.0049,
+            "shurikenChance": 0.0026
           }
         ],
         "rewards": {
@@ -761,13 +941,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.005,
+            "shieldChance": 0.011,
+            "shurikenChance": 0.006
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.9474,
+            "weaponChance": 0.9474,
+            "bowChance": 0.0905,
+            "shieldChance": 0.2002,
+            "shurikenChance": 0.1087
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "bowChance": 0.0055,
+            "shieldChance": 0.0139,
+            "shurikenChance": 0.0068
           }
         ],
         "rewards": {
@@ -795,13 +995,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0039,
+            "shieldChance": 0.0039,
+            "shurikenChance": 0.0049
+          },
+          {
+            "itemRarities": [
               "legendary"
             ],
-            "rollChance": 0.95,
-            "weaponChance": 0.7,
-            "bowChance": 0.05,
-            "shieldChance": 0.05,
-            "shurikenChance": 0.08
+            "rollChance": 0.9474,
+            "weaponChance": 0.9474,
+            "bowChance": 0.0709,
+            "shieldChance": 0.0709,
+            "shurikenChance": 0.089
           },
           {
             "itemRarities": [
@@ -809,9 +1019,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.03,
-            "shieldChance": 0.03,
-            "shurikenChance": 0.02
+            "bowChance": 0.0042,
+            "shieldChance": 0.0042,
+            "shurikenChance": 0.0054
           }
         ],
         "rewards": {
@@ -832,13 +1042,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0035,
+            "shieldChance": 0.007,
+            "shurikenChance": 0.004
+          },
+          {
+            "itemRarities": [
               "legendary"
             ],
-            "rollChance": 0.35,
-            "weaponChance": 0,
-            "bowChance": 0,
-            "shieldChance": 0,
-            "shurikenChance": 0
+            "rollChance": 0.8947,
+            "weaponChance": 0.8947,
+            "bowChance": 0.0597,
+            "shieldChance": 0.1198,
+            "shurikenChance": 0.0683
           },
           {
             "itemRarities": [
@@ -846,9 +1066,9 @@
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.07,
-            "shieldChance": 0.14,
-            "shurikenChance": 0.08
+            "bowChance": 0.0075,
+            "shieldChance": 0.016,
+            "shurikenChance": 0.0086
           }
         ],
         "rewards": {
@@ -869,13 +1089,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.005,
+            "shieldChance": 0.011,
+            "shurikenChance": 0.006
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.8421,
+            "weaponChance": 0.8421,
+            "bowChance": 0.0804,
+            "shieldChance": 0.178,
+            "shurikenChance": 0.0966
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.1,
-            "shieldChance": 0.22,
-            "shurikenChance": 0.12
+            "bowChance": 0.0164,
+            "shieldChance": 0.0406,
+            "shurikenChance": 0.02
           }
         ],
         "rewards": {
@@ -903,13 +1143,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.006,
+            "shieldChance": 0.0125,
+            "shurikenChance": 0.007
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.8421,
+            "weaponChance": 0.8421,
+            "bowChance": 0.0966,
+            "shieldChance": 0.2025,
+            "shurikenChance": 0.1128
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.12,
-            "shieldChance": 0.25,
-            "shurikenChance": 0.14
+            "bowChance": 0.02,
+            "shieldChance": 0.0476,
+            "shurikenChance": 0.0238
           }
         ],
         "rewards": {
@@ -930,13 +1190,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.008,
+            "shieldChance": 0.016,
+            "shurikenChance": 0.009
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.7895,
+            "weaponChance": 0.7895,
+            "bowChance": 0.121,
+            "shieldChance": 0.2439,
+            "shurikenChance": 0.1362
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.16,
-            "shieldChance": 0.32,
-            "shurikenChance": 0.18
+            "bowChance": 0.0367,
+            "shieldChance": 0.086,
+            "shurikenChance": 0.0421
           }
         ],
         "rewards": {
@@ -957,13 +1237,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.01,
+            "shieldChance": 0.02,
+            "shurikenChance": 0.011
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.7368,
+            "weaponChance": 0.7368,
+            "bowChance": 0.1414,
+            "shieldChance": 0.2857,
+            "shurikenChance": 0.1557
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.2,
-            "shieldChance": 0.4,
-            "shurikenChance": 0.22
+            "bowChance": 0.0588,
+            "shieldChance": 0.1429,
+            "shurikenChance": 0.0659
           }
         ],
         "rewards": {
@@ -991,13 +1291,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.05,
+            "weaponChance": 0.05,
+            "bowChance": 0.0075,
+            "shieldChance": 0.015,
+            "shurikenChance": 0.009
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.7368,
+            "weaponChance": 0.7368,
+            "bowChance": 0.1058,
+            "shieldChance": 0.2132,
+            "shurikenChance": 0.1271
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.15,
-            "shieldChance": 0.3,
-            "shurikenChance": 0.18
+            "bowChance": 0.0423,
+            "shieldChance": 0.0968,
+            "shurikenChance": 0.052
           }
         ],
         "rewards": {
@@ -1018,13 +1338,33 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "epic"
+            ],
+            "rollChance": 0.03,
+            "weaponChance": 0.03,
+            "bowChance": 0.006,
+            "shieldChance": 0.012,
+            "shurikenChance": 0.0066
+          },
+          {
+            "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.6907,
+            "weaponChance": 0.6907,
+            "bowChance": 0.1348,
+            "shieldChance": 0.2713,
+            "shurikenChance": 0.1484
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.2,
-            "shieldChance": 0.4,
-            "shurikenChance": 0.22
+            "bowChance": 0.0698,
+            "shieldChance": 0.1667,
+            "shurikenChance": 0.078
           }
         ],
         "rewards": {
@@ -1045,13 +1385,23 @@
         "equipmentPools": [
           {
             "itemRarities": [
+              "legendary"
+            ],
+            "rollChance": 0.7,
+            "weaponChance": 0.7,
+            "bowChance": 0.175,
+            "shieldChance": 0.35,
+            "shurikenChance": 0.175
+          },
+          {
+            "itemRarities": [
               "mythical"
             ],
             "rollChance": 1,
             "weaponChance": 1,
-            "bowChance": 0.25,
-            "shieldChance": 0.5,
-            "shurikenChance": 0.25
+            "bowChance": 0.0909,
+            "shieldChance": 0.2308,
+            "shurikenChance": 0.0909
           }
         ],
         "rewards": {

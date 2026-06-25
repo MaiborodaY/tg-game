@@ -186,6 +186,8 @@ const CITY_RETURN_TRANSITION_IN_MS = 260;
 const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487"]);
+const ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
+const TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS = new Set(["http://localhost:5173"]);
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
@@ -543,7 +545,7 @@ function queueHeroCloudSave(reason: string): void {
 }
 
 async function handleHeroProgressReset(): Promise<void> {
-  if (!HERO_PROGRESS_RESET_TELEGRAM_USER_IDS.has(getTelegramUserId() ?? "")) {
+  if (!canUseTelegramUserIdGatedAction(HERO_PROGRESS_RESET_TELEGRAM_USER_IDS)) {
     return;
   }
 
@@ -565,6 +567,24 @@ async function handleHeroProgressReset(): Promise<void> {
   } finally {
     cityHeroWidgetRefs.profileResetButton?.removeAttribute("disabled");
   }
+}
+
+function handleAdminArenaEnergyRestore(): void {
+  if (!canUseTelegramUserIdGatedAction(ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS)) {
+    return;
+  }
+
+  const nextHero = restoreHeroArenaEnergy(hero);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave("admin-arena-energy-restore");
+  renderCityHero();
+  renderCityArenaMenu();
 }
 
 function resetHeroProgressState(): void {
@@ -1490,7 +1510,10 @@ async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
 
   try {
     if (canUseGladiatorCloudSave()) {
-      hero = applyTelegramDisplayNameToHero(await spendGladiatorArenaEnergy(hero));
+      hero = {
+        ...hero,
+        arenaEnergy: await spendGladiatorArenaEnergy(hero),
+      };
       saveLocalHeroSave(hero);
     } else {
       const localSpend = spendHeroArenaEnergy(hero);
@@ -1510,8 +1533,11 @@ async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
     renderCityArenaMenu();
     return true;
   } catch (error) {
-    if (error instanceof GladiatorSaveError && error.hero) {
-      hero = applyTelegramDisplayNameToHero(error.hero);
+    if (error instanceof GladiatorSaveError && error.arenaEnergy) {
+      hero = {
+        ...hero,
+        arenaEnergy: error.arenaEnergy,
+      };
       saveLocalHeroSave(hero);
       syncHeroRuntimeState();
     }
@@ -1996,7 +2022,7 @@ function handleProfileAppearanceChange(appearance: Partial<HeroAppearance>): voi
 }
 
 function handleTemporaryChurchSkillGrant(): void {
-  if (!TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS.has(getTelegramUserId() ?? "")) {
+  if (!canUseTelegramUserIdGatedAction(TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS)) {
     return;
   }
 
@@ -2015,6 +2041,14 @@ function handleTemporaryChurchSkillGrant(): void {
   renderCityArenaMenu();
   syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
+}
+
+function canUseTelegramUserIdGatedAction(allowedTelegramUserIds: ReadonlySet<string>): boolean {
+  if (TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS.has(window.location.origin)) {
+    return true;
+  }
+
+  return allowedTelegramUserIds.has(getTelegramUserId() ?? "");
 }
 
 function syncShopHeroStateForProduct(product: CityShopProduct, previousHero: HeroState): void {
@@ -2239,6 +2273,7 @@ cityPvpJoinButton?.addEventListener("click", () => {
 cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
   void handleHeroProgressReset();
 });
+cityHeroWidgetRefs.arenaEnergy?.addEventListener("click", handleAdminArenaEnergyRestore);
 dom.restartButton.addEventListener("click", () => restart());
 dom.cityButton.addEventListener("click", () => {
   void returnToCity();

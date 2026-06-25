@@ -443,14 +443,16 @@ test("cloth and sword stay common while leather catalog items are uncommon", () 
 
 const arenaMatrixRarities = ["common", "uncommon", "rare", "epic", "legendary", "mythical"];
 const expectedArenaGoldRewards = new Map([
-  [1, { easy: 4, medium: 6, hard: 9, boss: 14 }],
-  [2, { easy: 14, medium: 16, hard: 19, boss: 25 }],
-  [3, { easy: 25, medium: 28, hard: 32, boss: 40 }],
-  [4, { easy: 40, medium: 44, hard: 49, boss: 60 }],
-  [5, { easy: 60, medium: 65, hard: 71, boss: 85 }],
-  [6, { easy: 85, medium: 91, hard: 99, boss: 115 }],
-  [7, { easy: 115, medium: 122, hard: 131, boss: 150 }],
-  [8, { easy: 150, medium: 158, hard: 168, boss: 190 }],
+  [1, { easy: 5, medium: 7, hard: 10, boss: 15 }],
+  [2, { easy: 15, medium: 17, hard: 21, boss: 27 }],
+  [3, { easy: 27, medium: 30, hard: 34, boss: 41 }],
+  [4, { easy: 41, medium: 44, hard: 50, boss: 58 }],
+  [5, { easy: 58, medium: 62, hard: 69, boss: 79 }],
+  [6, { easy: 79, medium: 84, hard: 92, boss: 104 }],
+  [7, { easy: 104, medium: 110, hard: 119, boss: 134 }],
+  [8, { easy: 134, medium: 141, hard: 152, boss: 170 }],
+  [9, { easy: 170, medium: 179, hard: 192, boss: 213 }],
+  [10, { easy: 213, medium: 223, hard: 239, boss: 265 }],
 ]);
 
 const expectedArenaRandomBaseStatPoints = new Map([
@@ -477,37 +479,124 @@ function createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChan
   };
 }
 
-function createExpectedArenaMatrixArmorOnlyPool(rarity, rollChance) {
-  return createExpectedArenaMatrixPool(rarity, rollChance, 0, 0, 0, 0);
+const expectedArenaMatrixEquipmentDistribution = {
+  2: {
+    easy: { common: 0.7, uncommon: 0.25, rare: 0.05 },
+    medium: { common: 0.4, uncommon: 0.55, rare: 0.05 },
+    hard: { common: 0.1, uncommon: 0.85, rare: 0.05 },
+  },
+  3: {
+    easy: { common: 0.1, uncommon: 0.85, rare: 0.05 },
+    medium: { uncommon: 0.4, rare: 0.55, epic: 0.05 },
+    hard: { uncommon: 0.1, rare: 0.85, epic: 0.05 },
+  },
+  4: {
+    easy: { uncommon: 0.1, rare: 0.85, epic: 0.05 },
+    medium: { uncommon: 0.05, rare: 0.8, epic: 0.15 },
+    hard: { uncommon: 0.05, rare: 0.7, epic: 0.25 },
+  },
+  5: {
+    easy: { uncommon: 0.05, rare: 0.7, epic: 0.25 },
+    medium: { uncommon: 0.05, rare: 0.15, epic: 0.8 },
+    hard: { rare: 0.05, epic: 0.94, legendary: 0.01 },
+  },
+  6: {
+    easy: { rare: 0.05, epic: 0.94, legendary: 0.01 },
+    medium: { rare: 0.05, epic: 0.85, legendary: 0.1 },
+    hard: { rare: 0.05, epic: 0.75, legendary: 0.2 },
+  },
+  7: {
+    easy: { rare: 0.05, epic: 0.75, legendary: 0.2 },
+    medium: { epic: 0.1, legendary: 0.87, mythical: 0.03 },
+    hard: { epic: 0.05, legendary: 0.9, mythical: 0.05 },
+  },
+  8: {
+    easy: { epic: 0.05, legendary: 0.9, mythical: 0.05 },
+    medium: { epic: 0.05, legendary: 0.85, mythical: 0.1 },
+    hard: { epic: 0.05, legendary: 0.8, mythical: 0.15 },
+  },
+  9: {
+    easy: { epic: 0.05, legendary: 0.8, mythical: 0.15 },
+    medium: { epic: 0.05, legendary: 0.75, mythical: 0.2 },
+    hard: { epic: 0.05, legendary: 0.7, mythical: 0.25 },
+  },
+  10: {
+    easy: { epic: 0.05, legendary: 0.7, mythical: 0.25 },
+    medium: { epic: 0.03, legendary: 0.67, mythical: 0.3 },
+    hard: { legendary: 0.7, mythical: 0.3 },
+  },
+};
+
+const expectedArenaMatrixSidearmTotals = {
+  default: {
+    easy: { bow: 0.0785, shield: 0.0785, shuriken: 0.0984 },
+    medium: { bow: 0.07, shield: 0.14, shuriken: 0.08 },
+    hard: { bow: 0.136, shield: 0.2824, shuriken: 0.1552 },
+  },
+  6: {
+    hard: { bow: 0.1, shield: 0.22, shuriken: 0.12 },
+  },
+  7: {
+    hard: { bow: 0.1, shield: 0.22, shuriken: 0.12 },
+  },
+  8: {
+    hard: { bow: 0.1, shield: 0.22, shuriken: 0.12 },
+  },
+  9: {
+    easy: { bow: 0.12, shield: 0.25, shuriken: 0.14 },
+    medium: { bow: 0.16, shield: 0.32, shuriken: 0.18 },
+    hard: { bow: 0.2, shield: 0.4, shuriken: 0.22 },
+  },
+  10: {
+    easy: { bow: 0.15, shield: 0.3, shuriken: 0.18 },
+    medium: { bow: 0.2, shield: 0.4, shuriken: 0.22 },
+    hard: { bow: 0.25, shield: 0.5, shuriken: 0.25 },
+  },
+};
+
+function roundExpectedArenaChance(value) {
+  return Math.round(Math.max(0, Math.min(1, value)) * 10000) / 10000;
 }
 
-function getExpectedArenaMatrixCurrentRarityIndex(tierId) {
-  return Math.min(Math.max(tierId - 1, 1), arenaMatrixRarities.length - 1);
+function getExpectedSequentialArenaChance(distribution, rarity) {
+  let previous = 0;
+  for (const candidate of arenaMatrixRarities) {
+    const effective = distribution[candidate] ?? 0;
+    if (candidate === rarity) {
+      const remaining = 1 - previous;
+      return remaining > 0 ? roundExpectedArenaChance(effective / remaining) : 0;
+    }
+    previous += effective;
+  }
+
+  return 0;
+}
+
+function scaleExpectedArenaDistribution(distribution, total) {
+  return Object.fromEntries(arenaMatrixRarities.map((rarity) => [rarity, (distribution[rarity] ?? 0) * total]));
+}
+
+function getExpectedArenaMatrixSidearmTotals(tierId, difficultyId) {
+  return expectedArenaMatrixSidearmTotals[tierId]?.[difficultyId] ?? expectedArenaMatrixSidearmTotals.default[difficultyId];
 }
 
 function getExpectedArenaMatrixEquipmentPools(tierId, difficultyId) {
-  const currentIndex = getExpectedArenaMatrixCurrentRarityIndex(tierId);
-  const previous = arenaMatrixRarities[currentIndex - 1];
-  const current = arenaMatrixRarities[currentIndex];
-  const next = arenaMatrixRarities[currentIndex + 1];
+  const distribution = expectedArenaMatrixEquipmentDistribution[tierId]?.[difficultyId];
+  const sidearmTotals = getExpectedArenaMatrixSidearmTotals(tierId, difficultyId);
 
-  if (difficultyId === "easy") {
-    return [
-      createExpectedArenaMatrixPool(previous, 0.95, 0.7, 0.05, 0.05, 0.08),
-      createExpectedArenaMatrixPool(current, 1, 1, 0.03, 0.03, 0.02),
-    ];
-  }
+  return arenaMatrixRarities.flatMap((rarity) => {
+    if (!(distribution[rarity] > 0)) {
+      return [];
+    }
 
-  if (difficultyId === "medium") {
-    return [
-      createExpectedArenaMatrixArmorOnlyPool(previous, 0.35),
-      createExpectedArenaMatrixPool(current, 1, 1, 0.07, 0.14, 0.08),
-    ];
-  }
+    const rollChance = getExpectedSequentialArenaChance(distribution, rarity);
+    const weaponChance = getExpectedSequentialArenaChance(distribution, rarity);
+    const bowChance = getExpectedSequentialArenaChance(scaleExpectedArenaDistribution(distribution, sidearmTotals.bow), rarity);
+    const shieldChance = getExpectedSequentialArenaChance(scaleExpectedArenaDistribution(distribution, sidearmTotals.shield), rarity);
+    const shurikenChance = getExpectedSequentialArenaChance(scaleExpectedArenaDistribution(distribution, sidearmTotals.shuriken), rarity);
 
-  return next
-    ? [createExpectedArenaMatrixPool(current, 0.95, 0.95, 0.1, 0.22, 0.12), createExpectedArenaMatrixPool(next, 1, 1, 0.04, 0.08, 0.04)]
-    : [createExpectedArenaMatrixPool(current, 1, 1, 0.1, 0.22, 0.12)];
+    return [createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChance, shieldChance, shurikenChance)];
+  });
 }
 
 test("arena tier one default enemy loadouts use tier one equipment pools", () => {
@@ -758,8 +847,8 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(easyOpponents[0].baseStats?.vitality, 0);
   assert.equal("name" in easyOpponents[0], false);
   assert.equal(easyOpponents[0].equipmentPools.length, 0);
-  assert.equal(easyOpponents[0].rewards.win.gold, 4);
-  assert.equal(easyOpponents[0].rewards.win.xp, 4);
+  assert.equal(easyOpponents[0].rewards.win.gold, 5);
+  assert.equal(easyOpponents[0].rewards.win.xp, 5);
   assert.equal(easyOpponents[0].rewards.loss.gold, 1);
   assert.equal(easyOpponents[0].rewards.loss.xp, 1);
   assert.equal(mediumOpponents.length, 1);
@@ -771,8 +860,8 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(mediumOpponents[0].equipmentPools[0].rollChance, tier.enemyEquipmentPools[0].rollChance);
   assert.equal(mediumOpponents[0].equipmentPools[1].itemRarities[0], "uncommon");
   assert.equal(mediumOpponents[0].equipmentPools[1].rollChance, 0.01);
-  assert.equal(mediumOpponents[0].rewards.win.gold, 6);
-  assert.equal(mediumOpponents[0].rewards.win.xp, 6);
+  assert.equal(mediumOpponents[0].rewards.win.gold, 7);
+  assert.equal(mediumOpponents[0].rewards.win.xp, 7);
   assert.equal(mediumOpponents[0].rewards.loss.gold, 1);
   assert.equal(mediumOpponents[0].rewards.loss.xp, 1);
   assert.equal(hardOpponents.length, 1);
@@ -790,14 +879,14 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].equipmentPools[1].bowChance, 0);
   assert.equal(hardOpponents[0].equipmentPools[1].shieldChance, 0);
   assert.equal(hardOpponents[0].equipmentPools[1].shurikenChance, 0);
-  assert.equal(hardOpponents[0].rewards.win.gold, 9);
+  assert.equal(hardOpponents[0].rewards.win.gold, 10);
   assert.equal(hardOpponents[0].rewards.win.xp, 10);
   assert.equal(hardOpponents[0].rewards.loss.gold, 1);
   assert.equal(hardOpponents[0].rewards.loss.xp, 1);
   assert.equal(tierTwo.name, "Dust Arena II");
   assert.equal(tierTwo.unlockBossId, "dust_arena_champion");
   assert.equal(tierTwo.randomOpponentIds.length, 3);
-  assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 14);
+  assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 15);
   assert.equal(tierTwoEasyOpponents[0].rewards.win.xp, 15);
 
   assert.equal(tier.bossIds.length, 1);
