@@ -775,6 +775,8 @@ function handleActionArcClick(event: Event): void {
 function mountCityPreviews(): Promise<void> {
   if (cityHero && !cityScene) {
     cityScene = mountCityHeroPreview(cityHero, hero.equipment, hero.appearance);
+  } else {
+    cityScene?.resume();
   }
 
   if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
@@ -1516,9 +1518,8 @@ async function waitForCityReady(): Promise<void> {
   await waitForCityFirstPaint();
 }
 
-function unmountCityScenePreview(): void {
-  cityScene?.destroy();
-  cityScene = undefined;
+function suspendCityScenePreview(): void {
+  cityScene?.suspend();
 }
 
 function mountArena(): void {
@@ -1557,7 +1558,7 @@ function startGame(options: StartGameOptions = {}): void {
   syncPvpTurnTimer();
   cityHeroProfile?.close();
   closeCityArenaMenu();
-  unmountCityScenePreview();
+  suspendCityScenePreview();
   weaponShop?.close();
   armoryShop?.close();
   magicShop?.close();

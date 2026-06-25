@@ -2590,6 +2590,8 @@ export interface CitySceneApi {
   prewarmEquipmentItem: (itemId: HeroItemId) => void;
   clearEquipmentPreview: () => void;
   focusArenaTransition: () => Promise<void>;
+  suspend: () => void;
+  resume: () => void;
   destroy: () => void;
 }
 
@@ -3373,6 +3375,8 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   let pendingCameraMode: CityCameraMode = "default";
   let pendingShopMenuTopY: number | undefined;
   const cityGameSize = getCityPhaserGameSize(parent);
+  let isSuspended = false;
+  let isDestroyed = false;
   let resolveReady: () => void = () => undefined;
   let isReady = false;
   const ready = new Promise<void>((resolve) => {
@@ -3391,6 +3395,10 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     scene = readyScene;
     readyScene.setShopMenuTop(scaleCityDomY(pendingShopMenuTopY, cityGameSize.pixelRatio));
     resolveReadyOnce();
+    if (isSuspended) {
+      game.loop.sleep();
+      return;
+    }
     if (pendingCameraMode === "armory") {
       readyScene.focusArmory();
       return;
@@ -3449,7 +3457,28 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       scene?.clearPlayerEquipmentPreview();
     },
     focusArenaTransition: () => scene?.focusArenaTransition() ?? Promise.resolve(),
+    suspend: () => {
+      if (isDestroyed || isSuspended) {
+        return;
+      }
+
+      isSuspended = true;
+      game.loop.sleep();
+    },
+    resume: () => {
+      if (isDestroyed) {
+        return;
+      }
+
+      isSuspended = false;
+      pendingCameraMode = "default";
+      game.loop.wake();
+      scene?.clearPlayerEquipmentPreview();
+      scene?.focusDefault(true);
+      scene?.scale.refresh();
+    },
     destroy: () => {
+      isDestroyed = true;
       if (cityReadyCallback === readyCallbackForGame) {
         cityReadyCallback = undefined;
       }
