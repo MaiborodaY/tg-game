@@ -32,7 +32,6 @@ export interface ActionConfig {
   restore?: number;
   heal?: number;
   glory?: number;
-  vulnerability?: number;
   move?: number;
   rangeMax?: number;
 }
@@ -151,8 +150,6 @@ export interface CombatState {
   distance: number;
   playerPosition: number;
   enemyPosition: number;
-  playerIncomingBonus: number;
-  enemyIncomingBonus: number;
   playerRestBlockChancePenalty: number;
   enemyRestBlockChancePenalty: number;
   lastPlayerAction?: ActionId;
@@ -356,10 +353,9 @@ export const actions: Record<ActionId, ActionConfig> = {
   taunt: {
     id: "taunt",
     title: "Taunt Crowd",
-    detail: "Cost 1 - Glory, +1 incoming",
+    detail: "Cost 1 - Glory",
     cost: 1,
     glory: 70,
-    vulnerability: 1,
   },
   rest: {
     id: "rest",
@@ -489,8 +485,6 @@ export function freshState(): CombatState {
     distance: START_DISTANCE,
     playerPosition: 0,
     enemyPosition: START_DISTANCE,
-    playerIncomingBonus: 0,
-    enemyIncomingBonus: 0,
     playerRestBlockChancePenalty: 0,
     enemyRestBlockChancePenalty: 0,
     lastPlayerDamage: 0,
@@ -1344,10 +1338,6 @@ function applyAction(
     attacker.hp = clamp(attacker.hp + heal, 0, getFighterMaxHp(attacker));
   }
 
-  if (action.vulnerability) {
-    addIncomingBonus(state, actor, action.vulnerability);
-  }
-
   if (actionId === "rest") {
     addRestBlockChancePenalty(state, actor, REST_BLOCK_CHANCE_PENALTY);
   }
@@ -1415,7 +1405,7 @@ function applyAction(
   let preciseStrikeConsumed = false;
 
   if (damage > 0 && actionId !== "scroll" && actionId !== "fireball") {
-    const firstHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, damage, random, true);
+    const firstHit = resolveWeaponHit(state, action, attacker, defender, defenderOwner, damage, random);
 
     damage = firstHit.damage;
     blocked = firstHit.blocked;
@@ -1433,7 +1423,7 @@ function applyAction(
 
       doubleStrikeRepeat = true;
       consumeDoubleStrikeRepeatCost(actionId, attacker);
-      const secondHit = resolveWeaponHit(state, actor, action, attacker, defender, defenderOwner, repeatBaseDamage, random, false);
+      const secondHit = resolveWeaponHit(state, action, attacker, defender, defenderOwner, repeatBaseDamage, random);
 
       damage += secondHit.damage;
       blocked ||= secondHit.blocked;
@@ -1458,10 +1448,9 @@ function applyAction(
 
   if (actor === "player") {
     const glory = action.glory ?? 0;
-    const riskBonus = action.vulnerability ? 35 : 0;
     const staminaBonus = state.player.stamina >= 5 ? 12 : 0;
 
-    state.score += damage * 90 + glory + riskBonus + staminaBonus;
+    state.score += damage * 90 + glory + staminaBonus;
     state.lastPlayerAction = actionId;
     state.lastPlayerDamage = damage;
     state.lastPlayerArmorAbsorbed = appliedDamage.armorAbsorbed;
@@ -1507,14 +1496,12 @@ function isActionBlocked(
 
 function resolveWeaponHit(
   state: CombatState,
-  actor: TurnOwner,
   action: ActionConfig,
   attacker: FighterState,
   defender: FighterState,
   defenderOwner: TurnOwner,
   baseDamage: number,
   random: () => number,
-  includeIncomingBonus: boolean,
 ): WeaponHitResolution {
   let damage = Math.max(0, Math.floor(baseDamage));
   let blocked = false;
@@ -1529,10 +1516,6 @@ function resolveWeaponHit(
   if (blocked) {
     clearIncomingAttackModifiers(state, defenderOwner);
     return { damage: 0, blocked, appliedDamage };
-  }
-
-  if (includeIncomingBonus) {
-    damage = applyIncomingBonus(state, actor, damage);
   }
 
   damage = applyWeaponArmorDamageBonus(action.id, attacker, defender, damage);
@@ -2043,15 +2026,6 @@ function finishBattle(state: CombatState): void {
   }
 }
 
-function applyIncomingBonus(state: CombatState, attacker: TurnOwner, damage: number): number {
-  const defender = attacker === "player" ? "enemy" : "player";
-  const incomingBonus = defender === "player" ? state.playerIncomingBonus : state.enemyIncomingBonus;
-
-  clearIncomingAttackModifiers(state, defender);
-
-  return damage + incomingBonus;
-}
-
 function clampActionMoveToContactRange(state: CombatState, actionId: ActionId, attacker: FighterState, distanceDelta: number): number {
   if (actionId !== "lunge" || !isSpearFighter(attacker) || distanceDelta >= 0) {
     return distanceDelta;
@@ -2084,14 +2058,6 @@ function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number):
   state.distance = roundCombatDistance(clamp(state.enemyPosition - state.playerPosition, MIN_DISTANCE, MAX_DISTANCE));
 }
 
-function addIncomingBonus(state: CombatState, actor: TurnOwner, value: number): void {
-  if (actor === "player") {
-    state.playerIncomingBonus += value;
-  } else {
-    state.enemyIncomingBonus += value;
-  }
-}
-
 function addRestBlockChancePenalty(state: CombatState, actor: TurnOwner, value: number): void {
   if (actor === "player") {
     state.playerRestBlockChancePenalty = Math.max(state.playerRestBlockChancePenalty, value);
@@ -2113,16 +2079,7 @@ function clearRestBlockChancePenalty(state: CombatState, actor: TurnOwner): void
 }
 
 function clearIncomingAttackModifiers(state: CombatState, actor: TurnOwner): void {
-  clearIncomingBonus(state, actor);
   clearRestBlockChancePenalty(state, actor);
-}
-
-function clearIncomingBonus(state: CombatState, actor: TurnOwner): void {
-  if (actor === "player") {
-    state.playerIncomingBonus = 0;
-  } else {
-    state.enemyIncomingBonus = 0;
-  }
 }
 
 function addLog(state: CombatState, text: string, important = false): void {

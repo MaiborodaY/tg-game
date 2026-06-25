@@ -755,7 +755,7 @@ test("enemy fighters can choose and cast fireball scrolls", () => {
   assert.equal(nextState.lastEnemyBlocked, false);
 });
 
-test("rest restores stamina and heals one hp without incoming penalty", () => {
+test("rest restores stamina and heals one hp", () => {
   const state = combat.freshState();
 
   state.player.hp = 6;
@@ -768,7 +768,6 @@ test("rest restores stamina and heals one hp without incoming penalty", () => {
 
   assert.equal(nextState.player.stamina, 5);
   assert.equal(nextState.player.hp, 7);
-  assert.equal(nextState.playerIncomingBonus, 0);
 });
 
 test("rest makes the resting fighter easier to hit for the next enemy action", () => {
@@ -876,7 +875,6 @@ test("enemy does not taunt while in clinch", () => {
   const nextState = combat.resolveEnemyTurn(state, () => 0.78);
 
   assert.notEqual(nextState.lastEnemyAction, "taunt");
-  assert.equal(nextState.enemyIncomingBonus, 0);
 });
 
 test("boss enemy AI cannot use taunt", () => {

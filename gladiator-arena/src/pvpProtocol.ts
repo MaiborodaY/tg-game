@@ -96,8 +96,6 @@ function mirrorCombatState(state: CombatState): CombatState {
     activeTurn: mirrorTurnOwner(state.activeTurn),
     playerPosition: START_DISTANCE - state.enemyPosition,
     enemyPosition: START_DISTANCE - state.playerPosition,
-    playerIncomingBonus: state.enemyIncomingBonus,
-    enemyIncomingBonus: state.playerIncomingBonus,
     playerRestBlockChancePenalty: state.enemyRestBlockChancePenalty,
     enemyRestBlockChancePenalty: state.playerRestBlockChancePenalty,
     lastPlayerAction: state.lastEnemyAction,

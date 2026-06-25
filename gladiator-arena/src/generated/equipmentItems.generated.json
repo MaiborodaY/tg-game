@@ -14496,7 +14496,7 @@
     "name": "Epic Axe 04",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 19,
+    "damageBonus": 20,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -14609,7 +14609,7 @@
     "name": "Mythical Axe 01",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 26,
+    "damageBonus": 24,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -14640,7 +14640,7 @@
     "name": "Mythical Axe 02",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 27,
+    "damageBonus": 25,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -14712,7 +14712,7 @@
     "name": "Prisoner Axe",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 50,
+    "damageBonus": 20,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -15672,7 +15672,7 @@
     "name": "Epic Mace 01",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 21,
+    "damageBonus": 19,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16113,7 +16113,7 @@
     "name": "Mythical Mace 01",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 35,
+    "damageBonus": 23,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16144,7 +16144,7 @@
     "name": "Mythical Mace 02",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 36,
+    "damageBonus": 24,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16442,7 +16442,7 @@
     "name": "Uncommon Mace 05",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 10,
+    "damageBonus": 9,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16473,7 +16473,7 @@
     "name": "Uncommon Mace 06",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 11,
+    "damageBonus": 10,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17007,7 +17007,7 @@
     "name": "Eagle Glaive",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 10,
+    "damageBonus": 19,
     "weaponClass": "spear",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17120,7 +17120,7 @@
     "name": "Epic Spear 03",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 16,
+    "damageBonus": 19,
     "weaponClass": "spear",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17428,7 +17428,7 @@
     "name": "Mythical Spear 02",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 25,
+    "damageBonus": 24,
     "weaponClass": "spear",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17582,7 +17582,7 @@
     "name": "Epic Sword 09",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 29,
+    "damageBonus": 21,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17613,7 +17613,7 @@
     "name": "Epic Sword 10",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 30,
+    "damageBonus": 22,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17644,7 +17644,7 @@
     "name": "Epic Sword 02",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 22,
+    "damageBonus": 19,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17757,7 +17757,7 @@
     "name": "Epic Sword 05",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 25,
+    "damageBonus": 20,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17911,7 +17911,7 @@
     "name": "Frost King Sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 62,
+    "damageBonus": 27,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17942,7 +17942,7 @@
     "name": "Grave King Greatsword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 68,
+    "damageBonus": 28,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17973,7 +17973,7 @@
     "name": "Common Sword 03",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 3,
+    "damageBonus": 4,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18086,7 +18086,7 @@
     "name": "Mythical Sword 01",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 35,
+    "damageBonus": 23,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18117,7 +18117,7 @@
     "name": "Mythical Sword 02",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 36,
+    "damageBonus": 24,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18271,7 +18271,7 @@
     "name": "Rare Sword 04",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 16,
+    "damageBonus": 12,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18302,7 +18302,7 @@
     "name": "Rare Sword 05",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 17,
+    "damageBonus": 13,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18333,7 +18333,7 @@
     "name": "Rare Sword 06",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 18,
+    "damageBonus": 14,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18364,7 +18364,7 @@
     "name": "Rare Sword 07",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 19,
+    "damageBonus": 15,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18436,7 +18436,7 @@
     "name": "Swamp sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 56,
+    "damageBonus": 24,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18631,7 +18631,7 @@
     "name": "Void Sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 75,
+    "damageBonus": 30,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18662,7 +18662,7 @@
     "name": "Warden Sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 52,
+    "damageBonus": 22,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
