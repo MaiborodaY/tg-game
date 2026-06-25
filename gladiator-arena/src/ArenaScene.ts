@@ -1325,7 +1325,24 @@ function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
 const CITY_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
 const ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
 
-function getArenaPhaserDevicePixelRatio(): number {
+interface PhaserGameSize {
+  width: number;
+  height: number;
+  pixelRatio: number;
+}
+
+interface PhaserScenePixelRatioCache {
+  sceneWidth: number;
+  sceneHeight: number;
+  displayWidth: number;
+  displayHeight: number;
+  pixelRatio: number;
+}
+
+const phaserScenePixelRatioCache = new WeakMap<Phaser.Scene, PhaserScenePixelRatioCache>();
+const arenaMainCameraViewportCache = new WeakMap<Phaser.Scene, { width: number; height: number }>();
+
+function getPhaserDevicePixelRatio(maxDevicePixelRatio: number): number {
   if (typeof window === "undefined") {
     return 1;
   }
@@ -1336,11 +1353,11 @@ function getArenaPhaserDevicePixelRatio(): number {
     return 1;
   }
 
-  return Math.min(ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+  return Math.min(maxDevicePixelRatio, ratio);
 }
 
-function getArenaPhaserGameSize(parent: HTMLElement | null): { width: number; height: number; pixelRatio: number } {
-  const pixelRatio = getArenaPhaserDevicePixelRatio();
+function getPhaserGameSize(parent: HTMLElement | null, maxDevicePixelRatio: number): PhaserGameSize {
+  const pixelRatio = getPhaserDevicePixelRatio(maxDevicePixelRatio);
   const logicalWidth = Math.max(1, parent?.clientWidth || GAME_WIDTH);
   const logicalHeight = Math.max(1, parent?.clientHeight || GAME_HEIGHT);
 
@@ -1351,41 +1368,47 @@ function getArenaPhaserGameSize(parent: HTMLElement | null): { width: number; he
   };
 }
 
+function getPhaserScenePixelRatio(scene: Phaser.Scene, maxDevicePixelRatio: number): number {
+  const sceneWidth = Math.max(1, scene.scale.width || scene.game.canvas.width || GAME_WIDTH);
+  const sceneHeight = Math.max(1, scene.scale.height || scene.game.canvas.height || GAME_HEIGHT);
+  const displayWidth = getPositivePhaserDimension(scene.scale.displaySize?.width, sceneWidth);
+  const displayHeight = getPositivePhaserDimension(scene.scale.displaySize?.height, sceneHeight);
+  const cached = phaserScenePixelRatioCache.get(scene);
+
+  if (
+    cached &&
+    cached.sceneWidth === sceneWidth &&
+    cached.sceneHeight === sceneHeight &&
+    cached.displayWidth === displayWidth &&
+    cached.displayHeight === displayHeight
+  ) {
+    return cached.pixelRatio;
+  }
+
+  const ratioX = sceneWidth / displayWidth;
+  const ratioY = sceneHeight / displayHeight;
+  const ratio = Math.max(ratioX, ratioY);
+  const pixelRatio = Number.isFinite(ratio) && ratio > 1 ? Math.min(maxDevicePixelRatio, ratio) : 1;
+
+  phaserScenePixelRatioCache.set(scene, { sceneWidth, sceneHeight, displayWidth, displayHeight, pixelRatio });
+
+  return pixelRatio;
+}
+
+function getPositivePhaserDimension(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function getArenaPhaserGameSize(parent: HTMLElement | null): PhaserGameSize {
+  return getPhaserGameSize(parent, ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO);
+}
+
 function getArenaScenePixelRatio(scene: Phaser.Scene): number {
-  const rect = scene.game.canvas.getBoundingClientRect();
-  const ratio = scene.game.canvas.width / Math.max(1, rect.width);
-
-  if (!Number.isFinite(ratio) || ratio <= 1) {
-    return 1;
-  }
-
-  return Math.min(ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+  return getPhaserScenePixelRatio(scene, ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
-function getCityPhaserDevicePixelRatio(): number {
-  if (typeof window === "undefined") {
-    return 1;
-  }
-
-  const ratio = Number(window.devicePixelRatio);
-
-  if (!Number.isFinite(ratio) || ratio <= 1) {
-    return 1;
-  }
-
-  return Math.min(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
-}
-
-function getCityPhaserGameSize(parent: HTMLElement): { width: number; height: number; pixelRatio: number } {
-  const pixelRatio = getCityPhaserDevicePixelRatio();
-  const logicalWidth = Math.max(1, parent.clientWidth || GAME_WIDTH);
-  const logicalHeight = Math.max(1, parent.clientHeight || GAME_HEIGHT);
-
-  return {
-    width: Math.max(1, Math.round(logicalWidth * pixelRatio)),
-    height: Math.max(1, Math.round(logicalHeight * pixelRatio)),
-    pixelRatio,
-  };
+function getCityPhaserGameSize(parent: HTMLElement): PhaserGameSize {
+  return getPhaserGameSize(parent, CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
 function scaleCityDomY(value: number | undefined, pixelRatio: number): number | undefined {
@@ -1393,14 +1416,7 @@ function scaleCityDomY(value: number | undefined, pixelRatio: number): number | 
 }
 
 function getCityScenePixelRatio(scene: Phaser.Scene): number {
-  const rect = scene.game.canvas.getBoundingClientRect();
-  const ratio = scene.game.canvas.width / Math.max(1, rect.width);
-
-  if (!Number.isFinite(ratio) || ratio <= 1) {
-    return 1;
-  }
-
-  return Math.min(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+  return getPhaserScenePixelRatio(scene, CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
@@ -9965,11 +9981,22 @@ function syncArenaMainCamera(target: Phaser.Scene): void {
   const pixelRatio = getArenaScenePixelRatio(target);
   const width = Math.max(1, target.scale.width || GAME_WIDTH * pixelRatio);
   const height = Math.max(1, target.scale.height || GAME_HEIGHT * pixelRatio);
+  const camera = target.cameras.main;
+  const cached = arenaMainCameraViewportCache.get(target);
 
-  target.cameras.main.setViewport(0, 0, width, height);
-  target.cameras.main.setBounds(0, 0, width, height);
-  target.cameras.main.setScroll(0, 0);
-  target.cameras.main.setZoom(1);
+  if (!cached || cached.width !== width || cached.height !== height) {
+    camera.setViewport(0, 0, width, height);
+    camera.setBounds(0, 0, width, height);
+    arenaMainCameraViewportCache.set(target, { width, height });
+  }
+
+  if (camera.scrollX !== 0 || camera.scrollY !== 0) {
+    camera.setScroll(0, 0);
+  }
+
+  if (camera.zoom !== 1) {
+    camera.setZoom(1);
+  }
 }
 
 function getArenaViewport(target: Phaser.Scene): CameraViewport {
