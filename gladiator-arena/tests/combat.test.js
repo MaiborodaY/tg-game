@@ -770,7 +770,7 @@ test("rest restores stamina and heals one hp", () => {
   assert.equal(nextState.player.hp, 7);
 });
 
-test("rest makes the resting fighter easier to hit for the next enemy action", () => {
+test("rest makes the resting fighter easier to hit until their next turn", () => {
   const state = combat.freshState();
 
   setConsistentDistance(state, combat.MELEE_RANGE);
@@ -778,16 +778,17 @@ test("rest makes the resting fighter easier to hit for the next enemy action", (
   const rested = combat.resolvePlayerTurn(state, "rest");
   const baseEnemyHeavyBlockChance = combat.getActionBlockChance(combat.actions.heavy, rested.enemy, rested.player);
 
-  assert.equal(rested.playerRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
+  assert.equal(rested.playerRestDefensePenalty, combat.REST_DEFENSE_PENALTY);
   assert.equal(
     combat.getActionBlockChanceForState(rested, "heavy", "enemy"),
-    baseEnemyHeavyBlockChance - combat.REST_BLOCK_CHANCE_PENALTY,
+    baseEnemyHeavyBlockChance - combat.REST_DEFENSE_PENALTY,
   );
-  assert.equal(combat.isActionHitChanceRestBoosted(rested, "heavy", "enemy"), true);
-  assert.equal(combat.isActionHitChanceRestBoosted(rested, "rest", "enemy"), false);
+  assert.equal(combat.isActionTargetRestVulnerable(rested, "heavy", "enemy"), true);
+  assert.equal(combat.isActionTargetRestVulnerable(rested, "lunge", "enemy"), true);
+  assert.equal(combat.isActionTargetRestVulnerable(rested, "rest", "enemy"), false);
 });
 
-test("rest hit chance penalty is consumed by the next incoming attack", () => {
+test("rest defense penalty is consumed by the next weapon hit check", () => {
   const state = combat.freshState();
 
   state.activeTurn = "enemy";
@@ -797,15 +798,15 @@ test("rest hit chance penalty is consumed by the next incoming attack", () => {
   const rested = combat.resolveEnemyTurn(state, () => 0);
   const nextState = combat.resolvePlayerTurn(rested, "heavy", () => 0.4);
 
-  assert.equal(rested.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
-  assert.equal(combat.isActionHitChanceRestBoosted(rested, "heavy", "player"), true);
+  assert.equal(rested.enemyRestDefensePenalty, combat.REST_DEFENSE_PENALTY);
+  assert.equal(combat.isActionTargetRestVulnerable(rested, "heavy", "player"), true);
   assert.equal(nextState.lastPlayerBlocked, false);
-  assert.equal(nextState.enemyRestBlockChancePenalty, 0);
-  assert.equal(combat.isActionHitChanceRestBoosted(nextState, "heavy", "player"), false);
+  assert.equal(nextState.enemyRestDefensePenalty, 0);
+  assert.equal(combat.isActionTargetRestVulnerable(nextState, "heavy", "player"), false);
   assert.equal(nextState.lastPlayerDamage > 0, true);
 });
 
-test("rest hit chance penalty survives non-turn scroll buffs", () => {
+test("rest defense penalty survives non-turn scroll buffs", () => {
   for (const actionId of ["preciseStrike", "doubleStrike"]) {
     const state = combat.freshState();
 
@@ -819,13 +820,54 @@ test("rest hit chance penalty survives non-turn scroll buffs", () => {
     const hitRolls = [0.4, 0.99];
     const hit = combat.resolvePlayerTurn(buffed, "medium", () => hitRolls.shift() ?? 0.99);
 
-    assert.equal(rested.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
+    assert.equal(rested.enemyRestDefensePenalty, combat.REST_DEFENSE_PENALTY);
     assert.equal(buffed.activeTurn, "player");
-    assert.equal(buffed.enemyRestBlockChancePenalty, combat.REST_BLOCK_CHANCE_PENALTY);
-    assert.equal(combat.isActionHitChanceRestBoosted(buffed, "medium", "player"), true);
-    assert.equal(hit.enemyRestBlockChancePenalty, 0);
+    assert.equal(buffed.enemyRestDefensePenalty, combat.REST_DEFENSE_PENALTY);
+    assert.equal(combat.isActionTargetRestVulnerable(buffed, "medium", "player"), true);
+    assert.equal(hit.enemyRestDefensePenalty, 0);
     assert.equal(hit.lastPlayerBlocked, false);
   }
+});
+
+test("rest defense penalty only boosts the first double strike weapon hit check", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.stamina = 0;
+  state.enemy.hp = 20;
+  state.enemy.maxHp = 20;
+  state.enemy.armor = 0;
+  state.player.damageBonus = 2;
+  state.player.doubleStrikeScrollCount = 1;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const rested = combat.resolveEnemyTurn(state, () => 0);
+  const buffed = combat.resolvePlayerTurn(rested, "doubleStrike", () => 0);
+  const rolls = [0.2, 0.2];
+  const hit = combat.resolvePlayerTurn(buffed, "medium", () => rolls.shift() ?? 0.99);
+
+  assert.equal(buffed.enemyRestDefensePenalty, combat.REST_DEFENSE_PENALTY);
+  assert.equal(hit.enemyRestDefensePenalty, 0);
+  assert.equal(hit.lastPlayerDoubleStrikeRepeat, true);
+  assert.deepEqual(getPlainPlayerHitResults(hit), [
+    { damage: 4, blocked: false },
+    { damage: 0, blocked: true },
+  ]);
+});
+
+test("rest defense penalty expires when the resting fighter gets the turn back", () => {
+  const state = combat.freshState();
+
+  state.activeTurn = "enemy";
+  state.enemy.stamina = 0;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const rested = combat.resolveEnemyTurn(state, () => 0);
+  const steppedBack = combat.resolvePlayerTurn(rested, "back", () => 0);
+
+  assert.equal(rested.enemyRestDefensePenalty, combat.REST_DEFENSE_PENALTY);
+  assert.equal(steppedBack.activeTurn, "enemy");
+  assert.equal(steppedBack.enemyRestDefensePenalty, 0);
 });
 
 test("enemy auto rests at zero stamina instead of acting", () => {

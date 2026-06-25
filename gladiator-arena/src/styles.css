@@ -14125,7 +14125,7 @@ body.debug-active .action-arc__center {
   filter: saturate(0.78) brightness(0.9);
 }
 
-.action-arc__chance--rest-boosted {
+.action-arc__chance--target-vulnerable {
   border-color: rgba(104, 172, 96, 0.88);
   color: #d9f0bf;
   background:
@@ -14350,7 +14350,7 @@ body.debug-active .action-arc__center {
   opacity: 0.62;
 }
 
-.classic-action-bar .classic-action-bar__chance--rest-boosted {
+.classic-action-bar .classic-action-bar__chance--target-vulnerable {
   filter: drop-shadow(0 0 5px rgba(75, 136, 66, 0.58));
 }
 
@@ -14465,7 +14465,7 @@ body.arena-low-effects .classic-action-bar .action-arc__button.classic-action-ba
 body.arena-low-effects .classic-action-bar .classic-action-bar__cost--dimmed,
 body.arena-low-effects .classic-action-bar .action-arc__button:disabled .action-arc__cost,
 body.arena-low-effects .classic-action-bar .action-arc__button:disabled .action-arc__chance,
-body.arena-low-effects .classic-action-bar .classic-action-bar__chance--rest-boosted {
+body.arena-low-effects .classic-action-bar .classic-action-bar__chance--target-vulnerable {
   filter: none;
 }
 

@@ -127,24 +127,24 @@ test("debug tuning can scale token icons independently from the button", () => {
 
 test("attack buttons show hit chance badges from block chance", () => {
   assert.equal(actionArcSource.includes("getActionBlockChanceForState"), true);
-  assert.equal(actionArcSource.includes("isActionHitChanceRestBoosted"), true);
+  assert.equal(actionArcSource.includes("isActionTargetRestVulnerable"), true);
   assert.equal(actionArcSource.includes("getActionHitChanceLabel"), true);
   assert.equal(actionArcSource.includes("action.blockChance === undefined"), true);
   assert.equal(actionArcSource.includes("Math.round((1 - blockChance) * 100)"), true);
   assert.equal(actionArcSource.includes('badge.className = "action-arc__chance"'), true);
-  assert.equal(actionArcSource.includes('badge.classList.toggle("action-arc__chance--rest-boosted"'), true);
+  assert.equal(actionArcSource.includes('badge.classList.toggle("action-arc__chance--target-vulnerable"'), true);
   assert.equal(classicActionBarSource.includes("getActionHitChanceLabel"), true);
-  assert.equal(classicActionBarSource.includes("isActionHitChanceRestBoosted"), true);
+  assert.equal(classicActionBarSource.includes("isActionTargetRestVulnerable"), true);
   assert.equal(classicActionBarSource.includes("syncClassicActionChanceBadge"), true);
-  assert.equal(classicActionBarSource.includes('classic-action-bar__chance--rest-boosted'), true);
+  assert.equal(classicActionBarSource.includes('classic-action-bar__chance--target-vulnerable'), true);
   assert.equal(classicActionBarSource.includes("CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y"), true);
   assert.equal(classicActionBarSource.includes("projectPointForWheelAngle"), true);
   assert.equal(classicActionBarSource.includes('"--classic-chance-counter-rotation"'), true);
   assert.equal(stylesSource.includes(".action-arc__chance"), true);
-  assert.equal(stylesSource.includes(".action-arc__chance--rest-boosted"), true);
+  assert.equal(stylesSource.includes(".action-arc__chance--target-vulnerable"), true);
   assert.equal(stylesSource.includes(".action-arc__button > span.action-arc__chance:not([hidden])"), true);
   assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__chance"), true);
-  assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__chance--rest-boosted"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__chance--target-vulnerable"), true);
   assert.equal(stylesSource.includes("rgba(104, 172, 96"), true);
   assert.equal(stylesSource.includes("rgba(42, 82, 39"), true);
 });

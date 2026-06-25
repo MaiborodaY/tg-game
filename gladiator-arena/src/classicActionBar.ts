@@ -15,7 +15,7 @@ import {
   canFighterSwitchWeapon,
   distanceBand,
   doesLungeReachTarget,
-  isActionHitChanceRestBoosted,
+  isActionTargetRestVulnerable,
   getFighterSpellbookScrollCount,
   getFighterShurikenCount,
   getFighterClinchRange,
@@ -500,16 +500,16 @@ function syncClassicActionChanceBadge(
   if (!label || !slot || !isVisible) {
     badge.hidden = true;
     badge.textContent = "";
-    badge.classList.remove("action-arc__chance--rest-boosted", "classic-action-bar__chance--rest-boosted");
+    badge.classList.remove("action-arc__chance--target-vulnerable", "classic-action-bar__chance--target-vulnerable");
     return undefined;
   }
 
   badge.hidden = false;
   badge.textContent = label;
-  const isRestBoosted = isActionHitChanceRestBoosted(state, actionId, "player");
+  const isTargetVulnerable = isActionTargetRestVulnerable(state, actionId, "player");
 
-  badge.classList.toggle("action-arc__chance--rest-boosted", isRestBoosted);
-  badge.classList.toggle("classic-action-bar__chance--rest-boosted", isRestBoosted);
+  badge.classList.toggle("action-arc__chance--target-vulnerable", isTargetVulnerable);
+  badge.classList.toggle("classic-action-bar__chance--target-vulnerable", isTargetVulnerable);
   const screenOffset = projectPointForWheelAngle(0, CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y, wheelRotationAngle);
 
   badge.style.setProperty("--classic-chance-x", `${formatCssNumber(slot.x + screenOffset.x)}px`);

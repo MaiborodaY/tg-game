@@ -34,7 +34,7 @@ import {
   doesLungeReachTarget,
   getActionBlockChanceForState,
   getActionStaminaCost,
-  isActionHitChanceRestBoosted,
+  isActionTargetRestVulnerable,
   isBowFighter,
   isPlayerExhausted,
   type ActionId,
@@ -219,14 +219,14 @@ export function syncActionChanceBadge(button: HTMLButtonElement, actionId: Actio
   if (!label) {
     badge.hidden = true;
     badge.textContent = "";
-    badge.classList.remove("action-arc__chance--rest-boosted");
+    badge.classList.remove("action-arc__chance--target-vulnerable");
     button.classList.remove("action-arc__button--has-chance");
     return undefined;
   }
 
   badge.hidden = false;
   badge.textContent = label;
-  badge.classList.toggle("action-arc__chance--rest-boosted", isActionHitChanceRestBoosted(state, actionId, "player"));
+  badge.classList.toggle("action-arc__chance--target-vulnerable", isActionTargetRestVulnerable(state, actionId, "player"));
   button.classList.add("action-arc__button--has-chance");
   return label;
 }
