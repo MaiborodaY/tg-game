@@ -325,7 +325,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 19,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-eagle-boss-01"
@@ -407,7 +407,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 34,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-frost-king-01"
@@ -443,7 +443,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 35,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-grave-king-01"
@@ -617,7 +617,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 32,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-old-fortress-warden-01"
@@ -653,7 +653,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 23,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-prisoner-01"
@@ -827,7 +827,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 33,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-swamp-boss-01"
@@ -863,7 +863,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 16,
+    "armorHp": 11,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-turtle-boss-01"
@@ -945,7 +945,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 40,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-void-king-01"
@@ -1285,7 +1285,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 19,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-eagle-boss-01"
@@ -1367,7 +1367,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 34,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-frost-king-01"
@@ -1403,7 +1403,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 35,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-grave-king-01"
@@ -1624,7 +1624,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 32,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-old-fortress-warden-01"
@@ -1660,7 +1660,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 23,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-prisoner-01"
@@ -1834,7 +1834,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 33,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-swamp-boss-01"
@@ -1870,7 +1870,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 16,
+    "armorHp": 11,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-turtle-boss-01"
@@ -1952,7 +1952,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 40,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-void-king-01"
@@ -2292,7 +2292,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 24,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-eagle-boss-01"
@@ -2374,7 +2374,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 42,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-frost-king-01"
@@ -2410,7 +2410,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 43,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-grave-king-01"
@@ -2631,7 +2631,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 40,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-old-fortress-warden-01"
@@ -2667,7 +2667,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 28,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-prisoner-01"
@@ -2841,7 +2841,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 41,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-swamp-boss-01"
@@ -2877,7 +2877,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 20,
+    "armorHp": 14,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-turtle-boss-01"
@@ -2959,7 +2959,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 49,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-void-king-01"
@@ -3299,7 +3299,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 24,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-eagle-boss-01"
@@ -3381,7 +3381,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 42,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-frost-king-01"
@@ -3417,7 +3417,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 43,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-grave-king-01"
@@ -3591,7 +3591,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 40,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-old-fortress-warden-01"
@@ -3627,7 +3627,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 28,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-prisoner-01"
@@ -3801,7 +3801,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 41,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-swamp-boss-01"
@@ -3837,7 +3837,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 20,
+    "armorHp": 14,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-turtle-boss-01"
@@ -3919,7 +3919,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 49,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-void-king-01"
@@ -4259,7 +4259,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 24,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-eagle-boss-01"
@@ -4341,7 +4341,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 42,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-frost-king-01"
@@ -4377,7 +4377,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 43,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-grave-king-01"
@@ -4551,7 +4551,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 40,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-old-fortress-warden-01"
@@ -4587,7 +4587,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 27,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-prisoner-01"
@@ -4761,7 +4761,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 41,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-swamp-boss-01"
@@ -4797,7 +4797,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 20,
+    "armorHp": 14,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-turtle-boss-01"
@@ -4879,7 +4879,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 49,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-void-king-01"
@@ -5219,7 +5219,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 19,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-eagle-boss-01"
@@ -5301,7 +5301,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 34,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-frost-king-01"
@@ -5337,7 +5337,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 35,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-grave-king-01"
@@ -5511,7 +5511,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 32,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-old-fortress-warden-01"
@@ -5547,7 +5547,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 22,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-prisoner-01"
@@ -5721,7 +5721,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 33,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-swamp-boss-01"
@@ -5757,7 +5757,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 16,
+    "armorHp": 11,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-turtle-boss-01"
@@ -5839,7 +5839,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 40,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-void-king-01"
@@ -6132,7 +6132,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 54,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-eagle-boss-01"
@@ -6214,7 +6214,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 95,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-frost-king-01"
@@ -6250,7 +6250,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 98,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-grave-king-01"
@@ -6424,7 +6424,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 90,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-old-fortress-warden-01"
@@ -6460,7 +6460,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 62,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-prisoner-01"
@@ -6634,7 +6634,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 93,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-swamp-boss-01"
@@ -6670,7 +6670,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 45,
+    "armorHp": 31,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-turtle-boss-01"
@@ -6752,7 +6752,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 111,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-void-king-01"
@@ -12983,7 +12983,7 @@
       "rank": 17,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 32,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-eagle-boss-01"
@@ -13065,7 +13065,7 @@
       "rank": 23,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 57,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-frost-king-01"
@@ -13101,7 +13101,7 @@
       "rank": 21,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 58,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-grave-king-01"
@@ -13275,7 +13275,7 @@
       "rank": 20,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 54,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-old-fortress-warden-01"
@@ -13311,7 +13311,7 @@
       "rank": 18,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 37,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-prisoner-01"
@@ -13485,7 +13485,7 @@
       "rank": 19,
       "grade": "boss"
     },
-    "armorHp": 1,
+    "armorHp": 55,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-swamp-boss-01"
@@ -13521,7 +13521,7 @@
       "rank": 16,
       "grade": "boss"
     },
-    "armorHp": 27,
+    "armorHp": 19,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-turtle-boss-01"
@@ -13603,7 +13603,7 @@
       "rank": 22,
       "grade": "boss"
     },
-    "armorHp": 0,
+    "armorHp": 67,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-void-king-01"
@@ -13989,7 +13989,7 @@
     "name": "Old Warden Shield",
     "kind": "armor",
     "rarity": "unique",
-    "armorHp": 200,
+    "armorHp": 140,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-Old-Warden-01"
@@ -14650,7 +14650,7 @@
     "name": "Prisoner Axe",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 100,
+    "damageBonus": 50,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17849,7 +17849,7 @@
     "name": "Frost King Sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 100,
+    "damageBonus": 62,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17880,7 +17880,7 @@
     "name": "Grave King Greatsword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 100,
+    "damageBonus": 68,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18374,7 +18374,7 @@
     "name": "Swamp sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 50,
+    "damageBonus": 56,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18569,7 +18569,7 @@
     "name": "Void Sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 100,
+    "damageBonus": 75,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18600,7 +18600,7 @@
     "name": "Warden Sword",
     "kind": "weapon",
     "rarity": "unique",
-    "damageBonus": 100,
+    "damageBonus": 52,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {

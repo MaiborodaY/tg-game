@@ -119,7 +119,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_druid_01","name":"Druid Back Boot 01","price":100,"itemIds":["generated_equipment_back_boot_druid_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_eagle_boss_01","name":"Eagle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_eagle_boss_01","name":"Eagle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":19},
     assetKeys: {"backBootAssetKey":"back-boot-eagle-boss-01"},
     equipmentTuning: {"x":-31.46421302587524,"y":-4,"angle":0,"scaleX":1.47,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
@@ -142,7 +142,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_executioner_01","name":"Executioner Back Boot 01","price":31,"itemIds":["generated_equipment_back_boot_executioner_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_frost_king_01","name":"Frost King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_frost_king_01","name":"Frost King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":34},
     assetKeys: {"backBootAssetKey":"back-boot-frost-king-01"},
     equipmentTuning: {"x":8.431967963338593,"y":-2.49753041356405,"angle":0,"scaleX":0.96,"scaleY":0.96,"flipX":false,"flipY":false},
     asset: {
@@ -153,7 +153,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_boot_grave_king_01","name":"Grave King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_grave_king_01","name":"Grave King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":35},
     assetKeys: {"backBootAssetKey":"back-boot-grave-king-01"},
     equipmentTuning: {"x":5.244035504312549,"y":-4.437919464446395,"angle":0,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -200,7 +200,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_mercenary_01","name":"Mercenary Back Boot 01","price":23,"itemIds":["generated_equipment_back_boot_mercenary_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":32},
     assetKeys: {"backBootAssetKey":"back-boot-old-fortress-warden-01"},
     equipmentTuning: {"x":-23.494677649626297,"y":0.7482873096379308,"angle":0,"scaleX":0.67,"scaleY":0.86,"flipX":true,"flipY":false},
     asset: {
@@ -211,7 +211,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_boot_prisoner_01","name":"Prisoner 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_prisoner_01","name":"Prisoner 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":23},
     assetKeys: {"backBootAssetKey":"back-boot-prisoner-01"},
     equipmentTuning: {"x":-24.252570477033572,"y":-2.2448619289136786,"angle":0,"scaleX":0.87,"scaleY":0.91,"flipX":true,"flipY":false},
     asset: {
@@ -258,7 +258,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_stormguard_01","name":"Stormguard Back Boot 01","price":66,"itemIds":["generated_equipment_back_boot_stormguard_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_swamp_boss_01","name":"Swamp Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_swamp_boss_01","name":"Swamp Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":33},
     assetKeys: {"backBootAssetKey":"back-boot-swamp-boss-01"},
     equipmentTuning: {"x":-26.526248959255483,"y":-3.741436548189654,"angle":0,"scaleX":1,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
@@ -269,7 +269,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_boot_turtle_boss_01","name":"Turtle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":16},
+    item: {"id":"generated_equipment_back_boot_turtle_boss_01","name":"Turtle Boss 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":11},
     assetKeys: {"backBootAssetKey":"back-boot-turtle-boss-01"},
     equipmentTuning: {"x":3,"y":0,"angle":0,"scaleX":0.86,"scaleY":0.81,"flipX":false,"flipY":false},
     asset: {
@@ -292,7 +292,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_viper_01","name":"Viper 01 Back Boot","price":76,"itemIds":["generated_equipment_back_boot_viper_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_void_king_01","name":"Void King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":1},
+    item: {"id":"generated_equipment_back_boot_void_king_01","name":"Void King 01 Back Boot","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":40},
     assetKeys: {"backBootAssetKey":"back-boot-void-king-01"},
     equipmentTuning: {"x":-20.97614201725014,"y":-2.958612976297559,"angle":0,"scaleX":0.81,"scaleY":1.17,"flipX":true,"flipY":false},
     asset: {
@@ -385,7 +385,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_druid_01","name":"Druid Back Glove 01","price":100,"itemIds":["generated_equipment_back_glove_druid_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_eagle_boss_01","name":"Eagle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":1},
+    item: {"id":"generated_equipment_back_glove_eagle_boss_01","name":"Eagle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":19},
     assetKeys: {"backGloveAssetKey":"back-glove-eagle-boss-01"},
     equipmentTuning: {"x":-2.063492706072111,"y":8.034377598346794,"angle":0,"scaleX":0.82,"scaleY":0.69,"flipX":true,"flipY":true},
     asset: {
@@ -408,7 +408,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_executioner_01","name":"Executioner Back Glove 01","price":31,"itemIds":["generated_equipment_back_glove_executioner_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_frost_king_01","name":"Frost King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    item: {"id":"generated_equipment_back_glove_frost_king_01","name":"Frost King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":34},
     assetKeys: {"backGloveAssetKey":"back-glove-frost-king-01"},
     equipmentTuning: {"x":2.498042538374463,"y":4.272117770485977,"angle":-3,"scaleX":1,"scaleY":0.89,"flipX":false,"flipY":false},
     asset: {
@@ -419,7 +419,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_glove_grave_king_01","name":"Grave King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    item: {"id":"generated_equipment_back_glove_grave_king_01","name":"Grave King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":35},
     assetKeys: {"backGloveAssetKey":"back-glove-grave-king-01"},
     equipmentTuning: {"x":-1.742345335550283,"y":3.0084203664906113,"angle":0,"scaleX":0.86,"scaleY":0.8,"flipX":false,"flipY":false},
     asset: {
@@ -478,7 +478,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_mercenary_01","name":"Mercenary Back Glove 01","price":23,"itemIds":["generated_equipment_back_glove_mercenary_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    item: {"id":"generated_equipment_back_glove_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":32},
     assetKeys: {"backGloveAssetKey":"back-glove-old-fortress-warden-01"},
     equipmentTuning: {"x":-1.053559694109424,"y":9.269836126356324,"angle":0,"scaleX":0.86,"scaleY":0.81,"flipX":true,"flipY":false},
     asset: {
@@ -489,7 +489,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_glove_prisoner_01","name":"Prisoner 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":1},
+    item: {"id":"generated_equipment_back_glove_prisoner_01","name":"Prisoner 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":23},
     assetKeys: {"backGloveAssetKey":"back-glove-prisoner-01"},
     equipmentTuning: {"x":-1.9102991579953823,"y":9.684738422017006,"angle":-3,"scaleX":0.7,"scaleY":0.7,"flipX":false,"flipY":false},
     asset: {
@@ -536,7 +536,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_stormguard_01","name":"Stormguard Back Glove 01","price":66,"itemIds":["generated_equipment_back_glove_stormguard_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_swamp_boss_01","name":"Swamp Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":1},
+    item: {"id":"generated_equipment_back_glove_swamp_boss_01","name":"Swamp Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":33},
     assetKeys: {"backGloveAssetKey":"back-glove-swamp-boss-01"},
     equipmentTuning: {"x":-2.0875802307999436,"y":8.128163902676533,"angle":0,"scaleX":0.85,"scaleY":0.7,"flipX":true,"flipY":false},
     asset: {
@@ -547,7 +547,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_glove_turtle_boss_01","name":"Turtle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":16},
+    item: {"id":"generated_equipment_back_glove_turtle_boss_01","name":"Turtle Boss 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":11},
     assetKeys: {"backGloveAssetKey":"back-glove-turtle-boss-01"},
     equipmentTuning: {"x":0.24310082112485532,"y":9.603791897587143,"angle":3,"scaleX":0.77,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
@@ -570,7 +570,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_viper_01","name":"Viper 01 Back Glove","price":76,"itemIds":["generated_equipment_back_glove_viper_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_void_king_01","name":"Void King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":0},
+    item: {"id":"generated_equipment_back_glove_void_king_01","name":"Void King 01 Back Glove","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":40},
     assetKeys: {"backGloveAssetKey":"back-glove-void-king-01"},
     equipmentTuning: {"x":-2.7837484562774932,"y":12.171297091456836,"angle":-3,"scaleX":0.69,"scaleY":0.72,"flipX":false,"flipY":false},
     asset: {
@@ -663,7 +663,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_druid_01","name":"Druid Back Greave 01","price":122,"itemIds":["generated_equipment_back_greave_druid_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_eagle_boss_01","name":"Eagle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":1},
+    item: {"id":"generated_equipment_back_greave_eagle_boss_01","name":"Eagle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":24},
     assetKeys: {"backGreaveAssetKey":"back-greave-eagle-boss-01"},
     equipmentTuning: {"x":-2.247443787562517,"y":16.272371369636744,"angle":-6,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -686,7 +686,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_executioner_01","name":"Executioner Back Greave 01","price":37,"itemIds":["generated_equipment_back_greave_executioner_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_frost_king_01","name":"Frost King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    item: {"id":"generated_equipment_back_greave_frost_king_01","name":"Frost King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":42},
     assetKeys: {"backGreaveAssetKey":"back-greave-frost-king-01"},
     equipmentTuning: {"x":-0.8431967963339275,"y":22.477773722077927,"angle":-6,"scaleX":1.5,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
@@ -697,7 +697,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_greave_grave_king_01","name":"Grave King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    item: {"id":"generated_equipment_back_greave_grave_king_01","name":"Grave King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":43},
     assetKeys: {"backGreaveAssetKey":"back-greave-grave-king-01"},
     equipmentTuning: {"x":-5.244035504312535,"y":11.09479866111593,"angle":-9,"scaleX":1.17,"scaleY":1.35,"flipX":false,"flipY":false},
     asset: {
@@ -756,7 +756,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_mercenary_01","name":"Mercenary Back Greave 01","price":29,"itemIds":["generated_equipment_back_greave_mercenary_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    item: {"id":"generated_equipment_back_greave_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":40},
     assetKeys: {"backGreaveAssetKey":"back-greave-old-fortress-warden-01"},
     equipmentTuning: {"x":-5.3052497918510255,"y":5.238011167465345,"angle":-9,"scaleX":1.47,"scaleY":1.28,"flipX":false,"flipY":false},
     asset: {
@@ -767,7 +767,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_greave_prisoner_01","name":"Prisoner 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":1},
+    item: {"id":"generated_equipment_back_greave_prisoner_01","name":"Prisoner 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":28},
     assetKeys: {"backGreaveAssetKey":"back-greave-prisoner-01"},
     equipmentTuning: {"x":-4.547356964443736,"y":23.94519390841299,"angle":-15,"scaleX":1.2,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -814,7 +814,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_stormguard_01","name":"Stormguard Back Greave 01","price":80,"itemIds":["generated_equipment_back_greave_stormguard_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_swamp_boss_01","name":"Swamp Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":1},
+    item: {"id":"generated_equipment_back_greave_swamp_boss_01","name":"Swamp Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":41},
     assetKeys: {"backGreaveAssetKey":"back-greave-swamp-boss-01"},
     equipmentTuning: {"x":-5.305249791851082,"y":20.203757360223506,"angle":-12,"scaleX":1.2,"scaleY":1.2,"flipX":false,"flipY":false},
     asset: {
@@ -825,7 +825,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_greave_turtle_boss_01","name":"Turtle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":20},
+    item: {"id":"generated_equipment_back_greave_turtle_boss_01","name":"Turtle Boss 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":14},
     assetKeys: {"backGreaveAssetKey":"back-greave-turtle-boss-01"},
     equipmentTuning: {"x":-2.2474437875625313,"y":24.40855705445506,"angle":-6,"scaleX":1.2,"scaleY":1.11,"flipX":false,"flipY":false},
     asset: {
@@ -848,7 +848,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_viper_01","name":"Viper 01 Back Greave","price":92,"itemIds":["generated_equipment_back_greave_viper_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_void_king_01","name":"Void King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":0},
+    item: {"id":"generated_equipment_back_greave_void_king_01","name":"Void King 01 Back Greave","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":49},
     assetKeys: {"backGreaveAssetKey":"back-greave-void-king-01"},
     equipmentTuning: {"x":-4,"y":17.75167785778558,"angle":-12,"scaleX":1.73,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
@@ -941,7 +941,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_druid_01","name":"Druid Back Shinguard 01","price":122,"itemIds":["generated_equipment_back_shinguard_druid_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_eagle_boss_01","name":"Eagle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":1},
+    item: {"id":"generated_equipment_back_shinguard_eagle_boss_01","name":"Eagle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":24},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-eagle-boss-01"},
     equipmentTuning: {"x":0.6320522444717085,"y":9.257876444654244,"angle":3,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -964,7 +964,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_executioner_01","name":"Executioner Back Shinguard 01","price":37,"itemIds":["generated_equipment_back_shinguard_executioner_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_frost_king_01","name":"Frost King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shinguard_frost_king_01","name":"Frost King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":42},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-frost-king-01"},
     equipmentTuning: {"x":0.6650306119256015,"y":13.021318515231997,"angle":3,"scaleX":1.3,"scaleY":1.03,"flipX":false,"flipY":false},
     asset: {
@@ -975,7 +975,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_grave_king_01","name":"Grave King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shinguard_grave_king_01","name":"Grave King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":43},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-grave-king-01"},
     equipmentTuning: {"x":2,"y":12.29843791698022,"angle":3,"scaleX":1.3,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -1022,7 +1022,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_mercenary_01","name":"Mercenary Back Shinguard 01","price":29,"itemIds":["generated_equipment_back_shinguard_mercenary_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shinguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":40},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-old-fortress-warden-01"},
     equipmentTuning: {"x":-0.09725095968886421,"y":5.455430839628093,"angle":0,"scaleX":1.11,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -1033,7 +1033,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_prisoner_01","name":"Prisoner 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":1},
+    item: {"id":"generated_equipment_back_shinguard_prisoner_01","name":"Prisoner 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":28},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-prisoner-01"},
     equipmentTuning: {"x":1.431683387692658,"y":10.159070779080082,"angle":3,"scaleX":1.1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -1080,7 +1080,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_stormguard_01","name":"Stormguard Back Shinguard 01","price":80,"itemIds":["generated_equipment_back_shinguard_stormguard_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_swamp_boss_01","name":"Swamp Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":1},
+    item: {"id":"generated_equipment_back_shinguard_swamp_boss_01","name":"Swamp Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":41},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-swamp-boss-01"},
     equipmentTuning: {"x":3.766763891488864,"y":14.876488899846095,"angle":9,"scaleX":1,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -1091,7 +1091,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_turtle_boss_01","name":"Turtle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":20},
+    item: {"id":"generated_equipment_back_shinguard_turtle_boss_01","name":"Turtle Boss 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":14},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-turtle-boss-01"},
     equipmentTuning: {"x":0.4260618862114427,"y":20.813197997012026,"angle":3,"scaleX":1.43,"scaleY":0.89,"flipX":false,"flipY":false},
     asset: {
@@ -1114,7 +1114,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_viper_01","name":"Viper 01 Back Shinguard","price":92,"itemIds":["generated_equipment_back_shinguard_viper_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_void_king_01","name":"Void King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shinguard_void_king_01","name":"Void King 01 Back Shinguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":49},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-void-king-01"},
     equipmentTuning: {"x":-1.0303002704416997,"y":13.082411889904847,"angle":3,"scaleX":1.49,"scaleY":0.98,"flipX":false,"flipY":false},
     asset: {
@@ -1207,7 +1207,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_druid_01","name":"Druid Back Shoulderguard 01","price":122,"itemIds":["generated_equipment_back_shoulderguard_druid_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_eagle_boss_01","name":"Eagle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":1},
+    item: {"id":"generated_equipment_back_shoulderguard_eagle_boss_01","name":"Eagle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":24},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-eagle-boss-01"},
     equipmentTuning: {"x":1.8728696991170182,"y":18.08041298719553,"angle":6,"scaleX":1.64,"scaleY":1.46,"flipX":false,"flipY":false},
     asset: {
@@ -1230,7 +1230,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_executioner_01","name":"Executioner Back Shoulderguard 01","price":37,"itemIds":["generated_equipment_back_shoulderguard_executioner_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_frost_king_01","name":"Frost King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shoulderguard_frost_king_01","name":"Frost King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":42},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-frost-king-01"},
     equipmentTuning: {"x":2.1079919385344112,"y":19.425237406742042,"angle":0,"scaleX":2.45,"scaleY":1.64,"flipX":false,"flipY":false},
     asset: {
@@ -1241,7 +1241,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_grave_king_01","name":"Grave King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shoulderguard_grave_king_01","name":"Grave King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":43},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-grave-king-01"},
     equipmentTuning: {"x":12.75551625917231,"y":28.65258751337086,"angle":27,"scaleX":2.58,"scaleY":1.9,"flipX":true,"flipY":false},
     asset: {
@@ -1288,7 +1288,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_mercenary_01","name":"Mercenary Back Shoulderguard 01","price":29,"itemIds":["generated_equipment_back_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shoulderguard_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":40},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-old-fortress-warden-01"},
     equipmentTuning: {"x":3.7894640525297802,"y":22.44862017911811,"angle":9,"scaleX":2.14,"scaleY":1.44,"flipX":false,"flipY":false},
     asset: {
@@ -1299,7 +1299,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_prisoner_01","name":"Prisoner 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":1},
+    item: {"id":"generated_equipment_back_shoulderguard_prisoner_01","name":"Prisoner 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":27},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-prisoner-01"},
     equipmentTuning: {"x":2.842098039397328,"y":20.78575942510946,"angle":9,"scaleX":2.02,"scaleY":1.39,"flipX":false,"flipY":false},
     asset: {
@@ -1346,7 +1346,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_stormguard_01","name":"Stormguard Back Shoulderguard 01","price":80,"itemIds":["generated_equipment_back_shoulderguard_stormguard_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_swamp_boss_01","name":"Swamp Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":1},
+    item: {"id":"generated_equipment_back_shoulderguard_swamp_boss_01","name":"Swamp Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":41},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-swamp-boss-01"},
     equipmentTuning: {"x":3.789464052529752,"y":19.95432904810508,"angle":9,"scaleX":1.67,"scaleY":1.6,"flipX":false,"flipY":false},
     asset: {
@@ -1357,7 +1357,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_turtle_boss_01","name":"Turtle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":20},
+    item: {"id":"generated_equipment_back_shoulderguard_turtle_boss_01","name":"Turtle Boss 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":14},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-turtle-boss-01"},
     equipmentTuning: {"x":0.936434849558438,"y":22.18959775701279,"angle":6,"scaleX":1.64,"scaleY":1.42,"flipX":false,"flipY":false},
     asset: {
@@ -1380,7 +1380,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_viper_01","name":"Viper 01 Back Shoulderguard","price":92,"itemIds":["generated_equipment_back_shoulderguard_viper_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_void_king_01","name":"Void King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":0},
+    item: {"id":"generated_equipment_back_shoulderguard_void_king_01","name":"Void King 01 Back Shoulderguard","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":49},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-void-king-01"},
     equipmentTuning: {"x":1.8728696991169755,"y":9.86204344756112,"angle":6,"scaleX":2.6,"scaleY":1.64,"flipX":true,"flipY":false},
     asset: {
@@ -1473,7 +1473,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_druid_01","name":"Druid Back Wrist 01","price":100,"itemIds":["generated_equipment_back_wrist_druid_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_eagle_boss_01","name":"Eagle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
+    item: {"id":"generated_equipment_back_wrist_eagle_boss_01","name":"Eagle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":19},
     assetKeys: {"backWristAssetKey":"back-wrist-eagle-boss-01"},
     equipmentTuning: {"x":2.582728356056876,"y":19.188831480997806,"angle":-6,"scaleX":1.4,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
@@ -1496,7 +1496,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_executioner_01","name":"Executioner Back Wrist 01","price":31,"itemIds":["generated_equipment_back_wrist_executioner_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_frost_king_01","name":"Frost King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    item: {"id":"generated_equipment_back_wrist_frost_king_01","name":"Frost King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":34},
     assetKeys: {"backWristAssetKey":"back-wrist-frost-king-01"},
     equipmentTuning: {"x":0.31964473815243366,"y":18.312434109737524,"angle":-9,"scaleX":1.99,"scaleY":1.1,"flipX":true,"flipY":false},
     asset: {
@@ -1507,7 +1507,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_grave_king_01","name":"Grave King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    item: {"id":"generated_equipment_back_wrist_grave_king_01","name":"Grave King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":35},
     assetKeys: {"backWristAssetKey":"back-wrist-grave-king-01"},
     equipmentTuning: {"x":1.2008392957877163,"y":25.870845464177023,"angle":-9,"scaleX":1.58,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -1554,7 +1554,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_mercenary_01","name":"Mercenary Back Wrist 01","price":23,"itemIds":["generated_equipment_back_wrist_mercenary_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    item: {"id":"generated_equipment_back_wrist_old_fortress_warden_01","name":"Old Fortress Warden 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":32},
     assetKeys: {"backWristAssetKey":"back-wrist-old-fortress-warden-01"},
     equipmentTuning: {"x":4.141490995909962,"y":20.134544213229333,"angle":-3,"scaleX":2.21,"scaleY":1.06,"flipX":false,"flipY":false},
     asset: {
@@ -1565,7 +1565,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_prisoner_01","name":"Prisoner 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
+    item: {"id":"generated_equipment_back_wrist_prisoner_01","name":"Prisoner 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":22},
     assetKeys: {"backWristAssetKey":"back-wrist-prisoner-01"},
     equipmentTuning: {"x":2.6259362591901976,"y":20.16099831823078,"angle":-6,"scaleX":2.22,"scaleY":1.2,"flipX":false,"flipY":false},
     asset: {
@@ -1612,7 +1612,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_stormguard_01","name":"Stormguard Back Wrist 01","price":66,"itemIds":["generated_equipment_back_wrist_stormguard_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_swamp_boss_01","name":"Swamp Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":1},
+    item: {"id":"generated_equipment_back_wrist_swamp_boss_01","name":"Swamp Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":33},
     assetKeys: {"backWristAssetKey":"back-wrist-swamp-boss-01"},
     equipmentTuning: {"x":1.2540350667376856,"y":28.417358876308356,"angle":-9,"scaleX":1.2,"scaleY":1.05,"flipX":false,"flipY":false},
     asset: {
@@ -1623,7 +1623,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_turtle_boss_01","name":"Turtle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":16},
+    item: {"id":"generated_equipment_back_wrist_turtle_boss_01","name":"Turtle Boss 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":11},
     assetKeys: {"backWristAssetKey":"back-wrist-turtle-boss-01"},
     equipmentTuning: {"x":-0.3017933779652111,"y":20.31776342892522,"angle":-10,"scaleX":2.03,"scaleY":0.94,"flipX":false,"flipY":false},
     asset: {
@@ -1646,7 +1646,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_viper_01","name":"Viper 01 Back Wrist","price":76,"itemIds":["generated_equipment_back_wrist_viper_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_void_king_01","name":"Void King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":0},
+    item: {"id":"generated_equipment_back_wrist_void_king_01","name":"Void King 01 Back Wrist","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":40},
     assetKeys: {"backWristAssetKey":"back-wrist-void-king-01"},
     equipmentTuning: {"x":1.097553742737034,"y":18.47453878644933,"angle":-6,"scaleX":2.1,"scaleY":1.27,"flipX":false,"flipY":false},
     asset: {
@@ -1727,7 +1727,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_druid_01","name":"Druid Breastplate 01","price":278,"itemIds":["generated_equipment_breastplate_druid_01"],"categoryId":"chest"},
   },
   {
-    item: {"id":"generated_equipment_breastplate_eagle_boss_01","name":"Eagle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":1},
+    item: {"id":"generated_equipment_breastplate_eagle_boss_01","name":"Eagle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":54},
     assetKeys: {"breastplateAssetKey":"breastplate-eagle-boss-01"},
     equipmentTuning: {"x":0,"y":44,"angle":0,"scaleX":1.35,"scaleY":1.75,"flipX":false,"flipY":false},
     asset: {
@@ -1750,7 +1750,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_executioner_01","name":"Executioner Breastplate 01","price":85,"itemIds":["generated_equipment_breastplate_executioner_01"],"categoryId":"chest"},
   },
   {
-    item: {"id":"generated_equipment_breastplate_frost_king_01","name":"Frost King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    item: {"id":"generated_equipment_breastplate_frost_king_01","name":"Frost King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":95},
     assetKeys: {"breastplateAssetKey":"breastplate-frost-king-01"},
     equipmentTuning: {"x":0,"y":55,"angle":0,"scaleX":1.37,"scaleY":1.69,"flipX":false,"flipY":false},
     asset: {
@@ -1761,7 +1761,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_breastplate_grave_king_01","name":"Grave King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    item: {"id":"generated_equipment_breastplate_grave_king_01","name":"Grave King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":98},
     assetKeys: {"breastplateAssetKey":"breastplate-grave-king-01"},
     equipmentTuning: {"x":0,"y":64,"angle":0,"scaleX":1.21,"scaleY":2,"flipX":false,"flipY":false},
     asset: {
@@ -1808,7 +1808,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_mercenary_01","name":"Mercenary Breastplate 01","price":65,"itemIds":["generated_equipment_breastplate_mercenary_01"],"categoryId":"chest"},
   },
   {
-    item: {"id":"generated_equipment_breastplate_old_fortress_warden_01","name":"Old Fortress Warden 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    item: {"id":"generated_equipment_breastplate_old_fortress_warden_01","name":"Old Fortress Warden 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":90},
     assetKeys: {"breastplateAssetKey":"breastplate-old-fortress-warden-01"},
     equipmentTuning: {"x":0,"y":49,"angle":0,"scaleX":1.5,"scaleY":1.46,"flipX":false,"flipY":false},
     asset: {
@@ -1819,7 +1819,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_breastplate_prisoner_01","name":"Prisoner 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":1},
+    item: {"id":"generated_equipment_breastplate_prisoner_01","name":"Prisoner 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":62},
     assetKeys: {"breastplateAssetKey":"breastplate-prisoner-01"},
     equipmentTuning: {"x":0,"y":52,"angle":0,"scaleX":1.18,"scaleY":1.61,"flipX":false,"flipY":false},
     asset: {
@@ -1866,7 +1866,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_stormguard_01","name":"Stormguard Breastplate 01","price":183,"itemIds":["generated_equipment_breastplate_stormguard_01"],"categoryId":"chest"},
   },
   {
-    item: {"id":"generated_equipment_breastplate_swamp_boss_01","name":"Swamp Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":1},
+    item: {"id":"generated_equipment_breastplate_swamp_boss_01","name":"Swamp Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":93},
     assetKeys: {"breastplateAssetKey":"breastplate-swamp-boss-01"},
     equipmentTuning: {"x":0,"y":69,"angle":0,"scaleX":1.3,"scaleY":1.71,"flipX":false,"flipY":false},
     asset: {
@@ -1877,7 +1877,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_breastplate_turtle_boss_01","name":"Turtle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":45},
+    item: {"id":"generated_equipment_breastplate_turtle_boss_01","name":"Turtle Boss 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":31},
     assetKeys: {"breastplateAssetKey":"breastplate-turtle-boss-01"},
     equipmentTuning: {"x":0,"y":58,"angle":0,"scaleX":1.51,"scaleY":1.68,"flipX":false,"flipY":false},
     asset: {
@@ -1900,7 +1900,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_breastplate_viper_01","name":"Viper 01 Breastplate","price":210,"itemIds":["generated_equipment_breastplate_viper_01"],"categoryId":"chest"},
   },
   {
-    item: {"id":"generated_equipment_breastplate_void_king_01","name":"Void King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":0},
+    item: {"id":"generated_equipment_breastplate_void_king_01","name":"Void King 01 Breastplate","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":111},
     assetKeys: {"breastplateAssetKey":"breastplate-void-king-01"},
     equipmentTuning: {"x":0,"y":58,"angle":0,"scaleX":1.63,"scaleY":1.83,"flipX":false,"flipY":false},
     asset: {
@@ -3624,7 +3624,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_druid_01","name":"Druid Helmet 01","price":166,"itemIds":["generated_equipment_helmet_druid_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_eagle_boss_01","name":"Eagle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"helmet","armorHp":1},
+    item: {"id":"generated_equipment_helmet_eagle_boss_01","name":"Eagle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"eagle_boss","name":"Eagle boss","rank":17,"grade":"boss"},"equipmentSlot":"helmet","armorHp":32},
     assetKeys: {"helmetAssetKey":"helmet-eagle-boss-01"},
     equipmentTuning: {"x":0,"y":21,"angle":0,"scaleX":1.18,"scaleY":1.15,"flipX":false,"flipY":false},
     asset: {
@@ -3647,7 +3647,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_executioner_01","name":"Executioner Helmet 01","price":51,"itemIds":["generated_equipment_helmet_executioner_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_frost_king_01","name":"Frost King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    item: {"id":"generated_equipment_helmet_frost_king_01","name":"Frost King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Frost King","rank":23,"grade":"boss"},"equipmentSlot":"helmet","armorHp":57},
     assetKeys: {"helmetAssetKey":"helmet-frost-king-01"},
     equipmentTuning: {"x":0,"y":21,"angle":0,"scaleX":1.37,"scaleY":1.42,"flipX":false,"flipY":false},
     asset: {
@@ -3658,7 +3658,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_helmet_grave_king_01","name":"Grave King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    item: {"id":"generated_equipment_helmet_grave_king_01","name":"Grave King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"grave_king","name":"Grave King","rank":21,"grade":"boss"},"equipmentSlot":"helmet","armorHp":58},
     assetKeys: {"helmetAssetKey":"helmet-grave-king-01"},
     equipmentTuning: {"x":0,"y":23,"angle":0,"scaleX":1.5,"scaleY":1.5,"flipX":false,"flipY":false},
     asset: {
@@ -3705,7 +3705,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_mercenary_01","name":"Mercenary Helmet 01","price":39,"itemIds":["generated_equipment_helmet_mercenary_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_old_fortress_warden_01","name":"Old Fortress Warden 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    item: {"id":"generated_equipment_helmet_old_fortress_warden_01","name":"Old Fortress Warden 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"old fortress warden","rank":20,"grade":"boss"},"equipmentSlot":"helmet","armorHp":54},
     assetKeys: {"helmetAssetKey":"helmet-old-fortress-warden-01"},
     equipmentTuning: {"x":-2.842170943040401e-14,"y":28.378286506234787,"angle":0,"scaleX":1.13,"scaleY":1.08,"flipX":false,"flipY":false},
     asset: {
@@ -3716,7 +3716,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_helmet_prisoner_01","name":"Prisoner 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"helmet","armorHp":1},
+    item: {"id":"generated_equipment_helmet_prisoner_01","name":"Prisoner 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"prisoner","name":"Prisoner","rank":18,"grade":"boss"},"equipmentSlot":"helmet","armorHp":37},
     assetKeys: {"helmetAssetKey":"helmet-prisoner-01"},
     equipmentTuning: {"x":0,"y":30,"angle":0,"scaleX":1.15,"scaleY":1.25,"flipX":false,"flipY":false},
     asset: {
@@ -3763,7 +3763,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_stormguard_01","name":"Stormguard Helmet 01","price":109,"itemIds":["generated_equipment_helmet_stormguard_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_swamp_boss_01","name":"Swamp Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"helmet","armorHp":1},
+    item: {"id":"generated_equipment_helmet_swamp_boss_01","name":"Swamp Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Swamp boss","rank":19,"grade":"boss"},"equipmentSlot":"helmet","armorHp":55},
     assetKeys: {"helmetAssetKey":"helmet-swamp-boss-01"},
     equipmentTuning: {"x":0,"y":35,"angle":0,"scaleX":1.15,"scaleY":1.2,"flipX":false,"flipY":false},
     asset: {
@@ -3774,7 +3774,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_helmet_turtle_boss_01","name":"Turtle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"helmet","armorHp":27},
+    item: {"id":"generated_equipment_helmet_turtle_boss_01","name":"Turtle Boss 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"turtle_boss","name":"Turtle Boss","rank":16,"grade":"boss"},"equipmentSlot":"helmet","armorHp":19},
     assetKeys: {"helmetAssetKey":"helmet-turtle-boss-01"},
     equipmentTuning: {"x":0,"y":18,"angle":0,"scaleX":1.1,"scaleY":1.1,"flipX":false,"flipY":false},
     asset: {
@@ -3797,7 +3797,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_viper_01","name":"Viper 01 Helmet","price":126,"itemIds":["generated_equipment_helmet_viper_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_void_king_01","name":"Void King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"helmet","armorHp":0},
+    item: {"id":"generated_equipment_helmet_void_king_01","name":"Void King 01 Helmet","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Void King","rank":22,"grade":"boss"},"equipmentSlot":"helmet","armorHp":67},
     assetKeys: {"helmetAssetKey":"helmet-void-king-01"},
     equipmentTuning: {"x":0,"y":32,"angle":0,"scaleX":1.35,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
@@ -3915,7 +3915,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_shield_mythical_02","name":"Mythical 02 Shield","price":5000,"itemIds":["generated_equipment_shield_mythical_02"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_old_warden_01","name":"Old Warden Shield","kind":"armor","rarity":"unique","equipmentSlot":"shield","armorHp":200},
+    item: {"id":"generated_equipment_shield_old_warden_01","name":"Old Warden Shield","kind":"armor","rarity":"unique","equipmentSlot":"shield","armorHp":140},
     assetKeys: {"shieldAssetKey":"shield-Old-Warden-01"},
     equipmentTuning: {"x":7.277693727739887,"y":30.467786797684937,"angle":-3,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -4116,7 +4116,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_axe_norm_axe","name":"Common Axe 01","price":16,"itemIds":["generated_equipment_weapon_axe_norm_axe"],"categoryId":"axes"},
   },
   {
-    item: {"id":"generated_equipment_weapon_axe_prisoner_axe","name":"Prisoner Axe","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"axe"},
+    item: {"id":"generated_equipment_weapon_axe_prisoner_axe","name":"Prisoner Axe","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":50,"weaponClass":"axe"},
     assetKeys: {"weaponMainAssetKey":"weapon-axe-prisoner-axe"},
     equipmentTuning: {"x":-30,"y":24,"angle":107,"scaleX":1.83,"scaleY":1.88,"flipX":false,"flipY":false},
     asset: {
@@ -4222,7 +4222,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"requirements":{"agility":5},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"weaponClass":"bow","requirements":{"agility":5}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-01"},
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
@@ -4234,7 +4234,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":50,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":2,"requirements":{"agility":10},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":2,"weaponClass":"bow","requirements":{"agility":10}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-common-bow-02"},
     equipmentTuning: {"x":-70,"y":7,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
@@ -4246,7 +4246,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","price":100,"itemIds":["generated_equipment_weapon_bow_common_bow_02"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":7,"requirements":{"agility":35},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":7,"weaponClass":"bow","requirements":{"agility":35}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-epic-bow-1"},
     equipmentTuning: {"x":-75,"y":4,"angle":90,"scaleX":1.6,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
@@ -4258,7 +4258,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_epic_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":8,"requirements":{"agility":40},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":8,"weaponClass":"bow","requirements":{"agility":40}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-epic-bow-2"},
     equipmentTuning: {"x":-92,"y":7,"angle":90,"scaleX":2.12,"scaleY":1.69,"flipX":true,"flipY":false},
     asset: {
@@ -4270,7 +4270,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","price":0,"itemIds":["generated_equipment_weapon_bow_epic_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":9,"requirements":{"agility":45},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":9,"weaponClass":"bow","requirements":{"agility":45}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-legendary-bow-1"},
     equipmentTuning: {"x":-100,"y":1,"angle":90,"scaleX":2.07,"scaleY":1.9,"flipX":true,"flipY":false},
     asset: {
@@ -4282,7 +4282,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_legendary_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":10,"requirements":{"agility":50},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":10,"weaponClass":"bow","requirements":{"agility":50}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-legendary-bow-2"},
     equipmentTuning: {"x":-109,"y":10,"angle":90,"scaleX":1.37,"scaleY":2.02,"flipX":true,"flipY":false},
     asset: {
@@ -4294,7 +4294,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","price":0,"itemIds":["generated_equipment_weapon_bow_legendary_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":11,"requirements":{"agility":55},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":11,"weaponClass":"bow","requirements":{"agility":55}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-mythic-bow-1"},
     equipmentTuning: {"x":-108,"y":-7,"angle":90,"scaleX":1.8,"scaleY":1.99,"flipX":false,"flipY":false},
     asset: {
@@ -4305,7 +4305,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":12,"requirements":{"agility":60},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_mythic_bow_2","name":"Mythic bow 2","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":12,"weaponClass":"bow","requirements":{"agility":60}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-mythic-bow-2"},
     equipmentTuning: {"x":-112,"y":4,"angle":90,"scaleX":1.3,"scaleY":2.02,"flipX":false,"flipY":false},
     asset: {
@@ -4316,7 +4316,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":5,"requirements":{"agility":25},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":5,"weaponClass":"bow","requirements":{"agility":25}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-rare-bow-1"},
     equipmentTuning: {"x":-74,"y":1,"angle":90,"scaleX":1.35,"scaleY":1.35,"flipX":true,"flipY":false},
     asset: {
@@ -4328,7 +4328,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_rare_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":6,"requirements":{"agility":30},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":6,"weaponClass":"bow","requirements":{"agility":30}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-rare-bow-2"},
     equipmentTuning: {"x":-75,"y":13,"angle":90,"scaleX":1.64,"scaleY":1.4,"flipX":true,"flipY":false},
     asset: {
@@ -4340,7 +4340,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","price":0,"itemIds":["generated_equipment_weapon_bow_rare_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":3,"requirements":{"agility":15},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":3,"weaponClass":"bow","requirements":{"agility":15}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-uncommon-bow-1"},
     equipmentTuning: {"x":-68,"y":5,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
@@ -4352,7 +4352,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","price":0,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_1"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":4,"requirements":{"agility":20},"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":4,"weaponClass":"bow","requirements":{"agility":20}},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-uncommon-bow-2"},
     equipmentTuning: {"x":-69,"y":6,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":true,"flipY":false},
     asset: {
@@ -5089,7 +5089,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_9","name":"Epic Sword 08","price":288,"itemIds":["generated_equipment_weapon_sword_epic_sword_9"],"categoryId":"swords"},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_frost_king_sword","name":"Frost King Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    item: {"id":"generated_equipment_weapon_sword_frost_king_sword","name":"Frost King Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":62,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-frost-king-sword"},
     equipmentTuning: {"x":185,"y":27,"angle":60,"scaleX":1.7,"scaleY":1.7,"flipX":true,"flipY":true},
     asset: {
@@ -5100,7 +5100,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_grave_king_greatsword","name":"Grave King Greatsword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    item: {"id":"generated_equipment_weapon_sword_grave_king_greatsword","name":"Grave King Greatsword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":68,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-grave-king-greatsword"},
     equipmentTuning: {"x":-24,"y":-4,"angle":128,"scaleX":1.9,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -5260,7 +5260,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"Common Sword 01","price":7,"itemIds":["generated_equipment_weapon_sword_rusty_sword"],"categoryId":"swords"},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_swamp_sword","name":"Swamp sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":50,"weaponClass":"sword"},
+    item: {"id":"generated_equipment_weapon_sword_swamp_sword","name":"Swamp sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":56,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-swamp-sword"},
     equipmentTuning: {"x":-13,"y":13,"angle":103,"scaleX":2,"scaleY":2,"flipX":false,"flipY":false},
     asset: {
@@ -5319,7 +5319,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_3","name":"Uncommon Sword 03","price":63,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_3"],"categoryId":"swords"},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_void_sword","name":"Void Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    item: {"id":"generated_equipment_weapon_sword_void_sword","name":"Void Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":75,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-void-sword"},
     equipmentTuning: {"x":-16,"y":10,"angle":109,"scaleX":2.5,"scaleY":2.5,"flipX":false,"flipY":false},
     asset: {
@@ -5330,7 +5330,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_warden_sword","name":"Warden Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    item: {"id":"generated_equipment_weapon_sword_warden_sword","name":"Warden Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":52,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-warden-sword"},
     equipmentTuning: {"x":-13,"y":10,"angle":107,"scaleX":1.7,"scaleY":2,"flipX":false,"flipY":false},
     asset: {
@@ -5471,12 +5471,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"weapon_sword_01","name":"Common Sword 02","price":14,"itemIds":["weapon_sword_01"],"categoryId":"swords"},
-  }
+  },
 ];
 
-export const GENERATED_EQUIPMENT_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);
-
-export const GENERATED_EQUIPMENT_ITEM_CATALOG = Object.fromEntries(
+export const GENERATED_HERO_ITEM_CATALOG = Object.fromEntries(
   GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, record.item]),
 ) as Record<HeroItemId, HeroItemDefinition>;
 
