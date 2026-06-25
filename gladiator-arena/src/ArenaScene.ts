@@ -694,8 +694,9 @@ interface ArenaBackgroundAssetSet {
   layers: ArenaBackgroundLayerConfig[];
 }
 
+type ArenaBackgroundPreloadEncounter = CombatState["encounter"];
+
 const ARENA_BACKGROUND_ASSET_SETS: readonly ArenaBackgroundAssetSet[] = createArenaBackgroundAssetSets();
-const DEFAULT_ARENA_BACKGROUND_ASSET_SET = getArenaBackgroundAssetSetForTier(1);
 
 const ARENA_CAMERA_TWEEN_DURATION_MS = 560;
 const ARENA_CAMERA_TWEEN_EASE = "Cubic.easeInOut";
@@ -1288,7 +1289,7 @@ let activePlayerAppearance: HeroAppearance = createDefaultHeroAppearance();
 let activePlayerBodyScaleBonus = 0;
 let activeCityTimeOfDay: CityTimeOfDay = "day";
 let activePaperDollAssetsUseLowRes = false;
-let arenaAssetPrewarmPromise: Promise<void> | undefined;
+const arenaAssetPrewarmPromises = new Map<string, Promise<void>>();
 let cityAssetPrewarmPromise: Promise<void> | undefined;
 const assetPrewarmImages = new Set<HTMLImageElement>();
 const arenaEffectPoolsByScene = new WeakMap<Phaser.Scene, ArenaEffectPools>();
@@ -1423,12 +1424,16 @@ function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
 }
 
-function getArenaBackgroundLayerConfigs(): ArenaBackgroundLayerConfig[] {
-  return ARENA_BACKGROUND_ASSET_SETS.flatMap((assetSet) => assetSet.layers);
+function getArenaBackgroundLayerConfigs(encounter?: ArenaBackgroundPreloadEncounter): ArenaBackgroundLayerConfig[] {
+  if (!encounter) {
+    return ARENA_BACKGROUND_ASSET_SETS.flatMap((assetSet) => assetSet.layers);
+  }
+
+  return getArenaBackgroundAssetSetForEncounter(encounter).layers;
 }
 
-function preloadArenaAssets(target: Phaser.Scene): void {
-  getArenaBackgroundLayerConfigs().forEach((asset) => target.load.image(asset.key, asset.url));
+function preloadArenaAssets(target: Phaser.Scene, encounter?: ArenaBackgroundPreloadEncounter): void {
+  getArenaBackgroundLayerConfigs(encounter).forEach((asset) => target.load.image(asset.key, asset.url));
   target.load.image(DAMAGE_BLOCK_ICON_ASSET_KEY, DAMAGE_BLOCK_ICON_ASSET_URL);
   target.load.image(DAMAGE_HIT_ICON_ASSET_KEY, DAMAGE_HIT_ICON_ASSET_URL);
   target.load.image(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY, DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL);
@@ -1443,10 +1448,29 @@ function preloadArenaAssets(target: Phaser.Scene): void {
   preloadScrollCastPropAssets(target);
 }
 
-export function prewarmArenaAssetsForBrowserCache(): Promise<void> {
-  arenaAssetPrewarmPromise ??= Promise.all(getArenaAssetPrewarmUrls().map(prewarmImageUrl)).then(() => undefined);
+function getArenaAssetPrewarmKey(encounter?: ArenaBackgroundPreloadEncounter): string {
+  if (!encounter) {
+    return "all";
+  }
 
-  return arenaAssetPrewarmPromise;
+  const assetSet = getArenaBackgroundAssetSetForEncounter(encounter);
+
+  return getArenaBackgroundAssetSetKey(assetSet.tierId, assetSet.variantId);
+}
+
+export function prewarmArenaAssetsForBrowserCache(encounter?: ArenaBackgroundPreloadEncounter): Promise<void> {
+  const prewarmKey = getArenaAssetPrewarmKey(encounter);
+  const existingPromise = arenaAssetPrewarmPromises.get(prewarmKey);
+
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const prewarmPromise = Promise.all([...new Set(getArenaAssetPrewarmUrls(encounter))].map(prewarmImageUrl)).then(() => undefined);
+
+  arenaAssetPrewarmPromises.set(prewarmKey, prewarmPromise);
+
+  return prewarmPromise;
 }
 
 export function prewarmCityAssetsForBrowserCache(): Promise<void> {
@@ -1733,9 +1757,9 @@ function getPendingPaperDollAssetLoads(target: Phaser.Scene): Map<string, Promis
   return pendingLoads;
 }
 
-function getArenaAssetPrewarmUrls(): string[] {
+function getArenaAssetPrewarmUrls(encounter?: ArenaBackgroundPreloadEncounter): string[] {
   return [
-    ...getArenaBackgroundLayerConfigs().map((asset) => asset.url),
+    ...getArenaBackgroundLayerConfigs(encounter).map((asset) => asset.url),
     DAMAGE_BLOCK_ICON_ASSET_URL,
     DAMAGE_HIT_ICON_ASSET_URL,
     DAMAGE_ARMOR_ABSORB_ICON_ASSET_URL,
@@ -2098,12 +2122,12 @@ export class ArenaScene extends Phaser.Scene {
   private unsubscribePlayerSettings?: () => void;
   private arenaBackgroundLayerDragState?: ArenaBackgroundLayerDragState;
 
-  constructor() {
+  constructor(private readonly initialEncounter?: ArenaBackgroundPreloadEncounter) {
     super("ArenaScene");
   }
 
   preload(): void {
-    preloadArenaAssets(this);
+    preloadArenaAssets(this, this.initialEncounter);
     preloadPaperDollAssets(this);
   }
 
@@ -2111,7 +2135,7 @@ export class ArenaScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
     syncArenaMainCamera(this);
     this.arenaLayers = createArenaLayers(this);
-    drawArenaBackground(this, this.arenaLayers);
+    drawArenaBackground(this, this.arenaLayers, this.initialEncounter);
     this.visuals = buildVisuals(this);
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
       syncFighterBodyPreset(this.visuals?.player);
@@ -2521,6 +2545,7 @@ export function launchArena(
   _onAction: (actionId: ActionId) => void,
   playerEquipment?: HeroEquipment,
   playerAppearance?: HeroAppearance,
+  initialEncounter?: ArenaBackgroundPreloadEncounter,
 ): () => void {
   void _onAction;
   usePlayerEquipment(playerEquipment);
@@ -2542,7 +2567,7 @@ export function launchArena(
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.NO_CENTER,
     },
-    scene: ArenaScene,
+    scene: new ArenaScene(initialEncounter),
   };
 
   const game = new Phaser.Game(config);
@@ -4939,8 +4964,8 @@ function createArenaLayers(target: Phaser.Scene): ArenaLayers {
   return { back, mid, ground, front, ambient, actors, effects, midShade, midImages, backgroundImages, backgroundLayerContainers, backgroundLayerRoles, backgroundLayerIds, all: [actors, effects] };
 }
 
-function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers): void {
-  syncArenaBackgroundAssetSet(target, layers, DEFAULT_ARENA_BACKGROUND_ASSET_SET);
+function drawArenaBackground(target: Phaser.Scene, layers: ArenaLayers, encounter?: ArenaBackgroundPreloadEncounter): void {
+  syncArenaBackgroundAssetSet(target, layers, getArenaBackgroundAssetSetForEncounter(encounter));
 }
 
 function syncArenaBackgroundForState(target: Phaser.Scene, layers: ArenaLayers, current: CombatState): void {

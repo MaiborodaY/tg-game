@@ -1406,8 +1406,10 @@ function startSelectedArena(selection: ArenaMenuSelection): void {
   gameMode = "pve";
   dom.restartButton.hidden = false;
   activeArenaSelection = selection;
+  const initialState = createCombatStateFromHero(hero, createArenaEncounterForSelection(selection));
+
   closeCityArenaMenu();
-  void startGameWithCityTransition();
+  void startGameWithCityTransition({ initialState });
 }
 
 async function finishInitialCityEntry(): Promise<void> {
@@ -1540,7 +1542,7 @@ function mountArena(): void {
 
       arenaScene = scene;
       void runArenaEntry(scene, entryToken);
-    }, handleAction, hero.equipment, hero.appearance);
+    }, handleAction, hero.equipment, hero.appearance, state.encounter);
   });
 }
 
@@ -1609,7 +1611,7 @@ async function startGameWithCityTransition(options: StartGameOptions = {}): Prom
   isArenaTransitionRunning = true;
   dom.startButton.disabled = true;
   clearShopPreview();
-  void prewarmArenaAssetsForBrowserCache();
+  void prewarmArenaAssetsForBrowserCache(options.initialState?.encounter ?? state.encounter);
   cityMenu?.classList.add("city-menu--arena-transition");
 
   try {
