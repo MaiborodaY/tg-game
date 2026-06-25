@@ -37,7 +37,7 @@ const ARMOR_EQUIPMENT_SET_EXPECTATIONS = new Map([
   ["viper", { name: "Viper", rank: 10, grade: "low", shopCount: 14, level: 70 }],
   ["bone", { name: "Bone", rank: 11, grade: "mid", shopCount: 14, level: 80 }],
   ["cathedral", { name: "Cathedral", rank: 12, grade: "high", shopCount: 14, level: 90 }],
-  ["druid", { name: "Druid", rank: 13, grade: "high", shopCount: 14, level: 100 }],
+  ["druid", { name: "Druid", rank: 13, grade: "high", shopCount: 0 }],
   ["wood_boss", { name: "Wood Boss", rank: 14, grade: "boss", shopCount: 0, bossCount: 14 }],
   ["boar_boss", { name: "Boar Boss", rank: 15, grade: "boss", shopCount: 0, bossCount: 14 }],
 ]);
@@ -53,8 +53,8 @@ const SHIELD_BALANCE_EXPECTATIONS = new Map([
   ["generated_equipment_shield_epic_02", { rarity: "epic", armor: 165, price: 1250, level: 60 }],
   ["generated_equipment_shield_legendary_01", { rarity: "legendary", armor: 220, price: 1800, level: 70 }],
   ["generated_equipment_shield_legendary_02", { rarity: "legendary", armor: 290, price: 2500, level: 80 }],
-  ["generated_equipment_shield_mythical_01", { rarity: "mythical", armor: 380, price: 3600, level: 90 }],
-  ["generated_equipment_shield_mythical_02", { rarity: "mythical", armor: 500, price: 5000, level: 100 }],
+  ["generated_equipment_shield_mythical_01", { rarity: "mythical", armor: 380, shop: false }],
+  ["generated_equipment_shield_mythical_02", { rarity: "mythical", armor: 500, shop: false }],
 ]);
 
 const WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS = new Map([
@@ -223,15 +223,32 @@ test("generated shop armor sets occupy their intended progression", () => {
     price: 1010,
     level: 90,
   });
-  assertGeneratedArmorSet("druid", {
-    rarity: "mythical",
-    armor: 445,
-    price: 1110,
-    level: 100,
+});
+
+test("druid armor set and mythical shields are enemy-only equipment", () => {
+  const enemyOnlyItems = generatedItems.filter(
+    (item) =>
+      item.kind === "armor" &&
+      (item.equipmentSet?.id === "druid" || (item.equipmentSlot === "shield" && item.rarity === "mythical")),
+  );
+  const nonMythicalShopShields = generatedItems.filter(
+    (item) => item.kind === "armor" && item.equipmentSlot === "shield" && item.rarity !== "mythical" && item.availability?.shop,
+  );
+
+  assert.equal(enemyOnlyItems.length, 16);
+  assert.equal(sumBy(enemyOnlyItems.filter((item) => item.equipmentSet?.id === "druid"), (item) => item.armorHp ?? 0), 445);
+  assert.equal(nonMythicalShopShields.length, 10);
+
+  enemyOnlyItems.forEach((item) => {
+    assert.equal(item.availability?.shop ?? false, false, `${item.id} shop availability`);
+    assert.equal(item.availability?.enemyPool ?? false, true, `${item.id} enemy availability`);
+    assert.equal(item.availability?.bossUnique ?? true, false, `${item.id} boss uniqueness`);
+    assert.equal(item.armoryProduct, undefined, `${item.id} armory product`);
+    assert.equal(item.levelRequirement, undefined, `${item.id} level requirement`);
   });
 });
 
-test("generated shields follow the heavy defensive purchase curve", () => {
+test("generated shields follow the defensive curve with mythical shields kept enemy-only", () => {
   const shields = generatedItems.filter((item) => item.kind === "armor" && item.equipmentSlot === "shield");
 
   assert.equal(shields.length, SHIELD_BALANCE_EXPECTATIONS.size);
@@ -479,13 +496,14 @@ function assertGeneratedBossArmorSet(token, expected) {
 
 function assertGeneratedShield(id, expected) {
   const item = generatedItems.find((candidate) => candidate.kind === "armor" && candidate.equipmentSlot === "shield" && candidate.id === id);
+  const isShopShield = expected.shop ?? true;
 
   assert.ok(item, `missing ${id}`);
   assert.equal(item.rarity, expected.rarity);
   assert.equal(item.armorHp, expected.armor);
-  assert.equal(item.levelRequirement, expected.level);
-  assert.equal(item.armoryProduct?.price, expected.price);
-  assert.equal(item.availability?.shop ?? false, true);
+  assert.equal(item.levelRequirement, isShopShield ? expected.level : undefined);
+  assert.equal(item.armoryProduct?.price, isShopShield ? expected.price : undefined);
+  assert.equal(item.availability?.shop ?? false, isShopShield);
   assert.equal(item.availability?.enemyPool ?? false, true);
   assert.equal(item.equipmentSet, undefined);
 }

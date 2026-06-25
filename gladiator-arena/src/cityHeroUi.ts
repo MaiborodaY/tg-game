@@ -24,6 +24,7 @@ import {
   getHeroArenaEnergy,
   getHeroItemWeaponClass,
   getHeroEquipmentStatBonuses,
+  getHeroTotalWins,
   HERO_ITEM_CATALOG,
   isHeroConsumableItem,
   type HeroAppearance,
@@ -303,6 +304,12 @@ export function getHeroRankTitle(level: number): string {
   return HERO_RANKS.find((rank) => normalizedLevel >= rank.minLevel)?.title ?? "Novice";
 }
 
+export function formatHeroWinCount(wins: number): string {
+  const normalizedWins = Math.max(0, Math.floor(wins));
+
+  return `${normalizedWins} ${normalizedWins === 1 ? "win" : "wins"}`;
+}
+
 export function syncCityHeroWidgetPosition(
   refs: CityHeroWidgetRefs,
   tuning: Pick<ArenaDebugTuning, "heroPortraitButtonX" | "heroPortraitButtonY" | "heroPortraitButtonScale">,
@@ -332,7 +339,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   }
 
   if (refs.rank) {
-    refs.rank.textContent = getHeroRankTitle(hero.level);
+    renderCityHeroRank(refs.rank, hero);
   }
 
   if (refs.gold) {
@@ -412,6 +419,15 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   });
 
   renderCityHeroProfileStats(refs, hero);
+}
+
+function renderCityHeroRank(element: HTMLElement, hero: HeroState): void {
+  const rankTitle = getHeroRankTitle(hero.level);
+  const winsElement = document.createElement("span");
+
+  winsElement.className = "city-menu__hero-wins";
+  winsElement.textContent = ` (${formatHeroWinCount(getHeroTotalWins(hero))})`;
+  element.replaceChildren(document.createTextNode(rankTitle), winsElement);
 }
 
 export interface CityHeroProfileApi {

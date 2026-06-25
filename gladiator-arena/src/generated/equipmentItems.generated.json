@@ -280,7 +280,6 @@
       "grade": "high"
     },
     "armorHp": 40,
-    "levelRequirement": 100,
     "equipmentSlot": "backBoot",
     "assetKeys": {
       "backBootAssetKey": "back-boot-druid-01"
@@ -300,18 +299,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/back-boot-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_boot_druid_01",
-      "name": "Druid Back Boot 01",
-      "price": 100,
-      "itemIds": [
-        "generated_equipment_back_boot_druid_01"
-      ],
-      "categoryId": "legs"
     }
   },
   {
@@ -1240,7 +1230,6 @@
       "grade": "high"
     },
     "armorHp": 40,
-    "levelRequirement": 100,
     "equipmentSlot": "backGlove",
     "assetKeys": {
       "backGloveAssetKey": "back-glove-druid-01"
@@ -1260,18 +1249,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/back-glove-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_glove_druid_01",
-      "name": "Druid Back Glove 01",
-      "price": 100,
-      "itemIds": [
-        "generated_equipment_back_glove_druid_01"
-      ],
-      "categoryId": "arms"
     }
   },
   {
@@ -2247,7 +2227,6 @@
       "grade": "high"
     },
     "armorHp": 49,
-    "levelRequirement": 100,
     "equipmentSlot": "backGreave",
     "assetKeys": {
       "backGreaveAssetKey": "back-greave-druid-01"
@@ -2267,18 +2246,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/back-greave-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_greave_druid_01",
-      "name": "Druid Back Greave 01",
-      "price": 122,
-      "itemIds": [
-        "generated_equipment_back_greave_druid_01"
-      ],
-      "categoryId": "legs"
     }
   },
   {
@@ -3254,7 +3224,6 @@
       "grade": "high"
     },
     "armorHp": 49,
-    "levelRequirement": 100,
     "equipmentSlot": "backShinguard",
     "assetKeys": {
       "backShinguardAssetKey": "back-shinguard-druid-01"
@@ -3274,18 +3243,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/back-shinguard-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_shinguard_druid_01",
-      "name": "Druid Back Shinguard 01",
-      "price": 122,
-      "itemIds": [
-        "generated_equipment_back_shinguard_druid_01"
-      ],
-      "categoryId": "legs"
     }
   },
   {
@@ -4214,7 +4174,6 @@
       "grade": "high"
     },
     "armorHp": 49,
-    "levelRequirement": 100,
     "equipmentSlot": "backShoulderguard",
     "assetKeys": {
       "backShoulderguardAssetKey": "back-shoulderguard-druid-01"
@@ -4234,18 +4193,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/back-shoulderguard-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_shoulderguard_druid_01",
-      "name": "Druid Back Shoulderguard 01",
-      "price": 122,
-      "itemIds": [
-        "generated_equipment_back_shoulderguard_druid_01"
-      ],
-      "categoryId": "shoulders"
     }
   },
   {
@@ -5174,7 +5124,6 @@
       "grade": "high"
     },
     "armorHp": 40,
-    "levelRequirement": 100,
     "equipmentSlot": "backWrist",
     "assetKeys": {
       "backWristAssetKey": "back-wrist-druid-01"
@@ -5194,18 +5143,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/back-wrist-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_back_wrist_druid_01",
-      "name": "Druid Back Wrist 01",
-      "price": 100,
-      "itemIds": [
-        "generated_equipment_back_wrist_druid_01"
-      ],
-      "categoryId": "arms"
     }
   },
   {
@@ -6087,7 +6027,6 @@
       "grade": "high"
     },
     "armorHp": 111,
-    "levelRequirement": 100,
     "equipmentSlot": "breastplate",
     "assetKeys": {
       "breastplateAssetKey": "breastplate-druid-01"
@@ -6107,18 +6046,9 @@
       "lowSourcePath": "assets-low/fighters/armor/breastplate/breastplate-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_breastplate_druid_01",
-      "name": "Druid Breastplate 01",
-      "price": 278,
-      "itemIds": [
-        "generated_equipment_breastplate_druid_01"
-      ],
-      "categoryId": "chest"
     }
   },
   {
@@ -7047,7 +6977,6 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 100,
     "equipmentSlot": "frontBoot",
     "assetKeys": {
       "frontBootAssetKey": "front-boot-druid-01"
@@ -7067,18 +6996,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/front-boot-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_boot_druid_01",
-      "name": "Druid Front Boot 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_boot_druid_01"
-      ],
-      "categoryId": "legs"
     }
   },
   {
@@ -8007,7 +7927,6 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 100,
     "equipmentSlot": "frontGlove",
     "assetKeys": {
       "frontGloveAssetKey": "front-glove-druid-01"
@@ -8027,18 +7946,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/front-glove-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_glove_druid_01",
-      "name": "Druid Front Glove 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_glove_druid_01"
-      ],
-      "categoryId": "arms"
     }
   },
   {
@@ -9014,7 +8924,6 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 100,
     "equipmentSlot": "frontGreave",
     "assetKeys": {
       "frontGreaveAssetKey": "front-greave-druid-01"
@@ -9034,18 +8943,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/front-greave-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_greave_druid_01",
-      "name": "Druid Front Greave 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_greave_druid_01"
-      ],
-      "categoryId": "legs"
     }
   },
   {
@@ -10021,7 +9921,6 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 100,
     "equipmentSlot": "frontShinguard",
     "assetKeys": {
       "frontShinguardAssetKey": "front-shinguard-druid-01"
@@ -10041,18 +9940,9 @@
       "lowSourcePath": "assets-low/fighters/armor/legs/front-shinguard-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_shinguard_druid_01",
-      "name": "Druid Front Shinguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_shinguard_druid_01"
-      ],
-      "categoryId": "legs"
     }
   },
   {
@@ -10981,7 +10871,6 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 100,
     "equipmentSlot": "frontShoulderguard",
     "assetKeys": {
       "frontShoulderguardAssetKey": "front-shoulderguard-druid-01"
@@ -11001,18 +10890,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/front-shoulderguard-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_shoulderguard_druid_01",
-      "name": "Druid Front Shoulderguard 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_shoulderguard_druid_01"
-      ],
-      "categoryId": "shoulders"
     }
   },
   {
@@ -11941,7 +11821,6 @@
       "grade": "high"
     },
     "armorHp": 0,
-    "levelRequirement": 100,
     "equipmentSlot": "frontWrist",
     "assetKeys": {
       "frontWristAssetKey": "front-wrist-druid-01"
@@ -11961,18 +11840,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/front-wrist-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_front_wrist_druid_01",
-      "name": "Druid Front Wrist 01",
-      "price": 0,
-      "itemIds": [
-        "generated_equipment_front_wrist_druid_01"
-      ],
-      "categoryId": "arms"
     }
   },
   {
@@ -12938,7 +12808,6 @@
       "grade": "high"
     },
     "armorHp": 67,
-    "levelRequirement": 100,
     "equipmentSlot": "helmet",
     "assetKeys": {
       "helmetAssetKey": "helmet-druid-01"
@@ -12958,18 +12827,9 @@
       "lowSourcePath": "assets-low/fighters/armor/helmet/helmet-druid-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_helmet_druid_01",
-      "name": "Druid Helmet 01",
-      "price": 166,
-      "itemIds": [
-        "generated_equipment_helmet_druid_01"
-      ],
-      "categoryId": "head"
     }
   },
   {
@@ -13910,7 +13770,6 @@
     "kind": "armor",
     "rarity": "mythical",
     "armorHp": 380,
-    "levelRequirement": 90,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-mythical-01"
@@ -13930,18 +13789,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/shield-mythical-01.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_shield_mythical_01",
-      "name": "Mythical 01 Shield",
-      "price": 3600,
-      "itemIds": [
-        "generated_equipment_shield_mythical_01"
-      ],
-      "categoryId": "arms"
     }
   },
   {
@@ -13950,7 +13800,6 @@
     "kind": "armor",
     "rarity": "mythical",
     "armorHp": 500,
-    "levelRequirement": 100,
     "equipmentSlot": "shield",
     "assetKeys": {
       "shieldAssetKey": "shield-mythical-02"
@@ -13970,18 +13819,9 @@
       "lowSourcePath": "assets-low/fighters/armor/arms/shield-mythical-02.webp"
     },
     "availability": {
-      "shop": true,
+      "shop": false,
       "enemyPool": true,
       "bossUnique": false
-    },
-    "armoryProduct": {
-      "id": "generated_equipment_shield_mythical_02",
-      "name": "Mythical 02 Shield",
-      "price": 5000,
-      "itemIds": [
-        "generated_equipment_shield_mythical_02"
-      ],
-      "categoryId": "arms"
     }
   },
   {

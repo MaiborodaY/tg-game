@@ -151,6 +151,9 @@ test("city hero widget lives in the bottom dock with a thumb-friendly portrait",
   assert.equal(heroWidgetHtml.indexOf('id="heroInfoXpFill"') < heroWidgetHtml.indexOf('id="heroInfoXpText"'), true);
   assert.equal(html.includes('id="heroInfoSkillPoints"'), false);
   assert.equal(cityHeroUiSource.includes("getHeroRankTitle"), true);
+  assert.equal(cityHeroUiSource.includes("getHeroTotalWins"), true);
+  assert.equal(cityHeroUiSource.includes("formatHeroWinCount(getHeroTotalWins(hero))"), true);
+  assert.equal(cityHeroUiSource.includes('winsElement.className = "city-menu__hero-wins"'), true);
   assert.equal(cityHeroUiSource.includes('{ minLevel: 90, title: "Immortal" }'), true);
   assert.equal(cityHeroUiSource.includes('{ minLevel: 70, title: "Legend" }'), true);
   assert.equal(cityHeroUiSource.includes('{ minLevel: 50, title: "Warlord" }'), true);
@@ -161,6 +164,7 @@ test("city hero widget lives in the bottom dock with a thumb-friendly portrait",
   assert.equal(cityHeroUiSource.includes('{ minLevel: 5, title: "Pit Fighter" }'), true);
   assert.equal(cityHeroUiSource.includes('{ minLevel: 1, title: "Novice" }'), true);
   assert.equal(stylesSource.includes(".city-menu__hero-rank"), true);
+  assert.equal(stylesSource.includes(".city-menu__hero-wins"), true);
   assert.equal(stylesSource.includes(".city-menu__hero-xp-icon"), true);
   assert.equal(stylesSource.includes("./assets/ui/shop/xp-icon.webp"), true);
   assert.equal(stylesSource.includes("--city-hud-bronze"), true);

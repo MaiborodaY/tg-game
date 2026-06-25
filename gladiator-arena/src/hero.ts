@@ -3,6 +3,7 @@ import {
   BATTLE_WIN_REWARD,
   DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
+  getArenaBossesForTier as resolveArenaBossesForTier,
   getArenaBossDefinition as resolveArenaBossDefinition,
   getArenaRandomOpponentDefinition as resolveArenaRandomOpponentDefinition,
   getArenaRandomOpponentsForTier as resolveArenaRandomOpponentsForTier,
@@ -75,6 +76,7 @@ export interface HeroState {
   xpToNextLevel: number;
   skillPoints: number;
   gold: number;
+  totalWins?: number;
   arenaEnergy?: HeroArenaEnergy;
   bowShotCapacity?: number;
   scrollCapacity?: number;
@@ -434,10 +436,16 @@ export const HERO_SHURIKEN_MAX_QUANTITY = 2;
 export const HERO_SCROLL_CAPACITY_BASE = 1;
 export const HERO_SCROLL_CAPACITY_MAX = 5;
 export const HERO_SCROLL_CAPACITY_UPGRADE_PRICES: Readonly<Record<number, number>> = {
-  2: 100,
-  3: 500,
-  4: 1000,
-  5: 2000,
+  2: 500,
+  3: 1000,
+  4: 2000,
+  5: 5000,
+};
+const HERO_SCROLL_CAPACITY_UPGRADE_UNLOCK_BOSS_TIER: Readonly<Record<number, number>> = {
+  2: 2,
+  3: 4,
+  4: 6,
+  5: 8,
 };
 export const HERO_SCROLL_MAX_QUANTITY = HERO_SCROLL_CAPACITY_MAX;
 export const HERO_CRACK_ARMOR_SCROLL_ITEM_ID = "scroll_crack_armor_01";
@@ -455,6 +463,12 @@ export const HERO_BOW_SHOT_CAPACITY_BASE = BOW_SHOTS_PER_BATTLE;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_MAX = 10;
 export const HERO_BOW_SHOT_CAPACITY_UPGRADE_PRICE = 500;
 export const HERO_SCROLL_UPGRADE_RARITIES: readonly HeroScrollUpgradeRarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+const HERO_SCROLL_UPGRADE_UNLOCK_BOSS_TIER: Readonly<Partial<Record<HeroScrollUpgradeRarity, number>>> = {
+  uncommon: 2,
+  rare: 4,
+  epic: 6,
+  legendary: 8,
+};
 
 const ENEMY_SCROLL_ROLLS_BY_TIER: Readonly<Record<number, { chance: number; rarity: HeroScrollUpgradeRarity }>> = {
   1: { chance: 0.1, rarity: "common" },
@@ -493,17 +507,17 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "crackArmor",
     itemId: HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 30,
-      uncommon: 120,
+      common: 36,
+      uncommon: 144,
       rare: 300,
       epic: 700,
       legendary: 1500,
     },
     upgradePrices: {
-      common: 400,
-      uncommon: 1100,
-      rare: 2600,
-      epic: 6000,
+      common: 900,
+      uncommon: 2600,
+      rare: 6500,
+      epic: 14000,
     },
     crackArmorParts: {
       common: 1,
@@ -517,41 +531,41 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "fireball",
     itemId: HERO_FIREBALL_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 50,
-      uncommon: 90,
+      common: 60,
+      uncommon: 108,
       rare: 200,
       epic: 425,
       legendary: 800,
     },
     upgradePrices: {
-      common: 250,
-      uncommon: 650,
-      rare: 1400,
-      epic: 3000,
+      common: 900,
+      uncommon: 2600,
+      rare: 6500,
+      epic: 14000,
     },
     fireballDamage: {
       common: FIREBALL_SCROLL_DAMAGE,
-      uncommon: 80,
-      rare: 130,
-      epic: 210,
-      legendary: 300,
+      uncommon: 70,
+      rare: 110,
+      epic: 150,
+      legendary: 200,
     },
   },
   ward: {
     kind: "ward",
     itemId: HERO_WARD_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 30,
-      uncommon: 90,
+      common: 36,
+      uncommon: 108,
       rare: 220,
       epic: 500,
       legendary: 1000,
     },
     upgradePrices: {
-      common: 250,
-      uncommon: 700,
-      rare: 1600,
-      epic: 3600,
+      common: 800,
+      uncommon: 2300,
+      rare: 5800,
+      epic: 12000,
     },
     wardHitCount: {
       common: 1,
@@ -565,17 +579,17 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "preciseStrike",
     itemId: HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 30,
-      uncommon: 60,
+      common: 36,
+      uncommon: 72,
       rare: 120,
       epic: 250,
       legendary: 500,
     },
     upgradePrices: {
-      common: 150,
-      uncommon: 350,
-      rare: 800,
-      epic: 1600,
+      common: 600,
+      uncommon: 1800,
+      rare: 4500,
+      epic: 9000,
     },
     preciseBlockChanceReduction: {
       common: 0.1,
@@ -589,17 +603,17 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "doubleStrike",
     itemId: HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 30,
-      uncommon: 75,
+      common: 36,
+      uncommon: 90,
       rare: 160,
       epic: 350,
       legendary: 700,
     },
     upgradePrices: {
-      common: 200,
-      uncommon: 500,
-      rare: 1100,
-      epic: 2200,
+      common: 700,
+      uncommon: 2100,
+      rare: 5200,
+      epic: 10500,
     },
     doubleStrikeDamageMultiplier: {
       common: 0.4,
@@ -613,17 +627,17 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "poison",
     itemId: HERO_POISON_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 35,
-      uncommon: 75,
+      common: 42,
+      uncommon: 90,
       rare: 160,
       epic: 325,
       legendary: 650,
     },
     upgradePrices: {
-      common: 200,
-      uncommon: 500,
-      rare: 1100,
-      epic: 2300,
+      common: 700,
+      uncommon: 2100,
+      rare: 5200,
+      epic: 10500,
     },
     poisonDamage: {
       common: POISON_SCROLL_DAMAGE,
@@ -912,6 +926,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
     skillPoints: HERO_STARTING_SKILL_POINTS,
     gold: 0,
+    totalWins: 0,
     arenaEnergy,
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
     scrollCapacity: HERO_SCROLL_CAPACITY_BASE,
@@ -963,6 +978,16 @@ export function getHeroArenaEnergy(hero: HeroState, now: string | Date = new Dat
     max: HERO_ARENA_ENERGY_MAX,
     dayKey,
   };
+}
+
+export function getHeroTotalWins(hero: HeroState): number {
+  const source = hero.totalWins;
+
+  if (typeof source !== "number" || !Number.isFinite(source)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor(source));
 }
 
 export function refreshHeroArenaEnergy(hero: HeroState, now = new Date().toISOString()): HeroState {
@@ -1625,22 +1650,19 @@ export function getHeroScrollUpgradePrice(hero: HeroState, itemId: HeroItemId | 
 }
 
 export function canUpgradeHeroScroll(hero: HeroState, itemId: HeroItemId | undefined): boolean {
+  const kind = getHeroUpgradeableScrollKind(itemId);
   const price = getHeroScrollUpgradePrice(hero, itemId);
+  const nextRarity = kind ? getNextHeroScrollUpgradeRarity(getHeroScrollUpgradeRarity(hero, kind)) : undefined;
 
-  return price !== undefined && hero.gold >= price;
+  return price !== undefined && nextRarity !== undefined && isHeroScrollUpgradeRarityUnlocked(hero, nextRarity) && hero.gold >= price;
 }
 
 export function upgradeHeroScroll(hero: HeroState, itemId: HeroItemId | undefined, now = new Date().toISOString()): HeroState {
   const kind = getHeroUpgradeableScrollKind(itemId);
   const price = getHeroScrollUpgradePrice(hero, itemId);
+  const nextRarity = kind ? getNextHeroScrollUpgradeRarity(getHeroScrollUpgradeRarity(hero, kind)) : undefined;
 
-  if (!kind || price === undefined || hero.gold < price) {
-    return hero;
-  }
-
-  const nextRarity = getNextHeroScrollUpgradeRarity(getHeroScrollUpgradeRarity(hero, kind));
-
-  if (!nextRarity) {
+  if (!kind || !nextRarity || price === undefined || !canUpgradeHeroScroll(hero, itemId)) {
     return hero;
   }
 
@@ -1653,6 +1675,33 @@ export function upgradeHeroScroll(hero: HeroState, itemId: HeroItemId | undefine
     },
     updatedAt: now,
   };
+}
+
+export function getHeroMaxScrollUpgradeRarity(hero: HeroState): HeroScrollUpgradeRarity {
+  return HERO_SCROLL_UPGRADE_RARITIES.reduce<HeroScrollUpgradeRarity>((maxRarity, rarity) => {
+    if (!isHeroScrollUpgradeRarityUnlocked(hero, rarity)) {
+      return maxRarity;
+    }
+
+    return rarity;
+  }, "common");
+}
+
+export function getHeroScrollUpgradeUnlockBossTier(rarity: HeroScrollUpgradeRarity): number | undefined {
+  return HERO_SCROLL_UPGRADE_UNLOCK_BOSS_TIER[rarity];
+}
+
+export function isHeroScrollUpgradeRarityUnlocked(hero: HeroState, rarity: HeroScrollUpgradeRarity): boolean {
+  const unlockBossTier = getHeroScrollUpgradeUnlockBossTier(rarity);
+
+  if (!unlockBossTier) {
+    return true;
+  }
+
+  const defeatedBossIds = new Set(hero.defeatedArenaBossIds ?? []);
+  const unlockBosses = resolveArenaBossesForTier(unlockBossTier);
+
+  return unlockBosses.some((boss) => defeatedBossIds.has(boss.id));
 }
 
 export function getHeroPreciseStrikeBlockChanceReduction(hero: HeroState): number {
@@ -1754,15 +1803,16 @@ export function getHeroScrollCapacityUpgradePrice(hero: HeroState): number | und
 
 export function canUpgradeHeroScrollCapacity(hero: HeroState): boolean {
   const price = getHeroScrollCapacityUpgradePrice(hero);
+  const nextCapacity = getHeroScrollCapacity(hero) + 1;
 
-  return price !== undefined && hero.gold >= price;
+  return price !== undefined && isHeroScrollCapacityUpgradeUnlocked(hero, nextCapacity) && hero.gold >= price;
 }
 
 export function upgradeHeroScrollCapacity(hero: HeroState, now = new Date().toISOString()): HeroState {
   const currentCapacity = getHeroScrollCapacity(hero);
   const price = getHeroScrollCapacityUpgradePrice(hero);
 
-  if (price === undefined || hero.gold < price) {
+  if (price === undefined || !canUpgradeHeroScrollCapacity(hero)) {
     return hero;
   }
 
@@ -1772,6 +1822,23 @@ export function upgradeHeroScrollCapacity(hero: HeroState, now = new Date().toIS
     scrollCapacity: Math.min(HERO_SCROLL_CAPACITY_MAX, currentCapacity + 1),
     updatedAt: now,
   };
+}
+
+export function getHeroScrollCapacityUpgradeUnlockBossTier(capacity: number): number | undefined {
+  return HERO_SCROLL_CAPACITY_UPGRADE_UNLOCK_BOSS_TIER[Math.max(0, Math.floor(capacity))];
+}
+
+export function isHeroScrollCapacityUpgradeUnlocked(hero: HeroState, capacity: number): boolean {
+  const unlockBossTier = getHeroScrollCapacityUpgradeUnlockBossTier(capacity);
+
+  if (!unlockBossTier) {
+    return true;
+  }
+
+  const defeatedBossIds = new Set(hero.defeatedArenaBossIds ?? []);
+  const unlockBosses = resolveArenaBossesForTier(unlockBossTier);
+
+  return unlockBosses.some((boss) => defeatedBossIds.has(boss.id));
 }
 
 export function getHeroEquipmentWeaponClass(equipment: HeroEquipment): HeroWeaponClass {
@@ -2078,10 +2145,11 @@ export function applyCombatReward(
 ): CombatRewardApplication {
   const reward = getBattleReward(combat);
   const heroAfterConsumables = applyCombatConsumableUsage(hero, combat, now);
-  const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterConsumables, combat, random) : [];
+  const heroAfterWinRecord = combat.result === "win" ? recordHeroWin(heroAfterConsumables, now) : heroAfterConsumables;
+  const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterWinRecord, combat, random) : [];
   const heroBeforeReward = combat.result === "win" && combat.encounter?.kind === "boss"
-    ? recordArenaBossDefeat(heroAfterConsumables, combat.encounter.opponentId, now)
-    : heroAfterConsumables;
+    ? recordArenaBossDefeat(heroAfterWinRecord, combat.encounter.opponentId, now)
+    : heroAfterWinRecord;
   const heroWithReward = applyBattleReward(heroBeforeReward, reward, now);
   const lootApplication = applyArenaLootWithAppliedDrops(heroWithReward, rolledLoot, now);
 
@@ -2116,6 +2184,14 @@ export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new
   return {
     ...hero,
     defeatedArenaBossIds: [...(hero.defeatedArenaBossIds ?? []), bossId],
+    updatedAt: now,
+  };
+}
+
+function recordHeroWin(hero: HeroState, now = new Date().toISOString()): HeroState {
+  return {
+    ...hero,
+    totalWins: getHeroTotalWins(hero) + 1,
     updatedAt: now,
   };
 }

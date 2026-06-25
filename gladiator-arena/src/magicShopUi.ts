@@ -504,6 +504,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const canBuy = canUpgradeHeroScrollCapacity(hero);
     const nextCapacity = Math.min(HERO_SCROLL_CAPACITY_MAX, currentCapacity + 1);
 
+    scrollUpgradeElements.root.hidden = mode !== "scrolls" || (!isMaxed && !canBuy);
     scrollUpgradeElements.card.disabled = isMaxed || !canBuy;
     scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--max", isMaxed);
     scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--no-gold", !isMaxed && !canBuy);
@@ -930,6 +931,10 @@ function setMagicProductPreviewRarity(
 }
 
 function getMagicProductUpgradePreview(hero: HeroState, product: MagicProduct): MagicProductUpgradePreview | undefined {
+  if (!canUpgradeMagicProduct(hero, product)) {
+    return undefined;
+  }
+
   const itemId = getMagicProductPrimaryItemId(product);
   const price = getMagicProductUpgradePrice(hero, product);
   const currentRarity = getHeroScrollUpgradeRarityForItem(hero, itemId);
@@ -1039,6 +1044,7 @@ function refreshMagicProductUpgradeButton(
   const isUpgradeable = isHeroUpgradeableScrollItemId(itemId);
 
   button.hidden = !isUpgradeable;
+  button.classList.remove("magic-shop__list-upgrade--unavailable");
 
   if (!isUpgradeable) {
     button.disabled = true;
@@ -1057,6 +1063,15 @@ function refreshMagicProductUpgradeButton(
   }
 
   button.disabled = !canUpgrade;
+  button.classList.toggle("magic-shop__list-upgrade--unavailable", !canUpgrade);
+
+  if (!canUpgrade) {
+    button.removeAttribute("aria-label");
+    button.title = "";
+    setTextContentIfChanged(button, "");
+    return;
+  }
+
   button.setAttribute("aria-label", `Upgrade ${getMagicProductDisplayName(product)} for ${upgradePrice} gold`);
   button.title = `Upgrade ${upgradePrice}`;
   setTextContentIfChanged(button, "");

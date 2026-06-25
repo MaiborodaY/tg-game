@@ -11,6 +11,7 @@ import {
   getHeroConsumableMaxQuantity,
   getHeroItemWeaponClass,
   getHeroItemQuantity,
+  getHeroShurikenItemId,
   getHeroShurikenQuantity,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -78,6 +79,23 @@ interface WeaponCategory {
   emptyText?: string;
 }
 
+interface WeaponCategoryToolbarPlaceholder {
+  id: string;
+  name: string;
+  iconText: string;
+  disabled: true;
+}
+
+type WeaponCategoryToolbarItem = WeaponCategory | WeaponCategoryToolbarPlaceholder;
+
+interface WeaponEquippedSlotGroup {
+  id: string;
+  label: string;
+  modifier: string;
+  area: string;
+  slot?: HeroEquipmentSlotKey;
+}
+
 interface WeaponShopOptions {
   getHero: () => HeroState;
   mountPreview?: (parent: HTMLElement) => () => void;
@@ -124,6 +142,7 @@ const WEAPON_RARITIES = Object.keys(WEAPON_RARITY_SORT_ORDER) as ShopItemRarity[
 const WEAPON_RARITY_FILTERS = WEAPON_RARITIES.filter((rarity) => rarity !== "mythical");
 const WEAPON_RARITY_FILTER_CLASS_NAMES = WEAPON_RARITY_FILTERS.map((rarity) => `armory-shop__set-filter--rarity-${rarity}`);
 const WEAPON_RANGED_CATEGORY_IDS = new Set(["bows", "shurikens"]);
+const WEAPON_CATEGORY_PLACEHOLDER_ID = "display-mode-placeholder";
 const WEAPON_PERK_DEFINITIONS: Record<HeroWeaponClass, WeaponPerkDefinition> = {
   sword: {
     chipLabel: "Precise",
@@ -199,6 +218,20 @@ const WEAPON_CATEGORIES: WeaponCategory[] = [
     products: getGeneratedWeaponProducts("shurikens"),
     emptyText: "Shurikens soon",
   },
+];
+const WEAPON_CATEGORY_TOOLBAR_ITEMS: readonly WeaponCategoryToolbarItem[] = [
+  ...WEAPON_CATEGORIES,
+  {
+    id: WEAPON_CATEGORY_PLACEHOLDER_ID,
+    name: "Display mode",
+    iconText: "...",
+    disabled: true,
+  },
+];
+const WEAPON_EQUIPPED_SLOT_GROUPS: readonly WeaponEquippedSlotGroup[] = [
+  { id: "bow", label: "Bow", modifier: "weapon-bow", area: "bow", slot: "weaponBow" },
+  { id: "melee", label: "Melee weapon", modifier: "weapon-main", area: "melee", slot: "weaponMain" },
+  { id: "shuriken", label: "Shuriken", modifier: "weapon-shuriken", area: "shuriken" },
 ];
 
 const BOW_CATEGORY_ID = "bows";
@@ -322,6 +355,10 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   preview.className = "armory-shop__preview";
   previewShell.append(preview);
 
+  const equipment = document.createElement("div");
+  equipment.className = "armory-shop__equipment weapon-shop__equipment";
+  equipment.setAttribute("aria-label", "Equipped weapons");
+
   const menu = document.createElement("div");
   menu.className = "armory-shop__menu";
 
@@ -353,7 +390,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   categoryFilter.className = "weapon-shop__category-filter";
   categoryFilter.setAttribute("aria-label", "Weapon types");
-  WEAPON_CATEGORIES.forEach((category) => categoryFilter.append(createWeaponCategoryButton(category)));
+  WEAPON_CATEGORY_TOOLBAR_ITEMS.forEach((item) => categoryFilter.append(createWeaponCategoryButton(item)));
 
   const gold = document.createElement("span");
   gold.className = "armory-shop__gold";
@@ -380,7 +417,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   const headerMeta = document.createElement("div");
   headerMeta.className = "armory-shop__header-meta";
-  headerMeta.append(gold, level);
+
+  const footerMeta = document.createElement("div");
+  footerMeta.className = "armory-shop__footer-meta";
 
   const selected = document.createElement("div");
   selected.className = "armory-shop__selected";
@@ -419,10 +458,12 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   });
 
   if (usesCityHeroPreview) {
+    footerMeta.append(gold, back, level);
     header.append(title, rarityFilter, categoryFilter);
-    tray.append(header, content, scrollIndicator);
+    tray.append(header, content, footerMeta, scrollIndicator);
     menu.append(tray);
   } else {
+    headerMeta.append(gold, level);
     header.append(back, title, rarityFilter, categoryFilter, headerMeta);
     tray.append(header, selected, content, scrollIndicator);
     menu.append(tray);
@@ -430,16 +471,13 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   if (options.mountPreview) {
     panel.append(previewShell);
   } else {
-    panel.append(headerMeta);
     panel.append(bowUpgrade);
     if (usesCityHeroPreview) {
+      panel.append(equipment);
       panel.append(selected);
     }
   }
   panel.append(menu);
-  if (usesCityHeroPreview) {
-    panel.append(back);
-  }
   shop.append(panel);
   root.append(shop);
   window.addEventListener("resize", scheduleLayoutSync);
@@ -507,6 +545,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     title.textContent = "Weapons";
     renderRarityFilterOptions(availableRarities);
     updateWeaponCategoryButtons();
+    renderEquippedWeaponSlots(hero);
     goldAmount.textContent = String(hero.gold);
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
     levelValue.textContent = String(hero.level);
@@ -656,15 +695,30 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     return label;
   }
 
-  function createWeaponCategoryButton(category: WeaponCategory): HTMLButtonElement {
+  function createWeaponCategoryButton(category: WeaponCategoryToolbarItem): HTMLButtonElement {
     const button = document.createElement("button");
-    const icon = document.createElement("img");
 
     button.className = "weapon-shop__category-button";
     button.type = "button";
     button.title = category.name;
     button.setAttribute("aria-label", category.name);
     button.setAttribute("aria-pressed", "false");
+
+    if ("disabled" in category && category.disabled) {
+      const icon = document.createElement("span");
+
+      button.classList.add("weapon-shop__category-button--placeholder");
+      button.disabled = true;
+      icon.className = "weapon-shop__category-placeholder";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = category.iconText;
+      button.append(icon);
+
+      return button;
+    }
+
+    const icon = document.createElement("img");
+
     icon.className = "weapon-shop__category-icon";
     icon.src = category.iconUrl;
     icon.alt = "";
@@ -900,6 +954,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const hero = options.getHero();
 
     updateShopHeroMeta(hero);
+    renderEquippedWeaponSlots(hero);
     syncSelectionState();
     refreshSelectedProduct(hero);
     refreshChangedProductButtons(hero, syncOptions);
@@ -1067,6 +1122,90 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function refreshBowCapacityUpgrade(hero: HeroState): void {
     bowUpgrade.replaceChildren();
     renderBowCapacityUpgrade(hero);
+  }
+
+  function renderEquippedWeaponSlots(hero: HeroState): void {
+    if (!usesCityHeroPreview) {
+      return;
+    }
+
+    const renderKey = getWeaponEquippedSlotsRenderKey(hero);
+
+    if (equipment.dataset.weaponEquippedSlotsRenderKey === renderKey) {
+      return;
+    }
+
+    equipment.dataset.weaponEquippedSlotsRenderKey = renderKey;
+    equipment.replaceChildren(...WEAPON_EQUIPPED_SLOT_GROUPS.map((group) => createEquippedWeaponSlot(group, hero)));
+  }
+
+  function createEquippedWeaponSlot(group: WeaponEquippedSlotGroup, hero: HeroState): HTMLElement {
+    const itemId = getEquippedWeaponSlotItemId(group, hero);
+    const itemIds = itemId ? [itemId] : [];
+    const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+    const iconUrl = getShopProductIconUrl(itemIds);
+    const rarity = itemIds.length > 0 ? getShopProductRarity(itemIds) : "empty";
+    const quantity = getEquippedWeaponSlotQuantity(group, hero, itemId);
+    const slot = document.createElement("div");
+    const icon = document.createElement("span");
+    const label = item
+      ? `${group.label}: ${getShopProductDisplayName(item.name)}${quantity > 0 ? ` x${quantity}` : ""}`
+      : `${group.label}: empty`;
+
+    slot.className = [
+      "armory-shop__equipped-slot",
+      "weapon-shop__equipped-slot",
+      `armory-shop__equipped-slot--${group.modifier}`,
+      `armory-shop__equipped-slot--area-${group.area}`,
+      `armory-shop__equipped-slot--${rarity}`,
+      rarity !== "empty" ? `armory-shop__option--rarity-${rarity}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    slot.setAttribute("aria-label", label);
+    slot.title = label;
+    icon.className = "armory-shop__equipped-icon";
+
+    if (iconUrl) {
+      icon.style.backgroundImage = `url("${iconUrl}")`;
+    }
+
+    slot.append(icon);
+
+    if (quantity > 0) {
+      const count = document.createElement("span");
+
+      count.className = "weapon-shop__equipped-count";
+      count.textContent = String(quantity);
+      slot.append(count);
+    }
+
+    return slot;
+  }
+
+  function getEquippedWeaponSlotItemId(group: WeaponEquippedSlotGroup, hero: HeroState): HeroItemId | undefined {
+    if (group.slot) {
+      return hero.equipment[group.slot];
+    }
+
+    return group.id === "shuriken" ? getHeroShurikenItemId(hero) : undefined;
+  }
+
+  function getEquippedWeaponSlotQuantity(group: WeaponEquippedSlotGroup, hero: HeroState, itemId: HeroItemId | undefined): number {
+    if (group.id !== "shuriken" || !itemId) {
+      return 0;
+    }
+
+    return getHeroItemQuantity(hero, itemId);
+  }
+
+  function getWeaponEquippedSlotsRenderKey(hero: HeroState): string {
+    return WEAPON_EQUIPPED_SLOT_GROUPS.map((group) => {
+      const itemId = getEquippedWeaponSlotItemId(group, hero);
+      const quantity = getEquippedWeaponSlotQuantity(group, hero, itemId);
+
+      return `${group.id}:${itemId ?? ""}:${quantity}`;
+    }).join("|");
   }
 
   function clearProductPreview(): void {
