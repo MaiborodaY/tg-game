@@ -84,8 +84,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 10,
-            "xp": 10
+            "gold": 11,
+            "xp": 11
           },
           "loss": {
             "gold": 1,
@@ -232,8 +232,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 21,
-            "xp": 21
+            "gold": 23,
+            "xp": 23
           },
           "loss": {
             "gold": 1,
@@ -380,8 +380,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 34,
-            "xp": 34
+            "gold": 37,
+            "xp": 37
           },
           "loss": {
             "gold": 1,
@@ -528,8 +528,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 50,
-            "xp": 50
+            "gold": 55,
+            "xp": 55
           },
           "loss": {
             "gold": 1,
@@ -676,8 +676,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 69,
-            "xp": 69
+            "gold": 76,
+            "xp": 76
           },
           "loss": {
             "gold": 1,
@@ -824,8 +824,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 92,
-            "xp": 92
+            "gold": 101,
+            "xp": 101
           },
           "loss": {
             "gold": 1,
@@ -972,8 +972,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 119,
-            "xp": 119
+            "gold": 131,
+            "xp": 131
           },
           "loss": {
             "gold": 1,
@@ -1120,8 +1120,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 152,
-            "xp": 152
+            "gold": 167,
+            "xp": 167
           },
           "loss": {
             "gold": 1,
@@ -1268,8 +1268,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 192,
-            "xp": 192
+            "gold": 211,
+            "xp": 211
           },
           "loss": {
             "gold": 1,
@@ -1406,8 +1406,8 @@
         ],
         "rewards": {
           "win": {
-            "gold": 239,
-            "xp": 239
+            "gold": 263,
+            "xp": 263
           },
           "loss": {
             "gold": 1,
