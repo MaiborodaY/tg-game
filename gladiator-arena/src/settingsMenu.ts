@@ -21,7 +21,7 @@ const hudModeDefaultVersion = 2;
 const defaultSettings: PlayerSettings = {
   lowEffects: false,
   statBarAnimations: false,
-  smoothRendering: true,
+  smoothRendering: false,
   renderFps: 30,
   vfxEnabled: true,
   shadowMode: "low",

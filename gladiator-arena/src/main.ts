@@ -32,7 +32,14 @@ import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } 
 import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
-import { canUseGladiatorCloudSave, deleteGladiatorCloudSave, loadGladiatorCloudSave, saveGladiatorCloudHero } from "./gladiatorSaveClient";
+import {
+  canUseGladiatorCloudSave,
+  deleteGladiatorCloudSave,
+  GladiatorSaveError,
+  loadGladiatorCloudSave,
+  saveGladiatorCloudHero,
+  spendGladiatorArenaEnergy,
+} from "./gladiatorSaveClient";
 import {
   HERO_ITEM_CATALOG,
   DEFAULT_ARENA_DIFFICULTY_ID,
@@ -56,9 +63,12 @@ import {
   getArenaTierDefinition,
   getArenaTierDefinitions,
   getBattleReward,
+  getHeroArenaEnergy,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
+  restoreHeroArenaEnergy,
   sharpenHeroActiveWeapon,
+  spendHeroArenaEnergy,
   unlockAllArenaBossTiers,
   unlockAllHeroShopRarities,
   updateHeroAppearance,
@@ -202,6 +212,7 @@ let shopPreviewPrewarmFrame: number | undefined;
 let shopPreviewPrewarmItemIds: HeroItemId[] = [];
 let activeShopPreviewPrewarmSignature = "";
 let completedShopPreviewPrewarmSignature = "";
+let arenaEnergySpendPending = false;
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
@@ -951,7 +962,7 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement
   rewardLine.append(reward, uniqueReward);
   button.append(name, rewardLine);
   button.addEventListener("click", () => {
-    startSelectedArena({ kind: "boss", bossId: boss.id });
+    void startSelectedArena({ kind: "boss", bossId: boss.id });
   });
 
   return button;
@@ -1001,8 +1012,8 @@ function canCancelPvpRoom(): boolean {
 }
 
 function syncCityArenaBotControls(): void {
-  const disabled = isPvpRoomBlockingArena();
-  const title = disabled ? "Cancel PvP room before fighting bots." : "";
+  const title = getCityArenaBotDisabledTitle();
+  const disabled = Boolean(title);
 
   [cityArenaEasyButton, cityArenaRandomButton, cityArenaHardButton].forEach((button) => {
     if (!button) {
@@ -1015,6 +1026,22 @@ function syncCityArenaBotControls(): void {
     button.disabled = disabled;
     button.title = title;
   });
+}
+
+function getCityArenaBotDisabledTitle(): string {
+  if (isPvpRoomBlockingArena()) {
+    return "Cancel PvP room before fighting bots.";
+  }
+
+  if (arenaEnergySpendPending) {
+    return "Spending arena energy...";
+  }
+
+  if (getHeroArenaEnergy(hero).current <= 0) {
+    return "No arena energy left today.";
+  }
+
+  return "";
 }
 
 function setPvpStatus(message: string): void {
@@ -1416,10 +1443,16 @@ function closeCityArenaMenu(): void {
   cityMenu?.classList.remove("city-menu--arena-select-open");
 }
 
-function startSelectedArena(selection: ArenaMenuSelection): void {
+async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> {
   if (isPvpRoomBlockingArena()) {
     setPvpStatus("Cancel PvP room before fighting bots.");
     syncPvpControls();
+    return;
+  }
+
+  const hasEnergy = await spendArenaEnergyForSelectedArena();
+
+  if (!hasEnergy) {
     return;
   }
 
@@ -1431,6 +1464,65 @@ function startSelectedArena(selection: ArenaMenuSelection): void {
 
   closeCityArenaMenu();
   void startGameWithCityTransition({ initialState });
+}
+
+async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
+  if (arenaEnergySpendPending) {
+    return false;
+  }
+
+  const currentArenaEnergy = getHeroArenaEnergy(hero);
+
+  if (currentArenaEnergy.current <= 0) {
+    syncCityArenaBotControls();
+    window.alert("No arena energy left today.");
+    return false;
+  }
+
+  arenaEnergySpendPending = true;
+  syncCityArenaBotControls();
+
+  try {
+    if (canUseGladiatorCloudSave()) {
+      hero = applyTelegramDisplayNameToHero(await spendGladiatorArenaEnergy(hero));
+      saveLocalHeroSave(hero);
+    } else {
+      const localSpend = spendHeroArenaEnergy(hero);
+
+      if (!localSpend.ok) {
+        hero = localSpend.hero;
+        syncHeroRuntimeState();
+        window.alert("No arena energy left today.");
+        return false;
+      }
+
+      hero = localSpend.hero;
+      saveLocalHeroSave(hero);
+    }
+
+    syncHeroRuntimeState();
+    renderCityArenaMenu();
+    return true;
+  } catch (error) {
+    if (error instanceof GladiatorSaveError && error.hero) {
+      hero = applyTelegramDisplayNameToHero(error.hero);
+      saveLocalHeroSave(hero);
+      syncHeroRuntimeState();
+    }
+
+    if (error instanceof GladiatorSaveError && error.code === "not_enough_arena_energy") {
+      window.alert("No arena energy left today.");
+    } else {
+      console.warn("[arena-energy] Failed to spend arena energy.", error);
+      window.alert("Could not start arena. Try again.");
+    }
+
+    renderCityArenaMenu();
+    return false;
+  } finally {
+    arenaEnergySpendPending = false;
+    syncCityArenaBotControls();
+  }
 }
 
 async function finishInitialCityEntry(): Promise<void> {
@@ -1900,8 +1992,17 @@ function handleProfileAppearanceChange(appearance: Partial<HeroAppearance>): voi
 function handleTemporaryChurchSkillGrant(): void {
   const now = new Date().toISOString();
 
-  hero = unlockAllArenaBossTiers(unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 20, now), 1000, now), now), now);
+  hero = restoreHeroArenaEnergy(
+    unlockAllArenaBossTiers(
+      unlockAllHeroShopRarities(grantHeroGold(grantHeroLevels(hero, 20, now), 1000, now), now),
+      now,
+    ),
+    now,
+  );
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave("church-cheat");
   renderCityHero();
+  renderCityArenaMenu();
   syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
 }
@@ -2111,13 +2212,13 @@ cityArenaTierSelect?.addEventListener("change", () => {
   renderCityArenaMenu();
 });
 cityArenaEasyButton?.addEventListener("click", () => {
-  startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "easy" });
+  void startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "easy" });
 });
 cityArenaRandomButton?.addEventListener("click", () => {
-  startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID });
+  void startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID });
 });
 cityArenaHardButton?.addEventListener("click", () => {
-  startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "hard" });
+  void startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "hard" });
 });
 cityPvpCreateButton?.addEventListener("click", () => {
   void handleCreatePvpRoom();

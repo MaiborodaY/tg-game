@@ -75,6 +75,7 @@ export interface HeroState {
   xpToNextLevel: number;
   skillPoints: number;
   gold: number;
+  arenaEnergy?: HeroArenaEnergy;
   bowShotCapacity?: number;
   scrollCapacity?: number;
   baseStats: HeroBaseStats;
@@ -93,6 +94,12 @@ export interface HeroBaseStats {
   strength: number;
   agility: number;
   vitality: number;
+}
+
+export interface HeroArenaEnergy {
+  current: number;
+  max: number;
+  dayKey: string;
 }
 
 export interface HeroAppearance {
@@ -178,6 +185,7 @@ export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommo
 export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
+export const HERO_ARENA_ENERGY_MAX = 10;
 const HERO_WEAPON_SHARPENING_ALLOWED_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
 
 interface PairedArmorSlotConfig {
@@ -893,6 +901,8 @@ export function createDefaultHeroInventory(): HeroInventoryEntry[] {
 }
 
 export function createDefaultHero(now = new Date().toISOString()): HeroState {
+  const arenaEnergy = createHeroArenaEnergy(now);
+
   return {
     id: DEFAULT_HERO_ID,
     name: DEFAULT_HERO_NAME,
@@ -901,6 +911,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
     skillPoints: HERO_STARTING_SKILL_POINTS,
     gold: 0,
+    arenaEnergy,
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
     scrollCapacity: HERO_SCROLL_CAPACITY_BASE,
     baseStats: {
@@ -918,6 +929,106 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export function getUtcDayKey(now: string | Date = new Date()): string {
+  const date = typeof now === "string" ? new Date(now) : now;
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+export function createHeroArenaEnergy(now: string | Date = new Date()): HeroArenaEnergy {
+  return {
+    current: HERO_ARENA_ENERGY_MAX,
+    max: HERO_ARENA_ENERGY_MAX,
+    dayKey: getUtcDayKey(now),
+  };
+}
+
+export function getHeroArenaEnergy(hero: HeroState, now: string | Date = new Date()): HeroArenaEnergy {
+  const dayKey = getUtcDayKey(now);
+  const source = hero.arenaEnergy;
+
+  if (!source || source.dayKey !== dayKey) {
+    return createHeroArenaEnergy(now);
+  }
+
+  return {
+    current: clampHeroArenaEnergyValue(source.current),
+    max: HERO_ARENA_ENERGY_MAX,
+    dayKey,
+  };
+}
+
+export function refreshHeroArenaEnergy(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const arenaEnergy = getHeroArenaEnergy(hero, now);
+  const source = hero.arenaEnergy;
+
+  if (source && source.current === arenaEnergy.current && source.max === arenaEnergy.max && source.dayKey === arenaEnergy.dayKey) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    arenaEnergy,
+    updatedAt: now,
+  };
+}
+
+export function restoreHeroArenaEnergy(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const arenaEnergy = createHeroArenaEnergy(now);
+
+  if (hero.arenaEnergy?.current === arenaEnergy.current && hero.arenaEnergy.max === arenaEnergy.max && hero.arenaEnergy.dayKey === arenaEnergy.dayKey) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    arenaEnergy,
+    updatedAt: now,
+  };
+}
+
+export function spendHeroArenaEnergy(
+  hero: HeroState,
+  now = new Date().toISOString(),
+): { ok: true; hero: HeroState; arenaEnergy: HeroArenaEnergy } | { ok: false; hero: HeroState; arenaEnergy: HeroArenaEnergy } {
+  const arenaEnergy = getHeroArenaEnergy(hero, now);
+
+  if (arenaEnergy.current <= 0) {
+    return {
+      ok: false,
+      hero: refreshHeroArenaEnergy(hero, now),
+      arenaEnergy,
+    };
+  }
+
+  const nextArenaEnergy: HeroArenaEnergy = {
+    ...arenaEnergy,
+    current: arenaEnergy.current - 1,
+  };
+
+  return {
+    ok: true,
+    hero: {
+      ...hero,
+      arenaEnergy: nextArenaEnergy,
+      updatedAt: now,
+    },
+    arenaEnergy: nextArenaEnergy,
+  };
+}
+
+function clampHeroArenaEnergyValue(value: number): number {
+  if (!Number.isFinite(value)) {
+    return HERO_ARENA_ENERGY_MAX;
+  }
+
+  return Math.max(0, Math.min(HERO_ARENA_ENERGY_MAX, Math.floor(value)));
 }
 
 export function deriveHeroStats(hero: HeroState): HeroStats {

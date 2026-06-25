@@ -21,6 +21,7 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   deriveHeroStats,
+  getHeroArenaEnergy,
   getHeroItemWeaponClass,
   getHeroEquipmentStatBonuses,
   HERO_ITEM_CATALOG,
@@ -233,6 +234,7 @@ export interface CityHeroWidgetRefs {
   name: HTMLElement | null;
   level: HTMLElement | null;
   rank: HTMLElement | null;
+  arenaEnergy: HTMLElement | null;
   gold: HTMLElement | null;
   xpFill: HTMLElement | null;
   xpText: HTMLElement | null;
@@ -242,6 +244,7 @@ export interface CityHeroWidgetRefs {
   profileName: HTMLElement | null;
   profileResetButton: HTMLButtonElement | null;
   profileGold: HTMLElement | null;
+  profileArenaEnergy: HTMLElement | null;
   profileLevel: HTMLElement | null;
   profileXpFill: HTMLElement | null;
   profileXpText: HTMLElement | null;
@@ -259,6 +262,7 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     name: root.querySelector<HTMLElement>("#heroInfoName"),
     level: root.querySelector<HTMLElement>("#heroInfoLevel"),
     rank: root.querySelector<HTMLElement>("#heroInfoRank"),
+    arenaEnergy: root.querySelector<HTMLElement>("#heroInfoArenaEnergy"),
     gold: root.querySelector<HTMLElement>("#heroInfoGold"),
     xpFill: root.querySelector<HTMLElement>("#heroInfoXpFill"),
     xpText: root.querySelector<HTMLElement>("#heroInfoXpText"),
@@ -268,6 +272,7 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     profileName: root.querySelector<HTMLElement>("#heroProfileName"),
     profileResetButton: root.querySelector<HTMLButtonElement>("#heroProfileResetButton"),
     profileGold: root.querySelector<HTMLElement>("#heroProfileGold"),
+    profileArenaEnergy: root.querySelector<HTMLElement>("#heroProfileArenaEnergy"),
     profileLevel: root.querySelector<HTMLElement>("#heroProfileLevel"),
     profileXpFill: root.querySelector<HTMLElement>("#heroProfileXpFill"),
     profileXpText: root.querySelector<HTMLElement>("#heroProfileXpText"),
@@ -334,6 +339,15 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
     refs.gold.textContent = String(hero.gold);
   }
 
+  const arenaEnergy = getHeroArenaEnergy(hero);
+
+  if (refs.arenaEnergy) {
+    refs.arenaEnergy.textContent = String(arenaEnergy.current);
+    refs.arenaEnergy.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
+    refs.arenaEnergy.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
+    refs.arenaEnergy.classList.toggle("city-menu__hero-energy--empty", arenaEnergy.current <= 0);
+  }
+
   if (refs.xpFill) {
     refs.xpFill.style.width = `${xpRatio * 100}%`;
   }
@@ -357,6 +371,13 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
 
   if (refs.profileGold) {
     refs.profileGold.textContent = String(hero.gold);
+  }
+
+  if (refs.profileArenaEnergy) {
+    refs.profileArenaEnergy.textContent = String(arenaEnergy.current);
+    refs.profileArenaEnergy.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
+    refs.profileArenaEnergy.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
+    refs.profileArenaEnergy.classList.toggle("city-profile__arena-energy--empty", arenaEnergy.current <= 0);
   }
 
   if (refs.profileXpFill) {

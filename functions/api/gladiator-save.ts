@@ -1,4 +1,4 @@
-interface Env {
+export interface Env {
   BOT_TOKEN?: string;
   GLADIATOR_SAVES_DB?: D1Database;
 }
@@ -14,6 +14,14 @@ interface PlayerSaveRow {
   revision: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface PlayerSave {
+  hero: unknown;
+  schemaVersion: number;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const SAVE_SCHEMA_VERSION = 1;
@@ -69,11 +77,11 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
   }
 };
 
-function readTelegramInitData(request: Request): string {
+export function readTelegramInitData(request: Request): string {
   return request.headers.get("x-telegram-init-data") ?? "";
 }
 
-async function verifyTelegramInitData(initData: string, botToken: string): Promise<{ ok: true; user: TelegramInitUser } | { ok: false; error: string }> {
+export async function verifyTelegramInitData(initData: string, botToken: string): Promise<{ ok: true; user: TelegramInitUser } | { ok: false; error: string }> {
   if (!initData) {
     return { ok: false, error: "missing_init_data" };
   }
@@ -121,7 +129,7 @@ async function hmacSha256(key: BufferSource, data: string): Promise<ArrayBuffer>
   return crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(data));
 }
 
-async function readPlayerSave(db: D1Database, telegramUserId: string): Promise<{ hero: unknown; schemaVersion: number; revision: number; createdAt: string; updatedAt: string } | null> {
+export async function readPlayerSave(db: D1Database, telegramUserId: string): Promise<PlayerSave | null> {
   const row = await db
     .prepare("SELECT hero_json, schema_version, revision, created_at, updated_at FROM player_saves WHERE telegram_user_id = ?")
     .bind(telegramUserId)
@@ -140,7 +148,7 @@ async function readPlayerSave(db: D1Database, telegramUserId: string): Promise<{
   };
 }
 
-function upsertPlayerSave(
+export function upsertPlayerSave(
   db: D1Database,
   save: { telegramUserId: string; telegramUsername?: string; heroJson: string },
 ): Promise<D1Result> {
@@ -167,6 +175,24 @@ function upsertPlayerSave(
     .run();
 }
 
+export function updatePlayerSaveIfRevision(
+  db: D1Database,
+  save: { telegramUserId: string; telegramUsername?: string; heroJson: string; revision: number },
+): Promise<D1Result> {
+  return db
+    .prepare(`
+      UPDATE player_saves SET
+        telegram_username = ?,
+        hero_json = ?,
+        schema_version = ?,
+        revision = revision + 1,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      WHERE telegram_user_id = ? AND revision = ?
+    `)
+    .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.telegramUserId, save.revision)
+    .run();
+}
+
 function bytesToHex(bytes: ArrayBuffer): string {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -185,7 +211,7 @@ function timingSafeEqualHex(left: string, right: string): boolean {
   return mismatch === 0;
 }
 
-function json(payload: unknown, status = 200): Response {
+export function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
