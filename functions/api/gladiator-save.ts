@@ -370,6 +370,10 @@ function timingSafeEqualHex(left: string, right: string): boolean {
   return mismatch === 0;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
