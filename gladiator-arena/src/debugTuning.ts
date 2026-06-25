@@ -11679,7 +11679,7 @@ export const defaultDebugTuning: ArenaDebugTuning = {
   facePreviewFocusY: 300,
   cityHeroX: 100,
   cityHeroY: 110,
-  cityHeroScale: 1,
+  cityHeroScale: 1.1,
   armoryBackgroundOffsetX: 0,
   armoryBackgroundOffsetY: 0,
   armoryBackgroundScale: 1,

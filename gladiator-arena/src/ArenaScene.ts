@@ -1322,6 +1322,87 @@ function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
   return getPlayerSettings().smoothRendering ? PHASER_SMOOTH_RENDER_CONFIG : PHASER_SHARP_RENDER_CONFIG;
 }
 
+const CITY_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
+const ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
+
+function getArenaPhaserDevicePixelRatio(): number {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+
+  const ratio = Number(window.devicePixelRatio);
+
+  if (!Number.isFinite(ratio) || ratio <= 1) {
+    return 1;
+  }
+
+  return Math.min(ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+}
+
+function getArenaPhaserGameSize(parent: HTMLElement | null): { width: number; height: number; pixelRatio: number } {
+  const pixelRatio = getArenaPhaserDevicePixelRatio();
+  const logicalWidth = Math.max(1, parent?.clientWidth || GAME_WIDTH);
+  const logicalHeight = Math.max(1, parent?.clientHeight || GAME_HEIGHT);
+
+  return {
+    width: Math.max(1, Math.round(logicalWidth * pixelRatio)),
+    height: Math.max(1, Math.round(logicalHeight * pixelRatio)),
+    pixelRatio,
+  };
+}
+
+function getArenaScenePixelRatio(scene: Phaser.Scene): number {
+  const rect = scene.game.canvas.getBoundingClientRect();
+  const ratio = scene.game.canvas.width / Math.max(1, rect.width);
+
+  if (!Number.isFinite(ratio) || ratio <= 1) {
+    return 1;
+  }
+
+  return Math.min(ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+}
+
+function getCityPhaserDevicePixelRatio(): number {
+  if (typeof window === "undefined") {
+    return 1;
+  }
+
+  const ratio = Number(window.devicePixelRatio);
+
+  if (!Number.isFinite(ratio) || ratio <= 1) {
+    return 1;
+  }
+
+  return Math.min(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+}
+
+function getCityPhaserGameSize(parent: HTMLElement): { width: number; height: number; pixelRatio: number } {
+  const pixelRatio = getCityPhaserDevicePixelRatio();
+  const logicalWidth = Math.max(1, parent.clientWidth || GAME_WIDTH);
+  const logicalHeight = Math.max(1, parent.clientHeight || GAME_HEIGHT);
+
+  return {
+    width: Math.max(1, Math.round(logicalWidth * pixelRatio)),
+    height: Math.max(1, Math.round(logicalHeight * pixelRatio)),
+    pixelRatio,
+  };
+}
+
+function scaleCityDomY(value: number | undefined, pixelRatio: number): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value * pixelRatio : undefined;
+}
+
+function getCityScenePixelRatio(scene: Phaser.Scene): number {
+  const rect = scene.game.canvas.getBoundingClientRect();
+  const ratio = scene.game.canvas.width / Math.max(1, rect.width);
+
+  if (!Number.isFinite(ratio) || ratio <= 1) {
+    return 1;
+  }
+
+  return Math.min(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO, ratio);
+}
+
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
   return gameObject as FighterPart;
 }
@@ -2381,7 +2462,7 @@ export class ArenaScene extends Phaser.Scene {
     const startTarget = getArenaEntryStartCameraTarget(finalTarget);
 
     killArenaTransformTweens(this, layers);
-    applyArenaTransform(layers, startTarget, debug);
+    applyArenaTransform(this, layers, startTarget, debug);
 
     return tweenArenaTransform(this, layers, finalTarget, ARENA_ENTRY_TRANSITION_DURATION_MS, ARENA_ENTRY_TRANSITION_EASE, debug)
       .then(() => {
@@ -2390,7 +2471,7 @@ export class ArenaScene extends Phaser.Scene {
         }
 
         const currentDebug = getActiveDebugTuning();
-        applyArenaTransform(layers, getCameraTarget(this.currentState, currentDebug, getArenaViewport(this)), currentDebug);
+        applyArenaTransform(this, layers, getCameraTarget(this.currentState, currentDebug, getArenaViewport(this)), currentDebug);
       })
       .finally(() => {
         this.arenaEntryTransitionState = "done";
@@ -2430,17 +2511,20 @@ export function launchArena(
   usePlayerAppearance(playerAppearance);
   readyCallback = onReady;
 
+  const parent = document.getElementById("game");
+  const arenaGameSize = getArenaPhaserGameSize(parent);
   const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
-    parent: "game",
-    width: GAME_WIDTH,
-    height: GAME_HEIGHT,
+    parent: parent ?? "game",
+    width: arenaGameSize.width,
+    height: arenaGameSize.height,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
     render: getPlayerPhaserRenderConfig(),
     scale: {
-      mode: Phaser.Scale.RESIZE,
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.NO_CENTER,
     },
     scene: ArenaScene,
   };
@@ -2459,6 +2543,7 @@ interface CityHeroLayout {
   feetX: number;
   feetY: number;
   scale: number;
+  logicalScale: number;
 }
 
 interface CityShopCameraViewport {
@@ -2628,7 +2713,7 @@ class CityHeroScene extends Phaser.Scene {
   setShopMenuTop(menuTopY?: number): void {
     const nextMenuTopY =
       typeof menuTopY === "number" && Number.isFinite(menuTopY)
-        ? clampNumber(menuTopY, CITY_CAMERA_SHOP_TOP_PADDING + 1, this.sceneHeight)
+        ? clampNumber(menuTopY, this.toScenePixels(CITY_CAMERA_SHOP_TOP_PADDING) + 1, this.sceneHeight)
         : undefined;
 
     if (this.shopMenuTopY === nextMenuTopY) {
@@ -3088,8 +3173,9 @@ class CityHeroScene extends Phaser.Scene {
       const viewport = this.getShopCameraViewport();
       const heroBounds = this.getShopHeroWorldBounds(layout);
       const shopZoom = this.getShopCameraZoom(heroBounds, viewport);
-      const targetX = layout.feetX + CITY_CAMERA_ARMORY_FOCUS_OFFSET_X * Math.max(0.7, layout.scale);
-      const heroCenterY = heroBounds.centerY - CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * Math.max(0.7, layout.scale);
+      const offsetScale = Math.max(0.7, layout.logicalScale);
+      const targetX = layout.feetX + this.toScenePixels(CITY_CAMERA_ARMORY_FOCUS_OFFSET_X * offsetScale);
+      const heroCenterY = heroBounds.centerY - this.toScenePixels(CITY_CAMERA_ARMORY_FOCUS_OFFSET_Y * offsetScale);
       const targetY = heroCenterY + (this.sceneHeight / 2 - viewport.centerY) / shopZoom;
 
       if (instant) {
@@ -3114,9 +3200,10 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   private getShopCameraViewport(): CityShopCameraViewport {
-    const topY = CITY_CAMERA_SHOP_TOP_PADDING;
+    const topY = this.toScenePixels(CITY_CAMERA_SHOP_TOP_PADDING);
     const menuTopY = this.shopMenuTopY ?? this.sceneHeight * CITY_CAMERA_SHOP_FALLBACK_MENU_TOP_RATIO;
-    const bottomY = clampNumber(menuTopY - CITY_CAMERA_SHOP_MENU_GAP, topY + 1, this.sceneHeight - CITY_CAMERA_SHOP_MENU_GAP);
+    const menuGap = this.toScenePixels(CITY_CAMERA_SHOP_MENU_GAP);
+    const bottomY = clampNumber(menuTopY - menuGap, topY + 1, this.sceneHeight - menuGap);
     const height = Math.max(1, bottomY - topY);
 
     return {
@@ -3199,18 +3286,39 @@ class CityHeroScene extends Phaser.Scene {
   }
 
   private getHeroLayout(liftProgress = this.cityHeroLiftProgress): CityHeroLayout {
-    const slotWidth = clampNumber(this.sceneWidth * CITY_HERO_SLOT_WIDTH_RATIO, CITY_HERO_SLOT_MIN_WIDTH, CITY_HERO_SLOT_MAX_WIDTH);
+    const pixelRatio = this.scenePixelRatio;
+    const logicalWidth = this.logicalSceneWidth;
+    const logicalHeight = this.logicalSceneHeight;
+    const slotWidth = clampNumber(logicalWidth * CITY_HERO_SLOT_WIDTH_RATIO, CITY_HERO_SLOT_MIN_WIDTH, CITY_HERO_SLOT_MAX_WIDTH);
     const slotScale = slotWidth / CITY_HERO_VIEWER_WIDTH;
     const slotHeight = CITY_HERO_VIEWER_HEIGHT * slotScale;
-    const slotBottom = Math.max(CITY_HERO_SLOT_BOTTOM, this.sceneHeight * 0.09);
-    const slotLeft = this.sceneWidth / 2 - slotWidth / 2;
-    const slotTop = this.sceneHeight - slotBottom - slotHeight;
+    const slotBottom = Math.max(CITY_HERO_SLOT_BOTTOM, logicalHeight * 0.09);
+    const slotLeft = logicalWidth / 2 - slotWidth / 2;
+    const slotTop = logicalHeight - slotBottom - slotHeight;
+    const logicalScale = debugTuning.cityHeroScale * slotScale * getCityPlayerBodyScaleMultiplier(liftProgress);
 
     return {
-      feetX: slotLeft + debugTuning.cityHeroX * slotScale,
-      feetY: slotTop + debugTuning.cityHeroY * slotScale - CITY_ARMORY_HERO_LIFT_Y * liftProgress,
-      scale: debugTuning.cityHeroScale * slotScale * getCityPlayerBodyScaleMultiplier(liftProgress),
+      feetX: (slotLeft + debugTuning.cityHeroX * slotScale) * pixelRatio,
+      feetY: (slotTop + debugTuning.cityHeroY * slotScale - CITY_ARMORY_HERO_LIFT_Y * liftProgress) * pixelRatio,
+      scale: logicalScale * pixelRatio,
+      logicalScale,
     };
+  }
+
+  private get scenePixelRatio(): number {
+    return getCityScenePixelRatio(this);
+  }
+
+  private get logicalSceneWidth(): number {
+    return this.sceneWidth / this.scenePixelRatio;
+  }
+
+  private get logicalSceneHeight(): number {
+    return this.sceneHeight / this.scenePixelRatio;
+  }
+
+  private toScenePixels(value: number): number {
+    return value * this.scenePixelRatio;
   }
 
   private get sceneWidth(): number {
@@ -3248,6 +3356,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   let scene: CityHeroScene | undefined;
   let pendingCameraMode: CityCameraMode = "default";
   let pendingShopMenuTopY: number | undefined;
+  const cityGameSize = getCityPhaserGameSize(parent);
   let resolveReady: () => void = () => undefined;
   let isReady = false;
   const ready = new Promise<void>((resolve) => {
@@ -3264,7 +3373,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
 
   const readyCallbackForGame = (readyScene: CityHeroScene) => {
     scene = readyScene;
-    readyScene.setShopMenuTop(pendingShopMenuTopY);
+    readyScene.setShopMenuTop(scaleCityDomY(pendingShopMenuTopY, cityGameSize.pixelRatio));
     resolveReadyOnce();
     if (pendingCameraMode === "armory") {
       readyScene.focusArmory();
@@ -3283,14 +3392,15 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: Math.max(1, parent.clientWidth || GAME_WIDTH),
-    height: Math.max(1, parent.clientHeight || GAME_HEIGHT),
+    width: cityGameSize.width,
+    height: cityGameSize.height,
     backgroundColor: "rgba(0, 0, 0, 0)",
     transparent: true,
     fps: getPlayerPhaserFpsConfig(),
     render: getPlayerPhaserRenderConfig(),
     scale: {
-      mode: Phaser.Scale.RESIZE,
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.NO_CENTER,
     },
     scene: CityHeroScene,
   });
@@ -3311,7 +3421,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     },
     setShopMenuTop: (menuTopY?: number) => {
       pendingShopMenuTopY = menuTopY;
-      scene?.setShopMenuTop(menuTopY);
+      scene?.setShopMenuTop(scaleCityDomY(menuTopY, cityGameSize.pixelRatio));
     },
     previewEquipment: (equipment: HeroEquipment) => {
       scene?.previewPlayerEquipment(equipment);
@@ -9464,11 +9574,11 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
   killArenaTransformTweens(target, layers);
 
   if (shouldSnap) {
-    applyArenaTransform(layers, cameraTarget, debug);
+    applyArenaTransform(target, layers, cameraTarget, debug);
     return;
   }
 
-  getArenaLayerTransforms(layers, cameraTarget, debug).forEach((transform) => {
+  getArenaLayerTransforms(layers, cameraTarget, debug, getArenaScenePixelRatio(target)).forEach((transform) => {
     target.tweens.add({
       targets: transform.layer,
       x: transform.x,
@@ -9521,7 +9631,7 @@ function tweenArenaTransform(
   ease: string,
   tuning?: ArenaDebugTuning,
 ): Promise<void> {
-  const transforms = getArenaLayerTransforms(layers, cameraTarget, tuning);
+  const transforms = getArenaLayerTransforms(layers, cameraTarget, tuning, getArenaScenePixelRatio(target));
 
   if (transforms.length <= 0) {
     setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId, layers.backgroundVariantId));
@@ -9595,8 +9705,8 @@ function tweenArenaTransform(
   });
 }
 
-function applyArenaTransform(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>, tuning?: ArenaDebugTuning): void {
-  getArenaLayerTransforms(layers, cameraTarget, tuning).forEach((transform) => {
+function applyArenaTransform(target: Phaser.Scene, layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>, tuning?: ArenaDebugTuning): void {
+  getArenaLayerTransforms(layers, cameraTarget, tuning, getArenaScenePixelRatio(target)).forEach((transform) => {
     transform.layer.setPosition(transform.x, transform.y);
     transform.layer.setScale(transform.scale);
     transform.alphaImage?.setAlpha(transform.alpha ?? transform.alphaImage.alpha);
@@ -9604,7 +9714,12 @@ function applyArenaTransform(layers: ArenaLayers, cameraTarget: ReturnType<typeo
   setArenaMidLayerShade(layers, getArenaMidLayerShade(cameraTarget, tuning, layers.backgroundTierId, layers.backgroundVariantId));
 }
 
-function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<typeof getCameraTarget>, tuning?: ArenaDebugTuning): ArenaLayerTransform[] {
+function getArenaLayerTransforms(
+  layers: ArenaLayers,
+  cameraTarget: ReturnType<typeof getCameraTarget>,
+  tuning?: ArenaDebugTuning,
+  renderPixelRatio = 1,
+): ArenaLayerTransform[] {
   const source = tuning ?? debugTuning;
   const tierId = getArenaBackgroundTuningTierId(layers.backgroundTierId);
   const variantId = layers.backgroundVariantId ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID;
@@ -9636,7 +9751,20 @@ function getArenaLayerTransforms(layers: ArenaLayers, cameraTarget: ReturnType<t
     ...backgroundTransforms,
     getArenaLayerTransform(layers.actors, cameraTarget, ARENA_LAYER_PARALLAX.actors, true),
     getArenaLayerTransform(layers.effects, cameraTarget, ARENA_LAYER_PARALLAX.effects, true),
-  ];
+  ].map((transform) => scaleArenaLayerTransformForRender(transform, renderPixelRatio));
+}
+
+function scaleArenaLayerTransformForRender(transform: ArenaLayerTransform, renderPixelRatio: number): ArenaLayerTransform {
+  if (!Number.isFinite(renderPixelRatio) || renderPixelRatio <= 1) {
+    return transform;
+  }
+
+  return {
+    ...transform,
+    x: transform.x * renderPixelRatio,
+    y: transform.y * renderPixelRatio,
+    scale: transform.scale * renderPixelRatio,
+  };
 }
 
 function getArenaBackgroundLayerTuningForTier(
@@ -9834,19 +9962,22 @@ function clamp01(value: number): number {
 }
 
 function syncArenaMainCamera(target: Phaser.Scene): void {
-  const viewport = getArenaViewport(target);
+  const pixelRatio = getArenaScenePixelRatio(target);
+  const width = Math.max(1, target.scale.width || GAME_WIDTH * pixelRatio);
+  const height = Math.max(1, target.scale.height || GAME_HEIGHT * pixelRatio);
 
-  target.cameras.main.setViewport(0, 0, viewport.width, viewport.height);
-  target.cameras.main.setBounds(0, 0, viewport.width, viewport.height);
+  target.cameras.main.setViewport(0, 0, width, height);
+  target.cameras.main.setBounds(0, 0, width, height);
   target.cameras.main.setScroll(0, 0);
   target.cameras.main.setZoom(1);
 }
 
 function getArenaViewport(target: Phaser.Scene): CameraViewport {
-  const height = Math.max(1, target.scale.height || GAME_HEIGHT);
+  const pixelRatio = getArenaScenePixelRatio(target);
+  const height = Math.max(1, (target.scale.height || GAME_HEIGHT * pixelRatio) / pixelRatio);
 
   return {
-    width: Math.max(1, target.scale.width || GAME_WIDTH),
+    width: Math.max(1, (target.scale.width || GAME_WIDTH * pixelRatio) / pixelRatio),
     height,
     safeBottom: getBattleSafeArea(undefined, height).bottom,
   };
