@@ -30,7 +30,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 2,
-    name: "Dust Arena II",
+    name: "Blackwood Road",
     unlockBossId: "dust_arena_champion",
     opponents: [
       {
@@ -58,7 +58,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 3,
-    name: "Aztec3",
+    name: "Mossgate Ruins",
     unlockBossId: "arena_boss_2",
     opponents: [
       {
@@ -86,7 +86,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 4,
-    name: "Dust Arena 4",
+    name: "Eaglewatch Highlands",
     unlockBossId: "arena_boss_3",
     opponents: [
       {
@@ -114,7 +114,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 5,
-    name: "Dust Arena 5",
+    name: "Blackgate Pit",
     unlockBossId: "arena_boss_4",
     opponents: [
       {
@@ -170,7 +170,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
   },
   {
     id: 7,
-    name: "Dust Arena 7",
+    name: "Greyfen Bog",
     unlockBossId: "arena_boss_6",
     opponents: [
       {

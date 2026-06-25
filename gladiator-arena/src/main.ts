@@ -979,7 +979,7 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement
   button.type = "button";
   button.disabled = isPvpRoomBlockingArena();
   button.title = button.disabled ? "Cancel PvP room before fighting bots." : "";
-  name.textContent = "Boss";
+  name.textContent = boss.name;
   rewardLine.className = "city-arena-menu__boss-reward-line";
   reward.className = "city-arena-menu__reward";
   syncCityArenaReward(reward, boss.rewards.win);

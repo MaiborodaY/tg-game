@@ -4,7 +4,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "dust_arena_champion",
     tierId: 1,
-    name: "Dust Arena Champion",
+    name: "Bront Oakhide",
     baseStats: {"strength":5,"agility":5,"vitality":5},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01","helmet":"generated_equipment_helmet_wood_boss_01","breastplate":"generated_equipment_breastplate_wood_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_wood_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_wood_boss_01","backWrist":"generated_equipment_back_wrist_wood_boss_01","frontWrist":"generated_equipment_front_wrist_wood_boss_01","backGlove":"generated_equipment_back_glove_wood_boss_01","frontGlove":"generated_equipment_front_glove_wood_boss_01","backGreave":"generated_equipment_back_greave_wood_boss_01","frontGreave":"generated_equipment_front_greave_wood_boss_01","backShinguard":"generated_equipment_back_shinguard_wood_boss_01","frontShinguard":"generated_equipment_front_shinguard_wood_boss_01","backBoot":"generated_equipment_back_boot_wood_boss_01","frontBoot":"generated_equipment_front_boot_wood_boss_01"},
     rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":0,"xp":0}},
@@ -23,7 +23,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_2",
     tierId: 2,
-    name: "Boar Boss",
+    name: "Garruk Blacktusk",
     baseStats: {"strength":7,"agility":14,"vitality":9},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_boar_mace","helmet":"generated_equipment_helmet_boar_boss_01","breastplate":"generated_equipment_breastplate_boar_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_boar_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_boar_boss_01","backWrist":"generated_equipment_back_wrist_boar_boss_01","frontWrist":"generated_equipment_front_wrist_boar_boss_01","backGlove":"generated_equipment_back_glove_boar_boss_01","frontGlove":"generated_equipment_front_glove_boar_boss_01","backGreave":"generated_equipment_back_greave_boar_boss_01","frontGreave":"generated_equipment_front_greave_boar_boss_01","backShinguard":"generated_equipment_back_shinguard_boar_boss_01","frontShinguard":"generated_equipment_front_shinguard_boar_boss_01","backBoot":"generated_equipment_back_boot_boar_boss_01","frontBoot":"generated_equipment_front_boot_boar_boss_01"},
     rewards: {"win":{"gold":27,"xp":27},"loss":{"gold":0,"xp":0}},
@@ -42,7 +42,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_3",
     tierId: 3,
-    name: "Arena Boss 3",
+    name: "Brakk Stoneback",
     baseStats: {"strength":8,"agility":0,"vitality":37},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_turtle_weapon","helmet":"generated_equipment_helmet_turtle_boss_01","breastplate":"generated_equipment_breastplate_turtle_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_turtle_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_turtle_boss_01","backWrist":"generated_equipment_back_wrist_turtle_boss_01","frontWrist":"generated_equipment_front_wrist_turtle_boss_01","backGlove":"generated_equipment_back_glove_turtle_boss_01","frontGlove":"generated_equipment_front_glove_turtle_boss_01","shield":"generated_equipment_shield_turtle_boss","backGreave":"generated_equipment_back_greave_turtle_boss_01","frontGreave":"generated_equipment_front_greave_turtle_boss_01","backShinguard":"generated_equipment_back_shinguard_turtle_boss_01","frontShinguard":"generated_equipment_front_shinguard_turtle_boss_01","backBoot":"generated_equipment_back_boot_turtle_boss_01","frontBoot":"generated_equipment_front_boot_turtle_boss_01"},
     rewards: {"win":{"gold":41,"xp":41},"loss":{"gold":1,"xp":2}},
@@ -62,7 +62,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_4",
     tierId: 4,
-    name: "Eagle",
+    name: "Aurelian Skybreaker",
     baseStats: {"strength":7,"agility":35,"vitality":18},
     equipment: {"weaponMain":"generated_equipment_weapon_spear_eagle_glaive","helmet":"generated_equipment_helmet_eagle_boss_01","breastplate":"generated_equipment_breastplate_eagle_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_eagle_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_eagle_boss_01","backWrist":"generated_equipment_back_wrist_eagle_boss_01","frontWrist":"generated_equipment_front_wrist_eagle_boss_01","backGlove":"generated_equipment_back_glove_eagle_boss_01","frontGlove":"generated_equipment_front_glove_eagle_boss_01","backGreave":"generated_equipment_back_greave_eagle_boss_01","frontGreave":"generated_equipment_front_greave_eagle_boss_01","backShinguard":"generated_equipment_back_shinguard_eagle_boss_01","frontShinguard":"generated_equipment_front_shinguard_eagle_boss_01","backBoot":"generated_equipment_back_boot_eagle_boss_01","frontBoot":"generated_equipment_front_boot_eagle_boss_01"},
     rewards: {"win":{"gold":58,"xp":58},"loss":{"gold":1,"xp":2}},
@@ -81,7 +81,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_5",
     tierId: 5,
-    name: "Prisoner",
+    name: "Rorik Chainborn",
     baseStats: {"strength":27,"agility":14,"vitality":34},
     equipment: {"weaponMain":"generated_equipment_weapon_axe_prisoner_axe","helmet":"generated_equipment_helmet_prisoner_01","breastplate":"generated_equipment_breastplate_prisoner_01","backShoulderguard":"generated_equipment_back_shoulderguard_prisoner_01","frontShoulderguard":"generated_equipment_front_shoulderguard_prisoner_01","backWrist":"generated_equipment_back_wrist_prisoner_01","frontWrist":"generated_equipment_front_wrist_prisoner_01","backGlove":"generated_equipment_back_glove_prisoner_01","frontGlove":"generated_equipment_front_glove_prisoner_01","backGreave":"generated_equipment_back_greave_prisoner_01","frontGreave":"generated_equipment_front_greave_prisoner_01","backShinguard":"generated_equipment_back_shinguard_prisoner_01","frontShinguard":"generated_equipment_front_shinguard_prisoner_01","backBoot":"generated_equipment_back_boot_prisoner_01","frontBoot":"generated_equipment_front_boot_prisoner_01"},
     rewards: {"win":{"gold":79,"xp":79},"loss":{"gold":1,"xp":2}},
@@ -120,7 +120,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_7",
     tierId: 7,
-    name: "Swamp Knight",
+    name: "Orphan Rothelm",
     baseStats: {"strength":32,"agility":23,"vitality":50},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_swamp_sword","helmet":"generated_equipment_helmet_swamp_boss_01","breastplate":"generated_equipment_breastplate_swamp_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_swamp_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_swamp_boss_01","backWrist":"generated_equipment_back_wrist_swamp_boss_01","frontWrist":"generated_equipment_front_wrist_swamp_boss_01","backGlove":"generated_equipment_back_glove_swamp_boss_01","frontGlove":"generated_equipment_front_glove_swamp_boss_01","backGreave":"generated_equipment_back_greave_swamp_boss_01","frontGreave":"generated_equipment_front_greave_swamp_boss_01","backShinguard":"generated_equipment_back_shinguard_swamp_boss_01","frontShinguard":"generated_equipment_front_shinguard_swamp_boss_01","backBoot":"generated_equipment_back_boot_swamp_boss_01","frontBoot":"generated_equipment_front_boot_swamp_boss_01"},
     rewards: {"win":{"gold":134,"xp":134},"loss":{"gold":1,"xp":2}},
@@ -139,7 +139,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_8",
     tierId: 8,
-    name: "Frost King",
+    name: "Aldric Winterborn",
     baseStats: {"strength":43,"agility":22,"vitality":55},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_frost_king_sword","helmet":"generated_equipment_helmet_frost_king_01","breastplate":"generated_equipment_breastplate_frost_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_frost_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_frost_king_01","backWrist":"generated_equipment_back_wrist_frost_king_01","frontWrist":"generated_equipment_front_wrist_frost_king_01","backGlove":"generated_equipment_back_glove_frost_king_01","frontGlove":"generated_equipment_front_glove_frost_king_01","backGreave":"generated_equipment_back_greave_frost_king_01","frontGreave":"generated_equipment_front_greave_frost_king_01","backShinguard":"generated_equipment_back_shinguard_frost_king_01","frontShinguard":"generated_equipment_front_shinguard_frost_king_01","backBoot":"generated_equipment_back_boot_frost_king_01","frontBoot":"generated_equipment_front_boot_frost_king_01"},
     rewards: {"win":{"gold":170,"xp":170},"loss":{"gold":1,"xp":2}},
@@ -158,7 +158,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_9",
     tierId: 9,
-    name: "Grave King",
+    name: "Morvane Gravebound",
     baseStats: {"strength":49,"agility":28,"vitality":58},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_grave_king_greatsword","helmet":"generated_equipment_helmet_grave_king_01","breastplate":"generated_equipment_breastplate_grave_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_grave_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_grave_king_01","backWrist":"generated_equipment_back_wrist_grave_king_01","frontWrist":"generated_equipment_front_wrist_grave_king_01","backGlove":"generated_equipment_back_glove_grave_king_01","frontGlove":"generated_equipment_front_glove_grave_king_01","backGreave":"generated_equipment_back_greave_grave_king_01","frontGreave":"generated_equipment_front_greave_grave_king_01","backShinguard":"generated_equipment_back_shinguard_grave_king_01","frontShinguard":"generated_equipment_front_shinguard_grave_king_01","backBoot":"generated_equipment_back_boot_grave_king_01","frontBoot":"generated_equipment_front_boot_grave_king_01"},
     rewards: {"win":{"gold":213,"xp":213},"loss":{"gold":1,"xp":2}},
@@ -177,7 +177,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
   {
     id: "arena_boss_10",
     tierId: 10,
-    name: "Void King",
+    name: "Asterion Black Sun",
     baseStats: {"strength":60,"agility":30,"vitality":60},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_void_sword","helmet":"generated_equipment_helmet_void_king_01","breastplate":"generated_equipment_breastplate_void_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_void_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_void_king_01","backWrist":"generated_equipment_back_wrist_void_king_01","frontWrist":"generated_equipment_front_wrist_void_king_01","backGlove":"generated_equipment_back_glove_void_king_01","frontGlove":"generated_equipment_front_glove_void_king_01","backGreave":"generated_equipment_back_greave_void_king_01","frontGreave":"generated_equipment_front_greave_void_king_01","backShinguard":"generated_equipment_back_shinguard_void_king_01","frontShinguard":"generated_equipment_front_shinguard_void_king_01","backBoot":"generated_equipment_back_boot_void_king_01","frontBoot":"generated_equipment_front_boot_void_king_01"},
     rewards: {"win":{"gold":265,"xp":265},"loss":{"gold":1,"xp":2}},

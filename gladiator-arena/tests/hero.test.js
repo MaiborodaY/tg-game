@@ -883,7 +883,7 @@ test("arena opponent model defines random opponents and boss hooks", () => {
   assert.equal(hardOpponents[0].rewards.win.xp, 10);
   assert.equal(hardOpponents[0].rewards.loss.gold, 1);
   assert.equal(hardOpponents[0].rewards.loss.xp, 1);
-  assert.equal(tierTwo.name, "Dust Arena II");
+  assert.equal(tierTwo.name, "Blackwood Road");
   assert.equal(tierTwo.unlockBossId, "dust_arena_champion");
   assert.equal(tierTwo.randomOpponentIds.length, 3);
   assert.equal(tierTwoEasyOpponents[0].rewards.win.gold, 15);
@@ -983,7 +983,7 @@ test("arena encounters can create combat states from random opponents and bosses
 
   assert.equal(bossEncounter.kind, "boss");
   assert.equal(bossState.encounter?.id, "boss:dust_arena_champion");
-  assert.equal(bossState.enemy.name, "Dust Arena Champion");
+  assert.equal(bossState.enemy.name, "Bront Oakhide");
   assert.equal(bossState.enemy.equipment?.helmet, "generated_equipment_helmet_wood_boss_01");
   assert.equal(bossState.enemy.equipment?.weaponMain, "generated_equipment_weapon_mace_wood_boss_01");
   assert.equal(bossState.enemy.armor, 20);
