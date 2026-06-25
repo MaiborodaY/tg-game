@@ -203,9 +203,9 @@ export const AXE_BLOCK_CHANCE_PENALTY: Partial<Record<ActionId, number>> = {
 };
 export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 2;
 const AXE_MELEE_DAMAGE_MULTIPLIER: Partial<Record<ActionId, number>> = {
-  light: 1.5,
-  medium: 2,
-  heavy: 3,
+  light: 1,
+  medium: 1.5,
+  heavy: 2,
 };
 export const MELEE_ACTION_FLAT_DAMAGE_BONUS: Partial<Record<ActionId, number>> = {
   light: 0,
@@ -217,7 +217,7 @@ const SWORD_BLOCK_CHANCE_REDUCTION: Partial<Record<ActionId, number>> = {
   medium: 0.2,
   heavy: 0.25,
 };
-const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.5;
+const MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER = 1.25;
 export const SPEAR_CLINCH_RANGE_BONUS = 0.4;
 export const SPEAR_LUNGE_MOVE_BONUS = 0.3;
 export const SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION = 0.30;

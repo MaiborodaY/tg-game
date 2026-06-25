@@ -182,6 +182,7 @@ export type HeroWeaponEnchantment = HeroWeaponSharpening;
 export type HeroWeaponEnchantments = HeroWeaponSharpenings;
 
 export const HERO_ITEM_RARITIES: readonly HeroItemRarity[] = ["common", "uncommon", "rare", "epic", "legendary", "mythical", "unique"];
+export const HERO_WEAPON_SHARPENING_ENABLED = false;
 export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
@@ -418,13 +419,13 @@ export const HERO_XP_TO_NEXT_LEVEL_BY_LEVEL: readonly number[] = [
   229,
 ];
 export const DEFAULT_HERO_XP_TO_NEXT_LEVEL = HERO_XP_TO_NEXT_LEVEL_BY_LEVEL[0]!;
-export const HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS = 0.05;
+export const HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS = 0.025;
 export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.005;
 export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.005;
 export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
 export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.015;
-export const HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS = 0.05;
-export const HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS = 0.05;
+export const HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS = 0.025;
+export const HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS = 0.025;
 export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
@@ -1100,6 +1101,10 @@ export function areHeroItemsEquipped(hero: HeroState, itemIds: readonly HeroItem
 }
 
 export function getActiveSharpenableHeroWeaponItemId(hero: HeroState): HeroItemId | undefined {
+  if (!HERO_WEAPON_SHARPENING_ENABLED) {
+    return undefined;
+  }
+
   const itemId = hero.equipment.weaponMain;
   const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
   const weaponClass = getHeroItemWeaponClass(item);
@@ -1126,6 +1131,10 @@ export function getHeroWeaponSharpening(
 }
 
 export function getHeroWeaponSharpeningLevel(sharpenings: HeroWeaponSharpenings | undefined, itemId: HeroItemId | null | undefined): number {
+  if (!HERO_WEAPON_SHARPENING_ENABLED) {
+    return 0;
+  }
+
   return Math.max(0, Math.min(HERO_WEAPON_SHARPENING_MAX_LEVEL, Math.floor(getHeroWeaponSharpening(sharpenings, itemId)?.level ?? 0)));
 }
 
@@ -1134,6 +1143,10 @@ export function getHeroWeaponSharpeningDamageBonus(sharpenings: HeroWeaponSharpe
 }
 
 export function getHeroActiveWeaponSharpeningPrice(hero: HeroState): number | undefined {
+  if (!HERO_WEAPON_SHARPENING_ENABLED) {
+    return undefined;
+  }
+
   const itemId = getActiveSharpenableHeroWeaponItemId(hero);
   const itemPrice = getHeroWeaponProductPrice(itemId);
 
@@ -1159,12 +1172,21 @@ function getHeroWeaponProductPrice(itemId: HeroItemId | null | undefined): numbe
 }
 
 export function canSharpenHeroActiveWeapon(hero: HeroState): boolean {
+  if (!HERO_WEAPON_SHARPENING_ENABLED) {
+    return false;
+  }
+
   const price = getHeroActiveWeaponSharpeningPrice(hero);
 
   return price !== undefined && hero.gold >= price;
 }
 
 export function sharpenHeroActiveWeapon(hero: HeroState, now = new Date().toISOString()): HeroState {
+  if (!HERO_WEAPON_SHARPENING_ENABLED) {
+    void now;
+    return hero;
+  }
+
   const itemId = getActiveSharpenableHeroWeaponItemId(hero);
   const price = getHeroActiveWeaponSharpeningPrice(hero);
 

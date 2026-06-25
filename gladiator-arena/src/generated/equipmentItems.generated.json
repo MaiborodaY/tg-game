@@ -14209,7 +14209,7 @@
     "name": "Epic Axe 05",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 45,
+    "damageBonus": 19,
     "weaponClass": "axe",
     "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
@@ -14238,7 +14238,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_01",
       "name": "Epic Axe 05",
-      "price": 450,
+      "price": 675,
       "itemIds": [
         "generated_equipment_weapon_axe_01"
       ],
@@ -14250,7 +14250,7 @@
     "name": "Rare Axe 03",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 21,
+    "damageBonus": 12,
     "weaponClass": "axe",
     "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
@@ -14279,7 +14279,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_1",
       "name": "Rare Axe 03",
-      "price": 189,
+      "price": 284,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_1"
       ],
@@ -14291,7 +14291,7 @@
     "name": "Epic Axe 01",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 25,
+    "damageBonus": 14,
     "weaponClass": "axe",
     "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
@@ -14320,7 +14320,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_3",
       "name": "Epic Axe 01",
-      "price": 250,
+      "price": 375,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_3"
       ],
@@ -14332,7 +14332,7 @@
     "name": "Epic Axe 02",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 29,
+    "damageBonus": 15,
     "weaponClass": "axe",
     "levelRequirement": 50,
     "equipmentSlot": "weaponMain",
@@ -14361,7 +14361,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_4",
       "name": "Epic Axe 02",
-      "price": 290,
+      "price": 435,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_4"
       ],
@@ -14373,7 +14373,7 @@
     "name": "Epic Axe 03",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 33,
+    "damageBonus": 16,
     "weaponClass": "axe",
     "levelRequirement": 55,
     "equipmentSlot": "weaponMain",
@@ -14402,7 +14402,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_5",
       "name": "Epic Axe 03",
-      "price": 330,
+      "price": 495,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_5"
       ],
@@ -14414,7 +14414,7 @@
     "name": "Epic Axe 06",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 37,
+    "damageBonus": 17,
     "weaponClass": "axe",
     "levelRequirement": 57,
     "equipmentSlot": "weaponMain",
@@ -14443,7 +14443,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_6",
       "name": "Epic Axe 06",
-      "price": 370,
+      "price": 555,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_6"
       ],
@@ -14455,7 +14455,7 @@
     "name": "Epic Axe 07",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 41,
+    "damageBonus": 18,
     "weaponClass": "axe",
     "levelRequirement": 58,
     "equipmentSlot": "weaponMain",
@@ -14484,7 +14484,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_7",
       "name": "Epic Axe 07",
-      "price": 410,
+      "price": 615,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_7"
       ],
@@ -14496,7 +14496,7 @@
     "name": "Epic Axe 04",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 40,
+    "damageBonus": 19,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -14527,7 +14527,7 @@
     "name": "Legendary Axe 01",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 50,
+    "damageBonus": 21,
     "weaponClass": "axe",
     "levelRequirement": 70,
     "equipmentSlot": "weaponMain",
@@ -14556,7 +14556,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_legendary_axe_01",
       "name": "Legendary Axe 01",
-      "price": 550,
+      "price": 825,
       "itemIds": [
         "generated_equipment_weapon_axe_legendary_axe_01"
       ],
@@ -14568,7 +14568,7 @@
     "name": "Legendary Axe 02",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 55,
+    "damageBonus": 22,
     "weaponClass": "axe",
     "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
@@ -14597,11 +14597,73 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_legendary_axe_02",
       "name": "Legendary Axe 02",
-      "price": 605,
+      "price": 908,
       "itemIds": [
         "generated_equipment_weapon_axe_legendary_axe_02"
       ],
       "categoryId": "axes"
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_mythical_axe_01",
+    "name": "Mythical Axe 01",
+    "kind": "weapon",
+    "rarity": "mythical",
+    "damageBonus": 26,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-mythical-axe-01"
+    },
+    "equipmentTuning": {
+      "x": -21,
+      "y": 83,
+      "angle": 90,
+      "scaleX": 2,
+      "scaleY": 2,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-mythical-axe-01",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-mythical-axe-01.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-mythical-axe-01.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_axe_mythical_axe_02",
+    "name": "Mythical Axe 02",
+    "kind": "weapon",
+    "rarity": "mythical",
+    "damageBonus": 27,
+    "weaponClass": "axe",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-axe-mythical-axe-02"
+    },
+    "equipmentTuning": {
+      "x": -58,
+      "y": 55,
+      "angle": 101,
+      "scaleX": 2,
+      "scaleY": 2.5,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-axe-mythical-axe-02",
+      "sourcePath": "assets/fighters/weapons/weapon-axe-mythical-axe-02.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-axe-mythical-axe-02.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": true,
+      "bossUnique": false
     }
   },
   {
@@ -14681,7 +14743,7 @@
     "name": "Rare Axe 01",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 15,
+    "damageBonus": 10,
     "weaponClass": "axe",
     "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
@@ -14710,7 +14772,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_rare_axe_1",
       "name": "Rare Axe 01",
-      "price": 135,
+      "price": 203,
       "itemIds": [
         "generated_equipment_weapon_axe_rare_axe_1"
       ],
@@ -14722,7 +14784,7 @@
     "name": "Rare Axe 02",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 18,
+    "damageBonus": 11,
     "weaponClass": "axe",
     "levelRequirement": 35,
     "equipmentSlot": "weaponMain",
@@ -14751,7 +14813,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_rare_axe_2",
       "name": "Rare Axe 02",
-      "price": 162,
+      "price": 243,
       "itemIds": [
         "generated_equipment_weapon_axe_rare_axe_2"
       ],
@@ -14874,7 +14936,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_uncommon_axe_1",
       "name": "Uncommon Axe 01",
-      "price": 48,
+      "price": 72,
       "itemIds": [
         "generated_equipment_weapon_axe_uncommon_axe_1"
       ],
@@ -14886,7 +14948,7 @@
     "name": "Uncommon Axe 02",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 8,
+    "damageBonus": 7,
     "weaponClass": "axe",
     "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
@@ -14915,7 +14977,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_uncommon_axe_2",
       "name": "Uncommon Axe 02",
-      "price": 64,
+      "price": 96,
       "itemIds": [
         "generated_equipment_weapon_axe_uncommon_axe_2"
       ],
@@ -14927,7 +14989,7 @@
     "name": "Uncommon Axe 03",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 10,
+    "damageBonus": 8,
     "weaponClass": "axe",
     "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
@@ -14956,7 +15018,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_uncommon_axe_3",
       "name": "Uncommon Axe 03",
-      "price": 80,
+      "price": 120,
       "itemIds": [
         "generated_equipment_weapon_axe_uncommon_axe_3"
       ],
@@ -14968,7 +15030,7 @@
     "name": "Uncommon Axe 04",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 13,
+    "damageBonus": 9,
     "weaponClass": "axe",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -15116,7 +15178,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_epic_bow_1",
       "name": "Epic bow 1",
-      "price": 0,
+      "price": 1600,
       "itemIds": [
         "generated_equipment_weapon_bow_epic_bow_1"
       ],
@@ -15159,7 +15221,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_epic_bow_2",
       "name": "Epic bow 2",
-      "price": 0,
+      "price": 2200,
       "itemIds": [
         "generated_equipment_weapon_bow_epic_bow_2"
       ],
@@ -15202,7 +15264,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_legendary_bow_1",
       "name": "Legendary bow 1",
-      "price": 0,
+      "price": 3000,
       "itemIds": [
         "generated_equipment_weapon_bow_legendary_bow_1"
       ],
@@ -15245,7 +15307,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_legendary_bow_2",
       "name": "Legendary bow 2",
-      "price": 0,
+      "price": 4000,
       "itemIds": [
         "generated_equipment_weapon_bow_legendary_bow_2"
       ],
@@ -15356,7 +15418,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_rare_bow_1",
       "name": "Rare bow 1",
-      "price": 0,
+      "price": 800,
       "itemIds": [
         "generated_equipment_weapon_bow_rare_bow_1"
       ],
@@ -15399,7 +15461,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_rare_bow_2",
       "name": "Rare bow 2",
-      "price": 0,
+      "price": 1100,
       "itemIds": [
         "generated_equipment_weapon_bow_rare_bow_2"
       ],
@@ -15442,7 +15504,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_uncommon_bow_1",
       "name": "Uncommon bow 1",
-      "price": 0,
+      "price": 300,
       "itemIds": [
         "generated_equipment_weapon_bow_uncommon_bow_1"
       ],
@@ -15485,7 +15547,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_uncommon_bow_2",
       "name": "Uncommon bow 2",
-      "price": 0,
+      "price": 500,
       "itemIds": [
         "generated_equipment_weapon_bow_uncommon_bow_2"
       ],
@@ -15610,7 +15672,7 @@
     "name": "Epic Mace 01",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 18,
+    "damageBonus": 21,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -15641,7 +15703,7 @@
     "name": "Epic Mace 02",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 20,
+    "damageBonus": 13,
     "weaponClass": "mace",
     "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
@@ -15670,7 +15732,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_1",
       "name": "Epic Mace 02",
-      "price": 220,
+      "price": 330,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_1"
       ],
@@ -15682,7 +15744,7 @@
     "name": "Epic Mace 03",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 22,
+    "damageBonus": 14,
     "weaponClass": "mace",
     "levelRequirement": 50,
     "equipmentSlot": "weaponMain",
@@ -15711,7 +15773,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_2",
       "name": "Epic Mace 03",
-      "price": 242,
+      "price": 363,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_2"
       ],
@@ -15723,7 +15785,7 @@
     "name": "Epic Mace 04",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 24,
+    "damageBonus": 15,
     "weaponClass": "mace",
     "levelRequirement": 55,
     "equipmentSlot": "weaponMain",
@@ -15752,7 +15814,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_3",
       "name": "Epic Mace 04",
-      "price": 264,
+      "price": 396,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_3"
       ],
@@ -15764,7 +15826,7 @@
     "name": "Epic Mace 05",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 27,
+    "damageBonus": 16,
     "weaponClass": "mace",
     "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
@@ -15793,7 +15855,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_4",
       "name": "Epic Mace 05",
-      "price": 297,
+      "price": 446,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_4"
       ],
@@ -15805,7 +15867,7 @@
     "name": "Epic Mace 06",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 29,
+    "damageBonus": 17,
     "weaponClass": "mace",
     "levelRequirement": 65,
     "equipmentSlot": "weaponMain",
@@ -15834,7 +15896,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_5",
       "name": "Epic Mace 06",
-      "price": 319,
+      "price": 479,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_5"
       ],
@@ -15846,7 +15908,7 @@
     "name": "Epic Mace 07",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 31,
+    "damageBonus": 18,
     "weaponClass": "mace",
     "levelRequirement": 70,
     "equipmentSlot": "weaponMain",
@@ -15875,7 +15937,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_6",
       "name": "Epic Mace 07",
-      "price": 341,
+      "price": 512,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_6"
       ],
@@ -15887,7 +15949,7 @@
     "name": "Legendary Mace 02",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 38,
+    "damageBonus": 21,
     "weaponClass": "mace",
     "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
@@ -15916,7 +15978,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_legendary_mace_02",
       "name": "Legendary Mace 02",
-      "price": 456,
+      "price": 684,
       "itemIds": [
         "generated_equipment_weapon_mace_legendary_mace_02"
       ],
@@ -15928,7 +15990,7 @@
     "name": "Legendary Mace 01",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 34,
+    "damageBonus": 20,
     "weaponClass": "mace",
     "levelRequirement": 70,
     "equipmentSlot": "weaponMain",
@@ -15957,7 +16019,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_lg_mace_1",
       "name": "Legendary Mace 01",
-      "price": 408,
+      "price": 612,
       "itemIds": [
         "generated_equipment_weapon_mace_lg_mace_1"
       ],
@@ -15969,7 +16031,7 @@
     "name": "Uncommon Mace 01",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 4,
+    "damageBonus": 5,
     "weaponClass": "mace",
     "levelRequirement": 15,
     "equipmentSlot": "weaponMain",
@@ -15998,7 +16060,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_mace",
       "name": "Uncommon Mace 01",
-      "price": 36,
+      "price": 54,
       "itemIds": [
         "generated_equipment_weapon_mace_mace"
       ],
@@ -16010,7 +16072,7 @@
     "name": "Uncommon Mace 02",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 5,
+    "damageBonus": 6,
     "weaponClass": "mace",
     "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
@@ -16039,7 +16101,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_mace1",
       "name": "Uncommon Mace 02",
-      "price": 45,
+      "price": 68,
       "itemIds": [
         "generated_equipment_weapon_mace_mace1"
       ],
@@ -16051,7 +16113,7 @@
     "name": "Mythical Mace 01",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 42,
+    "damageBonus": 35,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16082,7 +16144,7 @@
     "name": "Mythical Mace 02",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 46,
+    "damageBonus": 36,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16113,7 +16175,7 @@
     "name": "Rare Mace 01",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 11,
+    "damageBonus": 9,
     "weaponClass": "mace",
     "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
@@ -16142,7 +16204,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_rare_mace_1",
       "name": "Rare Mace 01",
-      "price": 110,
+      "price": 165,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_1"
       ],
@@ -16154,7 +16216,7 @@
     "name": "Rare Mace 02",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 13,
+    "damageBonus": 10,
     "weaponClass": "mace",
     "levelRequirement": 35,
     "equipmentSlot": "weaponMain",
@@ -16183,7 +16245,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_rare_mace_2",
       "name": "Rare Mace 02",
-      "price": 130,
+      "price": 195,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_2"
       ],
@@ -16195,7 +16257,7 @@
     "name": "Rare Mace 03",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 15,
+    "damageBonus": 11,
     "weaponClass": "mace",
     "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
@@ -16224,7 +16286,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_rare_mace_3",
       "name": "Rare Mace 03",
-      "price": 150,
+      "price": 225,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_3"
       ],
@@ -16308,7 +16370,7 @@
     "name": "Uncommon Mace 03",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 6,
+    "damageBonus": 8,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16368,7 +16430,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_uncommon_mace_4",
       "name": "Uncommon Mace 04",
-      "price": 63,
+      "price": 95,
       "itemIds": [
         "generated_equipment_weapon_mace_uncommon_mace_4"
       ],
@@ -16380,7 +16442,7 @@
     "name": "Uncommon Mace 05",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 8,
+    "damageBonus": 10,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -16411,7 +16473,7 @@
     "name": "Uncommon Mace 06",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 9,
+    "damageBonus": 11,
     "weaponClass": "mace",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17005,7 +17067,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear",
       "name": "Epic Spear 01",
-      "price": 120,
+      "price": 180,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear"
       ],
@@ -17046,7 +17108,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_1",
       "name": "Epic Spear 02",
-      "price": 132,
+      "price": 198,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_1"
       ],
@@ -17118,7 +17180,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_4",
       "name": "Epic Spear 04",
-      "price": 156,
+      "price": 234,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_4"
       ],
@@ -17159,7 +17221,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_5",
       "name": "Epic Spear 05",
-      "price": 180,
+      "price": 270,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_5"
       ],
@@ -17200,7 +17262,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_6",
       "name": "Epic Spear 06",
-      "price": 204,
+      "price": 306,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_6"
       ],
@@ -17241,7 +17303,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_7",
       "name": "Epic Spear 07",
-      "price": 216,
+      "price": 324,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_7"
       ],
@@ -17282,7 +17344,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_legendary_spear_02",
       "name": "Legendary Spear 02",
-      "price": 273,
+      "price": 410,
       "itemIds": [
         "generated_equipment_weapon_spear_legendary_spear_02"
       ],
@@ -17323,7 +17385,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_lg_spear_1",
       "name": "Legendary Spear 01",
-      "price": 247,
+      "price": 371,
       "itemIds": [
         "generated_equipment_weapon_spear_lg_spear_1"
       ],
@@ -17426,7 +17488,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_rare_spear",
       "name": "Rare Spear 01",
-      "price": 77,
+      "price": 116,
       "itemIds": [
         "generated_equipment_weapon_spear_rare_spear"
       ],
@@ -17467,7 +17529,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_rare_spear_1",
       "name": "Rare Spear 02",
-      "price": 88,
+      "price": 132,
       "itemIds": [
         "generated_equipment_weapon_spear_rare_spear_1"
       ],
@@ -17479,7 +17541,7 @@
     "name": "Epic Sword 01",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 24,
+    "damageBonus": 13,
     "weaponClass": "sword",
     "levelRequirement": 45,
     "equipmentSlot": "weaponMain",
@@ -17508,7 +17570,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_1",
       "name": "Epic Sword 01",
-      "price": 216,
+      "price": 324,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_1"
       ],
@@ -17520,7 +17582,7 @@
     "name": "Epic Sword 09",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 39,
+    "damageBonus": 29,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17551,7 +17613,7 @@
     "name": "Epic Sword 10",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 44,
+    "damageBonus": 30,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17582,7 +17644,7 @@
     "name": "Epic Sword 02",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 25,
+    "damageBonus": 22,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17613,7 +17675,7 @@
     "name": "Epic Sword 03",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 26,
+    "damageBonus": 14,
     "weaponClass": "sword",
     "levelRequirement": 48,
     "equipmentSlot": "weaponMain",
@@ -17642,7 +17704,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_3",
       "name": "Epic Sword 03",
-      "price": 234,
+      "price": 351,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_3"
       ],
@@ -17654,7 +17716,7 @@
     "name": "Epic Sword 04",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 27,
+    "damageBonus": 15,
     "weaponClass": "sword",
     "levelRequirement": 51,
     "equipmentSlot": "weaponMain",
@@ -17683,7 +17745,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_4",
       "name": "Epic Sword 04",
-      "price": 243,
+      "price": 365,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_4"
       ],
@@ -17695,7 +17757,7 @@
     "name": "Epic Sword 05",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 28,
+    "damageBonus": 25,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -17726,7 +17788,7 @@
     "name": "Epic Sword 06",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 29,
+    "damageBonus": 16,
     "weaponClass": "sword",
     "levelRequirement": 54,
     "equipmentSlot": "weaponMain",
@@ -17755,7 +17817,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_7",
       "name": "Epic Sword 06",
-      "price": 261,
+      "price": 392,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_7"
       ],
@@ -17767,7 +17829,7 @@
     "name": "Epic Sword 07",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 30,
+    "damageBonus": 17,
     "weaponClass": "sword",
     "levelRequirement": 57,
     "equipmentSlot": "weaponMain",
@@ -17796,7 +17858,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_8",
       "name": "Epic Sword 07",
-      "price": 270,
+      "price": 405,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_8"
       ],
@@ -17808,7 +17870,7 @@
     "name": "Epic Sword 08",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 32,
+    "damageBonus": 18,
     "weaponClass": "sword",
     "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
@@ -17837,7 +17899,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_9",
       "name": "Epic Sword 08",
-      "price": 288,
+      "price": 432,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_9"
       ],
@@ -17942,7 +18004,7 @@
     "name": "Legendary Sword 01",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 44,
+    "damageBonus": 20,
     "weaponClass": "sword",
     "levelRequirement": 70,
     "equipmentSlot": "weaponMain",
@@ -17971,7 +18033,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_lg_sword_1",
       "name": "Legendary Sword 01",
-      "price": 440,
+      "price": 660,
       "itemIds": [
         "generated_equipment_weapon_sword_lg_sword_1"
       ],
@@ -17983,7 +18045,7 @@
     "name": "Legendary Sword 02",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 49,
+    "damageBonus": 21,
     "weaponClass": "sword",
     "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
@@ -18012,7 +18074,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_lg_sword_2",
       "name": "Legendary Sword 02",
-      "price": 490,
+      "price": 735,
       "itemIds": [
         "generated_equipment_weapon_sword_lg_sword_2"
       ],
@@ -18024,7 +18086,7 @@
     "name": "Mythical Sword 01",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 56,
+    "damageBonus": 35,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18055,7 +18117,7 @@
     "name": "Mythical Sword 02",
     "kind": "weapon",
     "rarity": "mythical",
-    "damageBonus": 62,
+    "damageBonus": 36,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18086,7 +18148,7 @@
     "name": "Rare Sword 01",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 14,
+    "damageBonus": 9,
     "weaponClass": "sword",
     "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
@@ -18115,7 +18177,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rare_sword_1",
       "name": "Rare Sword 01",
-      "price": 112,
+      "price": 168,
       "itemIds": [
         "generated_equipment_weapon_sword_rare_sword_1"
       ],
@@ -18127,7 +18189,7 @@
     "name": "Rare Sword 02",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 15,
+    "damageBonus": 10,
     "weaponClass": "sword",
     "levelRequirement": 35,
     "equipmentSlot": "weaponMain",
@@ -18156,7 +18218,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rare_sword_2",
       "name": "Rare Sword 02",
-      "price": 120,
+      "price": 180,
       "itemIds": [
         "generated_equipment_weapon_sword_rare_sword_2"
       ],
@@ -18168,7 +18230,7 @@
     "name": "Rare Sword 03",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 16,
+    "damageBonus": 11,
     "weaponClass": "sword",
     "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
@@ -18197,7 +18259,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rare_sword_3",
       "name": "Rare Sword 03",
-      "price": 128,
+      "price": 192,
       "itemIds": [
         "generated_equipment_weapon_sword_rare_sword_3"
       ],
@@ -18209,7 +18271,7 @@
     "name": "Rare Sword 04",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 17,
+    "damageBonus": 16,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18240,7 +18302,7 @@
     "name": "Rare Sword 05",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 18,
+    "damageBonus": 17,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18271,7 +18333,7 @@
     "name": "Rare Sword 06",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 19,
+    "damageBonus": 18,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18302,7 +18364,7 @@
     "name": "Rare Sword 07",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 20,
+    "damageBonus": 19,
     "weaponClass": "sword",
     "equipmentSlot": "weaponMain",
     "assetKeys": {
@@ -18405,7 +18467,7 @@
     "name": "Common Sword 04",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 4,
+    "damageBonus": 3,
     "weaponClass": "sword",
     "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
@@ -18475,7 +18537,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_sword1",
       "name": "Uncommon Sword 01",
-      "price": 35,
+      "price": 53,
       "itemIds": [
         "generated_equipment_weapon_sword_sword1"
       ],
@@ -18487,7 +18549,7 @@
     "name": "Uncommon Sword 02",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 7,
+    "damageBonus": 6,
     "weaponClass": "sword",
     "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
@@ -18516,7 +18578,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_uncommon_sword_2",
       "name": "Uncommon Sword 02",
-      "price": 49,
+      "price": 74,
       "itemIds": [
         "generated_equipment_weapon_sword_uncommon_sword_2"
       ],
@@ -18528,7 +18590,7 @@
     "name": "Uncommon Sword 03",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 9,
+    "damageBonus": 7,
     "weaponClass": "sword",
     "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
@@ -18557,7 +18619,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_uncommon_sword_3",
       "name": "Uncommon Sword 03",
-      "price": 63,
+      "price": 95,
       "itemIds": [
         "generated_equipment_weapon_sword_uncommon_sword_3"
       ],

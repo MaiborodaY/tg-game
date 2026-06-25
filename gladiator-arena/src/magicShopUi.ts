@@ -256,7 +256,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   });
   const enchantModeButton = createMagicShopHomeAction({
     label: "Weapon Sharpening",
-    detail: "+ flat damage",
+    detail: "SOON",
     iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
     onClick: () => setMode("weaponSharpening"),
   });
@@ -562,7 +562,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const hasEnoughGold = sharpeningPrice !== undefined && hero.gold >= sharpeningPrice;
     const iconUrl = displayItemId ? getShopProductIconUrl([displayItemId]) : undefined;
     const displayName = displayItem ? getShopProductDisplayName(displayItem.name) : "No Weapon";
-    const status = sharpenableItemId ? `+${sharpeningLevel}/${HERO_WEAPON_SHARPENING_MAX_LEVEL}` : "No Sharpening";
+    const status = "SOON";
     const effect = getWeaponSharpeningEffectText(Boolean(activeWeaponItemId), Boolean(sharpenableItemId), isMaxSharpening, sharpeningPrice, hasEnoughGold);
 
     previewElements.card.className = "magic-shop__preview-card magic-shop__preview-card--sharpening";
@@ -1063,27 +1063,13 @@ function refreshMagicProductUpgradeButton(
 }
 
 function getWeaponSharpeningEffectText(hasWeapon: boolean, isSharpenable: boolean, isMaxSharpening: boolean, sharpeningPrice: number | undefined, hasEnoughGold: boolean): string {
-  if (!hasWeapon) {
-    return "Equip an epic melee weapon to sharpen it";
-  }
+  void hasWeapon;
+  void isSharpenable;
+  void isMaxSharpening;
+  void sharpeningPrice;
+  void hasEnoughGold;
 
-  if (!isSharpenable) {
-    return "Only epic+ melee weapons can be sharpened";
-  }
-
-  if (isMaxSharpening) {
-    return `Sharpening is maxed at +${HERO_WEAPON_SHARPENING_MAX_LEVEL}`;
-  }
-
-  if (sharpeningPrice === undefined) {
-    return "Sharpening unavailable";
-  }
-
-  if (!hasEnoughGold) {
-    return `Sharpening costs ${sharpeningPrice} gold`;
-  }
-
-  return "Adds +1 flat damage to this weapon";
+  return "SOON";
 }
 
 function getWeaponSharpeningActionLabel(
@@ -1093,23 +1079,13 @@ function getWeaponSharpeningActionLabel(
   hasEnoughGold: boolean,
   sharpeningPrice: number | undefined,
 ): string {
-  if (!hasWeapon) {
-    return "No Weapon";
-  }
+  void hasWeapon;
+  void isSharpenable;
+  void isMaxSharpening;
+  void hasEnoughGold;
+  void sharpeningPrice;
 
-  if (!isSharpenable) {
-    return "Unavailable";
-  }
-
-  if (isMaxSharpening) {
-    return `Max +${HERO_WEAPON_SHARPENING_MAX_LEVEL}`;
-  }
-
-  if (!hasEnoughGold || sharpeningPrice === undefined) {
-    return "No Gold";
-  }
-
-  return `Sharpen ${sharpeningPrice}`;
+  return "SOON";
 }
 
 function getMagicProductDisplayName(product: MagicProduct): string {
