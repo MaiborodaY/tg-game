@@ -12,6 +12,7 @@ interface TelegramWindow {
 }
 
 interface TelegramInitUser {
+  id?: number | string;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -42,6 +43,32 @@ export function getTelegramInitData(): string {
 }
 
 export function getTelegramDisplayName(): string | undefined {
+  const user = getTelegramInitUser();
+
+  if (!user) {
+    return undefined;
+  }
+
+  const personalName = normalizeTelegramName([user.first_name, user.last_name].filter(Boolean).join(" "));
+
+  if (personalName) {
+    return personalName;
+  }
+
+  return normalizeTelegramName(user.username?.replace(/^@+/, ""));
+}
+
+export function getTelegramUserStorageKey(): string {
+  const user = getTelegramInitUser();
+
+  if (user?.id !== undefined && user.id !== null) {
+    return `telegram-${String(user.id).trim()}`;
+  }
+
+  return "local";
+}
+
+function getTelegramInitUser(): TelegramInitUser | undefined {
   const initData = getTelegramInitData();
 
   if (!initData) {
@@ -55,14 +82,7 @@ export function getTelegramDisplayName(): string | undefined {
       return undefined;
     }
 
-    const user = JSON.parse(userJson) as TelegramInitUser;
-    const personalName = normalizeTelegramName([user.first_name, user.last_name].filter(Boolean).join(" "));
-
-    if (personalName) {
-      return personalName;
-    }
-
-    return normalizeTelegramName(user.username?.replace(/^@+/, ""));
+    return JSON.parse(userJson) as TelegramInitUser;
   } catch {
     return undefined;
   }

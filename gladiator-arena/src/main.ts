@@ -77,6 +77,7 @@ import {
   type HeroAttributeKey,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
+import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
 import { cancelPvpRoom, connectPvpRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
 import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
@@ -478,6 +479,19 @@ function syncHeroRuntimeState(): void {
   heroPortraitPreview?.setAppearance(hero.appearance);
 }
 
+function hydrateHeroFromLocalSave(): boolean {
+  const savedHero = loadLocalHeroSave();
+
+  if (!savedHero) {
+    return false;
+  }
+
+  hero = applyTelegramDisplayNameToHero(savedHero);
+  syncHeroRuntimeState();
+
+  return true;
+}
+
 async function hydrateHeroFromCloudSave(): Promise<void> {
   if (!canUseGladiatorCloudSave()) {
     return;
@@ -487,10 +501,14 @@ async function hydrateHeroFromCloudSave(): Promise<void> {
     const savedHero = await loadGladiatorCloudSave();
 
     if (!savedHero) {
+      clearLocalHeroSave();
+      hero = createInitialHero();
+      syncHeroRuntimeState();
       return;
     }
 
     hero = applyTelegramDisplayNameToHero(savedHero);
+    saveLocalHeroSave(hero);
     syncHeroRuntimeState();
   } catch (error) {
     console.warn("[gladiator-save] Failed to load cloud save.", error);
@@ -503,6 +521,8 @@ function queueHeroCloudSave(reason: string): void {
   }
 
   const heroToSave = hero;
+
+  saveLocalHeroSave(heroToSave);
 
   void saveGladiatorCloudHero(heroToSave).catch((error) => {
     console.warn(`[gladiator-save] Failed to save cloud hero after ${reason}.`, error);
@@ -541,6 +561,7 @@ function resetHeroProgressState(): void {
   armoryShop?.close();
   weaponShop?.close();
   magicShop?.close();
+  clearLocalHeroSave();
   hero = createInitialHero();
   syncHeroRuntimeState();
   renderCityArenaMenu();
@@ -1423,8 +1444,16 @@ async function finishInitialCityEntry(): Promise<void> {
 }
 
 async function startInitialCityEntry(): Promise<void> {
-  await hydrateHeroFromCloudSave();
+  const hasLocalHero = hydrateHeroFromLocalSave();
+
+  if (!hasLocalHero) {
+    await hydrateHeroFromCloudSave();
+  }
+
   await finishInitialCityEntry();
+  if (hasLocalHero) {
+    void hydrateHeroFromCloudSave();
+  }
   void restoreCurrentPvpRoom({ silent: true });
 }
 
