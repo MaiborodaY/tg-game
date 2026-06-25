@@ -5091,11 +5091,22 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   {
     item: {"id":"generated_equipment_weapon_sword_frost_king_sword","name":"Frost King Sword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-frost-king-sword"},
-    equipmentTuning: {"x":210,"y":30,"angle":60,"scaleX":1.9,"scaleY":1.9,"flipX":true,"flipY":true},
+    equipmentTuning: {"x":185,"y":27,"angle":60,"scaleX":1.7,"scaleY":1.7,"flipX":true,"flipY":true},
     asset: {
       key: "weapon-sword-frost-king-sword",
       sourcePath: "assets/fighters/weapons/weapon-sword-frost-king-sword.webp",
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-frost-king-sword.webp",
+    },
+    availability: {"shop":false,"enemyPool":false,"bossUnique":true},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_sword_grave_king_greatsword","name":"Grave King Greatsword","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":100,"weaponClass":"sword"},
+    assetKeys: {"weaponMainAssetKey":"weapon-sword-grave-king-greatsword"},
+    equipmentTuning: {"x":-24,"y":-4,"angle":128,"scaleX":1.9,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-sword-grave-king-greatsword",
+      sourcePath: "assets/fighters/weapons/weapon-sword-grave-king-greatsword.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-grave-king-greatsword.webp",
     },
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
@@ -5460,7 +5471,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"weapon_sword_01","name":"Common Sword 02","price":14,"itemIds":["weapon_sword_01"],"categoryId":"swords"},
-  },
+  }
 ];
 
 export const GENERATED_EQUIPMENT_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);

@@ -963,6 +963,7 @@
       "vitality": 104
     },
     "equipment": {
+      "weaponMain": "generated_equipment_weapon_sword_grave_king_greatsword",
       "helmet": "generated_equipment_helmet_grave_king_01",
       "breastplate": "generated_equipment_breastplate_grave_king_01",
       "backShoulderguard": "generated_equipment_back_shoulderguard_grave_king_01",
@@ -1055,6 +1056,14 @@
         "itemIds": [
           "generated_equipment_back_wrist_grave_king_01",
           "generated_equipment_front_wrist_grave_king_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
+        "id": "arena_boss_9_generated_equipment_weapon_sword_grave_king_greatsword_drop",
+        "itemIds": [
+          "generated_equipment_weapon_sword_grave_king_greatsword"
         ],
         "chance": 1,
         "quantity": 1

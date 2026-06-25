@@ -58,6 +58,18 @@ export function getTelegramDisplayName(): string | undefined {
   return normalizeTelegramName(user.username?.replace(/^@+/, ""));
 }
 
+export function getTelegramUserId(): string | undefined {
+  const user = getTelegramInitUser();
+
+  if (user?.id === undefined || user.id === null) {
+    return undefined;
+  }
+
+  const normalized = String(user.id).trim();
+
+  return normalized || undefined;
+}
+
 export function getTelegramUserStorageKey(): string {
   const user = getTelegramInitUser();
 

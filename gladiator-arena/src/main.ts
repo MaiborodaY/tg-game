@@ -94,7 +94,7 @@ import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
-import { bootTelegramWebApp, getTelegramDisplayName } from "./telegram";
+import { bootTelegramWebApp, getTelegramDisplayName, getTelegramUserId } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
@@ -184,6 +184,7 @@ const CITY_RETURN_MIN_READY_MS = 1800;
 const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
 const CITY_RETURN_TRANSITION_IN_MS = 260;
 const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
+const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
@@ -1990,6 +1991,10 @@ function handleProfileAppearanceChange(appearance: Partial<HeroAppearance>): voi
 }
 
 function handleTemporaryChurchSkillGrant(): void {
+  if (!TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS.has(getTelegramUserId() ?? "")) {
+    return;
+  }
+
   const now = new Date().toISOString();
 
   hero = restoreHeroArenaEnergy(

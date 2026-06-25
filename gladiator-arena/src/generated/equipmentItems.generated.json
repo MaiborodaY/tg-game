@@ -17856,11 +17856,11 @@
       "weaponMainAssetKey": "weapon-sword-frost-king-sword"
     },
     "equipmentTuning": {
-      "x": 210,
-      "y": 30,
+      "x": 185,
+      "y": 27,
       "angle": 60,
-      "scaleX": 1.9,
-      "scaleY": 1.9,
+      "scaleX": 1.7,
+      "scaleY": 1.7,
       "flipX": true,
       "flipY": true
     },
@@ -17868,6 +17868,37 @@
       "key": "weapon-sword-frost-king-sword",
       "sourcePath": "assets/fighters/weapons/weapon-sword-frost-king-sword.webp",
       "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-frost-king-sword.webp"
+    },
+    "availability": {
+      "shop": false,
+      "enemyPool": false,
+      "bossUnique": true
+    }
+  },
+  {
+    "id": "generated_equipment_weapon_sword_grave_king_greatsword",
+    "name": "Grave King Greatsword",
+    "kind": "weapon",
+    "rarity": "unique",
+    "damageBonus": 100,
+    "weaponClass": "sword",
+    "equipmentSlot": "weaponMain",
+    "assetKeys": {
+      "weaponMainAssetKey": "weapon-sword-grave-king-greatsword"
+    },
+    "equipmentTuning": {
+      "x": -24,
+      "y": -4,
+      "angle": 128,
+      "scaleX": 1.9,
+      "scaleY": 3,
+      "flipX": false,
+      "flipY": false
+    },
+    "asset": {
+      "key": "weapon-sword-grave-king-greatsword",
+      "sourcePath": "assets/fighters/weapons/weapon-sword-grave-king-greatsword.webp",
+      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-grave-king-greatsword.webp"
     },
     "availability": {
       "shop": false,
