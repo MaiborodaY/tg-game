@@ -5474,7 +5474,9 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
   },
 ];
 
-export const GENERATED_HERO_ITEM_CATALOG = Object.fromEntries(
+export const GENERATED_EQUIPMENT_ITEM_IDS = GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => record.item.id);
+
+export const GENERATED_EQUIPMENT_ITEM_CATALOG = Object.fromEntries(
   GENERATED_EQUIPMENT_ITEM_RECORDS.map((record) => [record.item.id, record.item]),
 ) as Record<HeroItemId, HeroItemDefinition>;
 

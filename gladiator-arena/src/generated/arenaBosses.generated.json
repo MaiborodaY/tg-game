@@ -121,9 +121,9 @@
     "tierId": 2,
     "name": "Boar Boss",
     "baseStats": {
-      "strength": 15,
-      "agility": 30,
-      "vitality": 20
+      "strength": 7,
+      "agility": 14,
+      "vitality": 9
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_mace_boar_mace",
@@ -238,9 +238,9 @@
     "tierId": 3,
     "name": "Arena Boss 3",
     "baseStats": {
-      "strength": 10,
+      "strength": 8,
       "agility": 0,
-      "vitality": 50
+      "vitality": 37
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_mace_turtle_weapon",
@@ -364,9 +364,9 @@
     "tierId": 4,
     "name": "Eagle",
     "baseStats": {
-      "strength": 10,
-      "agility": 50,
-      "vitality": 25
+      "strength": 7,
+      "agility": 35,
+      "vitality": 18
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_spear_eagle_glaive",
@@ -481,9 +481,9 @@
     "tierId": 5,
     "name": "Prisoner",
     "baseStats": {
-      "strength": 37,
-      "agility": 19,
-      "vitality": 48
+      "strength": 27,
+      "agility": 14,
+      "vitality": 34
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_axe_prisoner_axe",
@@ -598,9 +598,9 @@
     "tierId": 6,
     "name": "Old Kingdom warden",
     "baseStats": {
-      "strength": 56,
-      "agility": 22,
-      "vitality": 64
+      "strength": 35,
+      "agility": 14,
+      "vitality": 41
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_sword_warden_sword",
@@ -724,9 +724,9 @@
     "tierId": 7,
     "name": "Swamp Knight",
     "baseStats": {
-      "strength": 53,
-      "agility": 38,
-      "vitality": 83
+      "strength": 32,
+      "agility": 23,
+      "vitality": 50
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_sword_swamp_sword",
@@ -841,9 +841,9 @@
     "tierId": 8,
     "name": "Frost King",
     "baseStats": {
-      "strength": 66,
-      "agility": 33,
-      "vitality": 84
+      "strength": 43,
+      "agility": 22,
+      "vitality": 55
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_sword_frost_king_sword",
@@ -958,9 +958,9 @@
     "tierId": 9,
     "name": "Grave King",
     "baseStats": {
-      "strength": 87,
-      "agility": 51,
-      "vitality": 104
+      "strength": 49,
+      "agility": 28,
+      "vitality": 58
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_sword_grave_king_greatsword",
@@ -1075,9 +1075,9 @@
     "tierId": 10,
     "name": "Void King",
     "baseStats": {
-      "strength": 200,
-      "agility": 100,
-      "vitality": 200
+      "strength": 60,
+      "agility": 30,
+      "vitality": 60
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_sword_void_sword",
