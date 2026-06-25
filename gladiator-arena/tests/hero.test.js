@@ -466,7 +466,7 @@ const expectedArenaRandomBaseStatPoints = new Map([
   [10, { easy: 141, medium: 154, hard: 167 }],
 ]);
 
-function createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChance, shieldChance, shurikenChance, scrollChance) {
+function createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChance, shieldChance, shurikenChance) {
   return {
     itemRarities: [rarity],
     rollChance,
@@ -474,12 +474,11 @@ function createExpectedArenaMatrixPool(rarity, rollChance, weaponChance, bowChan
     bowChance,
     shieldChance,
     shurikenChance,
-    ...(scrollChance > 0 ? { scrollChance } : {}),
   };
 }
 
 function createExpectedArenaMatrixArmorOnlyPool(rarity, rollChance) {
-  return createExpectedArenaMatrixPool(rarity, rollChance, 0, 0, 0, 0, 0);
+  return createExpectedArenaMatrixPool(rarity, rollChance, 0, 0, 0, 0);
 }
 
 function getExpectedArenaMatrixCurrentRarityIndex(tierId) {
@@ -494,21 +493,21 @@ function getExpectedArenaMatrixEquipmentPools(tierId, difficultyId) {
 
   if (difficultyId === "easy") {
     return [
-      createExpectedArenaMatrixPool(previous, 0.95, 0.7, 0.05, 0.05, 0.08, 0.02),
-      createExpectedArenaMatrixPool(current, 1, 1, 0.03, 0.03, 0.02, 0.03),
+      createExpectedArenaMatrixPool(previous, 0.95, 0.7, 0.05, 0.05, 0.08),
+      createExpectedArenaMatrixPool(current, 1, 1, 0.03, 0.03, 0.02),
     ];
   }
 
   if (difficultyId === "medium") {
     return [
       createExpectedArenaMatrixArmorOnlyPool(previous, 0.35),
-      createExpectedArenaMatrixPool(current, 1, 1, 0.07, 0.14, 0.08, 0.05),
+      createExpectedArenaMatrixPool(current, 1, 1, 0.07, 0.14, 0.08),
     ];
   }
 
   return next
-    ? [createExpectedArenaMatrixPool(current, 0.95, 0.95, 0.1, 0.22, 0.12, 0.1), createExpectedArenaMatrixPool(next, 1, 1, 0.04, 0.08, 0.04, 0.05)]
-    : [createExpectedArenaMatrixPool(current, 1, 1, 0.1, 0.22, 0.12, 0.1)];
+    ? [createExpectedArenaMatrixPool(current, 0.95, 0.95, 0.1, 0.22, 0.12), createExpectedArenaMatrixPool(next, 1, 1, 0.04, 0.08, 0.04)]
+    : [createExpectedArenaMatrixPool(current, 1, 1, 0.1, 0.22, 0.12)];
 }
 
 test("arena tier one default enemy loadouts use tier one equipment pools", () => {
@@ -522,13 +521,11 @@ test("arena tier one default enemy loadouts use tier one equipment pools", () =>
   assert.equal(tierOneEquipmentPools[0].bowChance, 0.1);
   assert.equal(tierOneEquipmentPools[0].shieldChance, 0.05);
   assert.equal(tierOneEquipmentPools[0].shurikenChance, 0.1);
-  assert.equal(tierOneEquipmentPools[0].scrollChance, 1);
   assert.equal(tierOneEquipmentPools[1].itemRarities[0], "uncommon");
   assert.equal(tierOneEquipmentPools[1].rollChance, 0.01);
   assert.equal(tierOneEquipmentPools[1].bowChance, 0);
   assert.equal(tierOneEquipmentPools[1].shieldChance, 0);
   assert.equal(tierOneEquipmentPools[1].shurikenChance, 0);
-  assert.equal(tierOneEquipmentPools[1].scrollChance, undefined);
 
   const loadout = hero.createRandomEnemyLoadout(() => 0, 1);
   const equippedItemIds = Object.values(loadout.equipment).filter(Boolean);

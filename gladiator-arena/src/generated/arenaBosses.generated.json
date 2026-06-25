@@ -27,8 +27,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 14,
-        "xp": 12
+        "gold": 15,
+        "xp": 15
       },
       "loss": {
         "gold": 0,
@@ -144,8 +144,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 25,
-        "xp": 100
+        "gold": 27,
+        "xp": 27
       },
       "loss": {
         "gold": 0,
@@ -262,8 +262,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 40,
-        "xp": 627
+        "gold": 41,
+        "xp": 41
       },
       "loss": {
         "gold": 1,
@@ -387,8 +387,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 3746,
-        "xp": 2494
+        "gold": 58,
+        "xp": 58
       },
       "loss": {
         "gold": 1,
@@ -504,8 +504,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 1264,
-        "xp": 1264
+        "gold": 79,
+        "xp": 79
       },
       "loss": {
         "gold": 1,
@@ -622,8 +622,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 2071,
-        "xp": 1656
+        "gold": 104,
+        "xp": 104
       },
       "loss": {
         "gold": 1,
@@ -747,8 +747,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 5717,
-        "xp": 4572
+        "gold": 134,
+        "xp": 134
       },
       "loss": {
         "gold": 1,
@@ -864,8 +864,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 11453,
-        "xp": 11453
+        "gold": 170,
+        "xp": 170
       },
       "loss": {
         "gold": 1,
@@ -981,8 +981,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 6182,
-        "xp": 3086
+        "gold": 213,
+        "xp": 213
       },
       "loss": {
         "gold": 1,
@@ -1098,8 +1098,8 @@
     },
     "rewards": {
       "win": {
-        "gold": 20358,
-        "xp": 10179
+        "gold": 265,
+        "xp": 265
       },
       "loss": {
         "gold": 1,

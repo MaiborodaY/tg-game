@@ -463,7 +463,7 @@ interface DebugArenaTierDifficultyDefaults {
   equipmentPools: ArenaGeneratedEquipmentPool[];
 }
 
-type ArenaTierPoolChanceKey = "rollChance" | "weaponChance" | "bowChance" | "shieldChance" | "shurikenChance" | "scrollChance";
+type ArenaTierPoolChanceKey = "rollChance" | "weaponChance" | "bowChance" | "shieldChance" | "shurikenChance";
 type DebugArenaTierIconKey =
   | "strength"
   | "agility"
@@ -473,8 +473,7 @@ type DebugArenaTierIconKey =
   | "weapon"
   | "bow"
   | "shield"
-  | "shuriken"
-  | "scroll";
+  | "shuriken";
 
 const DEBUG_ARENA_TIER_POOL_CHANCE_FIELDS: readonly { key: ArenaTierPoolChanceKey; label: string; icon: DebugArenaTierIconKey }[] = [
   { key: "rollChance", label: "Armor", icon: "armor" },
@@ -482,7 +481,6 @@ const DEBUG_ARENA_TIER_POOL_CHANCE_FIELDS: readonly { key: ArenaTierPoolChanceKe
   { key: "bowChance", label: "Bow", icon: "bow" },
   { key: "shieldChance", label: "Shield", icon: "shield" },
   { key: "shurikenChance", label: "Shuriken", icon: "shuriken" },
-  { key: "scrollChance", label: "Scroll", icon: "scroll" },
 ];
 
 type ClassicSlotNumericKey = keyof ClassicActionButtonSlotTuning;
@@ -8230,7 +8228,6 @@ function applyArenaTierOpponentToEditor(editor: HTMLElement, difficultyId: Arena
     setArenaTierPoolChanceInput(fieldset, rarity, "bowChance", pool ? (pool.bowChance ?? pool.rollChance) : 0);
     setArenaTierPoolChanceInput(fieldset, rarity, "shieldChance", pool ? (pool.shieldChance ?? pool.rollChance) : 0);
     setArenaTierPoolChanceInput(fieldset, rarity, "shurikenChance", pool ? (pool.shurikenChance ?? ENEMY_SHURIKEN_ROLL_CHANCE) : 0);
-    setArenaTierPoolChanceInput(fieldset, rarity, "scrollChance", pool?.scrollChance ?? 0);
   });
 }
 
@@ -8291,10 +8288,9 @@ function readArenaTierEquipmentPools(fieldset: HTMLElement | undefined): ArenaGe
     const bowChance = readArenaTierPoolChance(fieldset, rarity, "bowChance");
     const shieldChance = readArenaTierPoolChance(fieldset, rarity, "shieldChance");
     const shurikenChance = readArenaTierPoolChance(fieldset, rarity, "shurikenChance");
-    const scrollChance = readArenaTierPoolChance(fieldset, rarity, "scrollChance");
     const nonShurikenChance = Math.max(rollChance, weaponChance, bowChance, shieldChance);
 
-    if (Math.max(rollChance, weaponChance, bowChance, shieldChance, shurikenChance, scrollChance) <= 0) {
+    if (Math.max(rollChance, weaponChance, bowChance, shieldChance, shurikenChance) <= 0) {
       return [];
     }
 
@@ -8306,7 +8302,6 @@ function readArenaTierEquipmentPools(fieldset: HTMLElement | undefined): ArenaGe
         ...(bowChance !== rollChance ? { bowChance } : {}),
         ...(shieldChance !== rollChance ? { shieldChance } : {}),
         ...(shurikenChance !== ENEMY_SHURIKEN_ROLL_CHANCE || nonShurikenChance <= 0 ? { shurikenChance } : {}),
-        ...(scrollChance > 0 ? { scrollChance } : {}),
       },
     ];
   });

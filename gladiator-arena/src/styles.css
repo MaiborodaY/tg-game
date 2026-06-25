@@ -11347,10 +11347,6 @@ body.debug-mode-hud .battle-screen .status-strip {
   background-image: url("./assets/ui/shop/category-shuriken.webp");
 }
 
-.debug-tier-editor__icon--scroll {
-  background-image: url("./assets/ui/city-buttons/city-magic-shop-icon.webp");
-}
-
 .debug-tier-editor__difficulty {
   min-width: 0;
 }

@@ -391,7 +391,6 @@ test("vite dev middleware writes generated arena tiers", () => {
   assert.match(source, /bowChance/);
   assert.match(source, /shieldChance/);
   assert.match(source, /shurikenChance/);
-  assert.match(source, /scrollChance/);
   assert.match(source, /hasArenaTierEquipmentPoolRollChance/);
   assert.doesNotMatch(source, /arena tier opponent name/);
   assert.match(generatedTierSource, /GENERATED_ARENA_TIERS/);

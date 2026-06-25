@@ -7,7 +7,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Dust Arena Champion",
     baseStats: {"strength":5,"agility":5,"vitality":5},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01","helmet":"generated_equipment_helmet_wood_boss_01","breastplate":"generated_equipment_breastplate_wood_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_wood_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_wood_boss_01","backWrist":"generated_equipment_back_wrist_wood_boss_01","frontWrist":"generated_equipment_front_wrist_wood_boss_01","backGlove":"generated_equipment_back_glove_wood_boss_01","frontGlove":"generated_equipment_front_glove_wood_boss_01","backGreave":"generated_equipment_back_greave_wood_boss_01","frontGreave":"generated_equipment_front_greave_wood_boss_01","backShinguard":"generated_equipment_back_shinguard_wood_boss_01","frontShinguard":"generated_equipment_front_shinguard_wood_boss_01","backBoot":"generated_equipment_back_boot_wood_boss_01","frontBoot":"generated_equipment_front_boot_wood_boss_01"},
-    rewards: {"win":{"gold":14,"xp":12},"loss":{"gold":0,"xp":0}},
+    rewards: {"win":{"gold":15,"xp":15},"loss":{"gold":0,"xp":0}},
     lootTable: [
       {"id":"dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_back_boot_wood_boss_01_generated_equipment_front_boot_wood_boss_01_drop","itemIds":["generated_equipment_back_boot_wood_boss_01","generated_equipment_front_boot_wood_boss_01"],"chance":1,"quantity":1},
@@ -26,7 +26,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Boar Boss",
     baseStats: {"strength":15,"agility":30,"vitality":20},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_boar_mace","helmet":"generated_equipment_helmet_boar_boss_01","breastplate":"generated_equipment_breastplate_boar_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_boar_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_boar_boss_01","backWrist":"generated_equipment_back_wrist_boar_boss_01","frontWrist":"generated_equipment_front_wrist_boar_boss_01","backGlove":"generated_equipment_back_glove_boar_boss_01","frontGlove":"generated_equipment_front_glove_boar_boss_01","backGreave":"generated_equipment_back_greave_boar_boss_01","frontGreave":"generated_equipment_front_greave_boar_boss_01","backShinguard":"generated_equipment_back_shinguard_boar_boss_01","frontShinguard":"generated_equipment_front_shinguard_boar_boss_01","backBoot":"generated_equipment_back_boot_boar_boss_01","frontBoot":"generated_equipment_front_boot_boar_boss_01"},
-    rewards: {"win":{"gold":25,"xp":100},"loss":{"gold":0,"xp":0}},
+    rewards: {"win":{"gold":27,"xp":27},"loss":{"gold":0,"xp":0}},
     lootTable: [
       {"id":"arena_boss_2_generated_equipment_back_boot_boar_boss_01_generated_equipment_front_boot_boar_boss_01_drop","itemIds":["generated_equipment_back_boot_boar_boss_01","generated_equipment_front_boot_boar_boss_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_2_generated_equipment_breastplate_boar_boss_01_drop","itemIds":["generated_equipment_breastplate_boar_boss_01"],"chance":1,"quantity":1},
@@ -45,7 +45,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Arena Boss 3",
     baseStats: {"strength":10,"agility":0,"vitality":50},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_turtle_weapon","helmet":"generated_equipment_helmet_turtle_boss_01","breastplate":"generated_equipment_breastplate_turtle_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_turtle_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_turtle_boss_01","backWrist":"generated_equipment_back_wrist_turtle_boss_01","frontWrist":"generated_equipment_front_wrist_turtle_boss_01","backGlove":"generated_equipment_back_glove_turtle_boss_01","frontGlove":"generated_equipment_front_glove_turtle_boss_01","shield":"generated_equipment_shield_turtle_boss","backGreave":"generated_equipment_back_greave_turtle_boss_01","frontGreave":"generated_equipment_front_greave_turtle_boss_01","backShinguard":"generated_equipment_back_shinguard_turtle_boss_01","frontShinguard":"generated_equipment_front_shinguard_turtle_boss_01","backBoot":"generated_equipment_back_boot_turtle_boss_01","frontBoot":"generated_equipment_front_boot_turtle_boss_01"},
-    rewards: {"win":{"gold":40,"xp":627},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":41,"xp":41},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_3_generated_equipment_back_boot_turtle_boss_01_generated_equipment_front_boot_turtle_boss_01_drop","itemIds":["generated_equipment_back_boot_turtle_boss_01","generated_equipment_front_boot_turtle_boss_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_3_generated_equipment_breastplate_turtle_boss_01_drop","itemIds":["generated_equipment_breastplate_turtle_boss_01"],"chance":1,"quantity":1},
@@ -65,7 +65,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Eagle",
     baseStats: {"strength":10,"agility":50,"vitality":25},
     equipment: {"weaponMain":"generated_equipment_weapon_spear_eagle_glaive","helmet":"generated_equipment_helmet_eagle_boss_01","breastplate":"generated_equipment_breastplate_eagle_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_eagle_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_eagle_boss_01","backWrist":"generated_equipment_back_wrist_eagle_boss_01","frontWrist":"generated_equipment_front_wrist_eagle_boss_01","backGlove":"generated_equipment_back_glove_eagle_boss_01","frontGlove":"generated_equipment_front_glove_eagle_boss_01","backGreave":"generated_equipment_back_greave_eagle_boss_01","frontGreave":"generated_equipment_front_greave_eagle_boss_01","backShinguard":"generated_equipment_back_shinguard_eagle_boss_01","frontShinguard":"generated_equipment_front_shinguard_eagle_boss_01","backBoot":"generated_equipment_back_boot_eagle_boss_01","frontBoot":"generated_equipment_front_boot_eagle_boss_01"},
-    rewards: {"win":{"gold":3746,"xp":2494},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":58,"xp":58},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_4_generated_equipment_back_boot_eagle_boss_01_generated_equipment_front_boot_eagle_boss_01_drop","itemIds":["generated_equipment_back_boot_eagle_boss_01","generated_equipment_front_boot_eagle_boss_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_4_generated_equipment_breastplate_eagle_boss_01_drop","itemIds":["generated_equipment_breastplate_eagle_boss_01"],"chance":1,"quantity":1},
@@ -84,7 +84,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Prisoner",
     baseStats: {"strength":37,"agility":19,"vitality":48},
     equipment: {"weaponMain":"generated_equipment_weapon_axe_prisoner_axe","helmet":"generated_equipment_helmet_prisoner_01","breastplate":"generated_equipment_breastplate_prisoner_01","backShoulderguard":"generated_equipment_back_shoulderguard_prisoner_01","frontShoulderguard":"generated_equipment_front_shoulderguard_prisoner_01","backWrist":"generated_equipment_back_wrist_prisoner_01","frontWrist":"generated_equipment_front_wrist_prisoner_01","backGlove":"generated_equipment_back_glove_prisoner_01","frontGlove":"generated_equipment_front_glove_prisoner_01","backGreave":"generated_equipment_back_greave_prisoner_01","frontGreave":"generated_equipment_front_greave_prisoner_01","backShinguard":"generated_equipment_back_shinguard_prisoner_01","frontShinguard":"generated_equipment_front_shinguard_prisoner_01","backBoot":"generated_equipment_back_boot_prisoner_01","frontBoot":"generated_equipment_front_boot_prisoner_01"},
-    rewards: {"win":{"gold":1264,"xp":1264},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":79,"xp":79},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_5_generated_equipment_back_boot_prisoner_01_generated_equipment_front_boot_prisoner_01_drop","itemIds":["generated_equipment_back_boot_prisoner_01","generated_equipment_front_boot_prisoner_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_5_generated_equipment_breastplate_prisoner_01_drop","itemIds":["generated_equipment_breastplate_prisoner_01"],"chance":1,"quantity":1},
@@ -103,7 +103,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Old Kingdom warden",
     baseStats: {"strength":56,"agility":22,"vitality":64},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_warden_sword","helmet":"generated_equipment_helmet_old_fortress_warden_01","breastplate":"generated_equipment_breastplate_old_fortress_warden_01","backShoulderguard":"generated_equipment_back_shoulderguard_old_fortress_warden_01","frontShoulderguard":"generated_equipment_front_shoulderguard_old_fortress_warden_01","backWrist":"generated_equipment_back_wrist_old_fortress_warden_01","frontWrist":"generated_equipment_front_wrist_old_fortress_warden_01","backGlove":"generated_equipment_back_glove_old_fortress_warden_01","frontGlove":"generated_equipment_front_glove_old_fortress_warden_01","shield":"generated_equipment_shield_old_warden_01","backGreave":"generated_equipment_back_greave_old_fortress_warden_01","frontGreave":"generated_equipment_front_greave_old_fortress_warden_01","backShinguard":"generated_equipment_back_shinguard_old_fortress_warden_01","frontShinguard":"generated_equipment_front_shinguard_old_fortress_warden_01","backBoot":"generated_equipment_back_boot_old_fortress_warden_01","frontBoot":"generated_equipment_front_boot_old_fortress_warden_01"},
-    rewards: {"win":{"gold":2071,"xp":1656},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":104,"xp":104},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_6_generated_equipment_back_boot_old_fortress_warden_01_generated_equipment_front_boot_old_fortress_warden_01_drop","itemIds":["generated_equipment_back_boot_old_fortress_warden_01","generated_equipment_front_boot_old_fortress_warden_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_6_generated_equipment_breastplate_old_fortress_warden_01_drop","itemIds":["generated_equipment_breastplate_old_fortress_warden_01"],"chance":1,"quantity":1},
@@ -123,7 +123,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Swamp Knight",
     baseStats: {"strength":53,"agility":38,"vitality":83},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_swamp_sword","helmet":"generated_equipment_helmet_swamp_boss_01","breastplate":"generated_equipment_breastplate_swamp_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_swamp_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_swamp_boss_01","backWrist":"generated_equipment_back_wrist_swamp_boss_01","frontWrist":"generated_equipment_front_wrist_swamp_boss_01","backGlove":"generated_equipment_back_glove_swamp_boss_01","frontGlove":"generated_equipment_front_glove_swamp_boss_01","backGreave":"generated_equipment_back_greave_swamp_boss_01","frontGreave":"generated_equipment_front_greave_swamp_boss_01","backShinguard":"generated_equipment_back_shinguard_swamp_boss_01","frontShinguard":"generated_equipment_front_shinguard_swamp_boss_01","backBoot":"generated_equipment_back_boot_swamp_boss_01","frontBoot":"generated_equipment_front_boot_swamp_boss_01"},
-    rewards: {"win":{"gold":5717,"xp":4572},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":134,"xp":134},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_7_generated_equipment_back_boot_swamp_boss_01_generated_equipment_front_boot_swamp_boss_01_drop","itemIds":["generated_equipment_back_boot_swamp_boss_01","generated_equipment_front_boot_swamp_boss_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_7_generated_equipment_breastplate_swamp_boss_01_drop","itemIds":["generated_equipment_breastplate_swamp_boss_01"],"chance":1,"quantity":1},
@@ -142,7 +142,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Frost King",
     baseStats: {"strength":66,"agility":33,"vitality":84},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_frost_king_sword","helmet":"generated_equipment_helmet_frost_king_01","breastplate":"generated_equipment_breastplate_frost_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_frost_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_frost_king_01","backWrist":"generated_equipment_back_wrist_frost_king_01","frontWrist":"generated_equipment_front_wrist_frost_king_01","backGlove":"generated_equipment_back_glove_frost_king_01","frontGlove":"generated_equipment_front_glove_frost_king_01","backGreave":"generated_equipment_back_greave_frost_king_01","frontGreave":"generated_equipment_front_greave_frost_king_01","backShinguard":"generated_equipment_back_shinguard_frost_king_01","frontShinguard":"generated_equipment_front_shinguard_frost_king_01","backBoot":"generated_equipment_back_boot_frost_king_01","frontBoot":"generated_equipment_front_boot_frost_king_01"},
-    rewards: {"win":{"gold":11453,"xp":11453},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":170,"xp":170},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_8_generated_equipment_back_boot_frost_king_01_generated_equipment_front_boot_frost_king_01_drop","itemIds":["generated_equipment_back_boot_frost_king_01","generated_equipment_front_boot_frost_king_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_8_generated_equipment_breastplate_frost_king_01_drop","itemIds":["generated_equipment_breastplate_frost_king_01"],"chance":1,"quantity":1},
@@ -161,7 +161,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Grave King",
     baseStats: {"strength":87,"agility":51,"vitality":104},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_grave_king_greatsword","helmet":"generated_equipment_helmet_grave_king_01","breastplate":"generated_equipment_breastplate_grave_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_grave_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_grave_king_01","backWrist":"generated_equipment_back_wrist_grave_king_01","frontWrist":"generated_equipment_front_wrist_grave_king_01","backGlove":"generated_equipment_back_glove_grave_king_01","frontGlove":"generated_equipment_front_glove_grave_king_01","backGreave":"generated_equipment_back_greave_grave_king_01","frontGreave":"generated_equipment_front_greave_grave_king_01","backShinguard":"generated_equipment_back_shinguard_grave_king_01","frontShinguard":"generated_equipment_front_shinguard_grave_king_01","backBoot":"generated_equipment_back_boot_grave_king_01","frontBoot":"generated_equipment_front_boot_grave_king_01"},
-    rewards: {"win":{"gold":6182,"xp":3086},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":213,"xp":213},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_9_generated_equipment_back_boot_grave_king_01_generated_equipment_front_boot_grave_king_01_drop","itemIds":["generated_equipment_back_boot_grave_king_01","generated_equipment_front_boot_grave_king_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_9_generated_equipment_breastplate_grave_king_01_drop","itemIds":["generated_equipment_breastplate_grave_king_01"],"chance":1,"quantity":1},
@@ -180,7 +180,7 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Void King",
     baseStats: {"strength":200,"agility":100,"vitality":200},
     equipment: {"weaponMain":"generated_equipment_weapon_sword_void_sword","helmet":"generated_equipment_helmet_void_king_01","breastplate":"generated_equipment_breastplate_void_king_01","backShoulderguard":"generated_equipment_back_shoulderguard_void_king_01","frontShoulderguard":"generated_equipment_front_shoulderguard_void_king_01","backWrist":"generated_equipment_back_wrist_void_king_01","frontWrist":"generated_equipment_front_wrist_void_king_01","backGlove":"generated_equipment_back_glove_void_king_01","frontGlove":"generated_equipment_front_glove_void_king_01","backGreave":"generated_equipment_back_greave_void_king_01","frontGreave":"generated_equipment_front_greave_void_king_01","backShinguard":"generated_equipment_back_shinguard_void_king_01","frontShinguard":"generated_equipment_front_shinguard_void_king_01","backBoot":"generated_equipment_back_boot_void_king_01","frontBoot":"generated_equipment_front_boot_void_king_01"},
-    rewards: {"win":{"gold":20358,"xp":10179},"loss":{"gold":1,"xp":2}},
+    rewards: {"win":{"gold":265,"xp":265},"loss":{"gold":1,"xp":2}},
     lootTable: [
       {"id":"arena_boss_10_generated_equipment_back_boot_void_king_01_generated_equipment_front_boot_void_king_01_drop","itemIds":["generated_equipment_back_boot_void_king_01","generated_equipment_front_boot_void_king_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_10_generated_equipment_breastplate_void_king_01_drop","itemIds":["generated_equipment_breastplate_void_king_01"],"chance":1,"quantity":1},
@@ -192,5 +192,5 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
       {"id":"arena_boss_10_generated_equipment_back_wrist_void_king_01_generated_equipment_front_wrist_void_king_01_drop","itemIds":["generated_equipment_back_wrist_void_king_01","generated_equipment_front_wrist_void_king_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_10_generated_equipment_weapon_sword_void_sword_drop","itemIds":["generated_equipment_weapon_sword_void_sword"],"chance":1,"quantity":1},
     ],
-  }
+  },
 ];

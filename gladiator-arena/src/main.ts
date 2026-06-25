@@ -185,6 +185,7 @@ const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
 const CITY_RETURN_TRANSITION_IN_MS = 260;
 const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
+const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487"]);
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
@@ -542,6 +543,10 @@ function queueHeroCloudSave(reason: string): void {
 }
 
 async function handleHeroProgressReset(): Promise<void> {
+  if (!HERO_PROGRESS_RESET_TELEGRAM_USER_IDS.has(getTelegramUserId() ?? "")) {
+    return;
+  }
+
   if (!window.confirm("Reset hero progress? This cannot be undone.")) {
     return;
   }
