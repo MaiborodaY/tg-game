@@ -5917,7 +5917,7 @@ body.debug-active .city-menu__portrait-button:active {
     "wrists hero shinguards"
     "gloves hero boots";
   gap: 2px;
-  align-content: start;
+  align-content: space-between;
   align-items: center;
   justify-items: center;
   transform: translateX(-50%);
@@ -6296,33 +6296,144 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-equipment-menu__filters {
+  --city-equipment-filter-action-width: 40px;
+  --city-equipment-filter-cell-size: 40px;
+  --city-equipment-filter-gap: 2px;
+  --city-equipment-filter-weapon-outline: rgba(165, 36, 22, 0.23);
+  --city-equipment-filter-armor-outline: rgba(78, 130, 184, 0.23);
+  --city-equipment-filter-weapon-glow: transparent;
+  --city-equipment-filter-armor-glow: transparent;
+
+  position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: repeat(2, 48px);
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr) var(--city-equipment-filter-action-width) minmax(0, 1fr);
+  grid-template-rows: repeat(3, var(--city-equipment-filter-cell-size));
+  gap: var(--city-equipment-filter-gap);
   min-height: 0;
 }
 
+.city-equipment-menu__filter-outline {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.city-equipment-menu__filter-outline-path {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: bevel;
+  vector-effect: non-scaling-stroke;
+}
+
+.city-equipment-menu__filter-outline-path--weapon {
+  stroke: var(--city-equipment-filter-weapon-outline);
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.62))
+    drop-shadow(0 0 2px var(--city-equipment-filter-weapon-glow));
+}
+
+.city-equipment-menu__filter-outline-path--armor {
+  stroke: var(--city-equipment-filter-armor-outline);
+  filter:
+    drop-shadow(0 1px 0 rgba(8, 2, 1, 0.62))
+    drop-shadow(0 0 2px var(--city-equipment-filter-armor-glow));
+}
+
+.city-equipment-menu__filters:has(.city-equipment-menu__category--weapon-all.city-equipment-menu__category--active) {
+  --city-equipment-filter-weapon-outline: rgba(225, 58, 38, 0.37);
+  --city-equipment-filter-weapon-glow: rgba(225, 58, 38, 0.08);
+}
+
+.city-equipment-menu__filters:has(.city-equipment-menu__category--armor-all.city-equipment-menu__category--active) {
+  --city-equipment-filter-armor-outline: rgba(98, 154, 214, 0.37);
+  --city-equipment-filter-armor-glow: rgba(98, 154, 214, 0.08);
+}
+
 .city-equipment-menu__categories {
-  grid-auto-rows: 48px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-auto-rows: var(--city-equipment-filter-cell-size);
   gap: 1px;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1px;
+  border-color: rgba(22, 7, 3, 0.82);
+  background: rgba(8, 2, 1, 0.08);
+  box-shadow: none;
+}
+
+.city-equipment-menu__categories::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 1;
+  opacity: 0.12;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 93px 93px;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 220, 146, 0.32))
+    drop-shadow(0 3px 5px rgba(8, 2, 1, 0.76));
+  pointer-events: none;
+}
+
+.city-equipment-menu__categories--weapon {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, var(--city-equipment-filter-cell-size));
+}
+
+.city-equipment-menu__categories--weapon::before {
+  background-image: url("./assets/ui/damage-icons/damage-hit.webp");
+}
+
+.city-equipment-menu__categories--armor {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, var(--city-equipment-filter-cell-size));
+}
+
+.city-equipment-menu__categories--armor::before {
+  background-image: url("./assets/ui/damage-icons/damage-block.webp");
+}
+
+.city-equipment-menu__filter-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  grid-template-rows: repeat(3, var(--city-equipment-filter-cell-size));
+  gap: 1px;
+  min-width: 0;
   overflow: hidden;
   padding: 1px;
 }
 
-.city-equipment-menu__categories--weapon {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-}
-
-.city-equipment-menu__categories--armor {
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-}
-
 .city-equipment-menu__category {
+  position: relative;
+  z-index: 2;
   min-width: 0;
   aspect-ratio: auto;
-  height: 48px;
+  height: calc(var(--city-equipment-filter-cell-size) - 4px);
   padding: 2px;
+  border-color: rgba(22, 7, 3, 0.62);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 235, 170, 0.05), transparent 44%),
+    linear-gradient(180deg, rgba(116, 59, 26, 0.14), rgba(13, 4, 2, 0.34));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 146, 0.06),
+    0 1px 0 rgba(8, 2, 1, 0.34);
 }
 
 .city-equipment-menu__category-icon {
@@ -6343,6 +6454,27 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-equipment-menu__category--filter {
   color: #fff0bd;
+}
+
+.city-equipment-menu__category--active {
+  border-color: rgba(255, 220, 146, 0.42);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 235, 170, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(139, 74, 30, 0.42), rgba(20, 6, 2, 0.64)),
+    var(--ui-panel-wood-texture) center / 160px 160px repeat,
+    linear-gradient(180deg, #8b4a1e, #2b0d05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 146, 0.16),
+    0 2px 0 rgba(8, 2, 1, 0.56);
+  filter: brightness(1.04) saturate(1.03);
+}
+
+.city-equipment-menu__category--side-all:not(.city-equipment-menu__category--active) {
+  border-color: rgba(255, 220, 146, 0.38);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 235, 170, 0.14), transparent 44%),
+    linear-gradient(180deg, rgba(153, 85, 34, 0.34), rgba(20, 6, 2, 0.62)),
+    var(--ui-panel-wood-texture) center / 160px 160px repeat;
 }
 
 .city-equipment-menu__category-icon--filter {
@@ -6416,19 +6548,11 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .city-equipment-menu__filters {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(2, 44px);
+    --city-equipment-filter-action-width: 38px;
+    --city-equipment-filter-cell-size: 38px;
+
+    grid-template-columns: minmax(0, 1fr) var(--city-equipment-filter-action-width) minmax(0, 1fr);
     gap: 2px;
-  }
-
-  .city-equipment-menu__categories {
-    grid-auto-rows: 44px;
-    gap: 1px;
-    padding: 1px;
-  }
-
-  .city-equipment-menu__category {
-    height: 44px;
   }
 
   .city-equipment-menu__products {
@@ -6480,7 +6604,6 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .city-equipment-menu__weapon-slots {
-    bottom: -34px;
     gap: 4px;
   }
 
@@ -6493,15 +6616,8 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .city-equipment-menu__filters {
-    grid-template-rows: repeat(2, 46px);
-  }
-
-  .city-equipment-menu__categories {
-    grid-auto-rows: 46px;
-  }
-
-  .city-equipment-menu__category {
-    height: 46px;
+    --city-equipment-filter-action-width: 39px;
+    --city-equipment-filter-cell-size: 39px;
   }
 
   .city-equipment-menu__products {

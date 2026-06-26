@@ -92,11 +92,6 @@ interface CityEquipmentCategory {
   slots?: readonly HeroEquipmentSlotKey[];
 }
 
-interface CityEquipmentCategoryRenderOptions {
-  includeAll?: boolean;
-  includeFilter?: boolean;
-}
-
 interface CityEquipmentProduct {
   id: string;
   name: string;
@@ -131,7 +126,11 @@ interface CityEquipmentMenuElements {
   detailsSet: HTMLElement | null;
   detailsEquipButton: HTMLButtonElement | null;
   inventory: HTMLElement | null;
+  filterOutline: SVGSVGElement | null;
+  filterOutlineWeapon: SVGPathElement | null;
+  filterOutlineArmor: SVGPathElement | null;
   weaponCategories: HTMLElement | null;
+  filterActions: HTMLElement | null;
   armorCategories: HTMLElement | null;
   productGrid: HTMLElement | null;
 }
@@ -652,7 +651,9 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   };
   const handleCategoryClick = (event: MouseEvent) => {
     const target = event.target instanceof Element ? event.target : null;
-    const button = target?.closest<HTMLButtonElement>("[data-city-equipment-category], [data-city-equipment-all], [data-city-equipment-filter]");
+    const button = target?.closest<HTMLButtonElement>(
+      "[data-city-equipment-category], [data-city-equipment-side-all], [data-city-equipment-filter]",
+    );
 
     if (!button || !menu.root.contains(button)) {
       return;
@@ -664,8 +665,11 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
       return;
     }
 
-    if (button.dataset.cityEquipmentAll) {
-      activeCategoryIds = new Set();
+    if (button.dataset.cityEquipmentSideAll) {
+      activeCategoryIds = getNextCityEquipmentSideAllSelection(
+        activeCategoryIds,
+        button.dataset.cityEquipmentSideAll as CityEquipmentCategorySide,
+      );
       selectedProductId = undefined;
       render();
       return;
@@ -788,6 +792,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   };
   const handleWindowResize = () => {
     syncProfilePreviewLayout();
+    syncCityEquipmentFilterOutline(menu);
   };
   const handleProfileCloseCapture = (event: MouseEvent) => {
     if (!isOpen) {
@@ -825,8 +830,13 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     renderCityEquipmentPaperDoll(menu, hero);
     renderCityEquipmentWeaponSlots(menu, hero);
     renderCityEquipmentDetails(menu, selectedProduct, hero);
-    renderCityEquipmentCategories(menu.weaponCategories, CITY_EQUIPMENT_WEAPON_CATEGORIES, activeCategoryIds, { includeAll: true });
-    renderCityEquipmentCategories(menu.armorCategories, CITY_EQUIPMENT_ARMOR_CATEGORIES, activeCategoryIds, { includeFilter: true });
+    renderCityEquipmentCategories(menu.weaponCategories, CITY_EQUIPMENT_WEAPON_CATEGORIES, activeCategoryIds);
+    renderCityEquipmentFilterActions(menu.filterActions, activeCategoryIds);
+    renderCityEquipmentCategories(menu.armorCategories, CITY_EQUIPMENT_ARMOR_CATEGORIES, activeCategoryIds);
+    syncCityEquipmentFilterOutline(menu);
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => syncCityEquipmentFilterOutline(menu));
+    }
     renderCityEquipmentProducts(menu.productGrid, selectedCategories, products, selectedProduct, hero);
   }
 
@@ -1206,7 +1216,12 @@ function createCityEquipmentMenuElements(): CityEquipmentMenuElements {
       </div>
       <div class="city-equipment-menu__inventory">
         <div class="city-equipment-menu__filters">
+          <svg class="city-equipment-menu__filter-outline" viewBox="0 0 100 100" aria-hidden="true">
+            <path class="city-equipment-menu__filter-outline-path city-equipment-menu__filter-outline-path--weapon" />
+            <path class="city-equipment-menu__filter-outline-path city-equipment-menu__filter-outline-path--armor" />
+          </svg>
           <div class="city-equipment-menu__categories city-equipment-menu__categories--weapon" aria-label="Weapon filters"></div>
+          <div class="city-equipment-menu__filter-actions" aria-label="Equipment filter actions"></div>
           <div class="city-equipment-menu__categories city-equipment-menu__categories--armor" aria-label="Armor filters"></div>
         </div>
         <div class="city-equipment-menu__products" aria-label="Owned equipment"></div>
@@ -1232,7 +1247,11 @@ function createCityEquipmentMenuElements(): CityEquipmentMenuElements {
     detailsSet: root.querySelector<HTMLElement>(".city-equipment-menu__details-set"),
     detailsEquipButton: root.querySelector<HTMLButtonElement>(".city-equipment-menu__details-equip"),
     inventory: root.querySelector<HTMLElement>(".city-equipment-menu__inventory"),
+    filterOutline: root.querySelector<SVGSVGElement>(".city-equipment-menu__filter-outline"),
+    filterOutlineWeapon: root.querySelector<SVGPathElement>(".city-equipment-menu__filter-outline-path--weapon"),
+    filterOutlineArmor: root.querySelector<SVGPathElement>(".city-equipment-menu__filter-outline-path--armor"),
     weaponCategories: root.querySelector<HTMLElement>(".city-equipment-menu__categories--weapon"),
+    filterActions: root.querySelector<HTMLElement>(".city-equipment-menu__filter-actions"),
     armorCategories: root.querySelector<HTMLElement>(".city-equipment-menu__categories--armor"),
     productGrid: root.querySelector<HTMLElement>(".city-equipment-menu__products"),
   };
@@ -1692,72 +1711,281 @@ function renderCityEquipmentCategories(
   host: HTMLElement | null,
   categories: readonly CityEquipmentCategory[],
   activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>,
-  options: CityEquipmentCategoryRenderOptions = {},
 ): void {
   if (!host) {
     return;
   }
 
-  const buttons: HTMLButtonElement[] = [];
-
-  if (options.includeAll) {
-    const button = document.createElement("button");
-    const label = document.createElement("span");
-    const isActive = activeCategoryIds.size <= 0;
-
-    button.type = "button";
-    button.className = "city-equipment-menu__category city-equipment-menu__category--all";
-    button.classList.toggle("city-equipment-menu__category--active", isActive);
-    button.dataset.cityEquipmentAll = "true";
-    button.setAttribute("aria-label", "All equipment");
-    button.setAttribute("aria-pressed", String(isActive));
-    label.className = "city-equipment-menu__category-label";
-    label.textContent = "All";
-    button.append(label);
-    buttons.push(button);
-  }
-
-  buttons.push(
-    ...categories.map((category) => {
-      const button = document.createElement("button");
-      const icon = document.createElement("span");
-      const iconUrl = getCityEquipmentCategoryIconUrl(category);
-
-      button.type = "button";
-      button.className = "city-equipment-menu__category";
-      button.classList.toggle("city-equipment-menu__category--active", activeCategoryIds.has(category.id));
-      button.dataset.cityEquipmentCategory = category.id;
-      button.setAttribute("aria-label", category.label);
-      button.setAttribute("aria-pressed", String(activeCategoryIds.has(category.id)));
-      icon.className = "city-equipment-menu__category-icon";
-
-      if (iconUrl) {
-        icon.style.backgroundImage = `url("${iconUrl}")`;
-      } else {
-        icon.textContent = category.label.slice(0, 1);
-      }
-
-      button.append(icon);
-
-      return button;
-    }),
-  );
-
-  if (options.includeFilter) {
+  const buttons = categories.map((category) => {
     const button = document.createElement("button");
     const icon = document.createElement("span");
+    const iconUrl = getCityEquipmentCategoryIconUrl(category);
 
     button.type = "button";
-    button.className = "city-equipment-menu__category city-equipment-menu__category--filter";
-    button.dataset.cityEquipmentFilter = "true";
-    button.setAttribute("aria-label", "Filter equipment");
-    button.setAttribute("aria-pressed", "false");
-    icon.className = "city-equipment-menu__category-icon city-equipment-menu__category-icon--filter";
+    button.className = "city-equipment-menu__category";
+    button.classList.toggle("city-equipment-menu__category--active", activeCategoryIds.has(category.id));
+    button.dataset.cityEquipmentCategory = category.id;
+    button.setAttribute("aria-label", category.label);
+    button.setAttribute("aria-pressed", String(activeCategoryIds.has(category.id)));
+    icon.className = "city-equipment-menu__category-icon";
+
+    if (iconUrl) {
+      icon.style.backgroundImage = `url("${iconUrl}")`;
+    } else {
+      icon.textContent = category.label.slice(0, 1);
+    }
+
     button.append(icon);
-    buttons.push(button);
-  }
+
+    return button;
+  });
 
   host.replaceChildren(...buttons);
+}
+
+function renderCityEquipmentFilterActions(host: HTMLElement | null, activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>): void {
+  if (!host) {
+    return;
+  }
+
+  host.replaceChildren(
+    createCityEquipmentSideAllButton("weapon", getCityEquipmentSideAllAriaLabel("weapon"), activeCategoryIds),
+    createCityEquipmentFilterButton(),
+    createCityEquipmentSideAllButton("armor", getCityEquipmentSideAllAriaLabel("armor"), activeCategoryIds),
+  );
+}
+
+function syncCityEquipmentFilterOutline(menu: CityEquipmentMenuElements): void {
+  const filterOutline = menu.filterOutline;
+  const weaponPath = menu.filterOutlineWeapon;
+  const armorPath = menu.filterOutlineArmor;
+  const weaponCategories = menu.weaponCategories;
+  const armorCategories = menu.armorCategories;
+  const weaponAll = menu.filterActions?.querySelector<HTMLElement>(".city-equipment-menu__category--weapon-all");
+  const armorAll = menu.filterActions?.querySelector<HTMLElement>(".city-equipment-menu__category--armor-all");
+  const filters = filterOutline?.closest<HTMLElement>(".city-equipment-menu__filters");
+
+  if (!filterOutline || !weaponPath || !armorPath || !weaponCategories || !armorCategories || !weaponAll || !armorAll || !filters) {
+    return;
+  }
+
+  const filterRect = filters.getBoundingClientRect();
+
+  if (filterRect.width <= 0 || filterRect.height <= 0) {
+    return;
+  }
+
+  const armorAllRect = getCityEquipmentLocalRect(armorAll, filterRect);
+
+  filterOutline.setAttribute("viewBox", `0 0 ${formatSvgPathNumber(filterRect.width)} ${formatSvgPathNumber(filterRect.height)}`);
+  weaponPath.setAttribute(
+    "d",
+    createCityEquipmentFilterOutlinePath(
+      getCityEquipmentLocalRect(weaponCategories, filterRect),
+      getCityEquipmentLocalRect(weaponAll, filterRect),
+      "weapon",
+      filterRect.width,
+      armorAllRect.bottom,
+    ),
+  );
+  armorPath.setAttribute(
+    "d",
+    createCityEquipmentFilterOutlinePath(
+      getCityEquipmentLocalRect(armorCategories, filterRect),
+      armorAllRect,
+      "armor",
+      filterRect.width,
+      armorAllRect.bottom,
+    ),
+  );
+}
+
+interface CityEquipmentLocalRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+function getCityEquipmentLocalRect(element: HTMLElement, rootRect: DOMRect): CityEquipmentLocalRect {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    left: rect.left - rootRect.left,
+    top: rect.top - rootRect.top,
+    right: rect.right - rootRect.left,
+    bottom: rect.bottom - rootRect.top,
+  };
+}
+
+function createCityEquipmentFilterOutlinePath(
+  categoryRect: CityEquipmentLocalRect,
+  allRect: CityEquipmentLocalRect,
+  side: CityEquipmentCategorySide,
+  rootWidth: number,
+  sharedBottom: number,
+): string {
+  const outlineInset = 2;
+  const bevel = 3;
+
+  if (side === "weapon") {
+    const left = outlineInset;
+    const top = Math.min(categoryRect.top, allRect.top) + outlineInset;
+    const right = allRect.right - outlineInset;
+    const allBottom = allRect.bottom - outlineInset;
+    const innerRight = categoryRect.right - outlineInset;
+    const bottom = sharedBottom - outlineInset;
+
+    return createBeveledSvgPath([
+      [left, top],
+      [right, top],
+      [right, allBottom],
+      [innerRight, allBottom],
+      [innerRight, bottom],
+      [left, bottom],
+    ], bevel);
+  }
+
+  const right = rootWidth - outlineInset;
+  const top = categoryRect.top + outlineInset;
+  const left = allRect.left + outlineInset;
+  const bottom = sharedBottom - outlineInset;
+  const allTop = allRect.top + outlineInset;
+  const innerLeft = categoryRect.left + outlineInset;
+
+  return createBeveledSvgPath([
+    [innerLeft, top],
+    [right, top],
+    [right, bottom],
+    [left, bottom],
+    [left, allTop],
+    [innerLeft, allTop],
+  ], bevel);
+}
+
+function createBeveledSvgPath(points: readonly (readonly [number, number])[], bevel: number): string {
+  if (points.length < 3) {
+    return "";
+  }
+
+  const commands: string[] = [];
+
+  points.forEach((point, index) => {
+    const previous = points[(index - 1 + points.length) % points.length]!;
+    const next = points[(index + 1) % points.length]!;
+    const entry = moveSvgPointToward(point, previous, bevel);
+    const exit = moveSvgPointToward(point, next, bevel);
+
+    if (index === 0) {
+      commands.push(`M ${formatSvgPathNumber(entry[0])} ${formatSvgPathNumber(entry[1])}`);
+    } else {
+      commands.push(`L ${formatSvgPathNumber(entry[0])} ${formatSvgPathNumber(entry[1])}`);
+    }
+
+    commands.push(`L ${formatSvgPathNumber(exit[0])} ${formatSvgPathNumber(exit[1])}`);
+  });
+
+  commands.push("Z");
+
+  return commands.join(" ");
+}
+
+function moveSvgPointToward(
+  point: readonly [number, number],
+  target: readonly [number, number],
+  distance: number,
+): [number, number] {
+  const deltaX = target[0] - point[0];
+  const deltaY = target[1] - point[1];
+  const length = Math.hypot(deltaX, deltaY);
+
+  if (length <= 0) {
+    return [point[0], point[1]];
+  }
+
+  const offset = Math.min(distance, length / 2);
+
+  return [
+    point[0] + (deltaX / length) * offset,
+    point[1] + (deltaY / length) * offset,
+  ];
+}
+
+function formatSvgPathNumber(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
+
+function createCityEquipmentSideAllButton(
+  side: CityEquipmentCategorySide,
+  ariaLabel: string,
+  activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>,
+): HTMLButtonElement {
+  const button = document.createElement("button");
+  const label = document.createElement("span");
+  const isActive = isCityEquipmentSideAllSelected(activeCategoryIds, side);
+
+  button.type = "button";
+  button.className = [
+    "city-equipment-menu__category",
+    "city-equipment-menu__category--all",
+    "city-equipment-menu__category--side-all",
+    `city-equipment-menu__category--${side}-all`,
+  ].join(" ");
+  button.classList.toggle("city-equipment-menu__category--active", isActive);
+  button.dataset.cityEquipmentSideAll = side;
+  button.setAttribute("aria-label", ariaLabel);
+  button.setAttribute("aria-pressed", String(isActive));
+  label.className = "city-equipment-menu__category-label";
+  label.textContent = "All";
+  button.append(label);
+
+  return button;
+}
+
+function getCityEquipmentSideAllAriaLabel(side: CityEquipmentCategorySide): string {
+  return side === "weapon" ? "All weapons" : "All armor";
+}
+
+function createCityEquipmentFilterButton(): HTMLButtonElement {
+  const button = document.createElement("button");
+  const icon = document.createElement("span");
+
+  button.type = "button";
+  button.className = "city-equipment-menu__category city-equipment-menu__category--filter";
+  button.dataset.cityEquipmentFilter = "true";
+  button.setAttribute("aria-label", "Filter equipment");
+  button.setAttribute("aria-pressed", "false");
+  icon.className = "city-equipment-menu__category-icon city-equipment-menu__category-icon--filter";
+  button.append(icon);
+
+  return button;
+}
+
+function getNextCityEquipmentSideAllSelection(
+  activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>,
+  side: CityEquipmentCategorySide,
+): Set<CityEquipmentCategoryId> {
+  if (isCityEquipmentOnlySideAllSelected(activeCategoryIds, side)) {
+    return new Set();
+  }
+
+  return new Set(getCityEquipmentSideCategoryIds(side));
+}
+
+function isCityEquipmentSideAllSelected(activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>, side: CityEquipmentCategorySide): boolean {
+  return activeCategoryIds.size === 0 || isCityEquipmentOnlySideAllSelected(activeCategoryIds, side);
+}
+
+function isCityEquipmentOnlySideAllSelected(activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>, side: CityEquipmentCategorySide): boolean {
+  const sideCategoryIds = getCityEquipmentSideCategoryIds(side);
+
+  return activeCategoryIds.size === sideCategoryIds.length && sideCategoryIds.every((categoryId) => activeCategoryIds.has(categoryId));
+}
+
+function getCityEquipmentSideCategoryIds(side: CityEquipmentCategorySide): CityEquipmentCategoryId[] {
+  const categories = side === "weapon" ? CITY_EQUIPMENT_WEAPON_CATEGORIES : CITY_EQUIPMENT_ARMOR_CATEGORIES;
+
+  return categories.map((category) => category.id);
 }
 
 function renderCityEquipmentProducts(
