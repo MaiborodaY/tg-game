@@ -88,6 +88,10 @@ interface WeaponCategoryToolbarPlaceholder {
 
 type WeaponCategoryToolbarItem = WeaponCategory | WeaponCategoryToolbarPlaceholder;
 
+function isWeaponCategoryToolbarPlaceholder(item: WeaponCategoryToolbarItem): item is WeaponCategoryToolbarPlaceholder {
+  return "disabled" in item && item.disabled;
+}
+
 interface WeaponEquippedSlotGroup {
   id: string;
   label: string;
@@ -704,7 +708,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.setAttribute("aria-label", category.name);
     button.setAttribute("aria-pressed", "false");
 
-    if ("disabled" in category && category.disabled) {
+    if (isWeaponCategoryToolbarPlaceholder(category)) {
       const icon = document.createElement("span");
 
       button.classList.add("weapon-shop__category-button--placeholder");
@@ -1185,7 +1189,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   function getEquippedWeaponSlotItemId(group: WeaponEquippedSlotGroup, hero: HeroState): HeroItemId | undefined {
     if (group.slot) {
-      return hero.equipment[group.slot];
+      return hero.equipment[group.slot] ?? undefined;
     }
 
     return group.id === "shuriken" ? getHeroShurikenItemId(hero) : undefined;

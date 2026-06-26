@@ -981,7 +981,11 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Comb
   if (actionId === "scroll") {
     const defender = getDefenderForActor(state, actor, defenderActor);
 
-    return Boolean(defender) && getFighterScrollCount(fighter) > 0 && hasCrackableArmorSlot(defender);
+    if (!defender) {
+      return false;
+    }
+
+    return getFighterScrollCount(fighter) > 0 && hasCrackableArmorSlot(defender);
   }
 
   if (actionId === "fireball") {

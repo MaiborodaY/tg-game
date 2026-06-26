@@ -4387,6 +4387,7 @@ class DebugCharacterScene extends Phaser.Scene {
       feetX: debugTuning.characterPreviewFeetX,
       feetY: debugTuning.characterPreviewFeetY,
       scale: debugTuning.characterPreviewScale,
+      logicalScale: debugTuning.characterPreviewScale,
     };
   }
 
@@ -4403,6 +4404,7 @@ class DebugCharacterScene extends Phaser.Scene {
       feetX: width / 2 + debugTuning.animationEditorOffsetX,
       feetY: height - 34 + debugTuning.animationEditorOffsetY,
       scale,
+      logicalScale: scale,
     };
   }
 
@@ -4502,6 +4504,7 @@ class DebugCharacterScene extends Phaser.Scene {
       feetX: debugTuning.facePreviewFocusX - focusLocalX * rootScaleX,
       feetY: debugTuning.facePreviewFocusY - focusLocalY * rootScaleY,
       scale,
+      logicalScale: scale,
     };
   }
 
@@ -4518,6 +4521,7 @@ class DebugCharacterScene extends Phaser.Scene {
       feetX: width / 2,
       feetY: height - SHOP_CHARACTER_PREVIEW_MARGIN_Y,
       scale,
+      logicalScale: scale,
     };
   }
 
@@ -9663,12 +9667,14 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
   syncDuoFighterRenderOrder(target, visuals, current);
 }
 
-function syncDuoFighterRenderOrder(target: ArenaScene, visuals: ArenaVisuals, current: CombatState): void {
-  if (!current.helper || !visuals.helper || !target.arenaLayers) {
+function syncDuoFighterRenderOrder(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState): void {
+  const arenaLayers = (target as Partial<ArenaScene>).arenaLayers;
+
+  if (!current.helper || !visuals.helper || !arenaLayers) {
     return;
   }
 
-  moveFighterVisualBelow(target.arenaLayers.actors, visuals.helper, visuals.player);
+  moveFighterVisualBelow(arenaLayers.actors, visuals.helper, visuals.player);
 }
 
 function moveFighterVisualBelow(

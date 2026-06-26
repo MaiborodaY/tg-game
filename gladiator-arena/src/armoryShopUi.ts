@@ -126,6 +126,10 @@ interface ArmoryCategoryToolbarPlaceholder {
 
 type ArmoryCategoryToolbarItem = ArmoryPartFilter | ArmoryCategoryToolbarPlaceholder;
 
+function isArmoryCategoryToolbarPlaceholder(item: ArmoryCategoryToolbarItem): item is ArmoryCategoryToolbarPlaceholder {
+  return "disabled" in item && item.disabled;
+}
+
 interface ArmoryEquippedSlotGroup {
   id: string;
   label: string;
@@ -979,7 +983,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.setAttribute("aria-label", item.name);
     button.setAttribute("aria-pressed", "false");
 
-    if ("disabled" in item && item.disabled) {
+    if (isArmoryCategoryToolbarPlaceholder(item)) {
       const icon = document.createElement("span");
 
       button.classList.add("armory-shop__category-button--placeholder");
