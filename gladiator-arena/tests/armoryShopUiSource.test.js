@@ -69,6 +69,7 @@ test("armory shop groups generated back and front equipment into one product", (
   assert.equal(armoryShopSource.includes("Math.max(backProduct.price, frontProduct.price)"), true);
   assert.equal(armoryShopSource.includes("price: backProduct.price + frontProduct.price"), false);
   assert.equal(armoryShopSource.includes("itemIds: [backItemId, frontItemId]"), true);
+  assert.equal(armoryShopSource.includes("`${sideFreeName} Pair`"), false);
 });
 
 test("armory shop sorts products by rarity, equipment set, slot, armor, price, then name", () => {

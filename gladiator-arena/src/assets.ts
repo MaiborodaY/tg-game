@@ -250,6 +250,7 @@ export const REST_HEALTH_ICON_ASSET_KEY = "rest-health-icon";
 export const REST_HEALTH_ICON_ASSET_URL = new URL("./assets/ui/profile/stat-health.webp", import.meta.url).href;
 export const REST_STAMINA_ICON_ASSET_KEY = "rest-stamina-icon";
 export const REST_STAMINA_ICON_ASSET_URL = new URL("./assets/ui/profile/stat-stamina.webp", import.meta.url).href;
+export const DAILY_ARENA_ENERGY_ICON_ASSET_URL = new URL("./assets/ui/profile/daily-energy.webp", import.meta.url).href;
 export const SCROLL_CAST_PROP_ASSETS: readonly { key: ScrollCastPropAssetKey; url: string }[] = [
   { key: "scroll-crack-armor-01", url: new URL("./assets/shop-icons/scroll-crack-armor-01.webp", import.meta.url).href },
   { key: "scroll-fireball-01", url: new URL("./assets/shop-icons/scroll-fireball-01.webp", import.meta.url).href },

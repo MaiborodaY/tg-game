@@ -29,7 +29,7 @@ import {
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { isDuoBossAiCombat, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
-import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
+import { DAILY_ARENA_ENERGY_ICON_ASSET_URL, pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation, type BattleResultPresentationStage } from "./domUi";
 import {
@@ -194,6 +194,9 @@ const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
+const ARENA_RANDOM_ENERGY_COST = 1;
+const ARENA_BOSS_ENERGY_COST = 2;
+const ARENA_DUO_BOSS_ENERGY_COST = 3;
 const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 let cityCurtainCleanupTimer: number | undefined;
@@ -1036,20 +1039,32 @@ function renderCityArenaMenu(): void {
 
   syncCityArenaTierSelect(cityArenaTierSelect, visibleTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
-  if (cityArenaEasyName) {
-    cityArenaEasyName.textContent = "Easy";
-  }
-  if (cityArenaRandomName) {
-    cityArenaRandomName.textContent = "Medium";
-  }
-  if (cityArenaHardName) {
-    cityArenaHardName.textContent = "Hard";
-  }
+  syncCityArenaFightTitle(cityArenaEasyName, "Easy", ARENA_RANDOM_ENERGY_COST);
+  syncCityArenaFightTitle(cityArenaRandomName, "Medium", ARENA_RANDOM_ENERGY_COST);
+  syncCityArenaFightTitle(cityArenaHardName, "Hard", ARENA_RANDOM_ENERGY_COST);
+  setCityArenaBotButtonEnergyCost(cityArenaEasyButton, ARENA_RANDOM_ENERGY_COST);
+  setCityArenaBotButtonEnergyCost(cityArenaRandomButton, ARENA_RANDOM_ENERGY_COST);
+  setCityArenaBotButtonEnergyCost(cityArenaHardButton, ARENA_RANDOM_ENERGY_COST);
   syncCityArenaReward(cityArenaEasyReward, easyOpponent?.rewards.win ?? { gold: 4, xp: 4 });
   syncCityArenaReward(cityArenaRandomReward, randomOpponent?.rewards.win ?? { gold: 8, xp: 6 });
   syncCityArenaReward(cityArenaHardReward, hardOpponent?.rewards.win ?? { gold: 15, xp: 10 });
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
   syncCityArenaBotControls();
+}
+
+function syncCityArenaFightTitle(title: HTMLElement | null | undefined, label: string, energyCost: number): void {
+  if (!title) {
+    return;
+  }
+
+  const text = document.createElement("span");
+  const cost = createCityArenaEnergyCostItem(energyCost);
+
+  title.classList.add("city-arena-menu__fight-title");
+  text.className = "city-arena-menu__fight-title-text";
+  text.textContent = label;
+  cost.classList.add("city-arena-menu__fight-cost");
+  title.replaceChildren(text, cost);
 }
 
 function getVisibleCityArenaTiers(): ArenaTierDefinition[] {
@@ -1102,16 +1117,19 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   const rewardLine = document.createElement("span");
   const reward = document.createElement("span");
   const uniqueReward = document.createElement("span");
-  const disabledTitle = getCityArenaBossDisabledTitle(boss);
+  const bossDisabledTitle = getCityArenaBossDisabledTitle(boss, ARENA_BOSS_ENERGY_COST);
+  const duoDisabledTitle = getCityArenaBossDisabledTitle(boss, ARENA_DUO_BOSS_ENERGY_COST);
 
   card.className = "city-arena-menu__boss-card";
   button.className = "city-arena-menu__boss";
   button.type = "button";
-  button.disabled = Boolean(disabledTitle);
-  button.title = disabledTitle;
+  button.disabled = Boolean(bossDisabledTitle);
+  button.title = bossDisabledTitle;
   button.dataset.cityArenaBotButton = "true";
   button.dataset.cityArenaBossTierId = `${boss.tierId}`;
-  name.textContent = boss.name;
+  button.dataset.cityArenaEnergyCost = `${ARENA_BOSS_ENERGY_COST}`;
+  syncCityArenaBossTitle(name, "Boss", ARENA_BOSS_ENERGY_COST);
+  name.title = boss.name;
   rewardLine.className = "city-arena-menu__boss-reward-line";
   reward.className = "city-arena-menu__reward";
   syncCityArenaReward(reward, boss.rewards.win);
@@ -1124,11 +1142,12 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   });
   duoButton.className = "city-arena-menu__boss-duo";
   duoButton.type = "button";
-  duoButton.textContent = "Duo";
-  duoButton.disabled = Boolean(disabledTitle);
-  duoButton.title = disabledTitle || "Fight this boss with an AI helper.";
+  duoButton.replaceChildren(createCityArenaDuoLabel(), createCityArenaEnergyCostItem(ARENA_DUO_BOSS_ENERGY_COST));
+  duoButton.disabled = Boolean(duoDisabledTitle);
+  duoButton.title = duoDisabledTitle || "Fight this boss with an AI helper.";
   duoButton.dataset.cityArenaBotButton = "true";
   duoButton.dataset.cityArenaBossTierId = `${boss.tierId}`;
+  duoButton.dataset.cityArenaEnergyCost = `${ARENA_DUO_BOSS_ENERGY_COST}`;
   duoButton.dataset.defaultTitle = "Fight this boss with an AI helper.";
   duoButton.addEventListener("click", () => {
     void startSelectedArena({ kind: "boss", bossId: boss.id, duo: true });
@@ -1138,8 +1157,27 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   return card;
 }
 
-function getCityArenaBossDisabledTitle(boss: ArenaBossDefinition): string {
-  const botDisabledTitle = getCityArenaBotDisabledTitle();
+function syncCityArenaBossTitle(title: HTMLElement, label: string, energyCost: number): void {
+  const text = document.createElement("span");
+  const cost = createCityArenaEnergyCostItem(energyCost);
+
+  title.classList.add("city-arena-menu__boss-title");
+  text.className = "city-arena-menu__boss-title-text";
+  text.textContent = label;
+  cost.classList.add("city-arena-menu__boss-cost");
+  title.replaceChildren(text, cost);
+}
+
+function createCityArenaDuoLabel(): HTMLElement {
+  const label = document.createElement("span");
+
+  label.className = "city-arena-menu__boss-duo-label";
+  label.textContent = "Duo";
+  return label;
+}
+
+function getCityArenaBossDisabledTitle(boss: ArenaBossDefinition, energyCost: number): string {
+  const botDisabledTitle = getCityArenaBotDisabledTitle(energyCost);
 
   if (botDisabledTitle) {
     return botDisabledTitle;
@@ -1161,12 +1199,27 @@ function createCityArenaEmptyBossMessage(): HTMLElement {
   return message;
 }
 
-function syncCityArenaReward(container: HTMLElement, reward: { gold: number; xp: number }): void {
-  container.setAttribute("aria-label", `${reward.gold} gold, ${reward.xp} XP`);
-  container.replaceChildren(
+function syncCityArenaReward(container: HTMLElement, reward: { gold: number; xp: number }, energyCost?: number): void {
+  const rewardItems = [
     createCityArenaRewardItem(SHOP_GOLD_COIN_ICON_ASSET_URL, "Gold", reward.gold),
     createCityArenaRewardItem(SHOP_XP_ICON_ASSET_URL, "XP", reward.xp),
+  ];
+
+  container.setAttribute(
+    "aria-label",
+    energyCost === undefined
+      ? `${reward.gold} gold, ${reward.xp} XP`
+      : `${energyCost} arena energy cost, ${reward.gold} gold, ${reward.xp} XP`,
   );
+  container.replaceChildren(...(energyCost === undefined ? rewardItems : [createCityArenaEnergyCostItem(energyCost), ...rewardItems]));
+}
+
+function createCityArenaEnergyCostItem(value: number): HTMLElement {
+  const item = createCityArenaRewardItem(DAILY_ARENA_ENERGY_ICON_ASSET_URL, "Arena energy", value);
+
+  item.classList.add("city-arena-menu__reward-item--energy");
+  item.setAttribute("aria-label", `${value} arena energy cost`);
+  return item;
 }
 
 function createCityArenaRewardItem(iconUrl: string, label: string, value: number): HTMLElement {
@@ -1196,17 +1249,18 @@ function canCancelPvpRoom(): boolean {
 }
 
 function syncCityArenaBotControls(): void {
-  const title = getCityArenaBotDisabledTitle();
-  const disabled = Boolean(title);
-
   [cityArenaEasyButton, cityArenaRandomButton, cityArenaHardButton].forEach((button) => {
     if (!button) {
       return;
     }
+    const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
+    const disabled = Boolean(title);
+
     button.disabled = disabled;
     button.title = title;
   });
   cityArenaBossList?.querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]").forEach((button) => {
+    const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
     const bossTierLimitTitle = title ? "" : getCityArenaBossVictoryLimitTitle(Number(button.dataset.cityArenaBossTierId));
     const buttonTitle = title || bossTierLimitTitle;
 
@@ -1215,7 +1269,25 @@ function syncCityArenaBotControls(): void {
   });
 }
 
-function getCityArenaBotDisabledTitle(): string {
+function setCityArenaBotButtonEnergyCost(button: HTMLButtonElement | null, energyCost: number): void {
+  if (button) {
+    button.dataset.cityArenaEnergyCost = `${energyCost}`;
+  }
+}
+
+function getCityArenaBotButtonEnergyCost(button: HTMLButtonElement): number {
+  return normalizeArenaEnergyCost(Number(button.dataset.cityArenaEnergyCost));
+}
+
+function normalizeArenaEnergyCost(value: number): number {
+  if (!Number.isFinite(value)) {
+    return ARENA_RANDOM_ENERGY_COST;
+  }
+
+  return Math.max(ARENA_RANDOM_ENERGY_COST, Math.floor(value));
+}
+
+function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): string {
   if (isPvpRoomBlockingArena()) {
     return "Cancel PvP room before fighting bots.";
   }
@@ -1224,8 +1296,10 @@ function getCityArenaBotDisabledTitle(): string {
     return "Spending arena energy...";
   }
 
-  if (getHeroArenaEnergy(hero).current <= 0) {
-    return "No arena energy left today.";
+  const currentArenaEnergy = getHeroArenaEnergy(hero).current;
+
+  if (currentArenaEnergy < energyCost) {
+    return currentArenaEnergy <= 0 ? "No arena energy left today." : `Not enough arena energy (${currentArenaEnergy}/${energyCost}).`;
   }
 
   return "";
@@ -1365,31 +1439,6 @@ async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<v
   }
 }
 
-async function restoreCurrentPvpRoom(options: { silent?: boolean } = {}): Promise<boolean> {
-  if (pvpControlsBusy || pvpSession) {
-    return false;
-  }
-
-  try {
-    const response = await getCurrentPvpRoom();
-
-    if (!response) {
-      return false;
-    }
-
-    beginPvpRoom(response);
-    if (!options.silent) {
-      setPvpStatus(formatPvpRoomStatus(response.snapshot));
-    }
-    return true;
-  } catch (error) {
-    if (!options.silent) {
-      setPvpStatus(error instanceof Error ? error.message : "PvP restore failed.");
-    }
-    return false;
-  }
-}
-
 async function handleCreatePvpRoom(): Promise<void> {
   if (pvpControlsBusy || pvpSession) {
     return;
@@ -1403,6 +1452,36 @@ async function handleCreatePvpRoom(): Promise<void> {
     await refreshPvpRoomList({ silent: true });
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP room failed.");
+    setPvpControlsBusy(false);
+  }
+}
+
+async function handleSearchPvpRooms(): Promise<void> {
+  if (pvpControlsBusy || pvpSession) {
+    return;
+  }
+
+  pvpRoomsVisible = true;
+  pvpRoomList = [];
+  setPvpControlsBusy(true);
+  setPvpStatus("Searching rooms...");
+
+  try {
+    const currentRoom = await getCurrentPvpRoom();
+
+    if (currentRoom) {
+      beginPvpRoom(currentRoom);
+      setPvpStatus(formatPvpRoomStatus(currentRoom.snapshot));
+      return;
+    }
+
+    const response = await listPvpRooms();
+
+    pvpRoomList = response.rooms;
+    setPvpControlsBusy(false);
+    setPvpStatus(response.rooms.length > 0 ? "Choose a room." : "No open rooms.");
+  } catch (error) {
+    setPvpStatus(error instanceof Error ? error.message : "PvP search failed.");
     setPvpControlsBusy(false);
   }
 }
@@ -1622,7 +1701,6 @@ function openCityArenaMenu(): void {
   syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
-  void restoreCurrentPvpRoom({ silent: true });
 }
 
 function closeCityArenaMenu(): void {
@@ -1647,7 +1725,7 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
     }
   }
 
-  const hasEnergy = await spendArenaEnergyForSelectedArena();
+  const hasEnergy = await spendArenaEnergyForSelectedArena(selection);
 
   if (!hasEnergy) {
     return;
@@ -1667,16 +1745,25 @@ function getArenaSelectionBossVictoryLimitTitle(selection: ArenaMenuSelection): 
   return selection.kind === "boss" ? getCityArenaBossVictoryLimitTitle(createArenaBossEncounter(selection.bossId).tierId) : "";
 }
 
-async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
+function getArenaSelectionEnergyCost(selection: ArenaMenuSelection): number {
+  if (selection.kind !== "boss") {
+    return ARENA_RANDOM_ENERGY_COST;
+  }
+
+  return selection.duo ? ARENA_DUO_BOSS_ENERGY_COST : ARENA_BOSS_ENERGY_COST;
+}
+
+async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection): Promise<boolean> {
   if (arenaEnergySpendPending) {
     return false;
   }
 
+  const energyCost = getArenaSelectionEnergyCost(selection);
   const currentArenaEnergy = getHeroArenaEnergy(hero);
 
-  if (currentArenaEnergy.current <= 0) {
+  if (currentArenaEnergy.current < energyCost) {
     syncCityArenaBotControls();
-    window.alert("No arena energy left today.");
+    window.alert(getArenaEnergyShortageMessage(currentArenaEnergy.current, energyCost));
     return false;
   }
 
@@ -1687,16 +1774,16 @@ async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
     if (canUseGladiatorCloudSave()) {
       hero = {
         ...hero,
-        arenaEnergy: await spendGladiatorArenaEnergy(hero),
+        arenaEnergy: await spendGladiatorArenaEnergy(hero, energyCost),
       };
       saveLocalHeroSave(hero);
     } else {
-      const localSpend = spendHeroArenaEnergy(hero);
+      const localSpend = spendHeroArenaEnergy(hero, energyCost);
 
       if (!localSpend.ok) {
         hero = localSpend.hero;
         syncHeroRuntimeState();
-        window.alert("No arena energy left today.");
+        window.alert(getArenaEnergyShortageMessage(localSpend.arenaEnergy.current, energyCost));
         return false;
       }
 
@@ -1718,7 +1805,7 @@ async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
     }
 
     if (error instanceof GladiatorSaveError && error.code === "not_enough_arena_energy") {
-      window.alert("No arena energy left today.");
+      window.alert(getArenaEnergyShortageMessage(error.arenaEnergy?.current ?? getHeroArenaEnergy(hero).current, energyCost));
     } else {
       console.warn("[arena-energy] Failed to spend arena energy.", error);
       window.alert("Could not start arena. Try again.");
@@ -1730,6 +1817,10 @@ async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
     arenaEnergySpendPending = false;
     syncCityArenaBotControls();
   }
+}
+
+function getArenaEnergyShortageMessage(current: number, energyCost: number): string {
+  return current <= 0 ? "No arena energy left today." : `Not enough arena energy (${current}/${energyCost}).`;
 }
 
 async function finishInitialCityEntry(): Promise<void> {
@@ -1753,7 +1844,6 @@ async function startInitialCityEntry(): Promise<void> {
   if (hasLocalHero) {
     void hydrateHeroFromCloudSave();
   }
-  void restoreCurrentPvpRoom({ silent: true });
 }
 
 function showCityReturnTransition(): void {
@@ -2445,7 +2535,7 @@ cityPvpCreateButton?.addEventListener("click", () => {
   void handleCreatePvpRoom();
 });
 cityPvpJoinButton?.addEventListener("click", () => {
-  void refreshPvpRoomList();
+  void handleSearchPvpRooms();
 });
 cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
   void handleHeroProgressReset();

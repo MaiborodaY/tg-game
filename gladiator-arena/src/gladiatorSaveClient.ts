@@ -55,7 +55,7 @@ export async function deleteGladiatorCloudSave(): Promise<void> {
   await requestGladiatorSave("DELETE");
 }
 
-export async function spendGladiatorArenaEnergy(hero: HeroState): Promise<HeroArenaEnergy> {
+export async function spendGladiatorArenaEnergy(hero: HeroState, amount = 1): Promise<HeroArenaEnergy> {
   const initData = getTelegramInitData();
 
   if (!initData) {
@@ -68,7 +68,7 @@ export async function spendGladiatorArenaEnergy(hero: HeroState): Promise<HeroAr
       "content-type": "application/json",
       "x-telegram-init-data": initData,
     },
-    body: JSON.stringify({ hero }),
+    body: JSON.stringify({ hero, amount }),
   });
   const data = (await response.json()) as GladiatorArenaEnergySpendResponse;
 

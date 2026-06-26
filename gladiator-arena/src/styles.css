@@ -3398,6 +3398,12 @@ body.debug-active .city-menu__portrait-button:active {
     0 1px 2px rgba(8, 2, 1, 0.45);
 }
 
+.city-arena-menu__reward-item--energy {
+  color: #fff0bd;
+  border-color: rgba(125, 235, 220, 0.28);
+  background: rgba(11, 43, 40, 0.32);
+}
+
 .city-arena-menu__reward-icon {
   flex: 0 0 auto;
   width: 17px;
@@ -3596,6 +3602,56 @@ body.debug-active .city-menu__portrait-button:active {
   white-space: nowrap;
 }
 
+.city-arena-menu__fight strong.city-arena-menu__fight-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.city-arena-menu__fight-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-arena-menu__fight-cost {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+}
+
+.city-arena-menu__fight-cost .city-arena-menu__reward-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.city-arena-menu__boss strong.city-arena-menu__boss-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.city-arena-menu__boss-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-arena-menu__boss-cost {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+}
+
+.city-arena-menu__boss-cost .city-arena-menu__reward-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .city-arena-menu__fight:hover,
 .city-arena-menu__boss:hover,
 .city-arena-menu__boss-duo:hover {
@@ -3654,6 +3710,11 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss-duo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   min-width: 0;
   min-height: 98px;
   padding: 0 4px;
@@ -3674,6 +3735,25 @@ body.debug-active .city-menu__portrait-button:active {
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(8, 2, 1, 0.86);
   cursor: pointer;
+}
+
+.city-arena-menu__boss-duo-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-arena-menu__boss-duo .city-arena-menu__reward-item {
+  gap: 2px;
+  padding: 1px 4px 1px 1px;
+  font-size: 0.66rem;
+}
+
+.city-arena-menu__boss-duo .city-arena-menu__reward-icon {
+  width: 15px;
+  height: 15px;
 }
 
 .city-arena-menu__boss-reward-line {
@@ -4585,34 +4665,32 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__arena-energy {
-  display: inline-grid;
-  place-items: center;
-  width: 25px;
-  height: 25px;
-  border: 2px solid #4e2108;
-  border-radius: 50%;
-  color: #3b1404;
-  background:
-    radial-gradient(circle at 38% 28%, rgba(255, 241, 178, 0.92), rgba(255, 177, 58, 0.88) 42%, rgba(191, 84, 12, 0.92) 72%),
-    #d66b14;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: max-content;
+  padding: 3px 8px 4px 3px;
+  border: 1px solid rgba(125, 235, 220, 0.22);
+  border-radius: 999px;
+  color: #fff0bd;
+  background: rgba(11, 43, 40, 0.38);
   box-shadow:
-    inset 0 1px 0 rgba(255, 244, 190, 0.58),
-    inset 0 -3px 0 rgba(92, 28, 4, 0.34),
+    inset 0 1px 0 rgba(181, 255, 246, 0.12),
     0 2px 0 rgba(8, 2, 1, 0.55);
-  font-size: 0.72rem;
+  font-size: clamp(0.7rem, 2.7vw, 0.84rem);
   font-weight: 900;
   line-height: 1;
-  text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 232, 151, 0.46);
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.72);
 }
 
 .city-profile__arena-energy--empty {
-  color: #ffe7ad;
-  background:
-    radial-gradient(circle at 38% 28%, rgba(180, 113, 47, 0.72), rgba(96, 35, 10, 0.9) 72%),
-    #54230b;
+  color: #d0a66d;
   opacity: 0.76;
-  text-shadow: 0 1px 0 rgba(22, 7, 3, 0.55);
+}
+
+.city-profile__arena-energy .city-arena-energy-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .city-profile__section-heading {
@@ -5982,6 +6060,17 @@ body.debug-active .city-menu__portrait-button:active {
   align-items: center;
 }
 
+.city-menu__hero-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.city-menu__hero-name-row .city-menu__hero-name {
+  min-width: 0;
+}
+
 .city-menu__hero-name,
 .city-menu__hero-gold,
 .city-menu__hero-level,
@@ -6009,35 +6098,34 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-menu__hero-energy {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: max-content;
   flex: 0 0 auto;
-  border: 1px solid #4e2108;
-  border-radius: 50%;
-  color: #3b1404;
-  background:
-    radial-gradient(circle at 38% 28%, rgba(255, 241, 178, 0.94), rgba(255, 177, 58, 0.9) 44%, rgba(191, 84, 12, 0.94) 74%),
-    #d66b14;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 244, 190, 0.5),
-    inset 0 -2px 0 rgba(92, 28, 4, 0.34),
-    0 1px 0 rgba(8, 2, 1, 0.58);
-  font-size: 0.56rem;
+  color: #fff0bd;
+  font-size: clamp(0.56rem, 2.1vw, 0.68rem);
   font-weight: 900;
   line-height: 1;
-  text-align: center;
-  text-shadow: 0 1px 0 rgba(255, 232, 151, 0.44);
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.78);
+}
+
+.city-arena-energy-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.68));
+}
+
+.city-arena-energy-value {
+  font-variant-numeric: tabular-nums;
 }
 
 .city-menu__hero-energy--empty {
-  color: #ffe7ad;
-  background:
-    radial-gradient(circle at 38% 28%, rgba(180, 113, 47, 0.72), rgba(96, 35, 10, 0.9) 72%),
-    #54230b;
+  color: #d0a66d;
   opacity: 0.78;
-  text-shadow: 0 1px 0 rgba(22, 7, 3, 0.55);
 }
 
 .city-menu__hero-gold {

@@ -308,6 +308,46 @@ test("hero starts with empty equipment including gloves wrists and shield", () =
   assert.equal(hero.getHeroTotalWins(hero.createDefaultHero()), 0);
 });
 
+test("arena energy can be spent in variable amounts", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const firstSpend = hero.spendHeroArenaEnergy(baseHero, 3, "2026-01-01T01:00:00.000Z");
+
+  assert.equal(firstSpend.ok, true);
+  assert.equal(firstSpend.arenaEnergy.current, 7);
+
+  const exactSpend = hero.spendHeroArenaEnergy(
+    {
+      ...firstSpend.hero,
+      arenaEnergy: {
+        current: 2,
+        max: hero.HERO_ARENA_ENERGY_MAX,
+        dayKey: "2026-01-01",
+      },
+    },
+    2,
+    "2026-01-01T02:00:00.000Z",
+  );
+
+  assert.equal(exactSpend.ok, true);
+  assert.equal(exactSpend.arenaEnergy.current, 0);
+
+  const failedSpend = hero.spendHeroArenaEnergy(
+    {
+      ...baseHero,
+      arenaEnergy: {
+        current: 2,
+        max: hero.HERO_ARENA_ENERGY_MAX,
+        dayKey: "2026-01-01",
+      },
+    },
+    3,
+    "2026-01-01T03:00:00.000Z",
+  );
+
+  assert.equal(failedSpend.ok, false);
+  assert.equal(failedSpend.arenaEnergy.current, 2);
+});
+
 test("preview equipment shows bows without mutating equipped melee weapons", () => {
   const equipment = {
     ...hero.createDefaultHeroEquipment(),

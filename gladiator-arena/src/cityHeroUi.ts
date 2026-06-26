@@ -1,5 +1,6 @@
 import type { ArenaDebugTuning } from "./debugTuning";
 import {
+  DAILY_ARENA_ENERGY_ICON_ASSET_URL,
   DAMAGE_BLOCK_ICON_ASSET_URL,
   SHOP_CATEGORY_AXE_ICON_ASSET_URL,
   SHOP_CATEGORY_ARMS_ICON_ASSET_URL,
@@ -27,6 +28,7 @@ import {
   getHeroTotalWins,
   HERO_ITEM_CATALOG,
   isHeroConsumableItem,
+  type HeroArenaEnergy,
   type HeroAppearance,
   type HeroAppearanceSlotKey,
   type HeroAttributeKey,
@@ -349,10 +351,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   const arenaEnergy = getHeroArenaEnergy(hero);
 
   if (refs.arenaEnergy) {
-    refs.arenaEnergy.textContent = String(arenaEnergy.current);
-    refs.arenaEnergy.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
-    refs.arenaEnergy.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
-    refs.arenaEnergy.classList.toggle("city-menu__hero-energy--empty", arenaEnergy.current <= 0);
+    renderCityArenaEnergyBadge(refs.arenaEnergy, arenaEnergy, "city-menu__hero-energy--empty");
   }
 
   if (refs.xpFill) {
@@ -381,10 +380,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   }
 
   if (refs.profileArenaEnergy) {
-    refs.profileArenaEnergy.textContent = String(arenaEnergy.current);
-    refs.profileArenaEnergy.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
-    refs.profileArenaEnergy.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
-    refs.profileArenaEnergy.classList.toggle("city-profile__arena-energy--empty", arenaEnergy.current <= 0);
+    renderCityArenaEnergyBadge(refs.profileArenaEnergy, arenaEnergy, "city-profile__arena-energy--empty");
   }
 
   if (refs.profileXpFill) {
@@ -419,6 +415,23 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   });
 
   renderCityHeroProfileStats(refs, hero);
+}
+
+function renderCityArenaEnergyBadge(element: HTMLElement, arenaEnergy: HeroArenaEnergy, emptyClassName: string): void {
+  const icon = document.createElement("img");
+  const value = document.createElement("span");
+
+  icon.className = "city-arena-energy-icon";
+  icon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  value.className = "city-arena-energy-value";
+  value.textContent = `${arenaEnergy.current}/${arenaEnergy.max}`;
+  element.replaceChildren(icon, value);
+  element.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
+  element.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
+  element.classList.toggle(emptyClassName, arenaEnergy.current <= 0);
 }
 
 function renderCityHeroRank(element: HTMLElement, hero: HeroState): void {

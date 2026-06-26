@@ -13,6 +13,7 @@ const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"
 const arenaTiersSource = readFileSync(resolve(currentDir, "../src/generated/arenaTiers.generated.ts"), "utf8");
 const battleResultFrameAssetPath = resolve(currentDir, "../src/assets/ui/battle-result/battle-result-card-frame.webp");
 const battleResultLevelBadgeAssetPath = resolve(currentDir, "../src/assets/ui/battle-result/battle-result-level-badge.webp");
+const dailyArenaEnergyAssetPath = resolve(currentDir, "../src/assets/ui/profile/daily-energy.webp");
 
 test("fighter stats are mounted inside the battle overlay", () => {
   const statusStripIndex = html.indexOf('<section class="status-strip"');
@@ -189,6 +190,8 @@ test("city hero widget lives in the bottom dock with a thumb-friendly portrait",
   assert.equal(html.includes('id="heroInfoLevel"'), true);
   assert.equal(html.includes('id="heroInfoRank"'), true);
   assert.equal(html.includes('id="heroInfoXpText"'), true);
+  assert.equal(heroWidgetHtml.includes('class="city-menu__hero-name-row"'), true);
+  assert.equal(heroWidgetHtml.indexOf('id="heroInfoName"') < heroWidgetHtml.indexOf('id="heroInfoArenaEnergy"'), true);
   assert.equal(heroWidgetHtml.includes('class="city-menu__hero-xp-icon"'), true);
   assert.equal(heroWidgetHtml.includes('<div class="city-menu__hero-xp-track">'), true);
   assert.equal(heroWidgetHtml.indexOf('id="heroInfoXpFill"') < heroWidgetHtml.indexOf('id="heroInfoXpText"'), true);
@@ -206,6 +209,11 @@ test("city hero widget lives in the bottom dock with a thumb-friendly portrait",
   assert.equal(cityHeroUiSource.includes('{ minLevel: 10, title: "Arena Blood" }'), true);
   assert.equal(cityHeroUiSource.includes('{ minLevel: 5, title: "Pit Fighter" }'), true);
   assert.equal(cityHeroUiSource.includes('{ minLevel: 1, title: "Novice" }'), true);
+  assert.equal(existsSync(dailyArenaEnergyAssetPath), true);
+  assert.equal(cityHeroUiSource.includes("DAILY_ARENA_ENERGY_ICON_ASSET_URL"), true);
+  assert.equal(cityHeroUiSource.includes('value.textContent = `${arenaEnergy.current}/${arenaEnergy.max}`'), true);
+  assert.equal(stylesSource.includes(".city-arena-energy-icon"), true);
+  assert.equal(stylesSource.includes(".city-arena-energy-value"), true);
   assert.equal(stylesSource.includes(".city-menu__hero-rank"), true);
   assert.equal(stylesSource.includes(".city-menu__hero-wins"), true);
   assert.equal(stylesSource.includes(".city-menu__hero-xp-icon"), true);
@@ -411,6 +419,7 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(html.includes('id="cityArenaHardButton"'), true);
   assert.equal(html.includes('id="cityArenaTierSelect"'), true);
   assert.equal(html.includes('id="cityArenaBossList"'), true);
+  assert.equal(html.includes('id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="button">SEARCH</button>'), true);
   assert.equal(html.includes('aria-label="Arena choices"'), true);
   assert.equal(html.includes("Arena contracts"), false);
   assert.equal(html.includes("Easy contract"), false);
@@ -446,14 +455,15 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes(" - Locked"), true);
   assert.equal(mainSource.includes("Defeat previous boss to unlock"), true);
   assert.equal(mainSource.includes("select.disabled = visibleTiers.length <= 1"), true);
-  assert.equal(mainSource.includes("name.textContent = boss.name"), true);
-  assert.equal(mainSource.includes('cityArenaEasyName.textContent = "Easy"'), true);
-  assert.equal(mainSource.includes('cityArenaRandomName.textContent = "Medium"'), true);
-  assert.equal(mainSource.includes('cityArenaHardName.textContent = "Hard"'), true);
+  assert.equal(mainSource.includes('syncCityArenaBossTitle(name, "Boss", ARENA_BOSS_ENERGY_COST)'), true);
+  assert.equal(mainSource.includes("name.title = boss.name"), true);
+  assert.equal(mainSource.includes('syncCityArenaFightTitle(cityArenaEasyName, "Easy", ARENA_RANDOM_ENERGY_COST)'), true);
+  assert.equal(mainSource.includes('syncCityArenaFightTitle(cityArenaRandomName, "Medium", ARENA_RANDOM_ENERGY_COST)'), true);
+  assert.equal(mainSource.includes('syncCityArenaFightTitle(cityArenaHardName, "Hard", ARENA_RANDOM_ENERGY_COST)'), true);
   assert.equal(mainSource.includes("+ unique reward"), true);
   assert.equal(mainSource.includes("city-arena-menu__boss-card"), true);
   assert.equal(mainSource.includes("city-arena-menu__boss-duo"), true);
-  assert.equal(mainSource.includes('duoButton.textContent = "Duo"'), true);
+  assert.equal(mainSource.includes('label.textContent = "Duo"'), true);
   assert.equal(mainSource.includes('void startSelectedArena({ kind: "boss", bossId: boss.id, duo: true });'), true);
   assert.equal(mainSource.includes("getCityArenaBossVictoryLimitTitle"), true);
   assert.equal(mainSource.includes("getArenaSelectionBossVictoryLimitTitle"), true);
@@ -462,8 +472,17 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("Number(button.dataset.cityArenaBossTierId)"), true);
   assert.equal(mainSource.includes("hasHeroArenaBossVictoryForTier(hero, tierId)"), true);
   assert.equal(mainSource.includes("Boss victory limit reached for this tier today."), true);
-  assert.equal(mainSource.indexOf("getArenaSelectionBossVictoryLimitTitle(selection)") < mainSource.indexOf("spendArenaEnergyForSelectedArena()"), true);
+  assert.equal(mainSource.indexOf("getArenaSelectionBossVictoryLimitTitle(selection)") < mainSource.indexOf("spendArenaEnergyForSelectedArena(selection)"), true);
   assert.equal(mainSource.includes('querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]")'), true);
+  assert.equal(mainSource.includes("const ARENA_RANDOM_ENERGY_COST = 1"), true);
+  assert.equal(mainSource.includes("const ARENA_BOSS_ENERGY_COST = 2"), true);
+  assert.equal(mainSource.includes("const ARENA_DUO_BOSS_ENERGY_COST = 3"), true);
+  assert.equal(mainSource.includes("DAILY_ARENA_ENERGY_ICON_ASSET_URL"), true);
+  assert.equal(mainSource.includes("button.dataset.cityArenaEnergyCost"), true);
+  assert.equal(mainSource.includes("duoButton.dataset.cityArenaEnergyCost"), true);
+  assert.equal(mainSource.includes("getArenaSelectionEnergyCost(selection)"), true);
+  assert.equal(mainSource.includes("spendGladiatorArenaEnergy(hero, energyCost)"), true);
+  assert.equal(mainSource.includes("spendHeroArenaEnergy(hero, energyCost)"), true);
   assert.equal(arenaTiersSource.includes('name: "Dust Arena"'), true);
   assert.equal(arenaTiersSource.includes('name: "Dust Arena I"'), false);
   assert.equal(mainSource.includes("boss.baseStats"), false);
@@ -474,10 +493,19 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("SHOP_XP_ICON_ASSET_URL"), true);
   assert.equal(mainSource.includes("formatCityArenaReward"), false);
   assert.equal(mainSource.includes("city-menu--arena-select-open"), true);
+  assert.equal(mainSource.includes("function handleSearchPvpRooms()"), true);
+  assert.equal(mainSource.includes("const currentRoom = await getCurrentPvpRoom()"), true);
+  assert.equal(mainSource.includes("void handleSearchPvpRooms();"), true);
+  assert.equal(mainSource.includes("function restoreCurrentPvpRoom"), false);
+  assert.equal(mainSource.includes("void restoreCurrentPvpRoom({ silent: true });"), false);
   assert.equal(stylesSource.includes(".city-arena-menu__tier-select"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss-card"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss-duo"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__fight-title"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__fight-cost"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__boss-title"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__boss-cost"), true);
   assert.equal(stylesSource.includes("assets/ui/arena-difficulty/difficulty-easy.webp"), true);
   assert.equal(stylesSource.includes("assets/ui/arena-difficulty/difficulty-medium.webp"), true);
   assert.equal(stylesSource.includes("assets/ui/arena-difficulty/difficulty-hard.webp"), true);

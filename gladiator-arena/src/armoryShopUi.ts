@@ -573,7 +573,7 @@ function getPairedArmoryProductName(product: ArmoryProduct, pairConfig: PairedAr
 
   return singularLabelPattern.test(sideFreeName)
     ? sideFreeName.replace(singularLabelPattern, pairConfig.pluralLabel)
-    : `${sideFreeName} Pair`;
+    : sideFreeName;
 }
 
 function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotConfig): string {

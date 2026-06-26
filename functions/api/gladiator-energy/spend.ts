@@ -15,6 +15,7 @@ import {
 
 interface SpendArenaEnergyRequest {
   hero?: unknown;
+  amount?: unknown;
 }
 
 type SpendArenaEnergyResult =
@@ -39,7 +40,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const telegramUserId = String(auth.user.id);
     const nowIso = new Date().toISOString();
     const initialArenaEnergy = await resolveInitialArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId, requestBody.hero, nowIso);
-    const spend = await spendPlayerDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId, initialArenaEnergy, nowIso);
+    const spendAmount = getArenaEnergySpendAmount(requestBody.amount);
+    const spend = await spendPlayerDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId, initialArenaEnergy, spendAmount, nowIso);
 
     return spend.ok
       ? json({ ok: true, arenaEnergy: spend.arenaEnergy })
@@ -90,6 +92,7 @@ async function spendPlayerDailyArenaEnergy(
   db: D1Database,
   telegramUserId: string,
   initialArenaEnergy: HeroArenaEnergy,
+  amount: number,
   nowIso: string,
 ): Promise<SpendArenaEnergyResult> {
   await initializePlayerDailyArenaEnergy(db, telegramUserId, initialArenaEnergy, nowIso);
@@ -98,16 +101,16 @@ async function spendPlayerDailyArenaEnergy(
     .prepare(
       `
         UPDATE player_daily_resources SET
-          current = current - 1,
+          current = current - ?,
           max = ?,
           updated_at = ?
         WHERE telegram_user_id = ?
           AND resource_key = ?
           AND day_key = ?
-          AND current > 0
+          AND current >= ?
       `,
     )
-    .bind(HERO_ARENA_ENERGY_MAX, nowIso, telegramUserId, ARENA_ENERGY_RESOURCE_KEY, initialArenaEnergy.dayKey)
+    .bind(amount, HERO_ARENA_ENERGY_MAX, nowIso, telegramUserId, ARENA_ENERGY_RESOURCE_KEY, initialArenaEnergy.dayKey, amount)
     .run();
   const arenaEnergy = (await readPlayerDailyArenaEnergy(db, telegramUserId, initialArenaEnergy.dayKey)) ?? initialArenaEnergy;
 
@@ -116,6 +119,16 @@ async function spendPlayerDailyArenaEnergy(
   }
 
   return { ok: true, arenaEnergy };
+}
+
+function getArenaEnergySpendAmount(value: unknown): number {
+  const amount = typeof value === "number" ? value : typeof value === "string" ? Number(value) : 1;
+
+  if (!Number.isFinite(amount)) {
+    return 1;
+  }
+
+  return Math.max(1, Math.min(HERO_ARENA_ENERGY_MAX, Math.floor(amount)));
 }
 
 function initializePlayerDailyArenaEnergy(

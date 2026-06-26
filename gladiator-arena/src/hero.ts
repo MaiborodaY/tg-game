@@ -1125,11 +1125,13 @@ export function restoreHeroArenaEnergy(hero: HeroState, now = new Date().toISOSt
 
 export function spendHeroArenaEnergy(
   hero: HeroState,
+  amount = 1,
   now = new Date().toISOString(),
 ): { ok: true; hero: HeroState; arenaEnergy: HeroArenaEnergy } | { ok: false; hero: HeroState; arenaEnergy: HeroArenaEnergy } {
   const arenaEnergy = getHeroArenaEnergy(hero, now);
+  const spendAmount = clampHeroArenaEnergySpendAmount(amount);
 
-  if (arenaEnergy.current <= 0) {
+  if (arenaEnergy.current < spendAmount) {
     return {
       ok: false,
       hero: refreshHeroArenaEnergy(hero, now),
@@ -1139,7 +1141,7 @@ export function spendHeroArenaEnergy(
 
   const nextArenaEnergy: HeroArenaEnergy = {
     ...arenaEnergy,
-    current: arenaEnergy.current - 1,
+    current: arenaEnergy.current - spendAmount,
   };
 
   return {
@@ -1151,6 +1153,14 @@ export function spendHeroArenaEnergy(
     },
     arenaEnergy: nextArenaEnergy,
   };
+}
+
+function clampHeroArenaEnergySpendAmount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1;
+  }
+
+  return Math.max(1, Math.min(HERO_ARENA_ENERGY_MAX, Math.floor(value)));
 }
 
 function clampHeroArenaEnergyValue(value: number): number {
