@@ -7143,7 +7143,11 @@ function syncSinglePaperDollEquipmentSlot(
     return undefined;
   }
 
-  const slotContainer = slot as Phaser.GameObjects.Container;
+  const slotContainer = getPaperDollEquipmentSlotContainer(slot);
+  if (!slotContainer) {
+    return undefined;
+  }
+
   const config = paperDollEquipmentSlotConfigs.get(slot) ?? PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey];
   let image = getPaperDollEquipmentSlotImage(slot);
 
@@ -9076,9 +9080,20 @@ function isPaperDollEquipmentSlotVisible(slot: FighterPart): boolean {
 }
 
 function getPaperDollEquipmentSlotImage(slot: FighterPart): Phaser.GameObjects.Image | undefined {
-  const slotContainer = slot as Phaser.GameObjects.Container;
+  const slotContainer = getPaperDollEquipmentSlotContainer(slot);
+  if (!slotContainer) {
+    return undefined;
+  }
 
   return slotContainer.list.find((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
+}
+
+function getPaperDollEquipmentSlotContainer(slot: FighterPart | undefined): Phaser.GameObjects.Container | undefined {
+  if (!(slot instanceof Phaser.GameObjects.Container) || !slot.scene?.textures) {
+    return undefined;
+  }
+
+  return slot;
 }
 
 function applyPaperDollWeaponTopOverlayCrop(image: Phaser.GameObjects.Image, crop: PaperDollWeaponOverlayCrop): void {

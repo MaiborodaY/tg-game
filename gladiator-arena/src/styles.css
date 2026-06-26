@@ -5476,29 +5476,29 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: center;
   gap: 5px;
   min-height: 62px;
   padding: 4px 5px 4px 4px;
-  border: 2px solid #1c0c06;
+  border: 2px solid var(--shop-rarity, #1c0c06);
   border-radius: 7px;
   background:
     radial-gradient(circle at 22% 24%, rgba(255, 246, 210, 0.22), transparent 19%),
     radial-gradient(circle at 78% 36%, rgba(8, 2, 1, 0.18), transparent 23%),
     radial-gradient(ellipse at 48% 18%, rgba(255, 246, 210, 0.17), transparent 50%),
     radial-gradient(circle at 35% 72%, rgba(8, 2, 1, 0.22), transparent 28%),
-    repeating-linear-gradient(115deg, rgba(255, 246, 210, 0.035) 0 1px, transparent 1px 5px),
     linear-gradient(135deg, rgba(255, 240, 189, 0.13), rgba(255, 240, 189, 0.04) 35%, transparent 36%),
     linear-gradient(180deg, rgba(255, 240, 189, 0.06), transparent 36%, rgba(8, 2, 1, 0.18) 100%),
     var(--ui-profile-backdrop-texture) center / var(--ui-profile-backdrop-size) repeat,
-    linear-gradient(180deg, var(--shop-rarity-light, #d4c49c) 0%, var(--shop-rarity, #9d8d74) 48%, var(--shop-rarity-dark, #4d4232) 100%);
-  background-blend-mode: screen, multiply, screen, multiply, screen, screen, multiply, soft-light, normal;
+    linear-gradient(180deg, rgba(55, 22, 10, 0.82) 0%, rgba(23, 7, 3, 0.92) 52%, rgba(10, 2, 1, 0.98) 100%);
+  background-blend-mode: screen, multiply, screen, multiply, screen, multiply, soft-light, normal;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 246, 210, 0.22),
-    inset 0 3px 0 rgba(255, 246, 210, 0.18),
-    inset 0 -6px 10px rgba(8, 2, 1, 0.26),
-    inset 0 0 13px rgba(8, 2, 1, 0.12),
+    inset 0 0 0 1px rgba(255, 246, 210, 0.14),
+    inset 0 3px 0 rgba(255, 246, 210, 0.1),
+    inset 0 -6px 10px rgba(8, 2, 1, 0.32),
+    inset 0 0 15px var(--shop-rarity-soft, rgba(255, 240, 189, 0.12)),
+    0 0 8px var(--shop-rarity-soft, rgba(255, 240, 189, 0.12)),
     0 2px 0 rgba(8, 2, 1, 0.76);
   cursor: pointer;
 }
@@ -5525,7 +5525,7 @@ body.debug-active .city-menu__portrait-button:active {
     inset 0 3px 0 rgba(255, 246, 210, 0.24),
     inset 0 -4px 0 rgba(8, 2, 1, 0.18),
     0 0 0 1px var(--shop-rarity-light, #fff0bd),
-    0 0 10px 2px var(--shop-rarity-soft, rgba(255, 240, 189, 0.28)),
+    0 0 12px 2px var(--shop-rarity-soft, rgba(255, 240, 189, 0.28)),
     0 2px 0 rgba(8, 2, 1, 0.74);
 }
 
@@ -5548,8 +5548,8 @@ body.debug-active .city-menu__portrait-button:active {
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 52px;
+  width: 38px;
+  height: 46px;
   border: 1px solid rgba(255, 240, 189, 0.22);
   border-radius: 6px;
   background:
@@ -5561,8 +5561,8 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-equipment-menu__item-icon {
-  width: 88%;
-  height: 88%;
+  width: 84%;
+  height: 84%;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -5611,14 +5611,14 @@ body.debug-active .city-menu__portrait-button:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 15px;
-  padding: 2px 4px;
+  min-height: 17px;
+  padding: 2px 5px;
   border: 1px solid rgba(255, 220, 146, 0.22);
   border-radius: 4px;
   color: #fff0bd;
   background: linear-gradient(180deg, rgba(72, 31, 13, 0.74), rgba(18, 5, 2, 0.72));
   box-shadow: inset 0 1px 0 rgba(255, 246, 210, 0.11);
-  font-size: clamp(0.43rem, 1.5vw, 0.52rem);
+  font-size: clamp(0.47rem, 1.65vw, 0.56rem);
   font-weight: 900;
   line-height: 1;
 }
@@ -5646,8 +5646,8 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-equipment-menu__item-stat::before {
   content: "";
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   background: var(--city-equipment-item-stat-icon) center / contain no-repeat;
   filter: drop-shadow(0 1px 1px rgba(8, 2, 1, 0.58));
 }
@@ -5661,9 +5661,9 @@ body.debug-active .city-menu__portrait-button:active {
   content: "";
   width: 0;
   height: 0;
-  border-right: 4px solid transparent;
-  border-left: 4px solid transparent;
-  border-bottom: 7px solid currentColor;
+  border-right: 4.5px solid transparent;
+  border-left: 4.5px solid transparent;
+  border-bottom: 8px solid currentColor;
 }
 
 .city-equipment-menu__item-diff--better {
@@ -6361,14 +6361,79 @@ body.debug-active .city-menu__portrait-button:active {
   }
 
   .city-equipment-menu__item {
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: 36px minmax(0, 1fr);
     min-height: 58px;
     padding: 4px;
   }
 
   .city-equipment-menu__item-icon-frame {
-    width: 40px;
-    height: 48px;
+    width: 34px;
+    height: 42px;
+  }
+}
+
+@media (max-width: 460px) {
+  .city-equipment-menu {
+    inset: 0;
+    place-items: stretch;
+  }
+
+  .city-equipment-menu__panel {
+    width: 100%;
+    padding: 2px 0 0;
+  }
+
+  .city-equipment-menu__stage {
+    --city-equipment-edge-inset: 2px;
+    --city-equipment-slot-top-inset: 0px;
+    --city-equipment-slot-bottom-inset: 2px;
+    --city-equipment-weapon-slot-size: clamp(46px, 12.4vw, 56px);
+
+    border-right-width: 0;
+    border-left-width: 0;
+    border-radius: 0;
+  }
+
+  .city-equipment-menu__equipped-slots {
+    --city-equipment-slot-size: clamp(48px, 12.5vw, 56px);
+
+    width: calc(100% - 8px);
+    max-width: none;
+    gap: 1px;
+  }
+
+  .city-equipment-menu__slot {
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  .city-equipment-menu__weapon-slots {
+    bottom: -34px;
+    gap: 4px;
+  }
+
+  .city-equipment-menu__inventory {
+    padding: 0 0 5px;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-radius: 0;
+  }
+
+  .city-equipment-menu__filters {
+    grid-template-rows: repeat(2, 46px);
+  }
+
+  .city-equipment-menu__categories {
+    grid-auto-rows: 46px;
+  }
+
+  .city-equipment-menu__category {
+    height: 46px;
+  }
+
+  .city-equipment-menu__products {
+    padding: 3px 5px 8px;
   }
 }
 

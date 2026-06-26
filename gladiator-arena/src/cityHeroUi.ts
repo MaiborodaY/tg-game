@@ -723,6 +723,22 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     selectedProductId = undefined;
     render();
   };
+  const handleDetailsOutsideClick = (event: MouseEvent) => {
+    if (!isOpen || !selectedProductId || !menu.details || menu.details.hidden) {
+      return;
+    }
+
+    const target = event.target instanceof Node ? event.target : null;
+
+    if (target && menu.details.contains(target)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    selectedProductId = undefined;
+    render();
+  };
   const handleEquipClick = (event: MouseEvent) => {
     event.preventDefault();
 
@@ -777,6 +793,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   profile?.addEventListener("city-profile-visibility", handleProfileVisibility);
   window.addEventListener("resize", handleWindowResize);
   document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("click", handleDetailsOutsideClick, true);
 
   function render(): void {
     if (!isOpen) {
@@ -814,6 +831,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
       profile?.removeEventListener("city-profile-visibility", handleProfileVisibility);
       window.removeEventListener("resize", handleWindowResize);
       document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("click", handleDetailsOutsideClick, true);
       menu.root.remove();
     },
   };
