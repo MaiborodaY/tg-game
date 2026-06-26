@@ -1547,11 +1547,12 @@ export function getHeroEquipmentSlotDamageBonus(equipment: HeroEquipment, slotKe
 
 export function getHeroAttributeTotals(hero: HeroState): HeroBaseStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
+  const equipmentSetBonuses = getHeroEquipmentSetStatBonuses(hero.equipment);
 
   return {
-    strength: getHeroAttributeTotal(hero.baseStats.strength, equipmentBonuses.strength),
-    agility: getHeroAttributeTotal(hero.baseStats.agility, equipmentBonuses.agility),
-    vitality: getHeroAttributeTotal(hero.baseStats.vitality, equipmentBonuses.vitality),
+    strength: getHeroAttributeTotal(hero.baseStats.strength, equipmentBonuses.strength + equipmentSetBonuses.strength),
+    agility: getHeroAttributeTotal(hero.baseStats.agility, equipmentBonuses.agility + equipmentSetBonuses.agility),
+    vitality: getHeroAttributeTotal(hero.baseStats.vitality, equipmentBonuses.vitality + equipmentSetBonuses.vitality),
   };
 }
 
@@ -2311,7 +2312,7 @@ export function createDuoBossCombatStateFromHero(hero: HeroState, encounter: Are
     mode: "duoBossAi",
   };
   const state = createCombatStateFromHero(hero, duoEncounter);
-  const helperLoadout = createRandomEnemyLoadout(random, encounter.tierId, DEFAULT_ARENA_DIFFICULTY_ID);
+  const helperLoadout = createDuoBossHelperLoadout(random, encounter.tierId);
   const helperName = pickRandomArenaOpponentName(random);
   const helper = createCombatFighterStateFromEnemyLoadout(helperName, helperLoadout, freshState().player);
 
@@ -2332,6 +2333,13 @@ export function createDuoBossCombatStateFromHero(hero: HeroState, encounter: Are
       { text: "Duo boss prototype: act first, your helper follows, then the boss answers." },
     ],
   };
+}
+
+function createDuoBossHelperLoadout(random: () => number, tierId: number): EnemyLoadout {
+  const mediumOpponents = resolveArenaRandomOpponentsForTier(tierId).filter((opponent) => opponent.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID);
+  const opponent = mediumOpponents.length > 0 ? pickRandom(mediumOpponents, random) : undefined;
+
+  return opponent ? createRandomEnemyLoadoutForOpponent(opponent, random) : createRandomEnemyLoadout(random, tierId, DEFAULT_ARENA_DIFFICULTY_ID);
 }
 
 function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: EnemyLoadout, base: FighterState): FighterState {

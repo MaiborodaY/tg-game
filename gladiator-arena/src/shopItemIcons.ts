@@ -35,7 +35,7 @@ const SHOP_ITEM_ICON_URLS = {
   ),
 } as Partial<Record<HeroItemId, string>>;
 
-let shopItemIconPrewarmPromise: Promise<void> | undefined;
+const shopItemIconPrewarmPromises = new Map<string, Promise<void>>();
 const shopItemIconPrewarmImages = new Set<HTMLImageElement>();
 
 export function getShopProductIconUrl(itemIds: readonly HeroItemId[]): string | undefined {
@@ -54,16 +54,14 @@ function getRepresentativeShopItemIconId(itemIds: readonly HeroItemId[]): HeroIt
   return frontItemId ?? [...itemIds].reverse().find((itemId) => SHOP_ITEM_ICON_URLS[itemId]);
 }
 
-export function prewarmShopItemIconsForBrowserCache(): Promise<void> {
+export function prewarmShopProductIcons(itemIdGroups: readonly (readonly HeroItemId[])[]): Promise<void> {
   if (typeof window === "undefined") {
     return Promise.resolve();
   }
 
-  shopItemIconPrewarmPromise ??= Promise.all(
-    [...new Set(Object.values(SHOP_ITEM_ICON_URLS).filter((url): url is string => Boolean(url)))].map(prewarmShopIconUrl),
-  ).then(() => undefined);
+  const urls = itemIdGroups.map(getShopProductIconUrl).filter((url): url is string => Boolean(url));
 
-  return shopItemIconPrewarmPromise;
+  return Promise.all([...new Set(urls)].map(prewarmShopIconUrl)).then(() => undefined);
 }
 
 function getShopIconAssetUrl(assetKey: string): string | undefined {
@@ -71,7 +69,13 @@ function getShopIconAssetUrl(assetKey: string): string | undefined {
 }
 
 function prewarmShopIconUrl(url: string): Promise<void> {
-  return new Promise((resolve) => {
+  const existingPromise = shopItemIconPrewarmPromises.get(url);
+
+  if (existingPromise) {
+    return existingPromise;
+  }
+
+  const promise = new Promise<void>((resolve) => {
     const image = new Image();
     let done = false;
     const finish = () => {
@@ -98,4 +102,8 @@ function prewarmShopIconUrl(url: string): Promise<void> {
     image.onerror = finish;
     image.src = url;
   });
+
+  shopItemIconPrewarmPromises.set(url, promise);
+
+  return promise;
 }

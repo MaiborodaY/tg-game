@@ -94,7 +94,7 @@ import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicSho
 import { cancelPvpRoom, connectPvpRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
 import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
-import { prewarmShopItemIconsForBrowserCache } from "./shopItemIcons";
+import { prewarmShopProductIcons } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
 import { bootTelegramWebApp, getTelegramDisplayName, getTelegramUserId } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
@@ -989,20 +989,6 @@ function focusCityDefaultFromShop(): void {
 
 function syncCityShopLayout(menuTopY?: number): void {
   cityScene?.setShopMenuTop(menuTopY);
-}
-
-function prewarmShopItemIconsWhenIdle(): void {
-  const prewarm = () => {
-    void prewarmShopItemIconsForBrowserCache();
-  };
-  const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number };
-
-  if (idleWindow.requestIdleCallback) {
-    idleWindow.requestIdleCallback(prewarm, { timeout: 2000 });
-    return;
-  }
-
-  window.setTimeout(prewarm, 250);
 }
 
 function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaEncounter {
@@ -2356,6 +2342,8 @@ function clearShopPreview(): void {
 }
 
 function handleShopProductPrewarm(products: readonly (ArmoryProduct | WeaponProduct)[]): void {
+  void prewarmShopProductIcons(products.map((product) => product.itemIds));
+
   const itemIds = products
     .filter((product) => hasHeroEquipmentPreviewItems(product.itemIds) && !isShopProductSealed(hero, product.itemIds, product.rarity))
     .flatMap((product) => product.itemIds);
@@ -2584,7 +2572,6 @@ setPlayerWeaponEnchantments(hero.weaponEnchantments);
 renderCityHero();
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
 void startInitialCityEntry();
-prewarmShopItemIconsWhenIdle();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,

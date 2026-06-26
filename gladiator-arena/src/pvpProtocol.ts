@@ -1,4 +1,4 @@
-import { START_DISTANCE, type ActionId, type CombatState, type Result, type TurnOwner } from "./combat";
+import { START_DISTANCE, type ActionId, type CombatActionTrace, type CombatState, type Result, type TurnOwner } from "./combat";
 import type { HeroState } from "./hero";
 
 export type PvpSeat = "host" | "guest";
@@ -98,6 +98,8 @@ function mirrorCombatState(state: CombatState): CombatState {
     enemyPosition: START_DISTANCE - state.playerPosition,
     playerRestDefensePenalty: state.enemyRestDefensePenalty,
     enemyRestDefensePenalty: state.playerRestDefensePenalty,
+    lastPlayerActions: mirrorCombatActionTraces(state.lastEnemyActions ?? []),
+    lastEnemyActions: mirrorCombatActionTraces(state.lastPlayerActions ?? []),
     lastPlayerAction: state.lastEnemyAction,
     lastEnemyAction: state.lastPlayerAction,
     lastPlayerDamage: state.lastEnemyDamage,
@@ -119,6 +121,25 @@ function mirrorCombatState(state: CombatState): CombatState {
     lastPlayerBlocked: state.lastEnemyBlocked,
     lastEnemyBlocked: state.lastPlayerBlocked,
   };
+}
+
+function mirrorCombatActionTraces(traces: readonly CombatActionTrace[]): CombatActionTrace[] {
+  return traces.map((trace) => ({
+    ...trace,
+    defender: mirrorCombatActor(trace.defender),
+  }));
+}
+
+function mirrorCombatActor(actor: CombatActionTrace["defender"]): CombatActionTrace["defender"] {
+  if (actor === "player") {
+    return "enemy";
+  }
+
+  if (actor === "enemy") {
+    return "player";
+  }
+
+  return actor;
 }
 
 function mirrorTurnOwner(owner: TurnOwner): TurnOwner {

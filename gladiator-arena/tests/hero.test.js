@@ -475,6 +475,7 @@ test("Oakhide set bonuses activate from equipped logical armor pieces", () => {
   };
   const twoPieceSummary = hero.getHeroEquipmentSetBonusSummary(oakhideHelm, twoPieceHero.equipment);
   const twoPieceStats = hero.deriveHeroStats(twoPieceHero);
+  const twoPieceAttributeTotals = hero.getHeroAttributeTotals(twoPieceHero);
 
   assert.equal(hero.getHeroEquipmentSetEquippedPieceCount(twoPieceHero.equipment, "wood_boss"), 2);
   assert.equal(twoPieceSummary?.label, "Oakhide Set");
@@ -482,6 +483,8 @@ test("Oakhide set bonuses activate from equipped logical armor pieces", () => {
     Array.from(twoPieceSummary?.bonuses ?? [], (bonus) => bonus.active),
     [true, false, false],
   );
+  assert.equal(twoPieceAttributeTotals.strength, 1);
+  assert.equal(twoPieceAttributeTotals.vitality, 0);
   assert.equal(twoPieceStats.meleeDamagePercentBonus, hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS);
   assert.equal(twoPieceStats.maxHp, combat.MAX_HP);
   assert.equal(twoPieceStats.maxStamina, combat.MAX_STAMINA);
@@ -498,12 +501,15 @@ test("Oakhide set bonuses activate from equipped logical armor pieces", () => {
     },
   };
   const fourPieceStats = hero.deriveHeroStats(fourPieceHero);
+  const fourPieceAttributeTotals = hero.getHeroAttributeTotals(fourPieceHero);
 
   assert.equal(hero.getHeroEquipmentSetEquippedPieceCount(fourPieceHero.equipment, "wood_boss"), 4);
   assert.deepEqual(
     Array.from(hero.getHeroEquipmentSetBonusSummary(oakhideHelm, fourPieceHero.equipment)?.bonuses ?? [], (bonus) => bonus.active),
     [true, true, false],
   );
+  assert.equal(fourPieceAttributeTotals.strength, 1);
+  assert.equal(fourPieceAttributeTotals.vitality, 2);
   assert.equal(fourPieceStats.maxHp, combat.MAX_HP + 2 * hero.HERO_VITALITY_HP_BONUS);
   assert.equal(fourPieceStats.maxStamina, combat.MAX_STAMINA + 2 * hero.HERO_VITALITY_STAMINA_BONUS);
   assert.equal(fourPieceStats.maceArmorDamagePercentBonus, 0);
@@ -1210,6 +1216,7 @@ test("duo boss combat creates a helper and scales only the boss fight", () => {
   assert.equal(duoState.helper?.name, "Grubbo");
   assert.equal(duoState.helper?.scrollCount, 0);
   assert.equal(duoState.helper?.fireballScrollCount, 0);
+  assert.ok(Math.abs((duoState.helper?.meleeDamagePercentBonus ?? 0) - 2 * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS) < 0.000001);
   assert.equal(duoState.enemy.maxHp, Math.ceil(soloState.enemy.maxHp * 1.5));
   assert.equal(duoState.enemy.maxArmor, Math.ceil(soloState.enemy.maxArmor * 1.5));
 

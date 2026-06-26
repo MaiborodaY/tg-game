@@ -755,6 +755,45 @@ test("enemy fighters can choose and cast fireball scrolls", () => {
   assert.equal(nextState.lastEnemyBlocked, false);
 });
 
+test("enemy precise strike scroll keeps its cast in the action sequence before the attack", () => {
+  const state = combat.freshState();
+  const rolls = [0.85, 0.4, 0.99];
+
+  state.activeTurn = "enemy";
+  state.enemy.preciseStrikeScrollCount = 1;
+  state.enemy.preciseStrikeScrollItemId = "scroll_precise_strike_01";
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolveEnemyTurn(state, () => rolls.shift() ?? 0.99);
+
+  assert.equal(nextState.lastEnemyActions.map((trace) => trace.actionId).join(","), "preciseStrike,light");
+  assert.equal(nextState.lastEnemyActions.map((trace) => trace.defender).join(","), "player,player");
+  assert.equal(nextState.lastEnemyAction, "light");
+  assert.equal(nextState.enemy.preciseStrikeScrollCount, 0);
+  assert.equal(nextState.enemy.preciseStrikeHits, combat.PRECISE_STRIKE_HITS - 1);
+  assert.equal(nextState.lastEnemyDamage > 0, true);
+});
+
+test("enemy double strike scroll keeps its cast in the action sequence before the repeated attack", () => {
+  const state = combat.freshState();
+  const rolls = [0.85, 0.4, 0.99, 0.99];
+
+  state.activeTurn = "enemy";
+  state.enemy.doubleStrikeScrollCount = 1;
+  state.enemy.doubleStrikeScrollItemId = "scroll_double_strike_01";
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const nextState = combat.resolveEnemyTurn(state, () => rolls.shift() ?? 0.99);
+
+  assert.equal(nextState.lastEnemyActions.map((trace) => trace.actionId).join(","), "doubleStrike,light");
+  assert.equal(nextState.lastEnemyActions.map((trace) => trace.defender).join(","), "player,player");
+  assert.equal(nextState.lastEnemyAction, "light");
+  assert.equal(nextState.enemy.doubleStrikeScrollCount, 0);
+  assert.equal(nextState.enemy.doubleStrikeHits, 0);
+  assert.equal(nextState.lastEnemyDoubleStrikeRepeat, true);
+  assert.equal(nextState.lastEnemyHitResults.length, 2);
+});
+
 test("rest restores stamina and heals one hp", () => {
   const state = combat.freshState();
 

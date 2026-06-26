@@ -1258,6 +1258,39 @@ body.arena-stat-bars-animated .classic-stat__fill::after {
     #31531f;
 }
 
+.mace-armor-damage-status {
+  position: relative;
+  min-width: 25px;
+  padding: 2px 4px;
+  border-color: #285221;
+  color: #eaffd2;
+  background:
+    linear-gradient(180deg, rgba(77, 132, 50, 0.96), rgba(31, 74, 25, 0.98)),
+    #315a25;
+}
+
+.mace-armor-damage-status::after {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  width: 12px;
+  height: 12px;
+  place-items: center;
+  border: 1px solid rgba(232, 255, 198, 0.92);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #90f066, #247b24);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  color: #f6ffe5;
+  content: "+";
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
 .combat-status-line {
   position: absolute;
   top: calc(100% + 6px);

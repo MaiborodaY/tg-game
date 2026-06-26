@@ -23,8 +23,8 @@ import {
   areHeroItemsOwned,
   deriveHeroStats,
   getHeroArenaEnergy,
+  getHeroAttributeTotals,
   getHeroItemWeaponClass,
-  getHeroEquipmentStatBonuses,
   getHeroTotalWins,
   HERO_ITEM_CATALOG,
   isHeroConsumableItem,
@@ -891,12 +891,7 @@ export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAlloc
 
 function renderCityHeroProfileStats(refs: CityHeroWidgetRefs, hero: HeroState): void {
   const stats = deriveHeroStats(hero);
-  const equipmentBonuses = getHeroEquipmentStatBonuses(hero.equipment);
-  const attributeTotals = {
-    strength: hero.baseStats.strength + equipmentBonuses.strength,
-    agility: hero.baseStats.agility + equipmentBonuses.agility,
-    vitality: hero.baseStats.vitality + equipmentBonuses.vitality,
-  };
+  const attributeTotals = getHeroAttributeTotals(hero);
 
   setText(refs.profileStats.damage, formatMeleeDamageProfileStat(stats.meleeDamagePercentBonus));
   setText(refs.profileStats.hp, String(stats.maxHp));

@@ -22,6 +22,11 @@ export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
 export type CombatActor = TurnOwner | "helper";
 
+export interface CombatActionTrace {
+  actionId: ActionId;
+  defender: CombatActor;
+}
+
 export interface ActionConfig {
   id: ActionId;
   title: string;
@@ -158,6 +163,9 @@ export interface CombatState {
   playerRestDefensePenalty: number;
   helperRestDefensePenalty: number;
   enemyRestDefensePenalty: number;
+  lastPlayerActions: CombatActionTrace[];
+  lastEnemyActions: CombatActionTrace[];
+  lastHelperActions: CombatActionTrace[];
   lastPlayerAction?: ActionId;
   lastEnemyAction?: ActionId;
   lastPlayerDamage: number;
@@ -507,6 +515,9 @@ export function freshState(): CombatState {
     playerRestDefensePenalty: 0,
     helperRestDefensePenalty: 0,
     enemyRestDefensePenalty: 0,
+    lastPlayerActions: [],
+    lastEnemyActions: [],
+    lastHelperActions: [],
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
     lastPlayerArmorAbsorbed: 0,
@@ -1204,6 +1215,9 @@ function cloneStateForTurn(current: CombatState): CombatState {
     helper: current.helper ? cloneFighterState(current.helper) : undefined,
     enemy: cloneFighterState(current.enemy),
     log: [...current.log],
+    lastPlayerActions: [],
+    lastEnemyActions: [],
+    lastHelperActions: [],
     lastPlayerAction: undefined,
     lastEnemyAction: undefined,
     lastHelperAction: undefined,
@@ -1749,6 +1763,7 @@ function applyAction(
     const staminaBonus = state.player.stamina >= 5 ? 12 : 0;
 
     state.score += damage * 90 + glory + staminaBonus;
+    pushCombatActionTrace(state, actor, actionId, defenderOwner);
     state.lastPlayerAction = actionId;
     state.lastPlayerDamage = damage;
     state.lastPlayerArmorAbsorbed = appliedDamage.armorAbsorbed;
@@ -1759,6 +1774,7 @@ function applyAction(
     state.lastPlayerDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastPlayerBlocked = blocked;
   } else if (actor === "helper") {
+    pushCombatActionTrace(state, actor, actionId, defenderOwner);
     state.lastHelperAction = actionId;
     state.lastHelperDamage = damage;
     state.lastHelperArmorAbsorbed = appliedDamage.armorAbsorbed;
@@ -1769,6 +1785,7 @@ function applyAction(
     state.lastHelperDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastHelperBlocked = blocked;
   } else {
+    pushCombatActionTrace(state, actor, actionId, defenderOwner);
     state.lastEnemyAction = actionId;
     state.lastEnemyTarget = defenderActor === "helper" ? "helper" : "player";
     state.lastEnemyDamage = damage;
@@ -1786,6 +1803,22 @@ function applyAction(
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
   }
+}
+
+function pushCombatActionTrace(state: CombatState, actor: CombatActor, actionId: ActionId, defender: CombatActor): void {
+  const trace: CombatActionTrace = { actionId, defender };
+
+  if (actor === "player") {
+    (state.lastPlayerActions ??= []).push(trace);
+    return;
+  }
+
+  if (actor === "helper") {
+    (state.lastHelperActions ??= []).push(trace);
+    return;
+  }
+
+  (state.lastEnemyActions ??= []).push(trace);
 }
 
 function isActionBlocked(

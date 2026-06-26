@@ -13,7 +13,7 @@ import {
   type CombatState,
   type DistanceBand,
 } from "./combat";
-import { DAMAGE_BLOCK_ICON_ASSET_URL, DAMAGE_HIT_ICON_ASSET_URL } from "./assets";
+import { DAMAGE_BLOCK_ICON_ASSET_URL, DAMAGE_HIT_ICON_ASSET_URL, SHOP_CATEGORY_MACE_ICON_ASSET_URL } from "./assets";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import { applyUiLayoutTuning } from "./uiLayoutTuning";
 import {
@@ -95,6 +95,7 @@ export interface DomRefs {
   playerWard: HTMLElement;
   playerPreciseStrike: HTMLElement;
   playerDoubleStrike: HTMLElement;
+  playerMaceArmorDamage: HTMLElement;
   playerPoison: HTMLElement;
   enemyWard: HTMLElement;
   enemyPreciseStrike: HTMLElement;
@@ -161,6 +162,7 @@ export function getDomRefs(): DomRefs {
     playerWard: document.querySelector<HTMLElement>("#playerWard"),
     playerPreciseStrike: document.querySelector<HTMLElement>("#playerPreciseStrike"),
     playerDoubleStrike: document.querySelector<HTMLElement>("#playerDoubleStrike"),
+    playerMaceArmorDamage: document.querySelector<HTMLElement>("#playerMaceArmorDamage"),
     playerPoison: document.querySelector<HTMLElement>("#playerPoison"),
     enemyWard: document.querySelector<HTMLElement>("#enemyWard"),
     enemyPreciseStrike: document.querySelector<HTMLElement>("#enemyPreciseStrike"),
@@ -324,6 +326,7 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   syncWardStatus(dom.playerWard, state.player.name, getFighterWardHits(state.player));
   syncPreciseStrikeStatus(dom.playerPreciseStrike, state.player.name, getFighterPreciseStrikeHits(state.player));
   syncDoubleStrikeStatus(dom.playerDoubleStrike, state.player.name, getFighterDoubleStrikeHits(state.player));
+  syncMaceArmorDamageStatus(dom.playerMaceArmorDamage, state.player.name, state.player.maceArmorDamagePercentBonus ?? 0);
   syncPoisonStatus(dom.playerPoison, state.player.name, getFighterPoisonTurns(state.player));
   syncWardStatus(dom.enemyWard, state.enemy.name, getFighterWardHits(state.enemy));
   syncPreciseStrikeStatus(dom.enemyPreciseStrike, state.enemy.name, getFighterPreciseStrikeHits(state.enemy));
@@ -450,6 +453,25 @@ function syncPoisonStatus(element: HTMLElement, fighterName: string, turns: numb
     POISON_STATUS_ICON_URL,
     `${fighterName} poisoned for ${safeTurns} ${safeTurns === 1 ? "turn" : "turns"}`,
   );
+}
+
+function syncMaceArmorDamageStatus(element: HTMLElement, fighterName: string, percentBonus: number): void {
+  const safePercentBonus = Math.max(0, percentBonus);
+  element.hidden = safePercentBonus <= 0;
+
+  if (safePercentBonus <= 0) {
+    return;
+  }
+
+  const icon = element.querySelector<HTMLImageElement>("img");
+  const percentLabel = Math.round(safePercentBonus * 100);
+
+  if (icon && icon.src !== SHOP_CATEGORY_MACE_ICON_ASSET_URL) {
+    icon.src = SHOP_CATEGORY_MACE_ICON_ASSET_URL;
+  }
+
+  element.setAttribute("aria-label", `${fighterName} mace armor damage +${percentLabel}%`);
+  element.title = `Mace armor damage +${percentLabel}%`;
 }
 
 function syncIconCountStatus(element: HTMLElement, count: number, iconUrl: string | undefined, ariaLabel: string): void {

@@ -150,6 +150,7 @@ test("battle hud exposes combat buff and debuff status trays with scroll icons",
   assert.equal(html.includes('id="playerWard"'), true);
   assert.equal(html.includes('id="playerPreciseStrike"'), true);
   assert.equal(html.includes('id="playerDoubleStrike"'), true);
+  assert.equal(html.includes('id="playerMaceArmorDamage"'), true);
   assert.equal(html.includes('id="playerPoison"'), true);
   assert.equal(html.includes('id="enemyWard"'), true);
   assert.equal(html.includes('id="enemyPreciseStrike"'), true);
@@ -163,15 +164,20 @@ test("battle hud exposes combat buff and debuff status trays with scroll icons",
   assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_PRECISE_STRIKE_SCROLL_ITEM_ID])"), true);
   assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID])"), true);
   assert.equal(domUiSource.includes("getShopProductIconUrl([HERO_POISON_SCROLL_ITEM_ID])"), true);
+  assert.equal(domUiSource.includes("SHOP_CATEGORY_MACE_ICON_ASSET_URL"), true);
   assert.equal(domUiSource.includes("getFighterWardHits"), true);
   assert.equal(domUiSource.includes("getFighterPreciseStrikeHits"), true);
   assert.equal(domUiSource.includes("getFighterDoubleStrikeHits"), true);
   assert.equal(domUiSource.includes("getFighterPoisonTurns"), true);
+  assert.equal(domUiSource.includes("syncMaceArmorDamageStatus(dom.playerMaceArmorDamage"), true);
+  assert.equal(domUiSource.includes("state.player.maceArmorDamagePercentBonus"), true);
   assert.equal(stylesSource.includes(".combat-status-line"), true);
   assert.equal(stylesSource.includes(".combat-buff-tray"), true);
   assert.equal(stylesSource.includes(".ward-status"), true);
   assert.equal(stylesSource.includes(".precise-strike-status"), true);
   assert.equal(stylesSource.includes(".double-strike-status"), true);
+  assert.equal(stylesSource.includes(".mace-armor-damage-status"), true);
+  assert.equal(stylesSource.includes(".mace-armor-damage-status::after"), true);
   assert.equal(stylesSource.includes(".poison-status"), true);
   assert.equal(stylesSource.includes(".combat-debuff-tray"), true);
   assert.equal(stylesSource.includes("justify-content: flex-start;"), true);
@@ -315,6 +321,7 @@ test("city hero profile uses generated medallion icons for attributes and derive
   assert.equal(stylesSource.includes("stat-armor.webp"), false);
   assert.equal(cityHeroUiSource.includes("formatMeleeDamageProfileStat(stats.meleeDamagePercentBonus)"), true);
   assert.equal(cityHeroUiSource.includes("formatMovementSpeedPercent(stats.movementDistanceBonus)"), true);
+  assert.equal(cityHeroUiSource.includes("getHeroAttributeTotals(hero)"), true);
   assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.hp, String(stats.maxHp))"), true);
   assert.equal(cityHeroUiSource.includes("setText(refs.profileStats.stamina, String(stats.maxStamina))"), true);
   assert.equal(cityHeroUiSource.includes("HERO_PROFILE_BASE_REST_HP + stats.restHpRestoreBonus"), true);

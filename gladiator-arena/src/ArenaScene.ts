@@ -112,6 +112,7 @@ import {
   isBowFighter,
   isRangedWeaponClass,
   type ActionId,
+  type CombatActionTrace,
   type CombatArmorSlotState,
   type CombatHitResult,
   type CombatState,
@@ -592,6 +593,30 @@ interface ArenaPreparedVisualState {
 interface ArenaSyncOptions {
   hudState?: CombatState;
   onImpact?: () => void;
+}
+
+function getCombatActionAnimationSequence(
+  traces: readonly CombatActionTrace[],
+  fallbackAction: ActionId | undefined,
+  fallbackDefender: CombatActionTrace["defender"],
+): CombatActionTrace[] {
+  if (traces.length > 0) {
+    return [...traces];
+  }
+
+  return fallbackAction ? [{ actionId: fallbackAction, defender: fallbackDefender }] : [];
+}
+
+function getCombatActionDefenderVisual(visuals: ArenaVisuals, trace: CombatActionTrace, fallback: FighterVisual): FighterVisual {
+  if (trace.defender === "enemy") {
+    return visuals.enemy;
+  }
+
+  if (trace.defender === "helper") {
+    return visuals.helper ?? fallback;
+  }
+
+  return visuals.player;
 }
 
 type ArenaBackgroundLayerKey = ArenaBackgroundLayerAssetKey;
@@ -2305,16 +2330,19 @@ export class ArenaScene extends Phaser.Scene {
     const lastPlayerAction = nextState.lastPlayerAction;
     const lastHelperAction = nextState.lastHelperAction;
     const lastEnemyAction = nextState.lastEnemyAction;
+    const playerActionSequence = getCombatActionAnimationSequence(nextState.lastPlayerActions ?? [], lastPlayerAction, "enemy");
+    const helperActionSequence = getCombatActionAnimationSequence(nextState.lastHelperActions ?? [], lastHelperAction, "enemy");
+    const enemyActionSequence = getCombatActionAnimationSequence(nextState.lastEnemyActions ?? [], lastEnemyAction, nextState.lastEnemyTarget ?? "player");
     let playerActionAnimation: ActionAnimationHandle | undefined;
     let helperActionAnimation: ActionAnimationHandle | undefined;
     let enemyActionAnimation: ActionAnimationHandle | undefined;
 
-    if (lastPlayerAction) {
-      playerActionAnimation = animateActionSequence(
+    if (lastPlayerAction && playerActionSequence.length > 0) {
+      playerActionAnimation = animateCombatActionSequence(
         this,
         visuals.player,
-        visuals.enemy,
-        lastPlayerAction,
+        playerActionSequence,
+        (trace) => getCombatActionDefenderVisual(visuals, trace, visuals.enemy),
         "right",
         getFighterBodyAnimationWeaponClass(nextState.player),
         playerSettings,
@@ -2327,12 +2355,12 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
 
-    if (lastHelperAction && visuals.helper && nextState.helper) {
-      helperActionAnimation = animateActionSequence(
+    if (lastHelperAction && helperActionSequence.length > 0 && visuals.helper && nextState.helper) {
+      helperActionAnimation = animateCombatActionSequence(
         this,
         visuals.helper,
-        visuals.enemy,
-        lastHelperAction,
+        helperActionSequence,
+        (trace) => getCombatActionDefenderVisual(visuals, trace, visuals.enemy),
         "right",
         getFighterBodyAnimationWeaponClass(nextState.helper),
         playerSettings,
@@ -2345,12 +2373,12 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
 
-    if (lastEnemyAction) {
-      enemyActionAnimation = animateActionSequence(
+    if (lastEnemyAction && enemyActionSequence.length > 0) {
+      enemyActionAnimation = animateCombatActionSequence(
         this,
         visuals.enemy,
-        enemyDefenderVisual,
-        lastEnemyAction,
+        enemyActionSequence,
+        (trace) => getCombatActionDefenderVisual(visuals, trace, enemyDefenderVisual),
         "left",
         getFighterBodyAnimationWeaponClass(nextState.enemy),
         playerSettings,
@@ -10823,6 +10851,76 @@ function animateActionSequence(
     done: getSecondAnimation().then((secondAnimation) => secondAnimation.done),
     impact: secondImpact,
     impacts: [firstImpact, secondImpact],
+  };
+}
+
+function animateCombatActionSequence(
+  target: Phaser.Scene,
+  actor: FighterVisual,
+  traces: readonly CombatActionTrace[],
+  getDefender: (trace: CombatActionTrace) => FighterVisual,
+  direction: "left" | "right",
+  weaponClass?: HeroWeaponClass,
+  playerSettings = getPlayerSettings(),
+  options: ActionAnimationOptions = {},
+  repeat = false,
+): ActionAnimationHandle {
+  const [firstTrace, ...remainingTraces] = traces;
+
+  if (!firstTrace) {
+    return { done: Promise.resolve() };
+  }
+
+  if (remainingTraces.length === 0) {
+    return animateActionSequence(target, actor, getDefender(firstTrace), firstTrace.actionId, direction, weaponClass, playerSettings, options, repeat);
+  }
+
+  let finalAnimationPromise: Promise<ActionAnimationHandle> | undefined;
+  const firstAnimation = animateActionSequence(
+    target,
+    actor,
+    getDefender(firstTrace),
+    firstTrace.actionId,
+    direction,
+    weaponClass,
+    playerSettings,
+    {
+      ...options,
+      variantSeed: `${options.variantSeed ?? firstTrace.actionId}:0:${firstTrace.actionId}`,
+    },
+  );
+
+  const getFinalAnimation = (): Promise<ActionAnimationHandle> => {
+    finalAnimationPromise ??= firstAnimation.done.then(() =>
+      animateCombatActionSequence(
+        target,
+        actor,
+        remainingTraces,
+        getDefender,
+        direction,
+        weaponClass,
+        playerSettings,
+        {
+          ...options,
+          variantSeed: `${options.variantSeed ?? firstTrace.actionId}:${traces.length - remainingTraces.length}:${remainingTraces[0]?.actionId ?? firstTrace.actionId}`,
+        },
+        repeat,
+      ),
+    );
+
+    return finalAnimationPromise;
+  };
+
+  return {
+    done: getFinalAnimation().then((finalAnimation) => finalAnimation.done),
+    impact: getFinalAnimation().then((finalAnimation) => finalAnimation.impact ?? finalAnimation.done),
+    impacts: [
+      getFinalAnimation().then((finalAnimation) => finalAnimation.impacts?.[0] ?? finalAnimation.impact ?? finalAnimation.done),
+      getFinalAnimation().then((finalAnimation) => finalAnimation.impacts?.[1] ?? finalAnimation.impacts?.[0] ?? finalAnimation.impact ?? finalAnimation.done),
+    ],
+    speedUp: (multiplier) => {
+      void getFinalAnimation().then((finalAnimation) => finalAnimation.speedUp?.(multiplier));
+    },
   };
 }
 
