@@ -2053,7 +2053,7 @@ function renderCityEquipmentProducts(
           iconUrl,
           name: displayName,
           rarityLabel: getShopRarityLabel(rarity),
-          typeLabel: getCityEquipmentProductTypeLabel(product),
+          typeLabel: side === "weapon" ? getCityEquipmentProductTypeLabel(product) : undefined,
           statIconUrl,
           statLabel,
           statValue,

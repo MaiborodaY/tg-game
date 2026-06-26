@@ -20,7 +20,7 @@ export interface EquipmentItemCardContentOptions {
   iconFallback?: string;
   name: string;
   rarityLabel: string;
-  typeLabel: string;
+  typeLabel?: string;
   statIconUrl: string;
   statLabel: string;
   statValue: number | string;
@@ -53,6 +53,7 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
   const rarityChip = document.createElement("span");
   const typeChip = document.createElement("span");
   const statRow = document.createElement("span");
+  const typeLabel = options.typeLabel?.trim();
   const levelRequirement = Math.max(0, Math.floor(options.levelRequirement ?? 0));
 
   content.className = "equipment-item-card__content";
@@ -74,8 +75,11 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
 
   name.textContent = options.name.toUpperCase();
   rarityChip.textContent = options.rarityLabel.toUpperCase();
-  typeChip.textContent = options.typeLabel.toUpperCase();
-  chips.append(rarityChip, typeChip);
+  chips.append(rarityChip);
+  if (typeLabel) {
+    typeChip.textContent = typeLabel.toUpperCase();
+    chips.append(typeChip);
+  }
   statRow.append(createEquipmentStatChip(options));
   if (options.diff !== undefined) {
     statRow.append(createEquipmentDiffChip(options.diff));

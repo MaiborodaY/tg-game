@@ -1178,7 +1178,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const currentArmor = getEquippedShopProductStat(hero, product.itemIds, "armor");
     const cardState = getArmoryProductCardState(hero, product);
     const displayName = getShopProductDisplayName(product.name);
-    const productType = getArmoryProductTypeLabel(product);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
 
@@ -1203,7 +1202,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
         iconUrl,
         name: displayName,
         rarityLabel: getShopRarityLabel(rarity),
-        typeLabel: productType,
         statIconUrl: DAMAGE_BLOCK_ICON_ASSET_URL,
         statLabel: "armor",
         statValue: armor,
@@ -1752,31 +1750,6 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   return { open, close, render, syncHeroState };
-}
-
-const ARMORY_PRODUCT_TYPE_LABELS: Partial<Record<HeroEquipmentSlotKey, string>> = {
-  helmet: "Head",
-  breastplate: "Chest",
-  backShoulderguard: "Shoulders",
-  frontShoulderguard: "Shoulders",
-  backWrist: "Wrists",
-  frontWrist: "Wrists",
-  backGlove: "Gloves",
-  frontGlove: "Gloves",
-  shield: "Shield",
-  backGreave: "Greaves",
-  frontGreave: "Greaves",
-  backShinguard: "Shinguards",
-  frontShinguard: "Shinguards",
-  backBoot: "Boots",
-  frontBoot: "Boots",
-};
-
-function getArmoryProductTypeLabel(product: ArmoryProduct): string {
-  const itemId = product.itemIds.find((candidateId) => Boolean(HERO_ITEM_CATALOG[candidateId]));
-  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
-
-  return (item ? ARMORY_PRODUCT_TYPE_LABELS[item.equipmentSlot] : undefined) ?? "Armor";
 }
 
 function createSealedRibbon(): HTMLElement {
