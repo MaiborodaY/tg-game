@@ -1755,8 +1755,26 @@ function renderCityEquipmentProducts(
       const rarity = getShopProductRarity(product.itemIds);
       const iconUrl = getShopProductIconUrl(product.itemIds);
       const side = getCityEquipmentProductSide(product);
+      const statKind = getCityEquipmentProductStatKind(product);
+      const statValue = getShopProductDisplayStat(hero, product.itemIds, statKind);
+      const currentStat = getEquippedShopProductDisplayStat(hero, product.itemIds, statKind);
+      const statLabel = statKind === "armor" ? "Armor" : "Damage";
+      const statIconUrl = statKind === "armor" ? DAMAGE_BLOCK_ICON_ASSET_URL : DAMAGE_HIT_ICON_ASSET_URL;
+      const diff = statValue - currentStat;
+      const isEquipped = areHeroItemsEquipped(hero, product.itemIds);
+      const displayName = getShopProductDisplayName(product.name);
       const button = document.createElement("button");
+      const iconFrame = document.createElement("span");
       const icon = document.createElement("span");
+      const info = document.createElement("span");
+      const name = document.createElement("strong");
+      const chips = document.createElement("span");
+      const rarityChip = document.createElement("span");
+      const kindChip = document.createElement("span");
+      const statRow = document.createElement("span");
+      const statChip = document.createElement("span");
+      const statValueElement = document.createElement("span");
+      const diffChip = document.createElement("span");
 
       button.type = "button";
       button.className = [
@@ -1764,13 +1782,38 @@ function renderCityEquipmentProducts(
         `city-equipment-menu__item--${side}`,
         `armory-shop__option--rarity-${rarity}`,
         selectedProduct?.id === product.id ? "city-equipment-menu__item--selected" : "",
-        areHeroItemsEquipped(hero, product.itemIds) ? "city-equipment-menu__item--equipped" : "",
+        isEquipped ? "city-equipment-menu__item--equipped" : "",
       ]
         .filter(Boolean)
         .join(" ");
       button.dataset.cityEquipmentProduct = product.id;
-      button.setAttribute("aria-label", getShopProductDisplayName(product.name));
+      button.setAttribute("aria-label", `${displayName}, ${statLabel} ${statValue}`);
+      iconFrame.className = "city-equipment-menu__item-icon-frame";
       icon.className = "city-equipment-menu__item-icon";
+      info.className = "city-equipment-menu__item-info";
+      name.className = "city-equipment-menu__item-name";
+      name.textContent = displayName.toUpperCase();
+      chips.className = "city-equipment-menu__item-chips";
+      rarityChip.className = "city-equipment-menu__item-chip city-equipment-menu__item-rarity";
+      rarityChip.textContent = getShopRarityLabel(rarity).toUpperCase();
+      kindChip.className = "city-equipment-menu__item-chip city-equipment-menu__item-kind";
+      kindChip.textContent = getCityEquipmentProductTypeLabel(product);
+      statRow.className = "city-equipment-menu__item-stat-row";
+      statChip.className = "city-equipment-menu__item-stat";
+      statChip.style.setProperty("--city-equipment-item-stat-icon", `url("${statIconUrl}")`);
+      statChip.setAttribute("aria-label", `${statLabel} ${statValue}`);
+      statValueElement.className = "city-equipment-menu__item-stat-value";
+      statValueElement.textContent = String(statValue);
+      diffChip.className = [
+        "city-equipment-menu__item-diff",
+        diff > 0 ? "city-equipment-menu__item-diff--better" : "",
+        diff < 0 ? "city-equipment-menu__item-diff--worse" : "",
+        diff === 0 ? "city-equipment-menu__item-diff--equal" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      diffChip.textContent = diff > 0 ? `+${diff}` : String(diff);
+      diffChip.setAttribute("aria-label", diff > 0 ? `Better by ${diff}` : diff < 0 ? `Worse by ${Math.abs(diff)}` : "Same stat");
 
       if (iconUrl) {
         icon.style.backgroundImage = `url("${iconUrl}")`;
@@ -1778,7 +1821,21 @@ function renderCityEquipmentProducts(
         icon.textContent = "?";
       }
 
-      button.append(icon);
+      iconFrame.append(icon);
+      chips.append(rarityChip, kindChip);
+
+      if (isEquipped) {
+        const equippedChip = document.createElement("span");
+
+        equippedChip.className = "city-equipment-menu__item-chip city-equipment-menu__item-equipped";
+        equippedChip.textContent = "EQUIPPED";
+        chips.append(equippedChip);
+      }
+
+      statChip.append(statValueElement);
+      statRow.append(statChip, diffChip);
+      info.append(name, chips, statRow);
+      button.append(iconFrame, info);
 
       return button;
     }),
