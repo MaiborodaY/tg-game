@@ -9,7 +9,6 @@ import {
   canHeroUseItems,
   getHeroBowShotCapacity,
   getHeroConsumableMaxQuantity,
-  getHeroItemWeaponClass,
   getHeroItemQuantity,
   getHeroShurikenItemId,
   getHeroShurikenQuantity,
@@ -838,7 +837,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const displayName = getShopProductDisplayName(product.name);
     const isConsumable = areHeroItemsConsumable(product.itemIds);
     const currentDamage = isConsumable ? damage : getEquippedShopProductDisplayStat(hero, product.itemIds, "damage");
-    const productType = getWeaponProductTypeLabel(product);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
     const consumableInfo = getConsumableCardInfo(hero, product.itemIds);
@@ -866,7 +864,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
         iconUrl,
         name: displayName,
         rarityLabel: getShopRarityLabel(rarity),
-        typeLabel: productType,
         statIconUrl: DAMAGE_HIT_ICON_ASSET_URL,
         statLabel: "damage",
         statValue: damage,
@@ -1603,16 +1600,6 @@ function appendRequirementContent(requirementNode: HTMLElement, requirement: Sho
   amount.className = "armory-shop__requirement-amount";
   amount.textContent = String(requirement.required);
   requirementNode.append(icon, amount);
-}
-
-function getWeaponProductClass(product: WeaponProduct): HeroWeaponClass | undefined {
-  const itemId = product.itemIds[0];
-
-  return itemId ? getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) : undefined;
-}
-
-function getWeaponProductTypeLabel(product: WeaponProduct): string {
-  return getWeaponProductClass(product) ?? "weapon";
 }
 
 function createSelectedMeta(

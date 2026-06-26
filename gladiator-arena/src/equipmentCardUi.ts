@@ -48,6 +48,7 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
   const iconFrame = document.createElement("span");
   const icon = document.createElement("span");
   const info = document.createElement("span");
+  const titleRow = document.createElement("span");
   const name = document.createElement("strong");
   const chips = document.createElement("span");
   const rarityChip = document.createElement("span");
@@ -60,6 +61,7 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
   iconFrame.className = "equipment-item-card__icon-frame";
   icon.className = "equipment-item-card__icon";
   info.className = "equipment-item-card__info";
+  titleRow.className = "equipment-item-card__title-row";
   name.className = "equipment-item-card__name";
   chips.className = "equipment-item-card__chips";
   rarityChip.className = "equipment-item-card__chip equipment-item-card__rarity";
@@ -73,7 +75,7 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
     icon.textContent = options.iconFallback ?? "?";
   }
 
-  name.textContent = options.name.toUpperCase();
+  name.textContent = options.name;
   rarityChip.textContent = options.rarityLabel.toUpperCase();
   chips.append(rarityChip);
   if (typeLabel) {
@@ -88,7 +90,8 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
     statRow.append(createEquipmentActionChip(options.action));
   }
   iconFrame.append(icon);
-  info.append(name, chips, statRow);
+  titleRow.append(name, chips);
+  info.append(titleRow, statRow);
   content.append(iconFrame, info);
 
   if (levelRequirement > 0) {
