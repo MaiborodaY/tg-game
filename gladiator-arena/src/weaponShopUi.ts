@@ -30,6 +30,7 @@ import {
   SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
+import { createEquipmentItemCardContent, createEquipmentSlotCard, type EquipmentCardAction } from "./equipmentCardUi";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
@@ -83,13 +84,12 @@ interface WeaponCategoryToolbarPlaceholder {
   id: string;
   name: string;
   iconText: string;
-  disabled: true;
 }
 
 type WeaponCategoryToolbarItem = WeaponCategory | WeaponCategoryToolbarPlaceholder;
 
 function isWeaponCategoryToolbarPlaceholder(item: WeaponCategoryToolbarItem): item is WeaponCategoryToolbarPlaceholder {
-  return "disabled" in item && item.disabled;
+  return "iconText" in item;
 }
 
 interface WeaponEquippedSlotGroup {
@@ -227,9 +227,8 @@ const WEAPON_CATEGORY_TOOLBAR_ITEMS: readonly WeaponCategoryToolbarItem[] = [
   ...WEAPON_CATEGORIES,
   {
     id: WEAPON_CATEGORY_PLACEHOLDER_ID,
-    name: "Display mode",
-    iconText: "...",
-    disabled: true,
+    name: "Two columns",
+    iconText: "2",
   },
 ];
 const WEAPON_EQUIPPED_SLOT_GROUPS: readonly WeaponEquippedSlotGroup[] = [
@@ -328,6 +327,7 @@ function getWeaponProductsForCategories(categories: readonly WeaponCategory[]): 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {
   let selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();
   let selectedRarityIds = getDefaultWeaponRarityFilterIds();
+  let isTwoColumnProductMode = false;
   let previewProduct: WeaponProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -391,6 +391,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   const categoryFilter = document.createElement("div");
   const weaponCategoryButtons = new Map<string, HTMLButtonElement>();
+  let displayModeButton: HTMLButtonElement | undefined;
 
   categoryFilter.className = "weapon-shop__category-filter";
   categoryFilter.setAttribute("aria-label", "Weapon types");
@@ -537,8 +538,13 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function render(): void {
     const hero = options.getHero();
     const selectedCategories = getSelectedWeaponCategories(selectedWeaponTypeIds);
-    const typeFilteredProducts = getWeaponProductsForCategories(selectedCategories);
+    const shopProducts = filterVisibleWeaponShopProducts(hero, getWeaponProductsForCategories(selectedCategories));
+    const typeFilteredProducts = shopProducts;
     const availableRarities = getAvailableWeaponRarities(hero, typeFilteredProducts);
+
+    if (previewProduct && !isWeaponProductVisibleInShop(hero, previewProduct)) {
+      clearProductPreview();
+    }
 
     if (normalizeSelectedWeaponRarityIds(availableRarities)) {
       clearProductPreview();
@@ -547,8 +553,10 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const selectedProducts = sortWeaponProductsForHero(hero, filterWeaponProductsByRarities(typeFilteredProducts, selectedRarityIds));
 
     title.textContent = "Weapons";
+    shop.classList.toggle("armory-shop--two-column", isTwoColumnProductMode);
     renderRarityFilterOptions(availableRarities);
     updateWeaponCategoryButtons();
+    updateWeaponDisplayModeButton();
     renderEquippedWeaponSlots(hero);
     goldAmount.textContent = String(hero.gold);
     gold.setAttribute("aria-label", `Gold ${hero.gold}`);
@@ -711,12 +719,22 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     if (isWeaponCategoryToolbarPlaceholder(category)) {
       const icon = document.createElement("span");
 
-      button.classList.add("weapon-shop__category-button--placeholder");
-      button.disabled = true;
+      button.classList.add("weapon-shop__category-button--placeholder", "weapon-shop__category-button--display-mode");
+      button.title = "Two columns";
+      button.setAttribute("aria-label", "Two columns");
       icon.className = "weapon-shop__category-placeholder";
       icon.setAttribute("aria-hidden", "true");
       icon.textContent = category.iconText;
+      button.addEventListener("click", () => {
+        closeRarityFilter();
+        isTwoColumnProductMode = !isTwoColumnProductMode;
+        shop.classList.toggle("armory-shop--two-column", isTwoColumnProductMode);
+        updateWeaponDisplayModeButton();
+        scheduleLayoutSync();
+        scheduleVisibleProductPrewarm();
+      });
       button.append(icon);
+      displayModeButton = button;
 
       return button;
     }
@@ -760,6 +778,17 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
         button.setAttribute("aria-pressed", String(isActive));
       }
     });
+  }
+
+  function updateWeaponDisplayModeButton(): void {
+    if (!displayModeButton) {
+      return;
+    }
+
+    displayModeButton.classList.toggle("weapon-shop__category-button--active", isTwoColumnProductMode);
+    displayModeButton.setAttribute("aria-pressed", String(isTwoColumnProductMode));
+    displayModeButton.title = isTwoColumnProductMode ? "One column" : "Two columns";
+    displayModeButton.setAttribute("aria-label", displayModeButton.title);
   }
 
   function normalizeSelectedWeaponTypeIds(): void {
@@ -806,12 +835,17 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
     const cardState = getWeaponProductCardState(hero, product);
     const displayName = getShopProductDisplayName(product.name);
+    const isConsumable = areHeroItemsConsumable(product.itemIds);
+    const currentDamage = isConsumable ? damage : getEquippedShopProductDisplayStat(hero, product.itemIds, "damage");
+    const productType = getWeaponProductTypeLabel(product);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
     const consumableInfo = getConsumableCardInfo(hero, product.itemIds);
 
-    button.className = `armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
+    button.className = `equipment-item-card armory-shop__option armory-shop__option--product armory-shop__option--rarity-${rarity}`;
+    button.classList.toggle("equipment-item-card--selected", isSelected);
     button.classList.toggle("armory-shop__option--selected", isSelected);
+    button.classList.toggle("equipment-item-card--equipped", cardState === "equipped");
     button.classList.toggle("armory-shop__option--owned", cardState === "equip");
     button.classList.toggle("armory-shop__option--equipped", cardState === "equipped");
     button.classList.toggle("armory-shop__option--max", cardState === "max");
@@ -826,7 +860,19 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       "aria-label",
       `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(cardState, product.price)}`,
     );
-    button.append(createProductIcon(iconUrl));
+    button.append(
+      createEquipmentItemCardContent({
+        iconUrl,
+        name: displayName,
+        rarityLabel: getShopRarityLabel(rarity),
+        typeLabel: productType,
+        statIconUrl: DAMAGE_HIT_ICON_ASSET_URL,
+        statLabel: "damage",
+        statValue: damage,
+        diff: damage - currentDamage,
+        action: getProductCardAction(cardState, product.price),
+      }),
+    );
     if (consumableInfo) {
       button.append(createConsumableCardBadges(consumableInfo));
     }
@@ -835,9 +881,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
     if (cardState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
-    }
-    if (cardState === "buy") {
-      button.append(createProductStats("damage", DAMAGE_HIT_ICON_ASSET_URL, damage, product.price));
     }
     button.addEventListener("click", () => {
       if (button.disabled) {
@@ -1003,6 +1046,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
 
   function refreshChangedProductButtons(hero: HeroState, syncOptions: WeaponShopHeroSyncOptions): void {
+    if (renderedProducts.some((product) => !isWeaponProductVisibleInShop(hero, product))) {
+      render();
+      return;
+    }
+
     const productIds = getProductButtonRefreshIds(syncOptions.product, syncOptions.previousHero);
 
     if (productIds) {
@@ -1113,6 +1161,21 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     return isShopProductSealed(hero, product.itemIds, product.rarity) ? "sealed" : "buy";
   }
 
+  function filterVisibleWeaponShopProducts(hero: HeroState, products: readonly WeaponProduct[]): WeaponProduct[] {
+    return products.filter((product) => isWeaponProductVisibleInShop(hero, product));
+  }
+
+  function isWeaponProductVisibleInShop(hero: HeroState, product: WeaponProduct): boolean {
+    if (areHeroItemsConsumable(product.itemIds)) {
+      return !isShopProductSealed(hero, product.itemIds, product.rarity);
+    }
+
+    return (
+      !areHeroItemsOwned(hero, product.itemIds) &&
+      !isShopProductSealed(hero, product.itemIds, product.rarity)
+    );
+  }
+
   function getWeaponProductActionState(hero: HeroState, product: WeaponProduct): ShopProductActionState {
     const actionState = getShopProductActionState(hero, product.itemIds, product.price);
 
@@ -1150,41 +1213,27 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const iconUrl = getShopProductIconUrl(itemIds);
     const rarity = itemIds.length > 0 ? getShopProductRarity(itemIds) : "empty";
     const quantity = getEquippedWeaponSlotQuantity(group, hero, itemId);
-    const slot = document.createElement("div");
-    const icon = document.createElement("span");
     const label = item
       ? `${group.label}: ${getShopProductDisplayName(item.name)}${quantity > 0 ? ` x${quantity}` : ""}`
       : `${group.label}: empty`;
 
-    slot.className = [
-      "armory-shop__equipped-slot",
-      "weapon-shop__equipped-slot",
-      `armory-shop__equipped-slot--${group.modifier}`,
-      `armory-shop__equipped-slot--area-${group.area}`,
-      `armory-shop__equipped-slot--${rarity}`,
-      rarity !== "empty" ? `armory-shop__option--rarity-${rarity}` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    slot.setAttribute("aria-label", label);
-    slot.title = label;
-    icon.className = "armory-shop__equipped-icon";
-
-    if (iconUrl) {
-      icon.style.backgroundImage = `url("${iconUrl}")`;
-    }
-
-    slot.append(icon);
-
-    if (quantity > 0) {
-      const count = document.createElement("span");
-
-      count.className = "weapon-shop__equipped-count";
-      count.textContent = String(quantity);
-      slot.append(count);
-    }
-
-    return slot;
+    return createEquipmentSlotCard({
+      tagName: "div",
+      classNames: [
+        "armory-shop__equipped-slot",
+        "weapon-shop__equipped-slot",
+        `armory-shop__equipped-slot--${group.modifier}`,
+        `armory-shop__equipped-slot--area-${group.area}`,
+        `armory-shop__equipped-slot--${rarity}`,
+      ],
+      iconClassNames: ["armory-shop__equipped-icon"],
+      rarity,
+      rarityClassName: rarity !== "empty" ? `armory-shop__option--rarity-${rarity}` : undefined,
+      iconUrl,
+      label,
+      count: quantity > 0 ? quantity : undefined,
+      countClassName: "weapon-shop__equipped-count",
+    });
   }
 
   function getEquippedWeaponSlotItemId(group: WeaponEquippedSlotGroup, hero: HeroState): HeroItemId | undefined {
@@ -1454,7 +1503,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   return { open, close, render, syncHeroState };
 }
 
-function createProductIcon(iconUrl: string | undefined, className = "armory-shop__product-icon"): HTMLElement {
+function createProductIcon(iconUrl: string | undefined, className: string): HTMLElement {
   if (!iconUrl) {
     const fallback = document.createElement("span");
 
@@ -1514,29 +1563,12 @@ function createConsumableCardBadges(info: ConsumableCardInfo): HTMLElement {
   return badges;
 }
 
-function createProductStats(statLabel: string, statIconUrl: string, stat: number, price: number): HTMLElement {
-  const stats = document.createElement("span");
-  const statNode = document.createElement("span");
-  const statIcon = document.createElement("img");
-  const statValue = document.createElement("span");
-  const priceNode = document.createElement("span");
+function getProductCardAction(actionState: ShopProductActionState, price: number): EquipmentCardAction {
+  if (actionState === "buy" || actionState === "no-gold" || actionState === "sealed" || actionState === "locked") {
+    return { kind: "price", iconUrl: SHOP_GOLD_COIN_ICON_ASSET_URL, value: price, state: actionState };
+  }
 
-  stats.className = "armory-shop__product-stats";
-  statNode.className = "armory-shop__product-stat";
-  statNode.setAttribute("aria-label", `${statLabel} ${stat}`);
-  statIcon.className = "armory-shop__product-stat-icon";
-  statIcon.src = statIconUrl;
-  statIcon.alt = "";
-  statIcon.decoding = "async";
-  statIcon.draggable = false;
-  statValue.className = "armory-shop__product-stat-value";
-  statValue.textContent = String(stat);
-  priceNode.className = "armory-shop__product-price";
-  appendPriceContent(priceNode, price);
-  statNode.append(statIcon, statValue);
-  stats.append(statNode, priceNode);
-
-  return stats;
+  return { kind: "status", label: getShopProductActionLabel(actionState, price), state: actionState };
 }
 
 function createRequirementRibbon(requirement: ShopProductRequirementBadge): HTMLElement {
@@ -1575,6 +1607,10 @@ function getWeaponProductClass(product: WeaponProduct): HeroWeaponClass | undefi
   const itemId = product.itemIds[0];
 
   return itemId ? getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) : undefined;
+}
+
+function getWeaponProductTypeLabel(product: WeaponProduct): string {
+  return getWeaponProductClass(product) ?? "weapon";
 }
 
 function createSelectedMeta(
