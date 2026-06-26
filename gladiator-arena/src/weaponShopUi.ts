@@ -39,6 +39,7 @@ import {
   getShopProductActionState,
   getShopProductDisplayStat,
   getShopProductDisplayName,
+  getShopProductLevelRequirement,
   getShopProductRequirementBadge,
   getShopProductRequirementDescription,
   getShopProductRarity,
@@ -870,6 +871,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
         statLabel: "damage",
         statValue: damage,
         diff: damage - currentDamage,
+        levelRequirement: getShopProductLevelRequirement(product.itemIds),
         action: getProductCardAction(cardState, product.price),
       }),
     );

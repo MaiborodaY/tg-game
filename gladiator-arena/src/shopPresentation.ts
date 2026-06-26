@@ -9,6 +9,7 @@ import {
   getHeroConsumableMaxQuantity,
   getHeroRemainingScrollCapacity,
   getHeroShurikenQuantity,
+  getHeroItemLevelRequirement,
   getHeroItemRequirementChecks,
   deriveHeroStats,
   getHeroAttributeTotals,
@@ -96,6 +97,10 @@ export function getShopProductStat(itemIds: HeroItemId[], statKind: ShopProductS
 
 export function getShopProductDisplayStat(hero: HeroState, itemIds: HeroItemId[], statKind: ShopProductStatKind): number {
   return itemIds.reduce((total, itemId) => total + getShopItemDisplayStat(hero, HERO_ITEM_CATALOG[itemId], statKind), 0);
+}
+
+export function getShopProductLevelRequirement(itemIds: readonly HeroItemId[]): number {
+  return getHeroItemLevelRequirement(itemIds);
 }
 
 export function getEquippedShopProductStat(hero: HeroState, itemIds: HeroItemId[], statKind: ShopProductStatKind): number {

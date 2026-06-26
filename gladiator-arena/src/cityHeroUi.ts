@@ -47,6 +47,7 @@ import {
   getEquippedShopProductDisplayStat,
   getShopProductDisplayName,
   getShopProductDisplayStat,
+  getShopProductLevelRequirement,
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
@@ -2057,6 +2058,7 @@ function renderCityEquipmentProducts(
           statLabel,
           statValue,
           diff,
+          levelRequirement: getShopProductLevelRequirement(product.itemIds),
           action: isEquipped ? { kind: "status", label: "Equipped", state: "equipped" } : undefined,
         }),
       );

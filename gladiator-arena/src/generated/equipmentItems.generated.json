@@ -39,7 +39,7 @@
     "armoryProduct": {
       "id": "cloth_breastplate_01",
       "name": "Cloth Breastplate 01",
-      "price": 8,
+      "price": 11,
       "itemIds": [
         "cloth_breastplate_01"
       ],
@@ -121,7 +121,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_bone_01",
       "name": "Bone 01 Back Boot",
-      "price": 83,
+      "price": 141,
       "itemIds": [
         "generated_equipment_back_boot_bone_01"
       ],
@@ -167,7 +167,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_cathedral_01",
       "name": "Cathedral 01 Back Boot",
-      "price": 91,
+      "price": 155,
       "itemIds": [
         "generated_equipment_back_boot_cathedral_01"
       ],
@@ -214,7 +214,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_chainmail_01",
       "name": "Chainmail Back Boot 01",
-      "price": 12,
+      "price": 21,
       "itemIds": [
         "generated_equipment_back_boot_chainmail_01"
       ],
@@ -261,7 +261,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_cloth_01",
       "name": "Cloth Back Boot 01",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_boot_cloth_01"
       ],
@@ -379,7 +379,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_executioner_01",
       "name": "Executioner Back Boot 01",
-      "price": 31,
+      "price": 54,
       "itemIds": [
         "generated_equipment_back_boot_executioner_01"
       ],
@@ -497,7 +497,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_lazure_01",
       "name": "Lazure 01 Back Boot",
-      "price": 46,
+      "price": 78,
       "itemIds": [
         "generated_equipment_back_boot_lazure_01"
       ],
@@ -543,7 +543,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_lion_01",
       "name": "Lion 01 Back Boot",
-      "price": 55,
+      "price": 94,
       "itemIds": [
         "generated_equipment_back_boot_lion_01"
       ],
@@ -589,7 +589,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_mercenary_01",
       "name": "Mercenary Back Boot 01",
-      "price": 23,
+      "price": 39,
       "itemIds": [
         "generated_equipment_back_boot_mercenary_01"
       ],
@@ -707,7 +707,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_rust_champion_01",
       "name": "Rust Champion Boots",
-      "price": 18,
+      "price": 32,
       "itemIds": [
         "generated_equipment_back_boot_rust_champion_01"
       ],
@@ -753,7 +753,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_sand_01",
       "name": "Sand Boots",
-      "price": 4,
+      "price": 6,
       "itemIds": [
         "generated_equipment_back_boot_sand_01"
       ],
@@ -799,7 +799,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_stormguard_01",
       "name": "Stormguard Back Boot 01",
-      "price": 66,
+      "price": 112,
       "itemIds": [
         "generated_equipment_back_boot_stormguard_01"
       ],
@@ -917,7 +917,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_boot_viper_01",
       "name": "Viper 01 Back Boot",
-      "price": 76,
+      "price": 129,
       "itemIds": [
         "generated_equipment_back_boot_viper_01"
       ],
@@ -1071,7 +1071,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_bone_01",
       "name": "Bone 01 Back Glove",
-      "price": 83,
+      "price": 141,
       "itemIds": [
         "generated_equipment_back_glove_bone_01"
       ],
@@ -1117,7 +1117,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_cathedral_01",
       "name": "Cathedral 01 Back Glove",
-      "price": 91,
+      "price": 155,
       "itemIds": [
         "generated_equipment_back_glove_cathedral_01"
       ],
@@ -1164,7 +1164,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_chainmail_03",
       "name": "Chainmail Back Glove 03",
-      "price": 12,
+      "price": 21,
       "itemIds": [
         "generated_equipment_back_glove_chainmail_03"
       ],
@@ -1211,7 +1211,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_cloth_01",
       "name": "Cloth Back Glove 01",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_glove_cloth_01"
       ],
@@ -1329,7 +1329,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_executioner_01",
       "name": "Executioner Back Glove 01",
-      "price": 31,
+      "price": 54,
       "itemIds": [
         "generated_equipment_back_glove_executioner_01"
       ],
@@ -1447,7 +1447,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_lazure_01",
       "name": "Lazure 01 Back Glove",
-      "price": 46,
+      "price": 78,
       "itemIds": [
         "generated_equipment_back_glove_lazure_01"
       ],
@@ -1494,7 +1494,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_leather_03",
       "name": "Leather Back Glove 03",
-      "price": 7,
+      "price": 13,
       "itemIds": [
         "generated_equipment_back_glove_leather_03"
       ],
@@ -1540,7 +1540,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_lion_01",
       "name": "Lion 01 Back Glove",
-      "price": 55,
+      "price": 94,
       "itemIds": [
         "generated_equipment_back_glove_lion_01"
       ],
@@ -1586,7 +1586,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_mercenary_01",
       "name": "Mercenary Back Glove 01",
-      "price": 23,
+      "price": 39,
       "itemIds": [
         "generated_equipment_back_glove_mercenary_01"
       ],
@@ -1704,7 +1704,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_rust_champion_01",
       "name": "Rust Back Glove Champion 01",
-      "price": 18,
+      "price": 32,
       "itemIds": [
         "generated_equipment_back_glove_rust_champion_01"
       ],
@@ -1750,7 +1750,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_sand_01",
       "name": "Sand Glove",
-      "price": 4,
+      "price": 6,
       "itemIds": [
         "generated_equipment_back_glove_sand_01"
       ],
@@ -1796,7 +1796,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_stormguard_01",
       "name": "Stormguard Back Glove 01",
-      "price": 66,
+      "price": 112,
       "itemIds": [
         "generated_equipment_back_glove_stormguard_01"
       ],
@@ -1914,7 +1914,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_glove_viper_01",
       "name": "Viper 01 Back Glove",
-      "price": 76,
+      "price": 129,
       "itemIds": [
         "generated_equipment_back_glove_viper_01"
       ],
@@ -2068,7 +2068,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_bone_01",
       "name": "Bone 01 Back Greave",
-      "price": 101,
+      "price": 172,
       "itemIds": [
         "generated_equipment_back_greave_bone_01"
       ],
@@ -2114,7 +2114,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_cathedral_01",
       "name": "Cathedral 01 Back Greave",
-      "price": 111,
+      "price": 189,
       "itemIds": [
         "generated_equipment_back_greave_cathedral_01"
       ],
@@ -2161,7 +2161,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_chainmail_01",
       "name": "Chainmail Back Greave 01",
-      "price": 14,
+      "price": 25,
       "itemIds": [
         "generated_equipment_back_greave_chainmail_01"
       ],
@@ -2208,7 +2208,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_cloth_01",
       "name": "Cloth Back Greave 01",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_greave_cloth_01"
       ],
@@ -2326,7 +2326,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_executioner_01",
       "name": "Executioner Back Greave 01",
-      "price": 37,
+      "price": 64,
       "itemIds": [
         "generated_equipment_back_greave_executioner_01"
       ],
@@ -2444,7 +2444,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_lazure_01",
       "name": "Lazure 01 Back Greave",
-      "price": 56,
+      "price": 95,
       "itemIds": [
         "generated_equipment_back_greave_lazure_01"
       ],
@@ -2491,7 +2491,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_leather_01",
       "name": "Leather Back Greave 01",
-      "price": 9,
+      "price": 16,
       "itemIds": [
         "generated_equipment_back_greave_leather_01"
       ],
@@ -2537,7 +2537,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_lion_01",
       "name": "Lion 01 Back Greave",
-      "price": 67,
+      "price": 115,
       "itemIds": [
         "generated_equipment_back_greave_lion_01"
       ],
@@ -2583,7 +2583,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_mercenary_01",
       "name": "Mercenary Back Greave 01",
-      "price": 29,
+      "price": 50,
       "itemIds": [
         "generated_equipment_back_greave_mercenary_01"
       ],
@@ -2701,7 +2701,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_rust_champion_01",
       "name": "Rust Back Greave Champion 01",
-      "price": 22,
+      "price": 38,
       "itemIds": [
         "generated_equipment_back_greave_rust_champion_01"
       ],
@@ -2747,7 +2747,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_sand_01",
       "name": "Sand Greave",
-      "price": 6,
+      "price": 8,
       "itemIds": [
         "generated_equipment_back_greave_sand_01"
       ],
@@ -2793,7 +2793,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_stormguard_01",
       "name": "Stormguard Back Greave 01",
-      "price": 80,
+      "price": 136,
       "itemIds": [
         "generated_equipment_back_greave_stormguard_01"
       ],
@@ -2911,7 +2911,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_greave_viper_01",
       "name": "Viper 01 Back Greave",
-      "price": 92,
+      "price": 156,
       "itemIds": [
         "generated_equipment_back_greave_viper_01"
       ],
@@ -3065,7 +3065,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_bone_01",
       "name": "Bone 01 Back Shinguard",
-      "price": 101,
+      "price": 172,
       "itemIds": [
         "generated_equipment_back_shinguard_bone_01"
       ],
@@ -3111,7 +3111,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_cathedral_01",
       "name": "Cathedral 01 Back Shinguard",
-      "price": 111,
+      "price": 189,
       "itemIds": [
         "generated_equipment_back_shinguard_cathedral_01"
       ],
@@ -3158,7 +3158,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_chainmail_01",
       "name": "Chainmail Back Shinguard 01",
-      "price": 14,
+      "price": 25,
       "itemIds": [
         "generated_equipment_back_shinguard_chainmail_01"
       ],
@@ -3205,7 +3205,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_cloth_01",
       "name": "Cloth Back Shinguard 01",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_shinguard_cloth_01"
       ],
@@ -3323,7 +3323,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_executioner_01",
       "name": "Executioner Back Shinguard 01",
-      "price": 37,
+      "price": 64,
       "itemIds": [
         "generated_equipment_back_shinguard_executioner_01"
       ],
@@ -3441,7 +3441,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_lazure_01",
       "name": "Lazure 01 Back Shinguard",
-      "price": 56,
+      "price": 95,
       "itemIds": [
         "generated_equipment_back_shinguard_lazure_01"
       ],
@@ -3487,7 +3487,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_lion_01",
       "name": "Lion 01 Back Shinguard",
-      "price": 67,
+      "price": 115,
       "itemIds": [
         "generated_equipment_back_shinguard_lion_01"
       ],
@@ -3533,7 +3533,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_mercenary_01",
       "name": "Mercenary Back Shinguard 01",
-      "price": 29,
+      "price": 50,
       "itemIds": [
         "generated_equipment_back_shinguard_mercenary_01"
       ],
@@ -3651,7 +3651,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_rust_champion_01",
       "name": "Rust Back Shinguard Champion 01",
-      "price": 22,
+      "price": 38,
       "itemIds": [
         "generated_equipment_back_shinguard_rust_champion_01"
       ],
@@ -3697,7 +3697,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_sand_01",
       "name": "Sand Shinguard",
-      "price": 5,
+      "price": 7,
       "itemIds": [
         "generated_equipment_back_shinguard_sand_01"
       ],
@@ -3743,7 +3743,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_stormguard_01",
       "name": "Stormguard Back Shinguard 01",
-      "price": 80,
+      "price": 136,
       "itemIds": [
         "generated_equipment_back_shinguard_stormguard_01"
       ],
@@ -3861,7 +3861,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shinguard_viper_01",
       "name": "Viper 01 Back Shinguard",
-      "price": 92,
+      "price": 156,
       "itemIds": [
         "generated_equipment_back_shinguard_viper_01"
       ],
@@ -4015,7 +4015,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_bone_01",
       "name": "Bone 01 Back Shoulderguard",
-      "price": 101,
+      "price": 172,
       "itemIds": [
         "generated_equipment_back_shoulderguard_bone_01"
       ],
@@ -4061,7 +4061,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_cathedral_01",
       "name": "Cathedral 01 Back Shoulderguard",
-      "price": 111,
+      "price": 189,
       "itemIds": [
         "generated_equipment_back_shoulderguard_cathedral_01"
       ],
@@ -4108,7 +4108,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_chainmail_01",
       "name": "Chainmail Back Shoulderguard 01",
-      "price": 14,
+      "price": 25,
       "itemIds": [
         "generated_equipment_back_shoulderguard_chainmail_01"
       ],
@@ -4155,7 +4155,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_cloth_01",
       "name": "Cloth Back Shoulderguard 01",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_shoulderguard_cloth_01"
       ],
@@ -4273,7 +4273,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_executioner_01",
       "name": "Executioner Back Shoulderguard 01",
-      "price": 37,
+      "price": 64,
       "itemIds": [
         "generated_equipment_back_shoulderguard_executioner_01"
       ],
@@ -4391,7 +4391,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_lazure_01",
       "name": "Lazure 01 Back Shoulderguard",
-      "price": 56,
+      "price": 95,
       "itemIds": [
         "generated_equipment_back_shoulderguard_lazure_01"
       ],
@@ -4437,7 +4437,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_lion_01",
       "name": "Lion 01 Back Shoulderguard",
-      "price": 67,
+      "price": 115,
       "itemIds": [
         "generated_equipment_back_shoulderguard_lion_01"
       ],
@@ -4483,7 +4483,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_mercenary_01",
       "name": "Mercenary Back Shoulderguard 01",
-      "price": 29,
+      "price": 50,
       "itemIds": [
         "generated_equipment_back_shoulderguard_mercenary_01"
       ],
@@ -4601,7 +4601,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_rust_champion_01",
       "name": "Rust Back Shoulderguard Champion 01",
-      "price": 22,
+      "price": 38,
       "itemIds": [
         "generated_equipment_back_shoulderguard_rust_champion_01"
       ],
@@ -4647,7 +4647,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_sand_01",
       "name": "Sand Shoulderguard",
-      "price": 6,
+      "price": 8,
       "itemIds": [
         "generated_equipment_back_shoulderguard_sand_01"
       ],
@@ -4693,7 +4693,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_stormguard_01",
       "name": "Stormguard Back Shoulderguard 01",
-      "price": 80,
+      "price": 136,
       "itemIds": [
         "generated_equipment_back_shoulderguard_stormguard_01"
       ],
@@ -4811,7 +4811,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_shoulderguard_viper_01",
       "name": "Viper 01 Back Shoulderguard",
-      "price": 92,
+      "price": 156,
       "itemIds": [
         "generated_equipment_back_shoulderguard_viper_01"
       ],
@@ -4965,7 +4965,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_bone_01",
       "name": "Bone 01 Back Wrist",
-      "price": 83,
+      "price": 141,
       "itemIds": [
         "generated_equipment_back_wrist_bone_01"
       ],
@@ -5011,7 +5011,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_cathedral_01",
       "name": "Cathedral 01 Back Wrist",
-      "price": 91,
+      "price": 155,
       "itemIds": [
         "generated_equipment_back_wrist_cathedral_01"
       ],
@@ -5058,7 +5058,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_chainmail_01",
       "name": "Chainmail Back Wrist 01",
-      "price": 12,
+      "price": 21,
       "itemIds": [
         "generated_equipment_back_wrist_chainmail_01"
       ],
@@ -5105,7 +5105,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_cloth_01",
       "name": "Cloth Back Wrist 01",
-      "price": 3,
+      "price": 4,
       "itemIds": [
         "generated_equipment_back_wrist_cloth_01"
       ],
@@ -5223,7 +5223,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_executioner_01",
       "name": "Executioner Back Wrist 01",
-      "price": 31,
+      "price": 54,
       "itemIds": [
         "generated_equipment_back_wrist_executioner_01"
       ],
@@ -5341,7 +5341,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_lazure_01",
       "name": "Lazure 01 Back Wrist",
-      "price": 46,
+      "price": 78,
       "itemIds": [
         "generated_equipment_back_wrist_lazure_01"
       ],
@@ -5387,7 +5387,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_lion_01",
       "name": "Lion 01 Back Wrist",
-      "price": 55,
+      "price": 94,
       "itemIds": [
         "generated_equipment_back_wrist_lion_01"
       ],
@@ -5433,7 +5433,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_mercenary_01",
       "name": "Mercenary Back Wrist 01",
-      "price": 23,
+      "price": 39,
       "itemIds": [
         "generated_equipment_back_wrist_mercenary_01"
       ],
@@ -5551,7 +5551,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_rust_champion_01",
       "name": "Rust Back Wrist Champion 01",
-      "price": 18,
+      "price": 32,
       "itemIds": [
         "generated_equipment_back_wrist_rust_champion_01"
       ],
@@ -5597,7 +5597,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_sand_01",
       "name": "Sand Wrist",
-      "price": 4,
+      "price": 6,
       "itemIds": [
         "generated_equipment_back_wrist_sand_01"
       ],
@@ -5643,7 +5643,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_stormguard_01",
       "name": "Stormguard Back Wrist 01",
-      "price": 66,
+      "price": 112,
       "itemIds": [
         "generated_equipment_back_wrist_stormguard_01"
       ],
@@ -5761,7 +5761,7 @@
     "armoryProduct": {
       "id": "generated_equipment_back_wrist_viper_01",
       "name": "Viper 01 Back Wrist",
-      "price": 76,
+      "price": 129,
       "itemIds": [
         "generated_equipment_back_wrist_viper_01"
       ],
@@ -5915,7 +5915,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_bone_01",
       "name": "Bone 01 Breastplate",
-      "price": 230,
+      "price": 389,
       "itemIds": [
         "generated_equipment_breastplate_bone_01"
       ],
@@ -5961,7 +5961,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_cathedral_01",
       "name": "Cathedral 01 Breastplate",
-      "price": 253,
+      "price": 428,
       "itemIds": [
         "generated_equipment_breastplate_cathedral_01"
       ],
@@ -6008,7 +6008,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_chainmail_01",
       "name": "Chainmail Hauberk 01",
-      "price": 33,
+      "price": 56,
       "itemIds": [
         "generated_equipment_breastplate_chainmail_01"
       ],
@@ -6126,7 +6126,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_executioner_01",
       "name": "Executioner Breastplate 01",
-      "price": 85,
+      "price": 145,
       "itemIds": [
         "generated_equipment_breastplate_executioner_01"
       ],
@@ -6244,7 +6244,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_lazure_01",
       "name": "Lazure 01 Breastplate",
-      "price": 128,
+      "price": 218,
       "itemIds": [
         "generated_equipment_breastplate_lazure_01"
       ],
@@ -6290,7 +6290,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_lion_01",
       "name": "Lion 01 Breastplate",
-      "price": 153,
+      "price": 259,
       "itemIds": [
         "generated_equipment_breastplate_lion_01"
       ],
@@ -6336,7 +6336,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_mercenary_01",
       "name": "Mercenary Breastplate 01",
-      "price": 65,
+      "price": 111,
       "itemIds": [
         "generated_equipment_breastplate_mercenary_01"
       ],
@@ -6454,7 +6454,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_rust_champion_01",
       "name": "Rust Breastplate Champion 01",
-      "price": 50,
+      "price": 85,
       "itemIds": [
         "generated_equipment_breastplate_rust_champion_01"
       ],
@@ -6500,7 +6500,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_sand_01",
       "name": "Sand Breastplate",
-      "price": 13,
+      "price": 17,
       "itemIds": [
         "generated_equipment_breastplate_sand_01"
       ],
@@ -6546,7 +6546,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_stormguard_01",
       "name": "Stormguard Breastplate 01",
-      "price": 183,
+      "price": 310,
       "itemIds": [
         "generated_equipment_breastplate_stormguard_01"
       ],
@@ -6664,7 +6664,7 @@
     "armoryProduct": {
       "id": "generated_equipment_breastplate_viper_01",
       "name": "Viper 01 Breastplate",
-      "price": 210,
+      "price": 355,
       "itemIds": [
         "generated_equipment_breastplate_viper_01"
       ],
@@ -12612,7 +12612,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_bone_01",
       "name": "Bone 01 Helmet",
-      "price": 138,
+      "price": 234,
       "itemIds": [
         "generated_equipment_helmet_bone_01"
       ],
@@ -12658,7 +12658,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_cathedral_01",
       "name": "Cathedral 01 Helmet",
-      "price": 151,
+      "price": 257,
       "itemIds": [
         "generated_equipment_helmet_cathedral_01"
       ],
@@ -12705,7 +12705,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_chainmail_01",
       "name": "Chainmail Coif 01",
-      "price": 19,
+      "price": 33,
       "itemIds": [
         "generated_equipment_helmet_chainmail_01"
       ],
@@ -12752,7 +12752,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_cloth_01",
       "name": "Cloth Helmet 01",
-      "price": 4,
+      "price": 6,
       "itemIds": [
         "generated_equipment_helmet_cloth_01"
       ],
@@ -12907,7 +12907,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_executioner_01",
       "name": "Executioner Helmet 01",
-      "price": 51,
+      "price": 88,
       "itemIds": [
         "generated_equipment_helmet_executioner_01"
       ],
@@ -13025,7 +13025,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_lazure_01",
       "name": "Lazure 01 Helmet",
-      "price": 76,
+      "price": 129,
       "itemIds": [
         "generated_equipment_helmet_lazure_01"
       ],
@@ -13071,7 +13071,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_lion_01",
       "name": "Lion 01 Helmet",
-      "price": 91,
+      "price": 155,
       "itemIds": [
         "generated_equipment_helmet_lion_01"
       ],
@@ -13117,7 +13117,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_mercenary_01",
       "name": "Mercenary Helmet 01",
-      "price": 39,
+      "price": 67,
       "itemIds": [
         "generated_equipment_helmet_mercenary_01"
       ],
@@ -13235,7 +13235,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_rust_champion_01",
       "name": "Rust Champion Helmet",
-      "price": 30,
+      "price": 51,
       "itemIds": [
         "generated_equipment_helmet_rust_champion_01"
       ],
@@ -13281,7 +13281,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_sand_01",
       "name": "Sand Helmet 01",
-      "price": 8,
+      "price": 11,
       "itemIds": [
         "generated_equipment_helmet_sand_01"
       ],
@@ -13327,7 +13327,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_stormguard_01",
       "name": "Stormguard Helmet 01",
-      "price": 109,
+      "price": 185,
       "itemIds": [
         "generated_equipment_helmet_stormguard_01"
       ],
@@ -13445,7 +13445,7 @@
     "armoryProduct": {
       "id": "generated_equipment_helmet_viper_01",
       "name": "Viper 01 Helmet",
-      "price": 126,
+      "price": 214,
       "itemIds": [
         "generated_equipment_helmet_viper_01"
       ],
@@ -13637,7 +13637,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_epic_01",
       "name": "Epic 01 Shield",
-      "price": 1000,
+      "price": 1300,
       "itemIds": [
         "generated_equipment_shield_epic_01"
       ],
@@ -13677,7 +13677,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_epic_02",
       "name": "Epic 02 Shield",
-      "price": 1300,
+      "price": 1690,
       "itemIds": [
         "generated_equipment_shield_epic_02"
       ],
@@ -13717,7 +13717,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_legendary_01",
       "name": "Legendary 01 Shield",
-      "price": 1450,
+      "price": 1885,
       "itemIds": [
         "generated_equipment_shield_legendary_01"
       ],
@@ -13757,7 +13757,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_legendary_02",
       "name": "Legendary 02 Shield",
-      "price": 2000,
+      "price": 2600,
       "itemIds": [
         "generated_equipment_shield_legendary_02"
       ],
@@ -13887,7 +13887,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_rare_01",
       "name": "Rare 01 Shield",
-      "price": 450,
+      "price": 585,
       "itemIds": [
         "generated_equipment_shield_rare_01"
       ],
@@ -13927,7 +13927,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_rare_02",
       "name": "Rare 02 Shield",
-      "price": 650,
+      "price": 845,
       "itemIds": [
         "generated_equipment_shield_rare_02"
       ],
@@ -13997,7 +13997,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_uncommon_01",
       "name": "Uncommon 01 Shield",
-      "price": 185,
+      "price": 241,
       "itemIds": [
         "generated_equipment_shield_uncommon_01"
       ],
@@ -14037,7 +14037,7 @@
     "armoryProduct": {
       "id": "generated_equipment_shield_uncommon_02",
       "name": "Uncommon 02 Shield",
-      "price": 270,
+      "price": 351,
       "itemIds": [
         "generated_equipment_shield_uncommon_02"
       ],
@@ -14078,7 +14078,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_01",
       "name": "Epic Axe 05",
-      "price": 675,
+      "price": 878,
       "itemIds": [
         "generated_equipment_weapon_axe_01"
       ],
@@ -14119,7 +14119,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_1",
       "name": "Rare Axe 03",
-      "price": 284,
+      "price": 370,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_1"
       ],
@@ -14160,7 +14160,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_3",
       "name": "Epic Axe 01",
-      "price": 375,
+      "price": 488,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_3"
       ],
@@ -14201,7 +14201,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_4",
       "name": "Epic Axe 02",
-      "price": 435,
+      "price": 566,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_4"
       ],
@@ -14242,7 +14242,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_5",
       "name": "Epic Axe 03",
-      "price": 495,
+      "price": 644,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_5"
       ],
@@ -14283,7 +14283,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_6",
       "name": "Epic Axe 06",
-      "price": 555,
+      "price": 722,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_6"
       ],
@@ -14324,7 +14324,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_epic_axe_7",
       "name": "Epic Axe 07",
-      "price": 615,
+      "price": 800,
       "itemIds": [
         "generated_equipment_weapon_axe_epic_axe_7"
       ],
@@ -14396,7 +14396,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_legendary_axe_01",
       "name": "Legendary Axe 01",
-      "price": 825,
+      "price": 1073,
       "itemIds": [
         "generated_equipment_weapon_axe_legendary_axe_01"
       ],
@@ -14437,7 +14437,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_legendary_axe_02",
       "name": "Legendary Axe 02",
-      "price": 908,
+      "price": 1181,
       "itemIds": [
         "generated_equipment_weapon_axe_legendary_axe_02"
       ],
@@ -14612,7 +14612,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_rare_axe_1",
       "name": "Rare Axe 01",
-      "price": 203,
+      "price": 264,
       "itemIds": [
         "generated_equipment_weapon_axe_rare_axe_1"
       ],
@@ -14653,7 +14653,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_rare_axe_2",
       "name": "Rare Axe 02",
-      "price": 243,
+      "price": 316,
       "itemIds": [
         "generated_equipment_weapon_axe_rare_axe_2"
       ],
@@ -14776,7 +14776,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_uncommon_axe_1",
       "name": "Uncommon Axe 01",
-      "price": 72,
+      "price": 94,
       "itemIds": [
         "generated_equipment_weapon_axe_uncommon_axe_1"
       ],
@@ -14817,7 +14817,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_uncommon_axe_2",
       "name": "Uncommon Axe 02",
-      "price": 96,
+      "price": 125,
       "itemIds": [
         "generated_equipment_weapon_axe_uncommon_axe_2"
       ],
@@ -14858,7 +14858,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_axe_uncommon_axe_3",
       "name": "Uncommon Axe 03",
-      "price": 120,
+      "price": 156,
       "itemIds": [
         "generated_equipment_weapon_axe_uncommon_axe_3"
       ],
@@ -15018,7 +15018,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_epic_bow_1",
       "name": "Epic bow 1",
-      "price": 1600,
+      "price": 2080,
       "itemIds": [
         "generated_equipment_weapon_bow_epic_bow_1"
       ],
@@ -15061,7 +15061,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_epic_bow_2",
       "name": "Epic bow 2",
-      "price": 2200,
+      "price": 2860,
       "itemIds": [
         "generated_equipment_weapon_bow_epic_bow_2"
       ],
@@ -15104,7 +15104,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_legendary_bow_1",
       "name": "Legendary bow 1",
-      "price": 3000,
+      "price": 3900,
       "itemIds": [
         "generated_equipment_weapon_bow_legendary_bow_1"
       ],
@@ -15147,7 +15147,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_legendary_bow_2",
       "name": "Legendary bow 2",
-      "price": 4000,
+      "price": 5200,
       "itemIds": [
         "generated_equipment_weapon_bow_legendary_bow_2"
       ],
@@ -15258,7 +15258,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_rare_bow_1",
       "name": "Rare bow 1",
-      "price": 800,
+      "price": 1040,
       "itemIds": [
         "generated_equipment_weapon_bow_rare_bow_1"
       ],
@@ -15301,7 +15301,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_rare_bow_2",
       "name": "Rare bow 2",
-      "price": 1100,
+      "price": 1430,
       "itemIds": [
         "generated_equipment_weapon_bow_rare_bow_2"
       ],
@@ -15344,7 +15344,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_uncommon_bow_1",
       "name": "Uncommon bow 1",
-      "price": 300,
+      "price": 390,
       "itemIds": [
         "generated_equipment_weapon_bow_uncommon_bow_1"
       ],
@@ -15387,7 +15387,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_uncommon_bow_2",
       "name": "Uncommon bow 2",
-      "price": 500,
+      "price": 650,
       "itemIds": [
         "generated_equipment_weapon_bow_uncommon_bow_2"
       ],
@@ -15572,7 +15572,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_1",
       "name": "Epic Mace 02",
-      "price": 330,
+      "price": 429,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_1"
       ],
@@ -15613,7 +15613,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_2",
       "name": "Epic Mace 03",
-      "price": 363,
+      "price": 472,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_2"
       ],
@@ -15654,7 +15654,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_3",
       "name": "Epic Mace 04",
-      "price": 396,
+      "price": 515,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_3"
       ],
@@ -15695,7 +15695,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_4",
       "name": "Epic Mace 05",
-      "price": 446,
+      "price": 580,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_4"
       ],
@@ -15736,7 +15736,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_5",
       "name": "Epic Mace 06",
-      "price": 479,
+      "price": 623,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_5"
       ],
@@ -15777,7 +15777,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_epic_mace_6",
       "name": "Epic Mace 07",
-      "price": 512,
+      "price": 666,
       "itemIds": [
         "generated_equipment_weapon_mace_epic_mace_6"
       ],
@@ -15818,7 +15818,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_legendary_mace_02",
       "name": "Legendary Mace 02",
-      "price": 684,
+      "price": 890,
       "itemIds": [
         "generated_equipment_weapon_mace_legendary_mace_02"
       ],
@@ -15859,7 +15859,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_lg_mace_1",
       "name": "Legendary Mace 01",
-      "price": 612,
+      "price": 796,
       "itemIds": [
         "generated_equipment_weapon_mace_lg_mace_1"
       ],
@@ -15900,7 +15900,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_mace",
       "name": "Uncommon Mace 01",
-      "price": 54,
+      "price": 71,
       "itemIds": [
         "generated_equipment_weapon_mace_mace"
       ],
@@ -15941,7 +15941,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_mace1",
       "name": "Uncommon Mace 02",
-      "price": 68,
+      "price": 89,
       "itemIds": [
         "generated_equipment_weapon_mace_mace1"
       ],
@@ -16044,7 +16044,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_rare_mace_1",
       "name": "Rare Mace 01",
-      "price": 165,
+      "price": 215,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_1"
       ],
@@ -16085,7 +16085,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_rare_mace_2",
       "name": "Rare Mace 02",
-      "price": 195,
+      "price": 254,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_2"
       ],
@@ -16126,7 +16126,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_rare_mace_3",
       "name": "Rare Mace 03",
-      "price": 225,
+      "price": 293,
       "itemIds": [
         "generated_equipment_weapon_mace_rare_mace_3"
       ],
@@ -16270,7 +16270,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_mace_uncommon_mace_4",
       "name": "Uncommon Mace 04",
-      "price": 95,
+      "price": 124,
       "itemIds": [
         "generated_equipment_weapon_mace_uncommon_mace_4"
       ],
@@ -16486,7 +16486,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_epic_shuriken_1",
       "name": "epic shuriken 1",
-      "price": 170,
+      "price": 221,
       "itemIds": [
         "generated_equipment_weapon_shuriken_epic_shuriken_1"
       ],
@@ -16527,7 +16527,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_epic_shuriken_2",
       "name": "epic shuriken 2",
-      "price": 200,
+      "price": 260,
       "itemIds": [
         "generated_equipment_weapon_shuriken_epic_shuriken_2"
       ],
@@ -16568,7 +16568,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_legendary_shuriken_1",
       "name": "Legendary shuriken 1",
-      "price": 230,
+      "price": 299,
       "itemIds": [
         "generated_equipment_weapon_shuriken_legendary_shuriken_1"
       ],
@@ -16609,7 +16609,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_legendary_shuriken_2",
       "name": "Legendary shuriken 2",
-      "price": 260,
+      "price": 338,
       "itemIds": [
         "generated_equipment_weapon_shuriken_legendary_shuriken_2"
       ],
@@ -16712,7 +16712,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_rare_shuriken_1",
       "name": "rare shuriken 1",
-      "price": 110,
+      "price": 143,
       "itemIds": [
         "generated_equipment_weapon_shuriken_rare_shuriken_1"
       ],
@@ -16753,7 +16753,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_rare_shuriken_2",
       "name": "rare shuriken 2",
-      "price": 140,
+      "price": 182,
       "itemIds": [
         "generated_equipment_weapon_shuriken_rare_shuriken_2"
       ],
@@ -16794,7 +16794,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_uncommon_shuriken_1",
       "name": "uncommon shuriken 1",
-      "price": 50,
+      "price": 65,
       "itemIds": [
         "generated_equipment_weapon_shuriken_uncommon_shuriken_1"
       ],
@@ -16835,7 +16835,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_uncommon_shuriken_2",
       "name": "uncommon shuriken 2",
-      "price": 80,
+      "price": 104,
       "itemIds": [
         "generated_equipment_weapon_shuriken_uncommon_shuriken_2"
       ],
@@ -16907,7 +16907,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear",
       "name": "Epic Spear 01",
-      "price": 180,
+      "price": 234,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear"
       ],
@@ -16948,7 +16948,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_1",
       "name": "Epic Spear 02",
-      "price": 198,
+      "price": 258,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_1"
       ],
@@ -17020,7 +17020,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_4",
       "name": "Epic Spear 04",
-      "price": 234,
+      "price": 305,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_4"
       ],
@@ -17061,7 +17061,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_5",
       "name": "Epic Spear 05",
-      "price": 270,
+      "price": 351,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_5"
       ],
@@ -17102,7 +17102,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_6",
       "name": "Epic Spear 06",
-      "price": 306,
+      "price": 398,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_6"
       ],
@@ -17143,7 +17143,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_epic_spear_7",
       "name": "Epic Spear 07",
-      "price": 324,
+      "price": 422,
       "itemIds": [
         "generated_equipment_weapon_spear_epic_spear_7"
       ],
@@ -17184,7 +17184,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_legendary_spear_02",
       "name": "Legendary Spear 02",
-      "price": 410,
+      "price": 533,
       "itemIds": [
         "generated_equipment_weapon_spear_legendary_spear_02"
       ],
@@ -17225,7 +17225,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_lg_spear_1",
       "name": "Legendary Spear 01",
-      "price": 371,
+      "price": 483,
       "itemIds": [
         "generated_equipment_weapon_spear_lg_spear_1"
       ],
@@ -17328,7 +17328,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_rare_spear",
       "name": "Rare Spear 01",
-      "price": 116,
+      "price": 151,
       "itemIds": [
         "generated_equipment_weapon_spear_rare_spear"
       ],
@@ -17369,7 +17369,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_rare_spear_1",
       "name": "Rare Spear 02",
-      "price": 132,
+      "price": 172,
       "itemIds": [
         "generated_equipment_weapon_spear_rare_spear_1"
       ],
@@ -17410,7 +17410,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_1",
       "name": "Epic Sword 01",
-      "price": 324,
+      "price": 422,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_1"
       ],
@@ -17544,7 +17544,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_3",
       "name": "Epic Sword 03",
-      "price": 351,
+      "price": 457,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_3"
       ],
@@ -17585,7 +17585,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_4",
       "name": "Epic Sword 04",
-      "price": 365,
+      "price": 475,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_4"
       ],
@@ -17657,7 +17657,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_7",
       "name": "Epic Sword 06",
-      "price": 392,
+      "price": 510,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_7"
       ],
@@ -17698,7 +17698,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_8",
       "name": "Epic Sword 07",
-      "price": 405,
+      "price": 527,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_8"
       ],
@@ -17739,7 +17739,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_epic_sword_9",
       "name": "Epic Sword 08",
-      "price": 432,
+      "price": 562,
       "itemIds": [
         "generated_equipment_weapon_sword_epic_sword_9"
       ],
@@ -17873,7 +17873,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_lg_sword_1",
       "name": "Legendary Sword 01",
-      "price": 660,
+      "price": 858,
       "itemIds": [
         "generated_equipment_weapon_sword_lg_sword_1"
       ],
@@ -17914,7 +17914,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_lg_sword_2",
       "name": "Legendary Sword 02",
-      "price": 735,
+      "price": 956,
       "itemIds": [
         "generated_equipment_weapon_sword_lg_sword_2"
       ],
@@ -18017,7 +18017,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rare_sword_1",
       "name": "Rare Sword 01",
-      "price": 168,
+      "price": 219,
       "itemIds": [
         "generated_equipment_weapon_sword_rare_sword_1"
       ],
@@ -18058,7 +18058,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rare_sword_2",
       "name": "Rare Sword 02",
-      "price": 180,
+      "price": 234,
       "itemIds": [
         "generated_equipment_weapon_sword_rare_sword_2"
       ],
@@ -18099,7 +18099,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rare_sword_3",
       "name": "Rare Sword 03",
-      "price": 192,
+      "price": 250,
       "itemIds": [
         "generated_equipment_weapon_sword_rare_sword_3"
       ],
@@ -18264,7 +18264,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_rusty_sword",
       "name": "Common Sword 01",
-      "price": 7,
+      "price": 6,
       "itemIds": [
         "generated_equipment_weapon_sword_rusty_sword"
       ],
@@ -18377,7 +18377,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_sword1",
       "name": "Uncommon Sword 01",
-      "price": 53,
+      "price": 69,
       "itemIds": [
         "generated_equipment_weapon_sword_sword1"
       ],
@@ -18418,7 +18418,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_uncommon_sword_2",
       "name": "Uncommon Sword 02",
-      "price": 74,
+      "price": 97,
       "itemIds": [
         "generated_equipment_weapon_sword_uncommon_sword_2"
       ],
@@ -18459,7 +18459,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_sword_uncommon_sword_3",
       "name": "Uncommon Sword 03",
-      "price": 95,
+      "price": 124,
       "itemIds": [
         "generated_equipment_weapon_sword_uncommon_sword_3"
       ],
@@ -18568,7 +18568,7 @@
     "armoryProduct": {
       "id": "leather_back_boot_01",
       "name": "Leather Back Boot 01",
-      "price": 7,
+      "price": 13,
       "itemIds": [
         "leather_back_boot_01"
       ],
@@ -18615,7 +18615,7 @@
     "armoryProduct": {
       "id": "leather_back_shinguard_01",
       "name": "Leather Back Shinguard 01",
-      "price": 9,
+      "price": 16,
       "itemIds": [
         "leather_back_shinguard_01"
       ],
@@ -18662,7 +18662,7 @@
     "armoryProduct": {
       "id": "leather_back_shoulderguard_01",
       "name": "Leather Back Shoulderguard 01",
-      "price": 9,
+      "price": 16,
       "itemIds": [
         "leather_back_shoulderguard_01"
       ],
@@ -18709,7 +18709,7 @@
     "armoryProduct": {
       "id": "leather_back_wrist_01",
       "name": "Leather Back Wrist 01",
-      "price": 7,
+      "price": 13,
       "itemIds": [
         "leather_back_wrist_01"
       ],
@@ -18756,7 +18756,7 @@
     "armoryProduct": {
       "id": "leather_breastplate_01",
       "name": "Leather Breastplate 01",
-      "price": 20,
+      "price": 34,
       "itemIds": [
         "leather_breastplate_01"
       ],
@@ -18991,7 +18991,7 @@
     "armoryProduct": {
       "id": "leather_helmet_01",
       "name": "Leather Helmet 01",
-      "price": 12,
+      "price": 21,
       "itemIds": [
         "leather_helmet_01"
       ],

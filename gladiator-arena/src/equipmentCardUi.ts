@@ -25,6 +25,7 @@ export interface EquipmentItemCardContentOptions {
   statLabel: string;
   statValue: number | string;
   diff?: number;
+  levelRequirement?: number;
   action?: EquipmentCardAction;
 }
 
@@ -52,6 +53,7 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
   const rarityChip = document.createElement("span");
   const typeChip = document.createElement("span");
   const statRow = document.createElement("span");
+  const levelRequirement = Math.max(0, Math.floor(options.levelRequirement ?? 0));
 
   content.className = "equipment-item-card__content";
   iconFrame.className = "equipment-item-card__icon-frame";
@@ -62,6 +64,7 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
   rarityChip.className = "equipment-item-card__chip equipment-item-card__rarity";
   typeChip.className = "equipment-item-card__chip equipment-item-card__kind";
   statRow.className = "equipment-item-card__stat-row";
+  content.classList.toggle("equipment-item-card__content--with-level", levelRequirement > 0);
 
   if (options.iconUrl) {
     icon.style.backgroundImage = `url("${options.iconUrl}")`;
@@ -83,6 +86,15 @@ export function createEquipmentItemCardContent(options: EquipmentItemCardContent
   iconFrame.append(icon);
   info.append(name, chips, statRow);
   content.append(iconFrame, info);
+
+  if (levelRequirement > 0) {
+    const level = document.createElement("span");
+
+    level.className = "equipment-item-card__level";
+    level.textContent = `LVL:${levelRequirement}`;
+    level.setAttribute("aria-label", `Required level ${levelRequirement}`);
+    content.append(level);
+  }
 
   return content;
 }

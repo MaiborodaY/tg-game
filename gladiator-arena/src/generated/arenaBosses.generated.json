@@ -27,7 +27,7 @@
     },
     "rewards": {
       "win": {
-        "gold": 18,
+        "gold": 20,
         "xp": 5
       },
       "loss": {
@@ -37,18 +37,10 @@
     },
     "lootTable": [
       {
-        "id": "dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop",
+        "id": "dust_arena_champion_generated_equipment_back_wrist_wood_boss_01_generated_equipment_front_wrist_wood_boss_01_drop",
         "itemIds": [
-          "generated_equipment_weapon_mace_wood_boss_01"
-        ],
-        "chance": 1,
-        "quantity": 1
-      },
-      {
-        "id": "dust_arena_champion_generated_equipment_back_boot_wood_boss_01_generated_equipment_front_boot_wood_boss_01_drop",
-        "itemIds": [
-          "generated_equipment_back_boot_wood_boss_01",
-          "generated_equipment_front_boot_wood_boss_01"
+          "generated_equipment_back_wrist_wood_boss_01",
+          "generated_equipment_front_wrist_wood_boss_01"
         ],
         "chance": 1,
         "quantity": 1
@@ -71,6 +63,15 @@
         "quantity": 1
       },
       {
+        "id": "dust_arena_champion_generated_equipment_back_greave_wood_boss_01_generated_equipment_front_greave_wood_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_back_greave_wood_boss_01",
+          "generated_equipment_front_greave_wood_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
         "id": "dust_arena_champion_generated_equipment_helmet_wood_boss_01_drop",
         "itemIds": [
           "generated_equipment_helmet_wood_boss_01"
@@ -88,6 +89,14 @@
         "quantity": 1
       },
       {
+        "id": "dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop",
+        "itemIds": [
+          "generated_equipment_weapon_mace_wood_boss_01"
+        ],
+        "chance": 1,
+        "quantity": 1
+      },
+      {
         "id": "dust_arena_champion_generated_equipment_back_shoulderguard_wood_boss_01_generated_equipment_front_shoulderguard_wood_boss_01_drop",
         "itemIds": [
           "generated_equipment_back_shoulderguard_wood_boss_01",
@@ -97,19 +106,10 @@
         "quantity": 1
       },
       {
-        "id": "dust_arena_champion_generated_equipment_back_wrist_wood_boss_01_generated_equipment_front_wrist_wood_boss_01_drop",
+        "id": "dust_arena_champion_generated_equipment_back_boot_wood_boss_01_generated_equipment_front_boot_wood_boss_01_drop",
         "itemIds": [
-          "generated_equipment_back_wrist_wood_boss_01",
-          "generated_equipment_front_wrist_wood_boss_01"
-        ],
-        "chance": 1,
-        "quantity": 1
-      },
-      {
-        "id": "dust_arena_champion_generated_equipment_back_greave_wood_boss_01_generated_equipment_front_greave_wood_boss_01_drop",
-        "itemIds": [
-          "generated_equipment_back_greave_wood_boss_01",
-          "generated_equipment_front_greave_wood_boss_01"
+          "generated_equipment_back_boot_wood_boss_01",
+          "generated_equipment_front_boot_wood_boss_01"
         ],
         "chance": 1,
         "quantity": 1

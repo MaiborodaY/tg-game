@@ -14,7 +14,7 @@
         "equipmentPools": [],
         "rewards": {
           "win": {
-            "gold": 5,
+            "gold": 3,
             "xp": 1
           },
           "loss": {
@@ -51,7 +51,7 @@
         "rewards": {
           "win": {
             "gold": 7,
-            "xp": 2
+            "xp": 1
           },
           "loss": {
             "gold": 1,
@@ -85,7 +85,7 @@
         "rewards": {
           "win": {
             "gold": 11,
-            "xp": 3
+            "xp": 1
           },
           "loss": {
             "gold": 1,
@@ -110,7 +110,6 @@
               "common"
             ],
             "rollChance": 0.7,
-            "weaponChance": 0.7,
             "bowChance": 0.055,
             "shieldChance": 0.055,
             "shurikenChance": 0.0689
@@ -120,7 +119,6 @@
               "uncommon"
             ],
             "rollChance": 0.8333,
-            "weaponChance": 0.8333,
             "bowChance": 0.0208,
             "shieldChance": 0.0208,
             "shurikenChance": 0.0264
@@ -130,7 +128,6 @@
               "rare"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0042,
             "shieldChance": 0.0042,
             "shurikenChance": 0.0054
@@ -138,12 +135,12 @@
         ],
         "rewards": {
           "win": {
-            "gold": 15,
+            "gold": 11,
             "xp": 5
           },
           "loss": {
-            "gold": 1,
-            "xp": 1
+            "gold": 2,
+            "xp": 2
           }
         }
       },
@@ -157,7 +154,6 @@
               "common"
             ],
             "rollChance": 0.4,
-            "weaponChance": 0.4,
             "bowChance": 0.028,
             "shieldChance": 0.056,
             "shurikenChance": 0.032
@@ -167,7 +163,6 @@
               "uncommon"
             ],
             "rollChance": 0.9167,
-            "weaponChance": 0.9167,
             "bowChance": 0.0396,
             "shieldChance": 0.0816,
             "shurikenChance": 0.0455
@@ -177,7 +172,6 @@
               "rare"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0037,
             "shieldChance": 0.0081,
             "shurikenChance": 0.0043
@@ -185,12 +179,12 @@
         ],
         "rewards": {
           "win": {
-            "gold": 17,
+            "gold": 14,
             "xp": 6
           },
           "loss": {
-            "gold": 1,
-            "xp": 1
+            "gold": 2,
+            "xp": 2
           }
         }
       },
@@ -204,7 +198,6 @@
               "common"
             ],
             "rollChance": 0.1,
-            "weaponChance": 0.1,
             "bowChance": 0.0136,
             "shieldChance": 0.0282,
             "shurikenChance": 0.0155
@@ -214,7 +207,6 @@
               "uncommon"
             ],
             "rollChance": 0.9444,
-            "weaponChance": 0.9444,
             "bowChance": 0.1172,
             "shieldChance": 0.247,
             "shurikenChance": 0.134
@@ -224,7 +216,6 @@
               "rare"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0078,
             "shieldChance": 0.0193,
             "shurikenChance": 0.0091
@@ -232,12 +223,12 @@
         ],
         "rewards": {
           "win": {
-            "gold": 23,
+            "gold": 22,
             "xp": 7
           },
           "loss": {
-            "gold": 1,
-            "xp": 1
+            "gold": 2,
+            "xp": 2
           }
         }
       }
@@ -258,7 +249,6 @@
               "common"
             ],
             "rollChance": 0.1,
-            "weaponChance": 0.1,
             "bowChance": 0.0079,
             "shieldChance": 0.0079,
             "shurikenChance": 0.0098
@@ -268,7 +258,6 @@
               "uncommon"
             ],
             "rollChance": 0.9444,
-            "weaponChance": 0.9444,
             "bowChance": 0.0673,
             "shieldChance": 0.0673,
             "shurikenChance": 0.0845
@@ -278,7 +267,6 @@
               "rare"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0042,
             "shieldChance": 0.0042,
             "shurikenChance": 0.0054
@@ -286,7 +274,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 27,
+            "gold": 23,
             "xp": 9
           },
           "loss": {
@@ -305,7 +293,6 @@
               "uncommon"
             ],
             "rollChance": 0.4,
-            "weaponChance": 0.4,
             "bowChance": 0.028,
             "shieldChance": 0.056,
             "shurikenChance": 0.032
@@ -315,7 +302,6 @@
               "rare"
             ],
             "rollChance": 0.9167,
-            "weaponChance": 0.9167,
             "bowChance": 0.0396,
             "shieldChance": 0.0816,
             "shurikenChance": 0.0455
@@ -325,7 +311,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0037,
             "shieldChance": 0.0081,
             "shurikenChance": 0.0043
@@ -333,7 +318,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 30,
+            "gold": 27,
             "xp": 10
           },
           "loss": {
@@ -352,7 +337,6 @@
               "uncommon"
             ],
             "rollChance": 0.1,
-            "weaponChance": 0.1,
             "bowChance": 0.0136,
             "shieldChance": 0.0282,
             "shurikenChance": 0.0155
@@ -362,7 +346,6 @@
               "rare"
             ],
             "rollChance": 0.9444,
-            "weaponChance": 0.9444,
             "bowChance": 0.1172,
             "shieldChance": 0.247,
             "shurikenChance": 0.134
@@ -372,7 +355,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0078,
             "shieldChance": 0.0193,
             "shurikenChance": 0.0091
@@ -380,7 +362,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 37,
+            "gold": 33,
             "xp": 11
           },
           "loss": {
@@ -406,7 +388,6 @@
               "uncommon"
             ],
             "rollChance": 0.1,
-            "weaponChance": 0.1,
             "bowChance": 0.0079,
             "shieldChance": 0.0079,
             "shurikenChance": 0.0098
@@ -416,7 +397,6 @@
               "rare"
             ],
             "rollChance": 0.9444,
-            "weaponChance": 0.9444,
             "bowChance": 0.0673,
             "shieldChance": 0.0673,
             "shurikenChance": 0.0845
@@ -426,7 +406,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0042,
             "shieldChance": 0.0042,
             "shurikenChance": 0.0054
@@ -434,7 +413,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 41,
+            "gold": 40,
             "xp": 13
           },
           "loss": {
@@ -453,7 +432,6 @@
               "uncommon"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0035,
             "shieldChance": 0.007,
             "shurikenChance": 0.004
@@ -463,7 +441,6 @@
               "rare"
             ],
             "rollChance": 0.8421,
-            "weaponChance": 0.8421,
             "bowChance": 0.0562,
             "shieldChance": 0.1128,
             "shurikenChance": 0.0643
@@ -473,7 +450,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0112,
             "shieldChance": 0.0238,
             "shurikenChance": 0.0129
@@ -500,7 +476,6 @@
               "uncommon"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0068,
             "shieldChance": 0.0141,
             "shurikenChance": 0.0078
@@ -510,7 +485,6 @@
               "rare"
             ],
             "rollChance": 0.7368,
-            "weaponChance": 0.7368,
             "bowChance": 0.0959,
             "shieldChance": 0.2005,
             "shurikenChance": 0.1095
@@ -520,7 +494,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0379,
             "shieldChance": 0.0896,
             "shurikenChance": 0.0439
@@ -528,7 +501,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 55,
+            "gold": 50,
             "xp": 15
           },
           "loss": {
@@ -554,7 +527,6 @@
               "uncommon"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0039,
             "shieldChance": 0.0039,
             "shurikenChance": 0.0049
@@ -564,7 +536,6 @@
               "rare"
             ],
             "rollChance": 0.7368,
-            "weaponChance": 0.7368,
             "bowChance": 0.0552,
             "shieldChance": 0.0552,
             "shurikenChance": 0.0692
@@ -574,7 +545,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0209,
             "shieldChance": 0.0209,
             "shurikenChance": 0.0266
@@ -582,7 +552,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 58,
+            "gold": 52,
             "xp": 17
           },
           "loss": {
@@ -601,7 +571,6 @@
               "uncommon"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0035,
             "shieldChance": 0.007,
             "shurikenChance": 0.004
@@ -611,7 +580,6 @@
               "rare"
             ],
             "rollChance": 0.1579,
-            "weaponChance": 0.1579,
             "bowChance": 0.0105,
             "shieldChance": 0.0211,
             "shurikenChance": 0.012
@@ -621,7 +589,6 @@
               "epic"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0568,
             "shieldChance": 0.1152,
             "shurikenChance": 0.065
@@ -629,7 +596,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 62,
+            "gold": 57,
             "xp": 18
           },
           "loss": {
@@ -648,7 +615,6 @@
               "rare"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0068,
             "shieldChance": 0.0141,
             "shurikenChance": 0.0078
@@ -658,7 +624,6 @@
               "epic"
             ],
             "rollChance": 0.9895,
-            "weaponChance": 0.9895,
             "bowChance": 0.1287,
             "shieldChance": 0.2693,
             "shurikenChance": 0.147
@@ -668,7 +633,6 @@
               "legendary"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0016,
             "shieldChance": 0.0039,
             "shurikenChance": 0.0018
@@ -676,7 +640,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 76,
+            "gold": 67,
             "xp": 19
           },
           "loss": {
@@ -702,7 +666,6 @@
               "rare"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0039,
             "shieldChance": 0.0039,
             "shurikenChance": 0.0049
@@ -712,7 +675,6 @@
               "epic"
             ],
             "rollChance": 0.9895,
-            "weaponChance": 0.9895,
             "bowChance": 0.0741,
             "shieldChance": 0.0741,
             "shurikenChance": 0.093
@@ -722,7 +684,6 @@
               "legendary"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0009,
             "shieldChance": 0.0009,
             "shurikenChance": 0.0011
@@ -730,7 +691,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 79,
+            "gold": 72,
             "xp": 21
           },
           "loss": {
@@ -749,7 +710,6 @@
               "rare"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0035,
             "shieldChance": 0.007,
             "shurikenChance": 0.004
@@ -759,7 +719,6 @@
               "epic"
             ],
             "rollChance": 0.8947,
-            "weaponChance": 0.8947,
             "bowChance": 0.0597,
             "shieldChance": 0.1198,
             "shurikenChance": 0.0683
@@ -769,7 +728,6 @@
               "legendary"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0075,
             "shieldChance": 0.016,
             "shurikenChance": 0.0086
@@ -777,7 +735,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 84,
+            "gold": 77,
             "xp": 22
           },
           "loss": {
@@ -796,7 +754,6 @@
               "rare"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.005,
             "shieldChance": 0.011,
             "shurikenChance": 0.006
@@ -806,7 +763,6 @@
               "epic"
             ],
             "rollChance": 0.7895,
-            "weaponChance": 0.7895,
             "bowChance": 0.0754,
             "shieldChance": 0.1668,
             "shurikenChance": 0.0905
@@ -816,7 +772,6 @@
               "legendary"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0217,
             "shieldChance": 0.0534,
             "shurikenChance": 0.0265
@@ -824,7 +779,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 101,
+            "gold": 88,
             "xp": 23
           },
           "loss": {
@@ -850,7 +805,6 @@
               "rare"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0039,
             "shieldChance": 0.0039,
             "shurikenChance": 0.0049
@@ -860,7 +814,6 @@
               "epic"
             ],
             "rollChance": 0.7895,
-            "weaponChance": 0.7895,
             "bowChance": 0.0591,
             "shieldChance": 0.0591,
             "shurikenChance": 0.0742
@@ -870,7 +823,6 @@
               "legendary"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0168,
             "shieldChance": 0.0168,
             "shurikenChance": 0.0214
@@ -878,7 +830,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 104,
+            "gold": 90,
             "xp": 25
           },
           "loss": {
@@ -897,7 +849,6 @@
               "epic"
             ],
             "rollChance": 0.1,
-            "weaponChance": 0.1,
             "bowChance": 0.007,
             "shieldChance": 0.014,
             "shurikenChance": 0.008
@@ -907,7 +858,6 @@
               "legendary"
             ],
             "rollChance": 0.9667,
-            "weaponChance": 0.9667,
             "bowChance": 0.0613,
             "shieldChance": 0.1235,
             "shurikenChance": 0.0702
@@ -917,7 +867,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0023,
             "shieldChance": 0.0049,
             "shurikenChance": 0.0026
@@ -925,7 +874,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 110,
+            "gold": 97,
             "xp": 26
           },
           "loss": {
@@ -944,7 +893,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.005,
             "shieldChance": 0.011,
             "shurikenChance": 0.006
@@ -954,7 +902,6 @@
               "legendary"
             ],
             "rollChance": 0.9474,
-            "weaponChance": 0.9474,
             "bowChance": 0.0905,
             "shieldChance": 0.2002,
             "shurikenChance": 0.1087
@@ -964,7 +911,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0055,
             "shieldChance": 0.0139,
             "shurikenChance": 0.0068
@@ -972,7 +918,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 131,
+            "gold": 109,
             "xp": 27
           },
           "loss": {
@@ -998,7 +944,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0039,
             "shieldChance": 0.0039,
             "shurikenChance": 0.0049
@@ -1008,7 +953,6 @@
               "legendary"
             ],
             "rollChance": 0.9474,
-            "weaponChance": 0.9474,
             "bowChance": 0.0709,
             "shieldChance": 0.0709,
             "shurikenChance": 0.089
@@ -1018,7 +962,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0042,
             "shieldChance": 0.0042,
             "shurikenChance": 0.0054
@@ -1026,7 +969,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 134,
+            "gold": 115,
             "xp": 29
           },
           "loss": {
@@ -1045,7 +988,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.0035,
             "shieldChance": 0.007,
             "shurikenChance": 0.004
@@ -1055,7 +997,6 @@
               "legendary"
             ],
             "rollChance": 0.8947,
-            "weaponChance": 0.8947,
             "bowChance": 0.0597,
             "shieldChance": 0.1198,
             "shurikenChance": 0.0683
@@ -1065,7 +1006,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0075,
             "shieldChance": 0.016,
             "shurikenChance": 0.0086
@@ -1073,7 +1013,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 141,
+            "gold": 124,
             "xp": 30
           },
           "loss": {
@@ -1092,7 +1032,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.005,
             "shieldChance": 0.011,
             "shurikenChance": 0.006
@@ -1102,7 +1041,6 @@
               "legendary"
             ],
             "rollChance": 0.8421,
-            "weaponChance": 0.8421,
             "bowChance": 0.0804,
             "shieldChance": 0.178,
             "shurikenChance": 0.0966
@@ -1112,7 +1050,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0164,
             "shieldChance": 0.0406,
             "shurikenChance": 0.02
@@ -1120,7 +1057,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 167,
+            "gold": 150,
             "xp": 31
           },
           "loss": {
@@ -1146,7 +1083,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.006,
             "shieldChance": 0.0125,
             "shurikenChance": 0.007
@@ -1156,7 +1092,6 @@
               "legendary"
             ],
             "rollChance": 0.8421,
-            "weaponChance": 0.8421,
             "bowChance": 0.0966,
             "shieldChance": 0.2025,
             "shurikenChance": 0.1128
@@ -1166,7 +1101,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.02,
             "shieldChance": 0.0476,
             "shurikenChance": 0.0238
@@ -1174,7 +1108,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 170,
+            "gold": 160,
             "xp": 33
           },
           "loss": {
@@ -1193,7 +1127,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.008,
             "shieldChance": 0.016,
             "shurikenChance": 0.009
@@ -1203,7 +1136,6 @@
               "legendary"
             ],
             "rollChance": 0.7895,
-            "weaponChance": 0.7895,
             "bowChance": 0.121,
             "shieldChance": 0.2439,
             "shurikenChance": 0.1362
@@ -1213,7 +1145,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0367,
             "shieldChance": 0.086,
             "shurikenChance": 0.0421
@@ -1221,7 +1152,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 179,
+            "gold": 171,
             "xp": 34
           },
           "loss": {
@@ -1240,7 +1171,6 @@
               "epic"
             ],
             "rollChance": 0.05,
-            "weaponChance": 0.05,
             "bowChance": 0.01,
             "shieldChance": 0.02,
             "shurikenChance": 0.011
@@ -1250,7 +1180,6 @@
               "legendary"
             ],
             "rollChance": 0.7368,
-            "weaponChance": 0.7368,
             "bowChance": 0.1414,
             "shieldChance": 0.2857,
             "shurikenChance": 0.1557
@@ -1260,7 +1189,6 @@
               "mythical"
             ],
             "rollChance": 1,
-            "weaponChance": 1,
             "bowChance": 0.0588,
             "shieldChance": 0.1429,
             "shurikenChance": 0.0659
@@ -1268,7 +1196,7 @@
         ],
         "rewards": {
           "win": {
-            "gold": 211,
+            "gold": 185,
             "xp": 35
           },
           "loss": {

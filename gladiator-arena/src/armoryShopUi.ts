@@ -24,6 +24,7 @@ import {
   getShopProductActionLabel,
   getShopProductActionState,
   getShopProductDisplayName,
+  getShopProductLevelRequirement,
   getShopProductRarity,
   getShopProductRequirementBadge,
   getShopProductRequirementDescription,
@@ -1207,6 +1208,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
         statLabel: "armor",
         statValue: armor,
         diff: armor - currentArmor,
+        levelRequirement: getShopProductLevelRequirement(product.itemIds),
         action: getProductCardAction(cardState, product.price),
       }),
     );

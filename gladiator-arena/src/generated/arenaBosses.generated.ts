@@ -7,17 +7,17 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
     name: "Bront Oakhide",
     baseStats: {"strength":5,"agility":5,"vitality":5},
     equipment: {"weaponMain":"generated_equipment_weapon_mace_wood_boss_01","helmet":"generated_equipment_helmet_wood_boss_01","breastplate":"generated_equipment_breastplate_wood_boss_01","backShoulderguard":"generated_equipment_back_shoulderguard_wood_boss_01","frontShoulderguard":"generated_equipment_front_shoulderguard_wood_boss_01","backWrist":"generated_equipment_back_wrist_wood_boss_01","frontWrist":"generated_equipment_front_wrist_wood_boss_01","backGlove":"generated_equipment_back_glove_wood_boss_01","frontGlove":"generated_equipment_front_glove_wood_boss_01","backGreave":"generated_equipment_back_greave_wood_boss_01","frontGreave":"generated_equipment_front_greave_wood_boss_01","backShinguard":"generated_equipment_back_shinguard_wood_boss_01","frontShinguard":"generated_equipment_front_shinguard_wood_boss_01","backBoot":"generated_equipment_back_boot_wood_boss_01","frontBoot":"generated_equipment_front_boot_wood_boss_01"},
-    rewards: {"win":{"gold":18,"xp":5},"loss":{"gold":0,"xp":0}},
+    rewards: {"win":{"gold":20,"xp":5},"loss":{"gold":0,"xp":0}},
     lootTable: [
-      {"id":"dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
-      {"id":"dust_arena_champion_generated_equipment_back_boot_wood_boss_01_generated_equipment_front_boot_wood_boss_01_drop","itemIds":["generated_equipment_back_boot_wood_boss_01","generated_equipment_front_boot_wood_boss_01"],"chance":1,"quantity":1},
+      {"id":"dust_arena_champion_generated_equipment_back_wrist_wood_boss_01_generated_equipment_front_wrist_wood_boss_01_drop","itemIds":["generated_equipment_back_wrist_wood_boss_01","generated_equipment_front_wrist_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_breastplate_wood_boss_01_drop","itemIds":["generated_equipment_breastplate_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_back_glove_wood_boss_01_generated_equipment_front_glove_wood_boss_01_drop","itemIds":["generated_equipment_back_glove_wood_boss_01","generated_equipment_front_glove_wood_boss_01"],"chance":1,"quantity":1},
+      {"id":"dust_arena_champion_generated_equipment_back_greave_wood_boss_01_generated_equipment_front_greave_wood_boss_01_drop","itemIds":["generated_equipment_back_greave_wood_boss_01","generated_equipment_front_greave_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_helmet_wood_boss_01_drop","itemIds":["generated_equipment_helmet_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_back_shinguard_wood_boss_01_generated_equipment_front_shinguard_wood_boss_01_drop","itemIds":["generated_equipment_back_shinguard_wood_boss_01","generated_equipment_front_shinguard_wood_boss_01"],"chance":1,"quantity":1},
+      {"id":"dust_arena_champion_generated_equipment_weapon_mace_wood_boss_01_drop","itemIds":["generated_equipment_weapon_mace_wood_boss_01"],"chance":1,"quantity":1},
       {"id":"dust_arena_champion_generated_equipment_back_shoulderguard_wood_boss_01_generated_equipment_front_shoulderguard_wood_boss_01_drop","itemIds":["generated_equipment_back_shoulderguard_wood_boss_01","generated_equipment_front_shoulderguard_wood_boss_01"],"chance":1,"quantity":1},
-      {"id":"dust_arena_champion_generated_equipment_back_wrist_wood_boss_01_generated_equipment_front_wrist_wood_boss_01_drop","itemIds":["generated_equipment_back_wrist_wood_boss_01","generated_equipment_front_wrist_wood_boss_01"],"chance":1,"quantity":1},
-      {"id":"dust_arena_champion_generated_equipment_back_greave_wood_boss_01_generated_equipment_front_greave_wood_boss_01_drop","itemIds":["generated_equipment_back_greave_wood_boss_01","generated_equipment_front_greave_wood_boss_01"],"chance":1,"quantity":1},
+      {"id":"dust_arena_champion_generated_equipment_back_boot_wood_boss_01_generated_equipment_front_boot_wood_boss_01_drop","itemIds":["generated_equipment_back_boot_wood_boss_01","generated_equipment_front_boot_wood_boss_01"],"chance":1,"quantity":1},
     ],
   },
   {
@@ -192,5 +192,5 @@ export const GENERATED_ARENA_BOSSES: readonly ArenaBossDefinition[] = [
       {"id":"arena_boss_10_generated_equipment_back_wrist_void_king_01_generated_equipment_front_wrist_void_king_01_drop","itemIds":["generated_equipment_back_wrist_void_king_01","generated_equipment_front_wrist_void_king_01"],"chance":1,"quantity":1},
       {"id":"arena_boss_10_generated_equipment_weapon_sword_void_sword_drop","itemIds":["generated_equipment_weapon_sword_void_sword"],"chance":1,"quantity":1},
     ],
-  },
+  }
 ];
