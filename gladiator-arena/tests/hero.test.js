@@ -1720,6 +1720,37 @@ test("owned shop items can be equipped without paying again", () => {
   assert.equal(hero.areHeroItemsEquipped(nextHero, ["leather_helmet_01"]), true);
 });
 
+test("equipped items can be unequipped while staying owned", () => {
+  const defaultHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const baseHero = {
+    ...defaultHero,
+    equipment: {
+      ...defaultHero.equipment,
+      helmet: "leather_helmet_01",
+      backGlove: "generated_equipment_back_glove_wood_boss_01",
+      frontGlove: "generated_equipment_front_glove_wood_boss_01",
+    },
+    inventory: [
+      { itemId: "leather_helmet_01", quantity: 1 },
+      { itemId: "generated_equipment_back_glove_wood_boss_01", quantity: 1 },
+      { itemId: "generated_equipment_front_glove_wood_boss_01", quantity: 1 },
+    ],
+  };
+  const withoutHelmet = hero.unequipHeroItems(baseHero, ["leather_helmet_01"], "2026-01-01T00:01:00.000Z");
+  const withoutGloves = hero.unequipHeroItems(
+    withoutHelmet,
+    ["generated_equipment_back_glove_wood_boss_01", "generated_equipment_front_glove_wood_boss_01"],
+    "2026-01-01T00:02:00.000Z",
+  );
+
+  assert.equal(withoutHelmet.equipment.helmet, null);
+  assert.equal(hero.areHeroItemsOwned(withoutHelmet, ["leather_helmet_01"]), true);
+  assert.equal(withoutHelmet.inventory.find((entry) => entry.itemId === "leather_helmet_01")?.quantity, 1);
+  assert.equal(withoutGloves.equipment.backGlove, null);
+  assert.equal(withoutGloves.equipment.frontGlove, null);
+  assert.equal(hero.areHeroItemsOwned(withoutGloves, ["generated_equipment_back_glove_wood_boss_01", "generated_equipment_front_glove_wood_boss_01"]), true);
+});
+
 test("weapon requirements block bow purchases until agility is high enough", () => {
   const baseHero = {
     ...hero.createDefaultHero("2026-01-01T00:00:00.000Z"),

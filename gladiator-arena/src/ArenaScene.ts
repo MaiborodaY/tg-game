@@ -902,6 +902,10 @@ const CITY_HERO_SLOT_MIN_WIDTH = 150;
 const CITY_HERO_SLOT_MAX_WIDTH = 190;
 const CITY_HERO_SLOT_WIDTH_RATIO = 0.38;
 const CITY_HERO_SLOT_BOTTOM = 82;
+const CITY_PROFILE_PREVIEW_FALLBACK_LOGICAL_SCALE = 1.32;
+const CITY_PROFILE_PREVIEW_MIN_LOGICAL_SCALE = 0.9;
+const CITY_PROFILE_PREVIEW_MAX_LOGICAL_SCALE = 1.42;
+const CITY_PROFILE_PREVIEW_FIT_PADDING_RATIO = 0.9;
 const CITY_HERO_CAMERA_VISUAL_WIDTH_RATIO = 0.62;
 const CITY_CAMERA_DEFAULT_ZOOM = 1;
 const CITY_CAMERA_ARMORY_ZOOM = 3.75;
@@ -1443,6 +1447,42 @@ function getCityPhaserGameSize(parent: HTMLElement): PhaserGameSize {
 
 function scaleCityDomY(value: number | undefined, pixelRatio: number): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value * pixelRatio : undefined;
+}
+
+function scaleCityProfilePreviewLayout(
+  layout: CityProfilePreviewLayout | undefined,
+  parent: HTMLElement,
+  pixelRatio: number,
+): CityProfilePreviewLayout | undefined {
+  if (!layout) {
+    return undefined;
+  }
+
+  const parentRect = parent.getBoundingClientRect();
+
+  return {
+    centerX: (layout.centerX - parentRect.left) * pixelRatio,
+    visualBottomY: (layout.visualBottomY - parentRect.top) * pixelRatio,
+    fitTopY: typeof layout.fitTopY === "number" && Number.isFinite(layout.fitTopY)
+      ? (layout.fitTopY - parentRect.top) * pixelRatio
+      : undefined,
+    fitWidth: typeof layout.fitWidth === "number" && Number.isFinite(layout.fitWidth)
+      ? layout.fitWidth * pixelRatio
+      : undefined,
+    scale: layout.scale,
+  };
+}
+
+function areCityProfilePreviewLayoutsEqual(left: CityProfilePreviewLayout | undefined, right: CityProfilePreviewLayout | undefined): boolean {
+  if (!left || !right) {
+    return left === right;
+  }
+
+  return left.centerX === right.centerX
+    && left.visualBottomY === right.visualBottomY
+    && left.fitTopY === right.fitTopY
+    && left.fitWidth === right.fitWidth
+    && left.scale === right.scale;
 }
 
 function getCityScenePixelRatio(scene: Phaser.Scene): number {
@@ -2695,6 +2735,14 @@ interface CityHeroLayout {
   logicalScale: number;
 }
 
+export interface CityProfilePreviewLayout {
+  centerX: number;
+  visualBottomY: number;
+  fitTopY?: number;
+  fitWidth?: number;
+  scale?: number;
+}
+
 interface CityShopCameraViewport {
   topY: number;
   bottomY: number;
@@ -2718,6 +2766,7 @@ export interface CitySceneApi {
   focusDefault: (instant?: boolean) => void;
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
+  setProfilePreview: (layout?: CityProfilePreviewLayout) => void;
   setShopMenuTop: (menuTopY?: number) => void;
   previewEquipment: (equipment: HeroEquipment) => void;
   prewarmEquipmentItem: (itemId: HeroItemId) => void;
@@ -2758,6 +2807,7 @@ class CityHeroScene extends Phaser.Scene {
   private cityLightingTween?: Phaser.Tweens.Tween;
   private cityHeroLiftProgress = 0;
   private cityHeroLiftTween?: Phaser.Tweens.Tween;
+  private profilePreviewLayout?: CityProfilePreviewLayout;
   private shopMenuTopY?: number;
   private previewEquipment?: HeroEquipment;
   private equipmentSyncToken = 0;
@@ -2839,10 +2889,12 @@ class CityHeroScene extends Phaser.Scene {
     }
 
     applyBodyAnimation(this.fighter, time, idle);
+    this.syncProfilePreviewVisualBottom();
   }
 
   focusDefault(instant = false): void {
     this.cameraMode = "default";
+    this.cameras.main.setAlpha(1);
     this.resetBackgroundCamera();
     this.getHeroCamera().setAlpha(1);
     this.setCityHeroShadowEnabled(true);
@@ -2854,6 +2906,7 @@ class CityHeroScene extends Phaser.Scene {
 
   focusArmory(instant = false): void {
     this.cameraMode = "armory";
+    this.cameras.main.setAlpha(1);
     this.setCityHeroShadowEnabled(false);
     this.transitionBackgroundTo(CITY_ARMORY_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(0, instant);
@@ -2880,6 +2933,7 @@ class CityHeroScene extends Phaser.Scene {
 
   focusWeaponShop(instant = false): void {
     this.cameraMode = "weaponShop";
+    this.cameras.main.setAlpha(1);
     this.setCityHeroShadowEnabled(false);
     this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(0, instant);
@@ -2929,8 +2983,21 @@ class CityHeroScene extends Phaser.Scene {
     }
   }
 
+  setProfilePreview(layout?: CityProfilePreviewLayout): void {
+    if (areCityProfilePreviewLayoutsEqual(this.profilePreviewLayout, layout)) {
+      return;
+    }
+
+    this.profilePreviewLayout = layout;
+    this.cameras.main.setAlpha(layout ? 0 : 1);
+    this.setCityHeroShadowEnabled(!layout && this.cameraMode === "default");
+    this.syncFighterLayout();
+  }
+
   focusArenaTransition(): Promise<void> {
     this.cameraMode = "arena";
+    this.profilePreviewLayout = undefined;
+    this.cameras.main.setAlpha(1);
     this.cityHeroLiftTween?.remove();
     this.cityHeroLiftTween = undefined;
     this.cityHeroLiftProgress = 0;
@@ -3059,9 +3126,85 @@ class CityHeroScene extends Phaser.Scene {
     if (!this.fighter) {
       return;
     }
+    if (this.profilePreviewLayout) {
+      this.syncProfilePreviewLayout();
+      return;
+    }
+
     const layout = this.getHeroLayout();
 
     applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+    this.syncProfilePreviewVisualBottom();
+  }
+
+  private syncProfilePreviewLayout(): void {
+    if (!this.fighter || !this.profilePreviewLayout) {
+      return;
+    }
+
+    const baseScale = getCityPlayerBodyScaleMultiplier(0) * this.scenePixelRatio;
+    const layout = {
+      feetX: this.profilePreviewLayout.centerX,
+      feetY: this.profilePreviewLayout.visualBottomY,
+      scale: baseScale,
+    };
+
+    applyPaperDollRigTuning(this.fighter, layout.scale, layout.feetY, layout.feetX);
+
+    const fittedScale = this.getProfilePreviewFittedScale(baseScale);
+
+    if (Math.abs(fittedScale - layout.scale) >= 0.01) {
+      applyPaperDollRigTuning(this.fighter, fittedScale, layout.feetY, layout.feetX);
+    }
+
+    this.syncProfilePreviewVisualBottom();
+  }
+
+  private getProfilePreviewFittedScale(baseScale: number): number {
+    if (!this.fighter || !this.profilePreviewLayout) {
+      return baseScale;
+    }
+
+    const bodyScaleMultiplier = getCityPlayerBodyScaleMultiplier(0);
+    const minScale = CITY_PROFILE_PREVIEW_MIN_LOGICAL_SCALE * bodyScaleMultiplier * this.scenePixelRatio;
+    const maxScale = (this.profilePreviewLayout.scale ?? CITY_PROFILE_PREVIEW_MAX_LOGICAL_SCALE) * bodyScaleMultiplier * this.scenePixelRatio;
+    const fallbackScale = (this.profilePreviewLayout.scale ?? CITY_PROFILE_PREVIEW_FALLBACK_LOGICAL_SCALE) * bodyScaleMultiplier * this.scenePixelRatio;
+    const fitBounds = getCityProfilePreviewFitBounds(this.fighter);
+    const scaleFactors: number[] = [];
+
+    if (!fitBounds) {
+      return clampNumber(fallbackScale, minScale, maxScale);
+    }
+
+    if (typeof this.profilePreviewLayout.fitTopY === "number" && Number.isFinite(this.profilePreviewLayout.fitTopY)) {
+      const fitHeight = this.profilePreviewLayout.visualBottomY - this.profilePreviewLayout.fitTopY;
+
+      if (fitHeight > 1 && fitBounds.height > 1) {
+        scaleFactors.push(fitHeight / fitBounds.height);
+      }
+    }
+
+    if (typeof this.profilePreviewLayout.fitWidth === "number" && Number.isFinite(this.profilePreviewLayout.fitWidth) && this.profilePreviewLayout.fitWidth > 1 && fitBounds.width > 1) {
+      scaleFactors.push(this.profilePreviewLayout.fitWidth / fitBounds.width);
+    }
+
+    if (scaleFactors.length === 0) {
+      return clampNumber(fallbackScale, minScale, maxScale);
+    }
+
+    return clampNumber(
+      baseScale * Math.min(...scaleFactors) * CITY_PROFILE_PREVIEW_FIT_PADDING_RATIO,
+      minScale,
+      maxScale,
+    );
+  }
+
+  private syncProfilePreviewVisualBottom(): void {
+    if (!this.fighter || !this.profilePreviewLayout) {
+      return;
+    }
+
+    alignCityProfilePreviewVisualBottom(this.fighter, this.profilePreviewLayout.visualBottomY);
   }
 
   private setCityHeroShadowEnabled(enabled: boolean): void {
@@ -3440,6 +3583,18 @@ class CityHeroScene extends Phaser.Scene {
     const pixelRatio = this.scenePixelRatio;
     const logicalWidth = this.logicalSceneWidth;
     const logicalHeight = this.logicalSceneHeight;
+
+    if (this.profilePreviewLayout) {
+      const logicalScale = (this.profilePreviewLayout.scale ?? CITY_PROFILE_PREVIEW_FALLBACK_LOGICAL_SCALE) * getCityPlayerBodyScaleMultiplier(0);
+
+      return {
+        feetX: this.profilePreviewLayout.centerX,
+        feetY: this.profilePreviewLayout.visualBottomY,
+        scale: logicalScale * pixelRatio,
+        logicalScale,
+      };
+    }
+
     const slotWidth = clampNumber(logicalWidth * CITY_HERO_SLOT_WIDTH_RATIO, CITY_HERO_SLOT_MIN_WIDTH, CITY_HERO_SLOT_MAX_WIDTH);
     const slotScale = slotWidth / CITY_HERO_VIEWER_WIDTH;
     const slotHeight = CITY_HERO_VIEWER_HEIGHT * slotScale;
@@ -3506,6 +3661,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   usePlayerAppearance(playerAppearance);
   let scene: CityHeroScene | undefined;
   let pendingCameraMode: CityCameraMode = "default";
+  let pendingProfilePreviewLayout: CityProfilePreviewLayout | undefined;
   let pendingShopMenuTopY: number | undefined;
   const cityGameSize = getCityPhaserGameSize(parent);
   let isSuspended = false;
@@ -3543,6 +3699,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     }
 
     readyScene.focusDefault();
+    readyScene.setProfilePreview(scaleCityProfilePreviewLayout(pendingProfilePreviewLayout, parent, cityGameSize.pixelRatio));
   };
   cityReadyCallback = readyCallbackForGame;
 
@@ -3575,6 +3732,10 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     focusWeaponShop: (instant = false) => {
       pendingCameraMode = "weaponShop";
       scene?.focusWeaponShop(instant);
+    },
+    setProfilePreview: (layout?: CityProfilePreviewLayout) => {
+      pendingProfilePreviewLayout = layout;
+      scene?.setProfilePreview(scaleCityProfilePreviewLayout(layout, parent, cityGameSize.pixelRatio));
     },
     setShopMenuTop: (menuTopY?: number) => {
       pendingShopMenuTopY = menuTopY;
@@ -6050,6 +6211,13 @@ const PAPER_DOLL_PART_HIT_AREAS: Record<PaperDollPartKey, Phaser.Geom.Rectangle>
   frontShin: new Phaser.Geom.Rectangle(-26, -12, 52, 92),
   frontFoot: new Phaser.Geom.Rectangle(-30, -18, 86, 52),
 };
+const CITY_PROFILE_PREVIEW_VISUAL_BOTTOM_PART_KEYS: readonly PaperDollPartKey[] = ["backFoot", "frontFoot"];
+const CITY_PROFILE_PREVIEW_VISUAL_BOTTOM_EQUIPMENT_SLOT_KEYS: readonly PaperDollEquipmentSlotKey[] = ["backBoot", "frontBoot"];
+const CITY_PROFILE_PREVIEW_FIT_IGNORED_EQUIPMENT_SLOT_KEYS = new Set<PaperDollEquipmentSlotKey>(["weaponMain", "weaponBow", "shield"]);
+
+type FighterPartWithBounds = FighterPart & {
+  getBounds?: () => Phaser.Geom.Rectangle;
+};
 
 function applyPaperDollRigTuning(
   fighter: FighterVisual,
@@ -6075,6 +6243,110 @@ function applyPaperDollRigTuning(
   fighter.name.y = feetY + 30 * PAPER_DOLL_BASE_SCALE * scale;
   fighter.debugScale = scale;
   rememberPaperDollAnimationRootBase(fighter);
+}
+
+function alignCityProfilePreviewVisualBottom(fighter: FighterVisual, visualBottomY: number): void {
+  const visualBottom = getCityProfilePreviewVisualBottom(fighter);
+
+  if (typeof visualBottom !== "number") {
+    return;
+  }
+
+  const deltaY = visualBottomY - visualBottom;
+
+  if (Math.abs(deltaY) < 0.01) {
+    return;
+  }
+
+  fighter.body.y += deltaY;
+  fighter.shadow.y += deltaY;
+  fighter.lowShadow.y += deltaY;
+  fighter.name.y += deltaY;
+  rememberPaperDollAnimationRootBase(fighter);
+}
+
+function getCityProfilePreviewVisualBottom(fighter: FighterVisual): number | undefined {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return undefined;
+  }
+
+  const candidates: (FighterPart | undefined)[] = [
+    ...CITY_PROFILE_PREVIEW_VISUAL_BOTTOM_PART_KEYS.map((partKey) => rig.parts[partKey]),
+    ...CITY_PROFILE_PREVIEW_VISUAL_BOTTOM_EQUIPMENT_SLOT_KEYS.map((slotKey) => rig.equipment[slotKey]),
+  ];
+  let visualBottom: number | undefined;
+
+  for (const candidate of candidates) {
+    const bounds = getFighterPartWorldBounds(candidate);
+
+    if (!bounds) {
+      continue;
+    }
+
+    visualBottom = Math.max(visualBottom ?? bounds.bottom, bounds.bottom);
+  }
+
+  return visualBottom;
+}
+
+function getCityProfilePreviewFitBounds(fighter: FighterVisual): Phaser.Geom.Rectangle | undefined {
+  const rig = fighter.paperDollRig;
+
+  if (!rig) {
+    return undefined;
+  }
+
+  const candidates: (FighterPart | undefined)[] = [
+    ...Object.values(rig.parts),
+    ...PAPER_DOLL_EQUIPMENT_SLOT_KEYS
+      .filter((slotKey) => !CITY_PROFILE_PREVIEW_FIT_IGNORED_EQUIPMENT_SLOT_KEYS.has(slotKey))
+      .map((slotKey) => rig.equipment[slotKey]),
+  ];
+  let left = Number.POSITIVE_INFINITY;
+  let top = Number.POSITIVE_INFINITY;
+  let right = Number.NEGATIVE_INFINITY;
+  let bottom = Number.NEGATIVE_INFINITY;
+
+  for (const candidate of candidates) {
+    const bounds = getFighterPartWorldBounds(candidate);
+
+    if (!bounds) {
+      continue;
+    }
+
+    left = Math.min(left, bounds.left);
+    top = Math.min(top, bounds.top);
+    right = Math.max(right, bounds.right);
+    bottom = Math.max(bottom, bounds.bottom);
+  }
+
+  if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(right) || !Number.isFinite(bottom)) {
+    return undefined;
+  }
+
+  return new Phaser.Geom.Rectangle(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+}
+
+function getFighterPartWorldBounds(partObject: FighterPart | undefined): Phaser.Geom.Rectangle | undefined {
+  if (!partObject?.visible) {
+    return undefined;
+  }
+
+  const getBounds = (partObject as FighterPartWithBounds).getBounds;
+
+  if (typeof getBounds !== "function") {
+    return undefined;
+  }
+
+  const bounds = getBounds.call(partObject);
+
+  if (!Number.isFinite(bounds.bottom) || bounds.width <= 1 || bounds.height <= 1) {
+    return undefined;
+  }
+
+  return bounds;
 }
 
 function applyPaperDollShadowTuning(

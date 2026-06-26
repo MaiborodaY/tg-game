@@ -2911,6 +2911,36 @@ export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase
   };
 }
 
+export function unequipHeroItems(hero: HeroState, itemIds: readonly HeroItemId[], now = new Date().toISOString()): HeroState {
+  if (itemIds.length <= 0 || areHeroItemsConsumable(itemIds)) {
+    return hero;
+  }
+
+  const equipment = { ...hero.equipment };
+  let changed = false;
+
+  itemIds.forEach((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    if (!item || isHeroConsumableItem(item) || equipment[item.equipmentSlot] !== itemId) {
+      return;
+    }
+
+    equipment[item.equipmentSlot] = null;
+    changed = true;
+  });
+
+  if (!changed) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    equipment,
+    updatedAt: now,
+  };
+}
+
 function buyHeroConsumableItems(hero: HeroState, purchase: HeroItemPurchase, now: string): HeroState {
   if (purchase.price <= 0 || purchase.price > hero.gold) {
     return hero;

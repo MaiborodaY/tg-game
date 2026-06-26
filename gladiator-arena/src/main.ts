@@ -71,6 +71,7 @@ import {
   restoreHeroArenaEnergy,
   sharpenHeroActiveWeapon,
   spendHeroArenaEnergy,
+  unequipHeroItems,
   unlockAllArenaBossTiers,
   unlockAllHeroShopRarities,
   updateHeroAppearance,
@@ -230,14 +231,22 @@ const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
 const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMenu(cityHeroWidgetRefs, {
   getHero: () => hero,
   onEquip: handleProfileEquipmentEquip,
+  onUnequip: handleProfileEquipmentUnequip,
   onCategoryOpen: handleProfileEquipmentCategoryOpen,
+  onOpen: (layout) => cityScene?.setProfilePreview(layout),
+  onClose: () => cityScene?.setProfilePreview(),
 });
 const cityHeroAppearanceMenu = mountCityHeroAppearanceMenu(cityHeroWidgetRefs, {
   getHero: () => hero,
   onChange: handleProfileAppearanceChange,
 });
 cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) => {
-  if ((event as CustomEvent<{ open?: boolean }>).detail?.open) {
+  const profileOpen = Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open);
+
+  if (!profileOpen) {
+    cityScene?.setProfilePreview();
+  }
+  if (profileOpen) {
     closeCityArenaMenu();
   }
 });
@@ -958,7 +967,7 @@ function mountCityPreviews(): Promise<void> {
   }
 
   if (cityHeroWidgetRefs.portrait && !heroPortraitPreview) {
-    const portraitMirrorParents = [cityHeroWidgetRefs.profilePortrait, cityHeroEquipmentMenu.getPortraitMirrorHost()].filter(
+    const portraitMirrorParents = [cityHeroWidgetRefs.profilePortrait].filter(
       (parent): parent is HTMLElement => Boolean(parent),
     );
 
@@ -2249,6 +2258,23 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
 
   cancelShopPreviewPrewarm();
   clearPendingBossEquipmentHintsForItems(itemIds);
+  hero = nextHero;
+  syncPlayerCityBodyScale();
+  setPlayerEquipment(hero.equipment);
+  heroPortraitPreview?.setEquipment(hero.equipment);
+  renderCityHero();
+  syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
+}
+
+function handleProfileEquipmentUnequip(itemIds: readonly HeroItemId[]): void {
+  const nextHero = unequipHeroItems(hero, itemIds);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  cancelShopPreviewPrewarm();
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);

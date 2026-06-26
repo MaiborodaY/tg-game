@@ -1020,6 +1020,16 @@ test("city shop camera zoom fits the hero inside the current viewport", () => {
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_AVAILABLE_HEIGHT_RATIO"), true);
   assert.equal(arenaSceneSource.includes("CITY_CAMERA_SHOP_MAX_SCREEN_WIDTH_RATIO"), true);
   assert.equal(arenaSceneSource.includes("setShopMenuTop: (menuTopY?: number) => void"), true);
+  assert.equal(arenaSceneSource.includes("setProfilePreview: (layout?: CityProfilePreviewLayout) => void"), true);
+  assert.equal(arenaSceneSource.includes("function scaleCityProfilePreviewLayout("), true);
+  assert.equal(arenaSceneSource.includes("const parentRect = parent.getBoundingClientRect();"), true);
+  assert.equal(arenaSceneSource.includes("visualBottomY: (layout.visualBottomY - parentRect.top) * pixelRatio"), true);
+  assert.equal(arenaSceneSource.includes("function alignCityProfilePreviewVisualBottom("), true);
+  assert.equal(arenaSceneSource.includes("private syncProfilePreviewLayout(): void"), true);
+  assert.equal(arenaSceneSource.includes("private getProfilePreviewFittedScale(baseScale: number): number"), true);
+  assert.equal(arenaSceneSource.includes("function getCityProfilePreviewFitBounds("), true);
+  assert.equal(arenaSceneSource.includes("CITY_PROFILE_PREVIEW_FIT_PADDING_RATIO"), true);
+  assert.equal(arenaSceneSource.includes('type CityCameraMode = "default" | "armory" | "weaponShop" | "arena";'), true);
   assert.equal(arenaSceneSource.includes("private getShopCameraViewport(): CityShopCameraViewport"), true);
   assert.equal(arenaSceneSource.includes("private getShopHeroWorldBounds(layout: CityHeroLayout): Phaser.Geom.Rectangle"), true);
   assert.equal(arenaSceneSource.includes("private getShopCameraZoom(heroBounds: Phaser.Geom.Rectangle, viewport: CityShopCameraViewport): number"), true);
