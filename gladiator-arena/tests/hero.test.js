@@ -48,6 +48,7 @@ const arenaOpponents = loadTypeScriptModule("../src/arenaOpponents.ts", {
     throw new Error(`Unsupported arena opponent test import: ${id}`);
   },
 });
+const oakhideEquipmentSet = { id: "wood_boss", name: "Oakhide", rank: 14, grade: "boss" };
 const generatedItems = {
   weapon_sword_01: {
     id: "weapon_sword_01",
@@ -175,6 +176,7 @@ const generatedItems = {
     name: "Oakhide Helm",
     kind: "armor",
     rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
     equipmentSlot: "helmet",
     armorHp: 5,
   },
@@ -183,14 +185,34 @@ const generatedItems = {
     name: "Oakhide Cuirass",
     kind: "armor",
     rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
     equipmentSlot: "breastplate",
     armorHp: 10,
+  },
+  generated_equipment_back_glove_wood_boss_01: {
+    id: "generated_equipment_back_glove_wood_boss_01",
+    name: "Oakhide Gauntlets",
+    kind: "armor",
+    rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
+    equipmentSlot: "backGlove",
+    armorHp: 5,
+  },
+  generated_equipment_front_glove_wood_boss_01: {
+    id: "generated_equipment_front_glove_wood_boss_01",
+    name: "Oakhide Gauntlets",
+    kind: "armor",
+    rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
+    equipmentSlot: "frontGlove",
+    armorHp: 0,
   },
   generated_equipment_back_greave_wood_boss_01: {
     id: "generated_equipment_back_greave_wood_boss_01",
     name: "Oakhide Greaves",
     kind: "armor",
     rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
     equipmentSlot: "backGreave",
     armorHp: 5,
   },
@@ -199,7 +221,26 @@ const generatedItems = {
     name: "Oakhide Greaves",
     kind: "armor",
     rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
     equipmentSlot: "frontGreave",
+    armorHp: 0,
+  },
+  generated_equipment_back_boot_wood_boss_01: {
+    id: "generated_equipment_back_boot_wood_boss_01",
+    name: "Oakhide Sabatons",
+    kind: "armor",
+    rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
+    equipmentSlot: "backBoot",
+    armorHp: 4,
+  },
+  generated_equipment_front_boot_wood_boss_01: {
+    id: "generated_equipment_front_boot_wood_boss_01",
+    name: "Oakhide Sabatons",
+    kind: "armor",
+    rarity: "unique",
+    equipmentSet: oakhideEquipmentSet,
+    equipmentSlot: "frontBoot",
     armorHp: 0,
   },
   generated_equipment_weapon_mace_wood_boss_01: {
@@ -332,6 +373,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultStats.damageBonus, 0);
   assert.equal(defaultStats.weaponDamageBonus, 0);
   assert.equal(defaultStats.meleeDamagePercentBonus, 0);
+  assert.equal(defaultStats.maceArmorDamagePercentBonus, 0);
   assert.equal(defaultStats.spearLungeDamagePercentBonus, 0);
   assert.equal(defaultStats.movementDistanceBonus, 0);
   assert.equal(defaultStats.bodyScaleBonus, 0);
@@ -353,6 +395,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(tunedStats.damageBonus, 0);
   assert.equal(tunedStats.weaponDamageBonus, 0);
   assert.equal(tunedStats.meleeDamagePercentBonus, 0.15);
+  assert.equal(tunedStats.maceArmorDamagePercentBonus, 0);
   assert.equal(tunedStats.spearLungeDamagePercentBonus, 4 * hero.HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS);
   assert.equal(tunedStats.movementDistanceBonus, 4 * hero.HERO_AGILITY_MOVEMENT_DISTANCE_BONUS);
   assert.equal(tunedStats.bodyScaleBonus, 3 * hero.HERO_STRENGTH_BODY_SCALE_BONUS);
@@ -367,6 +410,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(combatState.player.damageBonus, tunedStats.damageBonus);
   assert.equal(combatState.player.weaponDamageBonus, tunedStats.weaponDamageBonus);
   assert.equal(combatState.player.meleeDamagePercentBonus, tunedStats.meleeDamagePercentBonus);
+  assert.equal(combatState.player.maceArmorDamagePercentBonus, tunedStats.maceArmorDamagePercentBonus);
   assert.equal(combatState.player.spearLungeDamagePercentBonus, tunedStats.spearLungeDamagePercentBonus);
   assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
   assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
@@ -375,6 +419,73 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(combatState.player.restStaminaRestoreBonus, tunedStats.restStaminaRestoreBonus);
   assert.equal(combatState.player.maxHp, tunedStats.maxHp);
   assert.equal(combatState.player.maxStamina, tunedStats.maxStamina);
+});
+
+test("Oakhide set bonuses activate from equipped logical armor pieces", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const oakhideHelm = hero.HERO_ITEM_CATALOG.generated_equipment_helmet_wood_boss_01;
+  const twoPieceHero = {
+    ...baseHero,
+    equipment: {
+      ...baseHero.equipment,
+      helmet: "generated_equipment_helmet_wood_boss_01",
+      breastplate: "generated_equipment_breastplate_wood_boss_01",
+      weaponMain: "generated_equipment_weapon_mace_wood_boss_01",
+    },
+  };
+  const twoPieceSummary = hero.getHeroEquipmentSetBonusSummary(oakhideHelm, twoPieceHero.equipment);
+  const twoPieceStats = hero.deriveHeroStats(twoPieceHero);
+
+  assert.equal(hero.getHeroEquipmentSetEquippedPieceCount(twoPieceHero.equipment, "wood_boss"), 2);
+  assert.equal(twoPieceSummary?.label, "Oakhide Set");
+  assert.deepEqual(
+    Array.from(twoPieceSummary?.bonuses ?? [], (bonus) => bonus.active),
+    [true, false, false],
+  );
+  assert.equal(twoPieceStats.meleeDamagePercentBonus, hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS);
+  assert.equal(twoPieceStats.maxHp, combat.MAX_HP);
+  assert.equal(twoPieceStats.maxStamina, combat.MAX_STAMINA);
+  assert.equal(twoPieceStats.maceArmorDamagePercentBonus, 0);
+
+  const fourPieceHero = {
+    ...twoPieceHero,
+    equipment: {
+      ...twoPieceHero.equipment,
+      backGreave: "generated_equipment_back_greave_wood_boss_01",
+      frontGreave: "generated_equipment_front_greave_wood_boss_01",
+      backGlove: "generated_equipment_back_glove_wood_boss_01",
+      frontGlove: "generated_equipment_front_glove_wood_boss_01",
+    },
+  };
+  const fourPieceStats = hero.deriveHeroStats(fourPieceHero);
+
+  assert.equal(hero.getHeroEquipmentSetEquippedPieceCount(fourPieceHero.equipment, "wood_boss"), 4);
+  assert.deepEqual(
+    Array.from(hero.getHeroEquipmentSetBonusSummary(oakhideHelm, fourPieceHero.equipment)?.bonuses ?? [], (bonus) => bonus.active),
+    [true, true, false],
+  );
+  assert.equal(fourPieceStats.maxHp, combat.MAX_HP + 2 * hero.HERO_VITALITY_HP_BONUS);
+  assert.equal(fourPieceStats.maxStamina, combat.MAX_STAMINA + 2 * hero.HERO_VITALITY_STAMINA_BONUS);
+  assert.equal(fourPieceStats.maceArmorDamagePercentBonus, 0);
+
+  const fivePieceHero = {
+    ...fourPieceHero,
+    equipment: {
+      ...fourPieceHero.equipment,
+      backBoot: "generated_equipment_back_boot_wood_boss_01",
+      frontBoot: "generated_equipment_front_boot_wood_boss_01",
+    },
+  };
+  const fivePieceStats = hero.deriveHeroStats(fivePieceHero);
+  const fivePieceCombatState = hero.createCombatStateFromHero(fivePieceHero);
+
+  assert.equal(hero.getHeroEquipmentSetEquippedPieceCount(fivePieceHero.equipment, "wood_boss"), 5);
+  assert.deepEqual(
+    Array.from(hero.getHeroEquipmentSetBonusSummary(oakhideHelm, fivePieceHero.equipment)?.bonuses ?? [], (bonus) => bonus.active),
+    [true, true, true],
+  );
+  assert.equal(fivePieceStats.maceArmorDamagePercentBonus, 0.1);
+  assert.equal(fivePieceCombatState.player.maceArmorDamagePercentBonus, 0.1);
 });
 
 test("weapon class defaults to sword and can be inferred for generated weapons", () => {
@@ -1030,6 +1141,20 @@ test("arena encounters can create combat states from random opponents and bosses
   bossState.result = "win";
   assert.equal(hero.getBattleReward(bossState).gold, 14);
   assert.equal(hero.getBattleReward(bossState).xp, 12);
+});
+
+test("arena bosses receive active equipment set bonuses", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
+  const bossState = hero.createCombatStateFromHero(baseHero, bossEncounter);
+  const bossBaseStrength = bossEncounter.enemyLoadout.baseStats?.strength ?? 0;
+  const bossBaseVitality = bossEncounter.enemyLoadout.baseStats?.vitality ?? 0;
+
+  assert.equal(bossState.enemy.name, "Bront Oakhide");
+  assert.equal(bossState.enemy.maceArmorDamagePercentBonus, 0.1);
+  assert.equal(bossState.enemy.maxHp, combat.MAX_HP + (bossBaseVitality + 2) * hero.HERO_VITALITY_HP_BONUS);
+  assert.equal(bossState.enemy.maxStamina, combat.MAX_STAMINA + (bossBaseVitality + 2) * hero.HERO_VITALITY_STAMINA_BONUS);
+  assert.ok(Math.abs(bossState.enemy.meleeDamagePercentBonus - (bossBaseStrength + 1) * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS) < 0.000001);
 });
 
 test("duo boss combat creates a helper and scales only the boss fight", () => {

@@ -83,6 +83,7 @@ export interface FighterState {
   damageBonus: number;
   weaponDamageBonus?: number;
   meleeDamagePercentBonus?: number;
+  maceArmorDamagePercentBonus?: number;
   spearLungeDamagePercentBonus?: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
@@ -466,6 +467,7 @@ export function freshState(): CombatState {
       damageBonus: 0,
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
+      maceArmorDamagePercentBonus: 0,
       spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
@@ -485,6 +487,7 @@ export function freshState(): CombatState {
       damageBonus: 0,
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
+      maceArmorDamagePercentBonus: 0,
       spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
@@ -1940,7 +1943,7 @@ function applyWeaponArmorDamageBonus(actionId: ActionId, attacker: FighterState,
     return damage;
   }
 
-  return Math.ceil(damage * MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER);
+  return Math.ceil(damage * (MACE_ARMORED_TARGET_DAMAGE_MULTIPLIER + Math.max(0, attacker.maceArmorDamagePercentBonus ?? 0)));
 }
 
 function applyDamageToFighter(defender: FighterState, damage: number): DamageApplication {

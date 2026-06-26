@@ -147,6 +147,7 @@ export interface HeroStats {
   damageBonus: number;
   weaponDamageBonus: number;
   meleeDamagePercentBonus: number;
+  maceArmorDamagePercentBonus: number;
   spearLungeDamagePercentBonus: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
@@ -217,6 +218,26 @@ export interface HeroEquipmentSetInfo {
   name: string;
   rank: number;
   grade?: HeroEquipmentSetGrade;
+}
+
+export interface HeroEquipmentSetBonusDefinition {
+  pieces: number;
+  label: string;
+  statBonuses?: Partial<HeroBaseStats>;
+  maceArmorDamagePercentBonus?: number;
+}
+
+export interface HeroEquipmentSetBonusGroup {
+  id: string;
+  label: string;
+  bonuses: readonly HeroEquipmentSetBonusDefinition[];
+}
+
+export interface HeroEquipmentSetBonusSummary {
+  id: string;
+  label: string;
+  equippedPieces: number;
+  bonuses: readonly (HeroEquipmentSetBonusDefinition & { active: boolean })[];
 }
 
 export interface HeroItemDefinition {
@@ -439,6 +460,17 @@ export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
 export const HERO_VITALITY_REST_STAMINA_BONUS = 1;
+export const HERO_EQUIPMENT_SET_BONUSES: Readonly<Record<string, HeroEquipmentSetBonusGroup>> = {
+  wood_boss: {
+    id: "wood_boss",
+    label: "Oakhide Set",
+    bonuses: [
+      { pieces: 2, label: "Strength +1", statBonuses: { strength: 1 } },
+      { pieces: 4, label: "Vitality +2", statBonuses: { vitality: 2 } },
+      { pieces: 5, label: "Mace armor damage +10%", maceArmorDamagePercentBonus: 0.1 },
+    ],
+  },
+};
 export const HERO_SHURIKEN_MAX_QUANTITY = 2;
 export const HERO_SCROLL_CAPACITY_BASE = 1;
 export const HERO_SCROLL_CAPACITY_MAX = 5;
@@ -1130,7 +1162,7 @@ function clampHeroArenaEnergyValue(value: number): number {
 }
 
 export function deriveHeroStats(hero: HeroState): HeroStats {
-  return deriveFighterStats(hero.baseStats, hero.equipment, undefined, hero.weaponEnchantments);
+  return deriveFighterStats(hero.baseStats, hero.equipment, undefined, hero.weaponEnchantments, true);
 }
 
 function deriveFighterStats(
@@ -1138,13 +1170,15 @@ function deriveFighterStats(
   equipment: HeroEquipment,
   armorOverride?: number,
   weaponSharpenings?: HeroWeaponSharpenings,
+  includeEquipmentSetBonuses = false,
 ): HeroStats {
   const equipmentBonuses = getHeroEquipmentStatBonuses(equipment);
+  const equipmentSetBonuses = includeEquipmentSetBonuses ? getHeroEquipmentSetStatBonuses(equipment) : { strength: 0, agility: 0, vitality: 0 };
   const armorBonus = armorOverride ?? getHeroEquipmentArmor(equipment);
   const mainWeaponDamageBonus = getHeroEquipmentSlotDamageBonus(equipment, "weaponMain") + getHeroWeaponSharpeningDamageBonus(weaponSharpenings, equipment.weaponMain);
-  const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength);
-  const agilityBonus = getHeroAttributeTotal(baseStats.agility, equipmentBonuses.agility);
-  const vitalityBonus = getHeroAttributeTotal(baseStats.vitality, equipmentBonuses.vitality);
+  const strengthBonus = getHeroAttributeTotal(baseStats.strength, equipmentBonuses.strength + equipmentSetBonuses.strength);
+  const agilityBonus = getHeroAttributeTotal(baseStats.agility, equipmentBonuses.agility + equipmentSetBonuses.agility);
+  const vitalityBonus = getHeroAttributeTotal(baseStats.vitality, equipmentBonuses.vitality + equipmentSetBonuses.vitality);
   const bowWeaponDamageBonus = Math.round(
     getHeroEquipmentSlotDamageBonus(equipment, "weaponBow") * getAgilityBowDamageMultiplier(agilityBonus),
   );
@@ -1156,6 +1190,7 @@ function deriveFighterStats(
     damageBonus: mainWeaponDamageBonus,
     weaponDamageBonus: bowWeaponDamageBonus,
     meleeDamagePercentBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS),
+    maceArmorDamagePercentBonus: includeEquipmentSetBonuses ? getHeroEquipmentSetMaceArmorDamagePercentBonus(equipment) : 0,
     spearLungeDamagePercentBonus: roundStatBonus(agilityBonus * HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS),
     movementDistanceBonus: roundStatBonus(agilityBonus * HERO_AGILITY_MOVEMENT_DISTANCE_BONUS),
     bodyScaleBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_BODY_SCALE_BONUS),
@@ -1313,6 +1348,73 @@ export function getHeroEquipmentStatBonuses(equipment: HeroEquipment): HeroBaseS
     }),
     { strength: 0, agility: 0, vitality: 0 },
   );
+}
+
+export function getHeroEquipmentSetBonusSummary(item: HeroItemDefinition, equipment: HeroEquipment | undefined): HeroEquipmentSetBonusSummary | undefined {
+  const setId = item.equipmentSet?.id;
+  const bonusGroup = setId ? HERO_EQUIPMENT_SET_BONUSES[setId] : undefined;
+
+  if (!setId || !bonusGroup) {
+    return undefined;
+  }
+
+  const equippedPieces = equipment ? getHeroEquipmentSetEquippedPieceCount(equipment, setId) : 0;
+
+  return {
+    id: setId,
+    label: bonusGroup.label,
+    equippedPieces,
+    bonuses: bonusGroup.bonuses.map((bonus) => ({
+      ...bonus,
+      active: equippedPieces >= bonus.pieces,
+    })),
+  };
+}
+
+export function getHeroEquipmentSetEquippedPieceCount(equipment: HeroEquipment, setId: string): number {
+  const pieceKeys = new Set<string>();
+
+  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    const itemId = equipment[slotKey];
+    const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+    if (!item || isHeroConsumableItem(item) || item.equipmentSet?.id !== setId) {
+      return;
+    }
+
+    pieceKeys.add(getHeroEquipmentSetPieceKey(slotKey));
+  });
+
+  return pieceKeys.size;
+}
+
+function getHeroEquipmentSetStatBonuses(equipment: HeroEquipment): HeroBaseStats {
+  return getActiveHeroEquipmentSetBonuses(equipment).reduce(
+    (bonuses, bonus) => ({
+      strength: bonuses.strength + (bonus.statBonuses?.strength ?? 0),
+      agility: bonuses.agility + (bonus.statBonuses?.agility ?? 0),
+      vitality: bonuses.vitality + (bonus.statBonuses?.vitality ?? 0),
+    }),
+    { strength: 0, agility: 0, vitality: 0 },
+  );
+}
+
+function getHeroEquipmentSetMaceArmorDamagePercentBonus(equipment: HeroEquipment): number {
+  return getActiveHeroEquipmentSetBonuses(equipment).reduce((total, bonus) => total + (bonus.maceArmorDamagePercentBonus ?? 0), 0);
+}
+
+function getActiveHeroEquipmentSetBonuses(equipment: HeroEquipment): HeroEquipmentSetBonusDefinition[] {
+  return Object.values(HERO_EQUIPMENT_SET_BONUSES).flatMap((bonusGroup) => {
+    const equippedPieces = getHeroEquipmentSetEquippedPieceCount(equipment, bonusGroup.id);
+
+    return bonusGroup.bonuses.filter((bonus) => equippedPieces >= bonus.pieces);
+  });
+}
+
+function getHeroEquipmentSetPieceKey(slotKey: HeroEquipmentSlotKey): string {
+  const pairedSlot = PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
+
+  return pairedSlot?.token ?? slotKey;
 }
 
 export function getHeroEquipmentArmor(equipment: HeroEquipment): number {
@@ -1981,6 +2083,7 @@ function createCombatFighterStateFromHero(hero: HeroState, base: FighterState): 
     damageBonus: stats.damageBonus,
     weaponDamageBonus: stats.weaponDamageBonus,
     meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
+    maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
     spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
     mainWeaponClass,
     bowWeaponClass,
@@ -2051,7 +2154,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const heroEquipment = hero.equipment;
   const enemyEquipment = enemyLoadout.equipment;
   const enemyArmorSlots = getEnemyEquipmentArmorSlots(enemyEquipment);
-  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyEquipment, getArmorSlotTotal(enemyArmorSlots));
+  const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyEquipment, getArmorSlotTotal(enemyArmorSlots), undefined, true);
   const playerMainWeaponClass = getHeroEquipmentWeaponClass(heroEquipment);
   const playerBowWeaponClass = getHeroEquipmentBowWeaponClass(heroEquipment);
   const playerWeaponClass = heroEquipment.weaponMain ? playerMainWeaponClass : playerBowWeaponClass ?? playerMainWeaponClass;
@@ -2082,6 +2185,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       damageBonus: stats.damageBonus,
       weaponDamageBonus: stats.weaponDamageBonus,
       meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
+      maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
       spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
       mainWeaponClass: playerMainWeaponClass,
       bowWeaponClass: playerBowWeaponClass,
@@ -2134,6 +2238,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       damageBonus: enemyStats.damageBonus,
       weaponDamageBonus: enemyStats.weaponDamageBonus,
       meleeDamagePercentBonus: enemyStats.meleeDamagePercentBonus,
+      maceArmorDamagePercentBonus: enemyStats.maceArmorDamagePercentBonus,
       spearLungeDamagePercentBonus: enemyStats.spearLungeDamagePercentBonus,
       mainWeaponClass: enemyMainWeaponClass,
       bowWeaponClass: enemyBowWeaponClass,
@@ -2222,7 +2327,7 @@ export function createDuoBossCombatStateFromHero(hero: HeroState, encounter: Are
 function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: EnemyLoadout, base: FighterState): FighterState {
   const equipment = enemyLoadout.equipment;
   const armorSlots = getEnemyEquipmentArmorSlots(equipment);
-  const stats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, equipment, getArmorSlotTotal(armorSlots));
+  const stats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, equipment, getArmorSlotTotal(armorSlots), undefined, true);
   const mainWeaponClass = getHeroEquipmentWeaponClass(equipment);
   const bowWeaponClass = getHeroEquipmentBowWeaponClass(equipment);
   const weaponClass = equipment.weaponMain ? mainWeaponClass : bowWeaponClass ?? mainWeaponClass;
@@ -2239,6 +2344,7 @@ function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: En
     damageBonus: stats.damageBonus,
     weaponDamageBonus: stats.weaponDamageBonus,
     meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
+    maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
     spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
     mainWeaponClass,
     bowWeaponClass,

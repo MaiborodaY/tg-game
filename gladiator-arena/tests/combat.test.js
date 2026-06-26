@@ -1174,6 +1174,24 @@ test("maces deal bonus damage through armor with hp overflow", () => {
   assert.equal(nextState.lastPlayerArmorBroken, true);
 });
 
+test("mace set bonuses increase armored target damage", () => {
+  const state = combat.freshState();
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.player.weaponClass = "mace";
+  state.player.damageBonus = 10;
+  state.player.maceArmorDamagePercentBonus = 0.1;
+  state.enemy.armor = 20;
+  state.enemy.maxArmor = 20;
+
+  const nextState = combat.resolvePlayerTurn(state, "light", () => 0.99);
+
+  assert.equal(nextState.enemy.armor, 6);
+  assert.equal(nextState.enemy.hp, combat.MAX_HP);
+  assert.equal(nextState.lastPlayerDamage, 14);
+  assert.equal(nextState.lastPlayerArmorAbsorbed, 14);
+  assert.equal(nextState.lastPlayerArmorBroken, false);
+});
+
 test("maces do not gain armor damage bonus against unarmored targets", () => {
   const state = combat.freshState();
   setConsistentDistance(state, combat.MELEE_RANGE);

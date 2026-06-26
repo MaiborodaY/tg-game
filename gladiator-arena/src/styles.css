@@ -2172,6 +2172,41 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   white-space: nowrap;
 }
 
+.battle-result__loot-card-set {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  max-width: min(100%, 300px);
+  margin-top: -2px;
+  color: rgba(255, 239, 188, 0.88);
+  font-size: clamp(0.62rem, 2.64vw, 0.79rem);
+  font-weight: 900;
+  line-height: 1.08;
+  text-shadow: 1px 1px 0 #160703;
+}
+
+.battle-result__loot-card-set-name {
+  color: rgba(255, 239, 188, 0.92);
+  font-size: clamp(0.68rem, 2.86vw, 0.86rem);
+}
+
+.battle-result__loot-card-set-bonus {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-result__loot-card-set-bonus--active {
+  color: #fff4c9;
+}
+
+.battle-result__loot-card-set-bonus--inactive {
+  color: rgba(186, 179, 154, 0.58);
+  text-shadow: 1px 1px 0 rgba(12, 4, 2, 0.84);
+}
+
 .battle-result__loot-card-chips {
   display: flex;
   flex-wrap: wrap;

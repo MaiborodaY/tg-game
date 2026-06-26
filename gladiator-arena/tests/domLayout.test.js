@@ -72,6 +72,9 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(domUiSource.includes("resultPresentationStage?: BattleResultPresentationStage;"), true);
   assert.equal(domUiSource.includes("renderLootDropPresentation"), true);
   assert.equal(domUiSource.includes("createLootDropStatChip"), true);
+  assert.equal(domUiSource.includes("createLootDropSetBonusBlock"), true);
+  assert.equal(domUiSource.includes("getHeroEquipmentSetBonusSummary(item, heroBeforeReward?.equipment)"), true);
+  assert.equal(domUiSource.includes('row.textContent = `(${bonus.pieces}) ${bonus.label}`;'), true);
   assert.equal(domUiSource.includes("shouldFastRenderRewardStage"), true);
   assert.equal(domUiSource.includes('dom.resultBanner.classList.toggle("battle-result--reward-after-loot", shouldFastRenderRewardStage)'), true);
   assert.equal(domUiSource.includes("const goldDelayMs = fastIntro ? 180 : 1160;"), true);
@@ -111,6 +114,8 @@ test("battle result panel exposes rewards and xp progress", () => {
   assert.equal(stylesSource.includes('[data-loot-rarity="unique"]'), true);
   assert.equal(stylesSource.includes("--loot-rarity-color: #55e0d6"), true);
   assert.equal(stylesSource.includes(".battle-result__loot-card-chip--rarity"), true);
+  assert.equal(stylesSource.includes(".battle-result__loot-card-set-name"), true);
+  assert.equal(stylesSource.includes(".battle-result__loot-card-set-bonus--inactive"), true);
   assert.equal(stylesSource.includes(".battle-result__loot-card-stat-icon"), true);
   assert.equal(stylesSource.includes(".battle-result__loot-card-chip--stat"), true);
 });

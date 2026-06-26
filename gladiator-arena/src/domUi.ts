@@ -23,7 +23,9 @@ import {
   HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_WARD_SCROLL_ITEM_ID,
+  getHeroEquipmentSetBonusSummary,
   getHeroXpToNextLevel,
+  type HeroEquipmentSetBonusSummary,
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroWeaponClass,
@@ -758,6 +760,7 @@ function renderResultLootDrop(element: HTMLElement, drop: ArenaLootDrop | undefi
   const card = document.createElement("article");
   const icon = document.createElement("span");
   const name = document.createElement("strong");
+  const setBonusSummary = getHeroEquipmentSetBonusSummary(item, heroBeforeReward?.equipment);
   const chips = document.createElement("div");
   const status = document.createElement("span");
 
@@ -790,8 +793,36 @@ function renderResultLootDrop(element: HTMLElement, drop: ArenaLootDrop | undefi
     chips.append(createLootDropStatChip(heroBeforeReward, itemIds, statKind));
   }
 
-  card.append(icon, name, chips, status);
+  card.append(icon, name);
+
+  if (setBonusSummary) {
+    card.append(createLootDropSetBonusBlock(setBonusSummary));
+  }
+
+  card.append(chips, status);
   element.append(card);
+}
+
+function createLootDropSetBonusBlock(summary: HeroEquipmentSetBonusSummary): HTMLElement {
+  const block = document.createElement("div");
+  const label = document.createElement("span");
+
+  block.className = "battle-result__loot-card-set";
+  label.className = "battle-result__loot-card-set-name";
+  label.textContent = summary.label;
+  block.append(label);
+
+  summary.bonuses.forEach((bonus) => {
+    const row = document.createElement("span");
+
+    row.className = "battle-result__loot-card-set-bonus";
+    row.classList.toggle("battle-result__loot-card-set-bonus--active", bonus.active);
+    row.classList.toggle("battle-result__loot-card-set-bonus--inactive", !bonus.active);
+    row.textContent = `(${bonus.pieces}) ${bonus.label}`;
+    block.append(row);
+  });
+
+  return block;
 }
 
 function createLootDropTextChip(text: string, modifier?: string): HTMLElement {
