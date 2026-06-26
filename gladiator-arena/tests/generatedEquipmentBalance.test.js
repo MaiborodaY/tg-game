@@ -38,8 +38,16 @@ const ARMOR_EQUIPMENT_SET_EXPECTATIONS = new Map([
   ["bone", { name: "Bone", rank: 11, grade: "mid", shopCount: 14, level: 80 }],
   ["cathedral", { name: "Cathedral", rank: 12, grade: "high", shopCount: 14, level: 90 }],
   ["druid", { name: "Druid", rank: 13, grade: "high", shopCount: 0 }],
-  ["wood_boss", { name: "Wood Boss", rank: 14, grade: "boss", shopCount: 0, bossCount: 14 }],
-  ["boar_boss", { name: "Boar Boss", rank: 15, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["wood_boss", { name: "Oakhide", rank: 14, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["boar_boss", { name: "Blacktusk", rank: 15, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["turtle_boss", { name: "Stoneback", rank: 16, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["eagle_boss", { name: "Skybreaker", rank: 17, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["prisoner", { name: "Chainborn", rank: 18, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["swamp_boss", { name: "Rothelm", rank: 19, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["old_fortress_warden", { name: "Old Kingdom", rank: 20, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["grave_king", { name: "Gravebound", rank: 21, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["void_king", { name: "Black Sun", rank: 22, grade: "boss", shopCount: 0, bossCount: 14 }],
+  ["frost_king", { name: "Winterborn", rank: 23, grade: "boss", shopCount: 0, bossCount: 14 }],
 ]);
 
 const SHIELD_BALANCE_EXPECTATIONS = new Map([

@@ -31,7 +31,7 @@ import { mountClassicActionBar, type ClassicActionBarApi } from "./classicAction
 import { isDuoBossAiCombat, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
 import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
-import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
+import { getDomRefs, renderDom, type BattleResultPresentation, type BattleResultPresentationStage } from "./domUi";
 import {
   canUseGladiatorCloudSave,
   deleteGladiatorCloudSave,
@@ -205,6 +205,7 @@ let arenaEntryToken = 0;
 let arenaEntryLoaderTimer: number | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleResultPresentation: BattleResultPresentation | undefined;
+let battleResultPresentationStage: BattleResultPresentationStage = "reward";
 let battleResultPresentationId = 0;
 let battleResultPresentationRevealToken = 0;
 let statsRevealToken = 0;
@@ -452,10 +453,11 @@ function renderCurrentDom(): void {
     reward: gameMode === "pvp" ? { gold: 0, xp: 0 } : getBattleReward(state),
     statsState: displayedStatsState,
     resultPresentation: battleResultPresentation,
+    resultPresentationStage: battleResultPresentationStage,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
     resultReturn: {
-      ready: battleResultReturnReady,
-      label: battleResultReturnLabel,
+      ready: battleResultPresentationStage === "loot" ? true : battleResultReturnReady,
+      label: battleResultPresentationStage === "loot" ? "Continue" : battleResultReturnLabel,
     },
   });
 }
@@ -721,11 +723,28 @@ function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void 
       }
 
       battleResultPresentation = pendingBattleResultPresentation;
+      battleResultPresentationStage = getInitialBattleResultPresentationStage(battleResultPresentation);
       pendingBattleResultPresentation = undefined;
       renderCityHero();
       renderCurrentDom();
       syncTurnProbe();
     });
+}
+
+function getInitialBattleResultPresentationStage(presentation: BattleResultPresentation): BattleResultPresentationStage {
+  return presentation.loot && presentation.loot.length > 0 ? "loot" : "reward";
+}
+
+function continueBattleResultLootPresentation(): boolean {
+  if (!battleResultPresentation || battleResultPresentationStage !== "loot") {
+    return false;
+  }
+
+  battleResultPresentationStage = "reward";
+  renderCurrentDom();
+  syncTurnProbe();
+
+  return true;
 }
 
 function syncTurnProbe(): void {
@@ -2355,6 +2374,7 @@ async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
   resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   pendingBattleResultPresentation = undefined;
+  battleResultPresentationStage = "reward";
   battleResultPresentationRevealToken += 1;
   isArenaTransitionRunning = false;
   isInCity = true;
@@ -2397,6 +2417,7 @@ function restart(options: { syncArena?: boolean } = {}): void {
   resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   pendingBattleResultPresentation = undefined;
+  battleResultPresentationStage = "reward";
   battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
@@ -2434,6 +2455,10 @@ if (canShowLocalDebugRestartButton()) {
   dom.restartButton.addEventListener("click", () => restart());
 }
 dom.cityButton.addEventListener("click", () => {
+  if (continueBattleResultLootPresentation()) {
+    return;
+  }
+
   void returnToCity();
 });
 weaponShopButton?.addEventListener("click", () => {

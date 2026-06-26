@@ -48,12 +48,12 @@
   },
   {
     "id": "generated_equipment_back_boot_boar_boss_01",
-    "name": "Boar Boss 01 Back Boot",
+    "name": "Blacktusk Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -306,12 +306,12 @@
   },
   {
     "id": "generated_equipment_back_boot_eagle_boss_01",
-    "name": "Eagle Boss 01 Back Boot",
+    "name": "Skybreaker Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -388,12 +388,12 @@
   },
   {
     "id": "generated_equipment_back_boot_frost_king_01",
-    "name": "Frost King 01 Back Boot",
+    "name": "Winterborn Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -424,12 +424,12 @@
   },
   {
     "id": "generated_equipment_back_boot_grave_king_01",
-    "name": "Grave King 01 Back Boot",
+    "name": "Gravebound Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -598,12 +598,12 @@
   },
   {
     "id": "generated_equipment_back_boot_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Back Boot",
+    "name": "Old Kingdom Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -634,12 +634,12 @@
   },
   {
     "id": "generated_equipment_back_boot_prisoner_01",
-    "name": "Prisoner 01 Back Boot",
+    "name": "Chainborn Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -808,12 +808,12 @@
   },
   {
     "id": "generated_equipment_back_boot_swamp_boss_01",
-    "name": "Swamp Boss 01 Back Boot",
+    "name": "Rothelm Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -844,12 +844,12 @@
   },
   {
     "id": "generated_equipment_back_boot_turtle_boss_01",
-    "name": "Turtle Boss 01 Back Boot",
+    "name": "Stoneback Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -926,12 +926,12 @@
   },
   {
     "id": "generated_equipment_back_boot_void_king_01",
-    "name": "Void King 01 Back Boot",
+    "name": "Black Sun Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -962,12 +962,12 @@
   },
   {
     "id": "generated_equipment_back_boot_wood_boss_01",
-    "name": "Wood Boot",
+    "name": "Oakhide Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -998,12 +998,12 @@
   },
   {
     "id": "generated_equipment_back_glove_boar_boss_01",
-    "name": "Boar Boss 01 Back Glove",
+    "name": "Blacktusk Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -1256,12 +1256,12 @@
   },
   {
     "id": "generated_equipment_back_glove_eagle_boss_01",
-    "name": "Eagle Boss 01 Back Glove",
+    "name": "Skybreaker Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -1338,12 +1338,12 @@
   },
   {
     "id": "generated_equipment_back_glove_frost_king_01",
-    "name": "Frost King 01 Back Glove",
+    "name": "Winterborn Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -1374,12 +1374,12 @@
   },
   {
     "id": "generated_equipment_back_glove_grave_king_01",
-    "name": "Grave King 01 Back Glove",
+    "name": "Gravebound Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -1595,12 +1595,12 @@
   },
   {
     "id": "generated_equipment_back_glove_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Back Glove",
+    "name": "Old Kingdom Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -1631,12 +1631,12 @@
   },
   {
     "id": "generated_equipment_back_glove_prisoner_01",
-    "name": "Prisoner 01 Back Glove",
+    "name": "Chainborn Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -1805,12 +1805,12 @@
   },
   {
     "id": "generated_equipment_back_glove_swamp_boss_01",
-    "name": "Swamp Boss 01 Back Glove",
+    "name": "Rothelm Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -1841,12 +1841,12 @@
   },
   {
     "id": "generated_equipment_back_glove_turtle_boss_01",
-    "name": "Turtle Boss 01 Back Glove",
+    "name": "Stoneback Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -1923,12 +1923,12 @@
   },
   {
     "id": "generated_equipment_back_glove_void_king_01",
-    "name": "Void King 01 Back Glove",
+    "name": "Black Sun Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -1959,12 +1959,12 @@
   },
   {
     "id": "generated_equipment_back_glove_wood_boss_01",
-    "name": "Wood Back Glove Boss 01",
+    "name": "Oakhide Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -1995,12 +1995,12 @@
   },
   {
     "id": "generated_equipment_back_greave_boar_boss_01",
-    "name": "Boar Boss 01 Back Greave",
+    "name": "Blacktusk Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -2253,12 +2253,12 @@
   },
   {
     "id": "generated_equipment_back_greave_eagle_boss_01",
-    "name": "Eagle Boss 01 Back Greave",
+    "name": "Skybreaker Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -2335,12 +2335,12 @@
   },
   {
     "id": "generated_equipment_back_greave_frost_king_01",
-    "name": "Frost King 01 Back Greave",
+    "name": "Winterborn Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -2371,12 +2371,12 @@
   },
   {
     "id": "generated_equipment_back_greave_grave_king_01",
-    "name": "Grave King 01 Back Greave",
+    "name": "Gravebound Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -2592,12 +2592,12 @@
   },
   {
     "id": "generated_equipment_back_greave_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Back Greave",
+    "name": "Old Kingdom Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -2628,12 +2628,12 @@
   },
   {
     "id": "generated_equipment_back_greave_prisoner_01",
-    "name": "Prisoner 01 Back Greave",
+    "name": "Chainborn Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -2802,12 +2802,12 @@
   },
   {
     "id": "generated_equipment_back_greave_swamp_boss_01",
-    "name": "Swamp Boss 01 Back Greave",
+    "name": "Rothelm Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -2838,12 +2838,12 @@
   },
   {
     "id": "generated_equipment_back_greave_turtle_boss_01",
-    "name": "Turtle Boss 01 Back Greave",
+    "name": "Stoneback Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -2920,12 +2920,12 @@
   },
   {
     "id": "generated_equipment_back_greave_void_king_01",
-    "name": "Void King 01 Back Greave",
+    "name": "Black Sun Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -2956,12 +2956,12 @@
   },
   {
     "id": "generated_equipment_back_greave_wood_boss_01",
-    "name": "Wooden greave",
+    "name": "Oakhide Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -2992,12 +2992,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_boar_boss_01",
-    "name": "Boar Boss 01 Back Shinguard",
+    "name": "Blacktusk Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -3250,12 +3250,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_eagle_boss_01",
-    "name": "Eagle Boss 01 Back Shinguard",
+    "name": "Skybreaker Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -3332,12 +3332,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_frost_king_01",
-    "name": "Frost King 01 Back Shinguard",
+    "name": "Winterborn Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -3368,12 +3368,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_grave_king_01",
-    "name": "Grave King 01 Back Shinguard",
+    "name": "Gravebound Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -3542,12 +3542,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Back Shinguard",
+    "name": "Old Kingdom Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -3578,12 +3578,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_prisoner_01",
-    "name": "Prisoner 01 Back Shinguard",
+    "name": "Chainborn Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -3752,12 +3752,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_swamp_boss_01",
-    "name": "Swamp Boss 01 Back Shinguard",
+    "name": "Rothelm Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -3788,12 +3788,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_turtle_boss_01",
-    "name": "Turtle Boss 01 Back Shinguard",
+    "name": "Stoneback Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -3870,12 +3870,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_void_king_01",
-    "name": "Void King 01 Back Shinguard",
+    "name": "Black Sun Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -3906,12 +3906,12 @@
   },
   {
     "id": "generated_equipment_back_shinguard_wood_boss_01",
-    "name": "Wood Shinguard",
+    "name": "Oakhide Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -3942,12 +3942,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_boar_boss_01",
-    "name": "Boar Boss 01 Back Shoulderguard",
+    "name": "Blacktusk Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -4200,12 +4200,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_eagle_boss_01",
-    "name": "Eagle Boss 01 Back Shoulderguard",
+    "name": "Skybreaker Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -4282,12 +4282,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_frost_king_01",
-    "name": "Frost King 01 Back Shoulderguard",
+    "name": "Winterborn Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -4318,12 +4318,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_grave_king_01",
-    "name": "Grave King 01 Back Shoulderguard",
+    "name": "Gravebound Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -4492,12 +4492,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Back Shoulderguard",
+    "name": "Old Kingdom Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -4528,12 +4528,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_prisoner_01",
-    "name": "Prisoner 01 Back Shoulderguard",
+    "name": "Chainborn Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -4702,12 +4702,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_swamp_boss_01",
-    "name": "Swamp Boss 01 Back Shoulderguard",
+    "name": "Rothelm Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -4738,12 +4738,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_turtle_boss_01",
-    "name": "Turtle Boss 01 Back Shoulderguard",
+    "name": "Stoneback Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -4820,12 +4820,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_void_king_01",
-    "name": "Void King 01 Back Shoulderguard",
+    "name": "Black Sun Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -4856,12 +4856,12 @@
   },
   {
     "id": "generated_equipment_back_shoulderguard_wood_boss_01",
-    "name": "Wood Shoulders",
+    "name": "Oakhide Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -4892,12 +4892,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_boar_boss_01",
-    "name": "Boar Boss 01 Back Wrist",
+    "name": "Blacktusk Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -5150,12 +5150,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_eagle_boss_01",
-    "name": "Eagle Boss 01 Back Wrist",
+    "name": "Skybreaker Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -5232,12 +5232,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_frost_king_01",
-    "name": "Frost King 01 Back Wrist",
+    "name": "Winterborn Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -5268,12 +5268,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_grave_king_01",
-    "name": "Grave King 01 Back Wrist",
+    "name": "Gravebound Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -5442,12 +5442,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Back Wrist",
+    "name": "Old Kingdom Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -5478,12 +5478,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_prisoner_01",
-    "name": "Prisoner 01 Back Wrist",
+    "name": "Chainborn Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -5652,12 +5652,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_swamp_boss_01",
-    "name": "Swamp Boss 01 Back Wrist",
+    "name": "Rothelm Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -5688,12 +5688,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_turtle_boss_01",
-    "name": "Turtle Boss 01 Back Wrist",
+    "name": "Stoneback Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -5770,12 +5770,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_void_king_01",
-    "name": "Void King 01 Back Wrist",
+    "name": "Black Sun Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -5806,12 +5806,12 @@
   },
   {
     "id": "generated_equipment_back_wrist_wood_boss_01",
-    "name": "Wood Wrist",
+    "name": "Oakhide Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -5842,12 +5842,12 @@
   },
   {
     "id": "generated_equipment_breastplate_boar_boss_01",
-    "name": "Boar Boss 01 Breastplate",
+    "name": "Blacktusk Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -6053,12 +6053,12 @@
   },
   {
     "id": "generated_equipment_breastplate_eagle_boss_01",
-    "name": "Eagle Boss 01 Breastplate",
+    "name": "Skybreaker Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -6135,12 +6135,12 @@
   },
   {
     "id": "generated_equipment_breastplate_frost_king_01",
-    "name": "Frost King 01 Breastplate",
+    "name": "Winterborn Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -6171,12 +6171,12 @@
   },
   {
     "id": "generated_equipment_breastplate_grave_king_01",
-    "name": "Grave King 01 Breastplate",
+    "name": "Gravebound Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -6345,12 +6345,12 @@
   },
   {
     "id": "generated_equipment_breastplate_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Breastplate",
+    "name": "Old Kingdom Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -6381,12 +6381,12 @@
   },
   {
     "id": "generated_equipment_breastplate_prisoner_01",
-    "name": "Prisoner 01 Breastplate",
+    "name": "Chainborn Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -6555,12 +6555,12 @@
   },
   {
     "id": "generated_equipment_breastplate_swamp_boss_01",
-    "name": "Swamp Boss 01 Breastplate",
+    "name": "Rothelm Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -6591,12 +6591,12 @@
   },
   {
     "id": "generated_equipment_breastplate_turtle_boss_01",
-    "name": "Turtle Boss 01 Breastplate",
+    "name": "Stoneback Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -6673,12 +6673,12 @@
   },
   {
     "id": "generated_equipment_breastplate_void_king_01",
-    "name": "Void King 01 Breastplate",
+    "name": "Black Sun Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -6709,12 +6709,12 @@
   },
   {
     "id": "generated_equipment_breastplate_wood_boss_01",
-    "name": "Wood Breastplate Boss 01",
+    "name": "Oakhide Cuirass",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -6745,12 +6745,12 @@
   },
   {
     "id": "generated_equipment_front_boot_boar_boss_01",
-    "name": "Boar Boss 01 Front Boot",
+    "name": "Blacktusk Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -7003,12 +7003,12 @@
   },
   {
     "id": "generated_equipment_front_boot_eagle_boss_01",
-    "name": "Eagle Boss 01 Front Boot",
+    "name": "Skybreaker Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -7085,12 +7085,12 @@
   },
   {
     "id": "generated_equipment_front_boot_frost_king_01",
-    "name": "Frost King 01 Front Boot",
+    "name": "Winterborn Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -7121,12 +7121,12 @@
   },
   {
     "id": "generated_equipment_front_boot_grave_king_01",
-    "name": "Grave King 01 Front Boot",
+    "name": "Gravebound Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -7295,12 +7295,12 @@
   },
   {
     "id": "generated_equipment_front_boot_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Front Boot",
+    "name": "Old Kingdom Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -7331,12 +7331,12 @@
   },
   {
     "id": "generated_equipment_front_boot_prisoner_01",
-    "name": "Prisoner 01 Front Boot",
+    "name": "Chainborn Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -7505,12 +7505,12 @@
   },
   {
     "id": "generated_equipment_front_boot_swamp_boss_01",
-    "name": "Swamp Boss 01 Front Boot",
+    "name": "Rothelm Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -7541,12 +7541,12 @@
   },
   {
     "id": "generated_equipment_front_boot_turtle_boss_01",
-    "name": "Turtle Boss 01 Front Boot",
+    "name": "Stoneback Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -7623,12 +7623,12 @@
   },
   {
     "id": "generated_equipment_front_boot_void_king_01",
-    "name": "Void King 01 Front Boot",
+    "name": "Black Sun Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -7659,12 +7659,12 @@
   },
   {
     "id": "generated_equipment_front_boot_wood_boss_01",
-    "name": "Wood Boot Front",
+    "name": "Oakhide Sabatons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -7695,12 +7695,12 @@
   },
   {
     "id": "generated_equipment_front_glove_boar_boss_01",
-    "name": "Boar Boss 01 Front Glove",
+    "name": "Blacktusk Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -7953,12 +7953,12 @@
   },
   {
     "id": "generated_equipment_front_glove_eagle_boss_01",
-    "name": "Eagle Boss 01 Front Glove",
+    "name": "Skybreaker Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -8035,12 +8035,12 @@
   },
   {
     "id": "generated_equipment_front_glove_frost_king_01",
-    "name": "Frost King 01 Front Glove",
+    "name": "Winterborn Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -8071,12 +8071,12 @@
   },
   {
     "id": "generated_equipment_front_glove_grave_king_01",
-    "name": "Grave King 01 Front Glove",
+    "name": "Gravebound Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -8292,12 +8292,12 @@
   },
   {
     "id": "generated_equipment_front_glove_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Front Glove",
+    "name": "Old Kingdom Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -8328,12 +8328,12 @@
   },
   {
     "id": "generated_equipment_front_glove_prisoner_01",
-    "name": "Prisoner 01 Front Glove",
+    "name": "Chainborn Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -8502,12 +8502,12 @@
   },
   {
     "id": "generated_equipment_front_glove_swamp_boss_01",
-    "name": "Swamp Boss 01 Front Glove",
+    "name": "Rothelm Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -8538,12 +8538,12 @@
   },
   {
     "id": "generated_equipment_front_glove_turtle_boss_01",
-    "name": "Turtle Boss 01 Front Glove",
+    "name": "Stoneback Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -8620,12 +8620,12 @@
   },
   {
     "id": "generated_equipment_front_glove_void_king_01",
-    "name": "Void King 01 Front Glove",
+    "name": "Black Sun Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -8656,12 +8656,12 @@
   },
   {
     "id": "generated_equipment_front_glove_wood_boss_01",
-    "name": "Wood Front Glove Boss 01",
+    "name": "Oakhide Gauntlets",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -8692,12 +8692,12 @@
   },
   {
     "id": "generated_equipment_front_greave_boar_boss_01",
-    "name": "Boar Boss 01 Front Greave",
+    "name": "Blacktusk Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -8950,12 +8950,12 @@
   },
   {
     "id": "generated_equipment_front_greave_eagle_boss_01",
-    "name": "Eagle Boss 01 Front Greave",
+    "name": "Skybreaker Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -9032,12 +9032,12 @@
   },
   {
     "id": "generated_equipment_front_greave_frost_king_01",
-    "name": "Frost King 01 Front Greave",
+    "name": "Winterborn Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -9068,12 +9068,12 @@
   },
   {
     "id": "generated_equipment_front_greave_grave_king_01",
-    "name": "Grave King 01 Front Greave",
+    "name": "Gravebound Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -9289,12 +9289,12 @@
   },
   {
     "id": "generated_equipment_front_greave_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Front Greave",
+    "name": "Old Kingdom Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -9325,12 +9325,12 @@
   },
   {
     "id": "generated_equipment_front_greave_prisoner_01",
-    "name": "Prisoner 01 Front Greave",
+    "name": "Chainborn Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -9499,12 +9499,12 @@
   },
   {
     "id": "generated_equipment_front_greave_swamp_boss_01",
-    "name": "Swamp Boss 01 Front Greave",
+    "name": "Rothelm Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -9535,12 +9535,12 @@
   },
   {
     "id": "generated_equipment_front_greave_turtle_boss_01",
-    "name": "Turtle Boss 01 Front Greave",
+    "name": "Stoneback Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -9617,12 +9617,12 @@
   },
   {
     "id": "generated_equipment_front_greave_void_king_01",
-    "name": "Void King 01 Front Greave",
+    "name": "Black Sun Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -9653,12 +9653,12 @@
   },
   {
     "id": "generated_equipment_front_greave_wood_boss_01",
-    "name": "Wooden greave Front",
+    "name": "Oakhide Greaves",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -9689,12 +9689,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_boar_boss_01",
-    "name": "Boar Boss 01 Front Shinguard",
+    "name": "Blacktusk Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -9947,12 +9947,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_eagle_boss_01",
-    "name": "Eagle Boss 01 Front Shinguard",
+    "name": "Skybreaker Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -10029,12 +10029,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_frost_king_01",
-    "name": "Frost King 01 Front Shinguard",
+    "name": "Winterborn Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -10065,12 +10065,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_grave_king_01",
-    "name": "Grave King 01 Front Shinguard",
+    "name": "Gravebound Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -10239,12 +10239,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Front Shinguard",
+    "name": "Old Kingdom Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -10275,12 +10275,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_prisoner_01",
-    "name": "Prisoner 01 Front Shinguard",
+    "name": "Chainborn Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -10449,12 +10449,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_swamp_boss_01",
-    "name": "Swamp Boss 01 Front Shinguard",
+    "name": "Rothelm Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -10485,12 +10485,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_turtle_boss_01",
-    "name": "Turtle Boss 01 Front Shinguard",
+    "name": "Stoneback Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -10567,12 +10567,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_void_king_01",
-    "name": "Void King 01 Front Shinguard",
+    "name": "Black Sun Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -10603,12 +10603,12 @@
   },
   {
     "id": "generated_equipment_front_shinguard_wood_boss_01",
-    "name": "Wood Shinguard Front",
+    "name": "Oakhide Legguards",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -10639,12 +10639,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_boar_boss_01",
-    "name": "Boar Boss 01 Front Shoulderguard",
+    "name": "Blacktusk Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -10897,12 +10897,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_eagle_boss_01",
-    "name": "Eagle Boss 01 Front Shoulderguard",
+    "name": "Skybreaker Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -10979,12 +10979,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_frost_king_01",
-    "name": "Frost King 01 Front Shoulderguard",
+    "name": "Winterborn Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -11015,12 +11015,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_grave_king_01",
-    "name": "Grave King 01 Front Shoulderguard",
+    "name": "Gravebound Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -11189,12 +11189,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Front Shoulderguard",
+    "name": "Old Kingdom Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -11225,12 +11225,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_prisoner_01",
-    "name": "Prisoner 01 Front Shoulderguard",
+    "name": "Chainborn Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -11399,12 +11399,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_swamp_boss_01",
-    "name": "Swamp Boss 01 Front Shoulderguard",
+    "name": "Rothelm Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -11435,12 +11435,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_turtle_boss_01",
-    "name": "Turtle Boss 01 Front Shoulderguard",
+    "name": "Stoneback Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -11517,12 +11517,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_void_king_01",
-    "name": "Void King 01 Front Shoulderguard",
+    "name": "Black Sun Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -11553,12 +11553,12 @@
   },
   {
     "id": "generated_equipment_front_shoulderguard_wood_boss_01",
-    "name": "Wood Shoulders Front",
+    "name": "Oakhide Pauldrons",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -11589,12 +11589,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_boar_boss_01",
-    "name": "Boar Boss 01 Front Wrist",
+    "name": "Blacktusk Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -11847,12 +11847,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_eagle_boss_01",
-    "name": "Eagle Boss 01 Front Wrist",
+    "name": "Skybreaker Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -11929,12 +11929,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_frost_king_01",
-    "name": "Frost King 01 Front Wrist",
+    "name": "Winterborn Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -11965,12 +11965,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_grave_king_01",
-    "name": "Grave King 01 Front Wrist",
+    "name": "Gravebound Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -12139,12 +12139,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Front Wrist",
+    "name": "Old Kingdom Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -12175,12 +12175,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_prisoner_01",
-    "name": "Prisoner 01 Front Wrist",
+    "name": "Chainborn Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -12349,12 +12349,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_swamp_boss_01",
-    "name": "Swamp Boss 01 Front Wrist",
+    "name": "Rothelm Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -12385,12 +12385,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_turtle_boss_01",
-    "name": "Turtle Boss 01 Front Wrist",
+    "name": "Stoneback Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -12467,12 +12467,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_void_king_01",
-    "name": "Void King 01 Front Wrist",
+    "name": "Black Sun Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -12503,12 +12503,12 @@
   },
   {
     "id": "generated_equipment_front_wrist_wood_boss_01",
-    "name": "Wood Wrist Front",
+    "name": "Oakhide Bracers",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -12539,12 +12539,12 @@
   },
   {
     "id": "generated_equipment_helmet_boar_boss_01",
-    "name": "Boar Boss 01 Helmet",
+    "name": "Blacktusk Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "boar_boss",
-      "name": "Boar Boss",
+      "name": "Blacktusk",
       "rank": 15,
       "grade": "boss"
     },
@@ -12834,12 +12834,12 @@
   },
   {
     "id": "generated_equipment_helmet_eagle_boss_01",
-    "name": "Eagle Boss 01 Helmet",
+    "name": "Skybreaker Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "eagle_boss",
-      "name": "Eagle boss",
+      "name": "Skybreaker",
       "rank": 17,
       "grade": "boss"
     },
@@ -12916,12 +12916,12 @@
   },
   {
     "id": "generated_equipment_helmet_frost_king_01",
-    "name": "Frost King 01 Helmet",
+    "name": "Winterborn Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "frost_king",
-      "name": "Frost King",
+      "name": "Winterborn",
       "rank": 23,
       "grade": "boss"
     },
@@ -12952,12 +12952,12 @@
   },
   {
     "id": "generated_equipment_helmet_grave_king_01",
-    "name": "Grave King 01 Helmet",
+    "name": "Gravebound Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "grave_king",
-      "name": "Grave King",
+      "name": "Gravebound",
       "rank": 21,
       "grade": "boss"
     },
@@ -13126,12 +13126,12 @@
   },
   {
     "id": "generated_equipment_helmet_old_fortress_warden_01",
-    "name": "Old Fortress Warden 01 Helmet",
+    "name": "Old Kingdom Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "old_fortress_warden",
-      "name": "old fortress warden",
+      "name": "Old Kingdom",
       "rank": 20,
       "grade": "boss"
     },
@@ -13162,12 +13162,12 @@
   },
   {
     "id": "generated_equipment_helmet_prisoner_01",
-    "name": "Prisoner 01 Helmet",
+    "name": "Chainborn Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "prisoner",
-      "name": "Prisoner",
+      "name": "Chainborn",
       "rank": 18,
       "grade": "boss"
     },
@@ -13336,12 +13336,12 @@
   },
   {
     "id": "generated_equipment_helmet_swamp_boss_01",
-    "name": "Swamp Boss 01 Helmet",
+    "name": "Rothelm Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "swamp_boss",
-      "name": "Swamp boss",
+      "name": "Rothelm",
       "rank": 19,
       "grade": "boss"
     },
@@ -13372,12 +13372,12 @@
   },
   {
     "id": "generated_equipment_helmet_turtle_boss_01",
-    "name": "Turtle Boss 01 Helmet",
+    "name": "Stoneback Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "turtle_boss",
-      "name": "Turtle Boss",
+      "name": "Stoneback",
       "rank": 16,
       "grade": "boss"
     },
@@ -13454,12 +13454,12 @@
   },
   {
     "id": "generated_equipment_helmet_void_king_01",
-    "name": "Void King 01 Helmet",
+    "name": "Black Sun Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "void_king",
-      "name": "Void King",
+      "name": "Black Sun",
       "rank": 22,
       "grade": "boss"
     },
@@ -13490,12 +13490,12 @@
   },
   {
     "id": "generated_equipment_helmet_wood_boss_01",
-    "name": "Wood Helmet Boss 01",
+    "name": "Oakhide Helm",
     "kind": "armor",
     "rarity": "unique",
     "equipmentSet": {
       "id": "wood_boss",
-      "name": "Wood Boss",
+      "name": "Oakhide",
       "rank": 14,
       "grade": "boss"
     },
@@ -13826,7 +13826,7 @@
   },
   {
     "id": "generated_equipment_shield_old_warden_01",
-    "name": "Old Warden Shield",
+    "name": "Old Kingdom Bulwark",
     "kind": "armor",
     "rarity": "unique",
     "armorHp": 140,
@@ -13936,7 +13936,7 @@
   },
   {
     "id": "generated_equipment_shield_turtle_boss",
-    "name": "Turtle Shield",
+    "name": "Stoneback Bulwark",
     "kind": "armor",
     "rarity": "unique",
     "armorHp": 95,
@@ -14549,7 +14549,7 @@
   },
   {
     "id": "generated_equipment_weapon_axe_prisoner_axe",
-    "name": "Prisoner Axe",
+    "name": "Chainborn Axe",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 20,
@@ -15437,7 +15437,7 @@
   },
   {
     "id": "generated_equipment_weapon_mace_boar_mace",
-    "name": "Boar mace",
+    "name": "Blacktusk Crusher",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 13,
@@ -16176,7 +16176,7 @@
   },
   {
     "id": "generated_equipment_weapon_mace_turtle_weapon",
-    "name": "Turtle weapon",
+    "name": "Stoneback Maul",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 16,
@@ -16341,7 +16341,7 @@
   },
   {
     "id": "generated_equipment_weapon_mace_wood_boss_01",
-    "name": "Big Wooden mace",
+    "name": "Oakhide Maul",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 5,
@@ -16844,7 +16844,7 @@
   },
   {
     "id": "generated_equipment_weapon_spear_eagle_glaive",
-    "name": "Eagle Glaive",
+    "name": "Skybreaker Glaive",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 19,
@@ -17748,7 +17748,7 @@
   },
   {
     "id": "generated_equipment_weapon_sword_frost_king_sword",
-    "name": "Frost King Sword",
+    "name": "Winterborn Blade",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 27,
@@ -17779,7 +17779,7 @@
   },
   {
     "id": "generated_equipment_weapon_sword_grave_king_greatsword",
-    "name": "Grave King Greatsword",
+    "name": "Gravebound Greatsword",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 28,
@@ -18273,7 +18273,7 @@
   },
   {
     "id": "generated_equipment_weapon_sword_swamp_sword",
-    "name": "Swamp sword",
+    "name": "Rothelm Blade",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 24,
@@ -18468,7 +18468,7 @@
   },
   {
     "id": "generated_equipment_weapon_sword_void_sword",
-    "name": "Void Sword",
+    "name": "Black Sun Blade",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 30,
@@ -18499,7 +18499,7 @@
   },
   {
     "id": "generated_equipment_weapon_sword_warden_sword",
-    "name": "Warden Sword",
+    "name": "Old Kingdom Blade",
     "kind": "weapon",
     "rarity": "unique",
     "damageBonus": 22,

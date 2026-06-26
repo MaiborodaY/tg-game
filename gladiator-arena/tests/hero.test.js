@@ -172,7 +172,7 @@ const generatedItems = {
   },
   generated_equipment_helmet_wood_boss_01: {
     id: "generated_equipment_helmet_wood_boss_01",
-    name: "Wood Helmet Boss 01",
+    name: "Oakhide Helm",
     kind: "armor",
     rarity: "unique",
     equipmentSlot: "helmet",
@@ -180,7 +180,7 @@ const generatedItems = {
   },
   generated_equipment_breastplate_wood_boss_01: {
     id: "generated_equipment_breastplate_wood_boss_01",
-    name: "Wood Breastplate Boss 01",
+    name: "Oakhide Cuirass",
     kind: "armor",
     rarity: "unique",
     equipmentSlot: "breastplate",
@@ -188,7 +188,7 @@ const generatedItems = {
   },
   generated_equipment_back_greave_wood_boss_01: {
     id: "generated_equipment_back_greave_wood_boss_01",
-    name: "Wooden greave",
+    name: "Oakhide Greaves",
     kind: "armor",
     rarity: "unique",
     equipmentSlot: "backGreave",
@@ -196,7 +196,7 @@ const generatedItems = {
   },
   generated_equipment_front_greave_wood_boss_01: {
     id: "generated_equipment_front_greave_wood_boss_01",
-    name: "Wooden greave Front",
+    name: "Oakhide Greaves",
     kind: "armor",
     rarity: "unique",
     equipmentSlot: "frontGreave",
@@ -204,7 +204,7 @@ const generatedItems = {
   },
   generated_equipment_weapon_mace_wood_boss_01: {
     id: "generated_equipment_weapon_mace_wood_boss_01",
-    name: "Big Wooden mace",
+    name: "Oakhide Maul",
     kind: "weapon",
     rarity: "unique",
     weaponClass: "mace",

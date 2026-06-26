@@ -1966,6 +1966,294 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   white-space: nowrap;
 }
 
+.battle-result--loot {
+  --loot-rarity-color: #d6b978;
+  --loot-rarity-soft: rgba(214, 185, 120, 0.22);
+  --loot-rarity-glow: rgba(214, 185, 120, 0.3);
+  --battle-result-title-font-size: clamp(1.05rem, 5.6vw, 1.46rem);
+}
+
+.result-banner.battle-result--loot {
+  inset: 0;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 217, 129, 0.12), transparent 36%),
+    rgba(10, 3, 1, 0.62);
+  backdrop-filter: blur(1px);
+  transform: none;
+}
+
+.battle-result--loot .battle-result__frame {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  justify-items: center;
+  width: min(318px, calc(100% - 42px));
+  min-height: 100%;
+  aspect-ratio: auto;
+  padding: 22px 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.battle-result--loot .battle-result__rewards,
+.battle-result--loot .battle-result__xp {
+  display: none;
+}
+
+.battle-result--loot .battle-result__eyebrow {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: auto;
+  max-width: 100%;
+  padding: 8px 20px 7px;
+  border: 1px solid rgba(255, 225, 143, 0.44);
+  border-radius: 6px;
+  color: #fff1b8;
+  background:
+    linear-gradient(180deg, rgba(112, 61, 19, 0.86), rgba(46, 14, 4, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 195, 0.18),
+    0 3px 0 rgba(19, 5, 2, 0.55),
+    0 0 16px var(--loot-rarity-glow);
+  transform: none;
+}
+
+.battle-result--loot .battle-result__title {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  min-height: 0;
+  color: #ffe6a5;
+  font-size: var(--battle-result-title-font-size);
+}
+
+.battle-result--loot .battle-result__loot {
+  position: relative;
+  left: auto;
+  top: auto;
+  align-content: center;
+  width: 100%;
+  max-height: none;
+  min-height: 0;
+  padding: 14px 14px 13px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="common"] {
+  --loot-rarity-color: #d7c5a0;
+  --loot-rarity-soft: rgba(215, 197, 160, 0.16);
+  --loot-rarity-glow: rgba(215, 197, 160, 0.2);
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="uncommon"] {
+  --loot-rarity-color: #80e07b;
+  --loot-rarity-soft: rgba(90, 219, 91, 0.18);
+  --loot-rarity-glow: rgba(90, 219, 91, 0.28);
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="rare"] {
+  --loot-rarity-color: #73c9ff;
+  --loot-rarity-soft: rgba(89, 173, 255, 0.2);
+  --loot-rarity-glow: rgba(89, 173, 255, 0.34);
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="epic"] {
+  --loot-rarity-color: #ca8cff;
+  --loot-rarity-soft: rgba(172, 91, 255, 0.22);
+  --loot-rarity-glow: rgba(172, 91, 255, 0.35);
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="legendary"] {
+  --loot-rarity-color: #ffbd57;
+  --loot-rarity-soft: rgba(255, 168, 55, 0.24);
+  --loot-rarity-glow: rgba(255, 168, 55, 0.38);
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="mythical"] {
+  --loot-rarity-color: #ff7fe6;
+  --loot-rarity-soft: rgba(255, 103, 222, 0.24);
+  --loot-rarity-glow: rgba(255, 103, 222, 0.4);
+}
+
+.battle-result--loot .battle-result__loot[data-loot-rarity="unique"] {
+  --loot-rarity-color: #55e0d6;
+  --loot-rarity-soft: rgba(36, 211, 200, 0.26);
+  --loot-rarity-glow: rgba(36, 211, 200, 0.44);
+}
+
+.battle-result--loot .battle-result__button {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: min(258px, 82%);
+  margin-top: 5px;
+  transform: none;
+}
+
+.battle-result--loot.battle-result--animating .battle-result__frame {
+  animation: battle-result-panel-in 520ms 780ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--loot.battle-result--animating .battle-result__eyebrow {
+  animation: battle-result-loot-plaque-in 420ms 870ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--loot.battle-result--animating .battle-result__title {
+  animation: battle-result-title-in 420ms 1000ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--loot.battle-result--animating .battle-result__loot {
+  animation: battle-result-reward-in 360ms 1140ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--loot.battle-result--animating .battle-result__button {
+  animation: battle-result-loot-button-in 420ms 1320ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result__loot-card {
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #fff0bd;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.battle-result__loot-card-icon {
+  display: grid;
+  place-items: center;
+  width: clamp(76px, 24vw, 96px);
+  height: clamp(76px, 24vw, 96px);
+  border: 2px solid color-mix(in srgb, var(--loot-rarity-color) 62%, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 20%, var(--loot-rarity-soft), transparent 55%),
+    linear-gradient(180deg, rgba(93, 48, 18, 0.82), rgba(19, 6, 2, 0.82));
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 82% 82%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 210, 0.2),
+    inset 0 -8px 14px rgba(11, 3, 1, 0.34),
+    0 2px 0 rgba(8, 2, 1, 0.6),
+    0 0 18px var(--loot-rarity-glow);
+  filter: drop-shadow(0 5px 4px rgba(10, 3, 1, 0.48));
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.battle-result__loot-card-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--loot-rarity-color) 34%, #ffe6a5);
+  font-size: clamp(0.82rem, 3.6vw, 1rem);
+  font-weight: 900;
+  line-height: 1.02;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 2px 0 #160703,
+    0 0 8px rgba(255, 214, 119, 0.28);
+  white-space: nowrap;
+}
+
+.battle-result__loot-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+}
+
+.battle-result__loot-card-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+  padding: 3px 7px 4px;
+  border: 1px solid rgba(255, 220, 138, 0.34);
+  border-radius: 4px;
+  color: #fff2be;
+  background:
+    linear-gradient(180deg, rgba(108, 61, 22, 0.84), rgba(45, 15, 5, 0.88));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 200, 0.14),
+    0 1px 0 rgba(10, 3, 1, 0.42);
+  font-size: clamp(0.52rem, 2.25vw, 0.66rem);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #160703;
+  white-space: nowrap;
+}
+
+.battle-result__loot-card-chip--rarity {
+  border-color: color-mix(in srgb, var(--loot-rarity-color) 62%, rgba(0, 0, 0, 0.2));
+  color: color-mix(in srgb, var(--loot-rarity-color) 46%, #fff2be);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 200, 0.14),
+    0 1px 0 rgba(10, 3, 1, 0.42),
+    0 0 8px var(--loot-rarity-glow);
+}
+
+.battle-result__loot-card-chip--stat {
+  color: #ffe4a5;
+  gap: 5px;
+}
+
+.battle-result__loot-card-stat-label {
+  display: inline-block;
+  line-height: 1;
+}
+
+.battle-result__loot-card-stat-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.72));
+}
+
+.battle-result__loot-card-stat-value {
+  color: #fff4c9;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.battle-result__loot-card-stat-value--better {
+  color: #8cff8a;
+  text-shadow:
+    0 1px 0 #103b14,
+    0 0 7px rgba(99, 255, 102, 0.34);
+}
+
+.battle-result__loot-card-stat-value--worse {
+  color: #ff9f83;
+}
+
+.battle-result__loot-card-status {
+  color: rgba(255, 239, 188, 0.76);
+  font-size: clamp(0.52rem, 2.25vw, 0.66rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #160703;
+}
+
 .battle-result__xp {
   position: absolute;
   left: var(--battle-result-xp-left);
@@ -2188,6 +2476,46 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   animation: battle-result-button-in 420ms 1660ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
 }
 
+.battle-result--reward-after-loot.battle-result--animating .battle-result__frame {
+  animation: battle-result-panel-in 260ms 0ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__eyebrow {
+  animation: battle-result-plaque-in 240ms 40ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__title {
+  animation: battle-result-title-in 240ms 80ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__reward {
+  animation: battle-result-reward-in 240ms 120ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__reward:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__reward:nth-child(2) {
+  animation-delay: 170ms;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__reward .battle-result__icon {
+  animation: battle-result-icon-pop 320ms 180ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__xp {
+  animation: battle-result-reward-in 260ms 220ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__xp-fill {
+  animation: battle-result-xp-glow 720ms 440ms ease-out both;
+}
+
+.battle-result--reward-after-loot.battle-result--animating .battle-result__button {
+  animation: battle-result-button-in 260ms 360ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
 .battle-screen.battle-screen--finished .stage-panel::before {
   opacity: 1;
 }
@@ -2271,6 +2599,18 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   }
 }
 
+@keyframes battle-result-loot-plaque-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes battle-result-title-in {
   from {
     opacity: 0;
@@ -2321,6 +2661,18 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   to {
     opacity: 1;
     transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes battle-result-loot-button-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

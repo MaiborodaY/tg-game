@@ -13,6 +13,7 @@ import {
   type CombatState,
   type DistanceBand,
 } from "./combat";
+import { DAMAGE_BLOCK_ICON_ASSET_URL, DAMAGE_HIT_ICON_ASSET_URL } from "./assets";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import { applyUiLayoutTuning } from "./uiLayoutTuning";
 import {
@@ -23,11 +24,22 @@ import {
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_WARD_SCROLL_ITEM_ID,
   getHeroXpToNextLevel,
+  type HeroEquipmentSlotKey,
+  type HeroItemId,
+  type HeroWeaponClass,
   type ArenaDifficultyId,
   type ArenaLootDrop,
   type BattleReward,
   type HeroState,
 } from "./hero";
+import {
+  getEquippedShopProductStat,
+  getShopProductDisplayName,
+  getShopProductRarity,
+  getShopProductStat,
+  getShopRarityLabel,
+  type ShopProductStatKind,
+} from "./shopPresentation";
 
 export interface DomRefs {
   mainMenu: HTMLElement;
@@ -182,11 +194,14 @@ export interface BattleResultReturnState {
   label?: string;
 }
 
+export type BattleResultPresentationStage = "loot" | "reward";
+
 export interface DomRenderContext {
   hero?: HeroState;
   reward?: BattleReward;
   statsState?: CombatState;
   resultPresentation?: BattleResultPresentation;
+  resultPresentationStage?: BattleResultPresentationStage;
   deferResultPresentation?: boolean;
   resultReturn?: BattleResultReturnState;
 }
@@ -202,6 +217,31 @@ const CLASSIC_ENCOUNTER_DIFFICULTY_LABELS: Record<ClassicEncounterDifficulty, st
   medium: "Medium battle",
   hard: "Hard battle",
   boss: "Boss battle",
+};
+const EQUIPMENT_SLOT_LABELS: Partial<Record<HeroEquipmentSlotKey, string>> = {
+  helmet: "Helmet",
+  breastplate: "Chest",
+  backShoulderguard: "Shoulders",
+  frontShoulderguard: "Shoulders",
+  backWrist: "Wrists",
+  frontWrist: "Wrists",
+  backGlove: "Gloves",
+  frontGlove: "Gloves",
+  shield: "Shield",
+  backGreave: "Greaves",
+  frontGreave: "Greaves",
+  backShinguard: "Shinguards",
+  frontShinguard: "Shinguards",
+  backBoot: "Boots",
+  frontBoot: "Boots",
+};
+const WEAPON_CLASS_LABELS: Record<HeroWeaponClass, string> = {
+  sword: "SWORD",
+  axe: "AXE",
+  bow: "BOW",
+  mace: "MACE",
+  spear: "SPEAR",
+  shuriken: "SHURIKEN",
 };
 
 export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderContext = {}): void {
@@ -476,6 +516,7 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
     dom.resultBanner.hidden = true;
     dom.cityButton.hidden = true;
     dom.resultBanner.classList.remove("battle-result--animating");
+    dom.resultBanner.classList.remove("battle-result--loot", "battle-result--reward-after-loot");
     delete dom.resultBanner.dataset.resultAnimationKey;
     return;
   }
@@ -485,15 +526,17 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
   applyUiLayoutTuning(dom.gameScreen);
   syncResultReturnButton(dom.cityButton, context.resultReturn);
   syncResultVariant(dom.resultBanner, state.result);
-  dom.resultEyebrow.textContent = resultEyebrowText(state);
-  dom.resultTitle.textContent = resultBannerText(state);
 
   const presentation = context.resultPresentation;
   const reward = presentation?.reward ?? context.reward ?? { gold: 0, xp: 0 };
   const loot = presentation?.loot ?? [];
   const finalHero = presentation?.heroAfterReward ?? context.hero;
+  const presentationStage = context.resultPresentationStage ?? "reward";
+  const hasPrimaryLootDrop = Boolean(getPrimaryResultLootDrop(loot));
+  const shouldRenderLootStage = Boolean(presentation && presentationStage === "loot" && hasPrimaryLootDrop);
+  const shouldFastRenderRewardStage = Boolean(presentation && presentationStage === "reward" && hasPrimaryLootDrop);
   const animationKey =
-    presentation?.id ?? `static:${state.result}:${reward.gold}:${reward.xp}:${loot.map((drop) => `${drop.itemId}:${drop.quantity}`).join("|")}:${finalHero?.level ?? 0}:${finalHero?.xp ?? 0}`;
+    `${shouldRenderLootStage ? "loot" : "reward"}:${presentation?.id ?? `static:${state.result}:${reward.gold}:${reward.xp}:${loot.map((drop) => `${drop.itemId}:${drop.quantity}`).join("|")}:${finalHero?.level ?? 0}:${finalHero?.xp ?? 0}`}`;
 
   if (dom.resultBanner.dataset.resultAnimationKey === animationKey) {
     return;
@@ -501,13 +544,23 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
 
   dom.resultBanner.dataset.resultAnimationKey = animationKey;
 
+  if (presentation && shouldRenderLootStage) {
+    renderLootDropPresentation(dom, state, presentation);
+    return;
+  }
+
+  dom.resultBanner.classList.remove("battle-result--loot");
+  dom.resultBanner.classList.toggle("battle-result--reward-after-loot", shouldFastRenderRewardStage);
+  dom.resultEyebrow.textContent = resultEyebrowText(state);
+  dom.resultTitle.textContent = resultBannerText(state);
+
   if (presentation) {
-    animateResultPresentation(dom, presentation);
+    animateResultPresentation(dom, presentation, Boolean(context.resultPresentationStage), shouldFastRenderRewardStage);
     return;
   }
 
   cancelResultAnimations();
-  dom.resultBanner.classList.remove("battle-result--animating");
+  dom.resultBanner.classList.remove("battle-result--animating", "battle-result--reward-after-loot");
   renderRewardAmount(dom.resultGoldReward, reward.gold);
   renderRewardAmount(dom.resultXpReward, reward.xp);
   renderResultLoot(dom.resultLoot, loot);
@@ -603,7 +656,13 @@ function renderResultXpLabel(dom: DomRefs, level: number, progressText: string):
   dom.resultXpProgress.setAttribute("aria-label", `LVL ${level} ${progressText}`);
 }
 
-function animateResultPresentation(dom: DomRefs, presentation: BattleResultPresentation): void {
+function animateResultPresentation(dom: DomRefs, presentation: BattleResultPresentation, hideLoot = false, fastIntro = false): void {
+  const goldDelayMs = fastIntro ? 180 : 1160;
+  const xpDelayMs = fastIntro ? 260 : 1300;
+  const xpProgressDelayMs = fastIntro ? 440 : 1480;
+  const goldDurationMs = fastIntro ? 520 : 720;
+  const xpDurationMs = fastIntro ? 560 : 760;
+
   cancelResultAnimations();
 
   dom.resultBanner.classList.remove("battle-result--animating");
@@ -611,16 +670,37 @@ function animateResultPresentation(dom: DomRefs, presentation: BattleResultPrese
   dom.resultBanner.classList.add("battle-result--animating");
   renderRewardAmount(dom.resultGoldReward, 0);
   renderRewardAmount(dom.resultXpReward, 0);
-  renderResultLoot(dom.resultLoot, presentation.loot ?? []);
+  renderResultLoot(dom.resultLoot, hideLoot ? [] : presentation.loot ?? []);
   renderResultXpProgress(dom, presentation.heroBeforeReward ?? presentation.heroAfterReward);
 
-  animateResultNumber(dom.resultGoldReward, 0, presentation.reward.gold, 720, 1160);
-  animateResultNumber(dom.resultXpReward, 0, presentation.reward.xp, 760, 1300);
-  scheduleResultAnimation(1480, () => animateResultXpProgress(dom, presentation));
+  animateResultNumber(dom.resultGoldReward, 0, presentation.reward.gold, goldDurationMs, goldDelayMs);
+  animateResultNumber(dom.resultXpReward, 0, presentation.reward.xp, xpDurationMs, xpDelayMs);
+  scheduleResultAnimation(xpProgressDelayMs, () => animateResultXpProgress(dom, presentation));
+}
+
+function renderLootDropPresentation(dom: DomRefs, state: CombatState, presentation: BattleResultPresentation): void {
+  const drop = getPrimaryResultLootDrop(presentation.loot ?? []);
+
+  cancelResultAnimations();
+  dom.resultBanner.classList.remove("battle-result--animating");
+  void dom.resultBanner.offsetWidth;
+  dom.resultBanner.classList.remove("battle-result--reward-after-loot");
+  dom.resultBanner.classList.add("battle-result--animating", "battle-result--loot");
+  dom.resultEyebrow.textContent = state.encounter?.kind === "boss" ? "Boss Trophy" : "Dropped Item";
+  dom.resultTitle.textContent = "Dropped Item";
+  renderRewardAmount(dom.resultGoldReward, 0);
+  renderRewardAmount(dom.resultXpReward, 0);
+  renderResultXpProgress(dom, presentation.heroBeforeReward ?? presentation.heroAfterReward);
+  renderResultLootDrop(dom.resultLoot, drop, presentation.heroBeforeReward);
+}
+
+function getPrimaryResultLootDrop(loot: readonly ArenaLootDrop[]): ArenaLootDrop | undefined {
+  return loot.find((drop) => getArenaLootDropItemIds(drop).some((itemId) => Boolean(HERO_ITEM_CATALOG[itemId])));
 }
 
 function renderResultLoot(element: HTMLElement, loot: readonly ArenaLootDrop[]): void {
   element.replaceChildren();
+  delete element.dataset.lootRarity;
 
   if (loot.length === 0) {
     element.hidden = true;
@@ -652,6 +732,131 @@ function renderResultLoot(element: HTMLElement, loot: readonly ArenaLootDrop[]):
     row.append(icon, label);
     element.append(row);
   });
+}
+
+function renderResultLootDrop(element: HTMLElement, drop: ArenaLootDrop | undefined, heroBeforeReward: HeroState | undefined): void {
+  element.replaceChildren();
+  delete element.dataset.lootRarity;
+
+  if (!drop) {
+    element.hidden = true;
+    return;
+  }
+
+  const itemIds = getArenaLootDropItemIds(drop);
+  const item = HERO_ITEM_CATALOG[drop.itemId] ?? itemIds.map((itemId) => HERO_ITEM_CATALOG[itemId]).find(Boolean);
+
+  if (!item) {
+    renderResultLoot(element, [drop]);
+    return;
+  }
+
+  const iconUrl = getShopProductIconUrl(itemIds);
+  const rarity = getShopProductRarity(itemIds);
+  const statKind = getLootDropStatKind(itemIds);
+  const quantity = Math.max(1, drop.quantity);
+  const card = document.createElement("article");
+  const icon = document.createElement("span");
+  const name = document.createElement("strong");
+  const chips = document.createElement("div");
+  const status = document.createElement("span");
+
+  element.hidden = false;
+  card.className = "battle-result__loot-card";
+  icon.className = "battle-result__loot-card-icon";
+  name.className = "battle-result__loot-card-name";
+  chips.className = "battle-result__loot-card-chips";
+  status.className = "battle-result__loot-card-status";
+  name.textContent = getShopProductDisplayName(item.name);
+  status.textContent = quantity > 1 ? `Added to inventory x${quantity}` : "Added to inventory";
+  card.classList.add(`battle-result__loot-card--rarity-${rarity}`);
+  element.dataset.lootRarity = rarity;
+
+  if (iconUrl) {
+    icon.style.backgroundImage = `url("${iconUrl}")`;
+  } else {
+    icon.textContent = "?";
+  }
+
+  chips.append(createLootDropTextChip(getShopRarityLabel(rarity), "rarity"));
+
+  const slotLabel = getLootDropSlotLabel(itemIds);
+
+  if (slotLabel) {
+    chips.append(createLootDropTextChip(slotLabel));
+  }
+
+  if (statKind) {
+    chips.append(createLootDropStatChip(heroBeforeReward, itemIds, statKind));
+  }
+
+  card.append(icon, name, chips, status);
+  element.append(card);
+}
+
+function createLootDropTextChip(text: string, modifier?: string): HTMLElement {
+  const chip = document.createElement("span");
+
+  chip.className = "battle-result__loot-card-chip";
+  if (modifier) {
+    chip.classList.add(`battle-result__loot-card-chip--${modifier}`);
+  }
+  chip.textContent = text;
+
+  return chip;
+}
+
+function createLootDropStatChip(heroBeforeReward: HeroState | undefined, itemIds: HeroItemId[], statKind: ShopProductStatKind): HTMLElement {
+  const chip = document.createElement("span");
+  const icon = document.createElement("img");
+  const value = document.createElement("strong");
+  const stat = getShopProductStat(itemIds, statKind);
+  const equippedStat = heroBeforeReward ? getEquippedShopProductStat(heroBeforeReward, itemIds, statKind) : stat;
+  const statLabel = statKind === "armor" ? "Armor" : "Damage";
+  const statIconUrl = statKind === "armor" ? DAMAGE_BLOCK_ICON_ASSET_URL : DAMAGE_HIT_ICON_ASSET_URL;
+
+  chip.className = "battle-result__loot-card-chip battle-result__loot-card-chip--stat";
+  chip.setAttribute("aria-label", `${statLabel} ${stat}`);
+  icon.className = "battle-result__loot-card-stat-icon";
+  icon.src = statIconUrl;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  value.textContent = String(stat);
+  value.className = "battle-result__loot-card-stat-value";
+  value.classList.toggle("battle-result__loot-card-stat-value--better", stat > equippedStat);
+  value.classList.toggle("battle-result__loot-card-stat-value--worse", stat < equippedStat);
+  chip.append(icon, value);
+
+  return chip;
+}
+
+function getArenaLootDropItemIds(drop: ArenaLootDrop): HeroItemId[] {
+  return drop.itemIds && drop.itemIds.length > 0 ? [...drop.itemIds] : [drop.itemId];
+}
+
+function getLootDropStatKind(itemIds: readonly HeroItemId[]): ShopProductStatKind | undefined {
+  if (itemIds.some((itemId) => (HERO_ITEM_CATALOG[itemId]?.armorHp ?? 0) > 0)) {
+    return "armor";
+  }
+
+  if (itemIds.some((itemId) => (HERO_ITEM_CATALOG[itemId]?.damageBonus ?? 0) > 0)) {
+    return "damage";
+  }
+
+  return undefined;
+}
+
+function getLootDropSlotLabel(itemIds: readonly HeroItemId[]): string {
+  const item = itemIds.map((itemId) => HERO_ITEM_CATALOG[itemId]).find((candidate) => candidate && !candidate.equipmentSlot.startsWith("front"));
+
+  if (item?.kind === "weapon" && item.weaponClass) {
+    return WEAPON_CLASS_LABELS[item.weaponClass];
+  }
+
+  const slotLabel = item ? EQUIPMENT_SLOT_LABELS[item.equipmentSlot] : undefined;
+
+  return (slotLabel ?? "Item").toUpperCase();
 }
 
 function animateResultNumber(element: HTMLElement, fromValue: number, toValue: number, durationMs: number, delayMs: number): void {
