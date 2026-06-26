@@ -12,6 +12,7 @@ const debugMainSource = readFileSync(resolve(currentDir, "../src/debugMain.ts"),
 const settingsMenuSource = readFileSync(resolve(currentDir, "../src/settingsMenu.ts"), "utf8");
 const hudTuningSource = readFileSync(resolve(currentDir, "../src/hudTuning.ts"), "utf8");
 const arenaLayoutSource = readFileSync(resolve(currentDir, "../src/arenaLayout.ts"), "utf8");
+const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
 const viteConfigSource = readFileSync(resolve(currentDir, "../vite.config.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -311,15 +312,39 @@ test("regular arena exposes switchable classic HUD markup", () => {
   assert.equal(indexHtml.includes('class="classic-combat-hud"'), true);
   assert.equal(indexHtml.includes('data-classic-action-bar'), true);
   assert.equal(indexHtml.includes('id="classicPlayerHpFill"'), true);
+  assert.equal(indexHtml.includes('id="classicHelperName"'), true);
+  assert.equal(indexHtml.includes('id="classicHelperHpFill"'), true);
   assert.equal(indexHtml.includes('id="classicEnemyStaText"'), true);
   assert.equal(indexHtml.includes('class="classic-stat__icon classic-stat__icon--hp"'), true);
   assert.equal(indexHtml.includes('class="classic-stat__value"'), true);
   assert.equal(indexHtml.includes("data-classic-encounter-banner"), true);
+  assert.equal(debugHtml.includes('id="classicHelperName"'), true);
   assert.equal(debugHtml.includes('class="classic-stat__icon classic-stat__icon--armor"'), true);
   assert.equal(debugHtml.includes('class="classic-stat__value"'), true);
   assert.equal(debugHtml.includes("data-classic-encounter-banner"), true);
   assert.equal(stylesSource.includes(".classic-encounter-banner--boss"), true);
+  assert.equal(stylesSource.includes(".classic-fighter-card--helper"), true);
+  assert.equal(stylesSource.includes(".battle-screen--duo-boss .classic-combat-hud"), true);
+  assert.equal(stylesSource.includes(".battle-screen--duo-boss .classic-distance-badge"), true);
+  assert.equal(stylesSource.includes(".battle-screen--duo-boss .classic-encounter-banner"), true);
+  assert.equal(stylesSource.includes("grid-template-columns: minmax(104px, 36vw) minmax(0, 1fr)"), true);
+  assert.equal(stylesSource.includes("background: transparent"), true);
+  assert.equal(stylesSource.includes("box-shadow: none"), true);
+  assert.equal(stylesSource.includes(".battle-screen--duo-boss .classic-fighter-card--enemy .classic-stat"), true);
+  assert.equal(stylesSource.includes(".battle-screen--duo-boss .classic-fighter-card--helper"), true);
+  assert.equal(stylesSource.includes("width: min(124px, 36vw)"), true);
+  assert.equal(stylesSource.includes('data-helper-status="ready"'), true);
+  assert.equal(stylesSource.includes('content: "✓"'), true);
   assert.equal(mainSource.includes("mountClassicActionBar"), true);
+});
+
+test("arena scene can render and animate a duo helper", () => {
+  assert.equal(arenaSceneSource.includes("helper?: FighterVisual"), true);
+  assert.equal(arenaSceneSource.includes("syncHelperVisualForState"), true);
+  assert.equal(arenaSceneSource.includes("createHelperPaperDollOptions"), true);
+  assert.equal(arenaSceneSource.includes('getBodyAnimationVariantSeed(nextState, "helper")'), true);
+  assert.equal(arenaSceneSource.includes('nextState.lastEnemyTarget === "helper"'), true);
+  assert.equal(arenaSceneSource.includes("nextState.lastHelperHitResults"), true);
 });
 
 test("settings can persist the arena HUD mode", () => {

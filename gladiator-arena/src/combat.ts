@@ -20,6 +20,7 @@ export type ActionId =
   | "rest";
 export type Result = "playing" | "win" | "lose" | "draw";
 export type TurnOwner = "player" | "enemy";
+export type CombatActor = TurnOwner | "helper";
 
 export interface ActionConfig {
   id: ActionId;
@@ -137,10 +138,12 @@ export interface CombatEncounterState {
   opponentId: string;
   difficultyId?: ArenaDifficultyId;
   backgroundVariantId?: string;
+  mode?: "duoBossAi";
 }
 
 export interface CombatState {
   player: FighterState;
+  helper?: FighterState;
   enemy: FighterState;
   encounter?: CombatEncounterState;
   round: number;
@@ -149,8 +152,10 @@ export interface CombatState {
   activeTurn: TurnOwner;
   distance: number;
   playerPosition: number;
+  helperPosition?: number;
   enemyPosition: number;
   playerRestDefensePenalty: number;
+  helperRestDefensePenalty: number;
   enemyRestDefensePenalty: number;
   lastPlayerAction?: ActionId;
   lastEnemyAction?: ActionId;
@@ -166,6 +171,16 @@ export interface CombatState {
   lastEnemyWardAbsorbed: boolean;
   lastPlayerHitResults?: CombatHitResult[];
   lastEnemyHitResults?: CombatHitResult[];
+  lastHelperAction?: ActionId;
+  lastHelperDamage: number;
+  lastHelperArmorAbsorbed: number;
+  lastHelperArmorBroken: boolean;
+  lastHelperRemovedArmorSlots?: CombatArmorSlotState[];
+  lastHelperWardAbsorbed: boolean;
+  lastHelperHitResults?: CombatHitResult[];
+  lastHelperDoubleStrikeRepeat: boolean;
+  lastHelperBlocked: boolean;
+  lastEnemyTarget?: "player" | "helper";
   lastPlayerPoisonDamage: number;
   lastEnemyPoisonDamage: number;
   lastPlayerDoubleStrikeRepeat: boolean;
@@ -484,8 +499,10 @@ export function freshState(): CombatState {
     activeTurn: "player",
     distance: START_DISTANCE,
     playerPosition: 0,
+    helperPosition: undefined,
     enemyPosition: START_DISTANCE,
     playerRestDefensePenalty: 0,
+    helperRestDefensePenalty: 0,
     enemyRestDefensePenalty: 0,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
@@ -499,6 +516,15 @@ export function freshState(): CombatState {
     lastEnemyWardAbsorbed: false,
     lastPlayerHitResults: undefined,
     lastEnemyHitResults: undefined,
+    lastHelperDamage: 0,
+    lastHelperArmorAbsorbed: 0,
+    lastHelperArmorBroken: false,
+    lastHelperRemovedArmorSlots: undefined,
+    lastHelperWardAbsorbed: false,
+    lastHelperHitResults: undefined,
+    lastHelperDoubleStrikeRepeat: false,
+    lastHelperBlocked: false,
+    lastEnemyTarget: undefined,
     lastPlayerPoisonDamage: 0,
     lastEnemyPoisonDamage: 0,
     lastPlayerDoubleStrikeRepeat: false,
@@ -530,16 +556,15 @@ export function getActionBlockChance(action: ActionConfig, attacker?: FighterSta
   return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), 0);
 }
 
-export function getActionBlockChanceForState(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): number {
+export function getActionBlockChanceForState(state: CombatState, actionId: ActionId, actor: CombatActor = "player", defenderActor = getDefaultDefenderActor(state, actor)): number {
   const action = actions[actionId];
-  const attacker = actor === "player" ? state.player : state.enemy;
-  const defenderOwner = actor === "player" ? "enemy" : "player";
+  const attacker = getCombatActorFighter(state, actor);
 
-  return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestDefensePenalty(state, defenderOwner));
+  return getAdjustedActionBlockChance(action, getActionBlockChanceModifier(action, attacker), getRestDefensePenalty(state, defenderActor));
 }
 
-export function isActionTargetRestVulnerable(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
-  return actions[actionId].blockChance !== undefined && getRestDefensePenalty(state, actor === "player" ? "enemy" : "player") > 0;
+export function isActionTargetRestVulnerable(state: CombatState, actionId: ActionId, actor: CombatActor = "player"): boolean {
+  return actions[actionId].blockChance !== undefined && getRestDefensePenalty(state, getDefaultDefenderActor(state, actor)) > 0;
 }
 
 function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
@@ -617,9 +642,103 @@ function forceClinchWeapons(state: CombatState): void {
     forceFighterClinchWeapon(state.player);
   }
 
-  if (isFighterInClinchRange(state, "enemy")) {
+  if (hasLivingHelper(state) && isFighterInClinchRange(state, "helper")) {
+    forceFighterClinchWeapon(state.helper);
+  }
+
+  if (isEnemyInClinchWithAnyLivingAlly(state)) {
     forceFighterClinchWeapon(state.enemy);
   }
+}
+
+export function isDuoBossAiCombat(state: CombatState): boolean {
+  return state.encounter?.mode === "duoBossAi" && Boolean(state.helper);
+}
+
+function isAlliedActor(actor: CombatActor): boolean {
+  return actor !== "enemy";
+}
+
+function getCombatActorFighter(state: CombatState, actor: CombatActor): FighterState | undefined {
+  if (actor === "player") {
+    return state.player;
+  }
+
+  if (actor === "helper") {
+    return state.helper;
+  }
+
+  return state.enemy;
+}
+
+function getDefaultDefenderActor(state: CombatState, actor: CombatActor): CombatActor {
+  if (actor === "enemy") {
+    return state.lastEnemyTarget === "helper" && state.helper && state.helper.hp > 0 ? "helper" : "player";
+  }
+
+  return "enemy";
+}
+
+function getDefenderForActor(state: CombatState, actor: CombatActor, defenderActor = getDefaultDefenderActor(state, actor)): FighterState | undefined {
+  return getCombatActorFighter(state, defenderActor);
+}
+
+function hasLivingHelper(state: CombatState): state is CombatState & { helper: FighterState } {
+  return Boolean(state.helper && state.helper.hp > 0);
+}
+
+function getLivingHelperPosition(state: CombatState): number | undefined {
+  return hasLivingHelper(state) ? state.helperPosition ?? state.playerPosition : undefined;
+}
+
+function getAlliedActorPosition(state: CombatState, actor: CombatActor): number {
+  if (actor === "helper" && hasLivingHelper(state)) {
+    return state.helperPosition ?? state.playerPosition;
+  }
+
+  return state.playerPosition;
+}
+
+function getClosestAlliedPosition(state: CombatState): number {
+  const helperPosition = getLivingHelperPosition(state);
+
+  return helperPosition === undefined ? state.playerPosition : Math.max(state.playerPosition, helperPosition);
+}
+
+function getFarthestAlliedPosition(state: CombatState): number {
+  const helperPosition = getLivingHelperPosition(state);
+
+  return helperPosition === undefined ? state.playerPosition : Math.min(state.playerPosition, helperPosition);
+}
+
+function getActorDistance(state: CombatState, actor: CombatActor, defenderActor = getDefaultDefenderActor(state, actor)): number {
+  if (!state.helper) {
+    return state.distance;
+  }
+
+  if (actor === "enemy") {
+    return roundCombatDistance(clamp(state.enemyPosition - getAlliedActorPosition(state, defenderActor), MIN_DISTANCE, MAX_DISTANCE));
+  }
+
+  return roundCombatDistance(clamp(state.enemyPosition - getAlliedActorPosition(state, actor), MIN_DISTANCE, MAX_DISTANCE));
+}
+
+function syncSharedCombatDistance(state: CombatState): void {
+  state.distance = roundCombatDistance(clamp(state.enemyPosition - getFarthestAlliedPosition(state), MIN_DISTANCE, MAX_DISTANCE));
+}
+
+function isEnemyInClinchWithActor(state: CombatState, defenderActor: CombatActor): boolean {
+  const defender = getCombatActorFighter(state, defenderActor);
+
+  if (!defender || defender.hp <= 0) {
+    return false;
+  }
+
+  return getActorDistance(state, "enemy", defenderActor) <= getFighterClinchRange(state.enemy);
+}
+
+function isEnemyInClinchWithAnyLivingAlly(state: CombatState): boolean {
+  return isEnemyInClinchWithActor(state, "player") || isEnemyInClinchWithActor(state, "helper");
 }
 
 export function isRangedWeaponClass(weaponClass: HeroWeaponClass | undefined): boolean {
@@ -745,11 +864,11 @@ export function getActionTitle(actionId: ActionId, actor?: FighterState): string
   return actions[actionId].title;
 }
 
-export function availableActionIds(state: CombatState, actor: TurnOwner): ActionId[] {
+export function availableActionIds(state: CombatState, actor: CombatActor): ActionId[] {
   return actionOrder.filter((id) => canUseAction(state, id, actor));
 }
 
-function doesActionEndTurn(actionId: ActionId, actor: TurnOwner): boolean {
+function doesActionEndTurn(actionId: ActionId, actor: CombatActor): boolean {
   if (actionId === "switchWeapon" || actionId === "preciseStrike" || actionId === "doubleStrike") {
     return false;
   }
@@ -765,26 +884,31 @@ export function getFighterClinchRange(fighter?: FighterState): number {
   return Math.min(MAX_DISTANCE, MELEE_RANGE + Math.max(0, fighter?.clinchRangeBonus ?? 0) + getSpearClinchRangeBonus(fighter));
 }
 
-export function isFighterInClinchRange(state: CombatState, actor: TurnOwner): boolean {
-  const fighter = actor === "player" ? state.player : state.enemy;
+export function isFighterInClinchRange(state: CombatState, actor: CombatActor, defenderActor = getDefaultDefenderActor(state, actor)): boolean {
+  const fighter = getCombatActorFighter(state, actor);
 
-  return state.distance <= getFighterClinchRange(fighter);
+  return getActorDistance(state, actor, defenderActor) <= getFighterClinchRange(fighter);
 }
 
-export function doesLungeReachTarget(state: CombatState, actor: TurnOwner = "player"): boolean {
-  if (!canUseAction(state, "lunge", actor)) {
+export function doesLungeReachTarget(state: CombatState, actor: CombatActor = "player", defenderActor?: CombatActor): boolean {
+  if (!canUseAction(state, "lunge", actor, defenderActor)) {
     return false;
   }
 
-  const attacker = actor === "player" ? state.player : state.enemy;
+  const attacker = getCombatActorFighter(state, actor);
+
+  if (!attacker) {
+    return false;
+  }
+
   const actionRangeMax = getActionRangeMax(actions.lunge, attacker);
 
   if (actionRangeMax === undefined) {
     return false;
   }
 
-  const distanceDelta = clampActionMoveToContactRange(state, "lunge", attacker, getActionMove("lunge", attacker));
-  const nextDistance = roundCombatDistance(clamp(state.distance + distanceDelta, MIN_DISTANCE, MAX_DISTANCE));
+  const distanceDelta = clampActionMoveToContactRange(state, "lunge", attacker, actor, getActionMove("lunge", attacker), defenderActor);
+  const nextDistance = roundCombatDistance(clamp(getActorDistance(state, actor, defenderActor) + distanceDelta, MIN_DISTANCE, MAX_DISTANCE));
 
   return nextDistance <= actionRangeMax;
 }
@@ -797,7 +921,7 @@ export function isPlayerExhausted(state: CombatState): boolean {
   return state.result === "playing" && state.activeTurn === "player" && state.player.stamina <= 0;
 }
 
-export function canUseAction(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
+export function canUseAction(state: CombatState, actionId: ActionId, actor: CombatActor = "player", defenderActor?: CombatActor): boolean {
   if (state.result !== "playing") {
     return false;
   }
@@ -806,22 +930,36 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
     return false;
   }
 
+  if (actor === "helper" && state.activeTurn !== "enemy") {
+    return false;
+  }
+
+  if (actor === "enemy" && state.activeTurn !== "enemy") {
+    return false;
+  }
+
   const action = actions[actionId];
-  const fighter = actor === "player" ? state.player : state.enemy;
+  const fighter = getCombatActorFighter(state, actor);
+  const currentDistance = getActorDistance(state, actor, defenderActor);
+
+  if (!fighter || fighter.hp <= 0) {
+    return false;
+  }
+
   const actionRangeMax = getActionRangeMax(action, fighter);
   const fighterClinchRange = getFighterClinchRange(fighter);
-  const fighterInClinch = isFighterInClinchRange(state, actor);
+  const fighterInClinch = actor === "enemy" ? isEnemyInClinchWithAnyLivingAlly(state) : currentDistance <= fighterClinchRange;
 
-  if (actor === "player" && fighter.stamina <= 0 && actionId !== "rest" && !isScrollAction(actionId)) {
+  if (isAlliedActor(actor) && fighter.stamina <= 0 && actionId !== "rest" && !isScrollAction(actionId)) {
     return false;
   }
 
   if (actionId === "forward") {
-    return state.distance > fighterClinchRange;
+    return !fighterInClinch && currentDistance > fighterClinchRange;
   }
 
   if (actionId === "back") {
-    return state.distance < MAX_DISTANCE;
+    return currentDistance < MAX_DISTANCE;
   }
 
   if (actionId === "lunge") {
@@ -829,7 +967,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
       return false;
     }
 
-    return state.distance > fighterClinchRange;
+    return !fighterInClinch && currentDistance > fighterClinchRange;
   }
 
   if (actionId === "switchWeapon") {
@@ -841,9 +979,9 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionId === "scroll") {
-    const defender = actor === "player" ? state.enemy : state.player;
+    const defender = getDefenderForActor(state, actor, defenderActor);
 
-    return getFighterScrollCount(fighter) > 0 && hasCrackableArmorSlot(defender);
+    return Boolean(defender) && getFighterScrollCount(fighter) > 0 && hasCrackableArmorSlot(defender);
   }
 
   if (actionId === "fireball") {
@@ -871,7 +1009,7 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Turn
   }
 
   if (actionRangeMax !== undefined) {
-    return state.distance <= actionRangeMax;
+    return currentDistance <= actionRangeMax;
   }
 
   return true;
@@ -975,6 +1113,8 @@ export function resolvePvpTurn(current: CombatState, actor: TurnOwner, actionId:
   applyAction(state, actor, actionId, random, {
     playerActor: state.player.name,
     playerDefender: state.player.name,
+    helperActor: state.helper?.name ?? "Ally",
+    helperDefender: state.helper?.name ?? "ally",
     enemyActor: state.enemy.name,
     enemyDefender: state.enemy.name,
   });
@@ -1004,13 +1144,17 @@ export function resolveEnemyTurn(current: CombatState, random = Math.random): Co
     return state;
   }
 
-  let enemyActionId = chooseEnemyAction(state, random);
+  const defenderActor = chooseEnemyTarget(state, random);
 
-  applyAction(state, "enemy", enemyActionId, random);
+  state.lastEnemyTarget = defenderActor === "helper" ? "helper" : "player";
+
+  let enemyActionId = chooseEnemyAction(state, random, defenderActor);
+
+  applyAction(state, "enemy", enemyActionId, random, DEFAULT_COMBAT_LOG_LABELS, defenderActor);
 
   if (state.result === "playing" && !doesActionEndTurn(enemyActionId, "enemy")) {
-    enemyActionId = chooseEnemyAction(state, random);
-    applyAction(state, "enemy", enemyActionId, random);
+    enemyActionId = chooseEnemyAction(state, random, defenderActor);
+    applyAction(state, "enemy", enemyActionId, random, DEFAULT_COMBAT_LOG_LABELS, defenderActor);
   }
 
   if (state.result !== "playing") {
@@ -1023,32 +1167,66 @@ export function resolveEnemyTurn(current: CombatState, random = Math.random): Co
   return state;
 }
 
+export function resolveDuoBossHelperTurn(current: CombatState, random = Math.random): CombatState {
+  const state = cloneStateForTurn(current);
+
+  if (!isDuoBossAiCombat(state) || state.result !== "playing" || state.activeTurn !== "enemy" || !state.helper || state.helper.hp <= 0) {
+    return state;
+  }
+
+  forceClinchWeapons(state);
+
+  const helperActionId = chooseDuoBossHelperAction(state, random);
+
+  applyAction(state, "helper", helperActionId, random, {
+    playerActor: state.player.name,
+    playerDefender: state.player.name,
+    helperActor: state.helper.name,
+    helperDefender: state.helper.name,
+    enemyActor: state.enemy.name,
+    enemyDefender: state.enemy.name,
+  });
+
+  return state;
+}
+
 function cloneStateForTurn(current: CombatState): CombatState {
   return {
     ...current,
     player: cloneFighterState(current.player),
+    helper: current.helper ? cloneFighterState(current.helper) : undefined,
     enemy: cloneFighterState(current.enemy),
     log: [...current.log],
     lastPlayerAction: undefined,
     lastEnemyAction: undefined,
+    lastHelperAction: undefined,
     lastPlayerDamage: 0,
     lastEnemyDamage: 0,
+    lastHelperDamage: 0,
     lastPlayerArmorAbsorbed: 0,
     lastEnemyArmorAbsorbed: 0,
+    lastHelperArmorAbsorbed: 0,
     lastPlayerArmorBroken: false,
     lastEnemyArmorBroken: false,
+    lastHelperArmorBroken: false,
     lastPlayerRemovedArmorSlots: undefined,
     lastEnemyRemovedArmorSlots: undefined,
+    lastHelperRemovedArmorSlots: undefined,
     lastPlayerWardAbsorbed: false,
     lastEnemyWardAbsorbed: false,
+    lastHelperWardAbsorbed: false,
     lastPlayerHitResults: undefined,
     lastEnemyHitResults: undefined,
+    lastHelperHitResults: undefined,
     lastPlayerPoisonDamage: 0,
     lastEnemyPoisonDamage: 0,
     lastPlayerDoubleStrikeRepeat: false,
     lastEnemyDoubleStrikeRepeat: false,
+    lastHelperDoubleStrikeRepeat: false,
     lastPlayerBlocked: false,
     lastEnemyBlocked: false,
+    lastHelperBlocked: false,
+    lastEnemyTarget: undefined,
   };
 }
 
@@ -1063,22 +1241,23 @@ function cloneFighterState(fighter: FighterState): FighterState {
   };
 }
 
-function chooseEnemyAction(current: CombatState, random = Math.random): ActionId {
-  const available = availableEnemyAiActionIds(current);
+function chooseEnemyAction(current: CombatState, random = Math.random, defenderActor: CombatActor = "player"): ActionId {
+  const available = availableEnemyAiActionIds(current, defenderActor);
   const weighted: ActionId[] = [];
   const enemyLowStamina = current.enemy.stamina <= 3;
   const enemyLowHp = current.enemy.hp <= 10;
-  const playerLowHp = current.player.hp <= 9;
+  const defender = getDefenderForActor(current, "enemy", defenderActor) ?? current.player;
+  const playerLowHp = defender.hp <= 9;
   const enemyHasRangedWeapon = isRangedFighter(current.enemy);
   const enemyCanSwitchWeapon = canFighterSwitchWeapon(current.enemy);
-  const enemyInClinch = isFighterInClinchRange(current, "enemy");
-  const enemyLungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy");
+  const enemyInClinch = isEnemyInClinchWithAnyLivingAlly(current);
+  const enemyLungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy", defenderActor);
 
   if (current.enemy.stamina <= 0 && available.includes("rest")) {
     return "rest";
   }
 
-  const bossAction = chooseBossSpecificEnemyAction(current, available, random);
+  const bossAction = chooseBossSpecificEnemyAction(current, available, random, defenderActor);
 
   if (bossAction) {
     return bossAction;
@@ -1086,7 +1265,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
 
   for (const id of available) {
     if (id === "switchWeapon") {
-      if (!isFighterInClinchRange(current, "enemy") && enemyCanSwitchWeapon && !enemyHasRangedWeapon) {
+      if (!enemyInClinch && enemyCanSwitchWeapon && !enemyHasRangedWeapon) {
         weighted.push(id, id, id);
       } else if (enemyHasRangedWeapon && getBowShotsRemaining(current.enemy) <= 0) {
         weighted.push(id, id, id);
@@ -1106,7 +1285,7 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
       continue;
     }
 
-    if (!isFighterInClinchRange(current, "enemy")) {
+    if (!enemyInClinch) {
       if (enemyHasRangedWeapon) {
         if (id === "heavy") {
           weighted.push(id, playerLowHp ? id : "medium");
@@ -1155,10 +1334,10 @@ function chooseEnemyAction(current: CombatState, random = Math.random): ActionId
   return weighted[Math.floor(random() * weighted.length)] ?? available[0] ?? "rest";
 }
 
-function availableEnemyAiActionIds(state: CombatState): ActionId[] {
+function availableEnemyAiActionIds(state: CombatState, defenderActor: CombatActor = "player"): ActionId[] {
   const canRest = state.enemy.stamina <= getFighterMaxStamina(state.enemy) * 0.5;
 
-  return availableActionIds(state, "enemy").filter((id) => {
+  return actionOrder.filter((id) => canUseAction(state, id, "enemy", defenderActor)).filter((id) => {
     if (id === "rest") {
       return canRest;
     }
@@ -1171,24 +1350,112 @@ function availableEnemyAiActionIds(state: CombatState): ActionId[] {
   });
 }
 
-function chooseBossSpecificEnemyAction(current: CombatState, available: readonly ActionId[], random: () => number): ActionId | undefined {
+function chooseEnemyTarget(state: CombatState, random: () => number): CombatActor {
+  if (!isDuoBossAiCombat(state) || !state.helper || state.helper.hp <= 0) {
+    return "player";
+  }
+
+  const playerInClinch = isEnemyInClinchWithActor(state, "player");
+  const helperInClinch = isEnemyInClinchWithActor(state, "helper");
+
+  if (helperInClinch && !playerInClinch) {
+    return "helper";
+  }
+
+  if (playerInClinch && !helperInClinch) {
+    return "player";
+  }
+
+  if (state.player.hp <= 0) {
+    return "helper";
+  }
+
+  const playerHpRatio = state.player.hp / getFighterMaxHp(state.player);
+  const helperHpRatio = state.helper.hp / getFighterMaxHp(state.helper);
+
+  if (playerHpRatio <= 0.3 && helperHpRatio > 0.5) {
+    return random() < 0.35 ? "player" : "helper";
+  }
+
+  return random() < 0.62 ? "player" : "helper";
+}
+
+function chooseDuoBossHelperAction(state: CombatState, random: () => number): ActionId {
+  const helper = state.helper;
+
+  if (!helper) {
+    return "rest";
+  }
+
+  const available = actionOrder.filter((id) => isDuoBossHelperAiAction(id) && canUseAction(state, id, "helper"));
+  const weighted: ActionId[] = [];
+  const helperLowStamina = helper.stamina <= Math.max(2, Math.floor(getFighterMaxStamina(helper) * 0.35));
+  const helperInClinch = isFighterInClinchRange(state, "helper");
+  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(state, "helper");
+
+  if (helper.stamina <= 0 && available.includes("rest")) {
+    return "rest";
+  }
+
+  if (!helperInClinch) {
+    pushAvailableActions(weighted, available, "lunge", lungeReaches ? 7 : 2);
+    pushAvailableActions(weighted, available, "forward", lungeReaches ? 1 : 6);
+    pushAvailableActions(weighted, available, "light", isRangedFighter(helper) ? 4 : 0);
+    pushAvailableActions(weighted, available, "medium", isRangedFighter(helper) ? 3 : 0);
+    pushAvailableActions(weighted, available, "heavy", isRangedFighter(helper) ? 2 : 0);
+    pushAvailableActions(weighted, available, "rest", helperLowStamina ? 2 : 0);
+    return pickWeightedAction(weighted, random) ?? available[0] ?? "rest";
+  }
+
+  pushAvailableActions(weighted, available, "medium", helperLowStamina ? 2 : 5);
+  pushAvailableActions(weighted, available, "light", 3);
+  pushAvailableActions(weighted, available, "heavy", helperLowStamina ? 1 : 3);
+  pushAvailableActions(weighted, available, "rest", helperLowStamina ? 3 : 1);
+  pushAvailableActions(weighted, available, "back", helperLowStamina ? 2 : 0);
+  return pickWeightedAction(weighted, random) ?? available[0] ?? "rest";
+}
+
+function isDuoBossHelperAiAction(actionId: ActionId): boolean {
+  return (
+    actionId === "forward" ||
+    actionId === "back" ||
+    actionId === "lunge" ||
+    actionId === "light" ||
+    actionId === "medium" ||
+    actionId === "heavy" ||
+    actionId === "rest"
+  );
+}
+
+function chooseBossSpecificEnemyAction(
+  current: CombatState,
+  available: readonly ActionId[],
+  random: () => number,
+  defenderActor: CombatActor,
+): ActionId | undefined {
   if (current.encounter?.kind !== "boss") {
     return undefined;
   }
 
   if (current.encounter.opponentId === EAGLE_BOSS_ID) {
-    return chooseEagleBossAction(current, available, random);
+    return chooseEagleBossAction(current, available, random, defenderActor);
   }
 
   return undefined;
 }
 
-function chooseEagleBossAction(current: CombatState, available: readonly ActionId[], random: () => number): ActionId | undefined {
+function chooseEagleBossAction(
+  current: CombatState,
+  available: readonly ActionId[],
+  random: () => number,
+  defenderActor: CombatActor,
+): ActionId | undefined {
   const weighted: ActionId[] = [];
-  const enemyInClinch = isFighterInClinchRange(current, "enemy");
-  const playerLowHp = current.player.hp <= 9;
+  const enemyInClinch = isEnemyInClinchWithAnyLivingAlly(current);
+  const defender = getDefenderForActor(current, "enemy", defenderActor) ?? current.player;
+  const playerLowHp = defender.hp <= 9;
   const enemyLowStamina = current.enemy.stamina <= 3;
-  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy");
+  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "enemy", defenderActor);
 
   if (enemyInClinch) {
     pushAvailableActions(weighted, available, "back", playerLowHp ? 3 : 7);
@@ -1291,6 +1558,8 @@ function addEnemyScrollActionWeights(
 interface CombatLogLabels {
   playerActor: string;
   playerDefender: string;
+  helperActor: string;
+  helperDefender: string;
   enemyActor: string;
   enemyDefender: string;
 }
@@ -1298,24 +1567,44 @@ interface CombatLogLabels {
 const DEFAULT_COMBAT_LOG_LABELS: CombatLogLabels = {
   playerActor: "You",
   playerDefender: "you",
+  helperActor: "Ally",
+  helperDefender: "ally",
   enemyActor: "Grumbus",
   enemyDefender: "Grumbus",
 };
 
+function getCombatActorLogLabel(labels: CombatLogLabels, actor: CombatActor, role: "actor" | "defender"): string {
+  if (actor === "player") {
+    return role === "actor" ? labels.playerActor : labels.playerDefender;
+  }
+
+  if (actor === "helper") {
+    return role === "actor" ? labels.helperActor : labels.helperDefender;
+  }
+
+  return role === "actor" ? labels.enemyActor : labels.enemyDefender;
+}
+
 function applyAction(
   state: CombatState,
-  actor: TurnOwner,
+  actor: CombatActor,
   actionId: ActionId,
   random: () => number,
   labels: CombatLogLabels = DEFAULT_COMBAT_LOG_LABELS,
+  defenderActor: CombatActor = getDefaultDefenderActor(state, actor),
 ): void {
   const action = actions[actionId];
-  const attacker = actor === "player" ? state.player : state.enemy;
-  const defender = actor === "player" ? state.enemy : state.player;
+  const attacker = getCombatActorFighter(state, actor);
+  const defender = getDefenderForActor(state, actor, defenderActor);
+
+  if (!attacker || !defender) {
+    return;
+  }
+
   let actionMove = getActionMove(actionId, attacker);
-  const actorLabel = actor === "player" ? labels.playerActor : labels.enemyActor;
-  const defenderLabel = actor === "player" ? labels.enemyDefender : labels.playerDefender;
-  const defenderOwner = actor === "player" ? "enemy" : "player";
+  const actorLabel = getCombatActorLogLabel(labels, actor, "actor");
+  const defenderLabel = getCombatActorLogLabel(labels, defenderActor, "defender");
+  const defenderOwner = defenderActor;
   const actionTitle = getActionTitle(actionId, attacker);
   const actionRangeMax = getActionRangeMax(action, attacker);
   const staminaRestore = getActionStaminaRestore(actionId, attacker);
@@ -1328,8 +1617,8 @@ function applyAction(
   }
 
   if (actionMove) {
-    actionMove = clampActionMoveToContactRange(state, actionId, attacker, actionMove);
-    moveActor(state, actor, actionMove);
+    actionMove = clampActionMoveToContactRange(state, actionId, attacker, actor, actionMove, defenderActor);
+    moveActor(state, actor, actionMove, defenderActor);
     forceClinchWeapons(state);
   }
 
@@ -1346,7 +1635,8 @@ function applyAction(
   }
 
   let damage = getActionDamage(actionId, attacker);
-  const inRange = actionRangeMax === undefined || state.distance <= actionRangeMax;
+  const actionDistance = getActorDistance(state, actor, defenderActor);
+  const inRange = actionRangeMax === undefined || actionDistance <= actionRangeMax;
   let blocked = false;
   let appliedDamage: DamageApplication = { armorAbsorbed: 0, armorBroken: false };
   let hitResults: CombatHitResult[] | undefined;
@@ -1461,8 +1751,19 @@ function applyAction(
     state.lastPlayerHitResults = hitResults;
     state.lastPlayerDoubleStrikeRepeat = doubleStrikeRepeat;
     state.lastPlayerBlocked = blocked;
+  } else if (actor === "helper") {
+    state.lastHelperAction = actionId;
+    state.lastHelperDamage = damage;
+    state.lastHelperArmorAbsorbed = appliedDamage.armorAbsorbed;
+    state.lastHelperArmorBroken = appliedDamage.armorBroken;
+    state.lastHelperRemovedArmorSlots = appliedDamage.removedArmorSlots;
+    state.lastHelperWardAbsorbed = Boolean(appliedDamage.wardAbsorbed);
+    state.lastHelperHitResults = hitResults;
+    state.lastHelperDoubleStrikeRepeat = doubleStrikeRepeat;
+    state.lastHelperBlocked = blocked;
   } else {
     state.lastEnemyAction = actionId;
+    state.lastEnemyTarget = defenderActor === "helper" ? "helper" : "player";
     state.lastEnemyDamage = damage;
     state.lastEnemyArmorAbsorbed = appliedDamage.armorAbsorbed;
     state.lastEnemyArmorBroken = appliedDamage.armorBroken;
@@ -1473,7 +1774,7 @@ function applyAction(
     state.lastEnemyBlocked = blocked;
   }
 
-  addActionLog(state, actor, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked, getFighterClinchRange(attacker), staminaRestore, heal);
+  addActionLog(state, actor, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked, actionDistance, getFighterClinchRange(attacker), staminaRestore, heal);
 
   if (state.player.hp <= 0 || state.enemy.hp <= 0) {
     finishBattle(state);
@@ -1485,7 +1786,7 @@ function isActionBlocked(
   action: ActionConfig,
   attacker: FighterState,
   defender: FighterState,
-  defenderOwner: TurnOwner,
+  defenderOwner: CombatActor,
   random: () => number,
 ): boolean {
   void defender;
@@ -1500,7 +1801,7 @@ function resolveWeaponHit(
   action: ActionConfig,
   attacker: FighterState,
   defender: FighterState,
-  defenderOwner: TurnOwner,
+  defenderOwner: CombatActor,
   baseDamage: number,
   random: () => number,
 ): WeaponHitResolution {
@@ -1821,7 +2122,7 @@ function getCrackableArmorSlots(defender: FighterState): CombatArmorSlotState[] 
 
 function addActionLog(
   state: CombatState,
-  actor: TurnOwner,
+  actor: CombatActor,
   actorLabel: string,
   defenderLabel: string,
   action: ActionConfig,
@@ -1830,6 +2131,7 @@ function addActionLog(
   damage: number,
   inRange: boolean,
   blocked: boolean,
+  actionDistance: number,
   actorClinchRange: number,
   staminaRestore: number,
   heal: number,
@@ -1865,7 +2167,7 @@ function addActionLog(
     return;
   }
 
-  const wardAbsorbed = actor === "player" ? state.lastPlayerWardAbsorbed : state.lastEnemyWardAbsorbed;
+  const wardAbsorbed = actor === "player" ? state.lastPlayerWardAbsorbed : actor === "helper" ? state.lastHelperWardAbsorbed : state.lastEnemyWardAbsorbed;
 
   if (wardAbsorbed) {
     addLog(state, `${actorLabel} used ${actionTitle}, but the ward absorbed it.`, true);
@@ -1875,7 +2177,7 @@ function addActionLog(
   if (actionMove && action.damage) {
     addLog(
       state,
-      `${actorLabel} used ${actionTitle}, rushed to ${distanceLabel(state.distance, actorClinchRange)}, and ${
+      `${actorLabel} used ${actionTitle}, rushed to ${distanceLabel(actionDistance, actorClinchRange)}, and ${
         blocked ? `${defenderLabel} blocked it` : damage > 0 ? `hit ${defenderLabel} for ${damage}` : "came up short"
       }.`,
       damage >= 4,
@@ -1884,7 +2186,7 @@ function addActionLog(
   }
 
   if (actionMove) {
-    addLog(state, `${actorLabel} used ${actionTitle}. Distance is now ${distanceLabel(state.distance, actorClinchRange)}.`);
+    addLog(state, `${actorLabel} used ${actionTitle}. Distance is now ${distanceLabel(actionDistance, actorClinchRange)}.`);
     return;
   }
 
@@ -2027,24 +2329,33 @@ function finishBattle(state: CombatState): void {
   }
 }
 
-function clampActionMoveToContactRange(state: CombatState, actionId: ActionId, attacker: FighterState, distanceDelta: number): number {
+function clampActionMoveToContactRange(
+  state: CombatState,
+  actionId: ActionId,
+  attacker: FighterState,
+  actor: CombatActor,
+  distanceDelta: number,
+  defenderActor = getDefaultDefenderActor(state, actor),
+): number {
   if (actionId !== "lunge" || !isSpearFighter(attacker) || distanceDelta >= 0) {
     return distanceDelta;
   }
 
+  const actorDistance = getActorDistance(state, actor, defenderActor);
   const contactDistance = getFighterClinchRange(attacker);
-  const targetDistance = roundCombatDistance(state.distance + distanceDelta);
+  const targetDistance = roundCombatDistance(actorDistance + distanceDelta);
 
   if (targetDistance >= contactDistance) {
     return distanceDelta;
   }
 
-  return Math.min(0, roundCombatDistance(contactDistance - state.distance));
+  return Math.min(0, roundCombatDistance(contactDistance - actorDistance));
 }
 
-function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number): void {
-  const nextDistance = roundCombatDistance(clamp(state.distance + distanceDelta, MIN_DISTANCE, MAX_DISTANCE));
-  const actualDistanceDelta = roundCombatDistance(nextDistance - state.distance);
+function moveActor(state: CombatState, actor: CombatActor, distanceDelta: number, defenderActor = getDefaultDefenderActor(state, actor)): void {
+  const currentDistance = getActorDistance(state, actor, defenderActor);
+  const nextDistance = roundCombatDistance(clamp(currentDistance + distanceDelta, MIN_DISTANCE, MAX_DISTANCE));
+  const actualDistanceDelta = roundCombatDistance(nextDistance - currentDistance);
 
   if (actualDistanceDelta === 0) {
     return;
@@ -2052,28 +2363,42 @@ function moveActor(state: CombatState, actor: TurnOwner, distanceDelta: number):
 
   if (actor === "player") {
     state.playerPosition = Math.min(state.playerPosition - actualDistanceDelta, state.enemyPosition);
+  } else if (actor === "helper") {
+    state.helperPosition = Math.min((state.helperPosition ?? state.playerPosition) - actualDistanceDelta, state.enemyPosition);
   } else {
-    state.enemyPosition = Math.max(state.enemyPosition + actualDistanceDelta, state.playerPosition);
+    state.enemyPosition = Math.max(state.enemyPosition + actualDistanceDelta, getClosestAlliedPosition(state));
   }
 
-  state.distance = roundCombatDistance(clamp(state.enemyPosition - state.playerPosition, MIN_DISTANCE, MAX_DISTANCE));
+  syncSharedCombatDistance(state);
 }
 
-function addRestDefensePenalty(state: CombatState, actor: TurnOwner, value: number): void {
+function addRestDefensePenalty(state: CombatState, actor: CombatActor, value: number): void {
   if (actor === "player") {
     state.playerRestDefensePenalty = Math.max(state.playerRestDefensePenalty, value);
+  } else if (actor === "helper") {
+    state.helperRestDefensePenalty = Math.max(state.helperRestDefensePenalty, value);
   } else {
     state.enemyRestDefensePenalty = Math.max(state.enemyRestDefensePenalty, value);
   }
 }
 
-function getRestDefensePenalty(state: CombatState, actor: TurnOwner): number {
-  return actor === "player" ? state.playerRestDefensePenalty : state.enemyRestDefensePenalty;
+function getRestDefensePenalty(state: CombatState, actor: CombatActor): number {
+  if (actor === "player") {
+    return state.playerRestDefensePenalty;
+  }
+
+  if (actor === "helper") {
+    return state.helperRestDefensePenalty;
+  }
+
+  return state.enemyRestDefensePenalty;
 }
 
-function clearRestDefensePenalty(state: CombatState, actor: TurnOwner): void {
+function clearRestDefensePenalty(state: CombatState, actor: CombatActor): void {
   if (actor === "player") {
     state.playerRestDefensePenalty = 0;
+  } else if (actor === "helper") {
+    state.helperRestDefensePenalty = 0;
   } else {
     state.enemyRestDefensePenalty = 0;
   }

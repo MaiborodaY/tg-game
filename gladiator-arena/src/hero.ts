@@ -78,6 +78,7 @@ export interface HeroState {
   gold: number;
   totalWins?: number;
   arenaEnergy?: HeroArenaEnergy;
+  arenaBossVictoryLedger?: HeroArenaBossVictoryLedger;
   bowShotCapacity?: number;
   scrollCapacity?: number;
   baseStats: HeroBaseStats;
@@ -102,6 +103,11 @@ export interface HeroArenaEnergy {
   current: number;
   max: number;
   dayKey: string;
+}
+
+export interface HeroArenaBossVictoryLedger {
+  dayKey: string;
+  tierIds: number[];
 }
 
 export interface HeroAppearance {
@@ -294,6 +300,7 @@ export interface ArenaEncounter {
   opponentId: string;
   difficultyId?: ArenaDifficultyId;
   backgroundVariantId?: string;
+  mode?: "duoBossAi";
   name: string;
   enemyLoadout: EnemyLoadout;
   rewards: ArenaOpponentRewards;
@@ -928,6 +935,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     gold: 0,
     totalWins: 0,
     arenaEnergy,
+    arenaBossVictoryLedger: createHeroArenaBossVictoryLedger(now),
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
     scrollCapacity: HERO_SCROLL_CAPACITY_BASE,
     baseStats: {
@@ -962,6 +970,70 @@ export function createHeroArenaEnergy(now: string | Date = new Date()): HeroAren
     current: HERO_ARENA_ENERGY_MAX,
     max: HERO_ARENA_ENERGY_MAX,
     dayKey: getUtcDayKey(now),
+  };
+}
+
+export function createHeroArenaBossVictoryLedger(now: string | Date = new Date()): HeroArenaBossVictoryLedger {
+  return {
+    dayKey: getUtcDayKey(now),
+    tierIds: [],
+  };
+}
+
+export function getHeroArenaBossVictoryLedger(hero: HeroState, now: string | Date = new Date()): HeroArenaBossVictoryLedger {
+  const dayKey = getUtcDayKey(now);
+  const source = hero.arenaBossVictoryLedger;
+
+  if (!source || source.dayKey !== dayKey) {
+    return createHeroArenaBossVictoryLedger(now);
+  }
+
+  return {
+    dayKey,
+    tierIds: Array.from(new Set((source.tierIds ?? [])
+      .map((tierId) => Math.floor(tierId))
+      .filter((tierId) => Number.isFinite(tierId) && tierId > 0))),
+  };
+}
+
+export function hasHeroArenaBossVictoryForTier(hero: HeroState, tierId: number, now: string | Date = new Date()): boolean {
+  const normalizedTierId = Math.floor(tierId);
+
+  if (!Number.isFinite(normalizedTierId) || normalizedTierId <= 0) {
+    return false;
+  }
+
+  return getHeroArenaBossVictoryLedger(hero, now).tierIds.includes(normalizedTierId);
+}
+
+export function recordHeroArenaBossVictoryForTier(hero: HeroState, tierId: number, now = new Date().toISOString()): HeroState {
+  const normalizedTierId = Math.floor(tierId);
+
+  if (!Number.isFinite(normalizedTierId) || normalizedTierId <= 0) {
+    return hero;
+  }
+
+  const ledger = getHeroArenaBossVictoryLedger(hero, now);
+
+  if (ledger.tierIds.includes(normalizedTierId)) {
+    if (hero.arenaBossVictoryLedger?.dayKey === ledger.dayKey) {
+      return hero;
+    }
+
+    return {
+      ...hero,
+      arenaBossVictoryLedger: ledger,
+      updatedAt: now,
+    };
+  }
+
+  return {
+    ...hero,
+    arenaBossVictoryLedger: {
+      dayKey: ledger.dayKey,
+      tierIds: [...ledger.tierIds, normalizedTierId],
+    },
+    updatedAt: now,
   };
 }
 
@@ -2109,12 +2181,159 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       opponentId: encounter.opponentId,
       difficultyId: encounter.difficultyId,
       backgroundVariantId: encounter.backgroundVariantId,
+      mode: encounter.mode,
     },
     log: [
       { text: `The gate slams open. ${hero.name} and ${encounter.name} enter the sand.`, important: true },
       { text: "Move into range, strike, then survive the enemy turn." },
     ],
   };
+}
+
+export function createDuoBossCombatStateFromHero(hero: HeroState, encounter: ArenaEncounter, random = Math.random): CombatState {
+  const duoEncounter: ArenaEncounter = {
+    ...encounter,
+    mode: "duoBossAi",
+  };
+  const state = createCombatStateFromHero(hero, duoEncounter);
+  const helperLoadout = createRandomEnemyLoadout(random, encounter.tierId, DEFAULT_ARENA_DIFFICULTY_ID);
+  const helperName = pickRandomArenaOpponentName(random);
+  const helper = createCombatFighterStateFromEnemyLoadout(helperName, helperLoadout, freshState().player);
+
+  helper.scrollCount = 0;
+  helper.fireballScrollCount = 0;
+  helper.wardScrollCount = 0;
+  helper.preciseStrikeScrollCount = 0;
+  helper.doubleStrikeScrollCount = 0;
+  helper.poisonScrollCount = 0;
+
+  return {
+    ...state,
+    helper,
+    helperPosition: state.playerPosition,
+    enemy: scaleDuoBossFighter(state.enemy),
+    log: [
+      { text: `The gate slams open. ${hero.name} and ${helper.name} face ${encounter.name}.`, important: true },
+      { text: "Duo boss prototype: act first, your helper follows, then the boss answers." },
+    ],
+  };
+}
+
+function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: EnemyLoadout, base: FighterState): FighterState {
+  const equipment = enemyLoadout.equipment;
+  const armorSlots = getEnemyEquipmentArmorSlots(equipment);
+  const stats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, equipment, getArmorSlotTotal(armorSlots));
+  const mainWeaponClass = getHeroEquipmentWeaponClass(equipment);
+  const bowWeaponClass = getHeroEquipmentBowWeaponClass(equipment);
+  const weaponClass = equipment.weaponMain ? mainWeaponClass : bowWeaponClass ?? mainWeaponClass;
+
+  return {
+    ...base,
+    name,
+    hp: stats.maxHp,
+    maxHp: stats.maxHp,
+    armor: stats.maxArmor,
+    maxArmor: stats.maxArmor,
+    stamina: stats.maxStamina,
+    maxStamina: stats.maxStamina,
+    damageBonus: stats.damageBonus,
+    weaponDamageBonus: stats.weaponDamageBonus,
+    meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
+    spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
+    mainWeaponClass,
+    bowWeaponClass,
+    movementDistanceBonus: stats.movementDistanceBonus,
+    bodyScaleBonus: stats.bodyScaleBonus,
+    clinchRangeBonus: stats.clinchRangeBonus,
+    restHpRestoreBonus: stats.restHpRestoreBonus,
+    restStaminaRestoreBonus: stats.restStaminaRestoreBonus,
+    weaponClass,
+    bowShotsRemaining: bowWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+    bowMaxShots: bowWeaponClass === "bow" ? BOW_SHOTS_PER_BATTLE : 0,
+    shurikenCount: Math.max(0, Math.floor(enemyLoadout.shurikenCount ?? 0)),
+    shurikenDamage: Math.max(0, Math.floor(enemyLoadout.shurikenDamage ?? 0)),
+    shurikenItemId: enemyLoadout.shurikenItemId,
+    scrollCount: Math.max(0, Math.floor(enemyLoadout.scrollCount ?? 0)),
+    scrollItemId: enemyLoadout.scrollItemId,
+    crackArmorParts: enemyLoadout.crackArmorParts ?? getHeroCrackArmorPartsForRarity("common"),
+    fireballScrollCount: Math.max(0, Math.floor(enemyLoadout.fireballScrollCount ?? 0)),
+    fireballScrollItemId: enemyLoadout.fireballScrollItemId,
+    fireballDamage: enemyLoadout.fireballDamage ?? getHeroFireballDamageForRarity("common"),
+    wardScrollCount: Math.max(0, Math.floor(enemyLoadout.wardScrollCount ?? 0)),
+    wardScrollItemId: enemyLoadout.wardScrollItemId,
+    wardHitCount: enemyLoadout.wardHitCount ?? getHeroWardHitCountForRarity("common"),
+    wardHits: 0,
+    preciseStrikeScrollCount: Math.max(0, Math.floor(enemyLoadout.preciseStrikeScrollCount ?? 0)),
+    preciseStrikeScrollItemId: enemyLoadout.preciseStrikeScrollItemId,
+    preciseStrikeBlockChanceReduction: enemyLoadout.preciseStrikeBlockChanceReduction ?? getHeroPreciseStrikeBlockChanceReductionForRarity("common"),
+    preciseStrikeHits: 0,
+    doubleStrikeScrollCount: Math.max(0, Math.floor(enemyLoadout.doubleStrikeScrollCount ?? 0)),
+    doubleStrikeScrollItemId: enemyLoadout.doubleStrikeScrollItemId,
+    doubleStrikeDamageMultiplier: enemyLoadout.doubleStrikeDamageMultiplier ?? getHeroDoubleStrikeDamageMultiplierForRarity("common"),
+    doubleStrikeHits: 0,
+    poisonScrollCount: Math.max(0, Math.floor(enemyLoadout.poisonScrollCount ?? 0)),
+    poisonScrollItemId: enemyLoadout.poisonScrollItemId,
+    poisonDamage: enemyLoadout.poisonDamage ?? getHeroPoisonDamageForRarity("common"),
+    poisonTurns: 0,
+    equipment: { ...equipment },
+    armorSlots,
+    visualPreset: { ...enemyLoadout.visualPreset },
+  };
+}
+
+function scaleDuoBossFighter(fighter: FighterState): FighterState {
+  const baseArmorFromSlots = fighter.armorSlots ? getArmorSlotTotal(fighter.armorSlots) : 0;
+  const maxArmor = Math.ceil((baseArmorFromSlots > 0 ? baseArmorFromSlots : getSafeFighterMaxArmor(fighter)) * 1.5);
+  const armorSlots = fighter.armorSlots ? scaleDuoBossArmorSlots(fighter.armorSlots, maxArmor) : undefined;
+  const maxHp = Math.ceil(Math.max(1, fighter.maxHp) * 1.5);
+
+  return {
+    ...fighter,
+    hp: maxHp,
+    maxHp,
+    armor: maxArmor,
+    maxArmor,
+    armorSlots,
+    damageBonus: Math.ceil(Math.max(0, fighter.damageBonus) * 1.5),
+    weaponDamageBonus: fighter.weaponDamageBonus === undefined ? undefined : Math.ceil(Math.max(0, fighter.weaponDamageBonus) * 1.5),
+  };
+}
+
+function scaleDuoBossArmorSlots(armorSlots: CombatArmorSlotState[], targetTotal: number): CombatArmorSlotState[] {
+  if (targetTotal <= 0 || armorSlots.length <= 0) {
+    return armorSlots.map((slot) => ({ ...slot, armorHp: 0 }));
+  }
+
+  const scaled = armorSlots.map((slot, index) => {
+    const rawArmor = Math.max(0, slot.armorHp) * 1.5;
+
+    return {
+      index,
+      armorHp: Math.floor(rawArmor),
+      fraction: rawArmor - Math.floor(rawArmor),
+    };
+  });
+  const armorValues = scaled.map((entry) => entry.armorHp);
+  let remainingArmor = targetTotal - armorValues.reduce((total, armorHp) => total + armorHp, 0);
+  const fillOrder = [...scaled].sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+
+  for (const entry of fillOrder) {
+    if (remainingArmor <= 0) {
+      break;
+    }
+
+    armorValues[entry.index] += 1;
+    remainingArmor -= 1;
+  }
+
+  return armorSlots.map((slot, index) => ({
+    ...slot,
+    armorHp: armorValues[index] ?? 0,
+  }));
+}
+
+function getSafeFighterMaxArmor(fighter: FighterState): number {
+  return Math.max(0, fighter.maxArmor ?? fighter.armor ?? 0);
 }
 
 export function getBattleReward(combat: CombatState): BattleReward {
@@ -2148,7 +2367,7 @@ export function applyCombatReward(
   const heroAfterWinRecord = combat.result === "win" ? recordHeroWin(heroAfterConsumables, now) : heroAfterConsumables;
   const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterWinRecord, combat, random) : [];
   const heroBeforeReward = combat.result === "win" && combat.encounter?.kind === "boss"
-    ? recordArenaBossDefeat(heroAfterWinRecord, combat.encounter.opponentId, now)
+    ? recordHeroArenaBossVictoryForTier(recordArenaBossDefeat(heroAfterWinRecord, combat.encounter.opponentId, now), combat.encounter.tierId, now)
     : heroAfterWinRecord;
   const heroWithReward = applyBattleReward(heroBeforeReward, reward, now);
   const lootApplication = applyArenaLootWithAppliedDrops(heroWithReward, rolledLoot, now);

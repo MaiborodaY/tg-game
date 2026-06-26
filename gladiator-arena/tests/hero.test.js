@@ -1032,6 +1032,27 @@ test("arena encounters can create combat states from random opponents and bosses
   assert.equal(hero.getBattleReward(bossState).xp, 12);
 });
 
+test("duo boss combat creates a helper and scales only the boss fight", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
+  const soloState = hero.createCombatStateFromHero(baseHero, bossEncounter);
+  const rolls = [0, 0, 0, 0, 0, 0];
+  const duoState = hero.createDuoBossCombatStateFromHero(baseHero, bossEncounter, () => rolls.shift() ?? 0);
+
+  assert.equal(duoState.encounter?.mode, "duoBossAi");
+  assert.equal(duoState.encounter?.id, soloState.encounter?.id);
+  assert.equal(Boolean(duoState.helper), true);
+  assert.equal(duoState.helper?.name, "Grubbo");
+  assert.equal(duoState.helper?.scrollCount, 0);
+  assert.equal(duoState.helper?.fireballScrollCount, 0);
+  assert.equal(duoState.enemy.maxHp, Math.ceil(soloState.enemy.maxHp * 1.5));
+  assert.equal(duoState.enemy.maxArmor, Math.ceil(soloState.enemy.maxArmor * 1.5));
+
+  duoState.result = "win";
+  soloState.result = "win";
+  assert.deepEqual(hero.getBattleReward(duoState), hero.getBattleReward(soloState));
+});
+
 test("combat reward application tracks total wins", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
   const encounter = hero.createArenaRandomEnemyEncounter(1, "easy", () => 0);
@@ -1049,6 +1070,41 @@ test("combat reward application tracks total wins", () => {
   assert.equal(hero.getHeroTotalWins(winRewardApplication.heroAfterReward), 1);
   assert.equal(winRewardApplication.heroAfterReward.totalWins, 1);
   assert.equal(hero.getHeroTotalWins(lossRewardApplication.heroAfterReward), 1);
+});
+
+test("boss wins record one daily victory per arena tier", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
+  const soloState = hero.createCombatStateFromHero(baseHero, bossEncounter);
+  const duoState = hero.createDuoBossCombatStateFromHero(baseHero, bossEncounter, () => 0);
+
+  soloState.result = "win";
+  duoState.result = "win";
+
+  assert.equal(hero.hasHeroArenaBossVictoryForTier(baseHero, bossEncounter.tierId, "2026-01-01T00:01:00.000Z"), false);
+
+  const soloRewardApplication = hero.applyCombatReward(baseHero, soloState, "2026-01-01T00:01:00.000Z", () => 0.999);
+
+  assert.equal(hero.hasHeroArenaBossVictoryForTier(soloRewardApplication.heroAfterReward, bossEncounter.tierId, "2026-01-01T00:02:00.000Z"), true);
+  assert.equal(hero.hasHeroArenaBossVictoryForTier(soloRewardApplication.heroAfterReward, bossEncounter.tierId + 1, "2026-01-01T00:02:00.000Z"), false);
+  assert.equal(hero.hasHeroArenaBossVictoryForTier(soloRewardApplication.heroAfterReward, bossEncounter.tierId, "2026-01-02T00:01:00.000Z"), false);
+
+  const duoRewardApplication = hero.applyCombatReward(baseHero, duoState, "2026-01-01T00:01:00.000Z", () => 0.999);
+
+  assert.equal(hero.hasHeroArenaBossVictoryForTier(duoRewardApplication.heroAfterReward, bossEncounter.tierId, "2026-01-01T00:02:00.000Z"), true);
+});
+
+test("daily boss tier victory records are deduplicated and reset by day", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const firstRecord = hero.recordHeroArenaBossVictoryForTier(baseHero, 1, "2026-01-01T00:01:00.000Z");
+  const secondRecord = hero.recordHeroArenaBossVictoryForTier(firstRecord, 1, "2026-01-01T00:02:00.000Z");
+  const nextTierRecord = hero.recordHeroArenaBossVictoryForTier(secondRecord, 2, "2026-01-01T00:03:00.000Z");
+  const nextDayRecord = hero.recordHeroArenaBossVictoryForTier(nextTierRecord, 1, "2026-01-02T00:01:00.000Z");
+
+  assert.deepEqual([...hero.getHeroArenaBossVictoryLedger(firstRecord, "2026-01-01T00:02:00.000Z").tierIds], [1]);
+  assert.equal(secondRecord, firstRecord);
+  assert.deepEqual([...hero.getHeroArenaBossVictoryLedger(nextTierRecord, "2026-01-01T00:04:00.000Z").tierIds], [1, 2]);
+  assert.deepEqual([...hero.getHeroArenaBossVictoryLedger(nextDayRecord, "2026-01-02T00:02:00.000Z").tierIds], [1]);
 });
 
 test("arena encounter enemy base stats derive combat stats", () => {

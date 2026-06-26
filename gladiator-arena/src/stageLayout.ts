@@ -14,6 +14,8 @@ import type { ArenaDebugTuning } from "./debugTuning";
 export interface RuntimeStageLayout {
   playerX: number;
   playerY: number;
+  helperX: number;
+  helperY: number;
   enemyX: number;
   enemyY: number;
   playerScale: number;
@@ -22,7 +24,7 @@ export interface RuntimeStageLayout {
 
 export const CLINCH_VISUAL_GAP = 30;
 
-export function getStageLayout(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): RuntimeStageLayout {
+export function getStageLayout(current: Pick<CombatState, "playerPosition" | "enemyPosition"> & Partial<Pick<CombatState, "helper" | "helperPosition">>, tuning?: ArenaDebugTuning): RuntimeStageLayout {
   const originX = tuning?.originX ?? DEFAULT_STAGE_ORIGIN_X;
   const originY = tuning?.originY ?? DEFAULT_STAGE_ORIGIN_Y;
   const playerStageX = tuning?.playerStageX ?? DEFAULT_PLAYER_STAGE_X;
@@ -33,11 +35,15 @@ export function getStageLayout(current: Pick<CombatState, "playerPosition" | "en
   const enemyBaseX = originX + enemyStageX;
   const positionStep = getPositionStep(playerBaseX, enemyBaseX);
   const playerX = playerBaseX + current.playerPosition * positionStep;
+  const helperPosition = current.helper ? current.helperPosition ?? current.playerPosition : current.playerPosition;
+  const helperX = playerBaseX + helperPosition * positionStep;
   const enemyX = enemyBaseX + (current.enemyPosition - START_DISTANCE) * positionStep;
 
   return {
     playerX,
     playerY: originY + playerStageY,
+    helperX,
+    helperY: originY + playerStageY,
     enemyX,
     enemyY: originY + enemyStageY,
     playerScale: tuning?.playerScale ?? DEFAULT_PLAYER_SCALE,

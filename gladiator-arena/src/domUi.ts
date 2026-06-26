@@ -1,4 +1,5 @@
 import {
+  getActionTitle,
   distanceBand,
   distanceLabel,
   getFighterClinchRange,
@@ -63,6 +64,14 @@ export interface DomRefs {
   classicPlayerHpText: HTMLElement;
   classicPlayerArmorText: HTMLElement;
   classicPlayerStaText: HTMLElement;
+  classicHelperName: HTMLElement;
+  classicHelperAction: HTMLElement;
+  classicHelperHpFill: HTMLElement;
+  classicHelperArmorFill: HTMLElement;
+  classicHelperStaFill: HTMLElement;
+  classicHelperHpText: HTMLElement;
+  classicHelperArmorText: HTMLElement;
+  classicHelperStaText: HTMLElement;
   enemyHpFill: HTMLElement;
   enemyArmorFill: HTMLElement;
   enemyStaFill: HTMLElement;
@@ -121,6 +130,14 @@ export function getDomRefs(): DomRefs {
     classicPlayerHpText: document.querySelector<HTMLElement>("#classicPlayerHpText"),
     classicPlayerArmorText: document.querySelector<HTMLElement>("#classicPlayerArmorText"),
     classicPlayerStaText: document.querySelector<HTMLElement>("#classicPlayerStaText"),
+    classicHelperName: document.querySelector<HTMLElement>("#classicHelperName"),
+    classicHelperAction: document.querySelector<HTMLElement>("#classicHelperAction"),
+    classicHelperHpFill: document.querySelector<HTMLElement>("#classicHelperHpFill"),
+    classicHelperArmorFill: document.querySelector<HTMLElement>("#classicHelperArmorFill"),
+    classicHelperStaFill: document.querySelector<HTMLElement>("#classicHelperStaFill"),
+    classicHelperHpText: document.querySelector<HTMLElement>("#classicHelperHpText"),
+    classicHelperArmorText: document.querySelector<HTMLElement>("#classicHelperArmorText"),
+    classicHelperStaText: document.querySelector<HTMLElement>("#classicHelperStaText"),
     enemyHpFill: document.querySelector<HTMLElement>("#enemyHpFill"),
     enemyArmorFill: document.querySelector<HTMLElement>("#enemyArmorFill"),
     enemyStaFill: document.querySelector<HTMLElement>("#enemyStaFill"),
@@ -196,6 +213,7 @@ export function renderDom(dom: DomRefs, state: CombatState, context: DomRenderCo
   setText(dom.classicDistanceText, distance);
   syncClassicDistanceBadge(dom.classicDistanceBadge, band);
   syncClassicEncounterBanner(dom.classicEncounterBanner, getClassicEncounterDifficulty(state));
+  dom.gameScreen.classList.toggle("battle-screen--duo-boss", state.encounter?.mode === "duoBossAi" && Boolean(state.helper));
   renderStats(dom, context.statsState ?? state);
   renderLog(dom, state);
   renderResult(dom, state, context);
@@ -240,6 +258,10 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   const playerMaxHp = getFighterMaxHp(state.player);
   const playerMaxArmor = getFighterMaxArmor(state.player);
   const playerMaxStamina = getFighterMaxStamina(state.player);
+  const helper = state.helper;
+  const helperMaxHp = helper ? getFighterMaxHp(helper) : 1;
+  const helperMaxArmor = helper ? getFighterMaxArmor(helper) : 0;
+  const helperMaxStamina = helper ? getFighterMaxStamina(helper) : 1;
   const enemyMaxHp = getFighterMaxHp(state.enemy);
   const enemyMaxArmor = getFighterMaxArmor(state.enemy);
   const enemyMaxStamina = getFighterMaxStamina(state.enemy);
@@ -247,11 +269,15 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   const playerHpText = `${state.player.hp}/${playerMaxHp}`;
   const playerArmorText = `${state.player.armor}/${playerMaxArmor}`;
   const playerStaminaText = `${state.player.stamina}/${playerMaxStamina}`;
+  const helperHpText = helper ? `${helper.hp}/${helperMaxHp}` : "0/0";
+  const helperArmorText = helper ? `${helper.armor}/${helperMaxArmor}` : "0/0";
+  const helperStaminaText = helper ? `${helper.stamina}/${helperMaxStamina}` : "0/0";
   const enemyHpText = `${state.enemy.hp}/${enemyMaxHp}`;
   const enemyArmorText = `${state.enemy.armor}/${enemyMaxArmor}`;
   const enemyStaminaText = `${state.enemy.stamina}/${enemyMaxStamina}`;
 
   setText(dom.classicPlayerName, state.player.name);
+  syncHelperStats(dom, state);
   setText(dom.classicEnemyName, state.enemy.name);
   syncWardStatus(dom.playerWard, state.player.name, getFighterWardHits(state.player));
   syncPreciseStrikeStatus(dom.playerPreciseStrike, state.player.name, getFighterPreciseStrikeHits(state.player));
@@ -267,6 +293,9 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   setText(dom.classicPlayerHpText, playerHpText);
   setText(dom.classicPlayerArmorText, playerArmorText);
   setText(dom.classicPlayerStaText, playerStaminaText);
+  setText(dom.classicHelperHpText, helperHpText);
+  setText(dom.classicHelperArmorText, helperArmorText);
+  setText(dom.classicHelperStaText, helperStaminaText);
   setText(dom.enemyHpText, enemyHpText);
   setText(dom.enemyArmorText, enemyArmorText);
   setText(dom.enemyStaText, enemyStaminaText);
@@ -283,9 +312,58 @@ function renderStats(dom: DomRefs, state: CombatState): void {
   setBarFill(dom.classicPlayerHpFill, state.player.hp / playerMaxHp);
   setBarFill(dom.classicPlayerArmorFill, playerMaxArmor > 0 ? state.player.armor / playerMaxArmor : 0);
   setBarFill(dom.classicPlayerStaFill, state.player.stamina / playerMaxStamina);
+  setBarFill(dom.classicHelperHpFill, helper ? helper.hp / helperMaxHp : 0);
+  setBarFill(dom.classicHelperArmorFill, helper && helperMaxArmor > 0 ? helper.armor / helperMaxArmor : 0);
+  setBarFill(dom.classicHelperStaFill, helper ? helper.stamina / helperMaxStamina : 0);
   setBarFill(dom.classicEnemyHpFill, state.enemy.hp / enemyMaxHp);
   setBarFill(dom.classicEnemyArmorFill, enemyMaxArmor > 0 ? state.enemy.armor / enemyMaxArmor : 0);
   setBarFill(dom.classicEnemyStaFill, state.enemy.stamina / enemyMaxStamina);
+}
+
+function syncHelperStats(dom: DomRefs, state: CombatState): void {
+  const helperCard = dom.classicHelperName.closest<HTMLElement>(".classic-fighter-card--helper");
+  const helper = state.helper;
+
+  if (helperCard) {
+    helperCard.hidden = !helper;
+    delete helperCard.dataset.helperStatus;
+  }
+
+  if (!helper) {
+    setText(dom.classicHelperName, "Helper");
+    setText(dom.classicHelperAction, "");
+    return;
+  }
+
+  setText(dom.classicHelperName, helper.name);
+  if (helper.hp <= 0) {
+    if (helperCard) {
+      helperCard.dataset.helperStatus = "down";
+    }
+    setText(dom.classicHelperAction, "Down");
+    return;
+  }
+
+  if (state.lastHelperAction) {
+    if (helperCard) {
+      helperCard.dataset.helperStatus = "action";
+    }
+    setText(dom.classicHelperAction, getActionTitle(state.lastHelperAction, helper));
+    return;
+  }
+
+  if (state.activeTurn === "enemy") {
+    if (helperCard) {
+      helperCard.dataset.helperStatus = "choosing";
+    }
+    setText(dom.classicHelperAction, "Choosing...");
+    return;
+  }
+
+  if (helperCard) {
+    helperCard.dataset.helperStatus = "ready";
+  }
+  setText(dom.classicHelperAction, "Ready");
 }
 
 function syncWardStatus(element: HTMLElement, fighterName: string, hits: number): void {

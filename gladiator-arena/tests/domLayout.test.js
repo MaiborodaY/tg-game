@@ -403,11 +403,24 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes(" - Locked"), true);
   assert.equal(mainSource.includes("Defeat previous boss to unlock"), true);
   assert.equal(mainSource.includes("select.disabled = visibleTiers.length <= 1"), true);
-  assert.equal(mainSource.includes('name.textContent = "Boss"'), true);
+  assert.equal(mainSource.includes("name.textContent = boss.name"), true);
   assert.equal(mainSource.includes('cityArenaEasyName.textContent = "Easy"'), true);
   assert.equal(mainSource.includes('cityArenaRandomName.textContent = "Medium"'), true);
   assert.equal(mainSource.includes('cityArenaHardName.textContent = "Hard"'), true);
   assert.equal(mainSource.includes("+ unique reward"), true);
+  assert.equal(mainSource.includes("city-arena-menu__boss-card"), true);
+  assert.equal(mainSource.includes("city-arena-menu__boss-duo"), true);
+  assert.equal(mainSource.includes('duoButton.textContent = "Duo"'), true);
+  assert.equal(mainSource.includes('void startSelectedArena({ kind: "boss", bossId: boss.id, duo: true });'), true);
+  assert.equal(mainSource.includes("getCityArenaBossVictoryLimitTitle"), true);
+  assert.equal(mainSource.includes("getArenaSelectionBossVictoryLimitTitle"), true);
+  assert.equal(mainSource.includes("button.dataset.cityArenaBossTierId"), true);
+  assert.equal(mainSource.includes("duoButton.dataset.cityArenaBossTierId"), true);
+  assert.equal(mainSource.includes("Number(button.dataset.cityArenaBossTierId)"), true);
+  assert.equal(mainSource.includes("hasHeroArenaBossVictoryForTier(hero, tierId)"), true);
+  assert.equal(mainSource.includes("Boss victory limit reached for this tier today."), true);
+  assert.equal(mainSource.indexOf("getArenaSelectionBossVictoryLimitTitle(selection)") < mainSource.indexOf("spendArenaEnergyForSelectedArena()"), true);
+  assert.equal(mainSource.includes('querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]")'), true);
   assert.equal(arenaTiersSource.includes('name: "Dust Arena"'), true);
   assert.equal(arenaTiersSource.includes('name: "Dust Arena I"'), false);
   assert.equal(mainSource.includes("boss.baseStats"), false);
@@ -420,6 +433,8 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(mainSource.includes("city-menu--arena-select-open"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__tier-select"), true);
   assert.equal(stylesSource.includes(".city-arena-menu__boss"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__boss-card"), true);
+  assert.equal(stylesSource.includes(".city-arena-menu__boss-duo"), true);
   assert.equal(stylesSource.includes("assets/ui/arena-difficulty/difficulty-easy.webp"), true);
   assert.equal(stylesSource.includes("assets/ui/arena-difficulty/difficulty-medium.webp"), true);
   assert.equal(stylesSource.includes("assets/ui/arena-difficulty/difficulty-hard.webp"), true);
@@ -446,6 +461,19 @@ test("city arena menu exposes random fights and boss entries", () => {
   assert.equal(stylesSource.includes("var(--ui-hud-button-frame) center / 100% 100% no-repeat"), false);
   assert.equal(stylesSource.includes("var(--ui-hud-wide-panel-frame) center / 100% 100% no-repeat"), false);
   assert.equal(stylesSource.includes("var(--ui-panel-wood-texture) center / 180px 180px repeat"), true);
+});
+
+test("restart button is local debug UI only", () => {
+  assert.equal(html.includes('id="restartButton" class="restart stage-restart" type="button" hidden'), true);
+  assert.equal(mainSource.includes('const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";'), true);
+  assert.equal(mainSource.includes("function canShowLocalDebugRestartButton()"), true);
+  assert.equal(mainSource.includes("window.location.origin === LOCAL_DEBUG_RESTART_BUTTON_ORIGIN"), true);
+  assert.equal(mainSource.includes("function syncRestartButtonVisibility(visible = true): void"), true);
+  assert.equal(mainSource.includes("dom.restartButton.hidden = !canShowLocalDebugRestartButton() || !visible;"), true);
+  assert.equal(mainSource.includes("syncRestartButtonVisibility(gameMode !== \"pvp\")"), true);
+  assert.equal(mainSource.includes("if (canShowLocalDebugRestartButton())"), true);
+  assert.equal(mainSource.includes('dom.restartButton.addEventListener("click", () => restart());'), true);
+  assert.equal(mainSource.includes("getArenaSelectionBossVictoryLimitTitle(activeArenaSelection)"), false);
 });
 
 test("fighter resources use flask HUD while preserving stat ids", () => {

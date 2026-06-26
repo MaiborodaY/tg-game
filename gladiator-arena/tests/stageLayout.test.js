@@ -98,6 +98,20 @@ test("stage layout applies combat movement without letting fighters cross", () =
   assert.equal(clinch.enemyX - clinch.playerX, stageLayout.CLINCH_VISUAL_GAP);
 });
 
+test("stage layout tracks a duo helper position separately from the player", () => {
+  const layout = stageLayout.getStageLayout({
+    ...makeCombatState(0, 3),
+    helper: { name: "Helper" },
+    helperPosition: 1,
+  });
+  const playerBaseX = DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X;
+  const enemyBaseX = DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X;
+  const positionStep = getExpectedPositionStep(playerBaseX, enemyBaseX);
+
+  assert.equal(layout.playerX, playerBaseX);
+  assert.equal(layout.helperX, playerBaseX + positionStep);
+});
+
 test("stage layout keeps fighter scale independent from distance", () => {
   const far = stageLayout.getStageLayout(makeCombatState(0, 3, 3));
   const close = stageLayout.getStageLayout(makeCombatState(3, 3, 0));

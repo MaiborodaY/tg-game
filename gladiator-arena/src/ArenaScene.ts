@@ -271,6 +271,8 @@ interface FighterVisual {
   restZzzSpawnIndex?: number;
   isShattered?: boolean;
   isShatterScheduled?: boolean;
+  isDeathEffectQueued?: boolean;
+  deathEffectToken?: number;
 }
 
 interface FighterArrowCounterVisual {
@@ -575,6 +577,7 @@ interface ArenaMidLayerShadeState {
 
 interface ArenaVisuals {
   player: FighterVisual;
+  helper?: FighterVisual;
   enemy: FighterVisual;
   playerHud: HudVisual;
   enemyHud: HudVisual;
@@ -790,6 +793,7 @@ const FIGHTER_MOVE_DURATION = 280;
 const DEATH_SHATTER_DELAY = 260;
 const DEATH_SHATTER_AFTER_IMPACT_DELAY = 200;
 const DEATH_SHATTER_RESULT_SETTLE_DELAY = 520;
+const DEATH_REMAINS_FADE_DURATION = 180;
 const HEAD_ASSET_DISPLAY_HEIGHT = 122;
 const HEAD_ASSET_LOCAL_BOTTOM_Y = 14;
 const HEAD_ASSET_ORIGIN_X = 312 / 623;
@@ -2139,6 +2143,7 @@ export class ArenaScene extends Phaser.Scene {
     this.visuals = buildVisuals(this);
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => {
       syncFighterBodyPreset(this.visuals?.player);
+      syncFighterBodyPreset(this.visuals?.helper);
       syncFighterBodyPreset(this.visuals?.enemy);
       if (this.currentState) {
         renderScene(this, this.currentState);
@@ -2151,7 +2156,7 @@ export class ArenaScene extends Phaser.Scene {
       void ensurePaperDollAppearanceAssetsLoaded(this, [appearance]).then(() => syncPaperDollAppearanceState(this.visuals?.player.paperDollRig, appearance));
     });
     this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
-      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.visuals?.player, this.visuals?.enemy], () => {
+      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.visuals?.player, this.visuals?.helper, this.visuals?.enemy], () => {
         if (this.currentState) {
           renderScene(this, this.currentState);
         }
@@ -2186,8 +2191,14 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     applyLoopingBodyAnimation(this.visuals.player, time, getFighterBodyIdleAnimation(this.visuals.player), animationAmount);
+    if (this.visuals.helper) {
+      applyLoopingBodyAnimation(this.visuals.helper, time, getFighterBodyIdleAnimation(this.visuals.helper), animationAmount);
+    }
     applyLoopingBodyAnimation(this.visuals.enemy, time, getFighterBodyIdleAnimation(this.visuals.enemy), animationAmount);
     if (areArenaVfxEnabled(playerSettings)) {
+      if (this.visuals.helper) {
+        updateRestZzzEffects(this, this.visuals.helper, time);
+      }
       updateRestZzzEffects(this, this.visuals.enemy, time);
     }
   }
@@ -2258,6 +2269,9 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     resetFighterBodyIdleAnimation(this.visuals.player, this.time.now);
+    if (this.visuals.helper) {
+      resetFighterBodyIdleAnimation(this.visuals.helper, this.time.now);
+    }
     resetFighterBodyIdleAnimation(this.visuals.enemy, this.time.now);
   }
 
@@ -2269,22 +2283,30 @@ export class ArenaScene extends Phaser.Scene {
     const playerRemovedArmorSprites = this.visuals
       ? createRemovedArmorSlotSprites(this, this.visuals.enemy, nextState.lastPlayerRemovedArmorSlots)
       : [];
+    const helperRemovedArmorSprites = this.visuals
+      ? createRemovedArmorSlotSprites(this, this.visuals.enemy, nextState.lastHelperRemovedArmorSlots)
+      : [];
+    const enemyDamageTargetVisual = nextState.lastEnemyTarget === "helper" ? this.visuals?.helper : this.visuals?.player;
     const enemyRemovedArmorSprites = this.visuals
-      ? createRemovedArmorSlotSprites(this, this.visuals.player, nextState.lastEnemyRemovedArmorSlots)
+      ? createRemovedArmorSlotSprites(this, enemyDamageTargetVisual ?? this.visuals.player, nextState.lastEnemyRemovedArmorSlots)
       : [];
     const prepared = await this.prepareStateVisuals(nextState, { animateActions: true, hudState: options.hudState });
 
     if (!prepared) {
       playerRemovedArmorSprites.forEach((sprite) => sprite.destroy());
+      helperRemovedArmorSprites.forEach((sprite) => sprite.destroy());
       enemyRemovedArmorSprites.forEach((sprite) => sprite.destroy());
       return;
     }
 
     const { previousState, playerSettings, visuals } = prepared;
+    const enemyDefenderVisual = nextState.lastEnemyTarget === "helper" && visuals.helper ? visuals.helper : visuals.player;
     const actionAnimations: Promise<void>[] = [];
     const lastPlayerAction = nextState.lastPlayerAction;
+    const lastHelperAction = nextState.lastHelperAction;
     const lastEnemyAction = nextState.lastEnemyAction;
     let playerActionAnimation: ActionAnimationHandle | undefined;
+    let helperActionAnimation: ActionAnimationHandle | undefined;
     let enemyActionAnimation: ActionAnimationHandle | undefined;
 
     if (lastPlayerAction) {
@@ -2305,11 +2327,29 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
 
+    if (lastHelperAction && visuals.helper && nextState.helper) {
+      helperActionAnimation = animateActionSequence(
+        this,
+        visuals.helper,
+        visuals.enemy,
+        lastHelperAction,
+        "right",
+        getFighterBodyAnimationWeaponClass(nextState.helper),
+        playerSettings,
+        { loopRestAfterComplete: false, variantSeed: getBodyAnimationVariantSeed(nextState, "helper") },
+        nextState.lastHelperDoubleStrikeRepeat,
+      );
+      actionAnimations.push(helperActionAnimation.done);
+      if (lastHelperAction === "rest") {
+        showRestRecoveryPopupFromFighter(this, visuals.helper, previousState?.helper, nextState.helper);
+      }
+    }
+
     if (lastEnemyAction) {
       enemyActionAnimation = animateActionSequence(
         this,
         visuals.enemy,
-        visuals.player,
+        enemyDefenderVisual,
         lastEnemyAction,
         "left",
         getFighterBodyAnimationWeaponClass(nextState.enemy),
@@ -2324,12 +2364,15 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     const playerResultDelay = playerActionAnimation?.impact;
+    const helperResultDelay = helperActionAnimation?.impact;
     const enemyResultDelay = enemyActionAnimation?.impact;
     const playerResultDelays = playerActionAnimation?.impacts ?? (playerResultDelay ? [playerResultDelay] : undefined);
+    const helperResultDelays = helperActionAnimation?.impacts ?? (helperResultDelay ? [helperResultDelay] : undefined);
     const enemyResultDelays = enemyActionAnimation?.impacts ?? (enemyResultDelay ? [enemyResultDelay] : undefined);
-    const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, enemyResultDelay);
+    const hudImpactDelay = getStateHudImpactDelay(nextState, playerResultDelay, helperResultDelay, enemyResultDelay);
 
     queueRemovedArmorSlotFlyOff(this, actionAnimations, playerRemovedArmorSprites, playerResultDelay, 1);
+    queueRemovedArmorSlotFlyOff(this, actionAnimations, helperRemovedArmorSprites, helperResultDelay, 1);
     queueRemovedArmorSlotFlyOff(this, actionAnimations, enemyRemovedArmorSprites, enemyResultDelay, -1);
 
     if (options.hudState && options.hudState !== nextState) {
@@ -2344,6 +2387,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     speedUpDamagingLungeAfterImpact(playerActionAnimation, lastPlayerAction, nextState.lastPlayerDamage);
+    speedUpDamagingLungeAfterImpact(helperActionAnimation, lastHelperAction, nextState.lastHelperDamage);
     speedUpDamagingLungeAfterImpact(enemyActionAnimation, lastEnemyAction, nextState.lastEnemyDamage);
 
     if (nextState.lastPlayerPoisonDamage > 0) {
@@ -2393,10 +2437,45 @@ export class ArenaScene extends Phaser.Scene {
       });
     }
 
+    const queuedHelperHitResults = queueCombatHitResultAnimations(
+      this,
+      actionAnimations,
+      visuals.enemy,
+      nextState.lastHelperHitResults,
+      helperResultDelays,
+      playerSettings,
+    );
+    if (!queuedHelperHitResults && nextState.lastHelperDamage > 0) {
+      queueCombatResultAnimation(actionAnimations, helperResultDelay, () => {
+        showDamageResultPopupFromFighter(
+          this,
+          visuals.enemy,
+          nextState.lastHelperDamage,
+          nextState.lastHelperArmorAbsorbed,
+          nextState.lastHelperArmorBroken,
+          playerSettings,
+        );
+
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("hit", visuals.enemy.paperDollRig?.bodyPresetKey));
+      });
+    } else if (!queuedHelperHitResults && nextState.lastHelperWardAbsorbed) {
+      queueCombatResultAnimation(actionAnimations, helperResultDelay, () => {
+        showWardAbsorbPopupFromFighter(this, visuals.enemy);
+
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block", visuals.enemy.paperDollRig?.bodyPresetKey));
+      });
+    } else if (!queuedHelperHitResults && nextState.lastHelperBlocked) {
+      queueCombatResultAnimation(actionAnimations, helperResultDelay, () => {
+        showBlockPopupFromFighter(this, visuals.enemy);
+
+        return playBodyAnimationOnce(this, visuals.enemy, getActiveBodyAnimation("block", visuals.enemy.paperDollRig?.bodyPresetKey));
+      });
+    }
+
     const queuedEnemyHitResults = queueCombatHitResultAnimations(
       this,
       actionAnimations,
-      visuals.player,
+      enemyDefenderVisual,
       nextState.lastEnemyHitResults,
       enemyResultDelays,
       playerSettings,
@@ -2405,30 +2484,30 @@ export class ArenaScene extends Phaser.Scene {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
         showDamageResultPopupFromFighter(
           this,
-          visuals.player,
+          enemyDefenderVisual,
           nextState.lastEnemyDamage,
           nextState.lastEnemyArmorAbsorbed,
           nextState.lastEnemyArmorBroken,
           playerSettings,
         );
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("hit", visuals.player.paperDollRig?.bodyPresetKey));
+        return playBodyAnimationOnce(this, enemyDefenderVisual, getActiveBodyAnimation("hit", enemyDefenderVisual.paperDollRig?.bodyPresetKey));
       });
     } else if (!queuedEnemyHitResults && nextState.lastEnemyWardAbsorbed) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
-        showWardAbsorbPopupFromFighter(this, visuals.player);
+        showWardAbsorbPopupFromFighter(this, enemyDefenderVisual);
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block", visuals.player.paperDollRig?.bodyPresetKey));
+        return playBodyAnimationOnce(this, enemyDefenderVisual, getActiveBodyAnimation("block", enemyDefenderVisual.paperDollRig?.bodyPresetKey));
       });
     } else if (!queuedEnemyHitResults && nextState.lastEnemyBlocked) {
       queueCombatResultAnimation(actionAnimations, enemyResultDelay, () => {
-        showBlockPopupFromFighter(this, visuals.player);
+        showBlockPopupFromFighter(this, enemyDefenderVisual);
 
-        return playBodyAnimationOnce(this, visuals.player, getActiveBodyAnimation("block", visuals.player.paperDollRig?.bodyPresetKey));
+        return playBodyAnimationOnce(this, enemyDefenderVisual, getActiveBodyAnimation("block", enemyDefenderVisual.paperDollRig?.bodyPresetKey));
       });
     }
 
-    queueDeathEffects(this, actionAnimations, nextState, playerResultDelay, enemyResultDelay);
+    queueDeathEffects(this, actionAnimations, nextState, playerResultDelay, helperResultDelay, enemyResultDelay);
 
     return Promise.all(actionAnimations).then(() => {
       resetActiveTurnBodyIdleAnimation(visuals, previousState, nextState, this.time.now);
@@ -2462,8 +2541,8 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     await Promise.all([
-      ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.enemy.equipment]),
-      ensurePaperDollAppearanceAssetsLoaded(this, [nextState.player.appearance, nextState.enemy.appearance]),
+      ensurePaperDollEquipmentAssetsLoaded(this, [nextState.player.equipment, nextState.helper?.equipment, nextState.enemy.equipment]),
+      ensurePaperDollAppearanceAssetsLoaded(this, [nextState.player.appearance, nextState.helper?.appearance, nextState.enemy.appearance]),
     ]);
     if (options.animateActions ? syncToken !== this.syncToken : renderOnlyToken !== this.renderOnlyToken) {
       return;
@@ -2472,6 +2551,7 @@ export class ArenaScene extends Phaser.Scene {
     const playerSettings = getPlayerSettings();
     const visuals = this.visuals;
 
+    syncHelperVisualForState(this, visuals, previousState, nextState);
     syncEnemyVisualForState(this, visuals, previousState, nextState);
     resetDeathEffectsForLiveFighters(this, visuals, nextState);
     renderScene(this, nextState, playerSettings, options.hudState);
@@ -5416,6 +5496,13 @@ function createEnemyPaperDollOptions(x: number, y: number, enemy?: FighterState)
   };
 }
 
+function createHelperPaperDollOptions(x: number, y: number, helper: FighterState): PaperDollFighterOptions {
+  return {
+    ...createEnemyPaperDollOptions(x, y, helper),
+    facing: 1,
+  };
+}
+
 function buildVisuals(target: ArenaScene): ArenaVisuals {
   const player = createPaperDollFighter(target, createPlayerPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y), target.arenaLayers?.actors);
   const enemy = createPaperDollFighter(target, createEnemyPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_ENEMY_STAGE_X, FIGHTER_BASE_Y), target.arenaLayers?.actors);
@@ -6825,10 +6912,17 @@ function resetActiveTurnBodyIdleAnimation(
     return;
   }
 
-  const fighter = currentState.activeTurn === "player" ? visuals.player : visuals.enemy;
+  if (currentState.activeTurn === "player") {
+    [visuals.helper, visuals.enemy].forEach((fighter) => {
+      if (fighter?.bodyIdleAnimationKey === "rest") {
+        resetFighterBodyIdleAnimation(fighter, startedAt);
+      }
+    });
+    return;
+  }
 
-  if (fighter.bodyIdleAnimationKey === "rest") {
-    resetFighterBodyIdleAnimation(fighter, startedAt);
+  if (visuals.player.bodyIdleAnimationKey === "rest") {
+    resetFighterBodyIdleAnimation(visuals.player, startedAt);
   }
 }
 
@@ -8928,17 +9022,30 @@ function renderScene(target: ArenaScene, current: CombatState, playerSettings = 
   positionFightersForState(target, target.visuals, current, playerSettings);
   const shadowMode = getEffectiveArenaShadowMode(playerSettings);
   syncFighterCombatEquipment(target.visuals.player, current.player);
+  if (target.visuals.helper && current.helper) {
+    syncFighterCombatEquipment(target.visuals.helper, current.helper);
+  }
   syncFighterCombatEquipment(target.visuals.enemy, current.enemy);
   syncFighterCombatAppearance(target.visuals.player, current.player);
+  if (target.visuals.helper && current.helper) {
+    syncFighterCombatAppearance(target.visuals.helper, current.helper);
+  }
   syncFighterCombatAppearance(target.visuals.enemy, current.enemy);
   updateCamera(target, current);
   applyFighterArrowCountersSceneScale(target);
   setArenaHudForState(target, hudState);
   setFighterArrowCounter(target.visuals.player, current.player);
+  if (target.visuals.helper && current.helper) {
+    setFighterArrowCounter(target.visuals.helper, current.helper);
+  }
   setFighterArrowCounter(target.visuals.enemy, current.enemy);
 
   if (!target.visuals.player.isShattered) {
     setFighterAlpha(target.visuals.player, 1, shadowMode);
+  }
+
+  if (target.visuals.helper && current.helper && !target.visuals.helper.isShattered) {
+    setFighterAlpha(target.visuals.helper, current.helper.hp > 0 ? 1 : 0.35, shadowMode);
   }
 
   if (!target.visuals.enemy.isShattered) {
@@ -8958,10 +9065,15 @@ function setArenaHudForState(target: ArenaScene, current: CombatState): void {
 function getStateHudImpactDelay(
   current: CombatState,
   playerResultDelay: Promise<void> | undefined,
+  helperResultDelay: Promise<void> | undefined,
   enemyResultDelay: Promise<void> | undefined,
 ): Promise<void> | undefined {
   if (current.lastPlayerDamage > 0) {
     return playerResultDelay;
+  }
+
+  if (current.lastHelperDamage > 0) {
+    return helperResultDelay;
   }
 
   if (current.lastEnemyDamage > 0) {
@@ -9031,6 +9143,43 @@ function resetDeathEffectsForLiveFighters(target: ArenaScene, visuals: ArenaVisu
   if (current.enemy.hp > 0) {
     resetFighterShatter(target, visuals.enemy);
   }
+
+  if (current.helper && current.helper.hp > 0 && visuals.helper) {
+    resetFighterShatter(target, visuals.helper);
+  }
+}
+
+function syncHelperVisualForState(
+  target: ArenaScene,
+  visuals: ArenaVisuals,
+  previous: CombatState | undefined,
+  current: CombatState,
+): void {
+  if (!current.helper) {
+    if (visuals.helper) {
+      destroyFighterVisual(target, visuals.helper);
+      visuals.helper = undefined;
+    }
+    return;
+  }
+
+  const previousLoadoutKey = previous?.helper ? getFighterLoadoutKey(previous.helper) : undefined;
+  const currentLoadoutKey = getFighterLoadoutKey(current.helper);
+
+  if (visuals.helper && previousLoadoutKey === currentLoadoutKey) {
+    return;
+  }
+
+  if (visuals.helper) {
+    destroyFighterVisual(target, visuals.helper);
+  }
+
+  visuals.helper = createPaperDollFighter(
+    target,
+    createHelperPaperDollOptions(DEFAULT_STAGE_ORIGIN_X + DEFAULT_PLAYER_STAGE_X, FIGHTER_BASE_Y, current.helper),
+    target.arenaLayers?.actors,
+  );
+  attachFighterArrowCounter(target, visuals.helper);
 }
 
 function syncEnemyVisualForState(
@@ -9194,9 +9343,21 @@ function queueDeathEffects(
   actionAnimations: Promise<void>[],
   current: CombatState,
   playerResultDelay: Promise<void> | undefined,
+  helperResultDelay: Promise<void> | undefined,
   enemyResultDelay: Promise<void> | undefined,
 ): void {
-  if (!target.visuals || current.result === "playing") {
+  if (!target.visuals) {
+    return;
+  }
+
+  if (current.helper && current.helper.hp <= 0 && target.visuals.helper) {
+    queueFighterDeathEffect(target, actionAnimations, target.visuals.helper, -1, enemyResultDelay, {
+      blocksTurn: current.result !== "playing",
+      fadeRemainsAfterSettle: true,
+    });
+  }
+
+  if (current.result === "playing") {
     return;
   }
 
@@ -9205,8 +9366,13 @@ function queueDeathEffects(
   }
 
   if (current.enemy.hp <= 0) {
-    queueFighterDeathEffect(target, actionAnimations, target.visuals.enemy, 1, playerResultDelay);
+    queueFighterDeathEffect(target, actionAnimations, target.visuals.enemy, 1, helperResultDelay ?? playerResultDelay);
   }
+}
+
+interface FighterDeathEffectOptions {
+  blocksTurn?: boolean;
+  fadeRemainsAfterSettle?: boolean;
 }
 
 function queueFighterDeathEffect(
@@ -9215,15 +9381,41 @@ function queueFighterDeathEffect(
   fighter: FighterVisual,
   worldDirection: -1 | 1,
   impactDelay: Promise<void> | undefined,
+  options: FighterDeathEffectOptions = {},
 ): void {
+  if (fighter.isDeathEffectQueued || fighter.isShattered || fighter.isShatterScheduled) {
+    return;
+  }
+
+  fighter.isDeathEffectQueued = true;
+  const deathEffectToken = (fighter.deathEffectToken ?? 0) + 1;
+  fighter.deathEffectToken = deathEffectToken;
+
   const delay = impactDelay
     ? impactDelay.then(() => createSceneDelay(target, DEATH_SHATTER_AFTER_IMPACT_DELAY))
     : createSceneDelay(target, DEATH_SHATTER_DELAY);
 
-  queueCombatResultAnimation(actionAnimations, delay, () => {
+  const effect = delay.then(() => {
+    if (fighter.deathEffectToken !== deathEffectToken || !fighter.isDeathEffectQueued) {
+      return;
+    }
+
+    fighter.isDeathEffectQueued = false;
     scheduleFighterShatter(target, fighter, worldDirection, 0);
-    return createSceneDelay(target, DEATH_SHATTER_RESULT_SETTLE_DELAY);
+
+    return createSceneDelay(target, DEATH_SHATTER_RESULT_SETTLE_DELAY).then(() => {
+      if (options.fadeRemainsAfterSettle) {
+        fadeOutFighterRemains(target, fighter);
+      }
+    });
   });
+
+  if (options.blocksTurn === false) {
+    void effect;
+    return;
+  }
+
+  actionAnimations.push(effect);
 }
 
 function scheduleFighterShatter(target: ArenaScene, fighter: FighterVisual, worldDirection: -1 | 1, delayMs = DEATH_SHATTER_DELAY): void {
@@ -9242,17 +9434,30 @@ function scheduleFighterShatter(target: ArenaScene, fighter: FighterVisual, worl
   });
 }
 
+function fadeOutFighterRemains(target: Phaser.Scene, fighter: FighterVisual): void {
+  target.tweens.add({
+    targets: getFighterParts(fighter),
+    alpha: 0,
+    duration: DEATH_REMAINS_FADE_DURATION,
+    ease: "Sine.easeOut",
+  });
+}
+
 function resetFighterShatter(target: Phaser.Scene, fighter: FighterVisual): void {
-  if (!fighter.isShattered && !fighter.isShatterScheduled) {
+  if (!fighter.isShattered && !fighter.isShatterScheduled && !fighter.isDeathEffectQueued) {
     return;
   }
 
   fighter.isShattered = false;
   fighter.isShatterScheduled = false;
+  fighter.isDeathEffectQueued = false;
+  fighter.deathEffectToken = (fighter.deathEffectToken ?? 0) + 1;
   fighter.bodyAnimationLockedUntil = 0;
   resetFighterBodyIdleAnimation(fighter, target.time.now);
 
   const rig = fighter.paperDollRig;
+
+  target.tweens.killTweensOf(getFighterParts(fighter));
 
   if (rig) {
     target.tweens.killTweensOf([...Object.values(rig.parts), ...getPaperDollEquipmentAnchorParts(rig)]);
@@ -9377,9 +9582,14 @@ function setFighterAlpha(fighter: FighterVisual, alpha: number, shadowMode = get
   });
 }
 
+const DUO_PLAYER_STAGE_OFFSET_Y = 16;
+const DUO_HELPER_STAGE_OFFSET_Y = -16;
+const DUO_HELPER_SCALE_MULTIPLIER = 0.88;
+
 function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, current: CombatState, playerSettings = getPlayerSettings()): void {
   const layout = getStageLayout(current, getActiveDebugTuning());
   const shouldSnap = isDebugTuningActive();
+  const isDuoBoss = Boolean(current.helper && visuals.helper);
   const playerMovementDelayMs = shouldSnap
     ? 0
     : getBodyAnimationMovementStartDelayMs(
@@ -9387,6 +9597,14 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
       visuals.player,
       getFighterBodyAnimationWeaponClass(current.player),
       getBodyAnimationVariantSeed(current, "player"),
+    );
+  const helperMovementDelayMs = shouldSnap || !visuals.helper || !current.helper
+    ? 0
+    : getBodyAnimationMovementStartDelayMs(
+      current.lastHelperAction,
+      visuals.helper,
+      getFighterBodyAnimationWeaponClass(current.helper),
+      getBodyAnimationVariantSeed(current, "helper"),
     );
   const enemyMovementDelayMs = shouldSnap
     ? 0
@@ -9397,6 +9615,7 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
       getBodyAnimationVariantSeed(current, "enemy"),
     );
   const shouldShowPlayerMovementStartDust = isAxeLungeMovementStartDustAction(current.lastPlayerAction, current.player.weaponClass);
+  const shouldShowHelperMovementStartDust = isAxeLungeMovementStartDustAction(current.lastHelperAction, current.helper?.weaponClass);
   const shouldShowEnemyMovementStartDust = isAxeLungeMovementStartDustAction(current.lastEnemyAction, current.enemy.weaponClass);
 
   if (!visuals.player.isShattered) {
@@ -9405,11 +9624,25 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
       visuals.player,
       snapArenaPixel(layout.playerX),
       layout.playerScale * getFighterBodyScaleMultiplier(current.player),
-      snapArenaPixel(layout.playerY),
+      snapArenaPixel(layout.playerY + (isDuoBoss ? DUO_PLAYER_STAGE_OFFSET_Y : 0)),
       shouldSnap,
       playerSettings,
       playerMovementDelayMs,
       shouldShowPlayerMovementStartDust,
+    );
+  }
+
+  if (visuals.helper && current.helper && !visuals.helper.isShattered) {
+    positionFighterForLayout(
+      target,
+      visuals.helper,
+      snapArenaPixel(layout.helperX),
+      layout.playerScale * DUO_HELPER_SCALE_MULTIPLIER * getFighterBodyScaleMultiplier(current.helper),
+      snapArenaPixel(layout.helperY + DUO_HELPER_STAGE_OFFSET_Y),
+      shouldSnap,
+      playerSettings,
+      helperMovementDelayMs,
+      shouldShowHelperMovementStartDust,
     );
   }
 
@@ -9426,6 +9659,43 @@ function positionFightersForState(target: Phaser.Scene, visuals: ArenaVisuals, c
       shouldShowEnemyMovementStartDust,
     );
   }
+
+  syncDuoFighterRenderOrder(target, visuals, current);
+}
+
+function syncDuoFighterRenderOrder(target: ArenaScene, visuals: ArenaVisuals, current: CombatState): void {
+  if (!current.helper || !visuals.helper || !target.arenaLayers) {
+    return;
+  }
+
+  moveFighterVisualBelow(target.arenaLayers.actors, visuals.helper, visuals.player);
+}
+
+function moveFighterVisualBelow(
+  layer: Phaser.GameObjects.Container,
+  lower: FighterVisual,
+  upper: FighterVisual,
+): void {
+  moveLayerChildBelow(layer, lower.shadow, upper.shadow);
+  moveLayerChildBelow(layer, lower.lowShadow, upper.lowShadow);
+  moveLayerChildBelow(layer, lower.body, upper.body);
+  moveLayerChildBelow(layer, lower.name, upper.name);
+
+  if (lower.arrowCounter && upper.arrowCounter) {
+    moveLayerChildBelow(layer, lower.arrowCounter.container, upper.arrowCounter.container);
+  }
+}
+
+function moveLayerChildBelow(
+  layer: Phaser.GameObjects.Container,
+  child: Phaser.GameObjects.GameObject,
+  anchor: Phaser.GameObjects.GameObject,
+): void {
+  if (child === anchor || !layer.exists(child) || !layer.exists(anchor)) {
+    return;
+  }
+
+  layer.moveBelow(child, anchor);
 }
 
 function getFighterBodyScaleMultiplier(fighter: FighterState): number {
@@ -9525,17 +9795,17 @@ function getMovementBodyAnimationKey(actionId: ActionId | undefined): BodyAnimat
   return undefined;
 }
 
-function getBodyAnimationVariantSeed(state: CombatState, owner: "player" | "enemy"): string {
-  const actionId = owner === "player" ? state.lastPlayerAction : state.lastEnemyAction;
-  const damage = owner === "player" ? state.lastPlayerDamage : state.lastEnemyDamage;
-  const blocked = owner === "player" ? state.lastPlayerBlocked : state.lastEnemyBlocked;
-  const fighter = owner === "player" ? state.player : state.enemy;
+function getBodyAnimationVariantSeed(state: CombatState, owner: "player" | "helper" | "enemy"): string {
+  const actionId = owner === "player" ? state.lastPlayerAction : owner === "helper" ? state.lastHelperAction : state.lastEnemyAction;
+  const damage = owner === "player" ? state.lastPlayerDamage : owner === "helper" ? state.lastHelperDamage : state.lastEnemyDamage;
+  const blocked = owner === "player" ? state.lastPlayerBlocked : owner === "helper" ? state.lastHelperBlocked : state.lastEnemyBlocked;
+  const fighter = owner === "player" ? state.player : owner === "helper" ? state.helper : state.enemy;
 
   return [
     owner,
     state.round,
     actionId ?? "none",
-    fighter.weaponClass ?? "none",
+    fighter?.weaponClass ?? "none",
     state.playerPosition,
     state.enemyPosition,
     state.distance,
@@ -9614,6 +9884,9 @@ function applyFighterArrowCountersSceneScale(target: ArenaScene): void {
   }
 
   applyFighterArrowCounterSceneScale(target, visuals.player);
+  if (visuals.helper) {
+    applyFighterArrowCounterSceneScale(target, visuals.helper);
+  }
   applyFighterArrowCounterSceneScale(target, visuals.enemy);
 }
 

@@ -1214,3 +1214,146 @@ test("enemy cannot damage the player from far away", () => {
   assert.equal(nextState.player.hp, state.player.hp);
   assert.equal(nextState.lastEnemyDamage, 0);
 });
+
+test("duo boss helper acts before the boss", () => {
+  const state = combat.freshState();
+  state.encounter = {
+    id: "boss:test_duo",
+    kind: "boss",
+    tierId: 1,
+    opponentId: "test_duo",
+    mode: "duoBossAi",
+  };
+  state.activeTurn = "enemy";
+  state.enemy.hp = 20;
+  state.enemy.maxHp = 20;
+  state.helper = {
+    ...state.player,
+    name: "Helper",
+  };
+  state.enemy.armor = 0;
+  state.enemy.maxArmor = 0;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const rolls = [0, 0.99];
+  const nextState = combat.resolveDuoBossHelperTurn(state, () => rolls.shift() ?? 0.99);
+
+  assert.equal(nextState.activeTurn, "enemy");
+  assert.equal(nextState.lastHelperAction, "medium");
+  assert.equal(nextState.lastHelperDamage > 0, true);
+  assert.equal(nextState.enemy.hp < state.enemy.hp, true);
+});
+
+test("duo boss can target the helper without damaging the player", () => {
+  const state = combat.freshState();
+  state.encounter = {
+    id: "boss:test_duo",
+    kind: "boss",
+    tierId: 1,
+    opponentId: "test_duo",
+    mode: "duoBossAi",
+  };
+  state.activeTurn = "enemy";
+  state.enemy.hp = 20;
+  state.enemy.maxHp = 20;
+  state.helper = {
+    ...state.player,
+    name: "Helper",
+    hp: combat.MAX_HP,
+    armor: 0,
+    maxArmor: 0,
+  };
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  const rolls = [0.99, 0, 0.99];
+  const nextState = combat.resolveEnemyTurn(state, () => rolls.shift() ?? 0.99);
+
+  assert.equal(nextState.lastEnemyTarget, "helper");
+  assert.equal(nextState.helper.hp < state.helper.hp, true);
+  assert.equal(nextState.player.hp, state.player.hp);
+});
+
+test("duo boss attacks a clinched helper instead of lunging at the distant player", () => {
+  const state = combat.freshState();
+  state.encounter = {
+    id: "boss:test_duo",
+    kind: "boss",
+    tierId: 1,
+    opponentId: "test_duo",
+    mode: "duoBossAi",
+  };
+  state.activeTurn = "enemy";
+  state.enemy.hp = 20;
+  state.enemy.maxHp = 20;
+  state.helper = {
+    ...state.player,
+    name: "Helper",
+    hp: combat.MAX_HP,
+    armor: 0,
+    maxArmor: 0,
+  };
+  setConsistentDistance(state, combat.START_DISTANCE);
+  state.helperPosition = state.enemyPosition;
+
+  assert.equal(combat.canUseAction(state, "lunge", "enemy", "player"), false);
+  assert.equal(combat.canUseAction(state, "forward", "enemy", "player"), false);
+
+  const rolls = [0, 0.99];
+  const nextState = combat.resolveEnemyTurn(state, () => rolls.shift() ?? 0.99);
+
+  assert.equal(nextState.lastEnemyTarget, "helper");
+  assert.notEqual(nextState.lastEnemyAction, "lunge");
+  assert.equal(nextState.helper.hp < state.helper.hp, true);
+  assert.equal(nextState.player.hp, state.player.hp);
+});
+
+test("duo boss movement ignores a dead helper position", () => {
+  const state = combat.freshState();
+  state.encounter = {
+    id: "boss:test_duo",
+    kind: "boss",
+    tierId: 1,
+    opponentId: "test_duo",
+    mode: "duoBossAi",
+  };
+  state.activeTurn = "enemy";
+  state.helper = {
+    ...state.player,
+    name: "Helper",
+    hp: 0,
+  };
+  setConsistentDistance(state, combat.START_DISTANCE);
+  state.helperPosition = state.enemyPosition;
+
+  assert.equal(combat.canUseAction(state, "forward", "enemy", "player"), true);
+
+  const nextState = combat.resolveEnemyTurn(state, () => 0);
+
+  assert.equal(nextState.lastEnemyAction, "forward");
+  assert.equal(nextState.enemyPosition < state.enemyPosition, true);
+  assert.equal(nextState.distance < state.distance, true);
+});
+
+test("duo helper movement does not pull the player or camera distance", () => {
+  const state = combat.freshState();
+  state.encounter = {
+    id: "boss:test_duo",
+    kind: "boss",
+    tierId: 1,
+    opponentId: "test_duo",
+    mode: "duoBossAi",
+  };
+  state.activeTurn = "enemy";
+  state.helper = {
+    ...state.player,
+    name: "Helper",
+  };
+  state.helperPosition = state.playerPosition;
+
+  const nextState = combat.resolveDuoBossHelperTurn(state, () => 0.3);
+
+  assert.equal(nextState.lastHelperAction, "forward");
+  assert.equal(nextState.playerPosition, state.playerPosition);
+  assert.equal(nextState.helperPosition > state.helperPosition, true);
+  assert.equal(nextState.distance, state.distance);
+});

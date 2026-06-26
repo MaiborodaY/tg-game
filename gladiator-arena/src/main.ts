@@ -28,7 +28,7 @@ import {
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { isDuoBossAiCombat, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
 import { pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation } from "./domUi";
@@ -53,6 +53,7 @@ import {
   createArenaBossEncounter,
   createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
+  createDuoBossCombatStateFromHero,
   createDefaultHero,
   createHeroPreviewEquipment,
   deriveHeroStats,
@@ -64,6 +65,7 @@ import {
   getArenaTierDefinitions,
   getBattleReward,
   getHeroArenaEnergy,
+  hasHeroArenaBossVictoryForTier,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
   restoreHeroArenaEnergy,
@@ -133,7 +135,7 @@ const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
-type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId };
+type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId; duo?: boolean };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 type GameMode = "pve" | "pvp";
 interface StartGameOptions {
@@ -147,7 +149,7 @@ let hero: HeroState = createInitialHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
 let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
-let state: CombatState = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
+let state: CombatState = createCombatStateForSelection(activeArenaSelection);
 let displayedStatsState: CombatState = state;
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
@@ -188,6 +190,7 @@ const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "31
 const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487"]);
 const ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS = new Set(["http://localhost:5173"]);
+const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
@@ -239,6 +242,14 @@ syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
 mountArenaMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
+
+function canShowLocalDebugRestartButton(): boolean {
+  return window.location.origin === LOCAL_DEBUG_RESTART_BUTTON_ORIGIN;
+}
+
+function syncRestartButtonVisibility(visible = true): void {
+  dom.restartButton.hidden = !canShowLocalDebugRestartButton() || !visible;
+}
 
 function mountArenaMenu(): void {
   if (!arenaMenu || !arenaMenuButton || !arenaMenuPanel) {
@@ -480,7 +491,7 @@ function applyTelegramDisplayNameToHero(sourceHero: HeroState): HeroState {
 }
 
 function syncHeroRuntimeState(): void {
-  state = createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection));
+  state = createCombatStateForSelection(activeArenaSelection);
   displayedStatsState = state;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
@@ -656,6 +667,7 @@ function revealStatsAfterImpact(token: number, targetState: CombatState): void {
 
 function getPreImpactStatsState(previous: CombatState, current: CombatState): CombatState {
   let player = current.player;
+  let helper = current.helper;
   let enemy = current.enemy;
 
   if (current.lastPlayerDamage > 0) {
@@ -666,15 +678,31 @@ function getPreImpactStatsState(previous: CombatState, current: CombatState): Co
     };
   }
 
-  if (current.lastEnemyDamage > 0) {
-    player = {
-      ...current.player,
-      hp: previous.player.hp,
-      armor: previous.player.armor,
+  if (current.lastHelperDamage > 0) {
+    enemy = {
+      ...current.enemy,
+      hp: previous.enemy.hp,
+      armor: previous.enemy.armor,
     };
   }
 
-  return player === current.player && enemy === current.enemy ? current : { ...current, player, enemy };
+  if (current.lastEnemyDamage > 0) {
+    if (current.lastEnemyTarget === "helper" && current.helper && previous.helper) {
+      helper = {
+        ...current.helper,
+        hp: previous.helper.hp,
+        armor: previous.helper.armor,
+      };
+    } else {
+      player = {
+        ...current.player,
+        hp: previous.player.hp,
+        armor: previous.player.armor,
+      };
+    }
+  }
+
+  return player === current.player && helper === current.helper && enemy === current.enemy ? current : { ...current, player, helper, enemy };
 }
 
 function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void {
@@ -736,7 +764,77 @@ function handleAction(actionId: ActionId): void {
 
   const actionAnimation = commitState(nextState);
 
+  if (isDuoBossAiCombat(nextState)) {
+    void scheduleDuoBossTurns(nextState, actionAnimation);
+    return;
+  }
+
   void scheduleEnemyTurn(nextState, actionAnimation);
+}
+
+async function scheduleDuoBossTurns(enemyState: CombatState, previousActionAnimation: Promise<void> = Promise.resolve()): Promise<void> {
+  if (enemyState.result !== "playing" || enemyState.activeTurn !== "enemy") {
+    return;
+  }
+
+  const token = ++turnSequenceToken;
+
+  setTurnAnimationLocked(true);
+  enemyTimerStatus = "scheduled";
+  syncTurnProbe();
+  logTurnProbe("duo-helper-scheduled", enemyState, enemyTimerStatus);
+
+  await previousActionAnimation;
+
+  if (turnSequenceToken !== token || state !== enemyState) {
+    return;
+  }
+
+  await delay(PLAYER_TO_ENEMY_TURN_PACING_MS);
+
+  if (turnSequenceToken !== token || state !== enemyState) {
+    return;
+  }
+
+  enemyTimerStatus = "running";
+  logTurnProbe("duo-helper-running", enemyState, enemyTimerStatus);
+
+  const helperState = resolveDuoBossHelperTurn(enemyState);
+  const helperActionAnimation = helperState === enemyState ? Promise.resolve() : commitState(helperState);
+
+  await helperActionAnimation;
+
+  if (turnSequenceToken !== token || state !== helperState || helperState.result !== "playing") {
+    enemyTimerStatus = "idle";
+    setTurnAnimationLocked(false);
+    return;
+  }
+
+  await delay(PLAYER_TO_ENEMY_TURN_PACING_MS);
+
+  if (turnSequenceToken !== token || state !== helperState) {
+    return;
+  }
+
+  const nextState = resolveEnemyTurn(helperState);
+
+  enemyTimerStatus = "idle";
+  const enemyActionAnimation = commitState(nextState);
+  logTurnProbe("duo-enemy-committed", nextState, enemyTimerStatus);
+
+  await enemyActionAnimation;
+
+  if (turnSequenceToken !== token || state !== nextState) {
+    return;
+  }
+
+  await delay(ENEMY_TO_PLAYER_TURN_PACING_MS);
+
+  if (turnSequenceToken !== token || state !== nextState) {
+    return;
+  }
+
+  setTurnAnimationLocked(false);
 }
 
 async function scheduleEnemyTurn(enemyState: CombatState, previousActionAnimation: Promise<void> = Promise.resolve()): Promise<void> {
@@ -890,8 +988,17 @@ function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaE
 
   return {
     ...encounter,
+    ...(selection.kind === "boss" && selection.duo ? { mode: "duoBossAi" as const } : {}),
     backgroundVariantId: pickArenaBackgroundVariantIdForTier(encounter.tierId),
   };
+}
+
+function createCombatStateForSelection(selection: ArenaMenuSelection): CombatState {
+  const encounter = createArenaEncounterForSelection(selection);
+
+  return selection.kind === "boss" && selection.duo
+    ? createDuoBossCombatStateFromHero(hero, encounter)
+    : createCombatStateFromHero(hero, encounter);
 }
 
 function renderCityArenaMenu(): void {
@@ -968,17 +1075,23 @@ function createCityArenaTierOption(tier: ArenaTierDefinition): HTMLOptionElement
   return option;
 }
 
-function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement {
+function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
+  const card = document.createElement("div");
   const button = document.createElement("button");
+  const duoButton = document.createElement("button");
   const name = document.createElement("strong");
   const rewardLine = document.createElement("span");
   const reward = document.createElement("span");
   const uniqueReward = document.createElement("span");
+  const disabledTitle = getCityArenaBossDisabledTitle(boss);
 
+  card.className = "city-arena-menu__boss-card";
   button.className = "city-arena-menu__boss";
   button.type = "button";
-  button.disabled = isPvpRoomBlockingArena();
-  button.title = button.disabled ? "Cancel PvP room before fighting bots." : "";
+  button.disabled = Boolean(disabledTitle);
+  button.title = disabledTitle;
+  button.dataset.cityArenaBotButton = "true";
+  button.dataset.cityArenaBossTierId = `${boss.tierId}`;
   name.textContent = boss.name;
   rewardLine.className = "city-arena-menu__boss-reward-line";
   reward.className = "city-arena-menu__reward";
@@ -990,8 +1103,34 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLButtonElement
   button.addEventListener("click", () => {
     void startSelectedArena({ kind: "boss", bossId: boss.id });
   });
+  duoButton.className = "city-arena-menu__boss-duo";
+  duoButton.type = "button";
+  duoButton.textContent = "Duo";
+  duoButton.disabled = Boolean(disabledTitle);
+  duoButton.title = disabledTitle || "Fight this boss with an AI helper.";
+  duoButton.dataset.cityArenaBotButton = "true";
+  duoButton.dataset.cityArenaBossTierId = `${boss.tierId}`;
+  duoButton.dataset.defaultTitle = "Fight this boss with an AI helper.";
+  duoButton.addEventListener("click", () => {
+    void startSelectedArena({ kind: "boss", bossId: boss.id, duo: true });
+  });
+  card.append(button, duoButton);
 
-  return button;
+  return card;
+}
+
+function getCityArenaBossDisabledTitle(boss: ArenaBossDefinition): string {
+  const botDisabledTitle = getCityArenaBotDisabledTitle();
+
+  if (botDisabledTitle) {
+    return botDisabledTitle;
+  }
+
+  return getCityArenaBossVictoryLimitTitle(boss.tierId);
+}
+
+function getCityArenaBossVictoryLimitTitle(tierId: number): string {
+  return hasHeroArenaBossVictoryForTier(hero, tierId) ? "Boss victory limit reached for this tier today." : "";
 }
 
 function createCityArenaEmptyBossMessage(): HTMLElement {
@@ -1048,9 +1187,12 @@ function syncCityArenaBotControls(): void {
     button.disabled = disabled;
     button.title = title;
   });
-  cityArenaBossList?.querySelectorAll<HTMLButtonElement>(".city-arena-menu__boss").forEach((button) => {
-    button.disabled = disabled;
-    button.title = title;
+  cityArenaBossList?.querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]").forEach((button) => {
+    const bossTierLimitTitle = title ? "" : getCityArenaBossVictoryLimitTitle(Number(button.dataset.cityArenaBossTierId));
+    const buttonTitle = title || bossTierLimitTitle;
+
+    button.disabled = Boolean(buttonTitle);
+    button.title = buttonTitle || button.dataset.defaultTitle || "";
   });
 }
 
@@ -1476,6 +1618,16 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
     return;
   }
 
+  if (selection.kind === "boss") {
+    const limitTitle = getArenaSelectionBossVictoryLimitTitle(selection);
+
+    if (limitTitle) {
+      renderCityArenaMenu();
+      window.alert(limitTitle);
+      return;
+    }
+  }
+
   const hasEnergy = await spendArenaEnergyForSelectedArena();
 
   if (!hasEnergy) {
@@ -1484,12 +1636,16 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
 
   leavePvpRoom();
   gameMode = "pve";
-  dom.restartButton.hidden = false;
+  syncRestartButtonVisibility();
   activeArenaSelection = selection;
-  const initialState = createCombatStateFromHero(hero, createArenaEncounterForSelection(selection));
+  const initialState = createCombatStateForSelection(selection);
 
   closeCityArenaMenu();
   void startGameWithCityTransition({ initialState });
+}
+
+function getArenaSelectionBossVictoryLimitTitle(selection: ArenaMenuSelection): string {
+  return selection.kind === "boss" ? getCityArenaBossVictoryLimitTitle(createArenaBossEncounter(selection.bossId).tierId) : "";
 }
 
 async function spendArenaEnergyForSelectedArena(): Promise<boolean> {
@@ -1709,7 +1865,7 @@ function unmountArenaScene(): void {
 function startGame(options: StartGameOptions = {}): void {
   gameMode = options.mode ?? "pve";
   const initialState = gameMode === "pvp" ? pvpSnapshot?.state ?? options.initialState : options.initialState;
-  dom.restartButton.hidden = gameMode === "pvp";
+  syncRestartButtonVisibility(gameMode !== "pvp");
   syncPvpTurnTimer();
   cityHeroProfile?.close();
   closeCityArenaMenu();
@@ -2205,7 +2361,7 @@ async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
   gameMode = "pve";
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  dom.restartButton.hidden = false;
+  syncRestartButtonVisibility();
   unmountArenaScene();
   dom.gameScreen.hidden = true;
   dom.mainMenu.hidden = false;
@@ -2244,7 +2400,7 @@ function restart(options: { syncArena?: boolean } = {}): void {
   battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  void commitState(createCombatStateFromHero(hero, createArenaEncounterForSelection(activeArenaSelection)), options);
+  void commitState(createCombatStateForSelection(activeArenaSelection), options);
 }
 
 dom.startButton.addEventListener("click", () => {
@@ -2274,7 +2430,9 @@ cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
   void handleHeroProgressReset();
 });
 cityHeroWidgetRefs.arenaEnergy?.addEventListener("click", handleAdminArenaEnergyRestore);
-dom.restartButton.addEventListener("click", () => restart());
+if (canShowLocalDebugRestartButton()) {
+  dom.restartButton.addEventListener("click", () => restart());
+}
 dom.cityButton.addEventListener("click", () => {
   void returnToCity();
 });

@@ -570,6 +570,171 @@ body.arena-sharp-rendering .debug-character-viewer canvas {
   text-align: right;
 }
 
+.classic-fighter-card--helper {
+  grid-column: 1;
+  grid-row: 2;
+  padding-top: 6px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  text-align: left;
+}
+
+.battle-screen--duo-boss .classic-combat-hud {
+  grid-template-columns: minmax(104px, 36vw) minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  gap: 5px 6px;
+  align-items: start;
+  padding: max(8px, calc(env(safe-area-inset-top) + 5px)) 7px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.battle-screen--duo-boss .classic-combat-hud::before,
+.battle-screen--duo-boss .classic-encounter-banner,
+.battle-screen--duo-boss .classic-distance-badge {
+  display: none;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  align-items: stretch;
+  min-height: 82px;
+  padding: 5px 7px 7px;
+  border: 2px solid rgba(67, 25, 9, 0.96);
+  border-radius: 7px;
+  background:
+    linear-gradient(90deg, rgba(93, 30, 16, 0.72), rgba(31, 8, 3, 0.56)),
+    linear-gradient(180deg, rgba(255, 214, 128, 0.1), rgba(17, 5, 2, 0.48));
+  box-shadow:
+    inset 0 0 0 1px rgba(238, 163, 64, 0.22),
+    0 2px 0 rgba(8, 2, 1, 0.72),
+    0 5px 12px rgba(7, 2, 1, 0.28);
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy strong {
+  margin: 0 0 1px;
+  padding: 0 0 2px;
+  border-bottom-color: rgba(238, 163, 64, 0.2);
+  font-size: clamp(0.64rem, 2.5vw, 0.82rem);
+  text-align: center;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy .classic-stat {
+  min-height: 17px;
+  margin-top: 2px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy .classic-stat__track {
+  height: 17px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy .classic-stat__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--enemy .classic-stat__value {
+  inset: 0 23px;
+  font-size: 0.58rem;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player,
+.battle-screen--duo-boss .classic-fighter-card--helper {
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  justify-self: start;
+  width: min(124px, 36vw);
+  min-height: 0;
+  padding: 3px 4px 4px;
+  border: 2px solid rgba(67, 25, 9, 0.96);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(96, 38, 15, 0.9), rgba(33, 9, 3, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(238, 163, 64, 0.16),
+    0 2px 0 rgba(8, 2, 1, 0.68);
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player {
+  grid-column: 1;
+  grid-row: 3;
+  margin-top: 18px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--helper {
+  grid-column: 1;
+  grid-row: 2;
+  padding-top: 4px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player strong,
+.battle-screen--duo-boss .classic-fighter-card--helper strong {
+  margin-bottom: 2px;
+  padding: 0 16px 1px 0;
+  font-size: clamp(0.44rem, 1.75vw, 0.54rem);
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player .classic-stat,
+.battle-screen--duo-boss .classic-fighter-card--helper .classic-stat {
+  min-height: 11px;
+  margin-top: 2px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player .classic-stat__track,
+.battle-screen--duo-boss .classic-fighter-card--helper .classic-stat__track {
+  height: 11px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player .classic-stat__icon,
+.battle-screen--duo-boss .classic-fighter-card--helper .classic-stat__icon {
+  width: 12px;
+  height: 12px;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--player .classic-stat__value,
+.battle-screen--duo-boss .classic-fighter-card--helper .classic-stat__value {
+  inset: 0 14px;
+  font-size: 0.43rem;
+}
+
+.battle-screen--duo-boss .classic-helper-action {
+  display: none;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--helper[data-helper-status="ready"] .classic-helper-action {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(166, 246, 128, 0.72);
+  border-radius: 999px;
+  color: #dfffba;
+  background: linear-gradient(180deg, rgba(55, 115, 34, 0.92), rgba(14, 52, 20, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(226, 255, 196, 0.24),
+    0 1px 0 rgba(8, 2, 1, 0.68);
+  font-size: 0;
+}
+
+.battle-screen--duo-boss .classic-fighter-card--helper[data-helper-status="ready"] .classic-helper-action::before {
+  content: "✓";
+  font-size: 0.5rem;
+  line-height: 1;
+}
+
 .classic-fighter-card strong {
   display: block;
   overflow: hidden;
@@ -3045,12 +3210,14 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__fight:hover,
-.city-arena-menu__boss:hover {
+.city-arena-menu__boss:hover,
+.city-arena-menu__boss-duo:hover {
   filter: brightness(1.07);
 }
 
 .city-arena-menu__fight:disabled,
-.city-arena-menu__boss:disabled {
+.city-arena-menu__boss:disabled,
+.city-arena-menu__boss-duo:disabled {
   cursor: not-allowed;
   filter: saturate(0.68) brightness(0.76);
   opacity: 0.72;
@@ -3058,6 +3225,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__fight:active,
 .city-arena-menu__boss:active,
+.city-arena-menu__boss-duo:active,
 .city-arena-menu__close:active {
   transform: translateY(2px);
 }
@@ -3068,6 +3236,13 @@ body.debug-active .city-menu__portrait-button:active {
   max-height: none;
   overflow: visible;
   padding: 0;
+}
+
+.city-arena-menu__boss-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .city-arena-menu__boss {
@@ -3089,6 +3264,29 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__boss::before {
   background-image: url("./assets/ui/arena-difficulty/difficulty-boss.webp");
+}
+
+.city-arena-menu__boss-duo {
+  min-width: 0;
+  min-height: 98px;
+  padding: 0 4px;
+  border: 2px solid #1a0803;
+  border-radius: 8px;
+  color: #dffdf8;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(168, 255, 244, 0.28), transparent 40%),
+    linear-gradient(180deg, rgba(25, 124, 116, 0.94), rgba(16, 45, 42, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(198, 255, 248, 0.24),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(85, 224, 214, 0.28),
+    0 3px 0 rgba(8, 2, 1, 0.7);
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.86);
+  cursor: pointer;
 }
 
 .city-arena-menu__boss-reward-line {
@@ -8208,6 +8406,31 @@ body.debug-active .city-menu__portrait-button:active {
   text-shadow: 1px 1px 0 #160703;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.classic-helper-action {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 16px;
+  align-items: center;
+  justify-content: center;
+  margin: -1px 0 2px;
+  padding: 2px 6px;
+  border: 1px solid rgba(104, 221, 204, 0.38);
+  border-radius: 999px;
+  color: #dcfff8;
+  background:
+    linear-gradient(180deg, rgba(35, 103, 93, 0.8), rgba(11, 38, 34, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(209, 255, 247, 0.13),
+    0 1px 0 rgba(8, 2, 1, 0.76);
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .weapon-shop__selected-perk:hover,

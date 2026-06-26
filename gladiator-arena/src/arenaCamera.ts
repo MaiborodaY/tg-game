@@ -34,7 +34,7 @@ export interface CameraViewport {
   safeBottom?: number;
 }
 
-type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition">;
+type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition"> & Partial<Pick<CombatState, "helper" | "helperPosition">>;
 
 const CLOSE_ZOOM = 2.75;
 export function getPlayerWorldX(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): number {
@@ -46,9 +46,10 @@ export function getEnemyWorldX(current: Pick<CombatState, "playerPosition" | "en
 }
 
 export function getCameraTarget(current: CameraState, tuning?: ArenaDebugTuning, viewport?: Partial<CameraViewport>): CameraTarget {
-  const fighterLayout = getStageLayout(current, tuning);
+  const cameraState = getCameraStateForTargeting(current);
+  const fighterLayout = getStageLayout(cameraState, tuning);
   const cameraViewport = getCameraViewport(viewport);
-  const closeness = clamp((START_DISTANCE - current.distance) / START_DISTANCE, 0, 1);
+  const closeness = clamp((START_DISTANCE - cameraState.distance) / START_DISTANCE, 0, 1);
   const zoom = 1 + closeness * (CLOSE_ZOOM - 1);
   const centerX = (fighterLayout.playerX + fighterLayout.enemyX) / 2;
   const fighterFeetY = (fighterLayout.playerY + fighterLayout.enemyY) / 2;
@@ -75,6 +76,23 @@ export function getCameraTarget(current: CameraState, tuning?: ArenaDebugTuning,
     closeness,
     viewportWidth: cameraViewport.width,
     viewportHeight: cameraViewport.height,
+  };
+}
+
+function getCameraStateForTargeting(current: CameraState): CameraState {
+  if (!current.helper) {
+    return current;
+  }
+
+  const helperPosition = current.helperPosition ?? current.playerPosition;
+  const farthestAlliedPosition = Math.min(current.playerPosition, helperPosition);
+  const distance = clamp(current.enemyPosition - farthestAlliedPosition, 0, START_DISTANCE);
+
+  return {
+    ...current,
+    distance,
+    playerPosition: farthestAlliedPosition,
+    helperPosition,
   };
 }
 

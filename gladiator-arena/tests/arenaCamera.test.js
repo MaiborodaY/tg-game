@@ -166,6 +166,28 @@ test("arena camera follows the honest midpoint when either fighter moves", () =>
   assert.ok(arenaCamera.getCameraTarget(enemyForward).centerX < arenaCamera.getCameraTarget(start).centerX);
 });
 
+test("duo camera stays anchored to the farthest ally", () => {
+  const start = { distance: 3, playerPosition: 0, enemyPosition: 3 };
+  const helperForward = {
+    distance: 2,
+    playerPosition: 0,
+    helperPosition: 1,
+    enemyPosition: 3,
+    helper: { name: "Helper" },
+  };
+  const bothForward = {
+    distance: 2,
+    playerPosition: 1,
+    helperPosition: 1,
+    enemyPosition: 3,
+    helper: { name: "Helper" },
+  };
+
+  assert.equal(arenaCamera.getCameraTarget(helperForward).centerX, arenaCamera.getCameraTarget(start).centerX);
+  assert.equal(arenaCamera.getCameraTarget(helperForward).zoom, arenaCamera.getCameraTarget(start).zoom);
+  assert.ok(arenaCamera.getCameraTarget(bothForward).centerX > arenaCamera.getCameraTarget(start).centerX);
+});
+
 test("world projection uses the camera target for DOM overlays", () => {
   const target = arenaCamera.getCameraTarget({ distance: 0, playerPosition: 3, enemyPosition: 3 });
   const worldX = 193;
