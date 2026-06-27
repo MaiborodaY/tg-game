@@ -90,6 +90,8 @@ export interface FighterState {
   meleeDamagePercentBonus?: number;
   maceArmorDamagePercentBonus?: number;
   spearLungeDamagePercentBonus?: number;
+  spearClinchRangeBonus?: number;
+  spearLungeMoveBonus?: number;
   movementDistanceBonus: number;
   bodyScaleBonus: number;
   clinchRangeBonus: number;
@@ -607,11 +609,11 @@ function isSpearFighter(fighter: FighterState | undefined): boolean {
 }
 
 function getSpearClinchRangeBonus(fighter: FighterState | undefined): number {
-  return isSpearFighter(fighter) ? SPEAR_CLINCH_RANGE_BONUS : 0;
+  return isSpearFighter(fighter) ? Math.max(0, fighter?.spearClinchRangeBonus ?? SPEAR_CLINCH_RANGE_BONUS) : 0;
 }
 
 function getSpearLungeMoveBonus(fighter: FighterState | undefined): number {
-  return isSpearFighter(fighter) ? SPEAR_LUNGE_MOVE_BONUS : 0;
+  return isSpearFighter(fighter) ? Math.max(0, fighter?.spearLungeMoveBonus ?? SPEAR_LUNGE_MOVE_BONUS) : 0;
 }
 
 function getSpearLungeDamageMultiplier(actionId: ActionId, attacker: FighterState): number {

@@ -917,6 +917,8 @@ interface GeneratedEquipmentJsonRecord {
   equipmentSlot: EquipmentSlotKey;
   armorHp?: number;
   damageBonus?: number;
+  spearClinchRangeBonus?: number;
+  spearLungeMoveBonus?: number;
   levelRequirement?: number;
   requirements?: Partial<Record<"strength" | "agility" | "vitality", number>>;
   weaponClass?: "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken";
@@ -2712,6 +2714,14 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Promo
       ? Math.max(0, Math.min(promotedEquipmentMaxDamageBonus, Math.floor(readFinitePayloadNumber(promotion.damageBonus, "damageBonus"))))
       : undefined;
   const weaponClass = kind === "weapon" ? readWeaponClass(item.weaponClass, getWeaponClassFromText(`${assetKey} ${name}`)) : undefined;
+  const spearClinchRangeBonus =
+    kind === "weapon" && weaponClass === "spear"
+      ? readOptionalGeneratedEquipmentSpearBonus(item.spearClinchRangeBonus, "spearClinchRangeBonus")
+      : undefined;
+  const spearLungeMoveBonus =
+    kind === "weapon" && weaponClass === "spear"
+      ? readOptionalGeneratedEquipmentSpearBonus(item.spearLungeMoveBonus, "spearLungeMoveBonus")
+      : undefined;
   const availability = readPromotedEquipmentAvailability(promotion.availability, promotion.addToShop === true);
   const rarity = availability.bossUnique ? "unique" : readItemRarity(item.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
   const price = availability.shop ? Math.max(0, Math.min(promotedEquipmentMaxPrice, Math.floor(readFinitePayloadNumber(promotion.price, "price")))) : 0;
@@ -2736,6 +2746,8 @@ export async function pickPromotedEquipmentItem(payload: unknown): Promise<Promo
       ...(armorCategory ? { armorCategory } : {}),
       ...(armorHp !== undefined ? { armorHp } : {}),
       ...(damageBonus !== undefined ? { damageBonus } : {}),
+      ...(spearClinchRangeBonus !== undefined ? { spearClinchRangeBonus } : {}),
+      ...(spearLungeMoveBonus !== undefined ? { spearLungeMoveBonus } : {}),
       ...(weaponClass ? { weaponClass } : {}),
       equipmentSlot,
       assetKeys,
@@ -4644,6 +4656,8 @@ function formatGeneratedEquipmentRecord(record: GeneratedEquipmentJsonRecord): s
     equipmentSlot: record.equipmentSlot,
     ...(record.armorHp !== undefined ? { armorHp: record.armorHp } : {}),
     ...(record.damageBonus !== undefined ? { damageBonus: record.damageBonus } : {}),
+    ...(record.spearClinchRangeBonus !== undefined ? { spearClinchRangeBonus: record.spearClinchRangeBonus } : {}),
+    ...(record.spearLungeMoveBonus !== undefined ? { spearLungeMoveBonus: record.spearLungeMoveBonus } : {}),
     ...(record.requirements ? { requirements: record.requirements } : {}),
     ...(record.weaponClass ? { weaponClass: record.weaponClass } : {}),
     ...(record.levelRequirement !== undefined ? { levelRequirement: record.levelRequirement } : {}),
@@ -4911,6 +4925,14 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
   const rarity = readItemRarity(record.rarity, getDefaultGeneratedItemRarity(kind, armorCategory, weaponClass));
   const requirements = validateGeneratedEquipmentRequirements(record.requirements);
   const levelRequirement = validateGeneratedEquipmentLevelRequirement(record.levelRequirement);
+  const spearClinchRangeBonus =
+    kind === "weapon" && weaponClass === "spear"
+      ? readOptionalGeneratedEquipmentSpearBonus(record.spearClinchRangeBonus, "generated equipment spearClinchRangeBonus")
+      : undefined;
+  const spearLungeMoveBonus =
+    kind === "weapon" && weaponClass === "spear"
+      ? readOptionalGeneratedEquipmentSpearBonus(record.spearLungeMoveBonus, "generated equipment spearLungeMoveBonus")
+      : undefined;
   const equipmentSet = kind === "armor" ? validateGeneratedEquipmentSetInfo(record.equipmentSet) : undefined;
   const availability = readGeneratedEquipmentAvailability(record.availability, {
     shop: Boolean(record.armoryProduct || record.weaponProduct),
@@ -4934,6 +4956,8 @@ function validateGeneratedEquipmentRecord(input: unknown): GeneratedEquipmentJso
     ...(damageBonus !== undefined ? { damageBonus } : {}),
     ...(requirements ? { requirements } : {}),
     ...(weaponClass ? { weaponClass } : {}),
+    ...(spearClinchRangeBonus !== undefined ? { spearClinchRangeBonus } : {}),
+    ...(spearLungeMoveBonus !== undefined ? { spearLungeMoveBonus } : {}),
     ...(levelRequirement !== undefined ? { levelRequirement } : {}),
     equipmentSlot,
     assetKeys,
@@ -4955,6 +4979,14 @@ function validateGeneratedEquipmentLevelRequirement(input: unknown): number | un
   }
 
   return readClampedInteger(input, "generated equipment levelRequirement", 1, 100);
+}
+
+function readOptionalGeneratedEquipmentSpearBonus(input: unknown, label: string): number | undefined {
+  if (input === undefined || input === null || input === "") {
+    return undefined;
+  }
+
+  return Math.max(0, Math.min(5, readFinitePayloadNumber(input, label)));
 }
 
 function validateGeneratedEquipmentSetInfo(input: unknown): GeneratedEquipmentSetInfo | undefined {

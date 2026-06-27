@@ -197,6 +197,7 @@ let pvpSession: PvpRoomSession | undefined;
 let pvpConnection: PvpConnection | undefined;
 let pvpSnapshot: PvpRoomSnapshot | undefined;
 let pvpActionPending = false;
+let pvpSnapshotPlaybackToken = 0;
 let pvpControlsBusy = false;
 let pvpRoomsVisible = false;
 let pvpRoomList: PvpRoomListEntry[] = [];
@@ -230,6 +231,7 @@ const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const AUTO_RESULT_RETURN_LABEL = "Return";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
+const ARENA_ENTRY_FAILSAFE_TIMEOUT_MS = 5000;
 const ARENA_RANDOM_ENERGY_COST = 1;
 const ARENA_BOSS_ENERGY_COST = 2;
 const ARENA_DUO_BOSS_ENERGY_COST = 3;
@@ -250,6 +252,7 @@ let isArenaEntryLoading = false;
 let isArenaEntryTransitionPlaying = false;
 let arenaEntryToken = 0;
 let arenaEntryLoaderTimer: number | undefined;
+let arenaEntryFailsafeTimer: number | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleResultPresentation: BattleResultPresentation | undefined;
 let battleResultPresentationStage: BattleResultPresentationStage = "reward";
@@ -427,12 +430,39 @@ function clearArenaEntryLoaderTimer(): void {
   }
 }
 
+function clearArenaEntryFailsafeTimer(): void {
+  if (arenaEntryFailsafeTimer) {
+    window.clearTimeout(arenaEntryFailsafeTimer);
+    arenaEntryFailsafeTimer = undefined;
+  }
+}
+
+function releaseStalledArenaEntryGate(token: number): void {
+  if (arenaEntryToken !== token || !isArenaEntryLoading) {
+    return;
+  }
+
+  arenaEntryToken += 1;
+  isArenaEntryLoading = false;
+  isArenaEntryTransitionPlaying = false;
+  enemyTimerStatus = "idle";
+  clearArenaEntryLoaderTimer();
+  clearArenaEntryFailsafeTimer();
+  setArenaEntryLoaderVisible(false);
+  dom.gameScreen.classList.remove("battle-screen--arena-entry");
+  setTurnAnimationLocked(false);
+  syncAutoBattleToggle();
+  syncActionArc();
+  refreshArenaLayout();
+}
+
 function beginArenaEntryGate(): number {
   const token = arenaEntryToken + 1;
 
   arenaEntryToken = token;
   isArenaEntryLoading = true;
   clearArenaEntryLoaderTimer();
+  clearArenaEntryFailsafeTimer();
   setArenaEntryLoaderVisible(false);
   dom.gameScreen.classList.add("battle-screen--arena-entry");
   arenaEntryLoaderTimer = window.setTimeout(() => {
@@ -441,6 +471,10 @@ function beginArenaEntryGate(): number {
       setArenaEntryLoaderVisible(true);
     }
   }, ARENA_ENTRY_LOADER_DELAY_MS);
+  arenaEntryFailsafeTimer = window.setTimeout(() => {
+    arenaEntryFailsafeTimer = undefined;
+    releaseStalledArenaEntryGate(token);
+  }, ARENA_ENTRY_FAILSAFE_TIMEOUT_MS);
   syncActionArc();
 
   return token;
@@ -453,6 +487,7 @@ function finishArenaEntryGate(token: number): void {
 
   isArenaEntryLoading = false;
   clearArenaEntryLoaderTimer();
+  clearArenaEntryFailsafeTimer();
   setArenaEntryLoaderVisible(false);
   dom.gameScreen.classList.remove("battle-screen--arena-entry");
   syncActionArc();
@@ -463,6 +498,7 @@ function cancelArenaEntryGate(): void {
   isArenaEntryLoading = false;
   isArenaEntryTransitionPlaying = false;
   clearArenaEntryLoaderTimer();
+  clearArenaEntryFailsafeTimer();
   setArenaEntryLoaderVisible(false);
   dom.gameScreen.classList.remove("battle-screen--arena-entry");
   syncActionArc();
@@ -846,6 +882,16 @@ function setTurnAnimationLocked(locked: boolean): void {
   if (!locked) {
     scheduleAutoPlayerTurn();
   }
+}
+
+function resetBattleInteractionLocksForArenaStart(): void {
+  turnSequenceToken += 1;
+  pvpSnapshotPlaybackToken += 1;
+  enemyTimerStatus = "idle";
+  lastActionClick = "none";
+  setAutoBattleEnabled(false);
+  setTurnAnimationLocked(false);
+  cancelArenaEntryGate();
 }
 
 function mountAutoBattleToggle(host: HTMLElement): HTMLButtonElement {
@@ -2175,6 +2221,7 @@ function handlePvpSocketClose(): void {
   pvpSession = undefined;
   pvpSnapshot = undefined;
   pvpActionPending = false;
+  pvpSnapshotPlaybackToken += 1;
   clearPvpTurnTimer();
   setTurnAnimationLocked(false);
   setPvpStatus("Online disconnected.");
@@ -2191,6 +2238,9 @@ function handlePvpSocketClose(): void {
 
 function handlePvpServerMessage(message: PvpServerMessage): void {
   if (message.type === "error") {
+    pvpActionPending = false;
+    pvpSnapshotPlaybackToken += 1;
+    setTurnAnimationLocked(false);
     setPvpStatus(message.message);
     return;
   }
@@ -2219,9 +2269,32 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
   }
 
   if (gameMode === "pvp") {
-    setTurnAnimationLocked(false);
-    void commitState(snapshot.state);
+    commitPvpSnapshotState(snapshot);
   }
+}
+
+function commitPvpSnapshotState(snapshot: PvpRoomSnapshot): void {
+  if (!snapshot.state || gameMode !== "pvp") {
+    return;
+  }
+
+  const playbackToken = ++pvpSnapshotPlaybackToken;
+
+  setTurnAnimationLocked(true);
+  const actionAnimation = commitState(snapshot.state);
+  const releasePlaybackLock = () => {
+    if (pvpSnapshotPlaybackToken !== playbackToken || pvpSnapshot !== snapshot || gameMode !== "pvp" || isInCity) {
+      return;
+    }
+
+    if (snapshot.duoBossEnemyTurnPending) {
+      return;
+    }
+
+    setTurnAnimationLocked(false);
+  };
+
+  void actionAnimation.then(releasePlaybackLock, releasePlaybackLock);
 }
 
 function formatPvpRoomStatus(snapshot: PvpRoomSnapshot): string {
@@ -2231,6 +2304,10 @@ function formatPvpRoomStatus(snapshot: PvpRoomSnapshot): string {
 
   if (snapshot.status === "finished") {
     return snapshot.roomKind === "duoBoss" ? "Duo fight finished." : "PvP match finished.";
+  }
+
+  if (snapshot.duoBossEnemyTurnPending) {
+    return "Boss turn.";
   }
 
   if (snapshot.roomKind === "duoBoss") {
@@ -2372,6 +2449,7 @@ function leavePvpRoom(options: { keepStatus?: boolean } = {}): void {
   pvpSession = undefined;
   pvpSnapshot = undefined;
   pvpActionPending = false;
+  pvpSnapshotPlaybackToken += 1;
   clearPvpTurnTimer();
   setTurnAnimationLocked(false);
   syncPvpControls();
@@ -2402,11 +2480,15 @@ function updatePvpTurnTimer(): void {
   }
 
   const remainingSeconds = Math.max(0, Math.ceil((pvpDeadlineLocalTime - Date.now()) / 1000));
-  const turnLabel = pvpSnapshot.activeSeat === pvpSession?.seat
-    ? "YOUR TURN"
-    : pvpSnapshot.roomKind === "duoBoss"
-      ? "ALLY"
-      : "OPPONENT";
+  let turnLabel = "OPPONENT";
+
+  if (pvpSnapshot.duoBossEnemyTurnPending) {
+    turnLabel = "BOSS";
+  } else if (pvpSnapshot.activeSeat === pvpSession?.seat) {
+    turnLabel = "YOUR TURN";
+  } else if (pvpSnapshot.roomKind === "duoBoss") {
+    turnLabel = "ALLY";
+  }
 
   pvpTurnTimer.textContent = `${turnLabel} ${remainingSeconds}s`;
 }
@@ -2856,9 +2938,7 @@ function unmountArenaScene(): void {
 
 function startGame(options: StartGameOptions = {}): void {
   gameMode = options.mode ?? "pve";
-  if (gameMode === "pvp") {
-    setAutoBattleEnabled(false);
-  }
+  resetBattleInteractionLocksForArenaStart();
   const initialState = gameMode === "pvp" ? pvpSnapshot?.state ?? options.initialState : options.initialState;
   syncRestartButtonVisibility(gameMode !== "pvp");
   syncPvpTurnTimer();

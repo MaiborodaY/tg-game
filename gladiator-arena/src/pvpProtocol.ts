@@ -24,6 +24,7 @@ export interface PvpRoomSnapshot {
   activeSeat?: PvpSeat;
   controlledActor?: CombatActor;
   autoSeats?: Partial<Record<PvpSeat, boolean>>;
+  duoBossEnemyTurnPending?: boolean;
   turnVersion: number;
   deadlineAt?: number;
   serverNow: number;

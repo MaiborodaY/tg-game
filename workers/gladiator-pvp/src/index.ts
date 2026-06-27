@@ -63,6 +63,7 @@ interface RoomRecord {
   state?: CombatState;
   activeSeat?: PvpSeat;
   autoSeats?: Partial<Record<PvpSeat, boolean>>;
+  duoBossEnemyTurnPending?: boolean;
   timeoutStreaks?: Partial<Record<PvpSeat, number>>;
   turnVersion: number;
   deadlineAt?: number;
@@ -565,6 +566,23 @@ export class PvpRoom extends DurableObject<Env> {
       return;
     }
 
+    if (record?.status === "playing" && record.duoBossEnemyTurnPending) {
+      if (!record.state || !record.deadlineAt) {
+        return;
+      }
+
+      if (Date.now() < record.deadlineAt) {
+        await this.scheduleRoomAlarm(record);
+        return;
+      }
+
+      const nextRecord = this.resolvePendingDuoBossEnemyTurn(record);
+      await this.writeRoom(nextRecord);
+      await this.scheduleRoomAlarm(nextRecord);
+      this.broadcastSnapshots(nextRecord);
+      return;
+    }
+
     if (!record || record.status !== "playing" || !record.state || !record.activeSeat || !record.deadlineAt) {
       return;
     }
@@ -599,6 +617,18 @@ export class PvpRoom extends DurableObject<Env> {
   }
 
   private async resolveExpiredTurnIfNeeded(record: RoomRecord | undefined): Promise<RoomRecord | undefined> {
+    if (record?.status === "playing" && record.duoBossEnemyTurnPending) {
+      if (!record.state || !record.deadlineAt || Date.now() < record.deadlineAt) {
+        return record;
+      }
+
+      const nextRecord = this.resolvePendingDuoBossEnemyTurn(record);
+      await this.writeRoom(nextRecord);
+      await this.scheduleRoomAlarm(nextRecord);
+      this.broadcastSnapshots(nextRecord);
+      return nextRecord;
+    }
+
     if (!record || record.status !== "playing" || !record.state || !record.activeSeat || !record.deadlineAt) {
       return record;
     }
@@ -719,15 +749,54 @@ export class PvpRoom extends DurableObject<Env> {
       return record;
     }
 
-    const resolvedState = record.roomKind === "duoBoss"
-      ? this.resolveDuoBossAction(record.state, seat, actionId)
-      : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
-    const state = record.roomKind === "duoBoss" ? resolveDuoBossSkippedDefeatedAllyTurn(resolvedState) : resolvedState;
     const timeoutStreaks = options.resetTimeoutStreak === false
       ? record.timeoutStreaks
       : getNextTimeoutStreaks(record.timeoutStreaks, seat, 0);
 
+    if (record.roomKind === "duoBoss" && seat === "guest") {
+      const helperState = resolveDuoBossSkippedDefeatedAllyTurn(resolveDuoBossHelperPlayerTurn(record.state, actionId));
+
+      return helperState.result === "playing"
+        ? this.createPendingDuoBossEnemyTurnRecord(record, helperState, now, timeoutStreaks)
+        : this.createRecordWithState(record, helperState, now, timeoutStreaks);
+    }
+
+    const resolvedState = record.roomKind === "duoBoss"
+      ? resolvePvpTurn(record.state, "player", actionId)
+      : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
+    const state = record.roomKind === "duoBoss" ? resolveDuoBossSkippedDefeatedAllyTurn(resolvedState) : resolvedState;
+
     return this.createRecordWithState(record, state, now, timeoutStreaks);
+  }
+
+  private createPendingDuoBossEnemyTurnRecord(
+    record: RoomRecord,
+    state: CombatState,
+    now: number,
+    timeoutStreaks = record.timeoutStreaks,
+  ): RoomRecord {
+    return {
+      ...record,
+      status: "playing",
+      state,
+      activeSeat: undefined,
+      duoBossEnemyTurnPending: true,
+      timeoutStreaks,
+      turnVersion: record.turnVersion + 1,
+      deadlineAt: now + DUO_BOSS_AUTO_TURN_DELAY_MS,
+      expiresAt: undefined,
+      updatedAt: now,
+    };
+  }
+
+  private resolvePendingDuoBossEnemyTurn(record: RoomRecord, now = Date.now()): RoomRecord {
+    if (record.roomKind !== "duoBoss" || !record.duoBossEnemyTurnPending || !record.state) {
+      return record;
+    }
+
+    const enemyState = resolveDuoBossSkippedDefeatedAllyTurn(resolveEnemyTurn(record.state));
+
+    return this.createRecordWithState(record, enemyState, now);
   }
 
   private createRecordWithState(
@@ -746,6 +815,7 @@ export class PvpRoom extends DurableObject<Env> {
       status,
       state,
       activeSeat,
+      duoBossEnemyTurnPending: undefined,
       timeoutStreaks,
       turnVersion: record.turnVersion + 1,
       deadlineAt,
@@ -779,16 +849,6 @@ export class PvpRoom extends DurableObject<Env> {
     return nextRecord;
   }
 
-  private resolveDuoBossAction(state: CombatState, seat: PvpSeat, actionId: ActionId): CombatState {
-    if (seat === "host") {
-      return resolvePvpTurn(state, "player", actionId);
-    }
-
-    const helperState = resolveDuoBossHelperPlayerTurn(state, actionId);
-
-    return helperState.result === "playing" ? resolveEnemyTurn(helperState) : helperState;
-  }
-
   private async scheduleRoomAlarm(record: RoomRecord): Promise<void> {
     if (record.status === "playing" && record.deadlineAt) {
       await this.ctx.storage.setAlarm(record.deadlineAt);
@@ -814,6 +874,7 @@ export class PvpRoom extends DurableObject<Env> {
       state: record.state,
       activeSeat: record.activeSeat,
       autoSeats: record.autoSeats,
+      duoBossEnemyTurnPending: record.duoBossEnemyTurnPending,
       turnVersion: record.turnVersion,
       deadlineAt: record.deadlineAt,
       serverNow: Date.now(),
