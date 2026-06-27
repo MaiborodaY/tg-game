@@ -421,13 +421,14 @@ export class PvpRoom extends DurableObject<Env> {
     if (!record || !seat) {
       return undefined;
     }
+    const liveRecord = await this.healDuoBossRoomIfNeeded(record);
 
     return {
-      roomCode: record.roomCode,
+      roomCode: liveRecord.roomCode,
       token,
       seat,
-      roomKind: record.roomKind,
-      snapshot: this.createViewerSnapshot(record, seat),
+      roomKind: liveRecord.roomKind,
+      snapshot: this.createViewerSnapshot(liveRecord, seat),
     };
   }
 
@@ -444,6 +445,7 @@ export class PvpRoom extends DurableObject<Env> {
     if (!record || !seat) {
       return json({ ok: false, error: "Invalid PvP room token." }, 403);
     }
+    const liveRecord = await this.healDuoBossRoomIfNeeded(record);
 
     const pair = new WebSocketPair();
     const client = pair[0];
@@ -451,7 +453,7 @@ export class PvpRoom extends DurableObject<Env> {
 
     server.serializeAttachment({ token, seat } satisfies SocketAttachment);
     this.ctx.acceptWebSocket(server);
-    this.sendSnapshot(server, record, seat);
+    this.sendSnapshot(server, liveRecord, seat);
 
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -487,9 +489,18 @@ export class PvpRoom extends DurableObject<Env> {
   }
 
   private async handleAutoOff(seat: PvpSeat): Promise<void> {
-    const record = await this.readLiveRoom();
+    const storedRecord = await this.readLiveRoom();
 
-    if (!record || record.roomKind !== "duoBoss" || !record.autoSeats?.[seat]) {
+    if (!storedRecord || storedRecord.roomKind !== "duoBoss") {
+      return;
+    }
+
+    const record = await this.healDuoBossRoomIfNeeded(storedRecord, { broadcast: false });
+
+    if (!record.autoSeats?.[seat]) {
+      if (record !== storedRecord) {
+        this.broadcastSnapshots(record);
+      }
       return;
     }
 
@@ -695,18 +706,37 @@ export class PvpRoom extends DurableObject<Env> {
     const now = Date.now();
     const actor = getPvpActorForSeat(seat, record.roomKind);
 
+    if (record.roomKind === "duoBoss") {
+      const skippedHelperState = this.resolveDuoBossDeadHelperTurn(record.state);
+
+      if (skippedHelperState !== record.state) {
+        return this.createRecordWithState(record, skippedHelperState, now);
+      }
+    }
+
     if (!canUseTurnAction(record.state, actionId, actor)) {
       return record;
     }
 
-    const state = record.roomKind === "duoBoss"
+    const resolvedState = record.roomKind === "duoBoss"
       ? this.resolveDuoBossAction(record.state, seat, actionId)
       : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
-    const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
-    const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn, record.roomKind) : undefined;
+    const state = record.roomKind === "duoBoss" ? this.resolveDuoBossDeadHelperTurn(resolvedState) : resolvedState;
     const timeoutStreaks = options.resetTimeoutStreak === false
       ? record.timeoutStreaks
       : getNextTimeoutStreaks(record.timeoutStreaks, seat, 0);
+
+    return this.createRecordWithState(record, state, now, timeoutStreaks);
+  }
+
+  private createRecordWithState(
+    record: RoomRecord,
+    state: CombatState,
+    now: number,
+    timeoutStreaks = record.timeoutStreaks,
+  ): RoomRecord {
+    const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
+    const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn, record.roomKind) : undefined;
     const deadlineAt = activeSeat ? now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks, autoSeats: record.autoSeats }, activeSeat) : undefined;
     const expiresAt = status === "finished" ? now + FINISHED_ROOM_TTL_MS : undefined;
 
@@ -721,6 +751,41 @@ export class PvpRoom extends DurableObject<Env> {
       expiresAt,
       updatedAt: now,
     };
+  }
+
+  private createHealedDuoBossRoom(record: RoomRecord, now = Date.now()): RoomRecord {
+    if (record.roomKind !== "duoBoss" || !record.state) {
+      return record;
+    }
+
+    const state = this.resolveDuoBossDeadHelperTurn(record.state);
+
+    return state === record.state ? record : this.createRecordWithState(record, state, now);
+  }
+
+  private async healDuoBossRoomIfNeeded(record: RoomRecord, options: { broadcast?: boolean } = {}): Promise<RoomRecord> {
+    const nextRecord = this.createHealedDuoBossRoom(record);
+
+    if (nextRecord === record) {
+      return record;
+    }
+
+    await this.writeRoom(nextRecord);
+    await this.scheduleRoomAlarm(nextRecord);
+    if (options.broadcast !== false) {
+      this.broadcastSnapshots(nextRecord);
+    }
+    return nextRecord;
+  }
+
+  private resolveDuoBossDeadHelperTurn(state: CombatState): CombatState {
+    const helperAlive = (state.helper?.hp ?? 0) > 0;
+
+    if (state.result !== "playing" || state.activeTurn !== "enemy" || helperAlive) {
+      return state;
+    }
+
+    return resolveEnemyTurn(state);
   }
 
   private resolveDuoBossAction(state: CombatState, seat: PvpSeat, actionId: ActionId): CombatState {
