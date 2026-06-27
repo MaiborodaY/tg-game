@@ -110,6 +110,31 @@ export interface CityHeroInfoRenderOptions {
   highlightedEquipmentItemIds?: readonly HeroItemId[];
 }
 
+type CityHeroPortraitNotice =
+  | {
+      kind: "level";
+      label: "NEW LEVEL";
+    }
+  | {
+      kind: "item";
+      label: "NEW ITEM";
+      rarity: ShopItemRarity;
+    };
+
+const CITY_HERO_PORTRAIT_NOTICE_CLASS_NAMES = [
+  "city-menu__portrait-button--has-notification",
+  "city-menu__portrait-button--has-points",
+  "city-menu__portrait-button--notice-level",
+  "city-menu__portrait-button--notice-item",
+  "city-menu__portrait-button--notice-common",
+  "city-menu__portrait-button--notice-uncommon",
+  "city-menu__portrait-button--notice-rare",
+  "city-menu__portrait-button--notice-epic",
+  "city-menu__portrait-button--notice-legendary",
+  "city-menu__portrait-button--notice-mythical",
+  "city-menu__portrait-button--notice-unique",
+] as const;
+
 interface CityEquipmentMenuElements {
   root: HTMLElement;
   stage: HTMLElement | null;
@@ -402,6 +427,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   const xpToNextLevel = Math.max(1, hero.xpToNextLevel);
   const xpRatio = Math.max(0, Math.min(1, hero.xp / xpToNextLevel));
   const highlightedEquipmentItems = getHighlightedCityEquipmentItems(options.highlightedEquipmentItemIds);
+  const portraitNotice = getCityHeroPortraitNotice(hero, highlightedEquipmentItems);
 
   if (refs.name) {
     refs.name.textContent = hero.name.toUpperCase();
@@ -462,7 +488,7 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
     refs.profileXpText.textContent = `${hero.xp}/${xpToNextLevel}`;
   }
 
-  refs.portraitButton?.classList.toggle("city-menu__portrait-button--has-points", hero.skillPoints > 0 || highlightedEquipmentItems.length > 0);
+  syncCityHeroPortraitNotice(refs.portraitButton, portraitNotice);
 
   if (refs.skillPoints) {
     refs.skillPoints.textContent = hero.skillPoints > 0 ? `${hero.skillPoints} POINTS READY` : "NO POINTS";
@@ -486,6 +512,48 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   });
 
   renderCityHeroProfileStats(refs, hero);
+}
+
+function getCityHeroPortraitNotice(hero: HeroState, highlightedEquipmentItems: readonly CityHeroEquipmentHintItem[]): CityHeroPortraitNotice | undefined {
+  if (hero.skillPoints > 0) {
+    return { kind: "level", label: "NEW LEVEL" };
+  }
+
+  const rarity = getHighestHighlightedEquipmentRarity(highlightedEquipmentItems);
+
+  return rarity ? { kind: "item", label: "NEW ITEM", rarity } : undefined;
+}
+
+function getHighestHighlightedEquipmentRarity(highlightedEquipmentItems: readonly CityHeroEquipmentHintItem[]): ShopItemRarity | undefined {
+  return highlightedEquipmentItems.reduce<ShopItemRarity | undefined>((highestRarity, hint) => {
+    const rarity = getShopProductRarity([hint.itemId]);
+
+    if (!highestRarity || CITY_EQUIPMENT_RARITY_SORT_ORDER[rarity] > CITY_EQUIPMENT_RARITY_SORT_ORDER[highestRarity]) {
+      return rarity;
+    }
+
+    return highestRarity;
+  }, undefined);
+}
+
+function syncCityHeroPortraitNotice(button: HTMLButtonElement | null, notice: CityHeroPortraitNotice | undefined): void {
+  if (!button) {
+    return;
+  }
+
+  button.classList.remove(...CITY_HERO_PORTRAIT_NOTICE_CLASS_NAMES);
+
+  if (!notice) {
+    delete button.dataset.heroNotice;
+    return;
+  }
+
+  button.dataset.heroNotice = notice.label;
+  button.classList.add("city-menu__portrait-button--has-notification", `city-menu__portrait-button--notice-${notice.kind}`);
+
+  if (notice.kind === "item") {
+    button.classList.add(`city-menu__portrait-button--notice-${notice.rarity}`);
+  }
 }
 
 function renderCityArenaEnergyBadge(element: HTMLElement, arenaEnergy: HeroArenaEnergy, emptyClassName: string): void {

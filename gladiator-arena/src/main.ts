@@ -112,6 +112,10 @@ const cityMenu = document.querySelector<HTMLElement>(".city-menu");
 const cityTimeToggle = document.querySelector<HTMLButtonElement>("#cityTimeToggle");
 const cityArenaMenu = document.querySelector<HTMLElement>("#cityArenaMenu");
 const cityArenaCloseButton = document.querySelector<HTMLButtonElement>("#cityArenaCloseButton");
+const cityArenaMainView = document.querySelector<HTMLElement>("#cityArenaMainView");
+const cityArenaOnlinePanel = document.querySelector<HTMLElement>("#cityArenaOnlinePanel");
+const cityArenaOnlineButton = document.querySelector<HTMLButtonElement>("#cityArenaOnlineButton");
+const cityArenaOnlineBackButton = document.querySelector<HTMLButtonElement>("#cityArenaOnlineBackButton");
 const cityArenaTierName = document.querySelector<HTMLElement>("#cityArenaTierName");
 const cityArenaTierSelect = document.querySelector<HTMLSelectElement>("#cityArenaTierSelect");
 const cityArenaEasyReward = document.querySelector<HTMLElement>("#cityArenaEasyReward");
@@ -166,7 +170,7 @@ interface PendingCityArenaAutoRateTarget extends CityArenaAutoRateTarget {
   sourceHero: HeroState;
 }
 let hero: HeroState = createInitialHero();
-let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
+let pendingEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
 let activeArenaSelection: ArenaMenuSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
 let state: CombatState = createCombatStateForSelection(activeArenaSelection);
@@ -194,6 +198,7 @@ let pvpControlsBusy = false;
 let pvpRoomsVisible = false;
 let pvpRoomList: PvpRoomListEntry[] = [];
 let activeOnlineRoomKind: PvpRoomKind = "duoBoss";
+let isCityArenaOnlineViewOpen = false;
 let pvpDeadlineLocalTime: number | undefined;
 let pvpTimerInterval: number | undefined;
 let hasStarted = false;
@@ -520,7 +525,7 @@ function syncPlayerCityBodyScale(): void {
 
 function renderCityHero(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero, {
-    highlightedEquipmentItemIds: pendingBossEquipmentHintItemIds,
+    highlightedEquipmentItemIds: pendingEquipmentHintItemIds,
   });
 }
 
@@ -654,7 +659,7 @@ function handleAdminArenaEnergyRestore(): void {
 }
 
 function resetHeroProgressState(): void {
-  pendingBossEquipmentHintItemIds = [];
+  pendingEquipmentHintItemIds = [];
   activeArenaTierId = DEFAULT_ARENA_TIER_ID;
   activeArenaSelection = { kind: "random", tierId: DEFAULT_ARENA_TIER_ID, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID };
   clearShopPreview();
@@ -1774,6 +1779,24 @@ function setActiveOnlineRoomKind(roomKind: PvpRoomKind): void {
   setPvpStatus("");
 }
 
+function setCityArenaOnlineViewOpen(open: boolean): void {
+  if (isCityArenaOnlineViewOpen === open) {
+    return;
+  }
+
+  isCityArenaOnlineViewOpen = open;
+  if (cityArenaMainView) {
+    cityArenaMainView.hidden = open;
+  }
+  if (cityArenaOnlinePanel) {
+    cityArenaOnlinePanel.hidden = !open;
+  }
+  cityArenaMenu?.classList.toggle("city-arena-menu--online-open", open);
+  if (open) {
+    syncPvpControls();
+  }
+}
+
 function syncPvpControls(): void {
   const disabled = pvpControlsBusy || Boolean(pvpSession);
   const isPveTab = activeOnlineRoomKind === "duoBoss";
@@ -1781,14 +1804,15 @@ function syncPvpControls(): void {
   syncOnlineTabs();
 
   if (cityPvpCreateButton) {
-    cityPvpCreateButton.textContent = isPveTab ? "BOSS DUO" : "CREATE";
+    cityPvpCreateButton.hidden = isPveTab;
+    cityPvpCreateButton.textContent = "CREATE";
     cityPvpCreateButton.disabled = disabled || isPveTab;
-    cityPvpCreateButton.title = isPveTab ? "Use a boss DUO Online button to create a help request." : "Create PvP room.";
+    cityPvpCreateButton.title = "Create PvP room.";
   }
   if (cityPvpJoinButton) {
-    cityPvpJoinButton.textContent = pvpRoomsVisible ? "REFRESH" : "SEARCH";
+    cityPvpJoinButton.textContent = "REFRESH";
     cityPvpJoinButton.disabled = disabled;
-    cityPvpJoinButton.title = isPveTab ? "Search PVE help requests." : "Search PvP rooms.";
+    cityPvpJoinButton.title = isPveTab ? "Refresh PVE help requests." : "Refresh PvP rooms.";
   }
   syncCityArenaBotControls();
   renderPvpRoomList();
@@ -1814,7 +1838,7 @@ function renderPvpRoomList(): void {
   }
 
   const entries = getVisiblePvpRoomEntries();
-  const shouldShow = pvpRoomsVisible || entries.length > 0;
+  const shouldShow = isCityArenaOnlineViewOpen || pvpRoomsVisible || entries.length > 0;
 
   cityPvpRoomList.hidden = !shouldShow;
   if (!shouldShow) {
@@ -1823,11 +1847,11 @@ function renderPvpRoomList(): void {
   }
 
   if (pvpControlsBusy && entries.length === 0) {
-    cityPvpRoomList.replaceChildren(createPvpRoomListMessage("Loading rooms..."));
+    cityPvpRoomList.replaceChildren(createPvpRoomListMessage("Refreshing..."));
     return;
   }
 
-  cityPvpRoomList.replaceChildren(...(entries.length > 0 ? entries.map(createPvpRoomListItem) : [createPvpRoomListMessage("No open rooms.")]));
+  cityPvpRoomList.replaceChildren(...(entries.length > 0 ? entries.map(createPvpRoomListItem) : [createPvpRoomListMessage("No rooms yet.")]));
 }
 
 function getVisiblePvpRoomEntries(): PvpRoomListEntry[] {
@@ -1921,7 +1945,7 @@ async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<v
   pvpRoomsVisible = true;
   setPvpControlsBusy(true);
   if (!options.silent) {
-    setPvpStatus("Loading rooms...");
+    setPvpStatus("");
   }
 
   try {
@@ -1930,7 +1954,7 @@ async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<v
     pvpRoomList = response.rooms;
     setPvpControlsBusy(false);
     if (!options.silent) {
-      setPvpStatus(response.rooms.length > 0 ? "Choose a room." : "No open rooms.");
+      setPvpStatus(response.rooms.length > 0 ? "Choose a room." : "");
     }
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP rooms failed.");
@@ -1974,6 +1998,7 @@ async function handleCreateOnlineDuoBossRoom(boss: ArenaBossDefinition): Promise
 
   activeOnlineRoomKind = "duoBoss";
   pvpRoomsVisible = true;
+  setCityArenaOnlineViewOpen(true);
   setPvpControlsBusy(true);
   setPvpStatus("Creating help request...");
 
@@ -1994,7 +2019,7 @@ async function handleSearchPvpRooms(): Promise<void> {
   pvpRoomsVisible = true;
   pvpRoomList = [];
   setPvpControlsBusy(true);
-  setPvpStatus("Searching rooms...");
+  setPvpStatus("");
 
   try {
     const currentRoom = await getCurrentPvpRoom();
@@ -2009,7 +2034,7 @@ async function handleSearchPvpRooms(): Promise<void> {
 
     pvpRoomList = response.rooms;
     setPvpControlsBusy(false);
-    setPvpStatus(response.rooms.length > 0 ? "Choose a room." : "No open rooms.");
+    setPvpStatus(response.rooms.length > 0 ? "Choose a room." : "");
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP search failed.");
     setPvpControlsBusy(false);
@@ -2228,7 +2253,7 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
   hero = heroAfterReward;
   saveLocalHeroSave(hero);
   queueHeroCloudSave(snapshot.seat === "host" ? "online-duo-host-reward" : "online-duo-helper-reward");
-  rememberBossEquipmentHint(snapshot.state, loot);
+  rememberDroppedEquipmentHint(snapshot.state, loot);
   syncPlayerCityBodyScale();
   renderCityHero();
   syncCityShopHeroState();
@@ -2354,6 +2379,7 @@ function openCityArenaMenu(): void {
   if (pvpSession) {
     pvpRoomsVisible = true;
   }
+  setCityArenaOnlineViewOpen(Boolean(pvpSession));
   syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
@@ -2361,6 +2387,7 @@ function openCityArenaMenu(): void {
 
 function closeCityArenaMenu(): void {
   cityArenaMenu?.setAttribute("hidden", "");
+  setCityArenaOnlineViewOpen(false);
   cityMenu?.classList.remove("city-menu--arena-select-open");
 }
 
@@ -2444,7 +2471,7 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
     const { loot, heroAfterReward } = rewardApplication;
 
     hero = heroAfterReward;
-    rememberBossEquipmentHint(resolvedState, loot);
+    rememberDroppedEquipmentHint(resolvedState, loot);
     saveLocalHeroSave(hero);
     queueHeroCloudSave("auto-fight-result");
     presentAutoResolvedArenaResult(resolvedState, rewardApplication);
@@ -2861,7 +2888,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   if (nextState.result === "win") {
     queueHeroCloudSave("battle-win");
   }
-  rememberBossEquipmentHint(nextState, loot);
+  rememberDroppedEquipmentHint(nextState, loot);
   syncPlayerCityBodyScale();
   pendingBattleResultPresentation = {
     id: `battle-result-${++battleResultPresentationId}`,
@@ -2876,21 +2903,21 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   return nextState;
 }
 
-function rememberBossEquipmentHint(combat: CombatState, loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): void {
-  if (combat.result !== "win" || combat.encounter?.kind !== "boss") {
+function rememberDroppedEquipmentHint(combat: CombatState, loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): void {
+  if (combat.result !== "win") {
     return;
   }
 
-  const hintItemIds = getBossEquipmentHintItemIds(loot);
+  const hintItemIds = getDroppedEquipmentHintItemIds(loot);
 
   if (hintItemIds.length <= 0) {
     return;
   }
 
-  pendingBossEquipmentHintItemIds = hintItemIds;
+  pendingEquipmentHintItemIds = [...new Set([...pendingEquipmentHintItemIds, ...hintItemIds])];
 }
 
-function getBossEquipmentHintItemIds(loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): HeroItemId[] {
+function getDroppedEquipmentHintItemIds(loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): HeroItemId[] {
   const seenItemIds = new Set<HeroItemId>();
   const hintItemIds: HeroItemId[] = [];
 
@@ -2913,33 +2940,33 @@ function getBossEquipmentHintItemIds(loot: readonly { itemId: HeroItemId; itemId
 }
 
 function handleProfileEquipmentCategoryOpen(categoryId: CityEquipmentCategoryId): void {
-  if (clearPendingBossEquipmentHintsForCategory(categoryId)) {
+  if (clearPendingEquipmentHintsForCategory(categoryId)) {
     renderCityHero();
   }
 }
 
-function clearPendingBossEquipmentHintsForCategory(categoryId: CityEquipmentCategoryId): boolean {
-  return updatePendingBossEquipmentHints((itemId) => getCityEquipmentCategoryIdForHeroItemId(itemId) !== categoryId);
+function clearPendingEquipmentHintsForCategory(categoryId: CityEquipmentCategoryId): boolean {
+  return updatePendingEquipmentHints((itemId) => getCityEquipmentCategoryIdForHeroItemId(itemId) !== categoryId);
 }
 
-function clearPendingBossEquipmentHintsForItems(itemIds: readonly HeroItemId[]): boolean {
+function clearPendingEquipmentHintsForItems(itemIds: readonly HeroItemId[]): boolean {
   const clearedItemIds = new Set(itemIds);
 
-  return updatePendingBossEquipmentHints((itemId) => !clearedItemIds.has(itemId));
+  return updatePendingEquipmentHints((itemId) => !clearedItemIds.has(itemId));
 }
 
-function updatePendingBossEquipmentHints(keepItemId: (itemId: HeroItemId) => boolean): boolean {
-  if (pendingBossEquipmentHintItemIds.length <= 0) {
+function updatePendingEquipmentHints(keepItemId: (itemId: HeroItemId) => boolean): boolean {
+  if (pendingEquipmentHintItemIds.length <= 0) {
     return false;
   }
 
-  const nextItemIds = pendingBossEquipmentHintItemIds.filter(keepItemId);
+  const nextItemIds = pendingEquipmentHintItemIds.filter(keepItemId);
 
-  if (nextItemIds.length === pendingBossEquipmentHintItemIds.length) {
+  if (nextItemIds.length === pendingEquipmentHintItemIds.length) {
     return false;
   }
 
-  pendingBossEquipmentHintItemIds = nextItemIds;
+  pendingEquipmentHintItemIds = nextItemIds;
   return true;
 }
 
@@ -3065,7 +3092,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   }
 
   cancelShopPreviewPrewarm();
-  clearPendingBossEquipmentHintsForItems(itemIds);
+  clearPendingEquipmentHintsForItems(itemIds);
   hero = nextHero;
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
@@ -3342,6 +3369,8 @@ dom.startButton.addEventListener("click", () => {
   openCityArenaMenu();
 });
 cityArenaCloseButton?.addEventListener("click", closeCityArenaMenu);
+cityArenaOnlineButton?.addEventListener("click", () => setCityArenaOnlineViewOpen(true));
+cityArenaOnlineBackButton?.addEventListener("click", () => setCityArenaOnlineViewOpen(false));
 cityArenaTierSelect?.addEventListener("change", () => {
   activeArenaTierId = Number(cityArenaTierSelect.value) || DEFAULT_ARENA_TIER_ID;
   renderCityArenaMenu();

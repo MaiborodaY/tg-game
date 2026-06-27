@@ -2871,20 +2871,18 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   }
 }
 
-@keyframes city-portrait-points-pulse {
+@keyframes city-portrait-notice-pulse {
   0%,
   100% {
-    border-color: rgba(90, 240, 199, 0.54);
-    filter: drop-shadow(0 0 0 rgba(90, 240, 199, 0));
+    filter: drop-shadow(0 0 0 var(--city-portrait-notice-glow-transparent));
   }
 
   50% {
-    border-color: rgba(166, 255, 224, 0.98);
-    filter: drop-shadow(0 0 8px rgba(90, 240, 199, 0.5));
+    filter: drop-shadow(0 0 8px var(--city-portrait-notice-glow));
   }
 }
 
-@keyframes city-portrait-points-rim {
+@keyframes city-portrait-notice-rim {
   0%,
   100% {
     opacity: 0.44;
@@ -3311,11 +3309,15 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 }
 
 .city-menu__portrait-button {
+  --city-portrait-notice-color: #55e0d6;
+  --city-portrait-notice-soft: rgba(36, 211, 200, 0.22);
+  --city-portrait-notice-glow: rgba(36, 211, 200, 0.48);
+  --city-portrait-notice-glow-transparent: rgba(36, 211, 200, 0);
   position: relative;
   z-index: 1;
   grid-column: 2;
   grid-row: 1;
-  overflow: hidden;
+  overflow: visible;
   justify-self: end;
   box-sizing: border-box;
   width: 70px;
@@ -3352,33 +3354,124 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
     0 1px 0 rgba(8, 2, 1, 0.64);
 }
 
-.city-menu__portrait-button--has-points {
-  animation: city-portrait-points-pulse 1300ms ease-in-out infinite;
-  border-color: #5af0c7;
+.city-menu__portrait-button--notice-level {
+  --city-portrait-notice-color: #ffbd57;
+  --city-portrait-notice-soft: rgba(255, 168, 55, 0.26);
+  --city-portrait-notice-glow: rgba(255, 168, 55, 0.5);
+  --city-portrait-notice-glow-transparent: rgba(255, 168, 55, 0);
 }
 
+.city-menu__portrait-button--notice-common {
+  --city-portrait-notice-color: #d7c5a0;
+  --city-portrait-notice-soft: rgba(215, 197, 160, 0.18);
+  --city-portrait-notice-glow: rgba(215, 197, 160, 0.34);
+  --city-portrait-notice-glow-transparent: rgba(215, 197, 160, 0);
+}
+
+.city-menu__portrait-button--notice-uncommon {
+  --city-portrait-notice-color: #80e07b;
+  --city-portrait-notice-soft: rgba(90, 219, 91, 0.2);
+  --city-portrait-notice-glow: rgba(90, 219, 91, 0.4);
+  --city-portrait-notice-glow-transparent: rgba(90, 219, 91, 0);
+}
+
+.city-menu__portrait-button--notice-rare {
+  --city-portrait-notice-color: #73c9ff;
+  --city-portrait-notice-soft: rgba(89, 173, 255, 0.22);
+  --city-portrait-notice-glow: rgba(89, 173, 255, 0.44);
+  --city-portrait-notice-glow-transparent: rgba(89, 173, 255, 0);
+}
+
+.city-menu__portrait-button--notice-epic {
+  --city-portrait-notice-color: #ca8cff;
+  --city-portrait-notice-soft: rgba(172, 91, 255, 0.24);
+  --city-portrait-notice-glow: rgba(172, 91, 255, 0.45);
+  --city-portrait-notice-glow-transparent: rgba(172, 91, 255, 0);
+}
+
+.city-menu__portrait-button--notice-legendary {
+  --city-portrait-notice-color: #ffbd57;
+  --city-portrait-notice-soft: rgba(255, 168, 55, 0.26);
+  --city-portrait-notice-glow: rgba(255, 168, 55, 0.48);
+  --city-portrait-notice-glow-transparent: rgba(255, 168, 55, 0);
+}
+
+.city-menu__portrait-button--notice-mythical {
+  --city-portrait-notice-color: #ff7fe6;
+  --city-portrait-notice-soft: rgba(255, 103, 222, 0.24);
+  --city-portrait-notice-glow: rgba(255, 103, 222, 0.48);
+  --city-portrait-notice-glow-transparent: rgba(255, 103, 222, 0);
+}
+
+.city-menu__portrait-button--notice-unique {
+  --city-portrait-notice-color: #55e0d6;
+  --city-portrait-notice-soft: rgba(36, 211, 200, 0.26);
+  --city-portrait-notice-glow: rgba(36, 211, 200, 0.52);
+  --city-portrait-notice-glow-transparent: rgba(36, 211, 200, 0);
+}
+
+.city-menu__portrait-button--has-notification,
+.city-menu__portrait-button--has-points {
+  animation: city-portrait-notice-pulse 1300ms ease-in-out infinite;
+}
+
+.city-menu__portrait-button--has-notification::before {
+  content: attr(data-hero-notice);
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  min-width: 62px;
+  height: 17px;
+  padding: 0 7px 1px;
+  border: 1px solid color-mix(in srgb, var(--city-portrait-notice-color) 64%, #1b0803);
+  border-radius: 999px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 239, 185, 0.18), transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--city-portrait-notice-color) 42%, #4b1a09), #2a0d05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 239, 185, 0.24),
+    0 2px 0 rgba(8, 2, 1, 0.72),
+    0 0 9px var(--city-portrait-notice-glow);
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(22, 7, 3, 0.88);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.city-menu__portrait-button--has-notification::after,
 .city-menu__portrait-button--has-points::after {
   content: "";
   position: absolute;
   inset: 3px;
   z-index: 2;
-  border: 2px solid rgba(90, 240, 199, 0.72);
+  border: 2px solid color-mix(in srgb, var(--city-portrait-notice-color) 74%, rgba(255, 255, 255, 0.18));
   border-radius: 50%;
   clip-path: inherit;
   box-shadow:
-    inset 0 0 8px rgba(90, 240, 199, 0.32),
-    0 0 10px rgba(90, 240, 199, 0.18);
+    inset 0 0 8px var(--city-portrait-notice-soft),
+    0 0 10px var(--city-portrait-notice-glow);
   opacity: 0.72;
   pointer-events: none;
-  animation: city-portrait-points-rim 1300ms ease-in-out infinite;
+  animation: city-portrait-notice-rim 1300ms ease-in-out infinite;
 }
 
+.city-menu--profile-open .city-menu__portrait-button--has-notification,
 .city-menu--profile-open .city-menu__portrait-button--has-points {
   animation: none;
-  border-color: #c17635;
   filter: none;
 }
 
+.city-menu--profile-open .city-menu__portrait-button--has-notification::before,
+.city-menu--profile-open .city-menu__portrait-button--has-notification::after,
 .city-menu--profile-open .city-menu__portrait-button--has-points::after {
   opacity: 0;
   animation: none;
@@ -3456,7 +3549,7 @@ body.debug-active .city-menu__portrait-button:active {
   width: min(100%, 372px);
   max-height: calc(100dvh - max(40px, env(safe-area-inset-top)) - calc(34px + env(safe-area-inset-bottom)));
   overflow: auto;
-  padding: 28px 12px 14px;
+  padding: 12px 12px 14px;
   border: 3px solid #1a0803;
   border-radius: 10px;
   color: #ffe8a9;
@@ -3508,6 +3601,17 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
   text-align: center;
   transform: translateX(-50%);
+}
+
+.city-arena-menu__main {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+}
+
+.city-arena-menu__main[hidden] {
+  display: none !important;
 }
 
 .city-arena-menu__close {
@@ -3888,7 +3992,9 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu__fight:hover,
 .city-arena-menu__boss:hover,
 .city-arena-menu__boss-duo:hover,
-.city-arena-menu__auto-fight:hover {
+.city-arena-menu__auto-fight:hover,
+.city-arena-menu__online-entry:hover,
+.city-arena-menu__online-back:hover {
   filter: brightness(1.07);
 }
 
@@ -3905,6 +4011,8 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu__boss:active,
 .city-arena-menu__boss-duo:active,
 .city-arena-menu__auto-fight:active,
+.city-arena-menu__online-entry:active,
+.city-arena-menu__online-back:active,
 .city-arena-menu__close:active {
   transform: translateY(2px);
 }
@@ -4075,21 +4183,82 @@ body.debug-active .city-menu__portrait-button:active {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 7px;
-  padding: 9px;
-  border: 1px solid rgba(255, 211, 132, 0.24);
+  gap: 9px;
+  min-height: 178px;
+  padding: 10px;
+  border: 2px solid rgba(26, 8, 3, 0.94);
   border-radius: 8px;
   background:
+    radial-gradient(circle at 50% 0, rgba(255, 211, 132, 0.1), transparent 35%),
     linear-gradient(90deg, rgba(48, 19, 7, 0.32), transparent 52%, rgba(19, 7, 3, 0.26)),
-    rgba(17, 5, 2, 0.48);
+    rgba(17, 5, 2, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255, 229, 161, 0.1),
-    0 2px 0 rgba(8, 2, 1, 0.54);
+    inset 0 0 0 1px rgba(255, 211, 132, 0.18),
+    0 3px 0 rgba(8, 2, 1, 0.64);
+}
+
+.city-arena-menu__pvp[hidden] {
+  display: none !important;
+}
+
+.city-arena-menu__online-entry {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 2px solid #1a0803;
+  border-radius: 8px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 229, 161, 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(128, 73, 31, 0.92), rgba(39, 13, 6, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.22),
+    inset 0 -7px 12px rgba(0, 0, 0, 0.26),
+    0 3px 0 rgba(8, 2, 1, 0.7);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-shadow: 1px 2px 0 rgba(22, 7, 3, 0.82);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.city-arena-menu__online-header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.city-arena-menu__online-back {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  padding: 0 0 3px;
+  border: 2px solid #1a0803;
+  border-radius: 7px;
+  color: #fff0bd;
+  background: linear-gradient(180deg, #8a421d, #331207);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 211, 132, 0.26),
+    0 2px 0 rgba(8, 2, 1, 0.7);
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .city-arena-menu__pvp-title {
   color: #f4d188;
-  font-size: 0.7rem;
+  font-size: 0.88rem;
   font-weight: 900;
   line-height: 1;
   text-align: center;
@@ -4128,9 +4297,11 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__pvp-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(102px, 132px));
+  justify-content: center;
   gap: 7px;
   min-width: 0;
+  margin-top: auto;
 }
 
 .city-arena-menu__pvp-button {
@@ -4144,6 +4315,10 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
+}
+
+.city-arena-menu__pvp-button[hidden] {
+  display: none !important;
 }
 
 .city-arena-menu__pvp-button {
@@ -4161,10 +4336,16 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__pvp-room-list {
   display: grid;
+  align-content: center;
   gap: 6px;
-  max-height: 118px;
+  min-height: 46px;
+  max-height: 236px;
   overflow: auto;
   padding-right: 1px;
+}
+
+.city-arena-menu__pvp-room-list[hidden] {
+  display: none !important;
 }
 
 .city-arena-menu__pvp-room {
@@ -4199,9 +4380,22 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
 }
 
-.city-arena-menu__pvp-room-meta,
-.city-arena-menu__pvp-room-empty {
+.city-arena-menu__pvp-room-meta {
   color: #c89651;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.city-arena-menu__pvp-room-empty {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 211, 132, 0.14);
+  border-radius: 7px;
+  color: #c89651;
+  background: rgba(12, 3, 1, 0.38);
   font-size: 0.58rem;
   font-weight: 800;
   text-transform: uppercase;

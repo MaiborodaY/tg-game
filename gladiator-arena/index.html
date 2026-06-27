@@ -120,57 +120,62 @@
           </div>
           <section id="cityArenaMenu" class="city-arena-menu" role="dialog" aria-label="Arena menu" hidden>
             <div class="city-arena-menu__panel">
-              <div class="city-arena-menu__title">ARENA</div>
               <button id="cityArenaCloseButton" class="city-arena-menu__close" type="button" aria-label="Close arena menu">×</button>
-              <div class="city-arena-menu__tier">
-                <select id="cityArenaTierSelect" class="city-arena-menu__tier-select" aria-label="Arena"></select>
-                <strong id="cityArenaTierName"></strong>
+              <div id="cityArenaMainView" class="city-arena-menu__main">
+                <div class="city-arena-menu__tier">
+                  <select id="cityArenaTierSelect" class="city-arena-menu__tier-select" aria-label="Arena"></select>
+                  <strong id="cityArenaTierName"></strong>
+                </div>
+                <div class="city-arena-menu__fight-list" aria-label="Arena choices">
+                  <div class="city-arena-menu__fight-row">
+                    <button id="cityArenaEasyButton" class="city-arena-menu__fight city-arena-menu__fight--easy" type="button">
+                      <strong>Easy</strong>
+                      <span id="cityArenaEasyReward" class="city-arena-menu__reward"></span>
+                    </button>
+                    <button id="cityArenaEasyAutoButton" class="city-arena-menu__auto-fight" type="button">
+                      <span>AUTO</span>
+                      <output id="cityArenaEasyAutoRate">...</output>
+                    </button>
+                  </div>
+                  <div class="city-arena-menu__fight-row">
+                    <button id="cityArenaRandomButton" class="city-arena-menu__fight city-arena-menu__fight--medium" type="button">
+                      <strong>Medium</strong>
+                      <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
+                    </button>
+                    <button id="cityArenaRandomAutoButton" class="city-arena-menu__auto-fight" type="button">
+                      <span>AUTO</span>
+                      <output id="cityArenaRandomAutoRate">...</output>
+                    </button>
+                  </div>
+                  <div class="city-arena-menu__fight-row">
+                    <button id="cityArenaHardButton" class="city-arena-menu__fight city-arena-menu__fight--hard" type="button">
+                      <strong>Hard</strong>
+                      <span id="cityArenaHardReward" class="city-arena-menu__reward"></span>
+                    </button>
+                    <button id="cityArenaHardAutoButton" class="city-arena-menu__auto-fight" type="button">
+                      <span>AUTO</span>
+                      <output id="cityArenaHardAutoRate">...</output>
+                    </button>
+                  </div>
+                  <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
+                </div>
+                <button id="cityArenaOnlineButton" class="city-arena-menu__online-entry" type="button">ONLINE</button>
               </div>
-              <div class="city-arena-menu__fight-list" aria-label="Arena choices">
-                <div class="city-arena-menu__fight-row">
-                  <button id="cityArenaEasyButton" class="city-arena-menu__fight city-arena-menu__fight--easy" type="button">
-                    <strong>Easy</strong>
-                    <span id="cityArenaEasyReward" class="city-arena-menu__reward"></span>
-                  </button>
-                  <button id="cityArenaEasyAutoButton" class="city-arena-menu__auto-fight" type="button">
-                    <span>AUTO</span>
-                    <output id="cityArenaEasyAutoRate">...</output>
-                  </button>
+              <div id="cityArenaOnlinePanel" class="city-arena-menu__pvp city-arena-menu__online" aria-label="Online rooms" hidden>
+                <div class="city-arena-menu__online-header">
+                  <button id="cityArenaOnlineBackButton" class="city-arena-menu__online-back" type="button" aria-label="Back to arena choices">‹</button>
+                  <div class="city-arena-menu__pvp-title city-arena-menu__online-title">ONLINE</div>
                 </div>
-                <div class="city-arena-menu__fight-row">
-                  <button id="cityArenaRandomButton" class="city-arena-menu__fight city-arena-menu__fight--medium" type="button">
-                    <strong>Medium</strong>
-                    <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
-                  </button>
-                  <button id="cityArenaRandomAutoButton" class="city-arena-menu__auto-fight" type="button">
-                    <span>AUTO</span>
-                    <output id="cityArenaRandomAutoRate">...</output>
-                  </button>
-                </div>
-                <div class="city-arena-menu__fight-row">
-                  <button id="cityArenaHardButton" class="city-arena-menu__fight city-arena-menu__fight--hard" type="button">
-                    <strong>Hard</strong>
-                    <span id="cityArenaHardReward" class="city-arena-menu__reward"></span>
-                  </button>
-                  <button id="cityArenaHardAutoButton" class="city-arena-menu__auto-fight" type="button">
-                    <span>AUTO</span>
-                    <output id="cityArenaHardAutoRate">...</output>
-                  </button>
-                </div>
-                <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
-              </div>
-              <div class="city-arena-menu__pvp city-arena-menu__online" aria-label="Online rooms">
-                <div class="city-arena-menu__pvp-title city-arena-menu__online-title">ONLINE</div>
                 <div class="city-arena-menu__online-tabs" role="tablist" aria-label="Online mode">
                   <button id="cityOnlinePveTab" class="city-arena-menu__online-tab city-arena-menu__online-tab--active" type="button" role="tab" aria-selected="true">PVE</button>
                   <button id="cityOnlinePvpTab" class="city-arena-menu__online-tab" type="button" role="tab" aria-selected="false">PVP</button>
                 </div>
-                <div class="city-arena-menu__pvp-actions">
-                  <button id="cityPvpCreateButton" class="city-arena-menu__pvp-button" type="button">CREATE</button>
-                  <button id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="button">SEARCH</button>
-                </div>
                 <div id="cityPvpRoomList" class="city-arena-menu__pvp-room-list" hidden></div>
                 <output id="cityPvpStatus" class="city-arena-menu__pvp-status" aria-live="polite"></output>
+                <div class="city-arena-menu__pvp-actions">
+                  <button id="cityPvpCreateButton" class="city-arena-menu__pvp-button" type="button" hidden>CREATE</button>
+                  <button id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="button">REFRESH</button>
+                </div>
               </div>
             </div>
           </section>
