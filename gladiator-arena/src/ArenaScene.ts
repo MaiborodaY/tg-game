@@ -1365,6 +1365,14 @@ interface PhaserGameSize {
   pixelRatio: number;
 }
 
+interface CityCanvasProjection {
+  parentRect: DOMRect;
+  pixelRatio: number;
+  cssScale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 interface PhaserScenePixelRatioCache {
   sceneWidth: number;
   sceneHeight: number;
@@ -1394,6 +1402,16 @@ function getPhaserGameSize(parent: HTMLElement | null, maxDevicePixelRatio: numb
   const pixelRatio = getPhaserDevicePixelRatio(maxDevicePixelRatio);
   const logicalWidth = Math.max(1, parent?.clientWidth || GAME_WIDTH);
   const logicalHeight = Math.max(1, parent?.clientHeight || GAME_HEIGHT);
+
+  return {
+    width: Math.max(1, Math.round(logicalWidth * pixelRatio)),
+    height: Math.max(1, Math.round(logicalHeight * pixelRatio)),
+    pixelRatio,
+  };
+}
+
+function getFixedPhaserGameSize(logicalWidth: number, logicalHeight: number, maxDevicePixelRatio: number): PhaserGameSize {
+  const pixelRatio = getPhaserDevicePixelRatio(maxDevicePixelRatio);
 
   return {
     width: Math.max(1, Math.round(logicalWidth * pixelRatio)),
@@ -1441,12 +1459,60 @@ function getArenaScenePixelRatio(scene: Phaser.Scene): number {
   return getPhaserScenePixelRatio(scene, ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
-function getCityPhaserGameSize(parent: HTMLElement): PhaserGameSize {
-  return getPhaserGameSize(parent, CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
+function getCityPhaserGameSize(): PhaserGameSize {
+  return getFixedPhaserGameSize(GAME_WIDTH, GAME_HEIGHT, CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
-function scaleCityDomY(value: number | undefined, pixelRatio: number): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value * pixelRatio : undefined;
+function getFixedPhaserScenePixelRatio(
+  scene: Phaser.Scene,
+  logicalWidth: number,
+  logicalHeight: number,
+  maxDevicePixelRatio: number,
+): number {
+  const sceneWidth = Math.max(1, scene.scale.width || scene.game.canvas.width || logicalWidth);
+  const sceneHeight = Math.max(1, scene.scale.height || scene.game.canvas.height || logicalHeight);
+  const ratioX = sceneWidth / Math.max(1, logicalWidth);
+  const ratioY = sceneHeight / Math.max(1, logicalHeight);
+  const ratio = Math.min(ratioX, ratioY);
+
+  return Number.isFinite(ratio) && ratio > 1 ? Math.min(maxDevicePixelRatio, ratio) : 1;
+}
+
+function getCityCanvasProjection(parent: HTMLElement, pixelRatio: number): CityCanvasProjection {
+  const parentRect = parent.getBoundingClientRect();
+  const parentWidth = Math.max(1, parentRect.width || parent.clientWidth || GAME_WIDTH);
+  const parentHeight = Math.max(1, parentRect.height || parent.clientHeight || GAME_HEIGHT);
+  const cssScale = Math.max(parentWidth / GAME_WIDTH, parentHeight / GAME_HEIGHT);
+  const displayWidth = GAME_WIDTH * cssScale;
+  const displayHeight = GAME_HEIGHT * cssScale;
+
+  return {
+    parentRect,
+    pixelRatio,
+    cssScale,
+    offsetX: (parentWidth - displayWidth) / 2,
+    offsetY: (parentHeight - displayHeight) / 2,
+  };
+}
+
+function projectCityLocalX(value: number, projection: CityCanvasProjection): number {
+  return ((value - projection.offsetX) / projection.cssScale) * projection.pixelRatio;
+}
+
+function projectCityLocalY(value: number, projection: CityCanvasProjection): number {
+  return ((value - projection.offsetY) / projection.cssScale) * projection.pixelRatio;
+}
+
+function projectCityLength(value: number, projection: CityCanvasProjection): number {
+  return (value / projection.cssScale) * projection.pixelRatio;
+}
+
+function scaleCityDomY(value: number | undefined, parent: HTMLElement, pixelRatio: number): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  return projectCityLocalY(value, getCityCanvasProjection(parent, pixelRatio));
 }
 
 function scaleCityProfilePreviewLayout(
@@ -1458,16 +1524,16 @@ function scaleCityProfilePreviewLayout(
     return undefined;
   }
 
-  const parentRect = parent.getBoundingClientRect();
+  const projection = getCityCanvasProjection(parent, pixelRatio);
 
   return {
-    centerX: (layout.centerX - parentRect.left) * pixelRatio,
-    visualBottomY: (layout.visualBottomY - parentRect.top) * pixelRatio,
+    centerX: projectCityLocalX(layout.centerX - projection.parentRect.left, projection),
+    visualBottomY: projectCityLocalY(layout.visualBottomY - projection.parentRect.top, projection),
     fitTopY: typeof layout.fitTopY === "number" && Number.isFinite(layout.fitTopY)
-      ? (layout.fitTopY - parentRect.top) * pixelRatio
+      ? projectCityLocalY(layout.fitTopY - projection.parentRect.top, projection)
       : undefined,
     fitWidth: typeof layout.fitWidth === "number" && Number.isFinite(layout.fitWidth)
-      ? layout.fitWidth * pixelRatio
+      ? projectCityLength(layout.fitWidth, projection)
       : undefined,
     scale: layout.scale,
   };
@@ -1486,7 +1552,7 @@ function areCityProfilePreviewLayoutsEqual(left: CityProfilePreviewLayout | unde
 }
 
 function getCityScenePixelRatio(scene: Phaser.Scene): number {
-  return getPhaserScenePixelRatio(scene, CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
+  return getFixedPhaserScenePixelRatio(scene, GAME_WIDTH, GAME_HEIGHT, CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
 function part(gameObject: Phaser.GameObjects.GameObject): FighterPart {
@@ -3663,7 +3729,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   let pendingCameraMode: CityCameraMode = "default";
   let pendingProfilePreviewLayout: CityProfilePreviewLayout | undefined;
   let pendingShopMenuTopY: number | undefined;
-  const cityGameSize = getCityPhaserGameSize(parent);
+  const cityGameSize = getCityPhaserGameSize();
   let isSuspended = false;
   let isDestroyed = false;
   let resolveReady: () => void = () => undefined;
@@ -3682,7 +3748,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
 
   const readyCallbackForGame = (readyScene: CityHeroScene) => {
     scene = readyScene;
-    readyScene.setShopMenuTop(scaleCityDomY(pendingShopMenuTopY, cityGameSize.pixelRatio));
+    readyScene.setShopMenuTop(scaleCityDomY(pendingShopMenuTopY, parent, cityGameSize.pixelRatio));
     resolveReadyOnce();
     if (isSuspended) {
       game.loop.sleep();
@@ -3739,7 +3805,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     },
     setShopMenuTop: (menuTopY?: number) => {
       pendingShopMenuTopY = menuTopY;
-      scene?.setShopMenuTop(scaleCityDomY(menuTopY, cityGameSize.pixelRatio));
+      scene?.setShopMenuTop(scaleCityDomY(menuTopY, parent, cityGameSize.pixelRatio));
     },
     previewEquipment: (equipment: HeroEquipment) => {
       scene?.previewPlayerEquipment(equipment);

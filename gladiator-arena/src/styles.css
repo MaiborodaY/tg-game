@@ -3111,6 +3111,8 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  object-fit: cover;
+  object-position: center;
 }
 
 .city-menu--equipment-preview-open .city-menu__hero {
