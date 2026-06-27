@@ -112,9 +112,13 @@ export function toViewerPvpSnapshot(snapshot: Omit<PvpRoomSnapshot, "seat" | "st
     ...snapshot,
     seat,
     roomKind,
-    controlledActor: getPvpActorForSeat(seat, roomKind),
+    controlledActor: getViewerControlledActor(seat, roomKind),
     state: snapshot.state ? toViewerCombatState(snapshot.state, seat, roomKind) : undefined,
   };
+}
+
+function getViewerControlledActor(seat: PvpSeat, roomKind: PvpRoomKind): CombatActor {
+  return roomKind === "duoBoss" ? getPvpActorForSeat(seat, roomKind) : "player";
 }
 
 export function toViewerCombatState(state: CombatState, seat: PvpSeat, roomKind: PvpRoomKind = "pvp"): CombatState {

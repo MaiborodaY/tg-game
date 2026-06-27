@@ -231,7 +231,7 @@ const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 const AUTO_PLAYER_TURN_PACING_MS = 120;
 const AUTO_BATTLE_PANEL_TRANSITION_MS = 320;
-const AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS = 50;
+const AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS = 20;
 const AUTO_FIGHT_MAX_TURNS = 300;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
@@ -817,7 +817,13 @@ function getControlledActionActor(): CombatActor {
     return "player";
   }
 
-  return pvpSnapshot?.controlledActor ?? getPvpActorForSeat(pvpSession.seat, pvpSession.roomKind ?? pvpSnapshot?.roomKind ?? "pvp");
+  const roomKind = pvpSession.roomKind ?? pvpSnapshot?.roomKind ?? "pvp";
+
+  if (roomKind !== "duoBoss") {
+    return "player";
+  }
+
+  return pvpSnapshot?.controlledActor ?? getPvpActorForSeat(pvpSession.seat, roomKind);
 }
 
 function setTurnAnimationLocked(locked: boolean): void {
