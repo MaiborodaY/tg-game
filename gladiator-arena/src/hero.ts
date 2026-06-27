@@ -77,6 +77,7 @@ export interface HeroState {
   skillPoints: number;
   gold: number;
   totalWins?: number;
+  arenaWinQuest?: HeroArenaWinQuest;
   arenaEnergy?: HeroArenaEnergy;
   arenaBossVictoryLedger?: HeroArenaBossVictoryLedger;
   bowShotCapacity?: number;
@@ -103,6 +104,24 @@ export interface HeroArenaEnergy {
   current: number;
   max: number;
   dayKey: string;
+}
+
+export interface HeroArenaWinQuest {
+  wins: number;
+  claimed: boolean;
+  lastOpenedDayKey?: string;
+}
+
+export interface HeroArenaWinQuestStatus {
+  wins: number;
+  goal: number;
+  claimed: boolean;
+  ready: boolean;
+  openedToday: boolean;
+  rewards: {
+    arenaEnergy: number;
+    gold: number;
+  };
 }
 
 export interface HeroArenaBossVictoryLedger {
@@ -198,6 +217,9 @@ export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
 export const HERO_ARENA_ENERGY_MAX = 10;
+export const HERO_ARENA_WIN_QUEST_GOAL = 5;
+export const HERO_ARENA_WIN_QUEST_ENERGY_REWARD = 5;
+export const HERO_ARENA_WIN_QUEST_GOLD_REWARD = 20;
 const HERO_SPEAR_CLINCH_RANGE_BONUS_BY_RARITY: Readonly<Record<HeroItemRarity, number>> = {
   common: 0.2,
   uncommon: 0.25,
@@ -1010,6 +1032,7 @@ export function createDefaultHero(now = new Date().toISOString()): HeroState {
     skillPoints: HERO_STARTING_SKILL_POINTS,
     gold: 0,
     totalWins: 0,
+    arenaWinQuest: createHeroArenaWinQuest(),
     arenaEnergy,
     arenaBossVictoryLedger: createHeroArenaBossVictoryLedger(now),
     bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
@@ -1151,6 +1174,69 @@ export function getHeroTotalWins(hero: HeroState): number {
   }
 
   return Math.max(0, Math.floor(source));
+}
+
+export function createHeroArenaWinQuest(wins = 0, claimed = false, lastOpenedDayKey?: string | null): HeroArenaWinQuest {
+  const openedDayKey = typeof lastOpenedDayKey === "string" && lastOpenedDayKey.length > 0 ? lastOpenedDayKey : undefined;
+
+  return {
+    wins: Math.min(HERO_ARENA_WIN_QUEST_GOAL, Math.max(0, Math.floor(Number.isFinite(wins) ? wins : 0))),
+    claimed: Boolean(claimed),
+    ...(openedDayKey ? { lastOpenedDayKey: openedDayKey } : {}),
+  };
+}
+
+export function getHeroArenaWinQuest(hero: HeroState): HeroArenaWinQuest {
+  return createHeroArenaWinQuest(
+    hero.arenaWinQuest?.wins ?? 0,
+    hero.arenaWinQuest?.claimed ?? false,
+    hero.arenaWinQuest?.lastOpenedDayKey,
+  );
+}
+
+export function getHeroArenaWinQuestStatus(hero: HeroState, now: string | Date = new Date()): HeroArenaWinQuestStatus {
+  const quest = getHeroArenaWinQuest(hero);
+
+  return {
+    wins: quest.wins,
+    goal: HERO_ARENA_WIN_QUEST_GOAL,
+    claimed: quest.claimed,
+    ready: quest.wins >= HERO_ARENA_WIN_QUEST_GOAL && !quest.claimed,
+    openedToday: quest.lastOpenedDayKey === getUtcDayKey(now),
+    rewards: {
+      arenaEnergy: HERO_ARENA_WIN_QUEST_ENERGY_REWARD,
+      gold: HERO_ARENA_WIN_QUEST_GOLD_REWARD,
+    },
+  };
+}
+
+export function markHeroArenaWinQuestOpened(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const quest = getHeroArenaWinQuest(hero);
+  const dayKey = getUtcDayKey(now);
+
+  if (quest.lastOpenedDayKey === dayKey) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    arenaWinQuest: createHeroArenaWinQuest(quest.wins, quest.claimed, dayKey),
+    updatedAt: now,
+  };
+}
+
+function recordHeroArenaWinQuestProgress(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const quest = getHeroArenaWinQuest(hero);
+
+  if (quest.claimed || quest.wins >= HERO_ARENA_WIN_QUEST_GOAL) {
+    return hero.arenaWinQuest ? hero : { ...hero, arenaWinQuest: quest, updatedAt: now };
+  }
+
+  return {
+    ...hero,
+    arenaWinQuest: createHeroArenaWinQuest(quest.wins + 1, false, quest.lastOpenedDayKey),
+    updatedAt: now,
+  };
 }
 
 export function refreshHeroArenaEnergy(hero: HeroState, now = new Date().toISOString()): HeroState {
@@ -2675,11 +2761,13 @@ export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new
 }
 
 function recordHeroWin(hero: HeroState, now = new Date().toISOString()): HeroState {
-  return {
+  const heroWithWin = {
     ...hero,
     totalWins: getHeroTotalWins(hero) + 1,
     updatedAt: now,
   };
+
+  return recordHeroArenaWinQuestProgress(heroWithWin, now);
 }
 
 export function unlockAllArenaBossTiers(hero: HeroState, now = new Date().toISOString()): HeroState {
@@ -3161,6 +3249,27 @@ export function grantHeroGold(hero: HeroState, amount: number, now = new Date().
     gold: hero.gold + gold,
     updatedAt: now,
   };
+}
+
+export function claimHeroArenaWinQuestReward(
+  hero: HeroState,
+  now = new Date().toISOString(),
+): { ok: true; hero: HeroState } | { ok: false; hero: HeroState } {
+  const status = getHeroArenaWinQuestStatus(hero);
+
+  if (!status.ready) {
+    return { ok: false, hero };
+  }
+
+  const questClaimedHero: HeroState = {
+    ...hero,
+    arenaWinQuest: createHeroArenaWinQuest(status.goal, true, getHeroArenaWinQuest(hero).lastOpenedDayKey),
+    updatedAt: now,
+  };
+  const heroWithGold = grantHeroGold(questClaimedHero, status.rewards.gold, now);
+  const heroWithEnergy = grantHeroArenaEnergy(heroWithGold, status.rewards.arenaEnergy, now);
+
+  return { ok: true, hero: heroWithEnergy };
 }
 
 export function updateHeroAppearance(hero: HeroState, appearance: Partial<HeroAppearance>, now = new Date().toISOString()): HeroState {

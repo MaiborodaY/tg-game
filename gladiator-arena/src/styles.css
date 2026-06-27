@@ -3747,6 +3747,252 @@ body.debug-active .city-menu__portrait-button:active {
   opacity: 0.78;
 }
 
+.city-arena-menu__meta-row {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(96px, 112px);
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.city-arena-menu__quest-button {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 22px;
+  padding: 1px 8px 2px;
+  border: 1px solid rgba(255, 211, 132, 0.24);
+  border-radius: 999px;
+  color: #e0b96f;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 224, 143, 0.11), transparent 62%),
+    rgba(14, 4, 2, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.08),
+    0 1px 2px rgba(8, 2, 1, 0.45);
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.city-arena-menu__quest-button span {
+  white-space: nowrap;
+}
+
+.city-arena-menu__quest-button output {
+  color: #fff0bd;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-arena-menu__quest-button--ready {
+  color: #fff0bd;
+  border-color: rgba(255, 209, 86, 0.54);
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 225, 126, 0.22), transparent 64%),
+    rgba(80, 42, 8, 0.52);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 238, 168, 0.16),
+    0 0 8px rgba(255, 184, 55, 0.2),
+    0 1px 2px rgba(8, 2, 1, 0.45);
+}
+
+.city-arena-menu__quest-button--claimed {
+  color: #b69a68;
+  opacity: 0.78;
+}
+
+.city-arena-menu__quest-button--new {
+  --city-arena-quest-notice-glow: rgba(255, 184, 55, 0.42);
+  --city-arena-quest-notice-glow-transparent: rgba(255, 184, 55, 0);
+  color: #fff0bd;
+  border-color: rgba(255, 209, 86, 0.58);
+  animation: city-arena-quest-glow-pulse 1.3s ease-in-out infinite;
+}
+
+.city-arena-menu__quest-button--new output {
+  color: #ffe58a;
+}
+
+.city-arena-menu__quest-backdrop {
+  position: absolute;
+  inset: -2px;
+  z-index: 6;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.city-arena-menu__quest-backdrop[hidden] {
+  display: none !important;
+}
+
+@keyframes city-arena-quest-glow-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 var(--city-arena-quest-notice-glow-transparent));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 7px var(--city-arena-quest-notice-glow));
+  }
+}
+
+.city-arena-menu__quest-panel {
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  z-index: 7;
+  display: grid;
+  gap: 8px;
+  width: min(100% - 20px, 296px);
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid rgba(26, 8, 3, 0.96);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 211, 132, 0.16), transparent 48%),
+    linear-gradient(180deg, rgba(64, 27, 10, 0.94), rgba(18, 5, 2, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.16),
+    inset 0 0 0 1px rgba(255, 211, 132, 0.18),
+    0 3px 0 rgba(8, 2, 1, 0.72),
+    0 12px 22px rgba(8, 2, 1, 0.56);
+  transform: translateX(-50%);
+}
+
+.city-arena-menu__quest-panel[hidden] {
+  display: none !important;
+}
+
+.city-arena-menu__quest-title {
+  color: #f4d188;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.city-arena-menu__quest-title-row {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 22px;
+}
+
+.city-arena-menu__quest-close {
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(255, 211, 132, 0.24);
+  border-radius: 6px;
+  color: #f4d188;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 224, 143, 0.12), transparent 62%),
+    rgba(14, 4, 2, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.1),
+    0 1px 2px rgba(8, 2, 1, 0.45);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.city-arena-menu__quest-close:active {
+  filter: brightness(0.86);
+}
+
+.city-arena-menu__quest-card {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(255, 211, 132, 0.18);
+  border-radius: 7px;
+  background: rgba(12, 3, 1, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 229, 161, 0.08);
+}
+
+.city-arena-menu__quest-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  color: #fff0bd;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.city-arena-menu__quest-head span {
+  color: #e0b96f;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-arena-menu__quest-text {
+  margin: 0;
+  color: #c89651;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.city-arena-menu__quest-reward-label {
+  color: #e0b96f;
+  font-size: 0.56rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.city-arena-menu__quest-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.city-arena-menu__quest-claim {
+  min-width: 0;
+  min-height: 28px;
+  border: 2px solid #1a0803;
+  border-radius: 7px;
+  color: #fff0bd;
+  background: linear-gradient(180deg, #8b501f, #321207);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.2),
+    0 2px 0 rgba(8, 2, 1, 0.72);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.city-arena-menu__quest-claim:disabled {
+  cursor: default;
+  filter: grayscale(0.55) brightness(0.7);
+  opacity: 0.78;
+}
+
 .city-arena-menu__tier-select {
   min-width: 0;
   width: min(210px, 100%);

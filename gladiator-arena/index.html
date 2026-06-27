@@ -125,8 +125,31 @@
                 <div class="city-arena-menu__tier">
                   <select id="cityArenaTierSelect" class="city-arena-menu__tier-select" aria-label="Arena"></select>
                   <strong id="cityArenaTierName"></strong>
-                  <span id="cityArenaEnergy" class="city-arena-menu__energy" aria-label="Arena energy"></span>
+                  <div class="city-arena-menu__meta-row">
+                    <span id="cityArenaEnergy" class="city-arena-menu__energy" aria-label="Arena energy"></span>
+                    <button id="cityArenaQuestButton" class="city-arena-menu__quest-button" type="button" aria-expanded="false" aria-controls="cityArenaQuestPanel">
+                      <span id="cityArenaQuestLabel">QUEST</span>
+                      <output id="cityArenaQuestProgress">0/5</output>
+                    </button>
+                  </div>
                 </div>
+                <button id="cityArenaQuestBackdrop" class="city-arena-menu__quest-backdrop" type="button" aria-label="Close quest menu" hidden></button>
+                <section id="cityArenaQuestPanel" class="city-arena-menu__quest-panel" role="dialog" aria-label="Today quests" hidden>
+                  <div class="city-arena-menu__quest-title-row">
+                    <div class="city-arena-menu__quest-title">TODAY QUESTS</div>
+                    <button id="cityArenaQuestCloseButton" class="city-arena-menu__quest-close" type="button" aria-label="Close quest menu">&times;</button>
+                  </div>
+                  <article class="city-arena-menu__quest-card">
+                    <div class="city-arena-menu__quest-head">
+                      <strong>WIN 5 FIGHTS</strong>
+                      <span id="cityArenaQuestStatus">0/5</span>
+                    </div>
+                    <p id="cityArenaQuestText" class="city-arena-menu__quest-text">Win arena fights today.</p>
+                    <div class="city-arena-menu__quest-reward-label">REWARD</div>
+                    <div id="cityArenaQuestRewards" class="city-arena-menu__quest-rewards"></div>
+                    <button id="cityArenaQuestClaimButton" class="city-arena-menu__quest-claim" type="button">CLAIM</button>
+                  </article>
+                </section>
                 <div class="city-arena-menu__fight-list" aria-label="Arena choices">
                   <div class="city-arena-menu__fight-row">
                     <button id="cityArenaEasyButton" class="city-arena-menu__fight city-arena-menu__fight--easy" type="button">

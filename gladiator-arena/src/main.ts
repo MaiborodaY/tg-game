@@ -51,6 +51,7 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  claimHeroArenaWinQuestReward,
   createArenaBossEncounter,
   createArenaRandomEnemyEncounter,
   createCombatStateFromHero,
@@ -66,11 +67,13 @@ import {
   getArenaTierDefinitions,
   getBattleReward,
   getHeroArenaEnergy,
+  getHeroArenaWinQuestStatus,
   grantHeroArenaEnergy,
   hasHeroArenaBossVictoryForTier,
   hasHeroDefeatedArenaBoss,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
+  markHeroArenaWinQuestOpened,
   resetHeroArenaBossVictoryLedger,
   restoreHeroArenaEnergy,
   sharpenHeroActiveWeapon,
@@ -92,6 +95,7 @@ import {
   type HeroItemId,
   type HeroState,
   type HeroAttributeKey,
+  type HeroArenaWinQuestStatus,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
 import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
@@ -121,6 +125,16 @@ const cityArenaOnlineBackButton = document.querySelector<HTMLButtonElement>("#ci
 const cityArenaTierName = document.querySelector<HTMLElement>("#cityArenaTierName");
 const cityArenaTierSelect = document.querySelector<HTMLSelectElement>("#cityArenaTierSelect");
 const cityArenaEnergy = document.querySelector<HTMLElement>("#cityArenaEnergy");
+const cityArenaQuestButton = document.querySelector<HTMLButtonElement>("#cityArenaQuestButton");
+const cityArenaQuestLabel = document.querySelector<HTMLElement>("#cityArenaQuestLabel");
+const cityArenaQuestProgress = document.querySelector<HTMLElement>("#cityArenaQuestProgress");
+const cityArenaQuestBackdrop = document.querySelector<HTMLButtonElement>("#cityArenaQuestBackdrop");
+const cityArenaQuestPanel = document.querySelector<HTMLElement>("#cityArenaQuestPanel");
+const cityArenaQuestCloseButton = document.querySelector<HTMLButtonElement>("#cityArenaQuestCloseButton");
+const cityArenaQuestStatus = document.querySelector<HTMLElement>("#cityArenaQuestStatus");
+const cityArenaQuestText = document.querySelector<HTMLElement>("#cityArenaQuestText");
+const cityArenaQuestRewards = document.querySelector<HTMLElement>("#cityArenaQuestRewards");
+const cityArenaQuestClaimButton = document.querySelector<HTMLButtonElement>("#cityArenaQuestClaimButton");
 const cityArenaEasyReward = document.querySelector<HTMLElement>("#cityArenaEasyReward");
 const cityArenaEasyButton = document.querySelector<HTMLButtonElement>("#cityArenaEasyButton");
 const cityArenaEasyName = cityArenaEasyButton?.querySelector<HTMLElement>("strong");
@@ -203,6 +217,7 @@ let pvpRoomsVisible = false;
 let pvpRoomList: PvpRoomListEntry[] = [];
 let activeOnlineRoomKind: PvpRoomKind = "duoBoss";
 let isCityArenaOnlineViewOpen = false;
+let isCityArenaQuestPanelOpen = false;
 let pvpDeadlineLocalTime: number | undefined;
 let pvpTimerInterval: number | undefined;
 let hasStarted = false;
@@ -1333,6 +1348,7 @@ function renderCityArenaMenu(): void {
   syncCityArenaTierSelect(cityArenaTierSelect, visibleTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
   syncCityArenaMenuEnergy();
+  syncCityArenaQuestControls();
   syncCityArenaFightTitle(cityArenaEasyName, "Easy", ARENA_RANDOM_ENERGY_COST);
   syncCityArenaFightTitle(cityArenaRandomName, "Medium", ARENA_RANDOM_ENERGY_COST);
   syncCityArenaFightTitle(cityArenaHardName, "Hard", ARENA_RANDOM_ENERGY_COST);
@@ -1367,6 +1383,98 @@ function syncCityArenaMenuEnergy(): void {
   }
 
   renderCityArenaEnergyBadge(cityArenaEnergy, getHeroArenaEnergy(hero), "city-arena-menu__energy--empty");
+}
+
+function syncCityArenaQuestControls(): void {
+  const status = getHeroArenaWinQuestStatus(hero);
+  const isNewQuest = !status.claimed && !status.openedToday;
+  const questButtonTitle = isNewQuest
+    ? "New daily quest."
+    : status.claimed
+      ? "Quest reward claimed."
+      : status.ready
+        ? "Quest reward ready."
+        : `Win ${status.goal - status.wins} more arena fights.`;
+
+  if (cityArenaQuestButton) {
+    cityArenaQuestButton.classList.toggle("city-arena-menu__quest-button--ready", status.ready);
+    cityArenaQuestButton.classList.toggle("city-arena-menu__quest-button--claimed", status.claimed);
+    cityArenaQuestButton.classList.toggle("city-arena-menu__quest-button--new", isNewQuest);
+    cityArenaQuestButton.setAttribute("aria-expanded", String(isCityArenaQuestPanelOpen));
+    cityArenaQuestButton.title = questButtonTitle;
+  }
+  if (cityArenaQuestLabel) {
+    cityArenaQuestLabel.textContent = isNewQuest ? "NEW QUEST!" : "QUEST";
+  }
+  if (cityArenaQuestProgress) {
+    cityArenaQuestProgress.textContent = status.claimed ? "DONE" : `${status.wins}/${status.goal}`;
+  }
+
+  syncCityArenaQuestPanel(status);
+}
+
+function syncCityArenaQuestPanel(status: HeroArenaWinQuestStatus = getHeroArenaWinQuestStatus(hero)): void {
+  if (cityArenaQuestBackdrop) {
+    cityArenaQuestBackdrop.hidden = !isCityArenaQuestPanelOpen;
+  }
+  if (cityArenaQuestPanel) {
+    cityArenaQuestPanel.hidden = !isCityArenaQuestPanelOpen;
+  }
+  if (cityArenaQuestStatus) {
+    cityArenaQuestStatus.textContent = status.claimed ? "DONE" : `${status.wins}/${status.goal}`;
+  }
+  if (cityArenaQuestText) {
+    cityArenaQuestText.textContent = status.claimed
+      ? "Reward claimed."
+      : status.ready
+        ? "Quest complete. Claim your reward."
+        : "Win 5 arena fights today.";
+  }
+  if (cityArenaQuestRewards) {
+    const energyReward = createCityArenaRewardItem(DAILY_ARENA_ENERGY_ICON_ASSET_URL, "Arena energy", status.rewards.arenaEnergy);
+    const goldReward = createCityArenaRewardItem(SHOP_GOLD_COIN_ICON_ASSET_URL, "Gold", status.rewards.gold);
+
+    cityArenaQuestRewards.replaceChildren(energyReward, goldReward);
+  }
+  if (cityArenaQuestClaimButton) {
+    cityArenaQuestClaimButton.disabled = !status.ready;
+    cityArenaQuestClaimButton.textContent = status.claimed ? "CLAIMED" : "CLAIM";
+  }
+}
+
+function setCityArenaQuestPanelOpen(open: boolean): void {
+  if (open) {
+    const now = new Date().toISOString();
+    const nextHero = markHeroArenaWinQuestOpened(hero, now);
+
+    if (nextHero !== hero) {
+      hero = nextHero;
+      saveLocalHeroSave(hero);
+      queueHeroCloudSave("arena-win-quest-opened");
+    }
+  }
+
+  isCityArenaQuestPanelOpen = open;
+  syncCityArenaQuestControls();
+}
+
+function toggleCityArenaQuestPanel(): void {
+  setCityArenaQuestPanelOpen(!isCityArenaQuestPanelOpen);
+}
+
+function claimCityArenaQuestReward(): void {
+  const claimed = claimHeroArenaWinQuestReward(hero, new Date().toISOString());
+
+  if (!claimed.ok) {
+    syncCityArenaQuestControls();
+    return;
+  }
+
+  hero = claimed.hero;
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave("arena-win-quest");
+  renderCityHero();
+  renderCityArenaMenu();
 }
 
 function isCityArenaAutoFightUnlockedForTier(tierId: number): boolean {
@@ -1896,6 +2004,7 @@ function setCityArenaOnlineViewOpen(open: boolean): void {
   }
   cityArenaMenu?.classList.toggle("city-arena-menu--online-open", open);
   if (open) {
+    setCityArenaQuestPanelOpen(false);
     syncPvpControls();
   }
 }
@@ -2526,6 +2635,7 @@ function openCityArenaMenu(): void {
 
 function closeCityArenaMenu(): void {
   cityArenaMenu?.setAttribute("hidden", "");
+  setCityArenaQuestPanelOpen(false);
   setCityArenaOnlineViewOpen(false);
   cityMenu?.classList.remove("city-menu--arena-select-open");
 }
@@ -3517,8 +3627,21 @@ dom.startButton.addEventListener("click", () => {
 cityArenaCloseButton?.addEventListener("click", closeCityArenaMenu);
 cityArenaOnlineButton?.addEventListener("click", () => setCityArenaOnlineViewOpen(true));
 cityArenaOnlineBackButton?.addEventListener("click", () => setCityArenaOnlineViewOpen(false));
+cityArenaQuestButton?.addEventListener("click", toggleCityArenaQuestPanel);
+cityArenaQuestBackdrop?.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+});
+cityArenaQuestBackdrop?.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  setCityArenaQuestPanelOpen(false);
+});
+cityArenaQuestCloseButton?.addEventListener("click", () => setCityArenaQuestPanelOpen(false));
+cityArenaQuestClaimButton?.addEventListener("click", claimCityArenaQuestReward);
 cityArenaTierSelect?.addEventListener("change", () => {
   activeArenaTierId = Number(cityArenaTierSelect.value) || DEFAULT_ARENA_TIER_ID;
+  setCityArenaQuestPanelOpen(false);
   renderCityArenaMenu();
 });
 cityArenaEasyButton?.addEventListener("click", () => {
