@@ -8,6 +8,7 @@ import {
   resolvePvpTurn,
   type ActionId,
   type CombatState,
+  type TurnOwner,
 } from "../../../gladiator-arena/src/combat";
 import {
   createArenaBossEncounter,
@@ -153,7 +154,7 @@ function getNextAutoSeats(
 }
 
 function createTimeoutLossState(state: CombatState, seat: PvpSeat): CombatState {
-  const timedOutActor = getPvpActorForSeat(seat);
+  const timedOutActor = getPvpTurnOwnerForSeat(seat);
   const timedOutFighter = timedOutActor === "player" ? state.player : state.enemy;
   const nextState: CombatState = {
     ...state,
@@ -174,6 +175,10 @@ function createTimeoutLossState(state: CombatState, seat: PvpSeat): CombatState 
   }
 
   return nextState;
+}
+
+function getPvpTurnOwnerForSeat(seat: PvpSeat): TurnOwner {
+  return seat === "host" ? "player" : "enemy";
 }
 
 export class PvpLobby extends DurableObject<Env> {
@@ -696,7 +701,7 @@ export class PvpRoom extends DurableObject<Env> {
 
     const state = record.roomKind === "duoBoss"
       ? this.resolveDuoBossAction(record.state, seat, actionId)
-      : resolvePvpTurn(record.state, actor, actionId);
+      : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
     const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
     const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn, record.roomKind) : undefined;
     const timeoutStreaks = options.resetTimeoutStreak === false
