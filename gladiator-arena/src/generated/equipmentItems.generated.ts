@@ -36,7 +36,7 @@ export interface GeneratedEquipmentItemRecord {
 
 export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRecord[] = [
   {
-    item: {"id":"cloth_breastplate_01","name":"Cloth Breastplate 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"breastplate","armorHp":3,"levelRequirement":1},
+    item: {"id":"cloth_breastplate_01","name":"Cloth Breastplate 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"breastplate","armorHp":3,"levelRequirement":3},
     assetKeys: {"breastplateAssetKey":"breastplate-cloth-01"},
     equipmentTuning: {"x":0,"y":47,"angle":0,"scaleX":1.26,"scaleY":1.53,"flipX":false,"flipY":false},
     asset: {
@@ -95,7 +95,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_boot_chainmail_01","name":"Chainmail Back Boot 01","price":121,"itemIds":["generated_equipment_back_boot_chainmail_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_boot_cloth_01","name":"Cloth Back Boot 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":1,"levelRequirement":1},
+    item: {"id":"generated_equipment_back_boot_cloth_01","name":"Cloth Back Boot 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":1,"levelRequirement":3},
     assetKeys: {"backBootAssetKey":"back-boot-cloth-01"},
     equipmentTuning: {"x":2,"y":-4,"angle":0,"scaleX":0.93,"scaleY":1.05,"flipX":false,"flipY":false},
     asset: {
@@ -360,7 +360,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_glove_chainmail_03","name":"Chainmail Back Glove 03","price":121,"itemIds":["generated_equipment_back_glove_chainmail_03"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_glove_cloth_01","name":"Cloth Back Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":1,"levelRequirement":1},
+    item: {"id":"generated_equipment_back_glove_cloth_01","name":"Cloth Back Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":1,"levelRequirement":3},
     assetKeys: {"backGloveAssetKey":"back-glove-cloth-01"},
     equipmentTuning: {"x":0,"y":10,"angle":0,"scaleX":0.63,"scaleY":0.6,"flipX":false,"flipY":false},
     asset: {
@@ -637,7 +637,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_greave_chainmail_01","name":"Chainmail Back Greave 01","price":147,"itemIds":["generated_equipment_back_greave_chainmail_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_greave_cloth_01","name":"Cloth Back Greave 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGreave","armorHp":1,"levelRequirement":1},
+    item: {"id":"generated_equipment_back_greave_cloth_01","name":"Cloth Back Greave 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGreave","armorHp":1,"levelRequirement":3},
     assetKeys: {"backGreaveAssetKey":"back-greave-cloth-01"},
     equipmentTuning: {"x":-5,"y":15.781065088757398,"angle":-15,"scaleX":1.85,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
@@ -914,7 +914,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shinguard_chainmail_01","name":"Chainmail Back Shinguard 01","price":147,"itemIds":["generated_equipment_back_shinguard_chainmail_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_back_shinguard_cloth_01","name":"Cloth Back Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":1,"levelRequirement":1},
+    item: {"id":"generated_equipment_back_shinguard_cloth_01","name":"Cloth Back Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":1,"levelRequirement":3},
     assetKeys: {"backShinguardAssetKey":"back-shinguard-cloth-01"},
     equipmentTuning: {"x":2,"y":0,"angle":0,"scaleX":1.4,"scaleY":1,"flipX":false,"flipY":false},
     asset: {
@@ -1179,7 +1179,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_shoulderguard_chainmail_01","name":"Chainmail Back Shoulderguard 01","price":147,"itemIds":["generated_equipment_back_shoulderguard_chainmail_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_back_shoulderguard_cloth_01","name":"Cloth Back Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":1,"levelRequirement":1},
+    item: {"id":"generated_equipment_back_shoulderguard_cloth_01","name":"Cloth Back Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":1,"levelRequirement":3},
     assetKeys: {"backShoulderguardAssetKey":"back-shoulderguard-cloth-01"},
     equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":2.36,"scaleY":1.23,"flipX":false,"flipY":false},
     asset: {
@@ -1444,7 +1444,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_back_wrist_chainmail_01","name":"Chainmail Back Wrist 01","price":121,"itemIds":["generated_equipment_back_wrist_chainmail_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_back_wrist_cloth_01","name":"Cloth Back Wrist 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backWrist","armorHp":1,"levelRequirement":1},
+    item: {"id":"generated_equipment_back_wrist_cloth_01","name":"Cloth Back Wrist 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backWrist","armorHp":1,"levelRequirement":3},
     assetKeys: {"backWristAssetKey":"back-wrist-cloth-01"},
     equipmentTuning: {"x":-1.2507815116668395,"y":21.40828402366864,"angle":4,"scaleX":1.77,"scaleY":1.18,"flipX":false,"flipY":false},
     asset: {
@@ -1962,7 +1962,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_boot_chainmail_01","name":"Chainmail Front Boot 01","price":0,"itemIds":["generated_equipment_front_boot_chainmail_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_front_boot_cloth_01","name":"Cloth Front Boot 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":1},
+    item: {"id":"generated_equipment_front_boot_cloth_01","name":"Cloth Front Boot 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":3},
     assetKeys: {"frontBootAssetKey":"front-boot-cloth-01"},
     equipmentTuning: {"x":4,"y":-4,"angle":0,"scaleX":0.93,"scaleY":1.05,"flipX":false,"flipY":false},
     asset: {
@@ -2227,7 +2227,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_glove_chainmail_03","name":"Chainmail Front Glove 03","price":0,"itemIds":["generated_equipment_front_glove_chainmail_03"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_front_glove_cloth_01","name":"Cloth Front Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":1},
+    item: {"id":"generated_equipment_front_glove_cloth_01","name":"Cloth Front Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontGlove","armorHp":0,"levelRequirement":3},
     assetKeys: {"frontGloveAssetKey":"front-glove-cloth-01"},
     equipmentTuning: {"x":0,"y":10,"angle":0,"scaleX":0.63,"scaleY":0.6,"flipX":true,"flipY":false},
     asset: {
@@ -2504,7 +2504,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_greave_chainmail_01","name":"Chainmail Front Greave 01","price":0,"itemIds":["generated_equipment_front_greave_chainmail_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_front_greave_cloth_01","name":"Cloth Front Greave 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontGreave","armorHp":0,"levelRequirement":1},
+    item: {"id":"generated_equipment_front_greave_cloth_01","name":"Cloth Front Greave 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontGreave","armorHp":0,"levelRequirement":3},
     assetKeys: {"frontGreaveAssetKey":"front-greave-cloth-01"},
     equipmentTuning: {"x":-6,"y":13,"angle":-15,"scaleX":1.87,"scaleY":1.18,"flipX":true,"flipY":false},
     asset: {
@@ -2781,7 +2781,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shinguard_chainmail_01","name":"Chainmail Front Shinguard 01","price":0,"itemIds":["generated_equipment_front_shinguard_chainmail_01"],"categoryId":"legs"},
   },
   {
-    item: {"id":"generated_equipment_front_shinguard_cloth_01","name":"Cloth Front Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":1},
+    item: {"id":"generated_equipment_front_shinguard_cloth_01","name":"Cloth Front Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontShinguard","armorHp":0,"levelRequirement":3},
     assetKeys: {"frontShinguardAssetKey":"front-shinguard-cloth-01"},
     equipmentTuning: {"x":2,"y":0,"angle":0,"scaleX":1.4,"scaleY":1,"flipX":true,"flipY":false},
     asset: {
@@ -3046,7 +3046,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_shoulderguard_chainmail_01","name":"Chainmail Front Shoulderguard 01","price":0,"itemIds":["generated_equipment_front_shoulderguard_chainmail_01"],"categoryId":"shoulders"},
   },
   {
-    item: {"id":"generated_equipment_front_shoulderguard_cloth_01","name":"Cloth Front Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontShoulderguard","armorHp":0,"levelRequirement":1},
+    item: {"id":"generated_equipment_front_shoulderguard_cloth_01","name":"Cloth Front Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontShoulderguard","armorHp":0,"levelRequirement":3},
     assetKeys: {"frontShoulderguardAssetKey":"front-shoulderguard-cloth-01"},
     equipmentTuning: {"x":0,"y":47,"angle":7,"scaleX":2.36,"scaleY":1.23,"flipX":true,"flipY":false},
     asset: {
@@ -3311,7 +3311,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_front_wrist_chainmail_01","name":"Chainmail Front Wrist 01","price":0,"itemIds":["generated_equipment_front_wrist_chainmail_01"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_front_wrist_cloth_01","name":"Cloth Front Wrist 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":1},
+    item: {"id":"generated_equipment_front_wrist_cloth_01","name":"Cloth Front Wrist 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"frontWrist","armorHp":0,"levelRequirement":3},
     assetKeys: {"frontWristAssetKey":"front-wrist-cloth-01"},
     equipmentTuning: {"x":-1.2507815116668395,"y":21.40828402366864,"angle":4,"scaleX":1.77,"scaleY":1.18,"flipX":true,"flipY":false},
     asset: {
@@ -3576,7 +3576,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     armoryProduct: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","price":192,"itemIds":["generated_equipment_helmet_chainmail_01"],"categoryId":"head"},
   },
   {
-    item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"helmet","armorHp":2,"levelRequirement":1},
+    item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"helmet","armorHp":2,"levelRequirement":3},
     assetKeys: {"helmetAssetKey":"helmet-cloth-01"},
     equipmentTuning: {"x":-1,"y":21,"angle":0,"scaleX":1.12,"scaleY":1.12,"flipX":false,"flipY":false},
     asset: {
@@ -4110,7 +4110,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_axe_norm_axe","name":"Common Axe 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"axe","levelRequirement":1},
+    item: {"id":"generated_equipment_weapon_axe_norm_axe","name":"Common Axe 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"axe","levelRequirement":2},
     assetKeys: {"weaponMainAssetKey":"weapon-axe-norm-axe"},
     equipmentTuning: {"x":-9,"y":28,"angle":90,"scaleX":0.95,"scaleY":0.95,"flipX":true,"flipY":false},
     asset: {
@@ -4228,7 +4228,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"weaponClass":"bow"},
+    item: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":1,"weaponClass":"bow","levelRequirement":4},
     assetKeys: {"weaponBowAssetKey":"weapon-bow-01"},
     equipmentTuning: {"x":-73,"y":-3,"angle":90,"scaleX":1.3,"scaleY":1.3,"flipX":false,"flipY":false},
     asset: {
@@ -4370,7 +4370,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","price":1268,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_2"],"categoryId":"bows"},
   },
   {
-    item: {"id":"generated_equipment_weapon_mace_bad_club","name":"Common Mace 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace","levelRequirement":1},
+    item: {"id":"generated_equipment_weapon_mace_bad_club","name":"Common Mace 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace","levelRequirement":2},
     assetKeys: {"weaponMainAssetKey":"weapon-mace-bad-club"},
     equipmentTuning: {"x":0,"y":16,"angle":99,"scaleX":0.9,"scaleY":0.8,"flipX":false,"flipY":false},
     asset: {
@@ -5315,7 +5315,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"Common Sword 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword","levelRequirement":1},
+    item: {"id":"generated_equipment_weapon_sword_rusty_sword","name":"Common Sword 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"sword","levelRequirement":2},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-rusty-sword"},
     equipmentTuning: {"x":0,"y":18,"angle":84,"scaleX":0.65,"scaleY":0.65,"flipX":false,"flipY":false},
     asset: {

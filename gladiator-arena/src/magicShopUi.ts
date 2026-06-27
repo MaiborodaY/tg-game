@@ -256,10 +256,11 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   });
   const enchantModeButton = createMagicShopHomeAction({
     label: "Weapon Sharpening",
-    detail: "SOON",
+    detail: "Weapon upgrades",
     iconUrl: SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
     onClick: () => setMode("weaponSharpening"),
   });
+  enchantModeButton.append(createSoonRibbon("magic-shop__home-soon"));
 
   home.append(scrollsModeButton, enchantModeButton);
 
@@ -780,6 +781,16 @@ function createMagicShopHomeAction(options: { label: string; detail: string; ico
   button.append(icon, text);
 
   return button;
+}
+
+function createSoonRibbon(className: string): HTMLElement {
+  const ribbon = document.createElement("span");
+
+  ribbon.className = `city-level-ribbon city-soon-ribbon ${className}`;
+  ribbon.setAttribute("aria-label", "Coming soon");
+  ribbon.textContent = "SOON";
+
+  return ribbon;
 }
 
 function setTextContentIfChanged(node: HTMLElement, text: string): void {

@@ -14,6 +14,7 @@ import {
   type DistanceBand,
 } from "./combat";
 import {
+  DAILY_ARENA_ENERGY_ICON_ASSET_URL,
   DAMAGE_BLOCK_ICON_ASSET_URL,
   DAMAGE_HIT_ICON_ASSET_URL,
   SHOP_CATEGORY_MACE_ICON_ASSET_URL,
@@ -68,6 +69,11 @@ export interface DomRefs {
   resultXpProgressFill: HTMLElement;
   resultUnlockPanel: HTMLElement;
   resultUnlockLevel: HTMLElement;
+  resultUnlockEnergy: HTMLElement;
+  resultUnlockEnergyIcon: HTMLImageElement;
+  resultUnlockEnergyValue: HTMLElement;
+  resultUnlockEnergyStatus: HTMLElement;
+  resultUnlockTitle: HTMLElement;
   resultUnlockContent: HTMLElement;
   resultUnlockContinueButton: HTMLButtonElement;
   restartButton: HTMLButtonElement;
@@ -140,6 +146,11 @@ export function getDomRefs(): DomRefs {
     resultXpProgressFill: document.querySelector<HTMLElement>("#resultXpProgressFill"),
     resultUnlockPanel: document.querySelector<HTMLElement>("#resultUnlockPanel"),
     resultUnlockLevel: document.querySelector<HTMLElement>("#resultUnlockLevel"),
+    resultUnlockEnergy: document.querySelector<HTMLElement>("#resultUnlockEnergy"),
+    resultUnlockEnergyIcon: document.querySelector<HTMLImageElement>("#resultUnlockEnergyIcon"),
+    resultUnlockEnergyValue: document.querySelector<HTMLElement>("#resultUnlockEnergyValue"),
+    resultUnlockEnergyStatus: document.querySelector<HTMLElement>("#resultUnlockEnergyStatus"),
+    resultUnlockTitle: document.querySelector<HTMLElement>("#resultUnlockTitle"),
     resultUnlockContent: document.querySelector<HTMLElement>("#resultUnlockContent"),
     resultUnlockContinueButton: document.querySelector<HTMLButtonElement>("#resultUnlockContinueButton"),
     restartButton: document.querySelector<HTMLButtonElement>("#restartButton"),
@@ -224,10 +235,17 @@ export interface BattleResultUnlockProduct {
   price: number;
 }
 
+export interface BattleResultUnlockEnergy {
+  from: number;
+  to: number;
+  max: number;
+}
+
 export interface BattleResultLevelUnlocks {
   level: number;
   weapons: readonly BattleResultUnlockProduct[];
   armor: readonly BattleResultUnlockProduct[];
+  energy?: BattleResultUnlockEnergy;
 }
 
 export interface BattleResultReturnState {
@@ -1132,7 +1150,7 @@ function resetResultLevelUpUi(dom: DomRefs): void {
 }
 
 function showResultLevelNotice(dom: DomRefs, level: number): void {
-  dom.resultLevelNotice.textContent = "NEW LEVEL!";
+  dom.resultLevelNotice.textContent = "NEW LVL!";
   dom.resultLevelNotice.hidden = false;
   dom.resultLevelNotice.dataset.level = String(level);
   dom.resultXpProgress.classList.remove("battle-result__xp--level-up");
@@ -1159,29 +1177,174 @@ function renderResultUnlockPanel(dom: DomRefs, unlocks: BattleResultLevelUnlocks
 
   hideResultLevelNotice(dom);
   dom.resultUnlockPanel.dataset.unlockCount = String(products.length);
-  dom.resultUnlockPanel.dataset.unlockLayout = products.length === 1 ? "single" : "list";
+  dom.resultUnlockPanel.dataset.unlockDensity = products.length <= 4 ? "compact" : "list";
+  dom.resultUnlockPanel.dataset.unlockLayout = "groups";
   dom.resultUnlockPanel.hidden = false;
   dom.resultUnlockLevel.textContent = `LVL ${unlocks.level} REACHED`;
-  dom.resultUnlockContent.replaceChildren(...products.map((product, index) => createResultUnlockCard(product, index)));
+  renderResultUnlockEnergyValue(dom, unlocks.energy?.from ?? unlocks.energy?.to ?? 0, unlocks.energy?.max ?? 0);
+  dom.resultUnlockEnergyIcon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
+  dom.resultUnlockEnergy.hidden = true;
+  dom.resultUnlockEnergyStatus.hidden = true;
+  dom.resultUnlockTitle.hidden = true;
+  dom.resultUnlockContent.hidden = true;
+  dom.resultUnlockContent.replaceChildren();
+  dom.resultUnlockContinueButton.hidden = true;
   dom.resultUnlockContinueButton.onclick = onContinue;
+
+  scheduleResultAnimation(300, () => {
+    dom.resultUnlockEnergy.hidden = false;
+    animateResultUnlockEnergy(dom, unlocks.energy, () => {
+      dom.resultUnlockEnergyStatus.hidden = false;
+      scheduleResultAnimation(220, () => {
+        dom.resultUnlockContent.replaceChildren(...createResultUnlockElements(unlocks));
+        dom.resultUnlockTitle.hidden = false;
+        dom.resultUnlockContent.hidden = false;
+        dom.resultUnlockContinueButton.hidden = false;
+      });
+    });
+  });
 }
 
 function hideResultUnlockPanel(dom: DomRefs): void {
   dom.resultUnlockPanel.hidden = true;
   dom.resultUnlockPanel.removeAttribute("data-unlock-count");
+  dom.resultUnlockPanel.removeAttribute("data-unlock-density");
   dom.resultUnlockPanel.removeAttribute("data-unlock-layout");
+  dom.resultUnlockEnergy.hidden = true;
+  dom.resultUnlockEnergyStatus.hidden = true;
+  dom.resultUnlockTitle.hidden = true;
+  dom.resultUnlockContent.hidden = false;
   dom.resultUnlockContent.replaceChildren();
+  dom.resultUnlockContinueButton.hidden = false;
   dom.resultUnlockContinueButton.onclick = null;
 }
 
-function createResultUnlockCard(product: BattleResultUnlockProduct, index: number): HTMLElement {
+function animateResultUnlockEnergy(
+  dom: DomRefs,
+  energy: BattleResultUnlockEnergy | undefined,
+  onComplete: () => void,
+): void {
+  if (!energy) {
+    onComplete();
+    return;
+  }
+
+  const from = Math.max(0, Math.min(energy.max, Math.floor(energy.from)));
+  const to = Math.max(0, Math.min(energy.max, Math.floor(energy.to)));
+
+  renderResultUnlockEnergyValue(dom, from, energy.max);
+
+  if (from >= to) {
+    renderResultUnlockEnergyValue(dom, to, energy.max);
+    scheduleResultAnimation(120, onComplete);
+    return;
+  }
+
+  animateValue({
+    fromValue: from,
+    toValue: to,
+    durationMs: 620,
+    delayMs: 0,
+    onUpdate: (value) => renderResultUnlockEnergyValue(dom, Math.round(value), energy.max),
+    onComplete: () => {
+      renderResultUnlockEnergyValue(dom, to, energy.max);
+      onComplete();
+    },
+  });
+}
+
+function renderResultUnlockEnergyValue(dom: DomRefs, current: number, max: number): void {
+  const safeMax = Math.max(0, Math.floor(max));
+  const safeCurrent = Math.max(0, Math.min(safeMax, Math.floor(current)));
+
+  dom.resultUnlockEnergyValue.textContent = `${safeCurrent}/${safeMax}`;
+  dom.resultUnlockEnergy.setAttribute("aria-label", `Arena energy ${safeCurrent} of ${safeMax}, energy restored`);
+}
+
+const RESULT_UNLOCK_CASCADE_DELAY_MS = 500;
+
+function createResultUnlockElements(unlocks: BattleResultLevelUnlocks): HTMLElement[] {
+  const elements: HTMLElement[] = [];
+  let cascadeIndex = 0;
+
+  if (unlocks.weapons.length > 0) {
+    cascadeIndex = appendResultUnlockGroupElements(elements, "WEAPONS", "weapons", unlocks.weapons, cascadeIndex);
+  }
+
+  if (unlocks.armor.length > 0) {
+    cascadeIndex = appendResultUnlockGroupElements(elements, "ARMOR", "armor", unlocks.armor, cascadeIndex);
+  }
+
+  return elements;
+}
+
+function appendResultUnlockGroupElements(
+  elements: HTMLElement[],
+  title: string,
+  kind: "armor" | "weapons",
+  products: readonly BattleResultUnlockProduct[],
+  cascadeIndex: number,
+): number {
+  const heading = document.createElement("strong");
+  const sortedProducts = getResultUnlockPreviewProducts(products, kind);
+  const collapsedCount = Math.min(3, sortedProducts.length);
+  let nextCascadeIndex = cascadeIndex;
+
+  heading.className = "battle-result__unlock-section-title";
+  setResultUnlockCascadeDelay(heading, nextCascadeIndex);
+  heading.textContent = title;
+  elements.push(heading);
+  nextCascadeIndex += 1;
+
+  const cards = sortedProducts.map((product, index) => {
+    const isExtra = index >= collapsedCount;
+    const card = createResultUnlockCard(product, isExtra ? 0 : nextCascadeIndex);
+
+    if (isExtra) {
+      card.hidden = true;
+      return card;
+    }
+
+    nextCascadeIndex += 1;
+    return card;
+  });
+  const extraCards = cards.slice(collapsedCount);
+
+  elements.push(...cards);
+
+  if (extraCards.length > 0) {
+    const more = document.createElement("button");
+    const moreLabel = `and ${extraCards.length} more`;
+
+    more.className = "battle-result__unlock-more";
+    more.type = "button";
+    more.textContent = moreLabel;
+    more.setAttribute("aria-expanded", "false");
+    setResultUnlockCascadeDelay(more, nextCascadeIndex);
+    more.addEventListener("click", () => {
+      const expanded = more.getAttribute("aria-expanded") !== "true";
+
+      extraCards.forEach((card) => {
+        card.hidden = !expanded;
+      });
+      more.textContent = expanded ? "show less" : moreLabel;
+      more.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
+    elements.push(more);
+    nextCascadeIndex += 1;
+  }
+
+  return nextCascadeIndex;
+}
+
+function createResultUnlockCard(product: BattleResultUnlockProduct, cascadeIndex: number): HTMLElement {
   const card = document.createElement("span");
   const rarity = product.rarity ?? getShopProductRarity([...product.itemIds]);
   const iconUrl = getShopProductIconUrl(product.itemIds);
   const displayName = getShopProductDisplayName(product.name);
 
   card.className = `equipment-item-card battle-result__unlock-card armory-shop__option--rarity-${rarity}`;
-  card.style.setProperty("--battle-result-unlock-index", String(index));
+  setResultUnlockCascadeDelay(card, cascadeIndex);
   card.setAttribute(
     "aria-label",
     `${displayName}, ${getShopRarityLabel(rarity)}, ${product.statValue} ${product.statKind}, unlocked at level ${product.levelRequirement}`,
@@ -1205,6 +1368,51 @@ function createResultUnlockCard(product: BattleResultUnlockProduct, index: numbe
   );
 
   return card;
+}
+
+function setResultUnlockCascadeDelay(element: HTMLElement, cascadeIndex: number): void {
+  element.style.setProperty("--battle-result-unlock-delay", `${Math.max(0, cascadeIndex) * RESULT_UNLOCK_CASCADE_DELAY_MS}ms`);
+}
+
+function getResultUnlockPreviewProducts(
+  products: readonly BattleResultUnlockProduct[],
+  kind: "armor" | "weapons",
+): BattleResultUnlockProduct[] {
+  return [...products].sort((left, right) => {
+    const priorityDiff = getResultUnlockProductPriority(left, kind) - getResultUnlockProductPriority(right, kind);
+
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    return left.name.localeCompare(right.name);
+  });
+}
+
+function getResultUnlockProductPriority(product: BattleResultUnlockProduct, kind: "armor" | "weapons"): number {
+  const key = `${product.id} ${product.name} ${product.itemIds.join(" ")}`.toLowerCase();
+  const priorities =
+    kind === "armor"
+      ? [
+          ["helmet", "helm", "head"],
+          ["breastplate", "chest", "body"],
+          ["shoulder"],
+          ["glove", "wrist", "arms"],
+          ["greave", "shinguard", "leg"],
+          ["shield"],
+        ]
+      : [
+          ["sword"],
+          ["axe"],
+          ["mace"],
+          ["spear"],
+          ["bow"],
+          ["shuriken"],
+        ];
+
+  const index = priorities.findIndex((aliases) => aliases.some((alias) => key.includes(alias)));
+
+  return index >= 0 ? index : priorities.length;
 }
 
 interface ValueAnimationOptions {

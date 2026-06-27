@@ -15,6 +15,12 @@ export type EquipmentCardAction =
       state?: string;
     };
 
+export interface EquipmentCardInlineConfirmAction {
+  state: "buy" | "no-gold";
+  price: number;
+  iconUrl: string;
+}
+
 export interface EquipmentItemCardContentOptions {
   iconUrl?: string;
   iconFallback?: string;
@@ -148,6 +154,35 @@ export function createEquipmentSlotCard(options: EquipmentSlotCardOptions): HTML
   }
 
   return slot;
+}
+
+export function createEquipmentInlineConfirmAction(action: EquipmentCardInlineConfirmAction): HTMLElement {
+  const root = document.createElement("span");
+  const label = document.createElement("span");
+  const price = document.createElement("span");
+  const icon = document.createElement("img");
+  const amount = document.createElement("span");
+
+  root.className = [
+    "equipment-item-card__confirm-action",
+    `equipment-item-card__confirm-action--${action.state}`,
+  ].join(" ");
+  root.dataset.cardConfirmAction = action.state;
+  root.setAttribute("aria-label", action.state === "buy" ? `Buy for ${action.price} gold` : `Not enough gold, ${action.price} gold`);
+  label.className = "equipment-item-card__confirm-label";
+  label.textContent = action.state === "buy" ? "BUY" : "NO GOLD";
+  price.className = "equipment-item-card__confirm-price";
+  icon.className = "equipment-item-card__confirm-price-icon";
+  icon.src = action.iconUrl;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  amount.className = "equipment-item-card__confirm-price-amount";
+  amount.textContent = String(action.price);
+  price.append(icon, amount);
+  root.append(label, price);
+
+  return root;
 }
 
 function createEquipmentStatChip(options: EquipmentItemCardContentOptions): HTMLElement {

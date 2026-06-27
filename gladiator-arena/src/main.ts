@@ -197,6 +197,11 @@ interface PendingCityArenaAutoRateTarget extends CityArenaAutoRateTarget {
   cacheKey: string;
   sourceHero: HeroState;
 }
+const CITY_ARENA_TIER_ONE_DIFFICULTY_LEVEL_REQUIREMENTS: Partial<Record<ArenaDifficultyId, number>> = {
+  [DEFAULT_ARENA_DIFFICULTY_ID]: 3,
+  hard: 7,
+};
+const MAGIC_SHOP_LEVEL_REQUIREMENT = 8;
 let hero: HeroState = createInitialHero();
 let pendingEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -603,6 +608,7 @@ function renderCityHero(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero, {
     highlightedEquipmentItemIds: pendingEquipmentHintItemIds,
   });
+  syncMagicShopButtonLock();
 }
 
 function createBattleResultLevelUnlocks(heroBeforeReward: HeroState, heroAfterReward: HeroState): BattleResultLevelUnlocks[] {
@@ -615,14 +621,27 @@ function createBattleResultLevelUnlocks(heroBeforeReward: HeroState, heroAfterRe
 
   const weaponProducts = getBattleResultUnlockWeaponProducts(heroAfterReward);
   const armorProducts = getBattleResultUnlockArmorProducts(heroAfterReward);
+  const energyBeforeReward = getHeroArenaEnergy(heroBeforeReward);
+  const energyAfterReward = getHeroArenaEnergy(heroAfterReward);
   const levelUnlocks: BattleResultLevelUnlocks[] = [];
+  let energyFrom = energyBeforeReward.current;
 
   for (let level = fromLevel + 1; level <= toLevel; level += 1) {
     const weapons = getBattleResultUnlockProductsForLevel(weaponProducts, heroAfterReward, level);
     const armor = getBattleResultUnlockProductsForLevel(armorProducts, heroAfterReward, level);
 
     if (weapons.length > 0 || armor.length > 0) {
-      levelUnlocks.push({ level, weapons, armor });
+      levelUnlocks.push({
+        level,
+        weapons,
+        armor,
+        energy: {
+          from: energyFrom,
+          to: energyAfterReward.current,
+          max: energyAfterReward.max,
+        },
+      });
+      energyFrom = energyAfterReward.current;
     }
   }
 
@@ -1466,9 +1485,9 @@ function renderCityArenaMenu(): void {
   cityArenaTierName.textContent = tier.name;
   syncCityArenaMenuEnergy();
   syncCityArenaQuestControls();
-  syncCityArenaFightTitle(cityArenaEasyName, "Easy", ARENA_RANDOM_ENERGY_COST);
-  syncCityArenaFightTitle(cityArenaRandomName, "Medium", ARENA_RANDOM_ENERGY_COST);
-  syncCityArenaFightTitle(cityArenaHardName, "Hard", ARENA_RANDOM_ENERGY_COST);
+  syncCityArenaFightTitle(cityArenaEasyName, "Easy", ARENA_RANDOM_ENERGY_COST, getLockedCityArenaDifficultyLevelRequirement(tier.id, "easy"));
+  syncCityArenaFightTitle(cityArenaRandomName, "Medium", ARENA_RANDOM_ENERGY_COST, getLockedCityArenaDifficultyLevelRequirement(tier.id, DEFAULT_ARENA_DIFFICULTY_ID));
+  syncCityArenaFightTitle(cityArenaHardName, "Hard", ARENA_RANDOM_ENERGY_COST, getLockedCityArenaDifficultyLevelRequirement(tier.id, "hard"));
   setCityArenaBotButtonEnergyCost(cityArenaEasyButton, ARENA_RANDOM_ENERGY_COST);
   setCityArenaBotButtonEnergyCost(cityArenaRandomButton, ARENA_RANDOM_ENERGY_COST);
   setCityArenaBotButtonEnergyCost(cityArenaHardButton, ARENA_RANDOM_ENERGY_COST);
@@ -1604,6 +1623,34 @@ function isCityArenaAutoFightUnlockedForTier(tierId: number): boolean {
   return bosses.length > 0 && bosses.some((boss) => hasHeroDefeatedArenaBoss(hero, boss.id));
 }
 
+function getCityArenaDifficultyLevelRequirement(tierId: number, difficultyId: ArenaDifficultyId): number {
+  if (tierId !== DEFAULT_ARENA_TIER_ID) {
+    return 0;
+  }
+
+  return CITY_ARENA_TIER_ONE_DIFFICULTY_LEVEL_REQUIREMENTS[difficultyId] ?? 0;
+}
+
+function getLockedCityArenaDifficultyLevelRequirement(tierId: number, difficultyId: ArenaDifficultyId): number {
+  const requirement = getCityArenaDifficultyLevelRequirement(tierId, difficultyId);
+
+  return requirement > 0 && hero.level < requirement ? requirement : 0;
+}
+
+function getArenaSelectionLevelRequirement(selection: ArenaMenuSelection): number {
+  return selection.kind === "random" ? getCityArenaDifficultyLevelRequirement(selection.tierId, selection.difficultyId) : 0;
+}
+
+function getArenaSelectionLevelGateTitle(selection: ArenaMenuSelection): string {
+  const requirement = getArenaSelectionLevelRequirement(selection);
+
+  if (requirement <= 0 || hero.level >= requirement) {
+    return "";
+  }
+
+  return `Requires LVL ${requirement}.`;
+}
+
 function syncCityArenaAutoFightVisibility(unlocked: boolean): void {
   if (!unlocked) {
     cityArenaAutoRateToken += 1;
@@ -1631,19 +1678,49 @@ function syncCityArenaAutoFightVisibility(unlocked: boolean): void {
   });
 }
 
-function syncCityArenaFightTitle(title: HTMLElement | null | undefined, label: string, energyCost: number): void {
+function syncCityArenaFightTitle(title: HTMLElement | null | undefined, label: string, energyCost: number, levelRequirement = 0): void {
   if (!title) {
     return;
   }
 
+  const button = title.closest<HTMLElement>(".city-arena-menu__fight");
   const text = document.createElement("span");
   const cost = createCityArenaEnergyCostItem(energyCost);
+  const existingRibbon = button?.querySelector<HTMLElement>("[data-city-level-ribbon='arena']");
 
   title.classList.add("city-arena-menu__fight-title");
   text.className = "city-arena-menu__fight-title-text";
   text.textContent = label;
   cost.classList.add("city-arena-menu__fight-cost");
   title.replaceChildren(text, cost);
+  existingRibbon?.remove();
+
+  if (levelRequirement > 0) {
+    const levelRibbon = createCityLevelRibbon(levelRequirement, "city-arena-menu__fight-level", "arena");
+
+    if (button) {
+      button.append(levelRibbon);
+    } else {
+      title.append(levelRibbon);
+    }
+  }
+}
+
+function createCityLevelRibbon(levelRequirement: number, className: string, key: string): HTMLElement {
+  const ribbon = document.createElement("span");
+  const label = document.createElement("span");
+  const amount = document.createElement("span");
+
+  ribbon.className = `city-level-ribbon ${className}`;
+  ribbon.dataset.cityLevelRibbon = key;
+  ribbon.setAttribute("aria-label", `Requires level ${levelRequirement}`);
+  label.className = "city-level-ribbon__label";
+  label.textContent = "LVL";
+  amount.className = "city-level-ribbon__amount";
+  amount.textContent = String(levelRequirement);
+  ribbon.append(label, amount);
+
+  return ribbon;
 }
 
 function scheduleCityArenaAutoRates(targets: readonly CityArenaAutoRateTarget[]): void {
@@ -1653,6 +1730,13 @@ function scheduleCityArenaAutoRates(targets: readonly CityArenaAutoRateTarget[])
 
   targets.forEach((target) => {
     if (!target.button || !target.output) {
+      return;
+    }
+
+    if (getArenaSelectionLevelGateTitle(target.selection)) {
+      delete target.button.dataset.autoFightRateKey;
+      delete target.button.dataset.autoFightRate;
+      syncCityArenaAutoRate(target, undefined);
       return;
     }
 
@@ -2012,21 +2096,23 @@ function canCancelPvpRoom(): boolean {
 }
 
 function syncCityArenaBotControls(): void {
-  [cityArenaEasyButton, cityArenaRandomButton, cityArenaHardButton].forEach((button) => {
-    if (!button) {
+  const tierId = getSelectedCityArenaTier().id;
+
+  getCityArenaRandomFightTargets(tierId).forEach(({ button, selection }) => {
+    if (!button || selection.kind !== "random") {
       return;
     }
-    const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
+    const title = getCityArenaSelectionDisabledTitle(selection);
     const disabled = Boolean(title);
 
     button.disabled = disabled;
     button.title = title;
   });
-  [cityArenaEasyAutoButton, cityArenaRandomAutoButton, cityArenaHardAutoButton].forEach((button) => {
+  getCityArenaRandomAutoRateTargets(tierId).forEach(({ button, selection }) => {
     if (!button) {
       return;
     }
-    const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
+    const title = getCityArenaSelectionDisabledTitle(selection);
     const disabled = Boolean(title);
     const rateText = button.dataset.autoFightRate;
     const rate = rateText ? Number(rateText) : undefined;
@@ -2042,6 +2128,14 @@ function syncCityArenaBotControls(): void {
     button.disabled = Boolean(buttonTitle);
     button.title = buttonTitle || button.dataset.defaultTitle || "";
   });
+}
+
+function getCityArenaRandomFightTargets(tierId: number): CityArenaAutoRateTarget[] {
+  return [
+    { button: cityArenaEasyButton, output: null, selection: { kind: "random", tierId, difficultyId: "easy" } },
+    { button: cityArenaRandomButton, output: null, selection: { kind: "random", tierId, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID } },
+    { button: cityArenaHardButton, output: null, selection: { kind: "random", tierId, difficultyId: "hard" } },
+  ];
 }
 
 function setCityArenaBotButtonEnergyCost(button: HTMLButtonElement | null, energyCost: number): void {
@@ -2062,7 +2156,7 @@ function normalizeArenaEnergyCost(value: number): number {
   return Math.max(ARENA_RANDOM_ENERGY_COST, Math.floor(value));
 }
 
-function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): string {
+function getCityArenaBotBlockingTitle(): string {
   if (isPvpRoomBlockingArena()) {
     return "Cancel online room before fighting bots.";
   }
@@ -2075,6 +2169,16 @@ function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): st
     return "Resolving auto fight...";
   }
 
+  return "";
+}
+
+function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): string {
+  const blockingTitle = getCityArenaBotBlockingTitle();
+
+  if (blockingTitle) {
+    return blockingTitle;
+  }
+
   const currentArenaEnergy = getHeroArenaEnergy(hero).current;
 
   if (currentArenaEnergy < energyCost) {
@@ -2082,6 +2186,44 @@ function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): st
   }
 
   return "";
+}
+
+function getCityArenaSelectionDisabledTitle(selection: ArenaMenuSelection): string {
+  const blockingTitle = getCityArenaBotBlockingTitle();
+
+  if (blockingTitle) {
+    return blockingTitle;
+  }
+
+  return getArenaSelectionLevelGateTitle(selection) || getCityArenaBotDisabledTitle(getArenaSelectionEnergyCost(selection));
+}
+
+function getMagicShopLevelGateTitle(): string {
+  return hero.level >= MAGIC_SHOP_LEVEL_REQUIREMENT ? "" : `Requires LVL ${MAGIC_SHOP_LEVEL_REQUIREMENT}.`;
+}
+
+function syncMagicShopButtonLock(): void {
+  if (!magicShopButton) {
+    return;
+  }
+
+  const title = getMagicShopLevelGateTitle();
+  const locked = Boolean(title);
+  let levelRibbon = magicShopButton.querySelector<HTMLElement>("[data-city-level-ribbon='magic-shop']");
+
+  magicShopButton.classList.toggle("city-menu__button--locked", locked);
+  magicShopButton.toggleAttribute("aria-disabled", locked);
+  magicShopButton.title = title;
+
+  if (!locked) {
+    levelRibbon?.remove();
+    return;
+  }
+
+  if (!levelRibbon) {
+    levelRibbon = createCityLevelRibbon(MAGIC_SHOP_LEVEL_REQUIREMENT, "city-menu__button-level", "magic-shop");
+    magicShopButton.insertBefore(levelRibbon, magicShopButton.lastElementChild);
+  }
 }
 
 function setPvpStatus(message: string): void {
@@ -2765,6 +2907,14 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
     return;
   }
 
+  const levelGateTitle = getArenaSelectionLevelGateTitle(selection);
+
+  if (levelGateTitle) {
+    renderCityArenaMenu();
+    window.alert(levelGateTitle);
+    return;
+  }
+
   if (selection.kind === "boss") {
     const limitTitle = getArenaSelectionBossVictoryLimitTitle(selection);
 
@@ -2799,6 +2949,14 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
   if (isPvpRoomBlockingArena()) {
     setPvpStatus("Cancel online room before fighting bots.");
     syncPvpControls();
+    return;
+  }
+
+  const levelGateTitle = getArenaSelectionLevelGateTitle(selection);
+
+  if (levelGateTitle) {
+    renderCityArenaMenu();
+    window.alert(levelGateTitle);
     return;
   }
 
@@ -2846,6 +3004,7 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
     rememberDroppedEquipmentHint(resolvedState, loot);
     saveLocalHeroSave(hero);
     queueHeroCloudSave("auto-fight-result");
+    renderCityArenaMenu();
     presentAutoResolvedArenaResult(resolvedState, {
       ...rewardApplication,
       levelUnlocks: createBattleResultLevelUnlocks(rewardApplication.heroBeforeReward, rewardApplication.heroAfterReward),
@@ -2933,7 +3092,7 @@ function closeAutoResolvedArenaResult(): void {
   document.body.classList.remove("arena-active");
   renderCityHero();
   renderCurrentDom();
-  syncCityArenaBotControls();
+  renderCityArenaMenu();
   syncTurnProbe();
 }
 
@@ -3829,6 +3988,14 @@ armoryButton?.addEventListener("click", () => {
   armoryShop?.open();
 });
 magicShopButton?.addEventListener("click", () => {
+  const levelGateTitle = getMagicShopLevelGateTitle();
+
+  if (levelGateTitle) {
+    syncMagicShopButtonLock();
+    window.alert(levelGateTitle);
+    return;
+  }
+
   cityHeroProfile?.close();
   closeCityArenaMenu();
   weaponShop?.close();

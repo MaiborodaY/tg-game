@@ -16,7 +16,13 @@ import {
   SHOP_BACK_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
-import { createEquipmentItemCardContent, createEquipmentSlotCard, type EquipmentCardAction } from "./equipmentCardUi";
+import {
+  createEquipmentInlineConfirmAction,
+  createEquipmentItemCardContent,
+  createEquipmentSlotCard,
+  type EquipmentCardAction,
+  type EquipmentCardInlineConfirmAction,
+} from "./equipmentCardUi";
 import { GENERATED_ARMORY_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
@@ -967,26 +973,22 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const hero = options.getHero();
 
     renderSelectedProduct(hero);
-    updateProductButtonSelection(previousProductId);
+    updateProductButtonSelection(previousProductId, hero);
     scheduleLayoutSync();
   }
 
   function syncSelectionState(): void {
     const hasSelection = Boolean(previewProduct);
 
-    shop.classList.toggle("armory-shop--has-selection", hasSelection);
-    selected.hidden = !hasSelection;
-    content.classList.toggle("armory-shop__content--has-selection", hasSelection);
+    shop.classList.remove("armory-shop--has-selection");
+    shop.classList.toggle("armory-shop--has-inline-confirm", hasSelection);
+    selected.hidden = true;
+    content.classList.toggle("armory-shop__content--has-selection", false);
   }
 
-  function renderSelectedProduct(hero: HeroState): void {
+  function renderSelectedProduct(_hero: HeroState): void {
     syncSelectionState();
-
-    if (!previewProduct) {
-      return;
-    }
-
-    updateSelectedProductStrip(ensureSelectedStripElements(), previewProduct, hero);
+    selected.replaceChildren();
   }
 
   function ensureSelectedStripElements(): ArmorySelectedStripElements {
@@ -1007,15 +1009,15 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     return selectedStripElements;
   }
 
-  function updateProductButtonSelection(previousProductId?: string): void {
+  function updateProductButtonSelection(previousProductId: string | undefined, hero: HeroState): void {
     const nextProductId = previewProduct?.id;
 
     if (previousProductId && previousProductId !== nextProductId) {
-      productButtons.get(previousProductId)?.classList.remove("armory-shop__option--selected");
+      refreshProductButton(previousProductId, hero, true);
     }
 
     if (nextProductId) {
-      productButtons.get(nextProductId)?.classList.add("armory-shop__option--selected");
+      refreshProductButton(nextProductId, hero, true);
     }
   }
 
@@ -1213,6 +1215,8 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const armor = getShopProductStat(product.itemIds, "armor");
     const currentArmor = getEquippedShopProductStat(hero, product.itemIds, "armor");
     const cardState = getArmoryProductCardState(hero, product);
+    const actionState = getArmoryProductActionState(hero, product);
+    const inlineConfirmAction = isSelected ? getProductInlineConfirmAction(actionState, product.price) : undefined;
     const displayName = getShopProductDisplayName(product.name);
     const requirementBadge = getShopProductRequirementBadge(hero, product.itemIds);
     const requirementDescription = getShopProductRequirementDescription(hero, product.itemIds);
@@ -1226,34 +1230,59 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     button.classList.toggle("armory-shop__option--for-sale", cardState === "buy");
     button.classList.toggle("armory-shop__option--locked", cardState === "locked");
     button.classList.toggle("armory-shop__option--sealed", cardState === "sealed" || cardState === "locked");
+    button.classList.toggle("armory-shop__option--inline-confirm", Boolean(inlineConfirmAction));
     button.type = "button";
     button.disabled = cardState === "sealed" || cardState === "locked";
     button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
-      `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${requirementDescription || getShopProductActionLabel(cardState, product.price)}`,
+      `${displayName}, ${getShopRarityLabel(rarity)}, ${armor} armor, ${
+        inlineConfirmAction
+          ? inlineConfirmAction.state === "buy"
+            ? `selected, buy for ${product.price} gold`
+            : `selected, not enough gold, ${product.price} gold`
+          : requirementDescription || getShopProductActionLabel(actionState, product.price)
+      }`,
     );
-    button.append(
-      createEquipmentItemCardContent({
-        iconUrl,
-        name: displayName,
-        rarityLabel: getShopRarityLabel(rarity),
-        statIconUrl: DAMAGE_BLOCK_ICON_ASSET_URL,
-        statLabel: "armor",
-        statValue: armor,
-        diff: armor - currentArmor,
-        levelRequirement: getShopProductLevelRequirement(product.itemIds),
-        action: getProductCardAction(cardState, product.price),
-      }),
-    );
+    const cardContent = createEquipmentItemCardContent({
+      iconUrl,
+      name: displayName,
+      rarityLabel: getShopRarityLabel(rarity),
+      statIconUrl: DAMAGE_BLOCK_ICON_ASSET_URL,
+      statLabel: "armor",
+      statValue: armor,
+      diff: armor - currentArmor,
+      levelRequirement: inlineConfirmAction ? undefined : getShopProductLevelRequirement(product.itemIds),
+      action: inlineConfirmAction ? undefined : getProductCardAction(actionState, product.price),
+    });
+
+    if (inlineConfirmAction) {
+      cardContent.classList.add("equipment-item-card__content--with-inline-confirm");
+      cardContent.append(createEquipmentInlineConfirmAction(inlineConfirmAction));
+    }
+
+    button.append(cardContent);
     if (cardState === "sealed") {
       button.append(createSealedRibbon());
     }
     if (cardState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
     }
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
       if (button.disabled) {
+        return;
+      }
+
+      if (isSelected) {
+        const target = event.target;
+        const confirmAction =
+          target instanceof Element ? target.closest(".equipment-item-card__confirm-action") : undefined;
+
+        if (confirmAction && button.contains(confirmAction) && inlineConfirmAction?.state === "buy") {
+          previewProduct = undefined;
+          options.onBuy(product);
+        }
+
         return;
       }
 
@@ -1376,7 +1405,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
   }
 
-  function refreshProductButton(productId: string, hero: HeroState): void {
+  function refreshProductButton(productId: string, hero: HeroState, force = false): void {
     const product = renderedProductsById.get(productId);
 
     if (!product) {
@@ -1391,7 +1420,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     const nextVisualState = getProductButtonVisualState(hero, product);
 
-    if (productButtonVisualStates.get(product.id) === nextVisualState) {
+    if (!force && productButtonVisualStates.get(product.id) === nextVisualState) {
       return;
     }
 
@@ -1438,7 +1467,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   }
 
   function getProductButtonVisualState(hero: HeroState, product: ArmoryProduct): string {
-    return getArmoryProductCardState(hero, product);
+    return getArmoryProductActionState(hero, product);
   }
 
   function getArmoryProductCardState(hero: HeroState, product: ArmoryProduct): ShopProductActionState {
@@ -1829,6 +1858,14 @@ function getProductCardAction(actionState: ShopProductActionState, price: number
   }
 
   return { kind: "status", label: getShopProductActionLabel(actionState, price), state: actionState };
+}
+
+function getProductInlineConfirmAction(actionState: ShopProductActionState, price: number): EquipmentCardInlineConfirmAction | undefined {
+  if (actionState !== "buy" && actionState !== "no-gold") {
+    return undefined;
+  }
+
+  return { state: actionState, price, iconUrl: SHOP_GOLD_COIN_ICON_ASSET_URL };
 }
 
 function createSelectedMeta(): ArmorySelectedMetaElements {

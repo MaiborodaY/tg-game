@@ -30,7 +30,13 @@ import {
   SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
-import { createEquipmentItemCardContent, createEquipmentSlotCard, type EquipmentCardAction } from "./equipmentCardUi";
+import {
+  createEquipmentInlineConfirmAction,
+  createEquipmentItemCardContent,
+  createEquipmentSlotCard,
+  type EquipmentCardAction,
+  type EquipmentCardInlineConfirmAction,
+} from "./equipmentCardUi";
 import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import {
@@ -480,8 +486,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   back.append(backIcon);
   back.addEventListener("click", () => {
     if (previewProduct) {
-      clearProductPreview();
-      render();
+      const previousProductId = clearProductPreview();
+
+      updateProductButtonSelection(previousProductId);
       return;
     }
 
@@ -613,10 +620,6 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     content.classList.toggle("armory-shop__content--categories", false);
     content.classList.toggle("armory-shop__content--products", true);
     content.classList.toggle("armory-shop__content--confirm", false);
-
-    if (previewProduct) {
-      selected.append(createSelectedProductStrip(previewProduct, hero));
-    }
 
     renderBowCapacityUpgrade(hero);
     scheduleLayoutSync();
@@ -873,6 +876,8 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     const rarity = getShopProductRarity(product.itemIds, product.rarity);
     const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
     const cardState = getWeaponProductCardState(hero, product);
+    const actionState = getWeaponProductActionState(hero, product);
+    const inlineConfirmAction = isSelected ? getProductInlineConfirmAction(actionState, product.price) : undefined;
     const displayName = getShopProductDisplayName(product.name);
     const isConsumable = areHeroItemsConsumable(product.itemIds);
     const currentDamage = isConsumable ? damage : getEquippedShopProductDisplayStat(hero, product.itemIds, "damage");
@@ -891,26 +896,38 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.classList.toggle("armory-shop__option--locked", cardState === "locked");
     button.classList.toggle("armory-shop__option--sealed", cardState === "sealed" || cardState === "locked");
     button.classList.toggle("armory-shop__option--consumable", Boolean(consumableInfo));
+    button.classList.toggle("armory-shop__option--inline-confirm", Boolean(inlineConfirmAction));
     button.type = "button";
     button.disabled = cardState === "sealed" || cardState === "locked";
     button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
-      `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${requirementDescription || getShopProductActionLabel(cardState, product.price)}`,
+      `${displayName}, ${getShopRarityLabel(rarity)}, ${damage} damage, ${
+        inlineConfirmAction
+          ? inlineConfirmAction.state === "buy"
+            ? `selected, buy for ${product.price} gold`
+            : `selected, not enough gold, ${product.price} gold`
+          : requirementDescription || getShopProductActionLabel(actionState, product.price)
+      }`,
     );
-    button.append(
-      createEquipmentItemCardContent({
-        iconUrl,
-        name: displayName,
-        rarityLabel: getShopRarityLabel(rarity),
-        statIconUrl: DAMAGE_HIT_ICON_ASSET_URL,
-        statLabel: "damage",
-        statValue: damage,
-        diff: damage - currentDamage,
-        levelRequirement: getShopProductLevelRequirement(product.itemIds),
-        action: getProductCardAction(cardState, product.price),
-      }),
-    );
+    const cardContent = createEquipmentItemCardContent({
+      iconUrl,
+      name: displayName,
+      rarityLabel: getShopRarityLabel(rarity),
+      statIconUrl: DAMAGE_HIT_ICON_ASSET_URL,
+      statLabel: "damage",
+      statValue: damage,
+      diff: damage - currentDamage,
+      levelRequirement: inlineConfirmAction ? undefined : getShopProductLevelRequirement(product.itemIds),
+      action: inlineConfirmAction ? undefined : getProductCardAction(actionState, product.price),
+    });
+
+    if (inlineConfirmAction) {
+      cardContent.classList.add("equipment-item-card__content--with-inline-confirm");
+      cardContent.append(createEquipmentInlineConfirmAction(inlineConfirmAction));
+    }
+
+    button.append(cardContent);
     if (consumableInfo) {
       button.append(createConsumableCardBadges(consumableInfo));
     }
@@ -920,18 +937,44 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     if (cardState === "locked" && requirementBadge) {
       button.append(createRequirementRibbon(requirementBadge));
     }
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
       if (button.disabled) {
         return;
       }
 
       closeRarityFilter();
-      previewProduct = product;
-      options.onPreview?.(product);
-      render();
+      if (isSelected) {
+        const target = event.target;
+        const confirmAction =
+          target instanceof Element ? target.closest(".equipment-item-card__confirm-action") : undefined;
+
+        if (confirmAction && button.contains(confirmAction) && inlineConfirmAction?.state === "buy") {
+          previewProduct = undefined;
+          options.onBuy(product);
+        }
+
+        return;
+      }
+
+      previewWeaponProduct(product);
     });
 
     return button;
+  }
+
+  function previewWeaponProduct(product: WeaponProduct): void {
+    if (previewProduct?.id === product.id) {
+      return;
+    }
+
+    const previousProductId = previewProduct?.id;
+
+    clearVisibleProductPrewarm();
+    previewProduct = product;
+    options.onPreview?.(product);
+    updateProductButtonSelection(previousProductId);
+    scheduleLayoutSync();
+    scheduleVisibleProductPrewarm();
   }
 
   function createSelectedProductStrip(product: WeaponProduct, hero: HeroState): HTMLElement {
@@ -1057,16 +1100,27 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   function syncSelectionState(): void {
     const hasSelection = Boolean(previewProduct);
 
-    shop.classList.toggle("armory-shop--has-selection", hasSelection);
-    selected.hidden = !hasSelection;
-    content.classList.toggle("armory-shop__content--has-selection", hasSelection);
+    shop.classList.remove("armory-shop--has-selection");
+    shop.classList.toggle("weapon-shop--has-inline-confirm", hasSelection);
+    selected.hidden = true;
+    content.classList.toggle("armory-shop__content--has-selection", false);
   }
 
-  function refreshSelectedProduct(hero: HeroState): void {
+  function refreshSelectedProduct(_hero: HeroState): void {
     selected.replaceChildren();
+  }
 
-    if (previewProduct) {
-      selected.append(createSelectedProductStrip(previewProduct, hero));
+  function updateProductButtonSelection(previousProductId?: string): void {
+    const hero = options.getHero();
+    const nextProductId = previewProduct?.id;
+
+    syncSelectionState();
+    if (previousProductId && previousProductId !== nextProductId) {
+      refreshProductButton(previousProductId, hero, true);
+    }
+
+    if (nextProductId) {
+      refreshProductButton(nextProductId, hero, true);
     }
   }
 
@@ -1099,7 +1153,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
   }
 
-  function refreshProductButton(productId: string, hero: HeroState): void {
+  function refreshProductButton(productId: string, hero: HeroState, force = false): void {
     const product = renderedProductsById.get(productId);
 
     if (!product) {
@@ -1114,7 +1168,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
     const nextVisualState = getProductButtonVisualState(hero, product);
 
-    if (productButtonVisualStates.get(product.id) === nextVisualState) {
+    if (!force && productButtonVisualStates.get(product.id) === nextVisualState) {
       return;
     }
 
@@ -1161,7 +1215,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
 
   function getProductButtonVisualState(hero: HeroState, product: WeaponProduct): string {
-    const actionState = getWeaponProductCardState(hero, product);
+    const actionState = getWeaponProductActionState(hero, product);
     const damage = getShopProductDisplayStat(hero, product.itemIds, "damage");
     const consumableInfo = getConsumableCardInfo(hero, product.itemIds);
     const consumableState = consumableInfo ? `${consumableInfo.quantity}/${consumableInfo.maxQuantity}` : "";
@@ -1299,13 +1353,17 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }).join("|");
   }
 
-  function clearProductPreview(): void {
+  function clearProductPreview(): string | undefined {
     if (!previewProduct) {
-      return;
+      return undefined;
     }
+
+    const previousProductId = previewProduct.id;
 
     previewProduct = undefined;
     options.onPreviewClear?.();
+
+    return previousProductId;
   }
 
   function closeRarityFilter(): void {
@@ -1334,8 +1392,9 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       return;
     }
 
-    clearProductPreview();
-    render();
+    const previousProductId = clearProductPreview();
+
+    updateProductButtonSelection(previousProductId);
   }
 
   function scheduleShopTransition(callback: () => void): void {
@@ -1607,6 +1666,14 @@ function getProductCardAction(actionState: ShopProductActionState, price: number
   }
 
   return { kind: "status", label: getShopProductActionLabel(actionState, price), state: actionState };
+}
+
+function getProductInlineConfirmAction(actionState: ShopProductActionState, price: number): EquipmentCardInlineConfirmAction | undefined {
+  if (actionState !== "buy" && actionState !== "no-gold") {
+    return undefined;
+  }
+
+  return { state: actionState, price, iconUrl: SHOP_GOLD_COIN_ICON_ASSET_URL };
 }
 
 function createRequirementRibbon(requirement: ShopProductRequirementBadge): HTMLElement {

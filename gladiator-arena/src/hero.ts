@@ -3189,8 +3189,7 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
 
   const progress = applyHeroXp(hero.level, hero.xp + reward.xp, getHeroLevelCap(hero));
   const earnedSkillPoints = Math.max(0, progress.level - hero.level);
-
-  return {
+  const heroWithReward: HeroState = {
     ...hero,
     gold: hero.gold + reward.gold,
     level: progress.level,
@@ -3199,6 +3198,8 @@ export function applyBattleReward(hero: HeroState, reward: BattleReward, now = n
     skillPoints: hero.skillPoints + earnedSkillPoints,
     updatedAt: now,
   };
+
+  return earnedSkillPoints > 0 ? restoreHeroArenaEnergy(heroWithReward, now) : heroWithReward;
 }
 
 export function allocateHeroSkillPoint(hero: HeroState, attribute: HeroAttributeKey, now = new Date().toISOString()): HeroState {
