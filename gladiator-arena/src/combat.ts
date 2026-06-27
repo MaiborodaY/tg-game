@@ -1109,6 +1109,12 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
   return state;
 }
 
+export function resolveAutoPlayerTurn(current: CombatState, random = Math.random): CombatState {
+  const actionId = choosePlayerAutoAction(current);
+
+  return actionId ? resolvePlayerTurn(current, actionId, random) : current;
+}
+
 export function resolvePvpTurn(current: CombatState, actor: TurnOwner, actionId: ActionId, random = Math.random): CombatState {
   const state = cloneStateForTurn(current);
 
@@ -1260,6 +1266,91 @@ function cloneFighterState(fighter: FighterState): FighterState {
     appearance: fighter.appearance ? { ...fighter.appearance } : undefined,
     visualPreset: fighter.visualPreset ? { ...fighter.visualPreset } : undefined,
   };
+}
+
+export function choosePlayerAutoAction(current: CombatState): ActionId | undefined {
+  const available = availableActionIds(current, "player").filter((actionId) => isPlayerAutoAction(actionId));
+
+  if (available.length === 0) {
+    return undefined;
+  }
+
+  const player = current.player;
+  const lowStamina = player.stamina <= Math.max(1, Math.floor(getFighterMaxStamina(player) * 0.35));
+  const enemyLowHp = current.enemy.hp <= Math.max(3, Math.ceil(getActionDamage("light", player) * 2));
+  const playerHasRangedWeapon = isRangedFighter(player);
+  const playerCanSwitchWeapon = canFighterSwitchWeapon(player);
+  const inClinch = isFighterInClinchRange(current, "player");
+  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "player");
+
+  if (player.stamina <= 0 && available.includes("rest")) {
+    return "rest";
+  }
+
+  if (lowStamina && available.includes("rest") && (inClinch || !available.includes("forward"))) {
+    return "rest";
+  }
+
+  if (playerHasRangedWeapon) {
+    if (available.includes("heavy") && enemyLowHp) {
+      return "heavy";
+    }
+
+    if (available.includes("medium") && player.stamina >= getActionStaminaCost("medium", player)) {
+      return "medium";
+    }
+
+    if (available.includes("light")) {
+      return "light";
+    }
+
+    if (available.includes("back")) {
+      return "back";
+    }
+
+    if (playerCanSwitchWeapon && available.includes("switchWeapon")) {
+      return "switchWeapon";
+    }
+  }
+
+  if (!inClinch) {
+    if (lungeReaches && !lowStamina) {
+      return "lunge";
+    }
+
+    if (available.includes("forward")) {
+      return "forward";
+    }
+
+    if (playerCanSwitchWeapon && available.includes("switchWeapon")) {
+      return "switchWeapon";
+    }
+  }
+
+  if (available.includes("heavy") && (enemyLowHp || player.stamina >= getActionStaminaCost("heavy", player) + 2)) {
+    return "heavy";
+  }
+
+  if (available.includes("medium") && player.stamina >= getActionStaminaCost("medium", player)) {
+    return "medium";
+  }
+
+  if (available.includes("light")) {
+    return "light";
+  }
+
+  return available.includes("rest") ? "rest" : available[0];
+}
+
+function isPlayerAutoAction(actionId: ActionId): boolean {
+  return actionId !== "shuriken"
+    && actionId !== "scroll"
+    && actionId !== "fireball"
+    && actionId !== "ward"
+    && actionId !== "preciseStrike"
+    && actionId !== "doubleStrike"
+    && actionId !== "poison"
+    && actionId !== "taunt";
 }
 
 function chooseEnemyAction(current: CombatState, random = Math.random, defenderActor: CombatActor = "player"): ActionId {

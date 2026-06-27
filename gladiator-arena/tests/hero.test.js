@@ -279,6 +279,12 @@ const hero = loadTypeScriptModule("../src/hero.ts", {
   },
 });
 
+function createRandomSequence(values) {
+  const queue = [...values];
+
+  return () => queue.shift() ?? 0;
+}
+
 test("equipment catalog is sourced from generated items", () => {
   assert.equal(hero.HERO_ITEM_IDS.includes("cloth_breastplate_01"), true);
   assert.equal(hero.HERO_ITEM_IDS.includes("leather_breastplate_01"), true);
@@ -1452,6 +1458,91 @@ test("combat reward application grants one random missing boss loot once", () =>
   assert.equal(emptyLootRewardApplication.reward.xp, 12);
   assert.equal(emptyLootRewardApplication.loot.length, 0);
   assert.equal(randomCalls, 0);
+});
+
+test("combat reward application can drop one missing random enemy equipment item", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const encounter = {
+    id: "random:test_random_drop",
+    kind: "random",
+    tierId: 1,
+    opponentId: "test_random_drop",
+    name: "Random Drop Test",
+    enemyLoadout: {
+      equipment: {
+        ...hero.createDefaultHeroEquipment(),
+        weaponMain: "weapon_sword_01",
+      },
+      visualPreset: { skin: 0, skinDark: 0, hair: 0 },
+    },
+    rewards: {
+      win: { gold: 0, xp: 0 },
+      loss: { gold: 0, xp: 0 },
+    },
+    lootTable: [],
+  };
+  const combatState = hero.createCombatStateFromHero(baseHero, encounter);
+
+  combatState.result = "win";
+
+  const rewardApplication = hero.applyCombatReward(baseHero, combatState, "2026-01-01T00:01:00.000Z", createRandomSequence([0.004, 0]));
+
+  assert.equal(rewardApplication.loot.length, 1);
+  assert.equal(rewardApplication.loot[0].sourceId, "test_random_drop_weapon_sword_01_drop");
+  assert.equal(rewardApplication.loot[0].itemId, "weapon_sword_01");
+  assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === "weapon_sword_01")?.quantity, 1);
+
+  const missedRewardApplication = hero.applyCombatReward(baseHero, combatState, "2026-01-01T00:02:00.000Z", () => 0.005);
+
+  assert.equal(missedRewardApplication.loot.length, 0);
+
+  const heroWithSword = {
+    ...baseHero,
+    inventory: [{ itemId: "weapon_sword_01", quantity: 1 }],
+  };
+  let randomCalls = 0;
+  const ownedRewardApplication = hero.applyCombatReward(heroWithSword, combatState, "2026-01-01T00:03:00.000Z", () => {
+    randomCalls += 1;
+    return 0;
+  });
+
+  assert.equal(ownedRewardApplication.loot.length, 0);
+  assert.equal(randomCalls, 0);
+});
+
+test("random enemy equipment drops keep matching paired armor together", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const encounter = {
+    id: "random:test_pair_drop",
+    kind: "random",
+    tierId: 1,
+    opponentId: "test_pair_drop",
+    name: "Pair Drop Test",
+    enemyLoadout: {
+      equipment: {
+        ...hero.createDefaultHeroEquipment(),
+        backWrist: "leather_back_wrist_01",
+        frontWrist: "leather_front_wrist_01",
+      },
+      visualPreset: { skin: 0, skinDark: 0, hair: 0 },
+    },
+    rewards: {
+      win: { gold: 0, xp: 0 },
+      loss: { gold: 0, xp: 0 },
+    },
+    lootTable: [],
+  };
+  const combatState = hero.createCombatStateFromHero(baseHero, encounter);
+
+  combatState.result = "win";
+
+  const rewardApplication = hero.applyCombatReward(baseHero, combatState, "2026-01-01T00:01:00.000Z", createRandomSequence([0.004, 0]));
+  const itemIds = Array.from(rewardApplication.loot[0]?.itemIds ?? []);
+
+  assert.equal(rewardApplication.loot.length, 1);
+  assert.deepEqual(itemIds, ["leather_back_wrist_01", "leather_front_wrist_01"]);
+  assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === "leather_back_wrist_01")?.quantity, 1);
+  assert.equal(rewardApplication.heroAfterReward.inventory.find((entry) => entry.itemId === "leather_front_wrist_01")?.quantity, 1);
 });
 
 test("boss victory unlocks the next level cap before applying boss xp", () => {

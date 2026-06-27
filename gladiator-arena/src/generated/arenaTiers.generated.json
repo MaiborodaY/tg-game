@@ -51,7 +51,7 @@
         "rewards": {
           "win": {
             "gold": 7,
-            "xp": 1
+            "xp": 2
           },
           "loss": {
             "gold": 1,
@@ -86,7 +86,7 @@
         "rewards": {
           "win": {
             "gold": 11,
-            "xp": 1
+            "xp": 3
           },
           "loss": {
             "gold": 1,

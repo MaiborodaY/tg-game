@@ -68,7 +68,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_bone_01","name":"Bone 01 Back Boot","price":141,"itemIds":["generated_equipment_back_boot_bone_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_bone_01","name":"Bone 01 Back Boot","price":2980,"itemIds":["generated_equipment_back_boot_bone_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_cathedral_01","name":"Cathedral 01 Back Boot","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"backBoot","armorHp":36,"levelRequirement":90},
@@ -80,7 +80,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_cathedral_01","name":"Cathedral 01 Back Boot","price":155,"itemIds":["generated_equipment_back_boot_cathedral_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_cathedral_01","name":"Cathedral 01 Back Boot","price":4350,"itemIds":["generated_equipment_back_boot_cathedral_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_chainmail_01","name":"Chainmail Back Boot 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":5,"levelRequirement":25},
@@ -92,7 +92,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_chainmail_01","name":"Chainmail Back Boot 01","price":21,"itemIds":["generated_equipment_back_boot_chainmail_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_chainmail_01","name":"Chainmail Back Boot 01","price":121,"itemIds":["generated_equipment_back_boot_chainmail_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_cloth_01","name":"Cloth Back Boot 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":1,"levelRequirement":1},
@@ -138,7 +138,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":false,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_executioner_01","name":"Executioner Back Boot 01","price":54,"itemIds":["generated_equipment_back_boot_executioner_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_executioner_01","name":"Executioner Back Boot 01","price":413,"itemIds":["generated_equipment_back_boot_executioner_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_frost_king_01","name":"Winterborn Sabatons","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":34},
@@ -172,7 +172,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_lazure_01","name":"Lazure 01 Back Boot","price":78,"itemIds":["generated_equipment_back_boot_lazure_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_lazure_01","name":"Lazure 01 Back Boot","price":663,"itemIds":["generated_equipment_back_boot_lazure_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_lion_01","name":"Lion 01 Back Boot","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backBoot","armorHp":22,"levelRequirement":50},
@@ -184,7 +184,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_lion_01","name":"Lion 01 Back Boot","price":94,"itemIds":["generated_equipment_back_boot_lion_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_lion_01","name":"Lion 01 Back Boot","price":814,"itemIds":["generated_equipment_back_boot_lion_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_mercenary_01","name":"Mercenary Back Boot 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"backBoot","armorHp":9,"levelRequirement":35},
@@ -196,7 +196,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_mercenary_01","name":"Mercenary Back Boot 01","price":39,"itemIds":["generated_equipment_back_boot_mercenary_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_mercenary_01","name":"Mercenary Back Boot 01","price":331,"itemIds":["generated_equipment_back_boot_mercenary_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_old_fortress_warden_01","name":"Old Kingdom Sabatons","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":32},
@@ -230,7 +230,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_rust_champion_01","name":"Rust Champion Boots","price":32,"itemIds":["generated_equipment_back_boot_rust_champion_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_rust_champion_01","name":"Rust Champion Boots","price":184,"itemIds":["generated_equipment_back_boot_rust_champion_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_sand_01","name":"Sand Boots","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backBoot","armorHp":2,"levelRequirement":7},
@@ -254,7 +254,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_stormguard_01","name":"Stormguard Back Boot 01","price":112,"itemIds":["generated_equipment_back_boot_stormguard_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_stormguard_01","name":"Stormguard Back Boot 01","price":1274,"itemIds":["generated_equipment_back_boot_stormguard_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_swamp_boss_01","name":"Rothelm Sabatons","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":33},
@@ -288,7 +288,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_boot_viper_01","name":"Viper 01 Back Boot","price":129,"itemIds":["generated_equipment_back_boot_viper_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_boot_viper_01","name":"Viper 01 Back Boot","price":1779,"itemIds":["generated_equipment_back_boot_viper_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_boot_void_king_01","name":"Black Sun Sabatons","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"backBoot","armorHp":40},
@@ -333,7 +333,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_bone_01","name":"Bone 01 Back Glove","price":141,"itemIds":["generated_equipment_back_glove_bone_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_bone_01","name":"Bone 01 Back Glove","price":2980,"itemIds":["generated_equipment_back_glove_bone_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_cathedral_01","name":"Cathedral 01 Back Glove","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"backGlove","armorHp":36,"levelRequirement":90},
@@ -345,7 +345,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_cathedral_01","name":"Cathedral 01 Back Glove","price":155,"itemIds":["generated_equipment_back_glove_cathedral_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_cathedral_01","name":"Cathedral 01 Back Glove","price":4350,"itemIds":["generated_equipment_back_glove_cathedral_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_chainmail_03","name":"Chainmail Back Glove 03","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":5,"levelRequirement":25},
@@ -357,7 +357,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-chainmail-03.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_chainmail_03","name":"Chainmail Back Glove 03","price":21,"itemIds":["generated_equipment_back_glove_chainmail_03"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_chainmail_03","name":"Chainmail Back Glove 03","price":121,"itemIds":["generated_equipment_back_glove_chainmail_03"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_cloth_01","name":"Cloth Back Glove 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":1,"levelRequirement":1},
@@ -403,7 +403,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_executioner_01","name":"Executioner Back Glove 01","price":54,"itemIds":["generated_equipment_back_glove_executioner_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_executioner_01","name":"Executioner Back Glove 01","price":413,"itemIds":["generated_equipment_back_glove_executioner_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_frost_king_01","name":"Winterborn Gauntlets","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":34},
@@ -437,7 +437,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_lazure_01","name":"Lazure 01 Back Glove","price":78,"itemIds":["generated_equipment_back_glove_lazure_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_lazure_01","name":"Lazure 01 Back Glove","price":663,"itemIds":["generated_equipment_back_glove_lazure_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_leather_03","name":"Leather Back Glove 03","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":3,"levelRequirement":15},
@@ -449,7 +449,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-leather-03.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_leather_03","name":"Leather Back Glove 03","price":13,"itemIds":["generated_equipment_back_glove_leather_03"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_leather_03","name":"Leather Back Glove 03","price":61,"itemIds":["generated_equipment_back_glove_leather_03"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_lion_01","name":"Lion 01 Back Glove","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backGlove","armorHp":22,"levelRequirement":50},
@@ -461,7 +461,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_lion_01","name":"Lion 01 Back Glove","price":94,"itemIds":["generated_equipment_back_glove_lion_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_lion_01","name":"Lion 01 Back Glove","price":814,"itemIds":["generated_equipment_back_glove_lion_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_mercenary_01","name":"Mercenary Back Glove 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"backGlove","armorHp":9,"levelRequirement":35},
@@ -473,7 +473,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_mercenary_01","name":"Mercenary Back Glove 01","price":39,"itemIds":["generated_equipment_back_glove_mercenary_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_mercenary_01","name":"Mercenary Back Glove 01","price":331,"itemIds":["generated_equipment_back_glove_mercenary_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_old_fortress_warden_01","name":"Old Kingdom Gauntlets","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":32},
@@ -507,7 +507,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_rust_champion_01","name":"Rust Back Glove Champion 01","price":32,"itemIds":["generated_equipment_back_glove_rust_champion_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_rust_champion_01","name":"Rust Back Glove Champion 01","price":184,"itemIds":["generated_equipment_back_glove_rust_champion_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_sand_01","name":"Sand Glove","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backGlove","armorHp":2,"levelRequirement":7},
@@ -531,7 +531,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_stormguard_01","name":"Stormguard Back Glove 01","price":112,"itemIds":["generated_equipment_back_glove_stormguard_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_stormguard_01","name":"Stormguard Back Glove 01","price":1273,"itemIds":["generated_equipment_back_glove_stormguard_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_swamp_boss_01","name":"Rothelm Gauntlets","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":33},
@@ -565,7 +565,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-glove-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_glove_viper_01","name":"Viper 01 Back Glove","price":129,"itemIds":["generated_equipment_back_glove_viper_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_glove_viper_01","name":"Viper 01 Back Glove","price":1779,"itemIds":["generated_equipment_back_glove_viper_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_glove_void_king_01","name":"Black Sun Gauntlets","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"backGlove","armorHp":40},
@@ -610,7 +610,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_bone_01","name":"Bone 01 Back Greave","price":172,"itemIds":["generated_equipment_back_greave_bone_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_bone_01","name":"Bone 01 Back Greave","price":3637,"itemIds":["generated_equipment_back_greave_bone_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_cathedral_01","name":"Cathedral 01 Back Greave","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"backGreave","armorHp":44,"levelRequirement":90},
@@ -622,7 +622,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_cathedral_01","name":"Cathedral 01 Back Greave","price":189,"itemIds":["generated_equipment_back_greave_cathedral_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_cathedral_01","name":"Cathedral 01 Back Greave","price":5299,"itemIds":["generated_equipment_back_greave_cathedral_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_chainmail_01","name":"Chainmail Back Greave 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backGreave","armorHp":6,"levelRequirement":25},
@@ -634,7 +634,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_chainmail_01","name":"Chainmail Back Greave 01","price":25,"itemIds":["generated_equipment_back_greave_chainmail_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_chainmail_01","name":"Chainmail Back Greave 01","price":147,"itemIds":["generated_equipment_back_greave_chainmail_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_cloth_01","name":"Cloth Back Greave 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backGreave","armorHp":1,"levelRequirement":1},
@@ -680,7 +680,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_executioner_01","name":"Executioner Back Greave 01","price":64,"itemIds":["generated_equipment_back_greave_executioner_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_executioner_01","name":"Executioner Back Greave 01","price":491,"itemIds":["generated_equipment_back_greave_executioner_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_frost_king_01","name":"Winterborn Greaves","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":42},
@@ -714,7 +714,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_lazure_01","name":"Lazure 01 Back Greave","price":95,"itemIds":["generated_equipment_back_greave_lazure_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_lazure_01","name":"Lazure 01 Back Greave","price":811,"itemIds":["generated_equipment_back_greave_lazure_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_leather_01","name":"Leather Back Greave 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backGreave","armorHp":4,"levelRequirement":15},
@@ -726,7 +726,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_leather_01","name":"Leather Back Greave 01","price":16,"itemIds":["generated_equipment_back_greave_leather_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_leather_01","name":"Leather Back Greave 01","price":75,"itemIds":["generated_equipment_back_greave_leather_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_lion_01","name":"Lion 01 Back Greave","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backGreave","armorHp":27,"levelRequirement":50},
@@ -738,7 +738,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_lion_01","name":"Lion 01 Back Greave","price":115,"itemIds":["generated_equipment_back_greave_lion_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_lion_01","name":"Lion 01 Back Greave","price":1003,"itemIds":["generated_equipment_back_greave_lion_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_mercenary_01","name":"Mercenary Back Greave 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"backGreave","armorHp":11,"levelRequirement":35},
@@ -750,7 +750,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_mercenary_01","name":"Mercenary Back Greave 01","price":50,"itemIds":["generated_equipment_back_greave_mercenary_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_mercenary_01","name":"Mercenary Back Greave 01","price":422,"itemIds":["generated_equipment_back_greave_mercenary_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_old_fortress_warden_01","name":"Old Kingdom Greaves","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":40},
@@ -784,7 +784,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_rust_champion_01","name":"Rust Back Greave Champion 01","price":38,"itemIds":["generated_equipment_back_greave_rust_champion_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_rust_champion_01","name":"Rust Back Greave Champion 01","price":217,"itemIds":["generated_equipment_back_greave_rust_champion_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_sand_01","name":"Sand Greave","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backGreave","armorHp":2,"levelRequirement":7},
@@ -808,7 +808,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_stormguard_01","name":"Stormguard Back Greave 01","price":136,"itemIds":["generated_equipment_back_greave_stormguard_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_stormguard_01","name":"Stormguard Back Greave 01","price":1546,"itemIds":["generated_equipment_back_greave_stormguard_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_swamp_boss_01","name":"Rothelm Greaves","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":41},
@@ -842,7 +842,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-greave-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_greave_viper_01","name":"Viper 01 Back Greave","price":156,"itemIds":["generated_equipment_back_greave_viper_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_greave_viper_01","name":"Viper 01 Back Greave","price":2153,"itemIds":["generated_equipment_back_greave_viper_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_greave_void_king_01","name":"Black Sun Greaves","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"backGreave","armorHp":49},
@@ -887,7 +887,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_bone_01","name":"Bone 01 Back Shinguard","price":172,"itemIds":["generated_equipment_back_shinguard_bone_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_bone_01","name":"Bone 01 Back Shinguard","price":3637,"itemIds":["generated_equipment_back_shinguard_bone_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_cathedral_01","name":"Cathedral 01 Back Shinguard","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"backShinguard","armorHp":44,"levelRequirement":90},
@@ -899,7 +899,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_cathedral_01","name":"Cathedral 01 Back Shinguard","price":189,"itemIds":["generated_equipment_back_shinguard_cathedral_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_cathedral_01","name":"Cathedral 01 Back Shinguard","price":5299,"itemIds":["generated_equipment_back_shinguard_cathedral_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_chainmail_01","name":"Chainmail Back Shinguard 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":6,"levelRequirement":25},
@@ -911,7 +911,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_chainmail_01","name":"Chainmail Back Shinguard 01","price":25,"itemIds":["generated_equipment_back_shinguard_chainmail_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_chainmail_01","name":"Chainmail Back Shinguard 01","price":147,"itemIds":["generated_equipment_back_shinguard_chainmail_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_cloth_01","name":"Cloth Back Shinguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":1,"levelRequirement":1},
@@ -957,7 +957,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_executioner_01","name":"Executioner Back Shinguard 01","price":64,"itemIds":["generated_equipment_back_shinguard_executioner_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_executioner_01","name":"Executioner Back Shinguard 01","price":491,"itemIds":["generated_equipment_back_shinguard_executioner_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_frost_king_01","name":"Winterborn Legguards","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":42},
@@ -991,7 +991,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_lazure_01","name":"Lazure 01 Back Shinguard","price":95,"itemIds":["generated_equipment_back_shinguard_lazure_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_lazure_01","name":"Lazure 01 Back Shinguard","price":810,"itemIds":["generated_equipment_back_shinguard_lazure_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_lion_01","name":"Lion 01 Back Shinguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backShinguard","armorHp":27,"levelRequirement":50},
@@ -1003,7 +1003,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_lion_01","name":"Lion 01 Back Shinguard","price":115,"itemIds":["generated_equipment_back_shinguard_lion_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_lion_01","name":"Lion 01 Back Shinguard","price":1003,"itemIds":["generated_equipment_back_shinguard_lion_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_mercenary_01","name":"Mercenary Back Shinguard 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"backShinguard","armorHp":11,"levelRequirement":35},
@@ -1015,7 +1015,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_mercenary_01","name":"Mercenary Back Shinguard 01","price":50,"itemIds":["generated_equipment_back_shinguard_mercenary_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_mercenary_01","name":"Mercenary Back Shinguard 01","price":422,"itemIds":["generated_equipment_back_shinguard_mercenary_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_old_fortress_warden_01","name":"Old Kingdom Legguards","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":40},
@@ -1049,7 +1049,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":false,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_rust_champion_01","name":"Rust Back Shinguard Champion 01","price":38,"itemIds":["generated_equipment_back_shinguard_rust_champion_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_rust_champion_01","name":"Rust Back Shinguard Champion 01","price":217,"itemIds":["generated_equipment_back_shinguard_rust_champion_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_sand_01","name":"Sand Shinguard","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":2,"levelRequirement":7},
@@ -1073,7 +1073,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_stormguard_01","name":"Stormguard Back Shinguard 01","price":136,"itemIds":["generated_equipment_back_shinguard_stormguard_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_stormguard_01","name":"Stormguard Back Shinguard 01","price":1546,"itemIds":["generated_equipment_back_shinguard_stormguard_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_swamp_boss_01","name":"Rothelm Legguards","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":41},
@@ -1107,7 +1107,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shinguard_viper_01","name":"Viper 01 Back Shinguard","price":156,"itemIds":["generated_equipment_back_shinguard_viper_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"generated_equipment_back_shinguard_viper_01","name":"Viper 01 Back Shinguard","price":2153,"itemIds":["generated_equipment_back_shinguard_viper_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"generated_equipment_back_shinguard_void_king_01","name":"Black Sun Legguards","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"backShinguard","armorHp":49},
@@ -1152,7 +1152,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_bone_01","name":"Bone 01 Back Shoulderguard","price":172,"itemIds":["generated_equipment_back_shoulderguard_bone_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_bone_01","name":"Bone 01 Back Shoulderguard","price":3637,"itemIds":["generated_equipment_back_shoulderguard_bone_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_cathedral_01","name":"Cathedral 01 Back Shoulderguard","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"backShoulderguard","armorHp":44,"levelRequirement":90},
@@ -1164,7 +1164,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_cathedral_01","name":"Cathedral 01 Back Shoulderguard","price":189,"itemIds":["generated_equipment_back_shoulderguard_cathedral_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_cathedral_01","name":"Cathedral 01 Back Shoulderguard","price":5299,"itemIds":["generated_equipment_back_shoulderguard_cathedral_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_chainmail_01","name":"Chainmail Back Shoulderguard 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":6,"levelRequirement":25},
@@ -1176,7 +1176,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_chainmail_01","name":"Chainmail Back Shoulderguard 01","price":25,"itemIds":["generated_equipment_back_shoulderguard_chainmail_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_chainmail_01","name":"Chainmail Back Shoulderguard 01","price":147,"itemIds":["generated_equipment_back_shoulderguard_chainmail_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_cloth_01","name":"Cloth Back Shoulderguard 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":1,"levelRequirement":1},
@@ -1222,7 +1222,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_executioner_01","name":"Executioner Back Shoulderguard 01","price":64,"itemIds":["generated_equipment_back_shoulderguard_executioner_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_executioner_01","name":"Executioner Back Shoulderguard 01","price":491,"itemIds":["generated_equipment_back_shoulderguard_executioner_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_frost_king_01","name":"Winterborn Pauldrons","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":42},
@@ -1256,7 +1256,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_lazure_01","name":"Lazure 01 Back Shoulderguard","price":95,"itemIds":["generated_equipment_back_shoulderguard_lazure_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_lazure_01","name":"Lazure 01 Back Shoulderguard","price":810,"itemIds":["generated_equipment_back_shoulderguard_lazure_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_lion_01","name":"Lion 01 Back Shoulderguard","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backShoulderguard","armorHp":27,"levelRequirement":50},
@@ -1268,7 +1268,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_lion_01","name":"Lion 01 Back Shoulderguard","price":115,"itemIds":["generated_equipment_back_shoulderguard_lion_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_lion_01","name":"Lion 01 Back Shoulderguard","price":1003,"itemIds":["generated_equipment_back_shoulderguard_lion_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_mercenary_01","name":"Mercenary Back Shoulderguard 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"backShoulderguard","armorHp":11,"levelRequirement":35},
@@ -1280,7 +1280,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_mercenary_01","name":"Mercenary Back Shoulderguard 01","price":50,"itemIds":["generated_equipment_back_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_mercenary_01","name":"Mercenary Back Shoulderguard 01","price":421,"itemIds":["generated_equipment_back_shoulderguard_mercenary_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_old_fortress_warden_01","name":"Old Kingdom Pauldrons","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":40},
@@ -1314,7 +1314,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_rust_champion_01","name":"Rust Back Shoulderguard Champion 01","price":38,"itemIds":["generated_equipment_back_shoulderguard_rust_champion_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_rust_champion_01","name":"Rust Back Shoulderguard Champion 01","price":216,"itemIds":["generated_equipment_back_shoulderguard_rust_champion_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_sand_01","name":"Sand Shoulderguard","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":2,"levelRequirement":7},
@@ -1338,7 +1338,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_stormguard_01","name":"Stormguard Back Shoulderguard 01","price":136,"itemIds":["generated_equipment_back_shoulderguard_stormguard_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_stormguard_01","name":"Stormguard Back Shoulderguard 01","price":1546,"itemIds":["generated_equipment_back_shoulderguard_stormguard_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_swamp_boss_01","name":"Rothelm Pauldrons","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":41},
@@ -1372,7 +1372,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_shoulderguard_viper_01","name":"Viper 01 Back Shoulderguard","price":156,"itemIds":["generated_equipment_back_shoulderguard_viper_01"],"categoryId":"shoulders"},
+    armoryProduct: {"id":"generated_equipment_back_shoulderguard_viper_01","name":"Viper 01 Back Shoulderguard","price":2153,"itemIds":["generated_equipment_back_shoulderguard_viper_01"],"categoryId":"shoulders"},
   },
   {
     item: {"id":"generated_equipment_back_shoulderguard_void_king_01","name":"Black Sun Pauldrons","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"backShoulderguard","armorHp":49},
@@ -1417,7 +1417,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_bone_01","name":"Bone 01 Back Wrist","price":141,"itemIds":["generated_equipment_back_wrist_bone_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_bone_01","name":"Bone 01 Back Wrist","price":2979,"itemIds":["generated_equipment_back_wrist_bone_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_cathedral_01","name":"Cathedral 01 Back Wrist","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"backWrist","armorHp":36,"levelRequirement":90},
@@ -1429,7 +1429,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_cathedral_01","name":"Cathedral 01 Back Wrist","price":155,"itemIds":["generated_equipment_back_wrist_cathedral_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_cathedral_01","name":"Cathedral 01 Back Wrist","price":4349,"itemIds":["generated_equipment_back_wrist_cathedral_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_chainmail_01","name":"Chainmail Back Wrist 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"backWrist","armorHp":5,"levelRequirement":25},
@@ -1441,7 +1441,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_chainmail_01","name":"Chainmail Back Wrist 01","price":21,"itemIds":["generated_equipment_back_wrist_chainmail_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_chainmail_01","name":"Chainmail Back Wrist 01","price":121,"itemIds":["generated_equipment_back_wrist_chainmail_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_cloth_01","name":"Cloth Back Wrist 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"backWrist","armorHp":1,"levelRequirement":1},
@@ -1487,7 +1487,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_executioner_01","name":"Executioner Back Wrist 01","price":54,"itemIds":["generated_equipment_back_wrist_executioner_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_executioner_01","name":"Executioner Back Wrist 01","price":413,"itemIds":["generated_equipment_back_wrist_executioner_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_frost_king_01","name":"Winterborn Bracers","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":34},
@@ -1521,7 +1521,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_lazure_01","name":"Lazure 01 Back Wrist","price":78,"itemIds":["generated_equipment_back_wrist_lazure_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_lazure_01","name":"Lazure 01 Back Wrist","price":663,"itemIds":["generated_equipment_back_wrist_lazure_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_lion_01","name":"Lion 01 Back Wrist","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"backWrist","armorHp":22,"levelRequirement":50},
@@ -1533,7 +1533,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_lion_01","name":"Lion 01 Back Wrist","price":94,"itemIds":["generated_equipment_back_wrist_lion_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_lion_01","name":"Lion 01 Back Wrist","price":814,"itemIds":["generated_equipment_back_wrist_lion_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_mercenary_01","name":"Mercenary Back Wrist 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"backWrist","armorHp":9,"levelRequirement":35},
@@ -1545,7 +1545,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_mercenary_01","name":"Mercenary Back Wrist 01","price":39,"itemIds":["generated_equipment_back_wrist_mercenary_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_mercenary_01","name":"Mercenary Back Wrist 01","price":331,"itemIds":["generated_equipment_back_wrist_mercenary_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_old_fortress_warden_01","name":"Old Kingdom Bracers","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":32},
@@ -1579,7 +1579,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_rust_champion_01","name":"Rust Back Wrist Champion 01","price":32,"itemIds":["generated_equipment_back_wrist_rust_champion_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_rust_champion_01","name":"Rust Back Wrist Champion 01","price":184,"itemIds":["generated_equipment_back_wrist_rust_champion_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_sand_01","name":"Sand Wrist","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"backWrist","armorHp":2,"levelRequirement":7},
@@ -1603,7 +1603,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_stormguard_01","name":"Stormguard Back Wrist 01","price":112,"itemIds":["generated_equipment_back_wrist_stormguard_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_stormguard_01","name":"Stormguard Back Wrist 01","price":1273,"itemIds":["generated_equipment_back_wrist_stormguard_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_swamp_boss_01","name":"Rothelm Bracers","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":33},
@@ -1637,7 +1637,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_back_wrist_viper_01","name":"Viper 01 Back Wrist","price":129,"itemIds":["generated_equipment_back_wrist_viper_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_back_wrist_viper_01","name":"Viper 01 Back Wrist","price":1778,"itemIds":["generated_equipment_back_wrist_viper_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_back_wrist_void_king_01","name":"Black Sun Bracers","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"backWrist","armorHp":40},
@@ -1682,7 +1682,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_bone_01","name":"Bone 01 Breastplate","price":389,"itemIds":["generated_equipment_breastplate_bone_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_bone_01","name":"Bone 01 Breastplate","price":8215,"itemIds":["generated_equipment_breastplate_bone_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_cathedral_01","name":"Cathedral 01 Breastplate","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"breastplate","armorHp":101,"levelRequirement":90},
@@ -1694,7 +1694,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_cathedral_01","name":"Cathedral 01 Breastplate","price":428,"itemIds":["generated_equipment_breastplate_cathedral_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_cathedral_01","name":"Cathedral 01 Breastplate","price":11967,"itemIds":["generated_equipment_breastplate_cathedral_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_chainmail_01","name":"Chainmail Hauberk 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"breastplate","armorHp":13,"levelRequirement":25},
@@ -1706,7 +1706,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_chainmail_01","name":"Chainmail Hauberk 01","price":56,"itemIds":["generated_equipment_breastplate_chainmail_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_chainmail_01","name":"Chainmail Hauberk 01","price":324,"itemIds":["generated_equipment_breastplate_chainmail_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_druid_01","name":"Druid Breastplate 01","kind":"armor","rarity":"mythical","equipmentSet":{"id":"druid","name":"Druid","rank":13,"grade":"high"},"equipmentSlot":"breastplate","armorHp":111},
@@ -1740,7 +1740,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_executioner_01","name":"Executioner Breastplate 01","price":145,"itemIds":["generated_equipment_breastplate_executioner_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_executioner_01","name":"Executioner Breastplate 01","price":1116,"itemIds":["generated_equipment_breastplate_executioner_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_frost_king_01","name":"Winterborn Cuirass","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":95},
@@ -1774,7 +1774,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_lazure_01","name":"Lazure 01 Breastplate","price":218,"itemIds":["generated_equipment_breastplate_lazure_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_lazure_01","name":"Lazure 01 Breastplate","price":1852,"itemIds":["generated_equipment_breastplate_lazure_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_lion_01","name":"Lion 01 Breastplate","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"breastplate","armorHp":61,"levelRequirement":50},
@@ -1786,7 +1786,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_lion_01","name":"Lion 01 Breastplate","price":259,"itemIds":["generated_equipment_breastplate_lion_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_lion_01","name":"Lion 01 Breastplate","price":2251,"itemIds":["generated_equipment_breastplate_lion_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_mercenary_01","name":"Mercenary Breastplate 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"breastplate","armorHp":26,"levelRequirement":35},
@@ -1798,7 +1798,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_mercenary_01","name":"Mercenary Breastplate 01","price":111,"itemIds":["generated_equipment_breastplate_mercenary_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_mercenary_01","name":"Mercenary Breastplate 01","price":929,"itemIds":["generated_equipment_breastplate_mercenary_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_old_fortress_warden_01","name":"Old Kingdom Cuirass","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":90},
@@ -1832,7 +1832,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_rust_champion_01","name":"Rust Breastplate Champion 01","price":85,"itemIds":["generated_equipment_breastplate_rust_champion_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_rust_champion_01","name":"Rust Breastplate Champion 01","price":488,"itemIds":["generated_equipment_breastplate_rust_champion_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_sand_01","name":"Sand Breastplate","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"breastplate","armorHp":5,"levelRequirement":7},
@@ -1856,7 +1856,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_stormguard_01","name":"Stormguard Breastplate 01","price":310,"itemIds":["generated_equipment_breastplate_stormguard_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_stormguard_01","name":"Stormguard Breastplate 01","price":3517,"itemIds":["generated_equipment_breastplate_stormguard_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_swamp_boss_01","name":"Rothelm Cuirass","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":93},
@@ -1890,7 +1890,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_breastplate_viper_01","name":"Viper 01 Breastplate","price":355,"itemIds":["generated_equipment_breastplate_viper_01"],"categoryId":"chest"},
+    armoryProduct: {"id":"generated_equipment_breastplate_viper_01","name":"Viper 01 Breastplate","price":4886,"itemIds":["generated_equipment_breastplate_viper_01"],"categoryId":"chest"},
   },
   {
     item: {"id":"generated_equipment_breastplate_void_king_01","name":"Black Sun Cuirass","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"breastplate","armorHp":111},
@@ -3549,7 +3549,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-bone-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_bone_01","name":"Bone 01 Helmet","price":234,"itemIds":["generated_equipment_helmet_bone_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_bone_01","name":"Bone 01 Helmet","price":4935,"itemIds":["generated_equipment_helmet_bone_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_cathedral_01","name":"Cathedral 01 Helmet","kind":"armor","rarity":"legendary","equipmentSet":{"id":"cathedral","name":"Cathedral","rank":12,"grade":"high"},"equipmentSlot":"helmet","armorHp":61,"levelRequirement":90},
@@ -3561,7 +3561,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-cathedral-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_cathedral_01","name":"Cathedral 01 Helmet","price":257,"itemIds":["generated_equipment_helmet_cathedral_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_cathedral_01","name":"Cathedral 01 Helmet","price":7187,"itemIds":["generated_equipment_helmet_cathedral_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","kind":"armor","rarity":"uncommon","armorCategory":"chain","equipmentSet":{"id":"chainmail","name":"Chainmail","rank":3,"grade":"starter"},"equipmentSlot":"helmet","armorHp":8,"levelRequirement":25},
@@ -3573,7 +3573,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-chainmail-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","price":33,"itemIds":["generated_equipment_helmet_chainmail_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_chainmail_01","name":"Chainmail Coif 01","price":192,"itemIds":["generated_equipment_helmet_chainmail_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_cloth_01","name":"Cloth Helmet 01","kind":"armor","rarity":"common","armorCategory":"cloth","equipmentSet":{"id":"cloth","name":"Cloth","rank":0,"grade":"starter"},"equipmentSlot":"helmet","armorHp":2,"levelRequirement":1},
@@ -3630,7 +3630,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-executioner-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_executioner_01","name":"Executioner Helmet 01","price":88,"itemIds":["generated_equipment_helmet_executioner_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_executioner_01","name":"Executioner Helmet 01","price":672,"itemIds":["generated_equipment_helmet_executioner_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_frost_king_01","name":"Winterborn Helm","kind":"armor","rarity":"unique","equipmentSet":{"id":"frost_king","name":"Winterborn","rank":23,"grade":"boss"},"equipmentSlot":"helmet","armorHp":57},
@@ -3664,7 +3664,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-lazure-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_lazure_01","name":"Lazure 01 Helmet","price":129,"itemIds":["generated_equipment_helmet_lazure_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_lazure_01","name":"Lazure 01 Helmet","price":1098,"itemIds":["generated_equipment_helmet_lazure_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_lion_01","name":"Lion 01 Helmet","kind":"armor","rarity":"epic","equipmentSet":{"id":"lion","name":"Lion","rank":8,"grade":"mid"},"equipmentSlot":"helmet","armorHp":37,"levelRequirement":50},
@@ -3676,7 +3676,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-lion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_lion_01","name":"Lion 01 Helmet","price":155,"itemIds":["generated_equipment_helmet_lion_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_lion_01","name":"Lion 01 Helmet","price":1348,"itemIds":["generated_equipment_helmet_lion_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_mercenary_01","name":"Mercenary Helmet 01","kind":"armor","rarity":"rare","equipmentSet":{"id":"mercenary","name":"Mercenary","rank":5,"grade":"mid"},"equipmentSlot":"helmet","armorHp":16,"levelRequirement":35},
@@ -3688,7 +3688,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-mercenary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_mercenary_01","name":"Mercenary Helmet 01","price":67,"itemIds":["generated_equipment_helmet_mercenary_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_mercenary_01","name":"Mercenary Helmet 01","price":563,"itemIds":["generated_equipment_helmet_mercenary_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_old_fortress_warden_01","name":"Old Kingdom Helm","kind":"armor","rarity":"unique","equipmentSet":{"id":"old_fortress_warden","name":"Old Kingdom","rank":20,"grade":"boss"},"equipmentSlot":"helmet","armorHp":54},
@@ -3722,7 +3722,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-rust-champion-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_rust_champion_01","name":"Rust Champion Helmet","price":51,"itemIds":["generated_equipment_helmet_rust_champion_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_rust_champion_01","name":"Rust Champion Helmet","price":290,"itemIds":["generated_equipment_helmet_rust_champion_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_sand_01","name":"Sand Helmet 01","kind":"armor","rarity":"common","equipmentSet":{"id":"sand","name":"Sand","rank":1,"grade":"starter"},"equipmentSlot":"helmet","armorHp":3,"levelRequirement":7},
@@ -3746,7 +3746,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-stormguard-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_stormguard_01","name":"Stormguard Helmet 01","price":185,"itemIds":["generated_equipment_helmet_stormguard_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_stormguard_01","name":"Stormguard Helmet 01","price":2105,"itemIds":["generated_equipment_helmet_stormguard_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_swamp_boss_01","name":"Rothelm Helm","kind":"armor","rarity":"unique","equipmentSet":{"id":"swamp_boss","name":"Rothelm","rank":19,"grade":"boss"},"equipmentSlot":"helmet","armorHp":55},
@@ -3780,7 +3780,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-viper-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_helmet_viper_01","name":"Viper 01 Helmet","price":214,"itemIds":["generated_equipment_helmet_viper_01"],"categoryId":"head"},
+    armoryProduct: {"id":"generated_equipment_helmet_viper_01","name":"Viper 01 Helmet","price":2939,"itemIds":["generated_equipment_helmet_viper_01"],"categoryId":"head"},
   },
   {
     item: {"id":"generated_equipment_helmet_void_king_01","name":"Black Sun Helm","kind":"armor","rarity":"unique","equipmentSet":{"id":"void_king","name":"Black Sun","rank":22,"grade":"boss"},"equipmentSlot":"helmet","armorHp":67},
@@ -3838,7 +3838,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-epic-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_epic_01","name":"Epic 01 Shield","price":1300,"itemIds":["generated_equipment_shield_epic_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_epic_01","name":"Epic 01 Shield","price":6030,"itemIds":["generated_equipment_shield_epic_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","kind":"armor","rarity":"epic","equipmentSlot":"shield","armorHp":130,"levelRequirement":60},
@@ -3850,7 +3850,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-epic-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","price":1690,"itemIds":["generated_equipment_shield_epic_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_epic_02","name":"Epic 02 Shield","price":9680,"itemIds":["generated_equipment_shield_epic_02"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","kind":"armor","rarity":"legendary","equipmentSlot":"shield","armorHp":150,"levelRequirement":70},
@@ -3862,7 +3862,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-legendary-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","price":1885,"itemIds":["generated_equipment_shield_legendary_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_legendary_01","name":"Legendary 01 Shield","price":16350,"itemIds":["generated_equipment_shield_legendary_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","kind":"armor","rarity":"legendary","equipmentSlot":"shield","armorHp":200,"levelRequirement":80},
@@ -3874,10 +3874,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-legendary-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","price":2600,"itemIds":["generated_equipment_shield_legendary_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_legendary_02","name":"Legendary 02 Shield","price":27000,"itemIds":["generated_equipment_shield_legendary_02"],"categoryId":"arms"},
   },
   {
-    item: {"id":"generated_equipment_shield_mythical_01","name":"Mythical 01 Shield","kind":"armor","rarity":"mythical","equipmentSlot":"shield","armorHp":380},
+    item: {"id":"generated_equipment_shield_mythical_01","name":"Mythical 01 Shield","kind":"armor","rarity":"mythical","equipmentSlot":"shield","armorHp":220},
     assetKeys: {"shieldAssetKey":"shield-mythical-01"},
     equipmentTuning: {"x":3,"y":44,"angle":-5,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -3888,7 +3888,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_shield_mythical_02","name":"Mythical 02 Shield","kind":"armor","rarity":"mythical","equipmentSlot":"shield","armorHp":500},
+    item: {"id":"generated_equipment_shield_mythical_02","name":"Mythical 02 Shield","kind":"armor","rarity":"mythical","equipmentSlot":"shield","armorHp":250},
     assetKeys: {"shieldAssetKey":"shield-mythical-02"},
     equipmentTuning: {"x":13,"y":35,"angle":-2,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -3919,7 +3919,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-rare-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","price":585,"itemIds":["generated_equipment_shield_rare_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_rare_01","name":"Rare 01 Shield","price":1490,"itemIds":["generated_equipment_shield_rare_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","kind":"armor","rarity":"rare","equipmentSlot":"shield","armorHp":85,"levelRequirement":40},
@@ -3931,7 +3931,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-rare-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","price":845,"itemIds":["generated_equipment_shield_rare_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_rare_02","name":"Rare 02 Shield","price":3000,"itemIds":["generated_equipment_shield_rare_02"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_turtle_boss","name":"Stoneback Bulwark","kind":"armor","rarity":"unique","equipmentSlot":"shield","armorHp":95},
@@ -3954,7 +3954,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-uncommon-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_uncommon_01","name":"Uncommon 01 Shield","price":241,"itemIds":["generated_equipment_shield_uncommon_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_uncommon_01","name":"Uncommon 01 Shield","price":440,"itemIds":["generated_equipment_shield_uncommon_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","kind":"armor","rarity":"uncommon","equipmentSlot":"shield","armorHp":40,"levelRequirement":25},
@@ -3966,7 +3966,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/shield-uncommon-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","price":351,"itemIds":["generated_equipment_shield_uncommon_02"],"categoryId":"arms"},
+    armoryProduct: {"id":"generated_equipment_shield_uncommon_02","name":"Uncommon 02 Shield","price":990,"itemIds":["generated_equipment_shield_uncommon_02"],"categoryId":"arms"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_01","name":"Epic Axe 05","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"axe","levelRequirement":60},
@@ -3978,7 +3978,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_01","name":"Epic Axe 05","price":878,"itemIds":["generated_equipment_weapon_axe_01"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_01","name":"Epic Axe 05","price":9680,"itemIds":["generated_equipment_weapon_axe_01"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_1","name":"Rare Axe 03","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"axe","levelRequirement":40},
@@ -3990,7 +3990,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_1","name":"Rare Axe 03","price":370,"itemIds":["generated_equipment_weapon_axe_epic_axe_1"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_1","name":"Rare Axe 03","price":2750,"itemIds":["generated_equipment_weapon_axe_epic_axe_1"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_3","name":"Epic Axe 01","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"axe","levelRequirement":45},
@@ -4002,7 +4002,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_3","name":"Epic Axe 01","price":488,"itemIds":["generated_equipment_weapon_axe_epic_axe_3"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_3","name":"Epic Axe 01","price":4690,"itemIds":["generated_equipment_weapon_axe_epic_axe_3"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_4","name":"Epic Axe 02","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":15,"weaponClass":"axe","levelRequirement":50},
@@ -4014,7 +4014,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-4.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_4","name":"Epic Axe 02","price":566,"itemIds":["generated_equipment_weapon_axe_epic_axe_4"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_4","name":"Epic Axe 02","price":5360,"itemIds":["generated_equipment_weapon_axe_epic_axe_4"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_5","name":"Epic Axe 03","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"axe","levelRequirement":55},
@@ -4026,7 +4026,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-5.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_5","name":"Epic Axe 03","price":644,"itemIds":["generated_equipment_weapon_axe_epic_axe_5"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_5","name":"Epic Axe 03","price":7920,"itemIds":["generated_equipment_weapon_axe_epic_axe_5"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_6","name":"Epic Axe 06","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":17,"weaponClass":"axe","levelRequirement":57},
@@ -4038,7 +4038,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-6.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_6","name":"Epic Axe 06","price":722,"itemIds":["generated_equipment_weapon_axe_epic_axe_6"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_6","name":"Epic Axe 06","price":9680,"itemIds":["generated_equipment_weapon_axe_epic_axe_6"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_axe_7","name":"Epic Axe 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"axe","levelRequirement":58},
@@ -4050,7 +4050,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-epic-axe-7.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_7","name":"Epic Axe 07","price":800,"itemIds":["generated_equipment_weapon_axe_epic_axe_7"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_epic_axe_7","name":"Epic Axe 07","price":9680,"itemIds":["generated_equipment_weapon_axe_epic_axe_7"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_epic_zxe","name":"Epic Axe 04","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"axe"},
@@ -4073,7 +4073,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-legendary-axe-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_legendary_axe_01","name":"Legendary Axe 01","price":1073,"itemIds":["generated_equipment_weapon_axe_legendary_axe_01"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_legendary_axe_01","name":"Legendary Axe 01","price":15260,"itemIds":["generated_equipment_weapon_axe_legendary_axe_01"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_legendary_axe_02","name":"Legendary Axe 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"axe","levelRequirement":80},
@@ -4085,7 +4085,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-legendary-axe-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_legendary_axe_02","name":"Legendary Axe 02","price":1181,"itemIds":["generated_equipment_weapon_axe_legendary_axe_02"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_legendary_axe_02","name":"Legendary Axe 02","price":27000,"itemIds":["generated_equipment_weapon_axe_legendary_axe_02"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_mythical_axe_01","name":"Mythical Axe 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":24,"weaponClass":"axe"},
@@ -4142,7 +4142,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-rare-axe-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_rare_axe_1","name":"Rare Axe 01","price":264,"itemIds":["generated_equipment_weapon_axe_rare_axe_1"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_rare_axe_1","name":"Rare Axe 01","price":1160,"itemIds":["generated_equipment_weapon_axe_rare_axe_1"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_rare_axe_2","name":"Rare Axe 02","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":11,"weaponClass":"axe","levelRequirement":35},
@@ -4154,7 +4154,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-rare-axe-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_rare_axe_2","name":"Rare Axe 02","price":316,"itemIds":["generated_equipment_weapon_axe_rare_axe_2"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_rare_axe_2","name":"Rare Axe 02","price":2250,"itemIds":["generated_equipment_weapon_axe_rare_axe_2"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_rusty_axe","name":"Common Axe 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"axe","levelRequirement":5},
@@ -4190,7 +4190,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-uncommon-axe-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_uncommon_axe_1","name":"Uncommon Axe 01","price":94,"itemIds":["generated_equipment_weapon_axe_uncommon_axe_1"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_uncommon_axe_1","name":"Uncommon Axe 01","price":330,"itemIds":["generated_equipment_weapon_axe_uncommon_axe_1"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_uncommon_axe_2","name":"Uncommon Axe 02","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":7,"weaponClass":"axe","levelRequirement":20},
@@ -4202,7 +4202,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-uncommon-axe-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_uncommon_axe_2","name":"Uncommon Axe 02","price":125,"itemIds":["generated_equipment_weapon_axe_uncommon_axe_2"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_uncommon_axe_2","name":"Uncommon Axe 02","price":440,"itemIds":["generated_equipment_weapon_axe_uncommon_axe_2"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_uncommon_axe_3","name":"Uncommon Axe 03","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":8,"weaponClass":"axe","levelRequirement":25},
@@ -4214,7 +4214,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-axe-uncommon-axe-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_axe_uncommon_axe_3","name":"Uncommon Axe 03","price":156,"itemIds":["generated_equipment_weapon_axe_uncommon_axe_3"],"categoryId":"axes"},
+    weaponProduct: {"id":"generated_equipment_weapon_axe_uncommon_axe_3","name":"Uncommon Axe 03","price":830,"itemIds":["generated_equipment_weapon_axe_uncommon_axe_3"],"categoryId":"axes"},
   },
   {
     item: {"id":"generated_equipment_weapon_axe_uncommon_axe_4","name":"Uncommon Axe 04","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":9,"weaponClass":"axe"},
@@ -4261,7 +4261,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-epic-bow-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","price":2080,"itemIds":["generated_equipment_weapon_bow_epic_bow_1"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_1","name":"Epic bow 1","price":4056,"itemIds":["generated_equipment_weapon_bow_epic_bow_1"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponBow","damageBonus":8,"requirements":{"agility":40},"weaponClass":"bow"},
@@ -4273,7 +4273,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-epic-bow-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","price":2860,"itemIds":["generated_equipment_weapon_bow_epic_bow_2"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_epic_bow_2","name":"Epic bow 2","price":5577,"itemIds":["generated_equipment_weapon_bow_epic_bow_2"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":9,"requirements":{"agility":45},"weaponClass":"bow"},
@@ -4285,7 +4285,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-legendary-bow-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","price":3900,"itemIds":["generated_equipment_weapon_bow_legendary_bow_1"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_1","name":"Legendary bow 1","price":7605,"itemIds":["generated_equipment_weapon_bow_legendary_bow_1"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponBow","damageBonus":10,"requirements":{"agility":50},"weaponClass":"bow"},
@@ -4297,7 +4297,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-legendary-bow-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","price":5200,"itemIds":["generated_equipment_weapon_bow_legendary_bow_2"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_legendary_bow_2","name":"Legendary bow 2","price":10140,"itemIds":["generated_equipment_weapon_bow_legendary_bow_2"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_mythic_bow_1","name":"Mythic bow 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponBow","damageBonus":11,"requirements":{"agility":55},"weaponClass":"bow"},
@@ -4331,7 +4331,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-rare-bow-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","price":1040,"itemIds":["generated_equipment_weapon_bow_rare_bow_1"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_1","name":"Rare bow 1","price":2028,"itemIds":["generated_equipment_weapon_bow_rare_bow_1"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponBow","damageBonus":6,"requirements":{"agility":30},"weaponClass":"bow"},
@@ -4343,7 +4343,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-rare-bow-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","price":1430,"itemIds":["generated_equipment_weapon_bow_rare_bow_2"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_rare_bow_2","name":"Rare bow 2","price":2789,"itemIds":["generated_equipment_weapon_bow_rare_bow_2"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":3,"requirements":{"agility":15},"weaponClass":"bow"},
@@ -4355,7 +4355,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-uncommon-bow-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","price":390,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_1"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_1","name":"Uncommon bow 1","price":761,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_1"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponBow","damageBonus":4,"requirements":{"agility":20},"weaponClass":"bow"},
@@ -4367,7 +4367,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-uncommon-bow-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","price":650,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_2"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_uncommon_bow_2","name":"Uncommon bow 2","price":1268,"itemIds":["generated_equipment_weapon_bow_uncommon_bow_2"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_bad_club","name":"Common Mace 01","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"mace","levelRequirement":1},
@@ -4425,7 +4425,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_1","name":"Epic Mace 02","price":429,"itemIds":["generated_equipment_weapon_mace_epic_mace_1"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_1","name":"Epic Mace 02","price":4690,"itemIds":["generated_equipment_weapon_mace_epic_mace_1"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_epic_mace_2","name":"Epic Mace 03","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"mace","levelRequirement":50},
@@ -4437,7 +4437,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_2","name":"Epic Mace 03","price":472,"itemIds":["generated_equipment_weapon_mace_epic_mace_2"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_2","name":"Epic Mace 03","price":5360,"itemIds":["generated_equipment_weapon_mace_epic_mace_2"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_epic_mace_3","name":"Epic Mace 04","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":15,"weaponClass":"mace","levelRequirement":55},
@@ -4449,7 +4449,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_3","name":"Epic Mace 04","price":515,"itemIds":["generated_equipment_weapon_mace_epic_mace_3"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_3","name":"Epic Mace 04","price":7920,"itemIds":["generated_equipment_weapon_mace_epic_mace_3"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_epic_mace_4","name":"Epic Mace 05","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"mace","levelRequirement":60},
@@ -4461,7 +4461,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-4.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_4","name":"Epic Mace 05","price":580,"itemIds":["generated_equipment_weapon_mace_epic_mace_4"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_4","name":"Epic Mace 05","price":9680,"itemIds":["generated_equipment_weapon_mace_epic_mace_4"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_epic_mace_5","name":"Epic Mace 06","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":17,"weaponClass":"mace","levelRequirement":65},
@@ -4473,7 +4473,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-5.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_5","name":"Epic Mace 06","price":623,"itemIds":["generated_equipment_weapon_mace_epic_mace_5"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_5","name":"Epic Mace 06","price":13080,"itemIds":["generated_equipment_weapon_mace_epic_mace_5"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_epic_mace_6","name":"Epic Mace 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"mace","levelRequirement":70},
@@ -4485,7 +4485,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-epic-mace-6.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_6","name":"Epic Mace 07","price":666,"itemIds":["generated_equipment_weapon_mace_epic_mace_6"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_epic_mace_6","name":"Epic Mace 07","price":14170,"itemIds":["generated_equipment_weapon_mace_epic_mace_6"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_legendary_mace_02","name":"Legendary Mace 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"mace","levelRequirement":80},
@@ -4497,7 +4497,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-legendary-mace-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_legendary_mace_02","name":"Legendary Mace 02","price":890,"itemIds":["generated_equipment_weapon_mace_legendary_mace_02"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_legendary_mace_02","name":"Legendary Mace 02","price":27000,"itemIds":["generated_equipment_weapon_mace_legendary_mace_02"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_lg_mace_1","name":"Legendary Mace 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"mace","levelRequirement":70},
@@ -4509,7 +4509,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-lg-mace-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_lg_mace_1","name":"Legendary Mace 01","price":796,"itemIds":["generated_equipment_weapon_mace_lg_mace_1"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_lg_mace_1","name":"Legendary Mace 01","price":15260,"itemIds":["generated_equipment_weapon_mace_lg_mace_1"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_mace","name":"Uncommon Mace 01","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"mace","levelRequirement":15},
@@ -4521,7 +4521,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-mace.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_mace","name":"Uncommon Mace 01","price":71,"itemIds":["generated_equipment_weapon_mace_mace"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_mace","name":"Uncommon Mace 01","price":330,"itemIds":["generated_equipment_weapon_mace_mace"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_mace1","name":"Uncommon Mace 02","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"mace","levelRequirement":20},
@@ -4533,7 +4533,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-mace1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_mace1","name":"Uncommon Mace 02","price":89,"itemIds":["generated_equipment_weapon_mace_mace1"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_mace1","name":"Uncommon Mace 02","price":440,"itemIds":["generated_equipment_weapon_mace_mace1"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_mythical_mace_01","name":"Mythical Mace 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":23,"weaponClass":"mace"},
@@ -4567,7 +4567,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-rare-mace-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_rare_mace_1","name":"Rare Mace 01","price":215,"itemIds":["generated_equipment_weapon_mace_rare_mace_1"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_rare_mace_1","name":"Rare Mace 01","price":1160,"itemIds":["generated_equipment_weapon_mace_rare_mace_1"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_rare_mace_2","name":"Rare Mace 02","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"mace","levelRequirement":35},
@@ -4579,7 +4579,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-rare-mace-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_rare_mace_2","name":"Rare Mace 02","price":254,"itemIds":["generated_equipment_weapon_mace_rare_mace_2"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_rare_mace_2","name":"Rare Mace 02","price":2250,"itemIds":["generated_equipment_weapon_mace_rare_mace_2"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_rare_mace_3","name":"Rare Mace 03","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":11,"weaponClass":"mace","levelRequirement":40},
@@ -4591,7 +4591,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-rare-mace-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_rare_mace_3","name":"Rare Mace 03","price":293,"itemIds":["generated_equipment_weapon_mace_rare_mace_3"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_rare_mace_3","name":"Rare Mace 03","price":2750,"itemIds":["generated_equipment_weapon_mace_rare_mace_3"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_stone_mace","name":"Common Mace 03","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"mace","levelRequirement":10},
@@ -4637,7 +4637,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-mace-uncommon-mace-4.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_mace_uncommon_mace_4","name":"Uncommon Mace 04","price":124,"itemIds":["generated_equipment_weapon_mace_uncommon_mace_4"],"categoryId":"maces"},
+    weaponProduct: {"id":"generated_equipment_weapon_mace_uncommon_mace_4","name":"Uncommon Mace 04","price":830,"itemIds":["generated_equipment_weapon_mace_uncommon_mace_4"],"categoryId":"maces"},
   },
   {
     item: {"id":"generated_equipment_weapon_mace_uncommon_mace_5","name":"Uncommon Mace 05","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":9,"weaponClass":"mace"},
@@ -4706,7 +4706,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-epic-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","price":221,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","price":431,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_1"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"shuriken","levelRequirement":60},
@@ -4718,7 +4718,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-epic-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","price":260,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","price":507,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_2"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"shuriken","levelRequirement":70},
@@ -4730,7 +4730,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-legendary-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","price":299,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","price":584,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_1"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"shuriken","levelRequirement":80},
@@ -4742,7 +4742,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-legendary-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","price":338,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","price":659,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_2"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken"},
@@ -4776,7 +4776,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-rare-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","price":143,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","price":279,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_1"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"shuriken","levelRequirement":40},
@@ -4788,7 +4788,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-rare-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","price":182,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","price":356,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_2"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"shuriken","levelRequirement":15},
@@ -4800,7 +4800,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-uncommon-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","price":65,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","price":128,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_1"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":8,"weaponClass":"shuriken","levelRequirement":25},
@@ -4812,7 +4812,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-uncommon-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","price":104,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","price":203,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_2"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_eagle_glaive","name":"Skybreaker Glaive","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear"},
@@ -4835,7 +4835,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear","name":"Epic Spear 01","price":234,"itemIds":["generated_equipment_weapon_spear_epic_spear"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear","name":"Epic Spear 01","price":4690,"itemIds":["generated_equipment_weapon_spear_epic_spear"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_1","name":"Epic Spear 02","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":11,"weaponClass":"spear","levelRequirement":50},
@@ -4847,7 +4847,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_1","name":"Epic Spear 02","price":258,"itemIds":["generated_equipment_weapon_spear_epic_spear_1"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_1","name":"Epic Spear 02","price":5360,"itemIds":["generated_equipment_weapon_spear_epic_spear_1"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_3","name":"Epic Spear 03","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear"},
@@ -4870,7 +4870,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-4.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_4","name":"Epic Spear 04","price":305,"itemIds":["generated_equipment_weapon_spear_epic_spear_4"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_4","name":"Epic Spear 04","price":7920,"itemIds":["generated_equipment_weapon_spear_epic_spear_4"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_5","name":"Epic Spear 05","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":15,"weaponClass":"spear","levelRequirement":60},
@@ -4882,7 +4882,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-5.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_5","name":"Epic Spear 05","price":351,"itemIds":["generated_equipment_weapon_spear_epic_spear_5"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_5","name":"Epic Spear 05","price":9680,"itemIds":["generated_equipment_weapon_spear_epic_spear_5"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_6","name":"Epic Spear 06","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":17,"weaponClass":"spear","levelRequirement":65},
@@ -4894,7 +4894,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-6.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_6","name":"Epic Spear 06","price":398,"itemIds":["generated_equipment_weapon_spear_epic_spear_6"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_6","name":"Epic Spear 06","price":13080,"itemIds":["generated_equipment_weapon_spear_epic_spear_6"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"spear","levelRequirement":70},
@@ -4906,7 +4906,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-epic-spear-7.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","price":422,"itemIds":["generated_equipment_weapon_spear_epic_spear_7"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","price":14170,"itemIds":["generated_equipment_weapon_spear_epic_spear_7"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"spear","levelRequirement":80},
@@ -4918,7 +4918,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-legendary-spear-02.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","price":533,"itemIds":["generated_equipment_weapon_spear_legendary_spear_02"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","price":27000,"itemIds":["generated_equipment_weapon_spear_legendary_spear_02"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear","levelRequirement":70},
@@ -4930,7 +4930,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-lg-spear-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","price":483,"itemIds":["generated_equipment_weapon_spear_lg_spear_1"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_lg_spear_1","name":"Legendary Spear 01","price":15260,"itemIds":["generated_equipment_weapon_spear_lg_spear_1"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_mythical_spear_01","name":"Mythical Spear 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":23,"weaponClass":"spear"},
@@ -4964,7 +4964,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-rare-spear.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_rare_spear","name":"Rare Spear 01","price":151,"itemIds":["generated_equipment_weapon_spear_rare_spear"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_rare_spear","name":"Rare Spear 01","price":1160,"itemIds":["generated_equipment_weapon_spear_rare_spear"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_rare_spear_1","name":"Rare Spear 02","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":8,"weaponClass":"spear","levelRequirement":40},
@@ -4976,7 +4976,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-rare-spear-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_rare_spear_1","name":"Rare Spear 02","price":172,"itemIds":["generated_equipment_weapon_spear_rare_spear_1"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_rare_spear_1","name":"Rare Spear 02","price":2750,"itemIds":["generated_equipment_weapon_spear_rare_spear_1"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_1","name":"Epic Sword 01","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":13,"weaponClass":"sword","levelRequirement":45},
@@ -4988,7 +4988,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-epic-sword-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_1","name":"Epic Sword 01","price":422,"itemIds":["generated_equipment_weapon_sword_epic_sword_1"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_1","name":"Epic Sword 01","price":4690,"itemIds":["generated_equipment_weapon_sword_epic_sword_1"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_10","name":"Epic Sword 09","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"sword"},
@@ -5033,7 +5033,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-epic-sword-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_3","name":"Epic Sword 03","price":457,"itemIds":["generated_equipment_weapon_sword_epic_sword_3"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_3","name":"Epic Sword 03","price":5360,"itemIds":["generated_equipment_weapon_sword_epic_sword_3"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_4","name":"Epic Sword 04","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":15,"weaponClass":"sword","levelRequirement":51},
@@ -5045,7 +5045,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-epic-sword-4.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_4","name":"Epic Sword 04","price":475,"itemIds":["generated_equipment_weapon_sword_epic_sword_4"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_4","name":"Epic Sword 04","price":7920,"itemIds":["generated_equipment_weapon_sword_epic_sword_4"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_6","name":"Epic Sword 05","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"sword"},
@@ -5068,7 +5068,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-epic-sword-7.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_7","name":"Epic Sword 06","price":510,"itemIds":["generated_equipment_weapon_sword_epic_sword_7"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_7","name":"Epic Sword 06","price":7920,"itemIds":["generated_equipment_weapon_sword_epic_sword_7"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_8","name":"Epic Sword 07","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":17,"weaponClass":"sword","levelRequirement":57},
@@ -5080,7 +5080,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-epic-sword-8.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_8","name":"Epic Sword 07","price":527,"itemIds":["generated_equipment_weapon_sword_epic_sword_8"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_8","name":"Epic Sword 07","price":9680,"itemIds":["generated_equipment_weapon_sword_epic_sword_8"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_9","name":"Epic Sword 08","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"sword","levelRequirement":60},
@@ -5092,7 +5092,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-epic-sword-9.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_9","name":"Epic Sword 08","price":562,"itemIds":["generated_equipment_weapon_sword_epic_sword_9"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_epic_sword_9","name":"Epic Sword 08","price":9680,"itemIds":["generated_equipment_weapon_sword_epic_sword_9"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_frost_king_sword","name":"Winterborn Blade","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":27,"weaponClass":"sword"},
@@ -5126,7 +5126,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-lg-sword-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_lg_sword_1","name":"Legendary Sword 01","price":858,"itemIds":["generated_equipment_weapon_sword_lg_sword_1"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_lg_sword_1","name":"Legendary Sword 01","price":15260,"itemIds":["generated_equipment_weapon_sword_lg_sword_1"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_lg_sword_2","name":"Legendary Sword 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"sword","levelRequirement":80},
@@ -5138,7 +5138,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-lg-sword-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_lg_sword_2","name":"Legendary Sword 02","price":956,"itemIds":["generated_equipment_weapon_sword_lg_sword_2"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_lg_sword_2","name":"Legendary Sword 02","price":27000,"itemIds":["generated_equipment_weapon_sword_lg_sword_2"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_mythical_sword_01","name":"Mythical Sword 01","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":23,"weaponClass":"sword"},
@@ -5172,7 +5172,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-rare-sword-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_rare_sword_1","name":"Rare Sword 01","price":219,"itemIds":["generated_equipment_weapon_sword_rare_sword_1"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_rare_sword_1","name":"Rare Sword 01","price":1160,"itemIds":["generated_equipment_weapon_sword_rare_sword_1"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_rare_sword_2","name":"Rare Sword 02","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"sword","levelRequirement":35},
@@ -5184,7 +5184,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-rare-sword-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_rare_sword_2","name":"Rare Sword 02","price":234,"itemIds":["generated_equipment_weapon_sword_rare_sword_2"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_rare_sword_2","name":"Rare Sword 02","price":2250,"itemIds":["generated_equipment_weapon_sword_rare_sword_2"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_rare_sword_3","name":"Rare Sword 03","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":11,"weaponClass":"sword","levelRequirement":40},
@@ -5196,7 +5196,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-rare-sword-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_rare_sword_3","name":"Rare Sword 03","price":250,"itemIds":["generated_equipment_weapon_sword_rare_sword_3"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_rare_sword_3","name":"Rare Sword 03","price":2750,"itemIds":["generated_equipment_weapon_sword_rare_sword_3"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_rare_sword_4","name":"Rare Sword 04","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"sword"},
@@ -5287,7 +5287,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-sword1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_sword1","name":"Uncommon Sword 01","price":69,"itemIds":["generated_equipment_weapon_sword_sword1"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_sword1","name":"Uncommon Sword 01","price":330,"itemIds":["generated_equipment_weapon_sword_sword1"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_uncommon_sword_2","name":"Uncommon Sword 02","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"sword","levelRequirement":20},
@@ -5299,7 +5299,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-uncommon-sword-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_2","name":"Uncommon Sword 02","price":97,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_2"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_2","name":"Uncommon Sword 02","price":440,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_2"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_uncommon_sword_3","name":"Uncommon Sword 03","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":7,"weaponClass":"sword","levelRequirement":25},
@@ -5311,7 +5311,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-sword-uncommon-sword-3.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_3","name":"Uncommon Sword 03","price":124,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_3"],"categoryId":"swords"},
+    weaponProduct: {"id":"generated_equipment_weapon_sword_uncommon_sword_3","name":"Uncommon Sword 03","price":830,"itemIds":["generated_equipment_weapon_sword_uncommon_sword_3"],"categoryId":"swords"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_void_sword","name":"Black Sun Blade","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":30,"weaponClass":"sword"},
@@ -5345,7 +5345,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-boot-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"leather_back_boot_01","name":"Leather Back Boot 01","price":13,"itemIds":["leather_back_boot_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"leather_back_boot_01","name":"Leather Back Boot 01","price":61,"itemIds":["leather_back_boot_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"leather_back_shinguard_01","name":"Leather Back Shinguard 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backShinguard","armorHp":4,"levelRequirement":15},
@@ -5357,7 +5357,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/legs/back-shinguard-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"leather_back_shinguard_01","name":"Leather Back Shinguard 01","price":16,"itemIds":["leather_back_shinguard_01"],"categoryId":"legs"},
+    armoryProduct: {"id":"leather_back_shinguard_01","name":"Leather Back Shinguard 01","price":75,"itemIds":["leather_back_shinguard_01"],"categoryId":"legs"},
   },
   {
     item: {"id":"leather_back_shoulderguard_01","name":"Leather Back Shoulderguard 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backShoulderguard","armorHp":4,"levelRequirement":15},
@@ -5369,7 +5369,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-shoulderguard-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"leather_back_shoulderguard_01","name":"Leather Back Shoulderguard 01","price":16,"itemIds":["leather_back_shoulderguard_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"leather_back_shoulderguard_01","name":"Leather Back Shoulderguard 01","price":75,"itemIds":["leather_back_shoulderguard_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"leather_back_wrist_01","name":"Leather Back Wrist 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"backWrist","armorHp":3,"levelRequirement":15},
@@ -5381,7 +5381,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/arms/back-wrist-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"leather_back_wrist_01","name":"Leather Back Wrist 01","price":13,"itemIds":["leather_back_wrist_01"],"categoryId":"arms"},
+    armoryProduct: {"id":"leather_back_wrist_01","name":"Leather Back Wrist 01","price":61,"itemIds":["leather_back_wrist_01"],"categoryId":"arms"},
   },
   {
     item: {"id":"leather_breastplate_01","name":"Leather Breastplate 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"breastplate","armorHp":8,"levelRequirement":15},
@@ -5393,7 +5393,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/breastplate/breastplate-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"leather_breastplate_01","name":"Leather Breastplate 01","price":34,"itemIds":["leather_breastplate_01"],"categoryId":"body"},
+    armoryProduct: {"id":"leather_breastplate_01","name":"Leather Breastplate 01","price":155,"itemIds":["leather_breastplate_01"],"categoryId":"body"},
   },
   {
     item: {"id":"leather_front_boot_01","name":"Leather Front Boot 01","kind":"armor","rarity":"uncommon","armorCategory":"leather","equipmentSet":{"id":"leather","name":"Leather","rank":2,"grade":"starter"},"equipmentSlot":"frontBoot","armorHp":0,"levelRequirement":15},
@@ -5453,7 +5453,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/armor/helmet/helmet-leather-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    armoryProduct: {"id":"leather_helmet_01","name":"Leather Helmet 01","price":21,"itemIds":["leather_helmet_01"],"categoryId":"head"},
+    armoryProduct: {"id":"leather_helmet_01","name":"Leather Helmet 01","price":97,"itemIds":["leather_helmet_01"],"categoryId":"head"},
   },
   {
     item: {"id":"weapon_sword_01","name":"Common Sword 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"sword","levelRequirement":5},

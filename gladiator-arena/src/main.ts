@@ -28,7 +28,7 @@ import {
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { isDuoBossAiCombat, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { isDuoBossAiCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
 import { DAILY_ARENA_ENERGY_ICON_ASSET_URL, pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation, type BattleResultPresentationStage } from "./domUi";
@@ -155,6 +155,9 @@ let displayedStatsState: CombatState = state;
 let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
 let classicActionBar: ClassicActionBarApi | undefined;
+let autoBattleButton: HTMLButtonElement | undefined;
+let autoBattleEnabled = false;
+let autoBattleScheduleToken = 0;
 let turnSequenceToken = 0;
 let isTurnAnimationLocked = false;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
@@ -200,11 +203,13 @@ const ARENA_BOSS_ENERGY_COST = 2;
 const ARENA_DUO_BOSS_ENERGY_COST = 3;
 const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
+const AUTO_PLAYER_TURN_PACING_MS = 120;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
 let isArenaEntryLoading = false;
+let isArenaEntryTransitionPlaying = false;
 let arenaEntryToken = 0;
 let arenaEntryLoaderTimer: number | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
@@ -414,6 +419,7 @@ function finishArenaEntryGate(token: number): void {
 function cancelArenaEntryGate(): void {
   arenaEntryToken += 1;
   isArenaEntryLoading = false;
+  isArenaEntryTransitionPlaying = false;
   clearArenaEntryLoaderTimer();
   setArenaEntryLoaderVisible(false);
   dom.gameScreen.classList.remove("battle-screen--arena-entry");
@@ -768,6 +774,7 @@ function syncActionArc(): void {
 
   actionArc?.sync(visibleState);
   classicActionBar?.sync(visibleState);
+  syncAutoBattleToggle();
 }
 
 function setTurnAnimationLocked(locked: boolean): void {
@@ -777,6 +784,107 @@ function setTurnAnimationLocked(locked: boolean): void {
 
   isTurnAnimationLocked = locked;
   syncActionArc();
+  if (!locked) {
+    scheduleAutoPlayerTurn();
+  }
+}
+
+function mountAutoBattleToggle(host: HTMLElement): HTMLButtonElement {
+  const button = document.createElement("button");
+
+  button.className = "auto-battle-toggle";
+  button.type = "button";
+  button.textContent = "AUTO";
+  button.setAttribute("aria-label", "Auto battle");
+  button.setAttribute("aria-pressed", "false");
+  button.title = "Auto battle";
+  button.addEventListener("click", () => setAutoBattleEnabled(!autoBattleEnabled));
+  host.append(button);
+
+  return button;
+}
+
+function setAutoBattleEnabled(enabled: boolean): void {
+  autoBattleEnabled = enabled && gameMode !== "pvp";
+  autoBattleScheduleToken += 1;
+  syncAutoBattleToggle();
+
+  if (autoBattleEnabled) {
+    scheduleAutoPlayerTurn();
+  }
+}
+
+function syncAutoBattleToggle(): void {
+  if (!autoBattleButton) {
+    return;
+  }
+
+  const canAutoBattle = gameMode === "pve" && !isInCity;
+  const battleActive = canAutoBattle && hasStarted && state.result === "playing" && !isArenaEntryLoading;
+
+  autoBattleButton.hidden = !canAutoBattle;
+  autoBattleButton.disabled = !battleActive || isArenaEntryTransitionPlaying;
+  autoBattleButton.classList.toggle("auto-battle-toggle--active", autoBattleEnabled && battleActive);
+  autoBattleButton.setAttribute("aria-pressed", autoBattleEnabled && battleActive ? "true" : "false");
+}
+
+function scheduleAutoPlayerTurn(): void {
+  const token = ++autoBattleScheduleToken;
+
+  if (!canRunAutoPlayerTurn()) {
+    return;
+  }
+
+  window.setTimeout(() => {
+    if (token !== autoBattleScheduleToken || !canRunAutoPlayerTurn()) {
+      return;
+    }
+
+    handleAutoBattleAction();
+  }, AUTO_PLAYER_TURN_PACING_MS);
+}
+
+function canRunAutoPlayerTurn(): boolean {
+  return autoBattleEnabled
+    && gameMode === "pve"
+    && hasStarted
+    && !isInCity
+    && !isTurnAnimationLocked
+    && !isArenaEntryLoading
+    && !isArenaEntryTransitionPlaying
+    && state.result === "playing"
+    && state.activeTurn === "player";
+}
+
+function handleAutoBattleAction(): void {
+  if (!canRunAutoPlayerTurn()) {
+    return;
+  }
+
+  const nextState = resolveAutoPlayerTurn(state);
+
+  if (nextState === state) {
+    setAutoBattleEnabled(false);
+    return;
+  }
+
+  logTurnProbe("auto-player-action", state, enemyTimerStatus, nextState.lastPlayerAction);
+
+  const actionAnimation = commitState(nextState);
+
+  if (isDuoBossAiCombat(nextState)) {
+    void scheduleDuoBossTurns(nextState, actionAnimation);
+    return;
+  }
+
+  if (nextState.result === "playing" && nextState.activeTurn === "enemy") {
+    void scheduleEnemyTurn(nextState, actionAnimation);
+    return;
+  }
+
+  if (nextState.result === "playing" && nextState.activeTurn === "player") {
+    void actionAnimation.finally(() => scheduleAutoPlayerTurn());
+  }
 }
 
 function handleAction(actionId: ActionId): void {
@@ -934,6 +1042,9 @@ function isActiveArenaEntry(scene: ArenaScene, token: number): boolean {
 }
 
 async function runArenaEntry(scene: ArenaScene, entryToken: number): Promise<void> {
+  isArenaEntryTransitionPlaying = true;
+  syncAutoBattleToggle();
+
   try {
     await scene.prepareEntry(state);
 
@@ -944,9 +1055,15 @@ async function runArenaEntry(scene: ArenaScene, entryToken: number): Promise<voi
     finishArenaEntryGate(entryToken);
     await scene.playEntryTransition(state);
   } finally {
-    if (isActiveArenaEntry(scene, entryToken)) {
+    const stillActive = isActiveArenaEntry(scene, entryToken);
+
+    isArenaEntryTransitionPlaying = false;
+    syncAutoBattleToggle();
+
+    if (stillActive) {
       finishArenaEntryGate(entryToken);
       refreshArenaLayout();
+      scheduleAutoPlayerTurn();
     }
   }
 }
@@ -1968,6 +2085,9 @@ function unmountArenaScene(): void {
 
 function startGame(options: StartGameOptions = {}): void {
   gameMode = options.mode ?? "pve";
+  if (gameMode === "pvp") {
+    setAutoBattleEnabled(false);
+  }
   const initialState = gameMode === "pvp" ? pvpSnapshot?.state ?? options.initialState : options.initialState;
   syncRestartButtonVisibility(gameMode !== "pvp");
   syncPvpTurnTimer();
@@ -1990,6 +2110,7 @@ function startGame(options: StartGameOptions = {}): void {
       restart({ syncArena: false });
     }
     mountArena();
+    syncAutoBattleToggle();
     return;
   }
 
@@ -2001,6 +2122,7 @@ function startGame(options: StartGameOptions = {}): void {
   document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
   classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
+  autoBattleButton = mountAutoBattleToggle(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   if (initialState) {
@@ -2009,6 +2131,7 @@ function startGame(options: StartGameOptions = {}): void {
     restart({ syncArena: false });
   }
   mountArena();
+  syncAutoBattleToggle();
 }
 
 async function startGameWithCityTransition(options: StartGameOptions = {}): Promise<void> {
@@ -2466,6 +2589,7 @@ async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
   if (returningFromPvp) {
     leavePvpRoom();
   }
+  setAutoBattleEnabled(false);
   showCityReturnTransition();
   await delay(CITY_RETURN_TRANSITION_IN_MS);
 
@@ -2525,7 +2649,8 @@ function restart(options: { syncArena?: boolean } = {}): void {
   battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
   lastActionClick = "none";
-  void commitState(createCombatStateForSelection(activeArenaSelection), options);
+  void commitState(createCombatStateForSelection(activeArenaSelection), options)
+    .finally(() => scheduleAutoPlayerTurn());
 }
 
 dom.startButton.addEventListener("click", () => {

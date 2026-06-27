@@ -320,7 +320,7 @@ function getShopItemDisplayStat(hero: HeroState, item: HeroItemDefinition | unde
     return stat;
   }
 
-  return Math.round(stat * getHeroMeleeDamageDisplayMultiplier(hero, item));
+  return Math.ceil(stat * getHeroMeleeDamageDisplayMultiplier(hero, item));
 }
 
 function getHeroBowDamageDisplayMultiplier(hero: HeroState): number {

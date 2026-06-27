@@ -138,6 +138,54 @@ test("attack stamina costs stay tied to action type", () => {
   assert.equal(combat.getActionStaminaCost("lunge", fighter), 2);
 });
 
+test("player auto action advances without spending special resources", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MAX_DISTANCE);
+  state.player.shurikenCount = 1;
+  state.player.shurikenDamage = 20;
+  state.player.shurikenItemId = "weapon_shuriken_01";
+  state.player.fireballScrollCount = 1;
+  state.player.fireballScrollItemId = "scroll_fireball_01";
+  state.player.wardScrollCount = 1;
+  state.player.wardScrollItemId = "scroll_ward_01";
+  state.player.poisonScrollCount = 1;
+  state.player.poisonScrollItemId = "scroll_poison_01";
+
+  assert.equal(
+    combat.availableActionIds(state, "player").filter((actionId) => ["shuriken", "fireball", "ward", "poison"].includes(actionId)).join(","),
+    "shuriken,fireball,ward,poison",
+  );
+  assert.equal(combat.choosePlayerAutoAction(state), "forward");
+
+  const nextState = combat.resolveAutoPlayerTurn(state);
+
+  assert.equal(nextState.lastPlayerAction, "forward");
+  assert.equal(nextState.player.shurikenCount, 1);
+  assert.equal(nextState.player.fireballScrollCount, 1);
+  assert.equal(nextState.player.wardScrollCount, 1);
+  assert.equal(nextState.player.poisonScrollCount, 1);
+});
+
+test("player auto action attacks in clinch and rests when exhausted", () => {
+  const meleeState = combat.freshState();
+
+  setConsistentDistance(meleeState, combat.MELEE_RANGE);
+  assert.equal(combat.choosePlayerAutoAction(meleeState), "heavy");
+  assert.equal(combat.resolveAutoPlayerTurn(meleeState, () => 0.99).lastPlayerAction, "heavy");
+
+  const exhaustedState = combat.freshState();
+
+  setConsistentDistance(exhaustedState, combat.MELEE_RANGE);
+  exhaustedState.player.stamina = 0;
+  assert.equal(combat.choosePlayerAutoAction(exhaustedState), "rest");
+
+  const restedState = combat.resolveAutoPlayerTurn(exhaustedState);
+
+  assert.equal(restedState.lastPlayerAction, "rest");
+  assert.equal(restedState.player.stamina, 5);
+});
+
 test("attacks define base block chances", () => {
   assert.equal(combat.actions.lunge.blockChance, 0.5);
   assert.equal(combat.actions.light.blockChance, 0.25);

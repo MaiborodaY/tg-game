@@ -100,6 +100,10 @@ const shopPresentation = loadTypeScriptModule("../src/shopPresentation.ts", {
       return { getArenaBossesForTier: () => [] };
     }
 
+    if (id === "./combat") {
+      return { AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER: 1.5 };
+    }
+
     if (id === "./hero") {
       return {
         HERO_ITEM_CATALOG: generatedItems,
@@ -137,9 +141,10 @@ test("shop display damage scales melee by strength and bows by agility while lea
   };
 
   assert.equal(shopPresentation.getShopProductStat(["weapon_sword_01"], "damage"), 1);
+  assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, meleeDamagePercentBonus: 0.05 }, ["weapon_sword_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_sword_01"], "damage"), 2);
-  assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 20);
-  assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, meleeDamagePercentBonus: 0.2 }, ["weapon_axe_02"], "damage"), 25);
+  assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 18);
+  assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, meleeDamagePercentBonus: 0.2 }, ["weapon_axe_02"], "damage"), 24);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 8);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_shuriken_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["cloth_breastplate_01"], "armor"), 3);

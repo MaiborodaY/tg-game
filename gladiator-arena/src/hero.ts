@@ -196,6 +196,7 @@ export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
 export const HERO_ARENA_ENERGY_MAX = 10;
+const RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE = 0.005;
 const HERO_WEAPON_SHARPENING_ALLOWED_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
 
 interface PairedArmorSlotConfig {
@@ -2699,22 +2700,47 @@ function rollCombatRewardLoot(hero: HeroState, combat: CombatState, random: () =
     return rollBossCombatLoot(hero, combat, random);
   }
 
+  if (combat.encounter?.kind === "random") {
+    return rollRandomEnemyCombatLoot(hero, combat, random);
+  }
+
   return rollCombatEncounterLoot(combat, random);
 }
 
 function rollBossCombatLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
-  const entries = getCombatEncounterLootTable(combat).filter((candidate) => canHeroReceiveBossLootEntry(hero, candidate));
+  const entries = getCombatEncounterLootTable(combat).filter((candidate) => canHeroReceiveEquipmentLootEntry(hero, candidate));
 
-  return entries.length > 0 ? [createGuaranteedBossLootDrop(pickRandom(entries, random))] : [];
+  return entries.length > 0 ? [createArenaLootDrop(pickRandom(entries, random))] : [];
 }
 
-function canHeroReceiveBossLootEntry(hero: HeroState, entry: ArenaLootTableEntry): boolean {
+function rollRandomEnemyCombatLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
+  const encounter = combat.encounter;
+
+  if (!encounter || !canRollRandomEnemyEquipmentLoot(encounter)) {
+    return [];
+  }
+
+  const entries = createRandomEnemyEquipmentLootEntries(encounter.opponentId, combat.enemy.equipment)
+    .filter((candidate) => canHeroReceiveEquipmentLootEntry(hero, candidate));
+
+  if (entries.length === 0 || random() >= RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE) {
+    return [];
+  }
+
+  return [createArenaLootDrop(pickRandom(entries, random))];
+}
+
+function canRollRandomEnemyEquipmentLoot(encounter: NonNullable<CombatState["encounter"]>): boolean {
+  return encounter.kind === "random" && encounter.id.startsWith("random:");
+}
+
+function canHeroReceiveEquipmentLootEntry(hero: HeroState, entry: ArenaLootTableEntry): boolean {
   const itemIds = getValidArenaLootEntryItemIds(entry);
 
   return itemIds.length > 0 && !itemIds.some((itemId) => isHeroItemOwned(hero, itemId));
 }
 
-function createGuaranteedBossLootDrop(entry: ArenaLootTableEntry): ArenaLootDrop {
+function createArenaLootDrop(entry: ArenaLootTableEntry): ArenaLootDrop {
   const itemIds = getValidArenaLootEntryItemIds(entry);
   const itemId = itemIds[0]!;
 
@@ -2722,6 +2748,93 @@ function createGuaranteedBossLootDrop(entry: ArenaLootTableEntry): ArenaLootDrop
     sourceId: entry.id,
     itemId,
     ...(itemIds.length > 1 ? { itemIds } : {}),
+    quantity: 1,
+  };
+}
+
+function createRandomEnemyEquipmentLootEntries(sourceId: string, equipment: HeroEquipment | undefined): ArenaLootTableEntry[] {
+  if (!equipment) {
+    return [];
+  }
+
+  const usedSlots = new Set<HeroEquipmentSlotKey>();
+  const entries: ArenaLootTableEntry[] = [];
+
+  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
+    if (usedSlots.has(slotKey)) {
+      return;
+    }
+
+    const pairedEntry = createRandomEnemyPairedArmorLootEntry(sourceId, equipment, slotKey);
+
+    if (pairedEntry) {
+      const pairConfig = PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
+
+      if (pairConfig) {
+        usedSlots.add(pairConfig.backSlot);
+        usedSlots.add(pairConfig.frontSlot);
+      }
+
+      entries.push(pairedEntry);
+      return;
+    }
+
+    const itemId = getLootableEnemyEquipmentItemId(equipment, slotKey);
+
+    if (!itemId) {
+      return;
+    }
+
+    usedSlots.add(slotKey);
+    entries.push(createArenaLootTableEntry(sourceId, [itemId], RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE));
+  });
+
+  return entries;
+}
+
+function createRandomEnemyPairedArmorLootEntry(
+  sourceId: string,
+  equipment: HeroEquipment,
+  slotKey: HeroEquipmentSlotKey,
+): ArenaLootTableEntry | undefined {
+  const pairConfig = PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.backSlot === slotKey);
+
+  if (!pairConfig) {
+    return undefined;
+  }
+
+  const backItemId = getLootableEnemyEquipmentItemId(equipment, pairConfig.backSlot);
+  const frontItemId = getLootableEnemyEquipmentItemId(equipment, pairConfig.frontSlot);
+  const backItem = backItemId ? HERO_ITEM_CATALOG[backItemId] : undefined;
+  const frontItem = frontItemId ? HERO_ITEM_CATALOG[frontItemId] : undefined;
+
+  if (!backItemId || !frontItemId || !backItem || !frontItem || backItem.kind !== "armor" || frontItem.kind !== "armor") {
+    return undefined;
+  }
+
+  if (getPairedArmorItemKey(backItem, pairConfig) !== getPairedArmorItemKey(frontItem, pairConfig)) {
+    return undefined;
+  }
+
+  return createArenaLootTableEntry(sourceId, [backItemId, frontItemId], RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE);
+}
+
+function getLootableEnemyEquipmentItemId(equipment: HeroEquipment, slotKey: HeroEquipmentSlotKey): HeroItemId | undefined {
+  const itemId = equipment[slotKey];
+  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  if (!itemId || !item || item.equipmentSlot !== slotKey || isHeroConsumableItem(item)) {
+    return undefined;
+  }
+
+  return item.kind === "weapon" || item.kind === "armor" ? itemId : undefined;
+}
+
+function createArenaLootTableEntry(sourceId: string, itemIds: readonly HeroItemId[], chance: number): ArenaLootTableEntry {
+  return {
+    id: `${sourceId}_${itemIds.join("_")}_drop`,
+    itemIds: [...itemIds],
+    chance,
     quantity: 1,
   };
 }

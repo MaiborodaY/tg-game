@@ -61,8 +61,8 @@ const SHIELD_BALANCE_EXPECTATIONS = new Map([
   ["generated_equipment_shield_epic_02", { rarity: "epic", armor: 165, price: 1250, level: 60 }],
   ["generated_equipment_shield_legendary_01", { rarity: "legendary", armor: 220, price: 1800, level: 70 }],
   ["generated_equipment_shield_legendary_02", { rarity: "legendary", armor: 290, price: 2500, level: 80 }],
-  ["generated_equipment_shield_mythical_01", { rarity: "mythical", armor: 380, shop: false }],
-  ["generated_equipment_shield_mythical_02", { rarity: "mythical", armor: 500, shop: false }],
+  ["generated_equipment_shield_mythical_01", { rarity: "mythical", armor: 220, shop: false }],
+  ["generated_equipment_shield_mythical_02", { rarity: "mythical", armor: 250, shop: false }],
 ]);
 
 const WEAPON_LEVEL_REQUIREMENT_EXPECTATIONS = new Map([
