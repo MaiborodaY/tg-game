@@ -51,6 +51,7 @@ button {
 }
 
 .shell {
+  position: relative;
   width: min(430px, 100vw);
   min-height: 100dvh;
   margin: 0 auto;
@@ -276,42 +277,100 @@ body.arena-sharp-rendering .debug-character-viewer canvas {
 
 .auto-battle-toggle {
   position: absolute;
-  right: max(10px, calc(env(safe-area-inset-right) + 10px));
-  top: max(10px, calc(env(safe-area-inset-top) + 10px));
+  left: 50%;
+  top: max(122px, calc(env(safe-area-inset-top) + 116px));
   z-index: 8;
-  min-width: 58px;
-  height: 34px;
-  padding: 0 10px;
-  border: 2px solid rgba(53, 24, 13, 0.92);
-  border-radius: 8px;
+  min-width: 70px;
+  height: 24px;
+  padding: 0 12px;
+  border: 2px solid rgba(255, 217, 118, 0.76);
+  border-radius: 999px;
   color: #f8df9d;
   background:
-    linear-gradient(180deg, rgba(126, 74, 32, 0.9) 0%, rgba(82, 36, 17, 0.92) 58%, rgba(42, 15, 8, 0.95) 100%);
+    linear-gradient(180deg, rgba(93, 48, 20, 0.86) 0%, rgba(52, 20, 9, 0.9) 58%, rgba(22, 7, 4, 0.92) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 232, 167, 0.32),
-    inset 0 -4px 0 rgba(35, 10, 4, 0.3),
-    0 2px 0 rgba(20, 6, 3, 0.6);
-  font: 900 0.72rem/1 Georgia, "Times New Roman", serif;
+    inset 0 1px 0 rgba(255, 232, 167, 0.26),
+    inset 0 -3px 0 rgba(35, 10, 4, 0.24),
+    0 2px 0 rgba(20, 6, 3, 0.56),
+    0 0 8px rgba(255, 190, 75, 0.16);
+  font: 900 0.66rem/1 Georgia, "Times New Roman", serif;
   letter-spacing: 0;
   text-shadow: 0 1px 1px rgba(26, 7, 3, 0.88);
   pointer-events: auto;
+  transform: translateX(-50%);
 }
 
 .auto-battle-toggle--active {
-  color: #fff1b8;
-  border-color: rgba(255, 218, 132, 0.88);
-  background:
-    linear-gradient(180deg, rgba(194, 132, 54, 0.95) 0%, rgba(128, 61, 24, 0.95) 58%, rgba(72, 24, 10, 0.96) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 242, 188, 0.42),
-    inset 0 -4px 0 rgba(60, 18, 6, 0.32),
-    0 0 9px rgba(255, 188, 67, 0.22),
-    0 2px 0 rgba(20, 6, 3, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-7px) scale(0.94);
 }
 
 .auto-battle-toggle:disabled {
   opacity: 0.48;
   filter: saturate(0.65) brightness(0.78);
+  pointer-events: none;
+}
+
+.auto-battle-toggle.auto-battle-toggle--active:disabled {
+  opacity: 0;
+  filter: none;
+  transform: translateX(-50%) translateY(-7px) scale(0.94);
+}
+
+.auto-battle-off-button {
+  position: absolute;
+  left: 50%;
+  bottom: max(42px, calc(env(safe-area-inset-bottom) + 42px));
+  z-index: 9;
+  min-width: 132px;
+  height: 56px;
+  padding: 0 24px;
+  border: 3px solid rgba(255, 224, 139, 0.86);
+  border-radius: 16px;
+  color: #fff2b8;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 229, 155, 0.24), transparent 46%),
+    linear-gradient(180deg, rgba(125, 57, 24, 0.96), rgba(71, 23, 11, 0.98) 56%, rgba(29, 8, 4, 0.98));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 240, 185, 0.32),
+    inset 0 -7px 0 rgba(20, 5, 2, 0.32),
+    0 5px 0 rgba(11, 3, 1, 0.72),
+    0 0 18px rgba(255, 171, 62, 0.18);
+  font: 900 1rem/1 Georgia, "Times New Roman", serif;
+  letter-spacing: 0;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow:
+    1px 1px 0 #1b0703,
+    0 0 8px rgba(255, 219, 124, 0.22);
+  transform: translateX(-50%) translateY(16px) scale(0.92);
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    filter 300ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    transform 320ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    visibility 0ms linear 320ms;
+  visibility: hidden;
+}
+
+.battle-screen--auto-battle-active .auto-battle-off-button {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    filter 300ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    transform 320ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    visibility 0ms linear 0ms;
+  visibility: visible;
+}
+
+.auto-battle-off-button:active:not(:disabled) {
+  filter: brightness(0.94) saturate(0.96);
+  transform: translateX(-50%) translateY(4px) scale(0.98);
+}
+
+.auto-battle-off-button:disabled {
   pointer-events: none;
 }
 
@@ -2634,6 +2693,7 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 .battle-screen .stage-restart,
 .battle-screen .arena-menu,
 .battle-screen .auto-battle-toggle,
+.battle-screen .auto-battle-off-button,
 .classic-action-bar,
 .action-arc,
 .battle-ui .arena-fighters-strip {
@@ -2684,6 +2744,10 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   pointer-events: none;
   transform: translateY(-42px) scale(0.96);
   transition-duration: 520ms, 520ms, 620ms;
+}
+
+.battle-screen--finished .auto-battle-toggle {
+  transform: translateX(-50%) translateY(-42px) scale(0.96);
 }
 
 .battle-screen--arena-entry .auto-battle-toggle,
@@ -3579,6 +3643,14 @@ body.debug-active .city-menu__portrait-button:active {
   gap: 8px;
 }
 
+.city-arena-menu__fight-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
 .city-arena-menu__fight,
 .city-arena-menu__boss {
   --arena-banner-left: 12px;
@@ -3607,6 +3679,57 @@ body.debug-active .city-menu__portrait-button:active {
     0 3px 0 rgba(8, 2, 1, 0.7);
   text-align: left;
   cursor: pointer;
+}
+
+.city-arena-menu__auto-fight {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto auto;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 86px;
+  padding: 10px 5px;
+  border: 2px solid #1a0803;
+  border-radius: 8px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 229, 161, 0.2), transparent 38%),
+    linear-gradient(180deg, rgba(116, 61, 28, 0.92), rgba(38, 13, 6, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.22),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.24),
+    0 3px 0 rgba(8, 2, 1, 0.7);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 1px 2px 0 rgba(22, 7, 3, 0.82);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.city-arena-menu__auto-fight output {
+  min-width: 0;
+  color: #e0b96f;
+  font: inherit;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-arena-menu__auto-fight--safe output {
+  color: #c9f28d;
+}
+
+.city-arena-menu__auto-fight--risky output {
+  color: #ffd36f;
+}
+
+.city-arena-menu__auto-fight--danger output {
+  color: #ff9a7b;
 }
 
 .city-arena-menu__fight::before,
@@ -3768,13 +3891,15 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__fight:hover,
 .city-arena-menu__boss:hover,
-.city-arena-menu__boss-duo:hover {
+.city-arena-menu__boss-duo:hover,
+.city-arena-menu__auto-fight:hover {
   filter: brightness(1.07);
 }
 
 .city-arena-menu__fight:disabled,
 .city-arena-menu__boss:disabled,
-.city-arena-menu__boss-duo:disabled {
+.city-arena-menu__boss-duo:disabled,
+.city-arena-menu__auto-fight:disabled {
   cursor: not-allowed;
   filter: saturate(0.68) brightness(0.76);
   opacity: 0.72;
@@ -3783,6 +3908,7 @@ body.debug-active .city-menu__portrait-button:active {
 .city-arena-menu__fight:active,
 .city-arena-menu__boss:active,
 .city-arena-menu__boss-duo:active,
+.city-arena-menu__auto-fight:active,
 .city-arena-menu__close:active {
   transform: translateY(2px);
 }
@@ -12394,6 +12520,87 @@ body.arena-active .shell {
   background: #a75a1f;
 }
 
+.battle-screen--auto-result-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  min-height: 100%;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.battle-screen--auto-result-overlay::after {
+  content: none;
+}
+
+.battle-screen--auto-result-overlay .status-strip,
+.battle-screen--auto-result-overlay .arena-menu,
+.battle-screen--auto-result-overlay .combat-toast {
+  display: none;
+}
+
+.battle-screen--auto-result-overlay .stage-panel::before,
+.battle-screen--auto-result-overlay .stage-panel::after {
+  content: none;
+}
+
+.battle-screen--auto-result-overlay .game-frame,
+.battle-screen--auto-result-overlay .battle-ui,
+.battle-screen--auto-result-overlay .classic-action-bar {
+  display: none;
+}
+
+.battle-screen--auto-result-overlay .result-banner {
+  z-index: 41;
+  pointer-events: auto;
+}
+
+.battle-screen--auto-result-overlay .result-banner.battle-result--loot {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__frame {
+  animation: battle-result-panel-in 200ms 0ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__eyebrow {
+  animation: battle-result-plaque-in 200ms 30ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__title {
+  animation: battle-result-title-in 200ms 55ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__reward {
+  animation: battle-result-reward-in 180ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__reward:nth-child(1) {
+  animation-delay: 90ms;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__reward:nth-child(2) {
+  animation-delay: 130ms;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__reward .battle-result__icon {
+  animation: battle-result-icon-pop 260ms 140ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__xp {
+  animation: battle-result-reward-in 200ms 170ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__xp-fill {
+  animation: battle-result-xp-glow 640ms 240ms ease-out both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating .battle-result__button {
+  animation: battle-result-button-in 200ms 210ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
 .battle-screen::after {
   content: "";
   position: absolute;
@@ -16329,6 +16536,59 @@ body.debug-active .action-arc__center {
     inset 0 -2px 0 rgba(11, 3, 1, 0.48),
     0 1px 0 #170804,
     0 0 0 2px rgba(255, 199, 107, 0.08);
+}
+
+.battle-screen--auto-battle-active .classic-action-bar {
+  filter: saturate(0.58) brightness(0.66);
+}
+
+.battle-screen--auto-battle-active .classic-action-bar__wheel-shadow {
+  opacity: 0.52;
+  transition: opacity 320ms cubic-bezier(0.2, 0.82, 0.2, 1);
+}
+
+.battle-screen--auto-battle-active .classic-action-bar__wheel::before,
+.battle-screen--auto-battle-active .classic-action-bar__wheel::after {
+  filter: saturate(0.62) brightness(0.72);
+  transition:
+    filter 320ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    box-shadow 320ms cubic-bezier(0.2, 0.82, 0.2, 1);
+}
+
+.battle-screen--auto-battle-active .classic-action-bar .action-arc__button,
+.battle-screen--auto-battle-active .classic-action-bar .classic-action-bar__chance,
+.battle-screen--auto-battle-active .classic-action-bar .classic-action-bar__cost {
+  opacity: 0;
+  pointer-events: none;
+  transform:
+    translate(calc(-50% + var(--classic-slot-x, 0px)), calc(-50% + var(--classic-slot-y, 0px) + 16px))
+    rotate(var(--classic-slot-rotation, 0deg))
+    scale(calc(var(--action-button-scale, 1) * 0.82));
+  transition:
+    filter 260ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    opacity 260ms cubic-bezier(0.2, 0.82, 0.2, 1),
+    visibility 0ms linear 260ms,
+    transform 300ms cubic-bezier(0.2, 0.82, 0.2, 1);
+}
+
+.battle-screen--auto-battle-active .classic-action-bar .classic-action-bar__chance {
+  transform:
+    translate(calc(-50% + var(--classic-chance-x, 0px)), calc(-50% + var(--classic-chance-y, -40px) + 10px))
+    rotate(var(--classic-chance-counter-rotation, 0deg))
+    scale(0.88);
+}
+
+.battle-screen--auto-battle-active .classic-action-bar .classic-action-bar__cost {
+  transform:
+    translate(calc(-50% + var(--classic-cost-x, 0px)), calc(-50% + var(--classic-cost-y, 0px) + 10px))
+    rotate(var(--classic-cost-counter-rotation, 0deg))
+    scale(0.88);
+}
+
+.battle-screen--auto-battle-active:not(.battle-screen--auto-battle-transitioning) .classic-action-bar .action-arc__button,
+.battle-screen--auto-battle-active:not(.battle-screen--auto-battle-transitioning) .classic-action-bar .classic-action-bar__chance,
+.battle-screen--auto-battle-active:not(.battle-screen--auto-battle-transitioning) .classic-action-bar .classic-action-bar__cost {
+  visibility: hidden;
 }
 
 body.arena-low-effects .classic-action-bar__wheel {

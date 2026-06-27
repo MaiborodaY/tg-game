@@ -186,6 +186,35 @@ test("player auto action attacks in clinch and rests when exhausted", () => {
   assert.equal(restedState.player.stamina, 5);
 });
 
+test("auto combat resolves a simple winning fight", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MELEE_RANGE);
+  state.enemy.hp = 1;
+  state.enemy.armor = 0;
+  state.enemy.maxArmor = 0;
+
+  const resolved = combat.resolveAutoCombat(state, {
+    maxTurns: 10,
+    random: () => 0.99,
+  });
+
+  assert.equal(resolved.result, "win");
+});
+
+test("auto combat turn limit resolves as a loss", () => {
+  const state = combat.freshState();
+
+  setConsistentDistance(state, combat.MAX_DISTANCE);
+
+  const resolved = combat.resolveAutoCombat(state, {
+    maxTurns: 1,
+    random: () => 0.99,
+  });
+
+  assert.equal(resolved.result, "lose");
+});
+
 test("attacks define base block chances", () => {
   assert.equal(combat.actions.lunge.blockChance, 0.5);
   assert.equal(combat.actions.light.blockChance, 0.25);

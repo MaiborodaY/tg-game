@@ -28,7 +28,7 @@ import {
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { isDuoBossAiCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
 import { DAILY_ARENA_ENERGY_ICON_ASSET_URL, pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation, type BattleResultPresentationStage } from "./domUi";
@@ -115,12 +115,18 @@ const cityArenaTierSelect = document.querySelector<HTMLSelectElement>("#cityAren
 const cityArenaEasyReward = document.querySelector<HTMLElement>("#cityArenaEasyReward");
 const cityArenaEasyButton = document.querySelector<HTMLButtonElement>("#cityArenaEasyButton");
 const cityArenaEasyName = cityArenaEasyButton?.querySelector<HTMLElement>("strong");
+const cityArenaEasyAutoButton = document.querySelector<HTMLButtonElement>("#cityArenaEasyAutoButton");
+const cityArenaEasyAutoRate = document.querySelector<HTMLElement>("#cityArenaEasyAutoRate");
 const cityArenaRandomReward = document.querySelector<HTMLElement>("#cityArenaRandomReward");
 const cityArenaRandomButton = document.querySelector<HTMLButtonElement>("#cityArenaRandomButton");
 const cityArenaRandomName = cityArenaRandomButton?.querySelector<HTMLElement>("strong");
+const cityArenaRandomAutoButton = document.querySelector<HTMLButtonElement>("#cityArenaRandomAutoButton");
+const cityArenaRandomAutoRate = document.querySelector<HTMLElement>("#cityArenaRandomAutoRate");
 const cityArenaHardReward = document.querySelector<HTMLElement>("#cityArenaHardReward");
 const cityArenaHardButton = document.querySelector<HTMLButtonElement>("#cityArenaHardButton");
 const cityArenaHardName = cityArenaHardButton?.querySelector<HTMLElement>("strong");
+const cityArenaHardAutoButton = document.querySelector<HTMLButtonElement>("#cityArenaHardAutoButton");
+const cityArenaHardAutoRate = document.querySelector<HTMLElement>("#cityArenaHardAutoRate");
 const cityArenaBossList = document.querySelector<HTMLElement>("#cityArenaBossList");
 const cityPvpCreateButton = document.querySelector<HTMLButtonElement>("#cityPvpCreateButton");
 const cityPvpJoinButton = document.querySelector<HTMLButtonElement>("#cityPvpJoinButton");
@@ -146,6 +152,15 @@ interface StartGameOptions {
 interface ReturnToCityOptions {
   requireResultGate?: boolean;
 }
+interface CityArenaAutoRateTarget {
+  button: HTMLButtonElement | null;
+  output: HTMLElement | null;
+  selection: ArenaMenuSelection;
+}
+interface PendingCityArenaAutoRateTarget extends CityArenaAutoRateTarget {
+  cacheKey: string;
+  sourceHero: HeroState;
+}
 let hero: HeroState = createInitialHero();
 let pendingBossEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -156,8 +171,11 @@ let arenaScene: ArenaScene | undefined;
 let actionArc: ActionArcApi | undefined;
 let classicActionBar: ClassicActionBarApi | undefined;
 let autoBattleButton: HTMLButtonElement | undefined;
+let autoBattleOffButton: HTMLButtonElement | undefined;
 let autoBattleEnabled = false;
+let autoBattleActivationPending = false;
 let autoBattleScheduleToken = 0;
+let autoBattleActivationTimer: number | undefined;
 let turnSequenceToken = 0;
 let isTurnAnimationLocked = false;
 let enemyTimerStatus: EnemyTimerStatus = "idle";
@@ -197,6 +215,7 @@ const TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS = new Set(["http://localhost:
 const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
+const AUTO_RESULT_RETURN_LABEL = "Return";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_RANDOM_ENERGY_COST = 1;
 const ARENA_BOSS_ENERGY_COST = 2;
@@ -204,6 +223,9 @@ const ARENA_DUO_BOSS_ENERGY_COST = 3;
 const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 const AUTO_PLAYER_TURN_PACING_MS = 120;
+const AUTO_BATTLE_PANEL_TRANSITION_MS = 320;
+const AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS = 50;
+const AUTO_FIGHT_MAX_TURNS = 300;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -222,6 +244,10 @@ let battleResultReturnReady = true;
 let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
 let rewardUiRenderDirty = false;
+let cityArenaAutoRateToken = 0;
+let cityArenaAutoFightPending = false;
+let isAutoResultOverlayActive = false;
+const cityArenaAutoRateCache = new Map<string, number>();
 let isCityReturnTransitionRunning = false;
 let cityReturnTransitionToken = 0;
 let shopPreviewPrewarmToken = 0;
@@ -804,28 +830,75 @@ function mountAutoBattleToggle(host: HTMLElement): HTMLButtonElement {
   return button;
 }
 
+function mountAutoBattleOffButton(host: HTMLElement): HTMLButtonElement {
+  const button = document.createElement("button");
+
+  button.className = "auto-battle-off-button";
+  button.type = "button";
+  button.textContent = "OFF";
+  button.setAttribute("aria-label", "Turn off auto battle");
+  button.setAttribute("aria-hidden", "true");
+  button.title = "Turn off auto battle";
+  button.addEventListener("click", () => setAutoBattleEnabled(false));
+  host.append(button);
+
+  return button;
+}
+
+function clearAutoBattleActivationTimer(): void {
+  if (autoBattleActivationTimer === undefined) {
+    return;
+  }
+
+  window.clearTimeout(autoBattleActivationTimer);
+  autoBattleActivationTimer = undefined;
+}
+
 function setAutoBattleEnabled(enabled: boolean): void {
-  autoBattleEnabled = enabled && gameMode !== "pvp";
+  const shouldEnable = enabled && gameMode !== "pvp";
+
+  clearAutoBattleActivationTimer();
+  autoBattleEnabled = shouldEnable;
+  autoBattleActivationPending = shouldEnable;
   autoBattleScheduleToken += 1;
   syncAutoBattleToggle();
 
-  if (autoBattleEnabled) {
-    scheduleAutoPlayerTurn();
+  if (!shouldEnable) {
+    syncActionArc();
+    return;
   }
+
+  autoBattleActivationTimer = window.setTimeout(() => {
+    autoBattleActivationTimer = undefined;
+
+    if (!autoBattleEnabled) {
+      return;
+    }
+
+    autoBattleActivationPending = false;
+    syncAutoBattleToggle();
+    scheduleAutoPlayerTurn();
+  }, AUTO_BATTLE_PANEL_TRANSITION_MS);
 }
 
 function syncAutoBattleToggle(): void {
-  if (!autoBattleButton) {
+  if (!autoBattleButton || !autoBattleOffButton) {
     return;
   }
 
   const canAutoBattle = gameMode === "pve" && !isInCity;
   const battleActive = canAutoBattle && hasStarted && state.result === "playing" && !isArenaEntryLoading;
+  const autoBattleUiActive = autoBattleEnabled && battleActive;
 
   autoBattleButton.hidden = !canAutoBattle;
-  autoBattleButton.disabled = !battleActive || isArenaEntryTransitionPlaying;
-  autoBattleButton.classList.toggle("auto-battle-toggle--active", autoBattleEnabled && battleActive);
-  autoBattleButton.setAttribute("aria-pressed", autoBattleEnabled && battleActive ? "true" : "false");
+  autoBattleButton.disabled = !battleActive || autoBattleUiActive || isArenaEntryTransitionPlaying;
+  autoBattleButton.classList.toggle("auto-battle-toggle--active", autoBattleUiActive);
+  autoBattleButton.setAttribute("aria-pressed", autoBattleUiActive ? "true" : "false");
+  autoBattleOffButton.hidden = !canAutoBattle;
+  autoBattleOffButton.disabled = !autoBattleUiActive;
+  autoBattleOffButton.setAttribute("aria-hidden", autoBattleUiActive ? "false" : "true");
+  dom.gameScreen.classList.toggle("battle-screen--auto-battle-active", autoBattleUiActive);
+  dom.gameScreen.classList.toggle("battle-screen--auto-battle-transitioning", autoBattleUiActive && autoBattleActivationPending);
 }
 
 function scheduleAutoPlayerTurn(): void {
@@ -849,6 +922,7 @@ function canRunAutoPlayerTurn(): boolean {
     && gameMode === "pve"
     && hasStarted
     && !isInCity
+    && !autoBattleActivationPending
     && !isTurnAnimationLocked
     && !isArenaEntryLoading
     && !isArenaEntryTransitionPlaying
@@ -1117,8 +1191,8 @@ function syncCityShopLayout(menuTopY?: number): void {
   cityScene?.setShopMenuTop(menuTopY);
 }
 
-function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaEncounter {
-  const encounter = selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId);
+function createArenaEncounterForSelection(selection: ArenaMenuSelection, random = Math.random): ArenaEncounter {
+  const encounter = selection.kind === "boss" ? createArenaBossEncounter(selection.bossId) : createArenaRandomEnemyEncounter(selection.tierId, selection.difficultyId, random);
 
   return {
     ...encounter,
@@ -1127,12 +1201,12 @@ function createArenaEncounterForSelection(selection: ArenaMenuSelection): ArenaE
   };
 }
 
-function createCombatStateForSelection(selection: ArenaMenuSelection): CombatState {
-  const encounter = createArenaEncounterForSelection(selection);
+function createCombatStateForSelection(selection: ArenaMenuSelection, sourceHero: HeroState = hero, random = Math.random): CombatState {
+  const encounter = createArenaEncounterForSelection(selection, random);
 
   return selection.kind === "boss" && selection.duo
-    ? createDuoBossCombatStateFromHero(hero, encounter)
-    : createCombatStateFromHero(hero, encounter);
+    ? createDuoBossCombatStateFromHero(sourceHero, encounter, random)
+    : createCombatStateFromHero(sourceHero, encounter);
 }
 
 function renderCityArenaMenu(): void {
@@ -1157,9 +1231,17 @@ function renderCityArenaMenu(): void {
   setCityArenaBotButtonEnergyCost(cityArenaEasyButton, ARENA_RANDOM_ENERGY_COST);
   setCityArenaBotButtonEnergyCost(cityArenaRandomButton, ARENA_RANDOM_ENERGY_COST);
   setCityArenaBotButtonEnergyCost(cityArenaHardButton, ARENA_RANDOM_ENERGY_COST);
+  setCityArenaBotButtonEnergyCost(cityArenaEasyAutoButton, ARENA_RANDOM_ENERGY_COST);
+  setCityArenaBotButtonEnergyCost(cityArenaRandomAutoButton, ARENA_RANDOM_ENERGY_COST);
+  setCityArenaBotButtonEnergyCost(cityArenaHardAutoButton, ARENA_RANDOM_ENERGY_COST);
   syncCityArenaReward(cityArenaEasyReward, easyOpponent?.rewards.win ?? { gold: 4, xp: 4 });
   syncCityArenaReward(cityArenaRandomReward, randomOpponent?.rewards.win ?? { gold: 8, xp: 6 });
   syncCityArenaReward(cityArenaHardReward, hardOpponent?.rewards.win ?? { gold: 15, xp: 10 });
+  scheduleCityArenaAutoRates([
+    { button: cityArenaEasyAutoButton, output: cityArenaEasyAutoRate, selection: { kind: "random", tierId: tier.id, difficultyId: "easy" } },
+    { button: cityArenaRandomAutoButton, output: cityArenaRandomAutoRate, selection: { kind: "random", tierId: tier.id, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID } },
+    { button: cityArenaHardAutoButton, output: cityArenaHardAutoRate, selection: { kind: "random", tierId: tier.id, difficultyId: "hard" } },
+  ]);
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
   syncCityArenaBotControls();
 }
@@ -1177,6 +1259,155 @@ function syncCityArenaFightTitle(title: HTMLElement | null | undefined, label: s
   text.textContent = label;
   cost.classList.add("city-arena-menu__fight-cost");
   title.replaceChildren(text, cost);
+}
+
+function scheduleCityArenaAutoRates(targets: readonly CityArenaAutoRateTarget[]): void {
+  const token = ++cityArenaAutoRateToken;
+  const sourceHero = hero;
+  const pendingTargets: PendingCityArenaAutoRateTarget[] = [];
+
+  targets.forEach((target) => {
+    if (!target.button || !target.output) {
+      return;
+    }
+
+    const cacheKey = getCityArenaAutoRateCacheKey(target.selection, sourceHero);
+    const cachedRate = cityArenaAutoRateCache.get(cacheKey);
+
+    target.button.dataset.autoFightRateKey = cacheKey;
+
+    if (cachedRate === undefined) {
+      syncCityArenaAutoRate(target, undefined);
+      pendingTargets.push({ ...target, cacheKey, sourceHero });
+      return;
+    }
+
+    syncCityArenaAutoRate(target, cachedRate);
+  });
+
+  if (pendingTargets.length <= 0) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => computeNextCityArenaAutoRate(token, pendingTargets, 0));
+}
+
+function computeNextCityArenaAutoRate(token: number, targets: readonly PendingCityArenaAutoRateTarget[], index: number): void {
+  if (token !== cityArenaAutoRateToken || index >= targets.length) {
+    return;
+  }
+
+  const target = targets[index];
+  const rate = estimateCityArenaAutoSuccessRate(target.selection, target.cacheKey, target.sourceHero);
+
+  cityArenaAutoRateCache.set(target.cacheKey, rate);
+
+  if (target.button?.dataset.autoFightRateKey === target.cacheKey) {
+    syncCityArenaAutoRate(target, rate);
+  }
+
+  window.requestAnimationFrame(() => computeNextCityArenaAutoRate(token, targets, index + 1));
+}
+
+function syncCityArenaAutoRate(target: CityArenaAutoRateTarget, rate: number | undefined): void {
+  if (!target.output || !target.button) {
+    return;
+  }
+
+  const displayRate = rate === undefined ? undefined : getCityArenaAutoRateDisplayValue(rate);
+  const label = displayRate === undefined ? "..." : `${displayRate}%`;
+
+  target.output.textContent = label;
+  target.button.dataset.autoFightRate = rate === undefined ? "" : `${rate}`;
+  target.button.setAttribute(
+    "aria-label",
+    displayRate === undefined ? "Auto fight. Estimating success chance." : `Auto fight. Estimated success chance ${displayRate} percent.`,
+  );
+  target.button.title = getCityArenaAutoFightTitle(target.button, rate);
+  target.button.classList.toggle("city-arena-menu__auto-fight--safe", typeof rate === "number" && rate >= 75);
+  target.button.classList.toggle("city-arena-menu__auto-fight--risky", typeof rate === "number" && rate >= 40 && rate < 75);
+  target.button.classList.toggle("city-arena-menu__auto-fight--danger", typeof rate === "number" && rate < 40);
+}
+
+function getCityArenaAutoRateDisplayValue(rate: number): number {
+  const clampedRate = Math.max(0, Math.min(100, rate));
+
+  if (clampedRate <= 0) {
+    return 0;
+  }
+
+  return Math.min(95, Math.max(5, Math.round(clampedRate / 5) * 5));
+}
+
+function getCityArenaAutoFightTitle(button: HTMLButtonElement, rate?: number): string {
+  const disabledTitle = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
+
+  if (disabledTitle) {
+    return disabledTitle;
+  }
+
+  const displayRate = rate === undefined ? undefined : getCityArenaAutoRateDisplayValue(rate);
+
+  return rate === undefined
+    ? "Instantly resolve this fight with auto battle."
+    : `Instantly resolve this fight. Estimated auto success: ${displayRate}%.`;
+}
+
+function estimateCityArenaAutoSuccessRate(selection: ArenaMenuSelection, cacheKey: string, sourceHero: HeroState): number {
+  let wins = 0;
+
+  for (let attempt = 0; attempt < AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS; attempt += 1) {
+    const random = createSeededRandom(`${cacheKey}:${attempt}`);
+    const initialState = createCombatStateForSelection(selection, sourceHero, random);
+    const result = resolveAutoCombat(initialState, {
+      maxTurns: AUTO_FIGHT_MAX_TURNS,
+      random,
+    });
+
+    if (result.result === "win") {
+      wins += 1;
+    }
+  }
+
+  return Math.round((wins / AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS) * 100);
+}
+
+function getCityArenaAutoRateCacheKey(selection: ArenaMenuSelection, sourceHero: HeroState = hero): string {
+  return JSON.stringify({
+    hero: getCityArenaAutoRateHeroSignature(sourceHero),
+    selection,
+    simulations: AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS,
+    maxTurns: AUTO_FIGHT_MAX_TURNS,
+  });
+}
+
+function getCityArenaAutoRateHeroSignature(sourceHero: HeroState): unknown {
+  return {
+    level: sourceHero.level,
+    baseStats: sourceHero.baseStats,
+    equipment: sourceHero.equipment,
+    weaponEnchantments: sourceHero.weaponEnchantments,
+    bowShotCapacity: sourceHero.bowShotCapacity,
+    stats: deriveHeroStats(sourceHero),
+  };
+}
+
+function createSeededRandom(seedText: string): () => number {
+  let seed = 0x811c9dc5;
+
+  for (let index = 0; index < seedText.length; index += 1) {
+    seed ^= seedText.charCodeAt(index);
+    seed = Math.imul(seed, 0x01000193) >>> 0;
+  }
+
+  return () => {
+    seed = (seed + 0x6d2b79f5) >>> 0;
+    let value = seed;
+
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function getVisibleCityArenaTiers(): ArenaTierDefinition[] {
@@ -1371,6 +1602,18 @@ function syncCityArenaBotControls(): void {
     button.disabled = disabled;
     button.title = title;
   });
+  [cityArenaEasyAutoButton, cityArenaRandomAutoButton, cityArenaHardAutoButton].forEach((button) => {
+    if (!button) {
+      return;
+    }
+    const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
+    const disabled = Boolean(title);
+    const rateText = button.dataset.autoFightRate;
+    const rate = rateText ? Number(rateText) : undefined;
+
+    button.disabled = disabled;
+    button.title = title || getCityArenaAutoFightTitle(button, typeof rate === "number" && Number.isFinite(rate) ? rate : undefined);
+  });
   cityArenaBossList?.querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]").forEach((button) => {
     const title = getCityArenaBotDisabledTitle(getCityArenaBotButtonEnergyCost(button));
     const bossTierLimitTitle = title ? "" : getCityArenaBossVictoryLimitTitle(Number(button.dataset.cityArenaBossTierId));
@@ -1406,6 +1649,10 @@ function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): st
 
   if (arenaEnergySpendPending) {
     return "Spending arena energy...";
+  }
+
+  if (cityArenaAutoFightPending) {
+    return "Resolving auto fight...";
   }
 
   const currentArenaEnergy = getHeroArenaEnergy(hero).current;
@@ -1853,6 +2100,144 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   void startGameWithCityTransition({ initialState });
 }
 
+async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<void> {
+  if (cityArenaAutoFightPending) {
+    return;
+  }
+
+  if (isPvpRoomBlockingArena()) {
+    setPvpStatus("Cancel PvP room before fighting bots.");
+    syncPvpControls();
+    return;
+  }
+
+  if (selection.kind === "boss") {
+    const limitTitle = getArenaSelectionBossVictoryLimitTitle(selection);
+
+    if (limitTitle) {
+      renderCityArenaMenu();
+      window.alert(limitTitle);
+      return;
+    }
+  }
+
+  cityArenaAutoFightPending = true;
+  syncCityArenaBotControls();
+
+  try {
+    const hasEnergy = await spendArenaEnergyForSelectedArena(selection);
+
+    if (!hasEnergy) {
+      return;
+    }
+
+    leavePvpRoom();
+    gameMode = "pve";
+    syncRestartButtonVisibility();
+    activeArenaSelection = selection;
+
+    const random = Math.random;
+    const initialState = createCombatStateForSelection(selection, hero, random);
+    const resolvedState = resolveAutoCombat(initialState, {
+      maxTurns: AUTO_FIGHT_MAX_TURNS,
+      random,
+    });
+    const rewardTimestamp = new Date().toISOString();
+    const rewardApplication = applyCombatReward(hero, resolvedState, rewardTimestamp);
+    const { loot, heroAfterReward } = rewardApplication;
+
+    hero = heroAfterReward;
+    rememberBossEquipmentHint(resolvedState, loot);
+    saveLocalHeroSave(hero);
+    queueHeroCloudSave("auto-fight-result");
+    presentAutoResolvedArenaResult(resolvedState, rewardApplication);
+  } finally {
+    cityArenaAutoFightPending = false;
+    if (isInCity && !isAutoResultOverlayActive) {
+      renderCityArenaMenu();
+    }
+    syncCityArenaBotControls();
+  }
+}
+
+function presentAutoResolvedArenaResult(combat: CombatState, presentation: Omit<BattleResultPresentation, "id">): void {
+  cancelArenaEntryGate();
+  cityHeroProfile?.close();
+  clearShopPreview();
+  setArenaMenuOpen(false);
+  turnSequenceToken += 1;
+  setTurnAnimationLocked(false);
+  resetBattleResultReturnGate();
+  battleResultReturnReady = true;
+  battleResultReturnLabel = AUTO_RESULT_RETURN_LABEL;
+  battleResultPresentation = {
+    id: `battle-result-${++battleResultPresentationId}`,
+    instant: true,
+    ...presentation,
+  };
+  pendingBattleResultPresentation = undefined;
+  battleResultPresentationStage = getInitialBattleResultPresentationStage(battleResultPresentation);
+  battleResultPresentationRevealToken += 1;
+  state = combat;
+  displayedStatsState = combat;
+  gameMode = "pve";
+  isArenaTransitionRunning = false;
+  isInCity = true;
+  isAutoResultOverlayActive = true;
+  enemyTimerStatus = "idle";
+  lastActionClick = "auto-fight";
+  syncRestartButtonVisibility(false);
+  dom.mainMenu.hidden = false;
+  dom.gameScreen.hidden = false;
+  dom.startButton.disabled = false;
+  dom.gameScreen.classList.remove("battle-screen--arena-entry", "battle-screen--arena-entry-loading");
+  dom.gameScreen.classList.add("battle-screen--auto-result-overlay");
+  cityMenu?.classList.remove("city-menu--arena-transition");
+  cityMenu?.classList.add("city-menu--arena-select-open");
+  document.body.classList.remove("arena-active");
+  syncPlayerCityBodyScale();
+  setPlayerEquipment(hero.equipment);
+  setPlayerAppearance(hero.appearance);
+  setPlayerWeaponEnchantments(hero.weaponEnchantments);
+  renderCityHero();
+  renderCurrentDom();
+  syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
+  heroPortraitPreview?.setEquipment(hero.equipment);
+  heroPortraitPreview?.setAppearance(hero.appearance);
+  syncTurnProbe();
+}
+
+function closeAutoResolvedArenaResult(): void {
+  if (!isAutoResultOverlayActive) {
+    return;
+  }
+
+  isAutoResultOverlayActive = false;
+  resetBattleResultReturnGate();
+  battleResultPresentation = undefined;
+  pendingBattleResultPresentation = undefined;
+  battleResultPresentationStage = "reward";
+  battleResultPresentationRevealToken += 1;
+  state = createCombatStateForSelection(activeArenaSelection);
+  displayedStatsState = state;
+  gameMode = "pve";
+  isInCity = true;
+  enemyTimerStatus = "idle";
+  lastActionClick = "none";
+  syncRestartButtonVisibility();
+  dom.gameScreen.hidden = true;
+  dom.gameScreen.classList.remove("battle-screen--auto-result-overlay", "battle-screen--finished", "battle-screen--arena-entry", "battle-screen--arena-entry-loading");
+  dom.mainMenu.hidden = false;
+  dom.startButton.disabled = false;
+  cityMenu?.classList.add("city-menu--arena-select-open");
+  document.body.classList.remove("arena-active");
+  renderCityHero();
+  renderCurrentDom();
+  syncCityArenaBotControls();
+  syncTurnProbe();
+}
+
 function getArenaSelectionBossVictoryLimitTitle(selection: ArenaMenuSelection): string {
   return selection.kind === "boss" ? getCityArenaBossVictoryLimitTitle(createArenaBossEncounter(selection.bossId).tierId) : "";
 }
@@ -2123,6 +2508,7 @@ function startGame(options: StartGameOptions = {}): void {
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
   classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
   autoBattleButton = mountAutoBattleToggle(dom.gameScreen);
+  autoBattleOffButton = mountAutoBattleOffButton(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
   turnProbe = shouldMountTurnProbe() ? mountTurnProbe(dom.gameScreen) : undefined;
   if (initialState) {
@@ -2664,11 +3050,20 @@ cityArenaTierSelect?.addEventListener("change", () => {
 cityArenaEasyButton?.addEventListener("click", () => {
   void startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "easy" });
 });
+cityArenaEasyAutoButton?.addEventListener("click", () => {
+  void autoResolveSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "easy" });
+});
 cityArenaRandomButton?.addEventListener("click", () => {
   void startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID });
 });
+cityArenaRandomAutoButton?.addEventListener("click", () => {
+  void autoResolveSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID });
+});
 cityArenaHardButton?.addEventListener("click", () => {
   void startSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "hard" });
+});
+cityArenaHardAutoButton?.addEventListener("click", () => {
+  void autoResolveSelectedArena({ kind: "random", tierId: getSelectedCityArenaTier().id, difficultyId: "hard" });
 });
 cityPvpCreateButton?.addEventListener("click", () => {
   void handleCreatePvpRoom();
@@ -2685,6 +3080,11 @@ if (canShowLocalDebugRestartButton()) {
 }
 dom.cityButton.addEventListener("click", () => {
   if (continueBattleResultLootPresentation()) {
+    return;
+  }
+
+  if (isAutoResultOverlayActive) {
+    closeAutoResolvedArenaResult();
     return;
   }
 

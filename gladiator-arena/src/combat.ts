@@ -205,6 +205,7 @@ export const MIN_DISTANCE = 0;
 export const MAX_DISTANCE = 4;
 export const START_DISTANCE = 3;
 export const MELEE_RANGE = 0;
+export const DEFAULT_AUTO_COMBAT_MAX_TURNS = 300;
 export const FIREBALL_SCROLL_DAMAGE = 30;
 export const POISON_SCROLL_DAMAGE = 5;
 export const POISON_SCROLL_TURNS = 2;
@@ -1211,6 +1212,47 @@ export function resolveDuoBossHelperTurn(current: CombatState, random = Math.ran
     enemyDefender: state.enemy.name,
   });
 
+  return state;
+}
+
+export interface AutoCombatResolveOptions {
+  maxTurns?: number;
+  random?: () => number;
+}
+
+export function resolveAutoCombat(current: CombatState, options: AutoCombatResolveOptions = {}): CombatState {
+  const maxTurns = Math.max(1, Math.floor(options.maxTurns ?? DEFAULT_AUTO_COMBAT_MAX_TURNS));
+  const random = options.random ?? Math.random;
+  let state = current;
+
+  for (let turn = 0; state.result === "playing" && turn < maxTurns; turn += 1) {
+    const previousState = state;
+
+    if (state.activeTurn === "player") {
+      state = resolveAutoPlayerTurn(state, random);
+    } else if (isDuoBossAiCombat(state)) {
+      const helperState = resolveDuoBossHelperTurn(state, random);
+
+      state = helperState.result === "playing" ? resolveEnemyTurn(helperState, random) : helperState;
+    } else {
+      state = resolveEnemyTurn(state, random);
+    }
+
+    if (state === previousState) {
+      return finishAutoCombatByLimit(state, "Auto fight stalled. The crowd declares it a loss.");
+    }
+  }
+
+  return state.result === "playing"
+    ? finishAutoCombatByLimit(state, `Auto fight exceeded ${maxTurns} turns. The crowd declares it a loss.`)
+    : state;
+}
+
+function finishAutoCombatByLimit(current: CombatState, message: string): CombatState {
+  const state = cloneStateForTurn(current);
+
+  state.result = "lose";
+  addLog(state, message, true);
   return state;
 }
 

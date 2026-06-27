@@ -127,18 +127,36 @@
                 <strong id="cityArenaTierName"></strong>
               </div>
               <div class="city-arena-menu__fight-list" aria-label="Arena choices">
-                <button id="cityArenaEasyButton" class="city-arena-menu__fight city-arena-menu__fight--easy" type="button">
-                  <strong>Easy</strong>
-                  <span id="cityArenaEasyReward" class="city-arena-menu__reward"></span>
-                </button>
-                <button id="cityArenaRandomButton" class="city-arena-menu__fight city-arena-menu__fight--medium" type="button">
-                  <strong>Medium</strong>
-                  <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
-                </button>
-                <button id="cityArenaHardButton" class="city-arena-menu__fight city-arena-menu__fight--hard" type="button">
-                  <strong>Hard</strong>
-                  <span id="cityArenaHardReward" class="city-arena-menu__reward"></span>
-                </button>
+                <div class="city-arena-menu__fight-row">
+                  <button id="cityArenaEasyButton" class="city-arena-menu__fight city-arena-menu__fight--easy" type="button">
+                    <strong>Easy</strong>
+                    <span id="cityArenaEasyReward" class="city-arena-menu__reward"></span>
+                  </button>
+                  <button id="cityArenaEasyAutoButton" class="city-arena-menu__auto-fight" type="button">
+                    <span>AUTO</span>
+                    <output id="cityArenaEasyAutoRate">...</output>
+                  </button>
+                </div>
+                <div class="city-arena-menu__fight-row">
+                  <button id="cityArenaRandomButton" class="city-arena-menu__fight city-arena-menu__fight--medium" type="button">
+                    <strong>Medium</strong>
+                    <span id="cityArenaRandomReward" class="city-arena-menu__reward"></span>
+                  </button>
+                  <button id="cityArenaRandomAutoButton" class="city-arena-menu__auto-fight" type="button">
+                    <span>AUTO</span>
+                    <output id="cityArenaRandomAutoRate">...</output>
+                  </button>
+                </div>
+                <div class="city-arena-menu__fight-row">
+                  <button id="cityArenaHardButton" class="city-arena-menu__fight city-arena-menu__fight--hard" type="button">
+                    <strong>Hard</strong>
+                    <span id="cityArenaHardReward" class="city-arena-menu__reward"></span>
+                  </button>
+                  <button id="cityArenaHardAutoButton" class="city-arena-menu__auto-fight" type="button">
+                    <span>AUTO</span>
+                    <output id="cityArenaHardAutoRate">...</output>
+                  </button>
+                </div>
                 <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
               </div>
               <div class="city-arena-menu__pvp" aria-label="PvP room">

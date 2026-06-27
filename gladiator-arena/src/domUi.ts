@@ -191,6 +191,7 @@ export interface BattleResultPresentation {
   loot?: readonly ArenaLootDrop[];
   heroBeforeReward?: HeroState;
   heroAfterReward?: HeroState;
+  instant?: boolean;
 }
 
 export interface BattleResultReturnState {
@@ -579,7 +580,7 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
   dom.resultTitle.textContent = resultBannerText(state);
 
   if (presentation) {
-    animateResultPresentation(dom, presentation, Boolean(context.resultPresentationStage), shouldFastRenderRewardStage);
+    animateResultPresentation(dom, presentation, Boolean(context.resultPresentationStage), shouldFastRenderRewardStage || presentation.instant === true);
     return;
   }
 
