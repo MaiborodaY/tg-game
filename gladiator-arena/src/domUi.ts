@@ -241,10 +241,20 @@ export interface BattleResultUnlockEnergy {
   max: number;
 }
 
+export type BattleResultFeatureUnlockKind = "magic-shop";
+
+export interface BattleResultFeatureUnlock {
+  kind: BattleResultFeatureUnlockKind;
+  title: string;
+  iconUrl: string;
+  ariaLabel?: string;
+}
+
 export interface BattleResultLevelUnlocks {
   level: number;
   weapons: readonly BattleResultUnlockProduct[];
   armor: readonly BattleResultUnlockProduct[];
+  features?: readonly BattleResultFeatureUnlock[];
   energy?: BattleResultUnlockEnergy;
 }
 
@@ -1098,7 +1108,7 @@ function animateXpStage(
 
       showResultLevelNotice(dom, reachedLevel);
 
-      if (!unlocks || (unlocks.weapons.length <= 0 && unlocks.armor.length <= 0)) {
+      if (!unlocks || !hasBattleResultLevelUnlockPayload(unlocks)) {
         scheduleResultAnimation(700, () => {
           if (dom.resultLevelNotice.dataset.level === String(reachedLevel)) {
             hideResultLevelNotice(dom);
@@ -1169,38 +1179,104 @@ function getBattleResultLevelUnlocks(presentation: BattleResultPresentation, lev
 }
 
 function hasBattleResultLevelUnlocks(presentation: BattleResultPresentation): boolean {
-  return Boolean(presentation.levelUnlocks?.some((unlocks) => unlocks.weapons.length > 0 || unlocks.armor.length > 0));
+  return Boolean(presentation.levelUnlocks?.some(hasBattleResultLevelUnlockPayload));
 }
 
+function hasBattleResultLevelUnlockPayload(unlocks: BattleResultLevelUnlocks): boolean {
+  return Boolean(unlocks.features?.length) || unlocks.weapons.length > 0 || unlocks.armor.length > 0;
+}
+
+type BattleResultUnlockScreen =
+  | {
+      kind: "feature";
+      feature: BattleResultFeatureUnlock;
+    }
+  | {
+      kind: "items";
+      weapons: readonly BattleResultUnlockProduct[];
+      armor: readonly BattleResultUnlockProduct[];
+    };
+
 function renderResultUnlockPanel(dom: DomRefs, unlocks: BattleResultLevelUnlocks, onContinue: () => void): void {
-  const products = [...unlocks.weapons, ...unlocks.armor];
+  const screens = createResultUnlockScreens(unlocks);
+
+  if (screens.length <= 0) {
+    onContinue();
+    return;
+  }
 
   hideResultLevelNotice(dom);
-  dom.resultUnlockPanel.dataset.unlockCount = String(products.length);
-  dom.resultUnlockPanel.dataset.unlockDensity = products.length <= 4 ? "compact" : "list";
-  dom.resultUnlockPanel.dataset.unlockLayout = "groups";
   dom.resultUnlockPanel.hidden = false;
   dom.resultUnlockLevel.textContent = `LVL ${unlocks.level} REACHED`;
-  renderResultUnlockEnergyValue(dom, unlocks.energy?.from ?? unlocks.energy?.to ?? 0, unlocks.energy?.max ?? 0);
   dom.resultUnlockEnergyIcon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
+  renderResultUnlockScreen(dom, unlocks, screens, 0, onContinue, true);
+}
+
+function renderResultUnlockScreen(
+  dom: DomRefs,
+  unlocks: BattleResultLevelUnlocks,
+  screens: readonly BattleResultUnlockScreen[],
+  screenIndex: number,
+  onComplete: () => void,
+  animateEnergy: boolean,
+): void {
+  const screen = screens[screenIndex];
+
+  if (!screen) {
+    onComplete();
+    return;
+  }
+
+  const products = getResultUnlockScreenProducts(screen);
+  const isCompact = screen.kind === "feature" || products.length <= 4;
+
+  dom.resultUnlockPanel.dataset.unlockCount = String(screen.kind === "feature" ? 1 : products.length);
+  dom.resultUnlockPanel.dataset.unlockDensity = isCompact ? "compact" : "list";
+  dom.resultUnlockPanel.dataset.unlockScreen = screen.kind;
+  dom.resultUnlockTitle.textContent = getResultUnlockScreenTitle(screen);
+  renderResultUnlockEnergyValue(dom, unlocks.energy?.from ?? unlocks.energy?.to ?? 0, unlocks.energy?.max ?? 0);
   dom.resultUnlockEnergy.hidden = true;
   dom.resultUnlockEnergyStatus.hidden = true;
   dom.resultUnlockTitle.hidden = true;
   dom.resultUnlockContent.hidden = true;
   dom.resultUnlockContent.replaceChildren();
   dom.resultUnlockContinueButton.hidden = true;
-  dom.resultUnlockContinueButton.onclick = onContinue;
+  dom.resultUnlockContinueButton.onclick = () => {
+    if (screenIndex + 1 < screens.length) {
+      renderResultUnlockScreen(dom, unlocks, screens, screenIndex + 1, onComplete, false);
+      return;
+    }
+
+    onComplete();
+  };
+
+  const revealPayload = () => {
+    scheduleResultAnimation(220, () => {
+      dom.resultUnlockContent.replaceChildren(...createResultUnlockScreenElements(screen));
+      dom.resultUnlockTitle.hidden = false;
+      dom.resultUnlockContent.hidden = false;
+      dom.resultUnlockContinueButton.hidden = false;
+    });
+  };
+
+  if (!unlocks.energy) {
+    revealPayload();
+    return;
+  }
+
+  if (!animateEnergy) {
+    renderResultUnlockEnergyValue(dom, unlocks.energy.to, unlocks.energy.max);
+    dom.resultUnlockEnergy.hidden = false;
+    dom.resultUnlockEnergyStatus.hidden = false;
+    revealPayload();
+    return;
+  }
 
   scheduleResultAnimation(300, () => {
     dom.resultUnlockEnergy.hidden = false;
     animateResultUnlockEnergy(dom, unlocks.energy, () => {
       dom.resultUnlockEnergyStatus.hidden = false;
-      scheduleResultAnimation(220, () => {
-        dom.resultUnlockContent.replaceChildren(...createResultUnlockElements(unlocks));
-        dom.resultUnlockTitle.hidden = false;
-        dom.resultUnlockContent.hidden = false;
-        dom.resultUnlockContinueButton.hidden = false;
-      });
+      revealPayload();
     });
   });
 }
@@ -1209,7 +1285,7 @@ function hideResultUnlockPanel(dom: DomRefs): void {
   dom.resultUnlockPanel.hidden = true;
   dom.resultUnlockPanel.removeAttribute("data-unlock-count");
   dom.resultUnlockPanel.removeAttribute("data-unlock-density");
-  dom.resultUnlockPanel.removeAttribute("data-unlock-layout");
+  dom.resultUnlockPanel.removeAttribute("data-unlock-screen");
   dom.resultUnlockEnergy.hidden = true;
   dom.resultUnlockEnergyStatus.hidden = true;
   dom.resultUnlockTitle.hidden = true;
@@ -1263,16 +1339,60 @@ function renderResultUnlockEnergyValue(dom: DomRefs, current: number, max: numbe
 
 const RESULT_UNLOCK_CASCADE_DELAY_MS = 500;
 
-function createResultUnlockElements(unlocks: BattleResultLevelUnlocks): HTMLElement[] {
+function createResultUnlockScreens(unlocks: BattleResultLevelUnlocks): BattleResultUnlockScreen[] {
+  const screens: BattleResultUnlockScreen[] = [];
+
+  for (const feature of unlocks.features ?? []) {
+    screens.push({ kind: "feature", feature });
+  }
+
+  if (unlocks.weapons.length > 0 || unlocks.armor.length > 0) {
+    screens.push({ kind: "items", weapons: unlocks.weapons, armor: unlocks.armor });
+  }
+
+  return screens;
+}
+
+function getResultUnlockScreenProducts(screen: BattleResultUnlockScreen): readonly BattleResultUnlockProduct[] {
+  return screen.kind === "items" ? [...screen.weapons, ...screen.armor] : [];
+}
+
+function getResultUnlockScreenTitle(screen: BattleResultUnlockScreen): string {
+  return screen.kind === "feature" ? screen.feature.title : "NEW SHOP UNLOCKS";
+}
+
+function createResultUnlockScreenElements(screen: BattleResultUnlockScreen): HTMLElement[] {
+  if (screen.kind === "feature") {
+    return [createResultUnlockFeatureIcon(screen.feature)];
+  }
+
+  return createResultUnlockItemElements(screen.weapons, screen.armor);
+}
+
+function createResultUnlockFeatureIcon(feature: BattleResultFeatureUnlock): HTMLElement {
+  const icon = document.createElement("img");
+
+  icon.className = `battle-result__unlock-feature-icon battle-result__unlock-feature-icon--${feature.kind}`;
+  icon.src = feature.iconUrl;
+  icon.alt = feature.ariaLabel ?? feature.title;
+  icon.decoding = "async";
+  icon.draggable = false;
+  return icon;
+}
+
+function createResultUnlockItemElements(
+  weapons: readonly BattleResultUnlockProduct[],
+  armor: readonly BattleResultUnlockProduct[],
+): HTMLElement[] {
   const elements: HTMLElement[] = [];
   let cascadeIndex = 0;
 
-  if (unlocks.weapons.length > 0) {
-    cascadeIndex = appendResultUnlockGroupElements(elements, "WEAPONS", "weapons", unlocks.weapons, cascadeIndex);
+  if (weapons.length > 0) {
+    cascadeIndex = appendResultUnlockGroupElements(elements, "WEAPONS", "weapons", weapons, cascadeIndex);
   }
 
-  if (unlocks.armor.length > 0) {
-    cascadeIndex = appendResultUnlockGroupElements(elements, "ARMOR", "armor", unlocks.armor, cascadeIndex);
+  if (armor.length > 0) {
+    cascadeIndex = appendResultUnlockGroupElements(elements, "ARMOR", "armor", armor, cascadeIndex);
   }
 
   return elements;

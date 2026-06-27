@@ -2650,6 +2650,12 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   display: none;
 }
 
+.battle-result__unlock-panel[data-unlock-screen="feature"] .battle-result__unlock-title {
+  max-width: min(324px, 88vw);
+  font-size: clamp(1rem, 4.2vw, 1.32rem);
+  line-height: 1.03;
+}
+
 .battle-result__unlock-level {
   max-width: min(320px, 86vw);
   color: #fff0bd;
@@ -2814,6 +2820,18 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 .battle-result__unlock-card .equipment-item-card__price-amount {
   min-width: 0.8em;
   font-size: 1.04em;
+}
+
+.battle-result__unlock-feature-icon {
+  width: clamp(92px, 29vw, 132px);
+  height: clamp(92px, 29vw, 132px);
+  object-fit: contain;
+  opacity: 0;
+  transform: translateY(8px) scale(0.94);
+  animation: battle-result-unlock-feature-in 320ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+  filter:
+    drop-shadow(0 3px 0 rgba(8, 2, 1, 0.72))
+    drop-shadow(0 0 18px rgba(255, 211, 132, 0.42));
 }
 
 .battle-result__unlock-more {
@@ -3386,6 +3404,18 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes battle-result-unlock-feature-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -3997,6 +4027,19 @@ body.debug-active .city-menu__portrait-button:active {
   text-transform: uppercase;
 }
 
+.city-arena-menu--tier-bg .city-arena-menu__panel {
+  background-color: #160603;
+  background-image:
+    linear-gradient(rgba(8, 2, 1, 0.52), rgba(8, 2, 1, 0.52)),
+    var(--city-arena-menu-bg-front, none),
+    var(--city-arena-menu-bg-ground, none),
+    var(--city-arena-menu-bg-mid, none),
+    var(--city-arena-menu-bg-back, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 .city-arena-menu__panel::before {
   content: "";
   position: absolute;
@@ -4463,6 +4506,12 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-width: 58px;
   --arena-banner-height: 96px;
   --arena-card-padding-left: 76px;
+  --arena-card-accent: rgba(255, 211, 132, 0.6);
+  --arena-card-accent-soft: rgba(255, 211, 132, 0.16);
+  --arena-card-glass-top: rgba(30, 13, 7, 0.48);
+  --arena-card-glass-bottom: rgba(8, 2, 1, 0.58);
+  --arena-card-edge: rgba(255, 211, 132, 0.18);
+  --arena-card-highlight: rgba(255, 229, 161, 0.18);
   position: relative;
   z-index: 1;
   display: flex;
@@ -4473,21 +4522,28 @@ body.debug-active .city-menu__portrait-button:active {
   min-height: 86px;
   width: 100%;
   padding: 12px 42px 12px var(--arena-card-padding-left);
-  border: 2px solid #1a0803;
+  border: 2px solid rgba(26, 8, 3, 0.9);
   border-radius: 8px;
   color: #fff0bd;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 229, 161, 0.2), transparent 34%),
-    linear-gradient(180deg, rgba(131, 64, 28, 0.9), rgba(45, 15, 7, 0.94));
+    linear-gradient(90deg, var(--arena-card-accent-soft), transparent 34%, rgba(7, 2, 1, 0.28) 100%),
+    radial-gradient(circle at 20% 20%, var(--arena-card-highlight), transparent 38%),
+    linear-gradient(180deg, var(--arena-card-glass-top), var(--arena-card-glass-bottom));
   box-shadow:
-    inset 0 1px 0 rgba(255, 229, 161, 0.24),
-    inset 0 -8px 14px rgba(0, 0, 0, 0.24),
-    0 3px 0 rgba(8, 2, 1, 0.7);
+    inset 0 1px 0 rgba(255, 229, 161, 0.18),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px var(--arena-card-edge),
+    0 0 0 1px var(--arena-card-accent-soft),
+    0 3px 0 rgba(8, 2, 1, 0.62);
   text-align: left;
   cursor: pointer;
 }
 
 .city-arena-menu__auto-fight {
+  --arena-card-edge: rgba(255, 211, 132, 0.2);
+  --arena-card-highlight: rgba(255, 229, 161, 0.13);
+  --arena-card-glass-top: rgba(54, 25, 11, 0.48);
+  --arena-card-glass-bottom: rgba(18, 6, 3, 0.62);
   position: relative;
   z-index: 1;
   display: grid;
@@ -4502,12 +4558,13 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 8px;
   color: #fff0bd;
   background:
-    radial-gradient(circle at 50% 18%, rgba(255, 229, 161, 0.2), transparent 38%),
-    linear-gradient(180deg, rgba(116, 61, 28, 0.92), rgba(38, 13, 6, 0.96));
+    radial-gradient(circle at 50% 18%, var(--arena-card-highlight), transparent 38%),
+    linear-gradient(180deg, var(--arena-card-glass-top), var(--arena-card-glass-bottom));
   box-shadow:
-    inset 0 1px 0 rgba(255, 229, 161, 0.22),
-    inset 0 -8px 14px rgba(0, 0, 0, 0.24),
-    0 3px 0 rgba(8, 2, 1, 0.7);
+    inset 0 1px 0 rgba(255, 229, 161, 0.16),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px var(--arena-card-edge),
+    0 3px 0 rgba(8, 2, 1, 0.62);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 0.66rem;
   font-weight: 900;
@@ -4580,15 +4637,12 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-width: 44px;
   --arena-banner-height: 78px;
   --arena-card-padding-left: 76px;
-  background:
-    linear-gradient(90deg, rgba(18, 33, 10, 0.3), transparent 28%, rgba(7, 2, 1, 0.36) 100%),
-    radial-gradient(circle at 20% 22%, rgba(216, 255, 148, 0.26), transparent 36%),
-    linear-gradient(180deg, rgba(73, 103, 30, 0.95), rgba(17, 35, 12, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(231, 255, 169, 0.28),
-    inset 0 -10px 16px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(134, 170, 74, 0.2),
-    0 3px 0 rgba(8, 2, 1, 0.72);
+  --arena-card-accent: rgba(150, 204, 90, 0.72);
+  --arena-card-accent-soft: rgba(102, 160, 56, 0.24);
+  --arena-card-edge: rgba(154, 202, 92, 0.3);
+  --arena-card-highlight: rgba(216, 255, 148, 0.2);
+  --arena-card-glass-top: rgba(36, 62, 22, 0.48);
+  --arena-card-glass-bottom: rgba(9, 24, 8, 0.6);
 }
 
 .city-arena-menu__fight--easy::before {
@@ -4604,15 +4658,12 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-width: 54px;
   --arena-banner-height: 90px;
   --arena-card-padding-left: 76px;
-  background:
-    linear-gradient(90deg, rgba(50, 19, 5, 0.22), transparent 28%, rgba(7, 2, 1, 0.36) 100%),
-    radial-gradient(circle at 20% 22%, rgba(255, 205, 103, 0.28), transparent 36%),
-    linear-gradient(180deg, rgba(153, 75, 20, 0.96), rgba(61, 21, 7, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 212, 129, 0.3),
-    inset 0 -10px 16px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(196, 100, 28, 0.2),
-    0 3px 0 rgba(8, 2, 1, 0.72);
+  --arena-card-accent: rgba(224, 126, 38, 0.72);
+  --arena-card-accent-soft: rgba(178, 82, 22, 0.24);
+  --arena-card-edge: rgba(220, 123, 40, 0.3);
+  --arena-card-highlight: rgba(255, 205, 103, 0.2);
+  --arena-card-glass-top: rgba(73, 34, 12, 0.48);
+  --arena-card-glass-bottom: rgba(32, 10, 4, 0.62);
 }
 
 .city-arena-menu__fight--hard {
@@ -4620,15 +4671,12 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-width: 64px;
   --arena-banner-height: 102px;
   --arena-card-padding-left: 80px;
-  background:
-    linear-gradient(90deg, rgba(57, 8, 6, 0.24), transparent 28%, rgba(7, 2, 1, 0.38) 100%),
-    radial-gradient(circle at 20% 22%, rgba(255, 151, 115, 0.28), transparent 36%),
-    linear-gradient(180deg, rgba(153, 44, 31, 0.97), rgba(73, 13, 9, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 185, 139, 0.28),
-    inset 0 -10px 16px rgba(0, 0, 0, 0.32),
-    0 0 0 1px rgba(200, 68, 48, 0.22),
-    0 3px 0 rgba(8, 2, 1, 0.72);
+  --arena-card-accent: rgba(218, 71, 54, 0.74);
+  --arena-card-accent-soft: rgba(161, 38, 29, 0.25);
+  --arena-card-edge: rgba(220, 76, 58, 0.32);
+  --arena-card-highlight: rgba(255, 151, 115, 0.2);
+  --arena-card-glass-top: rgba(78, 24, 19, 0.5);
+  --arena-card-glass-bottom: rgba(38, 7, 5, 0.64);
 }
 
 .city-arena-menu__fight--hard::before {
@@ -4749,16 +4797,13 @@ body.debug-active .city-menu__portrait-button:active {
   --arena-banner-width: 76px;
   --arena-banner-height: 112px;
   --arena-card-padding-left: 86px;
+  --arena-card-accent: rgba(71, 220, 207, 0.74);
+  --arena-card-accent-soft: rgba(28, 170, 158, 0.25);
+  --arena-card-edge: rgba(85, 224, 214, 0.34);
+  --arena-card-highlight: rgba(92, 255, 235, 0.18);
+  --arena-card-glass-top: rgba(12, 65, 61, 0.5);
+  --arena-card-glass-bottom: rgba(8, 27, 25, 0.64);
   min-height: 98px;
-  background:
-    linear-gradient(90deg, rgba(10, 57, 53, 0.26), transparent 28%, rgba(7, 2, 1, 0.38) 100%),
-    radial-gradient(circle at 18% 20%, rgba(92, 255, 235, 0.24), transparent 36%),
-    linear-gradient(180deg, rgba(20, 104, 95, 0.88), rgba(27, 13, 8, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(174, 255, 246, 0.24),
-    inset 0 -10px 16px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(85, 224, 214, 0.28),
-    0 3px 0 rgba(8, 2, 1, 0.7);
 }
 
 .city-arena-menu__boss::before {
@@ -4766,6 +4811,11 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss-duo {
+  --arena-card-accent-soft: rgba(28, 170, 158, 0.24);
+  --arena-card-edge: rgba(85, 224, 214, 0.32);
+  --arena-card-highlight: rgba(168, 255, 244, 0.18);
+  --arena-card-glass-top: rgba(16, 76, 71, 0.48);
+  --arena-card-glass-bottom: rgba(8, 31, 29, 0.62);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4778,13 +4828,14 @@ body.debug-active .city-menu__portrait-button:active {
   border-radius: 8px;
   color: #dffdf8;
   background:
-    radial-gradient(circle at 50% 18%, rgba(168, 255, 244, 0.28), transparent 40%),
-    linear-gradient(180deg, rgba(25, 124, 116, 0.94), rgba(16, 45, 42, 0.98));
+    radial-gradient(circle at 50% 18%, var(--arena-card-highlight), transparent 40%),
+    linear-gradient(180deg, var(--arena-card-glass-top), var(--arena-card-glass-bottom));
   box-shadow:
-    inset 0 1px 0 rgba(198, 255, 248, 0.24),
-    inset 0 -10px 16px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(85, 224, 214, 0.28),
-    0 3px 0 rgba(8, 2, 1, 0.7);
+    inset 0 1px 0 rgba(198, 255, 248, 0.18),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.24),
+    inset 0 0 0 1px var(--arena-card-edge),
+    0 0 0 1px var(--arena-card-accent-soft),
+    0 3px 0 rgba(8, 2, 1, 0.62);
   font-size: 0.72rem;
   font-weight: 900;
   line-height: 1;

@@ -30,9 +30,26 @@ import {
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
 import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatActor, type CombatState } from "./combat";
-import { DAILY_ARENA_ENERGY_ICON_ASSET_URL, pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
+import {
+  ARENA_BACKGROUND_LAYER_ASSETS,
+  getArenaBackgroundVariantIdsForTier,
+  DAILY_ARENA_ENERGY_ICON_ASSET_URL,
+  pickArenaBackgroundVariantIdForTier,
+  SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+  SHOP_GOLD_COIN_ICON_ASSET_URL,
+  SHOP_XP_ICON_ASSET_URL,
+  type ArenaBackgroundLayerRole,
+} from "./assets";
 import { debugTuning } from "./debugTuning";
-import { getDomRefs, renderDom, type BattleResultLevelUnlocks, type BattleResultPresentation, type BattleResultPresentationStage, type BattleResultUnlockProduct } from "./domUi";
+import {
+  getDomRefs,
+  renderDom,
+  type BattleResultFeatureUnlock,
+  type BattleResultLevelUnlocks,
+  type BattleResultPresentation,
+  type BattleResultPresentationStage,
+  type BattleResultUnlockProduct,
+} from "./domUi";
 import {
   canUseGladiatorCloudSave,
   deleteGladiatorCloudSave,
@@ -627,12 +644,14 @@ function createBattleResultLevelUnlocks(heroBeforeReward: HeroState, heroAfterRe
   let energyFrom = energyBeforeReward.current;
 
   for (let level = fromLevel + 1; level <= toLevel; level += 1) {
+    const features = getBattleResultFeatureUnlocksForLevel(level);
     const weapons = getBattleResultUnlockProductsForLevel(weaponProducts, heroAfterReward, level);
     const armor = getBattleResultUnlockProductsForLevel(armorProducts, heroAfterReward, level);
 
-    if (weapons.length > 0 || armor.length > 0) {
+    if (features.length > 0 || weapons.length > 0 || armor.length > 0) {
       levelUnlocks.push({
         level,
+        features,
         weapons,
         armor,
         energy: {
@@ -646,6 +665,21 @@ function createBattleResultLevelUnlocks(heroBeforeReward: HeroState, heroAfterRe
   }
 
   return levelUnlocks;
+}
+
+function getBattleResultFeatureUnlocksForLevel(level: number): BattleResultFeatureUnlock[] {
+  if (level !== MAGIC_SHOP_LEVEL_REQUIREMENT) {
+    return [];
+  }
+
+  return [
+    {
+      kind: "magic-shop",
+      title: "MAGICAL SHOP UNLOCKED",
+      iconUrl: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+      ariaLabel: "Magical shop unlocked",
+    },
+  ];
 }
 
 function getBattleResultUnlockWeaponProducts(heroAfterReward: HeroState): WeaponProduct[] {
@@ -1481,6 +1515,7 @@ function renderCityArenaMenu(): void {
   const bosses = getArenaBossesForTier(tier.id);
   const autoFightUnlocked = isCityArenaAutoFightUnlockedForTier(tier.id);
 
+  syncCityArenaMenuBackground(tier.id);
   syncCityArenaTierSelect(cityArenaTierSelect, visibleTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
   syncCityArenaMenuEnergy();
@@ -1503,6 +1538,49 @@ function renderCityArenaMenu(): void {
   }
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
   syncCityArenaBotControls();
+}
+
+const CITY_ARENA_MENU_BACKGROUND_ROLES: readonly ArenaBackgroundLayerRole[] = ["back", "mid", "ground", "front"];
+
+function syncCityArenaMenuBackground(tierId: number): void {
+  if (!cityArenaMenu) {
+    return;
+  }
+
+  const backgroundLayers = getCityArenaMenuBackgroundLayers(tierId);
+
+  for (const role of CITY_ARENA_MENU_BACKGROUND_ROLES) {
+    const url = backgroundLayers.get(role);
+
+    if (url) {
+      cityArenaMenu.style.setProperty(`--city-arena-menu-bg-${role}`, toCssUrl(url));
+    } else {
+      cityArenaMenu.style.removeProperty(`--city-arena-menu-bg-${role}`);
+    }
+  }
+
+  cityArenaMenu.classList.toggle("city-arena-menu--tier-bg", backgroundLayers.size > 0);
+}
+
+function getCityArenaMenuBackgroundLayers(tierId: number): ReadonlyMap<ArenaBackgroundLayerRole, string> {
+  const variantId = getArenaBackgroundVariantIdsForTier(tierId)[0];
+  const layers = ARENA_BACKGROUND_LAYER_ASSETS.filter((asset) => asset.tierId === tierId && asset.variantId === variantId);
+
+  if (layers.length <= 0 && tierId !== DEFAULT_ARENA_TIER_ID) {
+    return getCityArenaMenuBackgroundLayers(DEFAULT_ARENA_TIER_ID);
+  }
+
+  return layers.reduce<Map<ArenaBackgroundLayerRole, string>>((byRole, asset) => {
+    if (CITY_ARENA_MENU_BACKGROUND_ROLES.includes(asset.role) && !byRole.has(asset.role)) {
+      byRole.set(asset.role, asset.url);
+    }
+
+    return byRole;
+  }, new Map());
+}
+
+function toCssUrl(url: string): string {
+  return `url("${url.replace(/["\\]/g, "\\$&")}")`;
 }
 
 function getCityArenaRandomAutoRateTargets(tierId: number): CityArenaAutoRateTarget[] {
