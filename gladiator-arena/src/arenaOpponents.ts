@@ -25,6 +25,7 @@ export interface ArenaTierOpponentDefinition {
   id: ArenaOpponentId;
   difficultyId: ArenaDifficultyId;
   baseStats?: HeroBaseStats;
+  maxHp?: number;
   randomBaseStatPoints?: number;
   equipmentPools: readonly ArenaGeneratedEquipmentPool[];
   rewards: ArenaOpponentRewards;

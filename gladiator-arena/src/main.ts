@@ -13,7 +13,7 @@ import {
   type CitySceneApi,
   type HeroPortraitPreviewApi,
 } from "./ArenaScene";
-import { mountArmoryShop, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
+import { mountArmoryShop, pairGeneratedArmoryProducts, type ArmoryProduct, type ArmoryShopApi } from "./armoryShopUi";
 import {
   getCityEquipmentCategoryIdForHeroItemId,
   getCityHeroWidgetRefs,
@@ -32,7 +32,7 @@ import { mountClassicActionBar, type ClassicActionBarApi } from "./classicAction
 import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatActor, type CombatState } from "./combat";
 import { DAILY_ARENA_ENERGY_ICON_ASSET_URL, pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
-import { getDomRefs, renderDom, type BattleResultPresentation, type BattleResultPresentationStage } from "./domUi";
+import { getDomRefs, renderDom, type BattleResultLevelUnlocks, type BattleResultPresentation, type BattleResultPresentationStage, type BattleResultUnlockProduct } from "./domUi";
 import {
   canUseGladiatorCloudSave,
   deleteGladiatorCloudSave,
@@ -98,13 +98,24 @@ import {
   type HeroArenaWinQuestStatus,
 } from "./hero";
 import { syncHudTuning } from "./hudTuning";
+import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
 import { cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
 import { getPvpActorForSeat, type PvpRoomKind, type PvpRoomListEntry, type PvpRoomResponse, type PvpRoomSession, type PvpRoomSnapshot, type PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopProductIcons } from "./shopItemIcons";
-import { isShopProductSealed } from "./shopPresentation";
+import {
+  getEquippedShopProductDisplayStat,
+  getEquippedShopProductStat,
+  getShopProductDisplayName,
+  getShopProductDisplayStat,
+  getShopProductLevelRequirement,
+  getShopProductRarity,
+  getShopProductStat,
+  isShopProductSealed,
+  type ShopProductStatKind,
+} from "./shopPresentation";
 import { bootTelegramWebApp, getTelegramDisplayName, getTelegramUserId } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
@@ -277,6 +288,7 @@ let statsRevealToken = 0;
 let battleResultReturnReady = true;
 let battleResultReturnLabel = CITY_RETURN_READY_LABEL;
 let battleResultReturnGateToken = 0;
+let battleResultSequenceLocked = false;
 let rewardUiRenderDirty = false;
 let cityArenaAutoRateToken = 0;
 let cityArenaAutoFightPending = false;
@@ -567,10 +579,20 @@ function renderCurrentDom(): void {
     resultPresentationStage: battleResultPresentationStage,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
     resultReturn: {
-      ready: battleResultPresentationStage === "loot" ? true : battleResultReturnReady,
+      ready: battleResultPresentationStage === "loot" ? true : battleResultReturnReady && !battleResultSequenceLocked,
       label: battleResultPresentationStage === "loot" ? "Continue" : battleResultReturnLabel,
     },
+    onResultSequenceLockChange: setBattleResultSequenceLocked,
   });
+}
+
+function setBattleResultSequenceLocked(locked: boolean): void {
+  if (battleResultSequenceLocked === locked) {
+    return;
+  }
+
+  battleResultSequenceLocked = locked;
+  renderCurrentDom();
 }
 
 function syncPlayerCityBodyScale(): void {
@@ -581,6 +603,101 @@ function renderCityHero(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero, {
     highlightedEquipmentItemIds: pendingEquipmentHintItemIds,
   });
+}
+
+function createBattleResultLevelUnlocks(heroBeforeReward: HeroState, heroAfterReward: HeroState): BattleResultLevelUnlocks[] {
+  const fromLevel = Math.max(1, Math.floor(heroBeforeReward.level));
+  const toLevel = Math.max(1, Math.floor(heroAfterReward.level));
+
+  if (toLevel <= fromLevel) {
+    return [];
+  }
+
+  const weaponProducts = getBattleResultUnlockWeaponProducts(heroAfterReward);
+  const armorProducts = getBattleResultUnlockArmorProducts(heroAfterReward);
+  const levelUnlocks: BattleResultLevelUnlocks[] = [];
+
+  for (let level = fromLevel + 1; level <= toLevel; level += 1) {
+    const weapons = getBattleResultUnlockProductsForLevel(weaponProducts, heroAfterReward, level);
+    const armor = getBattleResultUnlockProductsForLevel(armorProducts, heroAfterReward, level);
+
+    if (weapons.length > 0 || armor.length > 0) {
+      levelUnlocks.push({ level, weapons, armor });
+    }
+  }
+
+  return levelUnlocks;
+}
+
+function getBattleResultUnlockWeaponProducts(heroAfterReward: HeroState): WeaponProduct[] {
+  return GENERATED_WEAPON_PRODUCTS.map((product) => ({
+    id: product.id,
+    categoryId: product.categoryId,
+    name: product.name,
+    price: product.price,
+    itemIds: [...product.itemIds],
+  })).filter((product) => isBattleResultUnlockProductVisible(heroAfterReward, product));
+}
+
+function getBattleResultUnlockArmorProducts(heroAfterReward: HeroState): ArmoryProduct[] {
+  const products = GENERATED_ARMORY_PRODUCTS.map((product) => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    itemIds: [...product.itemIds],
+  }));
+
+  return pairGeneratedArmoryProducts(products).filter((product) => isBattleResultUnlockProductVisible(heroAfterReward, product));
+}
+
+function getBattleResultUnlockProductsForLevel(
+  products: readonly (ArmoryProduct | WeaponProduct)[],
+  heroAfterReward: HeroState,
+  level: number,
+): BattleResultUnlockProduct[] {
+  return products
+    .filter((product) => getShopProductLevelRequirement(product.itemIds) === level)
+    .filter((product) => !isShopProductSealed(heroAfterReward, product.itemIds, product.rarity))
+    .map((product) => createBattleResultUnlockProduct(heroAfterReward, product))
+    .sort(compareBattleResultUnlockProducts);
+}
+
+function createBattleResultUnlockProduct(heroAfterReward: HeroState, product: ArmoryProduct | WeaponProduct): BattleResultUnlockProduct {
+  const itemIds = [...product.itemIds];
+  const statKind: ShopProductStatKind = "categoryId" in product ? "damage" : "armor";
+  const statValue =
+    statKind === "damage" ? getShopProductDisplayStat(heroAfterReward, itemIds, statKind) : getShopProductStat(itemIds, statKind);
+  const currentStat =
+    statKind === "damage"
+      ? getEquippedShopProductDisplayStat(heroAfterReward, itemIds, statKind)
+      : getEquippedShopProductStat(heroAfterReward, itemIds, statKind);
+
+  return {
+    id: product.id,
+    name: getShopProductDisplayName(product.name),
+    itemIds,
+    rarity: getShopProductRarity(itemIds, product.rarity),
+    statKind,
+    statValue,
+    diff: statValue - currentStat,
+    levelRequirement: getShopProductLevelRequirement(itemIds),
+    price: product.price,
+  };
+}
+
+function isBattleResultUnlockProductVisible(heroAfterReward: HeroState, product: ArmoryProduct | WeaponProduct): boolean {
+  return product.itemIds.length > 0 && !areHeroItemsOwned(heroAfterReward, product.itemIds);
+}
+
+function compareBattleResultUnlockProducts(left: BattleResultUnlockProduct, right: BattleResultUnlockProduct): number {
+  const leftLevel = getShopProductLevelRequirement(left.itemIds);
+  const rightLevel = getShopProductLevelRequirement(right.itemIds);
+
+  if (leftLevel !== rightLevel) {
+    return leftLevel - rightLevel;
+  }
+
+  return left.name.localeCompare(right.name);
 }
 
 function createInitialHero(): HeroState {
@@ -2507,6 +2624,7 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
     loot,
     heroBeforeReward,
     heroAfterReward,
+    levelUnlocks: createBattleResultLevelUnlocks(heroBeforeReward, heroAfterReward),
   };
   startBattleResultReturnGate();
   markRewardUiRenderDirty();
@@ -2728,7 +2846,10 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
     rememberDroppedEquipmentHint(resolvedState, loot);
     saveLocalHeroSave(hero);
     queueHeroCloudSave("auto-fight-result");
-    presentAutoResolvedArenaResult(resolvedState, rewardApplication);
+    presentAutoResolvedArenaResult(resolvedState, {
+      ...rewardApplication,
+      levelUnlocks: createBattleResultLevelUnlocks(rewardApplication.heroBeforeReward, rewardApplication.heroAfterReward),
+    });
   } finally {
     cityArenaAutoFightPending = false;
     if (isInCity && !isAutoResultOverlayActive) {
@@ -2965,6 +3086,7 @@ function resetBattleResultReturnGate(): void {
   battleResultReturnGateToken += 1;
   battleResultReturnReady = true;
   battleResultReturnLabel = CITY_RETURN_READY_LABEL;
+  battleResultSequenceLocked = false;
 }
 
 function waitForCityPrewarmWithTimeout(): Promise<void> {
@@ -3148,6 +3270,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     loot,
     heroBeforeReward,
     heroAfterReward,
+    levelUnlocks: createBattleResultLevelUnlocks(heroBeforeReward, heroAfterReward),
   };
   startBattleResultReturnGate();
   markRewardUiRenderDirty();
@@ -3543,7 +3666,7 @@ function hasHeroEquipmentPreviewItems(itemIds: readonly HeroItemId[]): boolean {
 async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
   const requireResultGate = options.requireResultGate ?? true;
 
-  if ((requireResultGate && !battleResultReturnReady) || isCityReturnTransitionRunning) {
+  if ((requireResultGate && (!battleResultReturnReady || battleResultSequenceLocked)) || isCityReturnTransitionRunning) {
     return;
   }
 

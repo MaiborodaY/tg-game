@@ -4673,7 +4673,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"shuriken","levelRequirement":5},
+    item: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"shuriken","levelRequirement":3},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-01"},
     equipmentTuning: {"x":-11,"y":29,"angle":91,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {
@@ -4685,7 +4685,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","price":5,"itemIds":["generated_equipment_weapon_shuriken_01"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"shuriken","levelRequirement":10},
+    item: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"shuriken","levelRequirement":10},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-common-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.3,"scaleY":0.3,"flipX":false,"flipY":false},
     asset: {
@@ -4697,7 +4697,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","price":10,"itemIds":["generated_equipment_weapon_shuriken_common_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"shuriken","levelRequirement":50},
+    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"shuriken","levelRequirement":50},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-epic-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.45,"scaleY":0.45,"flipX":false,"flipY":false},
     asset: {
@@ -4706,10 +4706,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-epic-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","price":431,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","price":215,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":16,"weaponClass":"shuriken","levelRequirement":60},
+    item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"shuriken","levelRequirement":60},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-epic-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.45,"scaleY":0.45,"flipX":false,"flipY":false},
     asset: {
@@ -4718,10 +4718,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-epic-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","price":507,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_2","name":"epic shuriken 2","price":250,"itemIds":["generated_equipment_weapon_shuriken_epic_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":18,"weaponClass":"shuriken","levelRequirement":70},
+    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"shuriken","levelRequirement":70},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-legendary-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.5,"scaleY":0.5,"flipX":false,"flipY":false},
     asset: {
@@ -4730,10 +4730,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-legendary-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","price":584,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_1","name":"Legendary shuriken 1","price":290,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"shuriken","levelRequirement":80},
+    item: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken","levelRequirement":80},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-legendary-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.5,"scaleY":0.5,"flipX":false,"flipY":false},
     asset: {
@@ -4742,7 +4742,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-legendary-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","price":659,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_legendary_shuriken_2","name":"Legendary shuriken 2","price":325,"itemIds":["generated_equipment_weapon_shuriken_legendary_shuriken_2"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_mythical_shuriken_1","name":"Mythical shuriken 1","kind":"weapon","rarity":"mythical","equipmentSlot":"weaponMain","damageBonus":22,"weaponClass":"shuriken"},
@@ -4767,7 +4767,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":true,"bossUnique":false},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"shuriken","levelRequirement":30},
+    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"shuriken","levelRequirement":30},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-rare-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.4,"scaleY":0.4,"flipX":false,"flipY":false},
     asset: {
@@ -4776,10 +4776,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-rare-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","price":279,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_1","name":"rare shuriken 1","price":140,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":12,"weaponClass":"shuriken","levelRequirement":40},
+    item: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","kind":"weapon","rarity":"rare","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"shuriken","levelRequirement":40},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-rare-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.4,"scaleY":0.4,"flipX":false,"flipY":false},
     asset: {
@@ -4788,10 +4788,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-rare-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","price":356,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_rare_shuriken_2","name":"rare shuriken 2","price":175,"itemIds":["generated_equipment_weapon_shuriken_rare_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"shuriken","levelRequirement":15},
+    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":10,"weaponClass":"shuriken","levelRequirement":15},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-uncommon-shuriken-1"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {
@@ -4800,10 +4800,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-uncommon-shuriken-1.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","price":128,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_1"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_1","name":"uncommon shuriken 1","price":60,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_1"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":8,"weaponClass":"shuriken","levelRequirement":25},
+    item: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":11,"weaponClass":"shuriken","levelRequirement":25},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-uncommon-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.35,"scaleY":0.35,"flipX":false,"flipY":false},
     asset: {
@@ -4812,10 +4812,10 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-uncommon-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","price":203,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","price":100,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_2"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_crooked_stake","name":"Crooked Stake","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_crooked_stake","name":"Crooked Stake","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear","levelRequirement":2},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-crooked-stake"},
     equipmentTuning: {"x":-13,"y":13,"angle":124,"scaleX":2.29,"scaleY":2.48,"flipX":false,"flipY":false},
     asset: {
@@ -4827,7 +4827,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_crooked_stake","name":"Crooked Stake","price":10,"itemIds":["generated_equipment_weapon_spear_crooked_stake"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_crude_iron_spear","name":"Crude Iron Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_crude_iron_spear","name":"Crude Iron Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"spear","levelRequirement":20},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-crude-iron-spear"},
     equipmentTuning: {"x":-7,"y":10,"angle":128,"scaleX":2.2,"scaleY":2.2,"flipX":false,"flipY":false},
     asset: {
@@ -4933,7 +4933,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","price":14170,"itemIds":["generated_equipment_weapon_spear_epic_spear_7"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_guard_spear","name":"Guard Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_guard_spear","name":"Guard Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"spear","levelRequirement":15},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-guard-spear"},
     equipmentTuning: {"x":-16,"y":1,"angle":130,"scaleX":2,"scaleY":2.3,"flipX":false,"flipY":false},
     asset: {
@@ -5015,7 +5015,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_rare_spear_1","name":"Rare Spear 02","price":2750,"itemIds":["generated_equipment_weapon_spear_rare_spear_1"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"spear","levelRequirement":25},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-reinforced-spear"},
     equipmentTuning: {"x":-30,"y":-4,"angle":124,"scaleX":2.7,"scaleY":3,"flipX":false,"flipY":false},
     asset: {
@@ -5027,7 +5027,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","price":76,"itemIds":["generated_equipment_weapon_spear_reinforced_spear"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_rusty_scrap_spear","name":"Rusty Scrap Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_rusty_scrap_spear","name":"Rusty Scrap Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"spear","levelRequirement":6},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-rusty-scrap-spear"},
     equipmentTuning: {"x":0,"y":16,"angle":132,"scaleX":2.1,"scaleY":2.1,"flipX":false,"flipY":false},
     asset: {
@@ -5039,7 +5039,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_rusty_scrap_spear","name":"Rusty Scrap Spear","price":17,"itemIds":["generated_equipment_weapon_spear_rusty_scrap_spear"],"categoryId":"spears"},
   },
   {
-    item: {"id":"generated_equipment_weapon_spear_worn_militia_spear","name":"Worn Militia Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"spear"},
+    item: {"id":"generated_equipment_weapon_spear_worn_militia_spear","name":"Worn Militia Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"spear","levelRequirement":10},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-worn-militia-spear"},
     equipmentTuning: {"x":-16,"y":4,"angle":126,"scaleX":2.1,"scaleY":2.1,"flipX":false,"flipY":false},
     asset: {

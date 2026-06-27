@@ -16372,9 +16372,9 @@
     "name": "Rusty Shuriken",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 2,
+    "damageBonus": 3,
     "weaponClass": "shuriken",
-    "levelRequirement": 5,
+    "levelRequirement": 3,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-shuriken-01"
@@ -16413,7 +16413,7 @@
     "name": "common shuriken 2",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 5,
+    "damageBonus": 6,
     "weaponClass": "shuriken",
     "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
@@ -16454,7 +16454,7 @@
     "name": "epic shuriken 1",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 14,
+    "damageBonus": 16,
     "weaponClass": "shuriken",
     "levelRequirement": 50,
     "equipmentSlot": "weaponMain",
@@ -16483,7 +16483,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_epic_shuriken_1",
       "name": "epic shuriken 1",
-      "price": 431,
+      "price": 215,
       "itemIds": [
         "generated_equipment_weapon_shuriken_epic_shuriken_1"
       ],
@@ -16495,7 +16495,7 @@
     "name": "epic shuriken 2",
     "kind": "weapon",
     "rarity": "epic",
-    "damageBonus": 16,
+    "damageBonus": 18,
     "weaponClass": "shuriken",
     "levelRequirement": 60,
     "equipmentSlot": "weaponMain",
@@ -16524,7 +16524,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_epic_shuriken_2",
       "name": "epic shuriken 2",
-      "price": 507,
+      "price": 250,
       "itemIds": [
         "generated_equipment_weapon_shuriken_epic_shuriken_2"
       ],
@@ -16536,7 +16536,7 @@
     "name": "Legendary shuriken 1",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 18,
+    "damageBonus": 20,
     "weaponClass": "shuriken",
     "levelRequirement": 70,
     "equipmentSlot": "weaponMain",
@@ -16565,7 +16565,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_legendary_shuriken_1",
       "name": "Legendary shuriken 1",
-      "price": 584,
+      "price": 290,
       "itemIds": [
         "generated_equipment_weapon_shuriken_legendary_shuriken_1"
       ],
@@ -16577,7 +16577,7 @@
     "name": "Legendary shuriken 2",
     "kind": "weapon",
     "rarity": "legendary",
-    "damageBonus": 20,
+    "damageBonus": 22,
     "weaponClass": "shuriken",
     "levelRequirement": 80,
     "equipmentSlot": "weaponMain",
@@ -16606,7 +16606,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_legendary_shuriken_2",
       "name": "Legendary shuriken 2",
-      "price": 659,
+      "price": 325,
       "itemIds": [
         "generated_equipment_weapon_shuriken_legendary_shuriken_2"
       ],
@@ -16680,7 +16680,7 @@
     "name": "rare shuriken 1",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 10,
+    "damageBonus": 12,
     "weaponClass": "shuriken",
     "levelRequirement": 30,
     "equipmentSlot": "weaponMain",
@@ -16709,7 +16709,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_rare_shuriken_1",
       "name": "rare shuriken 1",
-      "price": 279,
+      "price": 140,
       "itemIds": [
         "generated_equipment_weapon_shuriken_rare_shuriken_1"
       ],
@@ -16721,7 +16721,7 @@
     "name": "rare shuriken 2",
     "kind": "weapon",
     "rarity": "rare",
-    "damageBonus": 12,
+    "damageBonus": 14,
     "weaponClass": "shuriken",
     "levelRequirement": 40,
     "equipmentSlot": "weaponMain",
@@ -16750,7 +16750,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_rare_shuriken_2",
       "name": "rare shuriken 2",
-      "price": 356,
+      "price": 175,
       "itemIds": [
         "generated_equipment_weapon_shuriken_rare_shuriken_2"
       ],
@@ -16762,7 +16762,7 @@
     "name": "uncommon shuriken 1",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 6,
+    "damageBonus": 10,
     "weaponClass": "shuriken",
     "levelRequirement": 15,
     "equipmentSlot": "weaponMain",
@@ -16791,7 +16791,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_uncommon_shuriken_1",
       "name": "uncommon shuriken 1",
-      "price": 128,
+      "price": 60,
       "itemIds": [
         "generated_equipment_weapon_shuriken_uncommon_shuriken_1"
       ],
@@ -16803,7 +16803,7 @@
     "name": "uncommon shuriken 2",
     "kind": "weapon",
     "rarity": "uncommon",
-    "damageBonus": 8,
+    "damageBonus": 11,
     "weaponClass": "shuriken",
     "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
@@ -16832,7 +16832,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_uncommon_shuriken_2",
       "name": "uncommon shuriken 2",
-      "price": 203,
+      "price": 100,
       "itemIds": [
         "generated_equipment_weapon_shuriken_uncommon_shuriken_2"
       ],
@@ -16846,6 +16846,7 @@
     "rarity": "common",
     "damageBonus": 1,
     "weaponClass": "spear",
+    "levelRequirement": 2,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-crooked-stake"
@@ -16886,6 +16887,7 @@
     "rarity": "uncommon",
     "damageBonus": 5,
     "weaponClass": "spear",
+    "levelRequirement": 20,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-crude-iron-spear"
@@ -17234,6 +17236,7 @@
     "rarity": "uncommon",
     "damageBonus": 4,
     "weaponClass": "spear",
+    "levelRequirement": 15,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-guard-spear"
@@ -17500,6 +17503,7 @@
     "rarity": "uncommon",
     "damageBonus": 6,
     "weaponClass": "spear",
+    "levelRequirement": 25,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-reinforced-spear"
@@ -17540,6 +17544,7 @@
     "rarity": "common",
     "damageBonus": 2,
     "weaponClass": "spear",
+    "levelRequirement": 6,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-rusty-scrap-spear"
@@ -17580,6 +17585,7 @@
     "rarity": "common",
     "damageBonus": 3,
     "weaponClass": "spear",
+    "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
     "assetKeys": {
       "weaponMainAssetKey": "weapon-spear-worn-militia-spear"

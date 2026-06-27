@@ -13,7 +13,13 @@ import {
   type CombatState,
   type DistanceBand,
 } from "./combat";
-import { DAMAGE_BLOCK_ICON_ASSET_URL, DAMAGE_HIT_ICON_ASSET_URL, SHOP_CATEGORY_MACE_ICON_ASSET_URL } from "./assets";
+import {
+  DAMAGE_BLOCK_ICON_ASSET_URL,
+  DAMAGE_HIT_ICON_ASSET_URL,
+  SHOP_CATEGORY_MACE_ICON_ASSET_URL,
+  SHOP_GOLD_COIN_ICON_ASSET_URL,
+} from "./assets";
+import { createEquipmentItemCardContent } from "./equipmentCardUi";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import { applyUiLayoutTuning } from "./uiLayoutTuning";
 import {
@@ -40,6 +46,7 @@ import {
   getShopProductRarity,
   getShopProductStat,
   getShopRarityLabel,
+  type ShopItemRarity,
   type ShopProductStatKind,
 } from "./shopPresentation";
 
@@ -54,10 +61,15 @@ export interface DomRefs {
   resultGoldReward: HTMLElement;
   resultXpReward: HTMLElement;
   resultLoot: HTMLElement;
+  resultLevelNotice: HTMLElement;
   resultXpProgress: HTMLElement;
   resultXpLevel: HTMLElement;
   resultXpProgressText: HTMLElement;
   resultXpProgressFill: HTMLElement;
+  resultUnlockPanel: HTMLElement;
+  resultUnlockLevel: HTMLElement;
+  resultUnlockContent: HTMLElement;
+  resultUnlockContinueButton: HTMLButtonElement;
   restartButton: HTMLButtonElement;
   cityButton: HTMLButtonElement;
   distanceText: HTMLElement;
@@ -121,10 +133,15 @@ export function getDomRefs(): DomRefs {
     resultGoldReward: document.querySelector<HTMLElement>("#resultGoldReward"),
     resultXpReward: document.querySelector<HTMLElement>("#resultXpReward"),
     resultLoot: document.querySelector<HTMLElement>("#resultLoot"),
+    resultLevelNotice: document.querySelector<HTMLElement>("#resultLevelNotice"),
     resultXpProgress: document.querySelector<HTMLElement>("#resultXpProgress"),
     resultXpLevel: document.querySelector<HTMLElement>("#resultXpLevel"),
     resultXpProgressText: document.querySelector<HTMLElement>("#resultXpProgressText"),
     resultXpProgressFill: document.querySelector<HTMLElement>("#resultXpProgressFill"),
+    resultUnlockPanel: document.querySelector<HTMLElement>("#resultUnlockPanel"),
+    resultUnlockLevel: document.querySelector<HTMLElement>("#resultUnlockLevel"),
+    resultUnlockContent: document.querySelector<HTMLElement>("#resultUnlockContent"),
+    resultUnlockContinueButton: document.querySelector<HTMLButtonElement>("#resultUnlockContinueButton"),
     restartButton: document.querySelector<HTMLButtonElement>("#restartButton"),
     cityButton: document.querySelector<HTMLButtonElement>("#cityButton"),
     distanceText: document.querySelector<HTMLElement>("#distanceText"),
@@ -191,7 +208,26 @@ export interface BattleResultPresentation {
   loot?: readonly ArenaLootDrop[];
   heroBeforeReward?: HeroState;
   heroAfterReward?: HeroState;
+  levelUnlocks?: readonly BattleResultLevelUnlocks[];
   instant?: boolean;
+}
+
+export interface BattleResultUnlockProduct {
+  id: string;
+  name: string;
+  itemIds: readonly HeroItemId[];
+  rarity?: ShopItemRarity;
+  statKind: ShopProductStatKind;
+  statValue: number;
+  diff: number;
+  levelRequirement: number;
+  price: number;
+}
+
+export interface BattleResultLevelUnlocks {
+  level: number;
+  weapons: readonly BattleResultUnlockProduct[];
+  armor: readonly BattleResultUnlockProduct[];
 }
 
 export interface BattleResultReturnState {
@@ -209,6 +245,7 @@ export interface DomRenderContext {
   resultPresentationStage?: BattleResultPresentationStage;
   deferResultPresentation?: boolean;
   resultReturn?: BattleResultReturnState;
+  onResultSequenceLockChange?: (locked: boolean) => void;
 }
 
 const WARD_STATUS_ICON_URL = getShopProductIconUrl([HERO_WARD_SCROLL_ITEM_ID]);
@@ -537,6 +574,8 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
 
   if (state.result === "playing" || isResultPresentationDeferred) {
     cancelResultAnimations();
+    resetResultLevelUpUi(dom);
+    context.onResultSequenceLockChange?.(false);
     syncResultReturnButton(dom.cityButton);
     dom.resultBanner.hidden = true;
     dom.cityButton.hidden = true;
@@ -580,11 +619,13 @@ function renderResult(dom: DomRefs, state: CombatState, context: DomRenderContex
   dom.resultTitle.textContent = resultBannerText(state);
 
   if (presentation) {
-    animateResultPresentation(dom, presentation, Boolean(context.resultPresentationStage), shouldFastRenderRewardStage || presentation.instant === true);
+    animateResultPresentation(dom, presentation, context, Boolean(context.resultPresentationStage), shouldFastRenderRewardStage || presentation.instant === true);
     return;
   }
 
   cancelResultAnimations();
+  resetResultLevelUpUi(dom);
+  context.onResultSequenceLockChange?.(false);
   dom.resultBanner.classList.remove("battle-result--animating", "battle-result--reward-after-loot");
   renderRewardAmount(dom.resultGoldReward, reward.gold);
   renderRewardAmount(dom.resultXpReward, reward.xp);
@@ -681,7 +722,13 @@ function renderResultXpLabel(dom: DomRefs, level: number, progressText: string):
   dom.resultXpProgress.setAttribute("aria-label", `LVL ${level} ${progressText}`);
 }
 
-function animateResultPresentation(dom: DomRefs, presentation: BattleResultPresentation, hideLoot = false, fastIntro = false): void {
+function animateResultPresentation(
+  dom: DomRefs,
+  presentation: BattleResultPresentation,
+  context: DomRenderContext,
+  hideLoot = false,
+  fastIntro = false,
+): void {
   const goldDelayMs = fastIntro ? 180 : 1160;
   const xpDelayMs = fastIntro ? 260 : 1300;
   const xpProgressDelayMs = fastIntro ? 440 : 1480;
@@ -689,6 +736,8 @@ function animateResultPresentation(dom: DomRefs, presentation: BattleResultPrese
   const xpDurationMs = fastIntro ? 560 : 760;
 
   cancelResultAnimations();
+  resetResultLevelUpUi(dom);
+  context.onResultSequenceLockChange?.(false);
 
   dom.resultBanner.classList.remove("battle-result--animating");
   void dom.resultBanner.offsetWidth;
@@ -700,13 +749,14 @@ function animateResultPresentation(dom: DomRefs, presentation: BattleResultPrese
 
   animateResultNumber(dom.resultGoldReward, 0, presentation.reward.gold, goldDurationMs, goldDelayMs);
   animateResultNumber(dom.resultXpReward, 0, presentation.reward.xp, xpDurationMs, xpDelayMs);
-  scheduleResultAnimation(xpProgressDelayMs, () => animateResultXpProgress(dom, presentation));
+  scheduleResultAnimation(xpProgressDelayMs, () => animateResultXpProgress(dom, presentation, context));
 }
 
 function renderLootDropPresentation(dom: DomRefs, state: CombatState, presentation: BattleResultPresentation): void {
   const drop = getPrimaryResultLootDrop(presentation.loot ?? []);
 
   cancelResultAnimations();
+  resetResultLevelUpUi(dom);
   dom.resultBanner.classList.remove("battle-result--animating");
   void dom.resultBanner.offsetWidth;
   dom.resultBanner.classList.remove("battle-result--reward-after-loot");
@@ -924,17 +974,19 @@ function animateResultNumber(element: HTMLElement, fromValue: number, toValue: n
   });
 }
 
-function animateResultXpProgress(dom: DomRefs, presentation: BattleResultPresentation): void {
+function animateResultXpProgress(dom: DomRefs, presentation: BattleResultPresentation, context: DomRenderContext): void {
   const heroAfterReward = presentation.heroAfterReward;
 
   if (!heroAfterReward) {
     renderResultXpProgress(dom, undefined);
+    context.onResultSequenceLockChange?.(false);
     return;
   }
 
   const stages = createXpAnimationStages(presentation.heroBeforeReward, heroAfterReward);
 
-  animateXpStage(dom, stages, 0, heroAfterReward);
+  context.onResultSequenceLockChange?.(hasBattleResultLevelUnlocks(presentation));
+  animateXpStage(dom, presentation, context, stages, 0, heroAfterReward);
 }
 
 interface XpAnimationStage {
@@ -992,11 +1044,20 @@ function createXpAnimationStages(heroBeforeReward: HeroState | undefined, heroAf
   return stages;
 }
 
-function animateXpStage(dom: DomRefs, stages: readonly XpAnimationStage[], stageIndex: number, finalHero: HeroState): void {
+function animateXpStage(
+  dom: DomRefs,
+  presentation: BattleResultPresentation,
+  context: DomRenderContext,
+  stages: readonly XpAnimationStage[],
+  stageIndex: number,
+  finalHero: HeroState,
+): void {
   const stage = stages[stageIndex];
 
   if (!stage) {
     renderResultXpProgress(dom, finalHero);
+    resetResultLevelUpUi(dom);
+    context.onResultSequenceLockChange?.(false);
     return;
   }
 
@@ -1008,9 +1069,47 @@ function animateXpStage(dom: DomRefs, stages: readonly XpAnimationStage[], stage
     onUpdate: (value) => renderXpStage(dom, stage, value),
     onComplete: () => {
       renderXpStage(dom, stage, stage.toXp);
-      animateXpStage(dom, stages, stageIndex + 1, finalHero);
+      const reachedLevel = getReachedLevelAfterXpStage(stages, stageIndex, finalHero);
+
+      if (!reachedLevel) {
+        animateXpStage(dom, presentation, context, stages, stageIndex + 1, finalHero);
+        return;
+      }
+
+      const unlocks = getBattleResultLevelUnlocks(presentation, reachedLevel);
+
+      showResultLevelNotice(dom, reachedLevel);
+
+      if (!unlocks || (unlocks.weapons.length <= 0 && unlocks.armor.length <= 0)) {
+        scheduleResultAnimation(700, () => {
+          if (dom.resultLevelNotice.dataset.level === String(reachedLevel)) {
+            hideResultLevelNotice(dom);
+          }
+        });
+        animateXpStage(dom, presentation, context, stages, stageIndex + 1, finalHero);
+        return;
+      }
+
+      scheduleResultAnimation(560, () => {
+        renderResultUnlockPanel(dom, unlocks, () => {
+          hideResultUnlockPanel(dom);
+          hideResultLevelNotice(dom);
+          animateXpStage(dom, presentation, context, stages, stageIndex + 1, finalHero);
+        });
+      });
     },
   });
+}
+
+function getReachedLevelAfterXpStage(stages: readonly XpAnimationStage[], stageIndex: number, finalHero: HeroState): number | undefined {
+  const stage = stages[stageIndex];
+  const nextStage = stages[stageIndex + 1];
+
+  if (!stage || !nextStage || stage.level >= finalHero.level || stage.level >= HERO_MAX_LEVEL) {
+    return undefined;
+  }
+
+  return Math.min(HERO_MAX_LEVEL, stage.level + 1);
 }
 
 function renderXpStage(dom: DomRefs, stage: XpAnimationStage, xpValue: number): void {
@@ -1025,6 +1124,87 @@ function renderXpStage(dom: DomRefs, stage: XpAnimationStage, xpValue: number): 
 
   dom.resultXpProgressFill.style.width = `${progressRatio * 100}%`;
   renderResultXpLabel(dom, stage.level, `${xp} / ${stage.xpToNextLevel} XP`);
+}
+
+function resetResultLevelUpUi(dom: DomRefs): void {
+  hideResultUnlockPanel(dom);
+  hideResultLevelNotice(dom);
+}
+
+function showResultLevelNotice(dom: DomRefs, level: number): void {
+  dom.resultLevelNotice.textContent = "NEW LEVEL!";
+  dom.resultLevelNotice.hidden = false;
+  dom.resultLevelNotice.dataset.level = String(level);
+  dom.resultXpProgress.classList.remove("battle-result__xp--level-up");
+  void dom.resultXpProgress.offsetWidth;
+  dom.resultXpProgress.classList.add("battle-result__xp--level-up");
+}
+
+function hideResultLevelNotice(dom: DomRefs): void {
+  dom.resultLevelNotice.hidden = true;
+  dom.resultLevelNotice.removeAttribute("data-level");
+  dom.resultXpProgress.classList.remove("battle-result__xp--level-up");
+}
+
+function getBattleResultLevelUnlocks(presentation: BattleResultPresentation, level: number): BattleResultLevelUnlocks | undefined {
+  return presentation.levelUnlocks?.find((unlocks) => unlocks.level === level);
+}
+
+function hasBattleResultLevelUnlocks(presentation: BattleResultPresentation): boolean {
+  return Boolean(presentation.levelUnlocks?.some((unlocks) => unlocks.weapons.length > 0 || unlocks.armor.length > 0));
+}
+
+function renderResultUnlockPanel(dom: DomRefs, unlocks: BattleResultLevelUnlocks, onContinue: () => void): void {
+  const products = [...unlocks.weapons, ...unlocks.armor];
+
+  hideResultLevelNotice(dom);
+  dom.resultUnlockPanel.dataset.unlockCount = String(products.length);
+  dom.resultUnlockPanel.dataset.unlockLayout = products.length === 1 ? "single" : "list";
+  dom.resultUnlockPanel.hidden = false;
+  dom.resultUnlockLevel.textContent = `LVL ${unlocks.level} REACHED`;
+  dom.resultUnlockContent.replaceChildren(...products.map((product, index) => createResultUnlockCard(product, index)));
+  dom.resultUnlockContinueButton.onclick = onContinue;
+}
+
+function hideResultUnlockPanel(dom: DomRefs): void {
+  dom.resultUnlockPanel.hidden = true;
+  dom.resultUnlockPanel.removeAttribute("data-unlock-count");
+  dom.resultUnlockPanel.removeAttribute("data-unlock-layout");
+  dom.resultUnlockContent.replaceChildren();
+  dom.resultUnlockContinueButton.onclick = null;
+}
+
+function createResultUnlockCard(product: BattleResultUnlockProduct, index: number): HTMLElement {
+  const card = document.createElement("span");
+  const rarity = product.rarity ?? getShopProductRarity([...product.itemIds]);
+  const iconUrl = getShopProductIconUrl(product.itemIds);
+  const displayName = getShopProductDisplayName(product.name);
+
+  card.className = `equipment-item-card battle-result__unlock-card armory-shop__option--rarity-${rarity}`;
+  card.style.setProperty("--battle-result-unlock-index", String(index));
+  card.setAttribute(
+    "aria-label",
+    `${displayName}, ${getShopRarityLabel(rarity)}, ${product.statValue} ${product.statKind}, unlocked at level ${product.levelRequirement}`,
+  );
+  card.append(
+    createEquipmentItemCardContent({
+      iconUrl,
+      iconFallback: "?",
+      name: displayName,
+      rarityLabel: getShopRarityLabel(rarity),
+      statIconUrl: product.statKind === "damage" ? DAMAGE_HIT_ICON_ASSET_URL : DAMAGE_BLOCK_ICON_ASSET_URL,
+      statLabel: product.statKind,
+      statValue: product.statValue,
+      diff: product.diff,
+      action: {
+        kind: "price",
+        iconUrl: SHOP_GOLD_COIN_ICON_ASSET_URL,
+        value: product.price,
+      },
+    }),
+  );
+
+  return card;
 }
 
 interface ValueAnimationOptions {

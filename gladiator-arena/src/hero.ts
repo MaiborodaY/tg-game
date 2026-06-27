@@ -356,6 +356,7 @@ export interface EnemyVisualPreset {
 export interface EnemyLoadout {
   equipment: HeroEquipment;
   baseStats?: HeroBaseStats;
+  maxHpOverride?: number;
   shurikenCount?: number;
   shurikenDamage?: number;
   shurikenItemId?: HeroItemId;
@@ -935,10 +936,12 @@ function createRandomEnemyLoadoutFromPools(
 
 function createRandomEnemyLoadoutForOpponent(opponent: ArenaRandomOpponentDefinition, random = Math.random): EnemyLoadout {
   const baseStats = createRandomOpponentBaseStats(opponent, random);
+  const maxHpOverride = getArenaOpponentMaxHpOverride(opponent);
 
   return {
     ...createRandomEnemyLoadoutFromPools(opponent.equipmentPools, random, opponent.tierId, opponent.difficultyId),
     ...(baseStats ? { baseStats } : {}),
+    ...(maxHpOverride ? { maxHpOverride } : {}),
   };
 }
 
@@ -966,6 +969,14 @@ function createRandomOpponentBaseStats(opponent: ArenaRandomOpponentDefinition, 
   }
 
   return baseStats;
+}
+
+function getArenaOpponentMaxHpOverride(opponent: ArenaRandomOpponentDefinition): number | undefined {
+  if (typeof opponent.maxHp !== "number" || !Number.isFinite(opponent.maxHp)) {
+    return undefined;
+  }
+
+  return Math.max(1, Math.floor(opponent.maxHp));
 }
 
 function createBossEnemyLoadout(boss: ArenaBossDefinition): EnemyLoadout {
@@ -2367,6 +2378,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
   const enemyEquipment = enemyLoadout.equipment;
   const enemyArmorSlots = getEnemyEquipmentArmorSlots(enemyEquipment);
   const enemyStats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, enemyEquipment, getArmorSlotTotal(enemyArmorSlots), undefined, true);
+  const enemyMaxHp = getEnemyLoadoutMaxHp(enemyLoadout, enemyStats.maxHp);
   const playerMainWeaponClass = getHeroEquipmentWeaponClass(heroEquipment);
   const playerBowWeaponClass = getHeroEquipmentBowWeaponClass(heroEquipment);
   const playerWeaponClass = heroEquipment.weaponMain ? playerMainWeaponClass : playerBowWeaponClass ?? playerMainWeaponClass;
@@ -2443,8 +2455,8 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
     enemy: {
       ...state.enemy,
       name: encounter.name,
-      hp: enemyStats.maxHp,
-      maxHp: enemyStats.maxHp,
+      hp: enemyMaxHp,
+      maxHp: enemyMaxHp,
       armor: enemyStats.maxArmor,
       maxArmor: enemyStats.maxArmor,
       stamina: enemyStats.maxStamina,
@@ -2567,10 +2579,19 @@ function createDuoBossHelperLoadout(random: () => number, tierId: number): Enemy
   return opponent ? createRandomEnemyLoadoutForOpponent(opponent, random) : createRandomEnemyLoadout(random, tierId, DEFAULT_ARENA_DIFFICULTY_ID);
 }
 
+function getEnemyLoadoutMaxHp(enemyLoadout: EnemyLoadout, fallbackMaxHp: number): number {
+  if (typeof enemyLoadout.maxHpOverride !== "number" || !Number.isFinite(enemyLoadout.maxHpOverride)) {
+    return fallbackMaxHp;
+  }
+
+  return Math.max(1, Math.floor(enemyLoadout.maxHpOverride));
+}
+
 function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: EnemyLoadout, base: FighterState): FighterState {
   const equipment = enemyLoadout.equipment;
   const armorSlots = getEnemyEquipmentArmorSlots(equipment);
   const stats = deriveFighterStats(enemyLoadout.baseStats ?? { strength: 0, agility: 0, vitality: 0 }, equipment, getArmorSlotTotal(armorSlots), undefined, true);
+  const maxHp = getEnemyLoadoutMaxHp(enemyLoadout, stats.maxHp);
   const mainWeaponClass = getHeroEquipmentWeaponClass(equipment);
   const bowWeaponClass = getHeroEquipmentBowWeaponClass(equipment);
   const weaponClass = equipment.weaponMain ? mainWeaponClass : bowWeaponClass ?? mainWeaponClass;
@@ -2578,8 +2599,8 @@ function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: En
   return {
     ...base,
     name,
-    hp: stats.maxHp,
-    maxHp: stats.maxHp,
+    hp: maxHp,
+    maxHp,
     armor: stats.maxArmor,
     maxArmor: stats.maxArmor,
     stamina: stats.maxStamina,

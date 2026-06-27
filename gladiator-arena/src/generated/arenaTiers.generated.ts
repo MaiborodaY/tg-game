@@ -9,6 +9,7 @@ export const GENERATED_ARENA_TIERS: readonly ArenaTierConfig[] = [
         id: "dust_arena_dummy",
         difficultyId: "easy",
         baseStats: {"strength":0,"agility":0,"vitality":0},
+        maxHp: 5,
         equipmentPools: [],
         rewards: {"win":{"gold":3,"xp":1},"loss":{"gold":1,"xp":1}},
       },

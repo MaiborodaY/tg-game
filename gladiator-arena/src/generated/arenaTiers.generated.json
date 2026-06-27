@@ -11,6 +11,7 @@
           "agility": 0,
           "vitality": 0
         },
+        "maxHp": 5,
         "equipmentPools": [],
         "rewards": {
           "win": {
