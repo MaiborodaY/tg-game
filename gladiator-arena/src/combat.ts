@@ -1034,14 +1034,16 @@ export function canUseAction(state: CombatState, actionId: ActionId, actor: Comb
   return true;
 }
 
-export function canUseTurnAction(state: CombatState, actionId: ActionId, actor: TurnOwner = "player"): boolean {
-  if (state.result !== "playing" || state.activeTurn !== actor) {
+export function canUseTurnAction(state: CombatState, actionId: ActionId, actor: CombatActor = "player"): boolean {
+  const activeTurn = actor === "helper" ? "enemy" : actor;
+
+  if (state.result !== "playing" || state.activeTurn !== activeTurn) {
     return false;
   }
 
-  const fighter = actor === "player" ? state.player : state.enemy;
+  const fighter = getCombatActorFighter(state, actor);
 
-  if (fighter.stamina <= 0 && actionId !== "rest" && !isScrollAction(actionId)) {
+  if (!fighter || fighter.stamina <= 0 && actionId !== "rest" && !isScrollAction(actionId)) {
     return false;
   }
 
@@ -1215,6 +1217,37 @@ export function resolveDuoBossHelperTurn(current: CombatState, random = Math.ran
   return state;
 }
 
+export function resolveDuoBossHelperPlayerTurn(current: CombatState, actionId: ActionId, random = Math.random): CombatState {
+  const state = cloneStateForTurn(current);
+
+  if (!isDuoBossAiCombat(state) || state.result !== "playing" || state.activeTurn !== "enemy" || !state.helper || state.helper.hp <= 0) {
+    return state;
+  }
+
+  forceClinchWeapons(state);
+  applyPoisonTurnStart(state, "helper");
+
+  if (state.result !== "playing") {
+    return state;
+  }
+
+  if (!canUseTurnAction(state, actionId, "helper")) {
+    addLog(state, `${getActionTitle(actionId, state.helper)} is not available right now.`);
+    return state;
+  }
+
+  applyAction(state, "helper", actionId, random, {
+    playerActor: state.player.name,
+    playerDefender: state.player.name,
+    helperActor: state.helper.name,
+    helperDefender: state.helper.name,
+    enemyActor: state.enemy.name,
+    enemyDefender: state.enemy.name,
+  });
+
+  return state;
+}
+
 export interface AutoCombatResolveOptions {
   maxTurns?: number;
   random?: () => number;
@@ -1310,22 +1343,26 @@ function cloneFighterState(fighter: FighterState): FighterState {
   };
 }
 
-export function choosePlayerAutoAction(current: CombatState): ActionId | undefined {
-  const available = availableActionIds(current, "player").filter((actionId) => isPlayerAutoAction(actionId));
+export function choosePlayerAutoAction(current: CombatState, actor: "player" | "helper" = "player"): ActionId | undefined {
+  const available = availableActionIds(current, actor).filter((actionId) => isPlayerAutoAction(actionId));
 
   if (available.length === 0) {
     return undefined;
   }
 
-  const player = current.player;
-  const lowStamina = player.stamina <= Math.max(1, Math.floor(getFighterMaxStamina(player) * 0.35));
-  const enemyLowHp = current.enemy.hp <= Math.max(3, Math.ceil(getActionDamage("light", player) * 2));
-  const playerHasRangedWeapon = isRangedFighter(player);
-  const playerCanSwitchWeapon = canFighterSwitchWeapon(player);
-  const inClinch = isFighterInClinchRange(current, "player");
-  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, "player");
+  const fighter = getCombatActorFighter(current, actor);
 
-  if (player.stamina <= 0 && available.includes("rest")) {
+  if (!fighter) {
+    return undefined;
+  }
+
+  const lowStamina = fighter.stamina <= Math.max(1, Math.floor(getFighterMaxStamina(fighter) * 0.35));
+  const enemyLowHp = current.enemy.hp <= Math.max(3, Math.ceil(getActionDamage("light", fighter) * 2));
+  const fighterHasRangedWeapon = isRangedFighter(fighter);
+  const inClinch = isFighterInClinchRange(current, actor);
+  const lungeReaches = available.includes("lunge") && doesLungeReachTarget(current, actor);
+
+  if (fighter.stamina <= 0 && available.includes("rest")) {
     return "rest";
   }
 
@@ -1333,12 +1370,12 @@ export function choosePlayerAutoAction(current: CombatState): ActionId | undefin
     return "rest";
   }
 
-  if (playerHasRangedWeapon) {
+  if (fighterHasRangedWeapon) {
     if (available.includes("heavy") && enemyLowHp) {
       return "heavy";
     }
 
-    if (available.includes("medium") && player.stamina >= getActionStaminaCost("medium", player)) {
+    if (available.includes("medium") && fighter.stamina >= getActionStaminaCost("medium", fighter)) {
       return "medium";
     }
 
@@ -1348,10 +1385,6 @@ export function choosePlayerAutoAction(current: CombatState): ActionId | undefin
 
     if (available.includes("back")) {
       return "back";
-    }
-
-    if (playerCanSwitchWeapon && available.includes("switchWeapon")) {
-      return "switchWeapon";
     }
   }
 
@@ -1363,17 +1396,13 @@ export function choosePlayerAutoAction(current: CombatState): ActionId | undefin
     if (available.includes("forward")) {
       return "forward";
     }
-
-    if (playerCanSwitchWeapon && available.includes("switchWeapon")) {
-      return "switchWeapon";
-    }
   }
 
-  if (available.includes("heavy") && (enemyLowHp || player.stamina >= getActionStaminaCost("heavy", player) + 2)) {
+  if (available.includes("heavy") && (enemyLowHp || fighter.stamina >= getActionStaminaCost("heavy", fighter) + 2)) {
     return "heavy";
   }
 
-  if (available.includes("medium") && player.stamina >= getActionStaminaCost("medium", player)) {
+  if (available.includes("medium") && fighter.stamina >= getActionStaminaCost("medium", fighter)) {
     return "medium";
   }
 
@@ -1385,14 +1414,13 @@ export function choosePlayerAutoAction(current: CombatState): ActionId | undefin
 }
 
 function isPlayerAutoAction(actionId: ActionId): boolean {
-  return actionId !== "shuriken"
-    && actionId !== "scroll"
-    && actionId !== "fireball"
-    && actionId !== "ward"
-    && actionId !== "preciseStrike"
-    && actionId !== "doubleStrike"
-    && actionId !== "poison"
-    && actionId !== "taunt";
+  return actionId === "forward"
+    || actionId === "back"
+    || actionId === "lunge"
+    || actionId === "light"
+    || actionId === "medium"
+    || actionId === "heavy"
+    || actionId === "rest";
 }
 
 function chooseEnemyAction(current: CombatState, random = Math.random, defenderActor: CombatActor = "player"): ActionId {
@@ -2145,8 +2173,13 @@ function applyDirectDamageToFighter(defender: FighterState, damage: number): Dam
   return { armorAbsorbed: 0, armorBroken: false };
 }
 
-function applyPoisonTurnStart(state: CombatState, owner: TurnOwner): void {
-  const fighter = owner === "player" ? state.player : state.enemy;
+function applyPoisonTurnStart(state: CombatState, owner: CombatActor): void {
+  const fighter = getCombatActorFighter(state, owner);
+
+  if (!fighter) {
+    return;
+  }
+
   const poisonTurns = getFighterPoisonTurns(fighter);
 
   if (poisonTurns <= 0 || fighter.hp <= 0) {

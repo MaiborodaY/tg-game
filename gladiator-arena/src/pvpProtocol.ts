@@ -1,21 +1,29 @@
-import { START_DISTANCE, type ActionId, type CombatActionTrace, type CombatState, type Result, type TurnOwner } from "./combat";
+import { START_DISTANCE, type ActionId, type CombatActionTrace, type CombatActor, type CombatState, type Result, type TurnOwner } from "./combat";
 import type { HeroState } from "./hero";
 
 export type PvpSeat = "host" | "guest";
+export type PvpRoomKind = "pvp" | "duoBoss";
 export type PvpRoomStatus = "waiting" | "playing" | "finished";
 
 export interface PvpRoomSession {
   roomCode: string;
   token: string;
   seat: PvpSeat;
+  roomKind?: PvpRoomKind;
 }
 
 export interface PvpRoomSnapshot {
   roomCode: string;
   seat: PvpSeat;
+  roomKind?: PvpRoomKind;
   status: PvpRoomStatus;
+  bossId?: string;
+  bossName?: string;
+  bossTierId?: number;
   state?: CombatState;
   activeSeat?: PvpSeat;
+  controlledActor?: CombatActor;
+  autoSeats?: Partial<Record<PvpSeat, boolean>>;
   turnVersion: number;
   deadlineAt?: number;
   serverNow: number;
@@ -26,10 +34,16 @@ export type PvpServerMessage =
   | { type: "error"; message: string };
 
 export type PvpClientMessage =
-  | { type: "action"; actionId: ActionId; turnVersion: number };
+  | { type: "action"; actionId: ActionId; turnVersion: number }
+  | { type: "autoOff" };
 
 export interface PvpCreateRoomRequest {
   hero: HeroState;
+}
+
+export interface PvpCreateDuoBossRoomRequest {
+  hero: HeroState;
+  bossId: string;
 }
 
 export interface PvpJoinRoomRequest {
@@ -46,8 +60,12 @@ export interface PvpCancelRoomResponse {
 
 export interface PvpRoomListEntry {
   roomCode: string;
+  roomKind?: PvpRoomKind;
   hostName: string;
   hostLevel: number;
+  bossId?: string;
+  bossName?: string;
+  bossTierId?: number;
   createdAt: number;
   updatedAt: number;
   expiresAt?: number;
@@ -67,23 +85,43 @@ export interface PvpCurrentRoomResponse {
   serverNow: number;
 }
 
-export function getPvpActorForSeat(seat: PvpSeat): TurnOwner {
+export function getPvpActorForSeat(seat: PvpSeat, roomKind: PvpRoomKind = "pvp"): CombatActor {
+  if (roomKind === "duoBoss") {
+    return seat === "host" ? "player" : "helper";
+  }
+
   return seat === "host" ? "player" : "enemy";
 }
 
-export function getPvpSeatForActor(actor: TurnOwner): PvpSeat {
-  return actor === "player" ? "host" : "guest";
+export function getPvpSeatForActor(actor: CombatActor, roomKind: PvpRoomKind = "pvp"): PvpSeat | undefined {
+  if (actor === "player") {
+    return "host";
+  }
+
+  if (actor === "helper" || (roomKind === "duoBoss" && actor === "enemy")) {
+    return "guest";
+  }
+
+  return roomKind === "pvp" ? "guest" : undefined;
 }
 
-export function toViewerPvpSnapshot(snapshot: Omit<PvpRoomSnapshot, "seat" | "state"> & { state?: CombatState }, seat: PvpSeat): PvpRoomSnapshot {
+export function toViewerPvpSnapshot(snapshot: Omit<PvpRoomSnapshot, "seat" | "state" | "controlledActor"> & { state?: CombatState }, seat: PvpSeat): PvpRoomSnapshot {
+  const roomKind = snapshot.roomKind ?? "pvp";
+
   return {
     ...snapshot,
     seat,
-    state: snapshot.state ? toViewerCombatState(snapshot.state, seat) : undefined,
+    roomKind,
+    controlledActor: getPvpActorForSeat(seat, roomKind),
+    state: snapshot.state ? toViewerCombatState(snapshot.state, seat, roomKind) : undefined,
   };
 }
 
-export function toViewerCombatState(state: CombatState, seat: PvpSeat): CombatState {
+export function toViewerCombatState(state: CombatState, seat: PvpSeat, roomKind: PvpRoomKind = "pvp"): CombatState {
+  if (roomKind === "duoBoss") {
+    return state;
+  }
+
   return seat === "host" ? state : mirrorCombatState(state);
 }
 

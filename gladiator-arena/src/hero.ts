@@ -1124,6 +1124,30 @@ export function restoreHeroArenaEnergy(hero: HeroState, now = new Date().toISOSt
   };
 }
 
+export function grantHeroArenaEnergy(hero: HeroState, amount: number, now = new Date().toISOString()): HeroState {
+  const arenaEnergy = getHeroArenaEnergy(hero, now);
+  const grantAmount = Math.max(0, Math.floor(Number.isFinite(amount) ? amount : 0));
+
+  if (grantAmount <= 0 || arenaEnergy.current >= arenaEnergy.max) {
+    return refreshHeroArenaEnergy(hero, now);
+  }
+
+  const nextArenaEnergy: HeroArenaEnergy = {
+    ...arenaEnergy,
+    current: clampHeroArenaEnergyValue(arenaEnergy.current + grantAmount),
+  };
+
+  if (nextArenaEnergy.current === arenaEnergy.current) {
+    return refreshHeroArenaEnergy(hero, now);
+  }
+
+  return {
+    ...hero,
+    arenaEnergy: nextArenaEnergy,
+    updatedAt: now,
+  };
+}
+
 export function spendHeroArenaEnergy(
   hero: HeroState,
   amount = 1,
@@ -2336,6 +2360,26 @@ export function createDuoBossCombatStateFromHero(hero: HeroState, encounter: Are
   };
 }
 
+export function createOnlineDuoBossCombatStateFromHeroes(playerHero: HeroState, helperHero: HeroState, encounter: ArenaEncounter): CombatState {
+  const duoEncounter: ArenaEncounter = {
+    ...encounter,
+    mode: "duoBossAi",
+  };
+  const state = createCombatStateFromHero(playerHero, duoEncounter);
+  const helper = createCombatFighterStateFromHero(helperHero, freshState().player);
+
+  return {
+    ...state,
+    helper,
+    helperPosition: state.playerPosition,
+    enemy: scaleDuoBossFighter(state.enemy),
+    log: [
+      { text: `The gate slams open. ${playerHero.name} and ${helperHero.name} face ${encounter.name}.`, important: true },
+      { text: "Online duo: act first, your ally follows, then the boss answers." },
+    ],
+  };
+}
+
 function createDuoBossHelperLoadout(random: () => number, tierId: number): EnemyLoadout {
   const mediumOpponents = resolveArenaRandomOpponentsForTier(tierId).filter((opponent) => opponent.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID);
   const opponent = mediumOpponents.length > 0 ? pickRandom(mediumOpponents, random) : undefined;
@@ -2486,12 +2530,14 @@ export function applyCombatReward(
   combat: CombatState,
   now = new Date().toISOString(),
   random = Math.random,
+  options: { recordBossVictory?: boolean } = {},
 ): CombatRewardApplication {
+  const shouldRecordBossVictory = options.recordBossVictory ?? true;
   const reward = getBattleReward(combat);
   const heroAfterConsumables = applyCombatConsumableUsage(hero, combat, now);
   const heroAfterWinRecord = combat.result === "win" ? recordHeroWin(heroAfterConsumables, now) : heroAfterConsumables;
   const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterWinRecord, combat, random) : [];
-  const heroBeforeReward = combat.result === "win" && combat.encounter?.kind === "boss"
+  const heroBeforeReward = shouldRecordBossVictory && combat.result === "win" && combat.encounter?.kind === "boss"
     ? recordHeroArenaBossVictoryForTier(recordArenaBossDefeat(heroAfterWinRecord, combat.encounter.opponentId, now), combat.encounter.tierId, now)
     : heroAfterWinRecord;
   const heroWithReward = applyBattleReward(heroBeforeReward, reward, now);

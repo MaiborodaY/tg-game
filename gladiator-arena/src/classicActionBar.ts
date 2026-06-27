@@ -24,7 +24,9 @@ import {
   isPlayerExhausted,
   isRangedFighter,
   type ActionId,
+  type CombatActor,
   type CombatState,
+  type FighterState,
 } from "./combat";
 import type { ActionButtonOffsetKey, ClassicActionButtonSlotTuning, ClassicActionWheelMode } from "./debugTuning";
 import {
@@ -43,6 +45,7 @@ type ClassicWheelRangeMode = "far" | "near" | "melee" | "clinch" | "bow";
 
 interface ClassicActionBarOptions {
   getPreviewWheelMode?: () => ClassicActionWheelMode | undefined;
+  getControlledActor?: () => CombatActor;
 }
 
 const CLASSIC_WHEEL_TURN_MS = 520;
@@ -166,9 +169,10 @@ export function mountClassicActionBar(
     const tuning = getTuning?.();
     const buttonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
     const previewWheelMode = options.getPreviewWheelMode?.();
-    const wheelMode = getClassicWheelMode(state, previewWheelMode);
+    const controlledActor = options.getControlledActor?.() ?? "player";
+    const wheelMode = getClassicWheelMode(state, controlledActor, previewWheelMode);
     const isBattleActive = state.result === "playing";
-    const hasPlayerControl = isBattleActive && state.activeTurn === "player";
+    const hasPlayerControl = isBattleActive && isControlledActorTurn(state, controlledActor);
 
     syncWheelFitScale();
 
@@ -182,7 +186,7 @@ export function mountClassicActionBar(
     }
 
     const activeWheelMode = activeLayer.mode ?? wheelMode;
-    const activeWheelRangeMode = getClassicWheelRangeMode(state, wheelMode, previewWheelMode);
+    const activeWheelRangeMode = getClassicWheelRangeMode(state, controlledActor, wheelMode, previewWheelMode);
 
     actionBarRoot.dataset.classicWheelMode = activeWheelMode;
     actionBarRoot.dataset.classicWheelRange = activeWheelRangeMode;
@@ -203,6 +207,7 @@ export function mountClassicActionBar(
         buttonScale,
         isBattleActive,
         layer === activeLayer && hasPlayerControl && !isWheelTurning,
+        controlledActor,
       );
     });
   }
@@ -214,9 +219,10 @@ export function mountClassicActionBar(
     buttonScale: number,
     shouldShowButtons: boolean,
     isInteractiveLayer: boolean,
+    controlledActor: CombatActor,
   ): void {
     const visibleSlots = new Map(
-      layer.mode ? getClassicActionSlots(layer.mode, state, tuning?.classicActionButtonSlots).map((slot) => [slot.actionId, slot]) : [],
+      layer.mode ? getClassicActionSlots(layer.mode, state, controlledActor, tuning?.classicActionButtonSlots).map((slot) => [slot.actionId, slot]) : [],
     );
 
     layer.element.classList.toggle("classic-action-bar__layer--active", Boolean(layer.mode));
@@ -237,25 +243,27 @@ export function mountClassicActionBar(
       button.style.setProperty("--classic-slot-x", `${formatCssNumber(projectedSlot?.x ?? 0)}px`);
       button.style.setProperty("--classic-slot-y", `${formatCssNumber(projectedSlot?.y ?? 18)}px`);
       button.style.setProperty("--classic-slot-rotation", `${formatCssNumber(projectedSlot?.rotation ?? 0)}deg`);
-      syncActionTokenButton(button, icon, actionId, tuning, buttonScale, getActionTokenIconUrl(actionId, state));
-      const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, projectedSlot, isVisible, wheelRotationAngle);
-      const costLabel = syncClassicActionCostBadge(costBadge, actionId, state, projectedSlot, isVisible, isDimmed, wheelRotationAngle, buttonScale);
-      button.disabled = !isInteractiveLayer || !isVisible || !isClassicActionButtonEnabled(state, actionId);
+      syncActionTokenButton(button, icon, actionId, tuning, buttonScale, getActionTokenIconUrl(actionId, state, controlledActor));
+      const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, controlledActor, projectedSlot, isVisible, wheelRotationAngle);
+      const costLabel = syncClassicActionCostBadge(costBadge, actionId, state, controlledActor, projectedSlot, isVisible, isDimmed, wheelRotationAngle, buttonScale);
+      button.disabled = !isInteractiveLayer || !isVisible || !isClassicActionButtonEnabled(state, actionId, controlledActor);
       button.tabIndex = isVisible && isInteractiveLayer ? 0 : -1;
       button.setAttribute("aria-hidden", isVisible ? "false" : "true");
       button.classList.toggle("classic-action-bar__button--visible", isVisible);
       button.classList.toggle("classic-action-bar__button--hidden", !isVisible);
       button.classList.toggle("classic-action-bar__button--dimmed", isDimmed);
-      button.classList.toggle("action-arc__button--exhausted-rest", isVisible && actionId === "rest" && isPlayerExhausted(state));
+      button.classList.toggle("action-arc__button--exhausted-rest", isVisible && actionId === "rest" && isClassicActorExhausted(state, controlledActor));
       button.classList.toggle(
         "action-arc__button--lunge-reaches",
-        isVisible && isInteractiveLayer && actionId === "lunge" && !button.disabled && doesLungeReachTarget(state),
+        isVisible && isInteractiveLayer && actionId === "lunge" && !button.disabled && doesLungeReachTarget(state, controlledActor),
       );
       chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
 
-      const title = isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state) ? getSpellbookButtonTitle() : getActionTitle(actionId, state.player);
+      const controlledFighter = getClassicActorFighter(state, controlledActor) ?? state.player;
+      const showSpellbook = controlledActor === "player" && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state);
+      const title = showSpellbook ? getSpellbookButtonTitle() : getActionTitle(actionId, controlledFighter);
       const detail =
-        isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state) ? getSpellbookButtonDetail() : actions[actionId].detail;
+        showSpellbook ? getSpellbookButtonDetail() : actions[actionId].detail;
 
       button.setAttribute("aria-label", `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
       button.title = `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
@@ -342,16 +350,39 @@ function getClassicWheelHostWidth(root: HTMLElement): number {
   return typeof width === "number" && Number.isFinite(width) && width > 0 ? width : CLASSIC_WHEEL_BASE_DIAMETER;
 }
 
-function getClassicWheelMode(state: CombatState, previewWheelMode?: ClassicActionWheelMode): ClassicWheelMode {
+function isControlledActorTurn(state: CombatState, actor: CombatActor): boolean {
+  return state.activeTurn === (actor === "helper" ? "enemy" : actor);
+}
+
+function getClassicActorFighter(state: CombatState, actor: CombatActor): FighterState | undefined {
+  if (actor === "helper") {
+    return state.helper;
+  }
+
+  return actor === "enemy" ? state.enemy : state.player;
+}
+
+function isClassicActorExhausted(state: CombatState, actor: CombatActor): boolean {
+  if (actor === "player") {
+    return isPlayerExhausted(state);
+  }
+
+  const fighter = getClassicActorFighter(state, actor);
+
+  return Boolean(fighter && fighter.stamina <= 0);
+}
+
+function getClassicWheelMode(state: CombatState, actor: CombatActor, previewWheelMode?: ClassicActionWheelMode): ClassicWheelMode {
   const forcedWheelMode = getClassicWheelModeFromTuningMode(previewWheelMode);
 
   if (forcedWheelMode) {
     return forcedWheelMode;
   }
 
-  const isPlayerInClinch = isFighterInClinchRange(state, "player");
+  const fighter = getClassicActorFighter(state, actor) ?? state.player;
+  const isPlayerInClinch = isFighterInClinchRange(state, actor);
 
-  if (isRangedFighter(state.player) && !isPlayerInClinch) {
+  if (isRangedFighter(fighter) && !isPlayerInClinch) {
     return "bow-distance";
   }
 
@@ -368,6 +399,7 @@ function getClassicWheelModeFromTuningMode(mode?: ClassicActionWheelMode): Class
 
 function getClassicWheelRangeMode(
   state: CombatState,
+  actor: CombatActor,
   wheelMode: ClassicWheelMode,
   previewWheelMode?: ClassicActionWheelMode,
 ): ClassicWheelRangeMode {
@@ -381,7 +413,8 @@ function getClassicWheelRangeMode(
     return "bow";
   }
 
-  const band = distanceBand(state.distance, getFighterClinchRange(state.player));
+  const fighter = getClassicActorFighter(state, actor) ?? state.player;
+  const band = distanceBand(state.distance, getFighterClinchRange(fighter));
 
   return band === "very-far" ? "far" : band;
 }
@@ -402,9 +435,9 @@ function getClassicWheelRangeModeFromTuningMode(mode?: ClassicActionWheelMode): 
   return undefined;
 }
 
-function getClassicActionSlots(wheelMode: ClassicWheelMode, state: CombatState, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {
+function getClassicActionSlots(wheelMode: ClassicWheelMode, state: CombatState, actor: CombatActor, slotsTuning?: ClassicActionSlotTuning): ClassicActionSlot[] {
   const modeSlots = slotsTuning?.[classicWheelModeTuningKey[wheelMode]];
-  const slots = getDefaultClassicActionSlots(wheelMode).filter((slot) => shouldShowClassicActionSlot(state, slot.actionId));
+  const slots = getDefaultClassicActionSlots(wheelMode).filter((slot) => shouldShowClassicActionSlot(state, slot.actionId, actor));
 
   if (!modeSlots) {
     return slots;
@@ -413,28 +446,30 @@ function getClassicActionSlots(wheelMode: ClassicWheelMode, state: CombatState, 
   return slots.map((slot) => ({ ...slot, ...(modeSlots[slot.actionId] ?? {}) }));
 }
 
-function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId): boolean {
+function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId, actor: CombatActor): boolean {
+  const fighter = getClassicActorFighter(state, actor) ?? state.player;
+
   if (actionId === "switchWeapon") {
-    return canFighterSwitchWeapon(state.player);
+    return canFighterSwitchWeapon(fighter);
   }
 
   if (actionId === "shuriken") {
-    return getFighterShurikenCount(state.player) > 0;
+    return getFighterShurikenCount(fighter) > 0;
   }
 
   if (actionId === "scroll") {
-    return getFighterSpellbookScrollCount(state.player) > 0;
+    return actor === "player" && getFighterSpellbookScrollCount(fighter) > 0;
   }
 
   return true;
 }
 
-function isClassicActionButtonEnabled(state: CombatState, actionId: ActionId): boolean {
-  if (isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state)) {
+function isClassicActionButtonEnabled(state: CombatState, actionId: ActionId, actor: CombatActor): boolean {
+  if (actor === "player" && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state)) {
     return shouldEnableSpellbookButton(state);
   }
 
-  return canUseAction(state, actionId, "player");
+  return canUseAction(state, actionId, actor);
 }
 
 function getDefaultClassicActionSlots(wheelMode: ClassicWheelMode): ClassicActionSlot[] {
@@ -491,11 +526,12 @@ function syncClassicActionChanceBadge(
   badge: HTMLSpanElement,
   actionId: ActionId,
   state: CombatState,
+  actor: CombatActor,
   slot: ClassicActionSlot | undefined,
   isVisible: boolean,
   wheelRotationAngle: number,
 ): string | undefined {
-  const label = getActionHitChanceLabel(actionId, state);
+  const label = getActionHitChanceLabel(actionId, state, actor);
 
   if (!label || !slot || !isVisible) {
     badge.hidden = true;
@@ -506,7 +542,7 @@ function syncClassicActionChanceBadge(
 
   badge.hidden = false;
   badge.textContent = label;
-  const isTargetVulnerable = isActionTargetRestVulnerable(state, actionId, "player");
+  const isTargetVulnerable = isActionTargetRestVulnerable(state, actionId, actor);
 
   badge.classList.toggle("action-arc__chance--target-vulnerable", isTargetVulnerable);
   badge.classList.toggle("classic-action-bar__chance--target-vulnerable", isTargetVulnerable);
@@ -522,13 +558,14 @@ function syncClassicActionCostBadge(
   badge: HTMLSpanElement,
   actionId: ActionId,
   state: CombatState,
+  actor: CombatActor,
   slot: ClassicActionSlot | undefined,
   isVisible: boolean,
   isDimmed: boolean,
   wheelRotationAngle: number,
   buttonScale: number,
 ): string | undefined {
-  const label = syncActionCostBadgeElement(badge, actionId, state, Boolean(slot) && isVisible);
+  const label = syncActionCostBadgeElement(badge, actionId, state, Boolean(slot) && isVisible, actor);
 
   if (!label || !slot || !isVisible) {
     badge.classList.remove("classic-action-bar__cost--dimmed");

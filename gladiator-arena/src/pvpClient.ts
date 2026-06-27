@@ -1,11 +1,21 @@
 import type { ActionId } from "./combat";
 import { getTelegramInitData } from "./telegram";
 import type { HeroState } from "./hero";
-import type { PvpCancelRoomResponse, PvpClientMessage, PvpCurrentRoomResponse, PvpListRoomsResponse, PvpRoomResponse, PvpRoomSession, PvpServerMessage } from "./pvpProtocol";
+import type {
+  PvpCancelRoomResponse,
+  PvpClientMessage,
+  PvpCurrentRoomResponse,
+  PvpListRoomsResponse,
+  PvpRoomKind,
+  PvpRoomResponse,
+  PvpRoomSession,
+  PvpServerMessage,
+} from "./pvpProtocol";
 
 export interface PvpConnection {
   close: () => void;
   sendAction: (actionId: ActionId, turnVersion: number) => void;
+  sendAutoOff: () => void;
 }
 
 export interface PvpConnectionHandlers {
@@ -23,8 +33,12 @@ export async function createPvpRoom(hero: HeroState): Promise<PvpRoomResponse> {
   return postPvpJson<PvpRoomResponse>("rooms", { hero });
 }
 
-export async function listPvpRooms(): Promise<PvpListRoomsResponse> {
-  return getPvpJson<PvpListRoomsResponse>("rooms");
+export async function createDuoBossRoom(hero: HeroState, bossId: string): Promise<PvpRoomResponse> {
+  return postPvpJson<PvpRoomResponse>("rooms/duo-boss", { hero, bossId });
+}
+
+export async function listPvpRooms(roomKind?: PvpRoomKind): Promise<PvpListRoomsResponse> {
+  return getPvpJson<PvpListRoomsResponse>(roomKind ? `rooms?kind=${encodeURIComponent(roomKind)}` : "rooms");
 }
 
 export async function getCurrentPvpRoom(): Promise<PvpRoomResponse | undefined> {
@@ -63,22 +77,29 @@ export function connectPvpRoom(session: PvpRoomSession, handlers: PvpConnectionH
     close: () => socket.close(),
     sendAction: (actionId: ActionId, turnVersion: number) => {
       const message: PvpClientMessage = { type: "action", actionId, turnVersion };
-      const payload = JSON.stringify(message);
-
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(payload);
-        return;
-      }
-
-      if (socket.readyState === WebSocket.CONNECTING) {
-        socket.addEventListener("open", () => {
-          if (socket.readyState === WebSocket.OPEN) {
-            socket.send(payload);
-          }
-        }, { once: true });
-      }
+      sendPvpSocketMessage(socket, message);
+    },
+    sendAutoOff: () => {
+      sendPvpSocketMessage(socket, { type: "autoOff" });
     },
   };
+}
+
+function sendPvpSocketMessage(socket: WebSocket, message: PvpClientMessage): void {
+  const payload = JSON.stringify(message);
+
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(payload);
+    return;
+  }
+
+  if (socket.readyState === WebSocket.CONNECTING) {
+    socket.addEventListener("open", () => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(payload);
+      }
+    }, { once: true });
+  }
 }
 
 export function getPvpApiBaseUrl(): string {

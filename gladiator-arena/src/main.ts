@@ -28,7 +28,7 @@ import {
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatState } from "./combat";
+import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatActor, type CombatState } from "./combat";
 import { DAILY_ARENA_ENERGY_ICON_ASSET_URL, pickArenaBackgroundVariantIdForTier, SHOP_GOLD_COIN_ICON_ASSET_URL, SHOP_XP_ICON_ASSET_URL } from "./assets";
 import { debugTuning } from "./debugTuning";
 import { getDomRefs, renderDom, type BattleResultPresentation, type BattleResultPresentationStage } from "./domUi";
@@ -65,6 +65,7 @@ import {
   getArenaTierDefinitions,
   getBattleReward,
   getHeroArenaEnergy,
+  grantHeroArenaEnergy,
   hasHeroArenaBossVictoryForTier,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
@@ -92,8 +93,8 @@ import {
 import { syncHudTuning } from "./hudTuning";
 import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
-import { cancelPvpRoom, connectPvpRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
-import type { PvpRoomListEntry, PvpRoomResponse, PvpRoomSession, PvpRoomSnapshot, PvpServerMessage } from "./pvpProtocol";
+import { cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
+import { getPvpActorForSeat, type PvpRoomKind, type PvpRoomListEntry, type PvpRoomResponse, type PvpRoomSession, type PvpRoomSnapshot, type PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopProductIcons } from "./shopItemIcons";
 import { isShopProductSealed } from "./shopPresentation";
@@ -132,6 +133,8 @@ const cityPvpCreateButton = document.querySelector<HTMLButtonElement>("#cityPvpC
 const cityPvpJoinButton = document.querySelector<HTMLButtonElement>("#cityPvpJoinButton");
 const cityPvpRoomList = document.querySelector<HTMLElement>("#cityPvpRoomList");
 const cityPvpStatus = document.querySelector<HTMLOutputElement>("#cityPvpStatus");
+const cityOnlinePveTab = document.querySelector<HTMLButtonElement>("#cityOnlinePveTab");
+const cityOnlinePvpTab = document.querySelector<HTMLButtonElement>("#cityOnlinePvpTab");
 const pvpTurnTimer = document.querySelector<HTMLOutputElement>("#pvpTurnTimer");
 const arenaMenu = document.querySelector<HTMLElement>("[data-arena-menu]");
 const arenaMenuButton = document.querySelector<HTMLButtonElement>("[data-arena-menu-button]");
@@ -189,6 +192,7 @@ let pvpActionPending = false;
 let pvpControlsBusy = false;
 let pvpRoomsVisible = false;
 let pvpRoomList: PvpRoomListEntry[] = [];
+let activeOnlineRoomKind: PvpRoomKind = "duoBoss";
 let pvpDeadlineLocalTime: number | undefined;
 let pvpTimerInterval: number | undefined;
 let hasStarted = false;
@@ -220,6 +224,9 @@ const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_RANDOM_ENERGY_COST = 1;
 const ARENA_BOSS_ENERGY_COST = 2;
 const ARENA_DUO_BOSS_ENERGY_COST = 3;
+const ONLINE_DUO_GUEST_ENERGY_REWARD = 5;
+const ONLINE_DUO_HOST_SPEND_STORAGE_PREFIX = "dust-arena-online-duo-host-spend:";
+const ONLINE_DUO_REWARD_STORAGE_PREFIX = "dust-arena-online-duo-reward:";
 const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 const AUTO_PLAYER_TURN_PACING_MS = 120;
@@ -796,11 +803,21 @@ function syncTurnProbe(): void {
 }
 
 function syncActionArc(): void {
-  const visibleState = isTurnAnimationLocked || isArenaEntryLoading ? { ...state, activeTurn: "enemy" as const } : state;
+  const controlledActor = getControlledActionActor();
+  const lockedTurn = controlledActor === "helper" ? "player" : "enemy";
+  const visibleState = isTurnAnimationLocked || isArenaEntryLoading ? { ...state, activeTurn: lockedTurn } : state;
 
   actionArc?.sync(visibleState);
   classicActionBar?.sync(visibleState);
   syncAutoBattleToggle();
+}
+
+function getControlledActionActor(): CombatActor {
+  if (gameMode !== "pvp" || !pvpSession) {
+    return "player";
+  }
+
+  return pvpSnapshot?.controlledActor ?? getPvpActorForSeat(pvpSession.seat, pvpSession.roomKind ?? pvpSnapshot?.roomKind ?? "pvp");
 }
 
 function setTurnAnimationLocked(locked: boolean): void {
@@ -839,7 +856,14 @@ function mountAutoBattleOffButton(host: HTMLElement): HTMLButtonElement {
   button.setAttribute("aria-label", "Turn off auto battle");
   button.setAttribute("aria-hidden", "true");
   button.title = "Turn off auto battle";
-  button.addEventListener("click", () => setAutoBattleEnabled(false));
+  button.addEventListener("click", () => {
+    if (isOnlineDuoSeatAutoEnabled()) {
+      handlePvpAutoOff();
+      return;
+    }
+
+    setAutoBattleEnabled(false);
+  });
   host.append(button);
 
   return button;
@@ -887,18 +911,33 @@ function syncAutoBattleToggle(): void {
   }
 
   const canAutoBattle = gameMode === "pve" && !isInCity;
+  const onlineAutoActive = isOnlineDuoSeatAutoEnabled();
   const battleActive = canAutoBattle && hasStarted && state.result === "playing" && !isArenaEntryLoading;
   const autoBattleUiActive = autoBattleEnabled && battleActive;
+  const offButtonActive = autoBattleUiActive || onlineAutoActive;
 
   autoBattleButton.hidden = !canAutoBattle;
   autoBattleButton.disabled = !battleActive || autoBattleUiActive || isArenaEntryTransitionPlaying;
   autoBattleButton.classList.toggle("auto-battle-toggle--active", autoBattleUiActive);
   autoBattleButton.setAttribute("aria-pressed", autoBattleUiActive ? "true" : "false");
-  autoBattleOffButton.hidden = !canAutoBattle;
-  autoBattleOffButton.disabled = !autoBattleUiActive;
-  autoBattleOffButton.setAttribute("aria-hidden", autoBattleUiActive ? "false" : "true");
-  dom.gameScreen.classList.toggle("battle-screen--auto-battle-active", autoBattleUiActive);
+  autoBattleOffButton.hidden = !canAutoBattle && !onlineAutoActive;
+  autoBattleOffButton.disabled = !offButtonActive;
+  autoBattleOffButton.setAttribute("aria-hidden", offButtonActive ? "false" : "true");
+  dom.gameScreen.classList.toggle("battle-screen--auto-battle-active", offButtonActive);
   dom.gameScreen.classList.toggle("battle-screen--auto-battle-transitioning", autoBattleUiActive && autoBattleActivationPending);
+}
+
+function isOnlineDuoSeatAutoEnabled(): boolean {
+  return gameMode === "pvp"
+    && !isInCity
+    && pvpSnapshot?.roomKind === "duoBoss"
+    && pvpSnapshot.status === "playing"
+    && state.result === "playing"
+    && Boolean(pvpSession && pvpSnapshot.autoSeats?.[pvpSession.seat]);
+}
+
+function handlePvpAutoOff(): void {
+  pvpConnection?.sendAutoOff();
 }
 
 function scheduleAutoPlayerTurn(): void {
@@ -1455,7 +1494,11 @@ function createCityArenaTierOption(tier: ArenaTierDefinition): HTMLOptionElement
 function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   const card = document.createElement("div");
   const button = document.createElement("button");
+  const duoWrap = document.createElement("div");
   const duoButton = document.createElement("button");
+  const duoChoices = document.createElement("div");
+  const duoBotButton = document.createElement("button");
+  const duoOnlineButton = document.createElement("button");
   const name = document.createElement("strong");
   const rewardLine = document.createElement("span");
   const reward = document.createElement("span");
@@ -1493,9 +1536,40 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   duoButton.dataset.cityArenaEnergyCost = `${ARENA_DUO_BOSS_ENERGY_COST}`;
   duoButton.dataset.defaultTitle = "Fight this boss with an AI helper.";
   duoButton.addEventListener("click", () => {
+    if (duoButton.disabled) {
+      return;
+    }
+
+    duoChoices.hidden = !duoChoices.hidden;
+  });
+  duoChoices.className = "city-arena-menu__boss-duo-choices";
+  duoChoices.hidden = true;
+  duoBotButton.className = "city-arena-menu__boss-duo-choice";
+  duoBotButton.type = "button";
+  duoBotButton.textContent = "BOT";
+  duoBotButton.title = "Fight this boss with an AI helper.";
+  duoBotButton.dataset.cityArenaBotButton = "true";
+  duoBotButton.dataset.cityArenaBossTierId = `${boss.tierId}`;
+  duoBotButton.dataset.cityArenaEnergyCost = `${ARENA_DUO_BOSS_ENERGY_COST}`;
+  duoBotButton.dataset.defaultTitle = "Fight this boss with an AI helper.";
+  duoBotButton.addEventListener("click", () => {
     void startSelectedArena({ kind: "boss", bossId: boss.id, duo: true });
   });
-  card.append(button, duoButton);
+  duoOnlineButton.className = "city-arena-menu__boss-duo-choice";
+  duoOnlineButton.type = "button";
+  duoOnlineButton.textContent = "ONLINE";
+  duoOnlineButton.title = "Create an online help request.";
+  duoOnlineButton.dataset.cityArenaBotButton = "true";
+  duoOnlineButton.dataset.cityArenaBossTierId = `${boss.tierId}`;
+  duoOnlineButton.dataset.cityArenaEnergyCost = `${ARENA_DUO_BOSS_ENERGY_COST}`;
+  duoOnlineButton.dataset.defaultTitle = "Create an online help request.";
+  duoOnlineButton.addEventListener("click", () => {
+    void handleCreateOnlineDuoBossRoom(boss);
+  });
+  duoChoices.append(duoBotButton, duoOnlineButton);
+  duoWrap.className = "city-arena-menu__boss-duo-wrap";
+  duoWrap.append(duoButton, duoChoices);
+  card.append(button, duoWrap);
 
   return card;
 }
@@ -1644,7 +1718,7 @@ function normalizeArenaEnergyCost(value: number): number {
 
 function getCityArenaBotDisabledTitle(energyCost = ARENA_RANDOM_ENERGY_COST): string {
   if (isPvpRoomBlockingArena()) {
-    return "Cancel PvP room before fighting bots.";
+    return "Cancel online room before fighting bots.";
   }
 
   if (arenaEnergySpendPending) {
@@ -1675,17 +1749,50 @@ function setPvpControlsBusy(busy: boolean): void {
   syncPvpControls();
 }
 
+function setActiveOnlineRoomKind(roomKind: PvpRoomKind): void {
+  if (activeOnlineRoomKind === roomKind) {
+    return;
+  }
+
+  activeOnlineRoomKind = roomKind;
+  pvpRoomsVisible = false;
+  pvpRoomList = [];
+  syncPvpControls();
+  setPvpStatus("");
+}
+
 function syncPvpControls(): void {
   const disabled = pvpControlsBusy || Boolean(pvpSession);
+  const isPveTab = activeOnlineRoomKind === "duoBoss";
+
+  syncOnlineTabs();
 
   if (cityPvpCreateButton) {
-    cityPvpCreateButton.disabled = disabled;
+    cityPvpCreateButton.textContent = isPveTab ? "BOSS DUO" : "CREATE";
+    cityPvpCreateButton.disabled = disabled || isPveTab;
+    cityPvpCreateButton.title = isPveTab ? "Use a boss DUO Online button to create a help request." : "Create PvP room.";
   }
   if (cityPvpJoinButton) {
+    cityPvpJoinButton.textContent = pvpRoomsVisible ? "REFRESH" : "SEARCH";
     cityPvpJoinButton.disabled = disabled;
+    cityPvpJoinButton.title = isPveTab ? "Search PVE help requests." : "Search PvP rooms.";
   }
   syncCityArenaBotControls();
   renderPvpRoomList();
+}
+
+function syncOnlineTabs(): void {
+  syncOnlineTab(cityOnlinePveTab, activeOnlineRoomKind === "duoBoss");
+  syncOnlineTab(cityOnlinePvpTab, activeOnlineRoomKind === "pvp");
+}
+
+function syncOnlineTab(button: HTMLButtonElement | null, isActive: boolean): void {
+  if (!button) {
+    return;
+  }
+
+  button.classList.toggle("city-arena-menu__online-tab--active", isActive);
+  button.setAttribute("aria-selected", isActive ? "true" : "false");
 }
 
 function renderPvpRoomList(): void {
@@ -1711,7 +1818,7 @@ function renderPvpRoomList(): void {
 }
 
 function getVisiblePvpRoomEntries(): PvpRoomListEntry[] {
-  const entries = [...pvpRoomList];
+  const entries = pvpRoomList.filter((entry) => (entry.roomKind ?? "pvp") === activeOnlineRoomKind);
   const currentEntry = getCurrentPvpRoomListEntry();
 
   if (currentEntry && !entries.some((entry) => entry.roomCode === currentEntry.roomCode)) {
@@ -1725,13 +1832,22 @@ function getCurrentPvpRoomListEntry(): PvpRoomListEntry | undefined {
   if (!pvpSession || pvpSession.seat !== "host" || pvpSnapshot?.status !== "waiting") {
     return undefined;
   }
+  const roomKind = pvpSession.roomKind ?? pvpSnapshot.roomKind ?? "pvp";
+
+  if (roomKind !== activeOnlineRoomKind) {
+    return undefined;
+  }
 
   const now = Date.now();
 
   return {
     roomCode: pvpSession.roomCode,
+    roomKind,
     hostName: hero.name,
     hostLevel: hero.level,
+    bossId: pvpSnapshot.bossId,
+    bossName: pvpSnapshot.bossName,
+    bossTierId: pvpSnapshot.bossTierId,
     createdAt: pvpSnapshot.serverNow || now,
     updatedAt: pvpSnapshot.serverNow || now,
   };
@@ -1750,10 +1866,10 @@ function createPvpRoomListItem(room: PvpRoomListEntry): HTMLElement {
   name.className = "city-arena-menu__pvp-room-name";
   name.textContent = isOwnRoom ? `${room.hostName} (YOU)` : room.hostName;
   meta.className = "city-arena-menu__pvp-room-meta";
-  meta.textContent = `LV ${room.hostLevel} - WAITING`;
+  meta.textContent = formatPvpRoomListMeta(room);
   button.className = "city-arena-menu__pvp-button city-arena-menu__pvp-room-button";
   button.type = "button";
-  button.textContent = isOwnRoom ? "CANCEL" : "JOIN";
+  button.textContent = isOwnRoom ? "CANCEL" : (room.roomKind === "duoBoss" ? "HELP" : "JOIN");
   button.disabled = pvpControlsBusy || (!isOwnRoom && Boolean(pvpSession));
   button.addEventListener("click", () => {
     if (isOwnRoom) {
@@ -1767,6 +1883,17 @@ function createPvpRoomListItem(room: PvpRoomListEntry): HTMLElement {
   copy.append(name, meta);
   item.append(copy, button);
   return item;
+}
+
+function formatPvpRoomListMeta(room: PvpRoomListEntry): string {
+  if (room.roomKind === "duoBoss") {
+    const bossName = room.bossName ?? "Boss";
+    const tierText = room.bossTierId ? `T${room.bossTierId}` : "PVE";
+
+    return `LV ${room.hostLevel} - ${tierText} - ${bossName}`;
+  }
+
+  return `LV ${room.hostLevel} - WAITING`;
 }
 
 function createPvpRoomListMessage(message: string): HTMLElement {
@@ -1785,7 +1912,7 @@ async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<v
   }
 
   try {
-    const response = await listPvpRooms();
+    const response = await listPvpRooms(activeOnlineRoomKind);
 
     pvpRoomList = response.rooms;
     setPvpControlsBusy(false);
@@ -1802,6 +1929,10 @@ async function handleCreatePvpRoom(): Promise<void> {
   if (pvpControlsBusy || pvpSession) {
     return;
   }
+  if (activeOnlineRoomKind === "duoBoss") {
+    setPvpStatus("Use boss DUO Online to create a help request.");
+    return;
+  }
 
   setPvpControlsBusy(true);
   setPvpStatus("Creating room...");
@@ -1811,6 +1942,33 @@ async function handleCreatePvpRoom(): Promise<void> {
     await refreshPvpRoomList({ silent: true });
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP room failed.");
+    setPvpControlsBusy(false);
+  }
+}
+
+async function handleCreateOnlineDuoBossRoom(boss: ArenaBossDefinition): Promise<void> {
+  if (pvpControlsBusy || pvpSession) {
+    return;
+  }
+
+  const disabledTitle = getCityArenaBossDisabledTitle(boss, ARENA_DUO_BOSS_ENERGY_COST);
+
+  if (disabledTitle) {
+    renderCityArenaMenu();
+    window.alert(disabledTitle);
+    return;
+  }
+
+  activeOnlineRoomKind = "duoBoss";
+  pvpRoomsVisible = true;
+  setPvpControlsBusy(true);
+  setPvpStatus("Creating help request...");
+
+  try {
+    beginPvpRoom(await createDuoBossRoom(hero, boss.id));
+    await refreshPvpRoomList({ silent: true });
+  } catch (error) {
+    setPvpStatus(error instanceof Error ? error.message : "Online duo room failed.");
     setPvpControlsBusy(false);
   }
 }
@@ -1834,7 +1992,7 @@ async function handleSearchPvpRooms(): Promise<void> {
       return;
     }
 
-    const response = await listPvpRooms();
+    const response = await listPvpRooms(activeOnlineRoomKind);
 
     pvpRoomList = response.rooms;
     setPvpControlsBusy(false);
@@ -1866,7 +2024,7 @@ async function handleCancelPvpRoom(): Promise<void> {
     return;
   }
   if (!canCancelPvpRoom()) {
-    setPvpStatus("PvP match already started.");
+    setPvpStatus("Online match already started.");
     return;
   }
 
@@ -1891,10 +2049,12 @@ async function handleCancelPvpRoom(): Promise<void> {
 
 function beginPvpRoom(response: PvpRoomResponse): void {
   leavePvpRoom({ keepStatus: true });
+  activeOnlineRoomKind = response.roomKind ?? response.snapshot.roomKind ?? "pvp";
   pvpSession = {
     roomCode: response.roomCode,
     token: response.token,
     seat: response.seat,
+    roomKind: response.roomKind ?? response.snapshot.roomKind ?? "pvp",
   };
   pvpSnapshot = response.snapshot;
   pvpRoomsVisible = true;
@@ -1904,7 +2064,7 @@ function beginPvpRoom(response: PvpRoomResponse): void {
   pvpConnection = connectPvpRoom(pvpSession, {
     onMessage: handlePvpServerMessage,
     onClose: handlePvpSocketClose,
-    onError: () => setPvpStatus("PvP socket error."),
+    onError: () => setPvpStatus("Online socket error."),
   });
   handlePvpSnapshot(response.snapshot);
 }
@@ -1914,7 +2074,7 @@ function handlePvpSocketClose(): void {
     return;
   }
 
-  const shouldShowDisconnectResult = gameMode === "pvp" && !isInCity && state.result === "playing";
+  const shouldShowDisconnectResult = gameMode === "pvp" && pvpSnapshot?.roomKind !== "duoBoss" && !isInCity && state.result === "playing";
 
   pvpConnection = undefined;
   pvpSession = undefined;
@@ -1922,7 +2082,7 @@ function handlePvpSocketClose(): void {
   pvpActionPending = false;
   clearPvpTurnTimer();
   setTurnAnimationLocked(false);
-  setPvpStatus("PvP disconnected.");
+  setPvpStatus("Online disconnected.");
   syncPvpControls();
 
   if (shouldShowDisconnectResult) {
@@ -1949,9 +2109,13 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
   setPvpStatus(formatPvpRoomStatus(snapshot));
   syncPvpTurnTimer(snapshot);
 
+  applyOnlineDuoHostStartCostIfNeeded(snapshot);
+
   if (!snapshot.state) {
     return;
   }
+
+  applyOnlineDuoRewardIfNeeded(snapshot);
 
   if (isInCity) {
     closeCityArenaMenu();
@@ -1967,11 +2131,15 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
 
 function formatPvpRoomStatus(snapshot: PvpRoomSnapshot): string {
   if (snapshot.status === "waiting") {
-    return "Waiting for opponent.";
+    return snapshot.roomKind === "duoBoss" ? "Waiting for helper." : "Waiting for opponent.";
   }
 
   if (snapshot.status === "finished") {
-    return "PvP match finished.";
+    return snapshot.roomKind === "duoBoss" ? "Duo fight finished." : "PvP match finished.";
+  }
+
+  if (snapshot.roomKind === "duoBoss") {
+    return snapshot.activeSeat === snapshot.seat ? "Your turn." : "Ally turn.";
   }
 
   return snapshot.activeSeat === snapshot.seat ? "Your turn." : "Opponent turn.";
@@ -1989,6 +2157,118 @@ function handlePvpAction(actionId: ActionId): void {
   pvpActionPending = true;
   setTurnAnimationLocked(true);
   pvpConnection.sendAction(actionId, pvpSnapshot.turnVersion);
+}
+
+function applyOnlineDuoHostStartCostIfNeeded(snapshot: PvpRoomSnapshot): void {
+  if (!isOnlineDuoSnapshot(snapshot) || snapshot.seat !== "host" || snapshot.status === "waiting") {
+    return;
+  }
+
+  const markerKey = getOnlineDuoHostSpendMarkerKey(snapshot);
+
+  if (hasLocalMarker(markerKey)) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const spendResult = spendHeroArenaEnergy(hero, ARENA_DUO_BOSS_ENERGY_COST, now);
+
+  if (!spendResult.ok) {
+    hero = spendResult.hero;
+    saveLocalHeroSave(hero);
+    renderCityHero();
+    setPvpStatus(getArenaEnergyShortageMessage(spendResult.arenaEnergy.current, ARENA_DUO_BOSS_ENERGY_COST));
+    return;
+  }
+
+  hero = spendResult.hero;
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave("online-duo-host-energy");
+  setLocalMarker(markerKey);
+  renderCityHero();
+  renderCityArenaMenu();
+}
+
+function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
+  if (!isOnlineDuoSnapshot(snapshot) || snapshot.status !== "finished" || !snapshot.state || snapshot.state.result === "playing") {
+    return;
+  }
+
+  const markerKey = getOnlineDuoRewardMarkerKey(snapshot);
+
+  if (hasLocalMarker(markerKey)) {
+    return;
+  }
+
+  const rewardTimestamp = new Date().toISOString();
+  const combatForReward = createOnlineDuoRewardCombat(snapshot);
+  const rewardApplication = applyCombatReward(hero, combatForReward, rewardTimestamp, Math.random, {
+    recordBossVictory: snapshot.seat === "host",
+  });
+  const { reward, loot, heroBeforeReward } = rewardApplication;
+  let heroAfterReward = rewardApplication.heroAfterReward;
+
+  if (snapshot.seat === "guest" && snapshot.state.result === "win") {
+    heroAfterReward = grantHeroArenaEnergy(heroAfterReward, ONLINE_DUO_GUEST_ENERGY_REWARD, rewardTimestamp);
+  }
+
+  hero = heroAfterReward;
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave(snapshot.seat === "host" ? "online-duo-host-reward" : "online-duo-helper-reward");
+  rememberBossEquipmentHint(snapshot.state, loot);
+  syncPlayerCityBodyScale();
+  renderCityHero();
+  syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
+  pendingBattleResultPresentation = {
+    id: `battle-result-${++battleResultPresentationId}`,
+    reward,
+    loot,
+    heroBeforeReward,
+    heroAfterReward,
+  };
+  startBattleResultReturnGate();
+  markRewardUiRenderDirty();
+  setLocalMarker(markerKey);
+}
+
+function createOnlineDuoRewardCombat(snapshot: PvpRoomSnapshot): CombatState {
+  if (snapshot.seat !== "guest" || !snapshot.state?.helper) {
+    return snapshot.state as CombatState;
+  }
+
+  return {
+    ...snapshot.state,
+    player: snapshot.state.helper,
+  };
+}
+
+function isOnlineDuoSnapshot(snapshot: PvpRoomSnapshot): boolean {
+  return snapshot.roomKind === "duoBoss";
+}
+
+function getOnlineDuoHostSpendMarkerKey(snapshot: PvpRoomSnapshot): string {
+  return `${ONLINE_DUO_HOST_SPEND_STORAGE_PREFIX}${snapshot.roomCode}:host`;
+}
+
+function getOnlineDuoRewardMarkerKey(snapshot: PvpRoomSnapshot): string {
+  return `${ONLINE_DUO_REWARD_STORAGE_PREFIX}${snapshot.roomCode}:${snapshot.seat}`;
+}
+
+function hasLocalMarker(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setLocalMarker(key: string): void {
+  try {
+    window.localStorage.setItem(key, "1");
+  } catch {
+    // Storage can be unavailable in embedded browsers; the reward path still completes.
+  }
 }
 
 function leavePvpRoom(options: { keepStatus?: boolean } = {}): void {
@@ -2027,7 +2307,11 @@ function updatePvpTurnTimer(): void {
   }
 
   const remainingSeconds = Math.max(0, Math.ceil((pvpDeadlineLocalTime - Date.now()) / 1000));
-  const turnLabel = pvpSnapshot.activeSeat === pvpSession?.seat ? "YOUR TURN" : "OPPONENT";
+  const turnLabel = pvpSnapshot.activeSeat === pvpSession?.seat
+    ? "YOUR TURN"
+    : pvpSnapshot.roomKind === "duoBoss"
+      ? "ALLY"
+      : "OPPONENT";
 
   pvpTurnTimer.textContent = `${turnLabel} ${remainingSeconds}s`;
 }
@@ -2069,7 +2353,7 @@ function closeCityArenaMenu(): void {
 
 async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> {
   if (isPvpRoomBlockingArena()) {
-    setPvpStatus("Cancel PvP room before fighting bots.");
+    setPvpStatus("Cancel online room before fighting bots.");
     syncPvpControls();
     return;
   }
@@ -2106,7 +2390,7 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
   }
 
   if (isPvpRoomBlockingArena()) {
-    setPvpStatus("Cancel PvP room before fighting bots.");
+    setPvpStatus("Cancel online room before fighting bots.");
     syncPvpControls();
     return;
   }
@@ -2506,7 +2790,9 @@ function startGame(options: StartGameOptions = {}): void {
   dom.gameScreen.hidden = false;
   document.body.classList.add("arena-active");
   actionArc = mountActionArc(dom.gameScreen, handleAction, () => debugTuning);
-  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning);
+  classicActionBar = mountClassicActionBar(dom.gameScreen, handleAction, () => debugTuning, {
+    getControlledActor: getControlledActionActor,
+  });
   autoBattleButton = mountAutoBattleToggle(dom.gameScreen);
   autoBattleOffButton = mountAutoBattleOffButton(dom.gameScreen);
   dom.gameScreen.addEventListener("arena-action-click", handleActionArcClick);
@@ -3071,6 +3357,8 @@ cityPvpCreateButton?.addEventListener("click", () => {
 cityPvpJoinButton?.addEventListener("click", () => {
   void handleSearchPvpRooms();
 });
+cityOnlinePveTab?.addEventListener("click", () => setActiveOnlineRoomKind("duoBoss"));
+cityOnlinePvpTab?.addEventListener("click", () => setActiveOnlineRoomKind("pvp"));
 cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
   void handleHeroProgressReset();
 });

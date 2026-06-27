@@ -1,6 +1,21 @@
 import { DurableObject } from "cloudflare:workers";
-import { actionOrder, canUseTurnAction, resolvePvpTurn, type ActionId, type CombatState } from "../../../gladiator-arena/src/combat";
-import { createPvpCombatStateFromHeroes, type HeroState } from "../../../gladiator-arena/src/hero";
+import {
+  actionOrder,
+  canUseTurnAction,
+  choosePlayerAutoAction,
+  resolveDuoBossHelperPlayerTurn,
+  resolveEnemyTurn,
+  resolvePvpTurn,
+  type ActionId,
+  type CombatState,
+} from "../../../gladiator-arena/src/combat";
+import {
+  createArenaBossEncounter,
+  createOnlineDuoBossCombatStateFromHeroes,
+  createPvpCombatStateFromHeroes,
+  getArenaBossDefinition,
+  type HeroState,
+} from "../../../gladiator-arena/src/hero";
 import {
   getPvpActorForSeat,
   getPvpSeatForActor,
@@ -8,11 +23,13 @@ import {
   type PvpCancelRoomRequest,
   type PvpCancelRoomResponse,
   type PvpClientMessage,
+  type PvpCreateDuoBossRoomRequest,
   type PvpCreateRoomRequest,
   type PvpCurrentRoomResponse,
   type PvpJoinRoomRequest,
   type PvpListRoomsResponse,
   type PvpRoomListEntry,
+  type PvpRoomKind,
   type PvpRoomResponse,
   type PvpRoomSnapshot,
   type PvpRoomStatus,
@@ -34,11 +51,16 @@ interface RoomPlayer {
 
 interface RoomRecord {
   roomCode: string;
+  roomKind: PvpRoomKind;
   status: PvpRoomStatus;
   host?: RoomPlayer;
   guest?: RoomPlayer;
+  bossId?: string;
+  bossName?: string;
+  bossTierId?: number;
   state?: CombatState;
   activeSeat?: PvpSeat;
+  autoSeats?: Partial<Record<PvpSeat, boolean>>;
   timeoutStreaks?: Partial<Record<PvpSeat, number>>;
   turnVersion: number;
   deadlineAt?: number;
@@ -51,6 +73,7 @@ interface PvpActiveSession {
   roomCode: string;
   seat: PvpSeat;
   token: string;
+  roomKind?: PvpRoomKind;
   updatedAt: number;
 }
 
@@ -71,6 +94,8 @@ const LOBBY_STORAGE_KEY = "rooms";
 const ACTIVE_SESSIONS_STORAGE_KEY = "activeSessions";
 const PVP_LOBBY_NAME = "global";
 const TURN_DURATION_MS = 20_000;
+const DUO_BOSS_TURN_DURATION_MS = 60_000;
+const DUO_BOSS_AUTO_TURN_DELAY_MS = 800;
 const MAX_CONSECUTIVE_TURN_TIMEOUTS = 3;
 const WAITING_ROOM_TTL_MS = 5 * 60_000;
 const FINISHED_ROOM_TTL_MS = 5 * 60_000;
@@ -84,7 +109,11 @@ function getSeatTimeoutStreak(record: Pick<RoomRecord, "timeoutStreaks">, seat: 
   return Math.max(0, Math.floor(record.timeoutStreaks?.[seat] ?? 0));
 }
 
-function getTurnDurationMs(record: Pick<RoomRecord, "timeoutStreaks">, seat: PvpSeat): number {
+function getTurnDurationMs(record: Pick<RoomRecord, "roomKind" | "timeoutStreaks" | "autoSeats">, seat: PvpSeat): number {
+  if (record.roomKind === "duoBoss") {
+    return record.autoSeats?.[seat] ? DUO_BOSS_AUTO_TURN_DELAY_MS : DUO_BOSS_TURN_DURATION_MS;
+  }
+
   const timeoutPenalty = Math.min(getSeatTimeoutStreak(record, seat), MAX_CONSECUTIVE_TURN_TIMEOUTS - 1);
 
   return TURN_DURATION_MS / 2 ** timeoutPenalty;
@@ -105,6 +134,22 @@ function getNextTimeoutStreaks(
   }
 
   return nextStreaks.host || nextStreaks.guest ? nextStreaks : undefined;
+}
+
+function getNextAutoSeats(
+  current: RoomRecord["autoSeats"],
+  seat: PvpSeat,
+  enabled: boolean,
+): RoomRecord["autoSeats"] {
+  const nextAutoSeats: Partial<Record<PvpSeat, boolean>> = { ...(current ?? {}) };
+
+  if (enabled) {
+    nextAutoSeats[seat] = true;
+  } else {
+    delete nextAutoSeats[seat];
+  }
+
+  return nextAutoSeats.host || nextAutoSeats.guest ? nextAutoSeats : undefined;
 }
 
 function createTimeoutLossState(state: CombatState, seat: PvpSeat): CombatState {
@@ -132,11 +177,12 @@ function createTimeoutLossState(state: CombatState, seat: PvpSeat): CombatState 
 }
 
 export class PvpLobby extends DurableObject<Env> {
-  async listRooms(): Promise<PvpListRoomsResponse> {
+  async listRooms(roomKind?: PvpRoomKind): Promise<PvpListRoomsResponse> {
     const rooms = await this.readLiveRooms();
+    const filteredRooms = roomKind ? rooms.filter((entry) => (entry.roomKind ?? "pvp") === roomKind) : rooms;
 
     return {
-      rooms: [...rooms].sort((left, right) => right.createdAt - left.createdAt),
+      rooms: [...filteredRooms].sort((left, right) => right.createdAt - left.createdAt),
       serverNow: Date.now(),
     };
   }
@@ -243,6 +289,7 @@ export class PvpRoom extends DurableObject<Env> {
     const expiresAt = now + WAITING_ROOM_TTL_MS;
     const record: RoomRecord = {
       roomCode,
+      roomKind: "pvp",
       status: "waiting",
       host: { token, hero, telegramUserId },
       turnVersion: 0,
@@ -258,6 +305,49 @@ export class PvpRoom extends DurableObject<Env> {
       roomCode,
       token,
       seat: "host",
+      roomKind: "pvp",
+      snapshot: this.createViewerSnapshot(record, "host"),
+    };
+  }
+
+  async createDuoBossRoom(roomCode: string, bossId: string, hero: HeroState, telegramUserId?: string): Promise<PvpRoomResponse> {
+    const existing = await this.readLiveRoom();
+
+    if (existing) {
+      throw new Error("Room already exists.");
+    }
+
+    const boss = getArenaBossDefinition(bossId);
+
+    if (!boss) {
+      throw new Error("Unknown arena boss.");
+    }
+
+    const token = crypto.randomUUID();
+    const now = Date.now();
+    const expiresAt = now + WAITING_ROOM_TTL_MS;
+    const record: RoomRecord = {
+      roomCode,
+      roomKind: "duoBoss",
+      status: "waiting",
+      host: { token, hero, telegramUserId },
+      bossId: boss.id,
+      bossName: boss.name,
+      bossTierId: boss.tierId,
+      turnVersion: 0,
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await this.writeRoom(record);
+    await this.scheduleRoomAlarm(record);
+
+    return {
+      roomCode,
+      token,
+      seat: "host",
+      roomKind: "duoBoss",
       snapshot: this.createViewerSnapshot(record, "host"),
     };
   }
@@ -314,6 +404,7 @@ export class PvpRoom extends DurableObject<Env> {
       roomCode: nextRecord.roomCode,
       token,
       seat: "guest",
+      roomKind: nextRecord.roomKind,
       snapshot: this.createViewerSnapshot(nextRecord, "guest"),
     };
   }
@@ -330,6 +421,7 @@ export class PvpRoom extends DurableObject<Env> {
       roomCode: record.roomCode,
       token,
       seat,
+      roomKind: record.roomKind,
       snapshot: this.createViewerSnapshot(record, seat),
     };
   }
@@ -376,12 +468,60 @@ export class PvpRoom extends DurableObject<Env> {
       return;
     }
 
+    if (data.type === "autoOff") {
+      await this.handleAutoOff(attachment.seat);
+      return;
+    }
+
     if (data.type !== "action" || !isActionId(data.actionId)) {
       this.sendError(ws, "Unknown PvP action.");
       return;
     }
 
     await this.handleAction(attachment.seat, data.actionId, data.turnVersion);
+  }
+
+  private async handleAutoOff(seat: PvpSeat): Promise<void> {
+    const record = await this.readLiveRoom();
+
+    if (!record || record.roomKind !== "duoBoss" || !record.autoSeats?.[seat]) {
+      return;
+    }
+
+    const now = Date.now();
+    const autoSeats = getNextAutoSeats(record.autoSeats, seat, false);
+    const deadlineAt = record.status === "playing" && record.activeSeat === seat
+      ? now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks: record.timeoutStreaks, autoSeats }, seat)
+      : record.deadlineAt;
+    const nextRecord: RoomRecord = {
+      ...record,
+      autoSeats,
+      deadlineAt,
+      updatedAt: now,
+    };
+
+    await this.writeRoom(nextRecord);
+    await this.scheduleRoomAlarm(nextRecord);
+    this.broadcastSnapshots(nextRecord);
+  }
+
+  async webSocketClose(ws: WebSocket): Promise<void> {
+    const attachment = this.getSocketAttachment(ws);
+
+    if (!attachment || attachment.seat !== "host") {
+      return;
+    }
+
+    const record = await this.readLiveRoom();
+
+    if (!record || record.status !== "waiting") {
+      return;
+    }
+
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.delete(ROOM_STORAGE_KEY);
+    await getPvpLobby(this.env).removeRoom(record.roomCode);
+    await getPvpLobby(this.env).removeActiveSessions(getRoomTelegramUserIds(record));
   }
 
   async alarm(): Promise<void> {
@@ -462,6 +602,10 @@ export class PvpRoom extends DurableObject<Env> {
       return record;
     }
 
+    if (record.roomKind === "duoBoss") {
+      return this.startDuoBossMatch(record);
+    }
+
     const now = Date.now();
     const state = createPvpCombatStateFromHeroes(record.host.hero, record.guest.hero);
 
@@ -472,7 +616,28 @@ export class PvpRoom extends DurableObject<Env> {
       activeSeat: "host",
       turnVersion: 1,
       timeoutStreaks: undefined,
-      deadlineAt: now + getTurnDurationMs({ timeoutStreaks: undefined }, "host"),
+      deadlineAt: now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks: undefined, autoSeats: undefined }, "host"),
+      expiresAt: undefined,
+      updatedAt: now,
+    };
+  }
+
+  private startDuoBossMatch(record: RoomRecord): RoomRecord {
+    if (!record.host || !record.guest || !record.bossId) {
+      return record;
+    }
+
+    const now = Date.now();
+    const state = createOnlineDuoBossCombatStateFromHeroes(record.host.hero, record.guest.hero, createArenaBossEncounter(record.bossId));
+
+    return {
+      ...record,
+      status: "playing",
+      state,
+      activeSeat: "host",
+      turnVersion: 1,
+      timeoutStreaks: undefined,
+      deadlineAt: now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks: undefined, autoSeats: undefined }, "host"),
       expiresAt: undefined,
       updatedAt: now,
     };
@@ -481,6 +646,14 @@ export class PvpRoom extends DurableObject<Env> {
   private applyTimedOutTurn(record: RoomRecord, seat: PvpSeat): RoomRecord {
     if (!record.state) {
       return record;
+    }
+
+    if (record.roomKind === "duoBoss") {
+      const actor = getPvpActorForSeat(seat, record.roomKind);
+      const actionId = choosePlayerAutoAction(record.state, actor === "helper" ? "helper" : "player") ?? REST_ACTION_ID;
+      const autoSeats = getNextAutoSeats(record.autoSeats, seat, true);
+
+      return this.applyAction({ ...record, autoSeats }, seat, actionId, { resetTimeoutStreak: false });
     }
 
     const now = Date.now();
@@ -515,19 +688,21 @@ export class PvpRoom extends DurableObject<Env> {
     }
 
     const now = Date.now();
-    const actor = getPvpActorForSeat(seat);
+    const actor = getPvpActorForSeat(seat, record.roomKind);
 
     if (!canUseTurnAction(record.state, actionId, actor)) {
       return record;
     }
 
-    const state = resolvePvpTurn(record.state, actor, actionId);
+    const state = record.roomKind === "duoBoss"
+      ? this.resolveDuoBossAction(record.state, seat, actionId)
+      : resolvePvpTurn(record.state, actor, actionId);
     const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
-    const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn) : undefined;
+    const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn, record.roomKind) : undefined;
     const timeoutStreaks = options.resetTimeoutStreak === false
       ? record.timeoutStreaks
       : getNextTimeoutStreaks(record.timeoutStreaks, seat, 0);
-    const deadlineAt = activeSeat ? now + getTurnDurationMs({ timeoutStreaks }, activeSeat) : undefined;
+    const deadlineAt = activeSeat ? now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks, autoSeats: record.autoSeats }, activeSeat) : undefined;
     const expiresAt = status === "finished" ? now + FINISHED_ROOM_TTL_MS : undefined;
 
     return {
@@ -541,6 +716,16 @@ export class PvpRoom extends DurableObject<Env> {
       expiresAt,
       updatedAt: now,
     };
+  }
+
+  private resolveDuoBossAction(state: CombatState, seat: PvpSeat, actionId: ActionId): CombatState {
+    if (seat === "host") {
+      return resolvePvpTurn(state, "player", actionId);
+    }
+
+    const helperState = resolveDuoBossHelperPlayerTurn(state, actionId);
+
+    return helperState.result === "playing" ? resolveEnemyTurn(helperState) : helperState;
   }
 
   private async scheduleRoomAlarm(record: RoomRecord): Promise<void> {
@@ -560,9 +745,14 @@ export class PvpRoom extends DurableObject<Env> {
   private createViewerSnapshot(record: RoomRecord, seat: PvpSeat): PvpRoomSnapshot {
     return toViewerPvpSnapshot({
       roomCode: record.roomCode,
+      roomKind: record.roomKind,
       status: record.status,
+      bossId: record.bossId,
+      bossName: record.bossName,
+      bossTierId: record.bossTierId,
       state: record.state,
       activeSeat: record.activeSeat,
+      autoSeats: record.autoSeats,
       turnVersion: record.turnVersion,
       deadlineAt: record.deadlineAt,
       serverNow: Date.now(),
@@ -662,7 +852,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   const segments = path.split("/").filter(Boolean);
 
   if (request.method === "GET" && segments.length === 1 && segments[0] === "rooms") {
-    return json(await getPvpLobby(env).listRooms());
+    return json(await getPvpLobby(env).listRooms(readRoomKind(url.searchParams.get("kind"))));
   }
 
   if (request.method === "GET" && segments.length === 2 && segments[0] === "rooms" && segments[1] === "current") {
@@ -684,6 +874,34 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     const response = await room.createRoom(roomCode, body.hero, telegramUserId);
 
     await getPvpLobby(env).addRoom(createRoomListEntry(roomCode, body.hero, telegramUser));
+    if (telegramUserId) {
+      await getPvpLobby(env).setActiveSession(telegramUserId, createActiveSession(response));
+    }
+
+    return json(response);
+  }
+
+  if (request.method === "POST" && segments.length === 2 && segments[0] === "rooms" && segments[1] === "duo-boss") {
+    const body = (await request.json()) as PvpCreateDuoBossRoomRequest;
+    const telegramUser = await readOptionalTelegramUser(request, env);
+    const currentRoom = telegramUser ? await getCurrentPvpRoomForUser(env, String(telegramUser.id)) : undefined;
+
+    if (currentRoom) {
+      return json(currentRoom);
+    }
+
+    const roomCode = await createUniqueRoomCode(env);
+    const room = env.PVP_ROOM.getByName(roomCode);
+    const telegramUserId = telegramUser ? String(telegramUser.id) : undefined;
+    const response = await room.createDuoBossRoom(roomCode, body.bossId, body.hero, telegramUserId);
+    const boss = getArenaBossDefinition(body.bossId);
+
+    await getPvpLobby(env).addRoom(createRoomListEntry(roomCode, body.hero, telegramUser, {
+      roomKind: "duoBoss",
+      bossId: boss?.id ?? body.bossId,
+      bossName: boss?.name,
+      bossTierId: boss?.tierId,
+    }));
     if (telegramUserId) {
       await getPvpLobby(env).setActiveSession(telegramUserId, createActiveSession(response));
     }
@@ -742,7 +960,7 @@ function getPvpLobby(env: Env): DurableObjectStub<PvpLobby> {
 
 async function getCurrentPvpRoom(request: Request, env: Env): Promise<PvpCurrentRoomResponse> {
   const telegramUser = await readOptionalTelegramUser(request, env);
-  const room = telegramUser ? await getCurrentPvpRoomForUser(env, String(telegramUser.id)) : undefined;
+  const room = telegramUser ? await getCurrentPvpRoomForUser(env, String(telegramUser.id), { includeFinishedDuoBoss: true }) : undefined;
 
   return {
     room: room ?? null,
@@ -750,7 +968,11 @@ async function getCurrentPvpRoom(request: Request, env: Env): Promise<PvpCurrent
   };
 }
 
-async function getCurrentPvpRoomForUser(env: Env, telegramUserId: string): Promise<PvpRoomResponse | undefined> {
+async function getCurrentPvpRoomForUser(
+  env: Env,
+  telegramUserId: string,
+  options: { includeFinishedDuoBoss?: boolean } = {},
+): Promise<PvpRoomResponse | undefined> {
   const lobby = getPvpLobby(env);
   const session = await lobby.getActiveSession(telegramUserId);
 
@@ -767,7 +989,8 @@ async function getCurrentPvpRoomForUser(env: Env, telegramUserId: string): Promi
   }
   if (response.snapshot.status === "finished") {
     await lobby.removeActiveSession(telegramUserId);
-    return undefined;
+
+    return options.includeFinishedDuoBoss && (response.roomKind ?? "pvp") === "duoBoss" ? response : undefined;
   }
 
   return response;
@@ -778,17 +1001,32 @@ function createActiveSession(response: PvpRoomResponse): PvpActiveSession {
     roomCode: response.roomCode,
     seat: response.seat,
     token: response.token,
+    roomKind: response.roomKind,
     updatedAt: Date.now(),
   };
 }
 
-function createRoomListEntry(roomCode: string, hero: HeroState, telegramUser?: TelegramInitUser): PvpRoomListEntry {
+function createRoomListEntry(
+  roomCode: string,
+  hero: HeroState,
+  telegramUser?: TelegramInitUser,
+  options: {
+    roomKind?: PvpRoomKind;
+    bossId?: string;
+    bossName?: string;
+    bossTierId?: number;
+  } = {},
+): PvpRoomListEntry {
   const now = Date.now();
 
   return {
     roomCode,
+    roomKind: options.roomKind,
     hostName: normalizeHostName(getTelegramUserDisplayName(telegramUser) ?? hero.name),
     hostLevel: Math.max(1, Math.floor(Number(hero.level) || 1)),
+    bossId: options.bossId,
+    bossName: options.bossName,
+    bossTierId: options.bossTierId,
     createdAt: now,
     updatedAt: now,
     expiresAt: now + WAITING_ROOM_TTL_MS,
@@ -825,6 +1063,10 @@ function createRoomCode(): string {
 
 function normalizeRoomCode(code: string): string {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, ROOM_CODE_LENGTH);
+}
+
+function readRoomKind(value: string | null): PvpRoomKind | undefined {
+  return value === "duoBoss" || value === "pvp" ? value : undefined;
 }
 
 function normalizeHostName(name: string): string {

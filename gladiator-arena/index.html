@@ -159,8 +159,12 @@
                 </div>
                 <div id="cityArenaBossList" class="city-arena-menu__boss-list" aria-label="Arena bosses"></div>
               </div>
-              <div class="city-arena-menu__pvp" aria-label="PvP room">
-                <div class="city-arena-menu__pvp-title">PVP ROOM</div>
+              <div class="city-arena-menu__pvp city-arena-menu__online" aria-label="Online rooms">
+                <div class="city-arena-menu__pvp-title city-arena-menu__online-title">ONLINE</div>
+                <div class="city-arena-menu__online-tabs" role="tablist" aria-label="Online mode">
+                  <button id="cityOnlinePveTab" class="city-arena-menu__online-tab city-arena-menu__online-tab--active" type="button" role="tab" aria-selected="true">PVE</button>
+                  <button id="cityOnlinePvpTab" class="city-arena-menu__online-tab" type="button" role="tab" aria-selected="false">PVP</button>
+                </div>
                 <div class="city-arena-menu__pvp-actions">
                   <button id="cityPvpCreateButton" class="city-arena-menu__pvp-button" type="button">CREATE</button>
                   <button id="cityPvpJoinButton" class="city-arena-menu__pvp-button" type="button">SEARCH</button>

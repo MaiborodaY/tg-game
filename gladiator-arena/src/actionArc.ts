@@ -38,7 +38,9 @@ import {
   isBowFighter,
   isPlayerExhausted,
   type ActionId,
+  type CombatActor,
   type CombatState,
+  type FighterState,
 } from "./combat";
 import { getActionArcLayout } from "./actionArcLayout";
 import { getStageLayout } from "./stageLayout";
@@ -212,8 +214,8 @@ export function syncActionTokenButton(
   renderActionIcon(button, icon, actionId, dynamicIconUrl);
 }
 
-export function syncActionChanceBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState): string | undefined {
-  const label = getActionHitChanceLabel(actionId, state);
+export function syncActionChanceBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState, actor: CombatActor = "player"): string | undefined {
+  const label = getActionHitChanceLabel(actionId, state, actor);
   const badge = getActionChanceBadge(button);
 
   if (!label) {
@@ -226,13 +228,13 @@ export function syncActionChanceBadge(button: HTMLButtonElement, actionId: Actio
 
   badge.hidden = false;
   badge.textContent = label;
-  badge.classList.toggle("action-arc__chance--target-vulnerable", isActionTargetRestVulnerable(state, actionId, "player"));
+  badge.classList.toggle("action-arc__chance--target-vulnerable", isActionTargetRestVulnerable(state, actionId, actor));
   button.classList.add("action-arc__button--has-chance");
   return label;
 }
 
-export function syncActionCostBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState): string | undefined {
-  return syncActionCostBadgeElement(getActionCostBadge(button), actionId, state);
+export function syncActionCostBadge(button: HTMLButtonElement, actionId: ActionId, state: CombatState, actor: CombatActor = "player"): string | undefined {
+  return syncActionCostBadgeElement(getActionCostBadge(button), actionId, state, true, actor);
 }
 
 export function syncActionCostBadgeElement(
@@ -240,8 +242,10 @@ export function syncActionCostBadgeElement(
   actionId: ActionId,
   state: CombatState,
   isVisible = true,
+  actor: CombatActor = "player",
 ): string | undefined {
-  const cost = getActionStaminaCost(actionId, state.player);
+  const fighter = getActionBadgeFighter(state, actor) ?? state.player;
+  const cost = getActionStaminaCost(actionId, fighter);
 
   if (cost <= 0 || !isVisible) {
     badge.hidden = true;
@@ -250,7 +254,8 @@ export function syncActionCostBadgeElement(
     return undefined;
   }
 
-  const exhausts = state.result === "playing" && state.activeTurn === "player" && state.player.stamina - cost <= 0;
+  const activeTurn = actor === "helper" ? "enemy" : actor;
+  const exhausts = state.result === "playing" && state.activeTurn === activeTurn && fighter.stamina - cost <= 0;
 
   badge.hidden = false;
   badge.classList.toggle("action-arc__cost--exhausts", exhausts);
@@ -308,14 +313,22 @@ function setActionCostValue(badge: HTMLSpanElement, value: string): void {
   }
 }
 
-export function getActionHitChanceLabel(actionId: ActionId, state: CombatState): string | undefined {
+function getActionBadgeFighter(state: CombatState, actor: CombatActor): FighterState | undefined {
+  if (actor === "helper") {
+    return state.helper;
+  }
+
+  return actor === "enemy" ? state.enemy : state.player;
+}
+
+export function getActionHitChanceLabel(actionId: ActionId, state: CombatState, actor: CombatActor = "player"): string | undefined {
   const action = actions[actionId];
 
   if (action.blockChance === undefined) {
     return undefined;
   }
 
-  const blockChance = getActionBlockChanceForState(state, actionId, "player");
+  const blockChance = getActionBlockChanceForState(state, actionId, actor);
   const hitChance = Math.round((1 - blockChance) * 100);
 
   return `${hitChance}%`;
@@ -647,13 +660,15 @@ function isActionArcButtonEnabled(state: CombatState, actionId: ActionId): boole
   return canUseAction(state, actionId, "player");
 }
 
-export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): string | undefined {
+export function getActionTokenIconUrl(actionId: ActionId, state: CombatState, actor: CombatActor = "player"): string | undefined {
+  const fighter = getActionBadgeFighter(state, actor) ?? state.player;
+
   if (actionId === "switchWeapon") {
-    const targetItemId = isBowFighter(state.player) ? state.player.equipment?.weaponMain : state.player.equipment?.weaponBow;
+    const targetItemId = isBowFighter(fighter) ? fighter.equipment?.weaponMain : fighter.equipment?.weaponBow;
 
     return targetItemId
-      ? getShopProductIconUrl([targetItemId]) ?? (isBowFighter(state.player) ? SHOP_CATEGORY_SWORD_ICON_ASSET_URL : SHOP_CATEGORY_BOW_ICON_ASSET_URL)
-      : isBowFighter(state.player)
+      ? getShopProductIconUrl([targetItemId]) ?? (isBowFighter(fighter) ? SHOP_CATEGORY_SWORD_ICON_ASSET_URL : SHOP_CATEGORY_BOW_ICON_ASSET_URL)
+      : isBowFighter(fighter)
         ? SHOP_CATEGORY_SWORD_ICON_ASSET_URL
         : SHOP_CATEGORY_BOW_ICON_ASSET_URL;
   }
@@ -663,20 +678,20 @@ export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): s
   }
 
   if (actionId === "ward") {
-    return state.player.wardScrollItemId
-      ? getShopProductIconUrl([state.player.wardScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+    return fighter.wardScrollItemId
+      ? getShopProductIconUrl([fighter.wardScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
       : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
   }
 
   if (actionId === "fireball") {
-    return state.player.fireballScrollItemId
-      ? getShopProductIconUrl([state.player.fireballScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+    return fighter.fireballScrollItemId
+      ? getShopProductIconUrl([fighter.fireballScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
       : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
   }
 
   if (actionId === "poison") {
-    return state.player.poisonScrollItemId
-      ? getShopProductIconUrl([state.player.poisonScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
+    return fighter.poisonScrollItemId
+      ? getShopProductIconUrl([fighter.poisonScrollItemId]) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL
       : SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
   }
 
@@ -684,8 +699,8 @@ export function getActionTokenIconUrl(actionId: ActionId, state: CombatState): s
     return undefined;
   }
 
-  return state.player.shurikenItemId
-    ? getShopProductIconUrl([state.player.shurikenItemId]) ?? SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL
+  return fighter.shurikenItemId
+    ? getShopProductIconUrl([fighter.shurikenItemId]) ?? SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL
     : SHOP_CATEGORY_SHURIKEN_ICON_ASSET_URL;
 }
 
