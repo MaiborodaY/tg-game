@@ -14932,7 +14932,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_bow_01",
       "name": "Bow 01",
-      "price": 50,
+      "price": 40,
       "itemIds": [
         "generated_equipment_weapon_bow_01"
       ],
@@ -16416,7 +16416,7 @@
     "name": "common shuriken 2",
     "kind": "weapon",
     "rarity": "common",
-    "damageBonus": 4,
+    "damageBonus": 5,
     "weaponClass": "shuriken",
     "levelRequirement": 10,
     "equipmentSlot": "weaponMain",
@@ -16445,7 +16445,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_shuriken_common_shuriken_2",
       "name": "common shuriken 2",
-      "price": 20,
+      "price": 10,
       "itemIds": [
         "generated_equipment_weapon_shuriken_common_shuriken_2"
       ],

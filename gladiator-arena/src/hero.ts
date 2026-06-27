@@ -196,7 +196,7 @@ export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
 export const HERO_ARENA_ENERGY_MAX = 10;
-const RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE = 0.005;
+const RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE = 0.1;
 const HERO_WEAPON_SHARPENING_ALLOWED_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
 
 interface PairedArmorSlotConfig {
@@ -571,7 +571,7 @@ const HERO_SCROLL_UPGRADE_DEFINITIONS: Record<HeroUpgradeableScrollKind, HeroScr
     kind: "fireball",
     itemId: HERO_FIREBALL_SCROLL_ITEM_ID,
     purchasePrices: {
-      common: 60,
+      common: 50,
       uncommon: 108,
       rare: 200,
       epic: 425,
@@ -1037,6 +1037,21 @@ export function hasHeroArenaBossVictoryForTier(hero: HeroState, tierId: number, 
   }
 
   return getHeroArenaBossVictoryLedger(hero, now).tierIds.includes(normalizedTierId);
+}
+
+export function resetHeroArenaBossVictoryLedger(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const ledger = createHeroArenaBossVictoryLedger(now);
+  const currentLedger = getHeroArenaBossVictoryLedger(hero, now);
+
+  if (hero.arenaBossVictoryLedger?.dayKey === ledger.dayKey && currentLedger.tierIds.length === 0) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    arenaBossVictoryLedger: ledger,
+    updatedAt: now,
+  };
 }
 
 export function recordHeroArenaBossVictoryForTier(hero: HeroState, tierId: number, now = new Date().toISOString()): HeroState {
@@ -2811,17 +2826,18 @@ function createRandomEnemyEquipmentLootEntries(sourceId: string, equipment: Hero
       return;
     }
 
-    const pairedEntry = createRandomEnemyPairedArmorLootEntry(sourceId, equipment, slotKey);
+    const pairConfig = PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
 
-    if (pairedEntry) {
-      const pairConfig = PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
+    if (pairConfig) {
+      const pairedEntry = createRandomEnemyPairedArmorLootEntry(sourceId, equipment, pairConfig);
 
-      if (pairConfig) {
-        usedSlots.add(pairConfig.backSlot);
-        usedSlots.add(pairConfig.frontSlot);
+      usedSlots.add(pairConfig.backSlot);
+      usedSlots.add(pairConfig.frontSlot);
+
+      if (pairedEntry) {
+        entries.push(pairedEntry);
       }
 
-      entries.push(pairedEntry);
       return;
     }
 
@@ -2841,14 +2857,8 @@ function createRandomEnemyEquipmentLootEntries(sourceId: string, equipment: Hero
 function createRandomEnemyPairedArmorLootEntry(
   sourceId: string,
   equipment: HeroEquipment,
-  slotKey: HeroEquipmentSlotKey,
+  pairConfig: PairedArmorSlotConfig,
 ): ArenaLootTableEntry | undefined {
-  const pairConfig = PAIRED_ARMOR_SLOT_CONFIGS.find((config) => config.backSlot === slotKey);
-
-  if (!pairConfig) {
-    return undefined;
-  }
-
   const backItemId = getLootableEnemyEquipmentItemId(equipment, pairConfig.backSlot);
   const frontItemId = getLootableEnemyEquipmentItemId(equipment, pairConfig.frontSlot);
   const backItem = backItemId ? HERO_ITEM_CATALOG[backItemId] : undefined;

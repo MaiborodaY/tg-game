@@ -4237,7 +4237,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-bow-01.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":50,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
+    weaponProduct: {"id":"generated_equipment_weapon_bow_01","name":"Bow 01","price":40,"itemIds":["generated_equipment_weapon_bow_01"],"categoryId":"bows"},
   },
   {
     item: {"id":"generated_equipment_weapon_bow_common_bow_02","name":"Common bow 02","kind":"weapon","rarity":"common","equipmentSlot":"weaponBow","damageBonus":2,"requirements":{"agility":10},"weaponClass":"bow"},
@@ -4685,7 +4685,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_01","name":"Rusty Shuriken","price":5,"itemIds":["generated_equipment_weapon_shuriken_01"],"categoryId":"shurikens"},
   },
   {
-    item: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"shuriken","levelRequirement":10},
+    item: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"shuriken","levelRequirement":10},
     assetKeys: {"weaponMainAssetKey":"weapon-shuriken-common-shuriken-2"},
     equipmentTuning: {"x":0,"y":16,"angle":90,"scaleX":0.3,"scaleY":0.3,"flipX":false,"flipY":false},
     asset: {
@@ -4694,7 +4694,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-shuriken-common-shuriken-2.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","price":20,"itemIds":["generated_equipment_weapon_shuriken_common_shuriken_2"],"categoryId":"shurikens"},
+    weaponProduct: {"id":"generated_equipment_weapon_shuriken_common_shuriken_2","name":"common shuriken 2","price":10,"itemIds":["generated_equipment_weapon_shuriken_common_shuriken_2"],"categoryId":"shurikens"},
   },
   {
     item: {"id":"generated_equipment_weapon_shuriken_epic_shuriken_1","name":"epic shuriken 1","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":14,"weaponClass":"shuriken","levelRequirement":50},

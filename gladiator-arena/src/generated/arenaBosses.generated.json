@@ -4,9 +4,9 @@
     "tierId": 1,
     "name": "Bront Oakhide",
     "baseStats": {
-      "strength": 5,
+      "strength": 4,
       "agility": 5,
-      "vitality": 5
+      "vitality": 6
     },
     "equipment": {
       "weaponMain": "generated_equipment_weapon_mace_wood_boss_01",
@@ -31,8 +31,8 @@
         "xp": 5
       },
       "loss": {
-        "gold": 0,
-        "xp": 0
+        "gold": 2,
+        "xp": 1
       }
     },
     "lootTable": [

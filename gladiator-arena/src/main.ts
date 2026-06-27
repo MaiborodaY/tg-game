@@ -69,6 +69,7 @@ import {
   hasHeroArenaBossVictoryForTier,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
+  resetHeroArenaBossVictoryLedger,
   restoreHeroArenaEnergy,
   sharpenHeroActiveWeapon,
   spendHeroArenaEnergy,
@@ -638,7 +639,8 @@ function handleAdminArenaEnergyRestore(): void {
     return;
   }
 
-  const nextHero = restoreHeroArenaEnergy(hero);
+  const now = new Date().toISOString();
+  const nextHero = resetHeroArenaBossVictoryLedger(restoreHeroArenaEnergy(hero, now), now);
 
   if (nextHero === hero) {
     return;
@@ -646,7 +648,7 @@ function handleAdminArenaEnergyRestore(): void {
 
   hero = nextHero;
   saveLocalHeroSave(hero);
-  queueHeroCloudSave("admin-arena-energy-restore");
+  queueHeroCloudSave("admin-arena-daily-reset");
   renderCityHero();
   renderCityArenaMenu();
 }
