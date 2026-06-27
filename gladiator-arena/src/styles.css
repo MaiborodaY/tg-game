@@ -2160,13 +2160,7 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 }
 
 .battle-result--loot .battle-result__title {
-  position: relative;
-  left: auto;
-  top: auto;
-  width: 100%;
-  min-height: 0;
-  color: #ffe6a5;
-  font-size: var(--battle-result-title-font-size);
+  display: none;
 }
 
 .battle-result--loot .battle-result__loot {
@@ -12644,11 +12638,15 @@ body.arena-active .shell {
   animation: battle-result-panel-in 200ms 0ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
 }
 
-.battle-screen--auto-result-overlay .battle-result--animating .battle-result__eyebrow {
+.battle-screen--auto-result-overlay .battle-result--animating:not(.battle-result--loot) .battle-result__eyebrow {
   animation: battle-result-plaque-in 200ms 30ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
 }
 
-.battle-screen--auto-result-overlay .battle-result--animating .battle-result__title {
+.battle-screen--auto-result-overlay .battle-result--loot.battle-result--animating .battle-result__eyebrow {
+  animation: battle-result-loot-plaque-in 200ms 30ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
+}
+
+.battle-screen--auto-result-overlay .battle-result--animating:not(.battle-result--loot) .battle-result__title {
   animation: battle-result-title-in 200ms 55ms cubic-bezier(0.2, 0.9, 0.24, 1) both;
 }
 

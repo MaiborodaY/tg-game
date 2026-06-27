@@ -712,7 +712,7 @@ function renderLootDropPresentation(dom: DomRefs, state: CombatState, presentati
   dom.resultBanner.classList.remove("battle-result--reward-after-loot");
   dom.resultBanner.classList.add("battle-result--animating", "battle-result--loot");
   dom.resultEyebrow.textContent = state.encounter?.kind === "boss" ? "Boss Trophy" : "Dropped Item";
-  dom.resultTitle.textContent = "Dropped Item";
+  dom.resultTitle.textContent = "";
   renderRewardAmount(dom.resultGoldReward, 0);
   renderRewardAmount(dom.resultXpReward, 0);
   renderResultXpProgress(dom, presentation.heroBeforeReward ?? presentation.heroAfterReward);

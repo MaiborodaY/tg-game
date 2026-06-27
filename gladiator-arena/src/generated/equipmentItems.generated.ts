@@ -4815,6 +4815,30 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_shuriken_uncommon_shuriken_2","name":"uncommon shuriken 2","price":203,"itemIds":["generated_equipment_weapon_shuriken_uncommon_shuriken_2"],"categoryId":"shurikens"},
   },
   {
+    item: {"id":"generated_equipment_weapon_spear_crooked_stake","name":"Crooked Stake","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":1,"weaponClass":"spear"},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-crooked-stake"},
+    equipmentTuning: {"x":-13,"y":13,"angle":124,"scaleX":2.29,"scaleY":2.48,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-crooked-stake",
+      sourcePath: "assets/fighters/weapons/weapon-spear-crooked-stake.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-crooked-stake.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_crooked_stake","name":"Crooked Stake","price":10,"itemIds":["generated_equipment_weapon_spear_crooked_stake"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_crude_iron_spear","name":"Crude Iron Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":5,"weaponClass":"spear"},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-crude-iron-spear"},
+    equipmentTuning: {"x":-7,"y":10,"angle":128,"scaleX":2.2,"scaleY":2.2,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-crude-iron-spear",
+      sourcePath: "assets/fighters/weapons/weapon-spear-crude-iron-spear.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-crude-iron-spear.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_crude_iron_spear","name":"Crude Iron Spear","price":55,"itemIds":["generated_equipment_weapon_spear_crude_iron_spear"],"categoryId":"spears"},
+  },
+  {
     item: {"id":"generated_equipment_weapon_spear_eagle_glaive","name":"Skybreaker Glaive","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear"},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-eagle-glaive"},
     equipmentTuning: {"x":-13,"y":-7,"angle":135,"scaleX":2.5,"scaleY":2.5,"flipX":false,"flipY":false},
@@ -4909,6 +4933,18 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     weaponProduct: {"id":"generated_equipment_weapon_spear_epic_spear_7","name":"Epic Spear 07","price":14170,"itemIds":["generated_equipment_weapon_spear_epic_spear_7"],"categoryId":"spears"},
   },
   {
+    item: {"id":"generated_equipment_weapon_spear_guard_spear","name":"Guard Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"spear"},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-guard-spear"},
+    equipmentTuning: {"x":-16,"y":1,"angle":130,"scaleX":2,"scaleY":2.3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-guard-spear",
+      sourcePath: "assets/fighters/weapons/weapon-spear-guard-spear.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-guard-spear.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_guard_spear","name":"Guard Spear","price":42,"itemIds":["generated_equipment_weapon_spear_guard_spear"],"categoryId":"spears"},
+  },
+  {
     item: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"spear","levelRequirement":80},
     assetKeys: {"weaponMainAssetKey":"weapon-spear-legendary-spear-02"},
     equipmentTuning: {"x":-2,"y":16,"angle":124,"scaleX":3,"scaleY":3,"flipX":false,"flipY":false},
@@ -4977,6 +5013,42 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
     weaponProduct: {"id":"generated_equipment_weapon_spear_rare_spear_1","name":"Rare Spear 02","price":2750,"itemIds":["generated_equipment_weapon_spear_rare_spear_1"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","kind":"weapon","rarity":"uncommon","equipmentSlot":"weaponMain","damageBonus":6,"weaponClass":"spear"},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-reinforced-spear"},
+    equipmentTuning: {"x":-30,"y":-4,"angle":124,"scaleX":2.7,"scaleY":3,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-reinforced-spear",
+      sourcePath: "assets/fighters/weapons/weapon-spear-reinforced-spear.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-reinforced-spear.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","price":76,"itemIds":["generated_equipment_weapon_spear_reinforced_spear"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_rusty_scrap_spear","name":"Rusty Scrap Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"spear"},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-rusty-scrap-spear"},
+    equipmentTuning: {"x":0,"y":16,"angle":132,"scaleX":2.1,"scaleY":2.1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-rusty-scrap-spear",
+      sourcePath: "assets/fighters/weapons/weapon-spear-rusty-scrap-spear.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-rusty-scrap-spear.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_rusty_scrap_spear","name":"Rusty Scrap Spear","price":17,"itemIds":["generated_equipment_weapon_spear_rusty_scrap_spear"],"categoryId":"spears"},
+  },
+  {
+    item: {"id":"generated_equipment_weapon_spear_worn_militia_spear","name":"Worn Militia Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":3,"weaponClass":"spear"},
+    assetKeys: {"weaponMainAssetKey":"weapon-spear-worn-militia-spear"},
+    equipmentTuning: {"x":-16,"y":4,"angle":126,"scaleX":2.1,"scaleY":2.1,"flipX":false,"flipY":false},
+    asset: {
+      key: "weapon-spear-worn-militia-spear",
+      sourcePath: "assets/fighters/weapons/weapon-spear-worn-militia-spear.webp",
+      lowSourcePath: "assets-low/fighters/weapons/weapon-spear-worn-militia-spear.webp",
+    },
+    availability: {"shop":true,"enemyPool":true,"bossUnique":false},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_worn_militia_spear","name":"Worn Militia Spear","price":25,"itemIds":["generated_equipment_weapon_spear_worn_militia_spear"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_sword_epic_sword_1","name":"Epic Sword 01","kind":"weapon","rarity":"epic","equipmentSlot":"weaponMain","damageBonus":13,"weaponClass":"sword","levelRequirement":45},

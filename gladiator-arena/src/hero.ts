@@ -196,7 +196,28 @@ export const HERO_WEAPON_SHARPENING_MAX_LEVEL = 10;
 export const HERO_WEAPON_SHARPENING_BASE_PRICE_RATIO = 0.1;
 export const HERO_WEAPON_SHARPENING_PRICE_RATIO_PER_LEVEL = 0.05;
 export const HERO_ARENA_ENERGY_MAX = 10;
-const RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE = 0.1;
+const RANDOM_ENEMY_EQUIPMENT_DROP_CHANCES_BY_DIFFICULTY: Record<ArenaDifficultyId, number> = {
+  easy: 0.05,
+  medium: 0.08,
+  hard: 0.12,
+};
+const RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE_MULTIPLIERS_BY_TIER: Readonly<Partial<Record<number, number>>> = {
+  1: 2,
+};
+const RANDOM_ENEMY_EQUIPMENT_LOOT_ENTRY_CHANCE = 1;
+type RandomEnemyEquipmentDropRarityWeights = Partial<Record<HeroItemRarity, number>>;
+const RANDOM_ENEMY_EQUIPMENT_DROP_RARITY_WEIGHTS_BY_TIER: Readonly<Record<number, RandomEnemyEquipmentDropRarityWeights>> = {
+  1: { common: 85, uncommon: 15 },
+  2: { common: 50, uncommon: 45, rare: 5 },
+  3: { uncommon: 55, rare: 40, epic: 5 },
+  4: { uncommon: 15, rare: 60, epic: 25 },
+  5: { rare: 25, epic: 65, legendary: 10 },
+  6: { rare: 10, epic: 65, legendary: 23, mythical: 2 },
+  7: { epic: 35, legendary: 60, mythical: 5 },
+  8: { epic: 20, legendary: 70, mythical: 10 },
+  9: { epic: 10, legendary: 70, mythical: 20 },
+  10: { legendary: 65, mythical: 35 },
+};
 const HERO_WEAPON_SHARPENING_ALLOWED_RARITIES: ReadonlySet<HeroItemRarity> = new Set(["epic", "legendary", "mythical", "unique"]);
 
 interface PairedArmorSlotConfig {
@@ -456,7 +477,7 @@ export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.005;
 export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
 export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.015;
 export const HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS = 0.025;
-export const HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS = 0.025;
+export const HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS = 0.10;
 export const HERO_VITALITY_HP_BONUS = 1;
 export const HERO_VITALITY_STAMINA_BONUS = 1;
 export const HERO_VITALITY_REST_HP_BONUS = 1;
@@ -2788,11 +2809,11 @@ function rollRandomEnemyCombatLoot(hero: HeroState, combat: CombatState, random:
   const entries = createRandomEnemyEquipmentLootEntries(encounter.opponentId, combat.enemy.equipment)
     .filter((candidate) => canHeroReceiveEquipmentLootEntry(hero, candidate));
 
-  if (entries.length === 0 || random() >= RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE) {
+  if (entries.length === 0 || random() >= getRandomEnemyEquipmentDropChance(encounter.difficultyId, encounter.tierId)) {
     return [];
   }
 
-  return [createArenaLootDrop(pickRandom(entries, random))];
+  return [createArenaLootDrop(pickRandomEnemyEquipmentLootEntry(entries, encounter.tierId, random))];
 }
 
 function canRollRandomEnemyEquipmentLoot(encounter: NonNullable<CombatState["encounter"]>): boolean {
@@ -2852,10 +2873,74 @@ function createRandomEnemyEquipmentLootEntries(sourceId: string, equipment: Hero
     }
 
     usedSlots.add(slotKey);
-    entries.push(createArenaLootTableEntry(sourceId, [itemId], RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE));
+    entries.push(createArenaLootTableEntry(sourceId, [itemId], RANDOM_ENEMY_EQUIPMENT_LOOT_ENTRY_CHANCE));
   });
 
   return entries;
+}
+
+function getRandomEnemyEquipmentDropChance(difficultyId: ArenaDifficultyId | undefined, tierId: number): number {
+  const baseChance = RANDOM_ENEMY_EQUIPMENT_DROP_CHANCES_BY_DIFFICULTY[difficultyId ?? DEFAULT_ARENA_DIFFICULTY_ID];
+  const tierMultiplier = RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE_MULTIPLIERS_BY_TIER[Math.max(1, Math.floor(tierId))] ?? 1;
+
+  return clampEnemyRollChance(baseChance * tierMultiplier);
+}
+
+function pickRandomEnemyEquipmentLootEntry(entries: readonly ArenaLootTableEntry[], tierId: number, random: () => number): ArenaLootTableEntry {
+  const rarityWeights = getRandomEnemyEquipmentDropRarityWeights(tierId);
+  const weightedEntries = entries
+    .map((entry) => ({
+      entry,
+      weight: getRandomEnemyEquipmentLootEntryRarityWeight(entry, rarityWeights),
+    }))
+    .filter(({ weight }) => weight > 0);
+
+  if (weightedEntries.length === 0) {
+    return pickRandom(entries, random);
+  }
+
+  const totalWeight = weightedEntries.reduce((total, { weight }) => total + weight, 0);
+  let roll = random() * totalWeight;
+
+  for (const { entry, weight } of weightedEntries) {
+    roll -= weight;
+
+    if (roll <= 0) {
+      return entry;
+    }
+  }
+
+  return weightedEntries[weightedEntries.length - 1]!.entry;
+}
+
+function getRandomEnemyEquipmentDropRarityWeights(tierId: number): RandomEnemyEquipmentDropRarityWeights {
+  const normalizedTierId = Math.max(1, Math.floor(tierId));
+
+  return RANDOM_ENEMY_EQUIPMENT_DROP_RARITY_WEIGHTS_BY_TIER[normalizedTierId] ?? RANDOM_ENEMY_EQUIPMENT_DROP_RARITY_WEIGHTS_BY_TIER[10]!;
+}
+
+function getRandomEnemyEquipmentLootEntryRarityWeight(entry: ArenaLootTableEntry, rarityWeights: RandomEnemyEquipmentDropRarityWeights): number {
+  const rarity = getArenaLootEntryRarity(entry);
+
+  return rarity ? Math.max(0, rarityWeights[rarity] ?? 0) : 0;
+}
+
+function getArenaLootEntryRarity(entry: ArenaLootTableEntry): HeroItemRarity | undefined {
+  const rarities = getValidArenaLootEntryItemIds(entry)
+    .map((itemId) => {
+      const item = HERO_ITEM_CATALOG[itemId];
+
+      return item ? getHeroItemRarity(item) : undefined;
+    })
+    .filter((rarity): rarity is HeroItemRarity => Boolean(rarity));
+
+  if (rarities.length === 0) {
+    return undefined;
+  }
+
+  const firstRarity = rarities[0]!;
+
+  return rarities.every((rarity) => rarity === firstRarity) ? firstRarity : undefined;
 }
 
 function createRandomEnemyPairedArmorLootEntry(
@@ -2876,7 +2961,7 @@ function createRandomEnemyPairedArmorLootEntry(
     return undefined;
   }
 
-  return createArenaLootTableEntry(sourceId, [backItemId, frontItemId], RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE);
+  return createArenaLootTableEntry(sourceId, [backItemId, frontItemId], RANDOM_ENEMY_EQUIPMENT_LOOT_ENTRY_CHANCE);
 }
 
 function getLootableEnemyEquipmentItemId(equipment: HeroEquipment, slotKey: HeroEquipmentSlotKey): HeroItemId | undefined {

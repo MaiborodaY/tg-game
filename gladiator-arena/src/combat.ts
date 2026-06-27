@@ -223,6 +223,7 @@ export const AXE_BLOCK_CHANCE_PENALTY: Partial<Record<ActionId, number>> = {
   medium: 0.15,
   heavy: 0.15,
 };
+const BOW_BLOCK_CHANCE_PENALTY = 0.10;
 export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 1.5;
 const AXE_MELEE_DAMAGE_MULTIPLIER: Partial<Record<ActionId, number>> = {
   light: 1,
@@ -585,11 +586,12 @@ export function isActionTargetRestVulnerable(state: CombatState, actionId: Actio
 function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
   const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
   const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" ? AXE_BLOCK_CHANCE_PENALTY[action.id] ?? 0 : 0;
+  const bowBlockChancePenalty = attacker && isBowFighter(attacker) && isAttackAction(action.id) ? BOW_BLOCK_CHANCE_PENALTY : 0;
   const spearLungeBlockChanceReduction =
     attacker && getFighterWeaponClass(attacker) === "spear" && action.id === "lunge" ? SPEAR_LUNGE_BLOCK_CHANCE_REDUCTION : 0;
   const preciseStrikeBlockChanceReduction = isPreciseStrikeBoostedAction(action.id, attacker) ? getFighterPreciseStrikeBlockChanceReduction(attacker) : 0;
 
-  return axeBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction - preciseStrikeBlockChanceReduction;
+  return axeBlockChancePenalty + bowBlockChancePenalty - swordBlockChanceReduction - spearLungeBlockChanceReduction - preciseStrikeBlockChanceReduction;
 }
 
 function getAdjustedActionBlockChance(action: ActionConfig, blockChanceModifier: number, defenderDefensePenalty: number): number {
