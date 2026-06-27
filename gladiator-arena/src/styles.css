@@ -3641,9 +3641,9 @@ body.debug-active .city-menu__portrait-button:active {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
-  gap: 9px;
+  gap: 7px;
   min-width: 0;
-  padding: 7px 38px 2px;
+  padding: 7px 38px 0;
 }
 
 .city-arena-menu__eyebrow,
@@ -3720,6 +3720,33 @@ body.debug-active .city-menu__portrait-button:active {
   background: linear-gradient(90deg, transparent, rgba(255, 211, 132, 0.62), transparent);
 }
 
+.city-arena-menu__energy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  min-height: 20px;
+  padding: 1px 9px 2px 6px;
+  border: 1px solid rgba(255, 211, 132, 0.2);
+  border-radius: 999px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 224, 143, 0.12), transparent 62%),
+    rgba(14, 4, 2, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.08),
+    0 1px 2px rgba(8, 2, 1, 0.45);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.city-arena-menu__energy--empty {
+  color: #d0a66d;
+  opacity: 0.78;
+}
+
 .city-arena-menu__tier-select {
   min-width: 0;
   width: min(210px, 100%);
@@ -3749,6 +3776,10 @@ body.debug-active .city-menu__portrait-button:active {
   align-items: stretch;
   gap: 6px;
   min-width: 0;
+}
+
+.city-arena-menu__fight-row--auto-hidden {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .city-arena-menu__fight,

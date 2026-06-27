@@ -21,6 +21,7 @@ import {
   mountCityHeroEquipmentMenu,
   mountCityHeroAppearanceMenu,
   mountCityHeroProfile,
+  renderCityArenaEnergyBadge,
   renderCityHeroInfo,
   syncCityHeroWidgetPosition,
   type CityEquipmentCategoryId,
@@ -67,6 +68,7 @@ import {
   getHeroArenaEnergy,
   grantHeroArenaEnergy,
   hasHeroArenaBossVictoryForTier,
+  hasHeroDefeatedArenaBoss,
   isHeroConsumableItem,
   isHeroEquipmentPreviewItem,
   resetHeroArenaBossVictoryLedger,
@@ -118,6 +120,7 @@ const cityArenaOnlineButton = document.querySelector<HTMLButtonElement>("#cityAr
 const cityArenaOnlineBackButton = document.querySelector<HTMLButtonElement>("#cityArenaOnlineBackButton");
 const cityArenaTierName = document.querySelector<HTMLElement>("#cityArenaTierName");
 const cityArenaTierSelect = document.querySelector<HTMLSelectElement>("#cityArenaTierSelect");
+const cityArenaEnergy = document.querySelector<HTMLElement>("#cityArenaEnergy");
 const cityArenaEasyReward = document.querySelector<HTMLElement>("#cityArenaEasyReward");
 const cityArenaEasyButton = document.querySelector<HTMLButtonElement>("#cityArenaEasyButton");
 const cityArenaEasyName = cityArenaEasyButton?.querySelector<HTMLElement>("strong");
@@ -1279,9 +1282,11 @@ function renderCityArenaMenu(): void {
   const randomOpponent = randomOpponents.find((opponent) => opponent.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID);
   const hardOpponent = randomOpponents.find((opponent) => opponent.difficultyId === "hard");
   const bosses = getArenaBossesForTier(tier.id);
+  const autoFightUnlocked = isCityArenaAutoFightUnlockedForTier(tier.id);
 
   syncCityArenaTierSelect(cityArenaTierSelect, visibleTiers, tier.id);
   cityArenaTierName.textContent = tier.name;
+  syncCityArenaMenuEnergy();
   syncCityArenaFightTitle(cityArenaEasyName, "Easy", ARENA_RANDOM_ENERGY_COST);
   syncCityArenaFightTitle(cityArenaRandomName, "Medium", ARENA_RANDOM_ENERGY_COST);
   syncCityArenaFightTitle(cityArenaHardName, "Hard", ARENA_RANDOM_ENERGY_COST);
@@ -1294,13 +1299,65 @@ function renderCityArenaMenu(): void {
   syncCityArenaReward(cityArenaEasyReward, easyOpponent?.rewards.win ?? { gold: 4, xp: 4 });
   syncCityArenaReward(cityArenaRandomReward, randomOpponent?.rewards.win ?? { gold: 8, xp: 6 });
   syncCityArenaReward(cityArenaHardReward, hardOpponent?.rewards.win ?? { gold: 15, xp: 10 });
-  scheduleCityArenaAutoRates([
-    { button: cityArenaEasyAutoButton, output: cityArenaEasyAutoRate, selection: { kind: "random", tierId: tier.id, difficultyId: "easy" } },
-    { button: cityArenaRandomAutoButton, output: cityArenaRandomAutoRate, selection: { kind: "random", tierId: tier.id, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID } },
-    { button: cityArenaHardAutoButton, output: cityArenaHardAutoRate, selection: { kind: "random", tierId: tier.id, difficultyId: "hard" } },
-  ]);
+  syncCityArenaAutoFightVisibility(autoFightUnlocked);
+  if (autoFightUnlocked) {
+    scheduleCityArenaAutoRates(getCityArenaRandomAutoRateTargets(tier.id));
+  }
   cityArenaBossList.replaceChildren(...(bosses.length > 0 ? bosses.map(createCityArenaBossButton) : [createCityArenaEmptyBossMessage()]));
   syncCityArenaBotControls();
+}
+
+function getCityArenaRandomAutoRateTargets(tierId: number): CityArenaAutoRateTarget[] {
+  return [
+    { button: cityArenaEasyAutoButton, output: cityArenaEasyAutoRate, selection: { kind: "random", tierId, difficultyId: "easy" } },
+    { button: cityArenaRandomAutoButton, output: cityArenaRandomAutoRate, selection: { kind: "random", tierId, difficultyId: DEFAULT_ARENA_DIFFICULTY_ID } },
+    { button: cityArenaHardAutoButton, output: cityArenaHardAutoRate, selection: { kind: "random", tierId, difficultyId: "hard" } },
+  ];
+}
+
+function syncCityArenaMenuEnergy(): void {
+  if (!cityArenaEnergy) {
+    return;
+  }
+
+  renderCityArenaEnergyBadge(cityArenaEnergy, getHeroArenaEnergy(hero), "city-arena-menu__energy--empty");
+}
+
+function isCityArenaAutoFightUnlockedForTier(tierId: number): boolean {
+  if (canUseArenaAdminControls()) {
+    return true;
+  }
+
+  const bosses = getArenaBossesForTier(tierId);
+
+  return bosses.length > 0 && bosses.some((boss) => hasHeroDefeatedArenaBoss(hero, boss.id));
+}
+
+function syncCityArenaAutoFightVisibility(unlocked: boolean): void {
+  if (!unlocked) {
+    cityArenaAutoRateToken += 1;
+  }
+
+  getCityArenaRandomAutoRateTargets(activeArenaTierId).forEach(({ button, output }) => {
+    if (!button) {
+      return;
+    }
+
+    button.hidden = !unlocked;
+    button.closest(".city-arena-menu__fight-row")?.classList.toggle("city-arena-menu__fight-row--auto-hidden", !unlocked);
+
+    if (unlocked) {
+      return;
+    }
+
+    delete button.dataset.autoFightRate;
+    delete button.dataset.autoFightRateKey;
+    button.removeAttribute("aria-label");
+    button.classList.remove("city-arena-menu__auto-fight--safe", "city-arena-menu__auto-fight--risky", "city-arena-menu__auto-fight--danger");
+    if (output) {
+      output.textContent = "";
+    }
+  });
 }
 
 function syncCityArenaFightTitle(title: HTMLElement | null | undefined, label: string, energyCost: number): void {
@@ -2435,6 +2492,11 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
     return;
   }
 
+  if (selection.kind === "random" && !isCityArenaAutoFightUnlockedForTier(selection.tierId)) {
+    renderCityArenaMenu();
+    return;
+  }
+
   if (selection.kind === "boss") {
     const limitTitle = getArenaSelectionBossVictoryLimitTitle(selection);
 
@@ -3161,6 +3223,10 @@ function canUseTelegramUserIdGatedAction(allowedTelegramUserIds: ReadonlySet<str
   }
 
   return allowedTelegramUserIds.has(getTelegramUserId() ?? "");
+}
+
+function canUseArenaAdminControls(): boolean {
+  return canUseTelegramUserIdGatedAction(ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS);
 }
 
 function syncShopHeroStateForProduct(product: CityShopProduct, previousHero: HeroState): void {

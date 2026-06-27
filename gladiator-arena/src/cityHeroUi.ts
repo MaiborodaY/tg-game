@@ -556,7 +556,7 @@ function syncCityHeroPortraitNotice(button: HTMLButtonElement | null, notice: Ci
   }
 }
 
-function renderCityArenaEnergyBadge(element: HTMLElement, arenaEnergy: HeroArenaEnergy, emptyClassName: string): void {
+export function renderCityArenaEnergyBadge(element: HTMLElement, arenaEnergy: HeroArenaEnergy, emptyClassName: string): void {
   const icon = document.createElement("img");
   const value = document.createElement("span");
 
