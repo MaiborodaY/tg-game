@@ -5117,17 +5117,6 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
     availability: {"shop":false,"enemyPool":false,"bossUnique":true},
   },
   {
-    item: {"id":"generated_equipment_weapon_sword_kortik","name":"Common Sword 03","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":4,"weaponClass":"sword"},
-    assetKeys: {"weaponMainAssetKey":"weapon-sword-kortik"},
-    equipmentTuning: {"x":-19,"y":19,"angle":90,"scaleX":0.6,"scaleY":1.02,"flipX":false,"flipY":false},
-    asset: {
-      key: "weapon-sword-kortik",
-      sourcePath: "assets/fighters/weapons/weapon-sword-kortik.webp",
-      lowSourcePath: "assets-low/fighters/weapons/weapon-sword-kortik.webp",
-    },
-    availability: {"shop":false,"enemyPool":true,"bossUnique":false},
-  },
-  {
     item: {"id":"generated_equipment_weapon_sword_lg_sword_1","name":"Legendary Sword 01","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":20,"weaponClass":"sword","levelRequirement":70},
     assetKeys: {"weaponMainAssetKey":"weapon-sword-lg-sword-1"},
     equipmentTuning: {"x":-22,"y":16,"angle":99,"scaleX":2,"scaleY":2.2,"flipX":false,"flipY":false},

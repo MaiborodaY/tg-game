@@ -222,7 +222,7 @@ export const AXE_BLOCK_CHANCE_PENALTY: Partial<Record<ActionId, number>> = {
   medium: 0.15,
   heavy: 0.15,
 };
-export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 2;
+export const AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER = 1.5;
 const AXE_MELEE_DAMAGE_MULTIPLIER: Partial<Record<ActionId, number>> = {
   light: 1,
   medium: 1.5,

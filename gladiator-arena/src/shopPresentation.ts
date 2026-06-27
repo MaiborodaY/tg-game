@@ -1,4 +1,5 @@
 import { getArenaBossesForTier } from "./arenaOpponents";
+import { AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER } from "./combat";
 import {
   HERO_ITEM_CATALOG,
   areHeroItemsEquipped,
@@ -327,7 +328,7 @@ function getHeroBowDamageDisplayMultiplier(hero: HeroState): number {
 }
 
 function getHeroMeleeDamageDisplayMultiplier(hero: HeroState, item: HeroItemDefinition): number {
-  const weaponMultiplier = getHeroItemWeaponClass(item) === "axe" ? 2 : 1;
+  const weaponMultiplier = getHeroItemWeaponClass(item) === "axe" ? AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER : 1;
 
   return 1 + Math.max(0, deriveHeroStats(hero).meleeDamagePercentBonus) * weaponMultiplier;
 }

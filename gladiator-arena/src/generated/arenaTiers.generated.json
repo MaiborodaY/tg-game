@@ -36,7 +36,7 @@
             "weaponChance": 0.5,
             "bowChance": 0.1,
             "shieldChance": 0.05,
-            "shurikenChance": 0.1
+            "shurikenChance": 0.01
           },
           {
             "itemRarities": [
@@ -70,7 +70,8 @@
             ],
             "rollChance": 0.95,
             "bowChance": 0.3,
-            "shieldChance": 0.1
+            "shieldChance": 0.1,
+            "shurikenChance": 0.05
           },
           {
             "itemRarities": [
@@ -103,7 +104,7 @@
       {
         "id": "dust_arena_2_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 5,
+        "randomBaseStatPoints": 10,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -112,7 +113,7 @@
             "rollChance": 0.7,
             "bowChance": 0.055,
             "shieldChance": 0.055,
-            "shurikenChance": 0.0689
+            "shurikenChance": 0.05
           },
           {
             "itemRarities": [
@@ -147,7 +148,7 @@
       {
         "id": "dust_arena_2_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 10,
+        "randomBaseStatPoints": 15,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -156,7 +157,7 @@
             "rollChance": 0.4,
             "bowChance": 0.028,
             "shieldChance": 0.056,
-            "shurikenChance": 0.032
+            "shurikenChance": 0.1
           },
           {
             "itemRarities": [
@@ -191,7 +192,7 @@
       {
         "id": "dust_arena_2_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 15,
+        "randomBaseStatPoints": 20,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -242,7 +243,7 @@
       {
         "id": "arena_3_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 15,
+        "randomBaseStatPoints": 20,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -286,7 +287,7 @@
       {
         "id": "arena_3_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 21,
+        "randomBaseStatPoints": 25,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -330,7 +331,7 @@
       {
         "id": "arena_3_hard",
         "difficultyId": "hard",
-        "randomBaseStatPoints": 27,
+        "randomBaseStatPoints": 30,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -381,7 +382,7 @@
       {
         "id": "dust_arena_4_easy",
         "difficultyId": "easy",
-        "randomBaseStatPoints": 27,
+        "randomBaseStatPoints": 30,
         "equipmentPools": [
           {
             "itemRarities": [
@@ -425,7 +426,7 @@
       {
         "id": "dust_arena_4_medium",
         "difficultyId": "medium",
-        "randomBaseStatPoints": 34,
+        "randomBaseStatPoints": 35,
         "equipmentPools": [
           {
             "itemRarities": [

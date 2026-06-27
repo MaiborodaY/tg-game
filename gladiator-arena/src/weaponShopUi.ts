@@ -9,6 +9,7 @@ import {
   canHeroUseItems,
   getHeroBowShotCapacity,
   getHeroConsumableMaxQuantity,
+  getHeroItemWeaponClass,
   getHeroItemQuantity,
   getHeroShurikenItemId,
   getHeroShurikenQuantity,
@@ -50,6 +51,7 @@ import {
   type ShopItemRarity,
   type ShopProductActionState,
 } from "./shopPresentation";
+import { readUiFilterPreferences, updateUiFilterPreferences } from "./uiFilterPreferences";
 
 export interface WeaponProduct {
   id: string;
@@ -312,6 +314,29 @@ function getDefaultWeaponTypeFilterIds(): Set<string> {
   return new Set();
 }
 
+function getStoredWeaponRarityFilterIds(rarityIds: readonly string[] | undefined): Set<ShopItemRarity> {
+  if (!rarityIds) {
+    return getDefaultWeaponRarityFilterIds();
+  }
+
+  const selectedRarityIds = rarityIds.filter((rarityId): rarityId is ShopItemRarity =>
+    WEAPON_RARITY_FILTERS.includes(rarityId as ShopItemRarity),
+  );
+
+  return selectedRarityIds.length > 0 ? new Set(selectedRarityIds) : getDefaultWeaponRarityFilterIds();
+}
+
+function getStoredWeaponTypeFilterIds(typeIds: readonly string[] | undefined): Set<string> {
+  if (!typeIds) {
+    return getDefaultWeaponTypeFilterIds();
+  }
+
+  const availableTypeIds = new Set(WEAPON_CATEGORIES.map((category) => category.id));
+  const selectedTypeIds = typeIds.filter((typeId) => availableTypeIds.has(typeId));
+
+  return selectedTypeIds.length >= WEAPON_CATEGORIES.length ? getDefaultWeaponTypeFilterIds() : new Set(selectedTypeIds);
+}
+
 function getSelectedWeaponCategories(typeIds: ReadonlySet<string>): WeaponCategory[] {
   if (typeIds.size === 0) {
     return WEAPON_CATEGORIES;
@@ -325,9 +350,10 @@ function getWeaponProductsForCategories(categories: readonly WeaponCategory[]): 
 }
 
 export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): WeaponShopApi {
-  let selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();
-  let selectedRarityIds = getDefaultWeaponRarityFilterIds();
-  let isTwoColumnProductMode = false;
+  const storedFilterPreferences = readUiFilterPreferences().weaponShop;
+  let selectedWeaponTypeIds = getStoredWeaponTypeFilterIds(storedFilterPreferences?.typeIds);
+  let selectedRarityIds = getStoredWeaponRarityFilterIds(storedFilterPreferences?.rarityIds);
+  let isTwoColumnProductMode = storedFilterPreferences?.twoColumn === true;
   let previewProduct: WeaponProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -494,10 +520,19 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   layoutResizeObserver?.observe(menu);
   layoutResizeObserver?.observe(tray);
 
+  function persistWeaponShopFilterPreferences(): void {
+    updateUiFilterPreferences((preferences) => ({
+      ...preferences,
+      weaponShop: {
+        rarityIds: [...selectedRarityIds],
+        typeIds: [...selectedWeaponTypeIds],
+        twoColumn: isTwoColumnProductMode,
+      },
+    }));
+  }
+
   function open(): void {
     clearTransitionTimer();
-    selectedWeaponTypeIds = getDefaultWeaponTypeFilterIds();
-    selectedRarityIds = getDefaultWeaponRarityFilterIds();
     clearProductPreview();
     window.addEventListener("pointerdown", dismissPreviewFromPointerDown, true);
     options.onOpen?.();
@@ -547,6 +582,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     }
 
     if (normalizeSelectedWeaponRarityIds(availableRarities)) {
+      persistWeaponShopFilterPreferences();
       clearProductPreview();
     }
 
@@ -696,6 +732,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
         selectedRarityIds.delete(rarity);
       }
 
+      persistWeaponShopFilterPreferences();
       clearProductPreview();
       updateRarityFilterVisual();
       render();
@@ -728,6 +765,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       button.addEventListener("click", () => {
         closeRarityFilter();
         isTwoColumnProductMode = !isTwoColumnProductMode;
+        persistWeaponShopFilterPreferences();
         shop.classList.toggle("armory-shop--two-column", isTwoColumnProductMode);
         updateWeaponDisplayModeButton();
         scheduleLayoutSync();
@@ -756,6 +794,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       }
 
       normalizeSelectedWeaponTypeIds();
+      persistWeaponShopFilterPreferences();
       clearProductPreview();
       updateWeaponCategoryButtons();
       render();
@@ -1602,6 +1641,12 @@ function appendRequirementContent(requirementNode: HTMLElement, requirement: Sho
   requirementNode.append(icon, amount);
 }
 
+function getWeaponProductClass(product: WeaponProduct): HeroWeaponClass | undefined {
+  const itemId = product.itemIds[0];
+
+  return itemId ? getHeroItemWeaponClass(HERO_ITEM_CATALOG[itemId]) : undefined;
+}
+
 function createSelectedMeta(
   productName: string,
   rarity: ShopItemRarity,
@@ -1618,9 +1663,10 @@ function createSelectedMeta(
   const statNode = document.createElement("span");
   const statRow = document.createElement("span");
   const statIcon = document.createElement("img");
-  const currentStatNode = document.createElement("span");
-  const nextStatNode = document.createElement("span");
+  const statValueNode = document.createElement("span");
+  const diffNode = document.createElement("span");
   const comparesStat = options.compareStat ?? true;
+  const diff = stat - currentStat;
   const perkDefinition = options.weaponClass ? WEAPON_PERK_DEFINITIONS[options.weaponClass] : undefined;
 
   meta.className = "armory-shop__selected-meta";
@@ -1639,27 +1685,33 @@ function createSelectedMeta(
   }
   statRow.className = "weapon-shop__selected-stat-row";
   statNode.className = "armory-shop__selected-stat";
-  statNode.setAttribute("aria-label", !comparesStat || currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
+  statNode.setAttribute("aria-label", `${statLabel} ${stat}`);
   statIcon.className = "armory-shop__selected-stat-icon";
   statIcon.src = statIconUrl;
   statIcon.alt = "";
   statIcon.decoding = "async";
   statIcon.draggable = false;
-  currentStatNode.className = "armory-shop__selected-stat-value";
-  currentStatNode.textContent = String(comparesStat ? currentStat : stat);
-  nextStatNode.className = "armory-shop__selected-stat-value";
-  nextStatNode.classList.toggle("armory-shop__selected-stat-value--positive", stat > currentStat);
-  nextStatNode.classList.toggle("armory-shop__selected-stat-value--negative", stat < currentStat);
-  nextStatNode.textContent = String(stat);
-  statNode.append(statIcon, currentStatNode);
-  if (comparesStat && currentStat !== stat) {
-    const arrowNode = document.createElement("span");
-
-    arrowNode.className = "armory-shop__selected-stat-arrow";
-    arrowNode.textContent = ">";
-    statNode.append(arrowNode, nextStatNode);
-  }
+  statValueNode.className = "armory-shop__selected-stat-value";
+  statValueNode.textContent = String(stat);
+  statNode.append(statIcon, statValueNode);
   statRow.append(statNode);
+  if (comparesStat) {
+    diffNode.className = [
+      "equipment-item-card__diff",
+      "armory-shop__selected-diff",
+      diff > 0 ? "equipment-item-card__diff--better" : "",
+      diff < 0 ? "equipment-item-card__diff--worse" : "",
+      diff === 0 ? "equipment-item-card__diff--equal" : "",
+      diff > 0 ? "armory-shop__selected-diff--better" : "",
+      diff < 0 ? "armory-shop__selected-diff--worse" : "",
+      diff === 0 ? "armory-shop__selected-diff--equal" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    diffNode.textContent = diff > 0 ? `+${diff}` : String(diff);
+    diffNode.setAttribute("aria-label", diff > 0 ? `Better by ${diff}` : diff < 0 ? `Worse by ${Math.abs(diff)}` : "Same stat");
+    statRow.append(diffNode);
+  }
   if (perkDefinition) {
     statRow.append(createWeaponPerkButton(perkDefinition));
   }

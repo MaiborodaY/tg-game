@@ -36,6 +36,7 @@ import {
   type ShopItemRarity,
   type ShopProductRequirementBadge,
 } from "./shopPresentation";
+import { readUiFilterPreferences, updateUiFilterPreferences } from "./uiFilterPreferences";
 
 export interface ArmoryProduct {
   id: string;
@@ -89,9 +90,8 @@ interface ArmorySelectedMetaElements {
   name: HTMLElement;
   rarity: HTMLElement;
   stat: HTMLElement;
-  currentStat: HTMLElement;
-  arrow: HTMLElement;
-  nextStat: HTMLElement;
+  statValue: HTMLElement;
+  diff: HTMLElement;
   price: HTMLElement;
   priceAmount: HTMLElement;
 }
@@ -419,6 +419,21 @@ function getDefaultArmoryPartFilterIds(): Set<string> {
   return new Set();
 }
 
+function getStoredArmoryPartFilterIds(partIds: readonly string[] | undefined): Set<string> {
+  if (!partIds) {
+    return getDefaultArmoryPartFilterIds();
+  }
+
+  const availablePartIds = new Set(ARMORY_PART_FILTERS.map((part) => part.id));
+  const storedPartIds = partIds.filter((partId) => availablePartIds.has(partId));
+
+  return storedPartIds.length >= ARMORY_PART_FILTERS.length ? getDefaultArmoryPartFilterIds() : new Set(storedPartIds);
+}
+
+function getStoredArmoryRarity(rarity: string | undefined): ShopItemRarity | undefined {
+  return ARMORY_RARITIES.includes(rarity as ShopItemRarity) ? (rarity as ShopItemRarity) : undefined;
+}
+
 function compareArmoryProducts(left: ArmoryProduct, right: ArmoryProduct): number {
   const rarityDifference = getArmoryProductRarityOrder(left) - getArmoryProductRarityOrder(right);
 
@@ -622,10 +637,11 @@ function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotCo
 }
 
 export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): ArmoryShopApi {
-  let selectedRarity: ShopItemRarity | undefined;
-  let selectedSetId: string | undefined;
-  let isTwoColumnProductMode = false;
-  let selectedPartFilterIds = getDefaultArmoryPartFilterIds();
+  const storedFilterPreferences = readUiFilterPreferences().armoryShop;
+  let selectedRarity = getStoredArmoryRarity(storedFilterPreferences?.rarity);
+  let selectedSetId = storedFilterPreferences?.setId;
+  let isTwoColumnProductMode = storedFilterPreferences?.twoColumn === true;
+  let selectedPartFilterIds = getStoredArmoryPartFilterIds(storedFilterPreferences?.partIds);
   let previewProduct: ArmoryProduct | undefined;
   let unmountPreview: (() => void) | undefined;
   let transitionTimer: number | undefined;
@@ -804,11 +820,20 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   layoutResizeObserver?.observe(menu);
   layoutResizeObserver?.observe(tray);
 
+  function persistArmoryShopFilterPreferences(): void {
+    updateUiFilterPreferences((preferences) => ({
+      ...preferences,
+      armoryShop: {
+        rarity: selectedRarity,
+        setId: selectedSetId,
+        partIds: [...selectedPartFilterIds],
+        twoColumn: isTwoColumnProductMode,
+      },
+    }));
+  }
+
   function open(): void {
     clearTransitionTimer();
-    selectedRarity = undefined;
-    selectedSetId = undefined;
-    selectedPartFilterIds = getDefaultArmoryPartFilterIds();
     clearProductPreview();
     window.addEventListener("pointerdown", dismissPreviewFromPointerDown, true);
     options.onOpen?.();
@@ -852,6 +877,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     const shopProducts = filterVisibleArmoryShopProducts(hero, sortedProducts);
     const partFilteredProducts = filterArmoryProductsByParts(shopProducts, selectedPartFilterIds);
     const availableSets = getAvailableArmorySetFilters(partFilteredProducts);
+    let didNormalizeStoredFilters = false;
 
     if (previewProduct && !isArmoryProductVisibleInShop(hero, previewProduct)) {
       clearProductPreview();
@@ -859,6 +885,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     if (selectedSetId && !availableSets.some((set) => set.id === selectedSetId)) {
       selectedSetId = undefined;
+      didNormalizeStoredFilters = true;
       clearProductPreview();
     }
 
@@ -867,7 +894,12 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     if (selectedRarity && !availableRarities.includes(selectedRarity)) {
       selectedRarity = undefined;
+      didNormalizeStoredFilters = true;
       clearProductPreview();
+    }
+
+    if (didNormalizeStoredFilters) {
+      persistArmoryShopFilterPreferences();
     }
 
     const selectedProducts = filterArmoryProductsByRarity(setFilteredProducts, selectedRarity);
@@ -1040,6 +1072,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     text.textContent = getShopRarityLabel(rarity);
     input.addEventListener("change", () => {
       selectedRarity = input.checked ? rarity : undefined;
+      persistArmoryShopFilterPreferences();
       clearProductPreview();
       updateArmoryRarityFilterVisual();
       render();
@@ -1073,6 +1106,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
         closeRarityFilter();
         closeSetFilter();
         isTwoColumnProductMode = !isTwoColumnProductMode;
+        persistArmoryShopFilterPreferences();
         shop.classList.toggle("armory-shop--two-column", isTwoColumnProductMode);
         updateArmoryDisplayModeButton();
         scheduleLayoutSync();
@@ -1101,6 +1135,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
         selectedPartFilterIds = new Set([item.id]);
       }
 
+      persistArmoryShopFilterPreferences();
       clearProductPreview();
       updateCategoryFilterButtons();
       render();
@@ -1160,6 +1195,7 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
     text.textContent = set.name;
     input.addEventListener("change", () => {
       selectedSetId = input.checked ? set.id : undefined;
+      persistArmoryShopFilterPreferences();
       clearProductPreview();
       render();
     });
@@ -1472,7 +1508,14 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
 
     updateSelectedMeta(elements.meta, displayName, rarity, "armor", armor, currentArmor, product.price);
     elements.buyButton.disabled = actionState === "equipped" || actionState === "no-gold" || actionState === "sealed" || actionState === "locked";
-    elements.buyButton.textContent = getShopProductActionLabel(actionState, product.price);
+    elements.buyButton.classList.toggle("armory-shop__selected-buy--price", actionState === "buy" || actionState === "no-gold");
+    elements.buyButton.replaceChildren();
+    if (actionState === "buy" || actionState === "no-gold") {
+      appendPriceContent(elements.buyButton, product.price);
+    } else {
+      elements.buyButton.textContent = getShopProductActionLabel(actionState, product.price);
+      elements.buyButton.removeAttribute("aria-label");
+    }
   }
 
   function updateSelectedMeta(
@@ -1486,13 +1529,9 @@ export function mountArmoryShop(root: HTMLElement, options: ArmoryShopOptions): 
   ): void {
     meta.name.textContent = productName;
     meta.rarity.textContent = getShopRarityLabel(rarity);
-    meta.stat.setAttribute("aria-label", currentStat === stat ? `${statLabel} ${stat}` : `${statLabel} ${currentStat} to ${stat}`);
-    meta.currentStat.textContent = String(currentStat);
-    meta.nextStat.classList.toggle("armory-shop__selected-stat-value--positive", stat > currentStat);
-    meta.nextStat.classList.toggle("armory-shop__selected-stat-value--negative", stat < currentStat);
-    meta.nextStat.textContent = String(stat);
-    meta.arrow.hidden = currentStat === stat;
-    meta.nextStat.hidden = currentStat === stat;
+    meta.stat.setAttribute("aria-label", `${statLabel} ${stat}`);
+    meta.statValue.textContent = String(stat);
+    updateSelectedDiffChip(meta.diff, stat - currentStat);
     meta.price.setAttribute("aria-label", `${price} gold`);
     meta.priceAmount.textContent = String(price);
   }
@@ -1797,35 +1836,55 @@ function createSelectedMeta(): ArmorySelectedMetaElements {
   const nameNode = document.createElement("span");
   const rarityNode = document.createElement("span");
   const statNode = document.createElement("span");
-  const currentStatNode = document.createElement("span");
-  const arrowNode = document.createElement("span");
-  const nextStatNode = document.createElement("span");
+  const statIcon = document.createElement("img");
+  const statValueNode = document.createElement("span");
+  const diffNode = document.createElement("span");
   const priceNode = document.createElement("span");
 
   meta.className = "armory-shop__selected-meta";
   nameNode.className = "armory-shop__selected-name";
   rarityNode.className = "armory-shop__selected-rarity";
   statNode.className = "armory-shop__selected-stat";
-  currentStatNode.className = "armory-shop__selected-stat-value";
-  arrowNode.className = "armory-shop__selected-stat-arrow";
-  arrowNode.textContent = ">";
-  nextStatNode.className = "armory-shop__selected-stat-value";
+  statIcon.className = "armory-shop__selected-stat-icon";
+  statIcon.src = DAMAGE_BLOCK_ICON_ASSET_URL;
+  statIcon.alt = "";
+  statIcon.decoding = "async";
+  statIcon.draggable = false;
+  statValueNode.className = "armory-shop__selected-stat-value";
+  diffNode.className =
+    "equipment-item-card__diff equipment-item-card__diff--equal armory-shop__selected-diff armory-shop__selected-diff--equal";
   priceNode.className = "armory-shop__selected-price";
   appendPriceContent(priceNode, 0);
-  statNode.append(currentStatNode, arrowNode, nextStatNode);
-  meta.append(nameNode, rarityNode, statNode, priceNode);
+  statNode.append(statIcon, statValueNode);
+  meta.append(nameNode, rarityNode, statNode, diffNode, priceNode);
 
   return {
     root: meta,
     name: nameNode,
     rarity: rarityNode,
     stat: statNode,
-    currentStat: currentStatNode,
-    arrow: arrowNode,
-    nextStat: nextStatNode,
+    statValue: statValueNode,
+    diff: diffNode,
     price: priceNode,
     priceAmount: priceNode.querySelector<HTMLElement>(".armory-shop__price-amount")!,
   };
+}
+
+function updateSelectedDiffChip(chip: HTMLElement, diff: number): void {
+  chip.className = [
+    "equipment-item-card__diff",
+    "armory-shop__selected-diff",
+    diff > 0 ? "equipment-item-card__diff--better" : "",
+    diff < 0 ? "equipment-item-card__diff--worse" : "",
+    diff === 0 ? "equipment-item-card__diff--equal" : "",
+    diff > 0 ? "armory-shop__selected-diff--better" : "",
+    diff < 0 ? "armory-shop__selected-diff--worse" : "",
+    diff === 0 ? "armory-shop__selected-diff--equal" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  chip.textContent = diff > 0 ? `+${diff}` : String(diff);
+  chip.setAttribute("aria-label", diff > 0 ? `Better by ${diff}` : diff < 0 ? `Worse by ${Math.abs(diff)}` : "Same stat");
 }
 
 function appendPriceContent(priceNode: HTMLElement, price: number): void {

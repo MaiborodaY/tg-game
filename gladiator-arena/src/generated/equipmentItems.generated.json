@@ -17809,37 +17809,6 @@
     }
   },
   {
-    "id": "generated_equipment_weapon_sword_kortik",
-    "name": "Common Sword 03",
-    "kind": "weapon",
-    "rarity": "common",
-    "damageBonus": 4,
-    "weaponClass": "sword",
-    "equipmentSlot": "weaponMain",
-    "assetKeys": {
-      "weaponMainAssetKey": "weapon-sword-kortik"
-    },
-    "equipmentTuning": {
-      "x": -19,
-      "y": 19,
-      "angle": 90,
-      "scaleX": 0.6,
-      "scaleY": 1.02,
-      "flipX": false,
-      "flipY": false
-    },
-    "asset": {
-      "key": "weapon-sword-kortik",
-      "sourcePath": "assets/fighters/weapons/weapon-sword-kortik.webp",
-      "lowSourcePath": "assets-low/fighters/weapons/weapon-sword-kortik.webp"
-    },
-    "availability": {
-      "shop": false,
-      "enemyPool": true,
-      "bossUnique": false
-    }
-  },
-  {
     "id": "generated_equipment_weapon_sword_lg_sword_1",
     "name": "Legendary Sword 01",
     "kind": "weapon",

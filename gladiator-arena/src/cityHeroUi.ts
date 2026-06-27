@@ -53,6 +53,7 @@ import {
   getShopRarityLabel,
   type ShopItemRarity,
 } from "./shopPresentation";
+import { readUiFilterPreferences, updateUiFilterPreferences } from "./uiFilterPreferences";
 
 const HERO_ATTRIBUTE_KEYS: readonly HeroAttributeKey[] = ["strength", "agility", "vitality"];
 const ATTRIBUTE_CTRL_ALLOCATE_AMOUNT = 10;
@@ -214,6 +215,32 @@ const CITY_EQUIPMENT_ARMOR_CATEGORIES: readonly CityEquipmentCategory[] = [
 ];
 
 const CITY_EQUIPMENT_CATEGORIES: readonly CityEquipmentCategory[] = [...CITY_EQUIPMENT_WEAPON_CATEGORIES, ...CITY_EQUIPMENT_ARMOR_CATEGORIES];
+
+function getStoredCityEquipmentCategoryIds(): Set<CityEquipmentCategoryId> {
+  const categoryIds = readUiFilterPreferences().cityEquipment?.categoryIds;
+
+  if (!categoryIds) {
+    return new Set();
+  }
+
+  const selectedCategoryIds = categoryIds.filter(isCityEquipmentCategoryId);
+
+  return selectedCategoryIds.length >= CITY_EQUIPMENT_CATEGORIES.length ? new Set() : new Set(selectedCategoryIds);
+}
+
+function persistCityEquipmentFilterPreferences(activeCategoryIds: ReadonlySet<CityEquipmentCategoryId>): void {
+  updateUiFilterPreferences((preferences) => ({
+    ...preferences,
+    cityEquipment: {
+      categoryIds: [...activeCategoryIds],
+    },
+  }));
+}
+
+function isCityEquipmentCategoryId(value: string): value is CityEquipmentCategoryId {
+  return CITY_EQUIPMENT_CATEGORIES.some((category) => category.id === value);
+}
+
 const HERO_RANKS: readonly { minLevel: number; title: string }[] = [
   { minLevel: 90, title: "Immortal" },
   { minLevel: 70, title: "Legend" },
@@ -596,7 +623,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   const profileClosePlaceholder = document.createComment("hero-profile-close-placeholder");
   let isOpen = false;
   let isProfileCloseButtonMoved = false;
-  let activeCategoryIds = new Set<CityEquipmentCategoryId>();
+  let activeCategoryIds = getStoredCityEquipmentCategoryIds();
   let selectedProductId: string | undefined;
 
   profile?.append(menu.root);
@@ -609,7 +636,13 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
   const setOpen = (nextOpen: boolean, categoryId?: CityEquipmentCategoryId) => {
     const wasOpen = isOpen;
 
-    activeCategoryIds = categoryId ? new Set([normalizeCityEquipmentCategoryId(categoryId)]) : new Set();
+    if (nextOpen) {
+      activeCategoryIds = categoryId ? new Set([normalizeCityEquipmentCategoryId(categoryId)]) : getStoredCityEquipmentCategoryIds();
+      if (categoryId) {
+        persistCityEquipmentFilterPreferences(activeCategoryIds);
+      }
+    }
+
     isOpen = nextOpen;
     menu.root.hidden = !nextOpen;
     profile?.classList.toggle("city-profile--equipment-menu-open", nextOpen);
@@ -671,6 +704,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
         activeCategoryIds,
         button.dataset.cityEquipmentSideAll as CityEquipmentCategorySide,
       );
+      persistCityEquipmentFilterPreferences(activeCategoryIds);
       selectedProductId = undefined;
       render();
       return;
@@ -687,6 +721,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     }
 
     activeCategoryIds = nextCategoryIds;
+    persistCityEquipmentFilterPreferences(activeCategoryIds);
     selectedProductId = undefined;
     render();
   };
@@ -726,6 +761,7 @@ export function mountCityHeroEquipmentMenu(refs: CityHeroWidgetRefs, options: Ci
     const product = productKey ? products.find((candidate) => getCityEquipmentProductKey(candidate) === productKey) : undefined;
 
     activeCategoryIds = new Set([categoryId]);
+    persistCityEquipmentFilterPreferences(activeCategoryIds);
     selectedProductId = product?.id;
     options.onCategoryOpen?.(categoryId);
     render();

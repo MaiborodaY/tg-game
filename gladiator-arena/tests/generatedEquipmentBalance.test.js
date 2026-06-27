@@ -350,7 +350,6 @@ test("generated axes follow the strength-scaling damage curve", () => {
 test("generated swords follow the accuracy-focused damage curve", () => {
   assertGeneratedSword("Common Sword 01", { damage: 1, shop: true, enemy: true });
   assertGeneratedSword("Common Sword 02", { damage: 2, shop: true, enemy: true });
-  assertGeneratedSword("Common Sword 03", { damage: 3, shop: false, enemy: true });
   assertGeneratedSword("Common Sword 04", { damage: 4, shop: true, enemy: true });
   assertGeneratedSword("Uncommon Sword 01", { damage: 5, shop: true, enemy: true });
   assertGeneratedSword("Uncommon Sword 02", { damage: 7, shop: true, enemy: true });
