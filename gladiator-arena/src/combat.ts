@@ -702,6 +702,23 @@ function hasLivingHelper(state: CombatState): state is CombatState & { helper: F
   return Boolean(state.helper && state.helper.hp > 0);
 }
 
+function hasLivingPlayer(state: CombatState): boolean {
+  return state.player.hp > 0;
+}
+
+function areAllAlliesDefeated(state: CombatState): boolean {
+  return !hasLivingPlayer(state) && !hasLivingHelper(state);
+}
+
+function shouldFinishBattle(state: CombatState): boolean {
+  return state.enemy.hp <= 0 || areAllAlliesDefeated(state);
+}
+
+function advanceToNextAlliedTurn(state: CombatState): void {
+  state.activeTurn = hasLivingPlayer(state) ? "player" : "enemy";
+  clearRestDefensePenalty(state, state.activeTurn);
+}
+
 function getLivingHelperPosition(state: CombatState): number | undefined {
   return hasLivingHelper(state) ? state.helperPosition ?? state.playerPosition : undefined;
 }
@@ -1097,6 +1114,11 @@ export function resolvePlayerTurn(current: CombatState, playerActionId: ActionId
     return state;
   }
 
+  if (!hasLivingPlayer(state) && hasLivingHelper(state)) {
+    advanceToNextAlliedTurn(state);
+    return state;
+  }
+
   if (!canUseAction(state, playerActionId, "player")) {
     addLog(state, `${getActionTitle(playerActionId, state.player)} is not available right now.`);
     return state;
@@ -1129,6 +1151,11 @@ export function resolvePvpTurn(current: CombatState, actor: TurnOwner, actionId:
   applyPoisonTurnStart(state, actor);
 
   if (state.result !== "playing") {
+    return state;
+  }
+
+  if (actor === "player" && !hasLivingPlayer(state) && hasLivingHelper(state)) {
+    advanceToNextAlliedTurn(state);
     return state;
   }
 
@@ -1189,9 +1216,34 @@ export function resolveEnemyTurn(current: CombatState, random = Math.random): Co
   }
 
   state.round += 1;
-  state.activeTurn = "player";
-  clearRestDefensePenalty(state, state.activeTurn);
+  advanceToNextAlliedTurn(state);
   return state;
+}
+
+export function resolveDuoBossSkippedDefeatedAllyTurn(current: CombatState): CombatState {
+  if (!isDuoBossAiCombat(current) || current.result !== "playing") {
+    return current;
+  }
+
+  if (shouldFinishBattle(current)) {
+    const state = cloneStateForTurn(current);
+
+    finishBattle(state);
+    return state;
+  }
+
+  if (current.activeTurn === "player" && !hasLivingPlayer(current) && hasLivingHelper(current)) {
+    const state = cloneStateForTurn(current);
+
+    advanceToNextAlliedTurn(state);
+    return state;
+  }
+
+  if (current.activeTurn === "enemy" && !hasLivingHelper(current) && hasLivingPlayer(current)) {
+    return resolveEnemyTurn(current);
+  }
+
+  return current;
 }
 
 export function resolveDuoBossHelperTurn(current: CombatState, random = Math.random): CombatState {
@@ -1961,7 +2013,7 @@ function applyAction(
 
   addActionLog(state, actor, actorLabel, defenderLabel, action, actionTitle, actionMove, damage, inRange, blocked, actionDistance, getFighterClinchRange(attacker), staminaRestore, heal);
 
-  if (state.player.hp <= 0 || state.enemy.hp <= 0) {
+  if (shouldFinishBattle(state)) {
     finishBattle(state);
   }
 }
@@ -2202,7 +2254,7 @@ function applyPoisonTurnStart(state: CombatState, owner: CombatActor): void {
 
   addLog(state, `${fighter.name} suffers ${poisonDamage} poison damage.`, true);
 
-  if (fighter.hp <= 0) {
+  if (shouldFinishBattle(state)) {
     finishBattle(state);
   }
 }
@@ -2513,23 +2565,28 @@ function consumeDoubleStrikeHit(fighter: FighterState): void {
 
 function finishBattle(state: CombatState): void {
   const playerName = state.player.name;
+  const helperName = state.helper?.name ?? "Ally";
   const enemyName = state.enemy.name;
+  const allAlliesDefeated = areAllAlliesDefeated(state);
 
-  if (state.enemy.hp <= 0 && state.player.hp <= 0) {
+  if (state.enemy.hp <= 0 && allAlliesDefeated) {
     state.result = "draw";
     state.score += 250;
-    addLog(state, "Both gladiators collapse dramatically. The crowd calls it art.", true);
+    addLog(state, "The last fighters collapse together. The crowd calls it art.", true);
     return;
   }
 
   if (state.enemy.hp <= 0) {
+    const survivorName = state.player.hp > 0 ? playerName : helperName;
+    const survivorHp = Math.max(0, state.player.hp > 0 ? state.player.hp : (state.helper?.hp ?? 0));
+
     state.result = "win";
-    state.score += 1000 + state.player.hp * 40;
-    addLog(state, `Victory! ${playerName} survives with all the dignity a bucket helmet allows.`, true);
+    state.score += 1000 + survivorHp * 40;
+    addLog(state, `Victory! ${survivorName} keeps the allied side standing.`, true);
     return;
   }
 
-  if (state.player.hp <= 0) {
+  if (allAlliesDefeated) {
     state.result = "lose";
     addLog(state, `Defeat. ${enemyName} wins and immediately starts posing at the wrong crowd.`, true);
   }

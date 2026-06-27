@@ -1092,6 +1092,11 @@ async function scheduleDuoBossTurns(enemyState: CombatState, previousActionAnima
     return;
   }
 
+  if (nextState.result === "playing" && nextState.activeTurn === "enemy") {
+    void scheduleDuoBossTurns(nextState);
+    return;
+  }
+
   setTurnAnimationLocked(false);
 }
 

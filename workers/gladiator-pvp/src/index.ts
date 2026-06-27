@@ -4,6 +4,7 @@ import {
   canUseTurnAction,
   choosePlayerAutoAction,
   resolveDuoBossHelperPlayerTurn,
+  resolveDuoBossSkippedDefeatedAllyTurn,
   resolveEnemyTurn,
   resolvePvpTurn,
   type ActionId,
@@ -707,10 +708,10 @@ export class PvpRoom extends DurableObject<Env> {
     const actor = getPvpActorForSeat(seat, record.roomKind);
 
     if (record.roomKind === "duoBoss") {
-      const skippedHelperState = this.resolveDuoBossDeadHelperTurn(record.state);
+      const skippedAllyState = resolveDuoBossSkippedDefeatedAllyTurn(record.state);
 
-      if (skippedHelperState !== record.state) {
-        return this.createRecordWithState(record, skippedHelperState, now);
+      if (skippedAllyState !== record.state) {
+        return this.createRecordWithState(record, skippedAllyState, now);
       }
     }
 
@@ -721,7 +722,7 @@ export class PvpRoom extends DurableObject<Env> {
     const resolvedState = record.roomKind === "duoBoss"
       ? this.resolveDuoBossAction(record.state, seat, actionId)
       : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
-    const state = record.roomKind === "duoBoss" ? this.resolveDuoBossDeadHelperTurn(resolvedState) : resolvedState;
+    const state = record.roomKind === "duoBoss" ? resolveDuoBossSkippedDefeatedAllyTurn(resolvedState) : resolvedState;
     const timeoutStreaks = options.resetTimeoutStreak === false
       ? record.timeoutStreaks
       : getNextTimeoutStreaks(record.timeoutStreaks, seat, 0);
@@ -758,7 +759,7 @@ export class PvpRoom extends DurableObject<Env> {
       return record;
     }
 
-    const state = this.resolveDuoBossDeadHelperTurn(record.state);
+    const state = resolveDuoBossSkippedDefeatedAllyTurn(record.state);
 
     return state === record.state ? record : this.createRecordWithState(record, state, now);
   }
@@ -776,16 +777,6 @@ export class PvpRoom extends DurableObject<Env> {
       this.broadcastSnapshots(nextRecord);
     }
     return nextRecord;
-  }
-
-  private resolveDuoBossDeadHelperTurn(state: CombatState): CombatState {
-    const helperAlive = (state.helper?.hp ?? 0) > 0;
-
-    if (state.result !== "playing" || state.activeTurn !== "enemy" || helperAlive) {
-      return state;
-    }
-
-    return resolveEnemyTurn(state);
   }
 
   private resolveDuoBossAction(state: CombatState, seat: PvpSeat, actionId: ActionId): CombatState {
