@@ -1647,7 +1647,11 @@ export function canHeroUseItems(hero: HeroState, itemIds: readonly HeroItemId[])
 }
 
 export function canHeroEquipItems(hero: HeroState, itemIds: readonly HeroItemId[]): boolean {
-  return !areHeroItemsConsumable(itemIds) && canHeroUseItems(hero, itemIds);
+  if (areHeroItemsConsumable(itemIds) || itemIds.some((itemId) => !HERO_ITEM_CATALOG[itemId])) {
+    return false;
+  }
+
+  return areHeroItemsOwned(hero, itemIds) || canHeroUseItems(hero, itemIds);
 }
 
 export function isHeroConsumableItem(item: HeroItemDefinition | undefined): boolean {

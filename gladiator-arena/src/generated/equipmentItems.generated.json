@@ -14902,9 +14902,6 @@
     "kind": "weapon",
     "rarity": "common",
     "damageBonus": 1,
-    "requirements": {
-      "agility": 5
-    },
     "weaponClass": "bow",
     "equipmentSlot": "weaponBow",
     "assetKeys": {
