@@ -1429,8 +1429,7 @@ function bindWebglRecoveryOverlay(game: Phaser.Game, source: string): void {
       const report = createWebglRecoveryReport(game, source, event);
 
       persistWebglRecoveryReport(report);
-      console.warn(`[webgl] Context lost in ${source}. Showing recovery overlay.`, event, report);
-      showWebglRecoveryOverlay();
+      showWebglRecoveryOverlay(report);
     }, { once: true });
   };
 
@@ -1502,10 +1501,11 @@ function persistWebglRecoveryReport(report: WebglRecoveryReport): void {
   }
 }
 
-function showWebglRecoveryOverlay(): void {
+function showWebglRecoveryOverlay(report: WebglRecoveryReport): void {
   const existing = document.getElementById(WEBGL_RECOVERY_OVERLAY_ID) as HTMLElement | null;
   const overlay = existing ?? createWebglRecoveryOverlay();
 
+  syncWebglRecoveryOverlayReport(overlay, report);
   overlay.hidden = false;
   document.body.classList.add("webgl-recovery-active");
   overlay.querySelector<HTMLButtonElement>(".webgl-recovery-overlay__button")?.focus({ preventScroll: true });
@@ -1516,6 +1516,8 @@ function createWebglRecoveryOverlay(): HTMLElement {
   const panel = document.createElement("div");
   const title = document.createElement("strong");
   const text = document.createElement("p");
+  const report = document.createElement("pre");
+  const copyButton = document.createElement("button");
   const button = document.createElement("button");
 
   overlay.id = WEBGL_RECOVERY_OVERLAY_ID;
@@ -1530,15 +1532,70 @@ function createWebglRecoveryOverlay(): HTMLElement {
   title.textContent = "TOO MUCH GLORY";
   text.className = "webgl-recovery-overlay__text";
   text.textContent = "The graphics need a quick reset.";
+  report.className = "webgl-recovery-overlay__report";
+  report.setAttribute("aria-label", "Crash report");
+  copyButton.className = "webgl-recovery-overlay__copy";
+  copyButton.type = "button";
+  copyButton.textContent = "COPY REPORT";
+  copyButton.addEventListener("click", () => {
+    void copyWebglRecoveryReport(overlay, copyButton);
+  });
   button.className = "webgl-recovery-overlay__button";
   button.type = "button";
   button.textContent = "RELOAD GAME";
   button.addEventListener("click", () => window.location.reload());
-  panel.append(title, text, button);
+  panel.append(title, text, report, copyButton, button);
   overlay.append(panel);
   document.body.append(overlay);
 
   return overlay;
+}
+
+function syncWebglRecoveryOverlayReport(overlay: HTMLElement, report: WebglRecoveryReport): void {
+  overlay.dataset.webglRecoveryReport = JSON.stringify(report);
+  const reportNode = overlay.querySelector<HTMLElement>(".webgl-recovery-overlay__report");
+
+  if (!reportNode) {
+    return;
+  }
+
+  reportNode.textContent = formatWebglRecoveryReport(report);
+}
+
+function formatWebglRecoveryReport(report: WebglRecoveryReport): string {
+  const activity = report.activity;
+  const lines = [
+    `SOURCE: ${report.source}`,
+    `ACTION: ${activity?.action ?? "unknown"}`,
+    `SHOP: ${activity?.shop ?? "-"}`,
+    `BURST: ${activity?.purchaseBurstCount ?? "-"}`,
+    `ITEMS: ${activity?.itemIds?.join(",") ?? "-"}`,
+    `FPS: ${report.renderer.actualFps ?? "-"}`,
+    `CANVAS: ${report.canvas ? `${report.canvas.width}x${report.canvas.height}` : "-"}`,
+    `DPR: ${report.window.devicePixelRatio}`,
+    `TIME: ${report.at}`,
+  ];
+
+  return lines.join("\n");
+}
+
+async function copyWebglRecoveryReport(overlay: HTMLElement, button: HTMLButtonElement): Promise<void> {
+  const report = overlay.dataset.webglRecoveryReport;
+
+  if (!report) {
+    return;
+  }
+
+  try {
+    await window.navigator.clipboard?.writeText(report);
+    button.textContent = "COPIED";
+  } catch {
+    button.textContent = "COPY FAILED";
+  }
+
+  window.setTimeout(() => {
+    button.textContent = "COPY REPORT";
+  }, 1600);
 }
 
 interface CityCanvasProjection {
