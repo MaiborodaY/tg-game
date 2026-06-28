@@ -132,7 +132,8 @@ export function mountClassicActionBar(
   const wheel = document.createElement("div");
   const wheelShadow = document.createElement("div");
   let lastState: CombatState | undefined;
-  const spellbookMenu = createSpellbookMenu(host, () => lastState, onAction);
+  const getControlledActor = (): CombatActor => options.getControlledActor?.() ?? "player";
+  const spellbookMenu = createSpellbookMenu(host, () => lastState, onAction, getControlledActor);
   const handleActionButtonClick = (actionId: ActionId, button: HTMLButtonElement): void => {
     button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
 
@@ -142,7 +143,7 @@ export function mountClassicActionBar(
 
     pressActionTokenButton(button);
 
-    if (lastState && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(lastState)) {
+    if (lastState && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(lastState, getControlledActor())) {
       spellbookMenu.toggle(button);
       return;
     }
@@ -169,7 +170,7 @@ export function mountClassicActionBar(
     const tuning = getTuning?.();
     const buttonScale = tuning?.actionButtonScale ?? DEFAULT_ACTION_BUTTON_SCALE;
     const previewWheelMode = options.getPreviewWheelMode?.();
-    const controlledActor = options.getControlledActor?.() ?? "player";
+    const controlledActor = getControlledActor();
     const wheelMode = getClassicWheelMode(state, controlledActor, previewWheelMode);
     const isBattleActive = state.result === "playing";
     const hasPlayerControl = isBattleActive && isControlledActorTurn(state, controlledActor);
@@ -260,7 +261,7 @@ export function mountClassicActionBar(
       chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
 
       const controlledFighter = getClassicActorFighter(state, controlledActor) ?? state.player;
-      const showSpellbook = controlledActor === "player" && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state);
+      const showSpellbook = isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state, controlledActor);
       const title = showSpellbook ? getSpellbookButtonTitle() : getActionTitle(actionId, controlledFighter);
       const detail =
         showSpellbook ? getSpellbookButtonDetail() : actions[actionId].detail;
@@ -458,15 +459,15 @@ function shouldShowClassicActionSlot(state: CombatState, actionId: ActionId, act
   }
 
   if (actionId === "scroll") {
-    return actor === "player" && getFighterSpellbookScrollCount(fighter) > 0;
+    return getFighterSpellbookScrollCount(fighter) > 0;
   }
 
   return true;
 }
 
 function isClassicActionButtonEnabled(state: CombatState, actionId: ActionId, actor: CombatActor): boolean {
-  if (actor === "player" && isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state)) {
-    return shouldEnableSpellbookButton(state);
+  if (isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state, actor)) {
+    return shouldEnableSpellbookButton(state, actor);
   }
 
   return canUseAction(state, actionId, actor);

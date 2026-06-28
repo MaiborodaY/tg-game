@@ -934,7 +934,7 @@ function doesActionEndTurn(actionId: ActionId, actor: CombatActor): boolean {
   return !(actor === "player" && actionId === "shuriken");
 }
 
-function doesPvpActionEndTurn(actionId: ActionId): boolean {
+export function doesPvpActionEndTurn(actionId: ActionId): boolean {
   return actionId !== "switchWeapon" && actionId !== "preciseStrike" && actionId !== "doubleStrike" && actionId !== "shuriken";
 }
 

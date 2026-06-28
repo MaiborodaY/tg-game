@@ -3,6 +3,7 @@ import {
   actionOrder,
   canUseTurnAction,
   choosePlayerAutoAction,
+  doesPvpActionEndTurn,
   resolveDuoBossHelperPlayerTurn,
   resolveDuoBossSkippedDefeatedAllyTurn,
   resolveEnemyTurn,
@@ -78,6 +79,10 @@ interface PvpActiveSession {
   token: string;
   roomKind?: PvpRoomKind;
   updatedAt: number;
+}
+
+interface CreateRecordWithStateOptions {
+  preserveTurnDeadline?: boolean;
 }
 
 interface TelegramInitUser {
@@ -755,9 +760,15 @@ export class PvpRoom extends DurableObject<Env> {
     const timeoutStreaks = options.resetTimeoutStreak === false
       ? record.timeoutStreaks
       : getNextTimeoutStreaks(record.timeoutStreaks, seat, 0);
+    const actionEndsTurn = doesPvpActionEndTurn(actionId);
+    const preserveTurnDeadline = !actionEndsTurn;
 
     if (record.roomKind === "duoBoss" && seat === "guest") {
       const helperState = resolveDuoBossSkippedDefeatedAllyTurn(resolveDuoBossHelperPlayerTurn(record.state, actionId));
+
+      if (helperState.result === "playing" && !actionEndsTurn) {
+        return this.createRecordWithState(record, helperState, now, timeoutStreaks, { preserveTurnDeadline });
+      }
 
       return helperState.result === "playing"
         ? this.createPendingDuoBossEnemyTurnRecord(record, helperState, now, timeoutStreaks)
@@ -769,7 +780,7 @@ export class PvpRoom extends DurableObject<Env> {
       : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
     const state = record.roomKind === "duoBoss" ? resolveDuoBossSkippedDefeatedAllyTurn(resolvedState) : resolvedState;
 
-    return this.createRecordWithState(record, state, now, timeoutStreaks);
+    return this.createRecordWithState(record, state, now, timeoutStreaks, { preserveTurnDeadline });
   }
 
   private createPendingDuoBossEnemyTurnRecord(
@@ -807,10 +818,20 @@ export class PvpRoom extends DurableObject<Env> {
     state: CombatState,
     now: number,
     timeoutStreaks = record.timeoutStreaks,
+    options: CreateRecordWithStateOptions = {},
   ): RoomRecord {
     const status: PvpRoomStatus = state.result === "playing" ? "playing" : "finished";
     const activeSeat = status === "playing" ? getPvpSeatForActor(state.activeTurn, record.roomKind) : undefined;
-    const deadlineAt = activeSeat ? now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks, autoSeats: record.autoSeats }, activeSeat) : undefined;
+    const shouldPreserveDeadline = options.preserveTurnDeadline
+      && status === "playing"
+      && activeSeat !== undefined
+      && activeSeat === record.activeSeat
+      && record.deadlineAt !== undefined;
+    const deadlineAt = activeSeat
+      ? shouldPreserveDeadline
+        ? record.deadlineAt
+        : now + getTurnDurationMs({ roomKind: record.roomKind, timeoutStreaks, autoSeats: record.autoSeats }, activeSeat)
+      : undefined;
     const expiresAt = status === "finished" ? now + FINISHED_ROOM_TTL_MS : undefined;
 
     return {

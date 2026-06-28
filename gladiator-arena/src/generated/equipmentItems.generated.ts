@@ -4836,7 +4836,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-crude-iron-spear.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_crude_iron_spear","name":"Crude Iron Spear","price":55,"itemIds":["generated_equipment_weapon_spear_crude_iron_spear"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_crude_iron_spear","name":"Crude Iron Spear","price":440,"itemIds":["generated_equipment_weapon_spear_crude_iron_spear"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_eagle_glaive","name":"Skybreaker Glaive","kind":"weapon","rarity":"unique","equipmentSlot":"weaponMain","damageBonus":19,"weaponClass":"spear"},
@@ -4942,7 +4942,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-guard-spear.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_guard_spear","name":"Guard Spear","price":42,"itemIds":["generated_equipment_weapon_spear_guard_spear"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_guard_spear","name":"Guard Spear","price":330,"itemIds":["generated_equipment_weapon_spear_guard_spear"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_legendary_spear_02","name":"Legendary Spear 02","kind":"weapon","rarity":"legendary","equipmentSlot":"weaponMain","damageBonus":21,"weaponClass":"spear","levelRequirement":80},
@@ -5024,7 +5024,7 @@ export const GENERATED_EQUIPMENT_ITEM_RECORDS: readonly GeneratedEquipmentItemRe
       lowSourcePath: "assets-low/fighters/weapons/weapon-spear-reinforced-spear.webp",
     },
     availability: {"shop":true,"enemyPool":true,"bossUnique":false},
-    weaponProduct: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","price":76,"itemIds":["generated_equipment_weapon_spear_reinforced_spear"],"categoryId":"spears"},
+    weaponProduct: {"id":"generated_equipment_weapon_spear_reinforced_spear","name":"Reinforced Spear","price":830,"itemIds":["generated_equipment_weapon_spear_reinforced_spear"],"categoryId":"spears"},
   },
   {
     item: {"id":"generated_equipment_weapon_spear_rusty_scrap_spear","name":"Rusty Scrap Spear","kind":"weapon","rarity":"common","equipmentSlot":"weaponMain","damageBonus":2,"weaponClass":"spear","levelRequirement":6},

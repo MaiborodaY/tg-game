@@ -14,6 +14,7 @@ import {
   getFighterWardHits,
   getFighterWardScrollCount,
   type ActionId,
+  type CombatActor,
   type CombatState,
   type FighterState,
 } from "./combat";
@@ -46,18 +47,23 @@ export interface SpellbookMenuApi {
 }
 
 type CombatStateProvider = () => CombatState | undefined;
+type CombatActorProvider = () => CombatActor;
 type SpellbookActionHandler = (actionId: SpellbookActionId) => void;
 
 export function isSpellbookButtonAction(actionId: ActionId): boolean {
   return actionId === SPELLBOOK_BUTTON_ACTION_ID;
 }
 
-export function shouldShowSpellbookButton(state: CombatState): boolean {
-  return getFighterSpellbookScrollCount(state.player) > 0;
+export function shouldShowSpellbookButton(state: CombatState, actor: CombatActor = "player"): boolean {
+  const fighter = getSpellbookActorFighter(state, actor);
+
+  return Boolean(fighter && getFighterSpellbookScrollCount(fighter) > 0);
 }
 
-export function shouldEnableSpellbookButton(state: CombatState): boolean {
-  return shouldShowSpellbookButton(state) && state.result === "playing" && state.activeTurn === "player";
+export function shouldEnableSpellbookButton(state: CombatState, actor: CombatActor = "player"): boolean {
+  return shouldShowSpellbookButton(state, actor)
+    && state.result === "playing"
+    && state.activeTurn === getSpellbookActorActiveTurn(actor);
 }
 
 export function getSpellbookButtonTitle(): string {
@@ -68,19 +74,25 @@ export function getSpellbookButtonDetail(): string {
   return "Choose scroll";
 }
 
-export function getSpellbookEntries(state: CombatState): SpellbookEntry[] {
+export function getSpellbookEntries(state: CombatState, actor: CombatActor = "player"): SpellbookEntry[] {
+  const fighter = getSpellbookActorFighter(state, actor);
+
+  if (!fighter) {
+    return [];
+  }
+
   return SPELLBOOK_ACTION_IDS.map((actionId) => {
-    const cost = getActionStaminaCost(actionId, state.player);
-    const disabled = !canUseAction(state, actionId, "player");
+    const cost = getActionStaminaCost(actionId, fighter);
+    const disabled = !canUseAction(state, actionId, actor);
 
     return {
       actionId,
-      title: getActionTitle(actionId, state.player),
-      detail: getFighterSpellbookScrollEffectText(state.player, actionId, actions[actionId].detail),
-      count: getSpellbookActionCount(state, actionId),
-      iconUrl: getSpellbookActionIconUrl(state.player, actionId),
+      title: getActionTitle(actionId, fighter),
+      detail: getFighterSpellbookScrollEffectText(fighter, actionId, actions[actionId].detail),
+      count: getSpellbookActionCount(fighter, actionId),
+      iconUrl: getSpellbookActionIconUrl(fighter, actionId),
       disabled,
-      disabledReason: disabled ? getSpellbookDisabledReason(state, actionId, cost) : undefined,
+      disabledReason: disabled ? getSpellbookDisabledReason(state, actor, actionId, cost) : undefined,
     };
   }).filter((entry) => entry.count > 0);
 }
@@ -89,6 +101,7 @@ export function createSpellbookMenu(
   host: HTMLElement,
   getState: CombatStateProvider,
   onAction: SpellbookActionHandler,
+  getActor: CombatActorProvider = () => "player",
 ): SpellbookMenuApi {
   const root = document.createElement("div");
   const title = document.createElement("div");
@@ -113,9 +126,11 @@ export function createSpellbookMenu(
       return;
     }
 
-    renderEntries(state);
+    const actor = getActor();
 
-    if (!shouldShowSpellbookButton(state)) {
+    renderEntries(state, actor);
+
+    if (!shouldShowSpellbookButton(state, actor)) {
       close();
       return;
     }
@@ -127,8 +142,9 @@ export function createSpellbookMenu(
 
   function toggle(anchor: HTMLElement): void {
     const state = getState();
+    const actor = getActor();
 
-    if (!state || !shouldShowSpellbookButton(state)) {
+    if (!state || !shouldShowSpellbookButton(state, actor)) {
       close();
       return;
     }
@@ -139,7 +155,7 @@ export function createSpellbookMenu(
     }
 
     anchorElement = anchor;
-    renderEntries(state);
+    renderEntries(state, actor);
     root.hidden = false;
     root.style.visibility = "hidden";
     placeMenu(anchor);
@@ -172,8 +188,8 @@ export function createSpellbookMenu(
     close();
   }
 
-  function renderEntries(state: CombatState): void {
-    const entries = getSpellbookEntries(state);
+  function renderEntries(state: CombatState, actor: CombatActor): void {
+    const entries = getSpellbookEntries(state, actor);
 
     list.replaceChildren(...entries.map((entry) => createEntryButton(entry)));
     root.setAttribute("aria-label", entries.length > 0 ? `Spellbook, ${entries.length} scrolls available` : "Spellbook");
@@ -212,7 +228,7 @@ export function createSpellbookMenu(
     button.append(iconFrame, copy, meta);
     button.addEventListener("click", () => {
       const state = getState();
-      const freshEntry = state ? getSpellbookEntries(state).find((candidate) => candidate.actionId === entry.actionId) : undefined;
+      const freshEntry = state ? getSpellbookEntries(state, getActor()).find((candidate) => candidate.actionId === entry.actionId) : undefined;
 
       if (!freshEntry || freshEntry.disabled) {
         sync();
@@ -280,40 +296,46 @@ function getSpellbookActionItemId(fighter: FighterState, actionId: SpellbookActi
   return fighter.wardScrollItemId;
 }
 
-function getSpellbookActionCount(state: CombatState, actionId: SpellbookActionId): number {
+function getSpellbookActionCount(fighter: FighterState, actionId: SpellbookActionId): number {
   if (actionId === "scroll") {
-    return getFighterScrollCount(state.player);
+    return getFighterScrollCount(fighter);
   }
 
   if (actionId === "fireball") {
-    return getFighterFireballScrollCount(state.player);
+    return getFighterFireballScrollCount(fighter);
   }
 
   if (actionId === "preciseStrike") {
-    return getFighterPreciseStrikeScrollCount(state.player);
+    return getFighterPreciseStrikeScrollCount(fighter);
   }
 
   if (actionId === "doubleStrike") {
-    return getFighterDoubleStrikeScrollCount(state.player);
+    return getFighterDoubleStrikeScrollCount(fighter);
   }
 
   if (actionId === "poison") {
-    return getFighterPoisonScrollCount(state.player);
+    return getFighterPoisonScrollCount(fighter);
   }
 
-  return getFighterWardScrollCount(state.player);
+  return getFighterWardScrollCount(fighter);
 }
 
-function getSpellbookDisabledReason(state: CombatState, actionId: SpellbookActionId, cost: number): string {
+function getSpellbookDisabledReason(state: CombatState, actor: CombatActor, actionId: SpellbookActionId, cost: number): string {
+  const fighter = getSpellbookActorFighter(state, actor);
+
+  if (!fighter) {
+    return "Unavailable";
+  }
+
   if (state.result !== "playing") {
     return "Battle ended";
   }
 
-  if (state.activeTurn !== "player") {
+  if (state.activeTurn !== getSpellbookActorActiveTurn(actor)) {
     return "Not your turn";
   }
 
-  if (state.player.stamina < cost) {
+  if (fighter.stamina < cost) {
     return "Need stamina";
   }
 
@@ -321,19 +343,31 @@ function getSpellbookDisabledReason(state: CombatState, actionId: SpellbookActio
     return "No armor target";
   }
 
-  if (actionId === "ward" && getFighterWardHits(state.player) > 0) {
+  if (actionId === "ward" && getFighterWardHits(fighter) > 0) {
     return "Ward active";
   }
 
-  if (actionId === "preciseStrike" && getFighterPreciseStrikeHits(state.player) > 0) {
+  if (actionId === "preciseStrike" && getFighterPreciseStrikeHits(fighter) > 0) {
     return "Strike ready";
   }
 
-  if (actionId === "doubleStrike" && getFighterDoubleStrikeHits(state.player) > 0) {
+  if (actionId === "doubleStrike" && getFighterDoubleStrikeHits(fighter) > 0) {
     return "Double ready";
   }
 
   return "Unavailable";
+}
+
+function getSpellbookActorFighter(state: CombatState, actor: CombatActor): FighterState | undefined {
+  if (actor === "helper") {
+    return state.helper;
+  }
+
+  return actor === "enemy" ? state.enemy : state.player;
+}
+
+function getSpellbookActorActiveTurn(actor: CombatActor): "player" | "enemy" {
+  return actor === "helper" ? "enemy" : actor;
 }
 
 function getPositiveDimension(value: number, fallback: number): number {

@@ -16915,7 +16915,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_crude_iron_spear",
       "name": "Crude Iron Spear",
-      "price": 55,
+      "price": 440,
       "itemIds": [
         "generated_equipment_weapon_spear_crude_iron_spear"
       ],
@@ -17264,7 +17264,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_guard_spear",
       "name": "Guard Spear",
-      "price": 42,
+      "price": 330,
       "itemIds": [
         "generated_equipment_weapon_spear_guard_spear"
       ],
@@ -17531,7 +17531,7 @@
     "weaponProduct": {
       "id": "generated_equipment_weapon_spear_reinforced_spear",
       "name": "Reinforced Spear",
-      "price": 76,
+      "price": 830,
       "itemIds": [
         "generated_equipment_weapon_spear_reinforced_spear"
       ],
