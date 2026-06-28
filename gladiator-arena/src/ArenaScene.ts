@@ -10047,10 +10047,10 @@ function syncHelperVisualForState(
     return;
   }
 
-  const previousLoadoutKey = previous?.helper ? getFighterLoadoutKey(previous.helper) : undefined;
-  const currentLoadoutKey = getFighterLoadoutKey(current.helper);
+  const previousVisualIdentityKey = previous?.helper ? getFighterVisualIdentityKey(previous.helper) : undefined;
+  const currentVisualIdentityKey = getFighterVisualIdentityKey(current.helper);
 
-  if (visuals.helper && previousLoadoutKey === currentLoadoutKey) {
+  if (visuals.helper && previousVisualIdentityKey === currentVisualIdentityKey) {
     return;
   }
 
@@ -10072,10 +10072,10 @@ function syncEnemyVisualForState(
   previous: CombatState | undefined,
   current: CombatState,
 ): void {
-  const previousLoadoutKey = previous ? getFighterLoadoutKey(previous.enemy) : undefined;
-  const currentLoadoutKey = getFighterLoadoutKey(current.enemy);
+  const previousVisualIdentityKey = previous ? getFighterVisualIdentityKey(previous.enemy) : undefined;
+  const currentVisualIdentityKey = getFighterVisualIdentityKey(current.enemy);
 
-  if (previousLoadoutKey === currentLoadoutKey) {
+  if (previousVisualIdentityKey === currentVisualIdentityKey) {
     return;
   }
 
@@ -10088,12 +10088,11 @@ function syncEnemyVisualForState(
   attachFighterArrowCounter(target, visuals.enemy);
 }
 
-function getFighterLoadoutKey(fighter: FighterState): string {
+function getFighterVisualIdentityKey(fighter: FighterState): string {
   return JSON.stringify({
     name: fighter.name,
     visualPreset: fighter.visualPreset ?? null,
     appearance: fighter.appearance ?? null,
-    equipment: fighter.equipment ?? null,
   });
 }
 
@@ -10783,6 +10782,7 @@ function applyFighterArrowCountersSceneScale(target: ArenaScene): void {
 function updateCamera(target: ArenaScene, current: CombatState): void {
   const shouldSnap = isDebugTuningActive();
   const isPendingEnemyResponse = current.result === "playing" && current.activeTurn === "enemy";
+  const shouldRetargetToLivingHelper = shouldRetargetCameraToLivingHelper(current);
   const layers = target.arenaLayers;
 
   if (!layers) {
@@ -10795,7 +10795,7 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
     return;
   }
 
-  if (isPendingEnemyResponse && target.cameraFrameInitialized) {
+  if (isPendingEnemyResponse && target.cameraFrameInitialized && !shouldRetargetToLivingHelper) {
     killArenaTransformTweens(target, layers);
     return;
   }
@@ -10842,6 +10842,10 @@ function updateCamera(target: ArenaScene, current: CombatState): void {
       syncArenaMidLayerTint(layers);
     },
   });
+}
+
+function shouldRetargetCameraToLivingHelper(current: CombatState): boolean {
+  return current.result === "playing" && current.player.hp <= 0 && Boolean(current.helper && current.helper.hp > 0);
 }
 
 function getArenaEntryStartCameraTarget(cameraTarget: CameraTarget): CameraTarget {

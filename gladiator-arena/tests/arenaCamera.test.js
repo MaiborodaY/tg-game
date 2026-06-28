@@ -188,6 +188,31 @@ test("duo camera stays anchored to the farthest ally", () => {
   assert.ok(arenaCamera.getCameraTarget(bothForward).centerX > arenaCamera.getCameraTarget(start).centerX);
 });
 
+test("duo camera follows the living helper after the player is defeated", () => {
+  const helperAlive = {
+    distance: 1,
+    playerPosition: 0,
+    helperPosition: 2,
+    enemyPosition: 3,
+    player: { hp: 0 },
+    helper: { name: "Helper", hp: 10 },
+  };
+  const helperOnly = {
+    distance: 1,
+    playerPosition: 2,
+    enemyPosition: 3,
+  };
+  const deadPlayerAnchor = {
+    distance: 3,
+    playerPosition: 0,
+    enemyPosition: 3,
+  };
+
+  assert.equal(arenaCamera.getCameraTarget(helperAlive).centerX, arenaCamera.getCameraTarget(helperOnly).centerX);
+  assert.equal(arenaCamera.getCameraTarget(helperAlive).zoom, arenaCamera.getCameraTarget(helperOnly).zoom);
+  assert.ok(arenaCamera.getCameraTarget(helperAlive).centerX > arenaCamera.getCameraTarget(deadPlayerAnchor).centerX);
+});
+
 test("world projection uses the camera target for DOM overlays", () => {
   const target = arenaCamera.getCameraTarget({ distance: 0, playerPosition: 3, enemyPosition: 3 });
   const worldX = 193;

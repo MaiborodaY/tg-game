@@ -32,15 +32,15 @@ test("equipment texture swaps reapply slot image sizing", () => {
   assert.match(arenaSceneSource, /if \(image && previousState && image\.texture\.key === textureKey && arePaperDollEquipmentSlotImageStatesEqual\(previousState, nextState\)\) \{[\s\S]*return image;[\s\S]*\}/);
 });
 
-test("enemy visual recreation key tracks equipment changes", () => {
-  const loadoutKeySource = arenaSceneSource.slice(
-    arenaSceneSource.indexOf("function getFighterLoadoutKey"),
+test("fighter visual recreation key ignores equipment state changes", () => {
+  const visualIdentityKeySource = arenaSceneSource.slice(
+    arenaSceneSource.indexOf("function getFighterVisualIdentityKey"),
     arenaSceneSource.indexOf("function destroyFighterVisual"),
   );
 
-  assert.equal(loadoutKeySource.includes("equipment: fighter.equipment ?? null"), true);
-  assert.equal(loadoutKeySource.includes("name: fighter.name"), true);
-  assert.equal(loadoutKeySource.includes("visualPreset: fighter.visualPreset"), true);
+  assert.equal(visualIdentityKeySource.includes("equipment: fighter.equipment ?? null"), false);
+  assert.equal(visualIdentityKeySource.includes("name: fighter.name"), true);
+  assert.equal(visualIdentityKeySource.includes("visualPreset: fighter.visualPreset"), true);
 });
 
 test("combat render syncs fighter equipment and appearance from state", () => {

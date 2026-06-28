@@ -34,7 +34,7 @@ export interface CameraViewport {
   safeBottom?: number;
 }
 
-type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition"> & Partial<Pick<CombatState, "helper" | "helperPosition">>;
+type CameraState = Pick<CombatState, "distance" | "playerPosition" | "enemyPosition"> & Partial<Pick<CombatState, "player" | "helper" | "helperPosition">>;
 
 const CLOSE_ZOOM = 2.75;
 export function getPlayerWorldX(current: Pick<CombatState, "playerPosition" | "enemyPosition">, tuning?: ArenaDebugTuning): number {
@@ -85,7 +85,11 @@ function getCameraStateForTargeting(current: CameraState): CameraState {
   }
 
   const helperPosition = current.helperPosition ?? current.playerPosition;
-  const farthestAlliedPosition = Math.min(current.playerPosition, helperPosition);
+  const alliedPositions = [
+    ...(isCameraFighterAlive(current.player) ? [current.playerPosition] : []),
+    ...(isCameraFighterAlive(current.helper) ? [helperPosition] : []),
+  ];
+  const farthestAlliedPosition = alliedPositions.length > 0 ? Math.min(...alliedPositions) : current.playerPosition;
   const distance = clamp(current.enemyPosition - farthestAlliedPosition, 0, START_DISTANCE);
 
   return {
@@ -94,6 +98,10 @@ function getCameraStateForTargeting(current: CameraState): CameraState {
     playerPosition: farthestAlliedPosition,
     helperPosition,
   };
+}
+
+function isCameraFighterAlive(fighter: Pick<CombatState["player"], "hp"> | undefined): boolean {
+  return !fighter || typeof fighter.hp !== "number" || fighter.hp > 0;
 }
 
 export function projectWorldToScreen(x: number, y: number, target: CameraTarget): ScreenPoint {
