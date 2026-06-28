@@ -1980,6 +1980,12 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   animation: city-return-coin-flip 920ms ease-in-out infinite;
 }
 
+.city-return-transition__retry {
+  width: min(210px, 100%);
+  min-height: 38px;
+  font-size: 0.78rem;
+}
+
 .battle-result__frame {
   position: relative;
   display: block;

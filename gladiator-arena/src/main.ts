@@ -337,6 +337,7 @@ let shopPreviewPrewarmItemIds: HeroItemId[] = [];
 let activeShopPreviewPrewarmSignature = "";
 let completedShopPreviewPrewarmSignature = "";
 let arenaEnergySpendPending = false;
+let cityReturnTransitionRetryHandler: (() => void) | undefined;
 
 const cityReturnTransition = createCityReturnTransition();
 const cityHeroProfile = mountCityHeroProfile(cityHeroWidgetRefs);
@@ -445,9 +446,13 @@ function createCityReturnTransition(): HTMLElement {
   element.innerHTML = `
     <div class="city-return-transition__panel">
       <span class="city-return-transition__coin" aria-hidden="true"></span>
-      <strong>Entering City...</strong>
+      <strong data-city-return-transition-label>Entering City...</strong>
+      <button class="city-return city-return-transition__retry" type="button" hidden data-city-return-transition-retry>Retry</button>
     </div>
   `;
+  element.querySelector<HTMLButtonElement>("[data-city-return-transition-retry]")?.addEventListener("click", () => {
+    cityReturnTransitionRetryHandler?.();
+  });
 
   document.body.append(element);
 
@@ -894,9 +899,9 @@ function hydrateHeroFromLocalSave(): boolean {
   return true;
 }
 
-async function hydrateHeroFromCloudSave(): Promise<void> {
+async function hydrateHeroFromCloudSave(): Promise<boolean> {
   if (!canUseGladiatorCloudSave()) {
-    return;
+    return false;
   }
 
   try {
@@ -906,14 +911,16 @@ async function hydrateHeroFromCloudSave(): Promise<void> {
       clearLocalHeroSave();
       hero = createInitialHero();
       syncHeroRuntimeState();
-      return;
+      return true;
     }
 
     hero = applyTelegramDisplayNameToHero(savedHero);
     saveLocalHeroSave(hero);
     syncHeroRuntimeState();
+    return true;
   } catch (error) {
     console.warn("[gladiator-save] Failed to load cloud save.", error);
+    return false;
   }
 }
 
@@ -3426,19 +3433,35 @@ async function finishInitialCityEntry(): Promise<void> {
 }
 
 async function startInitialCityEntry(): Promise<void> {
-  const hasLocalHero = hydrateHeroFromLocalSave();
+  showCityReturnTransition(canUseGladiatorCloudSave() ? "Syncing Hero..." : "Entering City...");
 
-  if (!hasLocalHero) {
-    await hydrateHeroFromCloudSave();
+  if (canUseGladiatorCloudSave()) {
+    await hydrateInitialHeroFromCloudSave();
+  } else if (!hydrateHeroFromLocalSave()) {
+    syncHeroRuntimeState();
   }
 
   await finishInitialCityEntry();
-  if (hasLocalHero) {
-    void hydrateHeroFromCloudSave();
+}
+
+async function hydrateInitialHeroFromCloudSave(): Promise<void> {
+  while (!(await hydrateHeroFromCloudSave())) {
+    await waitForCityReturnTransitionRetry("Sync failed.");
+    setCityReturnTransitionState("Syncing Hero...");
   }
 }
 
-function showCityReturnTransition(): void {
+function waitForCityReturnTransitionRetry(message: string): Promise<void> {
+  return new Promise((resolve) => {
+    setCityReturnTransitionState(message, () => {
+      setCityReturnTransitionState("Syncing Hero...");
+      resolve();
+    });
+  });
+}
+
+function showCityReturnTransition(message = "Entering City..."): void {
+  setCityReturnTransitionState(message);
   cityReturnTransition.hidden = false;
   cityReturnTransition.classList.remove("city-return-transition--leaving");
   void cityReturnTransition.offsetWidth;
@@ -3446,6 +3469,7 @@ function showCityReturnTransition(): void {
 }
 
 function hideCityReturnTransition(): void {
+  setCityReturnTransitionRetryHandler();
   cityReturnTransition.classList.add("city-return-transition--leaving");
   cityReturnTransition.classList.remove("city-return-transition--active");
   window.setTimeout(() => {
@@ -3456,6 +3480,26 @@ function hideCityReturnTransition(): void {
     cityReturnTransition.hidden = true;
     cityReturnTransition.classList.remove("city-return-transition--leaving");
   }, CITY_RETURN_TRANSITION_IN_MS);
+}
+
+function setCityReturnTransitionState(message: string, retryHandler?: () => void): void {
+  const label = cityReturnTransition.querySelector<HTMLElement>("[data-city-return-transition-label]");
+
+  if (label) {
+    label.textContent = message;
+  }
+
+  setCityReturnTransitionRetryHandler(retryHandler);
+}
+
+function setCityReturnTransitionRetryHandler(handler?: () => void): void {
+  const retryButton = cityReturnTransition.querySelector<HTMLButtonElement>("[data-city-return-transition-retry]");
+
+  cityReturnTransitionRetryHandler = handler;
+
+  if (retryButton) {
+    retryButton.hidden = !handler;
+  }
 }
 
 function startBattleResultReturnGate(): void {
@@ -4252,14 +4296,8 @@ magicShopButton?.addEventListener("click", () => {
 });
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
-syncPlayerCityBodyScale();
-setPlayerEquipment(hero.equipment);
-setPlayerAppearance(hero.appearance);
-setPlayerWeaponEnchantments(hero.weaponEnchantments);
-renderCityHero();
 window.setInterval(syncArenaEnergyTimerDisplays, ARENA_ENERGY_TIMER_REFRESH_MS);
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
-void startInitialCityEntry();
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,
@@ -4308,4 +4346,4 @@ if (cityMenu) {
     onLayoutChange: syncCityShopLayout,
   });
 }
-renderCurrentDom();
+void startInitialCityEntry();
