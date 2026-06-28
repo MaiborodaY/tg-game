@@ -130,7 +130,7 @@ import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./loca
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
 import { ackPvpRoomResult, cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, leavePvpRoomSession, listPvpRooms, reconnectPvpRoomSession, type PvpConnection } from "./pvpClient";
 import { getPvpActorForSeat, type PvpRoomKind, type PvpRoomListEntry, type PvpRoomResponse, type PvpRoomSession, type PvpRoomSnapshot, type PvpServerMessage } from "./pvpProtocol";
-import { mountSettingsMenu } from "./settingsMenu";
+import { getPlayerSettings, mountSettingsMenu, subscribePlayerSettings } from "./settingsMenu";
 import { prewarmShopProductIcons } from "./shopItemIcons";
 import {
   getEquippedShopProductDisplayStat,
@@ -143,7 +143,7 @@ import {
   isShopProductSealed,
   type ShopProductStatKind,
 } from "./shopPresentation";
-import { bootTelegramWebApp, getTelegramDisplayName, getTelegramUserId } from "./telegram";
+import { bootTelegramWebApp, getTelegramDisplayName, getTelegramUserId, getTelegramWebAppPlatform } from "./telegram";
 import { logTurnProbe, mountTurnProbe, shouldMountTurnProbe, type EnemyTimerStatus, type TurnProbeApi } from "./turnProbe";
 import { mountWeaponShop, type WeaponProduct, type WeaponShopApi } from "./weaponShopUi";
 import "./styles.css";
@@ -205,6 +205,9 @@ const weaponShopButton = document.querySelector<HTMLButtonElement>("#weaponShopB
 const armoryButton = document.querySelector<HTMLButtonElement>("#armoryButton");
 const magicShopButton = document.querySelector<HTMLButtonElement>("#magicShopButton");
 const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
+const cityRenderDebugButton = document.querySelector<HTMLButtonElement>("#cityRenderDebugButton");
+const cityRenderDebugPanel = document.querySelector<HTMLElement>("#cityRenderDebugPanel");
+const cityRenderDebugOutput = document.querySelector<HTMLElement>("#cityRenderDebugOutput");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId; duo?: boolean };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
@@ -302,8 +305,11 @@ const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
+const RENDER_DEBUG_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS = new Set(["http://localhost:5173"]);
 const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";
+const MOBILE_RENDER_DEBUG_PLATFORM_PATTERN = /android|ios|iphone|ipad|ipod|mobile/;
+const MOBILE_RENDER_DEBUG_USER_AGENT_PATTERN = /android|iphone|ipad|ipod|mobile/i;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const AUTO_RESULT_RETURN_LABEL = "Return";
@@ -395,9 +401,116 @@ syncHudTuning(dom.gameScreen, debugTuning);
 mountSettingsMenu();
 mountArenaMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
+mountCityRenderDebugControls();
 
 function canShowLocalDebugRestartButton(): boolean {
   return window.location.origin === LOCAL_DEBUG_RESTART_BUTTON_ORIGIN;
+}
+
+function mountCityRenderDebugControls(): void {
+  if (!cityRenderDebugButton || !cityRenderDebugPanel || !cityRenderDebugOutput) {
+    return;
+  }
+
+  const visible = canShowCityRenderDebugControls();
+
+  cityRenderDebugButton.hidden = !visible;
+  cityRenderDebugPanel.hidden = true;
+
+  if (!visible) {
+    return;
+  }
+
+  cityRenderDebugButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setCityRenderDebugOpen(cityRenderDebugPanel.hidden);
+  });
+
+  cityRenderDebugPanel.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  window.addEventListener("resize", refreshCityRenderDebugPanel);
+  subscribePlayerSettings(refreshCityRenderDebugPanel);
+}
+
+function setCityRenderDebugOpen(open: boolean): void {
+  if (!cityRenderDebugButton || !cityRenderDebugPanel) {
+    return;
+  }
+
+  cityRenderDebugPanel.hidden = !open;
+  cityRenderDebugButton.setAttribute("aria-expanded", String(open));
+
+  if (open) {
+    refreshCityRenderDebugPanel();
+  }
+}
+
+function refreshCityRenderDebugPanel(): void {
+  if (!cityRenderDebugOutput || cityRenderDebugPanel?.hidden !== false) {
+    return;
+  }
+
+  cityRenderDebugOutput.textContent = createCityRenderDebugReport();
+}
+
+function createCityRenderDebugReport(): string {
+  const settings = getPlayerSettings();
+  const canvas = cityHero?.querySelector<HTMLCanvasElement>("canvas") ?? undefined;
+  const canvasRect = canvas?.getBoundingClientRect();
+  const canvasScaleX = canvas && canvasRect && canvasRect.width > 0 ? canvas.width / canvasRect.width : undefined;
+  const canvasScaleY = canvas && canvasRect && canvasRect.height > 0 ? canvas.height / canvasRect.height : undefined;
+  const visualViewport = window.visualViewport;
+
+  return [
+    `PLATFORM: ${getCityRenderDebugPlatformLabel()}`,
+    `DPR: ${formatRenderDebugNumber(window.devicePixelRatio, 2)}`,
+    `WINDOW: ${window.innerWidth}x${window.innerHeight}`,
+    `VIEWPORT: ${visualViewport ? `${formatRenderDebugNumber(visualViewport.width, 1)}x${formatRenderDebugNumber(visualViewport.height, 1)}` : "-"}`,
+    `CITY CANVAS: ${canvas ? `${canvas.width}x${canvas.height}` : "-"}`,
+    `CITY CLIENT: ${canvas ? `${formatRenderDebugNumber(canvasRect?.width, 1)}x${formatRenderDebugNumber(canvasRect?.height, 1)}` : "-"}`,
+    `CITY SCALE: ${formatRenderDebugNumber(canvasScaleX, 2)}x${formatRenderDebugNumber(canvasScaleY, 2)}`,
+    `SMOOTH: ${settings.smoothRendering ? "ON" : "OFF"}`,
+    `LOW FX: ${settings.lowEffects ? "ON" : "OFF"}`,
+    `FPS: ${settings.renderFps}`,
+    `UA: ${navigator.userAgent}`,
+  ].join("\n");
+}
+
+function getCityRenderDebugPlatformLabel(): string {
+  const telegramPlatform = getTelegramWebAppPlatform();
+
+  if (telegramPlatform) {
+    return `telegram:${telegramPlatform}`;
+  }
+
+  return "browser";
+}
+
+function canShowCityRenderDebugControls(): boolean {
+  return canUseTelegramUserIdGatedAction(RENDER_DEBUG_TELEGRAM_USER_IDS) && isDesktopRenderDebugEnvironment();
+}
+
+function isDesktopRenderDebugEnvironment(): boolean {
+  const telegramPlatform = getTelegramWebAppPlatform().toLowerCase();
+
+  if (telegramPlatform) {
+    return !MOBILE_RENDER_DEBUG_PLATFORM_PATTERN.test(telegramPlatform);
+  }
+
+  if (MOBILE_RENDER_DEBUG_USER_AGENT_PATTERN.test(navigator.userAgent)) {
+    return false;
+  }
+
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
+
+  return !coarsePointer || (navigator.maxTouchPoints ?? 0) <= 1;
+}
+
+function formatRenderDebugNumber(value: number | undefined, digits: number): string {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "-";
 }
 
 function syncRestartButtonVisibility(visible = true): void {

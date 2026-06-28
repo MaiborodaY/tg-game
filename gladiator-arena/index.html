@@ -45,6 +45,20 @@
               <span class="city-menu__time-toggle-thumb"></span>
             </span>
           </button>
+          <button
+            id="cityRenderDebugButton"
+            class="city-menu__render-debug-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="cityRenderDebugPanel"
+            hidden
+          >
+            Render
+          </button>
+          <section id="cityRenderDebugPanel" class="city-menu__render-debug-panel" aria-label="Render debug" hidden>
+            <h2>Render Debug</h2>
+            <pre id="cityRenderDebugOutput" class="city-menu__render-debug-output"></pre>
+          </section>
           <div class="settings-menu settings-menu--city" data-settings-menu>
             <button
               id="citySettingsButton"

@@ -13,6 +13,7 @@ const settingsMenuSource = readFileSync(resolve(currentDir, "../src/settingsMenu
 const hudTuningSource = readFileSync(resolve(currentDir, "../src/hudTuning.ts"), "utf8");
 const arenaLayoutSource = readFileSync(resolve(currentDir, "../src/arenaLayout.ts"), "utf8");
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
+const telegramSource = readFileSync(resolve(currentDir, "../src/telegram.ts"), "utf8");
 const viteConfigSource = readFileSync(resolve(currentDir, "../vite.config.ts"), "utf8");
 const stylesSource = readFileSync(resolve(currentDir, "../src/styles.css"), "utf8");
 
@@ -381,6 +382,22 @@ test("settings expose reload-gated smooth rendering from city and arena", () => 
   assert.equal(settingsMenuSource.includes('root.querySelectorAll<HTMLElement>("[data-settings-menu]")'), true);
   assert.equal(stylesSource.includes("body.arena-sharp-rendering .game-frame canvas"), true);
   assert.equal(stylesSource.includes("image-rendering: pixelated;"), true);
+});
+
+test("city render debug is desktop admin gated", () => {
+  assert.equal(indexHtml.includes('id="cityRenderDebugButton"'), true);
+  assert.equal(indexHtml.includes('id="cityRenderDebugPanel"'), true);
+  assert.equal(indexHtml.includes('id="cityRenderDebugOutput"'), true);
+  assert.equal(mainSource.includes("const RENDER_DEBUG_TELEGRAM_USER_IDS"), true);
+  assert.equal(mainSource.includes("function canShowCityRenderDebugControls(): boolean"), true);
+  assert.equal(mainSource.includes("canUseTelegramUserIdGatedAction(RENDER_DEBUG_TELEGRAM_USER_IDS) && isDesktopRenderDebugEnvironment()"), true);
+  assert.equal(mainSource.includes("function createCityRenderDebugReport(): string"), true);
+  assert.equal(mainSource.includes("getTelegramWebAppPlatform()"), true);
+  assert.equal(mainSource.includes("CITY SCALE:"), true);
+  assert.equal(telegramSource.includes("platform?: string;"), true);
+  assert.equal(telegramSource.includes('getTelegramLaunchParam("tgWebAppPlatform")'), true);
+  assert.equal(stylesSource.includes(".city-menu__render-debug-button"), true);
+  assert.equal(stylesSource.includes(".city-menu__render-debug-panel"), true);
 });
 
 test("new players start with low arena shadows by default", () => {

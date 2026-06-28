@@ -420,6 +420,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(defaultStats.weaponDamageBonus, 0);
   assert.equal(defaultStats.meleeDamagePercentBonus, 0);
   assert.equal(defaultStats.maceArmorDamagePercentBonus, 0);
+  assert.equal(defaultStats.spearMeleeDamagePercentBonus, 0);
   assert.equal(defaultStats.spearLungeDamagePercentBonus, 0);
   assert.equal(defaultStats.movementDistanceBonus, 0);
   assert.equal(defaultStats.bodyScaleBonus, 0);
@@ -442,6 +443,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(tunedStats.weaponDamageBonus, 0);
   assert.equal(tunedStats.meleeDamagePercentBonus, 0.15);
   assert.equal(tunedStats.maceArmorDamagePercentBonus, 0);
+  assert.equal(tunedStats.spearMeleeDamagePercentBonus, 4 * hero.HERO_AGILITY_SPEAR_MELEE_DAMAGE_PERCENT_BONUS);
   assert.equal(tunedStats.spearLungeDamagePercentBonus, 4 * hero.HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS);
   assert.equal(tunedStats.movementDistanceBonus, 4 * hero.HERO_AGILITY_MOVEMENT_DISTANCE_BONUS);
   assert.equal(tunedStats.bodyScaleBonus, 3 * hero.HERO_STRENGTH_BODY_SCALE_BONUS);
@@ -457,6 +459,7 @@ test("hero base attributes derive combat stats", () => {
   assert.equal(combatState.player.weaponDamageBonus, tunedStats.weaponDamageBonus);
   assert.equal(combatState.player.meleeDamagePercentBonus, tunedStats.meleeDamagePercentBonus);
   assert.equal(combatState.player.maceArmorDamagePercentBonus, tunedStats.maceArmorDamagePercentBonus);
+  assert.equal(combatState.player.spearMeleeDamagePercentBonus, tunedStats.spearMeleeDamagePercentBonus);
   assert.equal(combatState.player.spearLungeDamagePercentBonus, tunedStats.spearLungeDamagePercentBonus);
   assert.equal(combatState.player.movementDistanceBonus, tunedStats.movementDistanceBonus);
   assert.equal(combatState.player.bodyScaleBonus, tunedStats.bodyScaleBonus);
@@ -1209,12 +1212,14 @@ test("arena bosses receive active equipment set bonuses", () => {
   assert.ok(Math.abs(bossState.enemy.meleeDamagePercentBonus - (bossBaseStrength + 1) * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS) < 0.000001);
 });
 
-test("duo boss combat creates a helper and scales only the boss fight", () => {
+test("tier one duo boss combat creates a helper without boss stat tuning", () => {
   const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const helperHero = { ...baseHero, name: "Helper" };
   const bossEncounter = hero.createArenaBossEncounter("dust_arena_champion");
   const soloState = hero.createCombatStateFromHero(baseHero, bossEncounter);
   const rolls = [0, 0, 0, 0, 0, 0];
   const duoState = hero.createDuoBossCombatStateFromHero(baseHero, bossEncounter, () => rolls.shift() ?? 0);
+  const onlineDuoState = hero.createOnlineDuoBossCombatStateFromHeroes(baseHero, helperHero, bossEncounter);
 
   assert.equal(duoState.encounter?.mode, "duoBossAi");
   assert.equal(duoState.encounter?.id, soloState.encounter?.id);
@@ -1223,12 +1228,37 @@ test("duo boss combat creates a helper and scales only the boss fight", () => {
   assert.equal(duoState.helper?.scrollCount, 0);
   assert.equal(duoState.helper?.fireballScrollCount, 0);
   assert.ok(Math.abs((duoState.helper?.meleeDamagePercentBonus ?? 0) - 2 * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS) < 0.000001);
-  assert.equal(duoState.enemy.maxHp, Math.ceil(soloState.enemy.maxHp * 1.5));
-  assert.equal(duoState.enemy.maxArmor, Math.ceil(soloState.enemy.maxArmor * 1.5));
+  assert.equal(duoState.enemy.maxHp, soloState.enemy.maxHp);
+  assert.equal(duoState.enemy.maxArmor, soloState.enemy.maxArmor);
+  assert.equal(duoState.enemy.damageBonus, soloState.enemy.damageBonus);
+  assert.equal(duoState.enemy.weaponDamageBonus, soloState.enemy.weaponDamageBonus);
+  assert.equal(onlineDuoState.enemy.maxHp, soloState.enemy.maxHp);
+  assert.equal(onlineDuoState.enemy.maxArmor, soloState.enemy.maxArmor);
+  assert.equal(onlineDuoState.enemy.damageBonus, soloState.enemy.damageBonus);
+  assert.equal(onlineDuoState.enemy.weaponDamageBonus, soloState.enemy.weaponDamageBonus);
 
   duoState.result = "win";
   soloState.result = "win";
   assert.deepEqual(hero.getBattleReward(duoState), hero.getBattleReward(soloState));
+});
+
+test("later tier duo boss combat keeps the boss stat tuning", () => {
+  const baseHero = hero.createDefaultHero("2026-01-01T00:00:00.000Z");
+  const helperHero = { ...baseHero, name: "Helper" };
+  const bossEncounter = hero.createArenaBossEncounter("arena_boss_2");
+  const soloState = hero.createCombatStateFromHero(baseHero, bossEncounter);
+  const duoState = hero.createDuoBossCombatStateFromHero(baseHero, bossEncounter, () => 0);
+  const onlineDuoState = hero.createOnlineDuoBossCombatStateFromHeroes(baseHero, helperHero, bossEncounter);
+
+  assert.equal(bossEncounter.tierId, 2);
+  assert.equal(duoState.enemy.maxHp, Math.ceil(soloState.enemy.maxHp * 1.5));
+  assert.equal(duoState.enemy.maxArmor, Math.ceil(soloState.enemy.maxArmor * 1.5));
+  assert.equal(duoState.enemy.damageBonus, Math.ceil(soloState.enemy.damageBonus * 1.5));
+  assert.equal(duoState.enemy.weaponDamageBonus, Math.ceil((soloState.enemy.weaponDamageBonus ?? 0) * 1.5));
+  assert.equal(onlineDuoState.enemy.maxHp, Math.ceil(soloState.enemy.maxHp * 1.5));
+  assert.equal(onlineDuoState.enemy.maxArmor, Math.ceil(soloState.enemy.maxArmor * 1.5));
+  assert.equal(onlineDuoState.enemy.damageBonus, Math.ceil(soloState.enemy.damageBonus * 1.5));
+  assert.equal(onlineDuoState.enemy.weaponDamageBonus, Math.ceil((soloState.enemy.weaponDamageBonus ?? 0) * 1.5));
 });
 
 test("combat reward application tracks total wins", () => {
@@ -1305,7 +1335,8 @@ test("arena encounter enemy base stats derive combat stats", () => {
   assert.equal(combatState.enemy.maxStamina, 14);
   assert.equal(combatState.enemy.damageBonus, 0);
   assert.equal(combatState.enemy.meleeDamagePercentBonus, 2 * hero.HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS);
-  assert.equal(combatState.enemy.spearLungeDamagePercentBonus, 0.15);
+  assert.equal(combatState.enemy.spearMeleeDamagePercentBonus, 0.075);
+  assert.equal(combatState.enemy.spearLungeDamagePercentBonus, 0.075);
   assert.equal(combatState.enemy.movementDistanceBonus, 0.045);
   assert.equal(combatState.enemy.restHpRestoreBonus, 4);
   assert.equal(combatState.enemy.restStaminaRestoreBonus, 4);

@@ -1,5 +1,6 @@
 interface TelegramWebApp {
   initData?: string;
+  platform?: string;
   ready: () => void;
   expand: () => void;
   disableVerticalSwipes?: () => void;
@@ -40,6 +41,16 @@ export function bootTelegramWebApp(): void {
 
 export function getTelegramInitData(): string {
   return window.Telegram?.WebApp?.initData ?? "";
+}
+
+export function getTelegramWebAppPlatform(): string {
+  const webAppPlatform = window.Telegram?.WebApp?.platform?.trim();
+
+  if (webAppPlatform) {
+    return webAppPlatform;
+  }
+
+  return getTelegramLaunchParam("tgWebAppPlatform");
 }
 
 export function getTelegramDisplayName(): string | undefined {
@@ -98,6 +109,21 @@ function getTelegramInitUser(): TelegramInitUser | undefined {
   } catch {
     return undefined;
   }
+}
+
+function getTelegramLaunchParam(name: string): string {
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+  const sources = [window.location.search, hash].filter(Boolean);
+
+  for (const source of sources) {
+    const value = new URLSearchParams(source).get(name)?.trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
 }
 
 function normalizeTelegramName(name: string | undefined): string | undefined {

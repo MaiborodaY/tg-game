@@ -328,9 +328,12 @@ function getHeroBowDamageDisplayMultiplier(hero: HeroState): number {
 }
 
 function getHeroMeleeDamageDisplayMultiplier(hero: HeroState, item: HeroItemDefinition): number {
-  const weaponMultiplier = getHeroItemWeaponClass(item) === "axe" ? AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER : 1;
+  const stats = deriveHeroStats(hero);
+  const weaponClass = getHeroItemWeaponClass(item);
+  const weaponMultiplier = weaponClass === "axe" ? AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER : 1;
+  const spearDamagePercentBonus = weaponClass === "spear" ? Math.max(0, stats.spearMeleeDamagePercentBonus ?? 0) : 0;
 
-  return 1 + Math.max(0, deriveHeroStats(hero).meleeDamagePercentBonus) * weaponMultiplier;
+  return 1 + Math.max(0, stats.meleeDamagePercentBonus) * weaponMultiplier + spearDamagePercentBonus;
 }
 
 function isBowWeaponShopItem(item: HeroItemDefinition | undefined): item is HeroItemDefinition {

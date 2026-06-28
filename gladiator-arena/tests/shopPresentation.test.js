@@ -68,6 +68,15 @@ const generatedItems = {
     equipmentSlot: "weaponBow",
     damageBonus: 5,
   },
+  weapon_spear_01: {
+    id: "weapon_spear_01",
+    name: "Spear 01",
+    kind: "weapon",
+    rarity: "common",
+    weaponClass: "spear",
+    equipmentSlot: "weaponMain",
+    damageBonus: 10,
+  },
   weapon_shuriken_01: {
     id: "weapon_shuriken_01",
     name: "Rusty Shuriken",
@@ -113,7 +122,10 @@ const shopPresentation = loadTypeScriptModule("../src/shopPresentation.ts", {
           itemIds.every((itemId) => generatedItems[itemId]?.weaponClass === "shuriken" || generatedItems[itemId]?.kind === "scroll"),
         canHeroEquipItems: (hero) => hero.canEquip !== false,
         canHeroUseItems: (hero) => hero.canUse !== false,
-        deriveHeroStats: (hero) => ({ meleeDamagePercentBonus: hero.meleeDamagePercentBonus ?? 0 }),
+        deriveHeroStats: (hero) => ({
+          meleeDamagePercentBonus: hero.meleeDamagePercentBonus ?? 0,
+          spearMeleeDamagePercentBonus: hero.spearMeleeDamagePercentBonus ?? 0,
+        }),
         getAgilityBowDamageMultiplier: (agility) => 1 + Math.max(0, Math.floor(agility)) * 0.05,
         getHeroAttributeTotals: (hero) => ({ strength: 0, agility: hero.agility ?? 0, vitality: 0 }),
         getHeroConsumableMaxQuantity: (itemId) => (generatedItems[itemId]?.weaponClass === "shuriken" ? 2 : 0),
@@ -130,7 +142,7 @@ const shopPresentation = loadTypeScriptModule("../src/shopPresentation.ts", {
   },
 });
 
-test("shop display damage scales melee by strength and bows by agility while leaving consumables raw", () => {
+test("shop display damage scales melee by strength, spears by agility, and bows by agility while leaving consumables raw", () => {
   const hero = {
     meleeDamagePercentBonus: 0.5,
     agility: 10,
@@ -145,6 +157,7 @@ test("shop display damage scales melee by strength and bows by agility while lea
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_sword_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_axe_01"], "damage"), 18);
   assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, meleeDamagePercentBonus: 0.2 }, ["weapon_axe_02"], "damage"), 24);
+  assert.equal(shopPresentation.getShopProductDisplayStat({ ...hero, spearMeleeDamagePercentBonus: 0.25 }, ["weapon_spear_01"], "damage"), 18);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_bow_01"], "damage"), 8);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["weapon_shuriken_01"], "damage"), 2);
   assert.equal(shopPresentation.getShopProductDisplayStat(hero, ["cloth_breastplate_01"], "armor"), 3);

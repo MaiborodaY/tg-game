@@ -168,6 +168,7 @@ export interface HeroStats {
   weaponDamageBonus: number;
   meleeDamagePercentBonus: number;
   maceArmorDamagePercentBonus: number;
+  spearMeleeDamagePercentBonus: number;
   spearLungeDamagePercentBonus: number;
   spearClinchRangeBonus: number;
   spearLungeMoveBonus: number;
@@ -529,6 +530,7 @@ export const HERO_STRENGTH_BODY_SCALE_BONUS = 0.005;
 export const HERO_STRENGTH_CLINCH_RANGE_BONUS = 0.005;
 export const HERO_STRENGTH_CLINCH_RANGE_MAX_BONUS = 0.50;
 export const HERO_AGILITY_MOVEMENT_DISTANCE_BONUS = 0.015;
+export const HERO_AGILITY_SPEAR_MELEE_DAMAGE_PERCENT_BONUS = 0.025;
 export const HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS = 0.025;
 export const HERO_AGILITY_BOW_DAMAGE_PERCENT_BONUS = 0.10;
 export const HERO_VITALITY_HP_BONUS = 1;
@@ -1390,6 +1392,7 @@ function deriveFighterStats(
     weaponDamageBonus: bowWeaponDamageBonus,
     meleeDamagePercentBonus: roundStatBonus(strengthBonus * HERO_STRENGTH_MELEE_DAMAGE_PERCENT_BONUS),
     maceArmorDamagePercentBonus: includeEquipmentSetBonuses ? getHeroEquipmentSetMaceArmorDamagePercentBonus(equipment) : 0,
+    spearMeleeDamagePercentBonus: roundStatBonus(agilityBonus * HERO_AGILITY_SPEAR_MELEE_DAMAGE_PERCENT_BONUS),
     spearLungeDamagePercentBonus: roundStatBonus(agilityBonus * HERO_AGILITY_SPEAR_LUNGE_DAMAGE_PERCENT_BONUS),
     spearClinchRangeBonus: getHeroItemSpearClinchRangeBonus(mainWeaponItem),
     spearLungeMoveBonus: getHeroItemSpearLungeMoveBonus(mainWeaponItem),
@@ -2313,6 +2316,7 @@ function createCombatFighterStateFromHero(hero: HeroState, base: FighterState): 
     weaponDamageBonus: stats.weaponDamageBonus,
     meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
     maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
+    spearMeleeDamagePercentBonus: stats.spearMeleeDamagePercentBonus,
     spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
     spearClinchRangeBonus: stats.spearClinchRangeBonus,
     spearLungeMoveBonus: stats.spearLungeMoveBonus,
@@ -2418,6 +2422,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       weaponDamageBonus: stats.weaponDamageBonus,
       meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
       maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
+      spearMeleeDamagePercentBonus: stats.spearMeleeDamagePercentBonus,
       spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
       spearClinchRangeBonus: stats.spearClinchRangeBonus,
       spearLungeMoveBonus: stats.spearLungeMoveBonus,
@@ -2473,6 +2478,7 @@ export function createCombatStateFromHero(hero: HeroState, encounterOrTierId: Ar
       weaponDamageBonus: enemyStats.weaponDamageBonus,
       meleeDamagePercentBonus: enemyStats.meleeDamagePercentBonus,
       maceArmorDamagePercentBonus: enemyStats.maceArmorDamagePercentBonus,
+      spearMeleeDamagePercentBonus: enemyStats.spearMeleeDamagePercentBonus,
       spearLungeDamagePercentBonus: enemyStats.spearLungeDamagePercentBonus,
       spearClinchRangeBonus: enemyStats.spearClinchRangeBonus,
       spearLungeMoveBonus: enemyStats.spearLungeMoveBonus,
@@ -2552,7 +2558,7 @@ export function createDuoBossCombatStateFromHero(hero: HeroState, encounter: Are
     ...state,
     helper,
     helperPosition: state.playerPosition,
-    enemy: scaleDuoBossFighter(state.enemy),
+    enemy: createDuoBossEnemyState(state.enemy, encounter.tierId),
     log: [
       { text: `The gate slams open. ${hero.name} and ${helper.name} face ${encounter.name}.`, important: true },
       { text: "Duo boss prototype: act first, your helper follows, then the boss answers." },
@@ -2572,7 +2578,7 @@ export function createOnlineDuoBossCombatStateFromHeroes(playerHero: HeroState, 
     ...state,
     helper,
     helperPosition: state.playerPosition,
-    enemy: scaleDuoBossFighter(state.enemy),
+    enemy: createDuoBossEnemyState(state.enemy, encounter.tierId),
     log: [
       { text: `The gate slams open. ${playerHero.name} and ${helperHero.name} face ${encounter.name}.`, important: true },
       { text: "Online duo: act first, your ally follows, then the boss answers." },
@@ -2617,6 +2623,7 @@ function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: En
     weaponDamageBonus: stats.weaponDamageBonus,
     meleeDamagePercentBonus: stats.meleeDamagePercentBonus,
     maceArmorDamagePercentBonus: stats.maceArmorDamagePercentBonus,
+    spearMeleeDamagePercentBonus: stats.spearMeleeDamagePercentBonus,
     spearLungeDamagePercentBonus: stats.spearLungeDamagePercentBonus,
     spearClinchRangeBonus: stats.spearClinchRangeBonus,
     spearLungeMoveBonus: stats.spearLungeMoveBonus,
@@ -2659,6 +2666,14 @@ function createCombatFighterStateFromEnemyLoadout(name: string, enemyLoadout: En
     armorSlots,
     visualPreset: { ...enemyLoadout.visualPreset },
   };
+}
+
+function createDuoBossEnemyState(enemy: FighterState, tierId: number): FighterState {
+  return shouldScaleDuoBossEnemy(tierId) ? scaleDuoBossFighter(enemy) : enemy;
+}
+
+function shouldScaleDuoBossEnemy(tierId: number): boolean {
+  return Math.max(1, Math.floor(tierId)) > 1;
 }
 
 function scaleDuoBossFighter(fighter: FighterState): FighterState {

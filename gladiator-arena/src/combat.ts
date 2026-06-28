@@ -89,6 +89,7 @@ export interface FighterState {
   weaponDamageBonus?: number;
   meleeDamagePercentBonus?: number;
   maceArmorDamagePercentBonus?: number;
+  spearMeleeDamagePercentBonus?: number;
   spearLungeDamagePercentBonus?: number;
   spearClinchRangeBonus?: number;
   spearLungeMoveBonus?: number;
@@ -480,6 +481,7 @@ export function freshState(): CombatState {
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
       maceArmorDamagePercentBonus: 0,
+      spearMeleeDamagePercentBonus: 0,
       spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
@@ -500,6 +502,7 @@ export function freshState(): CombatState {
       weaponDamageBonus: 0,
       meleeDamagePercentBonus: 0,
       maceArmorDamagePercentBonus: 0,
+      spearMeleeDamagePercentBonus: 0,
       spearLungeDamagePercentBonus: 0,
       movementDistanceBonus: 0,
       bodyScaleBonus: 0,
@@ -2156,9 +2159,10 @@ function getActionDamageBonus(attacker?: FighterState): number {
 
 function getActionMeleeDamageMultiplier(attacker: FighterState): number {
   const meleeDamagePercentBonus = Math.max(0, attacker.meleeDamagePercentBonus ?? 0);
+  const spearDamagePercentBonus = getFighterWeaponClass(attacker) === "spear" ? Math.max(0, attacker.spearMeleeDamagePercentBonus ?? 0) : 0;
   const weaponMultiplier = getFighterWeaponClass(attacker) === "axe" ? AXE_MELEE_DAMAGE_PERCENT_BONUS_MULTIPLIER : 1;
 
-  return 1 + meleeDamagePercentBonus * weaponMultiplier;
+  return 1 + meleeDamagePercentBonus * weaponMultiplier + spearDamagePercentBonus;
 }
 
 function getMeleeWeaponDamage(attacker: FighterState): number {

@@ -301,6 +301,34 @@ test("spears improve lunge movement hit chance and damage", () => {
   assert.equal(nextState.lastPlayerDamage, expectedDamage);
 });
 
+test("spear regular melee adds agility scaling without double dipping lunge", () => {
+  const meleeState = combat.freshState();
+  meleeState.player.weaponClass = "spear";
+  meleeState.player.mainWeaponClass = "spear";
+  meleeState.player.damageBonus = 10;
+  meleeState.player.meleeDamagePercentBonus = 0.2;
+  meleeState.player.spearMeleeDamagePercentBonus = 0.1;
+  setConsistentDistance(meleeState, combat.SPEAR_CLINCH_RANGE_BONUS);
+
+  const meleeNextState = combat.resolvePlayerTurn(meleeState, "light", () => 0.99);
+
+  assert.equal(meleeNextState.lastPlayerDamage, Math.ceil(10 * (1 + 0.2 + 0.1)));
+
+  const lungeState = combat.freshState();
+  lungeState.player.weaponClass = "spear";
+  lungeState.player.mainWeaponClass = "spear";
+  lungeState.player.damageBonus = 10;
+  lungeState.player.meleeDamagePercentBonus = 0.2;
+  lungeState.player.spearMeleeDamagePercentBonus = 0.1;
+  lungeState.player.spearLungeDamagePercentBonus = 0.25;
+  setConsistentDistance(lungeState, combat.SPEAR_CLINCH_RANGE_BONUS + combat.DEFAULT_LUNGE_MOVE_DISTANCE + combat.SPEAR_LUNGE_MOVE_BONUS);
+
+  const lungeNextState = combat.resolvePlayerTurn(lungeState, "lunge", () => 0.99);
+  const expectedLungeDamage = Math.ceil(10 * combat.SPEAR_LUNGE_DAMAGE_MULTIPLIER * (1 + 0.25));
+
+  assert.equal(lungeNextState.lastPlayerDamage, expectedLungeDamage);
+});
+
 test("spear lunge stops at spear contact range instead of pushing into full clinch", () => {
   const state = combat.freshState();
 
