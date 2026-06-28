@@ -215,6 +215,7 @@ interface StartGameOptions {
 }
 interface StartGameWithCityTransitionOptions extends StartGameOptions {
   cityTransition?: "city" | "arenaPanel";
+  releaseCityPreview?: boolean;
 }
 interface ReturnToCityOptions {
   requireResultGate?: boolean;
@@ -3160,7 +3161,7 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   activeArenaSelection = selection;
   const initialState = createCombatStateForSelection(selection);
 
-  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel" });
+  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel", releaseCityPreview: true });
 }
 
 async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<void> {
@@ -3560,6 +3561,30 @@ function suspendCityScenePreview(): void {
   cityScene?.suspend();
 }
 
+async function releaseCityScenePreviewForArenaEntry(encounter?: ArenaEncounter): Promise<void> {
+  recordArenaEntryActivity("arena-entry-destroy-city");
+  if (cityScene) {
+    cityScene.destroy();
+    cityScene = undefined;
+  }
+
+  await nextAnimationFrame();
+  await nextAnimationFrame();
+
+  recordArenaEntryActivity("arena-entry-prewarm");
+  await prewarmArenaAssetsForBrowserCache(encounter).catch(() => undefined);
+  recordArenaEntryActivity("arena-entry-mount");
+}
+
+function recordArenaEntryActivity(action: string): void {
+  recordWebglActivity({
+    screen: "arena-entry",
+    action,
+    heroLevel: hero.level,
+    heroGold: hero.gold,
+  });
+}
+
 function mountArena(): void {
   unmountArena?.();
   unmountArena = undefined;
@@ -3643,7 +3668,8 @@ function startGame(options: StartGameOptions = {}): void {
 }
 
 async function startGameWithCityTransition(options: StartGameWithCityTransitionOptions = {}): Promise<void> {
-  const { cityTransition = "city", ...startOptions } = options;
+  const { cityTransition = "city", releaseCityPreview = false, ...startOptions } = options;
+  const shouldReleaseCityPreview = releaseCityPreview && cityTransition === "arenaPanel" && startOptions.mode !== "pvp";
 
   if (isArenaTransitionRunning) {
     return;
@@ -3658,7 +3684,9 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
   dom.startButton.disabled = true;
   flushShopEquipmentVisualSync();
   clearShopPreview();
-  void prewarmArenaAssetsForBrowserCache(startOptions.initialState?.encounter ?? state.encounter);
+  if (!shouldReleaseCityPreview) {
+    void prewarmArenaAssetsForBrowserCache(startOptions.initialState?.encounter ?? state.encounter);
+  }
 
   if (cityTransition === "city") {
     cityMenu?.classList.add("city-menu--arena-transition");
@@ -3670,7 +3698,15 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
     } else {
       await (cityScene?.focusArenaTransition() ?? Promise.resolve());
     }
+
+    if (shouldReleaseCityPreview) {
+      showCityReturnTransition("Preparing Arena...");
+      await releaseCityScenePreviewForArenaEntry(startOptions.initialState?.encounter ?? state.encounter);
+    }
   } finally {
+    if (shouldReleaseCityPreview) {
+      hideCityReturnTransition();
+    }
     startGame(startOptions);
     dom.startButton.disabled = false;
     isArenaTransitionRunning = false;
