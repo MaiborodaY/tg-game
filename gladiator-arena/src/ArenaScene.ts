@@ -156,6 +156,7 @@ import {
   GENERATED_EQUIPMENT_ITEM_RECORDS,
   GENERATED_EQUIPMENT_ITEM_TUNING,
 } from "./generated/equipmentItems.generated";
+import { getTelegramWebAppPlatform } from "./telegram";
 import {
   beginDebugUndoGroup,
   debugTuning,
@@ -1357,6 +1358,7 @@ function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
 
 const CITY_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
 const ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
+const TELEGRAM_DESKTOP_PHASER_DEVICE_PIXEL_RATIO = 2;
 const WEBGL_RECOVERY_OVERLAY_ID = "webglRecoveryOverlay";
 const WEBGL_RECOVERY_REPORT_STORAGE_KEY = "dust-arena-webgl-crash-report";
 
@@ -1623,11 +1625,17 @@ function getPhaserDevicePixelRatio(maxDevicePixelRatio: number): number {
 
   const ratio = Number(window.devicePixelRatio);
 
-  if (!Number.isFinite(ratio) || ratio <= 1) {
-    return 1;
-  }
+  const browserPixelRatio = Number.isFinite(ratio) && ratio > 1 ? ratio : 1;
 
-  return Math.min(maxDevicePixelRatio, ratio);
+  return Math.min(maxDevicePixelRatio, Math.max(getTelegramDesktopPhaserDevicePixelRatio(), browserPixelRatio));
+}
+
+function getTelegramDesktopPhaserDevicePixelRatio(): number {
+  return getTelegramWebAppPlatform().toLowerCase() === "tdesktop" ? TELEGRAM_DESKTOP_PHASER_DEVICE_PIXEL_RATIO : 1;
+}
+
+export function getCityEffectivePhaserDevicePixelRatio(): number {
+  return getPhaserDevicePixelRatio(CITY_PHASER_MAX_DEVICE_PIXEL_RATIO);
 }
 
 function getPhaserGameSize(parent: HTMLElement | null, maxDevicePixelRatio: number): PhaserGameSize {

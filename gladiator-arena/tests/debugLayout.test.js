@@ -393,6 +393,10 @@ test("city render debug is desktop admin gated", () => {
   assert.equal(mainSource.includes("canUseTelegramUserIdGatedAction(RENDER_DEBUG_TELEGRAM_USER_IDS) && isDesktopRenderDebugEnvironment()"), true);
   assert.equal(mainSource.includes("function createCityRenderDebugReport(): string"), true);
   assert.equal(mainSource.includes("getTelegramWebAppPlatform()"), true);
+  assert.equal(mainSource.includes("EFFECTIVE DPR:"), true);
+  assert.equal(arenaSceneSource.includes("TELEGRAM_DESKTOP_PHASER_DEVICE_PIXEL_RATIO = 2"), true);
+  assert.equal(arenaSceneSource.includes('getTelegramWebAppPlatform().toLowerCase() === "tdesktop"'), true);
+  assert.equal(arenaSceneSource.includes("getCityEffectivePhaserDevicePixelRatio"), true);
   assert.equal(mainSource.includes("CITY SCALE:"), true);
   assert.equal(telegramSource.includes("platform?: string;"), true);
   assert.equal(telegramSource.includes('getTelegramLaunchParam("tgWebAppPlatform")'), true);

@@ -1,5 +1,6 @@
 import { mountActionArc, type ActionArcApi } from "./actionArc";
 import {
+  getCityEffectivePhaserDevicePixelRatio,
   launchArena,
   mountCityHeroPreview,
   mountHeroPortraitPreview,
@@ -467,6 +468,7 @@ function createCityRenderDebugReport(): string {
   return [
     `PLATFORM: ${getCityRenderDebugPlatformLabel()}`,
     `DPR: ${formatRenderDebugNumber(window.devicePixelRatio, 2)}`,
+    `EFFECTIVE DPR: ${formatRenderDebugNumber(getCityEffectivePhaserDevicePixelRatio(), 2)}`,
     `WINDOW: ${window.innerWidth}x${window.innerHeight}`,
     `VIEWPORT: ${visualViewport ? `${formatRenderDebugNumber(visualViewport.width, 1)}x${formatRenderDebugNumber(visualViewport.height, 1)}` : "-"}`,
     `CITY CANVAS: ${canvas ? `${canvas.width}x${canvas.height}` : "-"}`,
