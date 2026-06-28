@@ -67,6 +67,18 @@ export interface PvpLeaveRoomResponse {
   ok: true;
 }
 
+export interface PvpReconnectRoomRequest {
+  token: string;
+}
+
+export interface PvpResultAckRoomRequest {
+  token: string;
+}
+
+export interface PvpResultAckRoomResponse {
+  ok: true;
+}
+
 export interface PvpRoomListEntry {
   roomCode: string;
   roomKind?: PvpRoomKind;

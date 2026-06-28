@@ -7,6 +7,7 @@ import type {
   PvpCurrentRoomResponse,
   PvpLeaveRoomResponse,
   PvpListRoomsResponse,
+  PvpResultAckRoomResponse,
   PvpRoomKind,
   PvpRoomResponse,
   PvpRoomSession,
@@ -58,6 +59,14 @@ export async function cancelPvpRoom(session: PvpRoomSession): Promise<PvpCancelR
 
 export async function leavePvpRoomSession(session: PvpRoomSession): Promise<PvpLeaveRoomResponse> {
   return postPvpJson<PvpLeaveRoomResponse>(`rooms/${normalizeRoomCode(session.roomCode)}/leave`, { token: session.token });
+}
+
+export async function reconnectPvpRoomSession(session: Pick<PvpRoomSession, "roomCode" | "token">): Promise<PvpRoomResponse> {
+  return postPvpJson<PvpRoomResponse>(`rooms/${normalizeRoomCode(session.roomCode)}/reconnect`, { token: session.token });
+}
+
+export async function ackPvpRoomResult(session: Pick<PvpRoomSession, "roomCode" | "token">): Promise<PvpResultAckRoomResponse> {
+  return postPvpJson<PvpResultAckRoomResponse>(`rooms/${normalizeRoomCode(session.roomCode)}/result-ack`, { token: session.token });
 }
 
 export function connectPvpRoom(session: PvpRoomSession, handlers: PvpConnectionHandlers): PvpConnection {

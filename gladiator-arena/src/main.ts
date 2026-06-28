@@ -128,7 +128,7 @@ import { syncHudTuning } from "./hudTuning";
 import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
-import { cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, leavePvpRoomSession, listPvpRooms, type PvpConnection } from "./pvpClient";
+import { ackPvpRoomResult, cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, leavePvpRoomSession, listPvpRooms, reconnectPvpRoomSession, type PvpConnection } from "./pvpClient";
 import { getPvpActorForSeat, type PvpRoomKind, type PvpRoomListEntry, type PvpRoomResponse, type PvpRoomSession, type PvpRoomSnapshot, type PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopProductIcons } from "./shopItemIcons";
@@ -232,11 +232,15 @@ interface PendingCityArenaAutoRateTarget extends CityArenaAutoRateTarget {
   cacheKey: string;
   sourceHero: HeroState;
 }
+type PvpReconnectCandidate = Pick<PvpRoomSession, "roomCode" | "token" | "seat" | "roomKind"> & {
+  updatedAt: number;
+};
 const CITY_ARENA_TIER_ONE_DIFFICULTY_LEVEL_REQUIREMENTS: Partial<Record<ArenaDifficultyId, number>> = {
   [DEFAULT_ARENA_DIFFICULTY_ID]: 3,
   hard: 7,
 };
 const MAGIC_SHOP_LEVEL_REQUIREMENT = 8;
+const PVP_RECONNECT_STORAGE_KEY = "dust-arena-pvp-reconnect-room";
 let hero: HeroState = createInitialHero();
 let pendingEquipmentHintItemIds: HeroItemId[] = [];
 let activeArenaTierId = DEFAULT_ARENA_TIER_ID;
@@ -261,7 +265,8 @@ let gameMode: GameMode = "pve";
 let pvpSession: PvpRoomSession | undefined;
 let pvpConnection: PvpConnection | undefined;
 let pvpSnapshot: PvpRoomSnapshot | undefined;
-let locallyLeftPvpRoom: Pick<PvpRoomSession, "roomCode" | "token" | "seat"> | undefined;
+let pvpReconnectRoom: PvpRoomResponse | undefined;
+let locallyLeftPvpRoom: PvpReconnectCandidate | undefined = loadPvpReconnectCandidate();
 let pvpActionPending = false;
 let pvpSnapshotPlaybackToken = 0;
 let onlineDuoAutoOffPending = false;
@@ -2672,6 +2677,7 @@ function setCityArenaOnlineViewOpen(open: boolean): void {
   if (open) {
     setCityArenaQuestPanelOpen(false);
     syncPvpControls();
+    void refreshPvpReconnectRoom({ silent: true });
   }
 }
 
@@ -2716,7 +2722,8 @@ function renderPvpRoomList(): void {
   }
 
   const entries = getVisiblePvpRoomEntries();
-  const shouldShow = isCityArenaOnlineViewOpen || pvpRoomsVisible || entries.length > 0;
+  const reconnectItem = createPvpReconnectRoomListItem();
+  const shouldShow = isCityArenaOnlineViewOpen || pvpRoomsVisible || entries.length > 0 || Boolean(reconnectItem);
 
   cityPvpRoomList.hidden = !shouldShow;
   if (!shouldShow) {
@@ -2724,12 +2731,15 @@ function renderPvpRoomList(): void {
     return;
   }
 
-  if (pvpControlsBusy && entries.length === 0) {
+  if (pvpControlsBusy && entries.length === 0 && !reconnectItem) {
     cityPvpRoomList.replaceChildren(createPvpRoomListMessage("Refreshing..."));
     return;
   }
 
-  cityPvpRoomList.replaceChildren(...(entries.length > 0 ? entries.map(createPvpRoomListItem) : [createPvpRoomListMessage("No rooms yet.")]));
+  cityPvpRoomList.replaceChildren(
+    ...(reconnectItem ? [reconnectItem] : []),
+    ...(entries.length > 0 ? entries.map(createPvpRoomListItem) : (reconnectItem ? [] : [createPvpRoomListMessage("No rooms yet.")])),
+  );
 }
 
 function getVisiblePvpRoomEntries(): PvpRoomListEntry[] {
@@ -2811,12 +2821,89 @@ function formatPvpRoomListMeta(room: PvpRoomListEntry): string {
   return `LV ${room.hostLevel} - WAITING`;
 }
 
+function createPvpReconnectRoomListItem(): HTMLElement | undefined {
+  const response = pvpReconnectRoom?.snapshot.status !== "finished" ? pvpReconnectRoom : undefined;
+  const candidate = response ? undefined : locallyLeftPvpRoom;
+
+  if (pvpSession || (!response && !candidate)) {
+    return undefined;
+  }
+
+  const item = document.createElement("div");
+  const copy = document.createElement("div");
+  const name = document.createElement("strong");
+  const meta = document.createElement("span");
+  const button = document.createElement("button");
+  const roomKind = response?.roomKind ?? response?.snapshot.roomKind ?? candidate?.roomKind ?? "duoBoss";
+
+  item.className = "city-arena-menu__pvp-room city-arena-menu__pvp-room--reconnect";
+  copy.className = "city-arena-menu__pvp-room-copy";
+  name.className = "city-arena-menu__pvp-room-name";
+  name.textContent = roomKind === "duoBoss" ? "DUO FIGHT IN PROGRESS" : "PVP FIGHT IN PROGRESS";
+  meta.className = "city-arena-menu__pvp-room-meta";
+  meta.textContent = response ? formatPvpReconnectRoomMeta(response) : "Reconnect to your active fight.";
+  button.className = "city-arena-menu__pvp-button city-arena-menu__pvp-room-button";
+  button.type = "button";
+  button.textContent = "RECONNECT";
+  button.disabled = pvpControlsBusy;
+  button.addEventListener("click", () => {
+    void handleReconnectPvpRoom();
+  });
+
+  copy.append(name, meta);
+  item.append(copy, button);
+  return item;
+}
+
+function formatPvpReconnectRoomMeta(response: PvpRoomResponse): string {
+  const snapshot = response.snapshot;
+
+  if ((response.roomKind ?? snapshot.roomKind) === "duoBoss") {
+    const bossName = snapshot.bossName ?? "Boss";
+    const tierText = snapshot.bossTierId ? `T${snapshot.bossTierId}` : "PVE";
+
+    return `${tierText} - ${bossName}`;
+  }
+
+  return "Reconnect to PvP match.";
+}
+
 function createPvpRoomListMessage(message: string): HTMLElement {
   const item = document.createElement("div");
 
   item.className = "city-arena-menu__pvp-room-empty";
   item.textContent = message;
   return item;
+}
+
+async function refreshPvpReconnectRoom(options: { silent?: boolean } = {}): Promise<void> {
+  if (pvpSession) {
+    return;
+  }
+
+  try {
+    const currentRoom = await getCurrentPvpRoom();
+
+    if (!currentRoom || isLocallyLeftPvpRoomResponse(currentRoom)) {
+      pvpReconnectRoom = undefined;
+      renderPvpRoomList();
+      return;
+    }
+
+    if (currentRoom.snapshot.status === "finished") {
+      pvpReconnectRoom = undefined;
+      handleFinishedPvpRoomResponse(currentRoom);
+      renderPvpRoomList();
+      return;
+    }
+
+    pvpReconnectRoom = currentRoom;
+    renderPvpRoomList();
+  } catch {
+    if (!options.silent) {
+      setPvpStatus("Reconnect check failed.");
+    }
+  }
 }
 
 async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<void> {
@@ -2827,6 +2914,7 @@ async function refreshPvpRoomList(options: { silent?: boolean } = {}): Promise<v
   }
 
   try {
+    await refreshPvpReconnectRoom({ silent: true });
     const response = await listPvpRooms(activeOnlineRoomKind);
 
     pvpRoomList = response.rooms;
@@ -2900,14 +2988,7 @@ async function handleSearchPvpRooms(): Promise<void> {
   setPvpStatus("");
 
   try {
-    const currentRoom = await getCurrentPvpRoom();
-
-    if (currentRoom && !isLocallyLeftPvpRoomResponse(currentRoom)) {
-      beginPvpRoom(currentRoom);
-      setPvpStatus(formatPvpRoomStatus(currentRoom.snapshot));
-      return;
-    }
-
+    await refreshPvpReconnectRoom({ silent: true });
     const response = await listPvpRooms(activeOnlineRoomKind);
 
     pvpRoomList = response.rooms;
@@ -2932,6 +3013,52 @@ async function handleJoinListedPvpRoom(roomCode: string): Promise<void> {
   } catch (error) {
     setPvpStatus(error instanceof Error ? error.message : "PvP join failed.");
     setPvpControlsBusy(false);
+  }
+}
+
+async function handleReconnectPvpRoom(): Promise<void> {
+  if (pvpControlsBusy || pvpSession) {
+    return;
+  }
+
+  setPvpControlsBusy(true);
+  setPvpStatus("Reconnecting...");
+
+  try {
+    const reconnectSession = pvpReconnectRoom?.snapshot.status !== "finished" ? pvpReconnectRoom : locallyLeftPvpRoom;
+    let response = reconnectSession ? await reconnectPvpRoomSession(reconnectSession) : undefined;
+
+    if (!response) {
+      response = await getCurrentPvpRoom();
+    }
+    if (!response) {
+      pvpReconnectRoom = undefined;
+      clearPvpReconnectCandidate();
+      setPvpStatus("Fight not found.");
+      return;
+    }
+    if (response.snapshot.status === "finished") {
+      handleFinishedPvpRoomResponse(response);
+      setPvpStatus("Fight ended.");
+      return;
+    }
+
+    pvpReconnectRoom = undefined;
+    clearPvpReconnectCandidate();
+    beginPvpRoom(response);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Reconnect failed.";
+
+    if (message.includes("Room not found")) {
+      pvpReconnectRoom = undefined;
+      clearPvpReconnectCandidate();
+    }
+    setPvpStatus(message);
+  } finally {
+    if (!pvpSession) {
+      setPvpControlsBusy(false);
+      syncPvpControls();
+    }
   }
 }
 
@@ -2971,7 +3098,8 @@ function beginPvpRoom(response: PvpRoomResponse): void {
     return;
   }
 
-  locallyLeftPvpRoom = undefined;
+  pvpReconnectRoom = undefined;
+  clearPvpReconnectCandidate();
   leavePvpRoom({ keepStatus: true, notifyServer: false });
   activeOnlineRoomKind = response.roomKind ?? response.snapshot.roomKind ?? "pvp";
   pvpSession = {
@@ -2998,11 +3126,22 @@ function handlePvpSocketClose(): void {
     return;
   }
 
+  const closedSession = pvpSession;
+  const closedSnapshot = pvpSnapshot;
   const shouldShowDisconnectResult = gameMode === "pvp" && pvpSnapshot?.roomKind !== "duoBoss" && !isInCity && state.result === "playing";
 
   pvpConnection = undefined;
   pvpSession = undefined;
   pvpSnapshot = undefined;
+  if (closedSnapshot && closedSnapshot.status !== "finished") {
+    pvpReconnectRoom = {
+      roomCode: closedSession.roomCode,
+      token: closedSession.token,
+      seat: closedSession.seat,
+      roomKind: closedSession.roomKind ?? closedSnapshot.roomKind,
+      snapshot: closedSnapshot,
+    };
+  }
   pvpActionPending = false;
   clearOnlineDuoAutoOffPending();
   clearOnlineDuoBossPendingWatchdog();
@@ -3064,6 +3203,10 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
 
   applyOnlineDuoRewardIfNeeded(snapshot);
 
+  if (snapshot.status === "finished" && isInCity) {
+    return;
+  }
+
   if (isInCity) {
     closeCityArenaMenu();
     void startGameWithCityTransition({ mode: "pvp", initialState: snapshot.state });
@@ -3072,6 +3215,21 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
 
   if (gameMode === "pvp") {
     commitPvpSnapshotState(snapshot);
+  }
+}
+
+function handleFinishedPvpRoomResponse(response: PvpRoomResponse): void {
+  const session: PvpRoomSession = {
+    roomCode: response.roomCode,
+    token: response.token,
+    seat: response.seat,
+    roomKind: response.roomKind ?? response.snapshot.roomKind ?? "pvp",
+  };
+
+  applyOnlineDuoRewardIfNeeded(response.snapshot, session);
+  pvpReconnectRoom = undefined;
+  if (isSamePvpReconnectSession(session)) {
+    clearPvpReconnectCandidate();
   }
 }
 
@@ -3090,6 +3248,13 @@ function isLocallyLeftPvpRoomResponse(response: PvpRoomResponse): boolean {
     && response.roomCode === locallyLeftPvpRoom.roomCode
     && response.token === locallyLeftPvpRoom.token
     && response.seat === locallyLeftPvpRoom.seat);
+}
+
+function isSamePvpReconnectSession(session: Pick<PvpRoomSession, "roomCode" | "token" | "seat">): boolean {
+  return Boolean(locallyLeftPvpRoom
+    && session.roomCode === locallyLeftPvpRoom.roomCode
+    && session.token === locallyLeftPvpRoom.token
+    && session.seat === locallyLeftPvpRoom.seat);
 }
 
 function commitPvpSnapshotState(snapshot: PvpRoomSnapshot): void {
@@ -3180,7 +3345,7 @@ function applyOnlineDuoHostStartCostIfNeeded(snapshot: PvpRoomSnapshot): void {
   renderCityArenaMenu();
 }
 
-function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
+function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot, session = pvpSession): void {
   if (!isOnlineDuoSnapshot(snapshot) || snapshot.status !== "finished" || !snapshot.state || snapshot.state.result === "playing") {
     return;
   }
@@ -3188,6 +3353,7 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
   const markerKey = getOnlineDuoRewardMarkerKey(snapshot);
 
   if (hasLocalMarker(markerKey)) {
+    ackOnlineDuoResultIfNeeded(snapshot, session);
     return;
   }
 
@@ -3223,6 +3389,23 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
   startBattleResultReturnGate();
   markRewardUiRenderDirty();
   setLocalMarker(markerKey);
+  ackOnlineDuoResultIfNeeded(snapshot, session);
+}
+
+function ackOnlineDuoResultIfNeeded(snapshot: PvpRoomSnapshot, session?: PvpRoomSession): void {
+  if (!session || snapshot.roomCode !== session.roomCode || snapshot.seat !== session.seat || snapshot.status !== "finished") {
+    return;
+  }
+
+  void ackPvpRoomResult(session).catch(() => {
+    // Best-effort cleanup: the finished room still has its TTL fallback.
+  });
+  if (isSamePvpReconnectSession(session)) {
+    clearPvpReconnectCandidate();
+  }
+  if (pvpReconnectRoom?.roomCode === session.roomCode && pvpReconnectRoom.token === session.token) {
+    pvpReconnectRoom = undefined;
+  }
 }
 
 function createOnlineDuoRewardCombat(snapshot: PvpRoomSnapshot): CombatState {
@@ -3264,18 +3447,67 @@ function setLocalMarker(key: string): void {
   }
 }
 
+function rememberPvpReconnectCandidate(session: PvpRoomSession): void {
+  const candidate: PvpReconnectCandidate = {
+    roomCode: session.roomCode,
+    token: session.token,
+    seat: session.seat,
+    roomKind: session.roomKind,
+    updatedAt: Date.now(),
+  };
+
+  locallyLeftPvpRoom = candidate;
+  try {
+    window.localStorage.setItem(PVP_RECONNECT_STORAGE_KEY, JSON.stringify(candidate));
+  } catch {
+    // A local reconnect hint is helpful, but the server active session is the source of truth.
+  }
+}
+
+function clearPvpReconnectCandidate(): void {
+  locallyLeftPvpRoom = undefined;
+  try {
+    window.localStorage.removeItem(PVP_RECONNECT_STORAGE_KEY);
+  } catch {
+    // Storage may be unavailable in some embedded browsers.
+  }
+}
+
+function loadPvpReconnectCandidate(): PvpReconnectCandidate | undefined {
+  try {
+    const payload = window.localStorage.getItem(PVP_RECONNECT_STORAGE_KEY);
+    const candidate = payload ? JSON.parse(payload) : undefined;
+
+    return isPvpReconnectCandidate(candidate) ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isPvpReconnectCandidate(value: unknown): value is PvpReconnectCandidate {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<PvpReconnectCandidate>;
+
+  return typeof candidate.roomCode === "string"
+    && typeof candidate.token === "string"
+    && (candidate.seat === "host" || candidate.seat === "guest")
+    && (candidate.roomKind === undefined || candidate.roomKind === "pvp" || candidate.roomKind === "duoBoss");
+}
+
 function leavePvpRoom(options: { keepStatus?: boolean; notifyServer?: boolean } = {}): void {
   const session = pvpSession;
+  const shouldNotifyServer = Boolean(session && options.notifyServer !== false && pvpSnapshot?.status !== "finished");
 
-  if (session && options.notifyServer !== false) {
-    locallyLeftPvpRoom = {
-      roomCode: session.roomCode,
-      token: session.token,
-      seat: session.seat,
-    };
+  if (session && shouldNotifyServer) {
+    rememberPvpReconnectCandidate(session);
     void leavePvpRoomSession(session).catch(() => {
       // The local opt-out still prevents an immediate auto-resume if the best-effort leave fails.
     });
+  } else if (session && pvpSnapshot?.status === "finished") {
+    clearPvpReconnectCandidate();
   }
 
   pvpConnection?.close();
@@ -3355,7 +3587,19 @@ function openCityArenaMenu(): void {
   if (pvpSession) {
     pvpRoomsVisible = true;
   }
-  setCityArenaOnlineViewOpen(Boolean(pvpSession));
+  if (locallyLeftPvpRoom || pvpReconnectRoom) {
+    pvpRoomsVisible = true;
+  }
+  setCityArenaOnlineViewOpen(Boolean(pvpSession || locallyLeftPvpRoom || pvpReconnectRoom));
+  if (!pvpSession && !locallyLeftPvpRoom && !pvpReconnectRoom) {
+    void refreshPvpReconnectRoom({ silent: true }).then(() => {
+      if (!pvpSession && pvpReconnectRoom && cityArenaMenu && !cityArenaMenu.hidden) {
+        pvpRoomsVisible = true;
+        setCityArenaOnlineViewOpen(true);
+        syncPvpControls();
+      }
+    });
+  }
   syncPvpControls();
   cityArenaMenu.hidden = false;
   cityMenu?.classList.add("city-menu--arena-select-open");
