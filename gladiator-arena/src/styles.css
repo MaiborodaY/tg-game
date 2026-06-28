@@ -1800,6 +1800,11 @@ body.arena-stat-bars-animated .classic-stat__fill::after {
   transform: translateX(-50%);
 }
 
+.battle-screen--online-duo-boss .pvp-turn-timer {
+  top: max(96px, calc(env(safe-area-inset-top) + 94px));
+  left: 50%;
+}
+
 .battle-screen {
   --battle-result-card-top: var(--ui-battle-result-card-top, 57%);
   --battle-result-card-width: var(--ui-battle-result-card-width, 392px);
@@ -5062,6 +5067,54 @@ body.debug-active .city-menu__portrait-button:active {
   opacity: 0.72;
 }
 
+.city-arena-menu__bot-button--starting:disabled {
+  filter: none;
+  opacity: 1;
+}
+
+.city-arena-menu__bot-button--starting {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.24),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 229, 161, 0.46),
+    0 0 0 1px rgba(255, 211, 132, 0.28),
+    0 0 18px rgba(255, 190, 96, 0.24),
+    0 3px 0 rgba(8, 2, 1, 0.62);
+}
+
+.city-arena-menu__start-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  min-height: 27px;
+  padding: 4px 13px 5px;
+  border: 2px solid rgba(255, 226, 154, 0.82);
+  border-radius: 999px;
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, rgba(113, 57, 19, 0.98), rgba(50, 14, 5, 0.98)),
+    rgba(43, 10, 4, 0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 238, 183, 0.32),
+    inset 0 -5px 8px rgba(31, 7, 3, 0.42),
+    0 2px 0 rgba(8, 2, 1, 0.72),
+    0 0 12px rgba(255, 190, 96, 0.2);
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(8, 2, 1, 0.86);
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-1deg);
+}
+
 .city-arena-menu__fight:active,
 .city-arena-menu__boss:active,
 .city-arena-menu__boss-duo:active,
@@ -5175,6 +5228,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss-duo-choice {
+  position: relative;
   min-width: 0;
   min-height: 28px;
   padding: 0 4px;
@@ -5205,6 +5259,11 @@ body.debug-active .city-menu__portrait-button:active {
   cursor: not-allowed;
   filter: saturate(0.68) brightness(0.76);
   opacity: 0.72;
+}
+
+.city-arena-menu__boss-duo-choice.city-arena-menu__bot-button--starting:disabled {
+  filter: none;
+  opacity: 1;
 }
 
 .city-arena-menu__boss-reward-line {

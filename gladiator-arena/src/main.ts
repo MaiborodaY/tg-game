@@ -217,6 +217,9 @@ interface StartGameWithCityTransitionOptions extends StartGameOptions {
   cityTransition?: "city" | "arenaPanel";
   releaseCityPreview?: boolean;
 }
+interface ArenaEnergySpendOptions {
+  renderMenuOnSuccess?: boolean;
+}
 interface ReturnToCityOptions {
   requireResultGate?: boolean;
 }
@@ -266,6 +269,7 @@ let pvpRoomList: PvpRoomListEntry[] = [];
 let activeOnlineRoomKind: PvpRoomKind = "duoBoss";
 let isCityArenaOnlineViewOpen = false;
 let isCityArenaQuestPanelOpen = false;
+let pendingManualArenaStartSelection: ArenaMenuSelection | undefined;
 let pvpDeadlineLocalTime: number | undefined;
 let pvpTimerInterval: number | undefined;
 let hasStarted = false;
@@ -625,6 +629,7 @@ function renderCurrentDom(): void {
     },
     onResultSequenceLockChange: setBattleResultSequenceLocked,
   });
+  dom.gameScreen.classList.toggle("battle-screen--online-duo-boss", gameMode === "pvp" && pvpSnapshot?.roomKind === "duoBoss");
 }
 
 function setBattleResultSequenceLocked(locked: boolean): void {
@@ -2108,6 +2113,8 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   button.disabled = Boolean(bossDisabledTitle);
   button.title = bossDisabledTitle;
   button.dataset.cityArenaBotButton = "true";
+  button.dataset.cityArenaBossId = boss.id;
+  button.dataset.cityArenaBossMode = "solo";
   button.dataset.cityArenaBossTierId = `${boss.tierId}`;
   button.dataset.cityArenaEnergyCost = `${ARENA_BOSS_ENERGY_COST}`;
   syncCityArenaBossTitle(name, "Boss", ARENA_BOSS_ENERGY_COST);
@@ -2145,6 +2152,8 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   duoBotButton.textContent = "BOT";
   duoBotButton.title = "Fight this boss with an AI helper.";
   duoBotButton.dataset.cityArenaBotButton = "true";
+  duoBotButton.dataset.cityArenaBossId = boss.id;
+  duoBotButton.dataset.cityArenaBossMode = "duo-bot";
   duoBotButton.dataset.cityArenaBossTierId = `${boss.tierId}`;
   duoBotButton.dataset.cityArenaEnergyCost = `${ARENA_DUO_BOSS_ENERGY_COST}`;
   duoBotButton.dataset.defaultTitle = "Fight this boss with an AI helper.";
@@ -2156,6 +2165,8 @@ function createCityArenaBossButton(boss: ArenaBossDefinition): HTMLElement {
   duoOnlineButton.textContent = "ONLINE";
   duoOnlineButton.title = "Create an online help request.";
   duoOnlineButton.dataset.cityArenaBotButton = "true";
+  duoOnlineButton.dataset.cityArenaBossId = boss.id;
+  duoOnlineButton.dataset.cityArenaBossMode = "duo-online";
   duoOnlineButton.dataset.cityArenaBossTierId = `${boss.tierId}`;
   duoOnlineButton.dataset.cityArenaEnergyCost = `${ARENA_DUO_BOSS_ENERGY_COST}`;
   duoOnlineButton.dataset.defaultTitle = "Create an online help request.";
@@ -2310,7 +2321,10 @@ function syncCityArenaBotControls(): void {
 
     button.disabled = disabled;
     button.title = title;
-    syncCityArenaNoEnergyPanel(button.closest<HTMLElement>(".city-arena-menu__fight-row"), currentArenaEnergy < getArenaSelectionEnergyCost(selection));
+    syncCityArenaNoEnergyPanel(
+      button.closest<HTMLElement>(".city-arena-menu__fight-row"),
+      currentArenaEnergy < getArenaSelectionEnergyCost(selection) && !isPendingManualArenaStartSelection(selection),
+    );
   });
   getCityArenaRandomAutoRateTargets(tierId).forEach(({ button, selection }) => {
     if (!button) {
@@ -2335,9 +2349,87 @@ function syncCityArenaBotControls(): void {
   cityArenaBossList?.querySelectorAll<HTMLElement>(".city-arena-menu__boss-card").forEach((card) => {
     const bossButton = card.querySelector<HTMLButtonElement>(".city-arena-menu__boss");
     const energyCost = bossButton ? getCityArenaBotButtonEnergyCost(bossButton) : ARENA_BOSS_ENERGY_COST;
+    const isStartingThisBoss =
+      pendingManualArenaStartSelection?.kind === "boss" &&
+      Boolean(bossButton?.dataset.cityArenaBossId) &&
+      pendingManualArenaStartSelection.bossId === bossButton?.dataset.cityArenaBossId;
 
-    syncCityArenaNoEnergyPanel(card, currentArenaEnergy < energyCost);
+    syncCityArenaNoEnergyPanel(card, currentArenaEnergy < energyCost && !isStartingThisBoss);
   });
+  syncCityArenaManualStartIndicators();
+}
+
+function setPendingManualArenaStartSelection(selection?: ArenaMenuSelection): void {
+  pendingManualArenaStartSelection = selection;
+  cityArenaMenu?.classList.toggle("city-arena-menu--start-pending", Boolean(selection));
+  syncCityArenaBotControls();
+}
+
+function isPendingManualArenaStartSelection(selection?: ArenaMenuSelection): boolean {
+  if (!pendingManualArenaStartSelection || !selection || pendingManualArenaStartSelection.kind !== selection.kind) {
+    return false;
+  }
+
+  if (selection.kind === "random" && pendingManualArenaStartSelection.kind === "random") {
+    return pendingManualArenaStartSelection.tierId === selection.tierId && pendingManualArenaStartSelection.difficultyId === selection.difficultyId;
+  }
+
+  if (selection.kind === "boss" && pendingManualArenaStartSelection.kind === "boss") {
+    return pendingManualArenaStartSelection.bossId === selection.bossId && Boolean(pendingManualArenaStartSelection.duo) === Boolean(selection.duo);
+  }
+
+  return false;
+}
+
+function syncCityArenaManualStartIndicators(): void {
+  const buttons = [
+    cityArenaEasyButton,
+    cityArenaRandomButton,
+    cityArenaHardButton,
+    ...Array.from(cityArenaBossList?.querySelectorAll<HTMLButtonElement>("[data-city-arena-bot-button]") ?? []),
+  ].filter((button): button is HTMLButtonElement => Boolean(button));
+
+  buttons.forEach((button) => syncCityArenaManualStartButton(button, isCityArenaManualStartButton(button)));
+}
+
+function syncCityArenaManualStartButton(button: HTMLButtonElement, starting: boolean): void {
+  button.classList.toggle("city-arena-menu__bot-button--starting", starting);
+  button.toggleAttribute("aria-busy", starting);
+
+  const label = Array.from(button.children).find((child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains("city-arena-menu__start-label"));
+
+  if (!starting) {
+    label?.remove();
+    return;
+  }
+
+  const nextLabel = label ?? document.createElement("span");
+
+  nextLabel.className = "city-arena-menu__start-label";
+  nextLabel.textContent = arenaEnergySpendPending ? "SPENDING ENERGY" : "ENTERING ARENA";
+  if (!label) {
+    button.append(nextLabel);
+  }
+}
+
+function isCityArenaManualStartButton(button: HTMLButtonElement): boolean {
+  const pendingSelection = pendingManualArenaStartSelection;
+
+  if (!pendingSelection) {
+    return false;
+  }
+
+  if (pendingSelection.kind === "random") {
+    return (
+      (pendingSelection.difficultyId === "easy" && button === cityArenaEasyButton) ||
+      (pendingSelection.difficultyId === DEFAULT_ARENA_DIFFICULTY_ID && button === cityArenaRandomButton) ||
+      (pendingSelection.difficultyId === "hard" && button === cityArenaHardButton)
+    );
+  }
+
+  const bossMode = pendingSelection.duo ? "duo-bot" : "solo";
+
+  return button.dataset.cityArenaBossId === pendingSelection.bossId && button.dataset.cityArenaBossMode === bossMode;
 }
 
 function getCityArenaRandomFightTargets(tierId: number): CityArenaAutoRateTarget[] {
@@ -2373,6 +2465,10 @@ function getCityArenaBotBlockingTitle(): string {
 
   if (arenaEnergySpendPending) {
     return "Spending arena energy...";
+  }
+
+  if (pendingManualArenaStartSelection) {
+    return "Entering arena...";
   }
 
   if (cityArenaAutoFightPending) {
@@ -3105,6 +3201,7 @@ function openCityArenaMenu(): void {
 }
 
 function closeCityArenaMenu(): void {
+  setPendingManualArenaStartSelection();
   cityArenaMenu?.setAttribute("hidden", "");
   cityArenaMenu?.classList.remove("city-arena-menu--battle-transition");
   setCityArenaQuestPanelOpen(false);
@@ -3149,9 +3246,12 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
     }
   }
 
-  const hasEnergy = await spendArenaEnergyForSelectedArena(selection);
+  setPendingManualArenaStartSelection(selection);
+  recordArenaEntryActivity("arena-entry-energy-spend");
+  const hasEnergy = await spendArenaEnergyForSelectedArena(selection, { renderMenuOnSuccess: false });
 
   if (!hasEnergy) {
+    setPendingManualArenaStartSelection();
     return;
   }
 
@@ -3161,7 +3261,10 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   activeArenaSelection = selection;
   const initialState = createCombatStateForSelection(selection);
 
-  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel", releaseCityPreview: true });
+  recordArenaEntryActivity("arena-entry-transition");
+  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel", releaseCityPreview: true }).finally(() => {
+    setPendingManualArenaStartSelection();
+  });
 }
 
 async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<void> {
@@ -3334,7 +3437,7 @@ function getArenaSelectionEnergyCost(selection: ArenaMenuSelection): number {
   return selection.duo ? ARENA_DUO_BOSS_ENERGY_COST : ARENA_BOSS_ENERGY_COST;
 }
 
-async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection): Promise<boolean> {
+async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection, options: ArenaEnergySpendOptions = {}): Promise<boolean> {
   if (arenaEnergySpendPending) {
     return false;
   }
@@ -3373,7 +3476,12 @@ async function spendArenaEnergyForSelectedArena(selection: ArenaMenuSelection): 
     }
 
     syncHeroRuntimeState();
-    renderCityArenaMenu();
+    if (options.renderMenuOnSuccess ?? true) {
+      renderCityArenaMenu();
+    } else {
+      syncCityArenaMenuEnergy();
+      syncCityArenaBotControls();
+    }
     return true;
   } catch (error) {
     if (error instanceof GladiatorSaveError && error.arenaEnergy) {
