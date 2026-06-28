@@ -1359,6 +1359,56 @@ function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
 const CITY_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
 const ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
 const WEBGL_RECOVERY_OVERLAY_ID = "webglRecoveryOverlay";
+const WEBGL_RECOVERY_REPORT_STORAGE_KEY = "dust-arena-webgl-crash-report";
+
+interface WebglActivitySnapshot {
+  action: string;
+  screen?: string;
+  shop?: string;
+  itemIds?: readonly string[];
+  price?: number;
+  heroLevel?: number;
+  heroGold?: number;
+  purchaseBurstCount?: number;
+  productCount?: number;
+  itemCount?: number;
+  at: string;
+}
+
+interface WebglRecoveryReport {
+  version: 1;
+  at: string;
+  source: string;
+  statusMessage?: string;
+  href: string;
+  userAgent: string;
+  visibilityState: DocumentVisibilityState;
+  window: {
+    width: number;
+    height: number;
+    devicePixelRatio: number;
+  };
+  canvas?: {
+    width: number;
+    height: number;
+    clientWidth: number;
+    clientHeight: number;
+  };
+  renderer: {
+    type: string;
+    actualFps?: number;
+  };
+  activity?: WebglActivitySnapshot;
+}
+
+let latestWebglActivity: WebglActivitySnapshot | undefined;
+
+export function recordWebglActivity(activity: Omit<WebglActivitySnapshot, "at">): void {
+  latestWebglActivity = {
+    ...activity,
+    at: new Date().toISOString(),
+  };
+}
 
 interface PhaserGameSize {
   width: number;
@@ -1376,7 +1426,10 @@ function bindWebglRecoveryOverlay(game: Phaser.Game, source: string): void {
 
     canvas.addEventListener("webglcontextlost", (event) => {
       event.preventDefault();
-      console.warn(`[webgl] Context lost in ${source}. Showing recovery overlay.`, event);
+      const report = createWebglRecoveryReport(game, source, event);
+
+      persistWebglRecoveryReport(report);
+      console.warn(`[webgl] Context lost in ${source}. Showing recovery overlay.`, event, report);
       showWebglRecoveryOverlay();
     }, { once: true });
   };
@@ -1387,6 +1440,66 @@ function bindWebglRecoveryOverlay(game: Phaser.Game, source: string): void {
   }
 
   window.requestAnimationFrame(bindCanvas);
+}
+
+function createWebglRecoveryReport(game: Phaser.Game, source: string, event: Event): WebglRecoveryReport {
+  const canvas = game.canvas;
+
+  return {
+    version: 1,
+    at: new Date().toISOString(),
+    source,
+    statusMessage: getWebglContextStatusMessage(event),
+    href: window.location.href,
+    userAgent: window.navigator.userAgent,
+    visibilityState: document.visibilityState,
+    window: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      devicePixelRatio: window.devicePixelRatio,
+    },
+    canvas: canvas
+      ? {
+          width: canvas.width,
+          height: canvas.height,
+          clientWidth: canvas.clientWidth,
+          clientHeight: canvas.clientHeight,
+        }
+      : undefined,
+    renderer: {
+      type: getPhaserRendererType(game),
+      actualFps: Number.isFinite(game.loop.actualFps) ? Math.round(game.loop.actualFps) : undefined,
+    },
+    activity: latestWebglActivity,
+  };
+}
+
+function getWebglContextStatusMessage(event: Event): string | undefined {
+  const statusMessage = (event as WebGLContextEvent).statusMessage;
+
+  return typeof statusMessage === "string" && statusMessage.trim() ? statusMessage : undefined;
+}
+
+function getPhaserRendererType(game: Phaser.Game): string {
+  const renderer = game.renderer as { type?: number | string };
+
+  if (renderer.type === Phaser.WEBGL) {
+    return "webgl";
+  }
+
+  if (renderer.type === Phaser.CANVAS) {
+    return "canvas";
+  }
+
+  return typeof renderer.type === "string" ? renderer.type : "unknown";
+}
+
+function persistWebglRecoveryReport(report: WebglRecoveryReport): void {
+  try {
+    window.localStorage.setItem(WEBGL_RECOVERY_REPORT_STORAGE_KEY, JSON.stringify(report));
+  } catch {
+    // Embedded browsers can block storage; the recovery overlay is still useful.
+  }
 }
 
 function showWebglRecoveryOverlay(): void {

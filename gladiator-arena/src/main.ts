@@ -5,6 +5,7 @@ import {
   mountHeroPortraitPreview,
   prewarmArenaAssetsForBrowserCache,
   prewarmCityAssetsForBrowserCache,
+  recordWebglActivity,
   setPlayerBodyScaleBonus,
   setPlayerAppearance,
   setPlayerEquipment,
@@ -304,10 +305,16 @@ const AUTO_BATTLE_PANEL_TRANSITION_MS = 320;
 const AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS = 20;
 const AUTO_FIGHT_MAX_TURNS = 300;
 const AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER = 0.5;
+const SHOP_EQUIPMENT_VISUAL_SYNC_DELAY_MS = 260;
+const SHOP_PURCHASE_BURST_WINDOW_MS = 2500;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
 let isArenaTransitionRunning = false;
+let pendingShopEquipmentVisualSync: { equipment: HeroEquipment; updatePortrait: boolean } | undefined;
+let shopEquipmentVisualSyncTimer: number | undefined;
+let shopPurchaseBurstStartedAt = 0;
+let shopPurchaseBurstCount = 0;
 let isArenaEntryLoading = false;
 let isArenaEntryTransitionPlaying = false;
 let arenaEntryToken = 0;
@@ -1566,6 +1573,7 @@ function focusCityShop(mode: "armory" | "weaponShop" | "magicShop"): void {
 }
 
 function focusCityDefaultFromShop(): void {
+  flushShopEquipmentVisualSync();
   cityScene?.focusDefault(true);
 }
 
@@ -3580,6 +3588,7 @@ function unmountArenaScene(): void {
 function startGame(options: StartGameOptions = {}): void {
   gameMode = options.mode ?? "pve";
   resetBattleInteractionLocksForArenaStart();
+  flushShopEquipmentVisualSync();
   const initialState = gameMode === "pvp" ? pvpSnapshot?.state ?? options.initialState : options.initialState;
   syncRestartButtonVisibility(gameMode !== "pvp");
   syncPvpTurnTimer();
@@ -3643,6 +3652,7 @@ async function startGameWithCityTransition(options: StartGameWithCityTransitionO
 
   isArenaTransitionRunning = true;
   dom.startButton.disabled = true;
+  flushShopEquipmentVisualSync();
   clearShopPreview();
   void prewarmArenaAssetsForBrowserCache(startOptions.initialState?.encounter ?? state.encounter);
 
@@ -3764,6 +3774,74 @@ function updatePendingEquipmentHints(keepItemId: (itemId: HeroItemId) => boolean
   return true;
 }
 
+function scheduleShopEquipmentVisualSync(equipment: HeroEquipment, updatePortrait: boolean): void {
+  pendingShopEquipmentVisualSync = {
+    equipment: { ...equipment },
+    updatePortrait: Boolean(pendingShopEquipmentVisualSync?.updatePortrait || updatePortrait),
+  };
+
+  if (shopEquipmentVisualSyncTimer !== undefined) {
+    window.clearTimeout(shopEquipmentVisualSyncTimer);
+  }
+
+  shopEquipmentVisualSyncTimer = window.setTimeout(() => {
+    shopEquipmentVisualSyncTimer = undefined;
+    flushShopEquipmentVisualSync();
+  }, SHOP_EQUIPMENT_VISUAL_SYNC_DELAY_MS);
+}
+
+function flushShopEquipmentVisualSync(): void {
+  const pendingSync = pendingShopEquipmentVisualSync;
+
+  if (!pendingSync) {
+    return;
+  }
+
+  pendingShopEquipmentVisualSync = undefined;
+  if (shopEquipmentVisualSyncTimer !== undefined) {
+    window.clearTimeout(shopEquipmentVisualSyncTimer);
+    shopEquipmentVisualSyncTimer = undefined;
+  }
+
+  setPlayerEquipment(pendingSync.equipment);
+  if (pendingSync.updatePortrait) {
+    heroPortraitPreview?.setEquipment(pendingSync.equipment);
+  }
+}
+
+function recordCityShopProductActivity(action: string, product: CityShopProduct, purchaseBurstCount?: number): void {
+  recordWebglActivity({
+    screen: "city-shop",
+    action,
+    shop: getCityShopProductKind(product),
+    itemIds: [...product.itemIds],
+    price: product.price,
+    heroLevel: hero.level,
+    heroGold: hero.gold,
+    purchaseBurstCount,
+  });
+}
+
+function getNextShopPurchaseBurstCount(): number {
+  const now = Date.now();
+
+  if (now - shopPurchaseBurstStartedAt > SHOP_PURCHASE_BURST_WINDOW_MS) {
+    shopPurchaseBurstStartedAt = now;
+    shopPurchaseBurstCount = 0;
+  }
+
+  shopPurchaseBurstCount += 1;
+  return shopPurchaseBurstCount;
+}
+
+function getCityShopProductKind(product: CityShopProduct): "armory" | "weapon" | "magic" {
+  if (isMagicShopProduct(product)) {
+    return "magic";
+  }
+
+  return isArmoryShopProduct(product) ? "armory" : "weapon";
+}
+
 function handleShopBuy(product: CityShopProduct): void {
   const isSealedEquipmentPurchase =
     isEquipmentShopProduct(product) &&
@@ -3776,6 +3854,10 @@ function handleShopBuy(product: CityShopProduct): void {
 
   cancelShopPreviewPrewarm();
   const previousHero = hero;
+  const purchaseBurstCount = getNextShopPurchaseBurstCount();
+
+  recordCityShopProductActivity("shop-buy", product, purchaseBurstCount);
+
   const nextHero = buyAndEquipHeroItems(previousHero, {
     itemIds: product.itemIds,
     price: product.price,
@@ -3787,10 +3869,7 @@ function handleShopBuy(product: CityShopProduct): void {
 
   hero = nextHero;
   syncPlayerCityBodyScale();
-  setPlayerEquipment(hero.equipment);
-  if (!areHeroItemsConsumable(product.itemIds)) {
-    heroPortraitPreview?.setEquipment(hero.equipment);
-  }
+  scheduleShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
   renderCityHero();
   syncShopHeroStateForProduct(product, previousHero);
   cityHeroEquipmentMenu.render();
@@ -3992,6 +4071,7 @@ function handleShopPreview(product: ArmoryProduct | WeaponProduct): void {
     return;
   }
 
+  recordCityShopProductActivity("shop-preview", product);
   previewShopEquipment(createShopPreviewEquipment(product.itemIds));
 }
 
@@ -4006,6 +4086,18 @@ function handleShopProductPrewarm(products: readonly (ArmoryProduct | WeaponProd
   const itemIds = products
     .filter((product) => hasHeroEquipmentPreviewItems(product.itemIds) && !isShopProductSealed(hero, product.itemIds, product.rarity))
     .flatMap((product) => product.itemIds);
+
+  if (products.length > 0) {
+    recordWebglActivity({
+      screen: "city-shop",
+      action: "shop-prewarm",
+      shop: "equipment",
+      heroLevel: hero.level,
+      heroGold: hero.gold,
+      productCount: products.length,
+      itemCount: itemIds.length,
+    });
+  }
 
   scheduleShopPreviewPrewarm(itemIds);
 }
