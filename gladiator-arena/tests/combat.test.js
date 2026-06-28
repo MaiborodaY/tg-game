@@ -257,6 +257,30 @@ test("axes use heavier weapon damage tiers and double strength melee damage scal
   assert.equal(resolveAxeAttack("heavy").lastPlayerDamage, 20);
 });
 
+test("action preview damage mirrors hit damage before block rolls", () => {
+  const state = combat.freshState();
+
+  state.player.weaponClass = "mace";
+  state.player.damageBonus = 4;
+  state.enemy.armor = 6;
+  state.enemy.maxArmor = 6;
+  setConsistentDistance(state, combat.MELEE_RANGE);
+
+  assert.equal(combat.getActionPreviewDamage(state, "light"), 5);
+
+  state.enemy.armor = 0;
+
+  assert.equal(combat.getActionPreviewDamage(state, "light"), 4);
+
+  state.player.shurikenDamage = 7;
+  state.player.fireballScrollCount = 1;
+  state.player.fireballDamage = 12;
+
+  assert.equal(combat.getActionPreviewDamage(state, "shuriken"), 7);
+  assert.equal(combat.getActionPreviewDamage(state, "fireball"), 12);
+  assert.equal(combat.getActionPreviewDamage(state, "rest"), undefined);
+});
+
 test("spears extend active melee reach", () => {
   const state = combat.freshState();
 

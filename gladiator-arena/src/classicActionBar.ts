@@ -19,6 +19,7 @@ import {
   getFighterSpellbookScrollCount,
   getFighterShurikenCount,
   getFighterClinchRange,
+  getActionPreviewDamage,
   getActionTitle,
   isFighterInClinchRange,
   isPlayerExhausted,
@@ -37,6 +38,7 @@ import {
   shouldEnableSpellbookButton,
   shouldShowSpellbookButton,
 } from "./spellbookMenu";
+import { getPlayerSettings, setPlayerActionDamagePreviewEnabled, subscribePlayerSettings } from "./settingsMenu";
 
 type ClassicActionSlotTuning = Record<ClassicActionWheelMode, Record<ActionButtonOffsetKey, ClassicActionButtonSlotTuning>>;
 type TuningProvider = () => ActionTokenTuning & { classicActionButtonSlots?: ClassicActionSlotTuning };
@@ -52,6 +54,7 @@ const CLASSIC_WHEEL_TURN_MS = 520;
 const CLASSIC_WHEEL_BASE_DIAMETER = 420;
 const CLASSIC_WHEEL_SCREEN_PADDING_X = 12;
 const CLASSIC_CHANCE_BADGE_SCREEN_OFFSET_Y = -40;
+const CLASSIC_DAMAGE_BADGE_SCREEN_OFFSET_Y = -20;
 const CLASSIC_COST_BADGE_SCREEN_OFFSET_Y = 32;
 const CLASSIC_WHEEL_RANGE_MODES: ClassicWheelRangeMode[] = ["far", "near", "melee", "clinch", "bow"];
 
@@ -66,6 +69,7 @@ interface ClassicButtonLayer {
   element: HTMLDivElement;
   buttons: Map<ActionId, HTMLButtonElement>;
   chanceBadges: Map<ActionId, HTMLSpanElement>;
+  damageBadges: Map<ActionId, HTMLSpanElement>;
   costBadges: Map<ActionId, HTMLSpanElement>;
   mode?: ClassicWheelMode;
   angle: number;
@@ -134,6 +138,7 @@ export function mountClassicActionBar(
   let lastState: CombatState | undefined;
   const getControlledActor = (): CombatActor => options.getControlledActor?.() ?? "player";
   const spellbookMenu = createSpellbookMenu(host, () => lastState, onAction, getControlledActor);
+  const damagePreviewToggle = createClassicDamagePreviewToggle();
   const handleActionButtonClick = (actionId: ActionId, button: HTMLButtonElement): void => {
     button.dispatchEvent(new CustomEvent("arena-action-click", { bubbles: true, detail: { actionId, disabled: button.disabled } }));
 
@@ -162,9 +167,23 @@ export function mountClassicActionBar(
   wheelShadow.className = "classic-action-bar__wheel-shadow";
   wheel.className = "classic-action-bar__wheel";
   layers.forEach((layer) => wheel.append(layer.element));
-  actionBarRoot.append(wheelShadow, wheel);
+  actionBarRoot.append(wheelShadow, wheel, damagePreviewToggle);
   syncWheelFitScale();
+  syncDamagePreviewToggle();
   window.addEventListener("resize", syncWheelFitScale);
+  const unsubscribePlayerSettings = subscribePlayerSettings(() => {
+    syncDamagePreviewToggle();
+
+    if (lastState) {
+      sync(lastState);
+    }
+  });
+
+  damagePreviewToggle.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setPlayerActionDamagePreviewEnabled(!getPlayerSettings().showActionDamagePreview);
+  });
 
   function sync(state: CombatState): void {
     const tuning = getTuning?.();
@@ -174,8 +193,10 @@ export function mountClassicActionBar(
     const wheelMode = getClassicWheelMode(state, controlledActor, previewWheelMode);
     const isBattleActive = state.result === "playing";
     const hasPlayerControl = isBattleActive && isControlledActorTurn(state, controlledActor);
+    const showDamagePreview = getPlayerSettings().showActionDamagePreview;
 
     syncWheelFitScale();
+    syncDamagePreviewToggle(isBattleActive, showDamagePreview);
 
     if (!activeLayer.mode) {
       activeLayer.mode = wheelMode;
@@ -207,6 +228,7 @@ export function mountClassicActionBar(
         tuning,
         buttonScale,
         isBattleActive,
+        showDamagePreview,
         layer === activeLayer && hasPlayerControl && !isWheelTurning,
         controlledActor,
       );
@@ -219,6 +241,7 @@ export function mountClassicActionBar(
     tuning: ReturnType<TuningProvider> | undefined,
     buttonScale: number,
     shouldShowButtons: boolean,
+    showDamagePreview: boolean,
     isInteractiveLayer: boolean,
     controlledActor: CombatActor,
   ): void {
@@ -231,13 +254,14 @@ export function mountClassicActionBar(
     for (const [actionId, button] of layer.buttons) {
       const icon = button.querySelector<HTMLElement>(".action-arc__icon");
       const chanceBadge = layer.chanceBadges.get(actionId);
+      const damageBadge = layer.damageBadges.get(actionId);
       const costBadge = layer.costBadges.get(actionId);
       const slot = visibleSlots.get(actionId);
       const isVisible = shouldShowButtons && Boolean(slot);
       const isDimmed = isVisible && !isInteractiveLayer;
       const projectedSlot = slot ? projectSlotForWheelAngle(slot, layer.angle) : undefined;
 
-      if (!icon || !chanceBadge || !costBadge) {
+      if (!icon || !chanceBadge || !damageBadge || !costBadge) {
         continue;
       }
 
@@ -246,6 +270,17 @@ export function mountClassicActionBar(
       button.style.setProperty("--classic-slot-rotation", `${formatCssNumber(projectedSlot?.rotation ?? 0)}deg`);
       syncActionTokenButton(button, icon, actionId, tuning, buttonScale, getActionTokenIconUrl(actionId, state, controlledActor));
       const hitChanceLabel = syncClassicActionChanceBadge(chanceBadge, actionId, state, controlledActor, projectedSlot, isVisible, wheelRotationAngle);
+      const damageLabel = syncClassicActionDamageBadge(
+        damageBadge,
+        actionId,
+        state,
+        controlledActor,
+        projectedSlot,
+        isVisible,
+        isDimmed,
+        showDamagePreview,
+        wheelRotationAngle,
+      );
       const costLabel = syncClassicActionCostBadge(costBadge, actionId, state, controlledActor, projectedSlot, isVisible, isDimmed, wheelRotationAngle, buttonScale);
       button.disabled = !isInteractiveLayer || !isVisible || !isClassicActionButtonEnabled(state, actionId, controlledActor);
       button.tabIndex = isVisible && isInteractiveLayer ? 0 : -1;
@@ -259,6 +294,7 @@ export function mountClassicActionBar(
         isVisible && isInteractiveLayer && actionId === "lunge" && !button.disabled && doesLungeReachTarget(state, controlledActor),
       );
       chanceBadge.classList.toggle("classic-action-bar__chance--dimmed", isDimmed);
+      damageBadge.classList.toggle("classic-action-bar__damage--dimmed", isDimmed);
 
       const controlledFighter = getClassicActorFighter(state, controlledActor) ?? state.player;
       const showSpellbook = isSpellbookButtonAction(actionId) && shouldShowSpellbookButton(state, controlledActor);
@@ -266,8 +302,11 @@ export function mountClassicActionBar(
       const detail =
         showSpellbook ? getSpellbookButtonDetail() : actions[actionId].detail;
 
-      button.setAttribute("aria-label", `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`);
-      button.title = `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}`;
+      button.setAttribute(
+        "aria-label",
+        `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}${damageLabel ? ` damage ${damageLabel}` : ""}`,
+      );
+      button.title = `${title} ${detail}${costLabel ? ` stamina ${costLabel}` : ""}${hitChanceLabel ? ` hit ${hitChanceLabel}` : ""}${damageLabel ? ` damage ${damageLabel}` : ""}`;
     }
 
     spellbookMenu.sync();
@@ -331,10 +370,19 @@ export function mountClassicActionBar(
 
       window.removeEventListener("arena-debug-tuning-change", syncFromDebugTuning);
       window.removeEventListener("resize", syncWheelFitScale);
+      unsubscribePlayerSettings();
       spellbookMenu.destroy();
       actionBarRoot.replaceChildren();
     },
   };
+
+  function syncDamagePreviewToggle(isBattleActive = lastState?.result === "playing", showDamagePreview = getPlayerSettings().showActionDamagePreview): void {
+    actionBarRoot.classList.toggle("classic-action-bar--damage-preview", showDamagePreview);
+    damagePreviewToggle.hidden = !isBattleActive;
+    damagePreviewToggle.classList.toggle("classic-action-bar__damage-toggle--active", showDamagePreview);
+    damagePreviewToggle.setAttribute("aria-pressed", String(showDamagePreview));
+    damagePreviewToggle.title = showDamagePreview ? "Hide damage numbers" : "Show damage numbers";
+  }
 }
 
 function syncClassicWheelFitScale(root: HTMLElement): void {
@@ -485,6 +533,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId, button: HTMLBut
   const element = document.createElement("div");
   const buttons = new Map<ActionId, HTMLButtonElement>();
   const chanceBadges = new Map<ActionId, HTMLSpanElement>();
+  const damageBadges = new Map<ActionId, HTMLSpanElement>();
   const costBadges = new Map<ActionId, HTMLSpanElement>();
 
   element.className = "classic-action-bar__layer";
@@ -493,6 +542,7 @@ function createClassicButtonLayer(onAction: (actionId: ActionId, button: HTMLBut
     const button = document.createElement("button");
     const icon = document.createElement("span");
     const chanceBadge = document.createElement("span");
+    const damageBadge = document.createElement("span");
     const costBadge = createActionCostBadgeElement();
 
     button.type = "button";
@@ -503,14 +553,19 @@ function createClassicButtonLayer(onAction: (actionId: ActionId, button: HTMLBut
     chanceBadge.className = "action-arc__chance classic-action-bar__chance";
     chanceBadge.hidden = true;
     chanceBadge.setAttribute("aria-hidden", "true");
+    damageBadge.className = "classic-action-bar__damage";
+    damageBadge.hidden = true;
+    damageBadge.setAttribute("aria-hidden", "true");
     costBadge.classList.add("classic-action-bar__cost");
     button.append(icon);
     button.addEventListener("click", () => onAction(actionId, button));
     buttons.set(actionId, button);
     chanceBadges.set(actionId, chanceBadge);
+    damageBadges.set(actionId, damageBadge);
     costBadges.set(actionId, costBadge);
     element.append(button);
     element.append(chanceBadge);
+    element.append(damageBadge);
     element.append(costBadge);
   }
 
@@ -518,9 +573,25 @@ function createClassicButtonLayer(onAction: (actionId: ActionId, button: HTMLBut
     element,
     buttons,
     chanceBadges,
+    damageBadges,
     costBadges,
     angle: 0,
   };
+}
+
+function createClassicDamagePreviewToggle(): HTMLButtonElement {
+  const button = document.createElement("button");
+  const icon = document.createElement("span");
+
+  button.type = "button";
+  button.className = "classic-action-bar__damage-toggle";
+  button.setAttribute("aria-label", "Toggle action damage numbers");
+  button.setAttribute("aria-pressed", "false");
+  icon.className = "classic-action-bar__damage-toggle-icon";
+  icon.setAttribute("aria-hidden", "true");
+  button.append(icon);
+
+  return button;
 }
 
 function syncClassicActionChanceBadge(
@@ -579,6 +650,38 @@ function syncClassicActionCostBadge(
   badge.style.setProperty("--classic-cost-y", `${formatCssNumber(slot.y + screenOffset.y)}px`);
   badge.style.setProperty("--classic-cost-counter-rotation", `${formatCssNumber(-wheelRotationAngle)}deg`);
   badge.classList.toggle("classic-action-bar__cost--dimmed", isDimmed);
+  return label;
+}
+
+function syncClassicActionDamageBadge(
+  badge: HTMLSpanElement,
+  actionId: ActionId,
+  state: CombatState,
+  actor: CombatActor,
+  slot: ClassicActionSlot | undefined,
+  isVisible: boolean,
+  isDimmed: boolean,
+  showDamagePreview: boolean,
+  wheelRotationAngle: number,
+): string | undefined {
+  const damage = showDamagePreview ? getActionPreviewDamage(state, actionId, actor) : undefined;
+
+  if (!damage || !slot || !isVisible) {
+    badge.hidden = true;
+    badge.textContent = "";
+    badge.classList.remove("classic-action-bar__damage--dimmed");
+    return undefined;
+  }
+
+  const label = String(damage);
+  const screenOffset = projectPointForWheelAngle(0, CLASSIC_DAMAGE_BADGE_SCREEN_OFFSET_Y, wheelRotationAngle);
+
+  badge.hidden = false;
+  badge.textContent = label;
+  badge.style.setProperty("--classic-damage-x", `${formatCssNumber(slot.x + screenOffset.x)}px`);
+  badge.style.setProperty("--classic-damage-y", `${formatCssNumber(slot.y + screenOffset.y)}px`);
+  badge.style.setProperty("--classic-damage-counter-rotation", `${formatCssNumber(-wheelRotationAngle)}deg`);
+  badge.classList.toggle("classic-action-bar__damage--dimmed", isDimmed);
   return label;
 }
 

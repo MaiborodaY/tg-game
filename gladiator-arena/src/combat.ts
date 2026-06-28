@@ -588,6 +588,36 @@ export function isActionTargetRestVulnerable(state: CombatState, actionId: Actio
   return actions[actionId].blockChance !== undefined && getRestDefensePenalty(state, getDefaultDefenderActor(state, actor)) > 0;
 }
 
+export function getActionPreviewDamage(
+  state: CombatState,
+  actionId: ActionId,
+  actor: CombatActor = "player",
+  defenderActor = getDefaultDefenderActor(state, actor),
+): number | undefined {
+  const attacker = getCombatActorFighter(state, actor);
+  const defender = getDefenderForActor(state, actor, defenderActor);
+
+  if (!attacker || !defender) {
+    return undefined;
+  }
+
+  if (actionId === "fireball") {
+    return getFighterFireballScrollCount(attacker) > 0 ? getFighterFireballDamage(attacker) : undefined;
+  }
+
+  if (actionId === "scroll" || actionId === "ward" || actionId === "preciseStrike" || actionId === "doubleStrike" || actionId === "poison") {
+    return undefined;
+  }
+
+  const damage = getActionDamage(actionId, attacker);
+
+  if (damage <= 0) {
+    return undefined;
+  }
+
+  return applyWeaponArmorDamageBonus(actionId, attacker, defender, damage);
+}
+
 function getActionBlockChanceModifier(action: ActionConfig, attacker?: FighterState): number {
   const swordBlockChanceReduction = attacker && getFighterWeaponClass(attacker) === "sword" ? SWORD_BLOCK_CHANCE_REDUCTION[action.id] ?? 0 : 0;
   const axeBlockChancePenalty = attacker && getFighterWeaponClass(attacker) === "axe" ? AXE_BLOCK_CHANCE_PENALTY[action.id] ?? 0 : 0;

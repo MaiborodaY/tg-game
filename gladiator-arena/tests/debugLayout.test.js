@@ -9,6 +9,7 @@ const indexHtml = readFileSync(resolve(currentDir, "../index.html"), "utf8");
 const debugHtml = readFileSync(resolve(currentDir, "../debug.html"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
 const debugMainSource = readFileSync(resolve(currentDir, "../src/debugMain.ts"), "utf8");
+const classicActionBarSource = readFileSync(resolve(currentDir, "../src/classicActionBar.ts"), "utf8");
 const settingsMenuSource = readFileSync(resolve(currentDir, "../src/settingsMenu.ts"), "utf8");
 const hudTuningSource = readFileSync(resolve(currentDir, "../src/hudTuning.ts"), "utf8");
 const arenaLayoutSource = readFileSync(resolve(currentDir, "../src/arenaLayout.ts"), "utf8");
@@ -416,6 +417,23 @@ test("stat bar animations are a separate opt-in setting", () => {
   assert.equal(stylesSource.includes("body.arena-stat-bars-animated .classic-stat__fill::before"), true);
   assert.equal(stylesSource.includes("body.arena-stat-bars-animated .classic-stat__fill::after"), true);
   assert.equal(stylesSource.includes("body.arena-low-effects .classic-stat__fill::before"), false);
+});
+
+test("classic action bar can toggle action damage preview chips", () => {
+  assert.equal(settingsMenuSource.includes("showActionDamagePreview: false"), true);
+  assert.equal(settingsMenuSource.includes("setPlayerActionDamagePreviewEnabled"), true);
+  assert.equal(settingsMenuSource.includes("arena-action-damage-preview"), true);
+  assert.equal(settingsMenuSource.includes("PlayerSettingsChangeDetail"), true);
+  assert.equal(settingsMenuSource.includes("previousSettings"), true);
+  assert.equal(settingsMenuSource.includes("nextSettings"), true);
+  assert.equal(settingsMenuSource.includes("patch"), true);
+  assert.equal(classicActionBarSource.includes("classic-action-bar__damage-toggle"), true);
+  assert.equal(classicActionBarSource.includes("getActionPreviewDamage"), true);
+  assert.equal(classicActionBarSource.includes("syncClassicActionDamageBadge"), true);
+  assert.equal(arenaSceneSource.includes("function didPlayerLowEffectsChange"), true);
+  assert.equal(arenaSceneSource.includes("detail.previousSettings.lowEffects !== detail.nextSettings.lowEffects"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar__damage-toggle"), true);
+  assert.equal(stylesSource.includes(".classic-action-bar .classic-action-bar__damage"), true);
 });
 
 test("low effects simplify classic action bar compositing", () => {

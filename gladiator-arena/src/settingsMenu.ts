@@ -11,7 +11,14 @@ export interface PlayerSettings {
   vfxEnabled: boolean;
   shadowMode: PlayerShadowMode;
   hudMode: PlayerHudMode;
+  showActionDamagePreview: boolean;
   showFps: boolean;
+}
+
+export interface PlayerSettingsChangeDetail {
+  previousSettings: PlayerSettings;
+  nextSettings: PlayerSettings;
+  patch: Partial<PlayerSettings>;
 }
 
 const storageKey = "dust-arena-player-settings";
@@ -26,6 +33,7 @@ const defaultSettings: PlayerSettings = {
   vfxEnabled: true,
   shadowMode: "low",
   hudMode: DEFAULT_PLAYER_HUD_MODE,
+  showActionDamagePreview: false,
   showFps: false,
 };
 let cachedSettings: PlayerSettings | undefined;
@@ -173,10 +181,20 @@ export function getPlayerSettings(): PlayerSettings {
   return cachedSettings;
 }
 
-export function subscribePlayerSettings(listener: () => void): () => void {
-  window.addEventListener(settingsChangedEvent, listener);
+export function subscribePlayerSettings(listener: (detail: PlayerSettingsChangeDetail) => void): () => void {
+  const handleSettingsChange = (event: Event) => {
+    const detail = (event as CustomEvent<PlayerSettingsChangeDetail>).detail;
 
-  return () => window.removeEventListener(settingsChangedEvent, listener);
+    listener(detail ?? { previousSettings: getPlayerSettings(), nextSettings: getPlayerSettings(), patch: {} });
+  };
+
+  window.addEventListener(settingsChangedEvent, handleSettingsChange);
+
+  return () => window.removeEventListener(settingsChangedEvent, handleSettingsChange);
+}
+
+export function setPlayerActionDamagePreviewEnabled(showActionDamagePreview: boolean): void {
+  updateSettings({ showActionDamagePreview });
 }
 
 function setMenuOpen(button: HTMLButtonElement, panel: HTMLElement, open: boolean): void {
@@ -253,15 +271,17 @@ function applySettings(settings: PlayerSettings): void {
   document.body.classList.toggle("arena-stat-bars-animated", settings.statBarAnimations);
   document.body.classList.toggle("arena-hud-classic", settings.hudMode === "classic");
   document.body.classList.toggle("arena-hud-immersive", settings.hudMode === "immersive");
+  document.body.classList.toggle("arena-action-damage-preview", settings.showActionDamagePreview);
 }
 
 function updateSettings(patch: Partial<PlayerSettings>): void {
-  const nextSettings = normalizeSettings({ ...getPlayerSettings(), ...patch });
+  const previousSettings = getPlayerSettings();
+  const nextSettings = normalizeSettings({ ...previousSettings, ...patch });
 
   cachedSettings = nextSettings;
   saveSettings(nextSettings);
   applySettings(nextSettings);
-  window.dispatchEvent(new CustomEvent(settingsChangedEvent));
+  window.dispatchEvent(new CustomEvent<PlayerSettingsChangeDetail>(settingsChangedEvent, { detail: { previousSettings, nextSettings, patch } }));
 }
 
 function loadSettings(): PlayerSettings {
@@ -300,6 +320,7 @@ function normalizeSettings(input: Partial<PlayerSettings>): PlayerSettings {
     vfxEnabled: typeof input.vfxEnabled === "boolean" ? input.vfxEnabled : defaultSettings.vfxEnabled,
     shadowMode: normalizeShadowMode(input),
     hudMode: isPlayerHudMode(input.hudMode) ? input.hudMode : defaultSettings.hudMode,
+    showActionDamagePreview: typeof input.showActionDamagePreview === "boolean" ? input.showActionDamagePreview : defaultSettings.showActionDamagePreview,
     showFps: typeof input.showFps === "boolean" ? input.showFps : defaultSettings.showFps,
   };
 }

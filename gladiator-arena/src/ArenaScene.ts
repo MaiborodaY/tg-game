@@ -213,7 +213,7 @@ import {
   type WeaponEnchantGlowTuning,
 } from "./debugTuning";
 import { emitDebugCharacterEquipmentDelta, emitDebugCharacterEquipmentSelect } from "./debugCharacterEquipmentBridge";
-import { getPlayerSettings, subscribePlayerSettings, type PlayerSettings } from "./settingsMenu";
+import { getPlayerSettings, subscribePlayerSettings, type PlayerSettings, type PlayerSettingsChangeDetail } from "./settingsMenu";
 import { getStageLayout } from "./stageLayout";
 
 type FighterPart = Phaser.GameObjects.GameObject & {
@@ -1354,6 +1354,10 @@ function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig {
 
 function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
   return getPlayerSettings().smoothRendering ? PHASER_SMOOTH_RENDER_CONFIG : PHASER_SHARP_RENDER_CONFIG;
+}
+
+function didPlayerLowEffectsChange(detail: PlayerSettingsChangeDetail): boolean {
+  return detail.previousSettings.lowEffects !== detail.nextSettings.lowEffects;
 }
 
 const CITY_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
@@ -2526,7 +2530,11 @@ export class ArenaScene extends Phaser.Scene {
     this.unsubscribePlayerAppearance = subscribePlayerAppearanceChanges((appearance) => {
       void ensurePaperDollAppearanceAssetsLoaded(this, [appearance]).then(() => syncPaperDollAppearanceState(this.visuals?.player.paperDollRig, appearance));
     });
-    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+    this.unsubscribePlayerSettings = subscribePlayerSettings((detail) => {
+      if (!didPlayerLowEffectsChange(detail)) {
+        return;
+      }
+
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.visuals?.player, this.visuals?.helper, this.visuals?.enemy], () => {
         if (this.currentState) {
           renderScene(this, this.currentState);
@@ -3158,7 +3166,11 @@ class CityHeroScene extends Phaser.Scene {
     });
     this.unsubscribePlayerAppearance = subscribePlayerAppearanceChanges((appearance) => this.syncPlayerAppearance(appearance));
     this.unsubscribePlayerBodyScale = subscribePlayerBodyScaleChanges(() => this.syncFighterLayout());
-    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+    this.unsubscribePlayerSettings = subscribePlayerSettings((detail) => {
+      if (!didPlayerLowEffectsChange(detail)) {
+        return;
+      }
+
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => {
         if (this.fighter) {
           applyCityHeroLighting(this.fighter, this.cityLightingAmount);
@@ -4700,7 +4712,11 @@ export function mountHeroPortraitPreview(
       });
     });
   };
-  const unsubscribePlayerSettings = subscribePlayerSettings(() => refreshSnapshot(pendingEquipment, pendingAppearance, true));
+  const unsubscribePlayerSettings = subscribePlayerSettings((detail) => {
+    if (didPlayerLowEffectsChange(detail)) {
+      refreshSnapshot(pendingEquipment, pendingAppearance, true);
+    }
+  });
 
   refreshSnapshot();
 
@@ -4824,7 +4840,11 @@ class DebugCharacterScene extends Phaser.Scene {
     }
     this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
     this.unsubscribePlayerEquipment = subscribePlayerEquipmentChanges(({ changedSlots }) => this.syncPlayerEquipment(changedSlots));
-    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
+    this.unsubscribePlayerSettings = subscribePlayerSettings((detail) => {
+      if (!didPlayerLowEffectsChange(detail)) {
+        return;
+      }
+
       ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
     });
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleResize, this);
