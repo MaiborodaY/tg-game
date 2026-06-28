@@ -10090,6 +10090,10 @@ function getArenaEffectsLayerScale(target: Phaser.Scene): number {
   return Math.max(0.001, Math.abs(getArenaEffectsLayer(target)?.scaleX ?? 1));
 }
 
+function getArenaPopupFixedScreenScale(target: Phaser.Scene): number {
+  return getArenaScenePixelRatio(target) / getArenaEffectsLayerScale(target);
+}
+
 function createRemovedArmorSlotSprites(
   target: Phaser.Scene,
   fighter: FighterVisual,
@@ -13025,7 +13029,7 @@ function showRestZzzIconFromFighter(target: Phaser.Scene, fighter: FighterVisual
   const source = target.textures.get(REST_ZZZ_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
   const sourceWidth = Math.max(1, source?.width ?? 128);
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = getArenaPopupFixedScreenScale(target);
   const iconScale = (REST_ZZZ_ICON_SCREEN_SIZE / sourceWidth) * fixedScreenScale;
   const offsetX = (REST_ZZZ_SIDE_OFFSETS[spawnIndex % REST_ZZZ_SIDE_OFFSETS.length] ?? 0) / layerScale;
   const driftX = (REST_ZZZ_DRIFT_X[spawnIndex % REST_ZZZ_DRIFT_X.length] ?? 0) / layerScale;
@@ -13088,7 +13092,7 @@ function showBlockPopup(target: Phaser.Scene, x: number, y: number): void {
   }
 
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = getArenaPopupFixedScreenScale(target);
   const popupScale = getBlockPopupScale();
   const liftY = 42 / layerScale;
   const source = target.textures.get(DAMAGE_BLOCK_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
@@ -13127,7 +13131,7 @@ function showArmorAbsorbPopup(target: Phaser.Scene, x: number, y: number, amount
   }
 
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = getArenaPopupFixedScreenScale(target);
   const popupScale = getArmorAbsorbPopupScale();
   const source = target.textures.get(DAMAGE_ARMOR_ABSORB_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
   const sourceWidth = Math.max(1, source?.width ?? 256);
@@ -13167,7 +13171,7 @@ function showArmorBreakPopup(target: Phaser.Scene, x: number, y: number, amount:
   }
 
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = getArenaPopupFixedScreenScale(target);
   const popupScale = getArmorBreakPopupScale();
   const liftY = 44 / layerScale;
   const source = target.textures.get(DAMAGE_ARMOR_BREAK_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
@@ -13207,7 +13211,7 @@ function showPoisonDamagePopup(target: Phaser.Scene, x: number, y: number, amoun
   }
 
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = getArenaPopupFixedScreenScale(target);
   const popupScale = getDamagePopupScale();
   const liftY = 36 / layerScale;
   const source = target.textures.get(POISON_DAMAGE_POPUP_ICON_ASSET_KEY).getSourceImage() as { width?: number } | undefined;
@@ -13250,7 +13254,7 @@ function showRestRecoveryPopup(target: Phaser.Scene, x: number, y: number, healt
   }
 
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = getArenaPopupFixedScreenScale(target);
   const popupScale = debugTuning.popupScale;
   const endScale = fixedScreenScale * popupScale;
   const startScale = endScale * 0.76;
@@ -13325,7 +13329,7 @@ function setRestRecoveryPopupRow(
 function showDamagePopup(target: Phaser.Scene, x: number, y: number, amount: number, playerSettings = getPlayerSettings()): void {
   const useBurst = areArenaVfxEnabled(playerSettings);
   const layerScale = getArenaEffectsLayerScale(target);
-  const fixedScreenScale = 1 / layerScale;
+  const fixedScreenScale = useBurst ? getArenaPopupFixedScreenScale(target) : 1 / layerScale;
   const popupScale = getDamagePopupScale();
   const startScale = (useBurst ? 0.58 : 0.9) * fixedScreenScale * popupScale;
   const endScale = fixedScreenScale * popupScale;
