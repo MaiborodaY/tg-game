@@ -557,9 +557,13 @@ function syncCityHeroPortraitNotice(button: HTMLButtonElement | null, notice: Ci
 }
 
 export function renderCityArenaEnergyBadge(element: HTMLElement, arenaEnergy: HeroArenaEnergy, emptyClassName: string): void {
+  const energyBadge = document.createElement("span");
   const icon = document.createElement("img");
   const value = document.createElement("span");
+  const showResetTimer = arenaEnergy.current <= 0;
+  const resetTimerText = showResetTimer ? formatArenaEnergyResetTimer(arenaEnergy) : "";
 
+  energyBadge.className = "city-arena-energy-badge";
   icon.className = "city-arena-energy-icon";
   icon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
   icon.alt = "";
@@ -567,10 +571,33 @@ export function renderCityArenaEnergyBadge(element: HTMLElement, arenaEnergy: He
   icon.draggable = false;
   value.className = "city-arena-energy-value";
   value.textContent = `${arenaEnergy.current}/${arenaEnergy.max}`;
-  element.replaceChildren(icon, value);
-  element.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
-  element.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
+  energyBadge.append(icon, value);
+  if (showResetTimer) {
+    const timer = document.createElement("span");
+
+    timer.className = "city-arena-energy-reset";
+    timer.textContent = resetTimerText;
+    element.replaceChildren(energyBadge, timer);
+    element.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}. Reset in ${resetTimerText}.`;
+    element.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}, reset in ${resetTimerText}`);
+  } else {
+    element.replaceChildren(energyBadge);
+    element.title = `Arena energy: ${arenaEnergy.current}/${arenaEnergy.max}`;
+    element.setAttribute("aria-label", `Arena energy ${arenaEnergy.current} of ${arenaEnergy.max}`);
+  }
   element.classList.toggle(emptyClassName, arenaEnergy.current <= 0);
+}
+
+function formatArenaEnergyResetTimer(arenaEnergy: HeroArenaEnergy, now = new Date()): string {
+  const resetAt = new Date(`${arenaEnergy.dayKey}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000;
+  const fallbackResetAt = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const safeResetAt = Number.isFinite(resetAt) ? resetAt : fallbackResetAt;
+  const remainingMs = Math.max(0, safeResetAt - now.getTime());
+  const totalMinutes = Math.ceil(remainingMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function renderCityHeroRank(element: HTMLElement, hero: HeroState): void {

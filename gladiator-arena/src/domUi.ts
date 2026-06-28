@@ -220,6 +220,7 @@ export interface BattleResultPresentation {
   heroBeforeReward?: HeroState;
   heroAfterReward?: HeroState;
   levelUnlocks?: readonly BattleResultLevelUnlocks[];
+  postResultUnlocks?: readonly BattleResultLevelUnlocks[];
   instant?: boolean;
 }
 
@@ -241,7 +242,7 @@ export interface BattleResultUnlockEnergy {
   max: number;
 }
 
-export type BattleResultFeatureUnlockKind = "magic-shop";
+export type BattleResultFeatureUnlockKind = "magic-shop" | "magic-upgrades";
 
 export interface BattleResultFeatureUnlock {
   kind: BattleResultFeatureUnlockKind;
@@ -252,6 +253,7 @@ export interface BattleResultFeatureUnlock {
 
 export interface BattleResultLevelUnlocks {
   level: number;
+  heading?: string;
   weapons: readonly BattleResultUnlockProduct[];
   armor: readonly BattleResultUnlockProduct[];
   features?: readonly BattleResultFeatureUnlock[];
@@ -1013,7 +1015,7 @@ function animateResultXpProgress(dom: DomRefs, presentation: BattleResultPresent
 
   const stages = createXpAnimationStages(presentation.heroBeforeReward, heroAfterReward);
 
-  context.onResultSequenceLockChange?.(hasBattleResultLevelUnlocks(presentation));
+  context.onResultSequenceLockChange?.(hasBattleResultUnlocks(presentation));
   animateXpStage(dom, presentation, context, stages, 0, heroAfterReward);
 }
 
@@ -1085,6 +1087,13 @@ function animateXpStage(
   if (!stage) {
     renderResultXpProgress(dom, finalHero);
     resetResultLevelUpUi(dom);
+    if (hasBattleResultPostUnlocks(presentation)) {
+      renderPostResultUnlockPanels(dom, presentation.postResultUnlocks ?? [], 0, () => {
+        context.onResultSequenceLockChange?.(false);
+      });
+      return;
+    }
+
     context.onResultSequenceLockChange?.(false);
     return;
   }
@@ -1178,12 +1187,44 @@ function getBattleResultLevelUnlocks(presentation: BattleResultPresentation, lev
   return presentation.levelUnlocks?.find((unlocks) => unlocks.level === level);
 }
 
+function hasBattleResultUnlocks(presentation: BattleResultPresentation): boolean {
+  return hasBattleResultLevelUnlocks(presentation) || hasBattleResultPostUnlocks(presentation);
+}
+
 function hasBattleResultLevelUnlocks(presentation: BattleResultPresentation): boolean {
   return Boolean(presentation.levelUnlocks?.some(hasBattleResultLevelUnlockPayload));
 }
 
+function hasBattleResultPostUnlocks(presentation: BattleResultPresentation): boolean {
+  return Boolean(presentation.postResultUnlocks?.some(hasBattleResultLevelUnlockPayload));
+}
+
 function hasBattleResultLevelUnlockPayload(unlocks: BattleResultLevelUnlocks): boolean {
   return Boolean(unlocks.features?.length) || unlocks.weapons.length > 0 || unlocks.armor.length > 0;
+}
+
+function renderPostResultUnlockPanels(
+  dom: DomRefs,
+  unlocks: readonly BattleResultLevelUnlocks[],
+  unlockIndex: number,
+  onComplete: () => void,
+): void {
+  const unlock = unlocks[unlockIndex];
+
+  if (!unlock) {
+    onComplete();
+    return;
+  }
+
+  if (!hasBattleResultLevelUnlockPayload(unlock)) {
+    renderPostResultUnlockPanels(dom, unlocks, unlockIndex + 1, onComplete);
+    return;
+  }
+
+  renderResultUnlockPanel(dom, unlock, () => {
+    hideResultUnlockPanel(dom);
+    renderPostResultUnlockPanels(dom, unlocks, unlockIndex + 1, onComplete);
+  });
 }
 
 type BattleResultUnlockScreen =
@@ -1207,7 +1248,7 @@ function renderResultUnlockPanel(dom: DomRefs, unlocks: BattleResultLevelUnlocks
 
   hideResultLevelNotice(dom);
   dom.resultUnlockPanel.hidden = false;
-  dom.resultUnlockLevel.textContent = `LVL ${unlocks.level} REACHED`;
+  dom.resultUnlockLevel.textContent = unlocks.heading ?? `LVL ${unlocks.level} REACHED`;
   dom.resultUnlockEnergyIcon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
   renderResultUnlockScreen(dom, unlocks, screens, 0, onContinue, true);
 }

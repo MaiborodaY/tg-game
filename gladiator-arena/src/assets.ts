@@ -262,6 +262,7 @@ export const SCROLL_CAST_PROP_ASSETS: readonly { key: ScrollCastPropAssetKey; ur
 export const SHOP_BACK_ICON_ASSET_URL = new URL("./assets/ui/shop/back.webp", import.meta.url).href;
 export const SHOP_GOLD_COIN_ICON_ASSET_URL = new URL("./assets/ui/shop/gold-coin.webp", import.meta.url).href;
 export const SHOP_XP_ICON_ASSET_URL = new URL("./assets/ui/shop/xp-icon.webp", import.meta.url).href;
+export const SHOP_UPGRADE_ARROW_ICON_ASSET_URL = new URL("./assets/ui/shop/upgrade-arrow.webp", import.meta.url).href;
 export const SHOP_CATEGORY_HEAD_ICON_ASSET_URL = new URL("./assets/ui/shop/category-head.webp", import.meta.url).href;
 export const SHOP_CATEGORY_BODY_ICON_ASSET_URL = new URL("./assets/ui/shop/category-body.webp", import.meta.url).href;
 export const SHOP_CATEGORY_ARMS_ICON_ASSET_URL = new URL("./assets/ui/shop/category-arms.webp", import.meta.url).href;

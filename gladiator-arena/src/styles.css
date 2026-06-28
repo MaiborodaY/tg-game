@@ -2916,6 +2916,12 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
     drop-shadow(0 0 18px rgba(255, 211, 132, 0.42));
 }
 
+.battle-result__unlock-feature-icon--magic-upgrades {
+  filter:
+    drop-shadow(0 3px 0 rgba(8, 2, 1, 0.72))
+    drop-shadow(0 0 18px rgba(116, 255, 91, 0.42));
+}
+
 .battle-result__unlock-more {
   justify-self: center;
   min-height: 24px;
@@ -4317,19 +4323,9 @@ body.debug-active .city-menu__portrait-button:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-width: 72px;
-  min-height: 20px;
-  padding: 1px 9px 2px 6px;
-  border: 1px solid rgba(255, 211, 132, 0.2);
-  border-radius: 999px;
+  gap: 5px;
+  min-width: 0;
   color: #fff0bd;
-  background:
-    radial-gradient(circle at 50% 0, rgba(255, 224, 143, 0.12), transparent 62%),
-    rgba(14, 4, 2, 0.38);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 229, 161, 0.08),
-    0 1px 2px rgba(8, 2, 1, 0.45);
   font-size: 0.68rem;
   font-weight: 900;
   line-height: 1;
@@ -4342,12 +4338,16 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__meta-row {
   display: grid;
-  grid-template-columns: minmax(72px, auto) minmax(96px, 112px);
+  grid-template-columns: minmax(116px, auto) minmax(96px, 112px);
   justify-content: center;
   align-items: center;
   gap: 8px;
   width: 100%;
   min-width: 0;
+}
+
+.city-arena-menu__meta-row--quest-hidden {
+  grid-template-columns: minmax(116px, auto);
 }
 
 .city-arena-menu__quest-button {
@@ -4686,6 +4686,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__fight-row {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 52px;
   align-items: stretch;
@@ -4705,6 +4706,59 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-arena-menu__fight-row--auto-hidden {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.city-arena-menu__choice--no-energy::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: 9px;
+  background: rgba(5, 1, 1, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(255, 211, 132, 0.08);
+  pointer-events: none;
+}
+
+.city-arena-menu__no-energy {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 118px;
+  min-height: 29px;
+  padding: 4px 13px 5px 9px;
+  border: 2px solid rgba(255, 226, 154, 0.82);
+  border-radius: 999px;
+  color: #fff0bd;
+  background:
+    linear-gradient(180deg, rgba(104, 34, 16, 0.98), rgba(43, 10, 4, 0.98)),
+    rgba(43, 10, 4, 0.98);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 238, 183, 0.32),
+    inset 0 -5px 8px rgba(31, 7, 3, 0.42),
+    0 2px 0 rgba(8, 2, 1, 0.72),
+    0 0 12px rgba(8, 2, 1, 0.55);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(8, 2, 1, 0.86);
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-2deg);
+}
+
+.city-arena-menu__no-energy-icon {
+  display: block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 0 rgba(8, 2, 1, 0.75));
 }
 
 .city-arena-menu__fight,
@@ -4987,6 +5041,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-arena-menu__boss-card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 52px;
   gap: 6px;
@@ -6140,16 +6195,9 @@ body.debug-active .city-menu__portrait-button:active {
 .city-profile__arena-energy {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   width: max-content;
-  padding: 3px 8px 4px 3px;
-  border: 1px solid rgba(125, 235, 220, 0.22);
-  border-radius: 999px;
   color: #fff0bd;
-  background: rgba(11, 43, 40, 0.38);
-  box-shadow:
-    inset 0 1px 0 rgba(181, 255, 246, 0.12),
-    0 2px 0 rgba(8, 2, 1, 0.55);
   font-size: clamp(0.7rem, 2.7vw, 0.84rem);
   font-weight: 900;
   line-height: 1;
@@ -8241,7 +8289,7 @@ body.debug-active .city-menu__portrait-button:active {
 .city-menu__hero-energy {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   min-width: max-content;
   flex: 0 0 auto;
   color: #fff0bd;
@@ -8249,6 +8297,38 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 0 rgba(8, 2, 1, 0.78);
+}
+
+.city-arena-energy-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 50px;
+  min-height: 20px;
+  padding: 1px 7px 2px 4px;
+  border: 1px solid rgba(255, 211, 132, 0.22);
+  border-radius: 999px;
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 224, 143, 0.14), transparent 62%),
+    rgba(14, 4, 2, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.1),
+    0 1px 2px rgba(8, 2, 1, 0.48);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.city-arena-energy-reset {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  color: #e0b96f;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .city-arena-energy-icon {
@@ -10656,6 +10736,10 @@ body.debug-active .city-menu__portrait-button:active {
 .magic-shop__scroll-upgrade-card--max,
 .magic-shop__scroll-upgrade-card--no-gold {
   filter: saturate(0.78) brightness(0.86);
+}
+
+.magic-shop__scroll-upgrade-card--no-gold .magic-shop__scroll-upgrade-price {
+  color: #d8c4aa;
 }
 
 .magic-shop__scroll-upgrade-card:disabled {
@@ -13439,6 +13523,26 @@ body.debug-active .city-menu__portrait-button:active {
     drop-shadow(0 1px 0 rgba(8, 2, 1, 0.9));
 }
 
+.magic-shop.armory-shop--city-mode .magic-shop__wallet .armory-shop__back {
+  position: static;
+  inset: auto;
+  width: 30px;
+  height: 24px;
+  border-width: 1px;
+  border-radius: 7px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.22),
+    inset 0 -3px 0 rgba(8, 2, 1, 0.3),
+    0 1px 0 rgba(8, 2, 1, 0.68),
+    0 0 0 1px rgba(8, 2, 1, 0.54);
+  justify-self: center;
+}
+
+.magic-shop.armory-shop--city-mode .magic-shop__wallet .armory-shop__back-icon {
+  width: 62%;
+  height: 62%;
+}
+
 @media (max-width: 460px), (max-height: 760px) {
   .magic-shop.armory-shop--city-mode {
     --shop-city-products-height: clamp(248px, var(--ui-magic-shop-compact-products-height, 266px), 296px);
@@ -13514,6 +13618,13 @@ body.debug-active .city-menu__portrait-button:active {
     width: 34px;
     height: 34px;
     border-radius: 7px;
+  }
+
+  .magic-shop.armory-shop--city-mode .magic-shop__wallet .armory-shop__back {
+    position: static;
+    inset: auto;
+    width: 30px;
+    height: 24px;
   }
 
   .magic-shop.armory-shop--city-mode .magic-shop__preview {
@@ -13732,6 +13843,13 @@ body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="c
   width: 34px;
   height: 34px;
   border-radius: 7px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__wallet .armory-shop__back {
+  position: static;
+  inset: auto;
+  width: 30px;
+  height: 24px;
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview {

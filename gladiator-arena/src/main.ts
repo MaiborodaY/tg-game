@@ -37,6 +37,7 @@ import {
   pickArenaBackgroundVariantIdForTier,
   SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
+  SHOP_UPGRADE_ARROW_ICON_ASSET_URL,
   SHOP_XP_ICON_ASSET_URL,
   type ArenaBackgroundLayerRole,
 } from "./assets";
@@ -63,6 +64,9 @@ import {
   DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
   DEFAULT_HERO_NAME,
+  HERO_SCROLL_CAPACITY_BASE,
+  HERO_SCROLL_CAPACITY_MAX,
+  HERO_SCROLL_UPGRADE_RARITIES,
   allocateHeroSkillPoints,
   applyCombatReward,
   areHeroItemsConsumable,
@@ -85,6 +89,8 @@ import {
   getBattleReward,
   getHeroArenaEnergy,
   getHeroArenaWinQuestStatus,
+  getHeroScrollCapacityUpgradeUnlockBossTier,
+  getHeroScrollUpgradeUnlockBossTier,
   grantHeroArenaEnergy,
   hasHeroArenaBossVictoryForTier,
   hasHeroDefeatedArenaBoss,
@@ -153,6 +159,7 @@ const cityArenaOnlineBackButton = document.querySelector<HTMLButtonElement>("#ci
 const cityArenaTierName = document.querySelector<HTMLElement>("#cityArenaTierName");
 const cityArenaTierSelect = document.querySelector<HTMLSelectElement>("#cityArenaTierSelect");
 const cityArenaEnergy = document.querySelector<HTMLElement>("#cityArenaEnergy");
+const cityArenaMetaRow = cityArenaEnergy?.closest<HTMLElement>(".city-arena-menu__meta-row") ?? null;
 const cityArenaQuestButton = document.querySelector<HTMLButtonElement>("#cityArenaQuestButton");
 const cityArenaQuestLabel = document.querySelector<HTMLElement>("#cityArenaQuestLabel");
 const cityArenaQuestProgress = document.querySelector<HTMLElement>("#cityArenaQuestProgress");
@@ -284,6 +291,7 @@ const AUTO_RESULT_RETURN_LABEL = "Return";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_ENTRY_FAILSAFE_TIMEOUT_MS = 5000;
 const CITY_ARENA_PANEL_ENTRY_TRANSITION_MS = 1000;
+const ARENA_ENERGY_TIMER_REFRESH_MS = 30000;
 const ARENA_RANDOM_ENERGY_COST = 1;
 const ARENA_BOSS_ENERGY_COST = 2;
 const ARENA_DUO_BOSS_ENERGY_COST = 3;
@@ -632,6 +640,21 @@ function renderCityHero(): void {
   syncMagicShopButtonLock();
 }
 
+function syncArenaEnergyTimerDisplays(): void {
+  const arenaEnergy = getHeroArenaEnergy(hero);
+
+  if (cityHeroWidgetRefs.arenaEnergy) {
+    renderCityArenaEnergyBadge(cityHeroWidgetRefs.arenaEnergy, arenaEnergy, "city-menu__hero-energy--empty");
+  }
+  if (cityHeroWidgetRefs.profileArenaEnergy) {
+    renderCityArenaEnergyBadge(cityHeroWidgetRefs.profileArenaEnergy, arenaEnergy, "city-profile__arena-energy--empty");
+  }
+  if (cityArenaEnergy && cityArenaMenu && !cityArenaMenu.hidden) {
+    renderCityArenaEnergyBadge(cityArenaEnergy, arenaEnergy, "city-arena-menu__energy--empty");
+    syncCityArenaBotControls();
+  }
+}
+
 function createBattleResultLevelUnlocks(heroBeforeReward: HeroState, heroAfterReward: HeroState): BattleResultLevelUnlocks[] {
   const fromLevel = Math.max(1, Math.floor(heroBeforeReward.level));
   const toLevel = Math.max(1, Math.floor(heroAfterReward.level));
@@ -684,6 +707,71 @@ function getBattleResultFeatureUnlocksForLevel(level: number): BattleResultFeatu
       ariaLabel: "Magical shop unlocked",
     },
   ];
+}
+
+function createBattleResultPostUnlocks(heroBeforeReward: HeroState, heroAfterReward: HeroState): BattleResultLevelUnlocks[] {
+  return getNewlyUnlockedMagicShopUpgradeTierIds(heroBeforeReward, heroAfterReward).map((tierId) => ({
+    level: heroAfterReward.level,
+    heading: `TIER ${tierId} CLEARED`,
+    features: [
+      {
+        kind: "magic-upgrades",
+        title: "UPGRADES UNLOCKED",
+        iconUrl: SHOP_UPGRADE_ARROW_ICON_ASSET_URL,
+        ariaLabel: "Magic shop upgrades unlocked",
+      },
+    ],
+    weapons: [],
+    armor: [],
+  }));
+}
+
+function getNewlyUnlockedMagicShopUpgradeTierIds(heroBeforeReward: HeroState, heroAfterReward: HeroState): number[] {
+  const upgradeTierIds = getMagicShopUpgradeUnlockTierIds();
+
+  return getNewlyDefeatedArenaBossTierIds(heroBeforeReward, heroAfterReward).filter((tierId) => upgradeTierIds.has(tierId));
+}
+
+function getMagicShopUpgradeUnlockTierIds(): Set<number> {
+  const tierIds = new Set<number>();
+
+  HERO_SCROLL_UPGRADE_RARITIES.forEach((rarity) => {
+    const tierId = getHeroScrollUpgradeUnlockBossTier(rarity);
+
+    if (tierId) {
+      tierIds.add(tierId);
+    }
+  });
+
+  for (let capacity = HERO_SCROLL_CAPACITY_BASE + 1; capacity <= HERO_SCROLL_CAPACITY_MAX; capacity += 1) {
+    const tierId = getHeroScrollCapacityUpgradeUnlockBossTier(capacity);
+
+    if (tierId) {
+      tierIds.add(tierId);
+    }
+  }
+
+  return tierIds;
+}
+
+function getNewlyDefeatedArenaBossTierIds(heroBeforeReward: HeroState, heroAfterReward: HeroState): number[] {
+  const defeatedBefore = new Set(heroBeforeReward.defeatedArenaBossIds ?? []);
+  const newBossIds = new Set((heroAfterReward.defeatedArenaBossIds ?? []).filter((bossId) => !defeatedBefore.has(bossId)));
+  const tierIds = new Set<number>();
+
+  if (newBossIds.size <= 0) {
+    return [];
+  }
+
+  getArenaTierDefinitions().forEach((tier) => {
+    getArenaBossesForTier(tier.id).forEach((boss) => {
+      if (newBossIds.has(boss.id)) {
+        tierIds.add(boss.tierId);
+      }
+    });
+  });
+
+  return [...tierIds].sort((left, right) => left - right);
 }
 
 function getBattleResultUnlockWeaponProducts(heroAfterReward: HeroState): WeaponProduct[] {
@@ -1606,6 +1694,7 @@ function syncCityArenaMenuEnergy(): void {
 function syncCityArenaQuestControls(): void {
   const status = getHeroArenaWinQuestStatus(hero);
   const isNewQuest = !status.claimed && !status.openedToday;
+  const isQuestDone = status.claimed;
   const questButtonTitle = isNewQuest
     ? "New daily quest."
     : status.claimed
@@ -1614,7 +1703,12 @@ function syncCityArenaQuestControls(): void {
         ? "Quest reward ready."
         : `Win ${status.goal - status.wins} more arena fights.`;
 
+  if (isQuestDone) {
+    isCityArenaQuestPanelOpen = false;
+  }
+  cityArenaMetaRow?.classList.toggle("city-arena-menu__meta-row--quest-hidden", isQuestDone);
   if (cityArenaQuestButton) {
+    cityArenaQuestButton.hidden = isQuestDone;
     cityArenaQuestButton.classList.toggle("city-arena-menu__quest-button--ready", status.ready);
     cityArenaQuestButton.classList.toggle("city-arena-menu__quest-button--claimed", status.claimed);
     cityArenaQuestButton.classList.toggle("city-arena-menu__quest-button--new", isNewQuest);
@@ -2177,8 +2271,45 @@ function canCancelPvpRoom(): boolean {
   return Boolean(pvpSession && pvpSession.seat === "host" && pvpSnapshot?.status === "waiting");
 }
 
+function syncCityArenaNoEnergyPanel(panel: HTMLElement | null | undefined, noEnergy: boolean): void {
+  if (!panel) {
+    return;
+  }
+
+  let ribbon = panel.querySelector<HTMLElement>(":scope > .city-arena-menu__no-energy");
+
+  panel.classList.toggle("city-arena-menu__choice--no-energy", noEnergy);
+  if (!noEnergy) {
+    ribbon?.remove();
+    return;
+  }
+
+  if (!ribbon) {
+    ribbon = createCityArenaNoEnergyRibbon();
+    panel.append(ribbon);
+  }
+}
+
+function createCityArenaNoEnergyRibbon(): HTMLElement {
+  const ribbon = document.createElement("span");
+  const icon = document.createElement("img");
+  const label = document.createElement("span");
+
+  ribbon.className = "city-arena-menu__no-energy";
+  ribbon.setAttribute("aria-hidden", "true");
+  icon.className = "city-arena-menu__no-energy-icon";
+  icon.src = DAILY_ARENA_ENERGY_ICON_ASSET_URL;
+  icon.alt = "";
+  icon.decoding = "async";
+  icon.draggable = false;
+  label.textContent = "NO ENERGY";
+  ribbon.append(icon, label);
+  return ribbon;
+}
+
 function syncCityArenaBotControls(): void {
   const tierId = getSelectedCityArenaTier().id;
+  const currentArenaEnergy = getHeroArenaEnergy(hero).current;
 
   getCityArenaRandomFightTargets(tierId).forEach(({ button, selection }) => {
     if (!button || selection.kind !== "random") {
@@ -2189,6 +2320,7 @@ function syncCityArenaBotControls(): void {
 
     button.disabled = disabled;
     button.title = title;
+    syncCityArenaNoEnergyPanel(button.closest<HTMLElement>(".city-arena-menu__fight-row"), currentArenaEnergy < getArenaSelectionEnergyCost(selection));
   });
   getCityArenaRandomAutoRateTargets(tierId).forEach(({ button, selection }) => {
     if (!button) {
@@ -2209,6 +2341,12 @@ function syncCityArenaBotControls(): void {
 
     button.disabled = Boolean(buttonTitle);
     button.title = buttonTitle || button.dataset.defaultTitle || "";
+  });
+  cityArenaBossList?.querySelectorAll<HTMLElement>(".city-arena-menu__boss-card").forEach((card) => {
+    const bossButton = card.querySelector<HTMLButtonElement>(".city-arena-menu__boss");
+    const energyCost = bossButton ? getCityArenaBotButtonEnergyCost(bossButton) : ARENA_BOSS_ENERGY_COST;
+
+    syncCityArenaNoEnergyPanel(card, currentArenaEnergy < energyCost);
   });
 }
 
@@ -2849,6 +2987,7 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot): void {
     heroBeforeReward,
     heroAfterReward,
     levelUnlocks: createBattleResultLevelUnlocks(heroBeforeReward, heroAfterReward),
+    postResultUnlocks: createBattleResultPostUnlocks(heroBeforeReward, heroAfterReward),
   };
   startBattleResultReturnGate();
   markRewardUiRenderDirty();
@@ -3102,6 +3241,7 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
     presentAutoResolvedArenaResult(resolvedState, {
       ...rewardApplication,
       levelUnlocks: createBattleResultLevelUnlocks(rewardApplication.heroBeforeReward, rewardApplication.heroAfterReward),
+      postResultUnlocks: createBattleResultPostUnlocks(rewardApplication.heroBeforeReward, rewardApplication.heroAfterReward),
     });
   } finally {
     cityArenaAutoFightPending = false;
@@ -3533,6 +3673,7 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     heroBeforeReward,
     heroAfterReward,
     levelUnlocks: createBattleResultLevelUnlocks(heroBeforeReward, heroAfterReward),
+    postResultUnlocks: createBattleResultPostUnlocks(heroBeforeReward, heroAfterReward),
   };
   startBattleResultReturnGate();
   markRewardUiRenderDirty();
@@ -4113,6 +4254,7 @@ setPlayerEquipment(hero.equipment);
 setPlayerAppearance(hero.appearance);
 setPlayerWeaponEnchantments(hero.weaponEnchantments);
 renderCityHero();
+window.setInterval(syncArenaEnergyTimerDisplays, ARENA_ENERGY_TIMER_REFRESH_MS);
 mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
 void startInitialCityEntry();
 if (cityMenu) {

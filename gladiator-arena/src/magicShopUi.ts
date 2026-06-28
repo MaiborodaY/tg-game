@@ -27,6 +27,8 @@ import {
   getHeroScrollQuantity,
   getHeroWardHitCountForRarity,
   getHeroWeaponSharpeningLevel,
+  isHeroScrollCapacityUpgradeUnlocked,
+  isHeroScrollUpgradeRarityUnlocked,
   isHeroUpgradeableScrollItemId,
   type HeroItemId,
   type HeroScrollUpgradeRarity,
@@ -232,7 +234,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
   scrollCapacity.className = "magic-shop__scroll-capacity";
   scrollCapacityIcon.className = "magic-shop__scroll-capacity-icon";
-  scrollCapacityIcon.src = SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+  scrollCapacityIcon.src = MAGIC_SHOP_SCROLL_CAPACITY_UPGRADE_ICON_URL;
   scrollCapacityIcon.alt = "";
   scrollCapacityIcon.decoding = "async";
   scrollCapacityIcon.draggable = false;
@@ -269,7 +271,6 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
   const wallet = document.createElement("div");
   wallet.className = "magic-shop__wallet";
-  wallet.append(scrollCapacity, gold);
 
   const back = document.createElement("button");
   const backIcon = document.createElement("img");
@@ -284,6 +285,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   backIcon.draggable = false;
   back.append(backIcon);
   back.addEventListener("click", handleBack);
+  wallet.append(scrollCapacity, back, gold);
 
   const previewElements = createMagicProductPreview();
   const scrollUpgradeElements = createMagicScrollCapacityUpgrade();
@@ -296,7 +298,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   header.append(title);
   tray.append(header, content);
   menu.append(tray);
-  panel.append(preview, menu, scrollUpgradeElements.root, back);
+  panel.append(preview, menu, scrollUpgradeElements.root);
   shop.append(panel);
   root.append(shop);
 
@@ -502,18 +504,23 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     const currentCapacity = getHeroScrollCapacity(hero);
     const price = getHeroScrollCapacityUpgradePrice(hero);
     const isMaxed = currentCapacity >= HERO_SCROLL_CAPACITY_MAX || price === undefined;
-    const canBuy = canUpgradeHeroScrollCapacity(hero);
     const nextCapacity = Math.min(HERO_SCROLL_CAPACITY_MAX, currentCapacity + 1);
+    const isTierUnlocked = isMaxed || isHeroScrollCapacityUpgradeUnlocked(hero, nextCapacity);
+    const hasEnoughGold = price !== undefined && hero.gold >= price;
+    const canBuy = canUpgradeHeroScrollCapacity(hero);
+    const noGold = !isMaxed && isTierUnlocked && !hasEnoughGold;
 
-    scrollUpgradeElements.root.hidden = mode !== "scrolls" || (!isMaxed && !canBuy);
+    scrollUpgradeElements.root.hidden = mode !== "scrolls" || (!isMaxed && !isTierUnlocked);
     scrollUpgradeElements.card.disabled = isMaxed || !canBuy;
     scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--max", isMaxed);
-    scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--no-gold", !isMaxed && !canBuy);
+    scrollUpgradeElements.card.classList.toggle("magic-shop__scroll-upgrade-card--no-gold", noGold);
     scrollUpgradeElements.card.setAttribute(
       "aria-label",
       isMaxed
         ? `Scroll capacity ${currentCapacity} of ${HERO_SCROLL_CAPACITY_MAX}, max`
-        : `Upgrade scroll capacity from ${currentCapacity} to ${nextCapacity} for ${price} gold`,
+        : noGold
+          ? `Not enough gold to upgrade scroll capacity from ${currentCapacity} to ${nextCapacity}`
+          : `Upgrade scroll capacity from ${currentCapacity} to ${nextCapacity} for ${price} gold`,
     );
     setTextContentIfChanged(scrollUpgradeElements.current, String(currentCapacity));
     setTextContentIfChanged(scrollUpgradeElements.arrow, isMaxed ? "/" : ">");
@@ -593,7 +600,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
       const actionState = getShopProductActionState(hero, product.itemIds, price);
       const upgradePrice = getMagicProductUpgradePrice(hero, product);
       const canUpgrade = canUpgradeMagicProduct(hero, product);
-      const canEventuallyUpgrade = upgradePrice !== undefined;
+      const upgradeState = getMagicProductUpgradeState(hero, product);
 
       elements.item.className = `magic-shop__list-item armory-shop__option--rarity-${rarity}`;
       elements.item.classList.toggle("magic-shop__list-item--selected", product.id === selectedProductId);
@@ -604,7 +611,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
       elements.item.classList.toggle("magic-shop__list-item--upgrade-pending", product.id === pendingUpgradeProductId);
       elements.selectButton.setAttribute("aria-pressed", product.id === selectedProductId ? "true" : "false");
       setPriceAmount(elements.price, elements.priceAmount, price);
-      refreshMagicProductUpgradeButton(elements.upgradeButton, product, upgradePrice, canUpgrade, canEventuallyUpgrade);
+      refreshMagicProductUpgradeButton(elements.upgradeButton, product, upgradePrice, canUpgrade, upgradeState);
     });
   }
 
@@ -1038,6 +1045,30 @@ function canUpgradeMagicProduct(hero: HeroState, product: MagicProduct): boolean
   return canUpgradeHeroScroll(hero, getMagicProductPrimaryItemId(product));
 }
 
+type MagicProductUpgradeState = "hidden" | "ready" | "no-gold" | "max";
+
+function getMagicProductUpgradeState(hero: HeroState, product: MagicProduct): MagicProductUpgradeState {
+  const itemId = getMagicProductPrimaryItemId(product);
+
+  if (!isHeroUpgradeableScrollItemId(itemId)) {
+    return "hidden";
+  }
+
+  const price = getHeroScrollUpgradePrice(hero, itemId);
+  const currentRarity = getHeroScrollUpgradeRarityForItem(hero, itemId);
+  const nextRarity = currentRarity ? getNextMagicProductUpgradeRarity(currentRarity) : undefined;
+
+  if (price === undefined || !nextRarity) {
+    return "max";
+  }
+
+  if (!isHeroScrollUpgradeRarityUnlocked(hero, nextRarity)) {
+    return "hidden";
+  }
+
+  return hero.gold >= price ? "ready" : "no-gold";
+}
+
 function isMagicProductUpgradeMax(hero: HeroState, product: MagicProduct): boolean {
   const itemId = getMagicProductPrimaryItemId(product);
 
@@ -1049,7 +1080,7 @@ function refreshMagicProductUpgradeButton(
   product: MagicProduct,
   upgradePrice: number | undefined,
   canUpgrade: boolean,
-  canEventuallyUpgrade: boolean,
+  upgradeState: MagicProductUpgradeState,
 ): void {
   const itemId = getMagicProductPrimaryItemId(product);
   const isUpgradeable = isHeroUpgradeableScrollItemId(itemId);
@@ -1065,7 +1096,16 @@ function refreshMagicProductUpgradeButton(
     return;
   }
 
-  if (!canEventuallyUpgrade) {
+  if (upgradeState === "hidden") {
+    button.disabled = true;
+    button.classList.add("magic-shop__list-upgrade--unavailable");
+    button.removeAttribute("aria-label");
+    button.title = "";
+    setTextContentIfChanged(button, "");
+    return;
+  }
+
+  if (upgradeState === "max") {
     button.disabled = true;
     button.setAttribute("aria-label", "Max scroll rarity");
     button.title = "Max rarity";
@@ -1074,11 +1114,10 @@ function refreshMagicProductUpgradeButton(
   }
 
   button.disabled = !canUpgrade;
-  button.classList.toggle("magic-shop__list-upgrade--unavailable", !canUpgrade);
 
-  if (!canUpgrade) {
-    button.removeAttribute("aria-label");
-    button.title = "";
+  if (upgradeState === "no-gold") {
+    button.setAttribute("aria-label", `Not enough gold to upgrade ${getMagicProductDisplayName(product)}`);
+    button.title = `Need ${upgradePrice} gold`;
     setTextContentIfChanged(button, "");
     return;
   }
