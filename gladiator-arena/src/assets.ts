@@ -40,7 +40,19 @@ export interface ArenaBackgroundLayerAsset {
   shadeWithCamera?: boolean;
 }
 
+export interface ArenaMenuBackgroundAsset {
+  tierId: number;
+  variantId: ArenaBackgroundVariantId;
+  url: string;
+}
+
 const arenaBackgroundLayerAssetModules = import.meta.glob("./assets/arena/layers/arena*.{png,webp}", {
+  eager: true,
+  import: "default",
+  query: "?url",
+}) as Record<string, string>;
+
+const arenaMenuBackgroundAssetModules = import.meta.glob("./assets/ui/arena-menu-backgrounds/tier-*.webp", {
   eager: true,
   import: "default",
   query: "?url",
@@ -54,6 +66,14 @@ export const ARENA_BACKGROUND_LAYER_ASSETS: readonly ArenaBackgroundLayerAsset[]
     compareArenaBackgroundVariantIds(a.variantId, b.variantId) ||
     a.order - b.order ||
     a.layer.localeCompare(b.layer)
+  ));
+
+export const ARENA_MENU_BACKGROUND_ASSETS: readonly ArenaMenuBackgroundAsset[] = Object.entries(arenaMenuBackgroundAssetModules)
+  .map(([path, url]) => createArenaMenuBackgroundAsset(path, url))
+  .filter((asset): asset is ArenaMenuBackgroundAsset => !!asset)
+  .sort((a, b) => (
+    a.tierId - b.tierId ||
+    compareArenaBackgroundVariantIds(a.variantId, b.variantId)
   ));
 
 export function getArenaBackgroundVariantIdsForTier(tierId: number): ArenaBackgroundVariantId[] {
@@ -75,6 +95,26 @@ export function getArenaBackgroundLayerAssetKeysForTier(tierId: number, variantI
     .map((asset) => asset.layer);
 
   return tierLayers.length > 0 ? tierLayers : tierId === 1 ? [] : getArenaBackgroundLayerAssetKeysForTier(1);
+}
+
+export function getArenaMenuBackgroundAssetUrlForTier(tierId: number, variantId?: ArenaBackgroundVariantId): string | undefined {
+  const variantIds = getArenaBackgroundVariantIdsForTier(tierId);
+  const resolvedVariantId = variantId && variantIds.includes(variantId) ? variantId : variantIds[0] ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID;
+  const exactAsset = ARENA_MENU_BACKGROUND_ASSETS.find((asset) => asset.tierId === tierId && asset.variantId === resolvedVariantId);
+
+  if (exactAsset) {
+    return exactAsset.url;
+  }
+
+  if (resolvedVariantId !== DEFAULT_ARENA_BACKGROUND_VARIANT_ID) {
+    const defaultAsset = ARENA_MENU_BACKGROUND_ASSETS.find((asset) => asset.tierId === tierId && asset.variantId === DEFAULT_ARENA_BACKGROUND_VARIANT_ID);
+
+    if (defaultAsset) {
+      return defaultAsset.url;
+    }
+  }
+
+  return tierId === 1 ? undefined : getArenaMenuBackgroundAssetUrlForTier(1);
 }
 
 function createArenaBackgroundLayerAsset(path: string, url: string): ArenaBackgroundLayerAsset | undefined {
@@ -123,6 +163,26 @@ function createArenaBackgroundLayerAsset(path: string, url: string): ArenaBackgr
   }
 
   return undefined;
+}
+
+function createArenaMenuBackgroundAsset(path: string, url: string): ArenaMenuBackgroundAsset | undefined {
+  const match = /\/tier-(\d+)(?:-((?:variant|scene)-\d+))?\.webp$/u.exec(path);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const tierId = Number(match[1]);
+
+  if (!Number.isInteger(tierId) || tierId < 1) {
+    return undefined;
+  }
+
+  return {
+    tierId,
+    variantId: match[2] ?? DEFAULT_ARENA_BACKGROUND_VARIANT_ID,
+    url,
+  };
 }
 
 function createArenaBackgroundLayerAssetConfig({

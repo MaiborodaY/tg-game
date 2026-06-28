@@ -32,6 +32,7 @@ import {
   HERO_WARD_SCROLL_ITEM_ID,
   getHeroEquipmentSetBonusSummary,
   getHeroXpToNextLevel,
+  isHeroXpBlockedByArenaBossGate,
   type HeroEquipmentSetBonusSummary,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -727,7 +728,11 @@ function renderResultXpProgress(dom: DomRefs, hero: HeroState | undefined): void
   const progressRatio = Math.max(0, Math.min(1, hero.xp / xpToNextLevel));
 
   dom.resultXpProgressFill.style.width = `${progressRatio * 100}%`;
-  renderResultXpLabel(dom, hero.level, `${hero.xp} / ${xpToNextLevel} XP`);
+  renderResultXpLabel(
+    dom,
+    hero.level,
+    isHeroXpBlockedByArenaBossGate(hero) ? "DEFEAT BOSS TO UNLOCK" : `${hero.xp} / ${xpToNextLevel} XP`,
+  );
 }
 
 function renderResultXpLabel(dom: DomRefs, level: number, progressText: string): void {
@@ -1024,6 +1029,7 @@ interface XpAnimationStage {
   fromXp: number;
   toXp: number;
   xpToNextLevel: number;
+  bossGateLocked?: boolean;
 }
 
 function createXpAnimationStages(heroBeforeReward: HeroState | undefined, heroAfterReward: HeroState): XpAnimationStage[] {
@@ -1034,6 +1040,7 @@ function createXpAnimationStages(heroBeforeReward: HeroState | undefined, heroAf
         fromXp: 0,
         toXp: heroAfterReward.level >= HERO_MAX_LEVEL ? 1 : heroAfterReward.xp,
         xpToNextLevel: heroAfterReward.level >= HERO_MAX_LEVEL ? 1 : Math.max(1, heroAfterReward.xpToNextLevel),
+        bossGateLocked: isHeroXpBlockedByArenaBossGate(heroAfterReward),
       },
     ];
   }
@@ -1069,6 +1076,7 @@ function createXpAnimationStages(heroBeforeReward: HeroState | undefined, heroAf
     fromXp: level === heroBeforeReward.level ? fromXp : 0,
     toXp: Math.max(0, Math.floor(heroAfterReward.xp)),
     xpToNextLevel: Math.max(1, Math.floor(heroAfterReward.xpToNextLevel)),
+    bossGateLocked: isHeroXpBlockedByArenaBossGate(heroAfterReward),
   });
 
   return stages;
@@ -1160,7 +1168,11 @@ function renderXpStage(dom: DomRefs, stage: XpAnimationStage, xpValue: number): 
   const progressRatio = Math.max(0, Math.min(1, xpValue / stage.xpToNextLevel));
 
   dom.resultXpProgressFill.style.width = `${progressRatio * 100}%`;
-  renderResultXpLabel(dom, stage.level, `${xp} / ${stage.xpToNextLevel} XP`);
+  renderResultXpLabel(
+    dom,
+    stage.level,
+    stage.bossGateLocked && xp >= stage.xpToNextLevel ? "DEFEAT BOSS TO UNLOCK" : `${xp} / ${stage.xpToNextLevel} XP`,
+  );
 }
 
 function resetResultLevelUpUi(dom: DomRefs): void {

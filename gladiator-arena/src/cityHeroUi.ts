@@ -33,6 +33,7 @@ import {
   getHeroShurikenItemId,
   getHeroTotalWins,
   HERO_ITEM_CATALOG,
+  isHeroXpBlockedByArenaBossGate,
   isHeroConsumableItem,
   type HeroArenaEnergy,
   type HeroAppearance,
@@ -426,6 +427,8 @@ export function syncCityHeroWidgetPosition(
 export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, options: CityHeroInfoRenderOptions = {}): void {
   const xpToNextLevel = Math.max(1, hero.xpToNextLevel);
   const xpRatio = Math.max(0, Math.min(1, hero.xp / xpToNextLevel));
+  const isBossGateLocked = isHeroXpBlockedByArenaBossGate(hero);
+  const xpText = isBossGateLocked ? "DEFEAT BOSS TO UNLOCK" : `${hero.xp}/${xpToNextLevel}`;
   const highlightedEquipmentItems = getHighlightedCityEquipmentItems(options.highlightedEquipmentItemIds);
   const portraitNotice = getCityHeroPortraitNotice(hero, highlightedEquipmentItems);
 
@@ -456,7 +459,8 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   }
 
   if (refs.xpText) {
-    refs.xpText.textContent = `${hero.xp}/${xpToNextLevel}`;
+    refs.xpText.textContent = xpText;
+    refs.xpText.classList.toggle("city-menu__hero-xp-text--boss-gated", isBossGateLocked);
   }
 
   if (refs.profileName) {
@@ -485,7 +489,8 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   }
 
   if (refs.profileXpText) {
-    refs.profileXpText.textContent = `${hero.xp}/${xpToNextLevel}`;
+    refs.profileXpText.textContent = xpText;
+    refs.profileXpText.classList.toggle("city-profile__xp-text--boss-gated", isBossGateLocked);
   }
 
   syncCityHeroPortraitNotice(refs.portraitButton, portraitNotice);

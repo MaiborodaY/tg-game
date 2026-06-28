@@ -4150,10 +4150,7 @@ body.debug-active .city-menu__portrait-button:active {
   background-color: #160603;
   background-image:
     linear-gradient(rgba(8, 2, 1, 0.52), rgba(8, 2, 1, 0.52)),
-    var(--city-arena-menu-bg-front, none),
-    var(--city-arena-menu-bg-ground, none),
-    var(--city-arena-menu-bg-mid, none),
-    var(--city-arena-menu-bg-back, none);
+    var(--city-arena-menu-bg, none);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -5646,6 +5643,12 @@ body.debug-active .city-menu__portrait-button:active {
   color: #f2c978;
   font-size: clamp(0.58rem, 2.2vw, 0.7rem);
   letter-spacing: 0.07em;
+}
+
+.city-profile__xp-text--boss-gated {
+  color: #ffe4a1;
+  font-size: clamp(0.48rem, 1.9vw, 0.58rem);
+  letter-spacing: 0;
 }
 
 .city-profile__xp {
@@ -8389,6 +8392,11 @@ body.debug-active .city-menu__portrait-button:active {
   color: #f2c978;
   font-size: 0.62rem;
   letter-spacing: 0;
+}
+
+.city-menu__hero-xp-text--boss-gated {
+  color: #ffe4a1;
+  font-size: 0.52rem;
 }
 
 .city-menu__hero-rank {

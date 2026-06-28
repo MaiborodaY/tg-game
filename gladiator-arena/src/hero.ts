@@ -2776,6 +2776,14 @@ export function getHeroLevelCap(hero: HeroState): number {
   return Math.min(HERO_MAX_LEVEL, HERO_LEVELS_PER_BOSS_TIER * (defeatedGateBossCount + 1));
 }
 
+export function isHeroXpBlockedByArenaBossGate(hero: HeroState): boolean {
+  const levelCap = getHeroLevelCap(hero);
+  const xpToNextLevel = Math.max(1, Math.floor(hero.xpToNextLevel));
+  const xp = Math.max(0, Math.floor(hero.xp));
+
+  return levelCap < HERO_MAX_LEVEL && hero.level >= levelCap && xp >= xpToNextLevel;
+}
+
 export function recordArenaBossDefeat(hero: HeroState, bossId: string, now = new Date().toISOString()): HeroState {
   if (!bossId || hasHeroDefeatedArenaBoss(hero, bossId)) {
     return hero;
