@@ -692,7 +692,15 @@ function getCombatActorFighter(state: CombatState, actor: CombatActor): FighterS
 
 function getDefaultDefenderActor(state: CombatState, actor: CombatActor): CombatActor {
   if (actor === "enemy") {
-    return state.lastEnemyTarget === "helper" && state.helper && state.helper.hp > 0 ? "helper" : "player";
+    if (state.lastEnemyTarget === "helper" && hasLivingHelper(state)) {
+      return "helper";
+    }
+
+    if (hasLivingPlayer(state)) {
+      return "player";
+    }
+
+    return hasLivingHelper(state) ? "helper" : "player";
   }
 
   return "enemy";
@@ -727,6 +735,10 @@ function getLivingHelperPosition(state: CombatState): number | undefined {
   return hasLivingHelper(state) ? state.helperPosition ?? state.playerPosition : undefined;
 }
 
+function getLivingPlayerPosition(state: CombatState): number | undefined {
+  return hasLivingPlayer(state) ? state.playerPosition : undefined;
+}
+
 function getAlliedActorPosition(state: CombatState, actor: CombatActor): number {
   if (actor === "helper" && hasLivingHelper(state)) {
     return state.helperPosition ?? state.playerPosition;
@@ -736,15 +748,25 @@ function getAlliedActorPosition(state: CombatState, actor: CombatActor): number 
 }
 
 function getClosestAlliedPosition(state: CombatState): number {
+  const playerPosition = getLivingPlayerPosition(state);
   const helperPosition = getLivingHelperPosition(state);
 
-  return helperPosition === undefined ? state.playerPosition : Math.max(state.playerPosition, helperPosition);
+  if (playerPosition === undefined) {
+    return helperPosition ?? state.playerPosition;
+  }
+
+  return helperPosition === undefined ? playerPosition : Math.max(playerPosition, helperPosition);
 }
 
 function getFarthestAlliedPosition(state: CombatState): number {
+  const playerPosition = getLivingPlayerPosition(state);
   const helperPosition = getLivingHelperPosition(state);
 
-  return helperPosition === undefined ? state.playerPosition : Math.min(state.playerPosition, helperPosition);
+  if (playerPosition === undefined) {
+    return helperPosition ?? state.playerPosition;
+  }
+
+  return helperPosition === undefined ? playerPosition : Math.min(playerPosition, helperPosition);
 }
 
 function getActorDistance(state: CombatState, actor: CombatActor, defenderActor = getDefaultDefenderActor(state, actor)): number {

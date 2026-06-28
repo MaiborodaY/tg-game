@@ -500,9 +500,7 @@ export class PvpRoom extends DurableObject<Env> {
     const record = await this.healDuoBossRoomIfNeeded(storedRecord, { broadcast: false });
 
     if (!record.autoSeats?.[seat]) {
-      if (record !== storedRecord) {
-        this.broadcastSnapshots(record);
-      }
+      this.broadcastSnapshots(record);
       return;
     }
 
@@ -567,11 +565,11 @@ export class PvpRoom extends DurableObject<Env> {
     }
 
     if (record?.status === "playing" && record.duoBossEnemyTurnPending) {
-      if (!record.state || !record.deadlineAt) {
+      if (!record.state) {
         return;
       }
 
-      if (Date.now() < record.deadlineAt) {
+      if (record.deadlineAt && Date.now() < record.deadlineAt) {
         await this.scheduleRoomAlarm(record);
         return;
       }
@@ -618,7 +616,12 @@ export class PvpRoom extends DurableObject<Env> {
 
   private async resolveExpiredTurnIfNeeded(record: RoomRecord | undefined): Promise<RoomRecord | undefined> {
     if (record?.status === "playing" && record.duoBossEnemyTurnPending) {
-      if (!record.state || !record.deadlineAt || Date.now() < record.deadlineAt) {
+      if (!record.state) {
+        return record;
+      }
+
+      if (record.deadlineAt && Date.now() < record.deadlineAt) {
+        await this.scheduleRoomAlarm(record);
         return record;
       }
 
@@ -829,6 +832,14 @@ export class PvpRoom extends DurableObject<Env> {
       return record;
     }
 
+    if (record.status === "playing" && record.duoBossEnemyTurnPending) {
+      if (!record.deadlineAt || record.deadlineAt <= now) {
+        return this.resolvePendingDuoBossEnemyTurn(record, now);
+      }
+
+      return record;
+    }
+
     const state = resolveDuoBossSkippedDefeatedAllyTurn(record.state);
 
     return state === record.state ? record : this.createRecordWithState(record, state, now);
@@ -838,6 +849,10 @@ export class PvpRoom extends DurableObject<Env> {
     const nextRecord = this.createHealedDuoBossRoom(record);
 
     if (nextRecord === record) {
+      if (record.status === "playing" && record.deadlineAt) {
+        await this.scheduleRoomAlarm(record);
+      }
+
       return record;
     }
 

@@ -263,6 +263,10 @@ let pvpConnection: PvpConnection | undefined;
 let pvpSnapshot: PvpRoomSnapshot | undefined;
 let pvpActionPending = false;
 let pvpSnapshotPlaybackToken = 0;
+let onlineDuoAutoOffPending = false;
+let onlineDuoAutoOffPendingTimer: number | undefined;
+let onlineDuoBossPendingWatchdogTimer: number | undefined;
+let onlineDuoBossRefreshPending = false;
 let pvpControlsBusy = false;
 let pvpRoomsVisible = false;
 let pvpRoomList: PvpRoomListEntry[] = [];
@@ -307,6 +311,8 @@ const ARENA_DUO_BOSS_ENERGY_COST = 3;
 const ONLINE_DUO_GUEST_ENERGY_REWARD = 5;
 const ONLINE_DUO_HOST_SPEND_STORAGE_PREFIX = "dust-arena-online-duo-host-spend:";
 const ONLINE_DUO_REWARD_STORAGE_PREFIX = "dust-arena-online-duo-reward:";
+const ONLINE_DUO_AUTO_OFF_PENDING_TIMEOUT_MS = 2500;
+const ONLINE_DUO_BOSS_PENDING_WATCHDOG_GRACE_MS = 1200;
 const PLAYER_TO_ENEMY_TURN_PACING_MS = 100;
 const ENEMY_TO_PLAYER_TURN_PACING_MS = 50;
 const AUTO_PLAYER_TURN_PACING_MS = 120;
@@ -1266,7 +1272,7 @@ function syncAutoBattleToggle(): void {
   }
 
   const canAutoBattle = gameMode === "pve" && !isInCity;
-  const onlineAutoActive = isOnlineDuoSeatAutoEnabled();
+  const onlineAutoActive = isOnlineDuoSeatAutoEnabled() && !onlineDuoAutoOffPending;
   const battleActive = canAutoBattle && hasStarted && state.result === "playing" && !isArenaEntryLoading;
   const autoBattleUiActive = autoBattleEnabled && battleActive;
   const offButtonActive = autoBattleUiActive || onlineAutoActive;
@@ -1283,16 +1289,110 @@ function syncAutoBattleToggle(): void {
 }
 
 function isOnlineDuoSeatAutoEnabled(): boolean {
+  return isOnlineDuoSeatAutoEnabledForSnapshot(pvpSnapshot);
+}
+
+function isOnlineDuoSeatAutoEnabledForSnapshot(snapshot?: PvpRoomSnapshot): boolean {
   return gameMode === "pvp"
     && !isInCity
-    && pvpSnapshot?.roomKind === "duoBoss"
-    && pvpSnapshot.status === "playing"
+    && !!snapshot
+    && snapshot.roomKind === "duoBoss"
+    && snapshot.status === "playing"
     && state.result === "playing"
-    && Boolean(pvpSession && pvpSnapshot.autoSeats?.[pvpSession.seat]);
+    && Boolean(snapshot.autoSeats?.[snapshot.seat]);
 }
 
 function handlePvpAutoOff(): void {
+  if (!pvpConnection || !isOnlineDuoSeatAutoEnabled() || onlineDuoAutoOffPending) {
+    return;
+  }
+
+  setOnlineDuoAutoOffPending(true);
   pvpConnection?.sendAutoOff();
+}
+
+function setOnlineDuoAutoOffPending(pending: boolean): void {
+  if (onlineDuoAutoOffPendingTimer !== undefined) {
+    window.clearTimeout(onlineDuoAutoOffPendingTimer);
+    onlineDuoAutoOffPendingTimer = undefined;
+  }
+
+  onlineDuoAutoOffPending = pending;
+
+  if (pending) {
+    onlineDuoAutoOffPendingTimer = window.setTimeout(() => {
+      onlineDuoAutoOffPendingTimer = undefined;
+      onlineDuoAutoOffPending = false;
+      syncAutoBattleToggle();
+    }, ONLINE_DUO_AUTO_OFF_PENDING_TIMEOUT_MS);
+  }
+
+  syncAutoBattleToggle();
+}
+
+function clearOnlineDuoAutoOffPending(): void {
+  setOnlineDuoAutoOffPending(false);
+}
+
+function syncOnlineDuoBossPendingWatchdog(snapshot = pvpSnapshot): void {
+  clearOnlineDuoBossPendingWatchdog();
+
+  if (
+    gameMode !== "pvp" ||
+    !snapshot ||
+    snapshot.roomKind !== "duoBoss" ||
+    snapshot.status !== "playing" ||
+    !snapshot.duoBossEnemyTurnPending ||
+    !snapshot.deadlineAt
+  ) {
+    return;
+  }
+
+  const delayMs = Math.max(0, snapshot.deadlineAt - snapshot.serverNow) + ONLINE_DUO_BOSS_PENDING_WATCHDOG_GRACE_MS;
+
+  onlineDuoBossPendingWatchdogTimer = window.setTimeout(() => {
+    onlineDuoBossPendingWatchdogTimer = undefined;
+    void refreshOnlineDuoBossSnapshot();
+  }, delayMs);
+}
+
+function clearOnlineDuoBossPendingWatchdog(): void {
+  if (onlineDuoBossPendingWatchdogTimer !== undefined) {
+    window.clearTimeout(onlineDuoBossPendingWatchdogTimer);
+    onlineDuoBossPendingWatchdogTimer = undefined;
+  }
+}
+
+async function refreshOnlineDuoBossSnapshot(): Promise<void> {
+  const session = pvpSession;
+  const snapshot = pvpSnapshot;
+
+  if (
+    onlineDuoBossRefreshPending ||
+    !session ||
+    !snapshot ||
+    snapshot.roomKind !== "duoBoss" ||
+    !snapshot.duoBossEnemyTurnPending
+  ) {
+    return;
+  }
+
+  onlineDuoBossRefreshPending = true;
+
+  try {
+    const currentRoom = await getCurrentPvpRoom();
+
+    if (!currentRoom || currentRoom.roomCode !== session.roomCode || currentRoom.token !== session.token) {
+      return;
+    }
+
+    handlePvpSnapshot(currentRoom.snapshot);
+  } catch {
+    setPvpStatus("Syncing boss turn...");
+    syncOnlineDuoBossPendingWatchdog(snapshot);
+  } finally {
+    onlineDuoBossRefreshPending = false;
+  }
 }
 
 function scheduleAutoPlayerTurn(): void {
@@ -2895,6 +2995,9 @@ function handlePvpSocketClose(): void {
   pvpSession = undefined;
   pvpSnapshot = undefined;
   pvpActionPending = false;
+  clearOnlineDuoAutoOffPending();
+  clearOnlineDuoBossPendingWatchdog();
+  onlineDuoBossRefreshPending = false;
   pvpSnapshotPlaybackToken += 1;
   clearPvpTurnTimer();
   setTurnAnimationLocked(false);
@@ -2925,6 +3028,10 @@ function handlePvpServerMessage(message: PvpServerMessage): void {
 function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
   pvpSnapshot = snapshot;
   pvpActionPending = false;
+  if (!snapshot.autoSeats?.[snapshot.seat]) {
+    clearOnlineDuoAutoOffPending();
+  }
+  syncOnlineDuoBossPendingWatchdog(snapshot);
   setPvpStatus(formatPvpRoomStatus(snapshot));
   syncPvpTurnTimer(snapshot);
 
@@ -3125,6 +3232,9 @@ function leavePvpRoom(options: { keepStatus?: boolean } = {}): void {
   pvpSession = undefined;
   pvpSnapshot = undefined;
   pvpActionPending = false;
+  clearOnlineDuoAutoOffPending();
+  clearOnlineDuoBossPendingWatchdog();
+  onlineDuoBossRefreshPending = false;
   pvpSnapshotPlaybackToken += 1;
   clearPvpTurnTimer();
   setTurnAnimationLocked(false);
