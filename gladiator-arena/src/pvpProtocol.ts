@@ -59,6 +59,14 @@ export interface PvpCancelRoomResponse {
   ok: true;
 }
 
+export interface PvpLeaveRoomRequest {
+  token: string;
+}
+
+export interface PvpLeaveRoomResponse {
+  ok: true;
+}
+
 export interface PvpRoomListEntry {
   roomCode: string;
   roomKind?: PvpRoomKind;

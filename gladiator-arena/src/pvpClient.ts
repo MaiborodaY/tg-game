@@ -5,6 +5,7 @@ import type {
   PvpCancelRoomResponse,
   PvpClientMessage,
   PvpCurrentRoomResponse,
+  PvpLeaveRoomResponse,
   PvpListRoomsResponse,
   PvpRoomKind,
   PvpRoomResponse,
@@ -53,6 +54,10 @@ export async function joinPvpRoom(roomCode: string, hero: HeroState): Promise<Pv
 
 export async function cancelPvpRoom(session: PvpRoomSession): Promise<PvpCancelRoomResponse> {
   return postPvpJson<PvpCancelRoomResponse>(`rooms/${normalizeRoomCode(session.roomCode)}/cancel`, { token: session.token });
+}
+
+export async function leavePvpRoomSession(session: PvpRoomSession): Promise<PvpLeaveRoomResponse> {
+  return postPvpJson<PvpLeaveRoomResponse>(`rooms/${normalizeRoomCode(session.roomCode)}/leave`, { token: session.token });
 }
 
 export function connectPvpRoom(session: PvpRoomSession, handlers: PvpConnectionHandlers): PvpConnection {

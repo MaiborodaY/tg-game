@@ -128,7 +128,7 @@ import { syncHudTuning } from "./hudTuning";
 import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { clearLocalHeroSave, loadLocalHeroSave, saveLocalHeroSave } from "./localHeroSave";
 import { mountMagicShop, type MagicProduct, type MagicShopApi } from "./magicShopUi";
-import { cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, listPvpRooms, type PvpConnection } from "./pvpClient";
+import { cancelPvpRoom, connectPvpRoom, createDuoBossRoom, createPvpRoom, getCurrentPvpRoom, joinPvpRoom, leavePvpRoomSession, listPvpRooms, type PvpConnection } from "./pvpClient";
 import { getPvpActorForSeat, type PvpRoomKind, type PvpRoomListEntry, type PvpRoomResponse, type PvpRoomSession, type PvpRoomSnapshot, type PvpServerMessage } from "./pvpProtocol";
 import { mountSettingsMenu } from "./settingsMenu";
 import { prewarmShopProductIcons } from "./shopItemIcons";
@@ -261,6 +261,7 @@ let gameMode: GameMode = "pve";
 let pvpSession: PvpRoomSession | undefined;
 let pvpConnection: PvpConnection | undefined;
 let pvpSnapshot: PvpRoomSnapshot | undefined;
+let locallyLeftPvpRoom: Pick<PvpRoomSession, "roomCode" | "token" | "seat"> | undefined;
 let pvpActionPending = false;
 let pvpSnapshotPlaybackToken = 0;
 let onlineDuoAutoOffPending = false;
@@ -2901,7 +2902,7 @@ async function handleSearchPvpRooms(): Promise<void> {
   try {
     const currentRoom = await getCurrentPvpRoom();
 
-    if (currentRoom) {
+    if (currentRoom && !isLocallyLeftPvpRoomResponse(currentRoom)) {
       beginPvpRoom(currentRoom);
       setPvpStatus(formatPvpRoomStatus(currentRoom.snapshot));
       return;
@@ -2952,7 +2953,7 @@ async function handleCancelPvpRoom(): Promise<void> {
     await cancelPvpRoom(session);
     pvpRoomList = pvpRoomList.filter((room) => room.roomCode !== session.roomCode);
     pvpControlsBusy = false;
-    leavePvpRoom({ keepStatus: true });
+    leavePvpRoom({ keepStatus: true, notifyServer: false });
     pvpRoomsVisible = true;
     renderPvpRoomList();
     setPvpStatus("Room cancelled.");
@@ -2963,7 +2964,15 @@ async function handleCancelPvpRoom(): Promise<void> {
 }
 
 function beginPvpRoom(response: PvpRoomResponse): void {
-  leavePvpRoom({ keepStatus: true });
+  if (isLocallyLeftPvpRoomResponse(response)) {
+    setPvpControlsBusy(false);
+    syncPvpControls();
+    setPvpStatus("Leaving previous room...");
+    return;
+  }
+
+  locallyLeftPvpRoom = undefined;
+  leavePvpRoom({ keepStatus: true, notifyServer: false });
   activeOnlineRoomKind = response.roomKind ?? response.snapshot.roomKind ?? "pvp";
   pvpSession = {
     roomCode: response.roomCode,
@@ -3015,6 +3024,10 @@ function handlePvpSocketClose(): void {
 
 function handlePvpServerMessage(message: PvpServerMessage): void {
   if (message.type === "error") {
+    if (!pvpSession) {
+      return;
+    }
+
     pvpActionPending = false;
     pvpSnapshotPlaybackToken += 1;
     setTurnAnimationLocked(false);
@@ -3022,10 +3035,18 @@ function handlePvpServerMessage(message: PvpServerMessage): void {
     return;
   }
 
+  if (!isPvpSnapshotForCurrentSession(message.snapshot)) {
+    return;
+  }
+
   handlePvpSnapshot(message.snapshot);
 }
 
 function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
+  if (!isPvpSnapshotForCurrentSession(snapshot)) {
+    return;
+  }
+
   pvpSnapshot = snapshot;
   pvpActionPending = false;
   if (!snapshot.autoSeats?.[snapshot.seat]) {
@@ -3052,6 +3073,23 @@ function handlePvpSnapshot(snapshot: PvpRoomSnapshot): void {
   if (gameMode === "pvp") {
     commitPvpSnapshotState(snapshot);
   }
+}
+
+function isPvpSnapshotForCurrentSession(snapshot: PvpRoomSnapshot): boolean {
+  if (!pvpSession) {
+    return false;
+  }
+
+  return snapshot.roomCode === pvpSession.roomCode
+    && snapshot.seat === pvpSession.seat
+    && (snapshot.roomKind ?? "pvp") === (pvpSession.roomKind ?? "pvp");
+}
+
+function isLocallyLeftPvpRoomResponse(response: PvpRoomResponse): boolean {
+  return Boolean(locallyLeftPvpRoom
+    && response.roomCode === locallyLeftPvpRoom.roomCode
+    && response.token === locallyLeftPvpRoom.token
+    && response.seat === locallyLeftPvpRoom.seat);
 }
 
 function commitPvpSnapshotState(snapshot: PvpRoomSnapshot): void {
@@ -3226,7 +3264,20 @@ function setLocalMarker(key: string): void {
   }
 }
 
-function leavePvpRoom(options: { keepStatus?: boolean } = {}): void {
+function leavePvpRoom(options: { keepStatus?: boolean; notifyServer?: boolean } = {}): void {
+  const session = pvpSession;
+
+  if (session && options.notifyServer !== false) {
+    locallyLeftPvpRoom = {
+      roomCode: session.roomCode,
+      token: session.token,
+      seat: session.seat,
+    };
+    void leavePvpRoomSession(session).catch(() => {
+      // The local opt-out still prevents an immediate auto-resume if the best-effort leave fails.
+    });
+  }
+
   pvpConnection?.close();
   pvpConnection = undefined;
   pvpSession = undefined;

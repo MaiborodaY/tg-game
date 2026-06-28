@@ -30,6 +30,8 @@ import {
   type PvpCreateRoomRequest,
   type PvpCurrentRoomResponse,
   type PvpJoinRoomRequest,
+  type PvpLeaveRoomRequest,
+  type PvpLeaveRoomResponse,
   type PvpListRoomsResponse,
   type PvpRoomListEntry,
   type PvpRoomKind,
@@ -83,6 +85,12 @@ interface PvpActiveSession {
 
 interface CreateRecordWithStateOptions {
   preserveTurnDeadline?: boolean;
+}
+
+interface PvpLeaveRoomResult {
+  response: PvpLeaveRoomResponse;
+  telegramUserIds: string[];
+  removeRoom: boolean;
 }
 
 interface TelegramInitUser {
@@ -387,6 +395,47 @@ export class PvpRoom extends DurableObject<Env> {
     return {
       response: { ok: true },
       telegramUserIds: getRoomTelegramUserIds(record),
+    };
+  }
+
+  async leaveRoom(token: string, telegramUserId?: string): Promise<PvpLeaveRoomResult> {
+    const record = await this.readLiveRoom();
+
+    if (!record) {
+      return {
+        response: { ok: true },
+        telegramUserIds: telegramUserId ? [telegramUserId] : [],
+        removeRoom: false,
+      };
+    }
+
+    const seat = this.getSeatForLeave(record, token, telegramUserId);
+
+    if (!seat) {
+      throw new Error("Cannot leave this room.");
+    }
+
+    const player = seat === "host" ? record.host : record.guest;
+    const telegramUserIds = [player?.telegramUserId ?? telegramUserId].filter((id): id is string => Boolean(id));
+
+    if (record.status === "waiting" && seat === "host") {
+      this.closeRoomSockets("Room cancelled.");
+      await this.ctx.storage.deleteAlarm();
+      await this.ctx.storage.delete(ROOM_STORAGE_KEY);
+
+      return {
+        response: { ok: true },
+        telegramUserIds: getRoomTelegramUserIds(record),
+        removeRoom: true,
+      };
+    }
+
+    this.closeSeatSockets(seat, "Left room.");
+
+    return {
+      response: { ok: true },
+      telegramUserIds,
+      removeRoom: false,
     };
   }
 
@@ -778,6 +827,11 @@ export class PvpRoom extends DurableObject<Env> {
     const resolvedState = record.roomKind === "duoBoss"
       ? resolvePvpTurn(record.state, "player", actionId)
       : resolvePvpTurn(record.state, getPvpTurnOwnerForSeat(seat), actionId);
+
+    if (record.roomKind === "duoBoss" && actionEndsTurn && shouldDelayDuoBossEnemyTurnForDefeatedHelper(resolvedState)) {
+      return this.createPendingDuoBossEnemyTurnRecord(record, resolvedState, now, timeoutStreaks);
+    }
+
     const state = record.roomKind === "duoBoss" ? resolveDuoBossSkippedDefeatedAllyTurn(resolvedState) : resolvedState;
 
     return this.createRecordWithState(record, state, now, timeoutStreaks, { preserveTurnDeadline });
@@ -945,6 +999,19 @@ export class PvpRoom extends DurableObject<Env> {
     });
   }
 
+  private closeSeatSockets(seat: PvpSeat, message: string): void {
+    this.ctx.getWebSockets().forEach((ws) => {
+      const attachment = this.getSocketAttachment(ws);
+
+      if (attachment?.seat !== seat) {
+        return;
+      }
+
+      this.sendError(ws, message);
+      ws.close(1000, message);
+    });
+  }
+
   private getSocketAttachment(ws: WebSocket): SocketAttachment | undefined {
     const attachment = ws.deserializeAttachment() as Partial<SocketAttachment> | undefined;
 
@@ -956,6 +1023,26 @@ export class PvpRoom extends DurableObject<Env> {
       return "host";
     }
     if (record.guest?.token === token) {
+      return "guest";
+    }
+    return undefined;
+  }
+
+  private getSeatForLeave(record: RoomRecord, token: string, telegramUserId?: string): PvpSeat | undefined {
+    const tokenSeat = this.getSeatForToken(record, token);
+
+    if (tokenSeat) {
+      return tokenSeat;
+    }
+
+    if (!telegramUserId) {
+      return undefined;
+    }
+
+    if (record.host?.telegramUserId === telegramUserId) {
+      return "host";
+    }
+    if (record.guest?.telegramUserId === telegramUserId) {
       return "guest";
     }
     return undefined;
@@ -1102,6 +1189,21 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     return json(response);
   }
 
+  if (request.method === "POST" && segments.length === 3 && segments[0] === "rooms" && segments[2] === "leave") {
+    const roomCode = normalizeRoomCode(segments[1] ?? "");
+    const body = (await request.json()) as PvpLeaveRoomRequest;
+    const telegramUser = await readOptionalTelegramUser(request, env);
+    const room = env.PVP_ROOM.getByName(roomCode);
+    const { response, telegramUserIds, removeRoom } = await room.leaveRoom(body.token, telegramUser ? String(telegramUser.id) : undefined);
+
+    if (removeRoom) {
+      await getPvpLobby(env).removeRoom(roomCode);
+    }
+    await getPvpLobby(env).removeActiveSessions(telegramUserIds);
+
+    return json(response);
+  }
+
   if (request.method === "GET" && segments.length === 3 && segments[0] === "rooms" && segments[2] === "ws") {
     const roomCode = normalizeRoomCode(segments[1] ?? "");
     const room = env.PVP_ROOM.getByName(roomCode);
@@ -1193,6 +1295,13 @@ function createRoomListEntry(
 
 function getRoomTelegramUserIds(record: RoomRecord): string[] {
   return [record.host?.telegramUserId, record.guest?.telegramUserId].filter((id): id is string => Boolean(id));
+}
+
+function shouldDelayDuoBossEnemyTurnForDefeatedHelper(state: CombatState): boolean {
+  return state.result === "playing"
+    && state.activeTurn === "enemy"
+    && state.player.hp > 0
+    && (!state.helper || state.helper.hp <= 0);
 }
 
 async function createUniqueRoomCode(env: Env): Promise<string> {
