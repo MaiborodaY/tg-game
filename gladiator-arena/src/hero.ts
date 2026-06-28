@@ -82,6 +82,7 @@ export interface HeroState {
   arenaBossVictoryLedger?: HeroArenaBossVictoryLedger;
   bowShotCapacity?: number;
   scrollCapacity?: number;
+  skillPointResetCount?: number;
   baseStats: HeroBaseStats;
   appearance: HeroAppearance;
   equipment: HeroEquipment;
@@ -220,6 +221,8 @@ export const HERO_ARENA_ENERGY_MAX = 10;
 export const HERO_ARENA_WIN_QUEST_GOAL = 5;
 export const HERO_ARENA_WIN_QUEST_ENERGY_REWARD = 5;
 export const HERO_ARENA_WIN_QUEST_GOLD_REWARD = 20;
+export const HERO_SKILL_POINT_RESET_BASE_PRICE = 50;
+export const HERO_SKILL_POINT_RESET_PRICE_STEP = 25;
 const HERO_SPEAR_CLINCH_RANGE_BONUS_BY_RARITY: Readonly<Record<HeroItemRarity, number>> = {
   common: 0.2,
   uncommon: 0.25,
@@ -3249,6 +3252,50 @@ export function allocateHeroSkillPoints(hero: HeroState, attribute: HeroAttribut
     baseStats: {
       ...hero.baseStats,
       [attribute]: hero.baseStats[attribute] + spentPoints,
+    },
+    updatedAt: now,
+  };
+}
+
+export function getHeroAllocatedSkillPoints(hero: HeroState): number {
+  return HERO_ATTRIBUTE_KEYS.reduce((sum, attribute) => {
+    const value = Math.floor(hero.baseStats[attribute]);
+
+    return sum + Math.max(0, Number.isFinite(value) ? value : 0);
+  }, 0);
+}
+
+export function getHeroSkillPointResetCount(hero: HeroState): number {
+  const resetCount = Math.floor(hero.skillPointResetCount ?? 0);
+
+  return Math.max(0, Number.isFinite(resetCount) ? resetCount : 0);
+}
+
+export function getHeroSkillPointResetPrice(hero: HeroState): number {
+  return HERO_SKILL_POINT_RESET_BASE_PRICE + getHeroSkillPointResetCount(hero) * HERO_SKILL_POINT_RESET_PRICE_STEP;
+}
+
+export function canResetHeroSkillPoints(hero: HeroState): boolean {
+  return getHeroAllocatedSkillPoints(hero) > 0 && hero.gold >= getHeroSkillPointResetPrice(hero);
+}
+
+export function resetHeroSkillPoints(hero: HeroState, now = new Date().toISOString()): HeroState {
+  const allocatedSkillPoints = getHeroAllocatedSkillPoints(hero);
+  const price = getHeroSkillPointResetPrice(hero);
+
+  if (allocatedSkillPoints <= 0 || hero.gold < price) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    gold: hero.gold - price,
+    skillPoints: hero.skillPoints + allocatedSkillPoints,
+    skillPointResetCount: getHeroSkillPointResetCount(hero) + 1,
+    baseStats: {
+      strength: 0,
+      agility: 0,
+      vitality: 0,
     },
     updatedAt: now,
   };

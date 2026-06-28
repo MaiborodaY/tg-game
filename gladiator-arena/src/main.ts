@@ -72,6 +72,7 @@ import {
   areHeroItemsConsumable,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  canResetHeroSkillPoints,
   claimHeroArenaWinQuestReward,
   createArenaBossEncounter,
   createArenaRandomEnemyEncounter,
@@ -89,6 +90,8 @@ import {
   getBattleReward,
   getHeroArenaEnergy,
   getHeroArenaWinQuestStatus,
+  getHeroAllocatedSkillPoints,
+  getHeroSkillPointResetPrice,
   getHeroScrollCapacityUpgradeUnlockBossTier,
   getHeroScrollUpgradeUnlockBossTier,
   grantHeroArenaEnergy,
@@ -98,6 +101,7 @@ import {
   isHeroEquipmentPreviewItem,
   markHeroArenaWinQuestOpened,
   resetHeroArenaBossVictoryLedger,
+  resetHeroSkillPoints,
   restoreHeroArenaEnergy,
   sharpenHeroActiveWeapon,
   spendHeroArenaEnergy,
@@ -3954,6 +3958,34 @@ function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number
   cityHeroEquipmentMenu.render();
 }
 
+function handleHeroAttributeReset(): void {
+  if (!canResetHeroSkillPoints(hero)) {
+    return;
+  }
+
+  const price = getHeroSkillPointResetPrice(hero);
+  const allocatedSkillPoints = getHeroAllocatedSkillPoints(hero);
+  const pointLabel = allocatedSkillPoints === 1 ? "point" : "points";
+
+  if (!window.confirm(`Reset ${allocatedSkillPoints} attribute ${pointLabel} for ${price} gold?`)) {
+    return;
+  }
+
+  const nextHero = resetHeroSkillPoints(hero);
+
+  if (nextHero === hero) {
+    return;
+  }
+
+  hero = nextHero;
+  syncPlayerCityBodyScale();
+  renderCityHero();
+  syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave("attribute-reset");
+}
+
 function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   const nextHero = buyAndEquipHeroItems(hero, {
     itemIds: [...itemIds],
@@ -4358,7 +4390,7 @@ magicShopButton?.addEventListener("click", () => {
 churchButton?.addEventListener("click", handleTemporaryChurchSkillGrant);
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 window.setInterval(syncArenaEnergyTimerDisplays, ARENA_ENERGY_TIMER_REFRESH_MS);
-mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
+mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate, handleHeroAttributeReset);
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,

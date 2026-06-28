@@ -26,9 +26,11 @@ import {
   createHeroPreviewEquipment,
   deriveHeroStats,
   getHeroArenaEnergy,
+  getHeroAllocatedSkillPoints,
   getHeroAttributeTotals,
   getHeroEquipmentSetBonusSummary,
   getHeroItemQuantity,
+  getHeroSkillPointResetPrice,
   getHeroItemWeaponClass,
   getHeroShurikenItemId,
   getHeroTotalWins,
@@ -343,6 +345,7 @@ export interface CityHeroWidgetRefs {
   profilePortrait: HTMLElement | null;
   profileName: HTMLElement | null;
   profileResetButton: HTMLButtonElement | null;
+  profileResetPointsButton: HTMLButtonElement | null;
   profileGold: HTMLElement | null;
   profileArenaEnergy: HTMLElement | null;
   profileLevel: HTMLElement | null;
@@ -371,6 +374,7 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     profilePortrait: root.querySelector<HTMLElement>("#heroProfilePortrait"),
     profileName: root.querySelector<HTMLElement>("#heroProfileName"),
     profileResetButton: root.querySelector<HTMLButtonElement>("#heroProfileResetButton"),
+    profileResetPointsButton: root.querySelector<HTMLButtonElement>("#heroProfileResetPointsButton"),
     profileGold: root.querySelector<HTMLElement>("#heroProfileGold"),
     profileArenaEnergy: root.querySelector<HTMLElement>("#heroProfileArenaEnergy"),
     profileLevel: root.querySelector<HTMLElement>("#heroProfileLevel"),
@@ -498,6 +502,23 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   if (refs.skillPoints) {
     refs.skillPoints.textContent = hero.skillPoints > 0 ? `${hero.skillPoints} POINTS READY` : "NO POINTS";
     refs.skillPoints.classList.toggle("city-profile__points--ready", hero.skillPoints > 0);
+  }
+
+  if (refs.profileResetPointsButton) {
+    const resetPrice = getHeroSkillPointResetPrice(hero);
+    const allocatedSkillPoints = getHeroAllocatedSkillPoints(hero);
+    const canAffordReset = hero.gold >= resetPrice;
+
+    refs.profileResetPointsButton.hidden = allocatedSkillPoints <= 0;
+    refs.profileResetPointsButton.disabled = allocatedSkillPoints <= 0 || !canAffordReset;
+    refs.profileResetPointsButton.textContent = `RESET ${resetPrice}`;
+    refs.profileResetPointsButton.setAttribute("aria-label", `Reset attribute points for ${resetPrice} gold`);
+    refs.profileResetPointsButton.title =
+      allocatedSkillPoints <= 0
+        ? "No spent points"
+        : canAffordReset
+          ? `Reset ${allocatedSkillPoints} spent points for ${resetPrice} gold`
+          : `Need ${resetPrice} gold`;
   }
 
   renderCityHeroProfileEquipment(refs, hero, highlightedEquipmentItems);
@@ -1124,7 +1145,11 @@ export function mountCityHeroAppearanceMenu(refs: CityHeroWidgetRefs, options: C
   }
 }
 
-export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAllocate: (attribute: HeroAttributeKey, amount: number) => void): () => void {
+export function mountCityHeroAttributeControls(
+  refs: CityHeroWidgetRefs,
+  onAllocate: (attribute: HeroAttributeKey, amount: number) => void,
+  onReset?: () => void,
+): () => void {
   const cleanups = HERO_ATTRIBUTE_KEYS.flatMap((attribute) => {
     const button = refs.attributeButtons[attribute];
 
@@ -1205,6 +1230,18 @@ export function mountCityHeroAttributeControls(refs: CityHeroWidgetRefs, onAlloc
       },
     ];
   });
+
+  if (refs.profileResetPointsButton && onReset) {
+    const button = refs.profileResetPointsButton;
+    const handleClick = () => {
+      if (!button.disabled) {
+        onReset();
+      }
+    };
+
+    button.addEventListener("click", handleClick);
+    cleanups.push(() => button.removeEventListener("click", handleClick));
+  }
 
   return () => cleanups.forEach((cleanup) => cleanup());
 }

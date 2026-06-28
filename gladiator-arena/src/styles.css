@@ -5733,6 +5733,50 @@ body.debug-active .city-menu__portrait-button:active {
   animation: city-profile-points-ready-pulse 1.25s ease-in-out infinite;
 }
 
+.city-profile__points-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 22px;
+  padding: 3px 7px 4px;
+  border: 1px solid rgba(255, 220, 146, 0.36);
+  border-radius: 5px;
+  color: #ffe0a0;
+  background:
+    linear-gradient(180deg, rgba(101, 43, 18, 0.94), rgba(41, 13, 5, 0.94)),
+    var(--ui-panel-wood-texture) center / 180px 180px repeat;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 146, 0.16),
+    0 1px 0 rgba(8, 2, 1, 0.62);
+  font: inherit;
+  font-size: clamp(0.48rem, 1.85vw, 0.58rem);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.city-profile__points-reset::before {
+  content: "";
+  display: block;
+  width: 13px;
+  height: 13px;
+  background: url("./assets/ui/shop/gold-coin.webp") center / contain no-repeat;
+  filter: drop-shadow(0 1px 0 rgba(20, 6, 2, 0.7));
+}
+
+.city-profile__points-reset:disabled {
+  color: rgba(255, 224, 160, 0.48);
+  border-color: rgba(255, 220, 146, 0.18);
+  cursor: default;
+  filter: grayscale(0.8);
+  opacity: 0.68;
+}
+
+.city-profile__points-reset[hidden] {
+  display: none;
+}
+
 .city-profile__attributes {
   position: relative;
   z-index: 1;
@@ -6284,11 +6328,18 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__section-heading--attributes::after {
+  order: 3;
+}
+
+.city-profile__section-heading--attributes .city-profile__points-reset {
   order: 2;
+  flex: 0 0 auto;
+  max-width: 94px;
+  font-size: clamp(0.46rem, 1.7vw, 0.54rem);
 }
 
 .city-profile__section-heading--attributes .city-profile__points {
-  order: 3;
+  order: 4;
 }
 
 .city-profile__points {
