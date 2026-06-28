@@ -503,23 +503,13 @@ function clearArenaEntryFailsafeTimer(): void {
   }
 }
 
-function releaseStalledArenaEntryGate(token: number): void {
+function keepStalledArenaEntryLocked(token: number): void {
   if (arenaEntryToken !== token || !isArenaEntryLoading) {
     return;
   }
 
-  arenaEntryToken += 1;
-  isArenaEntryLoading = false;
-  isArenaEntryTransitionPlaying = false;
-  enemyTimerStatus = "idle";
-  clearArenaEntryLoaderTimer();
-  clearArenaEntryFailsafeTimer();
-  setArenaEntryLoaderVisible(false);
-  dom.gameScreen.classList.remove("battle-screen--arena-entry");
-  setTurnAnimationLocked(false);
-  syncAutoBattleToggle();
+  setArenaEntryLoaderVisible(true);
   syncActionArc();
-  refreshArenaLayout();
 }
 
 function beginArenaEntryGate(): number {
@@ -539,7 +529,7 @@ function beginArenaEntryGate(): number {
   }, ARENA_ENTRY_LOADER_DELAY_MS);
   arenaEntryFailsafeTimer = window.setTimeout(() => {
     arenaEntryFailsafeTimer = undefined;
-    releaseStalledArenaEntryGate(token);
+    keepStalledArenaEntryLocked(token);
   }, ARENA_ENTRY_FAILSAFE_TIMEOUT_MS);
   syncActionArc();
 
@@ -1135,7 +1125,9 @@ function syncTurnProbe(): void {
 function syncActionArc(): void {
   const controlledActor = getControlledActionActor();
   const lockedTurn = controlledActor === "helper" ? "player" : "enemy";
-  const visibleState = isTurnAnimationLocked || isArenaEntryLoading ? { ...state, activeTurn: lockedTurn } : state;
+  const visibleState = isTurnAnimationLocked || isArenaEntryLoading || isArenaEntryTransitionPlaying
+    ? { ...state, activeTurn: lockedTurn }
+    : state;
 
   actionArc?.sync(visibleState);
   classicActionBar?.sync(visibleState);
@@ -1347,7 +1339,7 @@ function handleAutoBattleAction(): void {
 }
 
 function handleAction(actionId: ActionId): void {
-  if (!hasStarted || isInCity || isTurnAnimationLocked || isArenaEntryLoading) {
+  if (!hasStarted || isInCity || isTurnAnimationLocked || isArenaEntryLoading || isArenaEntryTransitionPlaying) {
     return;
   }
 
