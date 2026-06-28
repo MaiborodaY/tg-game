@@ -209,6 +209,9 @@ const churchButton = document.querySelector<HTMLButtonElement>("#churchButton");
 const cityRenderDebugButton = document.querySelector<HTMLButtonElement>("#cityRenderDebugButton");
 const cityRenderDebugPanel = document.querySelector<HTMLElement>("#cityRenderDebugPanel");
 const cityRenderDebugOutput = document.querySelector<HTMLElement>("#cityRenderDebugOutput");
+const cityAdminButton = document.querySelector<HTMLButtonElement>("#cityAdminButton");
+const cityAdminPanel = document.querySelector<HTMLElement>("#cityAdminPanel");
+const cityAdminGoldButton = document.querySelector<HTMLButtonElement>("#cityAdminGoldButton");
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId; duo?: boolean };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
@@ -307,6 +310,8 @@ const TEMPORARY_CHURCH_SKILL_GRANT_TELEGRAM_USER_IDS = new Set(["297730487", "31
 const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const ARENA_ENERGY_RESTORE_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
 const RENDER_DEBUG_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
+const CITY_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
+const CITY_ADMIN_GOLD_GRANT_AMOUNT = 100;
 const TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS = new Set(["http://localhost:5173"]);
 const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";
 const MOBILE_RENDER_DEBUG_PLATFORM_PATTERN = /android|ios|iphone|ipad|ipod|mobile/;
@@ -403,6 +408,7 @@ mountSettingsMenu();
 mountArenaMenu();
 mountCityTimeToggle(cityTimeToggle, cityMenu);
 mountCityRenderDebugControls();
+mountCityAdminControls();
 
 function canShowLocalDebugRestartButton(): boolean {
   return window.location.origin === LOCAL_DEBUG_RESTART_BUTTON_ORIGIN;
@@ -441,6 +447,10 @@ function setCityRenderDebugOpen(open: boolean): void {
     return;
   }
 
+  if (open) {
+    setCityAdminOpen(false);
+  }
+
   cityRenderDebugPanel.hidden = !open;
   cityRenderDebugButton.setAttribute("aria-expanded", String(open));
 
@@ -455,6 +465,68 @@ function refreshCityRenderDebugPanel(): void {
   }
 
   cityRenderDebugOutput.textContent = createCityRenderDebugReport();
+}
+
+function mountCityAdminControls(): void {
+  if (!cityAdminButton || !cityAdminPanel || !cityAdminGoldButton) {
+    return;
+  }
+
+  const visible = canShowCityAdminControls();
+
+  cityAdminButton.hidden = !visible;
+  cityAdminPanel.hidden = true;
+
+  if (!visible) {
+    return;
+  }
+
+  cityAdminButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setCityAdminOpen(cityAdminPanel.hidden);
+  });
+
+  cityAdminPanel.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
+
+  cityAdminGoldButton.addEventListener("click", handleAdminGoldGrant);
+}
+
+function setCityAdminOpen(open: boolean): void {
+  if (!cityAdminButton || !cityAdminPanel) {
+    return;
+  }
+
+  if (open) {
+    setCityRenderDebugOpen(false);
+  }
+
+  cityAdminPanel.hidden = !open;
+  cityAdminButton.setAttribute("aria-expanded", String(open));
+}
+
+function canShowCityAdminControls(): boolean {
+  return canUseTelegramUserIdGatedAction(CITY_ADMIN_TELEGRAM_USER_IDS);
+}
+
+function handleAdminGoldGrant(): void {
+  if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  const currentGold = Number.isFinite(hero.gold) ? Math.max(0, Math.floor(hero.gold)) : 0;
+
+  hero = {
+    ...hero,
+    gold: currentGold + CITY_ADMIN_GOLD_GRANT_AMOUNT,
+    updatedAt: new Date().toISOString(),
+  };
+  saveLocalHeroSave(hero);
+  queueHeroCloudSave("admin-gold-grant");
+  renderCityHero();
+  syncCityShopHeroState();
 }
 
 function createCityRenderDebugReport(): string {

@@ -3963,7 +3963,8 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
     radial-gradient(circle at 50% 50%, #ffd05a 0 58%, #b56822 59% 100%);
 }
 
-.city-menu__render-debug-button {
+.city-menu__render-debug-button,
+.city-menu__admin-button {
   position: absolute;
   top: max(54px, calc(env(safe-area-inset-top) + 54px));
   left: 10px;
@@ -3992,19 +3993,27 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   pointer-events: auto;
 }
 
-.city-menu__render-debug-button[hidden] {
+.city-menu__admin-button {
+  left: 82px;
+}
+
+.city-menu__render-debug-button[hidden],
+.city-menu__admin-button[hidden] {
   display: none;
 }
 
-.city-menu__render-debug-button:hover {
+.city-menu__render-debug-button:hover,
+.city-menu__admin-button:hover {
   filter: brightness(1.06);
 }
 
-.city-menu__render-debug-button:active {
+.city-menu__render-debug-button:active,
+.city-menu__admin-button:active {
   transform: translateY(2px);
 }
 
-.city-menu__render-debug-panel {
+.city-menu__render-debug-panel,
+.city-menu__admin-panel {
   position: absolute;
   top: max(88px, calc(env(safe-area-inset-top) + 88px));
   left: 10px;
@@ -4026,15 +4035,48 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   text-shadow: 1px 1px 0 rgba(22, 7, 3, 0.86);
 }
 
-.city-menu__render-debug-panel[hidden] {
+.city-menu__admin-panel {
+  width: min(188px, calc(100% - 20px));
+}
+
+.city-menu__render-debug-panel[hidden],
+.city-menu__admin-panel[hidden] {
   display: none;
 }
 
-.city-menu__render-debug-panel h2 {
+.city-menu__render-debug-panel h2,
+.city-menu__admin-panel h2 {
   margin: 0 0 7px;
   font-size: 0.78rem;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.city-menu__admin-action {
+  display: grid;
+  width: 100%;
+  min-height: 34px;
+  place-items: center;
+  padding: 0 12px;
+  border: 2px solid #35180d;
+  border-radius: 8px;
+  color: #2b1005;
+  background:
+    linear-gradient(180deg, #ffe6a6, #f7a244 56%, #a94a16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 207, 0.78),
+    inset 0 -2px 0 rgba(84, 28, 8, 0.34),
+    0 2px 0 rgba(22, 7, 3, 0.68);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 230, 164, 0.68);
+  cursor: pointer;
+}
+
+.city-menu__admin-action:active {
+  transform: translateY(1px);
 }
 
 .city-menu__render-debug-output {
@@ -4050,10 +4092,18 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 .city-menu--magic-shop-open .city-menu__render-debug-button,
 .city-menu--profile-open .city-menu__render-debug-button,
 .city-menu--arena-select-open .city-menu__render-debug-button,
+.city-menu--armory-open .city-menu__admin-button,
+.city-menu--magic-shop-open .city-menu__admin-button,
+.city-menu--profile-open .city-menu__admin-button,
+.city-menu--arena-select-open .city-menu__admin-button,
 .city-menu--armory-open .city-menu__render-debug-panel,
 .city-menu--magic-shop-open .city-menu__render-debug-panel,
 .city-menu--profile-open .city-menu__render-debug-panel,
-.city-menu--arena-select-open .city-menu__render-debug-panel {
+.city-menu--arena-select-open .city-menu__render-debug-panel,
+.city-menu--armory-open .city-menu__admin-panel,
+.city-menu--magic-shop-open .city-menu__admin-panel,
+.city-menu--profile-open .city-menu__admin-panel,
+.city-menu--arena-select-open .city-menu__admin-panel {
   opacity: 0;
   pointer-events: none;
 }

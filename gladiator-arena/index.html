@@ -59,6 +59,20 @@
             <h2>Render Debug</h2>
             <pre id="cityRenderDebugOutput" class="city-menu__render-debug-output"></pre>
           </section>
+          <button
+            id="cityAdminButton"
+            class="city-menu__admin-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="cityAdminPanel"
+            hidden
+          >
+            Admin
+          </button>
+          <section id="cityAdminPanel" class="city-menu__admin-panel" aria-label="Admin tools" hidden>
+            <h2>Admin</h2>
+            <button id="cityAdminGoldButton" class="city-menu__admin-action" type="button">+100 Gold</button>
+          </section>
           <div class="settings-menu settings-menu--city" data-settings-menu>
             <button
               id="citySettingsButton"
