@@ -304,6 +304,7 @@ const AUTO_PLAYER_TURN_PACING_MS = 120;
 const AUTO_BATTLE_PANEL_TRANSITION_MS = 320;
 const AUTO_FIGHT_SUCCESS_RATE_SIMULATIONS = 20;
 const AUTO_FIGHT_MAX_TURNS = 300;
+const AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER = 0.5;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -3230,7 +3231,9 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
       random,
     });
     const rewardTimestamp = new Date().toISOString();
-    const rewardApplication = applyCombatReward(hero, resolvedState, rewardTimestamp);
+    const rewardApplication = applyCombatReward(hero, resolvedState, rewardTimestamp, random, {
+      randomEnemyLootChanceMultiplier: AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER,
+    });
     const { loot, heroAfterReward } = rewardApplication;
 
     hero = heroAfterReward;

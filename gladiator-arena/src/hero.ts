@@ -409,6 +409,11 @@ export interface CombatRewardApplication {
   heroAfterReward: HeroState;
 }
 
+export interface CombatRewardOptions {
+  recordBossVictory?: boolean;
+  randomEnemyLootChanceMultiplier?: number;
+}
+
 export const DEFAULT_HERO_ID = "local-hero";
 export const DEFAULT_HERO_NAME = "Borshemir";
 export const HERO_MAX_LEVEL = 100;
@@ -2733,13 +2738,15 @@ export function applyCombatReward(
   combat: CombatState,
   now = new Date().toISOString(),
   random = Math.random,
-  options: { recordBossVictory?: boolean } = {},
+  options: CombatRewardOptions = {},
 ): CombatRewardApplication {
   const shouldRecordBossVictory = options.recordBossVictory ?? true;
   const reward = getBattleReward(combat);
   const heroAfterConsumables = applyCombatConsumableUsage(hero, combat, now);
   const heroAfterWinRecord = combat.result === "win" ? recordHeroWin(heroAfterConsumables, now) : heroAfterConsumables;
-  const rolledLoot = combat.result === "win" ? rollCombatRewardLoot(heroAfterWinRecord, combat, random) : [];
+  const rolledLoot = combat.result === "win"
+    ? rollCombatRewardLoot(heroAfterWinRecord, combat, random, options.randomEnemyLootChanceMultiplier)
+    : [];
   const heroBeforeReward = shouldRecordBossVictory && combat.result === "win" && combat.encounter?.kind === "boss"
     ? recordHeroArenaBossVictoryForTier(recordArenaBossDefeat(heroAfterWinRecord, combat.encounter.opponentId, now), combat.encounter.tierId, now)
     : heroAfterWinRecord;
@@ -2946,13 +2953,18 @@ function getCombatEncounterLootTable(combat: CombatState): readonly ArenaLootTab
   return [];
 }
 
-function rollCombatRewardLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
+function rollCombatRewardLoot(
+  hero: HeroState,
+  combat: CombatState,
+  random: () => number,
+  randomEnemyLootChanceMultiplier = 1,
+): ArenaLootDrop[] {
   if (combat.encounter?.kind === "boss") {
     return rollBossCombatLoot(hero, combat, random);
   }
 
   if (combat.encounter?.kind === "random") {
-    return rollRandomEnemyCombatLoot(hero, combat, random);
+    return rollRandomEnemyCombatLoot(hero, combat, random, randomEnemyLootChanceMultiplier);
   }
 
   return rollCombatEncounterLoot(combat, random);
@@ -2964,7 +2976,12 @@ function rollBossCombatLoot(hero: HeroState, combat: CombatState, random: () => 
   return entries.length > 0 ? [createArenaLootDrop(pickRandom(entries, random))] : [];
 }
 
-function rollRandomEnemyCombatLoot(hero: HeroState, combat: CombatState, random: () => number): ArenaLootDrop[] {
+function rollRandomEnemyCombatLoot(
+  hero: HeroState,
+  combat: CombatState,
+  random: () => number,
+  chanceMultiplier = 1,
+): ArenaLootDrop[] {
   const encounter = combat.encounter;
 
   if (!encounter || !canRollRandomEnemyEquipmentLoot(encounter)) {
@@ -2974,7 +2991,7 @@ function rollRandomEnemyCombatLoot(hero: HeroState, combat: CombatState, random:
   const entries = createRandomEnemyEquipmentLootEntries(encounter.opponentId, combat.enemy.equipment)
     .filter((candidate) => canHeroReceiveEquipmentLootEntry(hero, candidate));
 
-  if (entries.length === 0 || random() >= getRandomEnemyEquipmentDropChance(encounter.difficultyId, encounter.tierId)) {
+  if (entries.length === 0 || random() >= getRandomEnemyEquipmentDropChance(encounter.difficultyId, encounter.tierId, chanceMultiplier)) {
     return [];
   }
 
@@ -3044,11 +3061,15 @@ function createRandomEnemyEquipmentLootEntries(sourceId: string, equipment: Hero
   return entries;
 }
 
-function getRandomEnemyEquipmentDropChance(difficultyId: ArenaDifficultyId | undefined, tierId: number): number {
+function getRandomEnemyEquipmentDropChance(
+  difficultyId: ArenaDifficultyId | undefined,
+  tierId: number,
+  chanceMultiplier = 1,
+): number {
   const baseChance = RANDOM_ENEMY_EQUIPMENT_DROP_CHANCES_BY_DIFFICULTY[difficultyId ?? DEFAULT_ARENA_DIFFICULTY_ID];
   const tierMultiplier = RANDOM_ENEMY_EQUIPMENT_DROP_CHANCE_MULTIPLIERS_BY_TIER[Math.max(1, Math.floor(tierId))] ?? 1;
 
-  return clampEnemyRollChance(baseChance * tierMultiplier);
+  return clampEnemyRollChance(baseChance * tierMultiplier * Math.max(0, chanceMultiplier));
 }
 
 function pickRandomEnemyEquipmentLootEntry(entries: readonly ArenaLootTableEntry[], tierId: number, random: () => number): ArenaLootTableEntry {
