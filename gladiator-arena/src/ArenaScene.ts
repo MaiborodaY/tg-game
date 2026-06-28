@@ -1314,7 +1314,6 @@ interface PlayerEquipmentChangeDetail {
 
 let readyCallback: ((scene: ArenaScene) => void) | undefined;
 let cityReadyCallback: ((scene: CityHeroScene) => void) | undefined;
-let heroPortraitReadyCallback: ((scene: HeroPortraitScene) => void) | undefined;
 let debugAnimationScene: DebugCharacterScene | undefined;
 let activePlayerEquipment: HeroEquipment | undefined;
 let activePlayerWeaponEnchantments: HeroWeaponEnchantments = {};
@@ -4084,129 +4083,378 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
   };
 }
 
-class HeroPortraitScene extends Phaser.Scene {
-  private fighter?: FighterVisual;
-  private unsubscribeDebugTuning?: () => void;
-  private unsubscribePlayerSettings?: () => void;
-  private equipment?: HeroEquipment;
-  private appearance?: HeroAppearance;
-  private equipmentSyncToken = 0;
-  private appearanceSyncToken = 0;
-
-  constructor() {
-    super("HeroPortraitScene");
-  }
-
-  preload(): void {
-    preloadPaperDollAssets(this);
-  }
-
-  create(): void {
-    this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
-    this.fighter = createPaperDollFighter(this, this.createPortraitOptions());
-    this.fighter.name.setVisible(false);
-    this.sync();
-    this.unsubscribeDebugTuning = subscribeDebugTuning(() => this.sync());
-    this.unsubscribePlayerSettings = subscribePlayerSettings(() => {
-      ensurePaperDollAssetResolution(this, getPlayerSettings().lowEffects, [this.fighter], () => this.sync());
-    });
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.unsubscribeDebugTuning?.();
-      this.unsubscribePlayerSettings?.();
-    });
-    heroPortraitReadyCallback?.(this);
-  }
-
-  async setEquipment(equipment: HeroEquipment): Promise<void> {
-    const syncToken = this.equipmentSyncToken + 1;
-
-    this.equipmentSyncToken = syncToken;
-    this.equipment = { ...equipment };
-    await ensurePaperDollEquipmentAssetsLoaded(this, [this.equipment]);
-    if (syncToken !== this.equipmentSyncToken) {
-      return;
-    }
-
-    const rig = this.fighter?.paperDollRig;
-
-    if (rig) {
-      rig.equipmentState = { ...this.equipment };
-      syncPaperDollEquipmentVisibility(rig);
-    }
-
-    this.sync();
-  }
-
-  async setAppearance(appearance: HeroAppearance): Promise<void> {
-    const syncToken = this.appearanceSyncToken + 1;
-
-    this.appearanceSyncToken = syncToken;
-    this.appearance = { ...appearance };
-    await ensurePaperDollAppearanceAssetsLoaded(this, [this.appearance]);
-    if (syncToken !== this.appearanceSyncToken) {
-      return;
-    }
-
-    syncPaperDollAppearanceState(this.fighter?.paperDollRig, this.appearance);
-    this.sync();
-  }
-
-  captureFrame(callback: (src: string) => void): void {
-    this.sync();
-    this.game.renderer.snapshot((snapshot) => {
-      if (snapshot instanceof HTMLImageElement && snapshot.src) {
-        callback(snapshot.src);
-      }
-    }, "image/png");
-  }
-
-  private sync(): void {
-    if (!this.fighter) {
-      return;
-    }
-
-    syncFighterBodyPreset(this.fighter);
-    applyPaperDollRigTuning(this.fighter, HERO_PORTRAIT_SCALE, HERO_PORTRAIT_FEET_Y, HERO_PORTRAIT_CENTER_X);
-    applyBodyAnimationBlend(this.fighter, getActiveBodyAnimation("idle", this.fighter.paperDollRig?.bodyPresetKey), 0);
-    syncHeroPortraitCrop(this.fighter);
-  }
-
-  private createPortraitOptions(): PaperDollFighterOptions {
-    const equipment = this.equipment ?? activePlayerEquipment;
-    const appearance = this.appearance ?? activePlayerAppearance;
-
-    return {
-      ...createPlayerPaperDollOptions(HERO_PORTRAIT_CENTER_X, 0, equipment, appearance),
-      castsShadow: false,
-      equipment: equipment ? { ...equipment } : undefined,
-      appearance: { ...appearance },
-      appearanceAssetKeys: createPlayerAppearanceAssetKeys(appearance, debugTuning.paperDollBodyPreset),
-      usesPlayerEquipment: false,
-    };
-  }
+interface CanvasPortraitTransform {
+  x: number;
+  y: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
 }
 
-function syncHeroPortraitCrop(fighter: FighterVisual): void {
-  const rig = fighter.paperDollRig;
+interface CanvasPortraitImageTuning extends CanvasPortraitTransform {
+  flipX?: boolean;
+  flipY?: boolean;
+}
 
-  if (!rig) {
+type CanvasPortraitEquipmentLayer = "legs" | "torso" | "head" | "weapon" | "arms";
+
+const canvasPortraitImageCache = new Map<string, Promise<HTMLImageElement | undefined>>();
+const canvasPortraitDefaultImageTuning: CanvasPortraitImageTuning = {
+  x: 0,
+  y: 0,
+  angle: 0,
+  scaleX: 1,
+  scaleY: 1,
+};
+
+async function renderHeroPortraitCanvasSnapshot(
+  equipmentOverride: HeroEquipment | undefined,
+  appearanceOverride: HeroAppearance,
+): Promise<string | undefined> {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    return undefined;
+  }
+
+  const equipment = equipmentOverride ? { ...equipmentOverride } : activePlayerEquipment;
+  const appearance = { ...appearanceOverride };
+  const bodyPresetKey = debugTuning.paperDollBodyPreset;
+  const bodyPreset = getPaperDollBodyPreset(bodyPresetKey);
+  const lowRes = getPlayerSettings().lowEffects;
+  const rootTransform: CanvasPortraitTransform = {
+    x: HERO_PORTRAIT_CENTER_X,
+    y: HERO_PORTRAIT_FEET_Y,
+    angle: 0,
+    scaleX: PAPER_DOLL_BASE_SCALE * HERO_PORTRAIT_SCALE,
+    scaleY: PAPER_DOLL_BASE_SCALE * HERO_PORTRAIT_SCALE,
+  };
+  const equipmentVisibility = createPlayerEquipmentVisibility(
+    equipment,
+    getPreferredPaperDollWeaponSlot(PAPER_DOLL_EQUIPMENT_SLOT_KEYS, equipment),
+  );
+
+  canvas.width = HERO_PORTRAIT_VIEWER_SIZE;
+  canvas.height = HERO_PORTRAIT_VIEWER_SIZE;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingEnabled = false;
+
+  const drawBodyPart = async (partKey: PaperDollPartKey): Promise<void> => {
+    if (HERO_PORTRAIT_HIDDEN_PART_KEYS.includes(partKey)) {
+      return;
+    }
+
+    const assetKey = getCanvasPortraitBodyPartAssetKey(partKey, bodyPreset);
+    const config = getCanvasPortraitBodyPartConfig(partKey);
+
+    if (!assetKey || !config) {
+      return;
+    }
+
+    await drawCanvasPortraitAsset(
+      context,
+      assetKey,
+      lowRes,
+      [rootTransform, getCanvasPortraitPartTransform(partKey, bodyPresetKey)],
+      config,
+      getCanvasPortraitBodyPartImageTuning(partKey, bodyPresetKey),
+    );
+
+    if (partKey === "head") {
+      await drawCanvasPortraitHeadLayers(context, lowRes, rootTransform, bodyPresetKey, bodyPreset, appearance);
+    }
+  };
+
+  const drawEquipmentLayer = async (layer: CanvasPortraitEquipmentLayer): Promise<void> => {
+    const slotKeys = PAPER_DOLL_EQUIPMENT_SLOT_KEYS
+      .filter((slotKey) => getCanvasPortraitEquipmentLayer(slotKey) === layer)
+      .filter((slotKey) => !HERO_PORTRAIT_HIDDEN_EQUIPMENT_SLOT_KEYS.includes(slotKey))
+      .filter((slotKey) => equipmentVisibility[slotKey])
+      .sort((left, right) => (PAPER_DOLL_EQUIPMENT_LAYER_ORDER[left] ?? 0) - (PAPER_DOLL_EQUIPMENT_LAYER_ORDER[right] ?? 0)
+        || PAPER_DOLL_EQUIPMENT_SLOT_KEYS.indexOf(left) - PAPER_DOLL_EQUIPMENT_SLOT_KEYS.indexOf(right));
+
+    for (const slotKey of slotKeys) {
+      await drawCanvasPortraitEquipmentSlot(context, slotKey, lowRes, rootTransform, bodyPresetKey, equipment);
+    }
+  };
+
+  for (const partKey of PAPER_DOLL_PART_ORDER) {
+    await drawBodyPart(partKey);
+    if (partKey === "frontFoot") {
+      await drawEquipmentLayer("legs");
+    } else if (partKey === "torso") {
+      await drawEquipmentLayer("torso");
+    } else if (partKey === "head") {
+      await drawEquipmentLayer("head");
+    } else if (partKey === "frontForearm") {
+      await drawEquipmentLayer("weapon");
+    } else if (partKey === "frontHand") {
+      await drawEquipmentLayer("arms");
+    }
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
+function getCanvasPortraitBodyPartAssetKey(partKey: PaperDollPartKey, bodyPreset: PaperDollBodyPresetDefinition): string | undefined {
+  if (partKey === "head") {
+    return bodyPreset.headAssetKey;
+  }
+
+  if (partKey === "torso") {
+    return bodyPreset.torsoAssetKey;
+  }
+
+  return bodyPreset.bodyPartAssetKeys[partKey] ?? DEFAULT_PAPER_DOLL_BODY_PART_ASSET_KEYS[partKey];
+}
+
+function getCanvasPortraitBodyPartConfig(partKey: PaperDollPartKey): PaperDollPartAssetConfig | undefined {
+  if (partKey === "head") {
+    return PAPER_DOLL_HEAD_ASSET_CONFIG;
+  }
+
+  if (partKey === "torso") {
+    return PAPER_DOLL_TORSO_ASSET_CONFIG;
+  }
+
+  return PAPER_DOLL_PART_ASSET_CONFIGS[partKey];
+}
+
+function getCanvasPortraitPartTransform(partKey: PaperDollPartKey, bodyPresetKey: PaperDollBodyPreset): CanvasPortraitTransform {
+  const pivot = PAPER_DOLL_PART_PIVOTS[partKey];
+  const animation = getActiveBodyAnimation("idle", bodyPresetKey);
+  const debugRigParts = getActiveDebugTuning() ? getDebugBodyPresetTuning(bodyPresetKey).rigParts : undefined;
+  const tuning = animation.enabled && animation.activeParts[partKey]
+    ? animation.base[partKey] ?? defaultRigPartTuning
+    : debugRigParts?.[partKey] ?? DEFAULT_RIG_PARTS[partKey] ?? defaultRigPartTuning;
+
+  return {
+    x: pivot.x + tuning.x,
+    y: pivot.y + tuning.y,
+    angle: tuning.angle,
+    scaleX: tuning.scaleX * (tuning.flipX ? -1 : 1),
+    scaleY: tuning.scaleY * (tuning.flipY ? -1 : 1),
+  };
+}
+
+function getCanvasPortraitBodyPartImageTuning(partKey: PaperDollPartKey, bodyPresetKey: PaperDollBodyPreset): CanvasPortraitImageTuning {
+  const tuning = getBodyPresetTuning(bodyPresetKey).bodyPartLayers[partKey] ?? defaultRigPartTuning;
+
+  return {
+    x: tuning.x,
+    y: tuning.y,
+    angle: tuning.angle,
+    scaleX: tuning.scaleX,
+    scaleY: tuning.scaleY,
+    flipX: tuning.flipX,
+    flipY: tuning.flipY,
+  };
+}
+
+async function drawCanvasPortraitHeadLayers(
+  context: CanvasRenderingContext2D,
+  lowRes: boolean,
+  rootTransform: CanvasPortraitTransform,
+  bodyPresetKey: PaperDollBodyPreset,
+  bodyPreset: PaperDollBodyPresetDefinition,
+  appearance: HeroAppearance,
+): Promise<void> {
+  const headTransform = getCanvasPortraitPartTransform("head", bodyPresetKey);
+
+  for (const layerKey of FACE_ASSET_LAYER_KEYS) {
+    const assetKey = bodyPreset.faceAssetKeys?.[layerKey];
+    const tuning = getDebugBodyPresetTuning(bodyPresetKey).faceAssetLayers[layerKey];
+
+    if (assetKey && tuning) {
+      await drawCanvasPortraitAsset(context, assetKey, lowRes, [rootTransform, headTransform, canvasTransformFromLayerTuning(tuning)], PAPER_DOLL_FACE_ASSET_CONFIGS[layerKey]);
+    }
+  }
+
+  if (!shouldUsePaperDollAppearanceAssets(bodyPresetKey)) {
     return;
   }
 
-  HERO_PORTRAIT_HIDDEN_PART_KEYS.forEach((partKey) => {
-    rig.parts[partKey]?.setVisible(false);
+  const appearanceAssetKeys = createPlayerAppearanceAssetKeys(appearance, bodyPresetKey);
+  const appearanceLayerTuning = getDebugBodyPresetTuning(bodyPresetKey).appearanceLayers;
+
+  for (const layerKey of APPEARANCE_LAYER_KEYS) {
+    const assetKey = appearanceAssetKeys[layerKey];
+    const tuning = appearanceLayerTuning[layerKey] ?? DEFAULT_APPEARANCE_LAYERS[layerKey];
+
+    if (assetKey && tuning) {
+      await drawCanvasPortraitAsset(context, assetKey, lowRes, [rootTransform, headTransform, canvasTransformFromLayerTuning(tuning)], PAPER_DOLL_APPEARANCE_ASSET_CONFIGS[layerKey]);
+    }
+  }
+}
+
+async function drawCanvasPortraitEquipmentSlot(
+  context: CanvasRenderingContext2D,
+  slotKey: PaperDollEquipmentSlotKey,
+  lowRes: boolean,
+  rootTransform: CanvasPortraitTransform,
+  bodyPresetKey: PaperDollBodyPreset,
+  equipment: HeroEquipment | undefined,
+): Promise<void> {
+  if (!equipment) {
+    return;
+  }
+
+  const assetKey = getCanvasPortraitEquipmentSlotAssetKey(equipment, slotKey);
+  const anchorPartKey = PAPER_DOLL_EQUIPMENT_ANCHOR_PARTS[slotKey];
+
+  if (!assetKey || HERO_PORTRAIT_HIDDEN_PART_KEYS.includes(anchorPartKey)) {
+    return;
+  }
+
+  await drawCanvasPortraitAsset(
+    context,
+    assetKey,
+    lowRes,
+    [
+      rootTransform,
+      getCanvasPortraitPartTransform(anchorPartKey, bodyPresetKey),
+      canvasTransformFromLayerTuning(getEquipmentTransformTuning(slotKey, DEFAULT_EQUIPMENT, DEFAULT_EQUIPMENT_ITEM_TUNING, equipment)),
+    ],
+    PAPER_DOLL_EQUIPMENT_SLOT_CONFIGS[slotKey],
+  );
+}
+
+function getCanvasPortraitEquipmentSlotAssetKey(equipment: HeroEquipment, slotKey: PaperDollEquipmentSlotKey): string | undefined {
+  const assetKey = PLAYER_EQUIPMENT_ASSET_KEY_BY_SLOT[slotKey];
+  const itemId = equipment[slotKey];
+  const itemAssetKeys = itemId ? getHeroItemEquipmentAssetKeys(itemId) : undefined;
+  const textureKey = itemAssetKeys?.[assetKey] ?? DEFAULT_PLAYER_EQUIPMENT_ASSET_KEYS[assetKey];
+
+  return typeof textureKey === "string" ? textureKey : undefined;
+}
+
+function getCanvasPortraitEquipmentLayer(slotKey: PaperDollEquipmentSlotKey): CanvasPortraitEquipmentLayer {
+  if (isPaperDollWeaponSlot(slotKey)) {
+    return "weapon";
+  }
+
+  if (slotKey === "helmet") {
+    return "head";
+  }
+
+  if (slotKey === "breastplate") {
+    return "torso";
+  }
+
+  if (
+    slotKey === "backGreave" ||
+    slotKey === "frontGreave" ||
+    slotKey === "backShinguard" ||
+    slotKey === "frontShinguard" ||
+    slotKey === "backBoot" ||
+    slotKey === "frontBoot"
+  ) {
+    return "legs";
+  }
+
+  return "arms";
+}
+
+async function drawCanvasPortraitAsset(
+  context: CanvasRenderingContext2D,
+  assetKey: string,
+  lowRes: boolean,
+  transforms: readonly CanvasPortraitTransform[],
+  config: PaperDollPartAssetConfig,
+  imageTuning: CanvasPortraitImageTuning = canvasPortraitDefaultImageTuning,
+): Promise<void> {
+  const image = await loadCanvasPortraitImage(assetKey, lowRes);
+  const imageWidth = image?.naturalWidth || image?.width || 0;
+  const imageHeight = image?.naturalHeight || image?.height || 0;
+
+  if (!image || imageWidth <= 0 || imageHeight <= 0) {
+    return;
+  }
+
+  const scale = config.displayHeight / imageHeight;
+
+  context.save();
+  transforms.forEach((transform) => applyCanvasPortraitTransform(context, transform));
+  context.translate(config.localX + imageTuning.x, config.localY + imageTuning.y);
+  context.rotate(degreesToRadians(imageTuning.angle));
+  context.scale(
+    scale * imageTuning.scaleX * (imageTuning.flipX ? -1 : 1),
+    scale * imageTuning.scaleY * (imageTuning.flipY ? -1 : 1),
+  );
+  context.drawImage(image, -config.originX * imageWidth, -config.originY * imageHeight, imageWidth, imageHeight);
+  context.restore();
+}
+
+function applyCanvasPortraitTransform(context: CanvasRenderingContext2D, transform: CanvasPortraitTransform): void {
+  context.translate(transform.x, transform.y);
+  context.rotate(degreesToRadians(transform.angle));
+  context.scale(transform.scaleX, transform.scaleY);
+}
+
+function canvasTransformFromLayerTuning(tuning: CanvasPortraitImageTuning): CanvasPortraitTransform {
+  return {
+    x: tuning.x,
+    y: tuning.y,
+    angle: tuning.angle,
+    scaleX: tuning.scaleX * (tuning.flipX ? -1 : 1),
+    scaleY: tuning.scaleY * (tuning.flipY ? -1 : 1),
+  };
+}
+
+function degreesToRadians(degrees: number): number {
+  return degrees * Math.PI / 180;
+}
+
+function loadCanvasPortraitImage(assetKey: string, lowRes: boolean): Promise<HTMLImageElement | undefined> {
+  const cacheKey = `${lowRes ? "low" : "high"}:${assetKey}`;
+  const cached = canvasPortraitImageCache.get(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
+
+  const promise = resolveCanvasPortraitAssetUrl(assetKey, lowRes).then((url) => {
+    if (!url) {
+      return undefined;
+    }
+
+    return loadCanvasPortraitImageUrl(url);
   });
 
-  HERO_PORTRAIT_HIDDEN_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    setPaperDollEquipmentSlotVisible(rig.equipment[slotKey], false);
+  canvasPortraitImageCache.set(cacheKey, promise);
+  return promise;
+}
+
+async function resolveCanvasPortraitAssetUrl(assetKey: string, lowRes: boolean): Promise<string | undefined> {
+  const asset = PAPER_DOLL_ASSETS_BY_KEY.get(assetKey);
+
+  return asset ? resolvePaperDollAssetUrl(asset, lowRes) : undefined;
+}
+
+function loadCanvasPortraitImageUrl(url: string): Promise<HTMLImageElement | undefined> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    const finish = () => resolve(image.naturalWidth > 0 && image.naturalHeight > 0 ? image : undefined);
+
+    image.decoding = "async";
+    image.loading = "eager";
+    image.onload = finish;
+    image.onerror = () => resolve(undefined);
+    image.src = url;
+    const decode = image.decode?.();
+
+    if (decode) {
+      void decode.then(finish, () => undefined);
+    }
   });
 }
 
-function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appearance: HeroAppearance | undefined): string {
+function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appearance: HeroAppearance | undefined, lowEffects = getPlayerSettings().lowEffects): string {
   const equipmentKey = HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS.map((slotKey) => `${slotKey}:${equipment?.[slotKey] ?? ""}`).join("|");
   const appearanceKey = `hair:${appearance?.hairId ?? ""}|beard:${appearance?.beardId ?? ""}`;
 
-  return `${equipmentKey}|${appearanceKey}`;
+  return `${equipmentKey}|${appearanceKey}|low:${lowEffects ? 1 : 0}`;
 }
 
 function getAnimationPreviewEquipmentKey(equipment: HeroEquipment | undefined): string {
@@ -4402,8 +4650,6 @@ export function mountHeroPortraitPreview(
 ): HeroPortraitPreviewApi {
   usePlayerEquipment(playerEquipment);
   usePlayerAppearance(playerAppearance);
-  let scene: HeroPortraitScene | undefined;
-  let game: Phaser.Game | undefined;
   let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
   let pendingAppearance = { ...playerAppearance };
   let lastSnapshotKey: string | undefined;
@@ -4414,65 +4660,26 @@ export function mountHeroPortraitPreview(
     parent: targetParent,
     image: createHeroPortraitSnapshotImage(targetParent),
   }));
-  let readyCallbackForGame: (readyScene: HeroPortraitScene) => void = () => undefined;
 
-  const destroyRenderGame = () => {
-    if (heroPortraitReadyCallback === readyCallbackForGame) {
-      heroPortraitReadyCallback = undefined;
-    }
-    scene = undefined;
-    game?.destroy(true);
-    game = undefined;
-  };
-
-  const ensureRenderGame = () => {
-    if (destroyed || game) {
-      return;
-    }
-
-    heroPortraitReadyCallback = readyCallbackForGame;
-    game = new Phaser.Game({
-      type: Phaser.AUTO,
-      parent,
-      width: HERO_PORTRAIT_VIEWER_SIZE,
-      height: HERO_PORTRAIT_VIEWER_SIZE,
-      backgroundColor: "rgba(0, 0, 0, 0)",
-      transparent: true,
-      fps: getPlayerPhaserFpsConfig(),
-      render: getPlayerPhaserRenderConfig(),
-      scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-      },
-      scene: HeroPortraitScene,
-    });
-    bindWebglRecoveryOverlay(game, "portrait");
-  };
-
-  const refreshSnapshot = (equipment = pendingEquipment, appearance = pendingAppearance) => {
+  const refreshSnapshot = (equipment = pendingEquipment, appearance = pendingAppearance, force = false) => {
     if (destroyed) {
       return;
     }
 
-    const snapshotKey = getHeroPortraitSnapshotKey(equipment, appearance);
+    const snapshotKey = getHeroPortraitSnapshotKey(equipment, appearance, getPlayerSettings().lowEffects);
 
-    if (snapshotKey === lastSnapshotKey) {
-      return;
-    }
-
-    if (!scene) {
-      ensureRenderGame();
+    if (!force && snapshotKey === lastSnapshotKey) {
       return;
     }
 
     const token = snapshotToken + 1;
-    const captureSnapshot = () => {
-      if (destroyed || token !== snapshotToken || !scene) {
-        return;
-      }
-
-      scene.captureFrame((src) => {
+    snapshotToken = token;
+    void renderHeroPortraitCanvasSnapshot(equipment, appearance).then((src) => {
+      window.requestAnimationFrame(() => {
         if (destroyed || token !== snapshotToken) {
+          return;
+        }
+        if (!src) {
           return;
         }
 
@@ -4482,27 +4689,17 @@ export function mountHeroPortraitPreview(
           target.image.hidden = false;
           target.parent.classList.add("city-menu__portrait--static");
         });
-        window.requestAnimationFrame(destroyRenderGame);
       });
-    };
-
-    snapshotToken = token;
-    game?.loop.wake();
-    window.requestAnimationFrame(() => window.requestAnimationFrame(captureSnapshot));
+    });
   };
+  const unsubscribePlayerSettings = subscribePlayerSettings(() => refreshSnapshot(pendingEquipment, pendingAppearance, true));
 
-  readyCallbackForGame = (readyScene: HeroPortraitScene) => {
-    scene = readyScene;
-    void Promise.all([pendingEquipment ? readyScene.setEquipment(pendingEquipment) : Promise.resolve(), readyScene.setAppearance(pendingAppearance)]).then(() =>
-      refreshSnapshot(),
-    );
-  };
   refreshSnapshot();
 
   return {
     setEquipment: (equipment) => {
       const nextEquipment = { ...equipment };
-      const nextSnapshotKey = getHeroPortraitSnapshotKey(nextEquipment, pendingAppearance);
+      const nextSnapshotKey = getHeroPortraitSnapshotKey(nextEquipment, pendingAppearance, getPlayerSettings().lowEffects);
 
       pendingEquipment = nextEquipment;
 
@@ -4510,25 +4707,15 @@ export function mountHeroPortraitPreview(
         return;
       }
 
-      if (scene) {
-        void scene.setEquipment(nextEquipment).then(() => refreshSnapshot(nextEquipment, pendingAppearance));
-        return;
-      }
-
       refreshSnapshot(nextEquipment, pendingAppearance);
     },
     setAppearance: (appearance) => {
       const nextAppearance = { ...appearance };
-      const nextSnapshotKey = getHeroPortraitSnapshotKey(pendingEquipment, nextAppearance);
+      const nextSnapshotKey = getHeroPortraitSnapshotKey(pendingEquipment, nextAppearance, getPlayerSettings().lowEffects);
 
       pendingAppearance = nextAppearance;
 
       if (nextSnapshotKey === lastSnapshotKey) {
-        return;
-      }
-
-      if (scene) {
-        void scene.setAppearance(nextAppearance).then(() => refreshSnapshot(pendingEquipment, nextAppearance));
         return;
       }
 
@@ -4537,7 +4724,7 @@ export function mountHeroPortraitPreview(
     destroy: () => {
       destroyed = true;
       snapshotToken += 1;
-      destroyRenderGame();
+      unsubscribePlayerSettings();
       snapshotTargets.forEach((target) => {
         target.image.remove();
         target.parent.classList.remove("city-menu__portrait--static");

@@ -769,7 +769,7 @@ test("phaser games request a low power webgl context", () => {
   assert.equal(arenaSceneSource.includes("getPlayerSettings().smoothRendering ? PHASER_SMOOTH_RENDER_CONFIG : PHASER_SHARP_RENDER_CONFIG"), true);
   assert.match(arenaSceneSource, /PHASER_SMOOTH_RENDER_CONFIG[\s\S]*antialias:\s*true,[\s\S]*antialiasGL:\s*true,/);
   assert.match(arenaSceneSource, /PHASER_SHARP_RENDER_CONFIG[\s\S]*antialias:\s*false,[\s\S]*antialiasGL:\s*false,/);
-  assert.equal((arenaSceneSource.match(/render: getPlayerPhaserRenderConfig\(\)/g) ?? []).length, 4);
+  assert.equal((arenaSceneSource.match(/render: getPlayerPhaserRenderConfig\(\)/g) ?? []).length, 3);
 });
 
 test("phaser games use the selected render fps setting", () => {
@@ -790,7 +790,7 @@ test("phaser games use the selected render fps setting", () => {
   assert.equal(arenaSceneSource.includes("limit: 60"), false);
   assert.equal(arenaSceneSource.includes("function getPlayerPhaserFpsConfig(): Phaser.Types.Core.FPSConfig"), true);
   assert.equal(arenaSceneSource.includes("getPlayerSettings().renderFps === 60 ? PHASER_SIXTY_FPS_CONFIG : PHASER_THIRTY_FPS_CONFIG"), true);
-  assert.equal((arenaSceneSource.match(/fps: getPlayerPhaserFpsConfig\(\)/g) ?? []).length, 4);
+  assert.equal((arenaSceneSource.match(/fps: getPlayerPhaserFpsConfig\(\)/g) ?? []).length, 3);
   assert.equal(launchArenaSource.includes("fps: getPlayerPhaserFpsConfig()"), true);
   assert.equal(cityPreviewSource.includes("fps: getPlayerPhaserFpsConfig()"), true);
 });
@@ -1050,8 +1050,8 @@ test("paper doll equipment sync skips unchanged transforms and hidden shadow tun
 
 test("city body scale normalizes as the hero moves into shop mode", () => {
   const portraitSceneSource = arenaSceneSource.slice(
-    arenaSceneSource.indexOf("class HeroPortraitScene"),
-    arenaSceneSource.indexOf("function syncHeroPortraitCrop"),
+    arenaSceneSource.indexOf("async function renderHeroPortraitCanvasSnapshot"),
+    arenaSceneSource.indexOf("function getHeroPortraitSnapshotKey"),
   );
   const debugCharacterSceneSource = arenaSceneSource.slice(
     arenaSceneSource.indexOf("class DebugCharacterScene"),
@@ -1063,6 +1063,9 @@ test("city body scale normalizes as the hero moves into shop mode", () => {
   assert.equal(arenaSceneSource.includes("activePlayerBodyScaleBonus * clampNumber(1 - liftProgress, 0, 1)"), true);
   assert.equal(arenaSceneSource.includes("subscribePlayerBodyScaleChanges(() => this.syncFighterLayout())"), true);
   assert.equal(arenaSceneSource.includes("debugTuning.cityHeroScale * slotScale * getCityPlayerBodyScaleMultiplier(liftProgress)"), true);
+  assert.equal(arenaSceneSource.includes("class HeroPortraitScene"), false);
+  assert.equal(portraitSceneSource.includes("document.createElement(\"canvas\")"), true);
+  assert.equal(portraitSceneSource.includes("new Phaser.Game"), false);
   assert.equal(portraitSceneSource.includes("subscribePlayerBodyScaleChanges"), false);
   assert.equal(portraitSceneSource.includes("getCityPlayerBodyScaleMultiplier"), false);
   assert.equal(debugCharacterSceneSource.includes("subscribePlayerBodyScaleChanges"), false);
@@ -1256,14 +1259,15 @@ test("city hero preview exposes a ready promise for return transitions", () => {
 
 test("hero portrait skips unchanged snapshot equipment", () => {
   assert.equal(arenaSceneSource.includes("HERO_PORTRAIT_SNAPSHOT_EQUIPMENT_SLOT_KEYS"), true);
-  assert.equal(arenaSceneSource.includes("function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appearance: HeroAppearance | undefined): string"), true);
+  assert.equal(arenaSceneSource.includes("function getHeroPortraitSnapshotKey(equipment: HeroEquipment | undefined, appearance: HeroAppearance | undefined, lowEffects = getPlayerSettings().lowEffects): string"), true);
   assert.equal(arenaSceneSource.includes('const appearanceKey = `hair:${appearance?.hairId ?? ""}|beard:${appearance?.beardId ?? ""}`;'), true);
+  assert.equal(arenaSceneSource.includes('return `${equipmentKey}|${appearanceKey}|low:${lowEffects ? 1 : 0}`;'), true);
   assert.equal(arenaSceneSource.includes("let lastSnapshotKey: string | undefined;"), true);
-  assert.match(arenaSceneSource, /if \(snapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
+  assert.match(arenaSceneSource, /if \(!force && snapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
   assert.match(arenaSceneSource, /if \(nextSnapshotKey === lastSnapshotKey\) \{\s*return;\s*\}/);
-  assert.match(arenaSceneSource, /scene\.captureFrame\(\(src\) => \{[\s\S]*lastSnapshotKey = snapshotKey;[\s\S]*target\.image\.src = src;/);
-  assert.equal(arenaSceneSource.includes("window.requestAnimationFrame(() => window.requestAnimationFrame(captureSnapshot));"), true);
-  assert.match(arenaSceneSource, /void scene\.setEquipment\(nextEquipment\)\.then\(\(\) => refreshSnapshot\(nextEquipment, pendingAppearance\)\);/);
+  assert.match(arenaSceneSource, /void renderHeroPortraitCanvasSnapshot\(equipment, appearance\)\.then\(\(src\) => \{[\s\S]*lastSnapshotKey = snapshotKey;[\s\S]*target\.image\.src = src;/);
+  assert.equal(arenaSceneSource.includes("const unsubscribePlayerSettings = subscribePlayerSettings(() => refreshSnapshot(pendingEquipment, pendingAppearance, true));"), true);
+  assert.equal(arenaSceneSource.includes("scene.captureFrame"), false);
 });
 
 test("blocked hits use the shield icon popup instead of block text", () => {
