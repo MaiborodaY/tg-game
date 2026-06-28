@@ -39,6 +39,88 @@ body {
   touch-action: manipulation;
 }
 
+body.webgl-recovery-active {
+  overflow: hidden;
+}
+
+.webgl-recovery-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  padding: max(22px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+  color: #fff0bd;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255, 211, 132, 0.18), transparent 32%),
+    radial-gradient(circle at 50% 115%, rgba(190, 79, 32, 0.28), transparent 42%),
+    linear-gradient(180deg, rgba(15, 4, 1, 0.98), rgba(6, 1, 0, 0.98));
+  font-family: Georgia, "Times New Roman", serif;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(8, 2, 1, 0.86);
+  text-transform: uppercase;
+}
+
+.webgl-recovery-overlay__panel {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(100%, 328px);
+  padding: 24px 20px 22px;
+  border: 3px solid rgba(255, 211, 132, 0.52);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 211, 132, 0.16), transparent 48%),
+    var(--ui-panel-wood-texture) center / var(--ui-panel-wood-size) repeat,
+    linear-gradient(180deg, rgba(76, 32, 13, 0.96), rgba(18, 5, 2, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 229, 161, 0.24),
+    inset 0 0 0 1px rgba(26, 8, 3, 0.72),
+    0 5px 0 rgba(8, 2, 1, 0.76),
+    0 22px 38px rgba(0, 0, 0, 0.58);
+}
+
+.webgl-recovery-overlay__title {
+  max-width: 100%;
+  color: #ffe8a9;
+  font-size: clamp(1.58rem, 8vw, 2.18rem);
+  font-weight: 900;
+  line-height: 0.95;
+}
+
+.webgl-recovery-overlay__text {
+  max-width: 24ch;
+  margin: 0;
+  color: #e8c98a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.webgl-recovery-overlay__button {
+  min-width: 184px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 2px solid #1a0803;
+  border-radius: 999px;
+  color: #2a0d04;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 246, 191, 0.78), transparent 46%),
+    linear-gradient(180deg, #ffc76b, #e36f28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 220, 0.58),
+    0 3px 0 rgba(8, 2, 1, 0.72);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.webgl-recovery-overlay__button:active {
+  transform: translateY(2px);
+}
+
 button,
 input,
 textarea,
@@ -4001,6 +4083,23 @@ body.debug-active .city-menu__portrait-button:active {
   display: none;
 }
 
+.city-arena-menu--battle-transition {
+  --city-arena-panel-entry-duration: 1000ms;
+  pointer-events: none;
+  animation: city-arena-menu-entry-backdrop var(--city-arena-panel-entry-duration) cubic-bezier(0.2, 0.84, 0.18, 1) both;
+}
+
+.city-arena-menu--battle-transition::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #050100;
+  opacity: 0;
+  pointer-events: none;
+  animation: city-arena-menu-entry-fade var(--city-arena-panel-entry-duration) cubic-bezier(0.22, 0.9, 0.26, 1) both;
+}
+
 .city-arena-menu__panel {
   position: relative;
   display: grid;
@@ -4025,6 +4124,14 @@ body.debug-active .city-menu__portrait-button:active {
     0 18px 30px rgba(8, 2, 1, 0.5);
   text-shadow: 1px 2px 0 rgba(22, 7, 3, 0.82);
   text-transform: uppercase;
+}
+
+.city-arena-menu--battle-transition .city-arena-menu__panel {
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: center;
+  animation: city-arena-panel-entry-zoom var(--city-arena-panel-entry-duration) cubic-bezier(0.22, 0.72, 0.2, 1) both;
 }
 
 .city-arena-menu--tier-bg .city-arena-menu__panel {
@@ -4052,6 +4159,10 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.city-arena-menu--battle-transition .city-arena-menu__panel::before {
+  animation: city-arena-panel-frame-out 390ms ease-out both;
+}
+
 .city-arena-menu__title {
   position: absolute;
   top: -14px;
@@ -4073,6 +4184,16 @@ body.debug-active .city-menu__portrait-button:active {
   font-weight: 900;
   text-align: center;
   transform: translateX(-50%);
+}
+
+.city-arena-menu--battle-transition .city-arena-menu__close,
+.city-arena-menu--battle-transition .city-arena-menu__tier,
+.city-arena-menu--battle-transition .city-arena-menu__quest-backdrop,
+.city-arena-menu--battle-transition .city-arena-menu__quest-panel,
+.city-arena-menu--battle-transition .city-arena-menu__online-entry,
+.city-arena-menu--battle-transition .city-arena-menu__pvp {
+  pointer-events: none;
+  animation: city-arena-panel-content-out 380ms ease-out both;
 }
 
 .city-arena-menu__main {
@@ -4308,6 +4429,82 @@ body.debug-active .city-menu__portrait-button:active {
   display: none !important;
 }
 
+@keyframes city-arena-menu-entry-backdrop {
+  from {
+    background: rgba(11, 3, 1, 0.42);
+  }
+
+  to {
+    background: rgba(5, 1, 0, 0.08);
+  }
+}
+
+@keyframes city-arena-menu-entry-fade {
+  0%,
+  30% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes city-arena-panel-entry-zoom {
+  0% {
+    transform: scale(1);
+  }
+
+  28% {
+    border-color: rgba(255, 211, 132, 0.12);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 211, 132, 0.12),
+      0 10px 24px rgba(8, 2, 1, 0.38);
+  }
+
+  100% {
+    border-color: rgba(26, 8, 3, 0);
+    box-shadow: none;
+    transform: scale(2.85);
+  }
+}
+
+@keyframes city-arena-panel-frame-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes city-arena-panel-content-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes city-arena-choice-exit-left {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-118%);
+  }
+}
+
+@keyframes city-arena-choice-exit-right {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(118%);
+  }
+}
+
 @keyframes city-arena-quest-glow-pulse {
   0%,
   100% {
@@ -4494,6 +4691,16 @@ body.debug-active .city-menu__portrait-button:active {
   align-items: stretch;
   gap: 6px;
   min-width: 0;
+}
+
+.city-arena-menu--battle-transition .city-arena-menu__fight-row:nth-child(1),
+.city-arena-menu--battle-transition .city-arena-menu__fight-row:nth-child(3) {
+  animation: city-arena-choice-exit-left 1400ms cubic-bezier(0.2, 0.78, 0.18, 1) both;
+}
+
+.city-arena-menu--battle-transition .city-arena-menu__fight-row:nth-child(2),
+.city-arena-menu--battle-transition .city-arena-menu__boss-card {
+  animation: city-arena-choice-exit-right 1400ms cubic-bezier(0.2, 0.78, 0.18, 1) both;
 }
 
 .city-arena-menu__fight-row--auto-hidden {

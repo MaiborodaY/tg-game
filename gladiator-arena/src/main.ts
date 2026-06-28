@@ -202,6 +202,9 @@ interface StartGameOptions {
   mode?: GameMode;
   initialState?: CombatState;
 }
+interface StartGameWithCityTransitionOptions extends StartGameOptions {
+  cityTransition?: "city" | "arenaPanel";
+}
 interface ReturnToCityOptions {
   requireResultGate?: boolean;
 }
@@ -280,6 +283,7 @@ const CITY_RETURN_WAITING_LABEL = "Preparing City...";
 const AUTO_RESULT_RETURN_LABEL = "Return";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_ENTRY_FAILSAFE_TIMEOUT_MS = 5000;
+const CITY_ARENA_PANEL_ENTRY_TRANSITION_MS = 1000;
 const ARENA_RANDOM_ENERGY_COST = 1;
 const ARENA_BOSS_ENERGY_COST = 2;
 const ARENA_DUO_BOSS_ENERGY_COST = 3;
@@ -2973,9 +2977,22 @@ function openCityArenaMenu(): void {
 
 function closeCityArenaMenu(): void {
   cityArenaMenu?.setAttribute("hidden", "");
+  cityArenaMenu?.classList.remove("city-arena-menu--battle-transition");
   setCityArenaQuestPanelOpen(false);
   setCityArenaOnlineViewOpen(false);
   cityMenu?.classList.remove("city-menu--arena-select-open");
+}
+
+async function playCityArenaPanelEntryTransition(): Promise<void> {
+  if (!cityArenaMenu || cityArenaMenu.hidden) {
+    return;
+  }
+
+  setCityArenaQuestPanelOpen(false);
+  cityArenaMenu.classList.remove("city-arena-menu--battle-transition");
+  void cityArenaMenu.offsetWidth;
+  cityArenaMenu.classList.add("city-arena-menu--battle-transition");
+  await delay(CITY_ARENA_PANEL_ENTRY_TRANSITION_MS);
 }
 
 async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> {
@@ -3015,8 +3032,7 @@ async function startSelectedArena(selection: ArenaMenuSelection): Promise<void> 
   activeArenaSelection = selection;
   const initialState = createCombatStateForSelection(selection);
 
-  closeCityArenaMenu();
-  void startGameWithCityTransition({ initialState });
+  void startGameWithCityTransition({ initialState, cityTransition: "arenaPanel" });
 }
 
 async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<void> {
@@ -3457,26 +3473,35 @@ function startGame(options: StartGameOptions = {}): void {
   syncAutoBattleToggle();
 }
 
-async function startGameWithCityTransition(options: StartGameOptions = {}): Promise<void> {
+async function startGameWithCityTransition(options: StartGameWithCityTransitionOptions = {}): Promise<void> {
+  const { cityTransition = "city", ...startOptions } = options;
+
   if (isArenaTransitionRunning) {
     return;
   }
 
   if (!isInCity) {
-    startGame(options);
+    startGame(startOptions);
     return;
   }
 
   isArenaTransitionRunning = true;
   dom.startButton.disabled = true;
   clearShopPreview();
-  void prewarmArenaAssetsForBrowserCache(options.initialState?.encounter ?? state.encounter);
-  cityMenu?.classList.add("city-menu--arena-transition");
+  void prewarmArenaAssetsForBrowserCache(startOptions.initialState?.encounter ?? state.encounter);
+
+  if (cityTransition === "city") {
+    cityMenu?.classList.add("city-menu--arena-transition");
+  }
 
   try {
-    await (cityScene?.focusArenaTransition() ?? Promise.resolve());
+    if (cityTransition === "arenaPanel") {
+      await playCityArenaPanelEntryTransition();
+    } else {
+      await (cityScene?.focusArenaTransition() ?? Promise.resolve());
+    }
   } finally {
-    startGame(options);
+    startGame(startOptions);
     dom.startButton.disabled = false;
     isArenaTransitionRunning = false;
   }

@@ -1358,11 +1358,74 @@ function getPlayerPhaserRenderConfig(): Phaser.Types.Core.RenderConfig {
 
 const CITY_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
 const ARENA_PHASER_MAX_DEVICE_PIXEL_RATIO = 2;
+const WEBGL_RECOVERY_OVERLAY_ID = "webglRecoveryOverlay";
 
 interface PhaserGameSize {
   width: number;
   height: number;
   pixelRatio: number;
+}
+
+function bindWebglRecoveryOverlay(game: Phaser.Game, source: string): void {
+  const bindCanvas = () => {
+    const canvas = game.canvas;
+
+    if (!canvas) {
+      return;
+    }
+
+    canvas.addEventListener("webglcontextlost", (event) => {
+      event.preventDefault();
+      console.warn(`[webgl] Context lost in ${source}. Showing recovery overlay.`, event);
+      showWebglRecoveryOverlay();
+    }, { once: true });
+  };
+
+  if (game.canvas) {
+    bindCanvas();
+    return;
+  }
+
+  window.requestAnimationFrame(bindCanvas);
+}
+
+function showWebglRecoveryOverlay(): void {
+  const existing = document.getElementById(WEBGL_RECOVERY_OVERLAY_ID) as HTMLElement | null;
+  const overlay = existing ?? createWebglRecoveryOverlay();
+
+  overlay.hidden = false;
+  document.body.classList.add("webgl-recovery-active");
+  overlay.querySelector<HTMLButtonElement>(".webgl-recovery-overlay__button")?.focus({ preventScroll: true });
+}
+
+function createWebglRecoveryOverlay(): HTMLElement {
+  const overlay = document.createElement("section");
+  const panel = document.createElement("div");
+  const title = document.createElement("strong");
+  const text = document.createElement("p");
+  const button = document.createElement("button");
+
+  overlay.id = WEBGL_RECOVERY_OVERLAY_ID;
+  overlay.className = "webgl-recovery-overlay";
+  overlay.hidden = true;
+  overlay.setAttribute("role", "alertdialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "webglRecoveryTitle");
+  panel.className = "webgl-recovery-overlay__panel";
+  title.id = "webglRecoveryTitle";
+  title.className = "webgl-recovery-overlay__title";
+  title.textContent = "TOO MUCH GLORY";
+  text.className = "webgl-recovery-overlay__text";
+  text.textContent = "The graphics need a quick reset.";
+  button.className = "webgl-recovery-overlay__button";
+  button.type = "button";
+  button.textContent = "RELOAD GAME";
+  button.addEventListener("click", () => window.location.reload());
+  panel.append(title, text, button);
+  overlay.append(panel);
+  document.body.append(overlay);
+
+  return overlay;
 }
 
 interface CityCanvasProjection {
@@ -2785,6 +2848,7 @@ export function launchArena(
   };
 
   const game = new Phaser.Game(config);
+  bindWebglRecoveryOverlay(game, "arena");
 
   return () => {
     readyCallback = undefined;
@@ -3784,6 +3848,7 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     },
     scene: CityHeroScene,
   });
+  bindWebglRecoveryOverlay(game, "city");
 
   return {
     ready,
@@ -4168,6 +4233,7 @@ export function mountHeroPortraitPreview(
   usePlayerEquipment(playerEquipment);
   usePlayerAppearance(playerAppearance);
   let scene: HeroPortraitScene | undefined;
+  let game: Phaser.Game | undefined;
   let pendingEquipment = playerEquipment ? { ...playerEquipment } : undefined;
   let pendingAppearance = { ...playerAppearance };
   let lastSnapshotKey: string | undefined;
@@ -4178,15 +4244,54 @@ export function mountHeroPortraitPreview(
     parent: targetParent,
     image: createHeroPortraitSnapshotImage(targetParent),
   }));
+  let readyCallbackForGame: (readyScene: HeroPortraitScene) => void = () => undefined;
+
+  const destroyRenderGame = () => {
+    if (heroPortraitReadyCallback === readyCallbackForGame) {
+      heroPortraitReadyCallback = undefined;
+    }
+    scene = undefined;
+    game?.destroy(true);
+    game = undefined;
+  };
+
+  const ensureRenderGame = () => {
+    if (destroyed || game) {
+      return;
+    }
+
+    heroPortraitReadyCallback = readyCallbackForGame;
+    game = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent,
+      width: HERO_PORTRAIT_VIEWER_SIZE,
+      height: HERO_PORTRAIT_VIEWER_SIZE,
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      transparent: true,
+      fps: getPlayerPhaserFpsConfig(),
+      render: getPlayerPhaserRenderConfig(),
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
+      scene: HeroPortraitScene,
+    });
+    bindWebglRecoveryOverlay(game, "portrait");
+  };
 
   const refreshSnapshot = (equipment = pendingEquipment, appearance = pendingAppearance) => {
-    if (!scene || destroyed) {
+    if (destroyed) {
       return;
     }
 
     const snapshotKey = getHeroPortraitSnapshotKey(equipment, appearance);
 
     if (snapshotKey === lastSnapshotKey) {
+      return;
+    }
+
+    if (!scene) {
+      ensureRenderGame();
       return;
     }
 
@@ -4207,38 +4312,21 @@ export function mountHeroPortraitPreview(
           target.image.hidden = false;
           target.parent.classList.add("city-menu__portrait--static");
         });
-        game.loop.sleep();
+        window.requestAnimationFrame(destroyRenderGame);
       });
     };
 
     snapshotToken = token;
-    game.loop.wake();
+    game?.loop.wake();
     window.requestAnimationFrame(() => window.requestAnimationFrame(captureSnapshot));
   };
 
-  const readyCallbackForGame = (readyScene: HeroPortraitScene) => {
+  readyCallbackForGame = (readyScene: HeroPortraitScene) => {
     scene = readyScene;
     void Promise.all([pendingEquipment ? readyScene.setEquipment(pendingEquipment) : Promise.resolve(), readyScene.setAppearance(pendingAppearance)]).then(() =>
       refreshSnapshot(),
     );
   };
-  heroPortraitReadyCallback = readyCallbackForGame;
-
-  const game = new Phaser.Game({
-    type: Phaser.AUTO,
-    parent,
-    width: HERO_PORTRAIT_VIEWER_SIZE,
-    height: HERO_PORTRAIT_VIEWER_SIZE,
-    backgroundColor: "rgba(0, 0, 0, 0)",
-    transparent: true,
-    fps: getPlayerPhaserFpsConfig(),
-    render: getPlayerPhaserRenderConfig(),
-    scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-    },
-    scene: HeroPortraitScene,
-  });
   refreshSnapshot();
 
   return {
@@ -4279,14 +4367,11 @@ export function mountHeroPortraitPreview(
     destroy: () => {
       destroyed = true;
       snapshotToken += 1;
-      if (heroPortraitReadyCallback === readyCallbackForGame) {
-        heroPortraitReadyCallback = undefined;
-      }
+      destroyRenderGame();
       snapshotTargets.forEach((target) => {
         target.image.remove();
         target.parent.classList.remove("city-menu__portrait--static");
       });
-      game.destroy(true);
     },
   };
 }
@@ -5265,6 +5350,7 @@ export function mountDebugCharacterViewer(parent: HTMLElement, playerEquipment?:
     },
     scene: new DebugCharacterScene(viewerMode),
   });
+  bindWebglRecoveryOverlay(game, `debug-${viewerMode}`);
 
   return () => game.destroy(true);
 }
