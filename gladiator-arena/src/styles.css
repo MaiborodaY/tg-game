@@ -5325,31 +5325,6 @@ body.debug-active .city-menu__portrait-button:active {
   white-space: nowrap;
   pointer-events: none;
   transform: translate(-50%, -50%) rotate(-1deg);
-  animation: city-arena-start-label-pulse 720ms ease-in-out infinite alternate;
-}
-
-body.arena-low-effects .city-arena-menu__start-label {
-  animation: none;
-}
-
-@keyframes city-arena-start-label-pulse {
-  from {
-    border-color: rgba(255, 226, 154, 0.72);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 238, 183, 0.28),
-      inset 0 -5px 8px rgba(31, 7, 3, 0.42),
-      0 2px 0 rgba(8, 2, 1, 0.72),
-      0 0 10px rgba(255, 190, 96, 0.18);
-  }
-
-  to {
-    border-color: rgba(255, 238, 183, 0.96);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 238, 183, 0.42),
-      inset 0 -5px 8px rgba(31, 7, 3, 0.42),
-      0 2px 0 rgba(8, 2, 1, 0.72),
-      0 0 18px rgba(255, 190, 96, 0.32);
-  }
 }
 
 .city-arena-menu__fight:active,
