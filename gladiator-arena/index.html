@@ -71,8 +71,16 @@
           </button>
           <section id="cityAdminPanel" class="city-menu__admin-panel" aria-label="Admin tools" hidden>
             <h2>Admin</h2>
-            <button id="cityAdminGoldButton" class="city-menu__admin-action" type="button">+100 Gold</button>
-            <button class="city-menu__admin-action" type="button" data-admin-action="level-up">+1 Level</button>
+            <div class="city-menu__admin-stepper">
+              <button class="city-menu__admin-stepper-button" type="button" data-admin-grant-adjust="gold" data-admin-grant-delta="-1" aria-label="Decrease gold grant">-</button>
+              <button id="cityAdminGoldButton" class="city-menu__admin-action" type="button">+100 Gold</button>
+              <button class="city-menu__admin-stepper-button" type="button" data-admin-grant-adjust="gold" data-admin-grant-delta="1" aria-label="Increase gold grant">+</button>
+            </div>
+            <div class="city-menu__admin-stepper">
+              <button class="city-menu__admin-stepper-button" type="button" data-admin-grant-adjust="level" data-admin-grant-delta="-1" aria-label="Decrease level grant">-</button>
+              <button class="city-menu__admin-action" type="button" data-admin-action="level-up">+1 Level</button>
+              <button class="city-menu__admin-stepper-button" type="button" data-admin-grant-adjust="level" data-admin-grant-delta="1" aria-label="Increase level grant">+</button>
+            </div>
             <button class="city-menu__admin-action" type="button" data-admin-action="unlock-shop">Unlock Shop</button>
             <button class="city-menu__admin-action" type="button" data-admin-action="unlock-arena">Unlock Arena</button>
             <button class="city-menu__admin-action" type="button" data-admin-action="restore-energy">Restore Energy</button>

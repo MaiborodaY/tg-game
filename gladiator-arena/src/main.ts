@@ -219,12 +219,15 @@ const cityRenderDebugOutput = document.querySelector<HTMLElement>("#cityRenderDe
 const cityAdminButton = document.querySelector<HTMLButtonElement>("#cityAdminButton");
 const cityAdminPanel = document.querySelector<HTMLElement>("#cityAdminPanel");
 const cityAdminGoldButton = document.querySelector<HTMLButtonElement>("#cityAdminGoldButton");
+const cityAdminLevelButton = document.querySelector<HTMLButtonElement>("[data-admin-action='level-up']");
 const cityAdminActionButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-action]")];
+const cityAdminGrantAdjustButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-grant-adjust]")];
 const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId; duo?: boolean };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 type GameMode = "pve" | "pvp";
 type CityAdminAction = "level-up" | "unlock-shop" | "unlock-arena" | "restore-energy" | "reset-daily-arena";
+type CityAdminGrantAdjustTarget = "gold" | "level";
 interface StartGameOptions {
   mode?: GameMode;
   initialState?: CombatState;
@@ -323,8 +326,11 @@ const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
 const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
 const ARENA_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
 const RENDER_DEBUG_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
-const CITY_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
+const CITY_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
 const CITY_ADMIN_GOLD_GRANT_AMOUNT = 100;
+const CITY_ADMIN_GOLD_GRANT_STEP = 100;
+const CITY_ADMIN_LEVEL_GRANT_AMOUNT = 1;
+const CITY_ADMIN_LEVEL_GRANT_STEP = 1;
 const TELEGRAM_USER_ID_GATED_ACTION_BYPASS_ORIGINS = new Set(["http://localhost:5173"]);
 const LOCAL_DEBUG_RESTART_BUTTON_ORIGIN = "http://localhost:5173";
 const MOBILE_RENDER_DEBUG_PLATFORM_PATTERN = /android|ios|iphone|ipad|ipod|mobile/;
@@ -353,6 +359,8 @@ const AUTO_FIGHT_MAX_TURNS = 300;
 const AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER = 0.5;
 const SHOP_EQUIPMENT_VISUAL_SYNC_DELAY_MS = 260;
 const SHOP_PURCHASE_BURST_WINDOW_MS = 2500;
+let cityAdminGoldGrantAmount = CITY_ADMIN_GOLD_GRANT_AMOUNT;
+let cityAdminLevelGrantAmount = CITY_ADMIN_LEVEL_GRANT_AMOUNT;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -509,7 +517,18 @@ function mountCityAdminControls(): void {
     event.stopPropagation();
   });
 
+  refreshCityAdminGrantControls();
   cityAdminGoldButton.addEventListener("click", handleAdminGoldGrant);
+  cityAdminGrantAdjustButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = parseCityAdminGrantAdjustTarget(button.dataset.adminGrantAdjust);
+      const delta = Number(button.dataset.adminGrantDelta);
+
+      if (target && Number.isFinite(delta)) {
+        handleCityAdminGrantAdjust(target, delta);
+      }
+    });
+  });
   cityAdminActionButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const action = parseCityAdminAction(button.dataset.adminAction);
@@ -538,12 +557,66 @@ function canShowCityAdminControls(): boolean {
   return canUseTelegramUserIdGatedAction(CITY_ADMIN_TELEGRAM_USER_IDS);
 }
 
+function parseCityAdminGrantAdjustTarget(target: string | undefined): CityAdminGrantAdjustTarget | undefined {
+  switch (target) {
+    case "gold":
+    case "level":
+      return target;
+    default:
+      return undefined;
+  }
+}
+
+function handleCityAdminGrantAdjust(target: CityAdminGrantAdjustTarget, deltaSteps: number): void {
+  if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  if (target === "gold") {
+    cityAdminGoldGrantAmount = Math.max(
+      CITY_ADMIN_GOLD_GRANT_AMOUNT,
+      cityAdminGoldGrantAmount + CITY_ADMIN_GOLD_GRANT_STEP * deltaSteps,
+    );
+  } else {
+    cityAdminLevelGrantAmount = Math.max(
+      CITY_ADMIN_LEVEL_GRANT_AMOUNT,
+      cityAdminLevelGrantAmount + CITY_ADMIN_LEVEL_GRANT_STEP * deltaSteps,
+    );
+  }
+
+  refreshCityAdminGrantControls();
+}
+
+function refreshCityAdminGrantControls(): void {
+  if (cityAdminGoldButton) {
+    cityAdminGoldButton.textContent = `+${cityAdminGoldGrantAmount} Gold`;
+  }
+
+  if (cityAdminLevelButton) {
+    cityAdminLevelButton.textContent = `+${cityAdminLevelGrantAmount} ${cityAdminLevelGrantAmount === 1 ? "Level" : "Levels"}`;
+  }
+
+  cityAdminGrantAdjustButtons.forEach((button) => {
+    const target = parseCityAdminGrantAdjustTarget(button.dataset.adminGrantAdjust);
+    const delta = Number(button.dataset.adminGrantDelta);
+
+    if (!target || !Number.isFinite(delta) || delta >= 0) {
+      return;
+    }
+
+    button.disabled =
+      target === "gold"
+        ? cityAdminGoldGrantAmount <= CITY_ADMIN_GOLD_GRANT_AMOUNT
+        : cityAdminLevelGrantAmount <= CITY_ADMIN_LEVEL_GRANT_AMOUNT;
+  });
+}
+
 function handleAdminGoldGrant(): void {
   if (!canShowCityAdminControls()) {
     return;
   }
 
-  applyCityAdminHeroState(grantHeroGold(hero, CITY_ADMIN_GOLD_GRANT_AMOUNT), "admin-gold-grant");
+  applyCityAdminHeroState(grantHeroGold(hero, cityAdminGoldGrantAmount), "admin-gold-grant");
 }
 
 function parseCityAdminAction(action: string | undefined): CityAdminAction | undefined {
@@ -570,7 +643,7 @@ function handleCityAdminAction(action: CityAdminAction): void {
 function applyCityAdminActionToHero(sourceHero: HeroState, action: CityAdminAction): HeroState {
   switch (action) {
     case "level-up":
-      return grantHeroLevels(sourceHero, 1);
+      return grantHeroLevels(sourceHero, cityAdminLevelGrantAmount);
     case "unlock-shop":
       return unlockAllHeroShopRarities(sourceHero);
     case "unlock-arena":

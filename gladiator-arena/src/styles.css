@@ -4038,7 +4038,7 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
 .city-menu__admin-panel {
   display: grid;
   gap: 6px;
-  width: min(214px, calc(100% - 20px));
+  width: min(254px, calc(100% - 20px));
 }
 
 .city-menu__render-debug-panel[hidden],
@@ -4077,13 +4077,58 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   cursor: pointer;
 }
 
+.city-menu__admin-stepper {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  gap: 5px;
+  align-items: stretch;
+}
+
+.city-menu__admin-stepper .city-menu__admin-action {
+  min-width: 0;
+}
+
+.city-menu__admin-stepper-button {
+  display: grid;
+  min-width: 0;
+  min-height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 2px solid #35180d;
+  border-radius: 8px;
+  color: #2b1005;
+  background:
+    linear-gradient(180deg, #fff0bd, #f0a044 58%, #8f3511);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 207, 0.82),
+    inset 0 -2px 0 rgba(84, 28, 8, 0.34),
+    0 2px 0 rgba(22, 7, 3, 0.68);
+  font-size: 0.96rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 230, 164, 0.68);
+  cursor: pointer;
+}
+
 .city-menu__admin-action:active {
   transform: translateY(1px);
 }
 
-.city-menu__admin-action:disabled {
+.city-menu__admin-stepper-button:active {
+  transform: translateY(1px);
+}
+
+.city-menu__admin-action:disabled,
+.city-menu__admin-stepper-button:disabled {
   filter: grayscale(0.42) brightness(0.76);
+}
+
+.city-menu__admin-action:disabled {
   cursor: wait;
+}
+
+.city-menu__admin-stepper-button:disabled {
+  cursor: not-allowed;
 }
 
 .city-menu__render-debug-output {
