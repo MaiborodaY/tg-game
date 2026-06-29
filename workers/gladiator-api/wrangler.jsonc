@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "account_id": "49cdef49a797b94dda3328ef3c4b2d6e",
+  "name": "gladiator-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-29",
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "GLADIATOR_SAVES_DB",
+      "database_name": "gladiator_saves",
+      "database_id": "98a82779-3a34-4076-9782-2f3e51c623cd",
+      "migrations_dir": "../../d1/migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PLAYER_ACTOR",
+        "class_name": "PlayerActor"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["PlayerActor"]
+    }
+  ]
+}
