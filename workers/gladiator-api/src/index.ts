@@ -1,5 +1,16 @@
 import { DurableObject } from "cloudflare:workers";
 
+import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "../../../gladiator-arena/src/generated/equipmentItems.generated";
+import {
+  HERO_ITEM_CATALOG,
+  areHeroItemsOwned,
+  buyAndEquipHeroItems,
+  type HeroEquipmentSlotKey,
+  type HeroItemId,
+  type HeroState,
+} from "../../../gladiator-arena/src/hero";
+import { isShopProductSealed, type ShopItemRarity } from "../../../gladiator-arena/src/shopPresentation";
+
 interface Env {
   BOT_TOKEN?: string;
   GLADIATOR_SAVES_DB: D1Database;
@@ -16,11 +27,24 @@ interface SpendArenaEnergyRequest {
   amount?: unknown;
 }
 
+interface ShopBuyRequest {
+  shopKind?: unknown;
+  productId?: unknown;
+}
+
 interface PlayerActorSpendArenaEnergyInput {
   telegramUserId: string;
   telegramUsername?: string;
   hero?: unknown;
   amount?: unknown;
+  nowIso: string;
+}
+
+interface PlayerActorBuyShopProductInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  shopKind: ShopKind;
+  productId: string;
   nowIso: string;
 }
 
@@ -34,21 +58,73 @@ type SpendArenaEnergyResult =
   | { ok: true; arenaEnergy: HeroArenaEnergy }
   | { ok: false; error: "not_enough_arena_energy"; arenaEnergy: HeroArenaEnergy };
 
+type ShopKind = "armory" | "weapon";
+
+type BuyShopProductResult =
+  | { ok: true; hero: HeroState }
+  | {
+      ok: false;
+      error: "invalid_hero_payload" | "player_save_not_found" | "sealed_shop_product" | "shop_product_not_found" | "shop_purchase_rejected";
+      hero?: HeroState;
+    };
+
 interface PlayerDailyResourceRow {
   current: number;
   max: number;
   day_key: string;
 }
 
+interface PlayerSaveHeroRow {
+  hero_json: string;
+}
+
+interface ShopProduct {
+  id: string;
+  name: string;
+  price: number;
+  itemIds: HeroItemId[];
+  rarity?: ShopItemRarity;
+}
+
+interface PairedArmorySlotConfig {
+  backSlot: HeroEquipmentSlotKey;
+  frontSlot: HeroEquipmentSlotKey;
+  token: string;
+  singularLabel: string;
+  pluralLabel: string;
+}
+
 const API_PREFIX = "/api";
+const SAVE_SCHEMA_VERSION = 1;
+const MAX_HERO_JSON_BYTES = 100_000;
 const ARENA_ENERGY_RESOURCE_KEY = "arena_energy";
 const HERO_ARENA_ENERGY_MAX = 10;
+const PAIRED_ARMORY_SLOT_CONFIGS: readonly PairedArmorySlotConfig[] = [
+  {
+    backSlot: "backShoulderguard",
+    frontSlot: "frontShoulderguard",
+    token: "shoulderguard",
+    singularLabel: "Shoulderguard",
+    pluralLabel: "Shoulders",
+  },
+  { backSlot: "backWrist", frontSlot: "frontWrist", token: "wrist", singularLabel: "Wrist", pluralLabel: "Wrists" },
+  { backSlot: "backGlove", frontSlot: "frontGlove", token: "glove", singularLabel: "Glove", pluralLabel: "Gloves" },
+  { backSlot: "backGreave", frontSlot: "frontGreave", token: "greave", singularLabel: "Greave", pluralLabel: "Greaves" },
+  { backSlot: "backShinguard", frontSlot: "frontShinguard", token: "shinguard", singularLabel: "Shinguard", pluralLabel: "Shinguards" },
+  { backSlot: "backBoot", frontSlot: "frontBoot", token: "boot", singularLabel: "Boot", pluralLabel: "Boots" },
+];
+const SERVER_ARMORY_PRODUCTS = pairGeneratedServerArmoryProducts(GENERATED_ARMORY_PRODUCTS.map(toServerShopProduct));
+const SERVER_WEAPON_PRODUCTS = GENERATED_WEAPON_PRODUCTS.map(toServerShopProduct);
 
 export class PlayerActor extends DurableObject<Env> {
   private operationQueue: Promise<void> = Promise.resolve();
 
   async spendArenaEnergy(input: PlayerActorSpendArenaEnergyInput): Promise<SpendArenaEnergyResult> {
     return this.enqueue(() => this.spendArenaEnergyNow(input));
+  }
+
+  async buyShopProduct(input: PlayerActorBuyShopProductInput): Promise<BuyShopProductResult> {
+    return this.enqueue(() => this.buyShopProductNow(input));
   }
 
   private async spendArenaEnergyNow(input: PlayerActorSpendArenaEnergyInput): Promise<SpendArenaEnergyResult> {
@@ -70,6 +146,48 @@ export class PlayerActor extends DurableObject<Env> {
     );
 
     return result;
+  }
+
+  private async buyShopProductNow(input: PlayerActorBuyShopProductInput): Promise<BuyShopProductResult> {
+    const product = getServerShopProduct(input.shopKind, input.productId);
+
+    if (!product) {
+      return { ok: false, error: "shop_product_not_found" };
+    }
+
+    const hero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!hero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    if (!areHeroItemsOwned(hero, product.itemIds) && isShopProductSealed(hero, product.itemIds, product.rarity)) {
+      return { ok: false, error: "sealed_shop_product", hero };
+    }
+
+    const nextHero = buyAndEquipHeroItems(hero, {
+      itemIds: product.itemIds,
+      price: product.price,
+    }, input.nowIso);
+
+    if (nextHero === hero) {
+      return { ok: false, error: "shop_purchase_rejected", hero };
+    }
+
+    const heroJson = JSON.stringify(nextHero);
+
+    if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
+      return { ok: false, error: "invalid_hero_payload", hero };
+    }
+
+    await updatePlayerHero(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      telegramUsername: input.telegramUsername,
+      heroJson,
+      nowIso: input.nowIso,
+    });
+
+    return { ok: true, hero: nextHero };
   }
 
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -103,6 +221,10 @@ export default {
         return handleSpendArenaEnergy(request, env);
       }
 
+      if (request.method === "POST" && url.pathname === "/api/gladiator-shop/buy") {
+        return handleBuyShopProduct(request, env);
+      }
+
       return json({ ok: false, error: "not_found" }, 404);
     } catch (error) {
       return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 400);
@@ -133,6 +255,40 @@ async function handleSpendArenaEnergy(request: Request, env: Env): Promise<Respo
     : json({ ok: false, error: result.error, arenaEnergy: result.arenaEnergy }, 409);
 }
 
+async function handleBuyShopProduct(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const body = await readShopBuyRequest(request);
+  const shopKind = toShopKind(body.shopKind);
+  const productId = typeof body.productId === "string" ? body.productId : "";
+
+  if (!shopKind || !productId) {
+    return json({ ok: false, error: "invalid_shop_buy_request" }, 400);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const result = await actor.buyShopProduct({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    shopKind,
+    productId,
+    nowIso: new Date().toISOString(),
+  });
+
+  if (result.ok) {
+    return json({ ok: true, hero: result.hero });
+  }
+
+  const status = result.error === "player_save_not_found" || result.error === "shop_product_not_found" ? 404 : 409;
+
+  return json({ ok: false, error: result.error, hero: result.hero }, status);
+}
+
 async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArenaEnergyRequest> {
   try {
     const body = (await request.json()) as SpendArenaEnergyRequest;
@@ -141,6 +297,55 @@ async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArena
   } catch {
     return {};
   }
+}
+
+async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
+  try {
+    const body = (await request.json()) as ShopBuyRequest;
+
+    return isRecord(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+async function readPlayerHero(db: D1Database, telegramUserId: string): Promise<HeroState | null> {
+  const row = await db
+    .prepare("SELECT hero_json FROM player_saves WHERE telegram_user_id = ?")
+    .bind(telegramUserId)
+    .first<PlayerSaveHeroRow>();
+
+  if (!row) {
+    return null;
+  }
+
+  try {
+    const hero = JSON.parse(row.hero_json) as unknown;
+
+    return isHeroState(hero) ? hero : null;
+  } catch {
+    return null;
+  }
+}
+
+function updatePlayerHero(
+  db: D1Database,
+  save: { telegramUserId: string; telegramUsername?: string; heroJson: string; nowIso: string },
+): Promise<D1Result> {
+  return db
+    .prepare(
+      `
+        UPDATE player_saves SET
+          telegram_username = ?,
+          hero_json = ?,
+          schema_version = ?,
+          revision = revision + 1,
+          updated_at = ?
+        WHERE telegram_user_id = ?
+      `,
+    )
+    .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.nowIso, save.telegramUserId)
+    .run();
 }
 
 async function spendPlayerDailyArenaEnergy(
@@ -293,6 +498,159 @@ function getArenaEnergySpendAmount(value: unknown): number {
   }
 
   return Math.max(1, Math.min(HERO_ARENA_ENERGY_MAX, Math.floor(amount)));
+}
+
+function toShopKind(value: unknown): ShopKind | undefined {
+  return value === "armory" || value === "weapon" ? value : undefined;
+}
+
+function getServerShopProduct(shopKind: ShopKind, productId: string): ShopProduct | undefined {
+  const products = shopKind === "armory" ? SERVER_ARMORY_PRODUCTS : SERVER_WEAPON_PRODUCTS;
+
+  return products.find((product) => product.id === productId);
+}
+
+function toServerShopProduct(product: { id: string; name: string; price: number; itemIds: readonly string[] }): ShopProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    itemIds: product.itemIds.filter((itemId) => HERO_ITEM_CATALOG[itemId]),
+  };
+}
+
+function pairGeneratedServerArmoryProducts(products: ShopProduct[]): ShopProduct[] {
+  const pairedProducts: ShopProduct[] = [];
+  const usedProductIds = new Set<string>();
+
+  products.forEach((product) => {
+    if (usedProductIds.has(product.id)) {
+      return;
+    }
+
+    const item = getArmoryProductItem(product);
+    const pairConfig = item ? getPairedArmorySlotConfig(item.equipmentSlot) : undefined;
+    const counterpart = pairConfig ? findArmoryProductPair(product, products, pairConfig, usedProductIds) : undefined;
+
+    if (!pairConfig) {
+      pairedProducts.push(product);
+      usedProductIds.add(product.id);
+      return;
+    }
+
+    if (!counterpart) {
+      usedProductIds.add(product.id);
+      return;
+    }
+
+    const pairedProduct = createPairedArmoryProduct(product, counterpart, pairConfig);
+
+    pairedProducts.push(pairedProduct ?? product);
+    usedProductIds.add(product.id);
+    usedProductIds.add(counterpart.id);
+  });
+
+  return pairedProducts;
+}
+
+function findArmoryProductPair(
+  product: ShopProduct,
+  products: ShopProduct[],
+  pairConfig: PairedArmorySlotConfig,
+  usedProductIds: ReadonlySet<string>,
+): ShopProduct | undefined {
+  const item = getArmoryProductItem(product);
+  const pairKey = getArmoryProductPairKey(product, pairConfig);
+
+  if (!item || !pairKey) {
+    return undefined;
+  }
+
+  const counterpartSlot = item.equipmentSlot === pairConfig.backSlot ? pairConfig.frontSlot : pairConfig.backSlot;
+
+  return products.find((candidate) => {
+    const candidateItem = getArmoryProductItem(candidate);
+
+    return (
+      candidate.id !== product.id &&
+      !usedProductIds.has(candidate.id) &&
+      candidateItem?.equipmentSlot === counterpartSlot &&
+      getArmoryProductPairKey(candidate, pairConfig) === pairKey
+    );
+  });
+}
+
+function createPairedArmoryProduct(
+  product: ShopProduct,
+  counterpart: ShopProduct,
+  pairConfig: PairedArmorySlotConfig,
+): ShopProduct | undefined {
+  const productItem = getArmoryProductItem(product);
+  const counterpartItem = getArmoryProductItem(counterpart);
+
+  if (!productItem || !counterpartItem) {
+    return undefined;
+  }
+
+  const backProduct = productItem.equipmentSlot === pairConfig.backSlot ? product : counterpart;
+  const frontProduct = productItem.equipmentSlot === pairConfig.frontSlot ? product : counterpart;
+  const backItemId = backProduct.itemIds[0];
+  const frontItemId = frontProduct.itemIds[0];
+  const pairKey = getArmoryProductPairKey(backProduct, pairConfig) ?? backProduct.id;
+
+  if (!backItemId || !frontItemId) {
+    return undefined;
+  }
+
+  return {
+    id: `${pairKey}-pair`,
+    name: getPairedArmoryProductName(backProduct, pairConfig),
+    price: Math.max(backProduct.price, frontProduct.price),
+    itemIds: [backItemId, frontItemId],
+  };
+}
+
+function getArmoryProductItem(product: ShopProduct): (typeof HERO_ITEM_CATALOG)[HeroItemId] | undefined {
+  const itemId = product.itemIds[0];
+
+  return itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+}
+
+function getPairedArmorySlotConfig(slotKey: HeroEquipmentSlotKey): PairedArmorySlotConfig | undefined {
+  return PAIRED_ARMORY_SLOT_CONFIGS.find((config) => config.backSlot === slotKey || config.frontSlot === slotKey);
+}
+
+function getArmoryProductPairKey(product: ShopProduct, pairConfig: PairedArmorySlotConfig): string | undefined {
+  const itemId = product.itemIds[0];
+
+  return itemId ? normalizePairedArmoryText(itemId, pairConfig).toLowerCase() : undefined;
+}
+
+function getPairedArmoryProductName(product: ShopProduct, pairConfig: PairedArmorySlotConfig): string {
+  const sideFreeName = normalizePairedArmoryText(product.name, pairConfig);
+  const singularLabelPattern = new RegExp(`\\b${pairConfig.singularLabel}\\b`, "iu");
+
+  return singularLabelPattern.test(sideFreeName)
+    ? sideFreeName.replace(singularLabelPattern, pairConfig.pluralLabel)
+    : sideFreeName;
+}
+
+function normalizePairedArmoryText(value: string, pairConfig: PairedArmorySlotConfig): string {
+  return value
+    .replace(new RegExp(`(^|[_\\s-])(?:back|front)([_\\s-]+)${pairConfig.token}(?=$|[_\\s-])`, "giu"), `$1${pairConfig.token}`)
+    .replace(/\s+/gu, " ")
+    .trim();
+}
+
+function isHeroState(value: unknown): value is HeroState {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.gold === "number" &&
+    isRecord(value.equipment) &&
+    Array.isArray(value.inventory)
+  );
 }
 
 function readTelegramInitData(request: Request): string {

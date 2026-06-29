@@ -20,8 +20,15 @@ interface GladiatorArenaEnergySpendResponse {
   error?: string;
 }
 
+interface GladiatorShopBuyResponse {
+  ok: boolean;
+  hero?: HeroState;
+  error?: string;
+}
+
 const GLADIATOR_SAVE_ENDPOINT = "/api/gladiator-save";
 const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
+const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy";
 const GLADIATOR_API_BASE_URL_STORAGE_KEY = "dust-arena-gladiator-api-base-url";
 const DEFAULT_GLADIATOR_API_BASE_URL = "https://gladiator-api.mr-maybik.workers.dev";
 
@@ -83,6 +90,34 @@ export async function spendGladiatorArenaEnergy(hero: HeroState, amount = 1): Pr
   }
 
   return data.arenaEnergy;
+}
+
+export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon", productId: string): Promise<HeroState> {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
+  }
+
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_SHOP_BUY_ENDPOINT), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+    body: JSON.stringify({ shopKind, productId }),
+  });
+  const data = (await response.json()) as GladiatorShopBuyResponse;
+
+  if (!response.ok || !data.ok) {
+    throw new GladiatorSaveError(data.error || `Gladiator shop buy request failed: ${response.status}`, data.error, data.hero);
+  }
+
+  if (!data.hero) {
+    throw new GladiatorSaveError("missing_hero_payload", "Shop buy response did not include hero.");
+  }
+
+  return data.hero;
 }
 
 function getGladiatorApiUrl(path: string): string {

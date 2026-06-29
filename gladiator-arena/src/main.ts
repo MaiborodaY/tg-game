@@ -53,6 +53,7 @@ import {
   type BattleResultUnlockProduct,
 } from "./domUi";
 import {
+  buyGladiatorShopProduct,
   canUseGladiatorCloudSave,
   deleteGladiatorCloudSave,
   GladiatorSaveError,
@@ -295,6 +296,7 @@ let isInCity = true;
 let armoryShop: ArmoryShopApi | undefined;
 let weaponShop: WeaponShopApi | undefined;
 let magicShop: MagicShopApi | undefined;
+let pendingEquipmentShopBuyProduct: ArmoryProduct | WeaponProduct | undefined;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
@@ -4614,6 +4616,15 @@ function getCityShopProductKind(product: CityShopProduct): "armory" | "weapon" |
 }
 
 function handleShopBuy(product: CityShopProduct): void {
+  if (canUseGladiatorCloudSave() && isEquipmentShopProduct(product)) {
+    void handleCloudEquipmentShopBuy(product);
+    return;
+  }
+
+  handleLocalShopBuy(product);
+}
+
+function handleLocalShopBuy(product: CityShopProduct): void {
   const isSealedEquipmentPurchase =
     isEquipmentShopProduct(product) &&
     !areHeroItemsOwned(hero, product.itemIds) &&
@@ -4644,6 +4655,45 @@ function handleShopBuy(product: CityShopProduct): void {
   renderCityHero();
   syncShopHeroStateForProduct(product, previousHero);
   cityHeroEquipmentMenu.render();
+}
+
+async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduct): Promise<void> {
+  if (pendingEquipmentShopBuyProduct) {
+    return;
+  }
+
+  const isSealedEquipmentPurchase =
+    !areHeroItemsOwned(hero, product.itemIds) &&
+    isShopProductSealed(hero, product.itemIds, product.rarity);
+
+  if (isSealedEquipmentPurchase) {
+    return;
+  }
+
+  cancelShopPreviewPrewarm();
+  const previousHero = hero;
+  const purchaseBurstCount = getNextShopPurchaseBurstCount();
+
+  recordCityShopProductActivity("shop-buy", product, purchaseBurstCount);
+  setPendingEquipmentShopBuyProduct(product);
+
+  try {
+    const serverHero = await buyGladiatorShopProduct(getEquipmentShopProductKind(product), product.id);
+    const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
+
+    hero = nextHero;
+    saveLocalHeroSave(hero);
+    syncPlayerCityBodyScale();
+    scheduleShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
+    renderCityHero();
+    syncShopHeroStateForProduct(product, previousHero);
+    cityHeroEquipmentMenu.render();
+  } catch (error) {
+    console.error("Gladiator shop buy failed", error);
+    window.alert("Could not buy item. Try again.");
+  } finally {
+    setPendingEquipmentShopBuyProduct(undefined);
+  }
 }
 
 function handleBowCapacityUpgrade(): void {
@@ -4709,6 +4759,35 @@ function isMagicShopProduct(product: CityShopProduct): product is MagicProduct {
 
 function isEquipmentShopProduct(product: CityShopProduct): product is ArmoryProduct | WeaponProduct {
   return !isMagicShopProduct(product);
+}
+
+function getEquipmentShopProductKind(product: ArmoryProduct | WeaponProduct): "armory" | "weapon" {
+  return isWeaponShopProduct(product) ? "weapon" : "armory";
+}
+
+function setPendingEquipmentShopBuyProduct(product: ArmoryProduct | WeaponProduct | undefined): void {
+  pendingEquipmentShopBuyProduct = product;
+
+  if (!product) {
+    armoryShop?.syncHeroState({ pendingProductId: null });
+    weaponShop?.syncHeroState({ pendingProductId: null });
+    return;
+  }
+
+  if (isWeaponShopProduct(product)) {
+    weaponShop?.syncHeroState({ product, pendingProductId: product.id });
+    return;
+  }
+
+  armoryShop?.syncHeroState({ product, pendingProductId: product.id });
+}
+
+function withCurrentArenaEnergy(nextHero: HeroState, currentHero: HeroState): HeroState {
+  return currentHero.arenaEnergy ? { ...nextHero, arenaEnergy: currentHero.arenaEnergy } : nextHero;
+}
+
+function isWeaponShopProduct(product: ArmoryProduct | WeaponProduct): product is WeaponProduct {
+  return "categoryId" in product;
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
