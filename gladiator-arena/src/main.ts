@@ -3835,15 +3835,37 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot, session = pvpSe
   }
 
   if (canUseGladiatorCloudSave()) {
-    onlineDuoRewardPendingRooms.add(markerKey);
-    void settleOnlineDuoRewardFromServer(snapshot, session, markerKey).finally(() => {
-      onlineDuoRewardPendingRooms.delete(markerKey);
-    });
+    startOnlineDuoRewardSettlement(snapshot, session, markerKey);
     return;
   }
 
   applyOnlineDuoRewardSettlement(snapshot, session, markerKey, createLocalOnlineDuoRewardApplication(snapshot), {
     cloudSaveReason: snapshot.seat === "host" ? "online-duo-host-reward" : "online-duo-helper-reward",
+  });
+}
+
+function startOnlineDuoRewardSettlement(
+  snapshot: PvpRoomSnapshot,
+  session: PvpRoomSession | undefined,
+  markerKey: string,
+): void {
+  onlineDuoRewardPendingRooms.add(markerKey);
+
+  const settlementPromise = settleOnlineDuoRewardFromServer(snapshot, session, markerKey);
+
+  pendingBattleRewardSettlement = settlementPromise;
+  startBattleResultReturnGate();
+  markRewardUiRenderDirty();
+
+  void settlementPromise.finally(() => {
+    onlineDuoRewardPendingRooms.delete(markerKey);
+
+    if (pendingBattleRewardSettlement !== settlementPromise) {
+      return;
+    }
+
+    pendingBattleRewardSettlement = undefined;
+    renderCurrentDom();
   });
 }
 
