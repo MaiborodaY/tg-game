@@ -59,8 +59,11 @@ test("equipment shop cards keep the selected buy action in a buying state while 
     assert.equal(source.includes('label: "BUYING"'), true);
     assert.equal(source.includes('return { state: "buying" }'), true);
     assert.equal(source.includes('button.classList.toggle("armory-shop__option--pending", isPending)'), true);
-    assert.equal(source.includes("button.disabled = Boolean(pendingProductId) ||"), true);
-    assert.equal(source.includes("refreshProductButton(product.id, hero, true)"), true);
+    assert.equal(source.includes('shop.classList.toggle("armory-shop--purchase-pending", Boolean(pendingProductId))'), true);
+    assert.equal(source.includes("button.disabled = isPending ||"), true);
+    assert.equal(source.includes("button.disabled || (pendingProductId && !isPending)"), true);
+    assert.equal(source.includes("removeRenderedProduct(hiddenProducts[0])"), true);
+    assert.equal(source.includes("refreshVisibleProductButtons(hero)"), true);
     assert.equal(source.includes("previewProduct = undefined;\r\n          options.onBuy(product);"), false);
     assert.equal(source.includes("previewProduct = undefined;\n          options.onBuy(product);"), false);
   }

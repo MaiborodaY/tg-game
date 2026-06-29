@@ -906,7 +906,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     button.classList.toggle("armory-shop__option--inline-confirm", Boolean(inlineConfirmAction));
     button.classList.toggle("armory-shop__option--pending", isPending);
     button.type = "button";
-    button.disabled = Boolean(pendingProductId) || cardState === "sealed" || cardState === "locked";
+    button.disabled = isPending || cardState === "sealed" || cardState === "locked";
     button.title = cardState === "sealed" ? `${displayName} - SEALED` : requirementDescription ? `${displayName} - ${requirementDescription}` : displayName;
     button.setAttribute(
       "aria-label",
@@ -948,7 +948,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       button.append(createRequirementRibbon(requirementBadge));
     }
     button.addEventListener("click", (event) => {
-      if (button.disabled) {
+      if (button.disabled || (pendingProductId && !isPending)) {
         return;
       }
 
@@ -1088,8 +1088,11 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
   }
 
   function syncHeroState(syncOptions: WeaponShopHeroSyncOptions = {}): void {
+    const previousPendingProductId = pendingProductId;
+
     if ("pendingProductId" in syncOptions) {
       pendingProductId = syncOptions.pendingProductId ?? undefined;
+      shop.classList.toggle("armory-shop--purchase-pending", Boolean(pendingProductId));
     }
 
     if (shop.hidden) {
@@ -1102,7 +1105,7 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     renderEquippedWeaponSlots(hero);
     syncSelectionState();
     refreshSelectedProduct(hero);
-    refreshChangedProductButtons(hero, syncOptions);
+    refreshChangedProductButtons(hero, syncOptions, previousPendingProductId);
     refreshBowCapacityUpgrade(hero);
     scheduleLayoutSync();
   }
@@ -1154,14 +1157,27 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
     productIdsByItemId.set(itemId, productIds);
   }
 
-  function refreshChangedProductButtons(hero: HeroState, syncOptions: WeaponShopHeroSyncOptions): void {
-    if (renderedProducts.some((product) => !isWeaponProductVisibleInShop(hero, product))) {
+  function refreshChangedProductButtons(hero: HeroState, syncOptions: WeaponShopHeroSyncOptions, previousPendingProductId?: string): void {
+    const hiddenProducts = renderedProducts.filter((product) => !isWeaponProductVisibleInShop(hero, product));
+
+    if (hiddenProducts.length > 0) {
+      if (syncOptions.product && hiddenProducts.length === 1 && hiddenProducts[0]?.id === syncOptions.product.id) {
+        removeRenderedProduct(hiddenProducts[0]);
+        refreshVisibleProductButtons(hero);
+        return;
+      }
+
       render();
       return;
     }
 
     if ("pendingProductId" in syncOptions) {
-      renderedProducts.forEach((product) => refreshProductButton(product.id, hero, true));
+      if (previousPendingProductId) {
+        refreshProductButton(previousPendingProductId, hero, true);
+      }
+      if (pendingProductId) {
+        refreshProductButton(pendingProductId, hero, true);
+      }
       return;
     }
 
@@ -1172,7 +1188,29 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
       return;
     }
 
+    refreshVisibleProductButtons(hero);
+  }
+
+  function refreshVisibleProductButtons(hero: HeroState): void {
     renderedProducts.forEach((product) => refreshProductButton(product.id, hero));
+  }
+
+  function removeRenderedProduct(product: WeaponProduct): void {
+    productButtons.get(product.id)?.remove();
+    productButtons.delete(product.id);
+    productButtonVisualStates.delete(product.id);
+    renderedProductsById.delete(product.id);
+    renderedProducts = renderedProducts.filter((renderedProduct) => renderedProduct.id !== product.id);
+    product.itemIds.forEach((itemId) => removeProductIdFromItemIndex(itemId, product.id));
+
+    if (previewProduct?.id === product.id) {
+      clearProductPreview();
+      syncSelectionState();
+    }
+
+    if (renderedProducts.length === 0) {
+      content.append(createEmptyState("No items yet"));
+    }
   }
 
   function refreshProductButton(productId: string, hero: HeroState, force = false): void {
@@ -1226,6 +1264,19 @@ export function mountWeaponShop(root: HTMLElement, options: WeaponShopOptions): 
 
   function addIndexedProductIds(productIds: Set<string>, itemId: HeroItemId): void {
     productIdsByItemId.get(itemId)?.forEach((productId) => productIds.add(productId));
+  }
+
+  function removeProductIdFromItemIndex(itemId: HeroItemId, productId: string): void {
+    const productIds = productIdsByItemId.get(itemId);
+
+    if (!productIds) {
+      return;
+    }
+
+    productIds.delete(productId);
+    if (productIds.size === 0) {
+      productIdsByItemId.delete(itemId);
+    }
   }
 
   function getProductEquipmentSlots(product: WeaponProduct): HeroEquipmentSlotKey[] {

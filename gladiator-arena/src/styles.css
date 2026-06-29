@@ -12583,10 +12583,11 @@ body.debug-active .city-menu__portrait-button:active {
     0 0 16px var(--shop-rarity-soft, rgba(255, 211, 132, 0.22));
 }
 
-.armory-shop--city-mode:not(.magic-shop) .armory-shop__option--product:disabled:not(.armory-shop__option--pending):not(.armory-shop__option--sealed):not(.armory-shop__option--locked) {
+.armory-shop--city-mode:not(.magic-shop).armory-shop--purchase-pending .armory-shop__option--product:not(.armory-shop__option--pending):not(.armory-shop__option--sealed):not(.armory-shop__option--locked) {
   cursor: default;
   filter: saturate(0.72) brightness(0.74);
   opacity: 0.68;
+  pointer-events: none;
 }
 
 .armory-shop--city-mode .armory-shop__option:hover:not(:disabled),
