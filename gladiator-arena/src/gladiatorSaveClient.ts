@@ -26,6 +26,16 @@ interface GladiatorShopBuyResponse {
   error?: string;
 }
 
+export type GladiatorShopKind = "armory" | "weapon" | "magic";
+export type GladiatorShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon";
+
+export interface GladiatorShopActionRequest {
+  shopKind: GladiatorShopKind;
+  action?: GladiatorShopAction;
+  productId?: string;
+  equipment?: HeroEquipment;
+}
+
 const GLADIATOR_SAVE_ENDPOINT = "/api/gladiator-save";
 const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
 const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy";
@@ -92,7 +102,11 @@ export async function spendGladiatorArenaEnergy(hero: HeroState, amount = 1): Pr
   return data.arenaEnergy;
 }
 
-export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon", productId: string, equipment: HeroEquipment): Promise<HeroState> {
+export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon" | "magic", productId: string, equipment?: HeroEquipment): Promise<HeroState> {
+  return applyGladiatorShopAction({ shopKind, productId, equipment });
+}
+
+export async function applyGladiatorShopAction(actionRequest: GladiatorShopActionRequest): Promise<HeroState> {
   const initData = getTelegramInitData();
 
   if (!initData) {
@@ -105,7 +119,7 @@ export async function buyGladiatorShopProduct(shopKind: "armory" | "weapon", pro
       "content-type": "application/json",
       "x-telegram-init-data": initData,
     },
-    body: JSON.stringify({ shopKind, productId, equipment }),
+    body: JSON.stringify(actionRequest),
   });
   const data = (await response.json()) as GladiatorShopBuyResponse;
 

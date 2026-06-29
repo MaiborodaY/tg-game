@@ -53,6 +53,7 @@ import {
   type BattleResultUnlockProduct,
 } from "./domUi";
 import {
+  applyGladiatorShopAction,
   buyGladiatorShopProduct,
   canUseGladiatorCloudSave,
   deleteGladiatorCloudSave,
@@ -60,6 +61,7 @@ import {
   loadGladiatorCloudSave,
   saveGladiatorCloudHero,
   spendGladiatorArenaEnergy,
+  type GladiatorShopAction,
 } from "./gladiatorSaveClient";
 import {
   HERO_ITEM_CATALOG,
@@ -297,6 +299,7 @@ let armoryShop: ArmoryShopApi | undefined;
 let weaponShop: WeaponShopApi | undefined;
 let magicShop: MagicShopApi | undefined;
 let pendingEquipmentShopBuyProduct: ArmoryProduct | WeaponProduct | undefined;
+let magicShopActionPending = false;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
@@ -4621,6 +4624,11 @@ function handleShopBuy(product: CityShopProduct): void {
     return;
   }
 
+  if (canUseGladiatorCloudSave() && isMagicShopProduct(product)) {
+    void handleCloudMagicShopAction("buy", product);
+    return;
+  }
+
   handleLocalShopBuy(product);
 }
 
@@ -4696,6 +4704,44 @@ async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduc
   }
 }
 
+async function handleCloudMagicShopAction(action: GladiatorShopAction, product?: MagicProduct): Promise<void> {
+  if (magicShopActionPending) {
+    return;
+  }
+
+  const previousHero = hero;
+
+  if (product) {
+    recordCityShopProductActivity(action === "buy" ? "shop-buy" : "shop-upgrade", product, action === "buy" ? getNextShopPurchaseBurstCount() : undefined);
+  }
+
+  magicShopActionPending = true;
+
+  try {
+    const serverHero = await applyGladiatorShopAction({
+      shopKind: "magic",
+      action,
+      productId: product?.id,
+      equipment: previousHero.equipment,
+    });
+    const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
+
+    hero = nextHero;
+    saveLocalHeroSave(hero);
+    syncPlayerCityBodyScale();
+    setPlayerEquipment(hero.equipment);
+    setPlayerWeaponEnchantments(hero.weaponEnchantments);
+    renderCityHero();
+    magicShop?.syncHeroState();
+    cityHeroEquipmentMenu.render();
+  } catch (error) {
+    console.error("Gladiator magic shop action failed", error);
+    window.alert("Could not apply magic shop action. Try again.");
+  } finally {
+    magicShopActionPending = false;
+  }
+}
+
 function handleBowCapacityUpgrade(): void {
   const nextHero = upgradeHeroBowShotCapacity(hero);
 
@@ -4710,6 +4756,11 @@ function handleBowCapacityUpgrade(): void {
 }
 
 function handleMagicWeaponSharpen(): void {
+  if (canUseGladiatorCloudSave()) {
+    void handleCloudMagicShopAction("sharpen_weapon");
+    return;
+  }
+
   const nextHero = sharpenHeroActiveWeapon(hero);
 
   if (nextHero === hero) {
@@ -4724,6 +4775,11 @@ function handleMagicWeaponSharpen(): void {
 }
 
 function handleMagicScrollUpgrade(product: MagicProduct): void {
+  if (canUseGladiatorCloudSave()) {
+    void handleCloudMagicShopAction("upgrade_scroll", product);
+    return;
+  }
+
   const nextHero = upgradeHeroScroll(hero, product.itemIds[0]);
 
   if (nextHero === hero) {
@@ -4737,6 +4793,11 @@ function handleMagicScrollUpgrade(product: MagicProduct): void {
 }
 
 function handleMagicScrollCapacityUpgrade(): void {
+  if (canUseGladiatorCloudSave()) {
+    void handleCloudMagicShopAction("upgrade_scroll_capacity");
+    return;
+  }
+
   const nextHero = upgradeHeroScrollCapacity(hero);
 
   if (nextHero === hero) {

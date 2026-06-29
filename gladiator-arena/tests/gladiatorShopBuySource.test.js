@@ -22,14 +22,23 @@ test("gladiator shop buys are routed through the player actor and D1 save", () =
   assert.equal(apiWorkerSource.includes("withValidatedEquipmentSnapshot(savedHero, input.equipment, input.nowIso)"), true);
   assert.equal(apiWorkerSource.includes("isHeroItemOwned(hero, itemId)"), true);
   assert.equal(apiWorkerSource.includes("item.equipmentSlot === slotKey"), true);
+  assert.equal(apiWorkerSource.includes('type ShopKind = "armory" | "weapon" | "magic"'), true);
+  assert.equal(apiWorkerSource.includes('type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon"'), true);
+  assert.equal(apiWorkerSource.includes("applyMagicShopAction(hero, input)"), true);
+  assert.equal(apiWorkerSource.includes("upgradeHeroScrollCapacity(hero, input.nowIso)"), true);
+  assert.equal(apiWorkerSource.includes("upgradeHeroScroll(hero, product.itemIds[0], input.nowIso)"), true);
   assert.equal(apiWorkerSource.includes("player_commands"), false);
 });
 
 test("frontend shop buy waits for the server hero before mutating visible hero state", () => {
   assert.equal(saveClientSource.includes('const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy"'), true);
   assert.equal(saveClientSource.includes("export async function buyGladiatorShopProduct"), true);
-  assert.equal(saveClientSource.includes("JSON.stringify({ shopKind, productId, equipment })"), true);
+  assert.equal(saveClientSource.includes("export async function applyGladiatorShopAction"), true);
+  assert.equal(saveClientSource.includes("body: JSON.stringify(actionRequest)"), true);
   assert.equal(mainSource.includes("previousHero.equipment"), true);
+  assert.equal(mainSource.includes('handleCloudMagicShopAction("buy", product)'), true);
+  assert.equal(mainSource.includes('handleCloudMagicShopAction("upgrade_scroll", product)'), true);
+  assert.equal(mainSource.includes('handleCloudMagicShopAction("upgrade_scroll_capacity")'), true);
   assert.match(
     mainSource,
     /setPendingEquipmentShopBuyProduct\(product\);[\s\S]*const serverHero = await buyGladiatorShopProduct\([\s\S]*hero = nextHero;/,

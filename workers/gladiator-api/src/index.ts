@@ -2,12 +2,22 @@ import { DurableObject } from "cloudflare:workers";
 
 import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "../../../gladiator-arena/src/generated/equipmentItems.generated";
 import {
+  HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
   HERO_EQUIPMENT_SLOT_KEYS,
+  HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
+  HERO_FIREBALL_SCROLL_ITEM_ID,
   HERO_ITEM_CATALOG,
+  HERO_POISON_SCROLL_ITEM_ID,
+  HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
+  HERO_WARD_SCROLL_ITEM_ID,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  getHeroScrollPurchasePrice,
   isHeroConsumableItem,
   isHeroItemOwned,
+  sharpenHeroActiveWeapon,
+  upgradeHeroScroll,
+  upgradeHeroScrollCapacity,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -33,6 +43,7 @@ interface SpendArenaEnergyRequest {
 
 interface ShopBuyRequest {
   shopKind?: unknown;
+  action?: unknown;
   productId?: unknown;
   equipment?: unknown;
 }
@@ -49,7 +60,8 @@ interface PlayerActorBuyShopProductInput {
   telegramUserId: string;
   telegramUsername?: string;
   shopKind: ShopKind;
-  productId: string;
+  action: ShopAction;
+  productId?: string;
   equipment?: HeroEquipmentSnapshot;
   nowIso: string;
 }
@@ -64,14 +76,21 @@ type SpendArenaEnergyResult =
   | { ok: true; arenaEnergy: HeroArenaEnergy }
   | { ok: false; error: "not_enough_arena_energy"; arenaEnergy: HeroArenaEnergy };
 
-type ShopKind = "armory" | "weapon";
+type ShopKind = "armory" | "weapon" | "magic";
+type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon";
 type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
 
 type BuyShopProductResult =
   | { ok: true; hero: HeroState }
   | {
       ok: false;
-      error: "invalid_hero_payload" | "player_save_not_found" | "sealed_shop_product" | "shop_product_not_found" | "shop_purchase_rejected";
+      error:
+        | "invalid_hero_payload"
+        | "player_save_not_found"
+        | "sealed_shop_product"
+        | "shop_action_not_supported"
+        | "shop_product_not_found"
+        | "shop_purchase_rejected";
       hero?: HeroState;
     };
 
@@ -122,6 +141,14 @@ const PAIRED_ARMORY_SLOT_CONFIGS: readonly PairedArmorySlotConfig[] = [
 ];
 const SERVER_ARMORY_PRODUCTS = pairGeneratedServerArmoryProducts(GENERATED_ARMORY_PRODUCTS.map(toServerShopProduct));
 const SERVER_WEAPON_PRODUCTS = GENERATED_WEAPON_PRODUCTS.map(toServerShopProduct);
+const SERVER_MAGIC_PRODUCTS: readonly ShopProduct[] = [
+  { id: "crack_armor_scroll", name: "Crack Armor Scroll", price: 30, itemIds: [HERO_CRACK_ARMOR_SCROLL_ITEM_ID], rarity: "common" },
+  { id: "fireball_scroll", name: "Fireball Scroll", price: 50, itemIds: [HERO_FIREBALL_SCROLL_ITEM_ID], rarity: "common" },
+  { id: "ward_scroll", name: "Ward Scroll", price: 30, itemIds: [HERO_WARD_SCROLL_ITEM_ID], rarity: "common" },
+  { id: "precise_strike_scroll", name: "Precise Strike Scroll", price: 30, itemIds: [HERO_PRECISE_STRIKE_SCROLL_ITEM_ID], rarity: "common" },
+  { id: "double_strike_scroll", name: "Double Strike Scroll", price: 30, itemIds: [HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID], rarity: "common" },
+  { id: "poison_scroll", name: "Poison Scroll", price: 35, itemIds: [HERO_POISON_SCROLL_ITEM_ID], rarity: "common" },
+];
 
 export class PlayerActor extends DurableObject<Env> {
   private operationQueue: Promise<void> = Promise.resolve();
@@ -156,12 +183,6 @@ export class PlayerActor extends DurableObject<Env> {
   }
 
   private async buyShopProductNow(input: PlayerActorBuyShopProductInput): Promise<BuyShopProductResult> {
-    const product = getServerShopProduct(input.shopKind, input.productId);
-
-    if (!product) {
-      return { ok: false, error: "shop_product_not_found" };
-    }
-
     const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
 
     if (!savedHero) {
@@ -169,21 +190,15 @@ export class PlayerActor extends DurableObject<Env> {
     }
 
     const hero = withValidatedEquipmentSnapshot(savedHero, input.equipment, input.nowIso);
+    const nextHero = input.shopKind === "magic"
+      ? applyMagicShopAction(hero, input)
+      : applyEquipmentShopAction(hero, input);
 
-    if (!areHeroItemsOwned(hero, product.itemIds) && isShopProductSealed(hero, product.itemIds, product.rarity)) {
-      return { ok: false, error: "sealed_shop_product", hero };
+    if (!nextHero.ok) {
+      return { ...nextHero, hero };
     }
 
-    const nextHero = buyAndEquipHeroItems(hero, {
-      itemIds: product.itemIds,
-      price: product.price,
-    }, input.nowIso);
-
-    if (nextHero === hero) {
-      return { ok: false, error: "shop_purchase_rejected", hero };
-    }
-
-    const heroJson = JSON.stringify(nextHero);
+    const heroJson = JSON.stringify(nextHero.hero);
 
     if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
       return { ok: false, error: "invalid_hero_payload", hero };
@@ -196,7 +211,7 @@ export class PlayerActor extends DurableObject<Env> {
       nowIso: input.nowIso,
     });
 
-    return { ok: true, hero: nextHero };
+    return { ok: true, hero: nextHero.hero };
   }
 
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -273,9 +288,10 @@ async function handleBuyShopProduct(request: Request, env: Env): Promise<Respons
 
   const body = await readShopBuyRequest(request);
   const shopKind = toShopKind(body.shopKind);
-  const productId = typeof body.productId === "string" ? body.productId : "";
+  const action = body.action === undefined ? "buy" : toShopAction(body.action);
+  const productId = typeof body.productId === "string" ? body.productId : undefined;
 
-  if (!shopKind || !productId) {
+  if (!shopKind || !action || (doesShopActionRequireProductId(shopKind, action) && !productId)) {
     return json({ ok: false, error: "invalid_shop_buy_request" }, 400);
   }
 
@@ -285,6 +301,7 @@ async function handleBuyShopProduct(request: Request, env: Env): Promise<Respons
     telegramUserId,
     telegramUsername: auth.user.username,
     shopKind,
+    action,
     productId,
     equipment: readHeroEquipmentSnapshot(body.equipment),
     nowIso: new Date().toISOString(),
@@ -317,6 +334,65 @@ async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
   } catch {
     return {};
   }
+}
+
+function applyEquipmentShopAction(hero: HeroState, input: PlayerActorBuyShopProductInput): BuyShopProductResult {
+  if (input.action !== "buy") {
+    return { ok: false, error: "shop_action_not_supported" };
+  }
+
+  const product = input.productId ? getServerShopProduct(input.shopKind, input.productId) : undefined;
+
+  if (!product) {
+    return { ok: false, error: "shop_product_not_found" };
+  }
+
+  if (!areHeroItemsOwned(hero, product.itemIds) && isShopProductSealed(hero, product.itemIds, product.rarity)) {
+    return { ok: false, error: "sealed_shop_product" };
+  }
+
+  return toShopMutationResult(buyAndEquipHeroItems(hero, {
+    itemIds: product.itemIds,
+    price: product.price,
+  }, input.nowIso), hero);
+}
+
+function applyMagicShopAction(hero: HeroState, input: PlayerActorBuyShopProductInput): BuyShopProductResult {
+  if (input.action === "upgrade_scroll_capacity") {
+    return toShopMutationResult(upgradeHeroScrollCapacity(hero, input.nowIso), hero);
+  }
+
+  if (input.action === "sharpen_weapon") {
+    return toShopMutationResult(sharpenHeroActiveWeapon(hero, input.nowIso), hero);
+  }
+
+  const product = input.productId ? getServerShopProduct("magic", input.productId) : undefined;
+
+  if (!product) {
+    return { ok: false, error: "shop_product_not_found" };
+  }
+
+  if (input.action === "upgrade_scroll") {
+    return toShopMutationResult(upgradeHeroScroll(hero, product.itemIds[0], input.nowIso), hero);
+  }
+
+  if (input.action !== "buy") {
+    return { ok: false, error: "shop_action_not_supported" };
+  }
+
+  const itemId = product.itemIds[0];
+  const price = getHeroScrollPurchasePrice(hero, itemId, product.price);
+
+  return toShopMutationResult(buyAndEquipHeroItems(hero, {
+    itemIds: product.itemIds,
+    price,
+  }, input.nowIso), hero);
+}
+
+function toShopMutationResult(nextHero: HeroState, previousHero: HeroState): BuyShopProductResult {
+  return nextHero === previousHero
+    ? { ok: false, error: "shop_purchase_rejected" }
+    : { ok: true, hero: nextHero };
 }
 
 function readHeroEquipmentSnapshot(value: unknown): HeroEquipmentSnapshot | undefined {
@@ -580,11 +656,25 @@ function getArenaEnergySpendAmount(value: unknown): number {
 }
 
 function toShopKind(value: unknown): ShopKind | undefined {
-  return value === "armory" || value === "weapon" ? value : undefined;
+  return value === "armory" || value === "weapon" || value === "magic" ? value : undefined;
+}
+
+function toShopAction(value: unknown): ShopAction | undefined {
+  return value === "buy" || value === "upgrade_scroll" || value === "upgrade_scroll_capacity" || value === "sharpen_weapon"
+    ? value
+    : undefined;
+}
+
+function doesShopActionRequireProductId(shopKind: ShopKind, action: ShopAction): boolean {
+  return shopKind !== "magic" || action === "buy" || action === "upgrade_scroll";
 }
 
 function getServerShopProduct(shopKind: ShopKind, productId: string): ShopProduct | undefined {
-  const products = shopKind === "armory" ? SERVER_ARMORY_PRODUCTS : SERVER_WEAPON_PRODUCTS;
+  const products = shopKind === "armory"
+    ? SERVER_ARMORY_PRODUCTS
+    : shopKind === "weapon"
+      ? SERVER_WEAPON_PRODUCTS
+      : SERVER_MAGIC_PRODUCTS;
 
   return products.find((product) => product.id === productId);
 }
