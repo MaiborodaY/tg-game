@@ -3859,6 +3859,10 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   pointer-events: none;
 }
 
+.city-menu--magic-shop-open.city-menu--magic-equipment-preview-open .city-menu__hero {
+  opacity: 1;
+}
+
 .city-menu--profile-open .city-menu__hero-widget {
   opacity: 0;
   pointer-events: none;
@@ -4093,6 +4097,13 @@ body.debug-mode-ui .battle-screen[data-ui-layout-viewport="compact"] {
   background:
     linear-gradient(180deg, #ffcf8a, #b94824 58%, #5a160c);
   text-shadow: 1px 1px 0 rgba(22, 7, 3, 0.74);
+}
+
+.city-menu__admin-action--toggle[aria-pressed="true"] {
+  color: #efffed;
+  background:
+    linear-gradient(180deg, #8df58b, #35a84b 56%, #176326);
+  text-shadow: 1px 1px 0 rgba(6, 34, 11, 0.64);
 }
 
 .city-menu__admin-stepper-button {
@@ -9582,6 +9593,10 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.magic-shop.armory-shop--city-mode.magic-shop--equipment-hero-view .armory-shop__panel::before {
+  content: none;
+}
+
 .magic-shop.armory-shop--city-mode .armory-shop__panel::after {
   content: none;
 }
@@ -12846,6 +12861,68 @@ body.debug-active .city-menu__portrait-button:active {
   pointer-events: none;
 }
 
+.magic-shop__equipment-view-toggle {
+  position: absolute;
+  top: calc(var(--magic-shop-preview-top) + 2px);
+  right: max(12px, calc((100% - var(--magic-shop-preview-width)) / 2 - 43px));
+  z-index: 6;
+  display: grid;
+  width: 34px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  place-items: center;
+  border: 2px solid rgba(255, 211, 132, 0.42);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255, 246, 210, 0.22), transparent 40%),
+    linear-gradient(180deg, rgba(118, 61, 24, 0.96), rgba(28, 10, 5, 0.98)),
+    #3b1709;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.26),
+    inset 0 -4px 0 rgba(8, 2, 1, 0.32),
+    0 3px 0 rgba(8, 2, 1, 0.74),
+    0 0 0 1px rgba(255, 211, 132, 0.12),
+    0 0 12px rgba(155, 76, 255, 0.18);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.magic-shop__equipment-view-toggle::before {
+  content: "";
+  width: 18px;
+  height: 11px;
+  border: 2px solid #ffe8ad;
+  border-radius: 50%;
+  box-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.86),
+    0 0 6px rgba(188, 96, 255, 0.28);
+  transform: rotate(-6deg);
+}
+
+.magic-shop__equipment-view-toggle::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffe8ad;
+  box-shadow:
+    0 1px 0 rgba(8, 2, 1, 0.86),
+    0 0 7px rgba(188, 96, 255, 0.38);
+}
+
+.magic-shop__equipment-view-toggle[aria-pressed="true"] {
+  border-color: rgba(205, 132, 255, 0.72);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 189, 0.28),
+    inset 0 -4px 0 rgba(8, 2, 1, 0.28),
+    0 3px 0 rgba(8, 2, 1, 0.74),
+    0 0 0 1px rgba(255, 211, 132, 0.14),
+    0 0 14px rgba(188, 96, 255, 0.38);
+}
+
 .magic-shop__preview-card {
   position: relative;
   isolation: isolate;
@@ -13469,6 +13546,12 @@ body.debug-active .city-menu__portrait-button:active {
   text-align: left;
 }
 
+.magic-shop__list-item--equipment {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(calc(var(--magic-shop-list-price-min-width) * var(--magic-shop-button-scale)), auto);
+}
+
 .magic-shop__list-select {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);
@@ -13576,6 +13659,18 @@ body.debug-active .city-menu__portrait-button:active {
   line-height: 1;
   text-overflow: ellipsis;
   text-shadow: 0 1px 0 #160703;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.magic-shop__list-effect {
+  overflow: hidden;
+  color: #d9b5ff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0 rgba(8, 2, 1, 0.86);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -14146,6 +14241,13 @@ body.debug-active .city-menu__portrait-button:active {
     left: 14px;
   }
 
+  .magic-shop__equipment-view-toggle {
+    top: calc(var(--magic-shop-preview-top) + 1px);
+    right: max(10px, calc((100% - var(--magic-shop-preview-width)) / 2 - 38px));
+    width: 31px;
+    height: 28px;
+  }
+
   .magic-shop__preview-card {
     gap: 4px;
     width: var(--magic-shop-preview-width);
@@ -14369,6 +14471,13 @@ body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="c
   right: 14px;
   bottom: calc(var(--shop-city-tray-height) + var(--shop-city-menu-pad-top) + var(--shop-city-menu-pad-bottom) + var(--magic-shop-preview-bottom-gap));
   left: 14px;
+}
+
+body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__equipment-view-toggle {
+  top: calc(var(--magic-shop-preview-top) + 1px);
+  right: max(10px, calc((100% - var(--magic-shop-preview-width)) / 2 - 38px));
+  width: 31px;
+  height: 28px;
 }
 
 body.debug-mode-ui .magic-shop.armory-shop--city-mode[data-ui-layout-viewport="compact"] .magic-shop__preview-card {

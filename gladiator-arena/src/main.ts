@@ -106,6 +106,7 @@ import {
   getHeroArenaEnergy,
   getHeroArenaWinQuestStatus,
   getHeroAllocatedSkillPoints,
+  getHeroItemWeaponClass,
   getHeroSkillPointResetPrice,
   getHeroScrollCapacityUpgradeUnlockBossTier,
   getHeroScrollUpgradeUnlockBossTier,
@@ -226,6 +227,7 @@ const cityRenderDebugOutput = document.querySelector<HTMLElement>("#cityRenderDe
 const cityAdminButton = document.querySelector<HTMLButtonElement>("#cityAdminButton");
 const cityAdminPanel = document.querySelector<HTMLElement>("#cityAdminPanel");
 const cityAdminGoldButton = document.querySelector<HTMLButtonElement>("#cityAdminGoldButton");
+const cityAdminPlayerViewButton = document.querySelector<HTMLButtonElement>("#cityAdminPlayerViewButton");
 const cityAdminLevelButton = document.querySelector<HTMLButtonElement>("[data-admin-action='level-up']");
 const cityAdminActionButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-action]")];
 const cityAdminGrantAdjustButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-admin-grant-adjust]")];
@@ -371,6 +373,7 @@ const SHOP_EQUIPMENT_VISUAL_SYNC_DELAY_MS = 260;
 const SHOP_PURCHASE_BURST_WINDOW_MS = 2500;
 let cityAdminGoldGrantAmount = CITY_ADMIN_GOLD_GRANT_AMOUNT;
 let cityAdminLevelGrantAmount = CITY_ADMIN_LEVEL_GRANT_AMOUNT;
+let cityAdminPlayerViewEnabled = false;
 let cityCurtainCleanupTimer: number | undefined;
 let cityCurtainRevealTimer: number | undefined;
 let cityCurtainSwitchTimer: number | undefined;
@@ -511,7 +514,7 @@ function refreshCityRenderDebugPanel(): void {
 }
 
 function mountCityAdminControls(): void {
-  if (!cityAdminButton || !cityAdminPanel || !cityAdminGoldButton) {
+  if (!cityAdminButton || !cityAdminPanel || !cityAdminGoldButton || !cityAdminPlayerViewButton) {
     return;
   }
 
@@ -535,6 +538,8 @@ function mountCityAdminControls(): void {
   });
 
   refreshCityAdminGrantControls();
+  refreshCityAdminPlayerViewControl();
+  cityAdminPlayerViewButton.addEventListener("click", handleCityAdminPlayerViewToggle);
   cityAdminGoldButton.addEventListener("click", handleAdminGoldGrant);
   cityAdminGrantAdjustButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -572,6 +577,36 @@ function setCityAdminOpen(open: boolean): void {
 
 function canShowCityAdminControls(): boolean {
   return canUseTelegramUserIdGatedAction(ADMIN_TELEGRAM_USER_IDS);
+}
+
+function canShowAdminOnlyGameFeatures(): boolean {
+  return canShowCityAdminControls() && !cityAdminPlayerViewEnabled;
+}
+
+function handleCityAdminPlayerViewToggle(): void {
+  if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  cityAdminPlayerViewEnabled = !cityAdminPlayerViewEnabled;
+  refreshCityAdminPlayerViewControl();
+  refreshAdminOnlyGameFeatureVisibility();
+}
+
+function refreshCityAdminPlayerViewControl(): void {
+  if (!cityAdminPlayerViewButton) {
+    return;
+  }
+
+  cityAdminPlayerViewButton.textContent = `Player View: ${cityAdminPlayerViewEnabled ? "On" : "Off"}`;
+  cityAdminPlayerViewButton.setAttribute("aria-pressed", String(cityAdminPlayerViewEnabled));
+}
+
+function refreshAdminOnlyGameFeatureVisibility(): void {
+  magicShop?.render();
+  if (cityArenaMenu && !cityArenaMenu.hidden) {
+    renderCityArenaMenu();
+  }
 }
 
 function parseCityAdminGrantAdjustTarget(target: string | undefined): CityAdminGrantAdjustTarget | undefined {
@@ -2042,6 +2077,14 @@ function focusCityShop(mode: "armory" | "weaponShop" | "magicShop"): void {
   }
 }
 
+function handleMagicEquipmentHeroViewChange(open: boolean): void {
+  if (open) {
+    cityScene?.focusMagicShop(true);
+  } else {
+    cityScene?.focusDefault(true);
+  }
+}
+
 function focusCityDefaultFromShop(): void {
   flushShopEquipmentVisualSync();
   cityScene?.focusDefault(true);
@@ -2291,7 +2334,7 @@ function applyHeroArenaQuestRewardPatch(reward: GladiatorArenaQuestRewardPatch):
 }
 
 function isCityArenaAutoFightUnlockedForTier(tierId: number): boolean {
-  if (canUseArenaAdminControls()) {
+  if (canShowAdminOnlyGameFeatures()) {
     return true;
   }
 
@@ -5333,6 +5376,14 @@ function isMagicShopProduct(product: CityShopProduct): product is MagicProduct {
   return product.itemIds.some((itemId) => HERO_ITEM_CATALOG[itemId]?.kind === "scroll");
 }
 
+function isMagicEquipmentShopProduct(product: CityShopProduct): product is WeaponProduct {
+  return product.itemIds.some((itemId) => {
+    const item = HERO_ITEM_CATALOG[itemId];
+
+    return item?.kind === "weapon" && getHeroItemWeaponClass(item) === "staff";
+  });
+}
+
 function isEquipmentShopProduct(product: CityShopProduct): product is ArmoryProduct | WeaponProduct {
   return !isMagicShopProduct(product);
 }
@@ -5347,6 +5398,12 @@ function setPendingEquipmentShopBuyProduct(product: ArmoryProduct | WeaponProduc
   if (!product) {
     armoryShop?.syncHeroState({ pendingProductId: null });
     weaponShop?.syncHeroState({ pendingProductId: null });
+    magicShop?.syncHeroState({ pendingEquipmentProductId: null });
+    return;
+  }
+
+  if (isMagicEquipmentShopProduct(product)) {
+    magicShop?.syncHeroState({ pendingEquipmentProductId: product.id });
     return;
   }
 
@@ -5653,7 +5710,7 @@ function canUseArenaAdminControls(): boolean {
 }
 
 function syncShopHeroStateForProduct(product: CityShopProduct, previousHero: HeroState): void {
-  if (isMagicShopProduct(product)) {
+  if (isMagicShopProduct(product) || isMagicEquipmentShopProduct(product)) {
     magicShop?.syncHeroState();
     return;
   }
@@ -6017,6 +6074,11 @@ if (cityMenu) {
   magicShop = mountMagicShop(cityMenu, {
     getHero: () => hero,
     onBuy: handleShopBuy,
+    onBuyEquipment: handleShopBuy,
+    onEquipmentPreview: handleShopPreview,
+    onEquipmentPreviewClear: clearShopPreview,
+    onEquipmentHeroViewChange: handleMagicEquipmentHeroViewChange,
+    showEquipment: canShowAdminOnlyGameFeatures,
     onUpgradeScroll: handleMagicScrollUpgrade,
     onScrollCapacityUpgrade: handleMagicScrollCapacityUpgrade,
     onSharpenWeapon: handleMagicWeaponSharpen,

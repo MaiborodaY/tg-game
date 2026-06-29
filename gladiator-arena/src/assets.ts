@@ -340,6 +340,7 @@ export const CITY_DAY_BACKGROUND_ASSET_KEY = "city-menu-bg-day";
 export const CITY_DAY_BACKGROUND_ASSET_URL = new URL("./assets/menu/main-city-day.webp", import.meta.url).href;
 export const CITY_SHOP_BACKGROUND_ASSET_KEY = "city-shop-bg";
 export const CITY_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/city-shop.webp", import.meta.url).href;
+export const CITY_MAGIC_SHOP_BACKGROUND_ASSET_KEY = "city-magic-shop-bg";
 export const CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL = new URL("./assets/menu/magic-shop.webp", import.meta.url).href;
 export const MAGIC_SHOP_TITLE_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-title-frame.webp", import.meta.url).href;
 export const MAGIC_SHOP_SELECTED_CARD_FRAME_ASSET_URL = new URL("./assets/ui/magic-shop/magic-shop-selected-card-frame.webp", import.meta.url).href;

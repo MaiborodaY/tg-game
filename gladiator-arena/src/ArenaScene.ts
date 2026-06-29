@@ -24,6 +24,8 @@ import {
   CITY_DAY_BACKGROUND_ASSET_KEY,
   CITY_DAY_BACKGROUND_ASSET_URL,
   CITY_CLOUD_ASSETS,
+  CITY_MAGIC_SHOP_BACKGROUND_ASSET_KEY,
+  CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
   CITY_SHOP_BACKGROUND_ASSET_KEY,
   CITY_SHOP_BACKGROUND_ASSET_URL,
   CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY,
@@ -1893,6 +1895,7 @@ function preloadCityAssets(target: Phaser.Scene): void {
   target.load.image(CITY_BACKGROUND_ASSET_KEY, CITY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_DAY_BACKGROUND_ASSET_KEY, CITY_DAY_BACKGROUND_ASSET_URL);
   target.load.image(CITY_SHOP_BACKGROUND_ASSET_KEY, CITY_SHOP_BACKGROUND_ASSET_URL);
+  target.load.image(CITY_MAGIC_SHOP_BACKGROUND_ASSET_KEY, CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL);
   CITY_CLOUD_ASSETS.forEach((asset) => target.load.image(asset.key, asset.url));
 }
 
@@ -2190,6 +2193,7 @@ async function getCityAssetPrewarmUrls(): Promise<string[]> {
     CITY_BACKGROUND_ASSET_URL,
     CITY_DAY_BACKGROUND_ASSET_URL,
     CITY_SHOP_BACKGROUND_ASSET_URL,
+    CITY_MAGIC_SHOP_BACKGROUND_ASSET_URL,
     ...CITY_CLOUD_ASSETS.map((asset) => asset.url),
     ...paperDollUrls.map((asset) => asset.url),
   ];
@@ -3071,7 +3075,7 @@ export function launchArena(
   };
 }
 
-type CityCameraMode = "default" | "armory" | "weaponShop" | "arena";
+type CityCameraMode = "default" | "armory" | "weaponShop" | "magicShop" | "arena";
 
 interface CityHeroLayout {
   feetX: number;
@@ -3111,6 +3115,7 @@ export interface CitySceneApi {
   focusDefault: (instant?: boolean) => void;
   focusArmory: (instant?: boolean) => void;
   focusWeaponShop: (instant?: boolean) => void;
+  focusMagicShop: (instant?: boolean) => void;
   setProfilePreview: (layout?: CityProfilePreviewLayout) => void;
   setShopMenuTop: (menuTopY?: number) => void;
   previewEquipment: (equipment: HeroEquipment) => void;
@@ -3286,6 +3291,16 @@ class CityHeroScene extends Phaser.Scene {
     this.cameras.main.setAlpha(1);
     this.setCityHeroShadowEnabled(false);
     this.transitionBackgroundTo(CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY, instant);
+    this.transitionCityCloudsTo(0, instant);
+    this.tweenHeroLiftTo(1, instant);
+    this.syncCamera(instant, 1);
+  }
+
+  focusMagicShop(instant = false): void {
+    this.cameraMode = "magicShop";
+    this.cameras.main.setAlpha(1);
+    this.setCityHeroShadowEnabled(false);
+    this.transitionBackgroundTo(CITY_MAGIC_SHOP_BACKGROUND_ASSET_KEY, instant);
     this.transitionCityCloudsTo(0, instant);
     this.tweenHeroLiftTo(1, instant);
     this.syncCamera(instant, 1);
@@ -4013,7 +4028,11 @@ function getCityBackgroundTransform(assetKey: string): { offsetX: number; offset
 }
 
 function getCityBackgroundTint(assetKey: string): number {
-  return assetKey === CITY_ARMORY_BACKGROUND_ASSET_KEY || assetKey === CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY ? CITY_SHOP_BACKGROUND_TINT : 0xffffff;
+  return assetKey === CITY_ARMORY_BACKGROUND_ASSET_KEY ||
+    assetKey === CITY_WEAPON_SHOP_BACKGROUND_ASSET_KEY ||
+    assetKey === CITY_MAGIC_SHOP_BACKGROUND_ASSET_KEY
+    ? CITY_SHOP_BACKGROUND_TINT
+    : 0xffffff;
 }
 
 export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: HeroEquipment, playerAppearance?: HeroAppearance): CitySceneApi {
@@ -4058,6 +4077,11 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
       return;
     }
 
+    if (pendingCameraMode === "magicShop") {
+      readyScene.focusMagicShop();
+      return;
+    }
+
     readyScene.focusDefault();
     readyScene.setProfilePreview(scaleCityProfilePreviewLayout(pendingProfilePreviewLayout, parent, cityGameSize.pixelRatio));
   };
@@ -4093,6 +4117,10 @@ export function mountCityHeroPreview(parent: HTMLElement, playerEquipment?: Hero
     focusWeaponShop: (instant = false) => {
       pendingCameraMode = "weaponShop";
       scene?.focusWeaponShop(instant);
+    },
+    focusMagicShop: (instant = false) => {
+      pendingCameraMode = "magicShop";
+      scene?.focusMagicShop(instant);
     },
     setProfilePreview: (layout?: CityProfilePreviewLayout) => {
       pendingProfilePreviewLayout = layout;

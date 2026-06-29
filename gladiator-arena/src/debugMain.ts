@@ -875,6 +875,9 @@ function startDebugApp(): void {
     magicShop = mountMagicShop(cityMenu, {
       getHero: () => hero,
       onBuy: handleShopBuy,
+      onBuyEquipment: handleShopBuy,
+      onEquipmentPreview: handleShopPreview,
+      onEquipmentPreviewClear: clearShopPreview,
       onUpgradeScroll: handleMagicScrollUpgrade,
       onScrollCapacityUpgrade: handleMagicScrollCapacityUpgrade,
       onSharpenWeapon: handleMagicWeaponSharpen,

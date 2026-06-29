@@ -44,17 +44,20 @@ import {
   SHOP_CATEGORY_SWORD_ICON_ASSET_URL,
   SHOP_GOLD_COIN_ICON_ASSET_URL,
 } from "./assets";
+import { GENERATED_WEAPON_PRODUCTS } from "./generated/equipmentItems.generated";
 import { applyUiLayoutTuning } from "./uiLayoutTuning";
 import {
   getShopProductActionLabel,
   getShopProductActionState,
   getShopProductDisplayName,
   getShopProductRarity,
+  getShopProductStat,
   getShopRarityLabel,
   type ShopItemRarity,
 } from "./shopPresentation";
 import { getShopProductIconUrl } from "./shopItemIcons";
 import { getHeroScrollEffectText } from "./scrollEffectText";
+import type { WeaponProduct } from "./weaponShopUi";
 
 export interface MagicProduct {
   id: string;
@@ -70,12 +73,24 @@ export interface MagicShopApi {
   open: () => void;
   close: () => void;
   render: () => void;
-  syncHeroState: () => void;
+  syncHeroState: (options?: MagicShopHeroSyncOptions) => void;
 }
+
+export interface MagicShopHeroSyncOptions {
+  pendingEquipmentProductId?: string | null;
+}
+
+type MagicEquipmentViewMode = "cards" | "hero";
+type MagicShopEquipmentVisibility = boolean | (() => boolean);
 
 interface MagicShopOptions {
   getHero: () => HeroState;
   onBuy: (product: MagicProduct) => void;
+  onBuyEquipment: (product: WeaponProduct) => void;
+  onEquipmentPreview?: (product: WeaponProduct) => void;
+  onEquipmentPreviewClear?: () => void;
+  onEquipmentHeroViewChange?: (open: boolean) => void;
+  showEquipment?: MagicShopEquipmentVisibility;
   onUpgradeScroll: (product: MagicProduct) => void;
   onScrollCapacityUpgrade: () => void;
   onSharpenWeapon: () => void;
@@ -121,7 +136,7 @@ interface MagicScrollCapacityUpgradeElements {
   price: HTMLElement;
 }
 
-type MagicShopMode = "home" | "scrolls" | "weaponSharpening";
+type MagicShopMode = "home" | "scrolls" | "weaponSharpening" | "equipment";
 
 const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   {
@@ -180,6 +195,25 @@ const MAGIC_PRODUCTS: readonly MagicProduct[] = [
   },
 ];
 
+const MAGIC_EQUIPMENT_RARITY_SORT_ORDER: Record<ShopItemRarity, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythical: 5,
+  unique: 6,
+};
+const MAGIC_EQUIPMENT_CATEGORY_ID = "staves";
+const MAGIC_EQUIPMENT_PRODUCTS: readonly WeaponProduct[] = GENERATED_WEAPON_PRODUCTS.filter((product) => product.categoryId === MAGIC_EQUIPMENT_CATEGORY_ID)
+  .map((product) => ({
+    id: product.id,
+    categoryId: product.categoryId,
+    name: product.name,
+    price: product.price,
+    itemIds: [...product.itemIds],
+  }))
+  .sort(compareMagicEquipmentProducts);
 const SHOP_LAYOUT_SETTLE_DELAYS_MS = [80, 180, 360] as const;
 
 export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): MagicShopApi {
@@ -188,7 +222,12 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   let layoutSettleTimers: number[] = [];
   let mode: MagicShopMode = "home";
   let selectedProductId = MAGIC_PRODUCTS[0]?.id ?? "";
+  let selectedEquipmentProductId = MAGIC_EQUIPMENT_PRODUCTS[0]?.id ?? "";
+  let pendingEquipmentProductId: string | undefined;
   let pendingUpgradeProductId: string | undefined;
+  let equipmentViewMode: MagicEquipmentViewMode = "cards";
+  let isEquipmentHeroViewActive = false;
+  let previewedEquipmentProductId: string | undefined;
 
   const shop = document.createElement("section");
   shop.className = "armory-shop weapon-shop magic-shop armory-shop--city-mode";
@@ -263,17 +302,26 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     onClick: () => setMode("weaponSharpening"),
   });
   enchantModeButton.append(createSoonRibbon("magic-shop__home-soon"));
+  const equipmentModeButton = createMagicShopHomeAction({
+    label: "Magic Equipment",
+    detail: "Staves",
+    iconUrl: SHOP_CATEGORY_SCROLL_ICON_ASSET_URL,
+    onClick: () => setMode("equipment"),
+  });
 
-  home.append(scrollsModeButton, enchantModeButton);
+  home.append(scrollsModeButton, equipmentModeButton, enchantModeButton);
 
   const productList = document.createElement("div");
   productList.className = "magic-shop__list";
+  const equipmentList = document.createElement("div");
+  equipmentList.className = "magic-shop__list magic-shop__equipment-list";
 
   const wallet = document.createElement("div");
   wallet.className = "magic-shop__wallet";
 
   const back = document.createElement("button");
   const backIcon = document.createElement("img");
+  const equipmentViewToggle = document.createElement("button");
 
   back.className = "armory-shop__back";
   back.type = "button";
@@ -287,18 +335,31 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
   back.addEventListener("click", handleBack);
   wallet.append(scrollCapacity, back, gold);
 
+  equipmentViewToggle.className = "magic-shop__equipment-view-toggle";
+  equipmentViewToggle.type = "button";
+  equipmentViewToggle.setAttribute("aria-label", "Show character preview");
+  equipmentViewToggle.setAttribute("aria-pressed", "false");
+  equipmentViewToggle.addEventListener("click", () => {
+    equipmentViewMode = equipmentViewMode === "cards" ? "hero" : "cards";
+    refreshHeroState(options.getHero());
+    scheduleLayoutSync();
+  });
+
   const previewElements = createMagicProductPreview();
   const scrollUpgradeElements = createMagicScrollCapacityUpgrade();
   const productListItems = MAGIC_PRODUCTS.map((product) => [product.id, createMagicProductListItem(product)] as const);
   const productListItemsById = new Map(productListItems);
+  const equipmentListItems = MAGIC_EQUIPMENT_PRODUCTS.map((product) => [product.id, createMagicEquipmentListItem(product)] as const);
+  const equipmentListItemsById = new Map(equipmentListItems);
 
   preview.append(previewElements.card);
   productList.append(...productListItems.map(([, elements]) => elements.item));
-  content.append(home, productList, wallet);
+  equipmentList.append(...equipmentListItems.map(([, elements]) => elements.item));
+  content.append(home, productList, equipmentList, wallet);
   header.append(title);
   tray.append(header, content);
   menu.append(tray);
-  panel.append(preview, menu, scrollUpgradeElements.root);
+  panel.append(preview, equipmentViewToggle, menu, scrollUpgradeElements.root);
   shop.append(panel);
   root.append(shop);
 
@@ -316,6 +377,7 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     options.onOpen?.();
     scheduleShopTransition(() => {
       mode = "home";
+      equipmentViewMode = "cards";
       pendingUpgradeProductId = undefined;
       root.classList.add("city-menu--armory-open");
       root.classList.add("city-menu--magic-shop-open");
@@ -336,7 +398,9 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     scheduleShopTransition(() => {
       root.classList.remove("city-menu--armory-open");
       root.classList.remove("city-menu--magic-shop-open");
+      root.classList.remove("city-menu--magic-equipment-preview-open");
       shop.hidden = true;
+      syncEquipmentHeroView(false);
       clearLayoutSync();
     });
   }
@@ -357,7 +421,12 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     scheduleLayoutSync();
   }
 
-  function syncHeroState(): void {
+  function syncHeroState(syncOptions: MagicShopHeroSyncOptions = {}): void {
+    if ("pendingEquipmentProductId" in syncOptions) {
+      pendingEquipmentProductId = syncOptions.pendingEquipmentProductId ?? undefined;
+      shop.classList.toggle("magic-shop--purchase-pending", Boolean(pendingEquipmentProductId));
+    }
+
     if (shop.hidden) {
       return;
     }
@@ -452,18 +521,39 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     return selectedProduct;
   }
 
+  function canShowEquipment(): boolean {
+    return typeof options.showEquipment === "function" ? options.showEquipment() : options.showEquipment ?? true;
+  }
+
+  function ensureVisibleMode(): void {
+    if (mode !== "equipment" || canShowEquipment()) {
+      return;
+    }
+
+    mode = "home";
+    equipmentViewMode = "cards";
+  }
+
   function setMode(nextMode: MagicShopMode): void {
+    if (nextMode === "equipment" && !canShowEquipment()) {
+      return;
+    }
+
     if (mode === nextMode) {
       return;
     }
 
     mode = nextMode;
+    if (mode !== "equipment") {
+      equipmentViewMode = "cards";
+    }
     pendingUpgradeProductId = undefined;
     refreshHeroState(options.getHero());
     scheduleLayoutSync();
   }
 
   function refreshHeroState(hero: HeroState): void {
+    ensureVisibleMode();
     refreshMode();
     refreshWallet(hero);
     refreshScrollCapacityUpgrade(hero);
@@ -473,20 +563,41 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
       return;
     }
 
+    if (mode === "equipment") {
+      refreshSelectedEquipmentProduct(hero);
+      refreshEquipmentProductList(hero);
+      return;
+    }
+
     if (mode === "weaponSharpening") {
       refreshWeaponSharpening(hero);
     }
   }
 
   function refreshMode(): void {
+    const showEquipment = canShowEquipment();
+
     shop.classList.toggle("magic-shop--mode-home", mode === "home");
     shop.classList.toggle("magic-shop--mode-scrolls", mode === "scrolls");
     shop.classList.toggle("magic-shop--mode-sharpening", mode === "weaponSharpening");
-    preview.hidden = mode === "home";
+    shop.classList.toggle("magic-shop--mode-equipment", mode === "equipment");
+    syncEquipmentHeroView();
+    preview.hidden = mode === "home" || isEquipmentHeroViewOpen();
+    equipmentModeButton.hidden = !showEquipment;
+    equipmentViewToggle.hidden = mode !== "equipment";
+    equipmentViewToggle.setAttribute("aria-pressed", String(equipmentViewMode === "hero"));
+    equipmentViewToggle.setAttribute(
+      "aria-label",
+      equipmentViewMode === "hero" ? "Show magic equipment cards" : "Show character preview",
+    );
     home.hidden = mode !== "home";
     productList.hidden = mode !== "scrolls";
+    equipmentList.hidden = mode !== "equipment";
     scrollUpgradeElements.root.hidden = mode !== "scrolls";
-    preview.setAttribute("aria-label", mode === "weaponSharpening" ? "Weapon sharpening" : "Selected scroll");
+    preview.setAttribute(
+      "aria-label",
+      mode === "weaponSharpening" ? "Weapon sharpening" : mode === "equipment" ? "Selected magic equipment" : "Selected scroll",
+    );
   }
 
   function refreshWallet(hero: HeroState): void {
@@ -498,6 +609,16 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     scrollCapacity.hidden = mode !== "scrolls";
     setTextContentIfChanged(scrollCapacityAmount, `${scrollCount}/${scrollCapacityValue}`);
     scrollCapacity.setAttribute("aria-label", `Scrolls ${scrollCount} of ${scrollCapacityValue}`);
+  }
+
+  function getSelectedMagicEquipmentProduct(): WeaponProduct | undefined {
+    const selectedProduct = MAGIC_EQUIPMENT_PRODUCTS.find((product) => product.id === selectedEquipmentProductId) ?? MAGIC_EQUIPMENT_PRODUCTS[0];
+
+    if (selectedProduct) {
+      selectedEquipmentProductId = selectedProduct.id;
+    }
+
+    return selectedProduct;
   }
 
   function refreshScrollCapacityUpgrade(hero: HeroState): void {
@@ -587,6 +708,38 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     );
   }
 
+  function refreshSelectedEquipmentProduct(hero: HeroState): void {
+    const product = getSelectedMagicEquipmentProduct();
+
+    previewElements.card.className = "magic-shop__preview-card magic-shop__preview-card--equipment";
+
+    if (!product) {
+      setImageSourceIfChanged(previewElements.icon, SHOP_CATEGORY_SCROLL_ICON_ASSET_URL);
+      setTextContentIfChanged(previewElements.name, "No Staves");
+      setTextContentIfChanged(previewElements.rarity, "EMPTY");
+      setTextContentIfChanged(previewElements.effect, "Import staff items to sell them here.");
+      previewElements.buyButton.disabled = true;
+      setMagicProductPreviewAction(previewElements.buyButton, "Buy", undefined);
+      return;
+    }
+
+    const rarity = getShopProductRarity(product.itemIds, product.rarity);
+    const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+    const isPending = pendingEquipmentProductId === product.id;
+    const actionLabel = isPending ? "Buying" : actionState === "buy" ? "Buy" : getShopProductActionLabel(actionState, product.price);
+    const iconUrl = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+
+    previewElements.card.className = `magic-shop__preview-card magic-shop__preview-card--equipment armory-shop__selected-card--rarity-${rarity}`;
+    previewElements.card.classList.toggle("magic-shop__preview-card--max", actionState === "equipped");
+    setImageSourceIfChanged(previewElements.icon, iconUrl);
+    setTextContentIfChanged(previewElements.name, getShopProductDisplayName(product.name));
+    setTextContentIfChanged(previewElements.rarity, getShopRarityLabel(rarity));
+    setTextContentIfChanged(previewElements.effect, getMagicEquipmentProductEffect(product));
+    previewElements.buyButton.disabled =
+      Boolean(pendingEquipmentProductId) || actionState === "no-gold" || actionState === "locked" || actionState === "sealed" || actionState === "equipped";
+    setMagicProductPreviewAction(previewElements.buyButton, actionLabel, undefined);
+  }
+
   function refreshProductList(hero: HeroState): void {
     MAGIC_PRODUCTS.forEach((product) => {
       const elements = productListItemsById.get(product.id);
@@ -615,6 +768,28 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     });
   }
 
+  function refreshEquipmentProductList(hero: HeroState): void {
+    MAGIC_EQUIPMENT_PRODUCTS.forEach((product) => {
+      const elements = equipmentListItemsById.get(product.id);
+
+      if (!elements) {
+        return;
+      }
+
+      const rarity = getShopProductRarity(product.itemIds, product.rarity);
+      const actionState = getShopProductActionState(hero, product.itemIds, product.price);
+      const isPending = pendingEquipmentProductId === product.id;
+
+      elements.item.className = `magic-shop__list-item magic-shop__list-item--equipment armory-shop__option--rarity-${rarity}`;
+      elements.item.classList.toggle("magic-shop__list-item--selected", product.id === selectedEquipmentProductId);
+      elements.item.classList.toggle("magic-shop__list-item--max", actionState === "equipped");
+      elements.item.classList.toggle("magic-shop__list-item--no-gold", actionState === "no-gold");
+      elements.item.classList.toggle("magic-shop__list-item--upgrade-pending", isPending);
+      elements.selectButton.setAttribute("aria-pressed", product.id === selectedEquipmentProductId ? "true" : "false");
+      setPriceAmount(elements.price, elements.priceAmount, product.price);
+    });
+  }
+
   function selectMagicProduct(productId: string): void {
     if (selectedProductId === productId && pendingUpgradeProductId !== productId) {
       return;
@@ -631,6 +806,48 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
     pendingUpgradeProductId = product.id;
     refreshHeroState(options.getHero());
     scheduleLayoutSync();
+  }
+
+  function selectMagicEquipmentProduct(productId: string): void {
+    if (selectedEquipmentProductId === productId) {
+      return;
+    }
+
+    selectedEquipmentProductId = productId;
+    refreshHeroState(options.getHero());
+    scheduleLayoutSync();
+  }
+
+  function isEquipmentHeroViewOpen(): boolean {
+    return mode === "equipment" && equipmentViewMode === "hero";
+  }
+
+  function syncEquipmentHeroView(forceOpen = isEquipmentHeroViewOpen()): void {
+    shop.classList.toggle("magic-shop--equipment-hero-view", forceOpen);
+    root.classList.toggle("city-menu--magic-equipment-preview-open", forceOpen);
+
+    if (forceOpen !== isEquipmentHeroViewActive) {
+      isEquipmentHeroViewActive = forceOpen;
+      options.onEquipmentHeroViewChange?.(forceOpen);
+      if (!forceOpen) {
+        previewedEquipmentProductId = undefined;
+        options.onEquipmentPreviewClear?.();
+      }
+    }
+
+    if (!forceOpen) {
+      return;
+    }
+
+    const product = getSelectedMagicEquipmentProduct();
+
+    if (product && product.id !== previewedEquipmentProductId) {
+      previewedEquipmentProductId = product.id;
+      options.onEquipmentPreview?.(product);
+    } else if (!product) {
+      previewedEquipmentProductId = undefined;
+      options.onEquipmentPreviewClear?.();
+    }
   }
 
   function createMagicProductPreview(): MagicProductPreviewElements {
@@ -663,6 +880,12 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
       if (mode === "weaponSharpening") {
         options.onSharpenWeapon();
+      } else if (mode === "equipment") {
+        const product = getSelectedMagicEquipmentProduct();
+
+        if (product) {
+          options.onBuyEquipment(product);
+        }
       } else if (pendingUpgradeProductId === getSelectedMagicProduct().id) {
         const product = getSelectedMagicProduct();
 
@@ -718,6 +941,47 @@ export function mountMagicShop(root: HTMLElement, options: MagicShopOptions): Ma
 
       selectMagicProductUpgrade(product);
     });
+    price.className = "magic-shop__list-price";
+    item.append(selectButton, upgradeButton, price);
+
+    return { item, selectButton, upgradeButton, price, priceAmount };
+  }
+
+  function createMagicEquipmentListItem(product: WeaponProduct): MagicProductListItemElements {
+    const item = document.createElement("div");
+    const selectButton = document.createElement("button");
+    const rarity = getShopProductRarity(product.itemIds, product.rarity);
+    const displayName = getShopProductDisplayName(product.name);
+    const icon = document.createElement("img");
+    const text = document.createElement("span");
+    const name = document.createElement("span");
+    const stat = document.createElement("span");
+    const upgradeButton = document.createElement("button");
+    const price = document.createElement("span");
+    const priceAmount = appendPriceContent(price, product.price);
+
+    item.className = `magic-shop__list-item magic-shop__list-item--equipment armory-shop__option--rarity-${rarity}`;
+    item.title = displayName;
+    selectButton.className = "magic-shop__list-select";
+    selectButton.type = "button";
+    selectButton.addEventListener("click", () => {
+      selectMagicEquipmentProduct(product.id);
+    });
+    icon.className = "magic-shop__list-icon";
+    icon.src = getShopProductIconUrl(product.itemIds) ?? SHOP_CATEGORY_SCROLL_ICON_ASSET_URL;
+    icon.alt = "";
+    icon.decoding = "async";
+    icon.draggable = false;
+    text.className = "magic-shop__list-text";
+    name.className = "magic-shop__list-name";
+    name.textContent = displayName;
+    stat.className = "magic-shop__list-effect";
+    stat.textContent = `DMG ${getShopProductStat(product.itemIds, "damage")}`;
+    text.append(name, stat);
+    selectButton.append(icon, text);
+    upgradeButton.className = "magic-shop__list-upgrade";
+    upgradeButton.type = "button";
+    upgradeButton.hidden = true;
     price.className = "magic-shop__list-price";
     item.append(selectButton, upgradeButton, price);
 
@@ -798,6 +1062,36 @@ function createSoonRibbon(className: string): HTMLElement {
   ribbon.textContent = "SOON";
 
   return ribbon;
+}
+
+function compareMagicEquipmentProducts(left: WeaponProduct, right: WeaponProduct): number {
+  const rarityDifference =
+    MAGIC_EQUIPMENT_RARITY_SORT_ORDER[getShopProductRarity(left.itemIds, left.rarity)] -
+    MAGIC_EQUIPMENT_RARITY_SORT_ORDER[getShopProductRarity(right.itemIds, right.rarity)];
+
+  if (rarityDifference !== 0) {
+    return rarityDifference;
+  }
+
+  const damageDifference = getShopProductStat(left.itemIds, "damage") - getShopProductStat(right.itemIds, "damage");
+
+  if (damageDifference !== 0) {
+    return damageDifference;
+  }
+
+  const priceDifference = left.price - right.price;
+
+  if (priceDifference !== 0) {
+    return priceDifference;
+  }
+
+  return left.name.localeCompare(right.name);
+}
+
+function getMagicEquipmentProductEffect(product: WeaponProduct): string {
+  const damage = getShopProductStat(product.itemIds, "damage");
+
+  return `Staff damage ${damage}. Replaces attacks with 100% hit fireballs.`;
 }
 
 function setTextContentIfChanged(node: HTMLElement, text: string): void {

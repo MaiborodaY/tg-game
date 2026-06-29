@@ -921,7 +921,7 @@ interface GeneratedEquipmentJsonRecord {
   spearLungeMoveBonus?: number;
   levelRequirement?: number;
   requirements?: Partial<Record<"strength" | "agility" | "vitality", number>>;
-  weaponClass?: "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken";
+  weaponClass?: "sword" | "axe" | "bow" | "mace" | "spear" | "shuriken" | "staff";
   assetKeys: Record<string, string>;
   equipmentTuning: RigPartTuning;
   asset: {
@@ -6397,7 +6397,7 @@ function readWeaponClass(
     return fallback;
   }
 
-  if (value === "sword" || value === "axe" || value === "bow" || value === "mace" || value === "spear" || value === "shuriken") {
+  if (value === "sword" || value === "axe" || value === "bow" || value === "mace" || value === "spear" || value === "shuriken" || value === "staff") {
     return value;
   }
 
@@ -6515,6 +6515,10 @@ function getWeaponCategoryId(assetKey: string, name: string, weaponClass = getWe
     return "spears";
   }
 
+  if (weaponClass === "staff") {
+    return "staves";
+  }
+
   return "swords";
 }
 
@@ -6527,6 +6531,10 @@ function getWeaponClassFromText(value: string): NonNullable<GeneratedEquipmentJs
 
   if (text.includes("shuriken")) {
     return "shuriken";
+  }
+
+  if (text.includes("staff") || text.includes("wand")) {
+    return "staff";
   }
 
   if (text.includes("axe")) {
