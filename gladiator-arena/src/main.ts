@@ -226,7 +226,7 @@ const cityHeroWidgetRefs = getCityHeroWidgetRefs();
 type ArenaMenuSelection = { kind: "random"; tierId: number; difficultyId: ArenaDifficultyId } | { kind: "boss"; bossId: ArenaBossId; duo?: boolean };
 type CityShopProduct = ArmoryProduct | WeaponProduct | MagicProduct;
 type GameMode = "pve" | "pvp";
-type CityAdminAction = "level-up" | "unlock-shop" | "unlock-arena" | "restore-energy" | "reset-daily-arena";
+type CityAdminAction = "level-up" | "unlock-shop" | "unlock-arena" | "restore-energy" | "reset-daily-arena" | "reset-progress";
 type CityAdminGrantAdjustTarget = "gold" | "level";
 interface StartGameOptions {
   mode?: GameMode;
@@ -323,10 +323,8 @@ const CITY_RETURN_MIN_READY_MS = 1800;
 const CITY_RETURN_PREWARM_TIMEOUT_MS = 3000;
 const CITY_RETURN_TRANSITION_IN_MS = 260;
 const CITY_RETURN_TRANSITION_TIMEOUT_MS = 4200;
-const HERO_PROGRESS_RESET_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
-const ARENA_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
+const ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
 const RENDER_DEBUG_TELEGRAM_USER_IDS = new Set(["297730487", "313719698"]);
-const CITY_ADMIN_TELEGRAM_USER_IDS = new Set(["297730487", "313719698", "913155684"]);
 const CITY_ADMIN_GOLD_GRANT_AMOUNT = 100;
 const CITY_ADMIN_GOLD_GRANT_STEP = 100;
 const CITY_ADMIN_LEVEL_GRANT_AMOUNT = 1;
@@ -534,7 +532,7 @@ function mountCityAdminControls(): void {
       const action = parseCityAdminAction(button.dataset.adminAction);
 
       if (action) {
-        handleCityAdminAction(action);
+        void handleCityAdminAction(action, button);
       }
     });
   });
@@ -554,7 +552,7 @@ function setCityAdminOpen(open: boolean): void {
 }
 
 function canShowCityAdminControls(): boolean {
-  return canUseTelegramUserIdGatedAction(CITY_ADMIN_TELEGRAM_USER_IDS);
+  return canUseTelegramUserIdGatedAction(ADMIN_TELEGRAM_USER_IDS);
 }
 
 function parseCityAdminGrantAdjustTarget(target: string | undefined): CityAdminGrantAdjustTarget | undefined {
@@ -626,14 +624,20 @@ function parseCityAdminAction(action: string | undefined): CityAdminAction | und
     case "unlock-arena":
     case "restore-energy":
     case "reset-daily-arena":
+    case "reset-progress":
       return action;
     default:
       return undefined;
   }
 }
 
-function handleCityAdminAction(action: CityAdminAction): void {
+async function handleCityAdminAction(action: CityAdminAction, sourceButton?: HTMLButtonElement): Promise<void> {
   if (!canShowCityAdminControls()) {
+    return;
+  }
+
+  if (action === "reset-progress") {
+    await handleHeroProgressReset(sourceButton);
     return;
   }
 
@@ -652,6 +656,8 @@ function applyCityAdminActionToHero(sourceHero: HeroState, action: CityAdminActi
       return restoreHeroArenaEnergy(sourceHero);
     case "reset-daily-arena":
       return resetHeroArenaBossVictoryLedger(sourceHero);
+    case "reset-progress":
+      return sourceHero;
   }
 }
 
@@ -1286,8 +1292,8 @@ function queueHeroCloudSave(reason: string): void {
   });
 }
 
-async function handleHeroProgressReset(): Promise<void> {
-  if (!canUseTelegramUserIdGatedAction(HERO_PROGRESS_RESET_TELEGRAM_USER_IDS)) {
+async function handleHeroProgressReset(sourceButton?: HTMLButtonElement): Promise<void> {
+  if (!canShowCityAdminControls()) {
     return;
   }
 
@@ -1295,7 +1301,7 @@ async function handleHeroProgressReset(): Promise<void> {
     return;
   }
 
-  cityHeroWidgetRefs.profileResetButton?.setAttribute("disabled", "");
+  sourceButton?.setAttribute("disabled", "");
 
   try {
     if (canUseGladiatorCloudSave()) {
@@ -1307,7 +1313,7 @@ async function handleHeroProgressReset(): Promise<void> {
     console.warn("[gladiator-save] Failed to reset hero progress.", error);
     window.alert("Reset failed. Try again.");
   } finally {
-    cityHeroWidgetRefs.profileResetButton?.removeAttribute("disabled");
+    sourceButton?.removeAttribute("disabled");
   }
 }
 
@@ -5274,7 +5280,7 @@ function canUseTelegramUserIdGatedAction(allowedTelegramUserIds: ReadonlySet<str
 }
 
 function canUseArenaAdminControls(): boolean {
-  return canUseTelegramUserIdGatedAction(ARENA_ADMIN_TELEGRAM_USER_IDS);
+  return canUseTelegramUserIdGatedAction(ADMIN_TELEGRAM_USER_IDS);
 }
 
 function syncShopHeroStateForProduct(product: CityShopProduct, previousHero: HeroState): void {
@@ -5541,9 +5547,6 @@ cityPvpJoinButton?.addEventListener("click", () => {
 });
 cityOnlinePveTab?.addEventListener("click", () => setActiveOnlineRoomKind("duoBoss"));
 cityOnlinePvpTab?.addEventListener("click", () => setActiveOnlineRoomKind("pvp"));
-cityHeroWidgetRefs.profileResetButton?.addEventListener("click", () => {
-  void handleHeroProgressReset();
-});
 if (canShowLocalDebugRestartButton()) {
   dom.restartButton.addEventListener("click", () => restart());
 }

@@ -349,7 +349,6 @@ export interface CityHeroWidgetRefs {
   profile: HTMLElement | null;
   profilePortrait: HTMLElement | null;
   profileName: HTMLElement | null;
-  profileResetButton: HTMLButtonElement | null;
   profileResetPointsButton: HTMLButtonElement | null;
   profileSaveAttributesButton: HTMLButtonElement | null;
   profileGold: HTMLElement | null;
@@ -380,7 +379,6 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     profile: root.querySelector<HTMLElement>("#heroProfile"),
     profilePortrait: root.querySelector<HTMLElement>("#heroProfilePortrait"),
     profileName: root.querySelector<HTMLElement>("#heroProfileName"),
-    profileResetButton: root.querySelector<HTMLButtonElement>("#heroProfileResetButton"),
     profileResetPointsButton: root.querySelector<HTMLButtonElement>("#heroProfileResetPointsButton"),
     profileSaveAttributesButton: root.querySelector<HTMLButtonElement>("#heroProfileSaveAttributesButton"),
     profileGold: root.querySelector<HTMLElement>("#heroProfileGold"),
