@@ -6,6 +6,8 @@ export interface Env {
 interface TelegramInitUser {
   id: number;
   username?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 interface PlayerSaveRow {
@@ -38,6 +40,35 @@ export interface HeroArenaEnergy {
 
 const SAVE_SCHEMA_VERSION = 1;
 const MAX_HERO_JSON_BYTES = 100_000;
+const DEFAULT_HERO_ID = "local-hero";
+const DEFAULT_HERO_NAME = "Borshemir";
+const DEFAULT_HERO_XP_TO_NEXT_LEVEL = 1;
+const HERO_STARTING_SKILL_POINTS = 1;
+const HERO_BOW_SHOT_CAPACITY_BASE = 5;
+const HERO_SCROLL_CAPACITY_BASE = 1;
+const HERO_EQUIPMENT_SLOT_KEYS = [
+  "weaponMain",
+  "weaponBow",
+  "helmet",
+  "breastplate",
+  "backShoulderguard",
+  "frontShoulderguard",
+  "backWrist",
+  "frontWrist",
+  "backGlove",
+  "frontGlove",
+  "shield",
+  "backGreave",
+  "frontGreave",
+  "backShinguard",
+  "frontShinguard",
+  "backBoot",
+  "frontBoot",
+] as const;
+const DEFAULT_HERO_APPEARANCE = {
+  hairId: "hair-01",
+  beardId: "beard-short-01",
+};
 export const ARENA_ENERGY_RESOURCE_KEY = "arena_energy";
 export const HERO_ARENA_ENERGY_MAX = 10;
 
@@ -58,7 +89,10 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
     const telegramUserId = String(auth.user.id);
 
     if (request.method === "GET") {
-      return json({ ok: true, save: await readPlayerSaveWithDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId) });
+      return json({
+        ok: true,
+        save: await readOrCreatePlayerSaveWithDailyArenaEnergy(env.GLADIATOR_SAVES_DB, telegramUserId, auth.user),
+      });
     }
 
     if (request.method === "PUT") {
@@ -137,6 +171,8 @@ export async function verifyTelegramInitData(initData: string, botToken: string)
       user: {
         id: userId,
         username: typeof user.username === "string" ? user.username : undefined,
+        first_name: typeof user.first_name === "string" ? user.first_name : undefined,
+        last_name: typeof user.last_name === "string" ? user.last_name : undefined,
       },
     };
   } catch {
@@ -188,6 +224,47 @@ export async function readPlayerSaveWithDailyArenaEnergy(db: D1Database, telegra
   };
 }
 
+async function readOrCreatePlayerSaveWithDailyArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  telegramUser: TelegramInitUser,
+): Promise<PlayerSave> {
+  const save = await readPlayerSaveWithDailyArenaEnergy(db, telegramUserId);
+
+  if (save) {
+    return save;
+  }
+
+  const nowIso = new Date().toISOString();
+  const hero = createBootstrapHero(telegramUser, nowIso);
+  const heroJson = JSON.stringify(hero);
+
+  if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
+    throw new Error("invalid_hero_payload");
+  }
+
+  await insertPlayerSaveIfMissing(db, {
+    telegramUserId,
+    telegramUsername: telegramUser.username,
+    heroJson,
+    nowIso,
+  });
+
+  const createdSave = await readPlayerSaveWithDailyArenaEnergy(db, telegramUserId);
+
+  if (createdSave) {
+    return createdSave;
+  }
+
+  return {
+    hero,
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    revision: 1,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
 export function upsertPlayerSave(
   db: D1Database,
   save: { telegramUserId: string; telegramUsername?: string; heroJson: string },
@@ -212,6 +289,28 @@ export function upsertPlayerSave(
         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
     `)
     .bind(save.telegramUserId, save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION)
+    .run();
+}
+
+function insertPlayerSaveIfMissing(
+  db: D1Database,
+  save: { telegramUserId: string; telegramUsername?: string; heroJson: string; nowIso: string },
+): Promise<D1Result> {
+  return db
+    .prepare(`
+      INSERT INTO player_saves (
+        telegram_user_id,
+        telegram_username,
+        hero_json,
+        schema_version,
+        revision,
+        created_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, 1, ?, ?)
+      ON CONFLICT(telegram_user_id) DO NOTHING
+    `)
+    .bind(save.telegramUserId, save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.nowIso, save.nowIso)
     .run();
 }
 
@@ -342,6 +441,81 @@ function withArenaEnergy(hero: unknown, arenaEnergy: HeroArenaEnergy): unknown {
     ...hero,
     arenaEnergy,
   };
+}
+
+function createBootstrapHero(telegramUser: TelegramInitUser, nowIso: string): unknown {
+  const hero = createDefaultBootstrapHero(nowIso);
+  const displayName = getTelegramDisplayName(telegramUser);
+
+  if (!displayName || hero.name !== DEFAULT_HERO_NAME) {
+    return hero;
+  }
+
+  return {
+    ...hero,
+    name: displayName,
+    updatedAt: nowIso,
+  };
+}
+
+function createDefaultBootstrapHero(nowIso: string): Record<string, unknown> {
+  const dayKey = getUtcDayKey(nowIso);
+
+  return {
+    id: DEFAULT_HERO_ID,
+    name: DEFAULT_HERO_NAME,
+    level: 1,
+    xp: 0,
+    xpToNextLevel: DEFAULT_HERO_XP_TO_NEXT_LEVEL,
+    skillPoints: HERO_STARTING_SKILL_POINTS,
+    gold: 0,
+    totalWins: 0,
+    arenaWinQuest: {
+      wins: 0,
+      claimed: false,
+    },
+    arenaEnergy: {
+      current: HERO_ARENA_ENERGY_MAX,
+      max: HERO_ARENA_ENERGY_MAX,
+      dayKey,
+    },
+    arenaBossVictoryLedger: {
+      dayKey,
+      tierIds: [],
+    },
+    bowShotCapacity: HERO_BOW_SHOT_CAPACITY_BASE,
+    scrollCapacity: HERO_SCROLL_CAPACITY_BASE,
+    baseStats: {
+      strength: 0,
+      agility: 0,
+      vitality: 0,
+    },
+    appearance: { ...DEFAULT_HERO_APPEARANCE },
+    equipment: Object.fromEntries(HERO_EQUIPMENT_SLOT_KEYS.map((slotKey) => [slotKey, null])),
+    weaponEnchantments: {},
+    scrollUpgrades: {},
+    inventory: [],
+    unlockedShopRarities: [],
+    defeatedArenaBossIds: [],
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}
+
+function getTelegramDisplayName(telegramUser: TelegramInitUser): string | undefined {
+  const personalName = normalizeTelegramName([telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(" "));
+
+  if (personalName) {
+    return personalName;
+  }
+
+  return normalizeTelegramName(telegramUser.username?.replace(/^@+/, ""));
+}
+
+function normalizeTelegramName(name: string | undefined): string | undefined {
+  const normalized = name?.trim().replace(/\s+/g, " ").slice(0, 24);
+
+  return normalized || undefined;
 }
 
 function clampArenaEnergyValue(value: unknown): number {
