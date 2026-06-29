@@ -12,6 +12,7 @@ import {
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_WARD_SCROLL_ITEM_ID,
   applyCombatReward,
+  applyHeroEquipmentSnapshotToEquipment,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
   claimHeroArenaWinQuestReward,
@@ -31,7 +32,9 @@ import {
   type HeroBaseStats,
   type HeroArenaWinQuest,
   type HeroEquipment,
+  type HeroEquipmentSnapshot,
   type HeroEquipmentSlotKey,
+  type HeroItemDefinition,
   type HeroItemId,
   type HeroState,
   type CombatRewardApplication,
@@ -175,7 +178,6 @@ type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpe
 type OfflineBattleSettlementKind = "manual" | "auto";
 type OfflineBattleSettlementResult = Exclude<Result, "playing">;
 type OnlineDuoBossSeat = "host" | "guest";
-type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
 type OfflineBattleEncounterSnapshot = NonNullable<CombatState["encounter"]>;
 type OfflineBattlePlayerConsumablesSnapshot = Partial<Record<
   | "shurikenItemId"
@@ -1081,36 +1083,16 @@ function applyHeroEquipmentSnapshot(
   snapshot: HeroEquipmentSnapshot,
   nowIso: string,
 ): { ok: true; hero: HeroState; changed: boolean } | { ok: false; error: "invalid_equipment_payload" } {
-  const equipment: HeroEquipment = { ...hero.equipment };
-  let changed = false;
+  const result = applyHeroEquipmentSnapshotToEquipment(hero.equipment, snapshot, {
+    canApplyItem: (slotKey, itemId, item) => canApplyEquipmentSnapshotItem(hero, slotKey, itemId, item),
+  });
 
-  for (const slotKey of HERO_EQUIPMENT_SLOT_KEYS) {
-    if (!(slotKey in snapshot)) {
-      continue;
-    }
-
-    const itemId = snapshot[slotKey];
-
-    if (itemId === null) {
-      if (equipment[slotKey] !== null) {
-        equipment[slotKey] = null;
-        changed = true;
-      }
-      continue;
-    }
-
-    if (!itemId || !canApplyEquipmentSnapshotItem(hero, slotKey, itemId)) {
-      return { ok: false, error: "invalid_equipment_payload" };
-    }
-
-    if (equipment[slotKey] !== itemId) {
-      equipment[slotKey] = itemId;
-      changed = true;
-    }
+  if (!result.ok) {
+    return { ok: false, error: "invalid_equipment_payload" };
   }
 
-  return changed
-    ? { ok: true, hero: { ...hero, equipment, updatedAt: nowIso }, changed: true }
+  return result.changed
+    ? { ok: true, hero: { ...hero, equipment: result.equipment, updatedAt: nowIso }, changed: true }
     : { ok: true, hero, changed: false };
 }
 
@@ -1365,46 +1347,16 @@ function withValidatedEquipmentSnapshot(hero: HeroState, snapshot: HeroEquipment
     return hero;
   }
 
-  const equipment: HeroEquipment = { ...hero.equipment };
-  let changed = false;
-
-  HERO_EQUIPMENT_SLOT_KEYS.forEach((slotKey) => {
-    if (!(slotKey in snapshot)) {
-      return;
-    }
-
-    const itemId = snapshot[slotKey];
-
-    if (itemId === null) {
-      if (equipment[slotKey] !== null) {
-        equipment[slotKey] = null;
-        changed = true;
-      }
-      return;
-    }
-
-    if (!itemId || !canApplyEquipmentSnapshotItem(hero, slotKey, itemId)) {
-      return;
-    }
-
-    if (equipment[slotKey] !== itemId) {
-      equipment[slotKey] = itemId;
-      changed = true;
-    }
+  const result = applyHeroEquipmentSnapshotToEquipment(hero.equipment, snapshot, {
+    ignoreInvalidItems: true,
+    canApplyItem: (slotKey, itemId, item) => canApplyEquipmentSnapshotItem(hero, slotKey, itemId, item),
   });
 
-  return changed ? { ...hero, equipment, updatedAt: nowIso } : hero;
+  return result.ok && result.changed ? { ...hero, equipment: result.equipment, updatedAt: nowIso } : hero;
 }
 
-function canApplyEquipmentSnapshotItem(hero: HeroState, slotKey: HeroEquipmentSlotKey, itemId: HeroItemId): boolean {
-  const item = HERO_ITEM_CATALOG[itemId];
-
-  return Boolean(
-    item &&
-      item.equipmentSlot === slotKey &&
-      !isHeroConsumableItem(item) &&
-      isHeroItemOwned(hero, itemId),
-  );
+function canApplyEquipmentSnapshotItem(hero: HeroState, _slotKey: HeroEquipmentSlotKey, itemId: HeroItemId, _item: HeroItemDefinition): boolean {
+  return isHeroItemOwned(hero, itemId);
 }
 
 async function readPlayerHero(db: D1Database, telegramUserId: string): Promise<HeroState | null> {

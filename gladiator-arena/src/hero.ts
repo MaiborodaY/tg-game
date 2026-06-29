@@ -203,7 +203,23 @@ export type HeroEquipmentSlotKey = (typeof HERO_EQUIPMENT_SLOT_KEYS)[number];
 export type HeroItemId = string;
 export type HeroItemRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "unique";
 export type HeroEquipment = Record<HeroEquipmentSlotKey, HeroItemId | null>;
+export type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
 export type HeroEquipmentSetGrade = "starter" | "low" | "mid" | "high" | "boss";
+
+export type HeroEquipmentSnapshotItemValidator = (
+  slotKey: HeroEquipmentSlotKey,
+  itemId: HeroItemId,
+  item: HeroItemDefinition,
+) => boolean;
+
+export interface HeroEquipmentSnapshotApplyOptions {
+  ignoreInvalidItems?: boolean;
+  canApplyItem?: HeroEquipmentSnapshotItemValidator;
+}
+
+export type HeroEquipmentSnapshotApplyResult =
+  | { ok: true; equipment: HeroEquipment; changed: boolean }
+  | { ok: false };
 
 export interface HeroWeaponSharpening {
   level: number;
@@ -1018,19 +1034,121 @@ export function createDefaultHeroEquipment(): HeroEquipment {
 }
 
 export function createHeroPreviewEquipment(baseEquipment: HeroEquipment, itemIds: readonly HeroItemId[]): HeroEquipment {
-  const equipment: HeroEquipment = { ...baseEquipment };
+  let equipment: HeroEquipment = { ...baseEquipment };
 
   itemIds.forEach((itemId) => {
-    const item = HERO_ITEM_CATALOG[itemId];
-
-    if (!isHeroEquipmentPreviewItem(item)) {
-      return;
-    }
-
-    equipment[item.equipmentSlot] = itemId;
+    equipment = applyHeroEquipmentItem(equipment, itemId);
   });
 
   return equipment;
+}
+
+export function applyHeroEquipmentItem(baseEquipment: HeroEquipment, itemId: HeroItemId): HeroEquipment {
+  const item = HERO_ITEM_CATALOG[itemId];
+
+  if (!isHeroEquippableItem(item)) {
+    return baseEquipment;
+  }
+
+  const equipment: HeroEquipment = { ...baseEquipment };
+
+  clearHeroEquipmentConflictsForItem(equipment, item);
+  equipment[item.equipmentSlot] = itemId;
+
+  return normalizeHeroEquipment(equipment);
+}
+
+export function applyHeroEquipmentSnapshotToEquipment(
+  baseEquipment: HeroEquipment,
+  snapshot: HeroEquipmentSnapshot,
+  options: HeroEquipmentSnapshotApplyOptions = {},
+): HeroEquipmentSnapshotApplyResult {
+  let equipment: HeroEquipment = { ...baseEquipment };
+
+  for (const slotKey of HERO_EQUIPMENT_SLOT_KEYS) {
+    if (!(slotKey in snapshot)) {
+      continue;
+    }
+
+    const itemId = snapshot[slotKey];
+
+    if (itemId === null) {
+      equipment[slotKey] = null;
+      continue;
+    }
+
+    const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+    const canApplyItem =
+      item &&
+      item.equipmentSlot === slotKey &&
+      isHeroEquippableItem(item) &&
+      (options.canApplyItem?.(slotKey, itemId, item) ?? true);
+
+    if (!canApplyItem) {
+      if (options.ignoreInvalidItems) {
+        continue;
+      }
+
+      return { ok: false };
+    }
+
+    equipment[slotKey] = itemId;
+  }
+
+  equipment = normalizeHeroEquipment(equipment);
+
+  return {
+    ok: true,
+    equipment,
+    changed: hasHeroEquipmentChanged(baseEquipment, equipment),
+  };
+}
+
+export function normalizeHeroEquipment(equipment: HeroEquipment): HeroEquipment {
+  const normalized: HeroEquipment = { ...equipment };
+
+  if (isHeroStaffEquipmentItemId(normalized.weaponMain) && isHeroBowEquipmentItemId(normalized.weaponBow)) {
+    normalized.weaponBow = null;
+  }
+
+  return normalized;
+}
+
+function clearHeroEquipmentConflictsForItem(equipment: HeroEquipment, item: HeroItemDefinition): void {
+  if (item.kind !== "weapon") {
+    return;
+  }
+
+  const weaponClass = getHeroItemWeaponClass(item);
+
+  if (weaponClass === "staff") {
+    equipment.weaponBow = null;
+    return;
+  }
+
+  if (weaponClass === "bow" && item.equipmentSlot === "weaponBow" && isHeroStaffEquipmentItemId(equipment.weaponMain)) {
+    equipment.weaponMain = null;
+  }
+}
+
+function hasHeroEquipmentChanged(left: HeroEquipment, right: HeroEquipment): boolean {
+  return HERO_EQUIPMENT_SLOT_KEYS.some((slotKey) => left[slotKey] !== right[slotKey]);
+}
+
+function isHeroStaffEquipmentItemId(itemId: HeroItemId | null): boolean {
+  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  return item?.kind === "weapon" && getHeroItemWeaponClass(item) === "staff";
+}
+
+function isHeroBowEquipmentItemId(itemId: HeroItemId | null): boolean {
+  const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  return item?.kind === "weapon" && getHeroItemWeaponClass(item) === "bow";
+}
+
+function isHeroEquippableItem(item: HeroItemDefinition | undefined): item is HeroItemDefinition {
+  return isHeroEquipmentPreviewItem(item) && !isHeroConsumableItem(item);
 }
 
 export function createDefaultHeroAppearance(): HeroAppearance {
@@ -3427,7 +3545,7 @@ export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase
   }
 
   const inventory = hero.inventory.map((entry) => ({ ...entry }));
-  const equipment = { ...hero.equipment };
+  let equipment = { ...hero.equipment };
 
   purchase.itemIds.forEach((itemId) => {
     const existingEntry = inventory.find((entry) => entry.itemId === itemId);
@@ -3438,8 +3556,7 @@ export function buyAndEquipHeroItems(hero: HeroState, purchase: HeroItemPurchase
       inventory.push({ itemId, quantity: 1 });
     }
 
-    const item = HERO_ITEM_CATALOG[itemId];
-    equipment[item.equipmentSlot] = itemId;
+    equipment = applyHeroEquipmentItem(equipment, itemId);
   });
 
   return {
