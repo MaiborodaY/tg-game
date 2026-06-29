@@ -62,7 +62,9 @@ import {
   loadGladiatorCloudSave,
   saveGladiatorHeroAttributes,
   saveGladiatorCloudHero,
+  settleGladiatorOfflineBattleReward,
   spendGladiatorArenaEnergy,
+  type GladiatorBattleSettlement,
   type GladiatorShopAction,
 } from "./gladiatorSaveClient";
 import {
@@ -366,6 +368,7 @@ let arenaEntryLoaderTimer: number | undefined;
 let arenaEntryFailsafeTimer: number | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleResultPresentation: BattleResultPresentation | undefined;
+let pendingBattleRewardSettlement: Promise<void> | undefined;
 let battleResultPresentationStage: BattleResultPresentationStage = "reward";
 let battleResultPresentationId = 0;
 let battleResultPresentationRevealToken = 0;
@@ -885,7 +888,7 @@ function renderCurrentDom(): void {
     statsState: displayedStatsState,
     resultPresentation: battleResultPresentation,
     resultPresentationStage: battleResultPresentationStage,
-    deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation),
+    deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation || pendingBattleRewardSettlement),
     resultReturn: {
       ready: battleResultPresentationStage === "loot" ? true : battleResultReturnReady && !battleResultSequenceLocked,
       label: battleResultPresentationStage === "loot" ? "Continue" : battleResultReturnLabel,
@@ -1344,10 +1347,12 @@ function getPreImpactStatsState(previous: CombatState, current: CombatState): Co
 
 function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void {
   const revealToken = ++battleResultPresentationRevealToken;
+  const rewardSettlement = pendingBattleRewardSettlement;
 
   void actionAnimation
     .catch(() => undefined)
     .then(nextAnimationFrame)
+    .then(() => rewardSettlement?.catch(() => undefined))
     .then(() => {
       if (battleResultPresentationRevealToken !== revealToken || state.result === "playing") {
         return;
@@ -3962,16 +3967,15 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
       maxTurns: AUTO_FIGHT_MAX_TURNS,
       random,
     });
-    const rewardTimestamp = new Date().toISOString();
-    const rewardApplication = applyCombatReward(hero, resolvedState, rewardTimestamp, random, {
-      randomEnemyLootChanceMultiplier: AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER,
-    });
+    const { rewardApplication, cloudSaveReason } = await resolveAutoFightRewardApplication(resolvedState, random);
     const { loot, heroAfterReward } = rewardApplication;
 
     hero = heroAfterReward;
     rememberDroppedEquipmentHint(resolvedState, loot);
     saveLocalHeroSave(hero);
-    queueHeroCloudSave("auto-fight-result");
+    if (cloudSaveReason) {
+      queueHeroCloudSave(cloudSaveReason);
+    }
     renderCityArenaMenu();
     presentAutoResolvedArenaResult(resolvedState, {
       ...rewardApplication,
@@ -3985,6 +3989,28 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
     }
     syncCityArenaBotControls();
   }
+}
+
+async function resolveAutoFightRewardApplication(
+  resolvedState: CombatState,
+  random: () => number,
+): Promise<{ rewardApplication: GladiatorBattleSettlement; cloudSaveReason?: string }> {
+  if (canUseGladiatorCloudSave()) {
+    try {
+      return {
+        rewardApplication: await settleGladiatorOfflineBattleReward(resolvedState, "auto"),
+      };
+    } catch (error) {
+      console.error("Gladiator auto-fight settlement failed", error);
+    }
+  }
+
+  return {
+    rewardApplication: applyCombatReward(hero, resolvedState, new Date().toISOString(), random, {
+      randomEnemyLootChanceMultiplier: AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER,
+    }),
+    cloudSaveReason: canUseGladiatorCloudSave() ? "auto-fight-result-fallback" : undefined,
+  };
 }
 
 function presentAutoResolvedArenaResult(combat: CombatState, presentation: Omit<BattleResultPresentation, "id">): void {
@@ -4471,14 +4497,70 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
     return nextState;
   }
 
+  if (canUseGladiatorCloudSave()) {
+    startOfflineBattleRewardSettlement(nextState, "manual");
+    return nextState;
+  }
+
   const rewardTimestamp = new Date().toISOString();
   const rewardApplication = applyCombatReward(hero, nextState, rewardTimestamp);
+
+  applyOfflineBattleRewardPresentation(nextState, rewardApplication, { cloudSaveReason: nextState.result === "win" ? "battle-win" : undefined });
+
+  return nextState;
+}
+
+function startOfflineBattleRewardSettlement(nextState: CombatState, battleKind: "manual" | "auto"): void {
+  const settlementPromise = settleOfflineBattleRewardPresentation(nextState, battleKind);
+
+  pendingBattleRewardSettlement = settlementPromise;
+  startBattleResultReturnGate();
+  markRewardUiRenderDirty();
+
+  void settlementPromise.finally(() => {
+    if (pendingBattleRewardSettlement === settlementPromise) {
+      pendingBattleRewardSettlement = undefined;
+      renderCurrentDom();
+    }
+  });
+}
+
+async function settleOfflineBattleRewardPresentation(nextState: CombatState, battleKind: "manual" | "auto"): Promise<void> {
+  try {
+    const settlement = await settleGladiatorOfflineBattleReward(nextState, battleKind);
+
+    applyOfflineBattleRewardPresentation(nextState, settlement);
+  } catch (error) {
+    console.error("Gladiator battle settlement failed", error);
+    applyLocalOfflineBattleRewardFallback(nextState, battleKind);
+  }
+}
+
+function applyLocalOfflineBattleRewardFallback(nextState: CombatState, battleKind: "manual" | "auto"): void {
+  const rewardTimestamp = new Date().toISOString();
+  const rewardApplication = applyCombatReward(hero, nextState, rewardTimestamp, Math.random, {
+    randomEnemyLootChanceMultiplier: battleKind === "auto" ? AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER : 1,
+  });
+
+  applyOfflineBattleRewardPresentation(nextState, rewardApplication, {
+    cloudSaveReason: nextState.result === "win" ? "battle-win-fallback" : undefined,
+  });
+}
+
+function applyOfflineBattleRewardPresentation(
+  nextState: CombatState,
+  rewardApplication: GladiatorBattleSettlement,
+  options: { cloudSaveReason?: string } = {},
+): void {
   const { reward, loot, heroBeforeReward, heroAfterReward } = rewardApplication;
 
   hero = heroAfterReward;
-  if (nextState.result === "win") {
-    queueHeroCloudSave("battle-win");
+  saveLocalHeroSave(hero);
+
+  if (options.cloudSaveReason) {
+    queueHeroCloudSave(options.cloudSaveReason);
   }
+
   rememberDroppedEquipmentHint(nextState, loot);
   syncPlayerCityBodyScale();
   pendingBattleResultPresentation = {
@@ -4492,8 +4574,6 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   };
   startBattleResultReturnGate();
   markRewardUiRenderDirty();
-
-  return nextState;
 }
 
 function rememberDroppedEquipmentHint(combat: CombatState, loot: readonly { itemId: HeroItemId; itemIds?: readonly HeroItemId[] }[]): void {

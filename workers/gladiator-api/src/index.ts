@@ -11,8 +11,11 @@ import {
   HERO_POISON_SCROLL_ITEM_ID,
   HERO_PRECISE_STRIKE_SCROLL_ITEM_ID,
   HERO_WARD_SCROLL_ITEM_ID,
+  applyCombatReward,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  getArenaBossDefinition,
+  getArenaRandomOpponentDefinition,
   getHeroScrollPurchasePrice,
   isHeroConsumableItem,
   isHeroItemOwned,
@@ -26,7 +29,9 @@ import {
   type HeroEquipmentSlotKey,
   type HeroItemId,
   type HeroState,
+  type CombatRewardApplication,
 } from "../../../gladiator-arena/src/hero";
+import type { CombatState, Result } from "../../../gladiator-arena/src/combat";
 import { isShopProductSealed, type ShopItemRarity } from "../../../gladiator-arena/src/shopPresentation";
 
 interface Env {
@@ -57,6 +62,15 @@ interface SaveHeroAttributesRequest {
   skillPoints?: unknown;
 }
 
+interface OfflineBattleSettlementRequest {
+  battleKind?: unknown;
+  result?: unknown;
+  encounter?: unknown;
+  equipment?: unknown;
+  enemyEquipment?: unknown;
+  playerConsumables?: unknown;
+}
+
 interface PlayerActorSpendArenaEnergyInput {
   telegramUserId: string;
   telegramUsername?: string;
@@ -83,6 +97,18 @@ interface PlayerActorSaveHeroAttributesInput {
   nowIso: string;
 }
 
+interface PlayerActorSettleOfflineBattleInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  battleKind: OfflineBattleSettlementKind;
+  result: OfflineBattleSettlementResult;
+  encounter: OfflineBattleEncounterSnapshot;
+  equipment?: HeroEquipmentSnapshot;
+  enemyEquipment?: HeroEquipmentSnapshot;
+  playerConsumables: OfflineBattlePlayerConsumablesSnapshot;
+  nowIso: string;
+}
+
 interface HeroArenaEnergy {
   current: number;
   max: number;
@@ -95,7 +121,29 @@ type SpendArenaEnergyResult =
 
 type ShopKind = "armory" | "weapon" | "magic";
 type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity";
+type OfflineBattleSettlementKind = "manual" | "auto";
+type OfflineBattleSettlementResult = Exclude<Result, "playing">;
 type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
+type OfflineBattleEncounterSnapshot = NonNullable<CombatState["encounter"]>;
+type OfflineBattlePlayerConsumablesSnapshot = Partial<Record<
+  | "shurikenItemId"
+  | "scrollItemId"
+  | "fireballScrollItemId"
+  | "wardScrollItemId"
+  | "preciseStrikeScrollItemId"
+  | "doubleStrikeScrollItemId"
+  | "poisonScrollItemId",
+  HeroItemId
+>> & Partial<Record<
+  | "shurikenCount"
+  | "scrollCount"
+  | "fireballScrollCount"
+  | "wardScrollCount"
+  | "preciseStrikeScrollCount"
+  | "doubleStrikeScrollCount"
+  | "poisonScrollCount",
+  number
+>>;
 
 type BuyShopProductResult =
   | { ok: true; hero: HeroState }
@@ -116,6 +164,14 @@ type SaveHeroAttributesResult =
   | {
       ok: false;
       error: "invalid_attribute_allocation" | "invalid_attribute_payload" | "invalid_hero_payload" | "player_save_not_found";
+      hero?: HeroState;
+    };
+
+type OfflineBattleSettlementResultPayload =
+  | { ok: true; settlement: CombatRewardApplication }
+  | {
+      ok: false;
+      error: "invalid_battle_settlement" | "invalid_hero_payload" | "player_save_not_found";
       hero?: HeroState;
     };
 
@@ -150,6 +206,7 @@ const SAVE_SCHEMA_VERSION = 1;
 const MAX_HERO_JSON_BYTES = 100_000;
 const ARENA_ENERGY_RESOURCE_KEY = "arena_energy";
 const HERO_ARENA_ENERGY_MAX = 10;
+const AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER = 0.5;
 const PAIRED_ARMORY_SLOT_CONFIGS: readonly PairedArmorySlotConfig[] = [
   {
     backSlot: "backShoulderguard",
@@ -188,6 +245,10 @@ export class PlayerActor extends DurableObject<Env> {
 
   async saveHeroAttributes(input: PlayerActorSaveHeroAttributesInput): Promise<SaveHeroAttributesResult> {
     return this.enqueue(() => this.saveHeroAttributesNow(input));
+  }
+
+  async settleOfflineBattle(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
+    return this.enqueue(() => this.settleOfflineBattleNow(input));
   }
 
   private async spendArenaEnergyNow(input: PlayerActorSpendArenaEnergyInput): Promise<SpendArenaEnergyResult> {
@@ -272,6 +333,38 @@ export class PlayerActor extends DurableObject<Env> {
     return { ok: true, hero: nextHero.hero };
   }
 
+  private async settleOfflineBattleNow(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!savedHero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    const heroWithArenaEnergy = await withCurrentPlayerDailyArenaEnergy(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, savedHero, input.nowIso);
+    const hero = withValidatedEquipmentSnapshot(heroWithArenaEnergy, input.equipment, input.nowIso);
+    const combat = createOfflineBattleSettlementCombat(input);
+    const settlement = applyCombatReward(hero, combat, input.nowIso, Math.random, {
+      randomEnemyLootChanceMultiplier: input.battleKind === "auto" ? AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER : 1,
+    });
+    const heroJson = JSON.stringify(settlement.heroAfterReward);
+
+    if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
+      return { ok: false, error: "invalid_hero_payload", hero };
+    }
+
+    await updatePlayerHero(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      telegramUsername: input.telegramUsername,
+      heroJson,
+      nowIso: input.nowIso,
+    });
+    if (!areHeroArenaEnergyEqual(hero.arenaEnergy, settlement.heroAfterReward.arenaEnergy)) {
+      await syncPlayerDailyArenaEnergyFromHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, settlement.heroAfterReward, input.nowIso);
+    }
+
+    return { ok: true, settlement };
+  }
+
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const nextOperation = this.operationQueue.then(operation, operation);
     this.operationQueue = nextOperation.then(
@@ -309,6 +402,10 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-attributes/save") {
         return handleSaveHeroAttributes(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/gladiator-battle/settle") {
+        return handleSettleOfflineBattle(request, env);
       }
 
       return json({ ok: false, error: "not_found" }, 404);
@@ -412,6 +509,45 @@ async function handleSaveHeroAttributes(request: Request, env: Env): Promise<Res
   return json({ ok: false, error: result.error, hero: result.hero }, status);
 }
 
+async function handleSettleOfflineBattle(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const body = await readOfflineBattleSettlementRequest(request);
+  const battleKind = toOfflineBattleSettlementKind(body.battleKind);
+  const result = toOfflineBattleSettlementResult(body.result);
+  const encounter = readOfflineBattleEncounterSnapshot(body.encounter);
+
+  if (!battleKind || !result || !encounter) {
+    return json({ ok: false, error: "invalid_battle_settlement" }, 400);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const settlement = await actor.settleOfflineBattle({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    battleKind,
+    result,
+    encounter,
+    equipment: readHeroEquipmentSnapshot(body.equipment),
+    enemyEquipment: readHeroEquipmentSnapshot(body.enemyEquipment),
+    playerConsumables: readOfflineBattlePlayerConsumablesSnapshot(body.playerConsumables),
+    nowIso: new Date().toISOString(),
+  });
+
+  if (settlement.ok) {
+    return json({ ok: true, settlement: settlement.settlement });
+  }
+
+  const status = settlement.error === "player_save_not_found" ? 404 : settlement.error === "invalid_battle_settlement" ? 400 : 409;
+
+  return json({ ok: false, error: settlement.error, hero: settlement.hero }, status);
+}
+
 async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArenaEnergyRequest> {
   try {
     const body = (await request.json()) as SpendArenaEnergyRequest;
@@ -435,6 +571,16 @@ async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
 async function readSaveHeroAttributesRequest(request: Request): Promise<SaveHeroAttributesRequest> {
   try {
     const body = (await request.json()) as SaveHeroAttributesRequest;
+
+    return isRecord(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+async function readOfflineBattleSettlementRequest(request: Request): Promise<OfflineBattleSettlementRequest> {
+  try {
+    const body = (await request.json()) as OfflineBattleSettlementRequest;
 
     return isRecord(body) ? body : {};
   } catch {
@@ -571,6 +717,131 @@ function readNonNegativeInteger(value: unknown): number | undefined {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
+function toOfflineBattleSettlementKind(value: unknown): OfflineBattleSettlementKind | undefined {
+  return value === "manual" || value === "auto" ? value : undefined;
+}
+
+function toOfflineBattleSettlementResult(value: unknown): OfflineBattleSettlementResult | undefined {
+  return value === "win" || value === "lose" || value === "draw" ? value : undefined;
+}
+
+function readOfflineBattleEncounterSnapshot(value: unknown): OfflineBattleEncounterSnapshot | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const id = typeof value.id === "string" ? value.id : undefined;
+  const kind = value.kind === "random" || value.kind === "boss" ? value.kind : undefined;
+  const tierId = readPositiveInteger(value.tierId);
+  const opponentId = typeof value.opponentId === "string" ? value.opponentId : undefined;
+  const difficultyId = toArenaDifficultyId(value.difficultyId);
+  const backgroundVariantId = typeof value.backgroundVariantId === "string" ? value.backgroundVariantId : undefined;
+  const mode = value.mode === "duoBossAi" ? value.mode : undefined;
+
+  if (!id || !kind || !tierId || !opponentId) {
+    return undefined;
+  }
+
+  if (kind === "random") {
+    const opponent = getArenaRandomOpponentDefinition(opponentId);
+
+    if (!opponent || opponent.tierId !== tierId || opponent.difficultyId !== difficultyId) {
+      return undefined;
+    }
+  }
+
+  if (kind === "boss") {
+    const boss = getArenaBossDefinition(opponentId);
+
+    if (!boss || boss.tierId !== tierId) {
+      return undefined;
+    }
+  }
+
+  return {
+    id,
+    kind,
+    tierId,
+    opponentId,
+    ...(difficultyId ? { difficultyId } : {}),
+    ...(backgroundVariantId ? { backgroundVariantId } : {}),
+    ...(mode ? { mode } : {}),
+  };
+}
+
+function readOfflineBattlePlayerConsumablesSnapshot(value: unknown): OfflineBattlePlayerConsumablesSnapshot {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  const snapshot: OfflineBattlePlayerConsumablesSnapshot = {};
+
+  copyConsumableItemSnapshot(value, snapshot, "shurikenItemId");
+  copyConsumableItemSnapshot(value, snapshot, "scrollItemId");
+  copyConsumableItemSnapshot(value, snapshot, "fireballScrollItemId");
+  copyConsumableItemSnapshot(value, snapshot, "wardScrollItemId");
+  copyConsumableItemSnapshot(value, snapshot, "preciseStrikeScrollItemId");
+  copyConsumableItemSnapshot(value, snapshot, "doubleStrikeScrollItemId");
+  copyConsumableItemSnapshot(value, snapshot, "poisonScrollItemId");
+  copyConsumableCountSnapshot(value, snapshot, "shurikenCount");
+  copyConsumableCountSnapshot(value, snapshot, "scrollCount");
+  copyConsumableCountSnapshot(value, snapshot, "fireballScrollCount");
+  copyConsumableCountSnapshot(value, snapshot, "wardScrollCount");
+  copyConsumableCountSnapshot(value, snapshot, "preciseStrikeScrollCount");
+  copyConsumableCountSnapshot(value, snapshot, "doubleStrikeScrollCount");
+  copyConsumableCountSnapshot(value, snapshot, "poisonScrollCount");
+
+  return snapshot;
+}
+
+function toArenaDifficultyId(value: unknown): OfflineBattleEncounterSnapshot["difficultyId"] | undefined {
+  return value === "easy" || value === "medium" || value === "hard" ? value : undefined;
+}
+
+function copyConsumableItemSnapshot(
+  source: Record<string, unknown>,
+  target: OfflineBattlePlayerConsumablesSnapshot,
+  key: keyof OfflineBattlePlayerConsumablesSnapshot,
+): void {
+  const itemId = source[key];
+  const item = typeof itemId === "string" ? HERO_ITEM_CATALOG[itemId] : undefined;
+
+  if (item && isHeroConsumableItem(item)) {
+    target[key] = itemId as never;
+  }
+}
+
+function copyConsumableCountSnapshot(
+  source: Record<string, unknown>,
+  target: OfflineBattlePlayerConsumablesSnapshot,
+  key: keyof OfflineBattlePlayerConsumablesSnapshot,
+): void {
+  const count = readNonNegativeInteger(source[key]);
+
+  if (count !== undefined) {
+    target[key] = count as never;
+  }
+}
+
+function readPositiveInteger(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+function createOfflineBattleSettlementCombat(input: PlayerActorSettleOfflineBattleInput): CombatState {
+  return {
+    result: input.result,
+    encounter: input.encounter,
+    player: {
+      name: "Player",
+      ...input.playerConsumables,
+    },
+    enemy: {
+      name: "Enemy",
+      equipment: input.enemyEquipment as HeroEquipment | undefined,
+    },
+  } as CombatState;
+}
+
 function readHeroEquipmentSnapshot(value: unknown): HeroEquipmentSnapshot | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -659,6 +930,17 @@ async function readPlayerHero(db: D1Database, telegramUserId: string): Promise<H
   }
 }
 
+async function withCurrentPlayerDailyArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  hero: HeroState,
+  nowIso: string,
+): Promise<HeroState> {
+  const arenaEnergy = await readPlayerDailyArenaEnergy(db, telegramUserId, getUtcDayKey(nowIso));
+
+  return arenaEnergy ? { ...hero, arenaEnergy } : hero;
+}
+
 function updatePlayerHero(
   db: D1Database,
   save: { telegramUserId: string; telegramUsername?: string; heroJson: string; nowIso: string },
@@ -676,6 +958,74 @@ function updatePlayerHero(
       `,
     )
     .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.nowIso, save.telegramUserId)
+    .run();
+}
+
+function syncPlayerDailyArenaEnergyFromHero(
+  db: D1Database,
+  telegramUserId: string,
+  hero: HeroState,
+  nowIso: string,
+): Promise<D1Result | undefined> {
+  const arenaEnergy = getHeroArenaEnergyFromHero(hero, getUtcDayKey(nowIso));
+
+  return arenaEnergy ? upsertPlayerDailyArenaEnergy(db, telegramUserId, arenaEnergy, nowIso) : Promise.resolve(undefined);
+}
+
+function getHeroArenaEnergyFromHero(hero: HeroState, dayKey: string): HeroArenaEnergy | undefined {
+  const arenaEnergy = hero.arenaEnergy;
+
+  if (!arenaEnergy || arenaEnergy.dayKey !== dayKey) {
+    return undefined;
+  }
+
+  return {
+    current: clampArenaEnergyValue(arenaEnergy.current),
+    max: HERO_ARENA_ENERGY_MAX,
+    dayKey,
+  };
+}
+
+function areHeroArenaEnergyEqual(left: HeroArenaEnergy | undefined, right: HeroArenaEnergy | undefined): boolean {
+  if (!left || !right) {
+    return left === right;
+  }
+
+  return left.current === right.current && left.max === right.max && left.dayKey === right.dayKey;
+}
+
+function upsertPlayerDailyArenaEnergy(
+  db: D1Database,
+  telegramUserId: string,
+  arenaEnergy: HeroArenaEnergy,
+  nowIso: string,
+): Promise<D1Result> {
+  return db
+    .prepare(
+      `
+        INSERT INTO player_daily_resources (
+          telegram_user_id,
+          resource_key,
+          day_key,
+          current,
+          max,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(telegram_user_id, resource_key, day_key) DO UPDATE SET
+          current = excluded.current,
+          max = excluded.max,
+          updated_at = excluded.updated_at
+      `,
+    )
+    .bind(
+      telegramUserId,
+      ARENA_ENERGY_RESOURCE_KEY,
+      arenaEnergy.dayKey,
+      clampArenaEnergyValue(arenaEnergy.current),
+      HERO_ARENA_ENERGY_MAX,
+      nowIso,
+    )
     .run();
 }
 

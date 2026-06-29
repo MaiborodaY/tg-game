@@ -95,3 +95,24 @@ test("profile attribute drafts can be decreased and saved through the player act
   assert.equal(mainSource.includes('attributeSaveStatus = "saving"'), true);
   assert.equal(mainSource.includes('clearHeroAttributeDraft("saved")'), true);
 });
+
+test("offline battle rewards settle through the player actor before result presentation", () => {
+  assert.equal(saveClientSource.includes('const GLADIATOR_BATTLE_SETTLE_ENDPOINT = "/api/gladiator-battle/settle"'), true);
+  assert.equal(saveClientSource.includes("export async function settleGladiatorOfflineBattleReward"), true);
+  assert.equal(saveClientSource.includes("createOfflineBattleSettlementRequest(combat, battleKind)"), true);
+  assert.equal(saveClientSource.includes("enemyEquipment: combat.enemy.equipment"), true);
+  assert.equal(saveClientSource.includes("playerConsumables"), true);
+  assert.equal(apiWorkerSource.includes('url.pathname === "/api/gladiator-battle/settle"'), true);
+  assert.equal(apiWorkerSource.includes("async settleOfflineBattle(input: PlayerActorSettleOfflineBattleInput)"), true);
+  assert.equal(apiWorkerSource.includes("applyCombatReward(hero, combat, input.nowIso, Math.random"), true);
+  assert.equal(apiWorkerSource.includes("withCurrentPlayerDailyArenaEnergy"), true);
+  assert.equal(apiWorkerSource.includes("syncPlayerDailyArenaEnergyFromHero"), true);
+  assert.equal(apiWorkerSource.includes("getArenaRandomOpponentDefinition(opponentId)"), true);
+  assert.equal(apiWorkerSource.includes("getArenaBossDefinition(opponentId)"), true);
+  assert.equal(apiWorkerSource.includes("createOfflineBattleSettlementCombat(input)"), true);
+  assert.equal(mainSource.includes("let pendingBattleRewardSettlement: Promise<void> | undefined"), true);
+  assert.equal(mainSource.includes("startOfflineBattleRewardSettlement(nextState, \"manual\")"), true);
+  assert.equal(mainSource.includes("settleGladiatorOfflineBattleReward(nextState, battleKind)"), true);
+  assert.equal(mainSource.includes("resolveAutoFightRewardApplication(resolvedState, random)"), true);
+  assert.equal(mainSource.includes("pendingBattleResultPresentation || pendingBattleRewardSettlement"), true);
+});
