@@ -58,6 +58,10 @@ interface ShopBuyRequest {
   equipment?: unknown;
 }
 
+interface SyncHeroEquipmentRequest {
+  equipment?: unknown;
+}
+
 interface SaveHeroAttributesRequest {
   baseStats?: unknown;
   skillPoints?: unknown;
@@ -87,6 +91,13 @@ interface PlayerActorBuyShopProductInput {
   action: ShopAction;
   productId?: string;
   equipment?: HeroEquipmentSnapshot;
+  nowIso: string;
+}
+
+interface PlayerActorSyncHeroEquipmentInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  equipment: HeroEquipmentSnapshot;
   nowIso: string;
 }
 
@@ -163,6 +174,14 @@ type BuyShopProductResult =
         | "shop_action_not_supported"
         | "shop_product_not_found"
         | "shop_purchase_rejected";
+      hero?: HeroState;
+    };
+
+type SyncHeroEquipmentResult =
+  | { ok: true; equipment: HeroEquipment; updatedAt: string }
+  | {
+      ok: false;
+      error: "invalid_equipment_payload" | "player_save_not_found";
       hero?: HeroState;
     };
 
@@ -273,6 +292,10 @@ export class PlayerActor extends DurableObject<Env> {
     return this.enqueue(() => this.buyShopProductNow(input));
   }
 
+  async syncHeroEquipment(input: PlayerActorSyncHeroEquipmentInput): Promise<SyncHeroEquipmentResult> {
+    return this.enqueue(() => this.syncHeroEquipmentNow(input));
+  }
+
   async saveHeroAttributes(input: PlayerActorSaveHeroAttributesInput): Promise<SaveHeroAttributesResult> {
     return this.enqueue(() => this.saveHeroAttributesNow(input));
   }
@@ -336,6 +359,31 @@ export class PlayerActor extends DurableObject<Env> {
     });
 
     return { ok: true, hero: nextHero.hero };
+  }
+
+  private async syncHeroEquipmentNow(input: PlayerActorSyncHeroEquipmentInput): Promise<SyncHeroEquipmentResult> {
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!savedHero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    const nextHero = applyHeroEquipmentSnapshot(savedHero, input.equipment, input.nowIso);
+
+    if (!nextHero.ok) {
+      return { ...nextHero, hero: savedHero };
+    }
+
+    if (nextHero.changed) {
+      await updatePlayerHeroEquipment(this.env.GLADIATOR_SAVES_DB, {
+        telegramUserId: input.telegramUserId,
+        telegramUsername: input.telegramUsername,
+        equipment: nextHero.hero.equipment,
+        updatedAt: nextHero.hero.updatedAt,
+      });
+    }
+
+    return { ok: true, equipment: nextHero.hero.equipment, updatedAt: nextHero.hero.updatedAt };
   }
 
   private async saveHeroAttributesNow(input: PlayerActorSaveHeroAttributesInput): Promise<SaveHeroAttributesResult> {
@@ -453,6 +501,10 @@ export default {
         return handleBuyShopProduct(request, env);
       }
 
+      if (request.method === "POST" && url.pathname === "/api/gladiator-equipment/sync") {
+        return handleSyncHeroEquipment(request, env);
+      }
+
       if (request.method === "POST" && url.pathname === "/api/gladiator-attributes/save") {
         return handleSaveHeroAttributes(request, env);
       }
@@ -528,6 +580,38 @@ async function handleBuyShopProduct(request: Request, env: Env): Promise<Respons
   }
 
   const status = result.error === "player_save_not_found" || result.error === "shop_product_not_found" ? 404 : 409;
+
+  return json({ ok: false, error: result.error, hero: result.hero }, status);
+}
+
+async function handleSyncHeroEquipment(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const body = await readSyncHeroEquipmentRequest(request);
+  const equipment = readHeroEquipmentSnapshot(body.equipment);
+
+  if (!equipment) {
+    return json({ ok: false, error: "invalid_equipment_payload" }, 400);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const result = await actor.syncHeroEquipment({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    equipment,
+    nowIso: new Date().toISOString(),
+  });
+
+  if (result.ok) {
+    return json({ ok: true, equipment: result.equipment, updatedAt: result.updatedAt });
+  }
+
+  const status = result.error === "player_save_not_found" ? 404 : 400;
 
   return json({ ok: false, error: result.error, hero: result.hero }, status);
 }
@@ -649,6 +733,16 @@ async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
   }
 }
 
+async function readSyncHeroEquipmentRequest(request: Request): Promise<SyncHeroEquipmentRequest> {
+  try {
+    const body = (await request.json()) as SyncHeroEquipmentRequest;
+
+    return isRecord(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
 async function readSaveHeroAttributesRequest(request: Request): Promise<SaveHeroAttributesRequest> {
   try {
     const body = (await request.json()) as SaveHeroAttributesRequest;
@@ -732,6 +826,44 @@ function toShopMutationResult(nextHero: HeroState, previousHero: HeroState): Buy
   return nextHero === previousHero
     ? { ok: false, error: "shop_purchase_rejected" }
     : { ok: true, hero: nextHero };
+}
+
+function applyHeroEquipmentSnapshot(
+  hero: HeroState,
+  snapshot: HeroEquipmentSnapshot,
+  nowIso: string,
+): { ok: true; hero: HeroState; changed: boolean } | { ok: false; error: "invalid_equipment_payload" } {
+  const equipment: HeroEquipment = { ...hero.equipment };
+  let changed = false;
+
+  for (const slotKey of HERO_EQUIPMENT_SLOT_KEYS) {
+    if (!(slotKey in snapshot)) {
+      continue;
+    }
+
+    const itemId = snapshot[slotKey];
+
+    if (itemId === null) {
+      if (equipment[slotKey] !== null) {
+        equipment[slotKey] = null;
+        changed = true;
+      }
+      continue;
+    }
+
+    if (!itemId || !canApplyEquipmentSnapshotItem(hero, slotKey, itemId)) {
+      return { ok: false, error: "invalid_equipment_payload" };
+    }
+
+    if (equipment[slotKey] !== itemId) {
+      equipment[slotKey] = itemId;
+      changed = true;
+    }
+  }
+
+  return changed
+    ? { ok: true, hero: { ...hero, equipment, updatedAt: nowIso }, changed: true }
+    : { ok: true, hero, changed: false };
 }
 
 function createHeroAttributesPatch(hero: HeroState, options: { includeResetFields?: boolean } = {}): HeroAttributesPatch {
@@ -1057,6 +1189,37 @@ function updatePlayerHero(
       `,
     )
     .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.nowIso, save.telegramUserId)
+    .run();
+}
+
+function updatePlayerHeroEquipment(
+  db: D1Database,
+  save: { telegramUserId: string; telegramUsername?: string; equipment: HeroEquipment; updatedAt: string },
+): Promise<D1Result> {
+  return db
+    .prepare(
+      `
+        UPDATE player_saves SET
+          telegram_username = ?,
+          hero_json = json_set(
+            hero_json,
+            '$.equipment', json(?),
+            '$.updatedAt', ?
+          ),
+          schema_version = ?,
+          revision = revision + 1,
+          updated_at = ?
+        WHERE telegram_user_id = ?
+      `,
+    )
+    .bind(
+      save.telegramUsername ?? null,
+      JSON.stringify(save.equipment),
+      save.updatedAt,
+      SAVE_SCHEMA_VERSION,
+      save.updatedAt,
+      save.telegramUserId,
+    )
     .run();
 }
 

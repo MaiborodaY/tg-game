@@ -34,6 +34,14 @@ interface GladiatorAttributesSaveResponse {
   error?: string;
 }
 
+interface GladiatorEquipmentSyncResponse {
+  ok: boolean;
+  equipment?: HeroEquipment;
+  updatedAt?: string;
+  hero?: HeroState;
+  error?: string;
+}
+
 interface GladiatorBattleSettlementResponse {
   ok: boolean;
   settlement?: GladiatorBattleSettlement;
@@ -71,6 +79,7 @@ export type GladiatorBattleSettlementKind = "manual" | "auto";
 const GLADIATOR_SAVE_ENDPOINT = "/api/gladiator-save";
 const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
 const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy";
+const GLADIATOR_EQUIPMENT_SYNC_ENDPOINT = "/api/gladiator-equipment/sync";
 const GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT = "/api/gladiator-attributes/save";
 const GLADIATOR_ATTRIBUTES_RESET_ENDPOINT = "/api/gladiator-attributes/reset";
 const GLADIATOR_BATTLE_SETTLE_ENDPOINT = "/api/gladiator-battle/settle";
@@ -167,6 +176,34 @@ export async function applyGladiatorShopAction(actionRequest: GladiatorShopActio
   }
 
   return data.hero;
+}
+
+export async function syncGladiatorHeroEquipment(equipment: HeroEquipment): Promise<{ equipment: HeroEquipment; updatedAt: string }> {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
+  }
+
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_EQUIPMENT_SYNC_ENDPOINT), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+    body: JSON.stringify({ equipment }),
+  });
+  const data = (await response.json()) as GladiatorEquipmentSyncResponse;
+
+  if (!response.ok || !data.ok) {
+    throw new GladiatorSaveError(data.error || `Gladiator equipment sync failed: ${response.status}`, data.error, data.hero);
+  }
+
+  if (!data.equipment || !data.updatedAt) {
+    throw new GladiatorSaveError("missing_equipment_payload", "Equipment sync response did not include equipment.");
+  }
+
+  return { equipment: data.equipment, updatedAt: data.updatedAt };
 }
 
 export async function saveGladiatorHeroAttributes(baseStats: HeroBaseStats, skillPoints: number): Promise<GladiatorHeroAttributesPatch> {

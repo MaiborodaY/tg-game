@@ -65,6 +65,7 @@ import {
   saveGladiatorCloudHero,
   settleGladiatorOfflineBattleReward,
   spendGladiatorArenaEnergy,
+  syncGladiatorHeroEquipment,
   type GladiatorBattleSettlement,
   type GladiatorHeroAttributesPatch,
   type GladiatorShopAction,
@@ -74,6 +75,7 @@ import {
   DEFAULT_ARENA_DIFFICULTY_ID,
   DEFAULT_ARENA_TIER_ID,
   DEFAULT_HERO_NAME,
+  HERO_EQUIPMENT_SLOT_KEYS,
   HERO_SCROLL_CAPACITY_BASE,
   HERO_SCROLL_CAPACITY_MAX,
   HERO_SCROLL_UPGRADE_RARITIES,
@@ -399,6 +401,8 @@ let shopPreviewPrewarmItemIds: HeroItemId[] = [];
 let activeShopPreviewPrewarmSignature = "";
 let completedShopPreviewPrewarmSignature = "";
 let arenaEnergySpendPending = false;
+let heroEquipmentSyncDirty = false;
+let heroEquipmentSyncInFlight = false;
 let cityReturnTransitionRetryHandler: (() => void) | undefined;
 
 const cityReturnTransition = createCityReturnTransition();
@@ -409,7 +413,10 @@ const cityHeroEquipmentMenu: CityHeroEquipmentMenuApi = mountCityHeroEquipmentMe
   onUnequip: handleProfileEquipmentUnequip,
   onCategoryOpen: handleProfileEquipmentCategoryOpen,
   onOpen: (layout) => cityScene?.setProfilePreview(layout),
-  onClose: () => cityScene?.setProfilePreview(),
+  onClose: () => {
+    cityScene?.setProfilePreview();
+    void flushHeroEquipmentSync("equipment-menu-close");
+  },
 });
 const cityHeroAppearanceMenu = mountCityHeroAppearanceMenu(cityHeroWidgetRefs, {
   getHero: () => hero,
@@ -420,6 +427,7 @@ cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) 
 
   if (!profileOpen) {
     cityScene?.setProfilePreview();
+    void flushHeroEquipmentSync("profile-close");
     if (attributeSaveStatus === "saved") {
       attributeSaveStatus = "idle";
       renderCityHero();
@@ -5135,6 +5143,53 @@ function applyHeroAttributesPatch(sourceHero: HeroState, attributes: GladiatorHe
   };
 }
 
+function markHeroEquipmentSyncDirty(): void {
+  heroEquipmentSyncDirty = true;
+}
+
+async function flushHeroEquipmentSync(reason: string): Promise<void> {
+  if (!heroEquipmentSyncDirty) {
+    return;
+  }
+
+  if (!canUseGladiatorCloudSave()) {
+    saveLocalHeroSave(hero);
+    heroEquipmentSyncDirty = false;
+    return;
+  }
+
+  if (heroEquipmentSyncInFlight) {
+    return;
+  }
+
+  const equipmentSnapshot: HeroEquipment = { ...hero.equipment };
+
+  heroEquipmentSyncDirty = false;
+  heroEquipmentSyncInFlight = true;
+
+  try {
+    const result = await syncGladiatorHeroEquipment(equipmentSnapshot);
+
+    if (areHeroEquipmentEqual(hero.equipment, equipmentSnapshot)) {
+      hero = {
+        ...hero,
+        equipment: result.equipment,
+        updatedAt: result.updatedAt,
+      };
+      saveLocalHeroSave(hero);
+    }
+  } catch (error) {
+    console.warn(`[gladiator-equipment] Failed to sync equipment after ${reason}.`, error);
+    heroEquipmentSyncDirty = true;
+  } finally {
+    heroEquipmentSyncInFlight = false;
+  }
+}
+
+function areHeroEquipmentEqual(left: HeroEquipment, right: HeroEquipment): boolean {
+  return HERO_EQUIPMENT_SLOT_KEYS.every((slotKey) => left[slotKey] === right[slotKey]);
+}
+
 function createEmptyHeroAttributeDraftAllocations(): HeroBaseStats {
   return {
     strength: 0,
@@ -5314,6 +5369,7 @@ function handleProfileEquipmentEquip(itemIds: readonly HeroItemId[]): void {
   cancelShopPreviewPrewarm();
   clearPendingEquipmentHintsForItems(itemIds);
   hero = nextHero;
+  markHeroEquipmentSyncDirty();
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
   heroPortraitPreview?.setEquipment(hero.equipment);
@@ -5331,6 +5387,7 @@ function handleProfileEquipmentUnequip(itemIds: readonly HeroItemId[]): void {
 
   cancelShopPreviewPrewarm();
   hero = nextHero;
+  markHeroEquipmentSyncDirty();
   syncPlayerCityBodyScale();
   setPlayerEquipment(hero.equipment);
   heroPortraitPreview?.setEquipment(hero.equipment);
