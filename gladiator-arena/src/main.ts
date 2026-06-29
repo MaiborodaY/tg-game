@@ -26,12 +26,13 @@ import {
   renderCityArenaEnergyBadge,
   renderCityHeroInfo,
   syncCityHeroWidgetPosition,
+  type CityHeroAttributeSaveStatus,
   type CityEquipmentCategoryId,
   type CityHeroEquipmentMenuApi,
 } from "./cityHeroUi";
 import { mountCityTimeToggle } from "./cityTimeToggle";
 import { mountClassicActionBar, type ClassicActionBarApi } from "./classicActionBar";
-import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatActor, type CombatState } from "./combat";
+import { isDuoBossAiCombat, resolveAutoCombat, resolveAutoPlayerTurn, resolveDuoBossHelperTurn, resolveEnemyTurn, resolvePlayerTurn, type ActionId, type CombatActor, type CombatState, type TurnOwner } from "./combat";
 import {
   getArenaBackgroundVariantIdsForTier,
   getArenaMenuBackgroundAssetUrlForTier,
@@ -59,6 +60,7 @@ import {
   deleteGladiatorCloudSave,
   GladiatorSaveError,
   loadGladiatorCloudSave,
+  saveGladiatorHeroAttributes,
   saveGladiatorCloudHero,
   spendGladiatorArenaEnergy,
   type GladiatorShopAction,
@@ -122,6 +124,7 @@ import {
   type ArenaEncounter,
   type ArenaTierDefinition,
   type HeroAppearance,
+  type HeroBaseStats,
   type HeroEquipment,
   type HeroItemId,
   type HeroState,
@@ -301,6 +304,8 @@ let magicShop: MagicShopApi | undefined;
 let pendingEquipmentShopBuyProduct: ArmoryProduct | WeaponProduct | undefined;
 let magicShopActionPending = false;
 let bowCapacityUpgradePending = false;
+let attributeDraftAllocations: HeroBaseStats = createEmptyHeroAttributeDraftAllocations();
+let attributeSaveStatus: CityHeroAttributeSaveStatus = "idle";
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
@@ -403,6 +408,10 @@ cityHeroWidgetRefs.profile?.addEventListener("city-profile-visibility", (event) 
 
   if (!profileOpen) {
     cityScene?.setProfilePreview();
+    if (attributeSaveStatus === "saved") {
+      attributeSaveStatus = "idle";
+      renderCityHero();
+    }
   }
   if (profileOpen) {
     closeCityArenaMenu();
@@ -902,6 +911,9 @@ function syncPlayerCityBodyScale(): void {
 function renderCityHero(): void {
   renderCityHeroInfo(cityHeroWidgetRefs, hero, {
     highlightedEquipmentItemIds: pendingEquipmentHintItemIds,
+    attributeDraftAllocations,
+    attributeSaveStatus,
+    attributeControlsDisabled: attributeSaveStatus === "saving",
   });
   syncMagicShopButtonLock();
 }
@@ -1376,7 +1388,7 @@ function syncTurnProbe(): void {
 
 function syncActionArc(): void {
   const controlledActor = getControlledActionActor();
-  const lockedTurn = controlledActor === "helper" ? "player" : "enemy";
+  const lockedTurn: TurnOwner = controlledActor === "helper" ? "player" : "enemy";
   const visibleState = isTurnAnimationLocked || isArenaEntryLoading || isArenaEntryTransitionPlaying
     ? { ...state, activeTurn: lockedTurn }
     : state;
@@ -4298,7 +4310,7 @@ function suspendCityScenePreview(): void {
   cityScene?.suspend();
 }
 
-async function releaseCityScenePreviewForArenaEntry(encounter?: ArenaEncounter): Promise<void> {
+async function releaseCityScenePreviewForArenaEntry(encounter?: CombatState["encounter"]): Promise<void> {
   recordArenaEntryActivity("arena-entry-destroy-city");
   if (cityScene) {
     cityScene.destroy();
@@ -4708,6 +4720,7 @@ async function handleCloudEquipmentShopBuy(product: ArmoryProduct | WeaponProduc
     const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
 
     hero = nextHero;
+    clearHeroAttributeDraft();
     saveLocalHeroSave(hero);
     syncPlayerCityBodyScale();
     applyShopEquipmentVisualSync(hero.equipment, !areHeroItemsConsumable(product.itemIds));
@@ -4745,6 +4758,7 @@ async function handleCloudMagicShopAction(action: GladiatorShopAction, product?:
     const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
 
     hero = nextHero;
+    clearHeroAttributeDraft();
     saveLocalHeroSave(hero);
     syncPlayerCityBodyScale();
     setPlayerEquipment(hero.equipment);
@@ -4777,6 +4791,7 @@ async function handleCloudBowCapacityUpgrade(): Promise<void> {
     const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
 
     hero = nextHero;
+    clearHeroAttributeDraft();
     saveLocalHeroSave(hero);
     syncPlayerCityBodyScale();
     setPlayerEquipment(hero.equipment);
@@ -4903,22 +4918,117 @@ function withCurrentArenaEnergy(nextHero: HeroState, currentHero: HeroState): He
   return currentHero.arenaEnergy ? { ...nextHero, arenaEnergy: currentHero.arenaEnergy } : nextHero;
 }
 
+function createEmptyHeroAttributeDraftAllocations(): HeroBaseStats {
+  return {
+    strength: 0,
+    agility: 0,
+    vitality: 0,
+  };
+}
+
+function hasHeroAttributeDraftAllocations(): boolean {
+  return Object.values(attributeDraftAllocations).some((value) => value > 0);
+}
+
+function clearHeroAttributeDraft(saveStatus: CityHeroAttributeSaveStatus = "idle"): void {
+  attributeDraftAllocations = createEmptyHeroAttributeDraftAllocations();
+  attributeSaveStatus = saveStatus;
+}
+
 function isWeaponShopProduct(product: ArmoryProduct | WeaponProduct): product is WeaponProduct {
   return "categoryId" in product;
 }
 
 function handleHeroAttributeAllocate(attribute: HeroAttributeKey, amount: number): void {
+  if (attributeSaveStatus === "saving") {
+    return;
+  }
+
+  const previousSkillPoints = hero.skillPoints;
   const nextHero = allocateHeroSkillPoints(hero, attribute, amount);
 
   if (nextHero === hero) {
     return;
   }
 
+  const spentPoints = Math.max(0, previousSkillPoints - nextHero.skillPoints);
+
   hero = nextHero;
+  attributeDraftAllocations = {
+    ...attributeDraftAllocations,
+    [attribute]: attributeDraftAllocations[attribute] + spentPoints,
+  };
+  attributeSaveStatus = "idle";
   syncPlayerCityBodyScale();
   renderCityHero();
   syncCityShopHeroState();
   cityHeroEquipmentMenu.render();
+}
+
+function handleHeroAttributeDeallocate(attribute: HeroAttributeKey, amount: number): void {
+  if (attributeSaveStatus === "saving") {
+    return;
+  }
+
+  const requestedPoints = Number.isFinite(amount) ? Math.floor(amount) : 0;
+  const returnedPoints = Math.min(attributeDraftAllocations[attribute], Math.max(0, requestedPoints));
+
+  if (returnedPoints <= 0) {
+    return;
+  }
+
+  hero = {
+    ...hero,
+    skillPoints: hero.skillPoints + returnedPoints,
+    baseStats: {
+      ...hero.baseStats,
+      [attribute]: Math.max(0, hero.baseStats[attribute] - returnedPoints),
+    },
+    updatedAt: new Date().toISOString(),
+  };
+  attributeDraftAllocations = {
+    ...attributeDraftAllocations,
+    [attribute]: attributeDraftAllocations[attribute] - returnedPoints,
+  };
+  attributeSaveStatus = "idle";
+  syncPlayerCityBodyScale();
+  renderCityHero();
+  syncCityShopHeroState();
+  cityHeroEquipmentMenu.render();
+}
+
+async function handleHeroAttributesSave(): Promise<void> {
+  if (attributeSaveStatus === "saving" || !hasHeroAttributeDraftAllocations()) {
+    return;
+  }
+
+  attributeSaveStatus = "saving";
+  renderCityHero();
+
+  try {
+    if (canUseGladiatorCloudSave()) {
+      const serverHero = await saveGladiatorHeroAttributes(hero.baseStats, hero.skillPoints);
+
+      hero = {
+        ...hero,
+        baseStats: serverHero.baseStats,
+        skillPoints: serverHero.skillPoints,
+        updatedAt: serverHero.updatedAt,
+      };
+    }
+
+    saveLocalHeroSave(hero);
+    clearHeroAttributeDraft("saved");
+    syncPlayerCityBodyScale();
+    renderCityHero();
+    syncCityShopHeroState();
+    cityHeroEquipmentMenu.render();
+  } catch (error) {
+    console.error("Gladiator attribute save failed", error);
+    attributeSaveStatus = "idle";
+    renderCityHero();
+    window.alert("Could not save attributes. Try again.");
+  }
 }
 
 function handleHeroAttributeReset(): void {
@@ -4941,6 +5051,7 @@ function handleHeroAttributeReset(): void {
   }
 
   hero = nextHero;
+  clearHeroAttributeDraft();
   syncPlayerCityBodyScale();
   renderCityHero();
   syncCityShopHeroState();
@@ -5329,7 +5440,14 @@ magicShopButton?.addEventListener("click", () => {
 });
 syncCityHeroWidgetPosition(cityHeroWidgetRefs, debugTuning);
 window.setInterval(syncArenaEnergyTimerDisplays, ARENA_ENERGY_TIMER_REFRESH_MS);
-mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate, handleHeroAttributeReset);
+mountCityHeroAttributeControls(cityHeroWidgetRefs, {
+  onAllocate: handleHeroAttributeAllocate,
+  onDeallocate: handleHeroAttributeDeallocate,
+  onSave: () => {
+    void handleHeroAttributesSave();
+  },
+  onReset: handleHeroAttributeReset,
+});
 if (cityMenu) {
   weaponShop = mountWeaponShop(cityMenu, {
     getHero: () => hero,

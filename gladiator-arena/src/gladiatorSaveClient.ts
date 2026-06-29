@@ -1,4 +1,4 @@
-import type { HeroArenaEnergy, HeroEquipment, HeroState } from "./hero";
+import type { HeroArenaEnergy, HeroBaseStats, HeroEquipment, HeroState } from "./hero";
 import { getTelegramInitData } from "./telegram";
 
 interface GladiatorSaveResponse {
@@ -26,6 +26,12 @@ interface GladiatorShopBuyResponse {
   error?: string;
 }
 
+interface GladiatorAttributesSaveResponse {
+  ok: boolean;
+  hero?: HeroState;
+  error?: string;
+}
+
 export type GladiatorShopKind = "armory" | "weapon" | "magic";
 export type GladiatorShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity";
 
@@ -39,6 +45,7 @@ export interface GladiatorShopActionRequest {
 const GLADIATOR_SAVE_ENDPOINT = "/api/gladiator-save";
 const GLADIATOR_ARENA_ENERGY_SPEND_ENDPOINT = "/api/gladiator-energy/spend";
 const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy";
+const GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT = "/api/gladiator-attributes/save";
 const GLADIATOR_API_BASE_URL_STORAGE_KEY = "dust-arena-gladiator-api-base-url";
 const DEFAULT_GLADIATOR_API_BASE_URL = "https://gladiator-api.mr-maybik.workers.dev";
 
@@ -129,6 +136,34 @@ export async function applyGladiatorShopAction(actionRequest: GladiatorShopActio
 
   if (!data.hero) {
     throw new GladiatorSaveError("missing_hero_payload", "Shop buy response did not include hero.");
+  }
+
+  return data.hero;
+}
+
+export async function saveGladiatorHeroAttributes(baseStats: HeroBaseStats, skillPoints: number): Promise<HeroState> {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
+  }
+
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+    body: JSON.stringify({ baseStats, skillPoints }),
+  });
+  const data = (await response.json()) as GladiatorAttributesSaveResponse;
+
+  if (!response.ok || !data.ok) {
+    throw new GladiatorSaveError(data.error || `Gladiator attributes save request failed: ${response.status}`, data.error, data.hero);
+  }
+
+  if (!data.hero) {
+    throw new GladiatorSaveError("missing_hero_payload", "Attributes save response did not include hero.");
   }
 
   return data.hero;

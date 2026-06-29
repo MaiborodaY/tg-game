@@ -111,7 +111,12 @@ interface CityHeroEquipmentHintItem {
 
 export interface CityHeroInfoRenderOptions {
   highlightedEquipmentItemIds?: readonly HeroItemId[];
+  attributeDraftAllocations?: Partial<Record<HeroAttributeKey, number>>;
+  attributeSaveStatus?: CityHeroAttributeSaveStatus;
+  attributeControlsDisabled?: boolean;
 }
+
+export type CityHeroAttributeSaveStatus = "idle" | "saving" | "saved";
 
 type CityHeroPortraitNotice =
   | {
@@ -346,6 +351,7 @@ export interface CityHeroWidgetRefs {
   profileName: HTMLElement | null;
   profileResetButton: HTMLButtonElement | null;
   profileResetPointsButton: HTMLButtonElement | null;
+  profileSaveAttributesButton: HTMLButtonElement | null;
   profileGold: HTMLElement | null;
   profileArenaEnergy: HTMLElement | null;
   profileLevel: HTMLElement | null;
@@ -355,6 +361,7 @@ export interface CityHeroWidgetRefs {
   profileStats: Record<CityHeroProfileStatKey, HTMLElement | null>;
   attributeValues: Record<HeroAttributeKey, HTMLElement | null>;
   attributeButtons: Record<HeroAttributeKey, HTMLButtonElement | null>;
+  attributeDecreaseButtons: Record<HeroAttributeKey, HTMLButtonElement | null>;
 }
 
 export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidgetRefs {
@@ -375,6 +382,7 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
     profileName: root.querySelector<HTMLElement>("#heroProfileName"),
     profileResetButton: root.querySelector<HTMLButtonElement>("#heroProfileResetButton"),
     profileResetPointsButton: root.querySelector<HTMLButtonElement>("#heroProfileResetPointsButton"),
+    profileSaveAttributesButton: root.querySelector<HTMLButtonElement>("#heroProfileSaveAttributesButton"),
     profileGold: root.querySelector<HTMLElement>("#heroProfileGold"),
     profileArenaEnergy: root.querySelector<HTMLElement>("#heroProfileArenaEnergy"),
     profileLevel: root.querySelector<HTMLElement>("#heroProfileLevel"),
@@ -397,6 +405,11 @@ export function getCityHeroWidgetRefs(root: ParentNode = document): CityHeroWidg
       strength: root.querySelector<HTMLButtonElement>('[data-hero-attribute-button="strength"]'),
       agility: root.querySelector<HTMLButtonElement>('[data-hero-attribute-button="agility"]'),
       vitality: root.querySelector<HTMLButtonElement>('[data-hero-attribute-button="vitality"]'),
+    },
+    attributeDecreaseButtons: {
+      strength: root.querySelector<HTMLButtonElement>('[data-hero-attribute-decrease-button="strength"]'),
+      agility: root.querySelector<HTMLButtonElement>('[data-hero-attribute-decrease-button="agility"]'),
+      vitality: root.querySelector<HTMLButtonElement>('[data-hero-attribute-decrease-button="vitality"]'),
     },
   };
 }
@@ -435,6 +448,10 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   const xpText = isBossGateLocked ? "DEFEAT BOSS TO UNLOCK" : `${hero.xp}/${xpToNextLevel}`;
   const highlightedEquipmentItems = getHighlightedCityEquipmentItems(options.highlightedEquipmentItemIds);
   const portraitNotice = getCityHeroPortraitNotice(hero, highlightedEquipmentItems);
+  const attributeDraftAllocations = options.attributeDraftAllocations ?? {};
+  const attributeSaveStatus = options.attributeSaveStatus ?? "idle";
+  const attributeControlsDisabled = Boolean(options.attributeControlsDisabled);
+  const hasAttributeDraft = HERO_ATTRIBUTE_KEYS.some((attribute) => getAttributeDraftAllocation(attributeDraftAllocations, attribute) > 0);
 
   if (refs.name) {
     refs.name.textContent = hero.name.toUpperCase();
@@ -510,15 +527,44 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
     const canAffordReset = hero.gold >= resetPrice;
 
     refs.profileResetPointsButton.hidden = allocatedSkillPoints <= 0;
-    refs.profileResetPointsButton.disabled = allocatedSkillPoints <= 0 || !canAffordReset;
+    refs.profileResetPointsButton.disabled = allocatedSkillPoints <= 0 || !canAffordReset || attributeControlsDisabled;
     refs.profileResetPointsButton.textContent = `RESET ${resetPrice}`;
     refs.profileResetPointsButton.setAttribute("aria-label", `Reset attribute points for ${resetPrice} gold`);
     refs.profileResetPointsButton.title =
-      allocatedSkillPoints <= 0
+      attributeControlsDisabled
+        ? "Saving attributes"
+        : allocatedSkillPoints <= 0
         ? "No spent points"
         : canAffordReset
           ? `Reset ${allocatedSkillPoints} spent points for ${resetPrice} gold`
           : `Need ${resetPrice} gold`;
+  }
+
+  if (refs.profileSaveAttributesButton) {
+    refs.profileSaveAttributesButton.hidden = !hasAttributeDraft && attributeSaveStatus !== "saved";
+    refs.profileSaveAttributesButton.disabled = !hasAttributeDraft || attributeSaveStatus === "saving" || attributeSaveStatus === "saved";
+    refs.profileSaveAttributesButton.classList.toggle("city-profile__points-save--saving", attributeSaveStatus === "saving");
+    refs.profileSaveAttributesButton.classList.toggle("city-profile__points-save--saved", attributeSaveStatus === "saved");
+    refs.profileSaveAttributesButton.textContent =
+      attributeSaveStatus === "saving"
+        ? "SAVING"
+        : attributeSaveStatus === "saved"
+          ? "SAVED"
+          : "SAVE";
+    refs.profileSaveAttributesButton.setAttribute(
+      "aria-label",
+      attributeSaveStatus === "saved"
+        ? "Attributes saved"
+        : attributeSaveStatus === "saving"
+          ? "Saving attributes"
+          : "Save attribute changes",
+    );
+    refs.profileSaveAttributesButton.title =
+      attributeSaveStatus === "saved"
+        ? "Attributes saved"
+        : attributeSaveStatus === "saving"
+          ? "Saving attributes"
+          : "Save attribute changes";
   }
 
   renderCityHeroProfileEquipment(refs, hero, highlightedEquipmentItems);
@@ -526,18 +572,34 @@ export function renderCityHeroInfo(refs: CityHeroWidgetRefs, hero: HeroState, op
   HERO_ATTRIBUTE_KEYS.forEach((attribute) => {
     const value = refs.attributeValues[attribute];
     const button = refs.attributeButtons[attribute];
+    const decreaseButton = refs.attributeDecreaseButtons[attribute];
+    const draftAllocation = getAttributeDraftAllocation(attributeDraftAllocations, attribute);
 
     if (value) {
       value.textContent = String(hero.baseStats[attribute]);
     }
 
     if (button) {
-      button.disabled = hero.skillPoints <= 0;
+      button.disabled = hero.skillPoints <= 0 || attributeControlsDisabled;
       button.hidden = false;
+    }
+
+    if (decreaseButton) {
+      decreaseButton.disabled = draftAllocation <= 0 || attributeControlsDisabled;
+      decreaseButton.hidden = false;
     }
   });
 
   renderCityHeroProfileStats(refs, hero);
+}
+
+function getAttributeDraftAllocation(
+  draftAllocations: Partial<Record<HeroAttributeKey, number>>,
+  attribute: HeroAttributeKey,
+): number {
+  const value = draftAllocations[attribute];
+
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
 function getCityHeroPortraitNotice(hero: HeroState, highlightedEquipmentItems: readonly CityHeroEquipmentHintItem[]): CityHeroPortraitNotice | undefined {
@@ -1145,97 +1207,50 @@ export function mountCityHeroAppearanceMenu(refs: CityHeroWidgetRefs, options: C
   }
 }
 
+export interface CityHeroAttributeControlOptions {
+  onAllocate: (attribute: HeroAttributeKey, amount: number) => void;
+  onDeallocate?: (attribute: HeroAttributeKey, amount: number) => void;
+  onSave?: () => void;
+  onReset?: () => void;
+}
+
 export function mountCityHeroAttributeControls(
   refs: CityHeroWidgetRefs,
-  onAllocate: (attribute: HeroAttributeKey, amount: number) => void,
-  onReset?: () => void,
+  options: CityHeroAttributeControlOptions,
 ): () => void {
   const cleanups = HERO_ATTRIBUTE_KEYS.flatMap((attribute) => {
-    const button = refs.attributeButtons[attribute];
+    const increaseButton = refs.attributeButtons[attribute];
+    const decreaseButton = refs.attributeDecreaseButtons[attribute];
+    const attributeCleanups: (() => void)[] = [];
 
-    if (!button) {
-      return [];
+    if (increaseButton) {
+      attributeCleanups.push(mountAttributeRepeatButton(increaseButton, (amount) => options.onAllocate(attribute, amount)));
     }
 
-    let holdDelayId: number | undefined;
-    let holdIntervalId: number | undefined;
-    let suppressNextClick = false;
+    if (decreaseButton && options.onDeallocate) {
+      attributeCleanups.push(mountAttributeRepeatButton(decreaseButton, (amount) => options.onDeallocate?.(attribute, amount)));
+    }
 
-    const clearHoldRepeat = () => {
-      if (holdDelayId !== undefined) {
-        window.clearTimeout(holdDelayId);
-        holdDelayId = undefined;
-      }
-
-      if (holdIntervalId !== undefined) {
-        window.clearInterval(holdIntervalId);
-        holdIntervalId = undefined;
-      }
-    };
-
-    const allocate = (amount: number) => {
-      if (!button.disabled) {
-        onAllocate(attribute, amount);
-      }
-    };
-
-    const getAllocateAmount = (event: MouseEvent | PointerEvent) => (event.ctrlKey ? ATTRIBUTE_CTRL_ALLOCATE_AMOUNT : 1);
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || button.disabled) {
-        return;
-      }
-
-      const amount = getAllocateAmount(event);
-
-      suppressNextClick = true;
-      allocate(amount);
-      clearHoldRepeat();
-      try {
-        button.setPointerCapture(event.pointerId);
-      } catch {
-        // Pointer capture is best-effort; regular pointerup/cancel still clears the repeat.
-      }
-      holdDelayId = window.setTimeout(() => {
-        allocate(amount);
-        holdIntervalId = window.setInterval(() => allocate(amount), ATTRIBUTE_HOLD_REPEAT_INTERVAL_MS);
-      }, ATTRIBUTE_HOLD_REPEAT_DELAY_MS);
-    };
-
-    const handleClick = (event: MouseEvent) => {
-      if (suppressNextClick) {
-        suppressNextClick = false;
-        return;
-      }
-
-      allocate(getAllocateAmount(event));
-    };
-
-    button.addEventListener("pointerdown", handlePointerDown);
-    button.addEventListener("pointerup", clearHoldRepeat);
-    button.addEventListener("pointercancel", clearHoldRepeat);
-    button.addEventListener("lostpointercapture", clearHoldRepeat);
-    button.addEventListener("blur", clearHoldRepeat);
-    button.addEventListener("click", handleClick);
-
-    return [
-      () => {
-        clearHoldRepeat();
-        button.removeEventListener("pointerdown", handlePointerDown);
-        button.removeEventListener("pointerup", clearHoldRepeat);
-        button.removeEventListener("pointercancel", clearHoldRepeat);
-        button.removeEventListener("lostpointercapture", clearHoldRepeat);
-        button.removeEventListener("blur", clearHoldRepeat);
-        button.removeEventListener("click", handleClick);
-      },
-    ];
+    return attributeCleanups;
   });
 
-  if (refs.profileResetPointsButton && onReset) {
+  if (refs.profileSaveAttributesButton && options.onSave) {
+    const button = refs.profileSaveAttributesButton;
+    const handleClick = () => {
+      if (!button.disabled) {
+        options.onSave?.();
+      }
+    };
+
+    button.addEventListener("click", handleClick);
+    cleanups.push(() => button.removeEventListener("click", handleClick));
+  }
+
+  if (refs.profileResetPointsButton && options.onReset) {
     const button = refs.profileResetPointsButton;
     const handleClick = () => {
       if (!button.disabled) {
-        onReset();
+        options.onReset?.();
       }
     };
 
@@ -1244,6 +1259,79 @@ export function mountCityHeroAttributeControls(
   }
 
   return () => cleanups.forEach((cleanup) => cleanup());
+}
+
+function mountAttributeRepeatButton(button: HTMLButtonElement, onChange: (amount: number) => void): () => void {
+  let holdDelayId: number | undefined;
+  let holdIntervalId: number | undefined;
+  let suppressNextClick = false;
+
+  const clearHoldRepeat = () => {
+    if (holdDelayId !== undefined) {
+      window.clearTimeout(holdDelayId);
+      holdDelayId = undefined;
+    }
+
+    if (holdIntervalId !== undefined) {
+      window.clearInterval(holdIntervalId);
+      holdIntervalId = undefined;
+    }
+  };
+
+  const change = (amount: number) => {
+    if (!button.disabled) {
+      onChange(amount);
+    }
+  };
+
+  const getChangeAmount = (event: MouseEvent | PointerEvent) => (event.ctrlKey ? ATTRIBUTE_CTRL_ALLOCATE_AMOUNT : 1);
+
+  const handlePointerDown = (event: PointerEvent) => {
+    if (event.button !== 0 || button.disabled) {
+      return;
+    }
+
+    const amount = getChangeAmount(event);
+
+    suppressNextClick = true;
+    change(amount);
+    clearHoldRepeat();
+    try {
+      button.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is best-effort; regular pointerup/cancel still clears the repeat.
+    }
+    holdDelayId = window.setTimeout(() => {
+      change(amount);
+      holdIntervalId = window.setInterval(() => change(amount), ATTRIBUTE_HOLD_REPEAT_INTERVAL_MS);
+    }, ATTRIBUTE_HOLD_REPEAT_DELAY_MS);
+  };
+
+  const handleClick = (event: MouseEvent) => {
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      return;
+    }
+
+    change(getChangeAmount(event));
+  };
+
+  button.addEventListener("pointerdown", handlePointerDown);
+  button.addEventListener("pointerup", clearHoldRepeat);
+  button.addEventListener("pointercancel", clearHoldRepeat);
+  button.addEventListener("lostpointercapture", clearHoldRepeat);
+  button.addEventListener("blur", clearHoldRepeat);
+  button.addEventListener("click", handleClick);
+
+  return () => {
+    clearHoldRepeat();
+    button.removeEventListener("pointerdown", handlePointerDown);
+    button.removeEventListener("pointerup", clearHoldRepeat);
+    button.removeEventListener("pointercancel", clearHoldRepeat);
+    button.removeEventListener("lostpointercapture", clearHoldRepeat);
+    button.removeEventListener("blur", clearHoldRepeat);
+    button.removeEventListener("click", handleClick);
+  };
 }
 
 function renderCityHeroProfileStats(refs: CityHeroWidgetRefs, hero: HeroState): void {
@@ -2371,7 +2459,7 @@ function getCityEquipmentProductTypeLabel(product: CityEquipmentProduct): string
   const itemId = product.itemIds.find((candidateId) => Boolean(HERO_ITEM_CATALOG[candidateId]));
   const item = itemId ? HERO_ITEM_CATALOG[itemId] : undefined;
 
-  if (!item) {
+  if (!itemId || !item) {
     return "ITEM";
   }
 

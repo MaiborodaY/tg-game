@@ -3,6 +3,7 @@ import { DurableObject } from "cloudflare:workers";
 import { GENERATED_ARMORY_PRODUCTS, GENERATED_WEAPON_PRODUCTS } from "../../../gladiator-arena/src/generated/equipmentItems.generated";
 import {
   HERO_CRACK_ARMOR_SCROLL_ITEM_ID,
+  HERO_ATTRIBUTE_KEYS,
   HERO_EQUIPMENT_SLOT_KEYS,
   HERO_DOUBLE_STRIKE_SCROLL_ITEM_ID,
   HERO_FIREBALL_SCROLL_ITEM_ID,
@@ -19,6 +20,8 @@ import {
   upgradeHeroBowShotCapacity,
   upgradeHeroScroll,
   upgradeHeroScrollCapacity,
+  type HeroAttributeKey,
+  type HeroBaseStats,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -49,6 +52,11 @@ interface ShopBuyRequest {
   equipment?: unknown;
 }
 
+interface SaveHeroAttributesRequest {
+  baseStats?: unknown;
+  skillPoints?: unknown;
+}
+
 interface PlayerActorSpendArenaEnergyInput {
   telegramUserId: string;
   telegramUsername?: string;
@@ -64,6 +72,14 @@ interface PlayerActorBuyShopProductInput {
   action: ShopAction;
   productId?: string;
   equipment?: HeroEquipmentSnapshot;
+  nowIso: string;
+}
+
+interface PlayerActorSaveHeroAttributesInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  baseStats: HeroBaseStats;
+  skillPoints: number;
   nowIso: string;
 }
 
@@ -92,6 +108,14 @@ type BuyShopProductResult =
         | "shop_action_not_supported"
         | "shop_product_not_found"
         | "shop_purchase_rejected";
+      hero?: HeroState;
+    };
+
+type SaveHeroAttributesResult =
+  | { ok: true; hero: HeroState }
+  | {
+      ok: false;
+      error: "invalid_attribute_allocation" | "invalid_attribute_payload" | "invalid_hero_payload" | "player_save_not_found";
       hero?: HeroState;
     };
 
@@ -162,6 +186,10 @@ export class PlayerActor extends DurableObject<Env> {
     return this.enqueue(() => this.buyShopProductNow(input));
   }
 
+  async saveHeroAttributes(input: PlayerActorSaveHeroAttributesInput): Promise<SaveHeroAttributesResult> {
+    return this.enqueue(() => this.saveHeroAttributesNow(input));
+  }
+
   private async spendArenaEnergyNow(input: PlayerActorSpendArenaEnergyInput): Promise<SpendArenaEnergyResult> {
     const spendAmount = getArenaEnergySpendAmount(input.amount);
     const dayKey = getUtcDayKey(input.nowIso);
@@ -215,6 +243,35 @@ export class PlayerActor extends DurableObject<Env> {
     return { ok: true, hero: nextHero.hero };
   }
 
+  private async saveHeroAttributesNow(input: PlayerActorSaveHeroAttributesInput): Promise<SaveHeroAttributesResult> {
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!savedHero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    const nextHero = applyHeroAttributeSnapshot(savedHero, input.baseStats, input.skillPoints, input.nowIso);
+
+    if (!nextHero.ok) {
+      return { ...nextHero, hero: savedHero };
+    }
+
+    const heroJson = JSON.stringify(nextHero.hero);
+
+    if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
+      return { ok: false, error: "invalid_hero_payload", hero: savedHero };
+    }
+
+    await updatePlayerHero(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      telegramUsername: input.telegramUsername,
+      heroJson,
+      nowIso: input.nowIso,
+    });
+
+    return { ok: true, hero: nextHero.hero };
+  }
+
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const nextOperation = this.operationQueue.then(operation, operation);
     this.operationQueue = nextOperation.then(
@@ -248,6 +305,10 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-shop/buy") {
         return handleBuyShopProduct(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/gladiator-attributes/save") {
+        return handleSaveHeroAttributes(request, env);
       }
 
       return json({ ok: false, error: "not_found" }, 404);
@@ -317,6 +378,40 @@ async function handleBuyShopProduct(request: Request, env: Env): Promise<Respons
   return json({ ok: false, error: result.error, hero: result.hero }, status);
 }
 
+async function handleSaveHeroAttributes(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const body = await readSaveHeroAttributesRequest(request);
+  const baseStats = readHeroBaseStats(body.baseStats);
+  const skillPoints = readNonNegativeInteger(body.skillPoints);
+
+  if (!baseStats || skillPoints === undefined) {
+    return json({ ok: false, error: "invalid_attribute_payload" }, 400);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const result = await actor.saveHeroAttributes({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    baseStats,
+    skillPoints,
+    nowIso: new Date().toISOString(),
+  });
+
+  if (result.ok) {
+    return json({ ok: true, hero: result.hero });
+  }
+
+  const status = result.error === "player_save_not_found" ? 404 : result.error === "invalid_attribute_payload" ? 400 : 409;
+
+  return json({ ok: false, error: result.error, hero: result.hero }, status);
+}
+
 async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArenaEnergyRequest> {
   try {
     const body = (await request.json()) as SpendArenaEnergyRequest;
@@ -330,6 +425,16 @@ async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArena
 async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
   try {
     const body = (await request.json()) as ShopBuyRequest;
+
+    return isRecord(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+async function readSaveHeroAttributesRequest(request: Request): Promise<SaveHeroAttributesRequest> {
+  try {
+    const body = (await request.json()) as SaveHeroAttributesRequest;
 
     return isRecord(body) ? body : {};
   } catch {
@@ -400,6 +505,70 @@ function toShopMutationResult(nextHero: HeroState, previousHero: HeroState): Buy
   return nextHero === previousHero
     ? { ok: false, error: "shop_purchase_rejected" }
     : { ok: true, hero: nextHero };
+}
+
+function applyHeroAttributeSnapshot(
+  hero: HeroState,
+  baseStats: HeroBaseStats,
+  skillPoints: number,
+  nowIso: string,
+): SaveHeroAttributesResult {
+  const currentBaseStats = readHeroBaseStats(hero.baseStats);
+  const currentSkillPoints = readNonNegativeInteger(hero.skillPoints);
+
+  if (!currentBaseStats || currentSkillPoints === undefined) {
+    return { ok: false, error: "invalid_hero_payload" };
+  }
+
+  const currentTotal = getHeroAttributeBudget(currentBaseStats, currentSkillPoints);
+  const nextTotal = getHeroAttributeBudget(baseStats, skillPoints);
+  const decreasesSavedAttribute = HERO_ATTRIBUTE_KEYS.some((attribute) => baseStats[attribute] < currentBaseStats[attribute]);
+
+  if (nextTotal !== currentTotal || decreasesSavedAttribute) {
+    return { ok: false, error: "invalid_attribute_allocation" };
+  }
+
+  return {
+    ok: true,
+    hero: {
+      ...hero,
+      baseStats,
+      skillPoints,
+      updatedAt: nowIso,
+    },
+  };
+}
+
+function getHeroAttributeBudget(baseStats: HeroBaseStats, skillPoints: number): number {
+  return skillPoints + HERO_ATTRIBUTE_KEYS.reduce((sum, attribute) => sum + baseStats[attribute], 0);
+}
+
+function readHeroBaseStats(value: unknown): HeroBaseStats | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const baseStats = {} as Record<HeroAttributeKey, number>;
+
+  for (const attribute of HERO_ATTRIBUTE_KEYS) {
+    const attributeValue = readNonNegativeInteger(value[attribute]);
+
+    if (attributeValue === undefined) {
+      return undefined;
+    }
+
+    baseStats[attribute] = attributeValue;
+  }
+
+  return {
+    strength: baseStats.strength,
+    agility: baseStats.agility,
+    vitality: baseStats.vitality,
+  };
+}
+
+function readNonNegativeInteger(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
 function readHeroEquipmentSnapshot(value: unknown): HeroEquipmentSnapshot | undefined {

@@ -264,6 +264,7 @@
               <div class="city-profile__section-heading city-profile__section-heading--attributes">
                 <span>ATTRIBUTES</span>
                 <button id="heroProfileResetPointsButton" class="city-profile__points-reset" type="button" hidden>RESET 50</button>
+                <button id="heroProfileSaveAttributesButton" class="city-profile__points-save" type="button" hidden>SAVE</button>
                 <strong id="heroProfileSkillPoints" class="city-profile__points"></strong>
               </div>
               <div class="city-profile__attributes" aria-label="Attributes">
@@ -274,6 +275,7 @@
                     <span>Increases damage and reach.</span>
                   </div>
                   <span class="city-profile__attribute-value" data-hero-attribute-value="strength">0</span>
+                  <button class="city-profile__attribute-button city-profile__attribute-button--decrease" type="button" data-hero-attribute-decrease-button="strength" aria-label="Decrease strength" disabled>-</button>
                   <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="strength" aria-label="Increase strength">+</button>
                 </div>
                 <div class="city-profile__attribute">
@@ -283,6 +285,7 @@
                     <span>Increases movement speed.</span>
                   </div>
                   <span class="city-profile__attribute-value" data-hero-attribute-value="agility">0</span>
+                  <button class="city-profile__attribute-button city-profile__attribute-button--decrease" type="button" data-hero-attribute-decrease-button="agility" aria-label="Decrease agility" disabled>-</button>
                   <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="agility" aria-label="Increase agility">+</button>
                 </div>
                 <div class="city-profile__attribute">
@@ -292,6 +295,7 @@
                     <span>Increases health and stamina.</span>
                   </div>
                   <span class="city-profile__attribute-value" data-hero-attribute-value="vitality">0</span>
+                  <button class="city-profile__attribute-button city-profile__attribute-button--decrease" type="button" data-hero-attribute-decrease-button="vitality" aria-label="Decrease vitality" disabled>-</button>
                   <button class="city-profile__attribute-button" type="button" data-hero-attribute-button="vitality" aria-label="Increase vitality">+</button>
                 </div>
               </div>

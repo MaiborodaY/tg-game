@@ -851,7 +851,9 @@ function startDebugApp(): void {
   }
   syncPlayerCityBodyScale();
   renderCityHeroInfo(cityHeroWidgetRefs, hero);
-  mountCityHeroAttributeControls(cityHeroWidgetRefs, handleHeroAttributeAllocate);
+  mountCityHeroAttributeControls(cityHeroWidgetRefs, {
+    onAllocate: handleHeroAttributeAllocate,
+  });
   mountHeroPortraitButtonDebug();
   mountHudDebug();
   mountClassicHudDebug();

@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const saveClientSource = readFileSync(resolve(currentDir, "../src/gladiatorSaveClient.ts"), "utf8");
 const mainSource = readFileSync(resolve(currentDir, "../src/main.ts"), "utf8");
+const cityHeroUiSource = readFileSync(resolve(currentDir, "../src/cityHeroUi.ts"), "utf8");
+const indexSource = readFileSync(resolve(currentDir, "../index.html"), "utf8");
 const armoryShopSource = readFileSync(resolve(currentDir, "../src/armoryShopUi.ts"), "utf8");
 const weaponShopSource = readFileSync(resolve(currentDir, "../src/weaponShopUi.ts"), "utf8");
 const arenaSceneSource = readFileSync(resolve(currentDir, "../src/ArenaScene.ts"), "utf8");
@@ -71,4 +73,25 @@ test("equipment shop cards keep the selected buy action in a buying state while 
     assert.equal(source.includes("previewProduct = undefined;\r\n          options.onBuy(product);"), false);
     assert.equal(source.includes("previewProduct = undefined;\n          options.onBuy(product);"), false);
   }
+});
+
+test("profile attribute drafts can be decreased and saved through the player actor", () => {
+  assert.equal(indexSource.includes("heroProfileSaveAttributesButton"), true);
+  assert.equal(indexSource.includes("data-hero-attribute-decrease-button=\"strength\""), true);
+  assert.equal(cityHeroUiSource.includes('export type CityHeroAttributeSaveStatus = "idle" | "saving" | "saved"'), true);
+  assert.equal(cityHeroUiSource.includes("attributeDraftAllocations?: Partial<Record<HeroAttributeKey, number>>"), true);
+  assert.equal(cityHeroUiSource.includes("city-profile__points-save--saving"), true);
+  assert.equal(cityHeroUiSource.includes("city-profile__points-save--saved"), true);
+  assert.equal(cityHeroUiSource.includes("onDeallocate?: (attribute: HeroAttributeKey, amount: number) => void"), true);
+  assert.equal(saveClientSource.includes('const GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT = "/api/gladiator-attributes/save"'), true);
+  assert.equal(saveClientSource.includes("export async function saveGladiatorHeroAttributes"), true);
+  assert.equal(apiWorkerSource.includes('url.pathname === "/api/gladiator-attributes/save"'), true);
+  assert.equal(apiWorkerSource.includes("async saveHeroAttributes(input: PlayerActorSaveHeroAttributesInput)"), true);
+  assert.equal(apiWorkerSource.includes("applyHeroAttributeSnapshot(savedHero, input.baseStats, input.skillPoints, input.nowIso)"), true);
+  assert.equal(apiWorkerSource.includes("baseStats[attribute] < currentBaseStats[attribute]"), true);
+  assert.equal(mainSource.includes("let attributeDraftAllocations: HeroBaseStats = createEmptyHeroAttributeDraftAllocations()"), true);
+  assert.equal(mainSource.includes("function handleHeroAttributeDeallocate"), true);
+  assert.equal(mainSource.includes("async function handleHeroAttributesSave"), true);
+  assert.equal(mainSource.includes('attributeSaveStatus = "saving"'), true);
+  assert.equal(mainSource.includes('clearHeroAttributeDraft("saved")'), true);
 });

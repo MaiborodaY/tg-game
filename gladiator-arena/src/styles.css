@@ -6048,6 +6048,55 @@ body.debug-active .city-menu__portrait-button:active {
   display: none;
 }
 
+.city-profile__points-save {
+  min-width: 66px;
+  min-height: 22px;
+  padding: 4px 12px 5px;
+  border: 1px solid rgba(154, 255, 185, 0.72);
+  border-radius: 5px;
+  color: #fff8d0;
+  background: linear-gradient(180deg, #34d96f, #148c42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    inset 0 -1px 0 rgba(6, 60, 25, 0.42),
+    0 1px 0 rgba(8, 2, 1, 0.62);
+  font: inherit;
+  font-size: clamp(0.58rem, 2.18vw, 0.7rem);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(0, 44, 18, 0.72);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.city-profile__points-save--saving {
+  color: #ffe0a0;
+  border-color: rgba(255, 220, 146, 0.4);
+  background:
+    linear-gradient(180deg, rgba(101, 43, 18, 0.94), rgba(41, 13, 5, 0.94)),
+    var(--ui-panel-wood-texture) center / 180px 180px repeat;
+}
+
+.city-profile__points-save--saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.city-profile__points-save--saved::before {
+  content: "\2713";
+  font-size: 0.66rem;
+  line-height: 1;
+}
+
+.city-profile__points-save:disabled {
+  cursor: default;
+}
+
+.city-profile__points-save[hidden] {
+  display: none;
+}
+
 .city-profile__attributes {
   position: relative;
   z-index: 1;
@@ -6058,7 +6107,7 @@ body.debug-active .city-menu__portrait-button:active {
 
 .city-profile__attribute {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 34px 32px;
+  grid-template-columns: 34px minmax(0, 1fr) 34px 32px 32px;
   gap: 7px;
   align-items: center;
   min-height: 48px;
@@ -6148,7 +6197,7 @@ body.debug-active .city-menu__portrait-button:active {
   cursor: pointer;
 }
 
-.city-profile__attribute-button:not(:disabled) {
+.city-profile__attribute-button:not(.city-profile__attribute-button--decrease):not(:disabled) {
   animation: city-profile-attribute-plus-pulse 1.25s ease-in-out infinite;
 }
 
@@ -6599,7 +6648,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__section-heading--attributes::after {
-  order: 3;
+  order: 4;
 }
 
 .city-profile__section-heading--attributes .city-profile__points-reset {
@@ -6609,8 +6658,15 @@ body.debug-active .city-menu__portrait-button:active {
   font-size: clamp(0.46rem, 1.7vw, 0.54rem);
 }
 
+.city-profile__section-heading--attributes .city-profile__points-save {
+  order: 3;
+  flex: 0 0 auto;
+  max-width: 112px;
+  font-size: clamp(0.56rem, 2.08vw, 0.68rem);
+}
+
 .city-profile__section-heading--attributes .city-profile__points {
-  order: 4;
+  order: 5;
 }
 
 .city-profile__points {
@@ -6630,7 +6686,7 @@ body.debug-active .city-menu__portrait-button:active {
 }
 
 .city-profile__attribute {
-  grid-template-columns: 48px minmax(0, 1fr) 34px 34px;
+  grid-template-columns: 48px minmax(0, 1fr) 34px 34px 34px;
   gap: 8px;
   min-height: 58px;
   padding: 7px 8px;
@@ -14695,7 +14751,7 @@ body.arena-low-effects .classic-distance-badge {
   }
 
   .city-profile__points--ready,
-  .city-profile__attribute-button:not(:disabled) {
+  .city-profile__attribute-button:not(.city-profile__attribute-button--decrease):not(:disabled) {
     animation: none;
   }
 }
