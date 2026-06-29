@@ -19,6 +19,7 @@ import {
   getArenaRandomOpponentDefinition,
   getHeroArenaWinQuestStatus,
   getHeroScrollPurchasePrice,
+  grantHeroArenaEnergy,
   isHeroConsumableItem,
   isHeroItemOwned,
   resetHeroSkillPoints,
@@ -72,6 +73,16 @@ interface SaveHeroAttributesRequest {
 
 interface OfflineBattleSettlementRequest {
   battleKind?: unknown;
+  result?: unknown;
+  encounter?: unknown;
+  equipment?: unknown;
+  enemyEquipment?: unknown;
+  playerConsumables?: unknown;
+}
+
+interface OnlineDuoBossSettlementRequest {
+  roomCode?: unknown;
+  seat?: unknown;
   result?: unknown;
   encounter?: unknown;
   equipment?: unknown;
@@ -136,6 +147,19 @@ interface PlayerActorSettleOfflineBattleInput {
   nowIso: string;
 }
 
+interface PlayerActorSettleOnlineDuoBossInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  roomCode: string;
+  seat: OnlineDuoBossSeat;
+  result: OfflineBattleSettlementResult;
+  encounter: OfflineBattleEncounterSnapshot;
+  equipment?: HeroEquipmentSnapshot;
+  enemyEquipment?: HeroEquipmentSnapshot;
+  playerConsumables: OfflineBattlePlayerConsumablesSnapshot;
+  nowIso: string;
+}
+
 interface HeroArenaEnergy {
   current: number;
   max: number;
@@ -150,6 +174,7 @@ type ShopKind = "armory" | "weapon" | "magic";
 type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity";
 type OfflineBattleSettlementKind = "manual" | "auto";
 type OfflineBattleSettlementResult = Exclude<Result, "playing">;
+type OnlineDuoBossSeat = "host" | "guest";
 type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
 type OfflineBattleEncounterSnapshot = NonNullable<CombatState["encounter"]>;
 type OfflineBattlePlayerConsumablesSnapshot = Partial<Record<
@@ -248,6 +273,14 @@ type OfflineBattleSettlementResultPayload =
       hero?: HeroState;
     };
 
+type OnlineDuoBossSettlementResultPayload =
+  | { ok: true; settlement: CombatRewardApplication }
+  | {
+      ok: false;
+      error: "invalid_online_duo_settlement" | "invalid_hero_payload" | "player_save_not_found";
+      hero?: HeroState;
+    };
+
 interface PlayerDailyResourceRow {
   current: number;
   max: number;
@@ -279,6 +312,7 @@ const SAVE_SCHEMA_VERSION = 1;
 const MAX_HERO_JSON_BYTES = 100_000;
 const ARENA_ENERGY_RESOURCE_KEY = "arena_energy";
 const HERO_ARENA_ENERGY_MAX = 10;
+const ONLINE_DUO_GUEST_ENERGY_REWARD = 5;
 const AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER = 0.5;
 const PAIRED_ARMORY_SLOT_CONFIGS: readonly PairedArmorySlotConfig[] = [
   {
@@ -334,6 +368,10 @@ export class PlayerActor extends DurableObject<Env> {
 
   async settleOfflineBattle(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
     return this.enqueue(() => this.settleOfflineBattleNow(input));
+  }
+
+  async settleOnlineDuoBoss(input: PlayerActorSettleOnlineDuoBossInput): Promise<OnlineDuoBossSettlementResultPayload> {
+    return this.enqueue(() => this.settleOnlineDuoBossNow(input));
   }
 
   private async spendArenaEnergyNow(input: PlayerActorSpendArenaEnergyInput): Promise<SpendArenaEnergyResult> {
@@ -526,6 +564,44 @@ export class PlayerActor extends DurableObject<Env> {
     return { ok: true, settlement };
   }
 
+  private async settleOnlineDuoBossNow(input: PlayerActorSettleOnlineDuoBossInput): Promise<OnlineDuoBossSettlementResultPayload> {
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!savedHero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    const heroWithArenaEnergy = await withCurrentPlayerDailyArenaEnergy(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, savedHero, input.nowIso);
+    const hero = withValidatedEquipmentSnapshot(heroWithArenaEnergy, input.equipment, input.nowIso);
+    const combat = createRewardSettlementCombat(input);
+    const baseSettlement = applyCombatReward(hero, combat, input.nowIso, Math.random, {
+      recordBossVictory: input.seat === "host",
+    });
+    const heroAfterReward = input.seat === "guest" && input.result === "win"
+      ? grantHeroArenaEnergy(baseSettlement.heroAfterReward, ONLINE_DUO_GUEST_ENERGY_REWARD, input.nowIso)
+      : baseSettlement.heroAfterReward;
+    const settlement = heroAfterReward === baseSettlement.heroAfterReward
+      ? baseSettlement
+      : { ...baseSettlement, heroAfterReward };
+    const heroJson = JSON.stringify(settlement.heroAfterReward);
+
+    if (!heroJson || heroJson.length > MAX_HERO_JSON_BYTES) {
+      return { ok: false, error: "invalid_hero_payload", hero };
+    }
+
+    await updatePlayerHero(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      telegramUsername: input.telegramUsername,
+      heroJson,
+      nowIso: input.nowIso,
+    });
+    if (!areHeroArenaEnergyEqual(hero.arenaEnergy, settlement.heroAfterReward.arenaEnergy)) {
+      await syncPlayerDailyArenaEnergyFromHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, settlement.heroAfterReward, input.nowIso);
+    }
+
+    return { ok: true, settlement };
+  }
+
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const nextOperation = this.operationQueue.then(operation, operation);
     this.operationQueue = nextOperation.then(
@@ -579,6 +655,10 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-battle/settle") {
         return handleSettleOfflineBattle(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/gladiator-online-duo/settle") {
+        return handleSettleOnlineDuoBoss(request, env);
       }
 
       return json({ ok: false, error: "not_found" }, 404);
@@ -801,6 +881,47 @@ async function handleSettleOfflineBattle(request: Request, env: Env): Promise<Re
   return json({ ok: false, error: settlement.error, hero: settlement.hero }, status);
 }
 
+async function handleSettleOnlineDuoBoss(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const body = await readOnlineDuoBossSettlementRequest(request);
+  const roomCode = readOnlineDuoBossRoomCode(body.roomCode);
+  const seat = toOnlineDuoBossSeat(body.seat);
+  const result = toOfflineBattleSettlementResult(body.result);
+  const encounter = readOfflineBattleEncounterSnapshot(body.encounter);
+
+  if (!roomCode || !seat || !result || !encounter || encounter.kind !== "boss") {
+    return json({ ok: false, error: "invalid_online_duo_settlement" }, 400);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const settlement = await actor.settleOnlineDuoBoss({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    roomCode,
+    seat,
+    result,
+    encounter,
+    equipment: readHeroEquipmentSnapshot(body.equipment),
+    enemyEquipment: readHeroEquipmentSnapshot(body.enemyEquipment),
+    playerConsumables: readOfflineBattlePlayerConsumablesSnapshot(body.playerConsumables),
+    nowIso: new Date().toISOString(),
+  });
+
+  if (settlement.ok) {
+    return json({ ok: true, settlement: settlement.settlement });
+  }
+
+  const status = settlement.error === "player_save_not_found" ? 404 : settlement.error === "invalid_online_duo_settlement" ? 400 : 409;
+
+  return json({ ok: false, error: settlement.error, hero: settlement.hero }, status);
+}
+
 async function readSpendArenaEnergyRequest(request: Request): Promise<SpendArenaEnergyRequest> {
   try {
     const body = (await request.json()) as SpendArenaEnergyRequest;
@@ -844,6 +965,16 @@ async function readSaveHeroAttributesRequest(request: Request): Promise<SaveHero
 async function readOfflineBattleSettlementRequest(request: Request): Promise<OfflineBattleSettlementRequest> {
   try {
     const body = (await request.json()) as OfflineBattleSettlementRequest;
+
+    return isRecord(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+async function readOnlineDuoBossSettlementRequest(request: Request): Promise<OnlineDuoBossSettlementRequest> {
+  try {
+    const body = (await request.json()) as OnlineDuoBossSettlementRequest;
 
     return isRecord(body) ? body : {};
   } catch {
@@ -1044,6 +1175,14 @@ function toOfflineBattleSettlementResult(value: unknown): OfflineBattleSettlemen
   return value === "win" || value === "lose" || value === "draw" ? value : undefined;
 }
 
+function toOnlineDuoBossSeat(value: unknown): OnlineDuoBossSeat | undefined {
+  return value === "host" || value === "guest" ? value : undefined;
+}
+
+function readOnlineDuoBossRoomCode(value: unknown): string | undefined {
+  return typeof value === "string" && /^[A-Z0-9]{3,12}$/i.test(value.trim()) ? value.trim().toUpperCase() : undefined;
+}
+
 function readOfflineBattleEncounterSnapshot(value: unknown): OfflineBattleEncounterSnapshot | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -1147,6 +1286,15 @@ function readPositiveInteger(value: unknown): number | undefined {
 }
 
 function createOfflineBattleSettlementCombat(input: PlayerActorSettleOfflineBattleInput): CombatState {
+  return createRewardSettlementCombat(input);
+}
+
+function createRewardSettlementCombat(input: {
+  result: OfflineBattleSettlementResult;
+  encounter: OfflineBattleEncounterSnapshot;
+  enemyEquipment?: HeroEquipmentSnapshot;
+  playerConsumables: OfflineBattlePlayerConsumablesSnapshot;
+}): CombatState {
   return {
     result: input.result,
     encounter: input.encounter,

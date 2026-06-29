@@ -1,5 +1,6 @@
 import type { CombatState } from "./combat";
 import type { ArenaLootDrop, BattleReward, HeroArenaEnergy, HeroArenaWinQuest, HeroBaseStats, HeroEquipment, HeroState } from "./hero";
+import type { PvpRoomSnapshot } from "./pvpProtocol";
 import { getTelegramInitData } from "./telegram";
 
 interface GladiatorSaveResponse {
@@ -98,6 +99,7 @@ const GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT = "/api/gladiator-attributes/save";
 const GLADIATOR_ATTRIBUTES_RESET_ENDPOINT = "/api/gladiator-attributes/reset";
 const GLADIATOR_ARENA_QUEST_CLAIM_ENDPOINT = "/api/gladiator-arena-quest/claim";
 const GLADIATOR_BATTLE_SETTLE_ENDPOINT = "/api/gladiator-battle/settle";
+const GLADIATOR_ONLINE_DUO_SETTLE_ENDPOINT = "/api/gladiator-online-duo/settle";
 const GLADIATOR_API_BASE_URL_STORAGE_KEY = "dust-arena-gladiator-api-base-url";
 const DEFAULT_GLADIATOR_API_BASE_URL = "https://gladiator-api.mr-maybik.workers.dev";
 
@@ -334,6 +336,34 @@ export async function settleGladiatorOfflineBattleReward(
   return data.settlement;
 }
 
+export async function settleGladiatorOnlineDuoBossReward(snapshot: PvpRoomSnapshot): Promise<GladiatorBattleSettlement> {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
+  }
+
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_ONLINE_DUO_SETTLE_ENDPOINT), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+    body: JSON.stringify(createOnlineDuoBossSettlementRequest(snapshot)),
+  });
+  const data = (await response.json()) as GladiatorBattleSettlementResponse;
+
+  if (!response.ok || !data.ok) {
+    throw new GladiatorSaveError(data.error || `Gladiator online duo settlement failed: ${response.status}`, data.error, data.hero);
+  }
+
+  if (!data.settlement) {
+    throw new GladiatorSaveError("missing_online_duo_settlement_payload", "Online duo settlement response did not include settlement.");
+  }
+
+  return data.settlement;
+}
+
 function createOfflineBattleSettlementRequest(combat: CombatState, battleKind: GladiatorBattleSettlementKind): unknown {
   return {
     battleKind,
@@ -341,22 +371,55 @@ function createOfflineBattleSettlementRequest(combat: CombatState, battleKind: G
     encounter: combat.encounter,
     equipment: combat.player.equipment,
     enemyEquipment: combat.enemy.equipment,
-    playerConsumables: {
-      shurikenItemId: combat.player.shurikenItemId,
-      shurikenCount: combat.player.shurikenCount,
-      scrollItemId: combat.player.scrollItemId,
-      scrollCount: combat.player.scrollCount,
-      fireballScrollItemId: combat.player.fireballScrollItemId,
-      fireballScrollCount: combat.player.fireballScrollCount,
-      wardScrollItemId: combat.player.wardScrollItemId,
-      wardScrollCount: combat.player.wardScrollCount,
-      preciseStrikeScrollItemId: combat.player.preciseStrikeScrollItemId,
-      preciseStrikeScrollCount: combat.player.preciseStrikeScrollCount,
-      doubleStrikeScrollItemId: combat.player.doubleStrikeScrollItemId,
-      doubleStrikeScrollCount: combat.player.doubleStrikeScrollCount,
-      poisonScrollItemId: combat.player.poisonScrollItemId,
-      poisonScrollCount: combat.player.poisonScrollCount,
-    },
+    playerConsumables: createBattleSettlementPlayerConsumables(combat.player),
+  };
+}
+
+function createOnlineDuoBossSettlementRequest(snapshot: PvpRoomSnapshot): unknown {
+  const combat = createOnlineDuoBossSettlementCombat(snapshot);
+
+  return {
+    roomCode: snapshot.roomCode,
+    seat: snapshot.seat,
+    result: combat.result,
+    encounter: combat.encounter,
+    equipment: combat.player.equipment,
+    enemyEquipment: combat.enemy.equipment,
+    playerConsumables: createBattleSettlementPlayerConsumables(combat.player),
+  };
+}
+
+function createOnlineDuoBossSettlementCombat(snapshot: PvpRoomSnapshot): CombatState {
+  if (!snapshot.state || snapshot.state.result === "playing" || !snapshot.state.encounter) {
+    throw new GladiatorSaveError("invalid_online_duo_settlement", "Online duo snapshot is not finished.");
+  }
+
+  if (snapshot.seat !== "guest" || !snapshot.state.helper) {
+    return snapshot.state;
+  }
+
+  return {
+    ...snapshot.state,
+    player: snapshot.state.helper,
+  };
+}
+
+function createBattleSettlementPlayerConsumables(player: CombatState["player"]): unknown {
+  return {
+    shurikenItemId: player.shurikenItemId,
+    shurikenCount: player.shurikenCount,
+    scrollItemId: player.scrollItemId,
+    scrollCount: player.scrollCount,
+    fireballScrollItemId: player.fireballScrollItemId,
+    fireballScrollCount: player.fireballScrollCount,
+    wardScrollItemId: player.wardScrollItemId,
+    wardScrollCount: player.wardScrollCount,
+    preciseStrikeScrollItemId: player.preciseStrikeScrollItemId,
+    preciseStrikeScrollCount: player.preciseStrikeScrollCount,
+    doubleStrikeScrollItemId: player.doubleStrikeScrollItemId,
+    doubleStrikeScrollCount: player.doubleStrikeScrollCount,
+    poisonScrollItemId: player.poisonScrollItemId,
+    poisonScrollCount: player.poisonScrollCount,
   };
 }
 

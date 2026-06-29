@@ -65,6 +65,7 @@ import {
   saveGladiatorHeroAttributes,
   saveGladiatorCloudHero,
   settleGladiatorOfflineBattleReward,
+  settleGladiatorOnlineDuoBossReward,
   spendGladiatorArenaEnergy,
   syncGladiatorHeroEquipment,
   type GladiatorBattleSettlement,
@@ -299,6 +300,8 @@ let onlineDuoAutoOffPending = false;
 let onlineDuoAutoOffPendingTimer: number | undefined;
 let onlineDuoBossPendingWatchdogTimer: number | undefined;
 let onlineDuoBossRefreshPending = false;
+const onlineDuoHostSpendPendingRooms = new Set<string>();
+const onlineDuoRewardPendingRooms = new Set<string>();
 let pvpControlsBusy = false;
 let pvpRoomsVisible = false;
 let pvpRoomList: PvpRoomListEntry[] = [];
@@ -3764,27 +3767,56 @@ function applyOnlineDuoHostStartCostIfNeeded(snapshot: PvpRoomSnapshot): void {
 
   const markerKey = getOnlineDuoHostSpendMarkerKey(snapshot);
 
-  if (hasLocalMarker(markerKey)) {
+  if (hasLocalMarker(markerKey) || onlineDuoHostSpendPendingRooms.has(markerKey)) {
     return;
   }
 
-  const now = new Date().toISOString();
-  const spendResult = spendHeroArenaEnergy(hero, ARENA_DUO_BOSS_ENERGY_COST, now);
+  onlineDuoHostSpendPendingRooms.add(markerKey);
+  void spendOnlineDuoHostStartCost(markerKey).finally(() => {
+    onlineDuoHostSpendPendingRooms.delete(markerKey);
+  });
+}
 
-  if (!spendResult.ok) {
-    hero = spendResult.hero;
+async function spendOnlineDuoHostStartCost(markerKey: string): Promise<void> {
+  try {
+    if (canUseGladiatorCloudSave()) {
+      hero = {
+        ...hero,
+        arenaEnergy: await spendGladiatorArenaEnergy(hero, ARENA_DUO_BOSS_ENERGY_COST),
+      };
+    } else {
+      const spendResult = spendHeroArenaEnergy(hero, ARENA_DUO_BOSS_ENERGY_COST);
+
+      if (!spendResult.ok) {
+        hero = spendResult.hero;
+        saveLocalHeroSave(hero);
+        renderCityHero();
+        setPvpStatus(getArenaEnergyShortageMessage(spendResult.arenaEnergy.current, ARENA_DUO_BOSS_ENERGY_COST));
+        return;
+      }
+
+      hero = spendResult.hero;
+    }
+
     saveLocalHeroSave(hero);
+    setLocalMarker(markerKey);
     renderCityHero();
-    setPvpStatus(getArenaEnergyShortageMessage(spendResult.arenaEnergy.current, ARENA_DUO_BOSS_ENERGY_COST));
-    return;
-  }
+    renderCityArenaMenu();
+  } catch (error) {
+    if (error instanceof GladiatorSaveError && error.arenaEnergy) {
+      hero = {
+        ...hero,
+        arenaEnergy: error.arenaEnergy,
+      };
+      saveLocalHeroSave(hero);
+      renderCityHero();
+      setPvpStatus(getArenaEnergyShortageMessage(error.arenaEnergy.current, ARENA_DUO_BOSS_ENERGY_COST));
+      return;
+    }
 
-  hero = spendResult.hero;
-  saveLocalHeroSave(hero);
-  queueHeroCloudSave("online-duo-host-energy");
-  setLocalMarker(markerKey);
-  renderCityHero();
-  renderCityArenaMenu();
+    console.warn("Online duo host energy spend failed", error);
+    setPvpStatus("Could not spend duo boss energy. Reconnecting...");
+  }
 }
 
 function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot, session = pvpSession): void {
@@ -3799,22 +3831,82 @@ function applyOnlineDuoRewardIfNeeded(snapshot: PvpRoomSnapshot, session = pvpSe
     return;
   }
 
+  if (onlineDuoRewardPendingRooms.has(markerKey)) {
+    return;
+  }
+
+  if (canUseGladiatorCloudSave()) {
+    onlineDuoRewardPendingRooms.add(markerKey);
+    void settleOnlineDuoRewardFromServer(snapshot, session, markerKey).finally(() => {
+      onlineDuoRewardPendingRooms.delete(markerKey);
+    });
+    return;
+  }
+
+  applyOnlineDuoRewardSettlement(snapshot, session, markerKey, createLocalOnlineDuoRewardApplication(snapshot), {
+    cloudSaveReason: snapshot.seat === "host" ? "online-duo-host-reward" : "online-duo-helper-reward",
+  });
+}
+
+async function settleOnlineDuoRewardFromServer(
+  snapshot: PvpRoomSnapshot,
+  session: PvpRoomSession | undefined,
+  markerKey: string,
+): Promise<void> {
+  try {
+    const rewardApplication = await settleGladiatorOnlineDuoBossReward(snapshot);
+
+    applyOnlineDuoRewardSettlement(snapshot, session, markerKey, rewardApplication);
+  } catch (error) {
+    console.warn("Online duo reward settlement failed", error);
+    setPvpStatus("Could not claim duo reward. Try again.");
+  }
+}
+
+function createLocalOnlineDuoRewardApplication(snapshot: PvpRoomSnapshot): GladiatorBattleSettlement {
+  const combat = snapshot.state;
+
+  if (!combat || combat.result === "playing") {
+    throw new Error("Online duo reward requires a finished combat state.");
+  }
+
   const rewardTimestamp = new Date().toISOString();
   const combatForReward = createOnlineDuoRewardCombat(snapshot);
   const rewardApplication = applyCombatReward(hero, combatForReward, rewardTimestamp, Math.random, {
     recordBossVictory: snapshot.seat === "host",
   });
-  const { reward, loot, heroBeforeReward } = rewardApplication;
   let heroAfterReward = rewardApplication.heroAfterReward;
 
-  if (snapshot.seat === "guest" && snapshot.state.result === "win") {
+  if (snapshot.seat === "guest" && combat.result === "win") {
     heroAfterReward = grantHeroArenaEnergy(heroAfterReward, ONLINE_DUO_GUEST_ENERGY_REWARD, rewardTimestamp);
   }
 
+  return heroAfterReward === rewardApplication.heroAfterReward
+    ? rewardApplication
+    : { ...rewardApplication, heroAfterReward };
+}
+
+function applyOnlineDuoRewardSettlement(
+  snapshot: PvpRoomSnapshot,
+  session: PvpRoomSession | undefined,
+  markerKey: string,
+  rewardApplication: GladiatorBattleSettlement,
+  options: { cloudSaveReason?: string } = {},
+): void {
+  const combat = snapshot.state;
+
+  if (!combat) {
+    return;
+  }
+
+  const { reward, loot, heroBeforeReward, heroAfterReward } = rewardApplication;
+
   hero = heroAfterReward;
   saveLocalHeroSave(hero);
-  queueHeroCloudSave(snapshot.seat === "host" ? "online-duo-host-reward" : "online-duo-helper-reward");
-  rememberDroppedEquipmentHint(snapshot.state, loot);
+  if (options.cloudSaveReason) {
+    queueHeroCloudSave(options.cloudSaveReason);
+  }
+  rememberDroppedEquipmentHint(combat, loot);
   syncPlayerCityBodyScale();
   renderCityHero();
   syncCityShopHeroState();
