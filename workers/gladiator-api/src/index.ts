@@ -299,6 +299,18 @@ interface ShopProduct {
   rarity?: ShopItemRarity;
 }
 
+type BattleAnalyticsKind = "offline_manual" | "offline_auto" | "online_duo";
+
+interface BattleAnalyticsInput {
+  telegramUserId: string;
+  battleKind: BattleAnalyticsKind;
+  roomCode?: string;
+  playerSeat?: OnlineDuoBossSeat;
+  combat: CombatState;
+  settlement: CombatRewardApplication;
+  createdAt: string;
+}
+
 interface PairedArmorySlotConfig {
   backSlot: HeroEquipmentSlotKey;
   frontSlot: HeroEquipmentSlotKey;
@@ -423,6 +435,7 @@ export class PlayerActor extends DurableObject<Env> {
       heroJson,
       nowIso: input.nowIso,
     });
+    await recordShopPurchaseIfNeeded(this.env.GLADIATOR_SAVES_DB, input, hero, nextHero.hero);
 
     return { ok: true, hero: nextHero.hero };
   }
@@ -560,6 +573,13 @@ export class PlayerActor extends DurableObject<Env> {
     if (!areHeroArenaEnergyEqual(hero.arenaEnergy, settlement.heroAfterReward.arenaEnergy)) {
       await syncPlayerDailyArenaEnergyFromHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, settlement.heroAfterReward, input.nowIso);
     }
+    await recordBattleAnalyticsIfNeeded(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      battleKind: input.battleKind === "auto" ? "offline_auto" : "offline_manual",
+      combat,
+      settlement,
+      createdAt: input.nowIso,
+    });
 
     return { ok: true, settlement };
   }
@@ -598,6 +618,15 @@ export class PlayerActor extends DurableObject<Env> {
     if (!areHeroArenaEnergyEqual(hero.arenaEnergy, settlement.heroAfterReward.arenaEnergy)) {
       await syncPlayerDailyArenaEnergyFromHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, settlement.heroAfterReward, input.nowIso);
     }
+    await recordBattleAnalyticsIfNeeded(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      battleKind: "online_duo",
+      roomCode: input.roomCode,
+      playerSeat: input.seat,
+      combat,
+      settlement,
+      createdAt: input.nowIso,
+    });
 
     return { ok: true, settlement };
   }
@@ -1426,6 +1455,148 @@ function updatePlayerHero(
     )
     .bind(save.telegramUsername ?? null, save.heroJson, SAVE_SCHEMA_VERSION, save.nowIso, save.telegramUserId)
     .run();
+}
+
+async function recordShopPurchaseIfNeeded(
+  db: D1Database,
+  input: PlayerActorBuyShopProductInput,
+  heroBefore: HeroState,
+  heroAfter: HeroState,
+): Promise<void> {
+  const goldSpent = Math.max(0, Math.floor(heroBefore.gold - heroAfter.gold));
+
+  if (goldSpent <= 0) {
+    return;
+  }
+
+  const product = input.productId ? getServerShopProduct(input.shopKind, input.productId) : undefined;
+
+  try {
+    await db
+      .prepare(
+        `
+          INSERT INTO shop_purchases (
+            telegram_user_id,
+            shop_kind,
+            action,
+            product_id,
+            item_ids_json,
+            gold_spent,
+            hero_level,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .bind(
+        input.telegramUserId,
+        input.shopKind,
+        input.action,
+        input.productId ?? null,
+        JSON.stringify(product?.itemIds ?? []),
+        goldSpent,
+        heroBefore.level,
+        input.nowIso,
+      )
+      .run();
+  } catch (error) {
+    console.warn("Could not record shop purchase analytics.", error);
+  }
+}
+
+async function recordBattleAnalyticsIfNeeded(db: D1Database, input: BattleAnalyticsInput): Promise<void> {
+  const encounter = input.combat.encounter;
+
+  if (!encounter) {
+    return;
+  }
+
+  const battleResultId = crypto.randomUUID();
+
+  try {
+    await db
+      .prepare(
+        `
+          INSERT INTO battle_results (
+            id,
+            telegram_user_id,
+            battle_kind,
+            result,
+            encounter_kind,
+            tier_id,
+            opponent_id,
+            difficulty_id,
+            room_code,
+            player_seat,
+            reward_gold,
+            reward_xp,
+            hero_level_before,
+            hero_level_after,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .bind(
+        battleResultId,
+        input.telegramUserId,
+        input.battleKind,
+        input.combat.result,
+        encounter.kind,
+        encounter.tierId,
+        encounter.opponentId,
+        encounter.difficultyId ?? null,
+        input.roomCode ?? null,
+        input.playerSeat ?? null,
+        input.settlement.reward.gold,
+        input.settlement.reward.xp,
+        input.settlement.heroBeforeReward.level,
+        input.settlement.heroAfterReward.level,
+        input.createdAt,
+      )
+      .run();
+
+    const insertLootDrop = db.prepare(
+      `
+        INSERT INTO loot_drops (
+          id,
+          battle_result_id,
+          telegram_user_id,
+          source_kind,
+          source_id,
+          opponent_id,
+          tier_id,
+          item_id,
+          item_ids_json,
+          quantity,
+          created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    );
+
+    for (const drop of input.settlement.loot) {
+      const itemIds = drop.itemIds && drop.itemIds.length > 0 ? drop.itemIds : [drop.itemId];
+
+      await insertLootDrop
+        .bind(
+          crypto.randomUUID(),
+          battleResultId,
+          input.telegramUserId,
+          encounter.kind,
+          drop.sourceId,
+          encounter.opponentId,
+          encounter.tierId,
+          drop.itemId,
+          JSON.stringify(itemIds),
+          Math.max(1, Math.floor(drop.quantity)),
+          input.createdAt,
+        )
+        .run();
+    }
+  } catch (error) {
+    console.warn("Could not record battle analytics.", error);
+  }
 }
 
 function updatePlayerHeroEquipment(
