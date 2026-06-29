@@ -2221,7 +2221,6 @@ function setCityArenaQuestPanelOpen(open: boolean): void {
     if (nextHero !== hero) {
       hero = nextHero;
       saveLocalHeroSave(hero);
-      queueHeroCloudSave("arena-win-quest-opened");
     }
   }
 
