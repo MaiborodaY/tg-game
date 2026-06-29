@@ -1,5 +1,5 @@
 import type { CombatState } from "./combat";
-import type { ArenaLootDrop, BattleReward, HeroArenaEnergy, HeroBaseStats, HeroEquipment, HeroState } from "./hero";
+import type { ArenaLootDrop, BattleReward, HeroArenaEnergy, HeroArenaWinQuest, HeroBaseStats, HeroEquipment, HeroState } from "./hero";
 import { getTelegramInitData } from "./telegram";
 
 interface GladiatorSaveResponse {
@@ -49,6 +49,13 @@ interface GladiatorBattleSettlementResponse {
   error?: string;
 }
 
+interface GladiatorArenaQuestClaimResponse {
+  ok: boolean;
+  reward?: GladiatorArenaQuestRewardPatch;
+  hero?: HeroState;
+  error?: string;
+}
+
 export type GladiatorShopKind = "armory" | "weapon" | "magic";
 export type GladiatorShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity";
 
@@ -67,6 +74,13 @@ export interface GladiatorHeroAttributesPatch {
   updatedAt: string;
 }
 
+export interface GladiatorArenaQuestRewardPatch {
+  arenaWinQuest: HeroArenaWinQuest;
+  gold: number;
+  arenaEnergy: HeroArenaEnergy;
+  updatedAt: string;
+}
+
 export interface GladiatorBattleSettlement {
   reward: BattleReward;
   loot: ArenaLootDrop[];
@@ -82,6 +96,7 @@ const GLADIATOR_SHOP_BUY_ENDPOINT = "/api/gladiator-shop/buy";
 const GLADIATOR_EQUIPMENT_SYNC_ENDPOINT = "/api/gladiator-equipment/sync";
 const GLADIATOR_ATTRIBUTES_SAVE_ENDPOINT = "/api/gladiator-attributes/save";
 const GLADIATOR_ATTRIBUTES_RESET_ENDPOINT = "/api/gladiator-attributes/reset";
+const GLADIATOR_ARENA_QUEST_CLAIM_ENDPOINT = "/api/gladiator-arena-quest/claim";
 const GLADIATOR_BATTLE_SETTLE_ENDPOINT = "/api/gladiator-battle/settle";
 const GLADIATOR_API_BASE_URL_STORAGE_KEY = "dust-arena-gladiator-api-base-url";
 const DEFAULT_GLADIATOR_API_BASE_URL = "https://gladiator-api.mr-maybik.workers.dev";
@@ -259,6 +274,33 @@ export async function resetGladiatorHeroAttributes(): Promise<GladiatorHeroAttri
   }
 
   return data.attributes;
+}
+
+export async function claimGladiatorArenaQuestReward(): Promise<GladiatorArenaQuestRewardPatch> {
+  const initData = getTelegramInitData();
+
+  if (!initData) {
+    throw new GladiatorSaveError("missing_init_data", "Telegram initData is unavailable.");
+  }
+
+  const response = await fetch(getGladiatorApiUrl(GLADIATOR_ARENA_QUEST_CLAIM_ENDPOINT), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-telegram-init-data": initData,
+    },
+  });
+  const data = (await response.json()) as GladiatorArenaQuestClaimResponse;
+
+  if (!response.ok || !data.ok) {
+    throw new GladiatorSaveError(data.error || `Gladiator arena quest claim failed: ${response.status}`, data.error, data.hero);
+  }
+
+  if (!data.reward) {
+    throw new GladiatorSaveError("missing_arena_quest_reward_payload", "Arena quest claim response did not include reward.");
+  }
+
+  return data.reward;
 }
 
 export async function settleGladiatorOfflineBattleReward(

@@ -57,6 +57,7 @@ import {
   applyGladiatorShopAction,
   buyGladiatorShopProduct,
   canUseGladiatorCloudSave,
+  claimGladiatorArenaQuestReward,
   deleteGladiatorCloudSave,
   GladiatorSaveError,
   loadGladiatorCloudSave,
@@ -67,6 +68,7 @@ import {
   spendGladiatorArenaEnergy,
   syncGladiatorHeroEquipment,
   type GladiatorBattleSettlement,
+  type GladiatorArenaQuestRewardPatch,
   type GladiatorHeroAttributesPatch,
   type GladiatorShopAction,
 } from "./gladiatorSaveClient";
@@ -303,6 +305,7 @@ let pvpRoomList: PvpRoomListEntry[] = [];
 let activeOnlineRoomKind: PvpRoomKind = "duoBoss";
 let isCityArenaOnlineViewOpen = false;
 let isCityArenaQuestPanelOpen = false;
+let cityArenaQuestClaimPending = false;
 let pendingManualArenaStartSelection: ArenaMenuSelection | undefined;
 let pvpDeadlineLocalTime: number | undefined;
 let pvpTimerInterval: number | undefined;
@@ -340,6 +343,7 @@ const MOBILE_RENDER_DEBUG_PLATFORM_PATTERN = /android|ios|iphone|ipad|ipod|mobil
 const MOBILE_RENDER_DEBUG_USER_AGENT_PATTERN = /android|iphone|ipad|ipod|mobile/i;
 const CITY_RETURN_READY_LABEL = "Return to City";
 const CITY_RETURN_WAITING_LABEL = "Preparing City...";
+const BATTLE_REWARD_CLAIM_RETRY_LABEL = "Claim Reward";
 const AUTO_RESULT_RETURN_LABEL = "Return";
 const ARENA_ENTRY_LOADER_DELAY_MS = 240;
 const ARENA_ENTRY_FAILSAFE_TIMEOUT_MS = 5000;
@@ -380,6 +384,7 @@ let arenaEntryFailsafeTimer: number | undefined;
 let battleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleResultPresentation: BattleResultPresentation | undefined;
 let pendingBattleRewardSettlement: Promise<void> | undefined;
+let pendingBattleRewardRetry: { combat: CombatState; battleKind: "manual" | "auto" } | undefined;
 let battleResultPresentationStage: BattleResultPresentationStage = "reward";
 let battleResultPresentationId = 0;
 let battleResultPresentationRevealToken = 0;
@@ -972,16 +977,26 @@ function playCityCurtainTransition(onCovered?: () => void): void {
 }
 
 function renderCurrentDom(): void {
+  const hasPendingBattleRewardRetry = Boolean(pendingBattleRewardRetry);
+
   renderDom(dom, state, {
     hero,
-    reward: gameMode === "pvp" ? { gold: 0, xp: 0 } : getBattleReward(state),
+    reward: gameMode === "pvp" || hasPendingBattleRewardRetry ? { gold: 0, xp: 0 } : getBattleReward(state),
     statsState: displayedStatsState,
     resultPresentation: battleResultPresentation,
     resultPresentationStage: battleResultPresentationStage,
     deferResultPresentation: state.result !== "playing" && Boolean(pendingBattleResultPresentation || pendingBattleRewardSettlement),
     resultReturn: {
-      ready: battleResultPresentationStage === "loot" ? true : battleResultReturnReady && !battleResultSequenceLocked,
-      label: battleResultPresentationStage === "loot" ? "Continue" : battleResultReturnLabel,
+      ready: hasPendingBattleRewardRetry
+        ? !pendingBattleRewardSettlement
+        : battleResultPresentationStage === "loot"
+          ? true
+          : battleResultReturnReady && !battleResultSequenceLocked,
+      label: hasPendingBattleRewardRetry
+        ? BATTLE_REWARD_CLAIM_RETRY_LABEL
+        : battleResultPresentationStage === "loot"
+          ? "Continue"
+          : battleResultReturnLabel,
     },
     onResultSequenceLockChange: setBattleResultSequenceLocked,
   });
@@ -1448,17 +1463,23 @@ function scheduleBattleResultPresentation(actionAnimation: Promise<void>): void 
         return;
       }
 
-      if (!pendingBattleResultPresentation) {
-        return;
-      }
-
-      battleResultPresentation = pendingBattleResultPresentation;
-      battleResultPresentationStage = getInitialBattleResultPresentationStage(battleResultPresentation);
-      pendingBattleResultPresentation = undefined;
-      renderCityHero();
-      renderCurrentDom();
-      syncTurnProbe();
+      revealPendingBattleResultPresentation();
     });
+}
+
+function revealPendingBattleResultPresentation(): boolean {
+  if (!pendingBattleResultPresentation || state.result === "playing") {
+    return false;
+  }
+
+  battleResultPresentation = pendingBattleResultPresentation;
+  battleResultPresentationStage = getInitialBattleResultPresentationStage(battleResultPresentation);
+  pendingBattleResultPresentation = undefined;
+  renderCityHero();
+  renderCurrentDom();
+  syncTurnProbe();
+
+  return true;
 }
 
 function getInitialBattleResultPresentationStage(presentation: BattleResultPresentation): BattleResultPresentationStage {
@@ -2180,8 +2201,12 @@ function syncCityArenaQuestPanel(status: HeroArenaWinQuestStatus = getHeroArenaW
     cityArenaQuestRewards.replaceChildren(energyReward, goldReward);
   }
   if (cityArenaQuestClaimButton) {
-    cityArenaQuestClaimButton.disabled = !status.ready;
-    cityArenaQuestClaimButton.textContent = status.claimed ? "CLAIMED" : "CLAIM";
+    cityArenaQuestClaimButton.disabled = cityArenaQuestClaimPending || !status.ready;
+    cityArenaQuestClaimButton.textContent = cityArenaQuestClaimPending
+      ? "CLAIMING"
+      : status.claimed
+        ? "CLAIMED"
+        : "CLAIM";
   }
 }
 
@@ -2205,7 +2230,40 @@ function toggleCityArenaQuestPanel(): void {
   setCityArenaQuestPanelOpen(!isCityArenaQuestPanelOpen);
 }
 
-function claimCityArenaQuestReward(): void {
+async function claimCityArenaQuestReward(): Promise<void> {
+  if (cityArenaQuestClaimPending) {
+    return;
+  }
+
+  const status = getHeroArenaWinQuestStatus(hero);
+
+  if (!status.ready) {
+    syncCityArenaQuestControls();
+    return;
+  }
+
+  if (canUseGladiatorCloudSave()) {
+    cityArenaQuestClaimPending = true;
+    syncCityArenaQuestControls();
+
+    try {
+      const reward = await claimGladiatorArenaQuestReward();
+
+      applyHeroArenaQuestRewardPatch(reward);
+      saveLocalHeroSave(hero);
+      renderCityHero();
+      renderCityArenaMenu();
+    } catch (error) {
+      console.error("Gladiator arena quest claim failed", error);
+      window.alert("Could not claim quest reward. Try again.");
+    } finally {
+      cityArenaQuestClaimPending = false;
+      syncCityArenaQuestControls();
+    }
+
+    return;
+  }
+
   const claimed = claimHeroArenaWinQuestReward(hero, new Date().toISOString());
 
   if (!claimed.ok) {
@@ -2218,6 +2276,16 @@ function claimCityArenaQuestReward(): void {
   queueHeroCloudSave("arena-win-quest");
   renderCityHero();
   renderCityArenaMenu();
+}
+
+function applyHeroArenaQuestRewardPatch(reward: GladiatorArenaQuestRewardPatch): void {
+  hero = {
+    ...hero,
+    arenaWinQuest: reward.arenaWinQuest,
+    gold: reward.gold,
+    arenaEnergy: reward.arenaEnergy,
+    updatedAt: reward.updatedAt,
+  };
 }
 
 function isCityArenaAutoFightUnlockedForTier(tierId: number): boolean {
@@ -4101,15 +4169,21 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
       maxTurns: AUTO_FIGHT_MAX_TURNS,
       random,
     });
-    const { rewardApplication, cloudSaveReason } = await resolveAutoFightRewardApplication(resolvedState, random);
+    const rewardResult = await resolveAutoFightRewardApplication(resolvedState, random).catch((error) => {
+      handleAutoFightRewardSettlementFailure(resolvedState, error);
+      return undefined;
+    });
+
+    if (!rewardResult) {
+      return;
+    }
+
+    const rewardApplication = rewardResult;
     const { loot, heroAfterReward } = rewardApplication;
 
     hero = heroAfterReward;
     rememberDroppedEquipmentHint(resolvedState, loot);
     saveLocalHeroSave(hero);
-    if (cloudSaveReason) {
-      queueHeroCloudSave(cloudSaveReason);
-    }
     renderCityArenaMenu();
     presentAutoResolvedArenaResult(resolvedState, {
       ...rewardApplication,
@@ -4128,22 +4202,31 @@ async function autoResolveSelectedArena(selection: ArenaMenuSelection): Promise<
 async function resolveAutoFightRewardApplication(
   resolvedState: CombatState,
   random: () => number,
-): Promise<{ rewardApplication: GladiatorBattleSettlement; cloudSaveReason?: string }> {
+): Promise<GladiatorBattleSettlement> {
   if (canUseGladiatorCloudSave()) {
-    try {
-      return {
-        rewardApplication: await settleGladiatorOfflineBattleReward(resolvedState, "auto"),
-      };
-    } catch (error) {
-      console.error("Gladiator auto-fight settlement failed", error);
-    }
+    return settleGladiatorOfflineBattleReward(resolvedState, "auto");
   }
 
+  return applyCombatReward(hero, resolvedState, new Date().toISOString(), random, {
+    randomEnemyLootChanceMultiplier: AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER,
+  });
+}
+
+function handleAutoFightRewardSettlementFailure(resolvedState: CombatState, error: unknown): void {
+  console.error("Gladiator auto-fight settlement failed", error);
+  presentAutoResolvedArenaResult(resolvedState, createUnclaimedBattleRewardPresentation());
+  queueOfflineBattleRewardRetry(resolvedState, "auto");
+  renderCurrentDom();
+  window.alert("Could not claim battle reward. Try again.");
+}
+
+function createUnclaimedBattleRewardPresentation(): Omit<BattleResultPresentation, "id"> {
   return {
-    rewardApplication: applyCombatReward(hero, resolvedState, new Date().toISOString(), random, {
-      randomEnemyLootChanceMultiplier: AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER,
-    }),
-    cloudSaveReason: canUseGladiatorCloudSave() ? "auto-fight-result-fallback" : undefined,
+    reward: { gold: 0, xp: 0 },
+    loot: [],
+    heroBeforeReward: hero,
+    heroAfterReward: hero,
+    instant: true,
   };
 }
 
@@ -4157,6 +4240,7 @@ function presentAutoResolvedArenaResult(combat: CombatState, presentation: Omit<
   resetBattleResultReturnGate();
   battleResultReturnReady = true;
   battleResultReturnLabel = AUTO_RESULT_RETURN_LABEL;
+  pendingBattleRewardRetry = undefined;
   battleResultPresentation = {
     id: `battle-result-${++battleResultPresentationId}`,
     instant: true,
@@ -4204,6 +4288,7 @@ function closeAutoResolvedArenaResult(): void {
   resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   pendingBattleResultPresentation = undefined;
+  pendingBattleRewardRetry = undefined;
   battleResultPresentationStage = "reward";
   battleResultPresentationRevealToken += 1;
   state = createCombatStateForSelection(activeArenaSelection);
@@ -4644,7 +4729,12 @@ function applyBattleRewardIfNeeded(nextState: CombatState): CombatState {
   return nextState;
 }
 
-function startOfflineBattleRewardSettlement(nextState: CombatState, battleKind: "manual" | "auto"): void {
+function startOfflineBattleRewardSettlement(
+  nextState: CombatState,
+  battleKind: "manual" | "auto",
+  options: { revealAfterSettlement?: boolean } = {},
+): void {
+  pendingBattleRewardRetry = undefined;
   const settlementPromise = settleOfflineBattleRewardPresentation(nextState, battleKind);
 
   pendingBattleRewardSettlement = settlementPromise;
@@ -4654,6 +4744,11 @@ function startOfflineBattleRewardSettlement(nextState: CombatState, battleKind: 
   void settlementPromise.finally(() => {
     if (pendingBattleRewardSettlement === settlementPromise) {
       pendingBattleRewardSettlement = undefined;
+
+      if (options.revealAfterSettlement && revealPendingBattleResultPresentation()) {
+        return;
+      }
+
       renderCurrentDom();
     }
   });
@@ -4666,8 +4761,32 @@ async function settleOfflineBattleRewardPresentation(nextState: CombatState, bat
     applyOfflineBattleRewardPresentation(nextState, settlement);
   } catch (error) {
     console.error("Gladiator battle settlement failed", error);
+
+    if (canUseGladiatorCloudSave()) {
+      queueOfflineBattleRewardRetry(nextState, battleKind);
+      window.alert("Could not claim battle reward. Try again.");
+      return;
+    }
+
     applyLocalOfflineBattleRewardFallback(nextState, battleKind);
   }
+}
+
+function queueOfflineBattleRewardRetry(nextState: CombatState, battleKind: "manual" | "auto"): void {
+  pendingBattleRewardRetry = { combat: nextState, battleKind };
+  battleResultReturnReady = true;
+  battleResultReturnLabel = BATTLE_REWARD_CLAIM_RETRY_LABEL;
+}
+
+function retryPendingOfflineBattleRewardSettlement(): void {
+  const retry = pendingBattleRewardRetry;
+
+  if (!retry || pendingBattleRewardSettlement) {
+    return;
+  }
+
+  startOfflineBattleRewardSettlement(retry.combat, retry.battleKind, { revealAfterSettlement: true });
+  renderCurrentDom();
 }
 
 function applyLocalOfflineBattleRewardFallback(nextState: CombatState, battleKind: "manual" | "auto"): void {
@@ -4676,9 +4795,7 @@ function applyLocalOfflineBattleRewardFallback(nextState: CombatState, battleKin
     randomEnemyLootChanceMultiplier: battleKind === "auto" ? AUTO_FIGHT_RANDOM_ENEMY_LOOT_CHANCE_MULTIPLIER : 1,
   });
 
-  applyOfflineBattleRewardPresentation(nextState, rewardApplication, {
-    cloudSaveReason: nextState.result === "win" ? "battle-win-fallback" : undefined,
-  });
+  applyOfflineBattleRewardPresentation(nextState, rewardApplication);
 }
 
 function applyOfflineBattleRewardPresentation(
@@ -5586,6 +5703,7 @@ async function returnToCity(options: ReturnToCityOptions = {}): Promise<void> {
   resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   pendingBattleResultPresentation = undefined;
+  pendingBattleRewardRetry = undefined;
   battleResultPresentationStage = "reward";
   battleResultPresentationRevealToken += 1;
   isArenaTransitionRunning = false;
@@ -5629,6 +5747,7 @@ function restart(options: { syncArena?: boolean } = {}): void {
   resetBattleResultReturnGate();
   battleResultPresentation = undefined;
   pendingBattleResultPresentation = undefined;
+  pendingBattleRewardRetry = undefined;
   battleResultPresentationStage = "reward";
   battleResultPresentationRevealToken += 1;
   enemyTimerStatus = "idle";
@@ -5654,7 +5773,9 @@ cityArenaQuestBackdrop?.addEventListener("click", (event) => {
   setCityArenaQuestPanelOpen(false);
 });
 cityArenaQuestCloseButton?.addEventListener("click", () => setCityArenaQuestPanelOpen(false));
-cityArenaQuestClaimButton?.addEventListener("click", claimCityArenaQuestReward);
+cityArenaQuestClaimButton?.addEventListener("click", () => {
+  void claimCityArenaQuestReward();
+});
 cityArenaTierSelect?.addEventListener("change", () => {
   activeArenaTierId = Number(cityArenaTierSelect.value) || DEFAULT_ARENA_TIER_ID;
   setCityArenaQuestPanelOpen(false);
@@ -5690,6 +5811,11 @@ if (canShowLocalDebugRestartButton()) {
   dom.restartButton.addEventListener("click", () => restart());
 }
 dom.cityButton.addEventListener("click", () => {
+  if (pendingBattleRewardRetry) {
+    retryPendingOfflineBattleRewardSettlement();
+    return;
+  }
+
   if (continueBattleResultLootPresentation()) {
     return;
   }

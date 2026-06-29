@@ -14,8 +14,10 @@ import {
   applyCombatReward,
   areHeroItemsOwned,
   buyAndEquipHeroItems,
+  claimHeroArenaWinQuestReward,
   getArenaBossDefinition,
   getArenaRandomOpponentDefinition,
+  getHeroArenaWinQuestStatus,
   getHeroScrollPurchasePrice,
   isHeroConsumableItem,
   isHeroItemOwned,
@@ -26,6 +28,7 @@ import {
   upgradeHeroScrollCapacity,
   type HeroAttributeKey,
   type HeroBaseStats,
+  type HeroArenaWinQuest,
   type HeroEquipment,
   type HeroEquipmentSlotKey,
   type HeroItemId,
@@ -110,6 +113,12 @@ interface PlayerActorSaveHeroAttributesInput {
 }
 
 interface PlayerActorResetHeroAttributesInput {
+  telegramUserId: string;
+  telegramUsername?: string;
+  nowIso: string;
+}
+
+interface PlayerActorClaimArenaWinQuestInput {
   telegramUserId: string;
   telegramUsername?: string;
   nowIso: string;
@@ -216,6 +225,21 @@ type ResetHeroAttributesResult =
       hero?: HeroState;
     };
 
+interface ArenaQuestRewardPatch {
+  arenaWinQuest: HeroArenaWinQuest;
+  gold: number;
+  arenaEnergy: HeroArenaEnergy;
+  updatedAt: string;
+}
+
+type ClaimArenaWinQuestResult =
+  | { ok: true; reward: ArenaQuestRewardPatch }
+  | {
+      ok: false;
+      error: "arena_quest_not_ready" | "player_save_not_found";
+      hero?: HeroState;
+    };
+
 type OfflineBattleSettlementResultPayload =
   | { ok: true; settlement: CombatRewardApplication }
   | {
@@ -302,6 +326,10 @@ export class PlayerActor extends DurableObject<Env> {
 
   async resetHeroAttributes(input: PlayerActorResetHeroAttributesInput): Promise<ResetHeroAttributesResult> {
     return this.enqueue(() => this.resetHeroAttributesNow(input));
+  }
+
+  async claimArenaWinQuest(input: PlayerActorClaimArenaWinQuestInput): Promise<ClaimArenaWinQuestResult> {
+    return this.enqueue(() => this.claimArenaWinQuestNow(input));
   }
 
   async settleOfflineBattle(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
@@ -434,6 +462,38 @@ export class PlayerActor extends DurableObject<Env> {
     return { ok: true, attributes };
   }
 
+  private async claimArenaWinQuestNow(input: PlayerActorClaimArenaWinQuestInput): Promise<ClaimArenaWinQuestResult> {
+    const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
+
+    if (!savedHero) {
+      return { ok: false, error: "player_save_not_found" };
+    }
+
+    const hero = await withCurrentPlayerDailyArenaEnergy(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, savedHero, input.nowIso);
+    const status = getHeroArenaWinQuestStatus(hero, input.nowIso);
+
+    if (status.claimed) {
+      return { ok: true, reward: createArenaQuestRewardPatch(hero, input.nowIso) };
+    }
+
+    const claimed = claimHeroArenaWinQuestReward(hero, input.nowIso);
+
+    if (!claimed.ok) {
+      return { ok: false, error: "arena_quest_not_ready", hero };
+    }
+
+    const reward = createArenaQuestRewardPatch(claimed.hero, input.nowIso);
+
+    await updatePlayerHeroArenaQuestReward(this.env.GLADIATOR_SAVES_DB, {
+      telegramUserId: input.telegramUserId,
+      telegramUsername: input.telegramUsername,
+      reward,
+    });
+    await syncPlayerDailyArenaEnergyFromHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId, claimed.hero, input.nowIso);
+
+    return { ok: true, reward };
+  }
+
   private async settleOfflineBattleNow(input: PlayerActorSettleOfflineBattleInput): Promise<OfflineBattleSettlementResultPayload> {
     const savedHero = await readPlayerHero(this.env.GLADIATOR_SAVES_DB, input.telegramUserId);
 
@@ -511,6 +571,10 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-attributes/reset") {
         return handleResetHeroAttributes(request, env);
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/gladiator-arena-quest/claim") {
+        return handleClaimArenaWinQuest(request, env);
       }
 
       if (request.method === "POST" && url.pathname === "/api/gladiator-battle/settle") {
@@ -667,6 +731,30 @@ async function handleResetHeroAttributes(request: Request, env: Env): Promise<Re
 
   if (result.ok) {
     return json({ ok: true, attributes: result.attributes });
+  }
+
+  const status = result.error === "player_save_not_found" ? 404 : 409;
+
+  return json({ ok: false, error: result.error, hero: result.hero }, status);
+}
+
+async function handleClaimArenaWinQuest(request: Request, env: Env): Promise<Response> {
+  const auth = await verifyTelegramInitData(readTelegramInitData(request), env.BOT_TOKEN ?? "");
+
+  if (!auth.ok) {
+    return json({ ok: false, error: auth.error }, 401);
+  }
+
+  const telegramUserId = String(auth.user.id);
+  const actor = env.PLAYER_ACTOR.getByName(telegramUserId);
+  const result = await actor.claimArenaWinQuest({
+    telegramUserId,
+    telegramUsername: auth.user.username,
+    nowIso: new Date().toISOString(),
+  });
+
+  if (result.ok) {
+    return json({ ok: true, reward: result.reward });
   }
 
   const status = result.error === "player_save_not_found" ? 404 : 409;
@@ -1296,6 +1384,54 @@ function updatePlayerHeroAttributes(
       attributes.updatedAt,
       SAVE_SCHEMA_VERSION,
       attributes.updatedAt,
+      save.telegramUserId,
+    )
+    .run();
+}
+
+function createArenaQuestRewardPatch(hero: HeroState, nowIso: string): ArenaQuestRewardPatch {
+  const dayKey = getUtcDayKey(nowIso);
+
+  return {
+    arenaWinQuest: hero.arenaWinQuest ?? { wins: 0, claimed: false },
+    gold: hero.gold,
+    arenaEnergy: getHeroArenaEnergyFromHero(hero, dayKey) ?? createFullHeroArenaEnergy(dayKey),
+    updatedAt: nowIso,
+  };
+}
+
+function updatePlayerHeroArenaQuestReward(
+  db: D1Database,
+  save: { telegramUserId: string; telegramUsername?: string; reward: ArenaQuestRewardPatch },
+): Promise<D1Result> {
+  const reward = save.reward;
+
+  return db
+    .prepare(
+      `
+        UPDATE player_saves SET
+          telegram_username = ?,
+          hero_json = json_set(
+            hero_json,
+            '$.arenaWinQuest', json(?),
+            '$.gold', ?,
+            '$.arenaEnergy', json(?),
+            '$.updatedAt', ?
+          ),
+          schema_version = ?,
+          revision = revision + 1,
+          updated_at = ?
+        WHERE telegram_user_id = ?
+      `,
+    )
+    .bind(
+      save.telegramUsername ?? null,
+      JSON.stringify(reward.arenaWinQuest),
+      reward.gold,
+      JSON.stringify(reward.arenaEnergy),
+      reward.updatedAt,
+      SAVE_SCHEMA_VERSION,
+      reward.updatedAt,
       save.telegramUserId,
     )
     .run();
