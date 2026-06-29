@@ -24,10 +24,11 @@ test("gladiator shop buys are routed through the player actor and D1 save", () =
   assert.equal(apiWorkerSource.includes("isHeroItemOwned(hero, itemId)"), true);
   assert.equal(apiWorkerSource.includes("item.equipmentSlot === slotKey"), true);
   assert.equal(apiWorkerSource.includes('type ShopKind = "armory" | "weapon" | "magic"'), true);
-  assert.equal(apiWorkerSource.includes('type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon"'), true);
+  assert.equal(apiWorkerSource.includes('type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity"'), true);
   assert.equal(apiWorkerSource.includes("applyMagicShopAction(hero, input)"), true);
   assert.equal(apiWorkerSource.includes("upgradeHeroScrollCapacity(hero, input.nowIso)"), true);
   assert.equal(apiWorkerSource.includes("upgradeHeroScroll(hero, product.itemIds[0], input.nowIso)"), true);
+  assert.equal(apiWorkerSource.includes("upgradeHeroBowShotCapacity(hero, input.nowIso)"), true);
   assert.equal(apiWorkerSource.includes("player_commands"), false);
 });
 
@@ -40,6 +41,9 @@ test("frontend shop buy waits for the server hero before mutating visible hero s
   assert.equal(mainSource.includes('handleCloudMagicShopAction("buy", product)'), true);
   assert.equal(mainSource.includes('handleCloudMagicShopAction("upgrade_scroll", product)'), true);
   assert.equal(mainSource.includes('handleCloudMagicShopAction("upgrade_scroll_capacity")'), true);
+  assert.equal(mainSource.includes("handleCloudBowCapacityUpgrade"), true);
+  assert.equal(mainSource.includes('action: "upgrade_bow_capacity"'), true);
+  assert.equal(mainSource.includes("bowCapacityUpgradePending"), true);
   assert.match(
     mainSource,
     /setPendingEquipmentShopBuyProduct\(product\);[\s\S]*const serverHero = await buyGladiatorShopProduct\([\s\S]*hero = nextHero;[\s\S]*applyShopEquipmentVisualSync\(hero\.equipment,/,

@@ -27,7 +27,7 @@ interface GladiatorShopBuyResponse {
 }
 
 export type GladiatorShopKind = "armory" | "weapon" | "magic";
-export type GladiatorShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon";
+export type GladiatorShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity";
 
 export interface GladiatorShopActionRequest {
   shopKind: GladiatorShopKind;

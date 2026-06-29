@@ -300,6 +300,7 @@ let weaponShop: WeaponShopApi | undefined;
 let magicShop: MagicShopApi | undefined;
 let pendingEquipmentShopBuyProduct: ArmoryProduct | WeaponProduct | undefined;
 let magicShopActionPending = false;
+let bowCapacityUpgradePending = false;
 let unmountArena: (() => void) | undefined;
 let cityScene: CitySceneApi | undefined;
 let heroPortraitPreview: HeroPortraitPreviewApi | undefined;
@@ -4759,7 +4760,44 @@ async function handleCloudMagicShopAction(action: GladiatorShopAction, product?:
   }
 }
 
+async function handleCloudBowCapacityUpgrade(): Promise<void> {
+  if (bowCapacityUpgradePending) {
+    return;
+  }
+
+  const previousHero = hero;
+  bowCapacityUpgradePending = true;
+
+  try {
+    const serverHero = await applyGladiatorShopAction({
+      shopKind: "weapon",
+      action: "upgrade_bow_capacity",
+      equipment: previousHero.equipment,
+    });
+    const nextHero = withCurrentArenaEnergy(serverHero, previousHero);
+
+    hero = nextHero;
+    saveLocalHeroSave(hero);
+    syncPlayerCityBodyScale();
+    setPlayerEquipment(hero.equipment);
+    renderCityHero();
+    weaponShop?.syncHeroState();
+    cityHeroEquipmentMenu.render();
+  } catch (error) {
+    console.error("Gladiator bow capacity upgrade failed", error);
+    window.alert("Could not upgrade bow capacity. Try again.");
+  } finally {
+    bowCapacityUpgradePending = false;
+    weaponShop?.syncHeroState();
+  }
+}
+
 function handleBowCapacityUpgrade(): void {
+  if (canUseGladiatorCloudSave()) {
+    void handleCloudBowCapacityUpgrade();
+    return;
+  }
+
   const nextHero = upgradeHeroBowShotCapacity(hero);
 
   if (nextHero === hero) {
@@ -4767,6 +4805,7 @@ function handleBowCapacityUpgrade(): void {
   }
 
   hero = nextHero;
+  saveLocalHeroSave(hero);
   renderCityHero();
   weaponShop?.syncHeroState();
   cityHeroEquipmentMenu.render();

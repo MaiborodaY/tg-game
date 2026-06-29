@@ -16,6 +16,7 @@ import {
   isHeroConsumableItem,
   isHeroItemOwned,
   sharpenHeroActiveWeapon,
+  upgradeHeroBowShotCapacity,
   upgradeHeroScroll,
   upgradeHeroScrollCapacity,
   type HeroEquipment,
@@ -77,7 +78,7 @@ type SpendArenaEnergyResult =
   | { ok: false; error: "not_enough_arena_energy"; arenaEnergy: HeroArenaEnergy };
 
 type ShopKind = "armory" | "weapon" | "magic";
-type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon";
+type ShopAction = "buy" | "upgrade_scroll" | "upgrade_scroll_capacity" | "sharpen_weapon" | "upgrade_bow_capacity";
 type HeroEquipmentSnapshot = Partial<Record<HeroEquipmentSlotKey, HeroItemId | null>>;
 
 type BuyShopProductResult =
@@ -337,6 +338,12 @@ async function readShopBuyRequest(request: Request): Promise<ShopBuyRequest> {
 }
 
 function applyEquipmentShopAction(hero: HeroState, input: PlayerActorBuyShopProductInput): BuyShopProductResult {
+  if (input.action === "upgrade_bow_capacity") {
+    return input.shopKind === "weapon"
+      ? toShopMutationResult(upgradeHeroBowShotCapacity(hero, input.nowIso), hero)
+      : { ok: false, error: "shop_action_not_supported" };
+  }
+
   if (input.action !== "buy") {
     return { ok: false, error: "shop_action_not_supported" };
   }
@@ -660,13 +667,13 @@ function toShopKind(value: unknown): ShopKind | undefined {
 }
 
 function toShopAction(value: unknown): ShopAction | undefined {
-  return value === "buy" || value === "upgrade_scroll" || value === "upgrade_scroll_capacity" || value === "sharpen_weapon"
+  return value === "buy" || value === "upgrade_scroll" || value === "upgrade_scroll_capacity" || value === "sharpen_weapon" || value === "upgrade_bow_capacity"
     ? value
     : undefined;
 }
 
-function doesShopActionRequireProductId(shopKind: ShopKind, action: ShopAction): boolean {
-  return shopKind !== "magic" || action === "buy" || action === "upgrade_scroll";
+function doesShopActionRequireProductId(_shopKind: ShopKind, action: ShopAction): boolean {
+  return action === "buy" || action === "upgrade_scroll";
 }
 
 function getServerShopProduct(shopKind: ShopKind, productId: string): ShopProduct | undefined {
